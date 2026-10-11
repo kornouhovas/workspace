@@ -1,3 +1,4 @@
+import type { ProjectCategoryMoveResult, ProjectCategoryMoveList, ProjectCategoryMoveRecoveryPreview, WorkspaceMoveProjectCategoryCommand, WorkspaceListProjectCategoryMovesQuery, WorkspaceGetProjectCategoryMoveQuery, WorkspacePreviewProjectCategoryMoveRecoveryQuery, WorkspaceRecoverProjectCategoryMoveCommand } from "./project-category-move.js";
 import type { ProjectRenameResult, ProjectRenameList, ProjectRenameRecoveryPreview, WorkspaceRenameProjectCommand, WorkspaceListProjectRenamesQuery, WorkspaceGetProjectRenameQuery, WorkspacePreviewProjectRenameRecoveryQuery, WorkspaceRecoverProjectRenameCommand } from "./project-rename.js";
 import type { ProjectRevealResult, WorkspaceRevealProjectCommand } from "./project-reveal.js";
 import type { ProjectCreationResult, ProjectCreationList, ProjectCreationRecoveryPreview, WorkspaceCreateProjectCommand, WorkspaceListProjectCreationsQuery, WorkspaceGetProjectCreationQuery, WorkspacePreviewProjectCreationRecoveryQuery, WorkspaceRecoverProjectCreationCommand } from "./project-creation.js";
@@ -9,7 +10,7 @@ import type { CategoryPropertySnapshot, WorkspaceRenameCategoryPropertyCommand, 
 export type BackendStatus = { state: "starting" | "ready" | "unavailable"; message?: string; diagnostic?: import("./startup-diagnostic.js").StartupDiagnostic };
 export type SettingsRequest = SettingsQuery | SettingsCommand;
 export type WorkspaceRequest = WorkspaceQuery | WorkspaceCommand;
-export type WorkspaceResponse = ProjectRenameResult | ProjectRenameList | ProjectRenameRecoveryPreview | ProjectRevealResult | ProjectCreationResult | ProjectCreationList | ProjectCreationRecoveryPreview | WorkspaceSourceObservationSnapshot | ProjectRecoveryPreview | CategoryPropertySnapshot | TextPropertySnapshot | TextPropertyMutation | ProjectList | DiscoveryPreview | WorkspaceLoad | WorkspaceCreated | ActiveWorkspace | WorkspaceSourceState;
+export type WorkspaceResponse = ProjectCategoryMoveResult | ProjectCategoryMoveList | ProjectCategoryMoveRecoveryPreview | ProjectRenameResult | ProjectRenameList | ProjectRenameRecoveryPreview | ProjectRevealResult | ProjectCreationResult | ProjectCreationList | ProjectCreationRecoveryPreview | WorkspaceSourceObservationSnapshot | ProjectRecoveryPreview | CategoryPropertySnapshot | TextPropertySnapshot | TextPropertyMutation | ProjectList | DiscoveryPreview | WorkspaceLoad | WorkspaceCreated | ActiveWorkspace | WorkspaceSourceState;
 export type RootPickerResult =
   | { outcome: "selected"; path: string }
   | { outcome: "cancelled" }
@@ -19,6 +20,11 @@ export interface WorkspaceDesktopApi {
   getBackendStatus(): Promise<BackendStatus>;
   onBackendStatus(listener: (status: BackendStatus) => void): () => void;
   settings(input: SettingsRequest): Promise<ServiceResult<Settings>>;
+  workspace(input: WorkspaceMoveProjectCategoryCommand): Promise<ServiceResult<ProjectCategoryMoveResult>>;
+  workspace(input: WorkspaceListProjectCategoryMovesQuery): Promise<ServiceResult<ProjectCategoryMoveList>>;
+  workspace(input: WorkspaceGetProjectCategoryMoveQuery): Promise<ServiceResult<ProjectCategoryMoveResult>>;
+  workspace(input: WorkspacePreviewProjectCategoryMoveRecoveryQuery): Promise<ServiceResult<ProjectCategoryMoveRecoveryPreview>>;
+  workspace(input: WorkspaceRecoverProjectCategoryMoveCommand): Promise<ServiceResult<ProjectCategoryMoveResult>>;
   workspace(input: WorkspaceRenameProjectCommand): Promise<ServiceResult<ProjectRenameResult>>;
   workspace(input: WorkspaceListProjectRenamesQuery): Promise<ServiceResult<ProjectRenameList>>;
   workspace(input: WorkspaceGetProjectRenameQuery): Promise<ServiceResult<ProjectRenameResult>>;

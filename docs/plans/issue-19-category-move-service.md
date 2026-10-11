@@ -172,12 +172,21 @@ Files:
 - Modify: src/renderer/workspace-service-client.ts
 - Create: tests/project-category-move-ipc.test.mjs
 - Exercise existing: src/desktop/backend-controller.ts, main.ts and preload.ts
-- [ ] Add command/query/result unions, exact backend entry validation and correct query classification for all five move requests.
-- [ ] Add typed client methods forwarding only accepted caller fields through the existing controller/main/preload route. Add no channels, native APIs, mutation queues or automatic retries.
-- [ ] Test the compiled production entry/controller/preload/client route against real temporary storage and folders: success, no-op, rejection, status, fresh-token recovery and same-source event-before-response ordering.
-- [ ] Cover lost requests/responses, backend replacement and stale-generation messages. Explicit original-request retry retains its exact immutable payload; reconnect and status reload never replay.
-- [ ] Reject extra paths/native evidence, malformed IDs, foreign entities and malformed recovery requests. Assert native identities and absolute/staging locators are absent from move responses and renderer-facing events; retain contextIsolation=true, nodeIntegration=false and sandbox=true.
-- [ ] Build and run new IPC tests plus existing service-protocol, preload/controller/security and rename IPC regressions; run npm run typecheck and commit after they pass.
+- [x] Add command/query/result unions, exact backend entry validation and correct query classification for all five move requests.
+- [x] Add typed client methods forwarding only accepted caller fields through the existing controller/main/preload route. Add no channels, native APIs, mutation queues or automatic retries.
+- [x] Test the compiled production entry/controller/preload/client route against real temporary storage and folders: success, no-op, rejection, status, fresh-token recovery and same-source event-before-response ordering.
+- [x] Cover lost requests/responses, backend replacement and stale-generation messages. Explicit original-request retry retains its exact immutable payload; reconnect and status reload never replay.
+- [x] Reject extra paths/native evidence, malformed IDs, foreign entities and malformed recovery requests. Assert native identities and absolute/staging locators are absent from move responses and renderer-facing events; retain contextIsolation=true, nodeIntegration=false and sandbox=true.
+- [x] Build and run new IPC tests plus existing service-protocol, preload/controller/security and rename IPC regressions; run npm run typecheck and commit after they pass.
+
+Task 5 verification (Node 22.21.1, local macOS):
+
+- The first compiled-route regression failed because the typed client had no move method; it passed after adding the contracts, exact entry validation, query classification and client methods. Evidence: `work/issue-19/task-5-ipc-red.log`, `task-5-ipc-green.log` and `task-5-build.log`.
+- Added 13 production entry/controller/preload/client cases using real disposable SQLite and folders. They cover success, validated no-op, finite rejection, sibling event-before-response ordering, identity/basename/sentinel/Text preservation, all five requests, strict payloads and foreign ownership, all three explicit recovery actions, stale/consumed/foreign tokens, lost original and recovery requests/responses, backend replacement, old-generation responses/events and a completed-response timeout. Explicit retries keep the original accepted fields; reconnect and status queries do not replay native effects. The production-default case uses the fixed native adapter without service injection.
+- The client constructs move payloads from accepted fields only. No channels, native interfaces, queues or automatic retries were added. Move results, status/list/recovery previews and related project events exclude absolute locators and native evidence. Existing compiled preload/controller tests verify malformed-event filtering, subscription cleanup and renderer isolation.
+- `npm run build` passed. `node --import tsx --test tests/project-category-move-ipc.test.mjs tests/backend-lifecycle.test.mjs tests/project-rename-ipc.test.mjs tests/project-creation-ipc.test.mjs tests/project-category-move-service.test.mjs tests/project-category-move-journal.test.mjs tests/project-category-move-coordination.test.mjs tests/project-category-move-crash.test.mjs` passed all 266 tests without failures or skips. Evidence: `work/issue-19/task-5-affected.log`. All 13 new cases also passed independently in `task-5-ipc-final.log`.
+- `npm run typecheck`, `npm run lint`, `npm run check:docs` and `git diff --check` passed. Evidence: `work/issue-19/task-5-typecheck.log`, `task-5-lint.log`, `task-5-docs.log` and `task-5-diff-check.log`. The initial expanded fixture expected project-unavailable from a direct source; its existing unconfigured policy was retained and foreign grouped ownership was checked separately. That failed fixture result remains in `task-5-ipc-expanded.log`.
+- Transport loss, native interruption and process-port replacement are injected boundary evidence; production code is compiled, but the IPC harness runs in Node with simulated Electron ports. Actual Electron utilityProcess service evidence belongs to Task 6. Actual Windows execution, review, CI and publication remain coordinator-owned gates.
 
 ### Task 6: Obtain focused actual macOS Electron service evidence
 

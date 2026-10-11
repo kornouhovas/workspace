@@ -1,3 +1,4 @@
+import type { WorkspaceMoveProjectCategoryCommand, ProjectCategoryMoveResult, ProjectCategoryMoveList, ProjectCategoryMoveRecoveryPreview, ProjectCategoryMoveRecoveryAction } from "../contracts/project-category-move.js";
 import type { WorkspaceRenameProjectCommand, ProjectRenameResult, ProjectRenameList, ProjectRenameRecoveryPreview, ProjectRenameRecoveryAction } from "../contracts/project-rename.js";
 import type { WorkspaceCreateProjectCommand, ProjectCreationResult, ProjectCreationList, ProjectCreationRecoveryPreview, ProjectCreationRecoveryAction } from "../contracts/project-creation.js";
 import type { ProjectRevealResult } from "../contracts/project-reveal.js";
@@ -27,6 +28,23 @@ export class WorkspaceServiceClient {
       if (active && isWorkspaceChangeEvent(event)) listener(event);
     });
     return () => { active = false; unsubscribe(); };
+  }
+
+  moveProjectCategory(input: Omit<WorkspaceMoveProjectCategoryCommand, "type">): Promise<ServiceResult<ProjectCategoryMoveResult>> {
+    const { workspaceId, projectId, operationId, destinationCategoryId, expectedRevision } = input;
+    return this.api.workspace({ type: "workspace.moveProjectCategory", workspaceId, projectId, operationId, destinationCategoryId, expectedRevision });
+  }
+  listProjectCategoryMoves(workspaceId: string): Promise<ServiceResult<ProjectCategoryMoveList>> {
+    return this.api.workspace({ type: "workspace.listProjectCategoryMoves", workspaceId });
+  }
+  getProjectCategoryMove(workspaceId: string, operationId: string): Promise<ServiceResult<ProjectCategoryMoveResult>> {
+    return this.api.workspace({ type: "workspace.getProjectCategoryMove", workspaceId, operationId });
+  }
+  previewProjectCategoryMoveRecovery(workspaceId: string, operationId: string): Promise<ServiceResult<ProjectCategoryMoveRecoveryPreview>> {
+    return this.api.workspace({ type: "workspace.previewProjectCategoryMoveRecovery", workspaceId, operationId });
+  }
+  recoverProjectCategoryMove(workspaceId: string, operationId: string, previewToken: string, action: ProjectCategoryMoveRecoveryAction): Promise<ServiceResult<ProjectCategoryMoveResult>> {
+    return this.api.workspace({ type: "workspace.recoverProjectCategoryMove", workspaceId, operationId, previewToken, action });
   }
 
   renameProject(input: Omit<WorkspaceRenameProjectCommand, "type">): Promise<ServiceResult<ProjectRenameResult>> {
