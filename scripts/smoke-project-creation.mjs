@@ -16,6 +16,7 @@ import { waitForRuntimeInterface } from "./runtime-startup.mjs";
 import { nativeBridgeCleanupEvidence } from "./native-bridge-evidence.mjs";
 import { collectNativeSelectionMetadata } from "./windows-native-selection.mjs";
 import { productDiagnosticSnapshot, validateProductDiagnostic } from "./windows-product-diagnostics.mjs";
+import { installNativeRevealReceipt, retainNativeRevealReceipt } from "./native-reveal-receipt.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const mode = process.argv[2] ?? "dev";
@@ -59,6 +60,19 @@ const save = async () => {
   }), null, 2) + "\n");
 };
 const record = async (discoveryMode, stage, result) => { recordCreationEvidence(evidence, discoveryMode, stage, result); await save(); };
+const saveFailureEvidence = async () => {
+  try { await save(); } catch (error) { failure ??= error; }
+};
+async function retainReceipt(primaryFailure) {
+  if (!current?.receiptTracking) return;
+  await retainNativeRevealReceipt({ electron: current.electron, primaryFailure,
+    retain: (nativeRevealReceipt) => {
+      const observation = { discoveryMode: activeRun.discoveryMode, checkpoint: activeRun.checkpoint, nativeRevealReceipt };
+      if (current.receiptObservation === undefined) {
+        current.receiptObservation = observations.length; observations.push(observation);
+      } else observations[current.receiptObservation] = observation;
+    }, persist: save });
+}
 const unwrap = (result) => { assert.equal(result.ok, true, JSON.stringify(result)); return result.value; };
 const query = async (page, type, workspaceId, extra = {}) => unwrap(await page.evaluate((input) => globalThis.window.workspace.workspace(input), { type: `workspace.${type}`, workspaceId, ...extra }));
 const projectList = (page, workspaceId) => query(page, "listProjects", workspaceId);
@@ -279,6 +293,11 @@ try {
           }
         });
         if (process.platform === "win32") current.nativeTracking = true;
+        if (process.platform === "darwin") {
+          // One armed intent in this owned disposable app; only public port methods.
+          current.receiptTracking = true;
+          await withDeadline(current.electron.evaluate(installNativeRevealReceipt, { workspaceId: workspace.workspaceId }), 1000, "Native receipt installation");
+        }
       }
       await page.locator(".project-creation button[type=submit]").press("Enter");
       if (directoryPackage) {
@@ -342,6 +361,7 @@ try {
           const feedback = await revealButton.locator("..").locator(".bb-status").innerText();
           const afterRevealObservation = await query(page, "getSourceObservation", workspace.workspaceId);
           observations.push({ nativeUiFeedback: feedback, beforeRevealObservation, afterRevealObservation });
+          await retainReceipt(); // Retain original typed receipt before strict UI acceptance.
           await save();
           assert.equal(feedback, t.dispatched, "A confirmed native dispatch must retain useful UI acknowledgment; source observation stays active");
           await record(discoveryMode, "nativeAcknowledgment", { status: "passed", asserted: true, language, feedback });
@@ -401,9 +421,13 @@ try {
   finished = true;
 } catch (error) {
   failure = error;
-  if (activeStage) await record(...activeStage, { status: "failed", reason: error.message });
+  await retainReceipt(error);
+  if (activeStage) {
+    recordCreationEvidence(evidence, ...activeStage, { status: "failed", reason: error.message });
+    await saveFailureEvidence();
+  }
   if (current?.page) await current.page.screenshot({ path: join(evidenceDirectory, "failed.png"), fullPage: true, timeout: 3000 }).catch(() => {});
-  await save();
+  await saveFailureEvidence();
 } finally {
   if (current) {
     const closing = current; current = undefined;
@@ -413,7 +437,7 @@ try {
         nativeBridgeCleanup = nativeBridgeCleanupEvidence(snapshot);
       } catch { nativeBridgeCleanup = nativeBridgeCleanupEvidence(null); }
       nativeBridgesStopped &&= nativeBridgeCleanup.status === "passed";
-      await save();
+      await saveFailureEvidence();
     }
     if (diagnostic) {
       try {
@@ -444,7 +468,7 @@ try {
   });
   await cleanupOwnedFixture(fixture, { processesStopped, primaryFailure: failure, record: async (outcome) => {
     fixtureCleanup = outcome;
-    await save();
+    await saveFailureEvidence();
   } });
 }
 if (failure) throw failure;
