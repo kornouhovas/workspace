@@ -342,7 +342,9 @@ export function interpretProjects(scan: DiscoveryScan, records: ProjectAssociati
         current.associationState = "unresolved";
         unresolved = true;
       } else {
-        current.associationState = entry.reason === null ? "active" : "excluded";
+        // Placement reservations retain ambiguity without implying a policy
+        // exclusion; native replacement and collision checks still run first.
+        current.associationState = entry.reason === null ? "active" : entry.reason === "unresolved" ? "unresolved" : "excluded";
         continue;
       }
     }

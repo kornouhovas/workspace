@@ -424,6 +424,106 @@ const interruptBeforeEffect = (f, from, to) => {
   return renameNoReplace(from, to);
 };
 for (const mode of ["direct", "grouped"]) {
+  test(`${mode}: unfinished rename intent retains original UUID, Name and exact Text as unresolved`, () => fixture(mode, (f) => {
+    // Keep the committed intent when interruption reporting also fails, before
+    // any native effect. Assertions use the public projection and Text query.
+    f.sql.exec("CREATE TRIGGER fail_uncertainty BEFORE UPDATE ON project_rename_operations WHEN NEW.stage = 'uncertain' BEGIN SELECT RAISE(ABORT, 'Injected interruption reporting failure'); END");
+    const result = pendingRename(f);
+    assert.equal(result.value.operation.stage, "intent");
+    const list = f.query("workspace.listProjects");
+    assert.equal(list.ok, true);
+    assert.equal(list.value.projects.some((row) => row.projectId === f.project.projectId), false);
+    const retained = list.value.retainedProjects.find((row) => row.projectId === f.project.projectId);
+    assert.ok(retained);
+    assert.equal(retained.name, "Original");
+    assert.equal(retained.categoryId, f.project.categoryId);
+    assert.equal(retained.resolution, "unresolved");
+    const text = f.query("workspace.listTextProperties");
+    assert.equal(text.ok, true);
+    assert.deepEqual(text.value.values, [{ projectId: f.project.projectId, propertyId: f.propertyId, value: "  Exact\nТекст  " }]);
+    assert.equal(fs.existsSync(join(f.root, f.relative("Fresh"))), false);
+    assert.equal(fs.readFileSync(join(f.root, f.relative("Original"), "sentinel"), "utf8"), "  Original 📝\n");
+  }, { native: interruptBeforeEffect }));
+  test(`${mode}: pending rename reservations survive repeated and sibling reads, Refresh and restart without replay or enrollment`, () => fixture(mode, (f) => {
+    const pending = pendingRename(f), before = f.snapshot();
+    // A third-party folder appearing at the intended destination is reserved,
+    // never enrolled or adopted by a read, Refresh or Discovery Apply.
+    fs.mkdirSync(join(f.root, f.relative("Fresh")));
+    fs.writeFileSync(join(f.root, f.relative("Fresh"), "third-party"), "Keep");
+    const originalIdentity = identity(join(f.root, f.relative("Original")));
+    const destinationIdentity = identity(join(f.root, f.relative("Fresh")));
+    for (const restarted of [false, true]) {
+      if (restarted) f.restart();
+      for (const workspaceId of [f.workspace.workspaceId, f.sibling.workspaceId]) {
+        for (let attempt = 0; attempt < 2; attempt++) {
+          const list = f.query("workspace.listProjects", { workspaceId });
+          assert.equal(list.ok, true);
+          assert.equal(list.value.revision, f.initial.revision);
+          assert.deepEqual(list.value.projects.map((row) => row.projectId), [f.other.projectId]);
+          assert.equal(list.value.retainedProjects.length, 1);
+          const retained = list.value.retainedProjects[0];
+          assert.equal(retained.projectId, f.project.projectId);
+          assert.equal(retained.name, "Original");
+          assert.equal(retained.relativePath, f.relative("Original"));
+          assert.equal(retained.categoryId, f.project.categoryId);
+          assert.equal(retained.resolution, "unresolved");
+          assert.deepEqual(f.query("workspace.listTextProperties", { workspaceId }).value.values,
+            [{ projectId: f.project.projectId, propertyId: f.propertyId, value: "  Exact\nТекст  " }]);
+          assert.deepEqual(f.query("workspace.getProjectRename", { workspaceId, operationId: f.pending.operationId }), pending);
+          const operations = f.query("workspace.listProjectRenames", { workspaceId });
+          assert.equal(operations.ok, true);
+          assert.deepEqual(operations.value.operations, [pending.value.operation]);
+        }
+        assert.equal(f.command("workspace.refreshSource", { workspaceId }).ok, true);
+        const preview = f.query("workspace.previewDiscovery", { workspaceId });
+        assert.equal(preview.ok, true);
+        for (const name of ["Original", "Fresh"]) {
+          assert.equal(preview.value.entries.find((row) => row.relativePath === f.relative(name)).reason, "unresolved");
+          const creation = f.command("workspace.createProject", { workspaceId, operationId: randomUUID(), name, mode,
+            expectedRevision: f.initial.revision, ...(mode === "grouped" ? { categoryId: f.project.categoryId } : {}) });
+          assert.equal(creation.value.outcome, "rejected");
+          assert.equal(creation.value.problem, "reserved_destination");
+        }
+        assert.equal(f.command("workspace.applyDiscovery", { workspaceId, previewToken: preview.value.previewToken }).error.code, "stale_preview");
+        const rename = f.rename(f.request("Fresh", { workspaceId, projectId: f.other.projectId }));
+        assert.equal(rename.value.outcome, "rejected");
+        assert.equal(rename.value.problem, "reserved_destination");
+      }
+    }
+    assert.equal(f.calls.length, 1, "reads, restart and conflicting commands never replay the interrupted native call");
+    assert.equal(identity(join(f.root, f.relative("Original"))), originalIdentity);
+    assert.equal(identity(join(f.root, f.relative("Fresh"))), destinationIdentity);
+    assert.equal(fs.readFileSync(join(f.root, f.relative("Original"), "sentinel"), "utf8"), "  Original 📝\n");
+    assert.equal(fs.readFileSync(join(f.root, f.relative("Fresh"), "third-party"), "utf8"), "Keep");
+    assert.deepEqual(f.snapshot(), before);
+  }, { native: interruptBeforeEffect }));
+  for (const policy of ["manual", "archive", "replacement"]) {
+    test(`${mode}: unfinished rename does not hide ${policy} evidence behind reservation ambiguity`, () => fixture(mode, (f) => {
+      pendingRename(f);
+      if (policy === "manual") f.sql.prepare("UPDATE sources SET excluded_relative_paths = ? WHERE id = ?")
+        .run(JSON.stringify([f.relative("Original")]), f.workspace.sourceId);
+      if (policy === "archive") f.sql.prepare("UPDATE sources SET archive_relative_path = ? WHERE id = ?")
+        .run(f.relative("Original"), f.workspace.sourceId);
+      if (policy === "replacement") {
+        fs.renameSync(join(f.root, f.relative("Original")), join(f.directory, "owned-away"));
+        fs.mkdirSync(join(f.root, f.relative("Original")));
+        fs.writeFileSync(join(f.root, f.relative("Original"), "third-party"), "Keep");
+      }
+      const list = f.query("workspace.listProjects");
+      assert.equal(list.ok, true);
+      const retained = list.value.retainedProjects.find((row) => row.projectId === f.project.projectId);
+      assert.equal(retained.name, "Original");
+      assert.equal(retained.resolution, policy === "replacement" ? "replaced" : "excluded");
+      assert.deepEqual(f.query("workspace.listTextProperties").value.values,
+        [{ projectId: f.project.projectId, propertyId: f.propertyId, value: "  Exact\nТекст  " }]);
+      const review = reviewRename(f);
+      assert.deepEqual(review.actions, []);
+      assert.equal(review.previewToken, null);
+      assert.equal(f.calls.length, 1);
+    }, { native: interruptBeforeEffect }));
+  }
+}
+for (const mode of ["direct", "grouped"]) {
   for (const action of ["retry_original", "keep_original"]) test(`${mode}: explicit ${action} preserves UUID/Text and consumes recovery review`, () => fixture(mode, (f) => {
     const before = f.snapshot(); pendingRename(f);
     const preview = reviewRename(f); assert.deepEqual(preview.actions, ["retry_original", "keep_original"]);
