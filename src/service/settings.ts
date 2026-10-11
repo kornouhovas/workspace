@@ -1,4 +1,4 @@
-import type { ProjectRenameResult } from "../contracts/project-rename.js";
+import type { ProjectRenameResult, ProjectRenameList, ProjectRenameRecoveryPreview } from "../contracts/project-rename.js";
 import type { ProjectRenameNative } from "./project-rename.js";
 import type { NativeProjectReveal } from "../contracts/service-protocol.js";
 import type { ProjectRevealResult } from "../contracts/project-reveal.js";
@@ -27,6 +27,10 @@ import type { CategoryPropertySnapshot, ProjectList, DiscoveryPreview, ActiveWor
 
 export interface SettingsService {
   renameProject(input: unknown): ServiceResult<ProjectRenameResult>;
+  listProjectRenames(input: unknown): ServiceResult<ProjectRenameList>;
+  getProjectRename(input: unknown): ServiceResult<ProjectRenameResult>;
+  previewProjectRenameRecovery(input: unknown): ServiceResult<ProjectRenameRecoveryPreview>;
+  recoverProjectRename(input: unknown): ServiceResult<ProjectRenameResult>;
   revealProject(input: unknown, native?: NativeProjectReveal): Promise<ServiceResult<ProjectRevealResult>>;
   handleQuery(input: unknown): ServiceResult<ProjectCreationResult | ProjectCreationList | ProjectCreationRecoveryPreview | WorkspaceSourceObservationSnapshot | ProjectRecoveryPreview | TextPropertySnapshot | Settings | WorkspaceLoad | DiscoveryPreview | ProjectList>;
   handleCommand(input: unknown): ServiceResult<ProjectCreationResult | CategoryPropertySnapshot | TextPropertyMutation | Settings | WorkspaceCreated | ActiveWorkspace | WorkspaceLoad | WorkspaceSourceState | ProjectList>;
@@ -81,6 +85,10 @@ export function openSettingsService(
   return {
     workspaces,
     renameProject: workspaces.renameProject,
+    listProjectRenames: workspaces.listProjectRenames,
+    getProjectRename: workspaces.getProjectRename,
+    previewProjectRenameRecovery: workspaces.previewProjectRenameRecovery,
+    recoverProjectRename: workspaces.recoverProjectRename,
     revealProject: workspaces.revealProject,
     handleQuery(input) {
       if (isRecord(input) && input.type === "workspace.listProjectCreations") return workspaces.listProjectCreations(input);

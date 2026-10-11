@@ -6,7 +6,7 @@ import { createSourceObserver, nativeObserverDependencies, type ObserverDependen
 import { reconcileSource } from "./external-reconciliation.js";
 import { createProjectRecoveryService } from "./project-recovery.js";
 import { createProjectRenameService, type ProjectRenameNative } from "./project-rename.js";
-import type { ProjectRenameResult } from "../contracts/project-rename.js";
+import type { ProjectRenameResult, ProjectRenameList, ProjectRenameRecoveryPreview } from "../contracts/project-rename.js";
 import { createProjectCreationService } from "./project-creation.js";
 import type { ProjectFilesystem } from "./project-filesystem.js";
 import type { ProjectCreationResult, ProjectCreationList, ProjectCreationRecoveryPreview } from "../contracts/project-creation.js";
@@ -48,6 +48,10 @@ const nativeFilesystem: WorkspaceFilesystem = {
 
 export interface WorkspaceService {
   renameProject(input: unknown): ServiceResult<ProjectRenameResult>;
+  listProjectRenames(input: unknown): ServiceResult<ProjectRenameList>;
+  getProjectRename(input: unknown): ServiceResult<ProjectRenameResult>;
+  previewProjectRenameRecovery(input: unknown): ServiceResult<ProjectRenameRecoveryPreview>;
+  recoverProjectRename(input: unknown): ServiceResult<ProjectRenameResult>;
   revealProject(input: unknown, native?: NativeProjectReveal): Promise<ServiceResult<ProjectRevealResult>>;
   listProjectCreations(input: unknown): ServiceResult<ProjectCreationList>;
   getProjectCreation(input: unknown): ServiceResult<ProjectCreationResult>;
@@ -122,6 +126,7 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
   function invalidateSourceReviews(sourceId: string) {
     recovery.invalidateSource(sourceId);
     creation.invalidateSource(sourceId);
+    rename.invalidateSource(sourceId);
     for (const [id, saved] of previewTokens) if (saved.preview.sourceId === sourceId) previewTokens.delete(id);
   }
   const creation = createProjectCreationService(db, {
@@ -143,6 +148,10 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
   const reveal = createProjectRevealService(db, projectFilesystem);
   const service: WorkspaceService = {
     renameProject: rename.renameProject,
+    listProjectRenames: rename.listProjectRenames,
+    getProjectRename: rename.getProjectRename,
+    previewProjectRenameRecovery: rename.previewProjectRenameRecovery,
+    recoverProjectRename: rename.recoverProjectRename,
     revealProject: reveal.revealProject,
     createProject: creation.createProject,
     listProjectCreations: creation.listProjectCreations,
@@ -191,7 +200,7 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
       observer.close();
       for (const timer of subscriptionTimers) timer.cancel();
       subscriptionTimers.clear(); observationEvents.clear(); observationCache.clear(); observationVersions.clear();
-      listeners.clear(); observed.clear(); previewTokens.clear(); recovery.close(); creation.close(); reveal.close();
+      listeners.clear(); observed.clear(); previewTokens.clear(); recovery.close(); creation.close(); rename.close(); reveal.close();
     },
     previewDiscovery(input) {
       if (!isRecord(input) || input.type !== "workspace.previewDiscovery" || !isUuid(input.workspaceId) ||
@@ -775,7 +784,7 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
     reorder: (input) => run(() => service.reorder(input), returnedSnapshot),
     remove: (input) => {
       const result = run(() => service.remove(input), returnedSnapshot);
-      if (result.ok && isRecord(input) && typeof input.workspaceId === "string") { previewTokens.delete(input.workspaceId); recovery.removeWorkspace(input.workspaceId); creation.removeWorkspace(input.workspaceId); }
+      if (result.ok && isRecord(input) && typeof input.workspaceId === "string") { previewTokens.delete(input.workspaceId); recovery.removeWorkspace(input.workspaceId); creation.removeWorkspace(input.workspaceId); rename.removeWorkspace(input.workspaceId); }
       return result;
     },
     activate: (input) => run(() => service.activate(input), activationSnapshot),

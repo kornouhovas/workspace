@@ -3,7 +3,8 @@ import { join } from "node:path";
 import { eq } from "drizzle-orm";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import { isProjectRenameRequest, type ProjectRenameOperation, type ProjectRenameProblem,
-  type ProjectRenameResult, type WorkspaceRenameProjectCommand } from "../contracts/project-rename.js";
+  type ProjectRenameResult, type ProjectRenameList, type ProjectRenameRecoveryPreview,
+  type ProjectRenamePlacementState, type WorkspaceRenameProjectCommand } from "../contracts/project-rename.js";
 import type { ServiceResult } from "../contracts/settings.js";
 import { isChildName, reliableIdentity, sameIdentity, validArchive, validExclusions, type NativeIdentity } from "./discovery.js";
 import { CreationFailure, filesystemCode, filesystemProblem, nativeProjectFilesystem, validProjectBasename,
@@ -40,6 +41,21 @@ export function createProjectRenameService(db: Database, integration: {
   invalidateSourceReviews(sourceId: string): void;
   committed(sourceId: string, revision: number, workspaceIds: string[]): void;
 }, filesystem: ProjectFilesystem = nativeProjectFilesystem, native: ProjectRenameNative = renameNoReplace) {
+  type Execution = { workspaceId: string; revision: number };
+  const executionFor = (row: Operation): Execution => ({ workspaceId: row.initiatingWorkspaceId, revision: row.expectedRevision });
+  const reviews = new Map<string, { row: Operation; execution: Execution; inspected: ReturnType<typeof inspectRecovery>; token: string }>();
+  const reviewKey = (workspaceId: string, operationId: string) => `${workspaceId}:${operationId}`;
+  function invalidateSource(sourceId: string) {
+    for (const [key, review] of reviews) if (review.row.sourceId === sourceId) reviews.delete(key);
+  }
+  const storage = () => ({ ok: false as const, error: { code: "storage" as const, message: "Rename history could not be read." } });
+  const stale = () => ({ ok: false as const, error: { code: "stale_preview" as const, message: "Refresh rename recovery and explicitly review current placements." } });
+  function problemFor(error: unknown, phase: "storage" | "filesystem"): ProjectRenameProblem {
+    const problem = filesystemProblem(error);
+    return error instanceof RenameFailure ? error.problem : error instanceof CreationFailure ?
+      (error.problem === "case_alias" ? "occupied" : error.problem) : phase === "filesystem" || /^E[A-Z]+$/.test(String(filesystemCode(error))) ?
+        (problem === "case_alias" ? "occupied" : problem) : "storage_error";
+  }
   const operationFor = (id: string) => db.select().from(schema.projectRenameOperations)
     .where(eq(schema.projectRenameOperations.operationId, id)).get();
   const unchangedOperation = (row: Operation) => {
@@ -49,7 +65,7 @@ export function createProjectRenameService(db: Database, integration: {
   const sourceFor = (workspaceId: string) => db.select().from(schema.workspaces)
     .innerJoin(schema.sources, eq(schema.workspaces.sourceId, schema.sources.id))
     .where(eq(schema.workspaces.id, workspaceId)).get()?.sources;
-  const invalid = (): ServiceResult<ProjectRenameResult> => ({ ok: false, error: { code: "invalid_input", message: "Choose a saved workspace and its immutable project rename request." } });
+  const invalid = () => ({ ok: false as const, error: { code: "invalid_input" as const, message: "Choose a saved workspace and its immutable project rename request." } });
   const rejected = (problem: ProjectRenameProblem): ServiceResult<ProjectRenameResult> => ({ ok: true, value: { outcome: "rejected", problem, operation: null } });
   const fail = (problem: ProjectRenameProblem): never => { throw new RenameFailure(problem); };
   const relativeName = (row: Operation, name: string) => row.parentRelativePath ? `${row.parentRelativePath}/${name}` : name;
@@ -80,10 +96,10 @@ export function createProjectRenameService(db: Database, integration: {
       }
     }
   }
-  function context(row: Operation, revision = row.expectedRevision, projectPath = row.originalRelativePath) {
-    const source = sourceFor(row.initiatingWorkspaceId);
+  function context(row: Operation, execution = executionFor(row), projectPath = row.originalRelativePath) {
+    const source = sourceFor(execution.workspaceId);
     if (!source || source.id !== row.sourceId || source.canonicalRoot !== row.canonicalRoot || source.discoveryMode !== row.mode ||
-      source.discoveryRevision !== revision || source.appliedRootIdentity !== row.rootIdentity ||
+      source.discoveryRevision !== execution.revision || source.appliedRootIdentity !== row.rootIdentity ||
       source.excludedRelativePaths !== row.excludedRelativePaths || source.archiveRelativePath !== row.archiveRelativePath) fail("stale_configuration");
     if (readProjectReservations(db, row.sourceId).some((o) => o.operationId !== row.operationId)) fail("reserved_destination");
     const project = db.select().from(schema.projects).where(eq(schema.projects.id, row.projectId)).get();
@@ -100,18 +116,18 @@ export function createProjectRenameService(db: Database, integration: {
     if (row.parentRelativePath && !filesystem.names(row.canonicalRoot).includes(row.parentRelativePath)) fail("filesystem_changed");
     return parent;
   }
-  function placement(row: Operation, path: string, revision = row.expectedRevision, projectPath = row.originalRelativePath) {
-    const parent = context(row, revision, projectPath);
+  function placement(row: Operation, path: string, execution = executionFor(row), projectPath = row.originalRelativePath) {
+    const parent = context(row, execution, projectPath);
     if (!filesystem.names(parent).includes(path.split("/").at(-1)!)) fail("filesystem_changed");
     verifyCreationDirectory(filesystem, join(row.canonicalRoot, path), JSON.parse(row.nativeIdentity));
     filesystem.assertAccessible?.(join(row.canonicalRoot, path));
-    context(row, revision, projectPath);
+    context(row, execution, projectPath);
     return parent;
   }
   // Only actual full identity can grant the selected current folder a self exception.
   // Folded names reserve other entries but never establish ownership of an alias.
-  function destination(row: Operation, from: string, to: string, allowSelf: boolean): boolean {
-    const parent = placement(row, from), name = to.split("/").at(-1)!;
+  function destination(row: Operation, from: string, to: string, allowSelf: boolean, execution = executionFor(row)): boolean {
+    const parent = placement(row, from, execution), name = to.split("/").at(-1)!;
     let inspected;
     try { inspected = filesystem.inspect(join(row.canonicalRoot, to)); }
     catch (error) { if (filesystemCode(error) !== "ENOENT") throw error; }
@@ -122,8 +138,25 @@ export function createProjectRenameService(db: Database, integration: {
       if (entry === from.split("/").at(-1)) continue;
       if (entry === name || filesystemAlias(entry) === filesystemAlias(name)) fail("occupied");
     }
-    placement(row, from);
+    placement(row, from, execution);
     return self;
+  }
+  function uniquePlacement(row: Operation, path: string, execution = executionFor(row), projectPath = row.originalRelativePath) {
+    const parent = placement(row, path, execution, projectPath), names = filesystem.names(parent);
+    for (const candidate of new Set([row.originalRelativePath, row.stagingRelativePath, row.requestedRelativePath])) {
+      if (!candidate || candidate === path) continue;
+      try {
+        const entry = filesystem.inspect(join(row.canonicalRoot, candidate));
+        const self = entry.kind === "directory" && reliableIdentity(entry.identity) && sameIdentity(entry.identity, JSON.parse(row.nativeIdentity));
+        if (self && !names.includes(candidate.split("/").at(-1)!)) continue;
+        fail(self ? "native_conflict" : "occupied");
+      } catch (error) { if (filesystemCode(error) !== "ENOENT") throw error; }
+    }
+    for (const candidate of [row.originalRelativePath, row.stagingRelativePath, row.requestedRelativePath]) {
+      if (candidate && names.some((name) => name !== path.split("/").at(-1) &&
+        filesystemAlias(name) === filesystemAlias(candidate.split("/").at(-1)!))) fail("occupied");
+    }
+    placement(row, path, execution, projectPath);
   }
   function unchanged(row: Operation) {
     return db.transaction((tx) => {
@@ -135,34 +168,209 @@ export function createProjectRenameService(db: Database, integration: {
       return operationFor(row.operationId)!;
     }, { behavior: "immediate" });
   }
-  function evidence(row: Operation, staged: boolean) {
+  function evidence(row: Operation, staged: boolean, execution = executionFor(row)) {
     const path = staged ? row.stagingRelativePath! : row.requestedRelativePath;
     return db.transaction((tx) => {
-      placement(row, path);
+      uniquePlacement(row, path, execution);
       if (!unchangedOperation(row)) fail("filesystem_changed");
+      // A recorded destination can have been explicitly moved back outside
+      // the service. Re-enter staged through uncertainty, retaining all evidence.
+      if (staged && row.stage === "destination_recorded") tx.update(schema.projectRenameOperations)
+        .set({ stage: "uncertain", problem: "filesystem_changed" }).where(eq(schema.projectRenameOperations.operationId, row.operationId)).run();
       tx.update(schema.projectRenameOperations).set(staged ? {
         stage: "staged", stagedIdentity: row.nativeIdentity, lastVerifiedPlacement: "staged", problem: null,
       } : { stage: "destination_recorded", destinationIdentity: row.nativeIdentity, lastVerifiedPlacement: "destination", problem: null })
         .where(eq(schema.projectRenameOperations.operationId, row.operationId)).run();
-      placement(row, path);
+      uniquePlacement(row, path, execution);
       return operationFor(row.operationId)!;
     }, { behavior: "immediate" });
   }
-  function complete(row: Operation) {
-    const revision = row.expectedRevision + 1;
+  function complete(row: Operation, execution = executionFor(row)) {
+    const revision = execution.revision + 1;
+    if (!Number.isSafeInteger(revision)) fail("stale_configuration");
     const completed = db.transaction((tx) => {
-      placement(row, row.requestedRelativePath);
+      uniquePlacement(row, row.requestedRelativePath, execution);
       if (!unchangedOperation(row)) fail("filesystem_changed");
       tx.update(schema.projects).set({ relativePath: row.requestedRelativePath }).where(eq(schema.projects.id, row.projectId)).run();
       tx.update(schema.sources).set({ discoveryRevision: revision }).where(eq(schema.sources.id, row.sourceId)).run();
       tx.update(schema.projectRenameOperations).set({ stage: "completed", resultKind: "completed", completedRevision: revision, problem: null })
         .where(eq(schema.projectRenameOperations.operationId, row.operationId)).run();
-      placement(row, row.requestedRelativePath, revision, row.requestedRelativePath);
+      uniquePlacement(row, row.requestedRelativePath, { ...execution, revision }, row.requestedRelativePath);
       return operationFor(row.operationId)!;
     }, { behavior: "immediate" });
     const workspaceIds = db.select().from(schema.workspaces).where(eq(schema.workspaces.sourceId, row.sourceId)).all().map((w) => w.id);
     integration.committed(row.sourceId, revision, workspaceIds);
     return completed;
+  }
+  function hop(row: Operation, from: string, to: string, execution = executionFor(row), starting = () => {}, returned: (outcome: ProjectRenameFilesystemResult) => void = () => {}) {
+    destination(row, from, to, false, execution);
+    if (!unchangedOperation(row)) fail("filesystem_changed");
+    starting();
+    const outcome = native(join(row.canonicalRoot, from), join(row.canonicalRoot, to));
+    returned(outcome);
+    if (outcome !== "renamed") fail(outcome === "invalid_argument" ? "invalid_name" : outcome);
+    placement(row, to, execution);
+  }
+
+  function inspectRecovery(row: Operation, execution: Execution) {
+    const preview: ProjectRenameRecoveryPreview = { workspaceId: execution.workspaceId, sourceId: row.sourceId,
+      operation: operationView(row), revision: execution.revision, originalState: "unavailable",
+      stagedState: row.stagingRelativePath ? "unavailable" : null, destinationState: "unavailable",
+      problem: null, actions: [], previewToken: null };
+    const observations: { path: string; state: ProjectRenamePlacementState; identity: NativeIdentity | null }[] = [];
+    let names: string[] = [];
+    const reserved = readProjectReservations(db, row.sourceId);
+    if (["completed", "failed"].includes(row.stage)) return { preview, observations, names, reserved };
+    try {
+      const parent = context(row, execution);
+      names = filesystem.names(parent).sort();
+      for (const path of [...new Set([row.originalRelativePath, row.stagingRelativePath, row.requestedRelativePath].filter((p): p is string => p !== null))]) {
+        const name = path.split("/").at(-1)!;
+        let state: ProjectRenamePlacementState = "missing", identity: NativeIdentity | null = null;
+        try {
+          const entry = filesystem.inspect(join(row.canonicalRoot, path));
+          identity = entry.identity;
+          if (entry.kind === "link") state = "link";
+          else if (entry.kind !== "directory" || !reliableIdentity(identity) || !sameIdentity(identity, JSON.parse(row.nativeIdentity))) state = "replaced";
+          else if (names.includes(name)) {
+            placement(row, path, execution);
+            state = "matching";
+          }
+          // An actual self-alias lookup is counted only at its exact enumerated
+          // spelling. Full identity alone cannot create a second placement.
+        } catch (error) {
+          if (filesystemCode(error) !== "ENOENT") throw error;
+        }
+        observations.push({ path, state, identity });
+      }
+      const stateFor = (path: string) => observations.find((entry) => entry.path === path)!.state;
+      preview.originalState = stateFor(row.originalRelativePath);
+      preview.stagedState = row.stagingRelativePath ? stateFor(row.stagingRelativePath) : null;
+      preview.destinationState = stateFor(row.requestedRelativePath);
+      const matches = observations.filter((entry) => entry.state === "matching");
+      if (observations.some((entry) => !["missing", "matching"].includes(entry.state))) {
+        preview.problem = observations.some((entry) => entry.state === "link") ? "destination_link" : "destination_replaced";
+      } else if (matches.length !== 1) {
+        preview.problem = matches.length ? "native_conflict" : "destination_missing";
+        if (matches.length) {
+          if (preview.originalState === "matching") preview.originalState = "conflicting";
+          if (preview.stagedState === "matching") preview.stagedState = "conflicting";
+          if (preview.destinationState === "matching") preview.destinationState = "conflicting";
+        }
+      } else {
+        const path = matches[0].path;
+        // Folded aliases other than the selected exact entry remain conflicts.
+        for (const candidate of observations) if (names.some((name) =>
+          name !== path.split("/").at(-1) && filesystemAlias(name) === filesystemAlias(candidate.path.split("/").at(-1)!))) fail("occupied");
+        if (path === row.originalRelativePath) {
+          destination(row, path, row.requestedRelativePath, true, execution);
+          if (row.stagingRelativePath) destination(row, path, row.stagingRelativePath, false, execution);
+          preview.actions = ["retry_original", "keep_original"];
+        } else if (path === row.stagingRelativePath) {
+          destination(row, path, row.requestedRelativePath, false, execution);
+          preview.actions = ["finish_staged"];
+        } else preview.actions = ["complete_destination"];
+      }
+      context(row, execution);
+    } catch (error) {
+      preview.problem = problemFor(error, "filesystem"); preview.actions = [];
+      preview.originalState = preview.destinationState = ["occupied", "native_conflict", "reserved_destination"].includes(preview.problem) ? "conflicting" : "unavailable";
+      if (row.stagingRelativePath) preview.stagedState = preview.originalState;
+    }
+    return { preview, observations, names, reserved };
+  }
+  function listProjectRenames(input: unknown): ServiceResult<ProjectRenameList> {
+    if (!isProjectRenameRequest(input) || input.type !== "workspace.listProjectRenames") return invalid();
+    try {
+      const source = sourceFor(input.workspaceId);
+      if (!source) return invalid();
+      const operations = db.select().from(schema.projectRenameOperations).where(eq(schema.projectRenameOperations.sourceId, source.id))
+        .all().filter((row) => !["completed", "failed"].includes(row.stage)).map(operationView);
+      return { ok: true, value: { workspaceId: input.workspaceId, sourceId: source.id, operations } };
+    } catch { return storage(); }
+  }
+  function getProjectRename(input: unknown): ServiceResult<ProjectRenameResult> {
+    if (!isProjectRenameRequest(input) || input.type !== "workspace.getProjectRename") return invalid();
+    try {
+      const source = sourceFor(input.workspaceId), row = operationFor(input.operationId);
+      if (!source || !row || source.id !== row.sourceId) return invalid();
+      return { ok: true, value: recordedResult(row) };
+    } catch { return storage(); }
+  }
+  function previewProjectRenameRecovery(input: unknown): ServiceResult<ProjectRenameRecoveryPreview> {
+    if (!isProjectRenameRequest(input) || input.type !== "workspace.previewProjectRenameRecovery") return invalid();
+    const key = reviewKey(input.workspaceId, input.operationId);
+    reviews.delete(key);
+    try {
+      const source = sourceFor(input.workspaceId), row = operationFor(input.operationId);
+      if (!source || !row || source.id !== row.sourceId) return invalid();
+      const execution = { workspaceId: input.workspaceId, revision: source.discoveryRevision };
+      const inspected = inspectRecovery(row, execution);
+      if (inspected.preview.actions.length) {
+        const token = randomUUID();
+        reviews.set(key, { row, execution, inspected: structuredClone(inspected), token });
+        inspected.preview.previewToken = token;
+      }
+      return { ok: true, value: inspected.preview };
+    } catch { return storage(); }
+  }
+  function recoverProjectRename(input: unknown): ServiceResult<ProjectRenameResult> {
+    if (!isProjectRenameRequest(input) || input.type !== "workspace.recoverProjectRename") return invalid();
+    const request = { ...input }, key = reviewKey(request.workspaceId, request.operationId);
+    const review = reviews.get(key);
+    if (!review || review.token !== request.previewToken || !review.inspected.preview.actions.includes(request.action)) return stale();
+    reviews.delete(key);
+    let row: Operation | undefined, accepted = false;
+    let phase: "storage" | "filesystem" = "storage";
+    try {
+      const source = sourceFor(request.workspaceId);
+      row = operationFor(request.operationId);
+      if (!source || !row || source.id !== row.sourceId) return invalid();
+      if (!unchangedOperation(review.row) || source.discoveryRevision !== review.execution.revision ||
+        JSON.stringify(inspectRecovery(row, review.execution)) !== JSON.stringify(review.inspected)) return stale();
+      const execution = review.execution;
+      integration.invalidateSourceReviews(row.sourceId);
+      accepted = true;
+      if (request.action === "keep_original") {
+        const bound = row;
+        row = db.transaction((tx) => {
+          uniquePlacement(bound, bound.originalRelativePath, execution);
+          if (!unchangedOperation(bound)) fail("filesystem_changed");
+          // Retain all prior evidence, including evidence of a previous hop.
+          if (bound.stage !== "intent" && bound.stage !== "uncertain") tx.update(schema.projectRenameOperations)
+            .set({ stage: "uncertain", problem: "kept_original" }).where(eq(schema.projectRenameOperations.operationId, bound.operationId)).run();
+          tx.update(schema.projectRenameOperations).set({ stage: "failed", resultKind: "rejected", problem: "kept_original", lastVerifiedPlacement: "original" })
+            .where(eq(schema.projectRenameOperations.operationId, bound.operationId)).run();
+          uniquePlacement(bound, bound.originalRelativePath, execution);
+          return operationFor(bound.operationId)!;
+        }, { behavior: "immediate" });
+      } else {
+        if (request.action === "retry_original" && row.stagingRelativePath) {
+          phase = "filesystem"; hop(row, row.originalRelativePath, row.stagingRelativePath, execution);
+          phase = "storage"; row = evidence(row, true, execution);
+        } else if (request.action === "finish_staged") {
+          // A crash after hop one may precede its evidence transaction.
+          row = evidence(row, true, execution);
+        }
+        if (request.action !== "complete_destination") {
+          phase = "filesystem";
+          hop(row, row.stagingRelativePath ?? row.originalRelativePath, row.requestedRelativePath, execution);
+        }
+        phase = "storage"; row = evidence(row, false, execution);
+        row = complete(row, execution);
+      }
+      return { ok: true, value: recordedResult(row) };
+    } catch (error) {
+      if (!row || !accepted) return stale();
+      try {
+        const persisted = operationFor(row.operationId)!;
+        if (["completed", "failed"].includes(persisted.stage)) return { ok: true, value: recordedResult(persisted) };
+        db.update(schema.projectRenameOperations).set({ stage: "uncertain", problem: problemFor(error, phase) })
+          .where(eq(schema.projectRenameOperations.operationId, row.operationId)).run();
+        row = operationFor(row.operationId)!;
+      } catch { try { row = operationFor(row.operationId) ?? row; } catch { /* Retain last durable evidence. */ } }
+      return { ok: true, value: recordedResult(row) };
+    }
   }
   function renameProject(input: unknown): ServiceResult<ProjectRenameResult> {
     if (!isProjectRenameRequest(input) || input.type !== "workspace.renameProject") return invalid();
@@ -225,30 +433,21 @@ export function createProjectRenameService(db: Database, integration: {
       }, { behavior: "immediate" });
       intent = row;
       integration.invalidateSourceReviews(row.sourceId);
-      const hop = (from: string, to: string) => {
+      const executeHop = (from: string, to: string) => {
         phase = "filesystem";
-        destination(intent!, from, to, false);
-        if (!unchangedOperation(intent!)) fail("filesystem_changed");
-        nativeStarted = true;
-        const outcome = native(join(row.canonicalRoot, from), join(row.canonicalRoot, to));
-        nativeStarted = false;
-        if (outcome !== "renamed") fail(outcome === "invalid_argument" ? "invalid_name" : outcome);
-        effect = true;
-        placement(intent!, to);
+        hop(intent!, from, to, executionFor(row), () => { nativeStarted = true; }, (outcome) => { nativeStarted = false; if (outcome === "renamed") effect = true; });
       };
       if (self) {
         // Self-alias ownership was revalidated inside intent; the first target is
         // a separately reserved absent hidden entry in the same real parent.
-        hop(row.originalRelativePath, row.stagingRelativePath!);
+        executeHop(row.originalRelativePath, row.stagingRelativePath!);
         phase = "storage"; intent = evidence(intent, true);
-        hop(row.stagingRelativePath!, row.requestedRelativePath);
-      } else hop(row.originalRelativePath, row.requestedRelativePath);
+        executeHop(row.stagingRelativePath!, row.requestedRelativePath);
+      } else executeHop(row.originalRelativePath, row.requestedRelativePath);
       phase = "storage"; intent = evidence(intent, false);
       return { ok: true, value: recordedResult(complete(intent)) };
     } catch (error) {
-      const creationProblem = filesystemProblem(error);
-      const problem: ProjectRenameProblem = error instanceof RenameFailure ? error.problem : error instanceof CreationFailure ?
-        (error.problem === "case_alias" ? "occupied" : error.problem) : phase === "filesystem" || /^E[A-Z]+$/.test(String(filesystemCode(error))) ? (creationProblem === "case_alias" ? "occupied" : creationProblem) : "storage_error";
+      const problem = problemFor(error, phase);
       if (!intent) return rejected(problem);
       try {
         let persisted = operationFor(intent.operationId)!;
@@ -267,5 +466,10 @@ export function createProjectRenameService(db: Database, integration: {
       }
     }
   }
-  return { renameProject };
+  return { renameProject, listProjectRenames, getProjectRename, previewProjectRenameRecovery, recoverProjectRename, invalidateSource,
+    removeWorkspace(workspaceId: string) {
+      for (const [key, review] of reviews) if (review.execution.workspaceId === workspaceId) reviews.delete(key);
+    },
+    close() { reviews.clear(); },
+  };
 }
