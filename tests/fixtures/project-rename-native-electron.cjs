@@ -155,7 +155,12 @@ if (process.versions.electron) {
     const { app, utilityProcess } = require("electron");
     // Chromium owns this directory until main exits. Only the outer supervisor removes it.
     const userData = join(ownedRoot, "user-data"); mkdirSync(userData); app.setPath("userData", userData);
-    const send = (message, flushed) => process.stdout.write(JSON.stringify(message) + "\n", flushed);
+    const framing = process.env.WORKSPACE_RENAME_FIXTURE_FRAMING;
+    if (framing === "crlf") process.stdout.write("\r\n");
+    if (framing === "malformed") process.stdout.write("not-json\n");
+    if (framing === "unknown") process.stdout.write('{"stage":"unexpected"}\n');
+    const send = (message, flushed) => process.stdout.write(JSON.stringify(message) + "\n" +
+      (framing === "incomplete" && message.stage === "utility_exit" ? '{"stage":' : ""), flushed);
     let result, acknowledged = false, child, timedOut = false;
     const deadline = setTimeout(() => {
       timedOut = true; send({ stage: "utility_timeout" });

@@ -11,6 +11,7 @@ import { createPackageWithOptions } from "@electron/asar";
 
 const require = createRequire(import.meta.url);
 const { verifyAdapter } = require("./fixtures/project-rename-native-electron.cjs");
+const { createProtocol, MAX_BYTES, MAX_MESSAGES, MAX_EVENTS } = require("./fixtures/project-rename-native-protocol.cjs");
 const supported = process.platform === "darwin" || process.platform === "win32";
 const evidence = { platform: process.platform, arch: process.arch, node: process.versions.node, results: {} };
 
@@ -36,9 +37,6 @@ test("real Node no-replace adapter preserves identities, bytes, occupied entries
 });
 
 // Finite fixture protocol: retain stages/codes, never child stderr, paths or stacks.
-const stages = new Set(["main_ready", "utility_started", "worker_started", "missing_loading", "missing_verified",
-  "corrupt_loading", "corrupt_verified", "fixed_loading", "fixed_loaded", "result", "ack_sent", "ack_received",
-  "exit_sent", "utility_exit", "utility_timeout", "startup_failed"]);
 const codes = new Set(["EPERM", "EACCES", "ENOENT", "ERR_ASSERTION", "ERR_DLOPEN_FAILED", "unknown"]);
 const exists = async path => Boolean(await lstat(path).catch(() => null));
 const alive = pid => {
@@ -46,12 +44,116 @@ const alive = pid => {
   catch (error) { return error.code !== "ESRCH"; }
 };
 
-async function supervise({ runtime = "node", packaged = false, fault } = {}) {
+function replay(chunks) {
+  const messages = [], protocol = createProtocol(message => messages.push(message));
+  for (const chunk of chunks) protocol.write(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+  protocol.finish();
+  return { messages, ...protocol.snapshot() };
+}
+
+test("supervisor parser preserves messages across LF/CRLF, whitespace and arbitrary byte chunks", () => {
+  const messages = [{ stage: "main_ready" }, { stage: "result", ok: true, label: "🧪" }, { stage: "ack_received" }];
+  const bytes = Buffer.from(`\n\r\n \t\r\n${messages.map(message => JSON.stringify(message)).join("\r\n")}\n \t\r`);
+  // One chunk tests multiple records; byte chunks split JSON, UTF-8 and CRLF.
+  for (const chunks of [[bytes], [...bytes].map(byte => Buffer.from([byte]))]) {
+    const result = replay(chunks);
+    assert.deepEqual(result.messages, messages);
+    assert.equal(result.failed, false);
+    assert.equal(result.pendingBytes, 0);
+    assert.equal(result.bytes, bytes.length);
+    assert.deepEqual(result.diagnostics, { ignoredWhitespaceRecords: 3, ignoredWhitespaceTailBytes: 3,
+      malformedJsonRecords: 0, unknownStageRecords: 0, incompleteTrailingBytes: 0, outputLimits: 0 });
+  }
+});
+
+test("supervisor parser keeps malformed and unknown nonblank records sticky while delivering subsequent lifecycle messages", () => {
+  const messages = [], protocol = createProtocol(message => messages.push(message));
+  protocol.write(Buffer.from('not-json\n{"stage":"unexpected"}\nnull\n'));
+  assert.equal(protocol.snapshot().failed, true);
+  protocol.write(Buffer.from('{"stage":"result","ok":true}\n\r\n{"stage":"ack_received"}\n'));
+  protocol.finish();
+  assert.deepEqual(messages, [{ stage: "result", ok: true }, { stage: "ack_received" }]);
+  assert.equal(protocol.snapshot().failed, true);
+  assert.deepEqual(protocol.snapshot().diagnostics, { ignoredWhitespaceRecords: 1, ignoredWhitespaceTailBytes: 0,
+    malformedJsonRecords: 1, unknownStageRecords: 2, incompleteTrailingBytes: 0, outputLimits: 0 });
+});
+
+test("supervisor parser rejects incomplete or unterminated non-whitespace tails with byte-only diagnostics", () => {
+  for (const tail of ['{"stage":', '{"stage":"result","ok":true}', " \t🧪"]) {
+    const result = replay(['{"stage":"main_ready"}\n', tail]);
+    assert.equal(result.failed, true);
+    assert.deepEqual(result.messages, [{ stage: "main_ready" }]);
+    assert.equal(result.diagnostics.incompleteTrailingBytes, Buffer.byteLength(tail));
+    assert.equal(result.diagnostics.malformedJsonRecords, 0);
+    assert.equal(result.pendingBytes, 0);
+  }
+});
+
+test("supervisor parser counts ignored whitespace in the unchanged byte budget and bounds pending input", () => {
+  for (const whitespace of ["\n", " "]) {
+    const exact = replay([whitespace.repeat(MAX_BYTES)]);
+    assert.equal(exact.failed, false);
+    assert.equal(exact.diagnostics[whitespace === " " ? "ignoredWhitespaceTailBytes" : "ignoredWhitespaceRecords"], MAX_BYTES);
+    const protocol = createProtocol(() => assert.fail("whitespace cannot produce a message"));
+    protocol.write(Buffer.from(whitespace.repeat(MAX_BYTES)));
+    assert.equal(protocol.snapshot().failed, false);
+    assert.equal(protocol.snapshot().pendingBytes, whitespace === " " ? MAX_BYTES : 0);
+    protocol.write(Buffer.from("\n"));
+    for (let i = 0; i < 100; i++) protocol.write(Buffer.alloc(MAX_BYTES));
+    protocol.finish();
+    assert.equal(protocol.snapshot().failed, true);
+    assert.equal(protocol.snapshot().bytes, MAX_BYTES + 1);
+    assert.equal(protocol.snapshot().pendingBytes, 0);
+    assert.equal(protocol.snapshot().diagnostics.outputLimits, 1);
+  }
+  const pending = createProtocol(() => assert.fail("unterminated input cannot produce a message"));
+  pending.write(Buffer.alloc(MAX_BYTES, 120));
+  assert.equal(pending.snapshot().pendingBytes, MAX_BYTES);
+  pending.write(Buffer.from("x"));
+  pending.finish();
+  assert.equal(pending.snapshot().pendingBytes, 0);
+  assert.equal(pending.snapshot().diagnostics.outputLimits, 1);
+});
+
+test("supervisor parser rejects oversized chunks and excessive valid-stage events without accumulating them", () => {
+  assert.equal(replay(["\n".repeat(MAX_BYTES + 1)]).diagnostics.outputLimits, 1);
+  const record = '{"stage":"ack_received"}\n';
+  for (const chunks of [[record.repeat(MAX_MESSAGES + 10)], Array(MAX_MESSAGES + 10).fill(record)]) {
+    const result = replay(chunks);
+    assert.equal(result.failed, true);
+    assert.equal(result.messages.length, MAX_MESSAGES);
+    assert.equal(result.messageCount, MAX_MESSAGES);
+    assert.equal(result.pendingBytes, 0);
+    assert.equal(result.diagnostics.outputLimits, 1);
+    assert.equal(result.diagnostics.unknownStageRecords, 0);
+    assert.ok(result.bytes < MAX_BYTES);
+  }
+});
+
+async function supervise({ runtime = "node", packaged = false, fault, framing } = {}) {
   const root = await mkdtemp(join(tmpdir(), "workspace-native-supervisor-"));
   const lifecycle = { runtime, packaged, fault: fault ?? "none", events: [], cleanup: "pending" };
   let child, utilityPid, utilityExited = false, closed = false, timer, result, protocolError = false;
-  let stderrBytes = 0, stdoutBytes = 0, pending = "";
-  const event = (stage, details = {}) => lifecycle.events.push({ stage, ...details });
+  let stderrBytes = 0;
+  const event = (stage, details = {}) => {
+    if (lifecycle.events.length === MAX_EVENTS) { protocol.rejectLimit(); return; }
+    lifecycle.events.push({ stage, ...details });
+  };
+  const protocol = createProtocol(message => {
+    const code = Number.isInteger(message.code) ? message.code : codes.has(message.code) ? message.code : undefined;
+    event(message.stage, code === undefined ? {} : { code });
+    if (message.stage === "utility_started" && Number.isInteger(message.pid) && message.pid > 0) utilityPid = message.pid;
+    if (message.stage === "utility_exit") utilityExited = true;
+    if (message.stage === "ack_received" && runtime === "node") {
+      event("exit_sent"); child.send({ exit: true }, error => { if (error) protocolError = true; });
+    }
+    if (message.stage === "result") {
+      result = message;
+      if (runtime === "node" && fault !== "missing-ack") {
+        event("ack_sent"); child.send({ received: true }, error => { if (error) protocolError = true; });
+      }
+    }
+  });
   try {
     let entry = fileURLToPath(new URL("./fixtures/project-rename-native-electron.cjs", import.meta.url));
     if (packaged) {
@@ -66,35 +168,14 @@ async function supervise({ runtime = "node", packaged = false, fault } = {}) {
     }
     const env = { ...process.env, WORKSPACE_RENAME_FIXTURE_ROOT: root };
     delete env.ELECTRON_RUN_AS_NODE; delete env.NODE_TEST_CONTEXT; delete env.WORKSPACE_RENAME_FIXTURE_FAULT;
+    delete env.WORKSPACE_RENAME_FIXTURE_FRAMING;
     if (fault) env.WORKSPACE_RENAME_FIXTURE_FAULT = fault;
+    if (framing) env.WORKSPACE_RENAME_FIXTURE_FRAMING = framing;
     child = spawn(runtime === "electron" ? require("electron") : process.execPath, [entry],
       { env, cwd: root, stdio: runtime === "node" ? ["ignore", "pipe", "pipe", "ipc"] : ["ignore", "pipe", "pipe"] });
     event("launched");
     child.stdout.on("data", data => {
-      stdoutBytes += data.length;
-      if (stdoutBytes > 16384) { protocolError = true; return; }
-      pending += data;
-      let newline;
-      while ((newline = pending.indexOf("\n")) >= 0) {
-        const line = pending.slice(0, newline); pending = pending.slice(newline + 1);
-        try {
-          const message = JSON.parse(line);
-          if (!stages.has(message.stage)) { protocolError = true; continue; }
-          const code = Number.isInteger(message.code) ? message.code : codes.has(message.code) ? message.code : undefined;
-          event(message.stage, code === undefined ? {} : { code });
-          if (message.stage === "utility_started" && Number.isInteger(message.pid) && message.pid > 0) utilityPid = message.pid;
-          if (message.stage === "utility_exit") utilityExited = true;
-          if (message.stage === "ack_received" && runtime === "node") {
-            event("exit_sent"); child.send({ exit: true }, error => { if (error) protocolError = true; });
-          }
-          if (message.stage === "result") {
-            result = message;
-            if (runtime === "node" && fault !== "missing-ack") {
-              event("ack_sent"); child.send({ received: true }, error => { if (error) protocolError = true; });
-            }
-          }
-        } catch { protocolError = true; }
-      }
+      try { protocol.write(data); } catch { protocolError = true; }
     });
     child.stderr.on("data", data => { stderrBytes += data.length; });
     // Install all process listeners before waiting or signaling. close confirms
@@ -121,8 +202,11 @@ async function supervise({ runtime = "node", packaged = false, fault } = {}) {
       while (alive(utilityPid) && Date.now() < limit) await new Promise(accept => setTimeout(accept, 25));
       utilityExited = !alive(utilityPid);
     }
+    if (runtime === "electron") lifecycle.utilityTerminationConfirmed = Boolean(utilityPid) && !alive(utilityPid);
     lifecycle.shutdownConfirmed = closed && (runtime === "node" || utilityExited || !utilityPid && !lifecycle.events.some(e => e.stage === "main_ready"));
-    lifecycle.protocolError = protocolError || pending.length !== 0;
+    protocol.finish();
+    lifecycle.protocol = protocol.snapshot();
+    lifecycle.protocolError = protocolError || lifecycle.protocol.failed;
     lifecycle.stderrBytes = stderrBytes;
     lifecycle.result = result;
     lifecycle.ok = lifecycle.shutdownConfirmed && !lifecycle.protocolError && !lifecycle.timedOut &&
@@ -151,15 +235,18 @@ async function supervise({ runtime = "node", packaged = false, fault } = {}) {
   return lifecycle;
 }
 
-function assertCleanup(lifecycle) {
+function assertCleanup(lifecycle, expectedProtocolError = false) {
   const context = JSON.stringify(lifecycle);
   assert.equal(lifecycle.shutdownConfirmed, true, context);
-  assert.equal(lifecycle.protocolError, false, context);
+  assert.equal(lifecycle.protocolError, expectedProtocolError, context);
   assert.equal(lifecycle.cleanup, "removed", context);
   assert.equal(lifecycle.beforeCleanup.loadedCopyPresent, true, context);
+  assert.ok(lifecycle.events.length <= MAX_EVENTS, context);
+  assert.ok(lifecycle.protocol.messageCount <= MAX_MESSAGES, context);
   const stages = lifecycle.events.map(e => e.stage);
   assert.ok(stages.indexOf("loader_exit") < stages.indexOf("cleanup_started"), context);
   if (lifecycle.runtime === "electron") {
+    assert.equal(lifecycle.utilityTerminationConfirmed, true, context);
     assert.equal(lifecycle.beforeCleanup.userDataPresent, true, context);
     assert.ok(stages.indexOf("utility_exit") >= 0, context);
     assert.ok(stages.indexOf("utility_exit") < stages.indexOf("loader_exit"), context);
@@ -196,6 +283,12 @@ test("native adapter fails closed on missing/corrupt binaries and uses only fixe
 });
 
 for (const packaged of [false, true]) {
+  test(`Electron ${packaged ? "ASAR" : "development"} CRLF framing preserves acknowledged lifecycle`, { skip: !supported, timeout: 30000 }, async () => {
+    await checked(packaged ? "crlf-asar" : "crlf-electron", { runtime: "electron", packaged, framing: "crlf" }, lifecycle => {
+      assertSuccess(lifecycle);
+      assert.ok(lifecycle.protocol.diagnostics.ignoredWhitespaceRecords >= 1);
+    });
+  });
   test(`actual Electron utilityProcess loads ${packaged ? "ASAR unpacked" : "development"} adapter and verifies disposable no-replace renames`, { skip: !supported, timeout: 30000 }, async () => {
     await checked(packaged ? "electron-asar" : "electron", { runtime: "electron", packaged }, assertSuccess);
   });
@@ -208,6 +301,20 @@ for (const packaged of [false, true]) {
   });
 }
 
+for (const framing of ["malformed", "unknown", "incomplete"]) {
+  test(`Electron ${framing} stdout cannot pass despite acknowledged success and clean shutdown`, { skip: !supported, timeout: 30000 }, async () => {
+    await checked(`protocol-${framing}`, { runtime: "electron", framing }, lifecycle => {
+      assertCleanup(lifecycle, true);
+      assert.equal(lifecycle.exit, 0);
+      assert.equal(lifecycle.result.ok, true);
+      assert.ok(lifecycle.events.some(event => event.stage === "ack_received"));
+      assert.equal(lifecycle.ok, false);
+      const category = { malformed: "malformedJsonRecords", unknown: "unknownStageRecords", incomplete: "incompleteTrailingBytes" }[framing];
+      assert.equal(lifecycle.protocol.diagnostics[category], framing === "incomplete" ? 9 : 1);
+    });
+  });
+}
+
 test("Node injected failure acknowledges and exits before supervisor deletes the loaded copy", { skip: !supported }, async () => {
   await checked("failure-node", { fault: "failure" }, lifecycle => {
     assertCleanup(lifecycle); assert.equal(lifecycle.ok, false);
@@ -216,9 +323,9 @@ test("Node injected failure acknowledges and exits before supervisor deletes the
   });
 });
 
-for (const runtime of ["node", "electron"]) {
-  for (const fault of ["abnormal-exit", "missing-ack"]) test(`${runtime} ${fault} fails with confirmed shutdown before cleanup`, { skip: !supported, timeout: 30000 }, async () => {
-    await checked(`${runtime}-${fault}`, { runtime, fault, packaged: runtime === "electron" && fault === "abnormal-exit" }, lifecycle => {
+for (const [runtime, packaged] of [["node", false], ["electron", false], ["electron", true]]) {
+  for (const fault of ["abnormal-exit", "missing-ack"]) test(`${runtime}${packaged ? " ASAR" : ""} ${fault} fails with confirmed shutdown before cleanup`, { skip: !supported, timeout: 30000 }, async () => {
+    await checked(`${runtime}${packaged ? "-asar" : ""}-${fault}`, { runtime, fault, packaged }, lifecycle => {
       assertCleanup(lifecycle); assert.equal(lifecycle.ok, false);
       assert.equal(lifecycle.events.some(e => e.stage === "ack_received"), false);
       if (fault === "abnormal-exit") {
