@@ -135,3 +135,26 @@ grouped/recovery stayed unreached. Preserve this failure independently of any
 later CI success. Actual complete macOS and Windows dev/packaged acceptance
 remains required before Issue18 completion. Executor/retry evidence is retained
 in `work/issue-18/ci-38166185612/executor-checkpoint.json`.
+
+## Review follow-up: disposable Electron profiles
+
+Separate Matt Standards/Spec review completed successfully at
+`b5f4b4eaeba73fe01ca692541e705e896d15a039`, with no critical/major findings.
+The first Standards pass found one minor fixture-isolation violation: readiness
+controls used Electron's persistent default profile. Each fixture launch now
+receives its own temporary root through a dedicated environment variable and
+sets both `userData` and `sessionData` before application readiness. The driver
+retains the child handle before closing Playwright and removes the temporary
+root only after confirmed child exit. Failed startup or unconfirmed exit keeps
+the root available rather than removing potentially live process data.
+
+The unchanged readiness controls passed again: 17 passed, 0 failed or skipped,
+including the real default timeout and frame/timer disposal. Evidence is
+`work/issue-18/editor-readiness/review-profile-controls-v3.log`. Earlier failed
+iterations are retained separately: argument-position handling was replaced
+with environment delivery, and the child handle is obtained before the
+Playwright connection closes. Lint, documentation and diff checks passed.
+Only fixture/test isolation changed; production and runtime-smoke inputs did
+not change. The previous full-suite result remains 1900 passed/20 platform
+skips; it was not rerun for this fixture-only follow-up. The failed local normal
+quit and all pending actual-platform acceptance gates remain unchanged.

@@ -1,5 +1,8 @@
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";
+import { mkdtemp, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
 import { _electron } from "playwright-core";
@@ -8,9 +11,16 @@ import { waitForRenameEditor } from "../scripts/rename-editor-readiness.mjs";
 const fixture = fileURLToPath(new URL("./fixtures/rename-editor-readiness-electron.cjs", import.meta.url));
 
 async function withPage(run) {
-  const app = await _electron.launch({ executablePath: createRequire(import.meta.url)("electron"), args: [fixture], timeout: 10000 });
+  const profile = await mkdtemp(join(tmpdir(), "workspace-editor-readiness-"));
+  const app = await _electron.launch({ executablePath: createRequire(import.meta.url)("electron"), args: [fixture],
+    env: { ...process.env, WORKSPACE_RENAME_EDITOR_PROFILE: profile }, timeout: 10000 });
+  const child = app.process();
   try { await run(await app.firstWindow()); }
-  finally { await app.close(); }
+  finally {
+    await app.close();
+    assert.ok(child.exitCode !== null || child.signalCode !== null, "Fixture must exit before profile removal");
+    await rm(profile, { recursive: true, force: true });
+  }
 }
 
 // The fixture app owns focus. The driver neither focuses nor mutates the input.
