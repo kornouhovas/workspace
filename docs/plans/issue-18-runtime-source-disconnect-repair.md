@@ -108,6 +108,10 @@ Keep Node error codes distinct from Win32 codes. The documented fs.watch EPERM c
 
 - Use only explicitly owned disposable roots. Validate containment, directory kind, identity, expected contents and destination absence before attempting a move.
 
+- Canonicalize the owned temporary fixture root once and derive fixed child paths from it. Preserve legitimate platform temporary-directory aliases such as macOS /var to /private/var; do not mistake them for an unsafe caller-selected path. Reject unsafe source or ancestor reparses within the owned fixture boundary.
+
+- The existing fixture intentionally contains descendant symbolic links. Inventory those links by their link text without traversing their targets; preserve and compare them across moves. Do not reject a valid fixture merely because its contents include those expected links.
+
 - Retry only Windows EPERM from the actual rename operation. It is evidence for a bounded retry candidate, not proof of transient sharing. Other codes fail immediately unless separately justified by new evidence.
 
 - Bound moves to at most 20 attempts over a 2,000 ms retry budget, with 100 ms spacing capped by remaining time. Never start another attempt after either bound.
