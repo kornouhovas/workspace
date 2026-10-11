@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { waitForRenameEditor } from "./rename-editor-readiness.mjs";
 import { execFileSync, fork } from "node:child_process";
 import { createHash, randomUUID } from "node:crypto";
 import { once } from "node:events";
@@ -111,7 +112,7 @@ export async function runProjectRenameUi(mode = "dev") {
   // Identify exercised build inputs; screenshots/results of separate invocations
   // must never be attributed to a different development/packaged artifact.
   const digest = createHash("sha256");
-  for (const path of ["package-lock.json", "scripts/smoke-project-rename-ui.mjs", "scripts/runtime-evidence.mjs", "scripts/rename-runtime-startup.mjs", "scripts/runtime-startup.mjs", "scripts/runtime-lifecycle.mjs", "tests/fixtures/project-rename-crash-worker.mjs", "dist/desktop/main.cjs", "dist/desktop/preload.cjs", "dist/service/entry.cjs", "dist/service/settings.mjs", "dist/service/native/project-rename.node"]) digest.update(path).update(await readFile(join(root, path)));
+  for (const path of ["package-lock.json", "scripts/smoke-project-rename-ui.mjs", "scripts/rename-editor-readiness.mjs", "scripts/runtime-evidence.mjs", "scripts/rename-runtime-startup.mjs", "scripts/runtime-startup.mjs", "scripts/runtime-lifecycle.mjs", "tests/fixtures/project-rename-crash-worker.mjs", "dist/desktop/main.cjs", "dist/desktop/preload.cjs", "dist/service/entry.cjs", "dist/service/settings.mjs", "dist/service/native/project-rename.node"]) digest.update(path).update(await readFile(join(root, path)));
   if (mode === "release") {
     const resources = process.platform === "darwin" ? resolve(dirname(executablePath), "../Resources") : join(dirname(executablePath), "resources");
     digest.update(await readFile(join(resources, "app.asar")));
@@ -223,8 +224,8 @@ export async function runProjectRenameUi(mode = "dev") {
   async function edit(page, name, draft, t, expectedMessage) {
     const trigger = page.getByRole("button", { name: `${t.rename}: ${name}`, exact: true });
     await trigger.press("Enter");
-    const input = page.locator("#project-rename-name"); await input.waitFor();
-    assert.equal(await input.evaluate(node => node === globalThis.document.activeElement && node.labels.length === 1), true);
+    await waitForRenameEditor(page, { record: readiness => observations.push({ editorReadiness: readiness }) });
+    const input = page.locator("#project-rename-name");
     await input.fill(draft); await input.press("Enter");
     await page.getByText(expectedMessage, { exact: true }).waitFor();
   }
