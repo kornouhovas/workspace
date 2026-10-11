@@ -445,3 +445,69 @@ test('actual runtime launch keeps early window/path failures unverified after ow
     assert.equal(ownedProcessesStopped(ownedProcesses, [], { launchUnverified: result.launchUnverified }), false);
   }
 });
+
+for (const forced of [false, true]) for (const evidenceFails of [false, true]) {
+  test(`runtime source-move failure remains primary through ${forced ? "forced" : "normal"} quit and ${evidenceFails ? "failed" : "saved"} evidence`, async (t) => {
+    const { mkdir, mkdtemp, readFile, rm, stat, writeFile } = await import("node:fs/promises");
+    const { tmpdir } = await import("node:os");
+    const { join } = await import("node:path");
+    const { cleanupOwnedFixture, closeRuntimeSession, ownedProcessesStopped } = await import("../scripts/runtime-lifecycle.mjs");
+    const { createRuntimeSourceDisconnect, createRuntimeSourceMoveEvidence } = await import("../scripts/runtime-source-disconnect.mjs");
+    const parent = await mkdtemp(join(tmpdir(), "source-move-cleanup-"));
+    const fixture = join(parent, "fixture"), unrelated = join(parent, "unrelated");
+    await mkdir(fixture); await mkdir(unrelated); await mkdir(join(fixture, "source"));
+    await writeFile(join(fixture, "source", "sentinel"), "Retained bytes");
+    t.after(() => rm(parent, { recursive: true, force: true }));
+    const sourceMoves = createRuntimeSourceMoveEvidence();
+    const move = await createRuntimeSourceDisconnect({ ownedFixture: fixture, sourceName: "source" }, { rename: async () => {} });
+    let primary;
+    try { await sourceMoves.run("disconnect", move, async () => {}); } catch (error) { primary = error; }
+    assert.equal(primary.code, "missing_effects");
+    const source = await readFile(new URL("../scripts/smoke-runtime.mjs", import.meta.url), "utf8");
+    const tail = source.slice(source.indexOf('} catch (error) {\n  scenarioFailure = error;'), source.lastIndexOf("\n\n}"));
+    assert.ok(tail.startsWith("} catch (error)"));
+    const child = await launchFixture(), exited = once(child, "exit");
+    const electron = { process: () => child, evaluate: () => forced ? new Promise(() => {}) : Promise.resolve(child.kill()),
+      close: () => forced ? new Promise(() => {}) : exited };
+    const shutdown = { passed: false }, evidence = [];
+    let quitAttempts = 0, backendChecks = 0;
+    const recordEvidence = async (status) => {
+      evidence.push({ status, sourceMoves: sourceMoves.snapshot(), shutdown: { ...shutdown } });
+      if (evidenceFails) throw new Error("Evidence write failed");
+    };
+    const closeCurrent = async () => {
+      quitAttempts++;
+      await closeRuntimeSession(electron, {
+        shutdown, readBackendPids: async () => [child.pid], beforeClose: () => recordEvidence("before quit"),
+        assertBackendsStopped: async pids => {
+          backendChecks++;
+          assert.deepEqual(pids, [child.pid]);
+          assert.throws(() => process.kill(child.pid, 0), { code: "ESRCH" });
+        },
+      }, app => closeElectron(app, forced ? 20 : 1000));
+    };
+    const dependencies = { primary, current: { page: { screenshot: async () => { throw new Error("Screenshot unavailable"); } } },
+      evidenceDirectory: "owned-evidence", join, mode: "dev", recordEvidence, closeCurrent, cleanupOwnedFixture,
+      fixture, ownedProcessesStopped, ownedProcesses: new Set([child]), ownedBackendPids: new Set([child.pid]), launchUnverified: false };
+    const invoke = new Function("dependencies", `return (async () => {
+      const { ${Object.keys(dependencies).join(", ")} } = dependencies;
+      let scenarioFailure, cleanupFailure, fixtureCleanup;
+      try { throw primary;
+      ${tail}
+    })();`);
+    try {
+      await assert.rejects(invoke(dependencies), error => error === primary);
+      assert.equal(quitAttempts, 1);
+      assert.equal(backendChecks, forced ? 0 : 1);
+      assert.equal(shutdown.passed, !forced && !evidenceFails);
+      if (forced) assert.equal(shutdown.forcedCleanup.processStopped, true);
+      assert.equal(evidence.at(-1).status, "failed");
+      assert.equal(evidence.at(-1).sourceMoves[0].status, "failed");
+      assert.ok(evidence.at(-1).sourceMoves.slice(1).every(outcome => outcome.status === "unreached"));
+      await assert.rejects(stat(fixture), { code: "ENOENT" });
+      assert.equal((await stat(unrelated)).isDirectory(), true);
+    } finally {
+      if (child.exitCode === null && child.signalCode === null) { child.kill("SIGKILL"); await exited; }
+    }
+  });
+}

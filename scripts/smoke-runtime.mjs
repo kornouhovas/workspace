@@ -9,7 +9,7 @@ import { packagedExecutablePath } from "./runtime-executable.mjs";
 import { createRuntimeStages, completeRuntimeStage } from "./runtime-evidence.mjs";
 import { cleanupOwnedFixture, closeElectron, closeRuntimeSession, ownedProcessesStopped, withDeadline } from "./runtime-lifecycle.mjs";
 import { measureDiscoveryLayout } from "./runtime-layout.mjs";
-import { createRuntimeSourceDisconnect } from "./runtime-source-disconnect.mjs";
+import { createRuntimeSourceDisconnect, createRuntimeSourceMoveEvidence } from "./runtime-source-disconnect.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const mode = process.argv[2] ?? "dev";
@@ -98,13 +98,15 @@ async function assertStopped(pids) {
 const evidenceDirectory = process.env.WORKSPACE_SMOKE_EVIDENCE_DIR;
 if (evidenceDirectory) await mkdir(evidenceDirectory, { recursive: true });
 const observations = [];
+const sourceMoves = createRuntimeSourceMoveEvidence();
 const stages = createRuntimeStages();
 const shutdowns = [];
 let fixtureCleanup;
 
 async function recordEvidence(status, error) {
+  if (status === "passed") sourceMoves.assertComplete();
   if (evidenceDirectory) await writeFile(join(evidenceDirectory, `${mode}-observations.json`), JSON.stringify({
-    mode, platform: process.platform, arch: process.arch, executablePath, status, stages, shutdowns, fixtureCleanup,
+    mode, platform: process.platform, arch: process.arch, executablePath, status, stages, shutdowns, fixtureCleanup, sourceMoves: sourceMoves.snapshot(),
     ...(error ? { error: error.message } : {}), observations,
   }, null, 2) + "\n");
 }
@@ -526,7 +528,34 @@ try {
     globalThis.smokeChanges = [];
     globalThis.stopSmokeChanges = globalThis.window.workspace.onWorkspaceChange((change) => globalThis.smokeChanges.push(change));
   });
-  const moveSelectedSource = await createRuntimeSourceDisconnect({ ownedFixture: fixture, sourceName: basename(projectRoot) });
+  const moveOwnedSource = await createRuntimeSourceDisconnect({ ownedFixture: fixture, sourceName: basename(projectRoot) });
+  const moveSelectedSource = direction => sourceMoves.run(direction, moveOwnedSource, () => recordEvidence("source move observed"));
+  const otherProjectsBeforeDisconnect = await projects(page, other.workspaceId);
+  async function assertSourceState(unavailable) {
+    const snapshot = await load(page);
+    assert.deepEqual(snapshot.workspaces, [other, first, sibling].map(({ workspaceId, name }) => ({ workspaceId, name })));
+    for (const workspace of [first, sibling, other]) {
+      await select(page, workspace);
+      const active = (await load(page)).activeWorkspace;
+      assert.deepEqual(identity(active), identity(workspace));
+      assert.equal(active.sourceAvailable, workspace === other || !unavailable);
+    }
+    await select(page, snapshot.activeWorkspace);
+    for (const workspace of [first, sibling]) {
+      const actual = await projects(page, workspace.workspaceId);
+      assertProjection(actual, { ...savedProjects, workspaceId: workspace.workspaceId,
+        state: unavailable ? "unavailable" : savedProjects.state,
+        projects: savedProjects.projects.map(row => unavailable ? { ...row, resolution: null } : row),
+        retainedProjects: savedProjects.retainedProjects.map(row => unavailable ? { ...row, resolution: null } : row),
+      });
+      assert.deepEqual(await properties(page, workspace.workspaceId), { ...savedProperties, workspaceId: workspace.workspaceId });
+    }
+    assert.deepEqual(await projects(page, other.workspaceId), otherProjectsBeforeDisconnect);
+    assert.deepEqual(await properties(page, other.workspaceId), otherProperties);
+    assert.deepEqual(await folderBytes(unavailable ? join(fixture, "temporarily-disconnected") : projectRoot), originalBytes);
+    assert.deepEqual(await folderBytes(otherRoot), otherBytes);
+    assert.deepEqual(await folderBytes(externalRoot), externalBytes);
+  }
   await moveSelectedSource("disconnect");
   await select(page, sibling);
   await page.getByRole("heading", { name: "Папка проекта недоступна", exact: true }).waitFor();
@@ -537,6 +566,7 @@ try {
   assert.ok([...disconnectedProjects.projects, ...disconnectedProjects.retainedProjects].every((row) => row.resolution === null));
   assert.deepEqual(await properties(page, sibling.workspaceId), { ...savedProperties, workspaceId: sibling.workspaceId });
   assert.equal(disconnectedProjects.retainedCount, savedProjects.retainedCount);
+  await assertSourceState(true);
   await previewFolders(page, "ru");
   assert.equal(await page.getByRole("button", { name: discoveryLabels.ru.apply, exact: true }).isDisabled(), true);
   await captureDiscovery(page, "ru", "unavailable");
@@ -562,15 +592,19 @@ try {
   assert.deepEqual(sourceChanges[1].source, { ...unavailable[0].source, sourceAvailable: true });
   await select(page, sibling);
   assert.equal((await load(page)).activeWorkspace.sourceAvailable, true);
+  await assertSourceState(false);
   await select(page, first);
   await page.evaluate(() => globalThis.stopSmokeChanges());
   await moveSelectedSource("disconnect");
   await select(page, sibling);
   await page.getByRole("heading", { name: "Папка проекта недоступна", exact: true }).waitFor();
+  await assertSourceState(true);
   await moveSelectedSource("restore");
   await page.getByRole("button", { name: "Проверить доступ к папке", exact: true }).press("Enter");
   await page.getByRole("heading", { name: "Папка проекта недоступна", exact: true }).waitFor({ state: "detached" });
+  await assertSourceState(false);
   assert.equal(await page.evaluate(() => globalThis.smokeChanges.filter((event) => event.type === "workspace.sourceChanged").length), 2);
+  sourceMoves.assertComplete();
   await select(page, first);
   observations.push({ scenario: "management and source notifications", identities: [first, sibling, other], sourceChanges });
 
@@ -1241,15 +1275,16 @@ try {
 } catch (error) {
   scenarioFailure = error;
   if (current && evidenceDirectory) await current.page.screenshot({ path: join(evidenceDirectory, `${mode}-failed.png`), fullPage: true, timeout: 3000 }).catch(() => {});
-  await recordEvidence("failed", error);
+  // Evidence failure is secondary; finally must still attempt normal quit and
+  // independently verify owned-process termination before fixture removal.
+  try { await recordEvidence("failed", error); }
+  catch (evidenceError) { cleanupFailure = evidenceError; }
 } finally {
   if (current) {
     try { await closeCurrent({ kind: "failure cleanup", requireBackend: false }); }
     catch (error) { cleanupFailure = error; }
   }
-  const primaryFailure = scenarioFailure && cleanupFailure
-    ? new AggregateError([scenarioFailure, cleanupFailure], "Runtime scenario and cleanup failed")
-    : scenarioFailure ?? cleanupFailure;
+  const primaryFailure = scenarioFailure ?? cleanupFailure;
   await cleanupOwnedFixture(fixture, {
     processesStopped: ownedProcessesStopped(ownedProcesses, ownedBackendPids, { launchUnverified }), primaryFailure,
     record: async outcome => {

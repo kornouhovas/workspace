@@ -171,17 +171,25 @@ Files:
 
 - Modify: tests/runtime-lifecycle.test.mjs
 
-- [ ] Record a bounded outcome for each of the four moves, including direction/scenario identifier, attempts, elapsed time, first allowlisted error code, final status and verified-effect booleans. Persist failure observations before propagating failure.
+- [x] Record a bounded outcome for each of the four moves, including direction/scenario identifier, attempts, elapsed time, first allowlisted error code, final status and verified-effect booleans. Persist failure observations before propagating failure.
 
-- [ ] Retain real unavailable/restored UI checks, the first subscription’s two actual workspace.sourceChanged events, and the second cycle’s unsubscribe assertion. Do not synthesize events, skip disconnects or disable native observation.
+- [x] Retain real unavailable/restored UI checks, the first subscription’s two actual workspace.sourceChanged events, and the second cycle’s unsubscribe assertion. Do not synthesize events, skip disconnects or disable native observation.
 
-- [ ] Verify root bytes/inventory and retained project, workspace, source, view and Text state across disconnect/restore. Preserve sibling notification routing and unrelated-source isolation.
+- [x] Verify root bytes/inventory and retained project, workspace, source, view and Text state across disconnect/restore. Preserve sibling notification routing and unrelated-source isolation.
 
-- [ ] Add evidence regressions proving missing effects, incomplete verification, exhausted budgets and skipped/unreached operations cannot become success; reject private fields and bound output size.
+- [x] Add evidence regressions proving missing effects, incomplete verification, exhausted budgets and skipped/unreached operations cannot become success; reject private fields and bound output size.
 
-- [ ] Add lifecycle controls showing a source-move failure remains primary through evidence collection, normal quit attempts and independently verified cleanup. Cleanup success or forced process termination cannot promote the scenario to passed.
+- [x] Add lifecycle controls showing a source-move failure remains primary through evidence collection, normal quit attempts and independently verified cleanup. Cleanup success or forced process termination cannot promote the scenario to passed.
 
-- [ ] Run node --import tsx --test tests/runtime-source-disconnect.test.mjs tests/runtime-lifecycle.test.mjs tests/windows-rename-diagnostics.test.mjs. Require all applicable controls to pass; record Windows-only skips as pending platform verification.
+- [x] Run node --import tsx --test tests/runtime-source-disconnect.test.mjs tests/runtime-lifecycle.test.mjs tests/windows-rename-diagnostics.test.mjs. Require all applicable controls to pass; record Windows-only skips as pending platform verification.
+
+Task 2 verification (local macOS, Node 22.21.1, starting checkpoint `2f63025978d9ac430dfcdd83b9489853d1f1ff30`):
+
+- The four actual runtime callsites use the tested evidence wrapper and shared move helper. Fixed subscribed/unsubscribed disconnect/restore records carry status, attempts, elapsed time, first allowlisted error code, final finite code and effect/verification booleans. Unreached operations remain explicit; snapshots cannot mutate the ledger. Failure evidence is awaited before propagation. Missing effects, incomplete verification, expired/exhausted budgets, malformed/private fields and pending persistence cannot complete the scenario. Serialized move records stay below the tested 4 KiB bound; new records contain no paths, names, identities, bytes, PIDs, stacks or raw exception messages.
+- Executed the runtime's extracted state assertions against a disposable real SQLite service and actual helper moves in both cycles. Project/retained projections, workspace/source/view identities, exact Text and revisions, no-follow root inventory, unrelated source and external-link target bytes remained unchanged. Real service subscriptions produced two source availability events routed to the two referencing workspaces, then no additional subscription events after unsubscribe. The original graphical unavailable/restored checks, event assertions and native observer configuration remain in place; this service-level control does not establish Electron/UI acceptance.
+- Executed the runtime's actual failure/finally wiring with an injected missing-effect fixture move, real owned child processes, normal and forced shutdown controls, successful and failing evidence collection, and independent filesystem/process probes. The original move error remained primary; final scenario evidence stayed failed, unreached moves stayed unreached, fixture removal was verified and an unrelated directory survived. Forced termination was never treated as normal shutdown or scenario success.
+- Final `node --import tsx --test tests/runtime-source-disconnect.test.mjs tests/runtime-lifecycle.test.mjs tests/windows-rename-diagnostics.test.mjs` passed: 149 tests, 146 passed, zero failures, 3 Windows-only skips. The skipped actual Windows bridge, PowerShell GENERIC_READ binding and fixed-target holder rejection controls remain pending actual Windows execution by the coordinator. The final corrected implementation inputs were rerun; the later retained-project/Text extension also passed its affected test. Earlier affected iterations exposed and corrected symbol-key rejection and the distinction between workspace summaries and active workspace identities.
+- Scoped ESLint for the two scripts and two tests, Node syntax checks for both scripts, documentation links and `git diff --check` passed. No production service, historical diagnostics, dependencies, CI gates, tracker or run-state files changed. Full development/packaged Electron smoke, actual Windows sharing acceptance and the independent #44 shutdown issue remain outside this iteration, owned by Tasks 3–4 and coordinator acceptance.
 
 ### Task 3: Add actual Windows release and persistent-block controls
 
