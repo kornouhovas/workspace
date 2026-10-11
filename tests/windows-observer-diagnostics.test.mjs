@@ -5,8 +5,26 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
+import { realpath } from 'node:fs/promises';
 
 const provenance = { sha: 'a'.repeat(40), runId: 'local', attempt: 1, matrix: 'local', platform: process.platform, nodeVersion: process.version };
+
+test('raw sync/async inequality alone permits ordinary evidence while canonical identity failures do not', async () => {
+  const { collectObserverDiagnostics, validateEvidence } = await import('../scripts/windows-observer-diagnostics.mjs');
+  const evidence = await collectObserverDiagnostics({ provenance });
+  assert.equal(evidence.outcome, 'ordinary');
+  for (const item of evidence.cases) {
+    item.identity.directorySyncAsyncEqual = false;
+    item.identity.logSyncAsyncEqual = false;
+  }
+  // Controlled finite-artifact validation, not a Windows filesystem reproduction.
+  assert.equal(validateEvidence(evidence), true);
+  for (const key of ['stateDirectoryMatchesSource', 'lockDirectoryMatchesSource', 'observerSourceDirectoryEqual', 'observerSourceLogEqual', 'lockPidMatchesOwnedProcess', 'lockTokenValid']) {
+    const invalid = structuredClone(evidence);
+    invalid.cases[0].identity[key] = false;
+    assert.equal(validateEvidence(invalid), false, key);
+  }
+});
 
 test('public diagnostic retains real ownership uncertainty without exposing or changing runner inputs', async t => {
   const { inspectObserverFixture } = await import('../scripts/windows-observer-diagnostics.mjs');
@@ -30,6 +48,24 @@ test('public diagnostic retains real ownership uncertainty without exposing or c
   assert.ok(Buffer.byteLength(output) < 12 * 1024);
 });
 
+test('public diagnostic compares observer identities to synchronous publication and retains raw filesystem comparisons', async t => {
+  const { inspectObserverFixture } = await import('../scripts/windows-observer-diagnostics.mjs');
+  const dir = realpathSync(mkdtempSync(join(tmpdir(), 'diagnostic-canonical-')));
+  t.after(() => rmSync(dir, { recursive: true, force: true }));
+  const state = { version: 1, runId: 'fixture-run', executionId: 'fixture-execution', runDirectory: dir, worktree: dir, status: 'running' };
+  const lock = { pid: process.pid, token: 'fixture-token', runId: state.runId, executionId: state.executionId, runDirectory: dir, worktree: dir };
+  writeFileSync(join(dir, 'current.json'), JSON.stringify(state));
+  writeFileSync(join(dir, 'executor.lock'), JSON.stringify(lock));
+  const log = join(dir, 'full.log'); writeFileSync(log, '');
+  const evidence = await inspectObserverFixture({ source: { kind: 'runner', dir, log }, cursor: join(dir, 'observer.json') });
+  assert.equal(evidence.observer.reason, 'deadline');
+  assert.equal(evidence.observer.ownership, 'identified');
+  assert.equal(evidence.identity.directorySyncAsyncEqual, dir === await realpath(dir));
+  assert.equal(evidence.identity.logSyncAsyncEqual, realpathSync(log) === await realpath(log));
+  for (const key of ['stateDirectoryMatchesSource', 'lockDirectoryMatchesSource', 'observerSourceDirectoryEqual', 'observerSourceLogEqual']) assert.equal(evidence.identity[key], true, key);
+  assert.equal(evidence.inputsUnchanged, true);
+});
+
 test('two fixed cases collect finite private evidence and remove only their own fixture and child', async t => {
   const { collectObserverDiagnostics, validateEvidence } = await import('../scripts/windows-observer-diagnostics.mjs');
   const parent = mkdtempSync(join(tmpdir(), 'diagnostic-parent-'));
@@ -40,11 +76,13 @@ test('two fixed cases collect finite private evidence and remove only their own 
   assert.deepEqual(evidence.cases.map(item => item.name), ['current_process', 'owned_child']);
   for (const item of evidence.cases) {
     assert.equal(item.observer.status, 'collected');
-    assert.ok(['deadline', 'ownership_unknown'].includes(item.observer.reason));
+    assert.equal(item.observer.reason, 'deadline');
+    assert.equal(item.observer.ownership, 'identified');
     assert.equal(item.inputsUnchanged, true);
     assert.ok(Object.values(item.identity).every(value => typeof value === 'boolean'));
   }
   assert.equal(evidence.cleanup.files, 'removed');
+  assert.equal(evidence.outcome, 'ordinary');
   assert.equal(evidence.cleanup.child, 'exited');
   assert.equal(evidence.cleanup.childExitCode, 0);
   assert.deepEqual(readdirSync(parent), ['unrelated']);
@@ -163,10 +201,8 @@ test('two-second observation timeout is retained and releases the observer-owned
   writeFileSync(join(dir, 'full.log'), '');
   const cursor = join(dir, 'observer.json'), start = Date.now();
   const evidence = await inspectObserverFixture({ source: { kind: 'runner', dir, log: join(dir, 'full.log') }, cursor, budgetMs: 2000 });
-  // Windows can honestly return ownership_unknown immediately. The diagnostic
-  // must preserve that outcome rather than forcing this timeout expectation.
-  assert.ok((evidence.observer.status === 'timed_out' && evidence.observer.reason === 'unavailable') ||
-    (evidence.observer.status === 'collected' && evidence.observer.reason === 'ownership_unknown' && evidence.observer.ownership === 'unknown'));
+  assert.equal(evidence.observer.status, 'timed_out');
+  assert.equal(evidence.observer.reason, 'unavailable');
   assert.ok(Date.now() - start < 3000);
   assert.equal(evidence.inputsUnchanged, true);
   assert.equal(existsSync(`${cursor}.lock`), false);

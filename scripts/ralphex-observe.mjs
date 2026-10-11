@@ -1,6 +1,7 @@
 import { command as defaultCommand, ciIdentity, observeCi, heartbeatConfig, heartbeat as renewHeartbeat } from './ralphex-observe-sources.mjs';
 import { randomUUID, createHash } from 'node:crypto';
-import { open, readFile, lstat, readlink, realpath, rename, rm, stat, writeFile } from 'node:fs/promises';
+import { realpathSync } from 'node:fs';
+import { open, readFile, lstat, readlink, rename, rm, stat, writeFile } from 'node:fs/promises';
 import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -14,7 +15,9 @@ const fingerprint = value => JSON.stringify(value);
 const timestampPrefix = /^\[\d{2}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\] /;
 
 async function canonicalPath(file) {
-  try { return await realpath(file); }
+  // Runner snapshots and locks publish this exact representation. In particular,
+  // Windows async realpath can return a different string for the same directory.
+  try { return realpathSync(file); }
   catch (error) {
     if (error.code !== 'ENOENT') throw error;
     let info;
@@ -133,7 +136,7 @@ export async function observe({ source, cursor, budgetMs = 50000, pollMs, signal
   pollMs ??= source?.kind === 'ci' ? 10000 : 250;
   if (!Number.isFinite(pollMs) || pollMs < 1) throw new Error('pollMs must be positive');
   if (!['runner','ci'].includes(source?.kind)) throw new Error('source kind must be runner or ci');
-  source = source.kind === 'runner' ? { ...source, dir: await realpath(source.dir), log: await canonicalPath(resolve(source.log)) } : ciIdentity(source);
+  source = source.kind === 'runner' ? { ...source, dir: realpathSync(source.dir), log: await canonicalPath(resolve(source.log)) } : ciIdentity(source);
   cursor = await canonicalPath(resolve(cursor));
   const lockPath = `${cursor}.lock`, token = randomUUID();
   const paths = {cursor,lock:lockPath,temporary:`${cursor}.${token}.tmp`,diagnostic:`${cursor}.diagnostic-${token}.txt`,details:`${cursor}.details-${token}.json`,progress:`${cursor}.progress-${token}.jsonl`};

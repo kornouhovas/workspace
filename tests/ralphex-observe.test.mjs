@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { spawn, execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { initialize, readState } from '../scripts/ralphex-run.mjs';
-import { mkdtempSync, mkdirSync, openSync, closeSync, ftruncateSync, writeFileSync, readFileSync, rmSync, appendFileSync, renameSync, realpathSync, symlinkSync, readdirSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, openSync, closeSync, ftruncateSync, writeFileSync, readFileSync, rmSync, appendFileSync, renameSync, realpathSync, symlinkSync, linkSync, readdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
@@ -19,6 +19,110 @@ function fixture(t) {
   const options = { source: { kind: 'runner', dir, log }, cursor: join(dir, 'observer.json'), budgetMs: 90, pollMs: 10 };
   return { dir, state, lock, log, options, save() { const temp = join(dir, 'snapshot.tmp'); writeFileSync(temp, JSON.stringify(state)); renameSync(temp, join(dir, 'current.json')); } };
 }
+
+test('synchronously published runner identities retain ownership and byte continuation through selected directory aliases', async t => {
+  const f = fixture(t), alias = join(f.dir, 'selected-alias');
+  symlinkSync(f.dir, alias, process.platform === 'win32' ? 'junction' : 'dir');
+  const files = ['current.json', 'executor.lock', 'full.log'];
+  const before = files.map(file => readFileSync(join(f.dir, file)));
+  const options = { ...f.options, source: { kind: 'runner', dir: alias, log: join(alias, 'full.log') }, cursor: join(alias, 'observer.json') };
+  const quiet = await observe(options);
+  assert.equal(quiet.reason, 'deadline'); assert.equal(quiet.ownership, 'identified');
+  assert.equal(quiet.source.dir, f.state.runDirectory);
+  assert.equal(quiet.source.log, realpathSync(f.log));
+  assert.equal(quiet.log.path, realpathSync(f.log));
+  assert.deepEqual(files.map(file => readFileSync(join(f.dir, file))), before);
+  const saved = JSON.parse(readFileSync(f.options.cursor, 'utf8'));
+  assert.deepEqual(saved.source, quiet.source);
+  assert.equal(saved.offset, 0);
+  appendFileSync(f.log, 'RALPHEX_PROGRESS {"task":"Task canonical control"}\n');
+  const log = readFileSync(f.log), progress = await observe(f.options);
+  assert.equal(progress.reason, 'progress'); assert.equal(progress.ownership, 'identified');
+  assert.equal(progress.task, 'Task canonical control');
+  assert.deepEqual(progress.source, quiet.source);
+  assert.equal(progress.log.from, 0); assert.equal(progress.log.to, log.length);
+  const continued = await observe(options);
+  assert.equal(continued.reason, 'deadline'); assert.equal(continued.ownership, 'identified');
+  assert.equal(continued.progressTotal, 0); assert.equal(continued.log.from, log.length);
+  assert.equal(continued.log.to, log.length);
+  assert.deepEqual(files.slice(0, 2).map(file => readFileSync(join(f.dir, file))), before.slice(0, 2));
+  assert.deepEqual(readFileSync(f.log), log);
+});
+
+test('canonical selection never authorizes foreign or aliased recorded ownership metadata', async t => {
+  for (const [target, key, value] of [
+    ['state', 'runDirectory', 'foreign'], ['lock', 'runDirectory', 'foreign'],
+    ['lock', 'token', undefined], ['lock', 'runId', 'foreign'],
+    ['lock', 'executionId', 'foreign'], ['lock', 'worktree', 'foreign'],
+    ['lock', 'pid', 0], ['lock', 'pid', 'invalid'],
+    ['state', 'runDirectory', 'alias'], ['lock', 'runDirectory', 'alias'],
+  ]) {
+    const f = fixture(t), alias = join(f.dir, 'metadata-alias');
+    symlinkSync(f.dir, alias, process.platform === 'win32' ? 'junction' : 'dir');
+    f[target][key] = value === 'alias' ? alias : value;
+    f.save(); writeFileSync(join(f.dir, 'executor.lock'), JSON.stringify(f.lock));
+    const files = ['current.json', 'executor.lock', 'full.log'], before = files.map(file => readFileSync(join(f.dir, file)));
+    const result = await observe(f.options);
+    assert.equal(result.reason, 'ownership_unknown', `${target}.${key}=${value}`);
+    assert.equal(result.ownership, 'unknown');
+    assert.deepEqual(files.map(file => readFileSync(join(f.dir, file))), before);
+  }
+});
+
+test('a stopped owned PID remains ownership uncertainty with matching canonical identities', async t => {
+  const f = fixture(t), child = spawn(process.execPath, ['-e', 'process.exit(0)'], { stdio: 'ignore' });
+  const pid = child.pid;
+  await new Promise((resolve, reject) => { child.once('error', reject); child.once('close', resolve); });
+  f.lock.pid = pid; writeFileSync(join(f.dir, 'executor.lock'), JSON.stringify(f.lock));
+  const before = readFileSync(join(f.dir, 'executor.lock'));
+  const result = await observe(f.options);
+  assert.equal(result.reason, 'ownership_unknown'); assert.equal(result.ownership, 'unknown');
+  assert.deepEqual(readFileSync(join(f.dir, 'executor.lock')), before);
+});
+
+test('canonical cursor continuation rejects foreign directory and log identities without rewriting evidence', async t => {
+  for (const key of ['dir', 'log', 'runId', 'executionId', 'worktree']) {
+    const f = fixture(t); await observe(f.options);
+    const cursor = JSON.parse(readFileSync(f.options.cursor, 'utf8'));
+    cursor.source[key] = 'foreign'; writeFileSync(f.options.cursor, JSON.stringify(cursor));
+    const before = readFileSync(f.options.cursor);
+    const result = await observe(f.options);
+    assert.equal(result.reason, 'needs_decision'); assert.equal(result.diagnostic.code, 'source_mismatch');
+    assert.deepEqual(readFileSync(f.options.cursor), before);
+  }
+});
+
+test('reserved runner inputs reject canonical directory aliases and hard-linked cursor outputs', async t => {
+  for (const name of ['current.json', 'current.json.tmp', 'events.jsonl', 'executor.lock', 'full.log']) {
+    const f = fixture(t), alias = join(f.dir, 'input-alias');
+    symlinkSync(f.dir, alias, process.platform === 'win32' ? 'junction' : 'dir');
+    if (['current.json.tmp', 'events.jsonl'].includes(name)) writeFileSync(join(f.dir, name), 'runner-owned');
+    const linked = join(f.dir, 'linked-output'); linkSync(join(f.dir, name), linked);
+    const before = readFileSync(join(f.dir, name)), entries = readdirSync(f.dir).sort();
+    for (const cursor of [join(alias, name), linked]) {
+      await assert.rejects(observe({ ...f.options, cursor }), /observer-owned/);
+      assert.deepEqual(readFileSync(join(f.dir, name)), before);
+      assert.deepEqual(readdirSync(f.dir).sort(), entries);
+    }
+    rmSync(linked); linkSync(join(f.dir, name), `${linked}.lock`);
+    const derivedEntries = readdirSync(f.dir).sort();
+    await assert.rejects(observe({ ...f.options, cursor: linked }), /observer-owned/);
+    assert.deepEqual(readFileSync(join(f.dir, name)), before);
+    assert.deepEqual(readdirSync(f.dir).sort(), derivedEntries);
+  }
+});
+
+test('missing reserved outputs remain protected through existing canonical ancestors', async t => {
+  for (const name of ['current.json.tmp', 'events.jsonl', 'executor.lock', 'full.log']) {
+    const f = fixture(t), alias = join(f.dir, 'missing-output-alias');
+    symlinkSync(f.dir, alias, process.platform === 'win32' ? 'junction' : 'dir');
+    rmSync(join(f.dir, name), { force: true });
+    const before = readFileSync(join(f.dir, 'current.json')), entries = readdirSync(f.dir).sort();
+    await assert.rejects(observe({ ...f.options, cursor: join(alias, name) }), /observer-owned/);
+    assert.deepEqual(readFileSync(join(f.dir, 'current.json')), before);
+    assert.deepEqual(readdirSync(f.dir).sort(), entries);
+  }
+});
 
 test('unchanged quiet runner is observed until a finite deadline without modifying its files', async t => {
   const f = fixture(t), before = ['current.json','executor.lock','full.log'].map(file => readFileSync(join(f.dir,file)));

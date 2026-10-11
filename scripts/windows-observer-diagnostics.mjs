@@ -56,13 +56,13 @@ export async function inspectObserverFixture({ source, cursor, budgetMs = 100, o
     lockDirectoryValid: textValid(lock.runDirectory), lockWorktreeValid: textValid(lock.worktree),
     sourceKindValid: source.kind === 'runner', sourceDirectoryValid: textValid(source.dir), sourceLogValid: textValid(source.log),
     directorySyncAsyncEqual: syncDir === asyncDir, logSyncAsyncEqual: syncLog === asyncLog,
-    stateDirectoryMatchesSource: state.runDirectory === asyncDir, lockDirectoryMatchesSource: lock.runDirectory === asyncDir,
+    stateDirectoryMatchesSource: state.runDirectory === syncDir, lockDirectoryMatchesSource: lock.runDirectory === syncDir,
     stateLockDirectoryEqual: state.runDirectory === lock.runDirectory,
     stateLockRunIdEqual: state.runId === lock.runId, stateLockExecutionIdEqual: state.executionId === lock.executionId,
     stateLockWorktreeEqual: state.worktree === lock.worktree,
     observerSourceAvailable: Boolean(result?.source),
     observerSourceKindEqual: result?.source?.kind === source.kind,
-    observerSourceDirectoryEqual: result?.source?.dir === asyncDir, observerSourceLogEqual: result?.source?.log === asyncLog,
+    observerSourceDirectoryEqual: result?.source?.dir === syncDir, observerSourceLogEqual: result?.source?.log === syncLog,
     observerSourceRunIdEqual: result?.source?.runId === state.runId,
     observerSourceExecutionIdEqual: result?.source?.executionId === state.executionId,
     observerSourceWorktreeEqual: result?.source?.worktree === state.worktree,
@@ -85,6 +85,8 @@ const codeValid = value => value === 'unavailable' || numericCode(value) === val
 const provenanceValid = value => exactKeys(value, ['sha', 'runId', 'attempt', 'matrix', 'platform', 'nodeVersion']) && typeof value.sha === 'string' && /^[a-f0-9]{40}$/.test(value.sha) && typeof value.runId === 'string' && /^(local|[1-9][0-9]{0,19})$/.test(value.runId) && Number.isSafeInteger(value.attempt) && value.attempt >= 1 && value.attempt <= 10000 && ['local', 'windows-latest', 'windows-2022'].includes(value.matrix) && ['darwin', 'win32', 'linux'].includes(value.platform) && typeof value.nodeVersion === 'string' && /^v\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(value.nodeVersion);
 const observerValid = value => exactKeys(value, ['status', 'reason', 'ownership', 'diagnosticCode', 'exitCode', 'errno']) && ['collected', 'error', 'timed_out', 'invalid_result', 'unreached'].includes(value.status) && [...reasons, 'unavailable'].includes(value.reason) && [...ownerships, 'unavailable'].includes(value.ownership) && [...diagnosticCodes, 'unavailable'].includes(value.diagnosticCode) && codeValid(value.exitCode) && codeValid(value.errno) && (value.status !== 'collected' || (reasons.includes(value.reason) && ownerships.includes(value.ownership)));
 const caseValid = value => exactKeys(value, ['name', 'identity', 'probe', 'observer', 'inputsUnchanged']) && caseNames.includes(value.name) && exactKeys(value.identity, identityKeys) && Object.values(value.identity).every(item => typeof item === 'boolean') && exactKeys(value.probe, ['status', 'errno']) && ['allowed', 'denied', 'unavailable'].includes(value.probe.status) && codeValid(value.probe.errno) && observerValid(value.observer) && typeof value.inputsUnchanged === 'boolean';
+// Raw realpath comparisons are diagnostic facts, not ownership requirements.
+const ordinaryCase = item => item.observer?.status === 'collected' && item.observer.reason === 'deadline' && item.observer.ownership === 'identified' && item.probe?.status === 'allowed' && identityKeys.filter(key => !['directorySyncAsyncEqual', 'logSyncAsyncEqual'].includes(key)).every(key => item.identity?.[key] === true);
 
 // Reject extra fields as well as unknown codes; upload validation cannot bless
 // an exception, path, arbitrary observer field or malformed status document.
@@ -92,7 +94,7 @@ export function validateEvidence(value) {
   try {
     if (Buffer.byteLength(JSON.stringify(value)) > 12 * 1024 || value.schemaVersion !== 1 || !provenanceValid(value.provenance)) return false;
     if (value.kind === 'focused_tests') return exactKeys(value, ['schemaVersion', 'kind', 'provenance', 'status', 'exitCode', 'errno']) && ['passed', 'failed', 'timed_out', 'unreached'].includes(value.status) && codeValid(value.exitCode) && codeValid(value.errno) && (value.status !== 'passed' || value.exitCode === 0) && (value.status !== 'failed' || value.exitCode !== 0) && (value.status !== 'unreached' || value.exitCode === 'unavailable');
-    if (value.outcome === 'ordinary' && !value.cases?.every(item => item.observer?.status === 'collected' && item.observer.reason === 'deadline' && item.observer.ownership === 'identified')) return false;
+    if (value.outcome === 'ordinary' && !value.cases?.every(ordinaryCase)) return false;
     if (value.collection !== 'unreached' && value.processExitCode !== (value.collection === 'complete' && value.outcome === 'ordinary' ? 0 : 1)) return false;
     if (value.cleanup?.child === 'exited' && value.cleanup.childExitCode !== 0) return false;
     return exactKeys(value, ['schemaVersion', 'kind', 'provenance', 'collection', 'outcome', 'processExitCode', 'cases', 'cleanup', 'errno']) && value.kind === 'observer_diagnostic' && ['complete', 'failed', 'timed_out', 'unreached'].includes(value.collection) && ['ordinary', 'anomalous', 'unavailable'].includes(value.outcome) && [0, 1, 'unavailable'].includes(value.processExitCode) && codeValid(value.errno) && Array.isArray(value.cases) && value.cases.length === 2 && value.cases.every((item, i) => caseValid(item) && item.name === caseNames[i]) && exactKeys(value.cleanup, ['files', 'child', 'childExitCode']) && ['removed', 'failed', 'unreached'].includes(value.cleanup.files) && ['exited', 'failed', 'unreached'].includes(value.cleanup.child) && codeValid(value.cleanup.childExitCode) && (value.collection !== 'complete' || (value.cases.every(item => item.observer.status === 'collected' && item.inputsUnchanged) && value.cleanup.files === 'removed' && value.cleanup.child === 'exited'));
@@ -145,7 +147,7 @@ export async function collectObserverDiagnostics({ provenance, fixtureParent = t
     }
   }
   if (evidence.cleanup.files !== 'removed' || evidence.cleanup.child !== 'exited') evidence.collection = 'failed';
-  evidence.outcome = evidence.cases.every(item => item.observer.status === 'collected') ? (evidence.cases.every(item => item.observer.reason === 'deadline' && item.observer.ownership === 'identified') ? 'ordinary' : 'anomalous') : 'unavailable';
+  evidence.outcome = evidence.cases.every(item => item.observer.status === 'collected') ? (evidence.cases.every(ordinaryCase) ? 'ordinary' : 'anomalous') : 'unavailable';
   evidence.processExitCode = evidence.collection === 'complete' && evidence.outcome === 'ordinary' ? 0 : 1;
   return evidence;
 }
