@@ -236,3 +236,26 @@ test("EN/RU mode-retained rows keep exact Text editable without a direct-mode ca
     cleanup();
   }
 });
+
+test("EN/RU Table without Text definitions retains the authored Name and only Name/Reveal columns", async () => {
+  const { TextPropertiesTable } = await import("../src/renderer/components/TextPropertiesTable.js");
+  const { WorkspaceServiceClient } = await import("../src/renderer/workspace-service-client.js");
+  const { translate } = await import("../src/renderer/localization.js");
+  const { waitFor } = await import("@testing-library/react");
+  const name = "  Authored-日本語-" + "long-name-".repeat(18) + "  ";
+  const client = new class extends WorkspaceServiceClient {
+    override onBackendStatus() { return () => {}; }
+    override onWorkspaceChange() { return () => {}; }
+    override async listTextProperties() { return { ok: true as const, value: { workspaceId: "workspace", sourceId: "source", revision: 0, definitions: [], values: [] } }; }
+  }();
+  for (const language of ["en", "ru"] as const) {
+    render(<TextPropertiesTable client={client} workspaceId="workspace" sourceId="source" language={language} disabled={false}
+      projects={[{ projectId: "project", categoryId: null, name, relativePath: name }]} />);
+    await waitFor(() => assert.equal(document.querySelector(".text-properties")?.getAttribute("aria-busy"), "false"));
+    assert.deepEqual(screen.getAllByRole("columnheader").map((node) => node.textContent), [translate(language, "projectName"), translate(language, "revealProject")]);
+    assert.equal(screen.getByText(name, { selector: "td span", normalizer: (text) => text }).textContent, name);
+    assert.equal(screen.queryByRole("button", { name: new RegExp(`^${translate(language, "editTextValue")}:`) }), null);
+    assert.ok(screen.getByRole("button", { name: translate(language, "createTextProperty") }));
+    cleanup();
+  }
+});

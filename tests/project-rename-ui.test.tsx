@@ -530,3 +530,32 @@ test("rename recovery review blocks competing folder reassociation while retaini
   const text = screen.getByRole("button", { name: `${translate("en", "editTextValue")}: Original / Notes` }); assert.equal((text as HTMLButtonElement).disabled, false);
   await userEvent.click(screen.getByRole("button", { name: "Close recovery review" })); assert.equal((locate as HTMLButtonElement).disabled, false);
 });
+
+for (const language of ["en", "ru"] as const) for (const mode of ["direct", "grouped"] as const) {
+  test(`${language}/${mode}: long authored Table Name supports Space, Tab and keyboard cancellation with real focus restoration`, async () => {
+    const client = new Client(), t = (key: Parameters<typeof translate>[1]) => translate(language, key);
+    const original = "  Original-日本語-" + "long-name-".repeat(20) + "  ";
+    client.list = { ...client.list, mode, projects: [{ ...initial.projects[0], name: original,
+      relativePath: mode === "grouped" ? `Category/${original}` : original, categoryId: mode === "grouped" ? "category" : null, categoryName: mode === "grouped" ? "Category" : null }],
+      categories: mode === "grouped" ? [{ categoryId: "category", name: "Category", relativePath: "Category" }] : [],
+      categoryProperty: mode === "grouped" ? { propertyId: "category-property", sourceId: "source", name: "Category" } : null };
+    render(<DiscoveryWorkspace client={client} workspaceId="workspace" sourceId="source" language={language} disabled={false} />);
+    const trigger = await screen.findByRole("button", { name: new RegExp(`^${t("renameProject")}:`) });
+    assert.equal(trigger.getAttribute("aria-label"), `${t("renameProject")}: ${original}`);
+    trigger.focus(); await userEvent.keyboard(" ");
+    const input = screen.getByRole("textbox", { name: t("projectName") });
+    assert.equal(document.activeElement, input); assert.equal((input as HTMLInputElement).labels?.length, 1);
+    assert.equal((input as HTMLInputElement).value, original);
+    fireEvent.change(input, { target: { value: "  Requested-новое-" + "unbroken-name-".repeat(20) + "  " } });
+    await userEvent.tab(); assert.equal(document.activeElement, screen.getByRole("button", { name: t("renameSubmit") }));
+    await userEvent.tab(); assert.equal(document.activeElement, screen.getByRole("button", { name: t("cancelRenameWorkspace") }));
+    await userEvent.keyboard("{Enter}");
+    assert.equal(screen.queryByRole("textbox", { name: t("projectName") }), null);
+    assert.equal(document.activeElement, trigger); assert.equal(client.renames.length, 0);
+    assert.equal(screen.getByText(original, { selector: "td span", normalizer: (text) => text }).textContent, original);
+    assert.ok(screen.getByText("Exact text"));
+    await userEvent.keyboard("{Enter}");
+    assert.equal((screen.getByRole("textbox", { name: t("projectName") }) as HTMLInputElement).value, original);
+    await userEvent.keyboard("{Escape}"); assert.equal(document.activeElement, trigger); assert.equal(client.renames.length, 0);
+  });
+}

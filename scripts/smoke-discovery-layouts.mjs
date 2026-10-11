@@ -49,23 +49,52 @@ app.on('window-all-closed', () => app.quit());`);
   }
   page.setDefaultTimeout(15000);
   const meta = JSON.parse(await readFile(join(built, "meta.json"), "utf8"));
-  const stories = Object.keys(meta.stories).filter((name) => /--(discovery-|applied-|text-|grouped-|category-|recovery-|source-|mode-|creation-)/.test(name));
+  const stories = Object.keys(meta.stories).filter((name) => /--(discovery-|applied-|text-|grouped-|category-|recovery-|source-|mode-|creation-|rename-)/.test(name));
   assert.equal(stories.filter((name) => name.includes("--text-")).length, 18, "Expected all nine EN/RU Text states");
   assert.equal(stories.filter((name) => name.includes("--recovery-")).length, 20, "Expected all ten EN/RU recovery states");
   assert.equal(stories.filter((name) => name.includes("--source-")).length, 14, "Expected all seven EN/RU source observation states");
   assert.equal(stories.filter((name) => name.includes("--mode-")).length, 18, "Expected all nine EN/RU mode-change states");
   assert.equal(stories.filter((name) => name.includes("--creation-")).length, 36, "Expected all eighteen EN/RU creation and Reveal states");
-  assert.equal(stories.length, 156, "Expected discovery, Text, category and recovery presentation states");
-  const selectedStories = process.argv.includes("--mode-changes") ? stories.filter((name) => name.includes("--mode-")) : process.argv.includes("--creation") ? stories.filter((name) => name.includes("--creation-")) : stories;
+  assert.equal(stories.filter((name) => name.includes("--rename-")).length, 96, "Expected all 24 direct/grouped EN/RU rename states");
+  assert.equal(stories.length, 252, "Expected discovery, Text, category, creation, reassociation and rename presentation states");
+  const selectedStories = process.argv.includes("--rename") ? stories.filter((name) => name.includes("--rename-")) : process.argv.includes("--mode-changes") ? stories.filter((name) => name.includes("--mode-")) : process.argv.includes("--creation") ? stories.filter((name) => name.includes("--creation-")) : stories;
   for (const story of selectedStories) {
+    results.currentStory = story;
     await page.goto(`${url}/?story=${story}&mode=preview`);
+    const renameStory = story.includes("--rename-");
     const creationStory = story.includes("--creation-");
     const modeStory = story.includes("--mode-");
     const sourceStory = story.includes("--source-");
     const recoveryStory = story.includes("--recovery-");
     const categoryStory = story.includes("--category-");
     const textStory = story.includes("--text-");
-    await page.locator(creationStory ? "[data-creation-fixture][data-fixture-ready=true]" : modeStory ? "[data-mode-fixture]" : sourceStory ? "[data-source-fixture]" : recoveryStory ? "[data-recovery-fixture]" : categoryStory ? "[data-category-fixture][data-fixture-ready=true]" : textStory ? "[data-text-fixture][data-fixture-ready=true]" : ".discovery-panel, .table-view").waitFor();
+    await page.locator(renameStory ? "[data-rename-fixture][data-fixture-ready=true]" : creationStory ? "[data-creation-fixture][data-fixture-ready=true]" : modeStory ? "[data-mode-fixture]" : sourceStory ? "[data-source-fixture]" : recoveryStory ? "[data-recovery-fixture]" : categoryStory ? "[data-category-fixture][data-fixture-ready=true]" : textStory ? "[data-text-fixture][data-fixture-ready=true]" : ".discovery-panel, .table-view").waitFor();
+    const renameState = renameStory ? await page.locator("[data-rename-fixture]").getAttribute("data-rename-fixture") : null;
+    const renameLanguage = renameStory ? await page.locator("[data-rename-fixture]").getAttribute("lang") : null;
+    const renameText = (en, ru) => renameLanguage === "ru" ? ru : en;
+    if (renameStory) {
+      const list = page.locator(".rename-operations");
+      assert.equal(await list.getAttribute("aria-busy"), renameState === "list-loading" ? "true" : "false");
+      if (["invalid", "collision", "stale", "unavailable", "unknown"].includes(renameState)) await page.locator(".project-rename > [role=alert]").waitFor();
+      if (renameState === "invalid") assert.equal(await page.locator("#project-rename-name").getAttribute("aria-invalid"), "true");
+      if (renameState === "list-error") await list.getByRole("alert").waitFor();
+      if (["pending", "unknown"].includes(renameState)) assert.equal(await page.locator("#project-rename-name").isDisabled(), true);
+      if (["saved", "unchanged", "kept-original"].includes(renameState)) {
+        assert.equal(await page.locator("#project-rename-name, .rename-review").count(), 0);
+        await page.locator(".project-rename > [role=status]").waitFor();
+      }
+      if (await page.locator("#project-rename-name").count()) {
+        assert.equal(await page.getByLabel(renameText("Project name", "Название проекта"), { exact: true }).count(), 1, "Name must have its visible associated label");
+        assert.equal(await page.locator("#project-rename-name").evaluate((node) => node.labels.length), 1);
+      }
+      const actions = page.locator(".rename-review .workspace-form-actions").first().getByRole("button");
+      if (["recovery-original", "recovery-staged", "recovery-destination", "recovery-blocked"].includes(renameState)) {
+        await page.locator(".rename-placements").waitFor();
+        assert.equal(await actions.count(), renameState === "recovery-original" ? 2 : renameState === "recovery-blocked" ? 0 : 1);
+      }
+      if (["review-stale", "review-loading", "review-error", "recovery-pending", "recovery-unknown"].includes(renameState)) assert.equal(await page.locator(".rename-placements").count(), 0);
+      if (renameState === "unknown" || renameState === "recovery-unknown") assert.equal(await page.getByRole("button", { name: renameText("Check rename status", "Проверить статус переименования"), exact: true }).isEnabled(), true);
+    }
     const creationState = creationStory ? await page.locator("[data-creation-fixture]").getAttribute("data-creation-fixture") : null;
     if (creationState?.startsWith("success-list")) {
       const language = await page.locator("[data-creation-fixture]").getAttribute("lang");
@@ -109,7 +138,11 @@ app.on('window-all-closed', () => app.quit());`);
       assert.equal(await page.locator(".discovery-mode select").inputValue(), "grouped");
     }
     if (textState === "loading") assert.equal(await page.locator(".text-properties").getAttribute("aria-busy"), "true");
-    if (textState === "no-definitions") assert.equal(await page.locator(".property-authored").count(), 0);
+    if (textState === "no-definitions") {
+      assert.equal(await page.getByRole("columnheader").count(), 2, "Only Name and Reveal columns remain without Text definitions");
+      assert.equal(await page.locator(".text-property-cell").count(), 0);
+      assert.equal(await page.locator("tbody td:first-child .property-authored").count(), 1, "The authored Name must remain visible");
+    }
     if (textState === "no-projects") assert.equal(await page.locator("tbody tr").count(), 0);
     if (["editing", "saving", "validation", "failure", "sibling"].includes(textState)) {
       await page.locator("textarea").waitFor();
@@ -130,16 +163,16 @@ app.on('window-all-closed', () => app.quit());`);
           const bounds = node.getBoundingClientRect(), scroll = node.closest(".project-table-scroll").getBoundingClientRect();
           return bounds.left < scroll.left - 1 || bounds.right > scroll.right + 1;
         }).map((node) => node.textContent),
-        elements: Array.from(globalThis.document.querySelectorAll(".discovery-panel, .discovery-effects, .discovery-effects li, .discovery-entries li, .project-table td, .project-table th, .workspace-root, .workspace-form-actions, .text-value-button, .text-value-editor, .category-property-header, .recovery-review dd, .recovery-candidates, .recovery-path, .source-refresh, .source-refresh .bb-status, .project-creation, .project-creation .bb-status, .project-creation .workspace-form-actions, .creation-review, .project-reveal .bb-status"))
+        elements: Array.from(globalThis.document.querySelectorAll(".discovery-panel, .discovery-effects, .discovery-effects li, .discovery-entries li, .project-table td, .project-table th, .workspace-root, .workspace-form-actions, .text-value-button, .text-value-editor, .category-property-header, .recovery-review dd, .recovery-candidates, .recovery-path, .source-refresh, .source-refresh .bb-status, .project-creation, .project-creation .bb-status, .project-creation .workspace-form-actions, .creation-review, .project-reveal .bb-status, .project-rename, .project-rename form, .project-rename .bb-status, .rename-operations, .rename-review, .project-rename dl, .project-rename dt, .project-rename dd, .project-rename .workspace-form-actions"))
           .filter((node) => node.scrollWidth > node.clientWidth + 1).map((node) => node.className || node.tagName),
-        wrapped: Array.from(globalThis.document.querySelectorAll(".discovery-name, .property-authored, .text-value-button:not([hidden]), .project-table td, .saved-categories li, .workspace-root, .recovery-review dd, .recovery-path"))
+        wrapped: Array.from(globalThis.document.querySelectorAll(".discovery-name, .property-authored, .text-value-button:not([hidden]), .project-table td, .saved-categories li, .workspace-root, .recovery-review dd, .recovery-path, .project-rename dd, .project-rename p"))
           .filter((node) => node.textContent.length > 150).every((node) => {
             const range = globalThis.document.createRange(); range.selectNodeContents(node);
             return new Set(Array.from(range.getClientRects(), (rect) => Math.round(rect.top))).size > 1;
           }),
       }));
-      if (recoveryStory || modeStory || creationStory) {
-        for (const button of await page.locator(creationStory ? ".project-creation button, .project-reveal button" : recoveryStory ? ".recovery-panel button" : ".workspace-form-actions button, [data-mode-fixture] > button").all()) {
+      if (renameStory || recoveryStory || modeStory || creationStory) {
+        for (const button of await page.locator(renameStory ? ".project-rename button, td:first-child .property-rename" : creationStory ? ".project-creation button, .project-reveal button" : recoveryStory ? ".recovery-panel button" : ".workspace-form-actions button, [data-mode-fixture] > button").all()) {
           await button.evaluate(async (node) => {
             node.scrollIntoView({ block: "center", inline: "nearest", behavior: "instant" });
             await new Promise((done) => globalThis.requestAnimationFrame(() => globalThis.requestAnimationFrame(done)));
@@ -153,14 +186,76 @@ app.on('window-all-closed', () => app.quit());`);
       assert.deepEqual(layout.clippedControls, [], `${story} ${size.width} editing controls clipped after scrolling`);
       assert.equal(layout.overflow, false, `${story} ${size.width} document overflow`);
       assert.deepEqual(layout.elements, [], `${story} ${size.width} element overflow`);
-      if (size.width === 420 || recoveryStory || creationStory) assert.equal(layout.wrapped, true, `${story} long authored text did not wrap`);
+      if (size.width === 420 || renameStory || recoveryStory || creationStory) assert.equal(layout.wrapped, true, `${story} long authored text did not wrap`);
+      if (renameStory) {
+        const surface = page.locator(".rename-review, .project-rename form").first();
+        await (await surface.count() ? surface : page.locator(".project-rename")).evaluate((node) => node.scrollIntoView({ block: "start", behavior: "instant" }));
+      }
       const screenshot = `${story}-${size.width}x${size.height}.png`;
-      // Chromium uses exact viewport captures; native Electron retains the
-      // existing full-page evidence. DOM checks above still cover long content.
-      await page.screenshot({ path: join(evidence, screenshot), fullPage: !browserOnly });
-      results.screenshots.push({ story, ...size, screenshot, layout });
+      // Keep complete rename surfaces in the captures, including long recovery
+      // evidence. Other Chromium states retain their existing viewport captures.
+      await page.screenshot({ path: join(evidence, screenshot), fullPage: !browserOnly || renameStory });
+      results.screenshots.push({ story, ...size, screenshot, capture: !browserOnly || renameStory ? "full-page" : "viewport", layout });
     }
     // Exercise the actual fixture controls after recording the requested state.
+    if (renameStory) {
+      const root = page.locator("[data-rename-fixture]");
+      const trigger = page.locator("td:first-child .property-rename");
+      const name = page.locator("#project-rename-name");
+      const panel = page.locator(".project-rename");
+      const calls = async () => ({ rename: Number(await root.getAttribute("data-rename-calls")), recovery: Number(await root.getAttribute("data-recovery-calls")) });
+      const initialCalls = await calls();
+      if (["editing", "invalid", "collision", "stale", "unavailable"].includes(renameState)) {
+        assert.equal(await name.evaluate((node) => node === globalThis.document.activeElement), true, "Editor/error returns focus to the associated input");
+        const authored = await name.inputValue(); assert.ok(authored.startsWith("  Requested-")); assert.ok(authored.endsWith("  "));
+        await name.press("Escape"); await name.waitFor({ state: "detached" });
+        assert.equal(await trigger.evaluate((node) => node === globalThis.document.activeElement), true);
+        await trigger.press("Enter"); await name.waitFor();
+        assert.equal(await name.evaluate((node) => node === globalThis.document.activeElement), true);
+        await name.press("Tab");
+        assert.equal(await panel.locator("button[type=submit]").evaluate((node) => node === globalThis.document.activeElement), true);
+        await page.keyboard.press("Tab"); await page.keyboard.press("Enter");
+        await name.waitFor({ state: "detached" });
+        assert.equal(await trigger.evaluate((node) => node === globalThis.document.activeElement), true);
+      } else if (["pending", "unknown"].includes(renameState)) {
+        await panel.locator("form").press("Escape"); await name.waitFor({ state: "detached" });
+        assert.equal(await trigger.isDisabled(), true);
+        assert.equal(await page.getByRole("heading", { name: renameText("Table", "Таблица"), exact: true }).evaluate((node) => node === globalThis.document.activeElement), true);
+        if (renameState === "unknown") {
+          await panel.getByRole("button", { name: renameText("Check rename status", "Проверить статус переименования"), exact: true }).press("Enter");
+          await panel.getByText(renameText("Project folder renamed.", "Папка проекта переименована."), { exact: true }).waitFor();
+          assert.equal(await root.getAttribute("data-status-calls"), "1");
+        }
+      } else if (renameState === "list-error") {
+        await page.locator(".rename-operations > button").press("Enter");
+        await page.locator(".rename-operations [role=alert]").waitFor();
+        assert.equal(await page.locator(".rename-operations").getAttribute("aria-busy"), "false");
+      } else if (["interrupted", "uncertain"].includes(renameState)) {
+        await page.locator(".rename-operations div > button").press("Enter");
+        await page.locator(".rename-placements").waitFor();
+        assert.equal(await page.locator("#rename-review-title").evaluate((node) => node === globalThis.document.activeElement), true);
+        await page.locator("#rename-review-title").press("Escape");
+        assert.equal(await page.locator(".rename-operations div > button").evaluate((node) => node === globalThis.document.activeElement), true);
+      } else if (renameState.startsWith("recovery-") || renameState.startsWith("review-")) {
+        const review = page.locator(".rename-review");
+        if (renameState === "review-stale") {
+          assert.equal(await review.getByRole("button").first().evaluate((node) => node === globalThis.document.activeElement), true, "Stale review restores focus to explicit review control");
+          await review.getByRole("button").first().press("Enter"); await page.locator(".rename-placements").waitFor();
+        } else if (!["recovery-pending", "recovery-unknown"].includes(renameState)) {
+          assert.equal(await page.locator("#rename-review-title").evaluate((node) => node === globalThis.document.activeElement), true);
+        }
+        await review.press("Escape"); await review.waitFor({ state: "detached" });
+        if (["recovery-pending", "recovery-unknown"].includes(renameState)) {
+          assert.equal(await page.getByRole("heading", { name: renameText("Table", "Таблица"), exact: true }).evaluate((node) => node === globalThis.document.activeElement), true);
+          if (renameState === "recovery-unknown") {
+            await panel.getByRole("button", { name: renameText("Check rename status", "Проверить статус переименования"), exact: true }).press("Enter");
+            await panel.getByText(renameText("Project folder renamed.", "Папка проекта переименована."), { exact: true }).waitFor();
+          }
+        } else assert.equal(await page.locator(".rename-operations div > button").evaluate((node) => node === globalThis.document.activeElement), true);
+      }
+      assert.deepEqual(await calls(), initialCalls, "Keyboard dismissal, list, review and status must not replay rename/recovery");
+      results.interactions ??= []; results.interactions.push({ story, state: renameState, passed: true, mutationCalls: initialCalls, native: "typed fixture only" });
+    }
     if (creationStory) {
       const trigger = page.locator(".project-creation > button").first();
       if (["direct", "grouped", "validation", "collision", "failure"].includes(creationState)) {
@@ -337,6 +432,8 @@ app.on('window-all-closed', () => app.quit());`);
     if (categoryStory) { results.interactions ??= []; results.interactions.push({ story, state: categoryState, passed: true }); }
     if (textStory) { results.interactions ??= []; results.interactions.push({ story, state: textState, passed: true }); }
   }
+  assert.equal(results.screenshots.length, selectedStories.length * 3, "Every selected state requires all three layouts");
+  results.completedStories = selectedStories.length; delete results.currentStory;
   results.featurePassed = true; await save();
   console.info(`Verified ${results.screenshots.length} EN/RU Ladle screenshots, including wrapping and no horizontal overflow`);
 } catch (error) { results.error = error.message; failure = error; await save(); }

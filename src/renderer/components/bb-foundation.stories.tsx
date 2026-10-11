@@ -1,6 +1,7 @@
 import { ProjectCreationPanel } from "./ProjectCreationPanel.js";
 import { ProjectRevealButton } from "./ProjectRevealButton.js";
 import type { ProjectCreationOperation, ProjectCreationResult } from "../../contracts/project-creation.js";
+import type { ProjectRenameOperation, ProjectRenameResult, ProjectRenameRecoveryPreview } from "../../contracts/project-rename.js";
 import type { ProjectRevealResult } from "../../contracts/project-reveal.js";
 import { useEffect, useRef, useState } from "react";
 import type { Language, ServiceResult } from "../../contracts/settings.js";
@@ -83,6 +84,7 @@ function WorkspacePreview({ language, state = "management" }: {
     const failure: ServiceResult<never> = { ok: false, error: { code: "storage", message: "Preview storage failure" } };
     const workspace = async (input: WorkspaceRequest): Promise<ServiceResult<WorkspaceResponse>> => {
       if (input.type === "workspace.load") return { ok: true, value: snapshot() };
+      if (input.type === "workspace.listProjectRenames") return { ok: true, value: { workspaceId: input.workspaceId, sourceId: records[0].sourceId, operations: [] } };
       if (input.type === "workspace.listProjectCreations") return { ok: true, value: { workspaceId: input.workspaceId, sourceId: records[0].sourceId, operations: [] } };
       if (input.type === "workspace.listProjects") return { ok: true, value: {
         workspaceId: input.workspaceId, sourceId: records[0].sourceId, revision: state.startsWith("applied") ? 1 : 0,
@@ -402,6 +404,7 @@ function RecoveryPreview({ language, state }: { language: Language; state: Recov
   const [client] = useState(() => new class extends WorkspaceServiceClient {
     override onBackendStatus() { return () => {}; }
     override async listProjectCreations(workspaceId: string) { return { ok: true as const, value: { workspaceId, sourceId: textStoryIds.sourceId, operations: [] } }; }
+    override async listProjectRenames(workspaceId: string) { return { ok: true as const, value: { workspaceId, sourceId: textStoryIds.sourceId, operations: [] } }; }
     override onWorkspaceChange() { return () => {}; }
     override async listTextProperties() { return { ok: true as const, value: { ...textStoryIds, revision: 7,
       definitions: [{ propertyId: textStoryIds.propertyId, sourceId: textStoryIds.sourceId, name: longCategoryLabel, propertyType: "text" as const }],
@@ -471,6 +474,7 @@ function SourceObservationPreview({ language, state }: { language: Language; sta
     const client = new class extends WorkspaceServiceClient {
     override onBackendStatus() { return () => {}; }
     override async listProjectCreations(workspaceId: string) { return { ok: true as const, value: { workspaceId, sourceId: textStoryIds.sourceId, operations: [] } }; }
+    override async listProjectRenames(workspaceId: string) { return { ok: true as const, value: { workspaceId, sourceId: textStoryIds.sourceId, operations: [] } }; }
       override onWorkspaceChange(listener: (event: WorkspaceChangeEvent) => void) { listeners.add(listener); return () => { listeners.delete(listener); }; }
       override async listProjects() { return { ok: true as const, value: list }; }
       override async listTextProperties() { return { ok: true as const, value: { workspaceId: textStoryIds.workspaceId, sourceId: textStoryIds.sourceId, revision: 7,
@@ -529,6 +533,7 @@ function ModeChangePreview({ language, state }: { language: Language; state: Mod
   const [client] = useState(() => new class extends WorkspaceServiceClient {
     override onBackendStatus() { return () => {}; }
     override async listProjectCreations(workspaceId: string) { return { ok: true as const, value: { workspaceId, sourceId: textStoryIds.sourceId, operations: [] } }; }
+    override async listProjectRenames(workspaceId: string) { return { ok: true as const, value: { workspaceId, sourceId: textStoryIds.sourceId, operations: [] } }; }
     private value: string | null = longTextValue;
     private revision = 1;
     override onWorkspaceChange() { return () => {}; }
@@ -727,3 +732,256 @@ export const CreationRevealErrorEnglish: Story = () => <CreationPreview language
 export const CreationRevealErrorRussian: Story = () => <CreationPreview language="ru" state="reveal-error" />;
 export const CreationRevealRetainedEnglish: Story = () => <CreationPreview language="en" state="reveal-retained" />;
 export const CreationRevealRetainedRussian: Story = () => <CreationPreview language="ru" state="reveal-retained" />;
+
+// Rename stories drive the production workspace/Table through a disposable typed
+// client. Preparation uses real controls; no private component state is injected.
+type RenameStoryState = "editing" | "pending" | "saved" | "unchanged" | "invalid" | "collision" | "stale" | "unavailable" | "unknown" | "list-loading" | "list-empty" | "list-error" | "interrupted" | "uncertain" | "recovery-original" | "recovery-staged" | "recovery-destination" | "recovery-blocked" | "review-stale" | "review-loading" | "review-error" | "recovery-pending" | "recovery-unknown" | "kept-original";
+const renameOriginal = "  Original-日本語-" + "long-authored-name-".repeat(10) + "  ";
+const renameRequested = "  Requested-новое-" + "unbroken-name-".repeat(14) + "  ";
+function RenamePreview({ language, mode, state }: { language: Language; mode: DiscoveryMode; state: RenameStoryState }) {
+  const root = useRef<HTMLElement>(null);
+  const [prepared, setPrepared] = useState(false);
+  const [calls, setCalls] = useState({ rename: 0, recovery: 0, status: 0, review: 0 });
+  const [fixture] = useState(() => {
+    const reviewState = state.startsWith("recovery-") || state.startsWith("review-") || state === "kept-original";
+    const retained = reviewState || ["interrupted", "uncertain"].includes(state);
+    const categoryId = mode === "grouped" ? "rename-category" : null;
+    const path = (name: string) => mode === "grouped" ? `${longCategory}/${name}` : name;
+    const row = { projectId: textStoryIds.projectId, name: renameOriginal, relativePath: path(renameOriginal), categoryId,
+      categoryName: categoryId ? longCategory : null, associationState: retained ? "unresolved" as const : "active" as const,
+      resolution: retained ? "unresolved" as const : "active" as const };
+    let projects: ProjectList = { ...textStoryIds, revision: 1, configured: true, mode, state: "ready",
+      projects: retained ? [] : [row], retainedProjects: retained ? [row] : [], retainedCount: retained ? 1 : 0,
+      categories: categoryId ? [{ categoryId, name: longCategory, relativePath: longCategory }] : [],
+      categoryProperty: categoryId ? { propertyId: "category-property", sourceId: textStoryIds.sourceId, name: longPropertyName } : null, categoryPropertyRevision: 0 };
+    let operation: ProjectRenameOperation = { operationId: "00000000-0000-4000-8000-000000000060", sourceId: textStoryIds.sourceId,
+      initiatingWorkspaceId: textStoryIds.workspaceId, projectId: row.projectId, originalName: row.name, name: renameRequested,
+      originalRelativePath: row.relativePath, requestedRelativePath: path(renameRequested), mode, categoryId, expectedRevision: 1,
+      stage: state === "interrupted" ? "intent" : "uncertain", lastVerifiedPlacement: state === "recovery-staged" ? "staged" : state === "recovery-destination" ? "destination" : "original",
+      problem: state === "interrupted" ? null : "ownership_uncertain", resultKind: null, completedRevision: null };
+    let operations = retained ? [operation] : [];
+    const events = new Set<(event: WorkspaceChangeEvent) => void>();
+    const count = (key: keyof typeof calls) => setCalls((value) => ({ ...value, [key]: value[key] + 1 }));
+    const finish = (unchanged = false): ProjectRenameResult => {
+      operation = { ...operation, stage: "completed", resultKind: unchanged ? "unchanged" : "completed", problem: null,
+        lastVerifiedPlacement: unchanged ? "original" : "destination", completedRevision: unchanged ? 1 : 2 };
+      operations = [];
+      projects = { ...projects, revision: operation.completedRevision!, projects: [{ ...row, name: operation.name,
+        relativePath: operation.requestedRelativePath, associationState: "active", resolution: "active" }], retainedProjects: [], retainedCount: 0 };
+      return { outcome: unchanged ? "unchanged" : "completed", operation, project: { operationId: operation.operationId,
+        sourceId: operation.sourceId, projectId: operation.projectId, name: operation.name, relativePath: operation.requestedRelativePath,
+        categoryId, revision: projects.revision } };
+    };
+    const client = new class extends WorkspaceServiceClient {
+      override onBackendStatus() { return () => {}; }
+      override onWorkspaceChange(listener: (event: WorkspaceChangeEvent) => void) { events.add(listener); return () => { events.delete(listener); }; }
+      override async listProjects() { return { ok: true as const, value: projects }; }
+      override async listProjectCreations() { return { ok: true as const, value: { ...textStoryIds, operations: [] } }; }
+      override async listTextProperties() { return { ok: true as const, value: { ...textStoryIds, revision: 1,
+        definitions: [{ propertyId: textStoryIds.propertyId, sourceId: textStoryIds.sourceId, name: longPropertyName, propertyType: "text" as const }],
+        values: [{ projectId: row.projectId, propertyId: textStoryIds.propertyId, value: longTextValue }] } }; }
+      override async listProjectRenames() {
+        if (state === "list-loading") return new Promise<Awaited<ReturnType<WorkspaceServiceClient["listProjectRenames"]>>>(() => {});
+        if (state === "list-error") return { ok: false as const, error: { code: "service_unavailable" as const, message: "Disposable list error" } };
+        return { ok: true as const, value: { ...textStoryIds, operations } };
+      }
+      override async renameProject(input: Parameters<WorkspaceServiceClient["renameProject"]>[0]) {
+        count("rename"); operation = { ...operation, ...input, initiatingWorkspaceId: input.workspaceId, requestedRelativePath: path(input.name) };
+        if (state === "pending") return new Promise<ServiceResult<ProjectRenameResult>>(() => {});
+        if (state === "unknown") throw new Error("Disposable lost response");
+        if (["saved", "unchanged"].includes(state)) return { ok: true as const, value: finish(state === "unchanged") };
+        return { ok: true as const, value: { outcome: "rejected" as const, operation: null,
+          problem: state === "invalid" ? "invalid_name" as const : state === "collision" ? "occupied" as const : state === "stale" ? "stale_configuration" as const : "source_unavailable" as const } };
+      }
+      override async getProjectRename() { count("status"); return { ok: true as const, value: finish() }; }
+      override async previewProjectRenameRecovery() {
+        count("review");
+        if (state === "review-loading") return new Promise<ServiceResult<ProjectRenameRecoveryPreview>>(() => {});
+        if (state === "review-error") return { ok: false as const, error: { code: "service_unavailable" as const, message: "Disposable review error" } };
+        const blocked = state === "recovery-blocked", staged = state === "recovery-staged", destination = state === "recovery-destination";
+        const preview: ProjectRenameRecoveryPreview = { ...textStoryIds, operation, revision: projects.revision,
+          originalState: blocked ? "conflicting" : staged || destination ? "missing" : "matching",
+          stagedState: staged ? "matching" : null, destinationState: blocked ? "replaced" : destination ? "matching" : "missing",
+          problem: blocked ? "ownership_uncertain" : null, previewToken: blocked ? null : "disposable-fresh-token",
+          actions: blocked ? [] : staged ? ["finish_staged"] : destination ? ["complete_destination"] : ["retry_original", "keep_original"] };
+        return { ok: true as const, value: preview };
+      }
+      override async recoverProjectRename(_workspaceId: string, _operationId: string, _token: string, action: Parameters<WorkspaceServiceClient["recoverProjectRename"]>[3]) {
+        count("recovery");
+        if (state === "recovery-pending") return new Promise<ServiceResult<ProjectRenameResult>>(() => {});
+        if (state === "recovery-unknown") throw new Error("Disposable lost recovery response");
+        if (action === "keep_original") {
+          operation = { ...operation, stage: "failed", problem: "kept_original", resultKind: "rejected", lastVerifiedPlacement: "original" };
+          operations = []; projects = { ...projects, projects: [{ ...row, associationState: "active", resolution: "active" }], retainedProjects: [], retainedCount: 0 };
+          return { ok: true as const, value: { outcome: "rejected" as const, operation, problem: "kept_original" as const } };
+        }
+        return { ok: true as const, value: finish() };
+      }
+    }();
+    return { client, reviewState, observe: () => events.forEach((listener) => listener({ type: "workspace.sourceObserved",
+      sourceId: textStoryIds.sourceId, workspaceIds: [textStoryIds.workspaceId], observationRevision: 2, state: "ready", automaticUpdates: "active" })) };
+  });
+  useEffect(() => {
+    let opened = false, authored = false, submitted = false, observed = false;
+    let submitTimer: ReturnType<typeof setTimeout> | undefined;
+    const prepare = () => {
+      const target = root.current; if (!target || target.querySelector(".text-properties")?.getAttribute("aria-busy") !== "false") return;
+      const done = () => { setPrepared(true); observer.disconnect(); };
+      if (state.startsWith("list-") || ["interrupted", "uncertain"].includes(state)) {
+        const list = target.querySelector(".rename-operations");
+        if (list && (state === "list-loading" || list.getAttribute("aria-busy") === "false")) done();
+        return;
+      }
+      if (fixture.reviewState) {
+        if (!opened) {
+          const button = target.querySelector<HTMLButtonElement>(".rename-operations div > button");
+          if (button && !button.disabled) { opened = true; button.click(); } return;
+        }
+        if (state === "kept-original" && submitted && [...target.querySelectorAll(".project-rename .bb-status")].some((node) => node.textContent === translate(language, "renameKeptOriginal"))) { done(); return; }
+        const review = target.querySelector(".rename-review"); if (!review) return;
+        if (state === "review-loading" && review.getAttribute("aria-busy") === "true" || state === "review-error" && review.querySelector("[role=alert]")) { done(); return; }
+        if (state === "review-stale") {
+          if (!observed && review.querySelector(".rename-placements")) { observed = true; fixture.observe(); }
+          if (observed && !review.querySelector(".rename-placements") && review.querySelector("[role=alert]")) done();
+          return;
+        }
+        if (["recovery-pending", "recovery-unknown", "kept-original"].includes(state)) {
+          if (!submitted && review.querySelector(".rename-placements")) {
+            submitted = true;
+            const action = state === "kept-original" ? "renameKeepOriginal" : "renameRetryOriginal";
+            [...review.querySelectorAll<HTMLButtonElement>("button")].find((button) => button.textContent === translate(language, action))?.click();
+          }
+          const key = state === "kept-original" ? "renameKeptOriginal" : state === "recovery-pending" ? "renamePending" : "renameUncertain";
+          if ([...target.querySelectorAll(".project-rename .bb-status")].some((node) => node.textContent === translate(language, key))) done();
+          return;
+        }
+        if (review.querySelector(".rename-placements")) done(); return;
+      }
+      if (!opened) { const button = target.querySelector<HTMLButtonElement>("td:first-child .property-rename"); if (button && !button.disabled) { opened = true; button.click(); } return; }
+      const input = target.querySelector<HTMLInputElement>("#project-rename-name");
+      if (input && !authored) {
+        authored = true;
+        if (state !== "unchanged") {
+          Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set?.call(input, renameRequested);
+          input.dispatchEvent(new Event("input", { bubbles: true }));
+        }
+        if (state === "editing") { done(); return; }
+        submitted = true;
+        submitTimer = setTimeout(() => { if (target.isConnected) input.closest("form")?.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true })); }, 0);
+      }
+      const keys = { pending: "renamePending", saved: "renameSaved", unchanged: "renameUnchanged", invalid: "renameInvalid", collision: "renameCollision", stale: "renameStale", unavailable: "renameUnavailable", unknown: "renameUncertain" } as const;
+      const key = keys[state as keyof typeof keys];
+      if (submitted && key && [...target.querySelectorAll(".project-rename .bb-status")].some((node) => node.textContent === translate(language, key))) done();
+    };
+    // Wait for committed renders and their passive effects before interacting.
+    // Initial discovery/list invalidation must settle before a recovery review.
+    let frame: number | null = null;
+    const schedule = () => {
+      if (frame !== null) return;
+      frame = requestAnimationFrame(() => { frame = requestAnimationFrame(() => { frame = null; prepare(); }); });
+    };
+    const observer = new MutationObserver(schedule);
+    observer.observe(root.current!, { childList: true, subtree: true, attributes: true }); schedule();
+    return () => { observer.disconnect(); if (frame !== null) cancelAnimationFrame(frame); clearTimeout(submitTimer); };
+  }, [fixture, language, state]);
+  return <main ref={root} className="app-shell" lang={language} data-rename-fixture={state} data-rename-mode={mode} data-fixture-ready={prepared}
+    data-rename-calls={calls.rename} data-recovery-calls={calls.recovery} data-status-calls={calls.status} data-review-calls={calls.review}>
+    <DiscoveryWorkspace client={fixture.client} workspaceId={textStoryIds.workspaceId} sourceId={textStoryIds.sourceId} language={language} disabled={false} />
+  </main>;
+}
+export const RenameEditingDirectEnglish: Story = () => <RenamePreview language="en" mode="direct" state="editing" />;
+export const RenameEditingDirectRussian: Story = () => <RenamePreview language="ru" mode="direct" state="editing" />;
+export const RenameEditingGroupedEnglish: Story = () => <RenamePreview language="en" mode="grouped" state="editing" />;
+export const RenameEditingGroupedRussian: Story = () => <RenamePreview language="ru" mode="grouped" state="editing" />;
+export const RenamePendingDirectEnglish: Story = () => <RenamePreview language="en" mode="direct" state="pending" />;
+export const RenamePendingDirectRussian: Story = () => <RenamePreview language="ru" mode="direct" state="pending" />;
+export const RenamePendingGroupedEnglish: Story = () => <RenamePreview language="en" mode="grouped" state="pending" />;
+export const RenamePendingGroupedRussian: Story = () => <RenamePreview language="ru" mode="grouped" state="pending" />;
+export const RenameSavedDirectEnglish: Story = () => <RenamePreview language="en" mode="direct" state="saved" />;
+export const RenameSavedDirectRussian: Story = () => <RenamePreview language="ru" mode="direct" state="saved" />;
+export const RenameSavedGroupedEnglish: Story = () => <RenamePreview language="en" mode="grouped" state="saved" />;
+export const RenameSavedGroupedRussian: Story = () => <RenamePreview language="ru" mode="grouped" state="saved" />;
+export const RenameUnchangedDirectEnglish: Story = () => <RenamePreview language="en" mode="direct" state="unchanged" />;
+export const RenameUnchangedDirectRussian: Story = () => <RenamePreview language="ru" mode="direct" state="unchanged" />;
+export const RenameUnchangedGroupedEnglish: Story = () => <RenamePreview language="en" mode="grouped" state="unchanged" />;
+export const RenameUnchangedGroupedRussian: Story = () => <RenamePreview language="ru" mode="grouped" state="unchanged" />;
+export const RenameInvalidDirectEnglish: Story = () => <RenamePreview language="en" mode="direct" state="invalid" />;
+export const RenameInvalidDirectRussian: Story = () => <RenamePreview language="ru" mode="direct" state="invalid" />;
+export const RenameInvalidGroupedEnglish: Story = () => <RenamePreview language="en" mode="grouped" state="invalid" />;
+export const RenameInvalidGroupedRussian: Story = () => <RenamePreview language="ru" mode="grouped" state="invalid" />;
+export const RenameCollisionDirectEnglish: Story = () => <RenamePreview language="en" mode="direct" state="collision" />;
+export const RenameCollisionDirectRussian: Story = () => <RenamePreview language="ru" mode="direct" state="collision" />;
+export const RenameCollisionGroupedEnglish: Story = () => <RenamePreview language="en" mode="grouped" state="collision" />;
+export const RenameCollisionGroupedRussian: Story = () => <RenamePreview language="ru" mode="grouped" state="collision" />;
+export const RenameStaleDirectEnglish: Story = () => <RenamePreview language="en" mode="direct" state="stale" />;
+export const RenameStaleDirectRussian: Story = () => <RenamePreview language="ru" mode="direct" state="stale" />;
+export const RenameStaleGroupedEnglish: Story = () => <RenamePreview language="en" mode="grouped" state="stale" />;
+export const RenameStaleGroupedRussian: Story = () => <RenamePreview language="ru" mode="grouped" state="stale" />;
+export const RenameUnavailableDirectEnglish: Story = () => <RenamePreview language="en" mode="direct" state="unavailable" />;
+export const RenameUnavailableDirectRussian: Story = () => <RenamePreview language="ru" mode="direct" state="unavailable" />;
+export const RenameUnavailableGroupedEnglish: Story = () => <RenamePreview language="en" mode="grouped" state="unavailable" />;
+export const RenameUnavailableGroupedRussian: Story = () => <RenamePreview language="ru" mode="grouped" state="unavailable" />;
+export const RenameUnknownDirectEnglish: Story = () => <RenamePreview language="en" mode="direct" state="unknown" />;
+export const RenameUnknownDirectRussian: Story = () => <RenamePreview language="ru" mode="direct" state="unknown" />;
+export const RenameUnknownGroupedEnglish: Story = () => <RenamePreview language="en" mode="grouped" state="unknown" />;
+export const RenameUnknownGroupedRussian: Story = () => <RenamePreview language="ru" mode="grouped" state="unknown" />;
+export const RenameListLoadingDirectEnglish: Story = () => <RenamePreview language="en" mode="direct" state="list-loading" />;
+export const RenameListLoadingDirectRussian: Story = () => <RenamePreview language="ru" mode="direct" state="list-loading" />;
+export const RenameListLoadingGroupedEnglish: Story = () => <RenamePreview language="en" mode="grouped" state="list-loading" />;
+export const RenameListLoadingGroupedRussian: Story = () => <RenamePreview language="ru" mode="grouped" state="list-loading" />;
+export const RenameListEmptyDirectEnglish: Story = () => <RenamePreview language="en" mode="direct" state="list-empty" />;
+export const RenameListEmptyDirectRussian: Story = () => <RenamePreview language="ru" mode="direct" state="list-empty" />;
+export const RenameListEmptyGroupedEnglish: Story = () => <RenamePreview language="en" mode="grouped" state="list-empty" />;
+export const RenameListEmptyGroupedRussian: Story = () => <RenamePreview language="ru" mode="grouped" state="list-empty" />;
+export const RenameListErrorDirectEnglish: Story = () => <RenamePreview language="en" mode="direct" state="list-error" />;
+export const RenameListErrorDirectRussian: Story = () => <RenamePreview language="ru" mode="direct" state="list-error" />;
+export const RenameListErrorGroupedEnglish: Story = () => <RenamePreview language="en" mode="grouped" state="list-error" />;
+export const RenameListErrorGroupedRussian: Story = () => <RenamePreview language="ru" mode="grouped" state="list-error" />;
+export const RenameInterruptedDirectEnglish: Story = () => <RenamePreview language="en" mode="direct" state="interrupted" />;
+export const RenameInterruptedDirectRussian: Story = () => <RenamePreview language="ru" mode="direct" state="interrupted" />;
+export const RenameInterruptedGroupedEnglish: Story = () => <RenamePreview language="en" mode="grouped" state="interrupted" />;
+export const RenameInterruptedGroupedRussian: Story = () => <RenamePreview language="ru" mode="grouped" state="interrupted" />;
+export const RenameUncertainDirectEnglish: Story = () => <RenamePreview language="en" mode="direct" state="uncertain" />;
+export const RenameUncertainDirectRussian: Story = () => <RenamePreview language="ru" mode="direct" state="uncertain" />;
+export const RenameUncertainGroupedEnglish: Story = () => <RenamePreview language="en" mode="grouped" state="uncertain" />;
+export const RenameUncertainGroupedRussian: Story = () => <RenamePreview language="ru" mode="grouped" state="uncertain" />;
+export const RenameRecoveryOriginalDirectEnglish: Story = () => <RenamePreview language="en" mode="direct" state="recovery-original" />;
+export const RenameRecoveryOriginalDirectRussian: Story = () => <RenamePreview language="ru" mode="direct" state="recovery-original" />;
+export const RenameRecoveryOriginalGroupedEnglish: Story = () => <RenamePreview language="en" mode="grouped" state="recovery-original" />;
+export const RenameRecoveryOriginalGroupedRussian: Story = () => <RenamePreview language="ru" mode="grouped" state="recovery-original" />;
+export const RenameRecoveryStagedDirectEnglish: Story = () => <RenamePreview language="en" mode="direct" state="recovery-staged" />;
+export const RenameRecoveryStagedDirectRussian: Story = () => <RenamePreview language="ru" mode="direct" state="recovery-staged" />;
+export const RenameRecoveryStagedGroupedEnglish: Story = () => <RenamePreview language="en" mode="grouped" state="recovery-staged" />;
+export const RenameRecoveryStagedGroupedRussian: Story = () => <RenamePreview language="ru" mode="grouped" state="recovery-staged" />;
+export const RenameRecoveryDestinationDirectEnglish: Story = () => <RenamePreview language="en" mode="direct" state="recovery-destination" />;
+export const RenameRecoveryDestinationDirectRussian: Story = () => <RenamePreview language="ru" mode="direct" state="recovery-destination" />;
+export const RenameRecoveryDestinationGroupedEnglish: Story = () => <RenamePreview language="en" mode="grouped" state="recovery-destination" />;
+export const RenameRecoveryDestinationGroupedRussian: Story = () => <RenamePreview language="ru" mode="grouped" state="recovery-destination" />;
+export const RenameRecoveryBlockedDirectEnglish: Story = () => <RenamePreview language="en" mode="direct" state="recovery-blocked" />;
+export const RenameRecoveryBlockedDirectRussian: Story = () => <RenamePreview language="ru" mode="direct" state="recovery-blocked" />;
+export const RenameRecoveryBlockedGroupedEnglish: Story = () => <RenamePreview language="en" mode="grouped" state="recovery-blocked" />;
+export const RenameRecoveryBlockedGroupedRussian: Story = () => <RenamePreview language="ru" mode="grouped" state="recovery-blocked" />;
+export const RenameReviewStaleDirectEnglish: Story = () => <RenamePreview language="en" mode="direct" state="review-stale" />;
+export const RenameReviewStaleDirectRussian: Story = () => <RenamePreview language="ru" mode="direct" state="review-stale" />;
+export const RenameReviewStaleGroupedEnglish: Story = () => <RenamePreview language="en" mode="grouped" state="review-stale" />;
+export const RenameReviewStaleGroupedRussian: Story = () => <RenamePreview language="ru" mode="grouped" state="review-stale" />;
+export const RenameReviewLoadingDirectEnglish: Story = () => <RenamePreview language="en" mode="direct" state="review-loading" />;
+export const RenameReviewLoadingDirectRussian: Story = () => <RenamePreview language="ru" mode="direct" state="review-loading" />;
+export const RenameReviewLoadingGroupedEnglish: Story = () => <RenamePreview language="en" mode="grouped" state="review-loading" />;
+export const RenameReviewLoadingGroupedRussian: Story = () => <RenamePreview language="ru" mode="grouped" state="review-loading" />;
+export const RenameReviewErrorDirectEnglish: Story = () => <RenamePreview language="en" mode="direct" state="review-error" />;
+export const RenameReviewErrorDirectRussian: Story = () => <RenamePreview language="ru" mode="direct" state="review-error" />;
+export const RenameReviewErrorGroupedEnglish: Story = () => <RenamePreview language="en" mode="grouped" state="review-error" />;
+export const RenameReviewErrorGroupedRussian: Story = () => <RenamePreview language="ru" mode="grouped" state="review-error" />;
+export const RenameRecoveryPendingDirectEnglish: Story = () => <RenamePreview language="en" mode="direct" state="recovery-pending" />;
+export const RenameRecoveryPendingDirectRussian: Story = () => <RenamePreview language="ru" mode="direct" state="recovery-pending" />;
+export const RenameRecoveryPendingGroupedEnglish: Story = () => <RenamePreview language="en" mode="grouped" state="recovery-pending" />;
+export const RenameRecoveryPendingGroupedRussian: Story = () => <RenamePreview language="ru" mode="grouped" state="recovery-pending" />;
+export const RenameRecoveryUnknownDirectEnglish: Story = () => <RenamePreview language="en" mode="direct" state="recovery-unknown" />;
+export const RenameRecoveryUnknownDirectRussian: Story = () => <RenamePreview language="ru" mode="direct" state="recovery-unknown" />;
+export const RenameRecoveryUnknownGroupedEnglish: Story = () => <RenamePreview language="en" mode="grouped" state="recovery-unknown" />;
+export const RenameRecoveryUnknownGroupedRussian: Story = () => <RenamePreview language="ru" mode="grouped" state="recovery-unknown" />;
+export const RenameKeptOriginalDirectEnglish: Story = () => <RenamePreview language="en" mode="direct" state="kept-original" />;
+export const RenameKeptOriginalDirectRussian: Story = () => <RenamePreview language="ru" mode="direct" state="kept-original" />;
+export const RenameKeptOriginalGroupedEnglish: Story = () => <RenamePreview language="en" mode="grouped" state="kept-original" />;
+export const RenameKeptOriginalGroupedRussian: Story = () => <RenamePreview language="ru" mode="grouped" state="kept-original" />;
