@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { lstat, mkdir, mkdtemp, readdir, readFile, readlink, realpath, rename, stat, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { dirname, join, resolve } from "node:path";
+import { basename, dirname, join, resolve } from "node:path";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 import { _electron } from "playwright-core";
@@ -9,6 +9,7 @@ import { packagedExecutablePath } from "./runtime-executable.mjs";
 import { createRuntimeStages, completeRuntimeStage } from "./runtime-evidence.mjs";
 import { cleanupOwnedFixture, closeElectron, closeRuntimeSession, ownedProcessesStopped, withDeadline } from "./runtime-lifecycle.mjs";
 import { measureDiscoveryLayout } from "./runtime-layout.mjs";
+import { createRuntimeSourceDisconnect } from "./runtime-source-disconnect.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const mode = process.argv[2] ?? "dev";
@@ -525,8 +526,8 @@ try {
     globalThis.smokeChanges = [];
     globalThis.stopSmokeChanges = globalThis.window.workspace.onWorkspaceChange((change) => globalThis.smokeChanges.push(change));
   });
-  const disconnectedRoot = join(fixture, "temporarily-disconnected");
-  await rename(projectRoot, disconnectedRoot);
+  const moveSelectedSource = await createRuntimeSourceDisconnect({ ownedFixture: fixture, sourceName: basename(projectRoot) });
+  await moveSelectedSource("disconnect");
   await select(page, sibling);
   await page.getByRole("heading", { name: "Папка проекта недоступна", exact: true }).waitFor();
   const disconnectedProjects = await projects(page, sibling.workspaceId);
@@ -552,7 +553,7 @@ try {
   assert.equal((await load(page)).activeWorkspace.sourceAvailable, true);
   await select(page, first);
   await page.getByRole("heading", { name: "Папка проекта недоступна", exact: true }).waitFor();
-  await rename(disconnectedRoot, projectRoot);
+  await moveSelectedSource("restore");
   await page.getByRole("button", { name: "Проверить доступ к папке", exact: true }).press("Enter");
   await page.getByRole("heading", { name: "Папка проекта недоступна", exact: true }).waitFor({ state: "detached" });
   await page.waitForFunction(() => globalThis.smokeChanges.some((event) => event.type === "workspace.sourceChanged" && event.source.sourceAvailable));
@@ -563,10 +564,10 @@ try {
   assert.equal((await load(page)).activeWorkspace.sourceAvailable, true);
   await select(page, first);
   await page.evaluate(() => globalThis.stopSmokeChanges());
-  await rename(projectRoot, disconnectedRoot);
+  await moveSelectedSource("disconnect");
   await select(page, sibling);
   await page.getByRole("heading", { name: "Папка проекта недоступна", exact: true }).waitFor();
-  await rename(disconnectedRoot, projectRoot);
+  await moveSelectedSource("restore");
   await page.getByRole("button", { name: "Проверить доступ к папке", exact: true }).press("Enter");
   await page.getByRole("heading", { name: "Папка проекта недоступна", exact: true }).waitFor({ state: "detached" });
   assert.equal(await page.evaluate(() => globalThis.smokeChanges.filter((event) => event.type === "workspace.sourceChanged").length), 2);

@@ -138,17 +138,26 @@ Files:
 
 - Modify: scripts/smoke-runtime.mjs
 
-- [ ] Reconfirm the failure location and retained evidence. Preserve the existing replay unchanged as historical diagnostic evidence; strip terminal escapes and redact paths before displaying selected CI log lines.
+- [x] Reconfirm the failure location and retained evidence. Preserve the existing replay unchanged as historical diagnostic evidence; strip terminal escapes and redact paths before displaying selected CI log lines.
 
-- [ ] Extract the selected-root move into a fixture-only callable helper, initially preserving single-attempt behavior. Wire all four disconnect/restore calls through it. Establish an executable regression that reaches this shared helper with real temporary directories, a first-attempt captured EPERM and subsequent real Node rename; observe the intended red failure before repair.
+- [x] Extract the selected-root move into a fixture-only callable helper, initially preserving single-attempt behavior. Wire all four disconnect/restore calls through it. Establish an executable regression that reaches this shared helper with real temporary directories, a first-attempt captured EPERM and subsequent real Node rename; observe the intended red failure before repair.
 
-- [ ] Implement the bounded Windows-only EPERM policy, private dependency injection for deterministic platform/clock/rename controls, and ownership checks. Capture full root identity and a no-follow content inventory; verify unchanged source and absent destination before retry, then source absence, matching destination identity and unchanged bytes after success.
+- [x] Implement the bounded Windows-only EPERM policy, private dependency injection for deterministic platform/clock/rename controls, and ownership checks. Capture full root identity and a no-follow content inventory; verify unchanged source and absent destination before retry, then source absence, matching destination identity and unchanged bytes after success.
 
-- [ ] Add regressions for both move directions, first-attempt success, transient EPERM recovery, non-Windows single-attempt failure, immediate nonretryable failure, attempt/deadline exhaustion, permanent EPERM/access-denial behavior, missing or substituted source, links/junctions, changed bytes and occupied destinations.
+- [x] Add regressions for both move directions, first-attempt success, transient EPERM recovery, non-Windows single-attempt failure, immediate nonretryable failure, attempt/deadline exhaustion, permanent EPERM/access-denial behavior, missing or substituted source, links/junctions, changed bytes and occupied destinations.
 
-- [ ] Add false-success and late-completion controls: a rename callback that resolves without moving cannot pass; unexpected or late effects remain failures and never trigger blind replay or rollback. Confirm unrelated paths remain intact.
+- [x] Add false-success and late-completion controls: a rename callback that resolves without moving cannot pass; unexpected or late effects remain failures and never trigger blind replay or rollback. Confirm unrelated paths remain intact.
 
-- [ ] Run node --test tests/runtime-source-disconnect.test.mjs. Require the previously red behavioral regression and all portable negative controls to pass. Confirm runtime callsites invoke the tested helper; source-text checks may supplement, but cannot replace, execution.
+- [x] Run node --test tests/runtime-source-disconnect.test.mjs. Require the previously red behavioral regression and all portable negative controls to pass. Confirm runtime callsites invoke the tested helper; source-text checks may supplement, but cannot replace, execution.
+
+Task 1 verification (local macOS, Node 22.21.1, starting checkpoint `82434841`):
+
+- Re-read retained run metadata and sanitized Windows Server 2022 log lines: second disconnect at the historical line 566 rejected Node rename with EPERM, errno -4048. Historical owner attribution remains unproven; no production policy changed.
+- Before extraction, the unchanged ignored historical replay failed as expected: 0 passed, 1 EPERM failure, approximately 50 ms. After extraction and before repair, `node --test tests/runtime-source-disconnect.test.mjs` reached the same callable helper through the actual second-disconnect callsite and failed as expected: 0 passed, 1 EPERM failure, approximately 52 ms.
+- After repair, `node --test tests/runtime-source-disconnect.test.mjs` passed all 51 tests (33 top-level cases), with no skips. The final affected rerun with `--test-reporter=dot` also passed. All four extracted runtime calls execute the helper with actual temporary-directory moves; this does not claim Electron/UI runtime acceptance.
+- Scoped ESLint for both scripts and the new test, Node syntax checks for both scripts, and `git diff --check` passed. No dependencies, production service files, historical diagnostics, trackers or CI gates changed.
+- Only owned fixture moves may retry Windows EPERM, at most 20 attempts within a 2,000 ms budget, spacing up to 100 ms. Verified contents include expected descendant link texts without traversing targets. In-flight operations are awaited; late or unexpected effects fail without replay or rollback. Ordinary Node rename retains the documented adversarial substitution/no-replace limitation.
+- Actual Windows sharing controls, persisted scenario evidence/lifecycle controls and full development/packaged runtime smoke checks belong to Tasks 2–4 and remain unperformed in this iteration.
 
 ### Task 2: Preserve runtime assertions and finite failure evidence
 
