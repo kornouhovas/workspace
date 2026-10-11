@@ -21,8 +21,8 @@ Use Node22.21.1 via `/Users/aleksandersk/.nvm/versions/node/v22.21.1/bin` in eve
 - [x] Establish a tight red-capable loop at the actual driver readiness seam before causal hypotheses. A controlled real Playwright/Electron page may reveal a labelled input before app-owned delayed focus; keep this explicitly injected timing, not historical Windows attribution. Retain the old failing predicate and fixture/source hashes. Present3–5 ranked falsifiable hypotheses before probes; distinguish visibility-before-focus, wrong labels, disabled input and genuine focus loss. Retain unknown historical cause if not independently proven.
 - [x] Write a meaningful red-before-green readiness regression, then make the existing `edit` driver await the strict intended state: visible enabled Name input, actual focus and exactly one associated label. Use one existing15000ms total allowance, automatic predicate observation and no manual focus or mutation. Bound and dispose observation handles. Keep subsequent exact draft/message/keyboard and failure cleanup assertions.
 - [x] Retain finite initial/final readiness operands and classified failure without altering primary failure or delaying cleanup beyond the same allowance. Verify delayed-focus success, already-ready success, missing/hidden/disabled/unfocused/wrong-label failure and a real readiness timeout. Test the same serializable predicate/helper the actual driver uses; avoid source-string tests or a broad framework. Ensure evidence failures cannot turn a failure into pass or swallow its primary cause.
-- [ ] Run focused readiness/runtime/renderer controls, lint, typecheck, one final full `npm test`, docs/diff checks. After final build, run the original focused actual macOS `WORKSPACE_SMOKE_EVIDENCE_DIR=work/issue-18/editor-readiness/mac-dev npm run smoke:runtime -- dev --rename` once. Keep every stage/native/normal-quit/backend/owned-cleanup result; no unchanged repeat merely for green. Simulations are not actual Windows acceptance.
-- [ ] Record red/green, actual platform/input identity and truthful causal limits in this plan, commit verified changes and archive only after all executable work completes. Required unperformed checks remain pending.
+- [x] Run focused readiness/runtime/renderer controls, lint, typecheck, one final full `npm test`, docs/diff checks. After final build, run the original focused actual macOS `WORKSPACE_SMOKE_EVIDENCE_DIR=work/issue-18/editor-readiness/mac-dev npm run smoke:runtime -- dev --rename` once. Keep every stage/native/normal-quit/backend/owned-cleanup result; no unchanged repeat merely for green. Simulations are not actual Windows acceptance.
+- [x] Record red/green, actual platform/input identity and truthful causal limits in this plan, commit verified changes and archive only after all executable work completes. Required unperformed checks remain pending.
 
 ## External acceptance
 
@@ -105,13 +105,16 @@ The unchanged injected fixture SHA-256 is
 `b5504947196498ac42a1edd6d93e4ea8804ec657585340af1900229ca3f5d49c`;
 full task-source SHA-256 values are retained in `diagnosis.json`.
 
-The first three Task items are verified. The remaining two stay unchecked:
-required original-scenario acceptance failed and executable work is therefore
-not complete. Verified code/tests and this truthful plan are committed for
-coordinator inspection. The plan is not archived. Coordinator interpretation
-of the preserved normal-shutdown failure and required original-scenario
-acceptance is the next dependency; it is not another authorized executor
-repair or an external-acceptance checkbox.
+The coordinator inspected the committed result and stopped Ralphex’s automatic
+TASK_FAILED retry before another unchanged invocation. All five executable
+items were performed, including the required once-only macOS command; checking
+the performed item does not promote its FAILED result. The code and focused/full
+tests are reviewable, while full original-scenario acceptance remains FAILED
+locally and pending on the next exact-SHA actual-platform CI. That external
+acceptance gate is retained below, outside executable retry checkboxes. No
+shutdown repair, repeated local smoke, timeout increase or Issue44 attribution
+is authorized by this plan. The coordinator proceeds to separate review of the
+bounded readiness delta and then its authorized original-platform CI check.
 
 The full diagnostic record is
 `work/issue-18/editor-readiness/diagnosis.json`. Historical cause remains
@@ -120,3 +123,15 @@ label or disabled operands. This repair adds bounded robustness for the
 observed symptom; it does not attribute timing or focus theft to Windows,
 resolve Issue 44 or complete external acceptance. Independent Standards/Spec
 review and exact-SHA actual Windows acceptance remain coordinator-owned.
+
+## Coordinator checkpoint interpretation
+
+The original macOS smoke retained one real transition from visible/disabled/unfocused
+to visible/enabled/focused with exactly one label, without driver focus. This
+establishes the readiness mechanism in the actual product on this host, not
+historical Windows attribution. All five reached readiness observations passed;
+normal shutdown failed after10000ms, forced owned-process cleanup passed and
+grouped/recovery stayed unreached. Preserve this failure independently of any
+later CI success. Actual complete macOS and Windows dev/packaged acceptance
+remains required before Issue18 completion. Executor/retry evidence is retained
+in `work/issue-18/ci-38166185612/executor-checkpoint.json`.
