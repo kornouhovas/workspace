@@ -430,13 +430,16 @@ test("evidence write failure is awaited, cannot mask a move failure, and cannot 
 
 test("actual runtime state assertions verify SQLite/Text, identities, bytes and isolation in both cycles", async (t) => {
   const { openSettingsService } = await import("../dist/service/settings.mjs");
+  let service;
+  // Hooks run in registration order: close SQLite before fixture registers removal,
+  // including when fixture setup or service initialization fails.
+  t.after(() => service?.close());
   const f = await fixture(t), projectRoot = f.source, otherRoot = join(f.ownedFixture, "unrelated");
   const externalRoot = join(f.ownedFixture, "external");
   await mkdir(externalRoot); await writeFile(join(externalRoot, "keep"), "External target bytes");
   await mkdir(join(projectRoot, "Retained")); await writeFile(join(projectRoot, "Retained", "keep"), "Excluded project bytes");
   await symlink(externalRoot, join(projectRoot, "link"), process.platform === "win32" ? "junction" : "dir");
-  const service = openSettingsService(join(f.ownedFixture, "workspace.sqlite"));
-  t.after(() => service.close());
+  service = openSettingsService(join(f.ownedFixture, "workspace.sqlite"));
   const command = input => { const result = service.handleCommand(input); assert.equal(result.ok, true); return result.value; };
   const query = input => { const result = service.handleQuery(input); assert.equal(result.ok, true); return result.value; };
   const create = (rootPath, name) => command({ type: "workspace.create", rootPath, name });
