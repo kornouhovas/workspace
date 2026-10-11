@@ -11,10 +11,6 @@ export function readProjectRenameReservations(db: Reader, sourceId: string) {
     .orderBy(asc(schema.projectRenameOperations.operationId)).all().filter((row) => row.stage !== "completed" && row.stage !== "failed");
 }
 
-export function hasUnfinishedProjectRename(db: Reader, sourceId: string): boolean {
-  return readProjectRenameReservations(db, sourceId).length > 0;
-}
-
 export function readProjectRelocationReservations(db: Reader, sourceId: string) {
   const renames = readProjectRenameReservations(db, sourceId).map((row) => ({ ...row, operationKind: "rename" as const }));
   const moves = db.select().from(schema.projectCategoryMoveOperations).where(eq(schema.projectCategoryMoveOperations.sourceId, sourceId))

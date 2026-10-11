@@ -247,14 +247,13 @@ test("incomplete and non-lossless native identities cannot enter the journal", (
   }
 }));
 
-test("unfinished moves reserve the project and every original/destination role; terminal receipts release operation reservations", () => fixture((f) => {
+test("unfinished moves reserve the project and original placements; terminal receipts release operation reservations", () => fixture((f) => {
   const op = f.operation(); f.insert(op);
   assert.throws(() => f.insert(f.operation()));
   const other = f.sql.prepare("SELECT * FROM projects WHERE id = ?").get(f.otherId);
   const next = f.operation({ project_id: other.id, name: "Other", original_relative_path: other.relative_path,
     requested_relative_path: "Destination/Other", native_identity: other.native_identity, last_verified_identity: other.native_identity });
   for (const path of [op.original_relative_path, op.requested_relative_path]) {
-    assert.throws(() => f.insert({ ...next, requested_relative_path: path }, true));
     assert.throws(() => f.sql.transaction(() => {
       f.sql.prepare("UPDATE projects SET association_state = 'replaced' WHERE id = ?").run(f.projectId);
       f.sql.prepare("UPDATE projects SET category_id = ?, relative_path = ? WHERE id = ?").run(
@@ -269,4 +268,43 @@ test("unfinished moves reserve the project and every original/destination role; 
   f.update(op, { stage: "failed", result_kind: "rejected", problem: "occupied" });
   f.insert(f.operation());
   assert.equal(f.sql.prepare("SELECT count(*) AS count FROM project_category_move_operations").get().count, 2);
+}));
+
+test("unfinished moves reserve requested placements against both original and destination paths", () => fixture((f) => {
+  const op = f.operation(); f.insert(op);
+  const thirdId = randomUUID(), thirdPath = "Third category";
+  fs.mkdirSync(join(f.root, thirdPath));
+  fs.renameSync(join(f.root, "Original category/Other"), join(f.root, thirdPath, "Original"));
+  const parentIdentity = identity(join(f.root, thirdPath));
+  f.sql.prepare("INSERT INTO categories (id, source_id, relative_path, native_identity, association_state) VALUES (?, ?, ?, ?, 'active')")
+    .run(thirdId, f.sourceId, thirdPath, parentIdentity);
+  f.sql.prepare("UPDATE projects SET category_id = ?, relative_path = ? WHERE id = ?")
+    .run(thirdId, `${thirdPath}/Original`, f.otherId);
+  const other = f.sql.prepare("SELECT * FROM projects WHERE id = ?").get(f.otherId);
+  const candidates = [
+    [f.categoryId, op.original_parent_relative_path, op.original_parent_identity],
+    [f.destinationId, op.destination_parent_relative_path, op.destination_parent_identity],
+  ].map(([destinationId, destinationPath, destinationIdentity]) => f.operation({
+    project_id: other.id, name: "Original", original_category_id: thirdId,
+    original_parent_relative_path: thirdPath, original_parent_identity: parentIdentity,
+    original_relative_path: other.relative_path, destination_category_id: destinationId,
+    destination_parent_relative_path: destinationPath, destination_parent_identity: destinationIdentity,
+    requested_relative_path: `${destinationPath}/Original`, native_identity: other.native_identity,
+    last_verified_identity: other.native_identity,
+  }));
+  const before = records(f.sql);
+  for (const candidate of candidates) {
+    assert.throws(() => f.insert(candidate, true));
+    assert.deepEqual(records(f.sql), before);
+  }
+  f.update(op, { stage: "failed", result_kind: "rejected", problem: "occupied" });
+  // The identical intents are otherwise valid: each inserts once the extra
+  // unfinished placement reservation is released. Roll back between alternatives.
+  for (const candidate of candidates) {
+    f.sql.exec("BEGIN");
+    try {
+      f.insert(candidate, true);
+      assert.deepEqual(f.sql.prepare("SELECT * FROM project_category_move_operations WHERE operation_id = ?").get(candidate.operation_id), candidate);
+    } finally { f.sql.exec("ROLLBACK"); }
+  }
 }));
