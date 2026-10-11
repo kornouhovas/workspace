@@ -41,6 +41,7 @@ Accepted plan destination: docs/plans/issue-18-windows-resolver-diagnosis.md.
 - Preserve the fixed program, fixed script arguments, ten-second resolver timeout, 1,024-byte output limit, empty-stderr requirement and exact case-insensitive C:\Windows output with LF or CRLF.
 
 - Observe the existing subprocess lifecycle without changing its execution policy, termination policy or deadline. A killed flag or rejection alone never proves direct-child termination.
+- If direct-child termination is unknown, stop the series and mark remaining samples unreached. Never start another resolver over an unverified owned child. The aggregate deadline cannot turn a still-pending call into a completed or accepted outcome; preserve its unknown state and existing process deadline.
 
 - Use gpt-6.1-sol/high in run-local configuration; preserve global settings and existing coordinator ownership.
 
