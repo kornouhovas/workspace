@@ -180,7 +180,8 @@ async function main() {
   } else if (mode === 'validate') {
     for (const name of ['diagnostic.json', 'test-status.json']) {
       const value = JSON.parse(readFileSync(join(output, name), 'utf8'));
-      if (!validateEvidence(value) || JSON.stringify(value.provenance) !== JSON.stringify(provenance) || (name === 'diagnostic.json' ? value.collection === 'unreached' : value.status === 'unreached')) throw new Error('Missing or invalid evidence');
+      const expectedKind = name === 'diagnostic.json' ? 'observer_diagnostic' : 'focused_tests';
+      if (!validateEvidence(value) || value.kind !== expectedKind || JSON.stringify(value.provenance) !== JSON.stringify(provenance) || (name === 'diagnostic.json' ? value.collection === 'unreached' : value.status === 'unreached')) throw new Error('Missing or invalid evidence');
     }
   } else if (mode === 'diagnostic') {
     // Supervisor owns the worker's disposable parent. Even a stalled collector

@@ -131,6 +131,27 @@ test('prepared unreached or missing CI evidence stays failed instead of passing 
   assert.equal(invalid.stdout, '');
 });
 
+test('CLI validation requires the diagnostic and focused-test document kinds at their selected paths', async t => {
+  const { collectObserverDiagnostics } = await import('../scripts/windows-observer-diagnostics.mjs');
+  const dir = mkdtempSync(join(tmpdir(), 'diagnostic-kind-'));
+  t.after(() => rmSync(dir, { recursive: true, force: true }));
+  const command = mode => spawnSync(process.execPath, ['scripts/windows-observer-diagnostics.mjs', mode, '--output', dir], { encoding: 'utf8', timeout: 5000 });
+  assert.equal(command('prepare').status, 0);
+  const tests = JSON.parse(readFileSync(join(dir, 'test-status.json'), 'utf8'));
+  tests.status = 'failed'; tests.exitCode = 1;
+  const diagnostic = await collectObserverDiagnostics({ provenance: tests.provenance });
+  const writePair = (first, second) => {
+    writeFileSync(join(dir, 'diagnostic.json'), JSON.stringify(first));
+    writeFileSync(join(dir, 'test-status.json'), JSON.stringify(second));
+  };
+  writePair(diagnostic, tests);
+  assert.equal(command('validate').status, 0, 'finite failed test evidence remains valid');
+  for (const pair of [[tests, tests], [diagnostic, diagnostic], [tests, diagnostic]]) {
+    writePair(...pair);
+    assert.equal(command('validate').status, 1, 'duplicate or swapped document kinds must fail');
+  }
+});
+
 test('two-second observation timeout is retained and releases the observer-owned cursor lock', async t => {
   const { inspectObserverFixture } = await import('../scripts/windows-observer-diagnostics.mjs');
   const dir = realpathSync(mkdtempSync(join(tmpdir(), 'diagnostic-timeout-')));
