@@ -1,7 +1,8 @@
+import { hasUnfinishedProjectRename, readProjectReservations } from "./project-rename-reservations.js";
 import { randomUUID } from "node:crypto";
 import { asc, eq } from "drizzle-orm";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
-import { isChildName, reserveCreationDestinations, projectExclusions, reliableIdentity, sameIdentity, scanDirectSource, scanGroupedSource, validArchive, validExclusions,
+import { isChildName, reserveProjectPlacements, projectExclusions, reliableIdentity, sameIdentity, scanDirectSource, scanGroupedSource, validArchive, validExclusions,
   type DirectoryObservation, type DiscoveryScan, type NativeIdentity } from "./discovery.js";
 import * as schema from "./db/schema.js";
 
@@ -154,16 +155,17 @@ export function reconcileSource(db: Database, source: Source): { changed: boolea
   if (!validExclusions(exclusions, "grouped") || !validArchive(source.archiveRelativePath) || !Number.isSafeInteger(source.discoveryRevision) ||
     source.discoveryRevision < 0 || source.appliedRootIdentity === null) throw new Error("Invalid configured source");
   const appliedRoot: NativeIdentity = JSON.parse(source.appliedRootIdentity);
-  const readReservations = () => db.select().from(schema.projectCreationOperations).where(eq(schema.projectCreationOperations.sourceId, source.id))
-    .orderBy(asc(schema.projectCreationOperations.operationId)).all().filter((row) => !["completed", "failed"].includes(row.stage));
+  const readReservations = () => readProjectReservations(db, source.id);
   const reservations = readReservations();
-  const scanSource = () => reserveCreationDestinations((grouped ? scanGroupedSource : scanDirectSource)(source.canonicalRoot,
+  const scanSource = () => reserveProjectPlacements((grouped ? scanGroupedSource : scanDirectSource)(source.canonicalRoot,
     source.archiveRelativePath, projectExclusions(exclusions, grouped ? "grouped" : "direct").effective), reservations);
   const scan = scanSource();
   if (!scan.snapshot) return { changed: false, scan };
   if (!reliableIdentity(appliedRoot) || !reliableIdentity(scan.snapshot.root.identity) || !sameIdentity(appliedRoot, scan.snapshot.root.identity)) {
     return { changed: false, scan: { state: "root_identity_conflict", entries: [], snapshot: null } };
   }
+  // Observe topology but leave all source locators untouched until explicit rename resolution.
+  if (hasUnfinishedProjectRename(db, source.id)) return { changed: false, scan };
   const readSource = () => db.select().from(schema.sources).where(eq(schema.sources.id, source.id)).get();
   const readProjects = () => db.select().from(schema.projects).where(eq(schema.projects.sourceId, source.id)).orderBy(asc(schema.projects.id)).all();
   const readCategories = () => db.select().from(schema.categories).where(eq(schema.categories.sourceId, source.id)).orderBy(asc(schema.categories.id)).all();
@@ -194,6 +196,7 @@ export function reconcileSource(db: Database, source: Source): { changed: boolea
   db.transaction((tx) => {
     if (!same(readSource(), source) || !same(readProjects(), records) || !same(readCategories(), categories) || !same(readProperty(), property) || !same(readReservations(), reservations)) throw new Error("Reconciliation configuration changed");
     verifyScan();
+    if (hasUnfinishedProjectRename(db, source.id)) throw new Error("Unfinished project rename");
     // Release only participating path reservations, transaction-locally. All
     // final active states are restored before commit; triggers/indexes stay on.
     for (const id of mappings.keys()) tx.update(schema.projects).set({ associationState: "replaced" }).where(eq(schema.projects.id, id)).run();

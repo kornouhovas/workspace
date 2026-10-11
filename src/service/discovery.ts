@@ -415,10 +415,11 @@ export function interpretGrouped(scan: DiscoveryScan, categories: ProjectAssocia
     categories: categoryInterpretation, projects: projectInterpretation };
 }
 
-// Outstanding creation intent reserves placement even without native evidence.
+// Unfinished creation and rename operations reserve all placements and native
+// evidence, including folders observed at a different path after interruption.
 // Preserve the raw snapshot for watch topology and complete scan revalidation.
-export interface CreationReservation { relativePath: string; nativeIdentity: string | null }
-export function reserveCreationDestinations(scan: DiscoveryScan, reservations: CreationReservation[]): DiscoveryScan {
+export interface ProjectPlacementReservation { relativePath: string; nativeIdentity: string | null }
+export function reserveProjectPlacements(scan: DiscoveryScan, reservations: ProjectPlacementReservation[]): DiscoveryScan {
   return { ...scan, entries: scan.entries.map((entry) => {
     const child = scan.snapshot?.children.find((child) => child.relativePath === entry.relativePath);
     const blocked = reservations.some((row) => {
@@ -435,8 +436,8 @@ export function reserveCreationDestinations(scan: DiscoveryScan, reservations: C
 // Interpret each folder in its target role. Historical project evidence reserves
 // project enrollment, but does not turn that same folder into a project category
 // identity or transfer its metadata to a newly discovered child.
-export function planDiscovery(scan: DiscoveryScan, categories: ProjectAssociation[], projects: GroupedProjectAssociation[], reservations: CreationReservation[] = []) {
-  scan = reserveCreationDestinations(scan, reservations);
+export function planDiscovery(scan: DiscoveryScan, categories: ProjectAssociation[], projects: GroupedProjectAssociation[], reservations: ProjectPlacementReservation[] = []) {
+  scan = reserveProjectPlacements(scan, reservations);
   if (!scan.snapshot) throw new Error("Cannot plan an incomplete scan");
   const mode = scan.snapshot.mode;
   const compatible = projects.filter((row) => !row.modeInactive && (mode === "grouped"

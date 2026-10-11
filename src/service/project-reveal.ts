@@ -1,3 +1,4 @@
+import { readProjectRenameReservations, readProjectReservations } from "./project-rename-reservations.js";
 import { eq } from "drizzle-orm";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import { isProjectRevealRequest, type ProjectRevealProblem, type ProjectRevealResult } from "../contracts/project-reveal.js";
@@ -16,6 +17,7 @@ export function createProjectRevealService(db: BetterSQLite3Database<typeof sche
     const project = db.select().from(schema.projects).where(eq(schema.projects.id, projectId)).get();
     if (!source || !project || project.sourceId !== source.id) throw new InvalidReveal();
     if (source.discoveryMode !== "direct" && source.discoveryMode !== "grouped" || source.appliedRootIdentity === null) throw new RevealFailure("unconfigured");
+    if (readProjectRenameReservations(db, source.id).some((row) => row.projectId === projectId)) throw new RevealFailure("unresolved");
     if (project.modeInactive) throw new RevealFailure("mode_retained");
     if (project.associationState !== "active") throw new RevealFailure(project.associationState);
     const components = project.relativePath.split("/");
@@ -40,10 +42,10 @@ export function createProjectRevealService(db: BetterSQLite3Database<typeof sche
     const entry = scan.entries.find((row) => row.kind === "project" && row.relativePath === project.relativePath);
     if (!entry || entry.reason !== null) throw new RevealFailure(entry?.reason === "link" ? "replaced" : "excluded");
     // Outstanding intents/evidence cannot be opened through another logical ID.
-    const reservations = db.select().from(schema.projectCreationOperations).where(eq(schema.projectCreationOperations.sourceId, source.id)).all();
+    const reservations = readProjectReservations(db, source.id);
     if (reservations.some((row) => !["completed", "failed"].includes(row.stage) &&
       (filesystemAlias(row.relativePath) === filesystemAlias(project.relativePath) ||
-        row.nativeIdentity && sameIdentity(JSON.parse(row.nativeIdentity), JSON.parse(project.nativeIdentity))))) throw new RevealFailure("unresolved");
+        row.nativeIdentity && nativeAlias(row.nativeIdentity, project.nativeIdentity)))) throw new RevealFailure("unresolved");
     const projects = db.select().from(schema.projects).where(eq(schema.projects.sourceId, source.id)).all();
     const identity = JSON.parse(project.nativeIdentity);
     const categories = db.select().from(schema.categories).where(eq(schema.categories.sourceId, source.id)).all();
@@ -92,4 +94,9 @@ export function createProjectRevealService(db: BetterSQLite3Database<typeof sche
 class InvalidReveal extends Error {}
 function invalid(): ServiceResult<never> {
   return { ok: false, error: { code: "invalid_input", message: "Choose a saved workspace and one of its projects." } };
+}
+
+function nativeAlias(a: string, b: string): boolean {
+  const left = JSON.parse(a), right = JSON.parse(b);
+  return left.dev === right.dev && left.ino === right.ino;
 }

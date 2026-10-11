@@ -1,10 +1,11 @@
+import { hasUnfinishedProjectRename, readProjectReservations } from "./project-rename-reservations.js";
 import { randomUUID } from "node:crypto";
 import { asc, eq } from "drizzle-orm";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import type { ProjectRecoveryCandidate, ProjectRecoveryPreview } from "../contracts/project-recovery.js";
 import type { ServiceResult } from "../contracts/settings.js";
 import type { ProjectList } from "../contracts/workspaces.js";
-import { modeRetainedResolution, reserveCreationDestinations, planDiscovery, projectExclusions, isChildName, reliableIdentity, sameIdentity, scanDirectSource, scanGroupedSource, validArchive, validExclusions,
+import { modeRetainedResolution, reserveProjectPlacements, planDiscovery, projectExclusions, isChildName, reliableIdentity, sameIdentity, scanDirectSource, scanGroupedSource, validArchive, validExclusions,
   type DiscoveryScan, type DiscoverySnapshot, type NativeIdentity } from "./discovery.js";
 import * as schema from "./db/schema.js";
 
@@ -18,7 +19,7 @@ interface Review {
   projects: Project[];
   categories: Category[];
   snapshot: DiscoverySnapshot;
-  reservations: typeof schema.projectCreationOperations.$inferSelect[];
+  reservations: ReturnType<typeof readProjectReservations>;
 }
 
 export function createProjectRecoveryService(db: Database, integration: {
@@ -34,9 +35,7 @@ export function createProjectRecoveryService(db: Database, integration: {
   }
   const projectsFor = (sourceId: string) => db.select().from(schema.projects).where(eq(schema.projects.sourceId, sourceId)).orderBy(asc(schema.projects.id)).all();
   const categoriesFor = (sourceId: string) => db.select().from(schema.categories).where(eq(schema.categories.sourceId, sourceId)).orderBy(asc(schema.categories.id)).all();
-  const reservationsFor = (sourceId: string) => db.select().from(schema.projectCreationOperations)
-    .where(eq(schema.projectCreationOperations.sourceId, sourceId)).orderBy(asc(schema.projectCreationOperations.operationId)).all()
-    .filter((row) => !["completed", "failed"].includes(row.stage));
+  const reservationsFor = (sourceId: string) => readProjectReservations(db, sourceId);
   function scanSource(source: Source) {
     const exclusions: unknown = JSON.parse(source.excludedRelativePaths);
     if (!validExclusions(exclusions, "grouped") || !validArchive(source.archiveRelativePath) || !Number.isSafeInteger(source.discoveryRevision) ||
@@ -48,7 +47,7 @@ export function createProjectRecoveryService(db: Database, integration: {
       return { state: "root_identity_conflict" as const, entries: [], snapshot: null };
     }
     if (!scan.snapshot) integration.invalidateSourceReviews(source.id);
-    return reserveCreationDestinations(scan, reservationsFor(source.id));
+    return reserveProjectPlacements(scan, reservationsFor(source.id));
   }
   function eligible(project: Project, scan: DiscoveryScan, projects: Project[], categories: Category[], source: Source) {
     if (project.modeInactive) return modeRetainedResolution(scan, project, JSON.parse(source.excludedRelativePaths), source.archiveRelativePath) !== "excluded";
@@ -124,11 +123,13 @@ export function createProjectRecoveryService(db: Database, integration: {
       try {
         const source = sourceFor(input.workspaceId);
         if (!source || !projectsFor(source.id).some((row) => row.id === input.projectId)) return invalid();
+        if (hasUnfinishedProjectRename(db, source.id)) return stale();
         const review = reviews.get(reviewKey);
         if (!review || review.preview.previewToken !== input.previewToken) return stale();
         const target = review.preview.entries.find((entry) => entry.relativePath === input.relativePath);
         if (!target || target.status !== "selectable" || input.relativePath.split("/").length !== (review.preview.mode === "grouped" ? 2 : 1)) return invalid();
         const verify = () => {
+          if (hasUnfinishedProjectRename(db, source.id)) throw new StaleReview();
           const current = sourceFor(input.workspaceId);
           if (!current || configuration(current) !== configuration(review.source) || current.discoveryMode !== review.preview.mode ||
             JSON.stringify(projectsFor(source.id)) !== JSON.stringify(review.projects) ||

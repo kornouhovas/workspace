@@ -1,3 +1,4 @@
+import { hasUnfinishedProjectRename, readProjectReservations } from "./project-rename-reservations.js";
 import { createProjectRevealService } from "./project-reveal.js";
 import type { NativeProjectReveal } from "../contracts/service-protocol.js";
 import type { ProjectRevealResult } from "../contracts/project-reveal.js";
@@ -93,7 +94,7 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
     projects: typeof schema.projects.$inferSelect[];
     categories: typeof schema.categories.$inferSelect[];
     interpretation: ReturnType<typeof planDiscovery>;
-    reservations: ReturnType<typeof readCreationReservations>;
+    reservations: ReturnType<typeof readReservations>;
   }>();
   const listeners = new Set<(event: WorkspaceChangeEvent) => void>();
   const observationEvents = new Map<string, Extract<WorkspaceChangeEvent, { type: "workspace.sourceObserved" }>>();
@@ -219,7 +220,7 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
         if (!snapshot) invalidateSourceReviews(source.id);
         const projects = readProjects(source.id);
         const categories = readCategories(source.id);
-        const interpretation = snapshot ? planDiscovery(scan, categories, projects, readCreationReservations(source.id)) : null;
+        const interpretation = snapshot ? planDiscovery(scan, categories, projects, readReservations(source.id)) : null;
         const interpreted = interpretation?.entries ?? [];
         const property = db.select().from(schema.categoryProperties).where(eq(schema.categoryProperties.sourceId, source.id)).get();
         if (snapshot) state = interpreted.some((entry) => entry.reason === null) ? "ready" : "empty";
@@ -233,7 +234,7 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
           previewToken: snapshot ? randomUUID() : null,
         };
         // Keep the reviewed draft/configuration independent of the caller's response object.
-        if (snapshot && interpretation) previewTokens.set(workspaceId, { preview: structuredClone(preview), snapshot, source, projects, categories, interpretation: structuredClone(interpretation), reservations: readCreationReservations(source.id) });
+        if (snapshot && interpretation) previewTokens.set(workspaceId, { preview: structuredClone(preview), snapshot, source, projects, categories, interpretation: structuredClone(interpretation), reservations: readReservations(source.id) });
         return { ok: true, value: preview };
       } catch { return storageFailure(); }
     },
@@ -261,13 +262,14 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
           discoverySourceState(token.source) !== discoverySourceState(source) ||
           JSON.stringify(token.projects) !== JSON.stringify(readProjects(source.id)) ||
           JSON.stringify(token.categories) !== JSON.stringify(readCategories(source.id)) ||
-          JSON.stringify(token.reservations) !== JSON.stringify(readCreationReservations(source.id))) return stale();
+          JSON.stringify(token.reservations) !== JSON.stringify(readReservations(source.id))) return stale();
+        if (hasUnfinishedProjectRename(db, source.id)) return stale();
         const mode = token.preview.mode;
         const scanner = mode === "grouped" ? scanGroupedSource : scanDirectSource;
         const scan = scanner(source.canonicalRoot, source.archiveRelativePath, token.preview.effectiveExcludedRelativePaths);
         if (!scan.snapshot || JSON.stringify(scan.snapshot) !== JSON.stringify(token.snapshot) ||
           !reliableIdentity(scan.snapshot.root.identity)) return stale();
-        const planned = planDiscovery(scan, token.categories, token.projects, readCreationReservations(source.id));
+        const planned = planDiscovery(scan, token.categories, token.projects, readReservations(source.id));
         const interpretation = planned.projects;
         if (JSON.stringify(planned) !== JSON.stringify(token.interpretation)) return stale();
         const changed = source.discoveryMode !== mode ||
@@ -285,7 +287,8 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
           if (discoverySourceState(workspaceSource(workspaceId)) !== discoverySourceState(source) ||
             JSON.stringify(readProjects(source.id)) !== JSON.stringify(token.projects) ||
             JSON.stringify(readCategories(source.id)) !== JSON.stringify(token.categories) ||
-            JSON.stringify(readCreationReservations(source.id)) !== JSON.stringify(token.reservations)) throw new StalePreview();
+            JSON.stringify(readReservations(source.id)) !== JSON.stringify(token.reservations)) throw new StalePreview();
+          if (hasUnfinishedProjectRename(db, source.id)) throw new StalePreview();
           // Revalidate again inside the transaction, before making any persistent change.
           const beforeWrites = scanner(source.canonicalRoot, source.archiveRelativePath, token.preview.effectiveExcludedRelativePaths);
           if (!beforeWrites.snapshot || JSON.stringify(beforeWrites.snapshot) !== JSON.stringify(token.snapshot)) throw new StalePreview();
@@ -343,7 +346,7 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
           if (discoverySourceState(workspaceSource(workspaceId)) !== discoverySourceState(expectedSource) ||
             !sameAssociations(readProjects(source.id), expectedProjects) ||
             !sameAssociations(readCategories(source.id), expectedCategories) ||
-            JSON.stringify(readCreationReservations(source.id)) !== JSON.stringify(token.reservations)) throw new StalePreview();
+            JSON.stringify(readReservations(source.id)) !== JSON.stringify(token.reservations)) throw new StalePreview();
           const committed = tx.select().from(schema.sources).where(eq(schema.sources.id, source.id)).get()!;
           const result = projectList(workspaceId, committed, recheck);
           return { result, observation: sourceObservation(committed, recheck, result) };
@@ -583,9 +586,8 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
   function readProjects(sourceId: string) {
     return db.select().from(schema.projects).where(eq(schema.projects.sourceId, sourceId)).orderBy(asc(schema.projects.id)).all();
   }
-  function readCreationReservations(sourceId: string) {
-    return db.select().from(schema.projectCreationOperations).where(eq(schema.projectCreationOperations.sourceId, sourceId))
-      .orderBy(asc(schema.projectCreationOperations.operationId)).all().filter((row) => !["completed", "failed"].includes(row.stage));
+  function readReservations(sourceId: string) {
+    return readProjectReservations(db, sourceId);
   }
   function readCategories(sourceId: string) {
     return db.select().from(schema.categories).where(eq(schema.categories.sourceId, sourceId)).orderBy(asc(schema.categories.id)).all();
@@ -607,7 +609,7 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
       !sameIdentity(JSON.parse(source.appliedRootIdentity), currentScan.snapshot.root.identity))) state = "root_identity_conflict";
     const verified = currentScan.snapshot && state !== "root_identity_conflict";
     if (!verified) invalidateSourceReviews(source.id);
-    const planned = verified ? planDiscovery(currentScan, categories, projects, readCreationReservations(source.id)) : null;
+    const planned = verified ? planDiscovery(currentScan, categories, projects, readReservations(source.id)) : null;
     const interpretation = planned?.projects;
     const projection = projects.map((row) => {
       const category = categories.find((category) => category.id === row.categoryId && !category.modeInactive && category.associationState === "active");
@@ -831,7 +833,7 @@ function normalizeSource(
     observe(sourceId, state);
     return state;
   }
-  if (canonicalRoot !== storedRoot) {
+  if (canonicalRoot !== storedRoot && !hasUnfinishedProjectRename(db, sourceId)) {
     const existing = db.select().from(schema.sources).where(eq(schema.sources.canonicalRoot, canonicalRoot)).get();
     // Older alias duplicates keep their logical IDs and associations. Do not merge or delete them.
     if (!existing) db.update(schema.sources).set({ canonicalRoot }).where(eq(schema.sources.id, sourceId)).run();

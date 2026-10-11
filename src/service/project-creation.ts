@@ -1,3 +1,4 @@
+import { hasUnfinishedProjectRename, readProjectRenameReservations } from "./project-rename-reservations.js";
 import { randomUUID } from "node:crypto";
 import { join } from "node:path";
 import { eq } from "drizzle-orm";
@@ -36,7 +37,7 @@ export function createProjectCreationService(db: Database, integration: {
   invalidateSourceReviews(sourceId: string): void;
   committed(sourceId: string, revision: number, workspaceIds: string[]): void;
 }, filesystem: ProjectFilesystem = nativeProjectFilesystem) {
-  const reviews = new Map<string, { row: Operation; revision: number; preview: ProjectCreationRecoveryPreview; evidence: NativeIdentity | null }>();
+  const reviews = new Map<string, { row: Operation; revision: number; preview: ProjectCreationRecoveryPreview; evidence: NativeIdentity | null; renames: ReturnType<typeof readProjectRenameReservations> }>();
   const reviewKey = (workspaceId: string, operationId: string) => `${workspaceId}:${operationId}`;
   const invalid = () => ({ ok: false as const, error: { code: "invalid_input" as const, message: "Choose a saved workspace and its creation operation." } });
   const storage = () => ({ ok: false as const, error: { code: "storage" as const, message: "Creation history could not be read." } });
@@ -87,6 +88,7 @@ export function createProjectCreationService(db: Database, integration: {
   }
 
   function verifyContext(row: Operation, revision = row.expectedRevision, workspaceId = row.initiatingWorkspaceId) {
+    if (hasUnfinishedProjectRename(db, row.sourceId)) throw new CreationFailure("reserved_destination");
     const current = sourceFor(workspaceId);
     if (!current || current.id !== row.sourceId || current.canonicalRoot !== row.canonicalRoot || current.discoveryMode !== row.mode ||
       current.discoveryRevision !== revision || current.appliedRootIdentity !== row.rootIdentity ||
@@ -196,7 +198,7 @@ export function createProjectCreationService(db: Database, integration: {
       const { preview, evidence } = inspectRecovery(row, input.workspaceId, source.discoveryRevision);
       if (preview.actions.length) {
         preview.previewToken = randomUUID();
-        reviews.set(key, { row, revision: source.discoveryRevision, preview: structuredClone(preview), evidence });
+        reviews.set(key, { row, revision: source.discoveryRevision, preview: structuredClone(preview), evidence, renames: readProjectRenameReservations(db, source.id) });
       }
       return { ok: true, value: preview };
     } catch { return storage(); }
@@ -216,7 +218,8 @@ export function createProjectCreationService(db: Database, integration: {
       if (!review || review.preview.previewToken !== request.previewToken || !review.preview.actions.includes(request.action)) return stale();
       reviews.delete(key);
       const current = inspectRecovery(row, request.workspaceId, source.discoveryRevision);
-      if (JSON.stringify(row) !== JSON.stringify(review.row) || source.discoveryRevision !== review.revision ||
+      if (JSON.stringify(readProjectRenameReservations(db, source.id)) !== JSON.stringify(review.renames) ||
+        JSON.stringify(row) !== JSON.stringify(review.row) || source.discoveryRevision !== review.revision ||
         current.preview.destinationState !== review.preview.destinationState ||
         !current.preview.actions.includes(request.action) || JSON.stringify(current.evidence) !== JSON.stringify(review.evidence)) return stale();
       const revision = source.discoveryRevision;
