@@ -2,7 +2,7 @@
 
 ## Scope and input identity
 
-This report covers the typed category move service, dedicated journal, source coordination, explicit recovery and production IPC/client from [the bounded plan](../plans/issue-19-category-move-service.md). [Architecture](../architecture.md#implemented-recoverable-project-category-move-service) describes the contract and [ADR 0007](../adr/0007-no-replace-project-renames.md#category-move-extension) records native/journal decisions. Category editing/recovery UI and full issue acceptance remain subsequent coordinator work.
+This report covers the typed category move service, dedicated journal, source coordination, explicit recovery and production IPC/client from [the bounded plan](../plans/completed/issue-19-category-move-service.md). [Architecture](../architecture.md#implemented-recoverable-project-category-move-service) describes the contract and [ADR 0007](../adr/0007-no-replace-project-renames.md#category-move-extension) records native/journal decisions. Category editing/recovery UI and full issue acceptance remain subsequent coordinator work.
 
 - Immutable issue base: `4f9f11f785c63a65585ea6f33f167fc438272c64`.
 - Service/native/IPC/fixture/dependency/CI inputs at Task 7 entry: `608adb0d`. Task 7 adds a public-service regression and documentation, and updates build/ASAR test fixtures; production and Electron smoke fixture inputs remain unchanged.
