@@ -50,7 +50,11 @@ test("read-only series samples the actual resolver three times sequentially into
     assert.equal(sample.observation.outcome, "resolved"); assert.equal(sample.observation.termination, "confirmed");
     assert.deepEqual(sample, result.samples[index - 1]);
   }
-  assert.deepEqual(f.artifacts.get(join("diagnostic-artifacts", "result.json")), result);
+  const aggregate = f.artifacts.get(join("diagnostic-artifacts", "result.json"));
+  assert.equal(aggregate.status, "unverified"); assert.equal(aggregate.persistence, "unverified");
+  assert.equal(aggregate.acceptance, "requires_successful_cli_exit");
+  assert.deepEqual(aggregate.samples, result.samples);
+  assert.equal(result.persistence, "completed");
   assert.equal(JSON.stringify(result).includes(privateValue), false);
   assert.equal(JSON.stringify(result).includes("C:\\"), false);
 });
@@ -63,6 +67,7 @@ test("a failed independent sample remains failed after later successful samples"
   assert.deepEqual(result.samples.map((sample) => sample.status), ["passed", "failed", "passed"]);
   assert.equal(result.samples[1].observation.errorCode, "EPERM");
   assert.equal(result.samples[1].observation.termination, "confirmed");
+  assert.equal(f.artifacts.get(join("diagnostic-artifacts", "result.json")).status, "failed");
   assert.equal(JSON.stringify(result).includes(privateValue), false);
 });
 
@@ -162,6 +167,24 @@ test("hung persistence uses the remaining aggregate budget and cannot pass", asy
   clock.advance(60000); await flush(); const result = await pending;
   assert.equal(result.status, "failed"); assert.equal(result.persistence, "failed");
   assert.equal(clock.pending, 0); assert.equal(f.artifacts.size, 0);
+});
+
+test("late final persistence cannot publish a passing aggregate or rescue CLI failure", async () => {
+  const f = seriesFixture(), clock = controlledClock(), write = f.options.filesystem.writeFile;
+  f.options.clock = clock;
+  f.options.filesystem.writeFile = async (path, ...args) => {
+    await write(path, ...args);
+    if (path.endsWith("result.json")) clock.advance(60001);
+  };
+  let result;
+  const code = await runResolverDiagnosisCli({ args: [], stdout: { write: () => {} }, stderr: { write: () => {} },
+    series: async () => { result = await f.run(); return result; } });
+  assert.equal(code, 1); assert.equal(result.status, "failed"); assert.equal(result.persistence, "failed");
+  const aggregate = f.artifacts.get(join("diagnostic-artifacts", "result.json"));
+  assert.equal(aggregate.status, "unverified"); assert.equal(aggregate.persistence, "unverified");
+  assert.equal(aggregate.acceptance, "requires_successful_cli_exit");
+  assert.deepEqual(aggregate.samples.map((sample) => sample.status), ["passed", "passed", "passed"]);
+  assert.equal(clock.pending, 0);
 });
 
 test("CLI rejects all overrides and prints only fixed success or failure messages", async () => {

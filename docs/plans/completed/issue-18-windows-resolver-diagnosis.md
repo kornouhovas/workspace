@@ -116,6 +116,8 @@ All affected local tests must pass. Explicit platform skips remain skips. No ful
 
 - Perform separate review of the committed diagnostic changes, checking privacy, unchanged authorization/deadlines, truthful termination evidence and independent failure gates.
 
+- Aggregate `result.json` is candidate evidence: an otherwise successful series persists `status: unverified` and `persistence: unverified`, with `acceptance: requires_successful_cli_exit`. Accept it only alongside the corresponding successful CLI/CI step and all three valid passing samples. A known sample failure remains `status: failed`. Only the returned result can confirm that all artifact writes completed within the budget; a late final write cannot publish a passing aggregate or trigger an additional repair write.
+
 - On the next authorized exact-SHA push, inspect both Windows matrix jobs and their original ready-selection and separate read-only-series artifacts.
 
 - Record the original invocation outcome and each sample independently. Missing, malformed or unreached evidence remains pending/failed; subsequent success cannot erase an earlier failure.
@@ -125,3 +127,10 @@ All affected local tests must pass. Explicit platform skips remain skips. No ful
 - Keep original-scenario Windows2022 verification and diagnostic-loop verification on both Windows images pending until actual results are inspected.
 
 - Product Reveal, readiness, shutdown failures and whole Issue #18 completion remain separate coordinator work.
+
+## Review Repair: Final Persistence Evidence
+
+- Both independent reviews confirmed that the original final write could persist `passed/completed` before its deadline check, while the returned result and CLI failed.
+- The regression uses the actual series/CLI orchestration with controlled final filesystem completion after 60,000 ms. It failed before the candidate-evidence change and passed afterward. Sample results, resolver policy and all deadlines remain unchanged.
+- Repair checks on Node 22.21.1/macOS: affected suites passed (53 tests, 50 passed, 3 platform skips), scoped ESLint and documentation links passed. No actual Windows invocation or full Electron/native rebuild was performed.
+- Repair evidence is retained under `work/issue-18/windows-resolver-diagnosis/review-persistence-*`; actual Windows observations remain pending and historical cause remains unproven.

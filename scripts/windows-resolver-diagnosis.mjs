@@ -31,7 +31,8 @@ export async function runResolverDiagnosisSeries({ platform = process.platform, 
     } finally { clock.clearTimeout(timer); }
   };
   const result = { version: 1, status: "failed", deadlineMs: 60000, executionDeadlineMs: 45000, elapsedMs: 0,
-    failure: null, samples: [1, 2, 3].map((index) => sampleRecord(index)), persistence: "not_attempted" };
+    failure: null, samples: [1, 2, 3].map((index) => sampleRecord(index)), persistence: "not_attempted",
+    acceptance: "requires_successful_cli_exit" };
   if (platform !== "win32") result.failure = "unsupported_host";
   else {
     for (let index = 0; index < 3; index++) {
@@ -67,8 +68,12 @@ export async function runResolverDiagnosisSeries({ platform = process.platform, 
   try {
     await withinBudget(() => filesystem.mkdir(directory, { recursive: true }), totalDeadline);
     for (const sample of result.samples) await withinBudget(() => filesystem.writeFile(join(directory, `sample-${sample.index}.json`), JSON.stringify(sample, null, 2) + "\n", "utf8"), totalDeadline);
+    // A file cannot attest that its own write completed within the budget.
+    // Persist a candidate: acceptance also requires this CLI/CI step to succeed.
+    // Late writes retain unverified bytes; no repair write extends the deadline.
+    const candidate = { ...result, status: result.failure ? "failed" : "unverified", persistence: "unverified" };
+    await withinBudget(() => filesystem.writeFile(join(directory, "result.json"), JSON.stringify(candidate, null, 2) + "\n", "utf8"), totalDeadline);
     result.persistence = "completed";
-    await withinBudget(() => filesystem.writeFile(join(directory, "result.json"), JSON.stringify(result, null, 2) + "\n", "utf8"), totalDeadline);
   } catch { result.persistence = "failed"; result.failure ??= "persistence_failed"; result.status = "failed"; }
   return result;
 }
