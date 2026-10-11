@@ -61,6 +61,13 @@ Task 1 local evidence (2026-10-12, macOS 27.0 arm64, Node 22.21.1):
   - Workflow YAML and matrix/failure semantics checked through the installed `js-yaml` parser: actual exit 0; `workflow-js-yaml.log`. The optional initial `yaml` import was unavailable (exit 1, retained `workflow.log`); no dependency was installed.
   - Actual Windows CI, artifact inspection and cause attribution remain outside executable task acceptance and pending with the coordinator.
 
+Task 1 continuation audit (2026-10-12, macOS 27.0 arm64):
+
+  - Resumed at committed implementation `4f24ca3a`, with a clean worktree. The coordinator snapshot still names the preceding planning commit `560f9c44`; it supplies no diagnosis or repair authorization for the retained focused-test failure.
+  - Read the retained final focused log and finite test-status artifact: actual test-process exit 1, 78/79 passed, zero skipped, and `ownership_unknown` instead of `failed` in the real runner/process failure scenario. The observer, source adapter, runner and their existing tests are unchanged between the recorded evidence SHA and the resumed implementation commit. No runtime inputs or assertions were changed in this continuation, and no unchanged focused-test retry was performed.
+  - The final Task 1 checkbox remains unchecked. Its failed applicable check requires coordinator diagnosis and, if appropriate, a separate bounded repair plan before executable continuation. Task 2 remains untouched; neither local nor Windows acceptance is established.
+  - Documentation-only continuation checks use Node 22.21.1: `npm run check:docs` and `git diff --check`, actual exit 0 each. Prior lint/typecheck results remain recorded above; this continuation does not claim new runs of them. Full continuation evidence: `work/issue-19/observer-diagnostics-task1-resume/` (`audit.json`, `audit.log`, `check-docs.log`, `diff-check.log`, `commit.log`).
+
 ### Task 2: Expose the exact disposable fixture failure seam
 
 Files:
@@ -94,3 +101,7 @@ These gates are not executable Task checkboxes.
   - Fixture evidence identifies recovery versus lifecycle assertion seams while retaining strict failure semantics.
   - Production ownership and service recovery policy remain unchanged.
   - Actual CI inspection and any proven-cause repair remain coordinator gates.
+
+## Coordinator checkpoint after retained focused failure
+
+The coordinator stopped and reaped the owned execute invocation after its first TASK_FAILED and before an unchanged retry. No owned descendants or executor lock remain. Task 1 diagnostic implementation and its eight new regressions are committed, but the final applicable focused check remains red (78/79), so Task 1 acceptance is pending. Task 2 is deferred and untouched. The next phase reviews the existing diagnostic delta and the retained real-runner terminal-state failure before diagnostic delivery or further implementation. No completed service stage is replayed.
