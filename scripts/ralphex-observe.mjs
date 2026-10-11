@@ -98,7 +98,7 @@ async function scanLog(file,{offset,size,deadline,signal,pending,task}) {
     anchor:offset ? {length:anchorBytes.length,hash:createHash('sha256').update(anchorBytes).digest('hex')} : undefined};
 }
 
-async function runner(source) {
+async function runner(source, { boundIdentity, deadline, signal } = {}) {
   let state;
   for (let retry = 0; retry < 3; retry++) {
     try { state = await json(join(source.dir, 'current.json')); break; }
@@ -117,6 +117,22 @@ async function runner(source) {
       if (!Number.isSafeInteger(lock.pid) || lock.pid <= 0) reason = 'ownership_unknown';
       else try { process.kill(lock.pid, 0); } catch { reason = 'ownership_unknown'; }
     }
+  }
+  // Terminal publication precedes runner lock removal. Resolve that single
+  // inconsistent read only within the selected execution and observation budget.
+  if (reason && state.status === 'running' && typeof state.runId === 'string' && state.runId &&
+      typeof state.executionId === 'string' && state.executionId &&
+      state.runDirectory === source.dir && typeof state.worktree === 'string' && state.worktree &&
+      (!boundIdentity || fingerprint(boundIdentity) === fingerprint(identity)) &&
+      Date.now() < deadline && !signal?.aborted) {
+    try {
+      const terminal = await json(join(source.dir, 'current.json'));
+      if (terminal.version === 1 && ['failed', 'awaiting_review', 'awaiting_verification'].includes(terminal.status) &&
+          terminal.runId === state.runId && terminal.executionId === state.executionId &&
+          terminal.runDirectory === source.dir && terminal.worktree === state.worktree) {
+        state = terminal; reason = undefined; ownership = 'identified';
+      }
+    } catch { /* Unresolved or malformed publication retains ownership uncertainty. */ }
   }
   if (reason) ownership = 'unknown';
   return { identity, state, ownership, reason };
@@ -195,7 +211,7 @@ export async function observe({ source, cursor, budgetMs = 50000, pollMs, signal
     };
     if (heartbeat && !signal?.aborted) {
       const lease = await heartbeatConfig(heartbeat);
-      try { current = source.kind === 'runner' ? await runner(source) : await observeCi(source,{transport:command,deadline,signal}); }
+      try { current = source.kind === 'runner' ? await runner(source,{boundIdentity:observedIdentity,deadline,signal}) : await observeCi(source,{transport:command,deadline,signal}); }
       catch (error) { return await finish('access_lost',{code:'access_lost',message:error.message}); }
       if (cursorError) return await finish(current.state.status === 'failed' ? 'failed' : 'needs_decision',{code:'cursor_invalid',message:cursorError.message});
       if (observedIdentity && fingerprint(observedIdentity) !== fingerprint(current.identity)) return await finish(current.state.status === 'failed' ? 'failed' : 'needs_decision',{code:'source_mismatch',message:'Cursor belongs to another source; choose a fresh cursor'});
@@ -225,7 +241,7 @@ export async function observe({ source, cursor, budgetMs = 50000, pollMs, signal
       if (leaseError) return await finish('lease_lost', {code:'lease_lost',message:leaseError.message});
       if (signal?.aborted) return await finish('cancelled');
       if (source.kind === 'ci' && current && deadline - Date.now() < 100) { await sleep(Math.max(0,deadline-Date.now()),wake.signal); return await finish(leaseError ? 'lease_lost' : signal?.aborted ? 'cancelled' : 'deadline'); }
-      try { current = await Promise.race([source.kind === 'runner' ? runner(source) : observeCi(source, { transport: command, deadline, signal:wake.signal }), lostLease.then(() => { throw leaseError; })]); polls++; }
+      try { current = await Promise.race([source.kind === 'runner' ? runner(source,{boundIdentity:observedIdentity,deadline,signal:wake.signal}) : observeCi(source, { transport: command, deadline, signal:wake.signal }), lostLease.then(() => { throw leaseError; })]); polls++; }
       catch (error) { return await finish(leaseError ? 'lease_lost' : signal?.aborted ? 'cancelled' : 'access_lost', { code: leaseError ? 'lease_lost' : 'access_lost', message: error.message }); }
       const runnerTerminal = source.kind === 'runner' && current.state.status !== 'running' ? (current.state.status === 'failed' ? 'failed' : ['awaiting_review','awaiting_verification'].includes(current.state.status) ? 'completed' : 'transition') : null;
       if (cursorError) return await finish(runnerTerminal ?? 'needs_decision', {code:'cursor_invalid',message:cursorError.message});

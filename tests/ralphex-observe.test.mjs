@@ -22,6 +22,178 @@ function fixture(t) {
   return { dir, state, lock, log, options, save() { const temp = join(dir, 'snapshot.tmp'); writeFileSync(temp, JSON.stringify(state)); renameSync(temp, join(dir, 'current.json')); } };
 }
 
+// Publish between the snapshot read and the ownership read, without a private
+// observer hook. All other filesystem reads still use the real implementation.
+async function withSnapshotPublication(f, publish, check) {
+  const original = fsPromises.readFile, snapshot = join(f.dir, 'current.json');
+  let reads = 0, reached = false, published;
+  fsPromises.readFile = async (...args) => {
+    const selected = args[0] === snapshot;
+    if (selected) reads++;
+    const bytes = await original(...args);
+    if (selected && reads === 1) {
+      assert.equal(JSON.parse(bytes).status, 'running');
+      publish(); reached = true;
+      published = ['current.json', 'events.jsonl', 'full.log', 'executor.lock'].map(file => {
+        try { return readFileSync(join(f.dir, file)); } catch (error) { if (error.code !== 'ENOENT') throw error; return null; }
+      });
+    }
+    return bytes;
+  };
+  syncBuiltinESMExports();
+  try { await check(() => reads); }
+  finally {
+    fsPromises.readFile = original; syncBuiltinESMExports();
+    assert.ok(reached, 'snapshot/lock publication interleaving was reached');
+    assert.deepEqual(['current.json', 'events.jsonl', 'full.log', 'executor.lock'].map(file => {
+      try { return readFileSync(join(f.dir, file)); } catch (error) { if (error.code !== 'ENOENT') throw error; return null; }
+    }), published, 'observer preserves published runner inputs and never performs cleanup');
+  }
+}
+
+test('same-execution terminal publication after a retained running read reports failure', async t => {
+  const f = fixture(t);
+  writeFileSync(join(f.dir, 'events.jsonl'), 'retained runner events\n');
+  await withSnapshotPublication(f, () => {
+    f.state.status = 'failed'; f.state.lastExit = 9; f.state.lastSignal = 'SIGTERM'; f.save();
+    rmSync(join(f.dir, 'executor.lock'));
+  }, async reads => {
+    const result = await observe(f.options);
+    assert.equal(result.reason, 'failed'); assert.equal(result.status, 'failed');
+    assert.equal(result.exit, 9); assert.equal(result.signal, 'SIGTERM');
+    assert.equal(result.ownership, 'identified'); assert.equal(result.acceptance, 'not_established');
+    assert.deepEqual(result.source, { kind: 'runner', dir: f.dir, log: f.log,
+      runId: 'fixture-run', executionId: 'fixture-execution', worktree: f.dir });
+    assert.equal(reads(), 2, 'one bounded consistency reread');
+  });
+});
+
+test('identified running ownership does not trigger a terminal consistency reread', async t => {
+  const f = fixture(t); writeFileSync(join(f.dir, 'events.jsonl'), 'retained runner events\n');
+  appendFileSync(f.log, 'RALPHEX_PROGRESS {"task":"Identified control"}\n');
+  await withSnapshotPublication(f, () => {}, async reads => {
+    const result = await observe(f.options);
+    assert.equal(result.reason, 'progress'); assert.equal(result.ownership, 'identified');
+    assert.equal(reads(), 1);
+  });
+});
+
+test('denied PID probes retain uncertain running ownership after the bounded reread', async t => {
+  const f = fixture(t); f.state.beads = 'fixture-task'; f.save();
+  writeFileSync(join(f.dir, 'events.jsonl'), 'retained runner events\n');
+  const original = process.kill;
+  process.kill = (pid, signal) => {
+    if (pid === f.lock.pid && signal === 0) throw Object.assign(new Error('Fixture probe denied'), { code: 'EPERM' });
+    return original(pid, signal);
+  };
+  try {
+    await withSnapshotPublication(f, () => {}, async reads => {
+      let calls = 0;
+      const result = await observe({ ...f.options,
+        heartbeat: { task: 'fixture-task', actor: 'fixture-owner', repo: f.dir, ttlMs: 400, intervalMs: 100 },
+        command: async () => { calls++; throw new Error('Denied probe must never reach transport'); } });
+      assert.equal(result.reason, 'ownership_unknown'); assert.equal(result.ownership, 'unknown');
+      assert.equal(reads(), 2); assert.equal(calls, 0);
+    });
+  } finally { process.kill = original; }
+});
+
+test('same-execution terminal publication preserves bound cursor and selected alias byte continuity', async t => {
+  const f = fixture(t), alias = join(f.dir, 'terminal-alias');
+  symlinkSync(f.dir, alias, process.platform === 'win32' ? 'junction' : 'dir');
+  writeFileSync(join(f.dir, 'events.jsonl'), 'retained runner events\n');
+  appendFileSync(f.log, 'before terminal\n');
+  const first = await observe(f.options), from = readFileSync(f.log).length;
+  appendFileSync(f.log, 'terminal output\n');
+  await withSnapshotPublication(f, () => {
+    f.state.status = 'failed'; f.state.lastExit = null; f.state.lastSignal = 'SIGKILL'; f.save();
+    rmSync(join(f.dir, 'executor.lock'));
+  }, async reads => {
+    const result = await observe({ ...f.options, source: { kind: 'runner', dir: alias, log: join(alias, 'full.log') } });
+    assert.equal(result.reason, 'failed'); assert.equal(result.exit, null); assert.equal(result.signal, 'SIGKILL');
+    assert.deepEqual(result.source, first.source); assert.equal(result.log.path, f.log);
+    assert.equal(result.log.from, from); assert.equal(result.log.to, readFileSync(f.log).length);
+    assert.equal(reads(), 2);
+    assert.equal(JSON.parse(readFileSync(f.options.cursor)).source.executionId, 'fixture-execution');
+    assert.throws(() => readFileSync(`${f.options.cursor}.lock`), { code: 'ENOENT' });
+  });
+});
+
+test('terminal consistency reread rejects foreign and invalid publications without heartbeat or runner cleanup', async t => {
+  for (const [key, value] of [
+    ['executionId', 'foreign-execution'], ['runId', 'foreign-run'],
+    ['runDirectory', 'foreign-directory'], ['worktree', 'foreign-worktree'],
+    ['runDirectory', undefined], ['version', 99], ['status', 'running'],
+    ['status', 'unknown'], ['status', undefined], ['malformed', true], ['removed', true],
+  ]) {
+    const f = fixture(t); f.state.beads = 'fixture-task'; f.save();
+    writeFileSync(join(f.dir, 'events.jsonl'), 'retained runner events\n');
+    await withSnapshotPublication(f, () => {
+      f.state.status = 'failed'; f.state.lastExit = 9; f.state[key] = value; f.save();
+      if (key === 'malformed') writeFileSync(join(f.dir, 'current.json'), '{');
+      if (key === 'removed') rmSync(join(f.dir, 'current.json'));
+      rmSync(join(f.dir, 'executor.lock'));
+    }, async reads => {
+      let calls = 0;
+      const result = await observe({ ...f.options,
+        heartbeat: { task: 'fixture-task', actor: 'fixture-owner', repo: f.dir, ttlMs: 400, intervalMs: 100 },
+        command: async () => { calls++; throw new Error('Unresolved ownership must never reach transport'); } });
+      assert.equal(result.reason, 'ownership_unknown', `${key}=${value}`);
+      assert.equal(result.status, 'running'); assert.equal(result.ownership, 'unknown');
+      assert.equal(result.source.runId, 'fixture-run'); assert.equal(result.source.executionId, 'fixture-execution');
+      assert.equal(calls, 0); assert.equal(reads(), 2);
+      assert.throws(() => readFileSync(`${f.options.cursor}.lock`), { code: 'ENOENT' });
+    });
+  }
+});
+
+test('terminal consistency reread keeps invocation and cursor identity mismatch fail closed', async t => {
+  for (const key of ['runId', 'executionId', 'dir', 'worktree', 'log']) {
+    const f = fixture(t); f.state.beads = 'fixture-task'; f.save(); await observe(f.options);
+    writeFileSync(join(f.dir, 'events.jsonl'), 'retained runner events\n');
+    const saved = JSON.parse(readFileSync(f.options.cursor)); saved.source[key] = 'foreign';
+    writeFileSync(f.options.cursor, JSON.stringify(saved));
+    const before = readFileSync(f.options.cursor);
+    await withSnapshotPublication(f, () => {
+      f.state.status = 'failed'; f.state.lastExit = 9; f.save(); rmSync(join(f.dir, 'executor.lock'));
+    }, async reads => {
+      let calls = 0;
+      const result = await observe({ ...f.options,
+        heartbeat: { task: 'fixture-task', actor: 'fixture-owner', repo: f.dir, ttlMs: 400, intervalMs: 100 },
+        command: async () => { calls++; throw new Error('Foreign cursor must never reach transport'); } });
+      assert.equal(result.reason, 'needs_decision'); assert.equal(result.diagnostic.code, 'source_mismatch');
+      assert.equal(reads(), 1); assert.equal(calls, 0);
+      assert.deepEqual(readFileSync(f.options.cursor), before);
+    });
+  }
+});
+
+test('uncertain still-running ownership gets one reread and preserves lock with zero heartbeat transport', async t => {
+  const child = spawn(process.execPath, ['-e', 'process.exit(0)'], { stdio: 'ignore' }), deadPid = child.pid;
+  await new Promise((resolve, reject) => { child.once('error', reject); child.once('close', resolve); });
+  for (const [key, value] of [
+    ['lock', undefined], ['pid', undefined], ['pid', deadPid], ['pid', 0], ['pid', 'invalid'],
+    ['token', undefined], ['token', ''], ['runId', 'foreign'], ['executionId', 'foreign'],
+    ['runDirectory', 'foreign'], ['worktree', 'foreign'],
+  ]) {
+    const f = fixture(t); f.state.beads = 'fixture-task'; f.save();
+    writeFileSync(join(f.dir, 'events.jsonl'), 'retained runner events\n');
+    await withSnapshotPublication(f, () => {
+      if (key === 'lock') rmSync(join(f.dir, 'executor.lock'));
+      else { f.lock[key] = value; writeFileSync(join(f.dir, 'executor.lock'), JSON.stringify(f.lock)); }
+    }, async reads => {
+      let calls = 0;
+      const result = await observe({ ...f.options,
+        heartbeat: { task: 'fixture-task', actor: 'fixture-owner', repo: f.dir, ttlMs: 400, intervalMs: 100 },
+        command: async () => { calls++; throw new Error('Uncertain ownership must never reach transport'); } });
+      assert.equal(result.reason, 'ownership_unknown', `${key}=${value}`);
+      assert.equal(result.status, 'running'); assert.equal(result.ownership, 'unknown');
+      assert.equal(calls, 0); assert.equal(reads(), 2);
+      assert.throws(() => readFileSync(`${f.options.cursor}.lock`), { code: 'ENOENT' });
+    });
+  }
+});
+
 test('synchronously published runner identities retain ownership and byte continuation through selected directory aliases', async t => {
   const f = fixture(t), alias = join(f.dir, 'selected-alias');
   symlinkSync(f.dir, alias, process.platform === 'win32' ? 'junction' : 'dir');
