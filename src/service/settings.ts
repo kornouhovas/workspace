@@ -1,3 +1,5 @@
+import type { ProjectRenameResult } from "../contracts/project-rename.js";
+import type { ProjectRenameNative } from "./project-rename.js";
 import type { NativeProjectReveal } from "../contracts/service-protocol.js";
 import type { ProjectRevealResult } from "../contracts/project-reveal.js";
 import type { ObserverDependencies } from "./source-observer.js";
@@ -24,6 +26,7 @@ import { createWorkspaceService, type WorkspaceFilesystem, type WorkspaceService
 import type { CategoryPropertySnapshot, ProjectList, DiscoveryPreview, ActiveWorkspace, WorkspaceCreated, WorkspaceLoad, WorkspaceSourceObservationSnapshot, WorkspaceSourceState } from "../contracts/workspaces.js";
 
 export interface SettingsService {
+  renameProject(input: unknown): ServiceResult<ProjectRenameResult>;
   revealProject(input: unknown, native?: NativeProjectReveal): Promise<ServiceResult<ProjectRevealResult>>;
   handleQuery(input: unknown): ServiceResult<ProjectCreationResult | ProjectCreationList | ProjectCreationRecoveryPreview | WorkspaceSourceObservationSnapshot | ProjectRecoveryPreview | TextPropertySnapshot | Settings | WorkspaceLoad | DiscoveryPreview | ProjectList>;
   handleCommand(input: unknown): ServiceResult<ProjectCreationResult | CategoryPropertySnapshot | TextPropertyMutation | Settings | WorkspaceCreated | ActiveWorkspace | WorkspaceLoad | WorkspaceSourceState | ProjectList>;
@@ -53,6 +56,7 @@ export function openSettingsService(
   workspaceFilesystem?: WorkspaceFilesystem,
   observerDependencies?: ObserverDependencies,
   projectFilesystem?: ProjectFilesystem,
+  projectRenameNative?: ProjectRenameNative,
 ): SettingsService {
   mkdirSync(dirname(databasePath), { recursive: true });
   const sqlite = new Database(databasePath);
@@ -73,9 +77,10 @@ export function openSettingsService(
     }
   })();
 
-  const workspaces = createWorkspaceService(db, workspaceFilesystem, observerDependencies, projectFilesystem);
+  const workspaces = createWorkspaceService(db, workspaceFilesystem, observerDependencies, projectFilesystem, projectRenameNative);
   return {
     workspaces,
+    renameProject: workspaces.renameProject,
     revealProject: workspaces.revealProject,
     handleQuery(input) {
       if (isRecord(input) && input.type === "workspace.listProjectCreations") return workspaces.listProjectCreations(input);

@@ -5,6 +5,8 @@ import type { ProjectRevealResult } from "../contracts/project-reveal.js";
 import { createSourceObserver, nativeObserverDependencies, type ObserverDependencies, type SourceObservation } from "./source-observer.js";
 import { reconcileSource } from "./external-reconciliation.js";
 import { createProjectRecoveryService } from "./project-recovery.js";
+import { createProjectRenameService, type ProjectRenameNative } from "./project-rename.js";
+import type { ProjectRenameResult } from "../contracts/project-rename.js";
 import { createProjectCreationService } from "./project-creation.js";
 import type { ProjectFilesystem } from "./project-filesystem.js";
 import type { ProjectCreationResult, ProjectCreationList, ProjectCreationRecoveryPreview } from "../contracts/project-creation.js";
@@ -45,6 +47,7 @@ const nativeFilesystem: WorkspaceFilesystem = {
 };
 
 export interface WorkspaceService {
+  renameProject(input: unknown): ServiceResult<ProjectRenameResult>;
   revealProject(input: unknown, native?: NativeProjectReveal): Promise<ServiceResult<ProjectRevealResult>>;
   listProjectCreations(input: unknown): ServiceResult<ProjectCreationList>;
   getProjectCreation(input: unknown): ServiceResult<ProjectCreationResult>;
@@ -86,7 +89,7 @@ export interface WorkspaceService {
     | { ok: false; error: { code: "invalid_input" | "storage"; message: string } };
 }
 
-export function createWorkspaceService(db: Database, filesystem = nativeFilesystem, observerDependencies?: ObserverDependencies, projectFilesystem?: ProjectFilesystem): WorkspaceService {
+export function createWorkspaceService(db: Database, filesystem = nativeFilesystem, observerDependencies?: ObserverDependencies, projectFilesystem?: ProjectFilesystem, projectRenameNative?: ProjectRenameNative): WorkspaceService {
   const previewTokens = new Map<string, {
     preview: DiscoveryPreview;
     snapshot: DiscoverySnapshot;
@@ -129,8 +132,17 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
       observer.request(sourceId);
     },
   }, projectFilesystem);
+  const rename = createProjectRenameService(db, {
+    invalidateSourceReviews,
+    committed(sourceId, revision, workspaceIds) {
+      invalidateSourceReviews(sourceId);
+      publish([{ type: "workspace.projectsChanged", sourceId, revision, workspaceIds }]);
+      observer.request(sourceId);
+    },
+  }, projectFilesystem, projectRenameNative);
   const reveal = createProjectRevealService(db, projectFilesystem);
   const service: WorkspaceService = {
+    renameProject: rename.renameProject,
     revealProject: reveal.revealProject,
     createProject: creation.createProject,
     listProjectCreations: creation.listProjectCreations,
