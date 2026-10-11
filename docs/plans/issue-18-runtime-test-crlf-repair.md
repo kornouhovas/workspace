@@ -26,13 +26,33 @@ Executor owns the bounded test/plan changes and explicit local commits. Coordina
 
 ### Task 1: Repair source extraction and verify the cleanup matrix
 
-- [ ] Add an explicit CRLF normal-quit/saved-evidence case before changing extraction. Run `node --test --test-name-pattern='runtime source-move failure remains primary' tests/runtime-lifecycle.test.mjs` and retain the nonzero result at the existing assertion. Reference the historical four-case red log.
-- [ ] Apply the smallest test-local extraction repair, canonicalizing CRLF before locating both fragment boundaries. Retain the extraction guard and execute the actual smoke fragment. Rerun the same behavioral regression and retain green evidence.
-- [ ] Extend the existing matrix to LF/CRLF × normal/forced quit × saved/failed evidence with identifiable names and all eight combinations. Construct both formats before extraction so CRLF exercises the repaired boundary.
-- [ ] Preserve the identical original missing_effects error, one quit attempt, backend exit verification, truthful shutdown/forced-cleanup outcomes, failed final evidence, failed first move and unreached remaining moves. Verify owned-child termination, fixture removal and unrelated-directory preservation for each combination.
-- [ ] Run the focused matrix, then `node --test tests/runtime-lifecycle.test.mjs` with existing outputs, requiring all eight selected cases to pass without skips. Run `npx --no-install eslint tests/runtime-lifecycle.test.mjs --max-warnings=0`, `npm run check:docs` for this plan and `git diff --check`. No full-suite, Electron/native rebuild or graphical runtime repeat is required for this test-only repair.
-- [ ] Save actual commands, input identity and red/green results under `work/issue-18/runtime-test-crlf-repair/` and add a concise verification record here. Keep original Windows `npm test` pending and independent native-selection/readiness and creation/shutdown failures unresolved.
-- [ ] Inspect the bounded diff, stage only the test and plan, run `git diff --cached --check` and commit the verified task in English. Report checks and remaining platform gates in Russian.
+- [x] Add an explicit CRLF normal-quit/saved-evidence case before changing extraction. Run `node --test --test-name-pattern='runtime source-move failure remains primary' tests/runtime-lifecycle.test.mjs` and retain the nonzero result at the existing assertion. Reference the historical four-case red log.
+- [x] Apply the smallest test-local extraction repair, canonicalizing CRLF before locating both fragment boundaries. Retain the extraction guard and execute the actual smoke fragment. Rerun the same behavioral regression and retain green evidence.
+- [x] Extend the existing matrix to LF/CRLF × normal/forced quit × saved/failed evidence with identifiable names and all eight combinations. Construct both formats before extraction so CRLF exercises the repaired boundary.
+- [x] Preserve the identical original missing_effects error, one quit attempt, backend exit verification, truthful shutdown/forced-cleanup outcomes, failed final evidence, failed first move and unreached remaining moves. Verify owned-child termination, fixture removal and unrelated-directory preservation for each combination.
+- [x] Run the focused matrix, then `node --test tests/runtime-lifecycle.test.mjs` with existing outputs, requiring all eight selected cases to pass without skips. Run `npx --no-install eslint tests/runtime-lifecycle.test.mjs --max-warnings=0`, `npm run check:docs` for this plan and `git diff --check`. No full-suite, Electron/native rebuild or graphical runtime repeat is required for this test-only repair.
+- [x] Save actual commands, input identity and red/green results under `work/issue-18/runtime-test-crlf-repair/` and add a concise verification record here. Keep original Windows `npm test` pending and independent native-selection/readiness and creation/shutdown failures unresolved.
+- [x] Inspect the bounded diff, stage only the test and plan, run `git diff --cached --check` and commit the verified task in English. Report checks and remaining platform gates in Russian.
+
+## Task 1 Verification
+
+Executed on macOS arm64 with Node 22.21.1 selected through the per-command PATH, starting at `d1bfd74583886761ba6de61281917f19ab5a38ba`. Existing packages and emitted service/native outputs were reused without rebuilding. Only the test and this plan changed; the tracked smoke script retained its original bytes.
+
+Evidence is retained under ignored `work/issue-18/runtime-test-crlf-repair/`. Each named `.json` records the actual command, exit code, runtime, starting HEAD and SHA-256 input manifest; the matching `.log` contains its output. Manifests include the test, scripts, package resolution, installed SQLite files and reused service/native outputs.
+
+| Evidence | Actual command | Result |
+| --- | --- | --- |
+| `red.json`, `red.log` | `node --test --test-name-pattern='runtime source-move failure remains primary' tests/runtime-lifecycle.test.mjs` | Exit 1: four LF cases passed; explicit CRLF normal-quit/saved-evidence case failed at the existing `tail.startsWith` extraction assertion. |
+| `green.json`, `green.log` | Same focused command after extraction repair | Exit 0: all five cases passed, zero skips. |
+| `matrix.json`, `matrix.log` | Same focused command after completing the matrix | Exit 0: all eight LF/CRLF × quit × evidence cases passed, zero skips. |
+| `lifecycle.json`, `lifecycle.log` | `node --test tests/runtime-lifecycle.test.mjs` | Exit 0: all 31 tests passed, zero skips, using existing outputs. |
+| `eslint.json`, `eslint.log` | `npx --no-install eslint tests/runtime-lifecycle.test.mjs --max-warnings=0` | Exit 0, zero warnings. |
+| `docs.json`, `docs.log` | `npm run check:docs` | Exit 0: local Markdown links checked in 84 files. |
+| `diff.json`, `diff.log` | `git diff --check` | Exit 0. |
+
+The final tested file SHA-256 is `2664b7bd3558c467ecfe6f52b84a294e924420ed821354db47c9c89919152f29`; matrix and lifecycle input digest is `199ee219fd8e7c648f73c77083cf6c7714134a7d13cf139875f5f93fbf958479`. The manifests identify the plan before this verification record was added; exercised code and build inputs remain unchanged. Historical four-case CRLF reproduction remains at `work/issue-18/ci-38141686024/crlf-red.log` with its diagnosis in the same directory. Both source formats are now constructed in memory before extraction, and the real smoke catch/finally fragment executes in every matrix case.
+
+The original Windows `npm test` acceptance remains pending for windows-latest and windows-2022. Native-selection/readiness, creation/shutdown failures, separate review and exact-SHA Actions interpretation remain unresolved coordinator gates. No full suite, graphical runtime, Electron/native rebuild, push or tracker update was performed.
 
 ## Post-Completion: Coordinator-Owned Gates
 

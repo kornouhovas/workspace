@@ -446,8 +446,8 @@ test('actual runtime launch keeps early window/path failures unverified after ow
   }
 });
 
-for (const forced of [false, true]) for (const evidenceFails of [false, true]) {
-  test(`runtime source-move failure remains primary through ${forced ? "forced" : "normal"} quit and ${evidenceFails ? "failed" : "saved"} evidence`, async (t) => {
+for (const lineEnding of ["LF", "CRLF"]) for (const forced of [false, true]) for (const evidenceFails of [false, true]) {
+  test(`runtime source-move failure remains primary with ${lineEnding} through ${forced ? "forced" : "normal"} quit and ${evidenceFails ? "failed" : "saved"} evidence`, async (t) => {
     const { mkdir, mkdtemp, readFile, rm, stat, writeFile } = await import("node:fs/promises");
     const { tmpdir } = await import("node:os");
     const { join } = await import("node:path");
@@ -463,8 +463,10 @@ for (const forced of [false, true]) for (const evidenceFails of [false, true]) {
     let primary;
     try { await sourceMoves.run("disconnect", move, async () => {}); } catch (error) { primary = error; }
     assert.equal(primary.code, "missing_effects");
-    const source = await readFile(new URL("../scripts/smoke-runtime.mjs", import.meta.url), "utf8");
-    const tail = source.slice(source.indexOf('} catch (error) {\n  scenarioFailure = error;'), source.lastIndexOf("\n\n}"));
+    const source = (await readFile(new URL("../scripts/smoke-runtime.mjs", import.meta.url), "utf8"))
+      .replace(/\r?\n/g, lineEnding === "CRLF" ? "\r\n" : "\n");
+    const normalizedSource = source.replace(/\r\n/g, "\n");
+    const tail = normalizedSource.slice(normalizedSource.indexOf('} catch (error) {\n  scenarioFailure = error;'), normalizedSource.lastIndexOf("\n\n}"));
     assert.ok(tail.startsWith("} catch (error)"));
     const child = await launchFixture(), exited = once(child, "exit");
     const electron = { process: () => child, evaluate: () => forced ? new Promise(() => {}) : Promise.resolve(child.kill()),
@@ -500,9 +502,20 @@ for (const forced of [false, true]) for (const evidenceFails of [false, true]) {
       assert.equal(quitAttempts, 1);
       assert.equal(backendChecks, forced ? 0 : 1);
       assert.equal(shutdown.passed, !forced && !evidenceFails);
-      if (forced) assert.equal(shutdown.forcedCleanup.processStopped, true);
+      if (forced) {
+        assert.match(shutdown.error, /Electron shutdown timed out/);
+        assert.deepEqual(shutdown.forcedCleanup, { status: "passed", processStopped: true });
+      } else {
+        assert.equal(shutdown.forcedCleanup, undefined);
+        assert.equal(shutdown.error, evidenceFails ? "Evidence write failed" : undefined);
+      }
+      assert.equal(shutdown.evidenceError, evidenceFails ? "Evidence write failed" : undefined);
+      assert.ok(child.exitCode !== null || child.signalCode !== null);
+      assert.throws(() => process.kill(child.pid, 0), { code: "ESRCH" });
       assert.equal(evidence.at(-1).status, "failed");
+      assert.equal(evidence.at(-1).sourceMoves.length, 4);
       assert.equal(evidence.at(-1).sourceMoves[0].status, "failed");
+      assert.equal(evidence.at(-1).sourceMoves[0].finalCode, "missing_effects");
       assert.ok(evidence.at(-1).sourceMoves.slice(1).every(outcome => outcome.status === "unreached"));
       await assert.rejects(stat(fixture), { code: "ENOENT" });
       assert.equal((await stat(unrelated)).isDirectory(), true);
