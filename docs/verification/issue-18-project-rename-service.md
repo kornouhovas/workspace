@@ -82,6 +82,52 @@ Repair verification on the same macOS arm64 host with Node.js 22.21.1 refreshed 
 
 The original full-suite and standalone smoke results above retain their historical input identity. They are not new results for the repaired service; unchanged UI/build configuration evidence was reused, while affected service/transport/runtime checks were repeated. Exact-SHA platform CI and the other coordinator gates remain pending.
 
+## Bounded service-fixture handshake repair
+
+The [repair plan](../plans/issue-18-service-handshake-repair.md) covers private fixture supervision and tests only. Executable repairs were committed as `3419172b` (bounded control handshake) and `6c803c02` (precise failure lifecycles). Task 3 changes documentation only. Production/native/UI sources, dependencies, build and CI configuration remain unchanged from the last reviewed HEAD `113721caca5ae1f15a5b8f859ada5d52412e7ef0`; the immutable issue base remains `a5728daa64caab6b90700854ad5e27417fcf683e`.
+
+Historical [CI run 38132376699](https://github.com/kornouhovas/workspace/actions/runs/38132376699) remains the original Windows service-fixture failure. Both Windows standalone artifacts passed all 16 scenarios, then reported result, ack_sent and supervisor_timeout without ack_received or exit_sent. Shutdown and removal succeeded, but lifecycle acceptance failed. Several broad negative controls also timed out. Original artifacts remain under `work/issue-18/ci-38132376699/`; `work/issue-18/service-handshake-repair/original-windows-references.json` indexes them. No Windows stdin probe was executed. Finite local early/late-listener probes both succeeded; disabled-receiver and closed-pipe controls separated successful parent writes from observed receiver delivery. These macOS observations leave historical Windows stdin causality unproven.
+
+The repaired seam publishes only fixed bounded ack/exit records through same-directory temporary files and rename beneath the disposable supervisor root. Receiver polling starts before main_ready; ack follows the actual result, ack_received follows consumption, and exit follows observed ack_received. Publication/read failures and deadlines remain finite and sticky; polling stops on terminal paths. Cleanup follows independently confirmed owned-process shutdown. Stdout stage/byte/message limits remain unchanged. Temporary probe scripts were removed before Task 3 verification; historical JSON/log evidence remains intact. Permanent bounded fault controls remain as regressions.
+
+Final verification ran on 2026-10-11, macOS 27.0 (26A428), arm64, supervisor Node 22.21.1, Electron 44.7.0 / embedded Node 24.21.0. Node was selected through the existing version-specific PATH. In-memory esbuild comparisons matched the retained controller, service entry, settings and both native-wrapper outputs; migrations/journal matched, and native source/binary SHA-256 values matched Task 1. No refresh, build, clean, install or configuration change was necessary. Reuse observations are retained in `work/issue-18/service-handshake-repair/task3-build-inspection.json` and `task3-reuse.json`.
+
+| Command or retained evidence | Observed result |
+| --- | --- |
+| `WORKSPACE_RENAME_SERVICE_EVIDENCE_DIR=work/issue-18/service-handshake-repair/task3-early npm run test:rename:early` | Ran once against final inputs: 309 passed, zero failures/skips/cancellations. Log: `task3-early-tests.log`; all 11 separate positive/control artifacts inspected under `task3-early/`. |
+| Task 2 native protocol controls: `node --test --test-name-pattern='supervisor parser\|CRLF framing\|stdout cannot pass' tests/project-rename-native.test.mjs` | Retained 10 passing selected tests, zero failures/skips. Native/protocol tests, fixtures, build inputs and exercised binaries remain unchanged. Original log: `task2-native-protocol-tests.log`; artifact: `task2-native-protocol/native-adapter.json`. Covers LF/CRLF/whitespace/chunk boundaries, malformed/unknown/truncated records, byte/message limits and actual Electron protocol rejection after acknowledgment. |
+| `npm run lint`, `npm run typecheck` | Both passed; zero lint warnings. Logs: `task3-lint.log`, `task3-typecheck.log`. |
+| `npm run check:docs`, `git diff --check` | Passed after documentation and plan updates. |
+| `WORKSPACE_RENAME_SERVICE_EVIDENCE_DIR=work/issue-18/service-handshake-repair/task3-standalone npm run smoke:rename:service` | Passed separately against the same retained build and final fixture inputs. Log: `task3-standalone-smoke.log`; artifact: `task3-standalone/service-checkpoint.json`. |
+
+All paths in this table are beneath ignored `work/issue-18/service-handshake-repair/`. No full suite, fresh packaging or graphical run was performed for this private repair; earlier full-service history above retains its original inputs and results.
+
+Both final positive artifacts passed all 16 named direct/grouped scenarios, observed self_alias_staged on both local mounted-case checks, and retained exactly one ordered result/ack_sent/ack_received/exit_sent/main_exit handshake. Main exited zero without signal/timeout; all five owned utilities exited successfully. Protocol was valid, shutdown independently confirmed and fixtures removed. The independently recomputed final inputSha256 matched every positive/control artifact:
+
+```text
+74a218f1fb4ffe53da795793a59bba1cc76f2ca670712840f5f7bedc141f1039
+```
+
+This digest includes the executable `tests/fixtures/project-rename-service-control.cjs`; a disposable-copy regression proves helper changes affect it without mutating live inputs. Documentation and removed scratch scripts are outside the digest.
+
+Every negative artifact retained `ok=false` for its intended reason:
+
+| Control | Required and observed lifecycle |
+| --- | --- |
+| failure | Only direct.rename failed; later scenarios unreached. Complete handshake, main exit 1, one successful utility exit. |
+| missing-assertion / skipped | Only direct.rename unreached / skipped; other 15 scenarios passed. Complete handshake, main exit 0. |
+| malformed | All scenarios passed; exactly one sticky malformed-record failure. Complete handshake, main exit 0. |
+| cleanup | All scenarios passed; complete handshake and main exit 0 preceded the injected cleanup-report failure. |
+| missing-ack | All scenarios passed and result arrived; no ack or exit instruction sent. Genuine supervisor timeout followed result. |
+| timeout | A live utility reached worker_started; genuine timeout before result, with all scenarios unreached. No platform-specific termination-code assumption. |
+| control-publication | All scenarios passed; occupied ack temporary record produced control_publish_failed / controlFailure=publish. No ack/exit publication or timeout. |
+| control-read | All scenarios passed; an exit-record directory produced only sanitized startup_failed / controlFailure=receive. Ack sent, no ack_received/exit instruction, main exit 1, no timeout. |
+| premature-main-exit | Five successful utility exits, then main exit 7 before result. Scenarios remained unreached; no protocol/control error, signal or timeout. |
+
+All controls confirmed shutdown and removal except the deliberately injected cleanup-report failure. The five complete-handshake controls had no unrelated timeout, acknowledgment loss or signal. Persisted final evidence equaled returned sanitized outcomes; privacy assertions rejected mailbox paths, command records, raw errors and existing scenario/path/native-identity secrets. The occupied-file evidence-write control also confirmed shutdown/removal while preserving occupied bytes. Helper controls passed incomplete-publication, exact-size/record, invalid/out-of-order/duplicate, publication/read failure and deadline-disposal assertions.
+
+Local executable repair completion does not establish Windows acceptance or complete Issue #18. Coordinator-owned gates remain outside Task checkboxes: separate follow-up review from `113721caca5ae1f15a5b8f859ada5d52412e7ef0`, authorized push/CI, observed early-service and full verification on macOS/windows-latest/windows-2022 at the exact reviewed commit, and inspection of every service/control artifact. Missing external evidence remains pending. Historical stdin causality, graphical Reveal, packaged rename acceptance and #44 remain separate. No tracker/coordinator-state mutation, push, CI dispatch, merge, release, signing or publication was performed.
+
 ## Guarantee limits
 
 The no-replace primitive protects the target at its native operation. Source/ancestor substitution between validation and that path-based call can still redirect an effect, and unobserved substitutions cannot all be detected. Full identity and repeated exact placement checks provide conservative detection, not a filesystem lock, guaranteed confinement, rollback or another-folder adoption authority. Unsupported filesystems and unavailable modules reject without ordinary-rename fallback.
