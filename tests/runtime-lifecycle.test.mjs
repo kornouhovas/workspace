@@ -524,3 +524,33 @@ for (const lineEnding of ["LF", "CRLF"]) for (const forced of [false, true]) for
     }
   });
 }
+
+test("rename assertion failure survives normal owned shutdown, evidence failure and successful fixture cleanup", async () => {
+  const { mkdtemp, stat, rm } = await import("node:fs/promises");
+  const { tmpdir } = await import("node:os");
+  const { join } = await import("node:path");
+  const { closeRuntimeSession, cleanupOwnedFixture, ownedProcessesStopped } = await import("../scripts/runtime-lifecycle.mjs");
+  const { createRenameEvidence, recordRenameEvidence, assertRenameAcceptance } = await import("../scripts/runtime-evidence.mjs");
+  const fixture = await mkdtemp(join(tmpdir(), "rename-lifecycle-"));
+  const child = await launchFixture(), exited = once(child, "exit");
+  const primary = new Error("Required rename preservation assertion failed"), evidence = createRenameEvidence();
+  recordRenameEvidence(evidence.direct.recovery.final_effect, "preservation", { status: "failed", reason: primary.message });
+  const shutdown = { passed: false };
+  try {
+    await assert.rejects(closeRuntimeSession({ process: () => child, evaluate: async () => { child.kill(); }, close: () => exited }, {
+      shutdown, readBackendPids: async () => [child.pid], beforeClose: async () => { throw new Error("Evidence write failed"); },
+      assertBackendsStopped: async () => assert.throws(() => process.kill(child.pid, 0), { code: "ESRCH" }),
+    }), /Evidence write failed/);
+    assert.equal(shutdown.passed, false);
+    assert.equal(ownedProcessesStopped(new Set([child]), new Set([child.pid])), true);
+    await assert.rejects(cleanupOwnedFixture(fixture, { processesStopped: true, primaryFailure: primary,
+      record: async outcome => recordRenameEvidence(evidence, "fixtureCleanup", outcome) }), error => error === primary);
+    assert.equal(evidence.fixtureCleanup.status, "passed");
+    assert.equal(evidence.direct.recovery.final_effect.preservation.status, "failed");
+    assert.throws(() => assertRenameAcceptance(evidence));
+    await assert.rejects(stat(fixture), { code: "ENOENT" });
+  } finally {
+    if (child.exitCode === null && child.signalCode === null) { child.kill("SIGKILL"); await exited; }
+    await rm(fixture, { recursive: true, force: true });
+  }
+});

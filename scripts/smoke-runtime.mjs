@@ -22,6 +22,9 @@ const executablePath = mode === "dev"
 
 if (process.argv.includes("--creation")) {
   await import("./smoke-project-creation.mjs");
+} else if (process.argv.includes("--rename")) {
+  const { runProjectRenameUi } = await import("./smoke-project-rename-ui.mjs");
+  await runProjectRenameUi(mode);
 } else {
 
 await stat(executablePath);
@@ -1293,5 +1296,10 @@ try {
     },
   });
 }
+
+// A separate owned fixture follows successful baseline acceptance and cleanup.
+// Failure throws before this stage; regular dev/release routes require both.
+const { runProjectRenameUi } = await import("./smoke-project-rename-ui.mjs");
+await runProjectRenameUi(mode);
 
 }

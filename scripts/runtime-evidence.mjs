@@ -39,3 +39,37 @@ export function recordCreationEvidence(evidence, mode, stage, result) {
   }
   target[stage] = { ...result };
 }
+
+// Every rename assertion starts unreached. A later cleanup or retry cannot
+// promote a failed/skipped assertion into acceptance for this invocation.
+export function createRenameEvidence() {
+  const stages = names => Object.fromEntries(names.map(name => [name, { status: "unreached" }]));
+  const mode = () => ({ ...stages(["submission", "rejections", "caseOnly", "sibling", "revealInvocation", "revealAcknowledgment", "fileManagerOutcome", "fileManagerCleanup", "restartPersistence"]),
+    recovery: Object.fromEntries(["intent", "keep_original", "first_effect", "staged_evidence", "final_effect", "destination_evidence", "commit"].map(checkpoint => [checkpoint,
+      stages(["seed", "restartNoReplay", "resolution", "preservation", "restartPersistence"])])) });
+  return { direct: mode(), grouped: mode(), ...stages(["isolation", "normalShutdown", "fixtureCleanup"]) };
+}
+export function recordRenameEvidence(target, stage, result) {
+  if (!target || !Object.hasOwn(target, stage) || !Object.hasOwn(target[stage], "status")) throw new Error(`Unknown rename evidence stage: ${stage}`);
+  if (!["passed", "failed", "skipped", "pending", "unreached"].includes(result.status)) throw new Error("Invalid rename evidence status");
+  if (["failed", "skipped"].includes(target[stage].status) && result.status !== target[stage].status) throw new Error(`Cannot promote ${target[stage].status} rename evidence`);
+  if (result.status === "passed") {
+    if (result.asserted !== true) throw new Error("Passed rename evidence requires a completed assertion");
+    if (["failed", "skipped"].includes(target[stage].status)) throw new Error(`Cannot promote ${target[stage].status} rename evidence`);
+    if (stage === "fileManagerOutcome" && (target.revealInvocation.status !== "passed" || result.exactTargetObserved !== true)) throw new Error("Rename file-manager evidence requires an exact observed target after invocation");
+    if (stage === "revealAcknowledgment" && target.revealInvocation.status !== "passed") throw new Error("Rename acknowledgment requires native invocation");
+  }
+  target[stage] = { ...result };
+}
+export function assertRenameAcceptance(evidence) {
+  const inspect = (target, expected, path) => {
+    if (!target || typeof target !== "object" || Object.keys(target).sort().join() !== Object.keys(expected).sort().join()) throw new Error(`Rename acceptance missing assertion or invalid shape: ${path}`);
+    for (const [name, value] of Object.entries(target)) {
+      const current = `${path}/${name}`;
+      if (Object.hasOwn(expected[name], "status")) {
+        if (!value || value.status !== "passed" || value.asserted !== true) throw new Error(`Rename acceptance ${current}: ${value?.status ?? "missing"}`);
+      } else inspect(value, expected[name], current);
+    }
+  };
+  inspect(evidence, createRenameEvidence(), "rename");
+}
