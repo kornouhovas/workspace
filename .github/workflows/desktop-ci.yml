@@ -11,6 +11,53 @@ on:
         default: false
 
 jobs:
+  windows-observer-diagnostic:
+    name: Isolated pure-Node observer diagnostic (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, windows-2022]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 5
+    env:
+      OBSERVER_MATRIX: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.21.1
+      - name: Initialize finite unreached diagnostic and test status
+        id: evidence
+        run: node scripts/windows-observer-diagnostics.mjs prepare --output work/ci-windows-observer
+        timeout-minutes: 1
+      - name: Compare owned observer identities and read-only process probes
+        run: node scripts/windows-observer-diagnostics.mjs diagnostic --output work/ci-windows-observer/diagnostic.json
+        timeout-minutes: 1
+      - name: Run focused observer runner and diagnostic regressions with actual test exit
+        if: ${{ always() && steps.evidence.outcome == 'success' }}
+        run: node scripts/windows-observer-diagnostics.mjs tests --output work/ci-windows-observer/test-status.json
+        timeout-minutes: 2
+      - name: Require both finite documents with matching checkout provenance
+        if: always()
+        run: node scripts/windows-observer-diagnostics.mjs validate --output work/ci-windows-observer
+        timeout-minutes: 1
+      - name: Preserve only sanitized observer evidence including anomalies
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-19-observer-diagnostic-${{ matrix.os }}-${{ github.sha }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
+          path: work/ci-windows-observer/diagnostic.json
+          if-no-files-found: error
+          retention-days: 7
+      - name: Preserve only finite focused test status including failures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-19-observer-tests-${{ matrix.os }}-${{ github.sha }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
+          path: work/ci-windows-observer/test-status.json
+          if-no-files-found: error
+          retention-days: 7
+
   project-category-move-service-early:
     name: Early real-service project category move (${{ matrix.os }})
     strategy:
