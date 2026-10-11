@@ -327,20 +327,24 @@ test("control publication and read failures are caught and stop receiver polling
 
 test("control reports a real read failure as error when an active read rejects after expiry", { timeout: 3000 }, async t => {
   await withControlRoot(async root => {
-    const unavailable = join(root, "occupied");
-    await writeFile(unavailable, "Keep");
+    const command = join(root, "ack.control");
+    await writeFile(command, "ack\n");
     const filesystem = require("node:fs/promises"), originalOpen = filesystem.open;
     let now = 0, release, started;
     const blocked = new Promise(resolve => { release = resolve; });
     const reading = new Promise(resolve => { started = resolve; });
     const pendingRead = t.mock.method(filesystem, "open", async (...args) => {
-      if (args[0] === join(unavailable, "ack.control")) { started(); await blocked; }
-      // A real file cannot be traversed as the control root (ENOTDIR).
+      if (args[0] === command) {
+        const file = await originalOpen(...args);
+        try { started(); await blocked; } finally { await file.close(); }
+        // stat() on this real closed handle rejects with EBADF on both OSes.
+        return file;
+      }
       return originalOpen(...args);
     });
     t.mock.timers.enable({ apis: ["setTimeout"] });
     const clock = t.mock.method(Date, "now", () => now);
-    const control = receive(unavailable, 30);
+    const control = receive(root, 30);
     try {
       control.receiver.resultPublished(); t.mock.timers.tick(1);
       await reading;
@@ -351,7 +355,7 @@ test("control reports a real read failure as error when an active read rejects a
       t.mock.timers.tick(100);
       control.receiver.dispose(); t.mock.timers.tick(100);
       assert.deepEqual(control.events, ["error"]);
-      assert.equal(await readFile(unavailable, "utf8"), "Keep");
+      assert.equal(await readFile(command, "utf8"), "ack\n");
     } finally { release(); control.receiver.dispose(); clock.mock.restore(); t.mock.timers.reset(); pendingRead.mock.restore(); }
   });
 });

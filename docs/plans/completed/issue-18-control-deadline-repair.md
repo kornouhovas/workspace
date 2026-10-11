@@ -68,6 +68,14 @@ No percentage coverage gate or additional documentation task is introduced for t
 - Scoped ESLint passed with zero warnings (eslint.log). Documentation links and diff whitespace checks passed before plan edits and were rerun after this evidence update (docs-final.log, diff-final.log). Only the three owned paths are included in the local task commit; its SHA is reported at handoff and retained in the ignored evidence receipt.
 - Separate review, task-branch publication, exact-SHA Actions rerun and CI artifact interpretation remain coordinator-owned gates. No tracker, push, merge, release, signing or global configuration action was performed. Historical CI scheduling/filesystem attribution remains unproven.
 
+## Review follow-up: Portable delayed-read failure control
+
+- The review against 49fcc6683c3ddbde16debf8b2001ea3408bad31b found that the new file-as-parent negative control depended on macOS ENOTDIR. Node 22.21.1 Windows libuv maps ERROR_DIRECTORY and ERROR_PATH_NOT_FOUND to ENOENT, which readCommand intentionally treats as an absent command. With the clock already advanced, this yields timeout instead of the required error.
+- An ignored diagnostic preload replayed that error classification against the actual receiver: the unchanged test failed with exactly timeout, and the repaired test passed with exactly error. This injected-classification evidence does not establish actual Windows execution or historical CI attribution.
+- The repaired control opens the real disposable ack record before expiry, waits for controlled clock advancement, then closes its FileHandle before returning it. Actual stat on the closed handle rejects with EBADF; the test requires one error, unchanged command bytes and no later callbacks. The production code and receiver helper remain unchanged.
+- Both independent reviewers inspected the correction without remaining findings. Node v22.21.1 full fixture checks passed 23/23 without skips, and scoped ESLint passed. The earlier full-suite and protocol evidence is reused for unchanged inputs: all 72 recorded input hashes and the executable digest fa6dc0f1a40ae51b8f6f512a55d54aee5d6cbd127154845a93b26408c3e64035 still match. Documentation and diff checks are rerun after this update.
+- Fresh red/green logs, fixture artifacts and diagnosis are retained separately under work/issue-18/ci-38150033449/control-deadline-review-repair/. The coordinator still owns the actual Windows/macOS exact-SHA Actions rerun and artifact acceptance.
+
 ## Post-Completion
 
 The coordinator owns separate Matt/Ralphex review, task-branch push, exact-SHA Actions rerun, artifact interpretation and tracker updates. The executor performs none of those actions.
