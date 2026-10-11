@@ -126,7 +126,7 @@ for (const mode of ["direct", "grouped"]) {
       for (const [table, rows] of Object.entries(before)) if (table !== "__drizzle_migrations") assert.deepEqual(after[table], rows, table);
       assert.deepEqual(after.project_creation_operations, []);
       assert.deepEqual(after.__drizzle_migrations.slice(0, 8), before.__drizzle_migrations);
-      assert.equal(after.__drizzle_migrations.length, 9);
+      assert.equal(after.__drizzle_migrations.length, 10);
       assert.deepEqual(f.sql.pragma("foreign_key_check"), []);
       assert.equal(service.handleQuery({ type: "settings.load" }).value.language, "ru");
       assert.deepEqual(inventory(f.root), files); f.close();
@@ -743,7 +743,7 @@ test("late migration failure rolls back journal/schema changes and every populat
   f.open(); f.close(); f.open();
   const after = records(f.sql);
   for (const [table, rows] of Object.entries(before)) if (table !== "__drizzle_migrations") assert.deepEqual(after[table], rows);
-  assert.equal(after.__drizzle_migrations.length, 9); assert.deepEqual(after.project_creation_operations, []);
+  assert.equal(after.__drizzle_migrations.length, 10); assert.deepEqual(after.project_creation_operations, []);
   assert.deepEqual(inventory(f.root), files);
 }, true));
 

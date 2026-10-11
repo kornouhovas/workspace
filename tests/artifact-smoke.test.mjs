@@ -25,6 +25,7 @@ const packagedFiles = [
   "dist/service/db/migrations/0006_grouped_discovery.sql",
   "dist/service/db/migrations/0007_discovery_mode_changes.sql",
   "dist/service/db/migrations/0008_project_creation.sql",
+  "dist/service/db/migrations/0009_project_rename.sql",
   "dist/service/db/migrations/meta/_journal.json",
 ];
 
@@ -239,6 +240,9 @@ for (const scenario of [
   { name: "missing unpacked rename adapter", omitted: ["unpacked-rename"], error: /adapter is missing or linked/ },
   { name: "corrupt rename adapter", corrupt: "dist/service/native/project-rename.node", error: /differs from current runtime build/ },
   { name: "missing renderer assets", omitted: ["renderer-assets"], error: /missing renderer resource/ },
+  { name: "missing rename SQL", omitted: ["dist/service/db/migrations/0009_project_rename.sql"], error: /missing.*0009_project_rename/ },
+  { name: "missing rename journal entry", omitEntry: 9, error: /journal is missing 0009_project_rename/ },
+  { name: "modified rename SQL", corrupt: "dist/service/db/migrations/0009_project_rename.sql", error: /migration differs from source/ },
   { name: "missing creation SQL", omitted: ["dist/service/db/migrations/0008_project_creation.sql"], error: /missing.*0008_project_creation/ },
   { name: "missing creation journal entry", omitEntry: 8, error: /journal is missing 0008_project_creation/ },
   { name: "modified creation SQL", corrupt: "dist/service/db/migrations/0008_project_creation.sql", error: /migration differs from source/ },

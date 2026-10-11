@@ -74,6 +74,7 @@ Files:
 - Modify: src/service/db/migrations/meta/_journal.json
 - Create: tests/project-rename-journal.test.mjs
 - Modify: tests/settings-service.test.mjs for the migration-count expectation
+- Modify: tests/project-creation-service.test.mjs for affected prior-upgrade migration-count expectations
 - Modify: tests/build-smoke.test.mjs
 - Modify: tests/artifact-smoke.test.mjs
 - Modify: scripts/check-artifact.mjs
@@ -84,13 +85,22 @@ Interfaces:
 - Export isProjectRenameRequest(value: unknown) with exact-key validation.
 - Add schema.projectRenameOperations for source-owned durable operations.
 
-- [ ] Write failing contract tests for all five requests, malformed UUIDs/revisions, unknown actions, extra fields and submitted paths/native evidence; preserve valid authored name text.
-- [ ] Implement contract types and migration 0009. Persist immutable request/context, original/requested/staging locators, full identities, last verified placement, problem and terminal result/revision. Keep initiatingWorkspaceId historical without a workspace deletion cascade.
-- [ ] Guard legal transitions, evidence consistency, immutable terminal receipts, DELETE/REPLACE history protection, one unfinished operation per project and cross-role exact-path conflicts between unfinished rename rows. Permit aliases inside one operation without weakening conflicts with another.
-- [ ] Guard successful completion against the same active source-owned project/category/native identity and committed discovery revision. Represent validated unchanged receipts explicitly, allowing the unchanged revision without filesystem mutation; retain original-placement evidence for safe failed/keep_original termination.
-- [ ] Test populated 0000–0008 upgrades, reopen, migration rollback, multiple sequential renames of one project, invalid transitions, changed bindings, duplicate reservations and unchanged Text/creation history.
-- [ ] Update build/artifact requirements for migration 0009 and test missing SQL, missing journal entry and modified migration content. Update the existing fresh-database migration-count assertion.
-- [ ] Refresh required outputs and run node --import tsx --test tests/project-rename-journal.test.mjs tests/settings-service.test.mjs tests/build-smoke.test.mjs tests/artifact-smoke.test.mjs, npm run typecheck and git diff --check; commit the verified foundation.
+- [x] Write failing contract tests for all five requests, malformed UUIDs/revisions, unknown actions, extra fields and submitted paths/native evidence; preserve valid authored name text.
+- [x] Implement contract types and migration 0009. Persist immutable request/context, original/requested/staging locators, full identities, last verified placement, problem and terminal result/revision. Keep initiatingWorkspaceId historical without a workspace deletion cascade.
+- [x] Guard legal transitions, evidence consistency, immutable terminal receipts, DELETE/REPLACE history protection, one unfinished operation per project and cross-role exact-path conflicts between unfinished rename rows. Permit aliases inside one operation without weakening conflicts with another.
+- [x] Guard successful completion against the same active source-owned project/category/native identity and committed discovery revision. Represent validated unchanged receipts explicitly, allowing the unchanged revision without filesystem mutation; retain original-placement evidence for safe failed/keep_original termination.
+- [x] Test populated 0000–0008 upgrades, reopen, migration rollback, multiple sequential renames of one project, invalid transitions, changed bindings, duplicate reservations and unchanged Text/creation history.
+- [x] Update build/artifact requirements for migration 0009 and test missing SQL, missing journal entry and modified migration content. Update the existing fresh-database migration-count assertion.
+- [x] Refresh required outputs and run node --import tsx --test tests/project-rename-journal.test.mjs tests/settings-service.test.mjs tests/build-smoke.test.mjs tests/artifact-smoke.test.mjs, npm run typecheck and git diff --check; commit the verified foundation.
+
+Task 1 verification (local macOS arm64, Node.js 22.21.1):
+
+- Confirmed the initial contract/journal test failed before implementation; artifact requirement tests and the retained-destination/restaging regression also failed before their fixes.
+- `npm run build` passed. After the final SQL refinement, `node scripts/copy-migrations.mjs` refreshed emitted migrations; build/artifact tests verified the final journal and SQL against source.
+- `node --import tsx --test tests/project-rename-journal.test.mjs tests/settings-service.test.mjs tests/build-smoke.test.mjs tests/artifact-smoke.test.mjs` passed: 71 tests, no failures or skips, including 18 contract/journal tests.
+- The shared migration boundary required updating two prior-upgrade count assertions in `tests/project-creation-service.test.mjs`. Its 114 tests passed against the final schema/migration and unchanged service outputs; this evidence remains valid after the final assertion-only journal-test correction.
+- `npm run typecheck`, ESLint on the affected TypeScript/JavaScript files, and `git diff --check` passed.
+- This establishes the contract and journal foundation only. Rename execution, reservation integration, recovery/IPC and real-platform service acceptance remain in subsequent tasks and coordinator checkpoints.
 
 ### Task 2: Coordinate outstanding renames with existing source consumers
 

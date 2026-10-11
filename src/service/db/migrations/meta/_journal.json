@@ -64,6 +64,13 @@
       "when": 1791504008000,
       "tag": "0008_project_creation",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1791504009000,
+      "tag": "0009_project_rename",
+      "breakpoints": true
     }
   ]
 }

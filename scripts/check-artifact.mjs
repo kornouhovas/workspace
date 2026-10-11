@@ -23,6 +23,7 @@ const requiredFiles = [
   "dist/service/db/migrations/0006_grouped_discovery.sql",
   "dist/service/db/migrations/0007_discovery_mode_changes.sql",
   "dist/service/db/migrations/0008_project_creation.sql",
+  "dist/service/db/migrations/0009_project_rename.sql",
   "dist/service/db/migrations/meta/_journal.json",
 ];
 
@@ -52,6 +53,8 @@ export async function checkArtifact(root, { platform = process.platform, arch = 
 
   assert.ok(journal.entries?.some((entry) => entry.idx === 8 && entry.tag === "0008_project_creation"),
     "Packaged migration journal is missing 0008_project_creation");
+  assert.ok(journal.entries?.some((entry) => entry.idx === 9 && entry.tag === "0009_project_rename"),
+    "Packaged migration journal is missing 0009_project_rename");
   const sourceMigrations = fileURLToPath(new URL("../src/service/db/migrations/", import.meta.url));
   assert.deepEqual(journal, JSON.parse(await readFile(join(sourceMigrations, "meta", "_journal.json"), "utf8")),
     "Packaged migration journal differs from source");
