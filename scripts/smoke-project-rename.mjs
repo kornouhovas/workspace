@@ -50,7 +50,7 @@ export async function superviseRenameService({ fault, evidenceDirectory = proces
       if (command === "ack") ackPublished = true; else exitPublished = true;
       record(`${command}_sent`);
     }).catch(() => {
-      if (!terminal) { evidence.controlError = true; record("control_publish_failed"); stopOwned(); }
+      if (!terminal) { evidence.controlError = true; evidence.controlFailure = "publish"; record("control_publish_failed"); stopOwned(); }
     });
   };
   const record = stage => { if (evidence.events.length < 80) evidence.events.push(stage); else protocolError = true; };
@@ -100,6 +100,9 @@ export async function superviseRenameService({ fault, evidenceDirectory = proces
     } else if (message.stage === "main_ready") {
       if (mainReady) protocolError = true;
       mainReady = true;
+    } else if (message.stage === "startup_failed" && message.code === "fixture_control_failed") {
+      // Retain only this finite receiver observation, never filesystem errors.
+      evidence.controlError = true; evidence.controlFailure = "receive";
     } else protocolError = true;
   };
   const protocol = createProtocol(observe);

@@ -15,60 +15,171 @@ const controlEvidence = name => process.env.WORKSPACE_RENAME_SERVICE_EVIDENCE_DI
   ? join(process.env.WORKSPACE_RENAME_SERVICE_EVIDENCE_DIR, name) : undefined;
 
 const supported = ["darwin", "win32"].includes(process.platform);
-test("real Electron service checkpoint requires every scenario, handshake, shutdown and cleanup", { skip: !supported }, async () => {
-  const result = await superviseRenameService({ evidenceDirectory: controlEvidence("success") });
-  assert.equal(result.ok, true, JSON.stringify(result));
-  assert.equal(result.cleanup, "removed");
-  assert.equal(result.shutdownConfirmed, true);
-  assert.deepEqual(Object.keys(result.scenarios), SCENARIOS);
-  assert.equal(SCENARIOS.length, 16);
-  assert.ok(Object.values(result.scenarios).every(value => value.status === "passed"));
-  assert.deepEqual(result.events.filter(stage => ["result", "ack_sent", "ack_received", "exit_sent", "main_exit"].includes(stage)),
-    ["result", "ack_sent", "ack_received", "exit_sent", "main_exit"]);
-  assert.equal(result.exitCode, 0);
-  assert.equal(result.signaled, false);
-  assert.equal(result.timedOut ?? false, false);
-  assert.equal(result.protocolError, false);
-  assert.equal(result.protocol.failed, false);
+const handshake = ["result", "ack_sent", "ack_received", "exit_sent", "main_exit"];
+const privateValues = ["Original", "Category", "sentinel", "nativeIdentity", "birthtimeNs", "workspace.sqlite", "stack", "private injected",
+  "workspace-rename-service-", "ack.control", "exit.control", "WORKSPACE_RENAME_SERVICE_ROOT", "EISDIR", "EEXIST", "Error:", "ack\\n", "exit\\n",
+  "Invalid fixture command", "Duplicate fixture command", "Fixture control deadline", "Fixture publication deadline"];
+function assertPrivate(result) {
+  const encoded = JSON.stringify(result);
+  for (const secret of privateValues) assert.equal(encoded.includes(secret), false, secret);
+}
+async function checkpoint(fault) {
+  const temporary = !controlEvidence(fault ?? "success");
+  const directory = controlEvidence(fault ?? "success") ?? await mkdtemp(join(tmpdir(), "rename-evidence-test-"));
+  try {
+    const result = await superviseRenameService({ fault, evidenceDirectory: directory });
+    const stored = JSON.parse(await readFile(join(directory, "service-checkpoint.json"), "utf8"));
+    assert.deepEqual(stored, result); // Every control must persist the final cleanup outcome.
+    assertPrivate(stored);
+    return result;
+  } finally { if (temporary) await rm(directory, { recursive: true, force: true }); }
+}
+function assertStages(result, expected) {
+  assert.deepEqual(result.events.filter(stage => handshake.includes(stage)), expected);
+}
+function assertOrderedOnce(result, stages) {
+  let previous = -1;
+  for (const stage of stages) {
+    assert.equal(result.events.filter(value => value === stage).length, 1, stage);
+    const index = result.events.indexOf(stage);
+    assert.ok(index > previous, stage); previous = index;
+  }
+}
+function assertProtocol(result, malformed = false) {
+  assert.equal(result.protocolError, malformed);
+  assert.equal(result.protocol.failed, malformed);
   assert.equal(result.protocol.pendingBytes, 0);
-  assert.ok(result.utilityCount >= 5);
-  assert.equal(result.utilityExitCount, result.utilityCount);
-  assert.equal(result.utilityExitFailure, false);
-  assert.equal(result.events.filter(stage => stage === "utility_started").length, result.utilityCount);
-  assert.equal(result.events.filter(stage => stage === "utility_exit").length, result.utilityCount);
+  const { ignoredWhitespaceRecords, ignoredWhitespaceTailBytes } = result.protocol.diagnostics;
+  // Valid blank output remains acceptable on either platform; it is not the
+  // historical Windows acknowledgment failure or a malformed record.
+  for (const count of [ignoredWhitespaceRecords, ignoredWhitespaceTailBytes]) assert.ok(Number.isSafeInteger(count) && count >= 0);
+  assert.deepEqual(result.protocol.diagnostics, { ignoredWhitespaceRecords, ignoredWhitespaceTailBytes,
+    malformedJsonRecords: malformed ? 1 : 0, unknownStageRecords: 0, incompleteTrailingBytes: 0, outputLimits: 0 });
+}
+function assertScenarios(result, status = () => "passed") {
+  assert.deepEqual(result.scenarios, Object.fromEntries(SCENARIOS.map(key => [key, { status: status(key) }])));
+}
+function assertMountedCase(result) {
   assert.deepEqual(Object.keys(result.mountedCase), ["direct", "grouped"]);
   for (const behavior of Object.values(result.mountedCase)) assert.ok(["self_alias_staged", "distinct_direct"].includes(behavior));
+}
+function assertUtilities(result, count = 5) {
+  assert.equal(result.utilityCount, count);
+  assert.equal(result.utilityExitCount, count);
+  assert.equal(result.utilityExitFailure, false);
+  assert.equal(result.events.filter(stage => stage === "utility_started").length, count);
+  assert.equal(result.events.filter(stage => stage === "utility_exit").length, count);
+}
+function assertCleanup(result, failed = false) {
+  assert.equal(result.shutdownConfirmed, true, JSON.stringify(result));
+  assert.equal(result.cleanup, failed ? "failed" : "removed");
+  assertOrderedOnce(result, ["launched", "main_ready", "main_exit", "cleanup_started", failed ? "cleanup_failed" : "cleanup_complete"]);
+  assert.equal(result.events.includes("supervisor_failed"), false);
+  assert.equal(result.events.includes("spawn_error"), false);
+  assert.equal(result.evidenceWriteFailed ?? false, false);
+}
+function assertNormalHandshake(result, { exitCode = 0, malformed = false, cleanupFailed = false } = {}) {
+  assertStages(result, handshake);
+  assertOrderedOnce(result, handshake);
+  assertCleanup(result, cleanupFailed);
+  assert.equal(result.exitCode, exitCode);
+  assert.equal(result.signaled, false);
+  assert.equal(result.timedOut ?? false, false);
+  assert.equal(result.events.includes("supervisor_timeout"), false);
+  assert.equal(result.controlError ?? false, false);
+  assert.equal(result.events.includes("control_publish_failed"), false);
+  assert.equal(result.events.includes("startup_failed"), false);
+  assertProtocol(result, malformed);
+}
+
+test("real Electron service checkpoint requires every scenario, handshake, shutdown and cleanup", { skip: !supported }, async () => {
+  const result = await checkpoint();
+  assert.equal(result.ok, true, JSON.stringify(result));
+  assert.equal(SCENARIOS.length, 16);
+  assertNormalHandshake(result);
+  assertScenarios(result);
+  assertUtilities(result);
+  assertMountedCase(result);
 });
-for (const fault of ["failure", "timeout", "malformed", "missing-assertion", "skipped", "missing-ack", "cleanup"]) {
-  test(`service fixture rejects ${fault} and reports finite failure/cleanup evidence`, { skip: !supported }, async () => {
-    const result = await superviseRenameService({ fault, evidenceDirectory: controlEvidence(fault) });
+for (const fault of ["failure", "malformed", "missing-assertion", "skipped", "cleanup"]) {
+  test(`service ${fault} control proves its intended failure with a complete normal handshake`, { skip: !supported }, async () => {
+    const result = await checkpoint(fault);
     assert.equal(result.ok, false, JSON.stringify(result));
-    assert.equal(result.shutdownConfirmed, true, JSON.stringify(result));
-    assert.equal(result.cleanup, fault === "cleanup" ? "failed" : "removed");
-    if (fault === "failure") assert.ok(Object.values(result.scenarios).some(value => value.status === "failed"));
-    if (fault === "skipped") assert.ok(Object.values(result.scenarios).some(value => value.status === "skipped"));
-    if (fault === "missing-assertion") assert.ok(Object.values(result.scenarios).some(value => value.status === "unreached"));
-    if (fault === "malformed") assert.equal(result.protocol.failed, true);
-    if (["timeout", "missing-ack"].includes(fault)) {
-      assert.equal(result.timedOut, true); assert.ok(result.utilityCount > 0);
+    assertNormalHandshake(result, { exitCode: fault === "failure" ? 1 : 0, malformed: fault === "malformed", cleanupFailed: fault === "cleanup" });
+    assertScenarios(result, key => fault === "failure" ? (key === "direct.rename" ? "failed" : "unreached")
+      : key === "direct.rename" && fault === "missing-assertion" ? "unreached"
+      : key === "direct.rename" && fault === "skipped" ? "skipped" : "passed");
+    assertUtilities(result, fault === "failure" ? 1 : 5);
+    if (fault === "failure") assert.deepEqual(result.mountedCase, {});
+    else assertMountedCase(result);
+  });
+}
+for (const fault of ["timeout", "missing-ack"]) {
+  test(`service ${fault} control proves a genuine timeout at its own checkpoint`, { skip: !supported }, async () => {
+    const result = await checkpoint(fault);
+    assert.equal(result.ok, false, JSON.stringify(result));
+    assertCleanup(result);
+    assertProtocol(result);
+    assert.equal(result.controlError ?? false, false);
+    assert.equal(result.timedOut, true);
+    assertStages(result, fault === "timeout" ? ["main_exit"] : ["result", "main_exit"]);
+    assertOrderedOnce(result, [fault === "timeout" ? "worker_started" : "result", "supervisor_timeout", "main_exit"]);
+    assertScenarios(result, () => fault === "timeout" ? "unreached" : "passed");
+    if (fault === "timeout") {
+      assert.deepEqual(result.mountedCase, {});
+      assert.equal(result.utilityCount, 1);
+      assert.equal(result.events.filter(stage => stage === "utility_started").length, 1);
+      assert.ok(result.events.indexOf("utility_started") < result.events.indexOf("worker_started"));
+      // Owned-worker termination codes/signals differ between platforms.
+    } else { assertUtilities(result); assertMountedCase(result); }
+  });
+}
+for (const fault of ["control-publication", "control-read", "premature-main-exit"]) {
+  test(`service ${fault} control proves the specific control-seam failure`, { skip: !supported }, async () => {
+    const result = await checkpoint(fault);
+    assert.equal(result.ok, false, JSON.stringify(result));
+    assertCleanup(result);
+    assertProtocol(result);
+    assert.equal(result.timedOut ?? false, false);
+    assert.equal(result.events.includes("supervisor_timeout"), false);
+    assertUtilities(result);
+    if (fault === "premature-main-exit") {
+      assertScenarios(result, () => "unreached");
+      assert.deepEqual(result.mountedCase, {});
+      assertStages(result, ["main_exit"]);
+      assert.equal(result.exitCode, 7);
+      assert.equal(result.signaled, false);
+      assert.equal(result.controlError ?? false, false);
+      assert.equal(result.events.includes("startup_failed"), false);
+      assert.equal(result.events.includes("control_publish_failed"), false);
+    } else {
+      assertScenarios(result); assertMountedCase(result);
+      assert.equal(result.controlError, true);
+      assert.equal(result.controlFailure, fault === "control-read" ? "receive" : "publish");
+      assertStages(result, fault === "control-read" ? ["result", "ack_sent", "main_exit"] : ["result", "main_exit"]);
+      assertOrderedOnce(result, ["result", fault === "control-read" ? "startup_failed" : "control_publish_failed", "main_exit"]);
+      assert.equal(result.events.includes(fault === "control-read" ? "control_publish_failed" : "startup_failed"), false);
+      if (fault === "control-read") { assert.equal(result.exitCode, 1); assert.equal(result.signaled, false); }
     }
-    const encoded = JSON.stringify(result);
-    for (const secret of ["Original", "Category", "sentinel", "nativeIdentity", "birthtimeNs", "workspace.sqlite", "stack", "private injected"]) assert.equal(encoded.includes(secret), false, secret);
   });
 }
 
-test("evidence persists sanitized failure outcomes and cleanup, and write failures cannot prevent cleanup", { skip: !supported }, async () => {
+test("evidence write failures cannot prevent confirmed shutdown and cleanup or overwrite an occupied file", { skip: !supported }, async () => {
   const directory = await mkdtemp(join(tmpdir(), "rename-evidence-test-"));
   try {
-    const result = await superviseRenameService({ fault: "failure", evidenceDirectory: directory });
-    const stored = JSON.parse(await readFile(join(directory, "service-checkpoint.json"), "utf8"));
-    assert.deepEqual(stored, result);
-    assert.equal(stored.scenarios["direct.rename"].status, "failed");
-    assert.equal(stored.scenarios["grouped.recovery"].status, "unreached");
     const file = join(directory, "occupied"); await writeFile(file, "Keep");
     const unavailable = await superviseRenameService({ fault: "failure", evidenceDirectory: file });
     assert.equal(unavailable.evidenceWriteFailed, true);
-    assert.equal(unavailable.ok, false); assert.equal(unavailable.cleanup, "removed");
+    assert.equal(unavailable.ok, false);
+    assert.equal(unavailable.cleanup, "removed");
+    assert.equal(unavailable.shutdownConfirmed, true);
+    assertStages(unavailable, handshake);
+    assert.equal(unavailable.exitCode, 1);
+    assert.equal(unavailable.signaled, false);
+    assert.equal(unavailable.timedOut ?? false, false);
+    assert.equal(unavailable.controlError ?? false, false);
+    assertProtocol(unavailable);
+    assertPrivate(unavailable);
     assert.equal(await readFile(file, "utf8"), "Keep");
   } finally { await rm(directory, { recursive: true, force: true }); }
 });

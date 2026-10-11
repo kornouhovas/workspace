@@ -15,7 +15,7 @@ if (process.versions.electron) {
   const fault = process.env.WORKSPACE_RENAME_SERVICE_FAULT;
   const scenarios = Object.fromEntries(SCENARIOS.map(key => [key, { status: "unreached" }]));
   const mountedCase = {};
-  const send = value => process.stdout.write(JSON.stringify(value) + "\n");
+  const send = (value, flushed) => process.stdout.write(JSON.stringify(value) + "\n", flushed);
   const own = new Set();
   let activeCheck, sql, controller, deadline, finishing = false, finalOK = false;
   // Poll before main_ready; stdout remains the result/receiver-observation route.
@@ -23,7 +23,10 @@ if (process.versions.electron) {
     deadline: Date.now() + 45000,
     onAck: () => send({ stage: "ack_received" }),
     onExit: () => app.exit(finalOK ? 0 : 1),
-    onError: () => { clearTimeout(deadline); app.exit(1); },
+    onError: () => {
+      clearTimeout(deadline);
+      send({ stage: "startup_failed", code: "fixture_control_failed" }, () => app.exit(1));
+    },
     onTimeout: () => { clearTimeout(deadline); app.exit(1); },
   });
   app.once("will-quit", () => control.dispose());
@@ -50,9 +53,17 @@ if (process.versions.electron) {
     try { await stop(); } catch { ok = false; }
     sql?.close(); sql = undefined;
     finalOK = ok;
+    // Exit at the control seam after workers stop, before publishing any result.
+    if (fault === "premature-main-exit") { app.exit(7); return; }
+    // Exclusive publication must fail on an occupied temporary record. The
+    // supervisor still uses the bounded real publisher without mocked I/O.
+    if (fault === "control-publication") fs.mkdirSync(join(root, "ack.control.pending"));
     control.resultPublished();
     send({ stage: "result", ok, scenarios, mountedCase,
       versions: { electron: process.versions.electron, node: process.versions.node } });
+    // The receiver cannot read a directory as an exact exit command. Ack
+    // publication remains valid; exit publication is never authorized.
+    if (fault === "control-read") fs.mkdirSync(join(root, "exit.control"));
     // Receiver remains live until the supervisor observes this result, publishes
     // ack, observes ack_received and explicitly publishes exit.
   }
