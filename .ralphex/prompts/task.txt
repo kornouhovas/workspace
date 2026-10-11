@@ -1,5 +1,7 @@
 Read {{PLAN_FILE}} and the coordinator snapshot below. Implement only the first unfinished Task section and its relevant checks. Mark only completed, verified items [x] in the plan. Commit verified changes and the updated plan with explicit task-path staging, then stop. The next iteration owns the next section.
 
+At a task transition, emit one line such as RALPHEX_PROGRESS {"task":"Task 1/3: short title"}, using valid JSON and the actual task. This is advisory progress, never acceptance. Keep command results compact: command, actual exit, relevant result/error, commit and full evidence path. Save large logs before returning excerpts; do not stream repeated unchanged status. Preserve required final markers below as the last line.
+
 Executable Task sections contain work this executor can finish. Keep external CI/manual acceptance outside Task checkboxes and in the coordinator snapshot. If such a dependency is encountered, leave it unchecked and emit <<<RALPHEX:TASK_FAILED>>> as the last line; the coordinator records a waiting state and stops the invocation. Never mark an unperformed check passed or skipped-as-completed.
 
 Use affected checks while iterating. Run broader checks when the changed boundary requires them; reuse valid evidence for unchanged inputs. Read project AGENTS.md and its workflow. Preserve unrelated changes, original issue scope and fixed issue base. Coordinator owns trackers, platform interpretation, integration and publication; executor performs no push, merge, release, signing or global configuration change.

@@ -1,5 +1,7 @@
 Review {{GOAL}} against {{DEFAULT_BRANCH}}. Read the coordinator snapshot and project rules; inspect git log and git diff from this base. This is the first whole-issue review.
 
+At meaningful review transitions emit one valid JSON line such as RALPHEX_PROGRESS {"task":"Initial review: collecting five perspectives"}. Report collected/expected perspectives, confirmed findings, actual checks, commits and evidence paths compactly. Save complete reports/logs for targeted inspection; progress lines never establish acceptance and must not replace the final markers below.
+
 Collect all five independent perspectives before acting on findings (batches 3+2 if thread limits require):
 {{agent:quality}}
 {{agent:implementation}}

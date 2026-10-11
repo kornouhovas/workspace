@@ -18,7 +18,7 @@ The installed Beads worktree behavior shares the database through the repository
 
 ## Ralphex
 
-For phase selection, early Windows feedback and compact continuation state, use [the Ralphex run guide](ralphex.md). Execution uses a tasks-only invocation; review and external waiting are separate phases.
+For phase selection, bounded observation, early Windows feedback and compact continuation state, use [the Ralphex run guide](ralphex.md). Execution uses a tasks-only invocation; review and external waiting remain separate explicit phases with ownership checked before continuation. The separate observer performs technical waits without a model call per unchanged poll; the guide specifies the actual tool fallback, progress/lease requirements and adoption limits.
 
 Repository defaults are in [.ralphex/config](../.ralphex/config). They select Codex, `docs/plans`, the `new-workspace` base and disabled automatic finalization. The phase runner creates a run-local gpt-6.1-sol/high profile; direct CLI planning uses the inspected effective configuration. Record the actual executor configuration in run evidence. Old progress logs and worktrees are not part of the new foundation.
 

@@ -103,3 +103,35 @@ test('dirty review results, concurrent executor locks and foreign bases cannot p
   rmSync(join(f.dir, 'executor.lock'));
   assert.throws(() => initialize(join(f.root, 'work/other'), { cwd: f.root, issue: 'x', beads: 'y', base: '0'.repeat(40) }));
 });
+
+test('launch identities remain distinct and a replaced lock is never removed or accepted', (t) => {
+  const f = fixture(t); let first;
+  assert.match(f.state.runId, /^[a-f0-9-]{36}$/);
+  phase(f.dir, 'execute', { plan: 'docs/plan.md', invoke() {
+    const state = readState(f.dir), lock = JSON.parse(readFileSync(join(f.dir, 'executor.lock')));
+    first = state.executionId; assert.equal(lock.executionId, first); assert.equal(lock.runId, f.state.runId);
+    assert.equal(lock.runDirectory, f.dir); return { status: 0 };
+  } });
+  assert.throws(() => phase(f.dir, 'review', { invoke() {
+    assert.notEqual(readState(f.dir).executionId, first);
+    writeFileSync(join(f.dir, 'executor.lock'), JSON.stringify({ pid: process.pid, token: 'foreign' })); return { status: 0 };
+  } }), /ownership/);
+  assert.equal(JSON.parse(readFileSync(join(f.dir, 'executor.lock'))).token, 'foreign');
+  assert.equal(readState(f.dir).status, 'running');
+});
+
+test('a fresh launch does not carry an earlier phase signal or launch error',t=>{
+  const f=fixture(t);phase(f.dir,'review',{invoke:()=>({status:null,signal:'SIGTERM',error:new Error('earlier launch')})});
+  phase(f.dir,'review',{invoke(){const running=readState(f.dir);assert.equal(running.lastSignal,null);assert.equal(running.lastError,null);return{status:0};}});
+  assert.equal(readState(f.dir).status,'awaiting_verification');
+});
+
+for (const failure of [{status:9},{status:null,signal:'SIGTERM',error:new Error('launch failed')}]) test(`unchanged reviewed HEAD cannot erase subsequent failed execution (${failure.status ?? failure.signal})`,t=>{
+  const f=fixture(t);
+  phase(f.dir,'execute',{plan:'docs/plan.md',invoke:()=>({status:0})});phase(f.dir,'review',{invoke:()=>({status:0})});
+  const failed=phase(f.dir,'execute',{invoke:()=>failure}),state=readFileSync(join(f.dir,'current.json'),'utf8'),history=readFileSync(join(f.dir,'events.jsonl'),'utf8');
+  const reused=phase(f.dir,'review',{invoke:()=>assert.fail('receipt reuse must not launch')});
+  assert.equal(reused.status,'failed');assert.equal(reused.lastExit,failure.status);assert.equal(reused.executionId,failed.executionId);
+  assert.equal(reused.lastSignal,failure.signal ?? null);assert.equal(reused.lastError,failure.error?.message ?? null);
+  assert.equal(readFileSync(join(f.dir,'current.json'),'utf8'),state);assert.equal(readFileSync(join(f.dir,'events.jsonl'),'utf8'),history);
+});

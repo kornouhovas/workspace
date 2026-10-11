@@ -1,5 +1,6 @@
+import { randomUUID } from 'node:crypto';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { closeSync, existsSync, mkdirSync, openSync, readFileSync, realpathSync, renameSync, rmSync, writeFileSync, appendFileSync } from 'node:fs';
+import { closeSync, ftruncateSync, writeSync, fstatSync, statSync, existsSync, mkdirSync, openSync, readFileSync, realpathSync, renameSync, rmSync, writeFileSync, appendFileSync } from 'node:fs';
 import { basename, dirname, isAbsolute, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -29,7 +30,7 @@ export function initialize(dir, { cwd = process.cwd(), issue, beads, base }) {
   mkdirSync(dir, { recursive: true });
   return unlocked(dir, () => {
     if (existsSync(join(dir, 'current.json'))) throw new Error('Run already initialized');
-    return save(dir, { version: 1, issue, beads, worktree, issueBaseSha, lastReviewedSha: null,
+    return save(dir, { version: 1, runId: randomUUID(), runDirectory: realpathSync(dir), issue, beads, worktree, issueBaseSha, lastReviewedSha: null,
     status: 'ready', phase: null, plan: null, headSha: git(worktree, 'rev-parse', 'HEAD'),
       nextAction: 'Execute the reviewed bounded plan', evidence: [], lastExit: null }, 'initialized');
   });
@@ -38,8 +39,22 @@ export function initialize(dir, { cwd = process.cwd(), issue, beads, base }) {
 function unlocked(dir, action) {
   const lock = join(dir, 'executor.lock');
   const fd = openSync(lock, 'wx');
-  try { writeFileSync(fd, JSON.stringify({ pid: process.pid })); return action(); }
-  finally { closeSync(fd); rmSync(lock); }
+  const metadata = { pid: process.pid, token: randomUUID(), runDirectory: realpathSync(dir) };
+  const acquired = fstatSync(fd);
+  const owner = {
+    assert() {
+      let current, identity;
+      try { current = JSON.parse(readFileSync(lock, 'utf8')); identity = statSync(lock); } catch { throw new Error('Executor lock ownership lost; inspect running evidence'); }
+      if (current.token !== metadata.token || identity.dev !== acquired.dev || identity.ino !== acquired.ino) throw new Error('Executor lock ownership lost; inspect running evidence');
+    },
+    publish(fields) {
+      this.assert(); Object.assign(metadata, fields); ftruncateSync(fd, 0);
+      writeSync(fd, JSON.stringify(metadata), 0, 'utf8');
+    }
+  };
+  writeSync(fd, JSON.stringify(metadata), 0, 'utf8');
+  try { return action(owner); }
+  finally { try { owner.assert(); rmSync(lock); } finally { closeSync(fd); } }
 }
 
 function config(dir, state) {
@@ -60,46 +75,51 @@ function config(dir, state) {
 export function phase(dir, name, { plan, invoke = spawnSync } = {}) {
   dir = resolve(dir);
   if (!['execute', 'review'].includes(name)) throw new Error('Phase must be execute or review');
-  return unlocked(dir, () => {
-    const state = readState(dir);
-    if (['waiting', 'running'].includes(state.status)) throw new Error(`Run is ${state.status}; inspect the snapshot and owned executor first`);
-    const cwd = state.worktree;
-    if (git(cwd, 'status', '--porcelain')) throw new Error('Commit or preserve outstanding changes before launching a phase');
-    const head = git(cwd, 'rev-parse', 'HEAD');
-    const base = name === 'review' ? state.lastReviewedSha ?? state.issueBaseSha : state.issueBaseSha;
-    git(cwd, 'merge-base', '--is-ancestor', base, head);
-    if (name === 'review' && state.lastReviewedSha === head) return state;
-    const selectedPlan = plan ?? state.plan;
-    if (name === 'execute' && !selectedPlan) throw new Error('execute requires --plan');
-    if (selectedPlan) {
-      let file = isAbsolute(selectedPlan) ? selectedPlan : join(cwd, selectedPlan);
-      if (!existsSync(file)) file = join(dirname(file), 'completed', basename(file));
-      if (!existsSync(file)) throw new Error('Plan does not exist');
-      state.plan = file;
-    }
-    const args = ['--codex', '--base-ref', base, '--config-dir', config(dir, state), '--skip-finalize',
-      name === 'execute' ? '--tasks-only' : '--review'];
-    if (state.plan) args.push(state.plan);
-    state.status = 'running'; state.phase = name; state.headSha = head; state.lastExit = null;
-    state.nextAction = `Wait for the owned ${name} process`; save(dir, state, 'started');
-    let result;
-    try { result = invoke('ralphex', args, { cwd, stdio: 'inherit', env: process.env }); }
-    catch { result = { status: null }; }
-    const clean = !git(cwd, 'status', '--porcelain');
-    state.headSha = git(cwd, 'rev-parse', 'HEAD'); state.lastExit = result.status ?? null;
-    let ancestry = true;
-    try { git(cwd, 'merge-base', '--is-ancestor', base, state.headSha); }
-    catch { ancestry = false; }
-    if (state.plan && !existsSync(state.plan)) {
-      const archived = join(dirname(state.plan), 'completed', basename(state.plan));
-      if (existsSync(archived)) state.plan = archived;
-    }
-    const succeeded = result.status === 0 && !result.error && clean && ancestry;
-    state.status = succeeded ? (name === 'execute' ? 'awaiting_review' : 'awaiting_verification') : 'failed';
-    if (succeeded && name === 'review') state.lastReviewedSha = state.headSha;
-    state.nextAction = succeeded ? (name === 'execute' ? 'Run the separate review phase' : 'Obtain required platform evidence and coordinator verification') : 'Inspect phase failure; no automatic retry';
-    return save(dir, state, 'finished');
-  });
+  return unlocked(dir, owner => performPhase(dir, name, { plan, invoke, owner }));
+}
+
+function performPhase(dir, name, { plan, invoke = spawnSync, owner } = {}) {
+  const state = readState(dir);
+  if (['waiting', 'running'].includes(state.status)) throw new Error(`Run is ${state.status}; inspect the snapshot and owned executor first`);
+  const cwd = state.worktree;
+  if (git(cwd, 'status', '--porcelain')) throw new Error('Commit or preserve outstanding changes before launching a phase');
+  const head = git(cwd, 'rev-parse', 'HEAD');
+  const base = name === 'review' ? state.lastReviewedSha ?? state.issueBaseSha : state.issueBaseSha;
+  git(cwd, 'merge-base', '--is-ancestor', base, head);
+  if (name === 'review' && state.lastReviewedSha === head) return state;
+  const selectedPlan = plan ?? state.plan;
+  if (name === 'execute' && !selectedPlan) throw new Error('execute requires --plan');
+  if (selectedPlan) {
+    let file = isAbsolute(selectedPlan) ? selectedPlan : join(cwd, selectedPlan);
+    if (!existsSync(file)) file = join(dirname(file), 'completed', basename(file));
+    if (!existsSync(file)) throw new Error('Plan does not exist');
+    state.plan = file;
+  }
+  const args = ['--codex', '--base-ref', base, '--config-dir', config(dir, state), '--skip-finalize',
+    name === 'execute' ? '--tasks-only' : '--review'];
+  if (state.plan) args.push(state.plan);
+  state.executionId = randomUUID();
+  owner.publish({ runId: state.runId ?? null, executionId: state.executionId, worktree: cwd });
+  state.status = 'running'; state.phase = name; state.headSha = head; state.lastExit = null; state.lastSignal = null; state.lastError = null;
+  state.nextAction = `Wait for the owned ${name} process`; save(dir, state, 'started');
+  let result;
+  try { result = invoke('ralphex', args, { cwd, stdio: 'inherit', env: process.env }); }
+  catch (error) { result = { status: null, error }; }
+  owner.assert();
+  const clean = !git(cwd, 'status', '--porcelain');
+  state.headSha = git(cwd, 'rev-parse', 'HEAD'); state.lastExit = result.status ?? null; state.lastSignal = result.signal ?? null; state.lastError = result.error?.message ?? null;
+  let ancestry = true;
+  try { git(cwd, 'merge-base', '--is-ancestor', base, state.headSha); }
+  catch { ancestry = false; }
+  if (state.plan && !existsSync(state.plan)) {
+    const archived = join(dirname(state.plan), 'completed', basename(state.plan));
+    if (existsSync(archived)) state.plan = archived;
+  }
+  const succeeded = result.status === 0 && !result.error && clean && ancestry;
+  state.status = succeeded ? (name === 'execute' ? 'awaiting_review' : 'awaiting_verification') : 'failed';
+  if (succeeded && name === 'review') state.lastReviewedSha = state.headSha;
+  state.nextAction = succeeded ? (name === 'execute' ? 'Run the separate review phase' : 'Obtain required platform evidence and coordinator verification') : 'Inspect phase failure; no automatic retry';
+  return save(dir, state, 'finished');
 }
 
 export function checkpoint(dir, reason, next) {

@@ -5,13 +5,15 @@ description: "Run an existing Beads task through Ralphex when the user chooses R
 
 # Do Task Ralphex
 
+For a new issue or continuation after context reset, first read [the continuous issue flow](references/issue-flow.md). It defines the Matt Pocock route, coordinator ownership, progress and diagnostic evidence.
+
 Input: an existing Beads task and project. The coordinator owns trackers and delivery; Ralphex executes a bounded reviewed plan. Honor project rules, the chosen executor/models and existing authorization.
 
 ## Establish the run
 
 Read the actual checkout, `git status --short --branch`, applicable AGENTS.md, linked primary issue and `bd show <ID>`. Verify ownership before execution; claim when appropriate and maintain supported heartbeat leases. Reuse the dedicated worktree, preserving unrelated changes and the shared Beads store.
 
-Inspect installed CLI help and effective configuration. Preserve global settings, disable unapproved notifications/finalization/publication, and pass the deliberate comparison SHA with `--base-ref`. Keep `issueBaseSha` fixed for the full issue history and `lastReviewedSha` separately for follow-up review. Record actual models rather than assuming them.
+Inspect installed CLI help and effective configuration. Preserve global settings and the caller-authorized model/effort, disable unapproved notifications/finalization/publication, and pass the deliberate comparison SHA with `--base-ref`. Keep `issueBaseSha` fixed for the full issue history and `lastReviewedSha` separately for follow-up review. Record actual models rather than assuming them.
 
 If the repository supplies `scripts/ralphex-run.mjs`, read `docs/ralphex.md` and use that runner. Otherwise use the explicit phases below and maintain a compact current snapshot plus a separate event history. The snapshot names the task, worktree, issue/review SHAs, phase/status, plan, evidence pointers and next action. Replace obsolete current state; consult historical notes only for the specific failure under investigation. Keep another executor off the same files.
 
@@ -23,15 +25,15 @@ Include only work executable before the next external dependency in Task section
 
 ## Execute, then review
 
-Launch execution separately:
+With a repository runner, use its verified commands: `node scripts/ralphex-run.mjs execute --dir <run-dir> --plan <reviewed-plan>`, then on success and verified current ownership `node scripts/ralphex-run.mjs review --dir <run-dir>`. This version keeps that transition explicit; observer lease failure must block the next phase. Do not bypass an older repository runner. Only when no repository runner exists, use the raw CLI fallback:
 
 ```sh
 ralphex --codex --base-ref "<issue-base-sha>" --config-dir "<run-config>" --skip-finalize --tasks-only "<reviewed-plan>"
 ```
 
-Capture logs and actual exit status. Run relevant checks while iterating and reuse evidence for unchanged inputs. For filesystem/native work, obtain a focused actual-target-OS result at the first working slice, before expanding implementation and full reviews. Local mocks/skips do not establish OS acceptance.
+Capture full logs and actual exit status outside the model context; return a compact result with evidence pointers and retrieve relevant ranges, including during diagnosis. Run relevant checks while iterating and reuse evidence for unchanged inputs. For filesystem/native work, obtain a focused actual-target-OS result at the first working slice, before expanding implementation and full reviews. Local mocks/skips do not establish OS acceptance.
 
-Launch review as a separate phase:
+For the no-runner fallback, launch review separately:
 
 ```sh
 ralphex --codex --base-ref "<review-comparison-sha>" --config-dir "<review-config>" --skip-finalize --review "<actual-plan-path>"
@@ -41,7 +43,9 @@ The first review covers the whole issue from `issueBaseSha`. Follow-ups use the 
 
 ## Wait and continue
 
-External waiting is coordinator state, not a failing task to execute repeatedly. Stop the invocation at the checkpoint, record the concrete dependency and next action, then continue independent authorized work. Resume dependent work only after inspecting the required new evidence or decision. Elapsed time is not evidence or approval.
+External waiting is coordinator state, not a failing task to execute repeatedly. A runner's `wait` checkpoint is not an event subscription. At an external checkpoint, record the dependency and next action; retain active monitoring and continue independent authorized work. Use supported waits and the progress/lease fallback in the continuous flow. Resume dependent work only after inspecting the required new evidence or decision. Elapsed time is not evidence or approval.
+
+When this checkout supplies `scripts/ralphex-observe.mjs`, follow its actual `docs/ralphex.md` observer CLI and tool-wrapper example. Its internal polls need no LLM; progress/lease deadlines and meaningful events return control. Observe only the selected run or exact CI attempt/SHA with a source-bound cursor. A deadline, advisory progress line or candidate CI result never establishes acceptance. On lease/access/ownership loss, retain evidence and resolve ownership before launching another phase; do not kill or reclaim the existing executor automatically. Older checkouts retain the supported exec-wait fallback.
 
 At meaningful milestones update the linked Beads step with concise commit/evidence references, remaining gate and next step. Keep GitHub's requirements/status authoritative; avoid copying the full execution history into both trackers.
 

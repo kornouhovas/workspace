@@ -1,5 +1,7 @@
 Review {{GOAL}} against {{DEFAULT_BRANCH}}, using the coordinator snapshot and project rules. Inspect git diff from this comparison SHA and enough surrounding context to assess affected contracts. The fixed issue base remains in the snapshot for history; this comparison begins at the last successful review when one exists.
 
+At meaningful review transitions emit one valid JSON line such as RALPHEX_PROGRESS {"task":"Follow-up review: collecting two perspectives"}. Return confirmed findings, actual checks, commits and evidence paths compactly; retain full reports/logs outside the model context. Progress lines are advisory and cannot replace the final markers below. Widen coverage when shared contracts changed.
+
 Collect both independent perspectives before repairing critical/major findings:
 {{agent:quality}}
 {{agent:implementation}}
