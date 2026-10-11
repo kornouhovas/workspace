@@ -1,4 +1,4 @@
-import { hasUnfinishedProjectRename, readProjectReservations } from "./project-rename-reservations.js";
+import { hasUnfinishedProjectRelocation, readProjectReservations } from "./project-rename-reservations.js";
 import { randomUUID } from "node:crypto";
 import { asc, eq } from "drizzle-orm";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
@@ -123,13 +123,13 @@ export function createProjectRecoveryService(db: Database, integration: {
       try {
         const source = sourceFor(input.workspaceId);
         if (!source || !projectsFor(source.id).some((row) => row.id === input.projectId)) return invalid();
-        if (hasUnfinishedProjectRename(db, source.id)) return stale();
+        if (hasUnfinishedProjectRelocation(db, source.id)) return stale();
         const review = reviews.get(reviewKey);
         if (!review || review.preview.previewToken !== input.previewToken) return stale();
         const target = review.preview.entries.find((entry) => entry.relativePath === input.relativePath);
         if (!target || target.status !== "selectable" || input.relativePath.split("/").length !== (review.preview.mode === "grouped" ? 2 : 1)) return invalid();
         const verify = () => {
-          if (hasUnfinishedProjectRename(db, source.id)) throw new StaleReview();
+          if (hasUnfinishedProjectRelocation(db, source.id)) throw new StaleReview();
           const current = sourceFor(input.workspaceId);
           if (!current || configuration(current) !== configuration(review.source) || current.discoveryMode !== review.preview.mode ||
             JSON.stringify(projectsFor(source.id)) !== JSON.stringify(review.projects) ||

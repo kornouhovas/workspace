@@ -15,15 +15,28 @@ export function hasUnfinishedProjectRename(db: Reader, sourceId: string): boolea
   return readProjectRenameReservations(db, sourceId).length > 0;
 }
 
+export function readProjectRelocationReservations(db: Reader, sourceId: string) {
+  const renames = readProjectRenameReservations(db, sourceId).map((row) => ({ ...row, operationKind: "rename" as const }));
+  const moves = db.select().from(schema.projectCategoryMoveOperations).where(eq(schema.projectCategoryMoveOperations.sourceId, sourceId))
+    .orderBy(asc(schema.projectCategoryMoveOperations.operationId)).all().filter((row) => row.stage !== "completed" && row.stage !== "failed")
+    .map((row) => ({ ...row, operationKind: "category_move" as const }));
+  return [...renames, ...moves];
+}
+
+export function hasUnfinishedProjectRelocation(db: Reader, sourceId: string): boolean {
+  return readProjectRelocationReservations(db, sourceId).length > 0;
+}
+
 // Keep the entire immutable binding and mutable evidence on each placement so
 // existing review snapshots also detect stage/evidence changes without a source
 // discovery revision. Terminal receipts supply no extra path reservations.
 export function readProjectReservations(db: Reader, sourceId: string) {
   const creations = db.select().from(schema.projectCreationOperations).where(eq(schema.projectCreationOperations.sourceId, sourceId))
-    .orderBy(asc(schema.projectCreationOperations.operationId)).all().filter((row) => row.stage !== "completed" && row.stage !== "failed");
-  const renames = readProjectRenameReservations(db, sourceId).flatMap((row) =>
-    [...new Set([row.originalRelativePath, row.requestedRelativePath, row.stagingRelativePath])]
+    .orderBy(asc(schema.projectCreationOperations.operationId)).all().filter((row) => row.stage !== "completed" && row.stage !== "failed")
+    .map((row) => ({ ...row, operationKind: "creation" as const }));
+  const relocations = readProjectRelocationReservations(db, sourceId).flatMap((row) =>
+    [...new Set([row.originalRelativePath, row.requestedRelativePath, ...(row.operationKind === "rename" ? [row.stagingRelativePath] : [])])]
       .filter((relativePath): relativePath is string => relativePath !== null)
       .map((relativePath) => ({ ...row, relativePath })));
-  return [...creations, ...renames];
+  return [...creations, ...relocations];
 }

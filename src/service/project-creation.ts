@@ -1,4 +1,4 @@
-import { hasUnfinishedProjectRename, readProjectRenameReservations } from "./project-rename-reservations.js";
+import { hasUnfinishedProjectRelocation, readProjectReservations } from "./project-rename-reservations.js";
 import { randomUUID } from "node:crypto";
 import { join } from "node:path";
 import { eq } from "drizzle-orm";
@@ -37,7 +37,7 @@ export function createProjectCreationService(db: Database, integration: {
   invalidateSourceReviews(sourceId: string): void;
   committed(sourceId: string, revision: number, workspaceIds: string[]): void;
 }, filesystem: ProjectFilesystem = nativeProjectFilesystem) {
-  const reviews = new Map<string, { row: Operation; revision: number; preview: ProjectCreationRecoveryPreview; evidence: NativeIdentity | null; renames: ReturnType<typeof readProjectRenameReservations> }>();
+  const reviews = new Map<string, { row: Operation; revision: number; preview: ProjectCreationRecoveryPreview; evidence: NativeIdentity | null; reservations: ReturnType<typeof readProjectReservations> }>();
   const reviewKey = (workspaceId: string, operationId: string) => `${workspaceId}:${operationId}`;
   const invalid = () => ({ ok: false as const, error: { code: "invalid_input" as const, message: "Choose a saved workspace and its creation operation." } });
   const storage = () => ({ ok: false as const, error: { code: "storage" as const, message: "Creation history could not be read." } });
@@ -76,19 +76,19 @@ export function createProjectCreationService(db: Database, integration: {
     };
     const projects = db.select().from(schema.projects).where(eq(schema.projects.sourceId, row.sourceId)).all();
     const categories = db.select().from(schema.categories).where(eq(schema.categories.sourceId, row.sourceId)).all();
-    const operations = db.select().from(schema.projectCreationOperations).where(eq(schema.projectCreationOperations.sourceId, row.sourceId)).all();
     for (const record of [...projects.filter((p) => !completed || p.id !== row.projectId), ...categories]) {
       if (filesystemAlias(record.relativePath) === filesystemAlias(row.relativePath)) throw new CreationFailure("reserved_destination");
       if (nativeCollision(record.nativeIdentity)) throw new CreationFailure("native_conflict");
     }
-    for (const record of operations.filter((o) => o.operationId !== row.operationId && o.stage !== "failed" && o.stage !== "completed")) {
+    for (const record of readProjectReservations(db, row.sourceId)
+      .filter((o) => o.operationKind !== "creation" || o.operationId !== row.operationId)) {
       if (filesystemAlias(record.relativePath) === filesystemAlias(row.relativePath)) throw new CreationFailure("reserved_destination");
       if (record.nativeIdentity && nativeCollision(record.nativeIdentity)) throw new CreationFailure("native_conflict");
     }
   }
 
   function verifyContext(row: Operation, revision = row.expectedRevision, workspaceId = row.initiatingWorkspaceId) {
-    if (hasUnfinishedProjectRename(db, row.sourceId)) throw new CreationFailure("reserved_destination");
+    if (hasUnfinishedProjectRelocation(db, row.sourceId)) throw new CreationFailure("reserved_destination");
     const current = sourceFor(workspaceId);
     if (!current || current.id !== row.sourceId || current.canonicalRoot !== row.canonicalRoot || current.discoveryMode !== row.mode ||
       current.discoveryRevision !== revision || current.appliedRootIdentity !== row.rootIdentity ||
@@ -198,7 +198,7 @@ export function createProjectCreationService(db: Database, integration: {
       const { preview, evidence } = inspectRecovery(row, input.workspaceId, source.discoveryRevision);
       if (preview.actions.length) {
         preview.previewToken = randomUUID();
-        reviews.set(key, { row, revision: source.discoveryRevision, preview: structuredClone(preview), evidence, renames: readProjectRenameReservations(db, source.id) });
+        reviews.set(key, { row, revision: source.discoveryRevision, preview: structuredClone(preview), evidence, reservations: readProjectReservations(db, source.id) });
       }
       return { ok: true, value: preview };
     } catch { return storage(); }
@@ -218,7 +218,7 @@ export function createProjectCreationService(db: Database, integration: {
       if (!review || review.preview.previewToken !== request.previewToken || !review.preview.actions.includes(request.action)) return stale();
       reviews.delete(key);
       const current = inspectRecovery(row, request.workspaceId, source.discoveryRevision);
-      if (JSON.stringify(readProjectRenameReservations(db, source.id)) !== JSON.stringify(review.renames) ||
+      if (JSON.stringify(readProjectReservations(db, source.id)) !== JSON.stringify(review.reservations) ||
         JSON.stringify(row) !== JSON.stringify(review.row) || source.discoveryRevision !== review.revision ||
         current.preview.destinationState !== review.preview.destinationState ||
         !current.preview.actions.includes(request.action) || JSON.stringify(current.evidence) !== JSON.stringify(review.evidence)) return stale();
@@ -287,6 +287,9 @@ export function createProjectCreationService(db: Database, integration: {
         };
         return { ok: true, value: recordedResult(prior) };
       }
+      if (db.select().from(schema.projectCategoryMoveOperations).where(eq(schema.projectCategoryMoveOperations.operationId, request.operationId)).get()) return {
+        ok: false, error: { code: "invalid_input", message: "The operation ID belongs to its immutable category move request." },
+      };
       if (!validProjectBasename(request.name, filesystem.platform)) return rejected("invalid_name");
       if (source.discoveryMode === null || source.appliedRootIdentity === null) return rejected("unconfigured");
       if (source.discoveryMode !== request.mode || source.discoveryRevision !== request.expectedRevision) return rejected("stale_configuration");

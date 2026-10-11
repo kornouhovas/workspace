@@ -249,3 +249,22 @@ for (const mode of ["direct", "grouped"]) test(`${mode}: requested placement ali
   const allowed = await f.service.revealProject({ ...input, projectId: f.missing.projectId }, async () => ({ outcome: "dispatched" }));
   assert.equal(allowed.value.outcome, "dispatched");
 }));
+
+for (const mode of ["direct", "grouped"]) test(`${mode}: historical creation/rename ID overlap does not grant a cross-journal self exception`, () => fixture(mode, (f) => {
+  const row = f.seed();
+  f.sql.prepare(`INSERT INTO project_creation_operations (operation_id, source_id, initiating_workspace_id, project_id, name,
+    mode, expected_revision, category_id, canonical_root, parent_relative_path, relative_path, root_identity, parent_identity, excluded_relative_paths, stage)
+    VALUES (?, ?, ?, ?, 'Pending creation', ?, ?, ?, ?, ?, ?, ?, ?, '[]', 'intent')`)
+    .run(row.operation_id, row.source_id, row.initiating_workspace_id, randomUUID(), mode, row.expected_revision, row.category_id,
+      row.canonical_root, row.parent_relative_path, f.relative("Pending creation"), row.root_identity, row.parent_identity);
+  const creation = f.query("workspace.getProjectCreation", { operationId: row.operation_id });
+  const rename = f.query("workspace.getProjectRename", { operationId: row.operation_id });
+  assert.equal(creation.value.outcome, "recoverable"); assert.equal(rename.value.outcome, "recoverable");
+  const blocked = f.query("workspace.previewProjectRenameRecovery", { operationId: row.operation_id }).value;
+  assert.deepEqual(blocked.actions, []); assert.equal(blocked.problem, "reserved_destination");
+  assert.deepEqual(f.query("workspace.getProjectCreation", { operationId: row.operation_id }), creation);
+  assert.deepEqual(f.query("workspace.getProjectRename", { operationId: row.operation_id }), rename);
+  f.sql.prepare("UPDATE project_creation_operations SET stage = 'failed', problem = 'occupied' WHERE operation_id = ?").run(row.operation_id);
+  const allowed = f.query("workspace.previewProjectRenameRecovery", { operationId: row.operation_id }).value;
+  assert.ok(allowed.actions.includes("retry_original"));
+}));

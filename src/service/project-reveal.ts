@@ -1,4 +1,4 @@
-import { readProjectRenameReservations, readProjectReservations } from "./project-rename-reservations.js";
+import { readProjectRelocationReservations, readProjectReservations } from "./project-rename-reservations.js";
 import { eq } from "drizzle-orm";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import { isProjectRevealRequest, type ProjectRevealProblem, type ProjectRevealResult } from "../contracts/project-reveal.js";
@@ -17,7 +17,7 @@ export function createProjectRevealService(db: BetterSQLite3Database<typeof sche
     const project = db.select().from(schema.projects).where(eq(schema.projects.id, projectId)).get();
     if (!source || !project || project.sourceId !== source.id) throw new InvalidReveal();
     if (source.discoveryMode !== "direct" && source.discoveryMode !== "grouped" || source.appliedRootIdentity === null) throw new RevealFailure("unconfigured");
-    if (readProjectRenameReservations(db, source.id).some((row) => row.projectId === projectId)) throw new RevealFailure("unresolved");
+    if (readProjectRelocationReservations(db, source.id).some((row) => row.projectId === projectId)) throw new RevealFailure("unresolved");
     if (project.modeInactive) throw new RevealFailure("mode_retained");
     if (project.associationState !== "active") throw new RevealFailure(project.associationState);
     const components = project.relativePath.split("/");

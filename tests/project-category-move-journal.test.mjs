@@ -7,13 +7,15 @@ import test from "node:test";
 import Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import { migrate } from "drizzle-orm/better-sqlite3/migrator";
-import { openSettingsService } from "../dist/service/settings.mjs";
 import { isProjectCategoryMoveRequest } from "../src/contracts/project-category-move.ts";
 import { projectCategoryMoveOperations } from "../src/service/db/schema.ts";
 
 const migrationsFolder = "src/service/db/migrations";
 const journal = JSON.parse(fs.readFileSync(join(migrationsFolder, "meta/_journal.json"), "utf8"));
-const dependencies = { watch() { return { close() {} }; }, schedule() { return { cancel() {} }; } };
+const identity = (path) => {
+  const stat = fs.lstatSync(path, { bigint: true });
+  return JSON.stringify({ dev: String(stat.dev), ino: String(stat.ino), birthtimeNs: String(stat.birthtimeNs) });
+};
 function copyMigrations(folder, count = journal.entries.length) {
   fs.mkdirSync(join(folder, "meta"), { recursive: true });
   const entries = journal.entries.slice(0, count);
@@ -27,7 +29,7 @@ function records(sql) {
 function fixture(run, legacy = false) {
   const directory = fs.realpathSync.native(fs.mkdtempSync(join(tmpdir(), "category-move-journal-")));
   const root = join(directory, "root"), databasePath = join(directory, "workspace.sqlite");
-  let sql, service;
+  let sql;
   try {
     fs.mkdirSync(root); for (const parent of ["Original category", "Destination"]) fs.mkdirSync(join(root, parent));
     for (const name of ["Original", "Other", "Recovery"]) {
@@ -36,32 +38,58 @@ function fixture(run, legacy = false) {
     }
     const folder = legacy ? join(directory, "legacy") : migrationsFolder;
     if (legacy) copyMigrations(folder, 10);
-    service = openSettingsService(databasePath, folder, undefined, dependencies, undefined,
-      () => { throw new Error("Injected uncertain native outcome without filesystem effect"); });
-    const workspace = service.workspaces.create({ type: "workspace.create", name: "Primary", rootPath: root }).value;
-    const workspaceId = workspace.workspaceId, sourceId = workspace.sourceId;
-    const preview = service.handleQuery({ type: "workspace.previewDiscovery", workspaceId, mode: "grouped" }).value;
-    const initial = service.handleCommand({ type: "workspace.applyDiscovery", workspaceId, previewToken: preview.previewToken }).value;
-    const categoryId = initial.projects.find((p) => p.name === "Original").categoryId;
-    const destinationId = initial.categories.find((c) => c.name === "Destination").categoryId;
-    const projectId = initial.projects.find((p) => p.name === "Original").projectId;
-    const otherId = initial.projects.find((p) => p.name === "Other").projectId;
-    const recoveryId = initial.projects.find((p) => p.name === "Recovery").projectId;
-    const created = service.handleCommand({ type: "workspace.createProject", workspaceId, operationId: randomUUID(), name: "Created",
-      mode: "grouped", categoryId, expectedRevision: initial.revision });
-    assert.equal(created.value.outcome, "completed");
-    const revision = created.value.project.revision;
-    const renameReceipt = service.renameProject({ type: "workspace.renameProject", workspaceId, operationId: randomUUID(), projectId: otherId,
-      name: "Other", expectedRevision: revision });
-    assert.equal(renameReceipt.value.outcome, "unchanged");
-    const renamePending = service.renameProject({ type: "workspace.renameProject", workspaceId, operationId: randomUUID(), projectId: recoveryId,
-      name: "Requested recovery", expectedRevision: revision });
-    assert.equal(renamePending.value.outcome, "recoverable");
-    const property = service.handleCommand({ type: "workspace.createProperty", workspaceId, name: "Notes", propertyType: "text" }).value;
-    service.handleCommand({ type: "workspace.setTextValue", workspaceId, projectId, propertyId: property.propertyId, value: "  Exact Текст\n  " });
-    service.handleCommand({ type: "settings.setLanguage", language: "ru" });
-    service.close(); service = null;
-    sql = new Database(databasePath); sql.pragma("foreign_keys = ON");
+    // Seed genuine prior-schema history through legal SQL transitions. Running
+    // the current service against a deliberately old schema would bypass its
+    // mandatory migration boundary and the new reservation reader's tables.
+    sql = new Database(databasePath);
+    migrate(drizzle(sql), { migrationsFolder: folder }); sql.pragma("foreign_keys = ON");
+    const workspaceId = randomUUID(), sourceId = randomUUID(), categoryId = randomUUID(), destinationId = randomUUID();
+    sql.prepare("INSERT INTO settings VALUES ('language', 'ru')").run();
+    sql.prepare(`INSERT INTO sources (id, canonical_root, discovery_mode, discovery_revision, property_revision,
+      category_property_revision, applied_root_identity) VALUES (?, ?, 'grouped', 1, 2, 1, ?)`)
+      .run(sourceId, root, identity(root));
+    sql.prepare("INSERT INTO workspaces (id, name, position, source_id) VALUES (?, 'Primary', 0, ?)").run(workspaceId, sourceId);
+    const viewId = randomUUID();
+    sql.prepare("INSERT INTO views VALUES (?, ?, 'Table', 'table')").run(viewId, workspaceId);
+    sql.prepare("INSERT INTO active_workspace VALUES ('active', ?, ?)").run(workspaceId, viewId);
+    for (const [id, name] of [[categoryId, "Original category"], [destinationId, "Destination"]])
+      sql.prepare("INSERT INTO categories (id, source_id, relative_path, native_identity, association_state) VALUES (?, ?, ?, ?, 'active')")
+        .run(id, sourceId, name, identity(join(root, name)));
+    sql.prepare("INSERT INTO category_properties VALUES (?, ?, 'Category')").run(randomUUID(), sourceId);
+    const addProject = (name, id = randomUUID()) => {
+      sql.prepare("INSERT INTO projects (id, source_id, relative_path, native_identity, association_state, category_id) VALUES (?, ?, ?, ?, 'active', ?)")
+        .run(id, sourceId, `Original category/${name}`, identity(join(root, "Original category", name)), categoryId);
+      return id;
+    };
+    const projectId = addProject("Original"), otherId = addProject("Other"), recoveryId = addProject("Recovery");
+    const creationId = randomUUID(), createdId = randomUUID();
+    sql.prepare(`INSERT INTO project_creation_operations (operation_id, source_id, initiating_workspace_id, project_id, name,
+      mode, expected_revision, category_id, canonical_root, parent_relative_path, relative_path, root_identity, parent_identity,
+      excluded_relative_paths, stage) VALUES (?, ?, ?, ?, 'Created', 'grouped', 1, ?, ?, 'Original category',
+      'Original category/Created', ?, ?, '[]', 'intent')`)
+      .run(creationId, sourceId, workspaceId, createdId, categoryId, root, identity(root), identity(join(root, "Original category")));
+    fs.mkdirSync(join(root, "Original category/Created"));
+    sql.prepare("UPDATE project_creation_operations SET stage = 'evidence_recorded', native_identity = ? WHERE operation_id = ?")
+      .run(identity(join(root, "Original category/Created")), creationId);
+    sql.transaction(() => {
+      addProject("Created", createdId);
+      sql.prepare("UPDATE sources SET discovery_revision = 2 WHERE id = ?").run(sourceId);
+      sql.prepare("UPDATE project_creation_operations SET stage = 'completed', completed_revision = 2 WHERE operation_id = ?").run(creationId);
+    })();
+    for (const [id, name, requested, operationId] of [[otherId, "Other", "Other", creationId], [recoveryId, "Recovery", "Requested recovery", randomUUID()]]) {
+      sql.prepare(`INSERT INTO project_rename_operations (operation_id, source_id, initiating_workspace_id, project_id,
+        original_name, name, mode, expected_revision, category_id, canonical_root, parent_relative_path,
+        original_relative_path, requested_relative_path, root_identity, parent_identity, native_identity,
+        excluded_relative_paths, stage, last_verified_placement, last_verified_identity)
+        VALUES (?, ?, ?, ?, ?, ?, 'grouped', 2, ?, ?, 'Original category', ?, ?, ?, ?, ?, '[]', 'intent', 'original', ?)`)
+        .run(operationId, sourceId, workspaceId, id, name, requested, categoryId, root, `Original category/${name}`,
+          `Original category/${requested}`, identity(root), identity(join(root, "Original category")), identity(join(root, "Original category", name)), identity(join(root, "Original category", name)));
+      if (name === requested) sql.prepare("UPDATE project_rename_operations SET stage = 'completed', result_kind = 'unchanged', completed_revision = 2 WHERE operation_id = ?").run(operationId);
+      else sql.prepare("UPDATE project_rename_operations SET stage = 'uncertain', problem = 'filesystem_error' WHERE operation_id = ?").run(operationId);
+    }
+    const propertyId = randomUUID();
+    sql.prepare("INSERT INTO property_definitions VALUES (?, ?, 'Notes', 'text', 0)").run(propertyId, sourceId);
+    sql.prepare("INSERT INTO text_property_values VALUES (?, ?, ?, ?)").run(projectId, propertyId, sourceId, "  Exact Текст\n  ");
     const operation = (extra = {}) => {
       const source = sql.prepare("SELECT * FROM sources WHERE id = ?").get(sourceId);
       const project = sql.prepare("SELECT * FROM projects WHERE id = ?").get(projectId);
@@ -80,7 +108,7 @@ function fixture(run, legacy = false) {
     const update = (op, fields) => sql.prepare(`UPDATE project_category_move_operations SET ${Object.keys(fields).map((key) => `${key} = ?`).join(", ")} WHERE operation_id = ?`).run(...Object.values(fields), op.operation_id);
     run({ directory, root, databasePath, sourceId, workspaceId, projectId, otherId, categoryId, destinationId, operation, insert, update,
       get sql() { return sql; }, reopen() { sql.close(); sql = new Database(databasePath); sql.pragma("foreign_keys = ON"); } });
-  } finally { service?.close(); sql?.close(); fs.rmSync(directory, { recursive: true, force: true }); }
+  } finally { sql?.close(); fs.rmSync(directory, { recursive: true, force: true }); }
 }
 
 test("all five category move requests accept exact logical payloads and reject paths, native evidence and invalid identities", () => {
@@ -109,6 +137,7 @@ test("all five category move requests accept exact logical payloads and reject p
 test("populated 0000–0009 upgrade and reopen retain creation/rename receipts, outstanding recovery, IDs, Text and independent revisions", () => fixture((f) => {
   const before = records(f.sql); assert.equal(before.__drizzle_migrations.length, 10);
   assert.equal(before.project_creation_operations[0].stage, "completed");
+  assert.equal(before.project_creation_operations[0].operation_id, before.project_rename_operations[0].operation_id, "historical cross-journal overlap survives upgrade");
   assert.deepEqual(before.project_rename_operations.map((r) => r.stage), ["completed", "uncertain"]);
   for (let i = 0; i < 2; i++) {
     migrate(drizzle(f.sql), { migrationsFolder }); f.reopen();

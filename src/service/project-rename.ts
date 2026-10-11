@@ -69,10 +69,10 @@ export function createProjectRenameService(db: Database, integration: {
   const rejected = (problem: ProjectRenameProblem): ServiceResult<ProjectRenameResult> => ({ ok: true, value: { outcome: "rejected", problem, operation: null } });
   const fail = (problem: ProjectRenameProblem): never => { throw new RenameFailure(problem); };
   const relativeName = (row: Operation, name: string) => row.parentRelativePath ? `${row.parentRelativePath}/${name}` : name;
-  // Creation IDs belong to a separate journal; only this rename's placements
-  // receive the self exception, even when a creation uses the same operation ID.
+  // Only this journal's operation receives the self exception. Historical
+  // creation/rename ID overlaps must not hide another operation's reservations.
   const otherOperationReservations = (row: Operation) => readProjectReservations(db, row.sourceId)
-    .filter((operation) => !("originalRelativePath" in operation) || operation.operationId !== row.operationId);
+    .filter((operation) => operation.operationKind !== "rename" || operation.operationId !== row.operationId);
 
   function policy(row: Operation, path: string) {
     const exclusions: unknown = JSON.parse(row.excludedRelativePaths);
@@ -390,6 +390,7 @@ export function createProjectRenameService(db: Database, integration: {
           prior.name !== request.name || prior.expectedRevision !== request.expectedRevision) return invalid();
         return { ok: true, value: recordedResult(prior) };
       }
+      if (db.select().from(schema.projectCategoryMoveOperations).where(eq(schema.projectCategoryMoveOperations.operationId, request.operationId)).get()) return invalid();
       if (!validProjectBasename(request.name, filesystem.platform)) return rejected("invalid_name");
       if ((source.discoveryMode !== "direct" && source.discoveryMode !== "grouped") || !source.appliedRootIdentity) return rejected("unconfigured");
       if (source.discoveryRevision !== request.expectedRevision) return rejected("stale_configuration");

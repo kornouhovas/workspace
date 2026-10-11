@@ -91,12 +91,22 @@ Files:
 - Modify: src/service/db/migrations/0010_project_category_move.sql
 - Create: tests/project-category-move-coordination.test.mjs
 - Modify: tests/project-rename-coordination.test.mjs
-- [ ] Add unfinished move original/destination placements and full evidence to the existing SQLite-backed reservation reader before startup observation. Use operation kind plus ID for self exceptions.
-- [ ] Reject new move IDs already bound in creation/rename journals and new creation/rename IDs bound to move history. Preserve existing historical creation/rename overlaps and their original receipts; test both request directions and durable insert guards.
-- [ ] Block conflicting source mutations during unfinished moves: creation/recovery, rename/recovery, discovery Apply, reassociation, locator reconciliation and root rebinding. Preserve reads, Text editing and unrelated-source operations.
-- [ ] Bind relevant reviews to complete reservation snapshots, invalidate them on move changes, and repeat checks inside metadata transactions. Observation must not enroll the destination or rewrite the project association before explicit completion.
-- [ ] Reject Reveal for the unresolved project and conflicting placements; retain eligible unrelated Reveal. Completed/failed move receipts add no permanent placement reservation.
-- [ ] Build and run new coordination tests plus affected rename coordination, creation, discovery, reconciliation, recovery, observer and Reveal tests; run npm run typecheck and commit only after they pass.
+- Modify: tests/project-category-move-journal.test.mjs (populate the actual prior schema without running current service code against unmigrated tables)
+- [x] Add unfinished move original/destination placements and full evidence to the existing SQLite-backed reservation reader before startup observation. Use operation kind plus ID for self exceptions.
+- [x] Reject new move IDs already bound in creation/rename journals and new creation/rename IDs bound to move history. Preserve existing historical creation/rename overlaps and their original receipts; test both request directions and durable insert guards.
+- [x] Block conflicting source mutations during unfinished moves: creation/recovery, rename/recovery, discovery Apply, reassociation, locator reconciliation and root rebinding. Preserve reads, Text editing and unrelated-source operations.
+- [x] Bind relevant reviews to complete reservation snapshots, invalidate them on move changes, and repeat checks inside metadata transactions. Observation must not enroll the destination or rewrite the project association before explicit completion.
+- [x] Reject Reveal for the unresolved project and conflicting placements; retain eligible unrelated Reveal. Completed/failed move receipts add no permanent placement reservation.
+- [x] Build and run new coordination tests plus affected rename coordination, creation, discovery, reconciliation, recovery, observer and Reveal tests; run npm run typecheck and commit only after they pass.
+
+Task 2 verification (Node 22.21.1, local macOS):
+
+- The first five public coordination regressions failed before the shared reader included moves; startup/observation rewrote pending metadata. The five cross-journal ID regressions also failed before service checks and durable insert guards. Evidence: `work/issue-19/task-2-reservations-red.log`, `task-2-reservations-green.log`, `task-2-ids-red.log` and `task-2-ids-green.log`.
+- Added 28 move coordination cases covering original/destination placements in intent, destination_recorded and uncertain stages, startup/Refresh/watchers, sibling reentry, retained-source reuse, stale reviews, creation/rename recovery, transaction-local reservation insertion, root rebinding, Reveal aliases, independent Text edits, unrelated sources, immutable receipts and terminal placement release. Two additional rename coordination cases protect historical cross-journal self exceptions. The upgrade journal fixture seeds legal transitions in the actual prior SQL schema and preserves populated creation/rename ID overlaps; it no longer runs current service code against deliberately unmigrated tables.
+- `npm run build` passed. Evidence: `work/issue-19/task-2-build.log`.
+- `node --import tsx --test` passed all 817 tests across move coordination/service/journal, rename coordination/service/journal/crash, creation service/crash, discovery mode/grouped, external reconciliation, project recovery, source observer, Reveal and settings suites, with zero failures and zero skips. Evidence: `work/issue-19/task-2-affected.log`. Focused intermediate results are retained in `task-2-coordination-green.log` and `task-2-transaction-green.log`; earlier fixture setup failures remain in `task-2-coordination-iteration.log` and `task-2-snapshots-green.log`.
+- `npm run typecheck`, `npm run lint`, `npm run check:docs` and `git diff --check` passed. Evidence: `work/issue-19/task-2-typecheck.log`, `task-2-lint.log`, `task-2-docs.log` and `task-2-diff-check.log`.
+- Move placements, SQL insertion races and resolver alias changes are injected disposable-fixture evidence. Actual move execution remains fail-closed with `unsupported`; physical moves, move recovery, IPC and actual Electron/platform acceptance remain subsequent tasks/gates. No Windows move acceptance, CI, review or publication is claimed.
 
 ### Task 3: Implement one-hop moves and filesystem safety
 

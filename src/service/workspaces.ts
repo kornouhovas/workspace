@@ -1,6 +1,6 @@
 import { createProjectCategoryMoveService } from "./project-category-move.js";
 import type { ProjectCategoryMoveResult, ProjectCategoryMoveList } from "../contracts/project-category-move.js";
-import { hasUnfinishedProjectRename, readProjectReservations } from "./project-rename-reservations.js";
+import { hasUnfinishedProjectRelocation, readProjectReservations } from "./project-rename-reservations.js";
 import { createProjectRevealService } from "./project-reveal.js";
 import type { NativeProjectReveal } from "../contracts/service-protocol.js";
 import type { ProjectRevealResult } from "../contracts/project-reveal.js";
@@ -293,7 +293,7 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
           JSON.stringify(token.projects) !== JSON.stringify(readProjects(source.id)) ||
           JSON.stringify(token.categories) !== JSON.stringify(readCategories(source.id)) ||
           JSON.stringify(token.reservations) !== JSON.stringify(readReservations(source.id))) return stale();
-        if (hasUnfinishedProjectRename(db, source.id)) return stale();
+        if (hasUnfinishedProjectRelocation(db, source.id)) return stale();
         const mode = token.preview.mode;
         const scanner = mode === "grouped" ? scanGroupedSource : scanDirectSource;
         const scan = scanner(source.canonicalRoot, source.archiveRelativePath, token.preview.effectiveExcludedRelativePaths);
@@ -318,7 +318,7 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
             JSON.stringify(readProjects(source.id)) !== JSON.stringify(token.projects) ||
             JSON.stringify(readCategories(source.id)) !== JSON.stringify(token.categories) ||
             JSON.stringify(readReservations(source.id)) !== JSON.stringify(token.reservations)) throw new StalePreview();
-          if (hasUnfinishedProjectRename(db, source.id)) throw new StalePreview();
+          if (hasUnfinishedProjectRelocation(db, source.id)) throw new StalePreview();
           // Revalidate again inside the transaction, before making any persistent change.
           const beforeWrites = scanner(source.canonicalRoot, source.archiveRelativePath, token.preview.effectiveExcludedRelativePaths);
           if (!beforeWrites.snapshot || JSON.stringify(beforeWrites.snapshot) !== JSON.stringify(token.snapshot)) throw new StalePreview();
@@ -863,7 +863,7 @@ function normalizeSource(
     observe(sourceId, state);
     return state;
   }
-  if (canonicalRoot !== storedRoot && !hasUnfinishedProjectRename(db, sourceId)) {
+  if (canonicalRoot !== storedRoot && !hasUnfinishedProjectRelocation(db, sourceId)) {
     const existing = db.select().from(schema.sources).where(eq(schema.sources.canonicalRoot, canonicalRoot)).get();
     // Older alias duplicates keep their logical IDs and associations. Do not merge or delete them.
     if (!existing) db.update(schema.sources).set({ canonicalRoot }).where(eq(schema.sources.id, sourceId)).run();

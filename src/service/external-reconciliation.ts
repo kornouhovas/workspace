@@ -1,4 +1,4 @@
-import { hasUnfinishedProjectRename, readProjectReservations } from "./project-rename-reservations.js";
+import { hasUnfinishedProjectRelocation, readProjectReservations } from "./project-rename-reservations.js";
 import { randomUUID } from "node:crypto";
 import { asc, eq } from "drizzle-orm";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
@@ -164,8 +164,8 @@ export function reconcileSource(db: Database, source: Source): { changed: boolea
   if (!reliableIdentity(appliedRoot) || !reliableIdentity(scan.snapshot.root.identity) || !sameIdentity(appliedRoot, scan.snapshot.root.identity)) {
     return { changed: false, scan: { state: "root_identity_conflict", entries: [], snapshot: null } };
   }
-  // Observe topology but leave all source locators untouched until explicit rename resolution.
-  if (hasUnfinishedProjectRename(db, source.id)) return { changed: false, scan };
+  // Observe topology but leave source locators untouched until relocation resolution.
+  if (hasUnfinishedProjectRelocation(db, source.id)) return { changed: false, scan };
   const readSource = () => db.select().from(schema.sources).where(eq(schema.sources.id, source.id)).get();
   const readProjects = () => db.select().from(schema.projects).where(eq(schema.projects.sourceId, source.id)).orderBy(asc(schema.projects.id)).all();
   const readCategories = () => db.select().from(schema.categories).where(eq(schema.categories.sourceId, source.id)).orderBy(asc(schema.categories.id)).all();
@@ -196,7 +196,7 @@ export function reconcileSource(db: Database, source: Source): { changed: boolea
   db.transaction((tx) => {
     if (!same(readSource(), source) || !same(readProjects(), records) || !same(readCategories(), categories) || !same(readProperty(), property) || !same(readReservations(), reservations)) throw new Error("Reconciliation configuration changed");
     verifyScan();
-    if (hasUnfinishedProjectRename(db, source.id)) throw new Error("Unfinished project rename");
+    if (hasUnfinishedProjectRelocation(db, source.id)) throw new Error("Unfinished project relocation");
     // Release only participating path reservations, transaction-locally. All
     // final active states are restored before commit; triggers/indexes stay on.
     for (const id of mappings.keys()) tx.update(schema.projects).set({ associationState: "replaced" }).where(eq(schema.projects.id, id)).run();

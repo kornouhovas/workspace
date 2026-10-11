@@ -57,9 +57,8 @@ export function createProjectCategoryMoveService(db: Database, filesystem: Proje
       (archive.length === 1 || filesystemAlias(parts[1]) === filesystemAlias(archive[1]))) fail("archive");
   }
   function reservations(row: Operation) {
-    if (readProjectReservations(db, row.sourceId).length || db.select().from(schema.projectCategoryMoveOperations)
-      .where(eq(schema.projectCategoryMoveOperations.sourceId, row.sourceId)).all()
-      .some((op) => op.operationId !== row.operationId && !["completed", "failed"].includes(op.stage))) fail("reserved_destination");
+    if (readProjectReservations(db, row.sourceId)
+      .some((op) => op.operationKind !== "category_move" || op.operationId !== row.operationId)) fail("reserved_destination");
     const paths = [row.originalRelativePath, row.requestedRelativePath];
     const records = [...db.select().from(schema.projects).where(eq(schema.projects.sourceId, row.sourceId)).all().filter((p) => p.id !== row.projectId),
       ...db.select().from(schema.categories).where(eq(schema.categories.sourceId, row.sourceId)).all()];
@@ -117,6 +116,8 @@ export function createProjectCategoryMoveService(db: Database, filesystem: Proje
           prior.destinationCategoryId !== request.destinationCategoryId || prior.expectedRevision !== request.expectedRevision) return invalid();
         return { ok: true, value: recordedResult(prior) };
       }
+      if (db.select().from(schema.projectCreationOperations).where(eq(schema.projectCreationOperations.operationId, request.operationId)).get() ||
+        db.select().from(schema.projectRenameOperations).where(eq(schema.projectRenameOperations.operationId, request.operationId)).get()) return invalid();
       if (source.discoveryMode !== "grouped" || !source.appliedRootIdentity) return rejected("unconfigured");
       if (source.discoveryRevision !== request.expectedRevision) return rejected("stale_configuration");
       const project = db.select().from(schema.projects).where(eq(schema.projects.id, request.projectId)).get();

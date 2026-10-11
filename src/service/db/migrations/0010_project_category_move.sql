@@ -54,6 +54,21 @@ CREATE TABLE project_category_move_operations (
 --> statement-breakpoint
 CREATE INDEX project_category_move_source ON project_category_move_operations (source_id);
 --> statement-breakpoint
+-- Creation/rename history may already overlap. Preserve it while reserving
+-- every new move ID across journals, including terminal history and REPLACE.
+CREATE TRIGGER project_category_move_operation_id_insert BEFORE INSERT ON project_category_move_operations
+WHEN EXISTS (SELECT 1 FROM project_creation_operations WHERE operation_id = NEW.operation_id)
+  OR EXISTS (SELECT 1 FROM project_rename_operations WHERE operation_id = NEW.operation_id)
+BEGIN SELECT RAISE(ABORT, 'Operation ID already belongs to creation or rename history'); END;
+--> statement-breakpoint
+CREATE TRIGGER project_creation_move_operation_id_insert BEFORE INSERT ON project_creation_operations
+WHEN EXISTS (SELECT 1 FROM project_category_move_operations WHERE operation_id = NEW.operation_id)
+BEGIN SELECT RAISE(ABORT, 'Operation ID already belongs to move history'); END;
+--> statement-breakpoint
+CREATE TRIGGER project_rename_move_operation_id_insert BEFORE INSERT ON project_rename_operations
+WHEN EXISTS (SELECT 1 FROM project_category_move_operations WHERE operation_id = NEW.operation_id)
+BEGIN SELECT RAISE(ABORT, 'Operation ID already belongs to move history'); END;
+--> statement-breakpoint
 CREATE UNIQUE INDEX project_category_move_outstanding_project ON project_category_move_operations (project_id) WHERE stage IN ('intent', 'destination_recorded', 'uncertain');
 --> statement-breakpoint
 -- Protect retained history even when REPLACE bypasses delete triggers.
