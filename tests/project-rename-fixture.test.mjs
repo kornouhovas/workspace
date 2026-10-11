@@ -360,3 +360,28 @@ test("control publication deadline rejects a stalled callback and late completio
     } finally { release(); pending.mock.restore(); }
   });
 });
+
+test("control removes its expired command when an already-started rename completes late", { timeout: 3000 }, async t => {
+  await withControlRoot(async root => {
+    const filesystem = require("node:fs/promises"), originalRename = filesystem.rename, originalRemove = filesystem.rm;
+    const destination = join(root, "ack.control");
+    let release, started, removed;
+    const blocked = new Promise(resolve => { release = resolve; });
+    const renaming = new Promise(resolve => { started = resolve; });
+    const cleaned = new Promise(resolve => { removed = resolve; });
+    const pendingRename = t.mock.method(filesystem, "rename", async (...args) => {
+      started(); await blocked; return originalRename(...args);
+    });
+    const pendingRemove = t.mock.method(filesystem, "rm", async (...args) => {
+      await originalRemove(...args);
+      if (args[0] === destination) removed();
+    });
+    try {
+      const publication = publishCommand(root, "ack", Date.now() + 100);
+      await renaming;
+      await assert.rejects(publication, /deadline/);
+      release(); await cleaned;
+      assert.deepEqual(await readdir(root), []);
+    } finally { release(); pendingRename.mock.restore(); pendingRemove.mock.restore(); }
+  });
+});

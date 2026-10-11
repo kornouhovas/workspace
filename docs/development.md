@@ -231,7 +231,7 @@ Required scenarios must all pass; skipped, failed, missing or unreached assertio
 
 For affected iteration checks, refresh only affected emitted inputs, then use `npm run test:rename:early` or selected suites from that script. Do not build/clean while a fixture uses dist. Reuse passing evidence only for unchanged relevant inputs; code corrections require a meaningful regression and affected checks. Documentation-only evidence additions require docs/diff checks, without repeating unchanged runtime tests.
 
-For the bounded private [handshake repair](plans/issue-18-service-handshake-repair.md), reuse verified current emitted outputs and run the focused suite once, followed by a separate standalone service smoke. No full-suite or percentage coverage gate is required for this fixture-only change. With Node 22.21.1 selected, use fresh ignored evidence directories:
+For the bounded private [handshake repair](plans/completed/issue-18-service-handshake-repair.md), reuse verified current emitted outputs and run the focused suite once, followed by a separate standalone service smoke. No full-suite or percentage coverage gate is required for this fixture-only change. With Node 22.21.1 selected, use fresh ignored evidence directories:
 
 ```sh
 WORKSPACE_RENAME_SERVICE_EVIDENCE_DIR=work/issue-18/service-handshake-repair/task3-early npm run test:rename:early

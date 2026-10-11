@@ -21,17 +21,19 @@ async function publishCommand(root, command, deadline) {
     beforeDeadline(deadline);
     // Exclusive creation prevents concurrent publication of the same command.
     const file = await fs.open(temporary, "wx");
-    let published = false;
+    let published = false, renamed = false;
     try {
       try { beforeDeadline(deadline); await file.writeFile(commands[command]); } finally { await file.close(); }
       beforeDeadline(deadline);
-      await fs.rename(temporary, destination); published = true;
-    } finally { if (!published) await fs.rm(temporary, { force: true }); }
+      await fs.rename(temporary, destination); renamed = true;
+      beforeDeadline(deadline); published = true;
+    } finally { if (!published) await fs.rm(renamed ? destination : temporary, { force: true }); }
   };
   try {
     // A stalled local filesystem callback cannot suspend supervisor termination.
     // Late preparation rechecks expiry before opening/writing/publishing; it can
-    // only close its handle and remove its own unpublished temporary record.
+    // close its handle and remove its own expired record. An already-started
+    // rename cannot be canceled; late completion removes its destination too.
     await Promise.race([publish(), new Promise((_, reject) => {
       timer = setTimeout(() => reject(new Error("Fixture publication deadline")), Math.max(0, deadline - Date.now()));
     })]);
