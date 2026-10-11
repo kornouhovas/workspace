@@ -6,7 +6,8 @@ import { isProjectCategoryMoveRequest, type ProjectCategoryMoveOperation, type P
 import type { ServiceResult } from "../contracts/settings.js";
 import { isChildName, validArchive, validExclusions, type NativeIdentity } from "./discovery.js";
 import { CreationFailure, filesystemCode, filesystemProblem, nativeProjectFilesystem, validProjectBasename,
-  verifyCreationDirectory, verifyCreationParents, type ProjectFilesystem } from "./project-filesystem.js";
+  assertCreationDestinationFree, verifyCreationDirectory, verifyCreationParents, type ProjectFilesystem } from "./project-filesystem.js";
+import { renameNoReplace, type ProjectRenameFilesystemResult } from "./project-rename-filesystem.js";
 import { readProjectReservations } from "./project-rename-reservations.js";
 import { filesystemAlias } from "./path-alias.js";
 import * as schema from "./db/schema.js";
@@ -34,7 +35,11 @@ function recordedResult(row: Operation): ProjectCategoryMoveResult {
   return { outcome: "recoverable", operation };
 }
 
-export function createProjectCategoryMoveService(db: Database, filesystem: ProjectFilesystem = nativeProjectFilesystem) {
+export function createProjectCategoryMoveService(db: Database, integration: {
+  invalidateSourceReviews(sourceId: string): void;
+  committed(sourceId: string, revision: number, workspaceIds: string[]): void;
+}, filesystem: ProjectFilesystem = nativeProjectFilesystem,
+  native: (from: string, to: string) => ProjectRenameFilesystemResult = renameNoReplace) {
   const invalid = () => ({ ok: false as const, error: { code: "invalid_input" as const,
     message: "Choose a saved workspace and its immutable project category move request." } });
   const storage = () => ({ ok: false as const, error: { code: "storage" as const, message: "Category move history could not be read." } });
@@ -69,14 +74,14 @@ export function createProjectCategoryMoveService(db: Database, filesystem: Proje
       if (other.dev === evidence.dev && other.ino === evidence.ino) fail("native_conflict");
     }
   }
-  function context(row: Operation) {
+  function context(row: Operation, completed = false) {
     const source = sourceFor(row.initiatingWorkspaceId);
     if (!source || source.id !== row.sourceId || source.canonicalRoot !== row.canonicalRoot || source.discoveryMode !== "grouped" ||
-      source.discoveryRevision !== row.expectedRevision || source.appliedRootIdentity !== row.rootIdentity ||
+      source.discoveryRevision !== row.expectedRevision + (completed ? 1 : 0) || source.appliedRootIdentity !== row.rootIdentity ||
       source.excludedRelativePaths !== row.excludedRelativePaths || source.archiveRelativePath !== row.archiveRelativePath) fail("stale_configuration");
     const project = db.select().from(schema.projects).where(eq(schema.projects.id, row.projectId)).get();
-    if (!project || project.sourceId !== row.sourceId || project.relativePath !== row.originalRelativePath || project.nativeIdentity !== row.nativeIdentity ||
-      project.categoryId !== row.originalCategoryId || project.associationState !== "active" || project.modeInactive) fail("project_unavailable");
+    if (!project || project.sourceId !== row.sourceId || project.relativePath !== (completed ? row.requestedRelativePath : row.originalRelativePath) || project.nativeIdentity !== row.nativeIdentity ||
+      project.categoryId !== (completed ? row.destinationCategoryId : row.originalCategoryId) || project.associationState !== "active" || project.modeInactive) fail("project_unavailable");
     for (const [id, path, identity] of [[row.originalCategoryId, row.originalParentRelativePath, row.originalParentIdentity],
       [row.destinationCategoryId, row.destinationParentRelativePath, row.destinationParentIdentity]]) {
       const category = db.select().from(schema.categories).where(eq(schema.categories.id, id)).get();
@@ -85,15 +90,22 @@ export function createProjectCategoryMoveService(db: Database, filesystem: Proje
     }
     policy(row, row.originalRelativePath); policy(row, row.requestedRelativePath); reservations(row);
   }
-  function placement(row: Operation) {
-    context(row);
+  function parents(row: Operation, completed = false) {
+    context(row, completed);
     for (const [parentRelativePath, parentIdentity] of [[row.originalParentRelativePath, row.originalParentIdentity],
       [row.destinationParentRelativePath, row.destinationParentIdentity]]) {
       const parent = verifyCreationParents(filesystem, { ...row, parentRelativePath, parentIdentity });
       filesystem.assertAccessible?.(row.canonicalRoot); filesystem.assertAccessible?.(parent);
-      if (!filesystem.names(row.canonicalRoot).includes(parentRelativePath)) fail("filesystem_changed");
+      const names = filesystem.names(row.canonicalRoot);
+      if (!names.includes(parentRelativePath)) fail("filesystem_changed");
+      if (names.some((name) => name !== parentRelativePath && filesystemAlias(name) === filesystemAlias(parentRelativePath))) fail("occupied");
     }
-    const parent = join(row.canonicalRoot, row.originalParentRelativePath), path = join(row.canonicalRoot, row.originalRelativePath);
+    context(row, completed);
+  }
+  function placement(row: Operation, relativePath = row.originalRelativePath, completed = false) {
+    parents(row, completed);
+    const parent = join(row.canonicalRoot, relativePath === row.originalRelativePath ? row.originalParentRelativePath : row.destinationParentRelativePath);
+    const path = join(row.canonicalRoot, relativePath);
     if (!filesystem.names(parent).includes(row.name)) fail("filesystem_changed");
     if (filesystem.names(parent).some((name) => name !== row.name && filesystemAlias(name) === filesystemAlias(row.name))) fail("occupied");
     verifyCreationDirectory(filesystem, path, JSON.parse(row.nativeIdentity));
@@ -101,12 +113,55 @@ export function createProjectCategoryMoveService(db: Database, filesystem: Proje
     // Recheck both ancestors after observing the project; no filesystem lock is implied.
     for (const [parentRelativePath, parentIdentity] of [[row.originalParentRelativePath, row.originalParentIdentity],
       [row.destinationParentRelativePath, row.destinationParentIdentity]]) verifyCreationParents(filesystem, { ...row, parentRelativePath, parentIdentity });
-    context(row);
+    parents(row, completed);
+  }
+  function destinationFree(row: Operation) {
+    placement(row);
+    assertCreationDestinationFree(filesystem, join(row.canonicalRoot, row.destinationParentRelativePath), row.name);
+    placement(row);
+  }
+  function uniqueDestination(row: Operation, completed = false) {
+    placement(row, row.requestedRelativePath, completed);
+    assertCreationDestinationFree(filesystem, join(row.canonicalRoot, row.originalParentRelativePath), row.name);
+    placement(row, row.requestedRelativePath, completed);
+  }
+  const unchangedOperation = (row: Operation) => {
+    const current = operationFor(row.operationId);
+    return !!current && (Object.keys(row) as (keyof Operation)[]).every((key) => current[key] === row[key]);
+  };
+  function evidence(row: Operation) {
+    return db.transaction((tx) => {
+      uniqueDestination(row);
+      if (!unchangedOperation(row)) fail("filesystem_changed");
+      tx.update(schema.projectCategoryMoveOperations).set({ stage: "destination_recorded", destinationIdentity: row.nativeIdentity,
+        lastVerifiedPlacement: "destination", problem: null }).where(eq(schema.projectCategoryMoveOperations.operationId, row.operationId)).run();
+      uniqueDestination(row);
+      return operationFor(row.operationId)!;
+    }, { behavior: "immediate" });
+  }
+  function complete(row: Operation) {
+    const revision = row.expectedRevision + 1;
+    if (!Number.isSafeInteger(revision)) fail("stale_configuration");
+    const receipt = db.transaction((tx) => {
+      uniqueDestination(row);
+      if (!unchangedOperation(row)) fail("filesystem_changed");
+      tx.update(schema.projects).set({ categoryId: row.destinationCategoryId, relativePath: row.requestedRelativePath })
+        .where(eq(schema.projects.id, row.projectId)).run();
+      tx.update(schema.sources).set({ discoveryRevision: revision }).where(eq(schema.sources.id, row.sourceId)).run();
+      tx.update(schema.projectCategoryMoveOperations).set({ stage: "completed", resultKind: "completed", completedRevision: revision, problem: null })
+        .where(eq(schema.projectCategoryMoveOperations.operationId, row.operationId)).run();
+      uniqueDestination(row, true);
+      return operationFor(row.operationId)!;
+    }, { behavior: "immediate" });
+    const workspaceIds = db.select().from(schema.workspaces).where(eq(schema.workspaces.sourceId, row.sourceId)).all().map((w) => w.id);
+    integration.committed(row.sourceId, revision, workspaceIds);
+    return receipt;
   }
   function moveProjectCategory(input: unknown): ServiceResult<ProjectCategoryMoveResult> {
     if (!isProjectCategoryMoveRequest(input) || input.type !== "workspace.moveProjectCategory") return invalid();
     const request = { ...input };
     let phase: "storage" | "filesystem" = "storage";
+    let intent: Operation | undefined, possibleEffect = false;
     try {
       const source = sourceFor(request.workspaceId);
       if (!source) return invalid();
@@ -139,22 +194,58 @@ export function createProjectCategoryMoveService(db: Database, filesystem: Proje
         stage: "intent", destinationIdentity: null, lastVerifiedPlacement: "original", lastVerifiedIdentity: project.nativeIdentity,
         problem: null, resultKind: null, completedRevision: null };
       phase = "filesystem"; placement(row);
-      // Physical effects are deliberately closed until the subsequent move slice.
-      if (row.originalCategoryId !== row.destinationCategoryId) return rejected("unsupported");
       phase = "storage";
-      const receipt = db.transaction((tx) => {
-        placement(row);
+      if (row.originalCategoryId === row.destinationCategoryId) {
+        const receipt = db.transaction((tx) => {
+          placement(row);
+          tx.insert(schema.projectCategoryMoveOperations).values(row).run();
+          tx.update(schema.projectCategoryMoveOperations).set({ stage: "completed", resultKind: "unchanged", completedRevision: row.expectedRevision })
+            .where(eq(schema.projectCategoryMoveOperations.operationId, row.operationId)).run();
+          placement(row);
+          return operationFor(row.operationId)!;
+        }, { behavior: "immediate" });
+        return { ok: true, value: recordedResult(receipt) };
+      }
+      if (!Number.isSafeInteger(row.expectedRevision + 1)) return rejected("stale_configuration");
+      intent = db.transaction((tx) => {
+        destinationFree(row);
         tx.insert(schema.projectCategoryMoveOperations).values(row).run();
-        tx.update(schema.projectCategoryMoveOperations).set({ stage: "completed", resultKind: "unchanged", completedRevision: row.expectedRevision })
-          .where(eq(schema.projectCategoryMoveOperations.operationId, row.operationId)).run();
-        placement(row);
+        destinationFree(row);
         return operationFor(row.operationId)!;
       }, { behavior: "immediate" });
-      return { ok: true, value: recordedResult(receipt) };
+      integration.invalidateSourceReviews(row.sourceId);
+      phase = "filesystem";
+      destinationFree(intent);
+      if (!unchangedOperation(intent)) fail("filesystem_changed");
+      // The primitive protects only the destination. Repeated identity checks
+      // detect observed substitutions, but do not lock filesystem ancestors.
+      possibleEffect = true;
+      const outcome = native(join(row.canonicalRoot, row.originalRelativePath), join(row.canonicalRoot, row.requestedRelativePath));
+      possibleEffect = outcome === "renamed" || outcome === "filesystem_error";
+      if (outcome !== "renamed") fail(outcome === "invalid_argument" ? "invalid_name" : outcome);
+      uniqueDestination(intent);
+      phase = "storage";
+      intent = evidence(intent);
+      return { ok: true, value: recordedResult(complete(intent)) };
     } catch (error) {
       const problem = error instanceof MoveFailure ? error.problem : error instanceof CreationFailure ? error.problem :
         phase === "filesystem" || /^E[A-Z]+$/.test(String(filesystemCode(error))) ? filesystemProblem(error) : "storage_error";
-      return rejected(problem === "case_alias" ? "occupied" : problem);
+      const finiteProblem = problem === "case_alias" ? "occupied" : problem;
+      if (!intent) return rejected(finiteProblem);
+      try {
+        let persisted = operationFor(intent.operationId)!;
+        if (["completed", "failed"].includes(persisted.stage)) return { ok: true, value: recordedResult(persisted) };
+        let noEffect = !possibleEffect;
+        if (noEffect) { try { placement(persisted); } catch { noEffect = false; } }
+        db.update(schema.projectCategoryMoveOperations).set(noEffect ? { stage: "failed", resultKind: "rejected", problem: finiteProblem }
+          : { stage: "uncertain", problem: finiteProblem }).where(eq(schema.projectCategoryMoveOperations.operationId, intent.operationId)).run();
+        persisted = operationFor(intent.operationId)!;
+        return { ok: true, value: recordedResult(persisted) };
+      } catch {
+        // A failed uncertainty write cannot erase or fabricate durable evidence.
+        try { intent = operationFor(intent.operationId) ?? intent; } catch { /* Retain last durable evidence. */ }
+        return { ok: true, value: recordedResult(intent) };
+      }
     }
   }
   function listProjectCategoryMoves(input: unknown): ServiceResult<ProjectCategoryMoveList> {

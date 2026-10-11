@@ -6,6 +6,7 @@ import { randomUUID } from "node:crypto";
 import test from "node:test";
 import Database from "better-sqlite3";
 import { openSettingsService } from "../dist/service/settings.mjs";
+import { renameNoReplace } from "../dist/service/project-rename-filesystem.mjs";
 import { nativeProjectFilesystem } from "../src/service/project-filesystem.ts";
 
 const dependencies = { watch() { return { close() {} }; }, schedule() { return { cancel() {} }; } };
@@ -13,14 +14,18 @@ function fixture(run, options = {}) {
   const directory = fs.realpathSync.native(fs.mkdtempSync(join(tmpdir(), "category-move-")));
   const root = join(directory, "root"), databasePath = join(directory, "workspace.sqlite");
   let service, sql;
+  const projectName = options.name ?? "Project 📝";
   const f = { directory, root, get service() { return service; }, get sql() { return sql; },
     restart() { service.close(); open(); } };
   const open = () => { service = openSettingsService(databasePath, undefined, undefined, dependencies,
-    options.filesystem?.(f) ?? nativeProjectFilesystem, () => { throw new Error("No native effect allowed in this slice"); }); };
+    options.filesystem?.(f) ?? nativeProjectFilesystem, options.defaultNative ? undefined : (from, to) => {
+      if (options.native) return options.native(f, from, to);
+      throw new Error("Injected unknown native outcome");
+    }); };
   try {
     fs.mkdirSync(root); fs.mkdirSync(join(root, "Original category")); fs.mkdirSync(join(root, "Destination"));
-    fs.mkdirSync(join(root, "Original category", "Project 📝"));
-    fs.writeFileSync(join(root, "Original category", "Project 📝", "sentinel"), "  Original bytes\n");
+    fs.mkdirSync(join(root, "Original category", projectName));
+    fs.writeFileSync(join(root, "Original category", projectName, "sentinel"), "  Original bytes\n");
     open(); sql = new Database(databasePath);
     const workspace = service.workspaces.create({ type: "workspace.create", name: "Primary", rootPath: root }).value;
     const sibling = service.workspaces.create({ type: "workspace.create", name: "Sibling", rootPath: root }).value;
@@ -28,7 +33,7 @@ function fixture(run, options = {}) {
     const command = (type, extra = {}) => service.handleCommand({ type, workspaceId: workspace.workspaceId, ...extra });
     const preview = query("workspace.previewDiscovery", { mode: "grouped" }).value;
     const initial = command("workspace.applyDiscovery", { previewToken: preview.previewToken }).value;
-    const project = initial.projects.find((p) => p.name === "Project 📝");
+    const project = initial.projects.find((p) => p.categoryName === "Original category");
     const destination = initial.categories.find((c) => c.name === "Destination");
     const propertyId = command("workspace.createProperty", { name: "Notes", propertyType: "text" }).value.propertyId;
     command("workspace.setTextValue", { projectId: project.projectId, propertyId, value: "  Exact\nТекст  " });
@@ -95,7 +100,7 @@ test("exact payloads, ownership and immutable retry bindings reject altered requ
 for (const state of ["project-missing", "project-replaced", "project-link", "category-missing", "category-replaced", "category-link",
   "root-missing", "root-replaced", "wrong-spelling", "stale-revision", "inactive-project", "unresolved-project", "inactive-category",
   "excluded", "archive", "direct-mode", "native-conflict"]) {
-  test(`current category is freshly validated: ${state} rejects a new no-op`, () => fixture((f) => {
+  test(`current placement is freshly validated: ${state} rejects no-op and physical moves`, () => fixture((f) => {
     const category = join(f.root, "Original category"), project = join(category, "Project 📝");
     if (state.startsWith("project-") || state.startsWith("category-") || state.startsWith("root-")) {
       const target = state.startsWith("project-") ? project : state.startsWith("category-") ? category : f.root;
@@ -116,21 +121,46 @@ for (const state of ["project-missing", "project-replaced", "project-link", "cat
       f.events.length = 0;
     }
     if (state === "native-conflict") f.sql.prepare("UPDATE categories SET native_identity = (SELECT native_identity FROM projects LIMIT 1) WHERE id = ?").run(f.destination.categoryId);
-    const result = f.service.moveProjectCategory(f.request());
-    assert.equal(result.value.outcome, "rejected"); assert.equal(result.value.operation, null);
-    assert.equal(f.query("workspace.listProjectCategoryMoves").value.operations.length, 0);
-    assert.equal(f.events.filter((e) => e.type === "workspace.projectsChanged").length, 0);
+    for (const destinationCategoryId of [f.project.categoryId, f.destination.categoryId]) {
+      const result = f.service.moveProjectCategory(f.request({ destinationCategoryId }));
+      assert.equal(result.value.outcome, "rejected"); assert.equal(result.value.operation, null);
+      assert.equal(f.query("workspace.listProjectCategoryMoves").value.operations.length, 0);
+      assert.equal(f.events.filter((e) => e.type === "workspace.projectsChanged").length, 0);
+    }
   }));
 }
 
-test("physical moves fail closed with unchanged public projection and sentinel", () => fixture((f) => {
-  const before = f.query("workspace.listProjects"), values = f.query("workspace.listTextProperties");
-  const result = f.service.moveProjectCategory(f.request({ destinationCategoryId: f.destination.categoryId }));
-  assert.equal(result.value.outcome, "rejected"); assert.equal(result.value.problem, "unsupported");
-  assert.deepEqual(f.query("workspace.listProjects"), before); assert.deepEqual(f.query("workspace.listTextProperties"), values);
-  assert.equal(fs.existsSync(join(f.root, "Destination", "Project 📝")), false);
-  assert.equal(fs.readFileSync(join(f.root, "Original category", "Project 📝", "sentinel"), "utf8"), "  Original bytes\n");
-}));
+test("one-hop category move preserves identity and exact Text and publishes one committed sibling event", () => fixture((f) => {
+  const values = f.query("workspace.listTextProperties"), before = f.query("workspace.listProjects").value;
+  const oldPath = join(f.root, "Original category", "Project 📝"), newPath = join(f.root, "Destination", "Project 📝");
+  const identity = nativeProjectFilesystem.inspect(oldPath).identity;
+  const request = f.request({ destinationCategoryId: f.destination.categoryId });
+  const result = f.service.moveProjectCategory(request);
+  assert.equal(result.ok, true); assert.equal(result.value.outcome, "completed", JSON.stringify(result));
+  assert.equal(result.value.project.categoryId, f.destination.categoryId);
+  assert.equal(result.value.project.relativePath, "Destination/Project 📝");
+  assert.equal(result.value.project.revision, f.initial.revision + 1);
+  assert.equal(fs.existsSync(oldPath), false);
+  assert.deepEqual(nativeProjectFilesystem.inspect(newPath).identity, identity);
+  assert.equal(fs.readFileSync(join(newPath, "sentinel"), "utf8"), "  Original bytes\n");
+  assert.deepEqual(f.query("workspace.listTextProperties"), values);
+  for (const workspaceId of [f.workspace.workspaceId, f.sibling.workspaceId]) {
+    const list = f.query("workspace.listProjects", { workspaceId }).value;
+    const project = list.projects.find((p) => p.projectId === f.project.projectId);
+    assert.deepEqual(project, { ...before.projects.find((p) => p.projectId === f.project.projectId),
+      categoryId: f.destination.categoryId, categoryName: "Destination", relativePath: "Destination/Project 📝" });
+    assert.equal(list.revision, f.initial.revision + 1);
+  }
+  const changes = f.events.filter((e) => e.type === "workspace.projectsChanged");
+  assert.equal(changes.length, 1);
+  assert.deepEqual(new Set(changes[0].workspaceIds), new Set([f.workspace.workspaceId, f.sibling.workspaceId]));
+  assert.deepEqual(f.service.moveProjectCategory(request), result);
+  f.restart();
+  assert.deepEqual(f.service.moveProjectCategory(request), result);
+  assert.deepEqual(f.query("workspace.getProjectCategoryMove", { operationId: request.operationId }), result);
+  assert.deepEqual(f.query("workspace.listTextProperties"), values);
+  assert.equal(f.query("workspace.listProjects").value.projects.find((p) => p.projectId === f.project.projectId).categoryId, f.destination.categoryId);
+}, { defaultNative: true }));
 
 test("injected permission loss rejects the no-op without a fabricated receipt", () => fixture((f) => {
   f.deny = true;
@@ -195,3 +225,276 @@ test("an unfinished rename reservation rejects a new current-category no-op whil
   assert.equal(fs.existsSync(join(f.root, "Original category", "Requested")), false);
   assert.equal(fs.readFileSync(join(f.root, "Original category", "Project 📝", "sentinel"), "utf8"), "  Original bytes\n");
 }));
+
+test("injected category alias ambiguity rejects even an exact existing destination", () => fixture((f) => {
+  f.alias = true;
+  const result = f.service.moveProjectCategory(f.request({ destinationCategoryId: f.destination.categoryId }));
+  assert.equal(result.value.outcome, "rejected");
+  assert.equal(result.value.problem, "occupied");
+  assert.equal(fs.existsSync(join(f.root, "Destination", "Project 📝")), false);
+}, { filesystem: (f) => ({ ...nativeProjectFilesystem, names(path) {
+  const names = nativeProjectFilesystem.names(path);
+  return f.alias && path === f.root ? [...names, "dESTINATION"] : names;
+} }), defaultNative: true }));
+
+const moveRequest = (f) => f.request({ destinationCategoryId: f.destination.categoryId });
+const originalPath = (f) => join(f.root, f.project.relativePath);
+const destinationPath = (f) => join(f.root, "Destination", f.project.name);
+function assertNoMetadataEffect(f, values) {
+  const list = f.query("workspace.listProjects").value;
+  const retained = [...list.projects, ...list.retainedProjects].find((p) => p.projectId === f.project.projectId);
+  assert.equal(retained.relativePath, f.project.relativePath);
+  assert.equal(retained.categoryId, f.project.categoryId);
+  assert.equal(list.revision, f.initial.revision);
+  assert.deepEqual(f.query("workspace.listTextProperties"), values);
+  assert.equal(f.events.filter((e) => e.type === "workspace.projectsChanged").length, 0);
+}
+
+for (const state of ["missing", "replaced", "link", "wrong-spelling", "excluded", "archive", "inactive", "unresolved", "permission"]) {
+  test(`destination ${state} is rejected before a physical effect`, () => fixture((f) => {
+    const path = join(f.root, "Destination"), values = f.query("workspace.listTextProperties");
+    if (["missing", "replaced", "link"].includes(state)) fs.renameSync(path, join(f.directory, "away"));
+    if (state === "replaced") fs.mkdirSync(path);
+    if (state === "link") fs.symlinkSync(join(f.directory, "away"), path, "junction");
+    if (state === "wrong-spelling") fs.renameSync(path, join(f.root, "dESTINATION"));
+    if (state === "excluded") f.sql.prepare("UPDATE sources SET excluded_relative_paths = '[\"Destination\"]'").run();
+    if (state === "archive") f.sql.prepare("UPDATE sources SET archive_relative_path = 'Destination'").run();
+    if (state === "inactive") f.sql.prepare("UPDATE categories SET mode_inactive = 1 WHERE id = ?").run(f.destination.categoryId);
+    if (state === "unresolved") f.sql.prepare("UPDATE categories SET association_state = 'unresolved' WHERE id = ?").run(f.destination.categoryId);
+    if (state === "permission") f.deny = path;
+    const result = f.service.moveProjectCategory(moveRequest(f));
+    assert.equal(result.value.outcome, "rejected"); assert.equal(result.value.operation, null);
+    f.deny = null;
+    assertNoMetadataEffect(f, values);
+    assert.equal(fs.readFileSync(join(originalPath(f), "sentinel"), "utf8"), "  Original bytes\n");
+  }, { defaultNative: true, filesystem: (f) => ({ ...nativeProjectFilesystem, assertAccessible(path) {
+    if (path === f.deny) throw Object.assign(new Error("Injected destination permission loss"), { code: "EACCES" });
+    nativeProjectFilesystem.assertAccessible(path);
+  } }) }));
+}
+
+for (const kind of ["empty-directory", "nonempty-directory", "file", "link", "alias"]) {
+  test(`occupied ${kind} preserves its identity and bytes and the original project`, () => fixture((f) => {
+    const target = kind === "alias" ? join(f.root, "Destination", "pROJECT 📝") : destinationPath(f);
+    if (["empty-directory", "nonempty-directory", "alias"].includes(kind)) fs.mkdirSync(target);
+    if (kind === "nonempty-directory") fs.writeFileSync(join(target, "third-party"), "Keep");
+    if (kind === "file") fs.writeFileSync(target, "Keep");
+    if (kind === "link") fs.symlinkSync(originalPath(f), target, "junction");
+    const identity = nativeProjectFilesystem.inspect(target), values = f.query("workspace.listTextProperties");
+    assert.equal(f.service.moveProjectCategory(moveRequest(f)).value.problem, "occupied");
+    assert.deepEqual(nativeProjectFilesystem.inspect(target), identity);
+    if (kind === "nonempty-directory") assert.equal(fs.readFileSync(join(target, "third-party"), "utf8"), "Keep");
+    if (kind === "file") assert.equal(fs.readFileSync(target, "utf8"), "Keep");
+    if (kind === "empty-directory") assert.deepEqual(fs.readdirSync(target), []);
+    assertNoMetadataEffect(f, values);
+    assert.equal(fs.readFileSync(join(originalPath(f), "sentinel"), "utf8"), "  Original bytes\n");
+  }, { defaultNative: true }));
+}
+
+test("actual no-replace adapter preserves an empty target inserted at the native-call boundary", () => fixture((f) => {
+  const values = f.query("workspace.listTextProperties"), request = moveRequest(f);
+  const result = f.service.moveProjectCategory(request);
+  assert.equal(result.value.outcome, "rejected"); assert.equal(result.value.problem, "occupied");
+  assert.equal(result.value.operation.stage, "failed");
+  assert.deepEqual(nativeProjectFilesystem.inspect(destinationPath(f)).identity, f.targetIdentity);
+  assert.deepEqual(fs.readdirSync(destinationPath(f)), []);
+  assertNoMetadataEffect(f, values);
+  assert.equal(fs.readFileSync(join(originalPath(f), "sentinel"), "utf8"), "  Original bytes\n");
+  assert.deepEqual(f.service.moveProjectCategory(request), result);
+}, { native: (f, from, to) => {
+  const intent = f.query("workspace.listProjectCategoryMoves").value.operations[0];
+  assert.equal(intent.stage, "intent", "intent is visible through another public query before the native effect");
+  fs.mkdirSync(to); f.targetIdentity = nativeProjectFilesystem.inspect(to).identity;
+  return renameNoReplace(from, to);
+} }));
+
+for (const outcome of ["permission_denied", "busy", "cross_device", "unsupported", "native_unavailable", "source_unavailable", "invalid_argument", "filesystem_error", "throw-before", "throw-after"]) {
+  test(`injected native ${outcome} retains a truthful durable result`, () => fixture((f) => {
+    const values = f.query("workspace.listTextProperties"), request = moveRequest(f);
+    const result = f.service.moveProjectCategory(request);
+    const uncertain = ["filesystem_error", "throw-before", "throw-after"].includes(outcome);
+    assert.equal(result.value.outcome, uncertain ? "recoverable" : "rejected");
+    assert.equal(result.value.operation.stage, uncertain ? "uncertain" : "failed");
+    assert.equal(result.value.operation.lastVerifiedPlacement, "original");
+    assertNoMetadataEffect(f, values);
+    const path = outcome === "throw-after" ? destinationPath(f) : originalPath(f);
+    assert.equal(fs.readFileSync(join(path, "sentinel"), "utf8"), "  Original bytes\n");
+    f.restart();
+    assert.deepEqual(f.service.moveProjectCategory(request), result);
+    assert.deepEqual(f.query("workspace.getProjectCategoryMove", { operationId: request.operationId }), result);
+    assert.equal(fs.readFileSync(join(path, "sentinel"), "utf8"), "  Original bytes\n");
+  }, { native: (_f, from, to) => {
+    if (outcome === "throw-after") assert.equal(renameNoReplace(from, to), "renamed");
+    if (outcome.startsWith("throw-")) throw new Error("Injected unknown native outcome");
+    return outcome;
+  } }));
+}
+
+for (const stage of ["intent", "destination_recorded", "completed", "uncertain"]) {
+  test(`injected ${stage} write failure preserves the last durable evidence`, () => fixture((f) => {
+    const values = f.query("workspace.listTextProperties"), request = moveRequest(f);
+    const event = stage === "intent" ? "INSERT" : "UPDATE";
+    f.sql.exec(`CREATE TRIGGER fail_move_write BEFORE ${event} ON project_category_move_operations WHEN NEW.stage = '${stage}' BEGIN SELECT RAISE(ABORT, 'Injected write failure'); END`);
+    const result = f.service.moveProjectCategory(request);
+    if (stage === "intent") {
+      assert.equal(result.value.outcome, "rejected"); assert.equal(result.value.problem, "storage_error");
+      assert.equal(f.query("workspace.getProjectCategoryMove", { operationId: request.operationId }).error.code, "invalid_input");
+    } else {
+      assert.equal(result.value.outcome, "recoverable");
+      assert.equal(result.value.operation.stage, stage === "uncertain" ? "intent" : "uncertain");
+      assert.equal(result.value.operation.lastVerifiedPlacement, stage === "completed" ? "destination" : "original");
+      f.restart();
+      assert.deepEqual(f.service.moveProjectCategory(request), result);
+      assert.deepEqual(f.query("workspace.listProjectCategoryMoves").value.operations, [result.value.operation]);
+    }
+    assertNoMetadataEffect(f, values);
+    const path = stage === "intent" ? originalPath(f) : destinationPath(f);
+    assert.equal(fs.readFileSync(join(path, "sentinel"), "utf8"), "  Original bytes\n");
+  }, { native: (_f, from, to) => {
+    assert.equal(renameNoReplace(from, to), "renamed");
+    if (stage === "uncertain") throw new Error("Injected lost response");
+    return "renamed";
+  } }));
+}
+
+for (const name of [process.platform === "win32" ? "  Проект 📝" : "  Проект 📝  ", ...(process.platform === "win32" ? [] : ["CON", "colon:name", "back\\slash", "line\nbreak"])]) {
+  test(`move retains exact supported basename ${JSON.stringify(name)}`, () => fixture((f) => {
+    const original = nativeProjectFilesystem.inspect(originalPath(f)).identity;
+    const result = f.service.moveProjectCategory(moveRequest(f));
+    assert.equal(result.value.outcome, "completed"); assert.equal(result.value.project.name, name);
+    assert.ok(fs.readdirSync(join(f.root, "Destination")).includes(name));
+    assert.deepEqual(nativeProjectFilesystem.inspect(destinationPath(f)).identity, original);
+    assert.equal(fs.readFileSync(join(destinationPath(f), "sentinel"), "utf8"), "  Original bytes\n");
+  }, { defaultNative: true, name }));
+}
+
+for (const boundary of ["intent", "after-native", "destination_recorded", "completed"]) {
+  for (const target of ["root", "original-parent", "destination-parent", "project", "permission"]) {
+    test(`injected ${target} substitution at ${boundary} prevents fabricated completion`, () => fixture((f) => {
+      const values = f.query("workspace.listTextProperties"), request = moveRequest(f);
+      f.activeRequest = request;
+      f.mutate = () => {
+        f.mutate = null;
+        if (target === "permission") { f.deny = true; return; }
+        const path = target === "root" ? f.root : target === "original-parent" ? join(f.root, "Original category")
+          : target === "destination-parent" ? join(f.root, "Destination") : boundary === "intent" ? originalPath(f) : destinationPath(f);
+        fs.renameSync(path, join(f.directory, "away"));
+        fs.mkdirSync(path); fs.writeFileSync(join(path, "replacement"), "Keep");
+        f.replacementPath = path;
+      };
+      const result = f.service.moveProjectCategory(request);
+      assert.equal(result.value.outcome, "recoverable", JSON.stringify(result));
+      assert.equal(result.value.operation.stage, "uncertain");
+      assert.equal(result.value.operation.lastVerifiedPlacement, boundary === "completed" ? "destination" : "original");
+      f.deny = false;
+      if (f.replacementPath) assert.equal(fs.readFileSync(join(f.replacementPath, "replacement"), "utf8"), "Keep");
+      assertNoMetadataEffect(f, values);
+      if (target !== "permission") {
+        const suffix = target === "root" ? join(boundary === "intent" ? "Original category" : "Destination", f.project.name)
+          : target === "project" ? "" : (target === "original-parent" && boundary !== "intent" || target === "destination-parent" && boundary === "intent") ? null : f.project.name;
+        if (suffix !== null) assert.equal(fs.readFileSync(join(f.directory, "away", suffix, "sentinel"), "utf8"), "  Original bytes\n");
+      } else assert.equal(fs.readFileSync(join(boundary === "intent" ? originalPath(f) : destinationPath(f), "sentinel"), "utf8"), "  Original bytes\n");
+      f.restart();
+      assert.deepEqual(f.service.moveProjectCategory(request), result);
+      assert.deepEqual(f.query("workspace.getProjectCategoryMove", { operationId: request.operationId }), result);
+    }, { native: (f, from, to) => {
+      assert.equal(renameNoReplace(from, to), "renamed");
+      if (boundary === "after-native") f.mutate?.();
+      return "renamed";
+    }, filesystem: (f) => ({ ...nativeProjectFilesystem, inspect(path) {
+      if (f.mutate && boundary !== "after-native") {
+        const stage = boundary === "intent" ? f.sql.prepare("SELECT stage FROM project_category_move_operations").get()?.stage
+          : f.service.getProjectCategoryMove({ type: "workspace.getProjectCategoryMove", workspaceId: f.workspace.workspaceId,
+            operationId: f.activeRequest.operationId }).value?.operation.stage;
+        if (stage === boundary) f.mutate();
+      }
+      return nativeProjectFilesystem.inspect(path);
+    }, assertAccessible(path) {
+      if (f.deny) throw Object.assign(new Error("Injected permission loss"), { code: "EACCES" });
+      nativeProjectFilesystem.assertAccessible(path);
+    } }) }));
+  }
+}
+
+test("physical move preserves unrelated sources, workspace selection/views, labels and independent revisions after reopen", () => fixture((f) => {
+  const unrelatedRoot = join(f.directory, "unrelated"); fs.mkdirSync(unrelatedRoot); fs.mkdirSync(join(unrelatedRoot, "Other project"));
+  const unrelated = f.service.workspaces.create({ type: "workspace.create", name: "Unrelated", rootPath: unrelatedRoot }).value;
+  const preview = f.query("workspace.previewDiscovery", { workspaceId: unrelated.workspaceId, mode: "direct" }).value;
+  f.command("workspace.applyDiscovery", { workspaceId: unrelated.workspaceId, previewToken: preview.previewToken });
+  f.service.handleCommand({ type: "settings.setLanguage", language: "ru" });
+  const categoryProperty = f.query("workspace.listProjects").value.categoryProperty;
+  f.command("workspace.renameCategoryProperty", { propertyId: categoryProperty.propertyId, name: "Exact label 📝" });
+  const load = f.service.handleQuery({ type: "workspace.load" }), settings = f.service.handleQuery({ type: "settings.load" });
+  const other = f.query("workspace.listProjects", { workspaceId: unrelated.workspaceId });
+  const values = f.query("workspace.listTextProperties"), list = f.query("workspace.listProjects").value;
+  f.events.length = 0;
+  const request = moveRequest(f), receipt = f.service.moveProjectCategory(request);
+  assert.equal(receipt.value.outcome, "completed");
+  for (let i = 0; i < 2; i++) {
+    assert.deepEqual(f.service.handleQuery({ type: "workspace.load" }), load);
+    assert.deepEqual(f.service.handleQuery({ type: "settings.load" }), settings);
+    assert.deepEqual(f.query("workspace.listProjects", { workspaceId: unrelated.workspaceId }), other);
+    assert.deepEqual(f.query("workspace.listTextProperties"), values);
+    const moved = f.query("workspace.listProjects").value;
+    assert.deepEqual(moved.categories, list.categories);
+    assert.deepEqual(moved.categoryProperty, list.categoryProperty);
+    assert.equal(moved.categoryPropertyRevision, list.categoryPropertyRevision);
+    assert.deepEqual(f.service.moveProjectCategory(request), receipt);
+    f.restart();
+  }
+}, { defaultNative: true }));
+
+for (const stage of ["destination_recorded", "completed"]) {
+  for (const change of ["revision", "reservation"]) {
+    test(`injected ${change} during ${stage} transaction invalidates completion and rolls back metadata`, () => fixture((f) => {
+      const values = f.query("workspace.listTextProperties");
+      const body = change === "revision" ? "UPDATE sources SET discovery_revision = discovery_revision + 1;" : `
+        INSERT INTO project_rename_operations (operation_id, source_id, initiating_workspace_id, project_id, original_name, name,
+          mode, expected_revision, category_id, canonical_root, parent_relative_path, original_relative_path, requested_relative_path,
+          root_identity, parent_identity, native_identity, excluded_relative_paths, archive_relative_path,
+          stage, last_verified_placement, last_verified_identity)
+        SELECT '${randomUUID()}', s.id, '${f.workspace.workspaceId}', p.id, '${f.project.name}', '${f.project.name}',
+          'grouped', s.discovery_revision, p.category_id, s.canonical_root, c.relative_path, p.relative_path, p.relative_path,
+          s.applied_root_identity, c.native_identity, p.native_identity, s.excluded_relative_paths, s.archive_relative_path,
+          'intent', 'original', p.native_identity
+        FROM projects p JOIN sources s ON s.id = p.source_id JOIN categories c ON c.id = p.category_id WHERE p.id = '${f.project.projectId}';`;
+      f.sql.exec(`CREATE TRIGGER inject_move_context AFTER UPDATE ON project_category_move_operations WHEN NEW.stage = '${stage}' BEGIN ${body} END`);
+      const result = f.service.moveProjectCategory(moveRequest(f));
+      assert.equal(result.value.outcome, "recoverable");
+      assert.equal(result.value.operation.problem, change === "revision" ? "stale_configuration" : "reserved_destination");
+      assert.equal(result.value.operation.lastVerifiedPlacement, stage === "completed" ? "destination" : "original");
+      assertNoMetadataEffect(f, values);
+      assert.equal(fs.readFileSync(join(destinationPath(f), "sentinel"), "utf8"), "  Original bytes\n");
+      if (change === "reservation") assert.equal(f.query("workspace.listProjectRenames").value.operations.length, 0);
+    }, { defaultNative: true }));
+  }
+}
+
+test("a discovery revision without a safe successor rejects a physical move before mutation", () => fixture((f) => {
+  f.sql.prepare("UPDATE sources SET discovery_revision = ? WHERE id = ?").run(Number.MAX_SAFE_INTEGER, f.workspace.sourceId);
+  const result = f.service.moveProjectCategory(moveRequestWithRevision(f));
+  assert.equal(result.value.outcome, "rejected"); assert.equal(result.value.operation, null);
+  assert.equal(result.value.problem, "stale_configuration");
+  assert.equal(fs.existsSync(destinationPath(f)), false);
+  assert.equal(fs.readFileSync(join(originalPath(f), "sentinel"), "utf8"), "  Original bytes\n");
+}, { defaultNative: true }));
+function moveRequestWithRevision(f) { return f.request({ destinationCategoryId: f.destination.categoryId, expectedRevision: Number.MAX_SAFE_INTEGER }); }
+
+test("a proven failed move releases reservations for a fresh move and retains its immutable historical receipt", () => fixture((f) => {
+  const original = moveRequest(f), failed = f.service.moveProjectCategory(original);
+  assert.equal(failed.value.outcome, "rejected"); assert.equal(failed.value.problem, "permission_denied");
+  assert.equal(failed.value.operation.stage, "failed");
+  const fresh = moveRequest(f), completed = f.service.moveProjectCategory(fresh);
+  assert.equal(completed.value.outcome, "completed");
+  for (let i = 0; i < 2; i++) {
+    assert.deepEqual(f.service.moveProjectCategory(original), failed);
+    assert.deepEqual(f.query("workspace.getProjectCategoryMove", { operationId: original.operationId }), failed);
+    assert.deepEqual(f.service.moveProjectCategory(fresh), completed);
+    assert.deepEqual(f.query("workspace.listProjectCategoryMoves").value.operations, []);
+    assert.equal(fs.readFileSync(join(destinationPath(f), "sentinel"), "utf8"), "  Original bytes\n");
+    f.restart();
+  }
+}, { native: (f, from, to) => {
+  if (!f.deniedOnce) { f.deniedOnce = true; return "permission_denied"; }
+  return renameNoReplace(from, to);
+} }));

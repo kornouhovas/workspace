@@ -150,7 +150,14 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
       observer.request(sourceId);
     },
   }, projectFilesystem, projectRenameNative);
-  const categoryMove = createProjectCategoryMoveService(db, projectFilesystem);
+  const categoryMove = createProjectCategoryMoveService(db, {
+    invalidateSourceReviews,
+    committed(sourceId, revision, workspaceIds) {
+      invalidateSourceReviews(sourceId);
+      publish([{ type: "workspace.projectsChanged", sourceId, revision, workspaceIds }]);
+      observer.request(sourceId);
+    },
+  }, projectFilesystem, projectRenameNative);
   const reveal = createProjectRevealService(db, projectFilesystem);
   const service: WorkspaceService = {
     moveProjectCategory: categoryMove.moveProjectCategory,
