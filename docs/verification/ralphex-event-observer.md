@@ -85,3 +85,13 @@ git diff --cached --check
 ```
 
 The installed skill-creator `quick_validate.py` also returned `Skill is valid!` for `.agents/skills/do-task-ralphex`. ESLint read existing dependencies through a temporary local symlink, removed before the task commit; no dependency installation or source checkout mutation was required. Static SHA-256 checks confirmed the active Issue #19 runner/skill and both installed global skill files were unchanged. No current issue runtime state, lease, lock or log was used as a fixture. The observer's successful historical CI read and every process experiment were scoped to the explicitly selected historical run or newly created disposable fixture.
+
+## Follow-up formatted-output integration repair
+
+The review of imported tooling commit `6efb4757` against the last successful Issue #19 review `fbbc07b3` collected independent quality and requirements perspectives. Requirements review confirmed one major integration defect: Ralphex v1.7.0 prefixes stdout lines with timestamps and wraps marker JSON, while the initial parser recognized only complete raw marker lines. The bounded deadline still worked, but task/review transitions were consumed without a progress event.
+
+A read-only capture of the owned review output supplied the original scenario. It was replayed only inside a disposable fixture; no active runner state, lock, log or lease was modified. The captured-input probe consumed all 1,167 bytes and returned `deadline`, zero progress and no task; a raw-marker control returned progress. The permanent regression uses the exact four formatted marker lines in [the captured fixture](../../tests/fixtures/ralphex-progress-formatted.txt) and failed before the parser repair.
+
+The parser now strips the known timestamp prefix and reconstructs bounded wrapped advisory JSON from same-timestamp continuations. Incomplete marker state survives cursor restart and retains the original raw byte ranges. Malformed or oversized messages cannot swallow a subsequent valid marker. Runner snapshots retain authority over completion and acceptance.
+
+On macOS with Node 22.21.1, the runner/observer suites passed **71/71**, with no failures or skips. Replaying the full captured original scenario returned two ordered progress records across all 1,167 bytes; a repeated observation delivered zero duplicates. A separate quality re-review found no confirmed new defect. Red/green TAP, original capture/probe, full replay results and both review reports remain under ignored `work/issue-19/followup-review-6efb4757/`. Windows execution, live heartbeat and adoption gates remain as stated above; this repair supplies no new platform or token-cost acceptance.

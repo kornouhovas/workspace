@@ -35,6 +35,60 @@ test('ordinary noisy bytes coalesce, while a task marker reports progress withou
   assert.ok(result.log.excerpt.length <= 2048); assert.equal(readFileSync(f.log,'utf8').length, result.log.to);
 });
 
+test('captured Ralphex timestamped and wrapped output delivers advisory review transitions', async t => {
+  const f = fixture(t);
+  // Captured from Ralphex v1.7.0 stdout, not raw executor output.
+  const captured = readFileSync(new URL('./fixtures/ralphex-progress-formatted.txt', import.meta.url));
+  writeFileSync(f.log, captured);
+  const result = await observe(f.options);
+  assert.equal(result.reason, 'progress');
+  assert.deepEqual(result.progressTasks, [
+    'Follow-up review: reading coordinator snapshot and project rules',
+    'Follow-up review: collecting two independent perspectives'
+  ]);
+  assert.equal(result.progressTotal, 2);
+  assert.equal(result.status, 'running');
+  assert.equal(result.acceptance, 'not_established');
+  const records = readFileSync(result.progressEvidence, 'utf8').trim().split('\n').map(line => JSON.parse(line));
+  assert.equal(records[0].from, 0);
+  assert.equal(records.at(-1).to, captured.length);
+  const repeat = await observe(f.options);
+  assert.equal(repeat.progressTotal, 0);
+  assert.equal(repeat.log.from, captured.length);
+});
+
+test('wrapped Ralphex progress survives observer restart in a partial continuation line', async t => {
+  const f = fixture(t);
+  const captured = readFileSync(new URL('./fixtures/ralphex-progress-formatted.txt', import.meta.url));
+  const split = captured.indexOf(10) + 12;
+  writeFileSync(f.log, captured.subarray(0, split));
+  const first = await observe(f.options);
+  assert.equal(first.reason, 'deadline');
+  assert.equal(first.progressTotal, 0);
+  appendFileSync(f.log, captured.subarray(split));
+  const resumed = await observe(f.options);
+  assert.equal(resumed.reason, 'progress');
+  assert.equal(resumed.progressTotal, 2);
+  assert.equal(resumed.task, 'Follow-up review: collecting two independent perspectives');
+  assert.equal(resumed.log.from, split);
+  const records = readFileSync(resumed.progressEvidence, 'utf8').trim().split('\n').map(line => JSON.parse(line));
+  assert.equal(records[0].from, 0);
+  assert.equal(records.at(-1).to, captured.length);
+  assert.equal((await observe(f.options)).progressTotal, 0);
+});
+
+test('malformed formatted messages stay bounded and cannot swallow the next valid marker', async t => {
+  const f = fixture(t), prefix = '[26-10-12 00:49:20] ';
+  writeFileSync(f.log, prefix + 'RALPHEX_PROGRESS {"task":"unfinished\n' +
+    Array.from({length:100}, () => prefix + 'x'.repeat(100) + '\n').join('') +
+    prefix + 'RALPHEX_PROGRESS {"task":"Next task"}\n');
+  const result = await observe(f.options);
+  assert.equal(result.reason, 'progress');
+  assert.deepEqual(result.progressTasks, ['Next task']);
+  assert.equal(result.status, 'running');
+  assert.ok(readFileSync(f.options.cursor).length < 6500);
+});
+
 test('terminal source wins over an unavailable log and retains failure exit evidence', async t => {
   const f = fixture(t); f.state.status = 'failed'; f.state.lastExit = 7; f.state.lastSignal = 'SIGTERM'; f.save(); rmSync(f.log);
   const result = await observe(f.options);

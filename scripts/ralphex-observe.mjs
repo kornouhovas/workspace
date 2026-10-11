@@ -11,6 +11,7 @@ const sleep = (ms, signal) => new Promise(resolve => {
 });
 const json = async file => JSON.parse(await readFile(file, 'utf8'));
 const fingerprint = value => JSON.stringify(value);
+const timestampPrefix = /^\[\d{2}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\] /;
 
 async function canonicalPath(file) {
   try { return await realpath(file); }
@@ -43,6 +44,7 @@ async function validateOutputs(paths,source) {
 async function scanLog(file,{offset,size,deadline,signal,pending,task}) {
   const start = offset, buffer = Buffer.alloc(16384), tasks = [], records = [];
   let line = Buffer.from(pending?.line ?? '', 'base64'), discard = pending?.discard ?? false;
+  let marker = pending?.marker;
   let lineStart = pending?.from ?? offset, tail = Buffer.alloc(0), count = 0;
   while (offset < size && Date.now() < deadline && !signal.aborted) {
     const requested = Math.min(buffer.length,size-offset), read = await file.read(buffer,0,requested,offset);
@@ -56,14 +58,23 @@ async function scanLog(file,{offset,size,deadline,signal,pending,task}) {
         else line = Buffer.concat([line,part]);
       }
       if (newline >= 0) {
-        if (!discard && line.subarray(0,17).toString('ascii') === 'RALPHEX_PROGRESS ') {
+        const text = discard ? '' : line.toString('utf8');
+        const prefix = timestampPrefix.exec(text)?.[0], content = prefix ? text.slice(prefix.length) : text;
+        if (content.startsWith('RALPHEX_PROGRESS ')) marker = {text:content.slice(17),prefix,from:lineStart};
+        else if (marker?.prefix && prefix === marker.prefix && !discard) marker.text += ` ${content}`;
+        else marker = undefined;
+        // Ralphex wraps one message into lines sharing a timestamp. Retain only
+        // bounded advisory JSON; neither formatted nor raw text sets run status.
+        if (marker && Buffer.byteLength(marker.text) > 4096) marker = undefined;
+        if (marker) {
           try {
-            const marker = JSON.parse(line.subarray(17).toString('utf8'));
-            if (typeof marker.task === 'string' && marker.task.length > 0 && marker.task.length <= 200 && marker.task !== task) {
-              task = marker.task; tasks.push(task); if (tasks.length > 10) tasks.shift(); count++;
-              records.push({task,from:lineStart,to:chunkStart+newline+1});
+            const value = JSON.parse(marker.text);
+            if (typeof value?.task === 'string' && value.task.length > 0 && value.task.length <= 200 && value.task !== task) {
+              task = value.task; tasks.push(task); if (tasks.length > 10) tasks.shift(); count++;
+              records.push({task,from:marker.from,to:chunkStart+newline+1});
             }
-          } catch { /* A log line can report a task, never authoritative status. */ }
+            marker = undefined;
+          } catch { if (!marker.prefix) marker = undefined; }
         }
         line = Buffer.alloc(0); discard = false; lineStart = chunkStart+newline+1;
       }
@@ -77,7 +88,7 @@ async function scanLog(file,{offset,size,deadline,signal,pending,task}) {
     const read = await file.read(anchorBytes,0,anchorBytes.length,offset-anchorBytes.length);
     if (read.bytesRead !== anchorBytes.length) throw new Error('Log truncated before cursor publication');
   }
-  return {offset,task,tasks,count,records,pending:{line:line.toString('base64'),discard,from:lineStart},
+  return {offset,task,tasks,count,records,pending:{line:line.toString('base64'),discard,from:lineStart,marker},
     excerpt:tail.toString('utf8'),omittedBytes:Math.max(0,offset-start-tail.length),
     anchor:offset ? {length:anchorBytes.length,hash:createHash('sha256').update(anchorBytes).digest('hex')} : undefined};
 }
@@ -137,6 +148,8 @@ export async function observe({ source, cursor, budgetMs = 50000, pollMs, signal
   try {
     try { previous = await json(cursor);
       if (previous.pendingLog && (typeof previous.pendingLog.line !== 'string' || previous.pendingLog.line.length > 5464 || typeof previous.pendingLog.discard !== 'boolean' || !Number.isSafeInteger(previous.pendingLog.from) || previous.pendingLog.from < 0 || previous.pendingLog.from > previous.offset)) throw new Error('Malformed observer stream cursor');
+      const marker = previous.pendingLog?.marker;
+      if (marker && (typeof marker.text !== 'string' || Buffer.byteLength(marker.text) > 4096 || typeof marker.prefix !== 'string' || timestampPrefix.exec(marker.prefix)?.[0] !== marker.prefix || !Number.isSafeInteger(marker.from) || marker.from < 0 || marker.from > previous.offset)) throw new Error('Malformed observer progress cursor');
       if (previous.anchor && (!Number.isSafeInteger(previous.anchor.length) || previous.anchor.length < 1 || previous.anchor.length > 64 || !/^[a-f0-9]{64}$/.test(previous.anchor.hash))) throw new Error('Malformed observer byte anchor');
       if (previous.version !== 1 || !previous.source || !Number.isSafeInteger(previous.offset) || previous.offset < 0 || typeof previous.fingerprint !== 'string') throw new Error('Unsupported or malformed observer cursor');
     } catch (error) { if (error.code !== 'ENOENT') { cursorError = error; previous = undefined; } }
