@@ -1,9 +1,13 @@
 import assert from "node:assert/strict";
+import { spawn } from "node:child_process";
 import { lstat, mkdir, mkdtemp, readFile, readdir, readlink, realpath, rename, rm, symlink, unlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { basename, dirname, join } from "node:path";
 import test from "node:test";
+import { setImmediate as nextTurn } from "node:timers/promises";
+import { fileURLToPath } from "node:url";
 import { createRuntimeSourceDisconnect, createRuntimeSourceMoveEvidence } from "../scripts/runtime-source-disconnect.mjs";
+import { runBoundedProcess } from "../scripts/windows-rename-diagnostics.mjs";
 
 const runtime = await readFile(new URL("../scripts/smoke-runtime.mjs", import.meta.url), "utf8");
 const anchor = "await page.evaluate(() => globalThis.stopSmokeChanges());";
@@ -13,9 +17,9 @@ const callSite = runtime.slice(start, runtime.indexOf("await select(page, siblin
 assert.equal(callSite, 'await moveSelectedSource("disconnect");');
 const invokeSecondDisconnect = new (Object.getPrototypeOf(async function () {}).constructor)("moveSelectedSource", callSite);
 
-async function fixture(t) {
+async function fixture(t, { autoCleanup = true } = {}) {
   const ownedFixture = await mkdtemp(join(tmpdir(), "workspace-runtime-"));
-  t.after(() => rm(ownedFixture, { recursive: true, force: true }));
+  if (autoCleanup) t.after(() => rm(ownedFixture, { recursive: true, force: true }));
   const source = join(ownedFixture, "SelectedProjectRoot");
   await mkdir(source);
   await writeFile(join(source, "sentinel"), "Exact fixture bytes");
@@ -538,4 +542,316 @@ test("actual runtime evidence writer saves bounded failure outcomes and rejects 
   assert.ok(Buffer.byteLength(JSON.stringify(persisted.sourceMoves, null, 2)) < 4096);
   assert.equal(JSON.stringify(persisted.sourceMoves).includes(f.ownedFixture), false);
   await unchanged(f);
+});
+
+const holderScript = fileURLToPath(new URL("./fixtures/runtime-source-disconnect-holder.ps1", import.meta.url));
+const holderReady = "WORKSPACE_RUNTIME_SOURCE_LOCKED";
+const holderCompleted = { version: 1, stage: "completed", opened: true, released: true };
+
+function assertHolderExit(result) {
+  assert.equal(result.status, "completed", "holder must exit normally within its bounds");
+  assert.equal(result.termination, "confirmed", "holder exit must be independently observed");
+  assert.equal(result.exitCode, 0);
+  assert.ok(Buffer.byteLength(result.stdout) <= 4096);
+  assert.deepEqual(JSON.parse(result.stdout), holderCompleted, "readiness alone cannot prove release");
+}
+
+async function removeSharingFixture(f, state, remove = rm) {
+  assert.equal(state.processesStopped, true, "unverified holder exit forbids fixture removal");
+  assert.equal(state.movePending, false, "an in-flight move forbids fixture removal");
+  await remove(f.ownedFixture, { recursive: true, force: true });
+  await assert.rejects(lstat(f.ownedFixture), { code: "ENOENT" }, "cleanup must actually remove the fixture");
+}
+
+async function sharingFixture(t) {
+  const f = await fixture(t, { autoCleanup: false });
+  // Match the holder's canonical immediate-child-of-temp boundary. OS temp
+  // aliases outside this generated tree are not caller-selected fixture aliases.
+  f.ownedFixture = await realpath(f.ownedFixture);
+  f.source = join(f.ownedFixture, f.sourceName);
+  f.disconnected = join(f.ownedFixture, "temporarily-disconnected");
+  const state = { processesStopped: true, movePending: false };
+  t.after(() => removeSharingFixture(f, state));
+  return { f, state };
+}
+
+// Reuse the historical bounded runner, not its single-attempt worker/holder:
+// that holder targets a category under another fixture layout. This handshake
+// holds the runtime's fixed descendant until real Node rename has rejected.
+async function heldSourceControl(f, state, mode, { runProcess = runBoundedProcess, dependencies = {} } = {}) {
+  let ready = false, blocked = 0, movePending, holderPending, blockedSignal;
+  const firstBlocked = new Promise(resolve => { blockedSignal = resolve; });
+  const move = dependencies.rename ?? rename;
+  const helper = await createRuntimeSourceDisconnect(f, { ...dependencies, rename: async (from, to) => {
+    try { await move(from, to); }
+    catch (error) {
+      assert.equal(error.code, "EPERM", "the real blocked Node operation must report EPERM");
+      assert.equal(error.syscall, "rename");
+      blocked++;
+      blockedSignal();
+      if (mode === "release") {
+        // Await the explicit release response and process exit before allowing
+        // retry. No sleep is used to infer handle readiness or release.
+        assertHolderExit(await holderPending);
+      }
+      throw error;
+    }
+  } });
+  state.processesStopped = false;
+  holderPending = runProcess("powershell.exe", ["-NoProfile", "-NonInteractive", "-File", holderScript], {
+    timeoutMs: 10000, maxBytes: 4096, readyMarker: holderReady, readyInput: "release\n", waitForReadyCallback: true,
+    env: { ...process.env, WORKSPACE_RUNTIME_HOLDER_FIXTURE: f.ownedFixture },
+    onReady: async () => {
+      assert.equal(ready, false); ready = true; state.movePending = true;
+      movePending = helper("disconnect").then(result => ({ result }), error => ({ error }))
+        .finally(() => { state.movePending = false; });
+      if (mode === "persistent") await movePending;
+      else await Promise.race([firstBlocked, movePending.then(() => { throw new Error("No blocked rename was observed"); })]);
+    },
+  });
+  const holder = await holderPending;
+  state.processesStopped = ["confirmed", "not_started"].includes(holder.termination);
+  // Even timeout/early-exit cases await any started Node move to settlement.
+  // No race against cleanup, cancellation claim, replay or rollback.
+  const outcome = await movePending;
+  assert.equal(ready, true, "holder must establish actual readiness");
+  assertHolderExit(holder);
+  assert.ok(blocked >= 1, "at least one actual Node rename must be blocked");
+  if (mode === "release") {
+    assert.equal(outcome.error, undefined, "release must permit a subsequent actual move");
+    assert.ok(outcome.result.attempts >= 2 && outcome.result.attempts <= 20);
+    assert.equal(outcome.result.firstErrorCode, "EPERM");
+    for (const key of ["sourceAbsent", "destinationIdentityMatches", "contentsMatch", "verificationComplete"]) assert.equal(outcome.result[key], true);
+    assert.ok(outcome.result.elapsedMs < 2000);
+  } else {
+    assert.ok(["attempts_exhausted", "deadline_exhausted"].includes(outcome.error?.code));
+    const observation = outcome.error.fixtureMove;
+    assert.equal(observation.firstErrorCode, "EPERM");
+    assert.equal(observation.attempts, blocked);
+    assert.ok(observation.attempts >= 1 && observation.attempts <= 20);
+    if (outcome.error.code === "attempts_exhausted") assert.equal(observation.attempts, 20);
+    else assert.ok(observation.elapsedMs >= 2000);
+    assert.equal(observation.sourceAbsent, false);
+    assert.equal(observation.destinationIdentityMatches, false);
+    assert.equal(observation.contentsMatch, false);
+    assert.equal(observation.verificationComplete, true);
+    await unchanged(f);
+  }
+  return { helper, outcome, blocked };
+}
+
+const completedHolderProcess = (extra = {}) => ({ status: "completed", termination: "confirmed", exitCode: 0,
+  stdout: JSON.stringify(holderCompleted), ...extra });
+const blockedRename = () => Object.assign(osError(), { syscall: "rename" });
+
+for (const mode of ["release", "persistent"]) test(`portable ${mode} holder orchestration exercises the real shared helper`, async (t) => {
+  const { f, state } = await sharingFixture(t);
+  const times = clock(); let held = true, calls = 0;
+  const control = await heldSourceControl(f, state, mode, {
+    dependencies: { ...times, platform: "win32", rename: async (from, to) => {
+      calls++;
+      if (held) throw blockedRename();
+      await rename(from, to);
+    } },
+    runProcess: async (program, args, options) => {
+      assert.equal(program, "powershell.exe"); assert.equal(args.at(-1), holderScript);
+      assert.equal(options.timeoutMs, 10000); assert.equal(options.maxBytes, 4096);
+      assert.equal(options.readyMarker, holderReady); assert.equal(options.readyInput, "release\n");
+      assert.equal(options.waitForReadyCallback, true);
+      await options.onReady();
+      assert.ok(calls >= 1, "release cannot precede blocking");
+      if (mode === "persistent") assert.equal(calls, 20, "persistent holder survives helper exhaustion");
+      held = false;
+      return completedHolderProcess();
+    },
+  });
+  assert.equal(state.movePending, false); assert.equal(state.processesStopped, true);
+  if (mode === "release") { assert.equal(control.blocked, 1); await control.helper("restore"); }
+  await unchanged(f);
+});
+
+for (const fault of ["readiness", "release", "timeout", "termination", "no-block", "wrong-code"]) {
+  test(`holder control fails closed for missing ${fault} evidence`, async (t) => {
+    const { f, state } = await sharingFixture(t);
+    let held = true;
+    await assert.rejects(heldSourceControl(f, state, "release", {
+      dependencies: { ...clock(), platform: "win32", rename: async (from, to) => {
+        if (fault === "no-block" || !held) { await rename(from, to); return; }
+        if (fault === "wrong-code") throw Object.assign(osError("EACCES"), { syscall: "rename" });
+        throw blockedRename();
+      } },
+      runProcess: async (_program, _args, options) => {
+        if (fault === "readiness") return completedHolderProcess();
+        try { await options.onReady(); } catch { return completedHolderProcess({ status: "process_error" }); }
+        held = false;
+        if (fault === "release") return completedHolderProcess({ stdout: JSON.stringify({ ...holderCompleted, released: false }) });
+        if (fault === "timeout") return completedHolderProcess({ status: "timeout", exitCode: null });
+        if (fault === "termination") return completedHolderProcess({ termination: "unknown" });
+        return completedHolderProcess();
+      },
+    }));
+    assert.equal(state.movePending, false);
+    if (fault === "termination") {
+      assert.equal(state.processesStopped, false);
+      let removes = 0;
+      await assert.rejects(removeSharingFixture(f, state, async () => { removes++; }));
+      assert.equal(removes, 0);
+      // This portable test never spawned a holder. Reset only that simulated
+      // unknown state so its exclusively owned fixture can be removed.
+      state.processesStopped = true;
+    }
+    assert.equal(await readFile(join(f.ownedFixture, "unrelated", "sentinel"), "utf8"), "Unrelated bytes");
+  });
+}
+
+test("sharing teardown rejects missing cleanup effects and unsettled moves", async (t) => {
+  const { f, state } = await sharingFixture(t);
+  await assert.rejects(removeSharingFixture(f, state, async () => {}));
+  state.movePending = true;
+  let removes = 0;
+  await assert.rejects(removeSharingFixture(f, state, async () => { removes++; }));
+  assert.equal(removes, 0); state.movePending = false;
+  await unchanged(f);
+});
+
+test("holder timeout awaits a late actual move before allowing fixture cleanup", async (t) => {
+  const { f, state } = await sharingFixture(t), times = clock();
+  let enterMove, finishMove, readiness;
+  const entered = new Promise(resolve => { enterMove = resolve; });
+  const finish = new Promise(resolve => { finishMove = resolve; });
+  let settled = false;
+  const pending = heldSourceControl(f, state, "release", {
+    dependencies: { ...times, platform: "win32", rename: async (from, to) => {
+      enterMove(); await finish; times.advance(2100); await rename(from, to);
+    } },
+    runProcess: async (_program, _args, options) => {
+      readiness = options.onReady().catch(() => undefined);
+      await entered;
+      return completedHolderProcess({ status: "timeout", exitCode: null });
+    },
+  }).finally(() => { settled = true; });
+  // Attach the rejection observer before releasing the controlled operation.
+  const rejected = assert.rejects(pending);
+  await entered; await nextTurn();
+  assert.equal(state.processesStopped, true); assert.equal(state.movePending, true); assert.equal(settled, false);
+  await assert.rejects(removeSharingFixture(f, state));
+  finishMove(); await rejected; await readiness;
+  assert.equal(state.movePending, false); assert.equal(settled, true);
+  await assert.rejects(lstat(f.source), { code: "ENOENT" });
+  assert.equal(await readFile(join(f.disconnected, "sentinel"), "utf8"), "Exact fixture bytes");
+  assert.equal(await readFile(join(f.ownedFixture, "unrelated", "sentinel"), "utf8"), "Unrelated bytes");
+});
+
+test("actual bounded subprocess handshake confirms readiness, release and exit without sleeps", async () => {
+  let ready = 0, child;
+  const program = `process.stdout.write(${JSON.stringify(holderReady + "\n")});
+    process.stdin.once('data', data => {
+      if (data.toString() !== 'release\\n') process.exit(1);
+      process.stdout.write(${JSON.stringify(JSON.stringify(holderCompleted))});
+      process.stdin.destroy();
+    });`;
+  const result = await runBoundedProcess(process.execPath, ["-e", program], {
+    timeoutMs: 5000, maxBytes: 4096, readyMarker: holderReady, readyInput: "release\n", waitForReadyCallback: true,
+    spawnProcess: (...args) => { child = spawn(...args); return child; },
+    onReady: async () => { ready++; assert.equal(child.exitCode, null); },
+  });
+  assert.equal(ready, 1); assertHolderExit(result);
+  assert.equal(child.exitCode, 0);
+  assert.throws(() => process.kill(child.pid, 0), { code: "ESRCH" });
+});
+
+for (const fault of ["no-ready", "no-release", "output-limit"]) test(`actual holder subprocess ${fault} cannot pass or outlive cleanup`, async (t) => {
+  const { f, state } = await sharingFixture(t);
+  let child, ready = 0;
+  const program = fault === "output-limit" ? "process.stdout.write('x'.repeat(8192)); setInterval(() => {}, 1000);" :
+    `${fault === "no-release" ? `process.stdout.write(${JSON.stringify(holderReady + "\n")});` : ""} setInterval(() => {}, 1000);`;
+  state.processesStopped = false;
+  const result = await runBoundedProcess(process.execPath, ["-e", program], {
+    timeoutMs: 5000, maxBytes: 4096, readyMarker: holderReady, readyInput: "release\n", waitForReadyCallback: true,
+    spawnProcess: (...args) => { child = spawn(...args); return child; },
+    onReady: async () => { ready++; await new Promise(() => {}); },
+  });
+  state.processesStopped = result.termination === "confirmed";
+  assert.equal(result.status, fault === "output-limit" ? "output_limit" : "timeout");
+  assert.equal(ready, fault === "no-release" ? 1 : 0);
+  assert.throws(() => assertHolderExit(result));
+  assert.equal(result.stdout, ""); assert.equal(result.termination, "confirmed");
+  assert.ok(child.exitCode !== null || child.signalCode !== null);
+  assert.throws(() => process.kill(child.pid, 0), { code: "ESRCH" });
+  await unchanged(f);
+});
+
+for (const mode of ["release", "persistent"]) test(`actual Windows selected-root ${mode} sharing control`, {
+  skip: process.platform !== "win32", timeout: 20000,
+}, async (t) => {
+  const { f, state } = await sharingFixture(t);
+  const before = await lstat(f.source, { bigint: true });
+  const control = await heldSourceControl(f, state, mode);
+  const location = mode === "release" ? f.disconnected : f.source;
+  const after = await lstat(location, { bigint: true });
+  assert.deepEqual([after.dev, after.ino, after.birthtimeNs], [before.dev, before.ino, before.birthtimeNs]);
+  assert.equal(await readFile(join(location, "sentinel"), "utf8"), "Exact fixture bytes");
+  assert.deepEqual(await readFile(join(location, "nested", "binary")), Buffer.from([0, 255, 1, 0, 128]));
+  if (mode === "release") await control.helper("restore");
+  await unchanged(f);
+});
+
+test("actual Windows no-holder selected-root positive control", { skip: process.platform !== "win32" }, async (t) => {
+  const { f } = await sharingFixture(t);
+  const helper = await createRuntimeSourceDisconnect(f);
+  for (const direction of ["disconnect", "restore"]) {
+    const result = await helper(direction);
+    assert.equal(result.attempts, 1); assert.equal(result.firstErrorCode, null);
+    assert.ok(result.sourceAbsent && result.destinationIdentityMatches && result.contentsMatch && result.verificationComplete);
+  }
+  await unchanged(f);
+});
+
+test("actual Windows runtime holder rejects foreign paths, aliases, reparses, file kinds and occupied destinations", {
+  skip: process.platform !== "win32",
+}, async (t) => {
+  for (const fault of ["foreign", "argument", "dot-alias", "ancestor-alias", "source-link", "child-link", "child-file", "occupied", "dangling-destination"]) {
+    await t.test(fault, async (t) => {
+      const { f, state } = await sharingFixture(t);
+      let root = f.ownedFixture;
+      if (fault === "foreign") root = join(f.ownedFixture, "unrelated");
+      if (fault === "dot-alias") root += "\\.";
+      if (fault === "ancestor-alias") {
+        await symlink(dirname(f.ownedFixture), join(f.ownedFixture, "alias"), "junction");
+        root = join(f.ownedFixture, "alias", basename(f.ownedFixture));
+      }
+      if (fault === "source-link") {
+        await rename(f.source, join(f.ownedFixture, "held-source"));
+        await symlink(join(f.ownedFixture, "held-source"), f.source, "junction");
+      }
+      if (fault === "child-link" || fault === "child-file") {
+        await rename(join(f.source, "nested"), join(f.source, "held-nested"));
+        if (fault === "child-link") await symlink(join(f.source, "held-nested"), join(f.source, "nested"), "junction");
+        else await writeFile(join(f.source, "nested"), "File must not be held as a directory");
+      }
+      if (fault === "occupied") {
+        await mkdir(f.disconnected); await writeFile(join(f.disconnected, "sentinel"), "Occupied bytes");
+      }
+      if (fault === "dangling-destination") await symlink(join(f.ownedFixture, "absent"), f.disconnected, "junction");
+      let ready = 0;
+      state.processesStopped = false;
+      const result = await runBoundedProcess("powershell.exe", ["-NoProfile", "-NonInteractive", "-File", holderScript,
+        ...(fault === "argument" ? [f.source] : [])], {
+        timeoutMs: 10000, maxBytes: 4096, readyMarker: holderReady, readyInput: "release\n", waitForReadyCallback: true,
+        env: { ...process.env, WORKSPACE_RUNTIME_HOLDER_FIXTURE: root }, onReady: async () => { ready++; },
+      });
+      state.processesStopped = result.termination === "confirmed";
+      assert.equal(result.termination, "confirmed"); assert.equal(result.status, "process_error"); assert.equal(result.exitCode, 1);
+      assert.equal(ready, 0);
+      assert.deepEqual(JSON.parse(result.stdout), { version: 1, stage: "input", opened: false, released: false });
+      const retained = fault === "source-link" ? join(f.ownedFixture, "held-source") : f.source;
+      assert.equal(await readFile(join(retained, "sentinel"), "utf8"), "Exact fixture bytes");
+      const nested = ["child-link", "child-file"].includes(fault) ? "held-nested" : "nested";
+      assert.deepEqual(await readFile(join(retained, nested, "binary")), Buffer.from([0, 255, 1, 0, 128]));
+      assert.equal(await readFile(join(f.ownedFixture, "unrelated", "sentinel"), "utf8"), "Unrelated bytes");
+      if (fault === "occupied") assert.equal(await readFile(join(f.disconnected, "sentinel"), "utf8"), "Occupied bytes");
+      else if (fault === "dangling-destination") assert.equal((await lstat(f.disconnected)).isSymbolicLink(), true);
+      else await assert.rejects(lstat(f.disconnected), { code: "ENOENT" });
+    });
+  }
 });
