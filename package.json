@@ -34,6 +34,8 @@
     "package:dev:win": "npm run package:dir:win && npm run check:artifact -- release",
     "build:project-rename-native": "node scripts/build-project-rename-native.mjs",
     "test:rename:native": "node --test tests/project-rename-native.test.mjs",
+    "smoke:category-move:service": "node scripts/smoke-project-category-move.mjs",
+    "test:category-move:early": "node --import tsx --test tests/project-category-move-journal.test.mjs tests/project-category-move-coordination.test.mjs tests/project-category-move-service.test.mjs tests/project-category-move-crash.test.mjs tests/project-category-move-ipc.test.mjs tests/project-category-move-fixture.test.mjs",
     "smoke:rename:service": "node scripts/smoke-project-rename.mjs",
     "test:rename:early": "node --import tsx --test tests/project-rename-journal.test.mjs tests/project-rename-coordination.test.mjs tests/project-rename-service.test.mjs tests/project-rename-crash.test.mjs tests/project-rename-ipc.test.mjs tests/project-rename-fixture.test.mjs"
   },

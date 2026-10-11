@@ -11,6 +11,43 @@ on:
         default: false
 
 jobs:
+  project-category-move-service-early:
+    name: Early real-service project category move (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest, windows-2022]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.21.1
+          cache: npm
+      - run: npm ci
+      - name: Build production service and native inputs
+        run: npm run build
+      - name: Check focused journal coordination recovery transport and fixture controls
+        run: npm run test:category-move:early
+        env:
+          WORKSPACE_CATEGORY_MOVE_SERVICE_EVIDENCE_DIR: work/ci-category-move-service-controls
+      - name: Observe production service in Electron before unrelated UI or Reveal work
+        if: ${{ !cancelled() }}
+        run: npm run smoke:category-move:service
+        timeout-minutes: 2
+        env:
+          WORKSPACE_CATEGORY_MOVE_SERVICE_EVIDENCE_DIR: work/ci-category-move-service
+      - name: Preserve separate service checkpoint including failures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-19-category-move-service-${{ matrix.os }}
+          path: |
+            work/ci-category-move-service/
+            work/ci-category-move-service-controls/
+          if-no-files-found: warn
+
   project-rename-service-early:
     name: Early real-service project rename (${{ matrix.os }})
     strategy:
