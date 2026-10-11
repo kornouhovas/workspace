@@ -17,6 +17,8 @@ import type { TextPropertySnapshot, TextPropertyMutation } from "../src/contract
 import { randomUUID } from "node:crypto";
 import { DiscoveryPanel } from "../src/renderer/components/DiscoveryPanel.js";
 import { openSettingsService } from "../src/service/settings.js";
+import { nativeProjectFilesystem } from "../src/service/project-filesystem.js";
+import type { ProjectRenameResult } from "../src/contracts/project-rename.js";
 
 const browser = new Window({ url: "http://localhost" });
 Object.assign(globalThis, {
@@ -3420,15 +3422,23 @@ test("EN/RU production App immediately Reveals creation through an active observ
   }
 });
 
-test("EN/RU production Name editing preserves identity and exact Text and resolves a lost response after backend remount", async () => {
+for (const platform of process.platform === "win32" ? [process.platform] : [process.platform, "win32"] as const) test(`EN/RU production Name editing preserves identity and exact Text and resolves a lost response after backend remount (${platform} policy)`, async () => {
   const { openSettingsService: openRenameService } = await import(new URL("../dist/service/settings.mjs", import.meta.url).href) as { openSettingsService: typeof openSettingsService };
+  const { renameNoReplace } = await import(new URL("../dist/service/project-rename-filesystem.mjs", import.meta.url).href) as typeof import("../src/service/project-rename-filesystem.js");
   const unwrap = <T,>(result: ServiceResult<T>) => { assert.ok(result.ok, JSON.stringify(result)); return result.value; };
+  // Exercise Windows policy on POSIX hosts without changing the real filesystem/native adapter.
+  const authoredName = platform === "win32" ? "  Renamed Текст 📝" : "  Renamed Текст 📝  ";
   for (const language of ["en", "ru"] as const) for (const mode of ["direct", "grouped"] as const) {
     const directory = realpathSync.native(mkdtempSync(join(tmpdir(), "rename-app-ui-"))), root = join(directory, "root"), database = join(directory, "workspace.sqlite");
     mkdirSync(root); const parent = mode === "grouped" ? join(root, "Existing category") : root;
     if (mode === "grouped") mkdirSync(parent); mkdirSync(join(parent, "Original"));
-    let service = openRenameService(database), off: (() => void) | undefined;
+    let nativeCalls = 0;
+    const openService = () => openRenameService(database, undefined, undefined, undefined, { ...nativeProjectFilesystem, platform }, (from, to) => {
+      nativeCalls++; return renameNoReplace(from, to);
+    });
+    let service = openService(), off: (() => void) | undefined;
     const renames: WorkspaceRequest[] = [], statuses: WorkspaceRequest[] = [];
+    const serviceResults: ServiceResult<ProjectRenameResult>[] = [], statusResults: ServiceResult<ProjectRenameResult>[] = [];
     const t = (key: Parameters<typeof translate>[1]) => translate(language, key);
     try {
       const workspace = unwrap(service.workspaces.create({ type: "workspace.create", name: "Rename workspace", rootPath: root }));
@@ -3443,9 +3453,12 @@ test("EN/RU production Name editing preserves identity and exact Text and resolv
       unwrap(service.workspaces.setTextValue({ type: "workspace.setTextValue", workspaceId, propertyId: property.propertyId, projectId: project.projectId, value: exactText }));
       const query = async (input: WorkspaceRequest) => service.handleQuery(input) as ServiceResult<WorkspaceResponse>;
       const api = mockApi({ language, onProjects: query, onProperties: query, onCreations: query, onObservation: query, onWorkspace: async (input) => {
-        if (input.type === "workspace.getProjectRename") { statuses.push(input); return query(input); }
+        if (input.type === "workspace.getProjectRename") {
+          statuses.push(input); const result = service.handleQuery(input) as ServiceResult<ProjectRenameResult>;
+          statusResults.push(result); return result;
+        }
         if (input.type === "workspace.renameProject") {
-          renames.push(input); const result = service.workspaces.renameProject(input); assert.equal(unwrap(result).outcome, "completed");
+          renames.push(input); serviceResults.push(service.workspaces.renameProject(input));
           return fail("service_unavailable"); // Native effect and commit succeeded; only the response is lost.
         }
         return (input.type === "workspace.load" ? service.handleQuery(input) : service.handleCommand(input)) as ServiceResult<WorkspaceResponse>;
@@ -3453,24 +3466,50 @@ test("EN/RU production Name editing preserves identity and exact Text and resolv
       off = service.workspaces.subscribe(api.emitChange); render(<App />);
       await userEvent.click(await screen.findByRole("button", { name: `${t("renameProject")}: Original` }));
       const input = screen.getByRole("textbox", { name: t("projectName") });
-      await userEvent.clear(input); await userEvent.type(input, "  Renamed Текст 📝  {Enter}");
+      await userEvent.clear(input); await userEvent.type(input, `${authoredName}{Enter}`);
+      // Assert outside the callback: renderer transport handling catches thrown assertions.
+      assert.equal(serviceResults.length, 1);
+      const receipt = unwrap(serviceResults[0]);
+      assert.equal(receipt.outcome, "completed", JSON.stringify(receipt));
+      if (receipt.outcome !== "completed") throw new Error("Expected a committed rename before losing its response");
+      assert.equal(nativeCalls, 1);
+      assert.equal(receipt.operation.originalName, "Original"); assert.equal(receipt.operation.name, authoredName);
+      assert.equal(receipt.operation.originalRelativePath, project.relativePath);
+      assert.equal(receipt.operation.projectId, project.projectId); assert.equal(receipt.operation.categoryId, project.categoryId);
+      assert.equal(receipt.project.name, authoredName);
+      assert.equal(receipt.project.relativePath, mode === "grouped" ? `Existing category/${authoredName}` : authoredName);
+      assert.equal(receipt.operation.requestedRelativePath, receipt.project.relativePath);
       await screen.findByText(t("renameUncertain"));
+      assert.equal((input as HTMLInputElement).value, authoredName);
       await act(async () => { api.emitStatus("unavailable"); api.emitStatus("ready"); });
-      await userEvent.click(await screen.findByRole("button", { name: t("renameStatus") }));
+      const statusButton = await screen.findByRole("button", { name: t("renameStatus") });
+      assert.equal(screen.queryByText(t("renameSaved")), null);
+      assert.ok(screen.getByText(authoredName, { selector: "dd", normalizer: (text) => text }));
+      assert.equal(renames.length, 1); assert.equal(statuses.length, 0); assert.equal(nativeCalls, 1);
+      await userEvent.click(statusButton);
       await screen.findByText(t("renameSaved"));
+      assert.ok(screen.getByText(authoredName, { selector: "td span", normalizer: (text) => text }));
+      assert.deepEqual(statusResults, serviceResults);
       const after = unwrap(service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId }));
       assert.equal(after.projects[0].projectId, project.projectId); assert.equal(after.projects[0].categoryId, project.categoryId);
-      assert.equal(after.projects[0].name, "  Renamed Текст 📝  "); assert.equal(after.revision, before.revision + 1);
+      assert.equal(after.projects[0].name, authoredName); assert.equal(after.revision, before.revision + 1);
+      assert.equal(after.projects[0].relativePath, receipt.project.relativePath);
       assert.equal(unwrap(service.workspaces.listTextProperties({ type: "workspace.listTextProperties", workspaceId })).values[0].value, exactText);
-      assert.equal(unwrap(service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId: sibling.workspaceId })).projects[0].projectId, project.projectId);
-      assert.deepEqual(readdirSync(parent), ["  Renamed Текст 📝  "]);
+      assert.deepEqual(unwrap(service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId: sibling.workspaceId })).projects, after.projects);
+      assert.deepEqual(readdirSync(parent), [authoredName]);
       assert.equal(renames.length, 1); assert.equal(statuses.length, 1);
       const command = renames[0]; assert.equal(command.type, "workspace.renameProject");
       if (command.type !== "workspace.renameProject") throw new Error("Unexpected command");
+      assert.equal(command.name, authoredName); assert.equal(command.projectId, project.projectId); assert.equal(command.expectedRevision, before.revision);
+      assert.equal(receipt.operation.operationId, command.operationId);
       assert.deepEqual(statuses[0], { type: "workspace.getProjectRename", workspaceId, operationId: command.operationId });
-      cleanup(); off(); off = undefined; service.close(); service = openRenameService(database);
+      cleanup(); off(); off = undefined; service.close(); service = openService();
       assert.deepEqual(unwrap(service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId })).projects, after.projects);
       assert.equal(unwrap(service.workspaces.listTextProperties({ type: "workspace.listTextProperties", workspaceId })).values[0].value, exactText);
+      assert.deepEqual(unwrap(service.getProjectRename({ type: "workspace.getProjectRename", workspaceId, operationId: command.operationId })), receipt);
+      assert.deepEqual(unwrap(service.getProjectRename({ type: "workspace.getProjectRename", workspaceId: sibling.workspaceId, operationId: command.operationId })), receipt);
+      assert.deepEqual(readdirSync(parent), [authoredName]);
+      assert.equal(renames.length, 1); assert.equal(statuses.length, 1); assert.equal(nativeCalls, 1);
     } finally { cleanup(); off?.(); service.close(); rmSync(directory, { recursive: true, force: true }); }
   }
 });
