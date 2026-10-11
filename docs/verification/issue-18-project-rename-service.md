@@ -2,7 +2,7 @@
 
 ## Scope and input identity
 
-This report covers the implemented service, durable journal, coordination, explicit recovery and production typed transport/client from [the service plan](../plans/issue-18-project-rename-service.md). It stops before Name editing/recovery UI and coordinator platform acceptance. [Architecture](../architecture.md#implemented-recoverable-project-rename-service) defines the implemented boundary; [ADR 0007](../adr/0007-no-replace-project-renames.md) records the native and durability decisions. ADR 0006 remains the unchanged creation decision.
+This report covers the implemented service, durable journal, coordination, explicit recovery and production typed transport/client from [the service plan](../plans/completed/issue-18-project-rename-service.md). It stops before Name editing/recovery UI and coordinator platform acceptance. [Architecture](../architecture.md#implemented-recoverable-project-rename-service) defines the implemented boundary; [ADR 0007](../adr/0007-no-replace-project-renames.md) records the native and durability decisions. ADR 0006 remains the unchanged creation decision.
 
 - Immutable issue base: `a5728daa64caab6b90700854ad5e27417fcf683e`.
 - Last successful coordinator review/native CI checkpoint: `de5de73c2cb178dce7591c8a80412805290dcf8d`.
@@ -70,6 +70,17 @@ Coordinator-owned gates remain outside executable Task checkboxes:
 - Subsequent Name editing, truthful retained Name/error UI, EN/RU keyboard/loading/recovery states, Ladle/layout expansion and broader development/packaged rename runtime acceptance. Task 7 did not build Ladle or a fresh packaged application, or run graphical rename UI smoke.
 
 No tracker mutation, push, merge, release, signing or publication was performed. Completing this executable service plan does not complete Issue #18.
+
+## First whole-issue review repairs
+
+The first whole-issue review compared `a5728daa64caab6b90700854ad5e27417fcf683e...d45468675a21726b296f7c3007c015cdbc5d3ae3` across five independent correctness, requirements, test, simplification and documentation perspectives before applying repairs.
+
+- Creation and rename journals have separate operation-ID namespaces. The rename self exception incorrectly exempted unfinished creation reservations with the same caller-supplied ID. Both context and placement checks now exempt only the current rename's own rows. Six direct/grouped regressions cover a reserved destination, another free destination and an exact-name no-op; all six failed against the prior emitted service and pass after the repair, without native calls, receipts, revision/events or metadata changes.
+- Archiving the service plan left two maintained Markdown links pointing to its previous location. ADR 0007 and this report now link to the completed plan; the previously failing documentation check passes.
+
+Repair verification on the same macOS arm64 host with Node.js 22.21.1 refreshed `build:service-test-lib` (including both native binaries) and `build:backend`. `npm run test:rename:early` passed 299 tests, including recovery, abrupt-process, IPC and actual Electron fixture controls. Creation, reassociation, Reveal and Settings service suites passed another 233 tests. All 532 tests passed with no failures or skips. `npm run lint`, `npm run typecheck`, `npm run check:docs` and `git diff --check` passed. Test logs are retained under ignored `work/issue-18/whole-issue-review/`.
+
+The original full-suite and standalone smoke results above retain their historical input identity. They are not new results for the repaired service; unchanged UI/build configuration evidence was reused, while affected service/transport/runtime checks were repeated. Exact-SHA platform CI and the other coordinator gates remain pending.
 
 ## Guarantee limits
 

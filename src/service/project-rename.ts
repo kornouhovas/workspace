@@ -69,6 +69,10 @@ export function createProjectRenameService(db: Database, integration: {
   const rejected = (problem: ProjectRenameProblem): ServiceResult<ProjectRenameResult> => ({ ok: true, value: { outcome: "rejected", problem, operation: null } });
   const fail = (problem: ProjectRenameProblem): never => { throw new RenameFailure(problem); };
   const relativeName = (row: Operation, name: string) => row.parentRelativePath ? `${row.parentRelativePath}/${name}` : name;
+  // Creation IDs belong to a separate journal; only this rename's placements
+  // receive the self exception, even when a creation uses the same operation ID.
+  const otherOperationReservations = (row: Operation) => readProjectReservations(db, row.sourceId)
+    .filter((operation) => !("originalRelativePath" in operation) || operation.operationId !== row.operationId);
 
   function policy(row: Operation, path: string) {
     const exclusions: unknown = JSON.parse(row.excludedRelativePaths);
@@ -86,7 +90,7 @@ export function createProjectRenameService(db: Database, integration: {
     const records = [
       ...db.select().from(schema.projects).where(eq(schema.projects.sourceId, row.sourceId)).all().filter((p) => p.id !== row.projectId),
       ...db.select().from(schema.categories).where(eq(schema.categories.sourceId, row.sourceId)).all(),
-      ...readProjectReservations(db, row.sourceId).filter((o) => o.operationId !== row.operationId),
+      ...otherOperationReservations(row),
     ];
     for (const record of records) {
       if (paths.some((path) => filesystemAlias(path) === filesystemAlias(record.relativePath))) fail("reserved_destination");
@@ -101,7 +105,7 @@ export function createProjectRenameService(db: Database, integration: {
     if (!source || source.id !== row.sourceId || source.canonicalRoot !== row.canonicalRoot || source.discoveryMode !== row.mode ||
       source.discoveryRevision !== execution.revision || source.appliedRootIdentity !== row.rootIdentity ||
       source.excludedRelativePaths !== row.excludedRelativePaths || source.archiveRelativePath !== row.archiveRelativePath) fail("stale_configuration");
-    if (readProjectReservations(db, row.sourceId).some((o) => o.operationId !== row.operationId)) fail("reserved_destination");
+    if (otherOperationReservations(row).length) fail("reserved_destination");
     const project = db.select().from(schema.projects).where(eq(schema.projects.id, row.projectId)).get();
     if (!project || project.sourceId !== row.sourceId || project.relativePath !== projectPath || project.nativeIdentity !== row.nativeIdentity ||
       project.categoryId !== row.categoryId || project.associationState !== "active" || project.modeInactive) fail("project_unavailable");

@@ -210,6 +210,23 @@ for (const mode of ["direct", "grouped"]) {
     assert.equal(f.rename(f.request("Original")).value.problem, "reserved_destination");
     assertUnchanged(f, before); assert.equal(f.calls.length, 0);
   }));
+  for (const name of ["Reserved", "Fresh", "Original"]) test(`${mode}: unfinished creation blocks ${name} rename with the same operation ID`, () => fixture(mode, (f) => {
+    const operationId = randomUUID();
+    const creation = f.command("workspace.createProject", {
+      operationId, name: "Reserved", mode, expectedRevision: f.initial.revision,
+      ...(mode === "grouped" ? { categoryId: f.project.categoryId } : {}),
+    });
+    assert.equal(creation.value.outcome, "recoverable");
+    assert.equal(creation.value.operation.stage, "uncertain");
+    assert.equal(fs.existsSync(join(f.root, f.relative("Reserved"))), false);
+    const before = f.snapshot();
+    const result = f.rename(f.request(name, { operationId }));
+    assert.equal(result.value.outcome, "rejected");
+    assert.equal(result.value.problem, "reserved_destination");
+    assert.equal(f.calls.length, 0);
+    assert.equal(f.sql.prepare("SELECT count(*) AS n FROM project_rename_operations").get().n, 0);
+    assertUnchanged(f, before);
+  }, { filesystem: () => ({ ...nativeProjectFilesystem, mkdir() { throw new Error("Interrupted before mkdir"); } }) }));
   test(`${mode}: completed creation receipt keeps its original result through multiple renames and source reuse`, () => fixture(mode, (f) => {
     const creationRequest = { operationId: randomUUID(), name: "Created", mode, expectedRevision: f.initial.revision,
       ...(mode === "grouped" ? { categoryId: f.project.categoryId } : {}) };
