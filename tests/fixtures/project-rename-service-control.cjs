@@ -56,10 +56,12 @@ async function readCommand(root, command) {
 function startControlReceiver(root, { deadline, onAck, onExit, onError, onTimeout }) {
   let disposed = false, resultPublished = false, acknowledged = false, pollTimer;
   const dispose = () => { disposed = true; clearTimeout(pollTimer); clearTimeout(deadlineTimer); };
-  const deadlineTimer = setTimeout(() => { dispose(); onTimeout(); }, Math.max(0, deadline - Date.now()));
+  const deadlineTimer = setTimeout(() => { if (!disposed) { dispose(); onTimeout(); } }, Math.max(0, deadline - Date.now()));
   async function poll() {
+    if (disposed) return;
     try {
-      beforeDeadline(deadline);
+      if (!Number.isFinite(deadline)) throw new Error("Fixture control deadline");
+      if (Date.now() >= deadline) { dispose(); onTimeout(); return; }
       const ack = await readCommand(root, "ack"), exit = await readCommand(root, "exit");
       if (disposed) return;
       if (Date.now() >= deadline) { dispose(); onTimeout(); return; }

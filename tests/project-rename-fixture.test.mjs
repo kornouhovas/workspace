@@ -204,6 +204,34 @@ function receive(root, milliseconds = 1000) {
 }
 const pause = milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds));
 
+for (const ready of [false, true]) {
+  test(`control first poll after expiry reports one timeout without consuming ${ready ? "a ready command" : "an empty root"}`, { timeout: 3000 }, async t => {
+    await withControlRoot(async root => {
+      const command = join(root, "ack.control"), bytes = Buffer.from("ack\n");
+      if (ready) await writeFile(command, bytes);
+      let now = 0;
+      t.mock.timers.enable({ apis: ["setTimeout"] });
+      const clock = t.mock.method(Date, "now", () => now);
+      const control = receive(root, 30);
+      try {
+        control.receiver.resultPublished();
+        // Dispatch the first poll overdue, before the deadline timer runs.
+        now = 45; t.mock.timers.tick(1);
+        await control.ended;
+        assert.deepEqual(control.events, ["timeout"]);
+        assert.deepEqual(await readdir(root), ready ? ["ack.control"] : []);
+        if (ready) assert.deepEqual(await readFile(command), bytes);
+        t.mock.timers.tick(100);
+        assert.deepEqual(control.events, ["timeout"]);
+        control.receiver.dispose();
+        t.mock.timers.tick(100);
+        assert.deepEqual(control.events, ["timeout"]);
+        if (ready) assert.deepEqual(await readFile(command), bytes);
+      } finally { control.receiver.dispose(); clock.mock.restore(); t.mock.timers.reset(); }
+    });
+  });
+}
+
 test("control ignores incomplete publication until atomic rename and consumes ack then exit once", async () => {
   await withControlRoot(async root => {
     const pending = join(root, "ack.control.pending");
@@ -294,6 +322,37 @@ test("control publication and read failures are caught and stop receiver polling
       assert.deepEqual(control.events, ["error"]);
       await pause(30); assert.deepEqual(control.events, ["error"]);
     } finally { control.receiver.dispose(); }
+  });
+});
+
+test("control reports a real read failure as error when an active read rejects after expiry", { timeout: 3000 }, async t => {
+  await withControlRoot(async root => {
+    const unavailable = join(root, "occupied");
+    await writeFile(unavailable, "Keep");
+    const filesystem = require("node:fs/promises"), originalOpen = filesystem.open;
+    let now = 0, release, started;
+    const blocked = new Promise(resolve => { release = resolve; });
+    const reading = new Promise(resolve => { started = resolve; });
+    const pendingRead = t.mock.method(filesystem, "open", async (...args) => {
+      if (args[0] === join(unavailable, "ack.control")) { started(); await blocked; }
+      // A real file cannot be traversed as the control root (ENOTDIR).
+      return originalOpen(...args);
+    });
+    t.mock.timers.enable({ apis: ["setTimeout"] });
+    const clock = t.mock.method(Date, "now", () => now);
+    const control = receive(unavailable, 30);
+    try {
+      control.receiver.resultPublished(); t.mock.timers.tick(1);
+      await reading;
+      assert.deepEqual(control.events, []);
+      now = 45; release();
+      await control.ended;
+      assert.deepEqual(control.events, ["error"]);
+      t.mock.timers.tick(100);
+      control.receiver.dispose(); t.mock.timers.tick(100);
+      assert.deepEqual(control.events, ["error"]);
+      assert.equal(await readFile(unavailable, "utf8"), "Keep");
+    } finally { release(); control.receiver.dispose(); clock.mock.restore(); t.mock.timers.reset(); pendingRead.mock.restore(); }
   });
 });
 
