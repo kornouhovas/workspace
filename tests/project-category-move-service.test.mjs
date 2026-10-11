@@ -162,6 +162,69 @@ test("one-hop category move preserves identity and exact Text and publishes one 
   assert.equal(f.query("workspace.listProjects").value.projects.find((p) => p.projectId === f.project.projectId).categoryId, f.destination.categoryId);
 }, { defaultNative: true }));
 
+test("completed move survives reopen and releases its vacated placement without rewriting creation, rename or move receipts", () => fixture((f) => {
+  const creationRequest = { type: "workspace.createProject", workspaceId: f.workspace.workspaceId,
+    operationId: randomUUID(), name: "Created", mode: "grouped", categoryId: f.project.categoryId,
+    expectedRevision: f.initial.revision };
+  const created = f.service.handleCommand(creationRequest);
+  assert.equal(created.value.outcome, "completed");
+  const projectId = created.value.project.projectId;
+  const renameRequest = { type: "workspace.renameProject", workspaceId: f.workspace.workspaceId,
+    projectId, operationId: randomUUID(), name: "History 📝", expectedRevision: created.value.project.revision };
+  const renamed = f.service.handleCommand(renameRequest);
+  assert.equal(renamed.value.outcome, "completed");
+  const text = "  History\nТекст  ";
+  assert.equal(f.command("workspace.setTextValue", { projectId, propertyId: f.propertyId, value: text }).ok, true);
+  const values = f.query("workspace.listTextProperties");
+  const vacated = join(f.root, "Original category", "History 📝");
+  const destination = join(f.root, "Destination", "History 📝");
+  fs.writeFileSync(join(vacated, "sentinel"), "Historical project bytes\n");
+  const identity = nativeProjectFilesystem.inspect(vacated).identity;
+  const moveRequest = f.request({ projectId, destinationCategoryId: f.destination.categoryId,
+    expectedRevision: renamed.value.project.revision });
+  const moved = f.service.handleCommand(moveRequest);
+  assert.equal(moved.value.outcome, "completed");
+  f.restart();
+  assert.equal(fs.existsSync(vacated), false);
+  assert.deepEqual(nativeProjectFilesystem.inspect(destination).identity, identity);
+  const current = f.query("workspace.listProjects").value;
+  assert.equal(current.revision, moved.value.project.revision);
+  assert.equal(current.projects.find((p) => p.projectId === projectId).categoryId, f.destination.categoryId);
+  assert.deepEqual(f.query("workspace.listTextProperties"), values);
+  const freshRequest = { ...creationRequest, operationId: randomUUID(), name: "History 📝",
+    expectedRevision: current.revision };
+  const stale = f.service.handleCommand({ ...freshRequest, operationId: randomUUID(), expectedRevision: current.revision - 1 });
+  assert.equal(stale.value.outcome, "rejected");
+  assert.equal(stale.value.problem, "stale_configuration");
+  assert.equal(fs.existsSync(vacated), false);
+  const fresh = f.service.handleCommand(freshRequest);
+  assert.equal(fresh.value.outcome, "completed", JSON.stringify(fresh));
+  assert.notEqual(fresh.value.project.projectId, projectId);
+  assert.equal(fresh.value.project.revision, current.revision + 1);
+  assert.deepEqual(fs.readdirSync(vacated), []);
+  assert.notDeepEqual(nativeProjectFilesystem.inspect(vacated).identity, identity);
+  for (let reopen = 0; reopen < 2; reopen++) {
+    for (const [request, receipt, queryType] of [
+      [creationRequest, created, "workspace.getProjectCreation"],
+      [renameRequest, renamed, "workspace.getProjectRename"],
+      [moveRequest, moved, "workspace.getProjectCategoryMove"],
+      [freshRequest, fresh, "workspace.getProjectCreation"],
+    ]) {
+      assert.deepEqual(f.service.handleCommand(request), receipt);
+      assert.deepEqual(f.query(queryType, { workspaceId: f.sibling.workspaceId, operationId: request.operationId }), receipt);
+    }
+    const projects = f.query("workspace.listProjects").value;
+    assert.equal(projects.revision, fresh.value.project.revision);
+    assert.equal(projects.projects.find((p) => p.projectId === projectId).relativePath, "Destination/History 📝");
+    assert.equal(projects.projects.find((p) => p.projectId === fresh.value.project.projectId).relativePath, "Original category/History 📝");
+    assert.deepEqual(f.query("workspace.listTextProperties"), values);
+    assert.deepEqual(f.query("workspace.listProjectCategoryMoves").value.operations, []);
+    assert.equal(fs.readFileSync(join(destination, "sentinel"), "utf8"), "Historical project bytes\n");
+    assert.deepEqual(fs.readdirSync(vacated), []);
+    f.restart();
+  }
+}, { defaultNative: true }));
+
 test("injected permission loss rejects the no-op without a fabricated receipt", () => fixture((f) => {
   f.deny = true;
   assert.equal(f.service.moveProjectCategory(f.request()).value.problem, "permission_denied");

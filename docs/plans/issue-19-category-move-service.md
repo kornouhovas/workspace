@@ -220,16 +220,26 @@ Task 6 verification (Node 22.21.1, actual local macOS arm64; Electron 44.7.0 / e
 Files:
 
 - Modify: tests/project-category-move-service.test.mjs
+- Modify: tests/build-smoke.test.mjs and tests/artifact-smoke.test.mjs (final full-suite migration 0010 expectations and ASAR fixture)
 - Modify: docs/architecture.md
 - Modify: docs/development.md
 - Modify: docs/adr/0007-no-replace-project-renames.md
 - Create: docs/verification/issue-19-category-move-service.md
 - Modify: README.md only if its capability summary needs updating
-- [ ] Add a final public-service regression proving a completed move survives reopen, releases its vacated placement for a fresh operation under current policy, and leaves previous creation/rename/move receipts immutable.
-- [ ] Run npm test, npm run lint, npm run typecheck, npm run check:docs and git diff --check. Preserve command outcomes and evidence pointers.
-- [ ] Run the actual macOS Electron service smoke against final built inputs. Reuse earlier platform evidence only when its input digest is unchanged; otherwise rerun the affected fixture.
-- [ ] Document implemented contract, dedicated journal rationale, reservations, recovery, security boundary, actual checks and residual path/durability limitations. Update repository-owned documentation rather than creating an unrelated CLAUDE.md.
-- [ ] Commit verified changes with explicit paths and record the final commit. Stop at the service checkpoint without launching review, UI work or external delivery.
+- [x] Add a final public-service regression proving a completed move survives reopen, releases its vacated placement for a fresh operation under current policy, and leaves previous creation/rename/move receipts immutable.
+- [x] Run npm test, npm run lint, npm run typecheck, npm run check:docs and git diff --check. Preserve command outcomes and evidence pointers.
+- [x] Run the actual macOS Electron service smoke against final built inputs. Reuse earlier platform evidence only when its input digest is unchanged; otherwise rerun the affected fixture.
+- [x] Document implemented contract, dedicated journal rationale, reservations, recovery, security boundary, actual checks and residual path/durability limitations. Update repository-owned documentation rather than creating an unrelated CLAUDE.md.
+- [x] Commit verified changes with explicit paths and record the final commit. Stop at the service checkpoint without launching review, UI work or external delivery.
+
+Task 7 verification (Node 22.21.1, local macOS 27.0 arm64; Electron 44.7.0 / embedded Node 24.21.0):
+
+- Added a public-service regression exercising creation → rename → move → reopen → fresh creation at the vacated placement. A stale fresh revision rejects without effects; the valid operation receives a distinct UUID and no inherited Text. Sibling status and identical original requests preserve creation/rename/move receipts through further reopen, with exact Text, native identity, sentinel bytes and revision checks. The first run passed the existing behavior; no new production fix/red result is claimed (`work/issue-19/task-7-regression.log`).
+- Initial `npm test` failed in obsolete build/ASAR fixtures: expected migration 0009 and omitted 0010 SQL. Its 25 failures remain in `work/issue-19/task-7-npm-test-red.log`. Updated only the build migration expectation and ASAR fixture inventory. Focused build/artifact/move tests passed all 179 cases without skips (`task-7-affected-green.log`).
+- Final `npm test` passed the clean build and all 2,104 executed tests, with zero failures/cancellations/todos and 20 Windows-host-only skips (`task-7-npm-test-green.log`). Those skips are not Windows acceptance; no required move test/scenario was skipped. `npm run lint`, `npm run typecheck`, `npm run check:docs` and `git diff --check` passed; final documentation/diff checks followed evidence updates (`task-7-lint.log`, `task-7-typecheck.log`, `task-7-docs-final.log`, `task-7-diff-final.log`).
+- Standalone actual macOS Electron smoke passed all 12 scenarios, four successful utility exits, ordered result/ack_sent/ack_received/exit_sent/main_exit, main exit zero, independent shutdown confirmation and removal (`task-7-standalone.log`, `task-7-standalone/service-checkpoint.json`). Its independently recomputed input SHA-256 is `da353c692cbaabe06c858a1efe2c73185bc0b32c6d9b6ad5568d01e7dd9783d2`, differing from Task 6's earlier build; the required fixture was rerun instead of reusing that evidence (`task-7-input-digest.json`).
+- Updated architecture, development commands, ADR 0007, README and [the service handoff report](../verification/issue-19-category-move-service.md) with the implemented contract, dedicated journal, reservations, recovery, security, actual checks and remaining path/atomicity/power-loss limitations. Changes are delivered by the commit containing this completed Task 7 plan; its exact SHA is recorded after successful commit in ignored `work/issue-19/task-7-commit.txt` and the executor handoff.
+- All executable service tasks are complete. Separate review, actual reviewed-SHA Windows results, category UI, graphical/packaged acceptance, Reveal/#44 and full issue completion remain coordinator-owned. No tracker/state mutation, review launch, UI work, push, merge, dispatch, release or publication was performed.
 
 ## Post-Completion: Coordinator-Owned Gates
 
