@@ -1,6 +1,6 @@
 # T11 Table Name editing and explicit rename recovery verification
 
-Issue: [T11 / GitHub #18](https://github.com/kornouhovas/workspace/issues/18). Executable plan: [Name/recovery UI](../plans/issue-18-project-rename-ui.md). This report covers the remaining UI stage after the [service checkpoint](issue-18-project-rename-service.md), not full issue or release acceptance.
+Issue: [T11 / GitHub #18](https://github.com/kornouhovas/workspace/issues/18). Executable plan: [Name/recovery UI](../plans/completed/issue-18-project-rename-ui.md). This report covers the remaining UI stage after the [service checkpoint](issue-18-project-rename-service.md), not full issue or release acceptance.
 
 ## Revisions and scope
 
@@ -10,6 +10,8 @@ Issue: [T11 / GitHub #18](https://github.com/kornouhovas/workspace/issues/18). E
 - Host: macOS arm64, supervisor Node 22.21.1, Electron 44.7.0. SQLite and project folders are disposable machine-local fixtures; no user project roots are modified.
 
 Task 6 reviewed the current issue body read-only and mapped its five acceptance criteria below. It found no concrete uncovered behavior requiring another production correction or regression. Source/contract/dependency/migration/agent/ADR inputs remain unchanged; this task changes README, development/architecture descriptions, this report and the executable plan only. Version remains 0.1.0; no new bb code or dependency was adopted.
+
+Review follow-up against `a352bff0686a6a2736994f7237c570805335ea4c`, inspecting HEAD `a3ad0c32cf53ebaebfee9ffc203e201f8a8a0b1c`, found two minor defects: the archived plan link and lost Table focus when explicit status resolves an unknown recovery as `kept_original`. The follow-up commit containing this paragraph corrects both. The existing EN/RU recovery/remount scenario failed both added focus assertions before the repair and passed afterward. The five-suite UI command passed all 428 tests with no skips; Node 22.21.1 typecheck, affected-file ESLint, renderer build, local documentation links and diff checks passed. The focus guard preserves external focus on delayed responses. Earlier service/native checks remain applicable to unchanged inputs; graphical/package evidence above belongs to its recorded revisions. No new graphical or Windows acceptance was performed for this focus repair.
 
 ## Implemented interaction
 

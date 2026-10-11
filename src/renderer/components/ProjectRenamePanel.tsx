@@ -177,7 +177,7 @@ function RenameContent({ client, workspaceId, sourceId, language, project, proje
       if (result.problem === "kept_original" && (!operation || operation.resultKind !== "rejected" || operation.problem !== "kept_original" || operation.lastVerifiedPlacement !== "original")) return false;
       requests.delete(sourceId); binding.current = null; submitted.current = null; setUnresolved(false);
       if (result.problem === "kept_original") {
-        setMessage("renameKeptOriginal"); closeReview(document.activeElement === document.body || !!reviewRoot.current?.contains(document.activeElement)); void loadRenames(); onClose(false); onCompleted(); return true;
+        setMessage("renameKeptOriginal"); closeReview(document.activeElement === document.body || !!reviewRoot.current?.contains(document.activeElement)); void loadRenames(); onClose(document.activeElement === document.body || !!root.current?.contains(document.activeElement)); onCompleted(); return true;
       }
       setMessage(result.problem === "invalid_name" ? "renameInvalid" :
         ["occupied", "reserved_destination", "native_conflict"].includes(result.problem) ? "renameCollision" :

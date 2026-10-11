@@ -366,6 +366,7 @@ for (const language of ["en", "ru"] as const) {
     client.statusHandler = async () => { client.unfinished = []; return { ok: true, value: { outcome: "rejected", problem: "kept_original", operation: { ...interrupted, stage: "failed", resultKind: "rejected", problem: "kept_original" } } }; };
     await userEvent.click(screen.getByRole("button", { name: t("renameStatus") })); await screen.findByText(t("renameKeptOriginal"));
     assert.deepEqual(client.statusCalls, [["workspace", "interrupted"]]); assert.equal(client.recoveries.length, 1); assert.equal(client.renames.length, 0);
+    await waitFor(() => assert.ok(document.activeElement === screen.getByRole("heading", { name: t("tableViewTitle") }), "Status resolution restores Table focus"));
   });
   test(`${language}: a stale recovery token requires explicit status and fresh review; no mutation retry`, async () => {
     const client = new Client(); client.unfinished = [interrupted];
