@@ -6,7 +6,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
 import { _electron } from "playwright-core";
-import { waitForRenameEditor } from "../scripts/rename-editor-readiness.mjs";
+import { observeRenameEditor, waitForRenameEditor } from "../scripts/rename-editor-readiness.mjs";
 
 const fixture = fileURLToPath(new URL("./fixtures/rename-editor-readiness-electron.cjs", import.meta.url));
 
@@ -57,6 +57,38 @@ function observedPage(page) {
   };
 }
 
+// Expire only the renderer observation; keep the host's finite delivery budget.
+// Forward its real callback and snapshots without changing the readiness predicate.
+function promptObservationPage(page) {
+  return { evaluate: (callback, arg) => page.evaluate(callback, { ...arg, deadline: 0 }) };
+}
+
+const unknownOperands = {
+  inputCount: "unknown", visible: null, enabled: null, editable: null, focused: null, labels: "unknown",
+};
+
+function unknownEvidence(failure) {
+  return { status: "observation_failed", failure, classification: "unknown",
+    initial: { ...unknownOperands }, final: { ...unknownOperands } };
+}
+
+function controlledHostClock(t) {
+  t.mock.timers.enable({ apis: ["setTimeout", "Date"], now: 1000 });
+  const active = new Set();
+  const schedule = globalThis.setTimeout, cancel = globalThis.clearTimeout;
+  const scheduled = t.mock.method(globalThis, "setTimeout", (callback, delay) => {
+    const handle = schedule(() => { active.delete(handle); callback(); }, delay);
+    active.add(handle);
+    return handle;
+  });
+  const cleared = t.mock.method(globalThis, "clearTimeout", handle => { active.delete(handle); cancel(handle); });
+  return {
+    active,
+    tick: ms => t.mock.timers.tick(ms),
+    restore: () => { scheduled.mock.restore(); cleared.mock.restore(); t.mock.timers.reset(); },
+  };
+}
+
 test("fixture cleanup errors retain a failed control's primary error and fail a successful control", async () => {
   const primary = new Error("Controlled primary assertion failure");
   const secondary = new Error("Controlled profile cleanup failure");
@@ -85,27 +117,33 @@ test("visible labelled Name waits for fixture-app delayed focus without driver f
 
 test("real Electron operands reject absent, hidden, disabled, unfocused and wrong-label editors", async t => {
   await withPage(async page => {
-    for (const [scenario, mutate, expected] of [
-      ["missing", () => globalThis.document.querySelector("input").remove(), "input_count"],
-      ["hidden", () => { globalThis.document.querySelector("input").style.display = "none"; }, "hidden"],
-      ["hidden ancestor", () => { globalThis.document.body.style.visibility = "hidden"; }, "hidden"],
-      ["disabled", () => { globalThis.document.querySelector("input").disabled = true; }, "disabled"],
+    for (const [scenario, mutate, expected, operands] of [
+      ["missing", () => globalThis.document.querySelector("input").remove(), "input_count", { inputCount: "none" }],
+      ["hidden", () => { globalThis.document.querySelector("input").style.display = "none"; }, "hidden", { visible: false }],
+      ["hidden ancestor", () => { globalThis.document.body.style.visibility = "hidden"; }, "hidden", { visible: false }],
+      ["disabled", () => { globalThis.document.querySelector("input").disabled = true; }, "disabled", { enabled: false }],
       ["disabled fieldset", () => {
         const fieldset = globalThis.document.createElement("fieldset"); fieldset.disabled = true;
         globalThis.document.body.append(fieldset); fieldset.append(globalThis.document.querySelector("input"));
-      }, "disabled"],
-      ["readonly", () => { globalThis.document.querySelector("input").readOnly = true; }, "not_editable"],
-      ["focus loss", () => globalThis.document.querySelector("button").focus(), "unfocused"],
-      ["no associated label", () => globalThis.document.querySelector("label").remove(), "label_count"],
-      ["multiple labels", () => globalThis.document.body.append(globalThis.document.querySelector("label").cloneNode(true)), "label_count"],
-      ["duplicate input", () => globalThis.document.body.append(globalThis.document.querySelector("input").cloneNode(true)), "input_count"],
+      }, "disabled", { enabled: false }],
+      ["readonly", () => { globalThis.document.querySelector("input").readOnly = true; }, "not_editable", { editable: false }],
+      ["focus loss", () => globalThis.document.querySelector("button").focus(), "unfocused", { focused: false }],
+      ["no associated label", () => globalThis.document.querySelector("label").remove(), "label_count", { labels: "none" }],
+      ["multiple labels", () => globalThis.document.body.append(globalThis.document.querySelector("label").cloneNode(true)), "label_count", { labels: "multiple" }],
+      ["duplicate input", () => globalThis.document.body.append(globalThis.document.querySelector("input").cloneNode(true)), "input_count", { inputCount: "multiple" }],
     ]) await t.test(scenario, async () => {
       await mount(page, "ready");
       await page.evaluate(mutate);
       let evidence;
-      await assert.rejects(waitForRenameEditor(page, { timeoutMs: 200, record: value => { evidence = value; } }), /readiness timed out/);
+      await assert.rejects(waitForRenameEditor(promptObservationPage(page), { timeoutMs: 200, record: value => { evidence = value; } }), /readiness timed out/);
       assert.equal(evidence.status, "timed_out"); assert.equal(evidence.failure, "timeout");
       assert.equal(evidence.classification, expected);
+      for (const observation of [evidence.initial, evidence.final]) {
+        for (const [operand, value] of Object.entries(operands)) assert.equal(observation[operand], value);
+        assert.ok(["none", "one", "multiple"].includes(observation.inputCount));
+        assert.ok(["none", "one", "multiple", "unknown"].includes(observation.labels));
+        for (const operand of ["visible", "enabled", "editable", "focused"]) assert.equal(typeof observation[operand], "boolean");
+      }
       assert.deepEqual(Object.keys(evidence.initial).sort(), ["editable", "enabled", "focused", "inputCount", "labels", "visible"]);
       assert.deepEqual(Object.keys(evidence.final).sort(), Object.keys(evidence.initial).sort());
       assert.deepEqual(Object.keys(evidence).sort(), ["classification", "failure", "final", "initial", "status"]);
@@ -142,22 +180,87 @@ test("never-focused real Electron page exhausts one default allowance without pa
   });
 });
 
-test("transport and evidence failures preserve the exact primary error and cannot pass unknown state", async () => {
-  const primary = new Error("Private transport error that must not enter telemetry");
-  let evidence;
-  await assert.rejects(waitForRenameEditor({ evaluate: async () => { throw primary; } }, {
-    timeoutMs: 100,
-    record: value => { evidence = value; throw new Error("Secondary evidence error"); },
-  }), error => error === primary);
-  assert.deepEqual(evidence, {
-    status: "observation_failed", failure: "observation_error", classification: "unknown",
-    initial: { inputCount: "unknown", visible: null, enabled: null, editable: null, focused: null, labels: "unknown" },
-    final: { inputCount: "unknown", visible: null, enabled: null, editable: null, focused: null, labels: "unknown" },
+test("real readonly observations retain operand rejection before delivery expiry and unknown after it", async t => {
+  await withPage(async page => {
+    await mount(page, "ready");
+    await page.evaluate(() => { globalThis.document.querySelector("input").readOnly = true; });
+    // Complete Electron I/O before controlling host time.
+    const outcome = await page.evaluate(observeRenameEditor, { deadline: 0 });
+    assert.equal(outcome.status, "timed_out");
+    assert.equal(outcome.initial.editable, false); assert.equal(outcome.final.editable, false);
+    for (const late of [false, true]) await t.test(late ? "delivery after deadline" : "delivery before deadline", async t => {
+      const deferred = Promise.withResolvers(), records = [];
+      const clock = controlledHostClock(t);
+      let pending;
+      try {
+        pending = waitForRenameEditor({ evaluate: () => deferred.promise }, {
+          timeoutMs: 200, record: value => { records.push(value); },
+        });
+        const rejected = assert.rejects(pending, late ? /readiness deadline exceeded/ : /readiness timed out/);
+        assert.equal(clock.active.size, 1);
+        clock.tick(199);
+        assert.equal(records.length, 0);
+        if (late) clock.tick(1);
+        else deferred.resolve(outcome);
+        await rejected;
+        assert.equal(clock.active.size, 0);
+        assert.deepEqual(records, [late ? unknownEvidence("timeout") : {
+          ...outcome, failure: "timeout", classification: "not_editable",
+        }]);
+        const recorded = structuredClone(records);
+        deferred.resolve(outcome); await deferred.promise;
+        // Await the already rejected operation after late delivery; no new record.
+        await pending.catch(() => {});
+        clock.tick(200);
+        assert.deepEqual(records, recorded);
+        assert.equal(clock.active.size, 0);
+      } finally {
+        deferred.resolve(outcome); await pending?.catch(() => {}); clock.restore();
+      }
+    });
   });
-  await assert.rejects(waitForRenameEditor({ evaluate: () => new Promise(() => {}) }, {
-    timeoutMs: 30, record: value => { evidence = value; throw new Error("Secondary evidence error"); },
-  }), /readiness deadline exceeded/);
-  assert.equal(evidence.failure, "timeout"); assert.equal(evidence.classification, "unknown");
+});
+
+test("host timers are disposed after real success, renderer rejection, transport error and deadline", async t => {
+  await withPage(async page => {
+    await mount(page, "ready");
+    const ready = await page.evaluate(observeRenameEditor, { deadline: Date.now() + 500 });
+    await page.evaluate(() => { globalThis.document.querySelector("input").readOnly = true; });
+    const rejected = await page.evaluate(observeRenameEditor, { deadline: 0 });
+    assert.equal(ready.status, "passed"); assert.equal(rejected.status, "timed_out");
+    for (const mode of ["success", "renderer rejection", "transport error", "deadline"]) await t.test(mode, async t => {
+      const primary = new Error("Private transport error that must not enter telemetry");
+      const records = [], clock = controlledHostClock(t);
+      try {
+        const pending = waitForRenameEditor({ evaluate: () => {
+          if (mode === "transport error") return Promise.reject(primary);
+          if (mode === "deadline") return new Promise(() => {});
+          return Promise.resolve(mode === "success" ? ready : rejected);
+        } }, { timeoutMs: mode === "deadline" ? 30 : 100, record: value => {
+          records.push(value);
+          if (mode === "transport error" || mode === "deadline") throw new Error("Secondary evidence error");
+        } });
+        assert.equal(clock.active.size, 1);
+        if (mode === "success") assert.equal((await pending).classification, "ready");
+        else {
+          const rejection = assert.rejects(pending, mode === "transport error" ? error => error === primary :
+            mode === "deadline" ? /readiness deadline exceeded/ : /readiness timed out/);
+          if (mode === "deadline") {
+            clock.tick(29); assert.equal(records.length, 0); assert.equal(clock.active.size, 1);
+            clock.tick(1);
+          }
+          await rejection;
+        }
+        assert.equal(clock.active.size, 0);
+        if (mode === "transport error" || mode === "deadline") {
+          assert.deepEqual(records, [unknownEvidence(mode === "deadline" ? "timeout" : "observation_error")]);
+        } else assert.deepEqual(records, [{ ...(mode === "success" ? ready : rejected),
+          failure: mode === "success" ? null : "timeout", classification: mode === "success" ? "ready" : "not_editable" }]);
+        clock.tick(200);
+        assert.equal(records.length, 1); assert.equal(clock.active.size, 0);
+      } finally { clock.restore(); }
+    });
+  });
   for (const timeoutMs of [0, -1, 15001, Infinity, NaN]) {
     await assert.rejects(waitForRenameEditor({}, { timeoutMs }), RangeError);
   }
@@ -191,7 +294,7 @@ test("browser frame and timer observations are released on success, timeout and 
     await waitForRenameEditor(observedPage(page), { timeoutMs: 1000 });
     assert.deepEqual(await page.evaluate(() => globalThis.fixtureResourceCounts()), { frames: 0, timers: 0 });
     await mount(page, "unfocused");
-    await assert.rejects(waitForRenameEditor(page, { timeoutMs: 200 }), /readiness timed out/);
+    await assert.rejects(waitForRenameEditor(promptObservationPage(page), { timeoutMs: 200 }), /readiness timed out/);
     assert.deepEqual(await page.evaluate(() => globalThis.fixtureResourceCounts()), { frames: 0, timers: 0 });
     await mount(page, "unfocused");
     await page.evaluate(() => {
