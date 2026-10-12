@@ -96,7 +96,7 @@ app.on('window-all-closed', () => app.quit());`);
         assert.equal(await moveSelect.evaluate((node) => node.labels.length), 1);
         assert.deepEqual(await moveSelect.locator("option").evaluateAll((nodes) => nodes.map((node) => node.value)), ["move-original-category", "move-destination-category"]);
         assert.equal(await moveSelect.isDisabled(), ["pending", "unknown"].includes(categoryMoveState));
-        await movePanel.getByText(moveText("Submitting physically moves the project folder into an existing category. Its exact name and Text values stay the same. Displayed paths are for review; the service validates the placement.", "Отправка физически перемещает папку проекта в существующую категорию. Точное имя и значения Text сохраняются. Пути показаны для проверки; сервис проверяет расположение."), { exact: true }).waitFor();
+        await movePanel.getByText(moveText("Submitting physically moves the project folder into an existing category. Its exact name and Text values stay the same.", "Отправка физически перемещает папку проекта в существующую категорию. Точное имя и значения Text сохраняются."), { exact: true }).waitFor();
       }
       if (["saved", "unchanged", "kept-original"].includes(categoryMoveState)) {
         assert.equal(await moveSelect.count(), 0); assert.equal(await moveReview.count(), 0);

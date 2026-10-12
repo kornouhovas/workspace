@@ -402,7 +402,8 @@ export function DiscoveryWorkspace({ client, workspaceId, sourceId, refreshVersi
         setError(false); setLoading(false);
       }} />
     <ProjectCreationPanel client={client} workspaceId={workspaceId} sourceId={sourceId} language={language}
-      projects={projects} onBlockedChange={setCreationBlocked} disabled={disabled || discoveryPending || loading || error || recoveryProject !== null || renameProject !== null || renameBlocked || categoryMoveProject !== null || categoryMoveBlocked} invalidation={invalidation}
+      projects={projects} onBlockedChange={setCreationBlocked} disabled={disabled || discoveryPending || loading || error || recoveryProject !== null || renameProject !== null || renameBlocked}
+      effectsBlocked={categoryMoveProject !== null || categoryMoveBlocked} invalidation={invalidation}
       minimumRevision={minimumRevision} observationVersion={observationVersion} onCompleted={() => void load()} />
     <ProjectRenamePanel client={client} workspaceId={workspaceId} sourceId={sourceId} language={language} project={renameProject}
       projects={projects} disabled={disabled || creationBlocked || discoveryPending || loading || error || recoveryProject !== null || categoryMoveProject !== null || categoryMoveBlocked} minimumRevision={minimumRevision}

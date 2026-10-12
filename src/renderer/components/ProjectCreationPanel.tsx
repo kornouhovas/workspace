@@ -8,7 +8,7 @@ import { StatusMessage } from "./bb-foundation.js";
 
 interface Props {
   client: WorkspaceServiceClient; workspaceId: string; sourceId: string; language: Language;
-  projects: ProjectList | null; disabled: boolean; invalidation: number;
+  projects: ProjectList | null; disabled: boolean; effectsBlocked?: boolean; invalidation: number;
   minimumRevision: { current: number }; observationVersion: { current: number };
   onCompleted(): void;
   onBlockedChange?(blocked: boolean): void;
@@ -19,8 +19,9 @@ const actions: Record<ProjectCreationRecoveryAction, TranslationKey> = {
 export function ProjectCreationPanel(props: Props) {
   return <CreationContent key={`${props.workspaceId}:${props.sourceId}`} {...props} />;
 }
-function CreationContent({ client, workspaceId, sourceId, language, projects, disabled, invalidation, minimumRevision, observationVersion, onCompleted, onBlockedChange }: Props) {
+function CreationContent({ client, workspaceId, sourceId, language, projects, disabled, effectsBlocked = false, invalidation, minimumRevision, observationVersion, onCompleted, onBlockedChange }: Props) {
   const t = (key: TranslationKey) => translate(language, key);
+  const mutationsDisabled = disabled || effectsBlocked;
   const [open, setOpen] = useState(false), [name, setName] = useState(""), [categoryId, setCategoryId] = useState("");
   const [pending, setPending] = useState(false), [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<TranslationKey | null>(null);
@@ -121,8 +122,8 @@ function CreationContent({ client, workspaceId, sourceId, language, projects, di
       ["source_unavailable", "category_unavailable", "unconfigured", "stale_configuration", "permission_denied"].includes(value.problem) ? "creationUnavailable" : "creationFailed");
     return true;
   };
-  const run = async (operationId: string, command: () => ReturnType<WorkspaceServiceClient["getProjectCreation"]>) => {
-    if (busy.current || disabled || !ready.current) return;
+  const run = async (operationId: string, command: () => ReturnType<WorkspaceServiceClient["getProjectCreation"]>, readOnly = false) => {
+    if (busy.current || disabled || (!readOnly && effectsBlocked) || !ready.current) return;
     pendingFocus.current = !!root.current?.contains(document.activeElement);
     busy.current = true; setPending(true); setMessage(null); setUnknownId((current) => current ?? operationId);
     const current = ++request.current, backend = generation.current;
@@ -138,7 +139,7 @@ function CreationContent({ client, workspaceId, sourceId, language, projects, di
   const available = projects?.configured && projects.mode && ["ready", "empty"].includes(projects.state) && projects.revision >= minimumRevision.current;
   const categoryAvailable = projects?.mode !== "grouped" || projects.categories.some((category) => category.categoryId === categoryId);
   const review = async (operationId: string) => {
-    if (busy.current || disabled || !ready.current) return;
+    if (busy.current || mutationsDisabled || !ready.current) return;
     busy.current = true; reviewing.current = true; setPending(true); setPreview(null); setMessage(null);
     const current = ++request.current, backend = generation.current, version = previewVersion.current, observed = observationVersion.current;
     try {
@@ -155,7 +156,7 @@ function CreationContent({ client, workspaceId, sourceId, language, projects, di
   return <section ref={root} tabIndex={-1} className="project-creation" aria-label={t("createProject")} aria-busy={pending} onKeyDown={(event) => {
       if (event.key === "Escape" && (preview || reviewing.current)) { event.preventDefault(); dismissReview(); }
     }}>
-    <button ref={trigger} type="button" className="workspace-button" disabled={disabled || pending || !available || (projects?.mode === "grouped" && !projects.categories.length)}
+    <button ref={trigger} type="button" className="workspace-button" disabled={mutationsDisabled || pending || !available || (projects?.mode === "grouped" && !projects.categories.length)}
       onClick={() => { setOpen(true); setMessage(null); }}>{t("createProject")}</button>
     {!projects?.configured && <p>{t("creationUnconfigured")}</p>}
     {projects?.configured && !available && <p>{t("creationUnavailable")}</p>}
@@ -163,7 +164,7 @@ function CreationContent({ client, workspaceId, sourceId, language, projects, di
     {available && projects?.projects.length === 0 && <p>{t("creationEmpty")}</p>}
     {open && <form onSubmit={(event) => {
       event.preventDefault();
-      if (!available || !categoryAvailable || busy.current || unknownId) return;
+      if (mutationsDisabled || !available || !categoryAvailable || busy.current || unknownId) return;
       if (!name.length) { setMessage("creationInvalid"); input.current?.focus(); return; }
       const operationId = crypto.randomUUID();
       const common = { workspaceId, operationId, name, expectedRevision: projects.revision };
@@ -172,17 +173,17 @@ function CreationContent({ client, workspaceId, sourceId, language, projects, di
       void run(operationId, () => client.createProject(authoredRequest));
     }} onKeyDown={(event) => { if (event.key === "Escape") { event.preventDefault(); close(); } }}>
       <label htmlFor="project-creation-name">{t("creationName")}</label>
-      <input ref={input} id="project-creation-name" className="workspace-input" value={name} disabled={disabled || pending || !!unknownId}
+      <input ref={input} id="project-creation-name" className="workspace-input" value={name} disabled={mutationsDisabled || pending || !!unknownId}
         onChange={(event) => setName(event.currentTarget.value)} aria-invalid={message === "creationInvalid"} />
       {projects?.mode === "grouped" && <label>{t("creationCategory")}
-        <select value={categoryId} disabled={disabled || pending || !!unknownId} onChange={(event) => setCategoryId(event.currentTarget.value)}>
+        <select value={categoryId} disabled={mutationsDisabled || pending || !!unknownId} onChange={(event) => setCategoryId(event.currentTarget.value)}>
           <option value="">{t("creationChooseCategory")}</option>
           {projects.categories.map((category) => <option key={category.categoryId} value={category.categoryId}>{category.name}</option>)}
         </select>
       </label>}
       <p>{t(projects?.mode === "grouped" ? "creationGroupedHint" : "creationDirectHint")}</p>
       <div className="workspace-form-actions">
-        <button type="submit" className="workspace-button" disabled={disabled || pending || !!unknownId || !available || !categoryAvailable}>{t("creationSubmit")}</button>
+        <button type="submit" className="workspace-button" disabled={mutationsDisabled || pending || !!unknownId || !available || !categoryAvailable}>{t("creationSubmit")}</button>
         <button ref={formCancel} type="button" className="workspace-button workspace-button--secondary" onClick={() => close()}>{t("cancelRenameWorkspace")}</button>
       </div>
       <p>{t("creationCancelHint")}</p>
@@ -193,9 +194,9 @@ function CreationContent({ client, workspaceId, sourceId, language, projects, di
     {listError && <StatusMessage kind="error" title={t("creationListError")} />}
     {unknownId && !operations.some((operation) => operation.operationId === unknownId) && <div>
       <p>{t("creationUncertain")}</p><button type="button" className="workspace-button workspace-button--secondary" disabled={disabled || pending}
-        onClick={() => void run(unknownId, () => client.getProjectCreation(workspaceId, unknownId))}>{t("creationStatus")}</button>
+        onClick={() => void run(unknownId, () => client.getProjectCreation(workspaceId, unknownId), true)}>{t("creationStatus")}</button>
     </div>}
-    {unknownId && originalRequest.current?.operationId === unknownId && <button type="button" className="workspace-button workspace-button--secondary" disabled={disabled || pending || !ready.current}
+    {unknownId && originalRequest.current?.operationId === unknownId && <button type="button" className="workspace-button workspace-button--secondary" disabled={mutationsDisabled || pending || !ready.current}
       onClick={() => {
         // Reconcile exactly the accepted payload, including its original revision.
         // No reconnect/list/cancel path replays it or allocates a replacement ID.
@@ -207,15 +208,15 @@ function CreationContent({ client, workspaceId, sourceId, language, projects, di
       <ul>{operations.map((operation) => <li key={operation.operationId}>
         <span className="property-authored">{operation.relativePath}</span>
         <button type="button" className="workspace-button workspace-button--secondary" disabled={disabled || pending}
-          onClick={() => void run(operation.operationId, () => client.getProjectCreation(workspaceId, operation.operationId))}>{t("creationStatus")}</button>
-        <button type="button" className="workspace-button workspace-button--secondary" disabled={disabled || pending} onClick={() => void review(operation.operationId)}>{t("creationReview")}</button>
+          onClick={() => void run(operation.operationId, () => client.getProjectCreation(workspaceId, operation.operationId), true)}>{t("creationStatus")}</button>
+        <button type="button" className="workspace-button workspace-button--secondary" disabled={mutationsDisabled || pending} onClick={() => void review(operation.operationId)}>{t("creationReview")}</button>
       </li>)}</ul>
     </div>}
     {preview && <div className="creation-review">
       <h4 ref={reviewHeading} tabIndex={-1}>{t("creationReview")}</h4><p className="property-authored">{preview.operation.relativePath}</p>
       <p>{t(({ missing: "creationReviewMissing", recorded: "creationReviewRecorded", unverified: "creationOwnershipWarning", replaced: "creationReviewReplaced", link: "creationReviewLink", unavailable: "creationUnavailable", conflicting: "creationCollision" } as const)[preview.destinationState])}</p>
       {!preview.actions.length && <p>{t("creationRecoveryBlocked")}</p>}
-      {preview.actions.map((action) => <button key={action} type="button" className="workspace-button" disabled={disabled || pending || !preview.previewToken}
+      {preview.actions.map((action) => <button key={action} type="button" className="workspace-button" disabled={mutationsDisabled || pending || !preview.previewToken}
         onClick={() => {
           if (!preview.previewToken || preview.revision < minimumRevision.current || previewObservation.current !== observationVersion.current) {
             setPreview(null); setMessage("creationReviewChanged"); return;

@@ -9,6 +9,7 @@ import type { ServiceResult } from "../src/contracts/settings.js";
 import type { ProjectCategoryMoveOperation, ProjectCategoryMoveResult, ProjectCategoryMoveList, ProjectCategoryMoveRecoveryPreview, ProjectCategoryMoveRecoveryAction } from "../src/contracts/project-category-move.js";
 import type { BackendStatus } from "../src/contracts/desktop-api.js";
 import type { ProjectList, WorkspaceChangeEvent } from "../src/contracts/workspaces.js";
+import type { ProjectCreationList, ProjectCreationOperation, ProjectCreationResult } from "../src/contracts/project-creation.js";
 
 const browser = new Window({ url: "http://localhost" });
 Object.assign(globalThis, { window: browser, document: browser.document, HTMLElement: browser.HTMLElement, Node: browser.Node, MutationObserver: browser.MutationObserver });
@@ -63,12 +64,54 @@ class Client extends WorkspaceServiceClient {
   override onWorkspaceChange(listener: (event: WorkspaceChangeEvent) => void) { this.events.add(listener); return () => { this.events.delete(listener); }; }
   override async listProjects() { this.lists++; return { ok: true as const, value: this.list }; }
   override async listTextProperties() { return { ok: true as const, value: { workspaceId: "workspace", sourceId: "source", revision: 1, definitions: [{ propertyId: "notes", sourceId: "source", name: "Notes", propertyType: "text" as const }], values: [{ projectId: "project", propertyId: "notes", value: "  Exact Text\nТекст  " }] } }; }
-  override async listProjectCreations(workspaceId: string) { return { ok: true as const, value: { workspaceId, sourceId: "source", operations: [] } }; }
+  override async listProjectCreations(workspaceId: string): Promise<ServiceResult<ProjectCreationList>> { return { ok: true as const, value: { workspaceId, sourceId: "source", operations: [] } }; }
   override async listProjectRenames(workspaceId: string) { return { ok: true as const, value: { workspaceId, sourceId: "source", operations: [] } }; }
   override async moveProjectCategory(input: Parameters<WorkspaceServiceClient["moveProjectCategory"]>[0]) { this.moves.push(input); return this.handler(); }
 }
 for (const language of ["en", "ru"] as const) {
 const t = (key: Parameters<typeof translate>[1]) => translate(language, key);
+test(`${language}: delayed creation list keeps read-only status usable with an unsubmitted category editor open`, async () => {
+  const list = deferred<ServiceResult<ProjectCreationList>>(), status = deferred<ServiceResult<ProjectCreationResult>>();
+  const operation: ProjectCreationOperation = {
+    operationId: "creation", sourceId: "source", initiatingWorkspaceId: "workspace", projectId: "new-project",
+    name: "New", relativePath: "Empty/New", mode: "grouped", categoryId: "empty", expectedRevision: 1,
+    stage: "intent", evidenceRecorded: false, problem: null, completedRevision: null,
+  };
+  const client = new class extends Client {
+    creationStatuses: string[][] = [];
+    creationMutations: string[] = [];
+    creationLists = 0;
+    override async listProjectCreations() { this.creationLists++; return list.promise; }
+    override async getProjectCreation(workspaceId: string, operationId: string) {
+      this.creationStatuses.push([workspaceId, operationId]); return status.promise;
+    }
+    override async createProject(): Promise<never> { this.creationMutations.push("create"); throw new Error("Unexpected creation"); }
+    override async recoverProjectCreation(): Promise<never> { this.creationMutations.push("recover"); throw new Error("Unexpected recovery"); }
+  }();
+  render(<DiscoveryWorkspace client={client} workspaceId="workspace" sourceId="source" language={language} disabled={false} />);
+  await userEvent.click(await screen.findByRole("button", { name: new RegExp(`^${t("moveCategory")}:`) }));
+  const destination = screen.getByRole("combobox", { name: t("moveCategoryDestination") });
+  await userEvent.selectOptions(destination, "empty");
+  await act(async () => list.resolve({ ok: true, value: { workspaceId: "workspace", sourceId: "source", operations: [operation] } }));
+  const statusButton = await screen.findByRole("button", { name: t("creationStatus") }) as HTMLButtonElement;
+  assert.equal(statusButton.disabled, false);
+  for (const key of ["moveCategorySubmit", "createProject", "creationReview"] as const) {
+    const button = screen.getByRole("button", { name: t(key) }) as HTMLButtonElement;
+    assert.equal(button.disabled, true); fireEvent.click(button);
+  }
+  const reload = screen.getByRole("button", { name: t("creationReload") }) as HTMLButtonElement;
+  const listsBeforeReload = client.creationLists;
+  assert.equal(reload.disabled, false); await userEvent.click(reload);
+  assert.equal(client.creationLists, listsBeforeReload + 1);
+  await userEvent.click(statusButton);
+  assert.deepEqual(client.creationStatuses, [["workspace", "creation"]]);
+  assert.equal(statusButton.disabled, true);
+  assert.equal(screen.getByRole("combobox", { name: t("moveCategoryDestination") }), destination);
+  await act(async () => status.resolve({ ok: true, value: { outcome: "recoverable", operation } }));
+  await waitFor(() => assert.equal(statusButton.disabled, false));
+  assert.equal((destination as HTMLSelectElement).value, "empty");
+  assert.deepEqual(client.moves, []); assert.deepEqual(client.recoveries, []); assert.deepEqual(client.creationMutations, []);
+});
 test(`${language}: explicit grouped category selection moves the folder without changing Name or Text`, async () => {
   const client = new Client();
   render(<DiscoveryWorkspace client={client} workspaceId="workspace" sourceId="source" language={language} disabled={false} />);
