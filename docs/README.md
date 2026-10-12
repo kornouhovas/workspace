@@ -10,11 +10,25 @@ These documents are written for the new implementation. The previous documentati
 | [Architecture](architecture.md) | Boundaries, stack and implementation status |
 | [Roadmap](roadmap.md) | Outcomes, dependencies and completion criteria |
 | [Workspace 0.1.0 specification](specs/workspace-0.1.0.md) | Local-release requirements and acceptance for M1–M4 |
-| [Workspace 0.1.0 implementation tickets](specs/workspace-0.1.0-tickets/README.md) | Published vertical slices, GitHub/Beads mapping and blocking edges |
-| [Development](development.md) | GitHub, Beads, Ralphex and verification |
+| [Workspace 0.1.0 implementation tickets](specs/workspace-0.1.0-tickets/README.md) | Published vertical slices, historical IDs and blocking edges |
+| [Development](development.md) | GitHub-only workflow, executor selection, integration and verification |
 | [Releases](releases.md) | Versions, changelog and future distribution |
 | [Reuse](reuse.md) | bb reference, attribution and adaptation rules |
 | [ADRs](adr/) | Significant accepted tradeoffs |
 | [Plans](plans/README.md) | Bounded implementation plans |
 
 Product discovery is ongoing. Accepted decisions may be implemented only within the authorized implementation scope; proposed details remain questions. A roadmap entry does not prove that code exists.
+
+## Task-specific reading
+
+Read development's scope, integration, tracker, executor-selection and verification rules for development tasks. Select product/architecture sections by the changed boundary; current runtime and accepted ADRs take precedence over historical plans. Read deep verification checkpoints only for the affected operation or continuing acceptance work.
+
+| Task | Relevant contracts |
+| --- | --- |
+| Service, storage or filesystem changes | Affected sections in [architecture](architecture.md), [ADRs](adr/) and typed contracts in `src/shared/`; inspect the active service wiring |
+| Project rename | [No-replace rename ADR](adr/0007-no-replace-project-renames.md), Architecture's rename/recovery sections, [rename ticket](specs/workspace-0.1.0-tickets/11-rename-project-folders-without-losing-identity.md) and originating issue |
+| Category move | Architecture's category-move/recovery sections, [move ticket](specs/workspace-0.1.0-tickets/12-move-projects-by-editing-folder-backed-select.md) and originating issue |
+| UI implementation/review | [Reuse adaptation policy](reuse.md#adaptation-policy), affected product/architecture interaction, accessibility, EN/RU and failure/recovery constraints, and the issue's acceptance criteria |
+| Issue operations or dependency graph | [Tracker](issue-tracker.md), including native and textual fallback relationships |
+
+For UI, identify the contract for each changed surface, shared primitive and service action; expand to related consumers when shared behavior changes. Imported bb references apply only to the relevant component/foundation; historical source/acceptance reports are consulted for provenance or a specific continuation, not loaded as general UI rules. Inspect actual component layout and scripts rather than copying a directory or command inventory into instructions.

@@ -5,7 +5,7 @@ This repository uses a spec-first, agent-ready workflow. The user owns product d
 ## Start here
 
 1. Check the actual checkout and `git status --short --branch`; preserve unrelated edits.
-2. Read [development](docs/development.md) for workflow, tracking and checks. Read [product](docs/product.md) and [decisions](docs/decisions.md) before changing behavior; open decisions are not requirements.
+2. Read [development](docs/development.md) for workflow, tracking and checks; use the [source map](docs/README.md) for affected contracts. Read [product](docs/product.md) and [decisions](docs/decisions.md) before changing behavior; open decisions are not requirements.
 3. Read [architecture](docs/architecture.md) and the relevant [ADRs](docs/adr/) for storage or boundary changes. Use [GLOSSARY.md](GLOSSARY.md) for domain language.
 4. For UI or borrowed modules, read [reuse](docs/reuse.md). For versions, packaging or publication, read [releases](docs/releases.md).
 
@@ -20,8 +20,8 @@ This repository uses a spec-first, agent-ready workflow. The user owns product d
 
 ## Delivery
 
-Use a task branch based on `new-workspace` for implementation. Complete only the accepted scope, verify affected behavior and commit every completed and verified file-changing task before handoff. Stage only task changes. Push, merge, publish and release require corresponding user authorization.
+Use a task branch based on the latest verified `new-workspace` for implementation. After successful issue acceptance and required checks, follow the owner-authorized [integration route](docs/development.md#integration-branch) into `new-workspace`. Complete only the accepted scope, verify affected behavior and commit every completed and verified file-changing task before handoff. Stage only task changes. Push, merge, publish and release require corresponding user authorization.
 
-GitHub Issues owns requirements and completion status; Beads records linked execution steps. Ralphex executes bounded English plans under [the development workflow](docs/development.md). Preserve existing tracker history. A worktree shares the repository's Beads database.
+GitHub Issues is the sole tracker; follow [tracker policy](docs/issue-tracker.md) for dependencies, ownership and checkpoints. Use Matt Pocock by default. Select a new Ralphex run only on explicit user request; follow [executor selection](docs/development.md#executor-selection) for existing runs. Archived tracker IDs are historical evidence.
 
 Report the result, actual checks, remaining limitations and existing commit in Russian. This branch contains a runnable settings application with workspace creation and reopening; claim build or runtime verification only when those checks were actually performed.

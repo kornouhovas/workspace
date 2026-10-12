@@ -1,6 +1,6 @@
 # Ralphex execution and continuation
 
-Use the installed `do-task-ralphex` skill for a selected, claimed Beads task. GitHub owns requirements; the coordinator owns tracker writes, platform acceptance and authorized delivery. These changes do not start Issue #18.
+Use this guide only for an explicitly selected Ralphex task or an already authorized continuation, under [executor selection](development.md#executor-selection). GitHub Issues is the sole tracker. Apply [tracker policy](issue-tracker.md) before historical tracker instructions; preserve current ownership, acceptance gates and waiting state.
 
 ## Separate phases and verified continuation
 
@@ -105,19 +105,9 @@ The independent `windows-observer-diagnostic` job runs on `windows-latest` and `
 
 Task 1 local verification ran on macOS 27.0 arm64 with Node 22.21.1. The final focused invocation returned exit 1: 78 of 79 tests passed without skips, including all eight new diagnostic regressions. The unchanged `real runner/process failure preserves terminal source and real CLI exit` assertion expected `failed` but received `ownership_unknown`; its cause remains unproven. The failed test-process exit is preserved in `test-status.json` and the full log is retained as `focused-tests-unexpected-red.log`; no unchanged rerun was used to obtain success. Lint, typecheck, documentation links and diff whitespace checks passed. The diagnostic collected both cases with ordinary outcomes and removed its fixtures/child. Full local evidence is retained under `work/issue-19/observer-diagnostics-task1/`; the [diagnostic plan](plans/completed/issue-19-runner-windows-diagnostics.md) records commands and results. Actual Windows results and artifact inspection by exact SHA/run/attempt remain coordinator-owned gates. Local diagnostic completeness establishes neither Windows acceptance nor the cause of the historical Windows failure.
 
-### Lease maintenance
+### Retired tracker compatibility
 
-Heartbeat is opt-in through `--heartbeat` JSON with `task`, `actor`, `repo`, `ttlMs` and `intervalMs`. Here `repo` is selected through the physical `realpathSync` representation used by runner worktree publication, including when supplied through a directory alias.
-
-Task and recorded worktree comparisons remain strict; foreign or aliased recorded ownership metadata is never canonicalized into acceptance. A controlled disposable fixture with an isolated asynchronous filesystem mock reproduced the retained Windows sync/async representation mismatch and verified the heartbeat repair locally; this is separate from actual Windows acceptance.
-
-The physical-repository alias regression uses a scoped test clock with the original 90 ms observation budget. It holds time through valid capability verification and renewal, then advances to the deadline after the second actual snapshot read. Exact `bd` arguments, identified ownership and runner source bytes remain asserted. A separate control advances 120 ms after valid help and requires `lease_lost` with zero renewal calls; a nonzero renewal reply must also lose the lease. Success, rejected observation and thrown-assertion controls restore `Date.now`, filesystem mocks and builtin exports in `finally`, then verify an independent public observation. These tests change no production lease, request deadline or polling policy. Controlled expiry reproduces the observed failure mechanism; historical macOS scheduling was not retained, so original attribution remains unproven and exact-SHA CI remains coordinator-owned.
-
-The checkout belongs to the already claimed Beads task; TTL must come from its actual supported configuration. Use an interval below that TTL with command/transport margin. The adapter verifies installed heartbeat support and uses only `bd --actor <actor> -C <repo> --sandbox heartbeat <task>`, with bounded calls. It does not claim, reclaim, close or change task requirements. Never use the live current issue as a fixture.
-
-Without this option, the coordinator still owns lease renewal and must shorten its observation budget to the next renewal deadline. With it, renewals run technically inside the bounded observation even while status is unchanged. The option does not transfer task ownership to the observer or provide renewal after the client/process exits.
-
-Lease failure returns immediately for investigation. Do not launch the next execute/review phase until the supported mechanism confirms the same selected task/actor/repository again. Retain the existing executor, lock and evidence; continue read-only observation without renewing a lease that is no longer yours. Check ownership immediately before every new phase, including after successful execution. This is a point-in-time check, not an atomic Beads-plus-process transaction.
+Observe the existing run without `--heartbeat`; no `bd` lease renewal, claim or closure is required. Historical `beads` snapshot fields and older required initialization arguments are inert correlation IDs. Check the GitHub execution checkpoint and executor lock before every new phase; the observer does not transfer ownership. Preserve existing baselines, logs and evidence. Compatibility tests for the optional heartbeat adapter remain historical regression coverage, not a live tracker requirement. Their prior diagnostic evidence remains in Git history.
 
 ### Exact CI observation
 

@@ -6,37 +6,29 @@ Start from [AGENTS.md](../AGENTS.md), the actual checkout and relevant product/a
 
 Use an isolated task branch based on `new-workspace` for implementation. Preserve unrelated files and existing task ownership. Commit completed, verified file changes in coherent English commits; stage explicit task paths. Push, merge and publication require corresponding authorization.
 
-## GitHub and Beads
+## Integration branch
 
-The public [kornouhovas/workspace](https://github.com/kornouhovas/workspace) repository is the primary issue tracker. Each implementation issue should describe the user outcome, scope, acceptance criteria, dependencies and relevant document links. Check for an existing issue before creating another. Verify repository visibility before the first write to a new repository.
+`new-workspace` is the integration branch for every issue. Start a new issue branch from its latest verified tip. Once the selected issue's acceptance criteria, review and required checks pass (including agreed human acceptance), merge the verified issue branch into `new-workspace`, verify the integrated result and record the delivered SHA. The owner has authorized this issue-by-issue integration route. It does not select/start the next issue or authorize release or merge into `main`.
 
-Beads records linked execution steps, blockers and continuation notes for a GitHub issue. Use the GitHub URL/number in each new task's description. For substantial work, maintain an epic or grouping for `new-workspace`; avoid importing the previous backlog automatically. Requirement changes and final product completion belong in GitHub; closing a Beads step does not close its GitHub issue.
+Issue 19 receives the completed agent-workflow changes now. Its merge into `new-workspace` remains conditional on successful completion: the current waiting state, residual native/platform gates and exact-SHA Actions acceptance remain unresolved until evidenced. A completed local documentation merge is not issue acceptance.
 
-Beads is most useful for dependent steps and multi-session continuation. Keep small tasks small; do not reproduce every issue paragraph as a second specification. No automatic GitHub↔Beads or Beads↔Ralphex synchronization is configured.
+## GitHub tracker
 
-The installed Beads worktree behavior shares the database through the repository's common Git directory. The retained `.beads` metadata is configuration, not a versioned copy of the live Dolt store. Preserve existing records; do not run initialization or copy a live database to simulate branch isolation. Fresh-machine task-store recovery is separate from checking out this branch.
+GitHub Issues is the sole tracker for requirements, acceptance, dependencies and completion. Read the selected issue and comments; resolve both native and textual fallback dependencies under [tracker policy](issue-tracker.md#dependencies). Keep execution checkpoints with branch/worktree, commit, actual checks, remaining gate and next action in issue comments. Check existing ownership before continuation.
+
+[Beads retirement](beads-retirement.md) preserves the database archive, unfinished mapping and pending publication. Historical GitHub bodies, versioned tickets and run snapshots may still carry Beads IDs; these are correlation evidence, not instructions to run `bd`. Preserve unique notes without restoring another live tracker.
+
+## Executor selection
+
+Use Matt Pocock directly for ordinary implementation requests. Select a new Ralphex run only when the user explicitly requests Ralphex or invokes `$do-task-ralphex`. A generic issue request, `$implement`, readiness label, plan, CI failure or installed `.ralphex` configuration does not select it. Finishing one issue does not select an executor or authorize starting the next.
+
+Continue an already authorized run only within its existing scope, ownership and permissions. A waiting snapshot remains waiting until its recorded dependency and user instructions permit continuation. Preserve the run snapshot, issue/review baselines, lock and evidence; this policy neither launches nor stops the executor.
 
 ## Ralphex
 
-For phase selection, bounded observation, early Windows feedback and compact continuation state, use [the Ralphex run guide](ralphex.md). Execution uses a tasks-only invocation; review and external waiting remain separate explicit phases with ownership checked before continuation. The separate observer performs technical waits without a model call per unchanged poll; the guide specifies the actual tool fallback, progress/lease requirements and adoption limits.
+For explicitly selected tasks or an already authorized continuation, read [the Ralphex run guide](ralphex.md) and the installed `do-task-ralphex` skill with its issue-flow reference. Apply the GitHub-only tracker policy before historical skill/plan defaults. Omit observer heartbeat and `bd` lease/claim/close operations; older `beads` metadata or `--beads` arguments are inert compatibility IDs.
 
-Repository defaults are in [.ralphex/config](../.ralphex/config). They select Codex, `docs/plans`, the `new-workspace` base and disabled automatic finalization. The phase runner creates a run-local gpt-6.1-sol profile (medium for task execution, high for planning/review); direct CLI planning uses the inspected effective configuration. Record the actual executor configuration in run evidence. Old progress logs and worktrees are not part of the new foundation.
-
-For a selected issue:
-
-1. Read its current acceptance criteria and linked Beads state. Create a bounded English task snapshot and plan; include fixtures, tests, completion criteria and exclusions.
-2. Review the plan against settled product decisions. Resolve consequential open questions before the dependent implementation.
-3. Run in an isolated task checkout. Save the issue's starting commit SHA and initialize the phase runner against that immutable base. Follow-up reviews use the separately recorded successful review SHA.
-4. Inspect the resulting diff and actual test evidence. Update linked execution state and GitHub only to the extent acceptance is satisfied.
-
-Supported planning invocation in the inspected local Ralphex installation:
-
-```sh
-ralphex --codex --base-ref "<issue-start-sha>" --skip-finalize \
-  --plan "Read the task snapshot at /absolute/path/task.md and create an English implementation plan in docs/plans."
-```
-
-This is a template with placeholder values, not a command already run. Inspect installed help and effective models before planning. Keep planning separate if it offers automatic continuation; inspect the result, then pass the reviewed plan's actual path to the runner's explicit execute phase. A plan is not authorization to push, merge or release.
+Use bounded English task snapshots/plans with scope, fixtures, acceptance and exclusions. Review the plan against settled decisions, retain the immutable issue-start SHA, and review the resulting diff and actual evidence. Follow-up review receipts retain their separate SHA. The existing configuration selects `new-workspace` and disables automatic finalization; configuration is not launch or delivery authorization.
 
 ## Verification
 
@@ -57,7 +49,7 @@ Use temporary data for destructive and recovery checks. Never use live user proj
 
 Ordinary push and pull-request runs execute common DOM/mocked-client and pure-helper tests once on macOS, alongside lint, typecheck and documentation links. The macOS, Windows latest and Windows 2022 matrix builds once per OS and runs the remaining platform tests, then the existing development and packaged runtime acceptance routes. SQLite, real filesystem, process, native and mixed UI/backend suites remain in that matrix. Production move, recovery and native acceptance assertions are unchanged.
 
-`npm test` still builds and runs every test locally. After a build, `npm run test:all` runs every test without rebuilding; `npm run test:platform` selects platform suites. `npm run test:common` requires no application build. The explicit common list lives in [test-suites.mjs](../scripts/test-suites.mjs); new test files default to platform coverage. `node scripts/test-suites.mjs <all|common|platform> --list` prints the selected files. Partition controls require complete, nonoverlapping coverage and preserve platform-sensitive suites.
+`npm test` still builds and runs every test locally. Test discovery is explicitly limited to `tests/` by the suite runner; sibling worktrees are outside its inventory. After a build, `npm run test:all` runs every test without rebuilding; `npm run test:platform` selects platform suites. `npm run test:common` requires no application build. The explicit common list lives in [test-suites.mjs](../scripts/test-suites.mjs); new test files default to platform coverage. `node scripts/test-suites.mjs <all|common|platform> --list` prints the selected files. Partition controls require complete, nonoverlapping coverage and preserve platform-sensitive suites.
 
 CI packages its already verified build with `npm run package:built`; local `package:dir` retains its fresh-build behavior. A failed prerequisite stops dependent acceptance steps, while failure evidence uploads retain `always()`. New commits cancel older runs for the same event/ref. Push and pull-request identities remain distinct.
 

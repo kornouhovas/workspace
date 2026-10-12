@@ -16,3 +16,6 @@ work/
 .beads-credential-key
 *.gate.lock*
 native/project-rename/build/
+
+# Retired tracker recovery data stays outside source control
+.beads/
