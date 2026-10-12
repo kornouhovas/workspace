@@ -65,4 +65,3 @@ Keep production/helper/fixture/lifecycle/runner/CI/application/dependencies unch
 ## Coordinator Gates
 
 Separate Ralphex and Matt Pocock review, authorized branch push and exact-SHA Actions remain coordinator actions. Full npm test and actual Windows acceptance remain pending until inspected. The new Windows-2022 observer regression in Actions 38222572956 is diagnosed separately. Preserve work/issue-19/category-move-ui-local-candidate.md and category-move-ui-runtime-future.md; no UI replay or implementation in this plan.
-
