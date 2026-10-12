@@ -7,15 +7,16 @@ import test from "node:test";
 import Database from "better-sqlite3";
 import { nativeObserverDependencies } from "../src/service/source-observer.ts";
 import { openSettingsService } from "../dist/service/settings.mjs";
+import { performFixtureRecovery } from "./fixtures/project-category-move-service-electron.cjs";
 
-async function fixture(run) {
+async function fixture(run, observerOptions = {}) {
   const directory = fs.realpathSync.native(fs.mkdtempSync(join(tmpdir(), "move-coordination-")));
   const root = join(directory, "root"), databasePath = join(directory, "workspace.sqlite");
   for (const name of ["Original", "Other", "Missing"]) fs.mkdirSync(join(root, "Category", name), { recursive: true });
   fs.mkdirSync(join(root, "Destination"));
   fs.writeFileSync(join(root, "Category", "Original", "sentinel"), "  Exact bytes 📝\n");
   const watches = [], timers = new Set();
-  const dependencies = { ...nativeObserverDependencies,
+  const dependencies = { ...nativeObserverDependencies, ...observerOptions,
     watch(path, hint) { const handle = { path, hint, closed: false }; watches.push(handle); return { close() { handle.closed = true; } }; },
     schedule(callback, delay) { const timer = { callback, delay }; timers.add(timer); return { cancel() { timers.delete(timer); } }; },
   };
@@ -78,7 +79,11 @@ async function fixture(run) {
   const move = (extra = {}) => command("workspace.moveProjectCategory", { projectId: project.projectId, operationId: randomUUID(),
     destinationCategoryId: project.categoryId, expectedRevision: sql.prepare("SELECT discovery_revision FROM sources WHERE id = ?").get(workspace.sourceId).discovery_revision, ...extra });
   const f = { directory, root, databasePath, sql, workspace, sibling, initial, project, missing, other, destinationId, propertyId, query, command, apply,
-    seed, moveRow, creationRow, renameRow, insert, move, snapshot, watches, flushHints, get service() { return service; },
+    seed, moveRow, creationRow, renameRow, insert, move, snapshot, watches, flushHints,
+    poll() {
+      const timer = [...timers].find(timer => timer.delay === 5000);
+      assert.ok(timer); timers.delete(timer); timer.callback(); flushHints();
+    }, get service() { return service; },
     restart(workspaceFilesystem) { service.close(); service = openSettingsService(databasePath, undefined, workspaceFilesystem, dependencies); } };
   try { await run(f); } finally { service.close(); sql.close(); fs.rmSync(directory, { recursive: true, force: true }); }
 }
@@ -364,3 +369,120 @@ for (const terminal of ["failed", "completed", "unchanged"]) test(`${terminal} m
   assert.ok(enrolled); assert.notEqual(enrolled.projectId, f.project.projectId);
   f.restart(); assert.deepEqual(f.query("workspace.getProjectCategoryMove", { operationId: row.operation_id }), receipt);
 }));
+
+// Controlled invalidation evidence is separate from original Electron/CI runs.
+// Deliver a real observer pass over the returned directory, never clear tokens.
+const recoveryControls = ["second_stale", "other_error", "unknown_error", "changed_state", "changed_bytes", "missing_action",
+  "failed_preview", "malformed_preview", "malformed_reply", "foreign_preview", "changed_placement", "reused_token", "empty_token",
+  "changed_after_preview", "second_error", "malformed_fresh_reply"];
+for (const pollCategories of [false, true]) for (const action of ["complete_destination", "retry_original", "keep_original"])
+  for (const control of [null, ...(action === "keep_original" && !pollCategories ? recoveryControls : [])]) {
+  test(`controlled sourceObserved invalidation: ${action}, ${pollCategories ? "Windows grouped polling seam" : "category notification seam"}${control ? `, response/state control ${control}` : ""}`, () => fixture(async f => {
+    f.flushHints();
+    f.sql.exec("CREATE TRIGGER fixture_interrupt BEFORE UPDATE ON projects BEGIN SELECT RAISE(ABORT, 'Fixture completion interruption'); END");
+    const input = { type: "workspace.moveProjectCategory", workspaceId: f.workspace.workspaceId,
+      operationId: randomUUID(), projectId: f.project.projectId, destinationCategoryId: f.destinationId, expectedRevision: f.initial.revision };
+    const unfinished = f.service.handleCommand(input);
+    assert.equal(unfinished.ok, true); assert.equal(unfinished.value.outcome, "recoverable");
+    f.sql.exec("DROP TRIGGER fixture_interrupt");
+    const observe = () => {
+      if (pollCategories) {
+        assert.deepEqual(f.watches.filter(watch => !watch.closed).map(watch => watch.path), [f.root]);
+        f.poll();
+      } else {
+        const watch = f.watches.find(watch => !watch.closed && watch.path === join(f.root, "Category"));
+        assert.ok(watch); watch.hint(); f.flushHints();
+      }
+    };
+    if (action !== "complete_destination") {
+      observe(); // Observer sees destination before the controlled external return.
+      fs.renameSync(join(f.root, "Destination/Original"), join(f.root, "Category/Original"));
+    }
+    const previewInput = { type: "workspace.previewProjectCategoryMoveRecovery", workspaceId: f.sibling.workspaceId, operationId: input.operationId };
+    const review = f.service.handleQuery(previewInput).value;
+    assert.ok(review.actions.includes(action));
+    const recover = { type: "workspace.recoverProjectCategoryMove", workspaceId: f.sibling.workspaceId,
+      operationId: input.operationId, previewToken: review.previewToken, action };
+    const state = () => ({
+      tables: f.snapshot(), operations: f.sql.prepare("SELECT * FROM project_category_move_operations ORDER BY operation_id").all(),
+      retained: Object.fromEntries(["workspaces", "active_workspace", "project_creation_operations", "project_rename_operations"]
+        .map(table => [table, f.sql.prepare(`SELECT * FROM ${table} ORDER BY 1`).all()])),
+      receipt: f.service.handleQuery({ type: "workspace.getProjectCategoryMove", workspaceId: f.sibling.workspaceId, operationId: input.operationId }),
+      projects: f.query("workspace.listProjects"), text: f.query("workspace.listTextProperties"),
+      placements: ["", "Category", "Destination", "Category/Original", "Destination/Original", "Category/Other"].map(path => {
+        const absolute = join(f.root, path);
+        if (!fs.existsSync(absolute)) return null;
+        const stat = fs.lstatSync(absolute, { bigint: true });
+        return { path, identity: [stat.dev, stat.ino, stat.birthtimeNs].map(String),
+          bytes: fs.existsSync(join(absolute, "sentinel")) ? fs.readFileSync(join(absolute, "sentinel"), "utf8") : null };
+      }),
+    });
+    const before = state(), events = [];
+    f.service.workspaces.subscribe(event => events.push(event));
+    events.length = 0; // Subscription replays the latest source observation.
+    let actions = 0, previews = 0;
+    const perform = () => performFixtureRecovery({ review, recover, readState: state, request: async request => {
+      if (request.type === "workspace.previewProjectCategoryMoveRecovery") {
+        previews++;
+        if (control === "failed_preview") return f.service.handleQuery({ ...request, operationId: randomUUID() });
+        const response = f.service.handleQuery(request);
+        assert.equal(response.ok, true);
+        // Explicit response corruption controls, separate from real invalidation.
+        if (control === "missing_action") response.value.actions = ["retry_original"];
+        if (control === "malformed_preview") return { ok: true, value: null };
+        if (control === "foreign_preview") response.value.workspaceId = f.workspace.workspaceId;
+        if (control === "changed_placement") response.value.originalState = "replaced";
+        if (control === "reused_token") response.value.previewToken = review.previewToken;
+        if (control === "empty_token") response.value.previewToken = "";
+        if (control === "changed_after_preview") assert.equal(f.command("workspace.setTextValue", {
+          projectId: f.project.projectId, propertyId: f.propertyId, value: "Changed after fresh preview" }).ok, true);
+        return response;
+      }
+      actions++;
+      if (actions === 1) observe();
+      if (actions === 2 && control === "second_stale") {
+        fs.mkdirSync(join(f.root, "Category/Observed extra")); observe();
+      }
+      if (actions === 2 && control === "second_error") return f.service.handleCommand({ ...request, action: "invalid" });
+      if (actions === 2 && control === "malformed_fresh_reply") return null;
+      const response = f.service.handleCommand(request);
+      if (actions === 1) {
+        assert.equal(response.ok, false); assert.equal(response.error.code, "stale_preview");
+        assert.deepEqual(state(), before); // Exact no-effect proof before fixture repair.
+        const observed = events.filter(event => event.type === "workspace.sourceObserved");
+        assert.ok(observed.length > 0);
+        for (const event of observed) {
+          assert.equal(event.sourceId, f.workspace.sourceId);
+          assert.deepEqual(event.workspaceIds, [f.workspace.workspaceId, f.sibling.workspaceId]);
+        }
+        assert.equal(events.some(event => event.type === "workspace.projectsChanged"), false);
+        if (control === "other_error") return f.service.handleCommand({ ...request, action: "invalid" });
+        if (control === "unknown_error") return { ok: false, error: { code: "future_error" } };
+        if (control === "malformed_reply") return null;
+        if (control === "changed_state") assert.equal(f.command("workspace.setTextValue", {
+          projectId: f.project.projectId, propertyId: f.propertyId, value: "Changed by control" }).ok, true);
+        if (control === "changed_bytes") fs.writeFileSync(join(f.root, "Category/Original/sentinel"), "Changed by control");
+      }
+      return response;
+    } });
+    if (control) {
+      await assert.rejects(perform, { name: "AssertionError" });
+      assert.equal(actions, ["second_stale", "second_error", "malformed_fresh_reply"].includes(control) ? 2 : 1);
+      assert.equal(previews, ["other_error", "unknown_error", "malformed_reply", "changed_state", "changed_bytes"].includes(control) ? 0 : 1);
+      assert.deepEqual(f.service.handleCommand(input), unfinished);
+      assert.equal(events.some(event => event.type === "workspace.projectsChanged"), false);
+      assert.equal(fs.existsSync(join(f.root, "Destination/Original")), false);
+      if (!["changed_state", "changed_bytes", "changed_after_preview"].includes(control)) assert.deepEqual(state(), before);
+      return;
+    }
+    const result = await perform();
+    assert.equal(actions, 2); assert.equal(previews, 1);
+    assert.notEqual(result.recover.previewToken, recover.previewToken);
+    assert.equal(result.recovered.outcome, action === "keep_original" ? "rejected" : "completed");
+    if (action === "keep_original") assert.equal(result.recovered.problem, "kept_original");
+    assert.equal(f.service.handleCommand(result.recover).error.code, "stale_preview");
+    const finalPath = action === "keep_original" ? "Category/Original" : "Destination/Original";
+    assert.equal(fs.readFileSync(join(f.root, finalPath, "sentinel"), "utf8"), "  Exact bytes 📝\n");
+    f.restart(); assert.deepEqual(f.service.handleCommand(input).value, result.recovered);
+  }, { pollCategories }));
+}

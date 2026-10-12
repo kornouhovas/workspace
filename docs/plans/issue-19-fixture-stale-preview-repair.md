@@ -68,19 +68,26 @@ Files:
 
 - Modify: tests/project-category-move-coordination.test.mjs
 
-- [ ] Add a deterministic controlled regression at the recovery preview/request boundary. Use existing observer dependencies and public production service calls to deliver an actual sourceObserved invalidation after preview; prove event delivery instead of directly clearing tokens, fabricating stale_preview or inserting a timing sleep. Cover the existing Windows grouped-observation fallback through the controllable dependency seam.
+- [x] Add a deterministic controlled regression at the recovery preview/request boundary. Use existing observer dependencies and public production service calls to deliver an actual sourceObserved invalidation after preview; prove event delivery instead of directly clearing tokens, fabricating stale_preview or inserting a timing sleep. Cover the existing Windows grouped-observation fallback through the controllable dependency seam.
 
-- [ ] Retain a failing fixture regression before repairing its request handling. Separately prove that the stale token returns exactly stale_preview with unchanged public receipt, durable operation, source/project state, directory identities, placements, sentinel bytes, Text/settings/views and no recovery effect.
+- [x] Retain a failing fixture regression before repairing its request handling. Separately prove that the stale token returns exactly stale_preview with unchanged public receipt, durable operation, source/project state, directory identities, placements, sentinel bytes, Text/settings/views and no recovery effect.
 
-- [ ] Replace the unconditional successful-result assertion at the affected recovery boundary with explicit finite branching. Preserve the ordinary one-request success path.
+- [x] Replace the unconditional successful-result assertion at the affected recovery boundary with explicit finite branching. Preserve the ordinary one-request success path.
 
-- [ ] Permit fresh review only after an exact stale_preview response and successful no-effect/state-equality checks. Fetch one fresh preview; verify the same workspace/source/operation, current safe placements, unchanged recovery-relevant state, a distinct nonempty token and advertisement of the previously chosen action. Submit that action exactly once with the fresh token.
+- [x] Permit fresh review only after an exact stale_preview response and successful no-effect/state-equality checks. Fetch one fresh preview; verify the same workspace/source/operation, current safe placements, unchanged recovery-relevant state, a distinct nonempty token and advertisement of the previously chosen action. Submit that action exactly once with the fresh token.
 
-- [ ] Fail on another stale response, any other/unknown error, changed evidence, missing action, failed preview or malformed response. Add controlled negative regressions proving those cases cannot trigger another recovery action or loop.
+- [x] Fail on another stale response, any other/unknown error, changed evidence, missing action, failed preview or malformed response. Add controlled negative regressions proving those cases cannot trigger another recovery action or loop.
 
-- [ ] Preserve all existing completed/kept-original, event, consumed-token, retention and restart assertions. Label controlled invalidation tests and evidence separately from original production-service runs without expanding uploaded diagnostics or exposing private fields.
+- [x] Preserve all existing completed/kept-original, event, consumed-token, retention and restart assertions. Label controlled invalidation tests and evidence separately from original production-service runs without expanding uploaded diagnostics or exposing private fields.
 
-- [ ] Run node --import tsx --test tests/project-category-move-fixture.test.mjs tests/project-category-move-coordination.test.mjs against verified unchanged production outputs; retain red/green logs and checkpoints. All affected tests must pass before Task 2.
+- [x] Run node --import tsx --test tests/project-category-move-fixture.test.mjs tests/project-category-move-coordination.test.mjs against verified unchanged production outputs; retain red/green logs and checkpoints. All affected tests must pass before Task 2.
+
+Task 1 verification (local macOS arm64, Node 22.21.1):
+
+- Controlled red: six public-service regressions delivered real `sourceObserved` invalidation and proved exact `stale_preview`/no effect before the fixture's unconditional success assertion failed. Retained log and pre-repair diff: `work/issue-19/fixture-recovery-request-diagnosis/task1/red-fixture.log` and `red-fixture.patch`.
+- Final affected command: `node --import tsx --test tests/project-category-move-fixture.test.mjs tests/project-category-move-coordination.test.mjs`, exit 0, 81 passed, 0 failed/skipped. Log: `work/issue-19/fixture-recovery-request-diagnosis/task1/green-final.log`; persisted original Electron control checkpoints: `task1/final-checkpoints/` under the same diagnosis directory. Controlled observer/response cases remain separately labeled in the tests/log, without new uploaded diagnostic fields.
+- Affected ESLint command passed (exit 0); log: `work/issue-19/fixture-recovery-request-diagnosis/task1/lint-final.log`. Production source/build and migration byte identity passed without writing `dist`; receipt: `work/issue-19/fixture-recovery-request-diagnosis/task1/production-inputs.json`.
+- The polling dependency control exercises the Windows grouped-observation fallback locally; it does not establish actual Windows acceptance or the cause of the historical CI failure. Task 2, Task 3 and coordinator gates remain pending.
 
 ### Task 2: Verify the bounded repair and record its evidence limits
 

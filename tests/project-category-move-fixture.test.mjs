@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { mkdtemp, rm, readFile, writeFile, cp } from "node:fs/promises";
-import { SCENARIOS } from "./fixtures/project-category-move-service-electron.cjs";
+import { SCENARIOS, performFixtureRecovery } from "./fixtures/project-category-move-service-electron.cjs";
 import { superviseCategoryMoveService, inputDigest } from "../scripts/smoke-project-category-move.mjs";
 
 
@@ -18,6 +18,35 @@ const privateValues = ["Original", "Category", "sentinel", "nativeIdentity", "bi
   "workspace-category-move-service-", "ack.control", "exit.control", "WORKSPACE_CATEGORY_MOVE_SERVICE_ROOT", "EISDIR", "EEXIST", "Error:", "ack\\n", "exit\\n",
   "Invalid fixture command", "Duplicate fixture command", "Fixture control deadline", "Fixture publication deadline",
   '"actual":', '"expected":', '"message":', '"name":', '"sql":', '"pid":', '"token":', '"errno":'];
+
+// Response-shape controls only. Actual stale-preview/no-effect evidence uses
+// the public service and real sourceObserved delivery in coordination tests.
+const fixtureReview = () => ({ workspaceId: "fixture-workspace", sourceId: "fixture-source",
+  operation: { operationId: "fixture-operation", sourceId: "fixture-source" }, previewToken: "fixture-token",
+  originalState: "matching", destinationState: "missing", problem: null, actions: ["retry_original", "keep_original"] });
+const fixtureRecover = review => ({ type: "workspace.recoverProjectCategoryMove", workspaceId: review.workspaceId,
+  operationId: review.operation.operationId, previewToken: review.previewToken, action: "keep_original" });
+
+test("fixture ordinary recovery performs exactly the chosen action without fresh preview", async () => {
+  const review = fixtureReview(), recover = fixtureRecover(review), requests = [];
+  const receipt = { outcome: "rejected", problem: "kept_original", operation: review.operation };
+  const result = await performFixtureRecovery({ review, recover, readState: () => ({ unchanged: true }), request: input => {
+    requests.push(input); return { ok: true, value: receipt };
+  } });
+  assert.deepEqual(requests, [recover]); assert.deepEqual(result, { recovered: receipt, recover });
+});
+
+for (const [name, response] of [
+  ["missing", undefined], ["null", null], ["empty", {}], ["missing error", { ok: false }],
+  ["malformed ok", { ok: "true" }], ["missing result", { ok: true }], ["null result", { ok: true, value: null }],
+  ["wrong outcome", { ok: true, value: { outcome: "recoverable" } }],
+  ["missing operation", { ok: true, value: { outcome: "rejected", problem: "kept_original" } }],
+]) test(`fixture response corruption ${name} fails without another request`, async () => {
+  const review = fixtureReview(), requests = [];
+  await assert.rejects(() => performFixtureRecovery({ review, recover: fixtureRecover(review),
+    readState: () => ({ unchanged: true }), request: input => { requests.push(input); return response; } }), { name: "AssertionError" });
+  assert.equal(requests.length, 1); assert.equal(requests[0].type, "workspace.recoverProjectCategoryMove");
+});
 function assertPrivate(result) {
   const encoded = JSON.stringify(result);
   for (const secret of privateValues) assert.equal(encoded.includes(secret), false, secret);

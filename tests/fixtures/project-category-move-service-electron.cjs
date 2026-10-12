@@ -15,7 +15,50 @@ const DIAGNOSTIC_SEAMS = ["setup", "scenario", "recovery_prepare", "unfinished_r
   "recovery_result", "recovery_events", "recovery_project", "consumed_token", "retained_identity", "retained_state",
   "final_receipt", "restart_receipts", "restart_status", "stop", "connect", "final_stop", "final_cleanup"];
 const DIAGNOSTIC_FAILURES = ["assertion_failed", "operation_failed", "lifecycle_failed", "deadline"];
-module.exports = { SCENARIOS, DIAGNOSTIC_SEAMS, DIAGNOSTIC_FAILURES };
+// Fixture-only explicit action boundary, also exercised against the public
+// service with controlled observer dependencies. It is not a service retry API.
+async function performFixtureRecovery({ review, recover, request, readState }) {
+  const assertReview = candidate => {
+    assert.equal(candidate?.workspaceId, recover.workspaceId);
+    assert.equal(candidate?.operation?.operationId, recover.operationId);
+    assert.equal(typeof candidate.sourceId, "string"); assert.ok(candidate.sourceId.length > 0);
+    assert.equal(candidate.operation.sourceId, candidate.sourceId);
+    assert.equal(typeof candidate.previewToken, "string"); assert.ok(candidate.previewToken.length > 0);
+    assert.ok(Array.isArray(candidate.actions) && candidate.actions.includes(recover.action));
+    assert.equal(candidate.problem, null);
+    assert.equal(candidate.originalState, recover.action === "complete_destination" ? "missing" : "matching");
+    assert.equal(candidate.destinationState, recover.action === "complete_destination" ? "matching" : "missing");
+  };
+  assert.ok(["complete_destination", "retry_original", "keep_original"].includes(recover.action));
+  assertReview(review); assert.equal(review.previewToken, recover.previewToken);
+  const before = await readState();
+  let submitted = recover, result = await request(submitted);
+  if (result?.ok === false) {
+    assert.equal(result.error?.code, "stale_preview");
+    assert.deepEqual(await readState(), before);
+    const fresh = await request({ type: "workspace.previewProjectCategoryMoveRecovery",
+      workspaceId: recover.workspaceId, operationId: recover.operationId });
+    assert.equal(fresh?.ok, true); assertReview(fresh.value);
+    assert.notEqual(fresh.value.previewToken, review.previewToken);
+    // The review may only change its token/action advertisement. The selected
+    // action must still be present; all recovery evidence remains identical.
+    const evidence = candidate => {
+      const state = { ...candidate }; delete state.previewToken; delete state.actions;
+      return state;
+    };
+    assert.deepEqual(evidence(fresh.value), evidence(review));
+    assert.deepEqual(await readState(), before);
+    submitted = { ...recover, previewToken: fresh.value.previewToken };
+    result = await request(submitted); // One fresh explicit action; never loop.
+  }
+  assert.equal(result?.ok, true);
+  assert.equal(result.value?.outcome, recover.action === "keep_original" ? "rejected" : "completed");
+  if (recover.action === "keep_original") assert.equal(result.value.problem, "kept_original");
+  assert.equal(result.value.operation?.operationId, recover.operationId);
+  assert.equal(result.value.operation.sourceId, review.sourceId);
+  return { recovered: result.value, recover: submitted };
+}
+module.exports = { SCENARIOS, DIAGNOSTIC_SEAMS, DIAGNOSTIC_FAILURES, performFixtureRecovery };
 
 if (process.versions.electron) {
   const { app, utilityProcess, MessageChannelMain } = require("electron");
@@ -291,9 +334,25 @@ if (process.versions.electron) {
         seam("recovery_preview");
         const review = await query("workspace.previewProjectCategoryMoveRecovery", { workspaceId: sibling.workspaceId, operationId: recoveryInput.operationId });
         seam("recovery_actions"); assert.deepEqual(review.actions, action === "complete_destination" ? [action] : ["retry_original", "keep_original"]);
-        const recover = { type: "workspace.recoverProjectCategoryMove", workspaceId: sibling.workspaceId,
+        let recover = { type: "workspace.recoverProjectCategoryMove", workspaceId: sibling.workspaceId,
           operationId: recoveryInput.operationId, previewToken: review.previewToken, action };
-        seam("recovery_request"); const recovered = await request(recover);
+        const readState = async () => {
+          assertBytes(action === "complete_destination" ? nextParent : currentParent);
+          await assertRetained();
+          return {
+            receipt: await query("workspace.getProjectCategoryMove", { workspaceId: sibling.workspaceId, operationId: recoveryInput.operationId }),
+            projects: await query("workspace.listProjects", { workspaceId: sibling.workspaceId }),
+            tables: Object.fromEntries(["sources", "projects", "categories", "category_properties", "property_definitions", "text_property_values",
+              "views", "settings", "workspaces", "active_workspace", "project_category_move_operations", "project_rename_operations", "project_creation_operations"]
+              .map(table => [table, sql.prepare(`SELECT * FROM ${table} ORDER BY 1`).all()])),
+            placements: [sourceRoot, originalParent, destinationParent, placement(originalParent), placement(destinationParent), join(originalParent, "Other")]
+              .map(path => fs.existsSync(path) ? { identity: identity(path), entries: fs.readdirSync(path).sort() } : null),
+            projectEventCount: projectEvents().length,
+          };
+        };
+        seam("recovery_request");
+        const performed = await performFixtureRecovery({ review, recover, readState, request: input => controller.request(input, 6000) });
+        const recovered = performed.recovered; recover = performed.recover;
         seam("recovery_result");
         if (action === "keep_original" && ["recovery-assertion", "recovery-assertion-lifecycle-stop", "recovery-assertion-cleanup", "recovery-assertion-malformed-result",
           ...diagnosticFaults].includes(fault))
