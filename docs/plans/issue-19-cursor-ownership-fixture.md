@@ -64,13 +64,13 @@ fixtures.
 ### Task 1: Replace the timer and verify fixture sensitivity and restoration
 Files:
 - Modify: tests/ralphex-observe.test.mjs.
-- [ ] Record starting HEAD, Node/platform, allowlisted
+- [x] Record starting HEAD, Node/platform, allowlisted
 file identities and relevant unchanged input hashes in
 ignored evidence. Retain the diagnosis and both actual
 probe logs with their probe identity and recorded exits.
 Keep historical failure, injected mechanism and passing
 ownership control distinct.
-- [ ] Replace the timer with a minimal scoped
+- [x] Replace the timer with a minimal scoped
 fsPromises.readFile wrapper synchronized through
 syncBuiltinESMExports. Intervene exactly once for this
 fixture’s canonical cursor-lock path. Read and validate
@@ -80,14 +80,14 @@ token; then forward the guarded read to the real
 filesystem so it returns the foreign token. Assert that
 the boundary was reached and takeover occurred. Forward
 unrelated operations unchanged.
-- [ ] Retain the public observe call and require the
+- [x] Retain the public observe call and require the
 exact Observer cursor ownership lost message, ENOENT for
 the cursor, and the exact retained foreign-lock payload.
 Add byte-for-byte before/after assertions for
 current.json, executor.lock and full.log. Do not accept
 EEXIST, an injected exception or an assertion failure as
 the ownership rejection.
-- [ ] Restore fsPromises.readFile and synchronized named
+- [x] Restore fsPromises.readFile and synchronized named
 builtin exports in finally before invariant assertions,
 including rejected observation and thrown-check paths.
 Await observation settlement before restoring. Verify
@@ -96,12 +96,12 @@ public observe using a fresh fixture/cursor, requiring
 identified ownership, expected healthy outcome and normal
 owned-lock cleanup. Independently recheck the original
 foreign lock.
-- [ ] Add tight restoration controls for successful
+- [x] Add tight restoration controls for successful
 observation, ownership rejection and a deliberately thrown
 assertion after observation settles. Require the
 appropriate exact outcome for each control and an
 independent public observation after restoration.
-- [ ] Demonstrate red/green sensitivity using a
+- [x] Demonstrate red/green sensitivity using a
 disposable standalone copy of the exact repaired fixture.
 With takeover disabled, confirm the same boundary sees the
 owned token but no foreign write occurs: the
@@ -114,7 +114,7 @@ logs, commands and actual exits; the deliberately red
 invocation must remain red. Do not mutate production or
 treat the retained pre-publication race probe as a failing
 production regression.
-- [ ] Run the repaired test alone with node --test
+- [x] Run the repaired test alone with node --test
 --test-name-pattern="^losing cursor ownership cannot
 publish or remove a competing observer cursor$"
 tests/ralphex-observe.test.mjs. Then run the original focused
@@ -123,7 +123,7 @@ tests/ralphex-observe.test.mjs tests/ralphex-run.test.mjs
 tests/windows-observer-diagnostics.test.mjs. Record
 failures, skips and cancellations honestly; all applicable
 ordinary checks must pass.
-- [ ] Run npx --no-install eslint
+- [x] Run npx --no-install eslint
 tests/ralphex-observe.test.mjs --max-warnings=0 and
 inspect the complete allowlisted diff. Verify unchanged
 budgets, polling, production inputs and completed Issue

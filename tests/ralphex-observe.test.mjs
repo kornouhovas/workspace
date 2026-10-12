@@ -1052,10 +1052,84 @@ test('bounded CI transport timeout is distinguishable from user cancellation',as
   assert.equal(result.reason,'access_lost');assert.match(result.diagnostic.message,/timed out/);
 });
 
-test('losing cursor ownership cannot publish or remove a competing observer cursor',async t=>{
-  const f=fixture(t);const timer=setTimeout(()=>writeFileSync(`${f.options.cursor}.lock`,JSON.stringify({token:'foreign',pid:process.pid})),20);t.after(()=>clearTimeout(timer));
-  await assert.rejects(observe(f.options),/ownership lost/);assert.throws(()=>readFileSync(f.options.cursor),/ENOENT/);
-  assert.equal(JSON.parse(readFileSync(`${f.options.cursor}.lock`)).token,'foreign');
+// Intervene at the public filesystem boundary only after the actual owner has
+// published its token. These builtin mocks stay scoped to sequential tests.
+async function withCursorOwnership(t, f, check, { takeover = true } = {}) {
+  const lockPath = `${f.options.cursor}.lock`, foreign = JSON.stringify({ token: 'foreign', pid: process.pid });
+  const files = ['current.json', 'executor.lock', 'full.log'].map(name => join(f.dir, name));
+  const before = files.map(file => readFileSync(file)), originalRead = fsPromises.readFile;
+  const boundary = { reached: false, ownedTokenRead: false, foreignWritten: false };
+  let observation;
+  try {
+    fsPromises.readFile = async (...args) => {
+      if (args[0] === lockPath && !boundary.reached) {
+        boundary.reached = true;
+        const owner = JSON.parse(await originalRead(...args));
+        assert.match(owner.token, /^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/);
+        assert.equal(owner.pid, process.pid);
+        boundary.ownedTokenRead = true;
+        if (takeover) {
+          writeFileSync(lockPath, foreign);
+          boundary.foreignWritten = true;
+        }
+      }
+      return originalRead(...args);
+    };
+    syncBuiltinESMExports();
+    observation = observe(f.options);
+    return await check({ observation, boundary });
+  } finally {
+    // A check may throw before awaiting observe; never restore a live mock user.
+    try { await observation; } catch { /* The check owns the exact expected outcome. */ }
+    fsPromises.readFile = originalRead;
+    syncBuiltinESMExports();
+    assert.equal(fsPromises.readFile, originalRead);
+    assert.equal(builtinReadFile, originalRead);
+    assert.deepEqual(boundary, { reached: true, ownedTokenRead: true, foreignWritten: takeover });
+    assert.deepEqual(files.map(file => readFileSync(file)), before);
+    assert.equal(f.options.budgetMs, 90);
+    assert.equal(f.options.pollMs, 10);
+    if (takeover) {
+      assert.throws(() => readFileSync(f.options.cursor), { code: 'ENOENT' });
+      assert.equal(readFileSync(lockPath, 'utf8'), foreign);
+    } else {
+      assert.throws(() => readFileSync(lockPath), { code: 'ENOENT' });
+      assert.equal(JSON.parse(readFileSync(f.options.cursor)).source.executionId, f.state.executionId);
+    }
+    const independent = fixture(t);
+    appendFileSync(independent.log, 'RALPHEX_PROGRESS {"task":"Independent cursor ownership control"}\n');
+    const result = await observe(independent.options);
+    assert.equal(result.reason, 'progress');
+    assert.equal(result.ownership, 'identified');
+    assert.equal(result.task, 'Independent cursor ownership control');
+    assert.equal(result.source.worktree, independent.state.worktree);
+    assert.throws(() => readFileSync(`${independent.options.cursor}.lock`), { code: 'ENOENT' });
+    if (takeover) assert.equal(readFileSync(lockPath, 'utf8'), foreign);
+  }
+}
+
+test('losing cursor ownership cannot publish or remove a competing observer cursor', async t => {
+  const f = fixture(t);
+  await withCursorOwnership(t, f, async ({ observation }) => {
+    await assert.rejects(observation, { message: 'Observer cursor ownership lost' });
+  });
+});
+
+for (const outcome of ['success', 'rejection', 'thrown assertion']) test(`cursor ownership mock restores after ${outcome} and leaves subsequent observations independent`, async t => {
+  const f = fixture(t), failure = new assert.AssertionError({ message: 'Deliberate post-observation assertion' });
+  const check = async ({ observation }) => {
+    if (outcome === 'rejection') {
+      await assert.rejects(observation, { message: 'Observer cursor ownership lost' });
+      return;
+    }
+    const result = await observation;
+    assert.equal(result.reason, 'deadline');
+    assert.equal(result.ownership, 'identified');
+    if (outcome === 'thrown assertion') throw failure;
+  };
+  const control = withCursorOwnership(t, f, check, { takeover: outcome === 'rejection' });
+  if (outcome === 'thrown assertion') await assert.rejects(control, error => error === failure);
+  else await control;
 });
 
 test('large CI step reports keep every outcome in evidence and return a compact envelope',async t=>{
