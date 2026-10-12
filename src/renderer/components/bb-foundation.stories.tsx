@@ -1099,6 +1099,7 @@ function CategoryMovePreview({ language, state }: { language: Language; state: C
           if (button && !button.disabled) { opened = true; button.click(); } return;
         }
         if (state === "kept-original" && submitted && [...target.querySelectorAll(".project-category-move .bb-status")].some((node) => node.textContent === translate(language, "moveCategoryKeptOriginal"))) { done(); return; }
+        if (state !== "review-stale" && !submitted && refreshInitialReview(target)) return;
         const review = target.querySelector(".category-move-review"); if (!review) return;
         if (state === "review-loading" && review.getAttribute("aria-busy") === "true" || state === "review-error" && review.querySelector("[role=alert]")) { done(); return; }
         if (state === "review-stale") {
@@ -1106,7 +1107,6 @@ function CategoryMovePreview({ language, state }: { language: Language; state: C
           if (observed && !review.querySelector(".category-move-placements") && review.querySelector("[role=alert]")) done();
           return;
         }
-        if (!submitted && refreshInitialReview(target)) return;
         if (["recovery-pending", "recovery-unknown", "kept-original"].includes(state)) {
           if (!submitted && review.querySelector(".category-move-placements")) {
             submitted = true;

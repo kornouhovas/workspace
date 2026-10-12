@@ -538,7 +538,12 @@ for (const language of ["en", "ru"] as const) {
       await screen.findByText(t("moveCategoryReviewStale"));
       await waitFor(() => assert.equal(document.querySelector(".category-move-operations")?.getAttribute("aria-busy"), "false"));
       await act(async () => assert.equal(refresh(document.body), revision === 1));
-      if (revision === 1) await screen.findByRole("button", { name: t("moveCategoryRetryOriginal") });
+      if (revision === 1) {
+        assert.equal(document.querySelector(".category-move-review"), null);
+        await act(async () => assert.equal(refresh(document.body), true));
+        await screen.findByRole("button", { name: t("moveCategoryRetryOriginal") });
+        assert.equal(document.activeElement === document.getElementById("category-move-review-title"), true, "Prepared initial review restores heading focus");
+      }
       else assert.ok(screen.getByText(t("moveCategoryReviewStale")), "Repeated instability must remain a fixture failure");
     }
     assert.equal(client.reviews.length, 2);
