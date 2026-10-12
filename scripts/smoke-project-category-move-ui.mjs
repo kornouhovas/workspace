@@ -245,10 +245,12 @@ export async function assertRuntimeCategoryAcknowledgment(page, language, outcom
 
 // Fixture preparation uses the existing service only before the production app
 // consumes the database. No production failure injection or mutation seam.
-export async function seedCategoryMoveFixture(data) {
+export async function seedCategoryMoveFixture(data, platform = process.platform) {
   await mkdir(data, { recursive: true });
   const sourceRoot = join(data, "root"), otherRoot = join(data, "other");
-  const name = "  Exact 日本語 📝  ";
+  // Windows rejects trailing ASCII spaces; retain exact Unicode and leading
+  // whitespace there, and keep POSIX trailing-whitespace coverage separately.
+  const name = platform === "win32" ? "  Exact 日本語 📝" : "  Exact 日本語 📝  ";
   for (const path of [join(sourceRoot, "Current", name, "nested"), join(sourceRoot, "Destination"), join(sourceRoot, "Occupied", name), join(sourceRoot, "Unavailable"), join(otherRoot, "Other project")]) await mkdir(path, { recursive: true });
   await writeFile(join(sourceRoot, "Current", name, "sentinel"), "original bytes\0日本語\n");
   await writeFile(join(sourceRoot, "Current", name, "nested", "note"), "nested bytes\n");

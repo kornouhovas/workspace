@@ -168,6 +168,42 @@ test("category recovery acceptance fails for every missing or unsuccessful asser
   assert.throws(() => assertCategoryMoveAcceptance(short, inputs), /shutdown/);
 });
 
+test("Windows-policy driver fixture completes current-category and native moves with exact authored identity and Text", async () => {
+  const { mkdtemp, rm } = await import("node:fs/promises");
+  const { tmpdir } = await import("node:os");
+  const { join } = await import("node:path");
+  const { randomUUID } = await import("node:crypto");
+  const { seedCategoryMoveFixture, categoryMoveInventory } = await import("../scripts/smoke-project-category-move-ui.mjs");
+  const { openSettingsService } = await import("../dist/service/settings.mjs");
+  const { nativeProjectFilesystem } = await import("../src/service/project-filesystem.ts");
+  const { renameNoReplace } = await import("../dist/service/project-rename-filesystem.mjs");
+  const fixture = await mkdtemp(join(tmpdir(), "category-driver-windows-policy-"));
+  let service;
+  try {
+    const setup = await seedCategoryMoveFixture(join(fixture, "data"), "win32");
+    let nativeCalls = 0;
+    service = openSettingsService(setup.database, undefined, undefined, undefined,
+      { ...nativeProjectFilesystem, platform: "win32" }, (from, to) => { nativeCalls++; return renameNoReplace(from, to); });
+    const request = { type: "workspace.moveProjectCategory", workspaceId: setup.workspace.workspaceId, projectId: setup.project.projectId,
+      operationId: randomUUID(), destinationCategoryId: setup.project.categoryId, expectedRevision: setup.projection.revision };
+    const noop = service.handleCommand(request);
+    assert.equal(noop.ok, true);
+    assert.equal(noop.value.outcome, "unchanged");
+    assert.equal(noop.value.operation.name, "  Exact 日本語 📝");
+    assert.equal(nativeCalls, 0);
+    assert.deepEqual(await categoryMoveInventory(setup.sourceRoot), setup.tree);
+    const destination = setup.projection.categories.find(c => c.name === "Destination");
+    const moved = service.handleCommand({ ...request, operationId: randomUUID(), destinationCategoryId: destination.categoryId });
+    assert.equal(moved.ok, true); assert.equal(moved.value.outcome, "completed");
+    assert.equal(nativeCalls, 1);
+    assert.equal(moved.value.project.projectId, setup.project.projectId);
+    assert.equal(moved.value.project.relativePath, "Destination/  Exact 日本語 📝");
+    assert.deepEqual(await categoryMoveInventory(join(setup.sourceRoot, moved.value.project.relativePath)), setup.projectTree);
+    assert.deepEqual(service.handleQuery({ type: "workspace.listTextProperties", workspaceId: setup.workspace.workspaceId }).value, setup.properties);
+    assert.deepEqual(await categoryMoveInventory(setup.otherRoot), setup.otherTree);
+  } finally { service?.close(); await rm(fixture, { recursive: true, force: true }); }
+});
+
 test("real driver-owned grouped SQLite fixture reopens read-only with identities, exact Text, labels and independent views", async () => {
   const { mkdtemp, rm, symlink, writeFile } = await import("node:fs/promises");
   const { tmpdir } = await import("node:os");
@@ -180,7 +216,7 @@ test("real driver-owned grouped SQLite fixture reopens read-only with identities
     assert.equal(setup.workspace.sourceId, setup.sibling.sourceId);
     assert.notEqual(setup.workspace.sourceId, setup.other.sourceId);
     assert.notEqual(setup.workspace.viewId, setup.sibling.viewId);
-    assert.equal(setup.project.name, "  Exact 日本語 📝  ");
+    assert.equal(setup.project.name, process.platform === "win32" ? "  Exact 日本語 📝" : "  Exact 日本語 📝  ");
     assert.equal(setup.projection.categories.length, 4);
     assert.equal(setup.projection.categoryProperty.name, "  Exact category label 📝  ");
     assert.equal(setup.properties.values[0].value, "  Exact\nТекст\t  ");
