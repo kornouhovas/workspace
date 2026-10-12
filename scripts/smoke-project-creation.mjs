@@ -13,7 +13,7 @@ import { cleanupOwnedFixture, closeElectron, withDeadline } from "./runtime-life
 import { createCreationEvidence, recordCreationEvidence } from "./runtime-evidence.mjs";
 import { waitForFileManagerTarget, closeDisposableFileManagerTarget } from "./file-manager-evidence.mjs";
 import { waitForRuntimeInterface } from "./runtime-startup.mjs";
-import { nativeBridgeCleanupEvidence } from "./native-bridge-evidence.mjs";
+import { nativeBridgeCleanupEvidence, pollNativeInvocation, nativeInvocationRendererState } from "./native-bridge-evidence.mjs";
 import { collectNativeSelectionMetadata } from "./windows-native-selection.mjs";
 import { productDiagnosticSnapshot, validateProductDiagnostic } from "./windows-product-diagnostics.mjs";
 import { installNativeRevealReceipt, retainNativeRevealReceipt } from "./native-reveal-receipt.mjs";
@@ -30,7 +30,7 @@ const diagnostic = process.env.WORKSPACE_WINDOWS_SELECTION_DIAGNOSTIC === "1";
 validateProductDiagnostic({ enabled: diagnostic, platform: process.platform, mode, selectedMode, selectedCheckpoint, args: process.argv.slice(2) });
 const metadata = diagnostic ? await collectNativeSelectionMetadata() : undefined;
 const fixture = await realpath(await mkdtemp(join(tmpdir(), "workspace-create-runtime-")));
-let runtime, invocationCount = 0, targetMatched = null, fileManagerCleanup, failureCleanup, finished = false;
+let runtime, invocationCount = 0, targetMatched = null, fileManagerCleanup, failureCleanup, finished = false, nativeInvocationOutcome;
 const directoryPackage = process.argv.includes("--directory-package");
 if (directoryPackage) assert.equal(process.platform, "darwin", "The harmless app-bundle probe requires macOS");
 assert.ok(!selectedMode || ["direct", "grouped"].includes(selectedMode));
@@ -55,7 +55,7 @@ const save = async () => {
   runs, checkpointEvidence, observations, fixtureCleanup, nativeBridgeCleanup, ...(failure ? { error: failure.message } : {}),
 }, null, 2) + "\n");
   if (diagnostic) await writeFile(join(evidenceDirectory, "result.json"), JSON.stringify(productDiagnosticSnapshot({
-    metadata, runtime, evidence, invocationCount, targetMatched, fileManagerCleanup, fixtureCleanup, failureCleanup, nativeBridgeCleanup,
+    metadata, runtime, evidence, invocationCount, targetMatched, nativeInvocationOutcome, fileManagerCleanup, fixtureCleanup, failureCleanup, nativeBridgeCleanup,
     shutdowns: runs[0].shutdowns, failed: Boolean(failure), finished,
   }), null, 2) + "\n");
 };
@@ -320,31 +320,39 @@ try {
         // Reveal directly: no Refresh, sibling switch or settling delay first.
         nativeTargets.add(destination);
         await page.getByRole("button", { name: `${t.reveal}: ${name}`, exact: true }).press("Enter");
-        const calls = await withDeadline((async () => {
-          for (let attempt = 0; attempt < (process.platform === "win32" ? 150 : 50); attempt++) {
-            const calls = await current.electron.evaluate(() => globalThis.creationNativeCalls);
-            if (calls.some((call) => call.returned) || calls.length > 1) return calls;
-            await new Promise((done) => setTimeout(done, 100));
-          }
-          return [];
-        })(), process.platform === "win32" ? 17000 : 10000, "Real native invocation");
-        invocationCount = calls.length;
-        targetMatched = calls.length === 1 && calls[0].path === destination;
-        assert.equal(calls.length, 1, "Reveal must invoke the real native API exactly once");
-        assert.equal(calls[0].path, destination);
-        const opens = await current.electron.evaluate(() => globalThis.creationNativeOpens);
-        if (process.platform === "win32") assert.deepEqual(opens, [destination], "One actual parent navigation per Reveal intent");
+        const electron = current.electron;
+        nativeInvocationOutcome = await pollNativeInvocation({ target: destination,
+          attempts: process.platform === "win32" ? 150 : 50, timeoutMs: process.platform === "win32" ? 17000 : 10000,
+          read: () => electron.evaluate(() => ({ calls: globalThis.creationNativeCalls,
+            opens: globalThis.creationNativeOpens, bridge: globalThis.creationNativeBridge })) });
+        try {
+          nativeInvocationOutcome.renderer = await withDeadline(page.evaluate(nativeInvocationRendererState,
+            { label: `${t.reveal}: ${name}`, dispatched: t.dispatched }), 1000, "Native renderer evidence");
+        } catch { nativeInvocationOutcome.renderer = "unavailable"; }
+        invocationCount = nativeInvocationOutcome.selectionCount;
+        targetMatched = nativeInvocationOutcome.exactTarget;
+        // Persist the finite terminal observation before any strict assertion.
+        // Later stage failure and cleanup cannot erase a select without done.
+        observations.push({ discoveryMode, checkpoint, nativeInvocationOutcome });
+        await save();
+        assert.equal(nativeInvocationOutcome.readStatus, "available", "Native invocation evidence must be readable");
+        assert.equal(invocationCount, 1, "Reveal must invoke the real native API exactly once");
+        assert.equal(targetMatched, true, "Reveal must use the exact owned target");
+        if (process.platform === "win32") {
+          assert.equal(nativeInvocationOutcome.navigationCount, 1, "One actual parent navigation per Reveal intent");
+          assert.equal(nativeInvocationOutcome.exactNavigationTarget, true, "Navigation must use the exact owned target");
+        }
         if (current.nativeTracking) {
-          nativeBridgeCleanup = nativeBridgeCleanupEvidence(await current.electron.evaluate(() => globalThis.creationNativeBridge));
+          nativeBridgeCleanup = nativeInvocationOutcome.bridgeCleanup;
           nativeBridgesStopped &&= nativeBridgeCleanup.status === "passed";
           await save();
           assert.equal(nativeBridgesStopped, true, "Unknown native bridge termination forbids owned cleanup");
         }
-        const apiPassed = calls[0].returned === true;
+        const apiPassed = nativeInvocationOutcome.returnedCount === 1;
         await record(discoveryMode, "nativeInvocation", { status: apiPassed ? "passed" : "failed", asserted: apiPassed,
           api: process.platform === "win32" ? "Windows ready FolderView.SelectItem" : "Electron shell.showItemInFolder",
-          apiResult: "returned without throwing; exact selected-item observation remains separate", target: destination,
-          ...(process.platform === "win32" ? { navigationCount: opens.length, selectionCount: calls.length } : {}) });
+          apiResult: apiPassed ? "returned without throwing; exact selected-item observation remains separate" : "completion not observed", target: destination,
+          ...(process.platform === "win32" ? { navigationCount: nativeInvocationOutcome.navigationCount, selectionCount: invocationCount } : {}) });
         activeStage = undefined; // Retain actual API results even if a later UI assertion fails.
         if (apiPassed) {
           await record(discoveryMode, "fileManagerOutcome", await waitForFileManagerTarget(destination, process.platform, undefined, { windowsDiagnostics: true }));

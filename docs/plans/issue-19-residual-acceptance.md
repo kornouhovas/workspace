@@ -254,34 +254,34 @@ tests/runtime-readiness.test.mjs.
 tests/windows-project-reveal.test.mjs.
   - Create ignored probe/evidence files:
 work/issue-19/residual-acceptance/native/.
-  - [ ] Retain the original direct after_evidence
+  - [x] Retain the original direct after_evidence
 observations. Rank and announce predictions for absent
 invocation, recorded-but-unreturned selection,
 renderer/status failure and native bridge response
 failure.
-  - [ ] Construct bounded controls through the actual
+  - [x] Construct bounded controls through the actual
 fixture polling/evidence seam, including a recorded select
 without done. Demonstrate whether polling exhaustion
 discards incomplete calls as an empty array; distinguish
 this controlled mechanism from the historical Windows
 cause.
-  - [ ] Capture finite terminal polling outcomes before
+  - [x] Capture finite terminal polling outcomes before
 assertions: bounded navigation/selection/returned counts,
 exact-target comparison, allowlisted renderer/response
 status and bridge cleanup. Retain incomplete observations
 truthfully while keeping them failed; observation must
 never invoke Reveal again.
-  - [ ] Preserve immediate Reveal on the newly available
+  - [x] Preserve immediate Reveal on the newly available
 row, active production observation, no Refresh/sibling
 switch/settling wait, one real parent navigation and
 completed selection, truthful acknowledgment, exact
 file-manager observation and existing cleanup deadlines.
-  - [ ] Add meaningful red/green tests for changed
+  - [x] Add meaningful red/green tests for changed
 evidence/polling behavior, covering absence, incomplete
 and completed calls, duplicates, unavailable reads and
 privacy. Extend strict existing snapshots/validators
 instead of introducing a general tracing system.
-  - [ ] Run node --test
+  - [x] Run node --test
 tests/native-bridge-evidence.test.mjs
 tests/windows-product-diagnostics.test.mjs
 tests/runtime-readiness.test.mjs
@@ -290,6 +290,43 @@ Where local prerequisites permit, run only the focused
 original development direct after_evidence smoke in a
 fresh evidence directory; label its actual OS and retain
 Windows acceptance pending.
+
+Task 3 verified evidence (local macOS, Node 22.21.1):
+`work/issue-19/residual-acceptance/native/diagnosis.json` retains original
+Windows direct `after_evidence` provenance, artifact hashes, ranked predictions,
+finite controls, commands/exits and attribution limits. The original poll's
+injected absent and select-without-done controls each read 50 times and reported
+zero calls; its completed control reported one. The shared fixture polling seam
+now retains the last finite sample on exhaustion, read failure or deadline.
+Five labeled controls distinguish absence, incomplete selection, completion,
+duplicates and wrong targets without dispatching another Reveal.
+
+Before strict invocation assertions, the smoke persists bounded navigation,
+selection and returned counts, exact-target comparisons, finite renderer and
+response states and bridge cleanup. Incomplete observations remain failed;
+terminal evidence survives subsequent stage failure and cleanup. Strict product
+snapshots reconstruct the allowlisted terminal data and discard paths, raw
+errors, UI text and extra fields. Immediate Reveal, active source observation,
+exact native/parent selection assertions, acknowledgment, independent file-manager
+acceptance and existing polling/cleanup deadlines remain intact. No production
+code or workflow changed. An affected workflow test was updated for Task 2's
+already implemented always-run collector validation while preserving all
+original platform scenarios.
+
+Polling, deadline and snapshot regressions were observed red before repair.
+The required four-suite check ran with `NODE_OPTIONS='--import tsx'` for the
+existing TypeScript bridge imports: exit 0, 75 passed and one existing actual
+Windows PowerShell test skipped on macOS. The earlier bare-node loader failure
+and stale workflow expectation remain recorded rather than passed. Targeted
+ESLint and `git diff --check` exited 0. `inputs-before.json` and
+`inputs-after.json` identify 110 files and verify unchanged production/build
+inputs. The focused original development direct `after_evidence` smoke exited 0
+in fresh `native/original-macos/` evidence, with one native call, exact Finder
+observation, truthful acknowledgment, restart persistence, two normal quits
+and owned fixture cleanup. This macOS result and injected controls do not prove
+the historical Windows cause or establish Windows acceptance. Actual Windows
+original-scenario acceptance and separate review remain coordinator-owned gates.
+
 ### Task 4: Verify the bounded delta and document pending
 gates
 Files:

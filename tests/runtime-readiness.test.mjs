@@ -105,3 +105,25 @@ test("runtime interface stays pending while starting and records ready only for 
     assert.deepEqual(JSON.parse(JSON.stringify(outcomes)), [{ state: "ready" }]);
   } finally { await f.browser.happyDOM.close(); }
 });
+
+test('terminal native renderer observation classifies states without clicks or status text retention', async () => {
+  const { nativeInvocationRendererState } = await import('../scripts/native-bridge-evidence.mjs');
+  const browser = new Window();
+  try {
+    const observe = () => runInNewContext(`(${nativeInvocationRendererState.toString()})(input)`,
+      { document: browser.document, input: { label: 'Reveal: owned', dispatched: 'Request sent.' } });
+    assert.equal(observe(), 'absent');
+    browser.document.body.innerHTML = '<div class="project-reveal"><button aria-label="Reveal: owned">Reveal</button></div>';
+    let clicks = 0;
+    const button = browser.document.querySelector('button'); button.addEventListener('click', () => clicks++);
+    assert.equal(observe(), 'idle');
+    button.disabled = true; assert.equal(observe(), 'pending'); button.disabled = false;
+    button.parentElement.insertAdjacentHTML('beforeend', '<section class="bb-status bb-status--error">private path error</section>');
+    assert.equal(observe(), 'error');
+    const status = button.parentElement.querySelector('.bb-status');
+    status.className = 'bb-status bb-status--info'; status.textContent = 'Request sent.';
+    assert.equal(observe(), 'acknowledged');
+    status.textContent = 'private unexpected message'; assert.equal(observe(), 'unknown');
+    assert.equal(clicks, 0);
+  } finally { await browser.happyDOM.close(); }
+});

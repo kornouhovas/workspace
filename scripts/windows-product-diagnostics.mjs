@@ -1,4 +1,5 @@
 import { independentSelectionResult, windowsObservationResult } from './file-manager-evidence.mjs';
+import { nativeInvocationOutcomeSnapshot } from './native-bridge-evidence.mjs';
 
 // Opt-in evidence only; the existing product scenario and acceptance stay intact.
 export function validateProductDiagnostic({ enabled, platform, mode, selectedMode, selectedCheckpoint, args }) {
@@ -35,7 +36,7 @@ function observation(value = {}) {
 // Reconstruct finite data rather than serializing runtime assertions/messages,
 // paths, environment or UI text. Unknown, negative and unavailable stay distinct.
 export function productDiagnosticSnapshot({ metadata, runtime, evidence, invocationCount, targetMatched,
-  fileManagerCleanup, fixtureCleanup, failureCleanup, nativeBridgeCleanup, shutdowns = [], failed = false, finished = false }) {
+  nativeInvocationOutcome, fileManagerCleanup, fixtureCleanup, failureCleanup, nativeBridgeCleanup, shutdowns = [], failed = false, finished = false }) {
   const native = evidence.direct;
   const outcome = native.fileManagerOutcome;
   const observed = observation(outcome);
@@ -57,7 +58,8 @@ export function productDiagnosticSnapshot({ metadata, runtime, evidence, invocat
       api: allowed(native.nativeInvocation.api, ['Electron shell.showItemInFolder', 'Windows ready FolderView.SelectItem'], 'unknown'),
       navigationCount: count(native.nativeInvocation.navigationCount, 1),
       selectionCount: count(native.nativeInvocation.selectionCount, 1),
-      count: count(invocationCount), exactOwnedTarget: typeof targetMatched === 'boolean' ? targetMatched : null },
+      count: count(invocationCount), exactOwnedTarget: typeof targetMatched === 'boolean' ? targetMatched : null,
+      terminal: nativeInvocationOutcomeSnapshot(nativeInvocationOutcome) },
     nativeBridgeCleanup: {
       status: allowed(nativeBridgeCleanup?.status, ['passed', 'unverified', 'not_required'], 'unverified'),
       started: count(nativeBridgeCleanup?.started, 1), stopped: count(nativeBridgeCleanup?.stopped, 1),

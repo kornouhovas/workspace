@@ -215,7 +215,8 @@ test('full product OS comparison retains identical checks and unique evidence/pa
   assert.ok(job.steps.every((step) => step['continue-on-error'] === undefined));
   const runs = job.steps.filter((step) => step.run);
   assert.deepEqual(runs.map((step) => step.run), [
-    'npm ci', 'npm test', 'npm run lint', 'npm run typecheck', 'npm run build', 'npm run build:ladle',
+    'npm ci', 'npm test', 'node scripts/windows-observer-diagnostics.mjs validate-call --output work/ci-observer-full-suite',
+    'npm run lint', 'npm run typecheck', 'npm run build', 'npm run build:ladle',
     'node scripts/smoke-discovery-layouts.mjs --creation',
     'node scripts/smoke-discovery-layouts.mjs --category-move',
     'npm run smoke:runtime -- dev --creation --skip-native',
@@ -228,7 +229,9 @@ test('full product OS comparison retains identical checks and unique evidence/pa
     'npm run smoke:runtime -- release',
   ]);
   // No OS-dependent skip or alternate command in the shared acceptance sequence.
-  assert.ok(runs.every((step) => step.if === undefined || step.if === '${{ !cancelled() }}'));
+  const collectorValidation = runs.find((step) => step.id === 'observer-call-validation');
+  assert.equal(collectorValidation.if, 'always()');
+  assert.ok(runs.filter((step) => step !== collectorValidation).every((step) => step.if === undefined || step.if === '${{ !cancelled() }}'));
   assert.ok(runs.every(({ run, if: condition }) => !JSON.stringify({ run, condition }).includes('matrix.os')));
   assert.equal(job.steps.find((step) => step.uses === 'actions/setup-node@v4').with['node-version'], '22.21.1');
   const uploads = job.steps.filter((step) => step.uses === 'actions/upload-artifact@v4');
@@ -374,4 +377,40 @@ test('product artifact distinguishes actual Windows command counts from negative
   const result = snapshot(evidence);
   assert.equal(result.invocation.api, 'unknown');
   assert.equal(result.invocation.navigationCount, null); assert.equal(result.invocation.selectionCount, null);
+});
+
+test('strict snapshot retains terminal incomplete polling independently of cleanup and stage overwrite', () => {
+  const evidence = createCreationEvidence();
+  const polling = { completion: 'exhausted', attempts: 150, readStatus: 'available', navigationCount: 1,
+    selectionCount: 1, returnedCount: 0, exactTarget: true, exactNavigationTarget: true, response: 'incomplete',
+    renderer: 'error', bridgeCleanup: { status: 'passed', started: 1, stopped: 1, active: 0, unknown: false },
+    privatePath: privateText };
+  recordCreationEvidence(evidence, 'direct', 'nativeInvocation', { status: 'failed', reason: privateText });
+  const result = snapshot(evidence, { nativeInvocationOutcome: polling, failed: true });
+  assert.equal(result.invocation.terminal.completion, 'exhausted');
+  assert.equal(result.invocation.terminal.selectionCount, 1);
+  assert.equal(result.invocation.terminal.returnedCount, 0);
+  assert.equal(result.invocation.terminal.response, 'incomplete');
+  assert.equal(result.invocation.terminal.renderer, 'error');
+  assert.equal(result.invocation.terminal.bridgeCleanup.status, 'passed');
+  assert.equal(result.invocation.status, 'failed'); assert.equal(result.status, 'failed');
+  assert.equal(JSON.stringify(result).includes(privateText), false);
+});
+
+test('terminal snapshot allowlists reject private values and invalid counts without promoting failed intent', () => {
+  const evidence = createCreationEvidence();
+  evidence.direct.nativeInvocation = { status: 'failed' };
+  const result = snapshot(evidence, { nativeInvocationOutcome: {
+    completion: privateText, attempts: 151, readStatus: privateText, selectionCount: 1001,
+    navigationCount: -1, returnedCount: 0.5, exactTarget: privateText, exactNavigationTarget: true,
+    response: privateText, renderer: privateText, bridgeCleanup: { unknown: false, privateText }, privateText,
+  } });
+  assert.deepEqual(result.invocation.terminal, { completion: 'unavailable', attempts: null, readStatus: 'unavailable',
+    navigationCount: null, selectionCount: null, returnedCount: null, exactTarget: null, exactNavigationTarget: true,
+    response: 'unavailable', renderer: 'unavailable',
+    bridgeCleanup: { status: 'unverified', started: null, stopped: null, active: null, unknown: false } });
+  assert.equal(result.invocation.status, 'failed');
+  assert.equal(result.observation.exactTargetObserved, false);
+  assert.equal(JSON.stringify(result).includes(privateText), false);
+  assert.equal(snapshot(evidence).invocation.terminal, null);
 });
