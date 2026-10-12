@@ -95,23 +95,33 @@ Files:
 
 - Modify: tests/project-category-move-fixture.test.mjs
 
+- Modify: tests/fixtures/project-category-move-service-electron.cjs (minimal checkpoint-only control plumbing through public preview replacement; production policy and diagnostic schema stay unchanged).
+
 - Modify: docs/development.md
 
 - Modify: docs/verification/issue-19-category-move-service.md
 
 - Update ignored local evidence under work/issue-19/fixture-recovery-request-diagnosis/.
 
-- [ ] Extend checkpoint regressions for the new controlled cases using the existing strict privacy, persisted-result, handshake and lifecycle assertions. Require four successful utility exits for successful runs; failed controls must retain their actual reached/unreached outcomes. Keep the finite diagnostic schema and sanitized transport unchanged.
+- [x] Extend checkpoint regressions for the new controlled cases using the existing strict privacy, persisted-result, handshake and lifecycle assertions. Require four successful utility exits for successful runs; failed controls must retain their actual reached/unreached outcomes. Keep the finite diagnostic schema and sanitized transport unchanged.
 
-- [ ] Verify production source/build inputs and migration bytes before reusing dist. Record this identity separately from the changed fixture digest; previous fixture smoke receipts cannot establish acceptance of the repaired fixture. Do not rebuild while a fixture consumes dist.
+- [x] Verify production source/build inputs and migration bytes before reusing dist. Record this identity separately from the changed fixture digest; previous fixture smoke receipts cannot establish acceptance of the repaired fixture. Do not rebuild while a fixture consumes dist.
 
-- [ ] Run npm run test:category-move:early and npm run smoke:category-move:service with distinct ignored evidence directories. Require the original fixture controls to reach their intended seams, all required success scenarios, ordered acknowledgment/exit, owned shutdown and removal.
+- [x] Run npm run test:category-move:early and npm run smoke:category-move:service with distinct ignored evidence directories. Require the original fixture controls to reach their intended seams, all required success scenarios, ordered acknowledgment/exit, owned shutdown and removal.
 
-- [ ] Run npm run lint, npm run typecheck, npm run check:docs and git diff --check. Retain actual commands, exit statuses, platform, revision and evidence pointers. Do not replay the 2,125-test product suite or 103-test runner suite.
+- [x] Run npm run lint, npm run typecheck, npm run check:docs and git diff --check. Retain actual commands, exit statuses, platform, revision and evidence pointers. Do not replay the 2,125-test product suite or 103-test runner suite.
 
-- [ ] Document the single fresh-review/action fixture behavior and actual controlled regression results. Preserve original Actions failures, the 20 passing probes, the 10 controlled timing failures and explicitly unproven historical attribution. Record original-scenario CI verification as pending.
+- [x] Document the single fresh-review/action fixture behavior and actual controlled regression results. Preserve original Actions failures, the 20 passing probes, the 10 controlled timing failures and explicitly unproven historical attribution. Record original-scenario CI verification as pending.
 
-- [ ] Review the final bounded diff and commit only completed, verified task changes in English. Stop after the local handoff; do not execute review, push, dispatch CI, mutate trackers, implement UI or publish.
+- [x] Review the final bounded diff and commit only completed, verified task changes in English. Stop after the local handoff; do not execute review, push, dispatch CI, mutate trackers, implement UI or publish.
+
+Task 2 verification (local macOS 27.0 arm64, Node 22.21.1, input revision `cd6fa954191f0a8620b6ae676c80bd9a63bfd208`):
+
+- Added ten separately labeled Electron preview-replacement/response/state checkpoint controls. Retained red exits 1 (`task2/red-checkpoint.log`, `task2/red-response-checkpoints.log`, `task2/red-response.patch`), then controlled green exit 0 with 10 passed and no failures/skips (`task2/green-controlled.log`). Actual `sourceObserved` and Windows polling invalidation remain separately proven by Task 1's public-service regressions. The checkpoint controls use the real service to replace previews; response corruption does not establish historical cause.
+- Production byte identity before runtime reuse passed: five in-memory bundles match `dist`, retained native/backend hashes match Task 1, all 11 migrations match source bytes and production inputs match the recorded review baseline. No `dist` writes. Receipt: `work/issue-19/fixture-recovery-request-diagnosis/task2/production-inputs.json`. Changed fixture SHA-256: `b1d891754b8eea29c374afc517bf64067958806106d62348a8af89bf6121bf0c`; final runtime input SHA-256: `78277f3afc43f4756bb0371a34962e561d7ca5e765018101d2be66941bd3b009`.
+- `npm run test:category-move:early`, exit 0: 251 passed, zero failed/skipped; `task2/early.log`, `task2/early-checkpoints/`. `npm run smoke:category-move:service`, exit 0: all 12 scenarios, four successful utility exits, ordered handshake, confirmed shutdown/removal; `task2/standalone.log`, `task2/standalone/service-checkpoint.json`. Independent inspection of all 38 persisted checkpoints passed (`task2/checkpoint-inspection.json`); original controls reached their intended seams and failures retain failed/unreached outcomes.
+- `npm run lint`, `npm run typecheck`, `npm run check:docs` and `git diff --check` exited 0; final logs/exit receipts and bounded diff are under `work/issue-19/fixture-recovery-request-diagnosis/task2/`. The commit containing these checked items and the report is identified in the executor handoff and `task2/commit.txt`.
+- Original Actions38216688273 failures, 20 passing instrumented probes and 10 controlled 250ms timing failures remain retained. Historical attribution is unproven; original-scenario exact-SHA CI, actual Windows acceptance, separate review and Issue #19 completion remain pending. No broad product/runner suite replay or coordinator action. Task 3 remains the first unfinished executable section.
 
 ### Task 3: Repair the existing shared-CI behavior regression
 

@@ -52,6 +52,8 @@ function assertPrivate(result) {
   for (const secret of privateValues) assert.equal(encoded.includes(secret), false, secret);
   if (result.diagnostic) {
     assert.ok(Buffer.byteLength(JSON.stringify(result.diagnostic)) <= 512);
+    assert.deepEqual(Object.keys(result.diagnostic).sort(), result.diagnostic.lifecycleFailure
+      ? ["firstFailure", "lifecycleFailure"] : ["firstFailure"]);
     for (const record of Object.values(result.diagnostic))
       assert.deepEqual(Object.keys(record).sort(), ["failure", "scenario", "seam"]);
   }
@@ -63,6 +65,7 @@ async function checkpoint(fault) {
     const result = await superviseCategoryMoveService({ fault, evidenceDirectory: directory });
     const stored = JSON.parse(await readFile(join(directory, "service-checkpoint.json"), "utf8"));
     assert.deepEqual(stored, result); // Every control must persist the final cleanup outcome.
+    assert.equal(stored.inputSha256, await inputDigest());
     assertPrivate(stored);
     return result;
   } finally { if (temporary) await rm(directory, { recursive: true, force: true }); }
@@ -146,6 +149,42 @@ test("controlled recovery assertion retains its exact seam and unreached restart
     : key === "grouped.recovery_restart" ? "unreached" : "passed");
   assertUtilities(result, 3);
 });
+
+test("controlled preview replacement fails closed on a second stale response in the persisted checkpoint", { skip: !supported }, async () => {
+  const result = await checkpoint("recovery-preview-second-stale");
+  assert.equal(result.ok, false);
+  assert.deepEqual(result.diagnostic, { firstFailure: {
+    scenario: "grouped.keep_original", seam: "recovery_request", failure: "assertion_failed",
+  } });
+  assertNormalHandshake(result, { exitCode: 1 });
+  assertScenarios(result, key => key === "grouped.keep_original" ? "failed"
+    : key === "grouped.recovery_restart" ? "unreached" : "passed");
+  assertUtilities(result, 3);
+});
+
+test("controlled preview replacement completes one fresh chosen action with four successful utility exits", { skip: !supported }, async () => {
+  const result = await checkpoint("recovery-preview-success");
+  assert.equal(result.ok, true);
+  assertNormalHandshake(result);
+  assertScenarios(result);
+  assertUtilities(result);
+  assert.equal(Object.hasOwn(result, "diagnostic"), false);
+});
+
+for (const control of ["other-error", "unknown-error", "changed-state", "missing-action", "failed-preview",
+  "malformed-preview", "changed-placement", "malformed-fresh-reply"]) {
+  test(`controlled preview replacement ${control} retains rejection, private evidence and unreached restart`, { skip: !supported }, async () => {
+    const result = await checkpoint(`recovery-preview-${control}`);
+    assert.equal(result.ok, false);
+    assert.deepEqual(result.diagnostic, { firstFailure: {
+      scenario: "grouped.keep_original", seam: "recovery_request", failure: "assertion_failed",
+    } });
+    assertNormalHandshake(result, { exitCode: 1 });
+    assertScenarios(result, key => key === "grouped.keep_original" ? "failed"
+      : key === "grouped.recovery_restart" ? "unreached" : "passed");
+    assertUtilities(result, 3);
+  });
+}
 
 test("controlled lifecycle failure is distinct from a recovery assertion", { skip: !supported }, async () => {
   const result = await checkpoint("lifecycle-connect");

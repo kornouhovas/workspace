@@ -351,7 +351,43 @@ if (process.versions.electron) {
           };
         };
         seam("recovery_request");
-        const performed = await performFixtureRecovery({ review, recover, readState, request: input => controller.request(input, 6000) });
+        // Checkpoint-only preview replacement control. Real sourceObserved
+        // invalidation and Windows polling are covered separately by the
+        // coordination regressions; no fabricated stale response is used here.
+        let recoveryRequests = 0, freshPreviews = 0;
+        const controlled = action === "keep_original" && fault?.startsWith("recovery-preview-");
+        const previewInput = { type: "workspace.previewProjectCategoryMoveRecovery",
+          workspaceId: recover.workspaceId, operationId: recover.operationId };
+        const recoveryRequest = async input => {
+          if (controlled && input.type === "workspace.recoverProjectCategoryMove") {
+            recoveryRequests++;
+            if (recoveryRequests === 1 || fault === "recovery-preview-second-stale") {
+              const replacement = await controller.request(previewInput, 6000);
+              assert.equal(replacement.ok, true);
+              assert.notEqual(replacement.value.previewToken, input.previewToken);
+            }
+            if (recoveryRequests === 2 && fault === "recovery-preview-malformed-fresh-reply") return null;
+          }
+          const result = await controller.request(input, 6000);
+          if (controlled && input.type === "workspace.recoverProjectCategoryMove" && recoveryRequests === 1) {
+            assert.equal(result.ok, false); assert.equal(result.error.code, "stale_preview");
+            if (fault === "recovery-preview-other-error") return controller.request({ ...input, action: "invalid" }, 6000);
+            if (fault === "recovery-preview-unknown-error") return { ok: false, error: { code: "future_error" } };
+            if (fault === "recovery-preview-changed-state") await request({ type: "workspace.setTextValue",
+              workspaceId: workspace.workspaceId, projectId: project.projectId, propertyId: property.propertyId, value: "Changed by control" });
+          }
+          if (controlled && input.type === "workspace.previewProjectCategoryMoveRecovery") {
+            freshPreviews++;
+            assert.equal(result.ok, true);
+            if (fault === "recovery-preview-failed-preview") return controller.request({ ...input, operationId: randomUUID() }, 6000);
+            if (fault === "recovery-preview-malformed-preview") return { ok: true, value: null };
+            if (fault === "recovery-preview-missing-action") result.value.actions = ["retry_original"];
+            if (fault === "recovery-preview-changed-placement") result.value.originalState = "replaced";
+          }
+          return result;
+        };
+        const performed = await performFixtureRecovery({ review, recover, readState, request: recoveryRequest });
+        if (controlled) { assert.equal(recoveryRequests, 2); assert.equal(freshPreviews, 1); }
         const recovered = performed.recovered; recover = performed.recover;
         seam("recovery_result");
         if (action === "keep_original" && ["recovery-assertion", "recovery-assertion-lifecycle-stop", "recovery-assertion-cleanup", "recovery-assertion-malformed-result",
