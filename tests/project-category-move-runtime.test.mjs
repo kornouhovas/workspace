@@ -2,7 +2,9 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import React from "react";
 import { Window } from "happy-dom";
-import { assertRuntimeCategoryCell } from "../scripts/smoke-project-category-move-ui.mjs";
+import { assertRuntimeCategoryCell, assertRuntimeCategoryAcknowledgment, captureRuntimeCategoryState, runtimeCategoryBinding,
+  expectedRuntimeCategoryRow, assertRuntimeCategoryReceipt, assertRuntimeCategoryJournal, assertRuntimeCategoryUnchanged,
+  recordRuntimeCategoryAction, assertRuntimeCategoryKeptOriginal } from "../scripts/smoke-project-category-move-ui.mjs";
 
 const browser = new Window({ url: "http://localhost" });
 Object.assign(globalThis, { window: browser, document: browser.document, HTMLElement: browser.HTMLElement, Node: browser.Node, MutationObserver: browser.MutationObserver });
@@ -270,4 +272,287 @@ test("CI runs category layouts once and retains failures while regular runtimes 
     assert.equal(normal[0].env.WORKSPACE_SMOKE_EVIDENCE_DIR, `work/ci-runtime-${mode}`);
   }
   assert.equal(steps.filter(step => /smoke:runtime.*--category-move/.test(step.run ?? "")).length, 0);
+});
+
+// Real service/SQLite/native trees supply the positive receipt and independent
+// state. Altered evidence is rejected before the acknowledgment seam is reached.
+test("current-category durable proof binds one actual operation and rejects every changed receipt/state", async () => {
+  const { mkdtemp, rm } = await import("node:fs/promises");
+  const { tmpdir } = await import("node:os");
+  const { join } = await import("node:path");
+  const { randomUUID } = await import("node:crypto");
+  const { seedCategoryMoveFixture } = await import("../scripts/smoke-project-category-move-ui.mjs");
+  const { openSettingsService } = await import("../dist/service/settings.mjs");
+  const fixture = await mkdtemp(join(tmpdir(), "category-noop-proof-"));
+  const savedApi = globalThis.window.workspace, savedEvents = globalThis.categoryMoveEvents;
+  let service;
+  try {
+    const setup = await seedCategoryMoveFixture(join(fixture, "data"));
+    service = openSettingsService(setup.database);
+    globalThis.categoryMoveEvents = [];
+    globalThis.window.workspace = { workspace: input => service.handleQuery(input), settings: input => service.handleQuery(input) };
+    const page = { evaluate: async (fn, input) => fn(input) };
+    const before = await captureRuntimeCategoryState(page, setup);
+    const binding = runtimeCategoryBinding(before, setup.project.projectId, setup.project.categoryId);
+    const id = randomUUID();
+    const result = service.handleCommand({ type: "workspace.moveProjectCategory", workspaceId: binding.workspaceId,
+      projectId: binding.projectId, operationId: id, destinationCategoryId: binding.destinationCategoryId, expectedRevision: binding.expectedRevision });
+    const after = await captureRuntimeCategoryState(page, setup);
+    const row = expectedRuntimeCategoryRow(before, binding, id, "unchanged");
+    assertRuntimeCategoryJournal(before.durable.journal, after.durable.journal, row);
+    assert.deepEqual(assertRuntimeCategoryUnchanged(before, after, binding, id, result), result.value);
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const status = service.handleQuery({ type: "workspace.getProjectCategoryMove", workspaceId: binding.workspaceId, operationId: id });
+      assertRuntimeCategoryUnchanged(before, await captureRuntimeCategoryState(page, setup), binding, id, status);
+    }
+    const reject = (state = after, receipt = result, authored = binding, operationId = id) => assert.throws(() => assertRuntimeCategoryUnchanged(before, state, authored, operationId, receipt));
+    assert.throws(() => assertRuntimeCategoryUnchanged(before, after, binding, id, undefined));
+    for (const invalid of [null, {}, { ok: false }, { ok: true }, { ok: true, value: null }]) reject(after, invalid);
+    for (const key of Object.keys(result.value.operation)) {
+      const changed = structuredClone(result); changed.value.operation[key] = key === "expectedRevision" || key === "completedRevision" ? 999 : "foreign";
+      reject(after, changed);
+    }
+    for (const key of Object.keys(result.value.project)) {
+      const changed = structuredClone(result); changed.value.project[key] = key === "revision" ? 999 : "foreign"; reject(after, changed);
+    }
+    for (const outcome of ["completed", "recoverable", "rejected", "unknown"]) {
+      const changed = structuredClone(result); changed.value.outcome = outcome; reject(after, changed);
+    }
+    for (const stage of ["intent", "destination_recorded", "uncertain", "failed"]) {
+      const changed = structuredClone(result); changed.value.operation.stage = stage; reject(after, changed);
+    }
+    for (const key of Object.keys(binding)) reject(after, result, { ...binding, [key]: key === "expectedRevision" ? 999 : "foreign" });
+    reject(after, result, binding, randomUUID());
+    for (const key of Object.keys(row)) {
+      const changed = structuredClone(after); changed.durable.journal[0][key] = "changed"; reject(changed);
+    }
+    for (const key of Object.keys(after).filter(key => key !== "durable")) {
+      const changed = structuredClone(after); changed[key] = null; reject(changed);
+    }
+    for (const table of Object.keys(after.durable.metadata)) {
+      const changed = structuredClone(after); changed.durable.metadata[table].push({ foreign: true }); reject(changed);
+    }
+    for (const key of ["tree", "otherTree"]) {
+      const changed = structuredClone(after); changed.durable[key].children[0][1].identity.ino = "999"; reject(changed);
+      const bytes = structuredClone(after); bytes.durable[key].children.push(["extra", { bytes: "00" }]); reject(bytes);
+    }
+    const extra = structuredClone(after); extra.durable.journal.push({ ...row, operation_id: randomUUID() }); reject(extra);
+    const absent = structuredClone(after); absent.durable.journal = []; reject(absent);
+    const replayed = structuredClone(before); replayed.durable.journal = after.durable.journal;
+    assert.throws(() => assertRuntimeCategoryUnchanged(replayed, after, binding, id, result));
+    // A completed/moved receipt cannot satisfy no-op, even with coherent fields.
+    const moved = structuredClone(result); moved.value.outcome = "completed"; moved.value.operation.resultKind = "completed";
+    moved.value.operation.lastVerifiedPlacement = "destination"; moved.value.operation.completedRevision++;
+    moved.value.project.revision++; reject(after, moved);
+    // Existing history must remain byte-for-byte equal, rather than selecting
+    // whichever row happens to be newest or happens to look successful.
+    const withHistory = structuredClone(before); withHistory.durable.journal = [{ ...row, operation_id: randomUUID() }];
+    const historicalAfter = structuredClone(after); historicalAfter.durable.journal = structuredClone([...withHistory.durable.journal, row]).sort((a, b) => a.operation_id.localeCompare(b.operation_id));
+    assertRuntimeCategoryUnchanged(withHistory, historicalAfter, binding, id, result);
+    historicalAfter.durable.journal.find(entry => entry.operation_id !== id).problem = "changed";
+    assert.throws(() => assertRuntimeCategoryUnchanged(withHistory, historicalAfter, binding, id, result));
+    assert.throws(() => assertRuntimeCategoryJournal(after.durable.journal, after.durable.journal, row), /correlated|Expected/);
+    assert.doesNotThrow(() => assertRuntimeCategoryJournal(after.durable.journal, after.durable.journal, row, true));
+    assert.throws(() => assertRuntimeCategoryReceipt(result, { ...row, result_kind: "completed" }));
+  } finally {
+    service?.close(); globalThis.window.workspace = savedApi; globalThis.categoryMoveEvents = savedEvents;
+    await rm(fixture, { recursive: true, force: true });
+  }
+});
+
+for (const language of ["en", "ru"]) for (const outcome of ["unchanged", "completed"]) test(`${language}: ${outcome} acknowledgment requires proof before ordinary/guarded exact text and detachment`, async () => {
+  const ordinary = translate(language, outcome === "unchanged" ? "moveCategoryUnchanged" : "moveCategorySaved");
+  const guarded = translate(language, "moveCategoryNewer");
+  let messages = [ordinary], proof = false, editor = 0, review = 0;
+  const receipt = { outcome, operation: { stage: "completed", resultKind: outcome } };
+  const page = { locator: selector => selector === ".project-category-move" ? { evaluate: async () => { assert.equal(proof, true); return messages; } }
+    : { count: async () => selector === "#project-category-move-destination" ? editor : review } };
+  const prove = async () => { proof = true; return receipt; };
+  await assertRuntimeCategoryAcknowledgment(page, language, outcome, prove);
+  messages = [guarded]; proof = false; await assertRuntimeCategoryAcknowledgment(page, language, outcome, prove);
+  await assert.rejects(assertRuntimeCategoryAcknowledgment(page, language, outcome), /proof/);
+  proof = false;
+  await assert.rejects(assertRuntimeCategoryAcknowledgment(page, language, outcome, async () => { throw new Error("Invalid durable proof"); }), /Invalid durable proof/);
+  assert.equal(proof, false);
+  for (messages of [[], [ordinary, guarded], [guarded + " "], [translate(language, outcome === "unchanged" ? "moveCategorySaved" : "moveCategoryUnchanged")], [translate(language, "moveCategoryUncertain")]]) {
+    await assert.rejects(assertRuntimeCategoryAcknowledgment(page, language, outcome, prove), /Exact proven/);
+  }
+  messages = [guarded]; editor = 1;
+  await assert.rejects(assertRuntimeCategoryAcknowledgment(page, language, outcome, prove), /editor detached/);
+  editor = 0; review = 1;
+  await assert.rejects(assertRuntimeCategoryAcknowledgment(page, language, outcome, prove), /review detached/);
+  review = 0;
+  for (const invalid of [null, {}, { ...receipt, outcome: "recoverable" }, { ...receipt, operation: { stage: "intent", resultKind: outcome } }, { ...receipt, operation: { stage: "completed", resultKind: "other" } }]) {
+    await assert.rejects(assertRuntimeCategoryAcknowledgment(page, language, outcome, async () => invalid));
+  }
+});
+
+test("actual action ID recorder restores crypto after success, rejection and thrown assertion", async () => {
+  const original = globalThis.crypto.randomUUID;
+  const page = { evaluate: async fn => fn() };
+  const ids = await recordRuntimeCategoryAction(page, async () => { globalThis.crypto.randomUUID(); });
+  assert.equal(ids.length, 1); assert.equal(globalThis.crypto.randomUUID, original);
+  for (const action of [async () => { throw new Error("action rejected"); }, async () => { globalThis.crypto.randomUUID(); assert.fail("action assertion"); }]) {
+    await assert.rejects(recordRuntimeCategoryAction(page, action));
+    assert.equal(globalThis.crypto.randomUUID, original); assert.equal(globalThis.categoryMoveActionIds, undefined);
+  }
+  assert.deepEqual(await recordRuntimeCategoryAction(page, async () => {}), []);
+  assert.equal(globalThis.crypto.randomUUID, original);
+});
+
+for (const language of ["en", "ru"]) for (const observation of [false, true]) test(`${language}: actual DiscoveryWorkspace ${observation ? "in-flight sourceObserved" : "neutral"} no-op crosses driver proof and acknowledgment`, async () => {
+  const { mkdtemp, rm } = await import("node:fs/promises");
+  const { tmpdir } = await import("node:os");
+  const { join } = await import("node:path");
+  const { seedCategoryMoveFixture } = await import("../scripts/smoke-project-category-move-ui.mjs");
+  const { openSettingsService } = await import("../dist/service/settings.mjs");
+  const { DiscoveryWorkspace } = await import("../src/renderer/components/DiscoveryPanel.tsx");
+  const { WorkspaceServiceClient } = await import("../src/renderer/workspace-service-client.ts");
+  const { act, waitFor } = await import("@testing-library/react");
+  const { default: userEvent } = await import("@testing-library/user-event");
+  const fixture = await mkdtemp(join(tmpdir(), "category-component-proof-"));
+  const savedApi = globalThis.window.workspace, savedEvents = globalThis.categoryMoveEvents;
+  let service;
+  try {
+    const setup = await seedCategoryMoveFixture(join(fixture, "data"));
+    service = openSettingsService(setup.database);
+    const listeners = new Set(), submissions = [];
+    let resolveResponse, result;
+    const response = new Promise(done => { resolveResponse = done; });
+    globalThis.categoryMoveEvents = [];
+    globalThis.window.workspace = {
+      workspace: async input => {
+        if (input.type === "workspace.moveProjectCategory") {
+          submissions.push(structuredClone(input)); result = service.handleCommand(input); return response;
+        }
+        assert.equal(input.type.startsWith("workspace.recover"), false, "No recovery mutation");
+        return service.handleQuery(input);
+      },
+      settings: async input => service.handleQuery(input),
+      onWorkspaceChange: listener => { listeners.add(listener); return () => listeners.delete(listener); },
+      onBackendStatus: () => () => {},
+    };
+    const page = { getByRole: (role, options) => locator(screen.queryAllByRole(role, options)), evaluate: async (fn, input) => fn(input), locator: selector => ({
+      evaluate: async fn => fn(globalThis.document.querySelector(selector)),
+      count: async () => globalThis.document.querySelectorAll(selector).length,
+    }) };
+    render(React.createElement(DiscoveryWorkspace, { client: new WorkspaceServiceClient(), workspaceId: setup.workspace.workspaceId,
+      sourceId: setup.workspace.sourceId, language, disabled: false }));
+    await screen.findAllByRole("button", { name: new RegExp(`^${translate(language, "moveCategory")}:`) });
+    const cell = await assertRuntimeCategoryCell(page, setup.project.name, "Current", translate(language, "moveCategory"));
+    await userEvent.click(await cell.getByRole("button").evaluate(node => node));
+    const input = screen.getByRole("combobox", { name: translate(language, "moveCategoryDestination") });
+    assert.equal(input.value, setup.project.categoryId);
+    const before = await captureRuntimeCategoryState(page, setup);
+    const binding = runtimeCategoryBinding(before, setup.project.projectId, input.value);
+    const ids = await recordRuntimeCategoryAction(page, async () => {
+      await userEvent.keyboard("{Enter}"); assert.equal(submissions.length, 1);
+      if (observation) await act(async () => listeners.forEach(listener => listener({ type: "workspace.sourceObserved", sourceId: setup.workspace.sourceId,
+        workspaceIds: [setup.workspace.workspaceId, setup.sibling.workspaceId], observationRevision: 1, state: "ready", automaticUpdates: "active" })));
+      await act(async () => resolveResponse(result));
+      await waitFor(() => assert.equal(screen.queryByRole("combobox", { name: translate(language, "moveCategoryDestination") }), null));
+    });
+    assert.deepEqual(ids, [submissions[0].operationId]);
+    assert.deepEqual(submissions, [{ type: "workspace.moveProjectCategory", workspaceId: binding.workspaceId, projectId: binding.projectId,
+      destinationCategoryId: binding.destinationCategoryId, expectedRevision: binding.expectedRevision, operationId: ids[0] }]);
+    const prove = async () => {
+      let receipt;
+      for (let count = 0; count < 2; count++) {
+        const status = await globalThis.window.workspace.workspace({ type: "workspace.getProjectCategoryMove", workspaceId: binding.workspaceId, operationId: ids[0] });
+        receipt = assertRuntimeCategoryUnchanged(before, await captureRuntimeCategoryState(page, setup), binding, ids[0], status);
+      }
+      return receipt;
+    };
+    await assertRuntimeCategoryAcknowledgment(page, language, "unchanged", prove);
+    assert.ok(screen.getByText(translate(language, observation ? "moveCategoryNewer" : "moveCategoryUnchanged")));
+    const finalCell = await assertRuntimeCategoryCell(page, setup.project.name, "Current", translate(language, "moveCategory"));
+    const finalRow = await finalCell.locator("..").evaluate(node => node);
+    assert.ok(within(finalRow).getByText(setup.properties.values[0].value, { normalizer: value => value }));
+    // The actual guarded DOM cannot authorize acceptance of a foreign status.
+    await assert.rejects(assertRuntimeCategoryAcknowledgment(page, language, "unchanged", async () =>
+      assertRuntimeCategoryUnchanged(before, await captureRuntimeCategoryState(page, setup), binding, ids[0], { ok: true, value: { ...result.value, operation: null } })));
+    assert.equal(submissions.length, 1);
+  } finally {
+    cleanup(); service?.close(); globalThis.window.workspace = savedApi; globalThis.categoryMoveEvents = savedEvents;
+    await rm(fixture, { recursive: true, force: true });
+  }
+});
+
+
+test("public-service keep_original reaches the exact driver oracle with independent active projection and no effects", async () => {
+  const { mkdtemp, rm } = await import("node:fs/promises");
+  const { tmpdir } = await import("node:os");
+  const { join } = await import("node:path");
+  const { randomUUID } = await import("node:crypto");
+  const { seedCategoryMoveFixture, interruptCategoryMoveFixture } = await import("../scripts/smoke-project-category-move-ui.mjs");
+  const { ownedProcessesStopped } = await import("../scripts/runtime-lifecycle.mjs");
+  const { openSettingsService } = await import("../dist/service/settings.mjs");
+  const fixture = await mkdtemp(join(tmpdir(), "category-keep-original-oracle-")), children = new Set();
+  const savedApi = globalThis.window.workspace, savedEvents = globalThis.categoryMoveEvents;
+  let service;
+  try {
+    const setup = await seedCategoryMoveFixture(join(fixture, "data"));
+    // This complete public projection is retained before the interruption;
+    // expected state never comes from the actual post-recovery query.
+    const originalProjection = structuredClone(setup.projection);
+    setup.request = { type: "workspace.moveProjectCategory", workspaceId: setup.workspace.workspaceId, projectId: setup.project.projectId,
+      operationId: randomUUID(), destinationCategoryId: setup.projection.categories.find(c => c.name === "Destination").categoryId,
+      expectedRevision: setup.projection.revision };
+    await interruptCategoryMoveFixture(setup, "intent", children);
+    service = openSettingsService(setup.database);
+    globalThis.categoryMoveEvents = [];
+    service.workspaces.subscribe(event => { if (event.type === "workspace.projectsChanged") globalThis.categoryMoveEvents.push(event); });
+    globalThis.window.workspace = { workspace: async input => service.handleQuery(input), settings: async input => service.handleQuery(input) };
+    const page = { evaluate: async (fn, input) => fn(input) };
+    const before = await captureRuntimeCategoryState(page, setup, setup.sibling.workspaceId);
+    const preview = service.handleQuery({ type: "workspace.previewProjectCategoryMoveRecovery", workspaceId: setup.sibling.workspaceId, operationId: setup.request.operationId });
+    assert.equal(preview.ok, true); assert.ok(preview.value.actions.includes("keep_original"));
+    assert.deepEqual(await captureRuntimeCategoryState(page, setup, setup.sibling.workspaceId), before, "Preview is read-only");
+    const bound = before.durable.journal.find(entry => entry.operation_id === setup.request.operationId);
+    const row = { ...bound, stage: "failed", result_kind: "rejected", last_verified_placement: "original", problem: "kept_original", completed_revision: null };
+    const result = service.handleCommand({ type: "workspace.recoverProjectCategoryMove", workspaceId: setup.sibling.workspaceId,
+      operationId: setup.request.operationId, previewToken: preview.value.previewToken, action: "keep_original" });
+    assert.equal(result.ok, true); assert.equal(result.value.problem, "kept_original");
+    const after = await captureRuntimeCategoryState(page, setup, setup.sibling.workspaceId);
+    const verify = (state = after, receipt = result, expectedRow = row, projection = originalProjection) =>
+      assertRuntimeCategoryKeptOriginal(before, state, expectedRow, receipt, projection);
+    verify();
+    for (let count = 0; count < 2; count++) {
+      const receipt = service.handleQuery({ type: "workspace.getProjectCategoryMove", workspaceId: setup.sibling.workspaceId, operationId: setup.request.operationId });
+      verify(await captureRuntimeCategoryState(page, setup, setup.sibling.workspaceId), receipt);
+    }
+    for (const key of ["projects", "sibling"]) {
+      for (const field of ["projectId", "relativePath", "name", "categoryId", "categoryName", "associationState", "resolution", "retentionReason"]) {
+        const bad = structuredClone(after); bad[key].projects.find(p => p.projectId === setup.project.projectId)[field] = "wrong";
+        assert.throws(() => verify(bad), undefined, `${key}/${field}`);
+      }
+      for (const alter of [list => { list.revision++; }, list => { list.retainedCount++; }, list => { list.projects.reverse(); },
+        list => { list.projects.pop(); }, list => { list.retainedProjects.push(before[key].retainedProjects[0]); },
+        list => { list.projects.find(p => p.projectId !== setup.project.projectId).name = "wrong sibling"; }]) {
+        const bad = structuredClone(after); alter(bad[key]); assert.throws(() => verify(bad));
+      }
+    }
+    for (const key of ["other", "text", "siblingText", "otherText", "settings", "configurations", "events"]) {
+      const bad = structuredClone(after); bad[key] = null; assert.throws(() => verify(bad), undefined, key);
+    }
+    for (const key of ["metadata", "tree", "otherTree"]) {
+      const bad = structuredClone(after); bad.durable[key] = null; assert.throws(() => verify(bad), undefined, key);
+    }
+    for (const alter of [journal => journal.push({ ...row, operation_id: randomUUID() }), journal => { journal[0].native_identity = "wrong"; },
+      journal => { journal[0].last_verified_placement = "destination"; }, journal => { journal[0].completed_revision = originalProjection.revision + 1; }]) {
+      const bad = structuredClone(after); alter(bad.durable.journal); assert.throws(() => verify(bad));
+    }
+    for (const field of Object.keys(result.value.operation)) {
+      const bad = structuredClone(result); bad.value.operation[field] = "wrong"; assert.throws(() => verify(after, bad), undefined, field);
+    }
+    for (const receipt of [null, { ok: false }, { ...result, value: { ...result.value, outcome: "completed" } },
+      { ...result, value: { ...result.value, problem: null } }]) assert.throws(() => verify(after, receipt));
+    const badProjection = structuredClone(originalProjection); badProjection.projects.find(p => p.projectId === setup.project.projectId).name = "foreign";
+    assert.throws(() => verify(after, result, row, badProjection));
+    assert.equal(ownedProcessesStopped(children, new Set()), true);
+  } finally {
+    service?.close(); globalThis.window.workspace = savedApi; globalThis.categoryMoveEvents = savedEvents;
+    assert.equal(ownedProcessesStopped(children, new Set()), true);
+    await rm(fixture, { recursive: true, force: true });
+  }
 });

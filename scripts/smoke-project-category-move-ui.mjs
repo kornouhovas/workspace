@@ -58,17 +58,189 @@ export async function categoryMoveMetadata(database) {
   const { default: Database } = await import("better-sqlite3");
   const db = new Database(database, { readonly: true });
   try {
-    return Object.fromEntries(["workspaces", "views", "active_workspace", "sources", "projects", "categories", "category_properties", "property_definitions", "text_property_values", "settings"].map(table => [table, db.prepare(`SELECT * FROM ${table} ORDER BY 1, 2`).all()]));
+    return Object.fromEntries(["workspaces", "views", "active_workspace", "sources", "projects", "categories", "category_properties", "property_definitions", "text_property_values", "settings", "project_creation_operations", "project_rename_operations"].map(table => [table, db.prepare(`SELECT * FROM ${table} ORDER BY 1, 2`).all()]));
   } finally { db.close(); }
 }
 
-async function recoveryState(setup) {
+export async function recoveryState(setup) {
   const { default: Database } = await import("better-sqlite3");
   const db = new Database(setup.database, { readonly: true });
   let journal;
   try { journal = db.prepare("SELECT * FROM project_category_move_operations ORDER BY operation_id").all(); }
   finally { db.close(); }
   return { journal, metadata: await categoryMoveMetadata(setup.database), tree: await categoryMoveInventory(setup.sourceRoot), otherTree: await categoryMoveInventory(setup.otherRoot) };
+}
+
+// These are independent, read-only fixture oracles. Observation acknowledgment
+// is not application metadata; every retained application table is compared.
+export async function captureRuntimeCategoryState(page, setup, workspaceId = setup.workspace.workspaceId) {
+  return {
+    durable: await recoveryState(setup),
+    projects: await query(page, "listProjects", workspaceId),
+    sibling: await query(page, "listProjects", setup.sibling.workspaceId),
+    other: await query(page, "listProjects", setup.other.workspaceId),
+    text: await query(page, "listTextProperties", workspaceId),
+    siblingText: await query(page, "listTextProperties", setup.sibling.workspaceId),
+    otherText: await query(page, "listTextProperties", setup.other.workspaceId),
+    configurations: await query(page, "load"),
+    settings: unwrap(await page.evaluate(() => globalThis.window.workspace.settings({ type: "settings.load" }))),
+    events: await page.evaluate(() => globalThis.categoryMoveEvents),
+  };
+}
+
+export function runtimeCategoryBinding(before, projectId, destinationCategoryId) {
+  const list = before.projects;
+  const project = list.projects.find(entry => entry.projectId === projectId);
+  const original = list.categories.find(entry => entry.categoryId === project?.categoryId);
+  const destination = list.categories.find(entry => entry.categoryId === destinationCategoryId);
+  assert.ok(project && original && destination);
+  assert.equal(project.relativePath, `${original.relativePath}/${project.name}`);
+  return Object.freeze({ workspaceId: list.workspaceId, sourceId: list.sourceId, projectId,
+    name: project.name, originalCategoryId: original.categoryId, destinationCategoryId,
+    originalRelativePath: project.relativePath, requestedRelativePath: `${destination.relativePath}/${project.name}`,
+    originalParent: original.relativePath, destinationParent: destination.relativePath, expectedRevision: list.revision });
+}
+
+function inventoryEntry(tree, path) {
+  for (const name of path.split("/")) { tree = tree.children.find(([entry]) => entry === name)?.[1]; assert.ok(tree); }
+  return tree;
+}
+
+export function expectedRuntimeCategoryRow(before, binding, operationId, outcome) {
+  assert.ok(outcome === "unchanged" || outcome === "completed");
+  assert.match(operationId, /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
+  const { metadata, tree } = before.durable;
+  const source = metadata.sources.find(row => row.id === binding.sourceId);
+  const project = metadata.projects.find(row => row.id === binding.projectId && row.source_id === binding.sourceId);
+  const original = metadata.categories.find(row => row.id === binding.originalCategoryId && row.source_id === binding.sourceId);
+  const destination = metadata.categories.find(row => row.id === binding.destinationCategoryId && row.source_id === binding.sourceId);
+  assert.ok(source && project && original && destination);
+  assert.equal(source.discovery_revision, binding.expectedRevision);
+  assert.equal(project.category_id, binding.originalCategoryId); assert.equal(project.relative_path, binding.originalRelativePath);
+  assert.deepEqual(JSON.parse(source.applied_root_identity), tree.identity);
+  for (const category of [original, destination]) assert.deepEqual(JSON.parse(category.native_identity), inventoryEntry(tree, category.relative_path).identity);
+  assert.deepEqual(JSON.parse(project.native_identity), inventoryEntry(tree, project.relative_path).identity);
+  assert.equal(binding.originalCategoryId === binding.destinationCategoryId, outcome === "unchanged");
+  return { operation_id: operationId, source_id: binding.sourceId, initiating_workspace_id: binding.workspaceId,
+    project_id: binding.projectId, name: binding.name, expected_revision: binding.expectedRevision,
+    original_category_id: binding.originalCategoryId, destination_category_id: binding.destinationCategoryId,
+    canonical_root: source.canonical_root, original_parent_relative_path: binding.originalParent, destination_parent_relative_path: binding.destinationParent,
+    original_relative_path: binding.originalRelativePath, requested_relative_path: binding.requestedRelativePath,
+    root_identity: source.applied_root_identity, original_parent_identity: original.native_identity, destination_parent_identity: destination.native_identity,
+    native_identity: project.native_identity, excluded_relative_paths: source.excluded_relative_paths, archive_relative_path: source.archive_relative_path,
+    stage: "completed", destination_identity: outcome === "unchanged" ? null : project.native_identity,
+    last_verified_placement: outcome === "unchanged" ? "original" : "destination", last_verified_identity: project.native_identity,
+    problem: null, result_kind: outcome, completed_revision: binding.expectedRevision + (outcome === "unchanged" ? 0 : 1) };
+}
+
+export function assertRuntimeCategoryReceipt(result, row) {
+  assert.deepEqual(result, { ok: true, value: { outcome: row.result_kind, operation: {
+    operationId: row.operation_id, sourceId: row.source_id, initiatingWorkspaceId: row.initiating_workspace_id,
+    projectId: row.project_id, name: row.name, originalCategoryId: row.original_category_id, destinationCategoryId: row.destination_category_id,
+    originalRelativePath: row.original_relative_path, requestedRelativePath: row.requested_relative_path, expectedRevision: row.expected_revision,
+    stage: "completed", lastVerifiedPlacement: row.last_verified_placement, problem: null, resultKind: row.result_kind, completedRevision: row.completed_revision,
+  }, project: { operationId: row.operation_id, sourceId: row.source_id, projectId: row.project_id, name: row.name,
+    relativePath: row.requested_relative_path, categoryId: row.destination_category_id, revision: row.completed_revision } } });
+  return result.value;
+}
+
+export function assertRuntimeCategoryJournal(before, after, row, existing = false) {
+  assert.equal(before.filter(entry => entry.operation_id === row.operation_id).length, existing ? 1 : 0);
+  const expected = before.filter(entry => entry.operation_id !== row.operation_id).concat(row).sort((a, b) => a.operation_id.localeCompare(b.operation_id));
+  assert.deepEqual(after, expected, "Exact correlated operation and unchanged complete journal");
+}
+
+function assertMoveEvents(before, after, sourceId, revision, workspaceIds) {
+  assert.deepEqual(after.slice(0, before.length), before);
+  const added = after.slice(before.length);
+  assert.equal(added.length, 1, "One authored move event");
+  assert.deepEqual({ ...added[0], workspaceIds: [...added[0].workspaceIds].sort() },
+    { type: "workspace.projectsChanged", sourceId, revision, workspaceIds: [...workspaceIds].sort() });
+}
+
+export function assertRuntimeCategoryUnchanged(before, after, binding, operationId, result) {
+  const row = expectedRuntimeCategoryRow(before, binding, operationId, "unchanged");
+  assert.equal(before.durable.journal.some(entry => entry.operation_id === operationId), false);
+  const expected = structuredClone(before);
+  expected.durable.journal.push(row); expected.durable.journal.sort((a, b) => a.operation_id.localeCompare(b.operation_id));
+  assert.deepEqual(after, expected, "Exactly one correlated no-op receipt; no independent state/effect/event change");
+  return assertRuntimeCategoryReceipt(result, row);
+}
+
+export function assertRuntimeCategoryKeptOriginal(before, after, row, result, originalProjection) {
+  const bound = before.durable.journal.find(entry => entry.operation_id === row.operation_id);
+  assert.ok(bound, "Existing authored recovery operation");
+  assert.deepEqual(row, { ...bound, stage: "failed", result_kind: "rejected", last_verified_placement: "original",
+    problem: "kept_original", completed_revision: null }, "Exact keep_original journal transition");
+  assertRuntimeCategoryJournal(before.durable.journal, after.durable.journal, row, true);
+  const project = originalProjection.projects.find(entry => entry.projectId === bound.project_id);
+  const stored = before.durable.metadata.projects.find(entry => entry.id === bound.project_id);
+  assert.ok(project && stored);
+  assert.equal(originalProjection.sourceId, bound.source_id);
+  assert.equal(originalProjection.revision, bound.expected_revision);
+  assert.equal(project.resolution, "active"); assert.equal(project.associationState, "active");
+  assert.equal(project.retentionReason, null);
+  assert.equal(project.name, bound.name); assert.equal(project.relativePath, bound.original_relative_path);
+  assert.equal(project.categoryId, bound.original_category_id);
+  assert.equal(stored.source_id, bound.source_id); assert.equal(stored.relative_path, project.relativePath);
+  assert.equal(stored.category_id, project.categoryId); assert.equal(stored.native_identity, bound.native_identity);
+  assert.deepEqual(inventoryEntry(before.durable.tree, project.relativePath).identity, JSON.parse(bound.native_identity));
+  const expected = structuredClone(before);
+  expected.durable.journal = before.durable.journal.map(entry => entry.operation_id === row.operation_id ? row : entry);
+  for (const key of ["projects", "sibling"]) {
+    const active = { ...structuredClone(originalProjection), workspaceId: before[key].workspaceId };
+    const pending = structuredClone(active);
+    pending.projects = pending.projects.filter(entry => entry.projectId !== bound.project_id);
+    pending.retainedProjects.push({ ...project, resolution: "unresolved" });
+    pending.retainedProjects.sort((a, b) => a.relativePath < b.relativePath ? -1 : a.relativePath > b.relativePath ? 1 : 0);
+    pending.retainedCount++;
+    assert.deepEqual(before[key], pending, "Only the selected original project is pending before keep_original");
+    expected[key] = active;
+  }
+  assert.deepEqual(after, expected, "keep_original changes only its exact terminal receipt and original active projections");
+  assert.deepEqual(result, { ok: true, value: { outcome: "rejected", problem: "kept_original", operation: {
+    operationId: row.operation_id, sourceId: row.source_id, initiatingWorkspaceId: row.initiating_workspace_id,
+    projectId: row.project_id, name: row.name, originalCategoryId: row.original_category_id, destinationCategoryId: row.destination_category_id,
+    originalRelativePath: row.original_relative_path, requestedRelativePath: row.requested_relative_path, expectedRevision: row.expected_revision,
+    stage: "failed", lastVerifiedPlacement: "original", problem: "kept_original", resultKind: "rejected", completedRevision: null,
+  } } });
+  return result.value;
+}
+
+// Record, but never replace, the ID generated by the actual renderer Enter.
+// The frozen preload API and service request/response remain untouched.
+export async function recordRuntimeCategoryAction(page, action) {
+  await page.evaluate(() => {
+    const original = globalThis.crypto.randomUUID;
+    globalThis.categoryMoveActionIds = [];
+    globalThis.categoryMoveOriginalUUID = original;
+    globalThis.crypto.randomUUID = function (...args) {
+      const id = Reflect.apply(original, this, args); globalThis.categoryMoveActionIds.push(id); return id;
+    };
+  });
+  try { await action(); return await page.evaluate(() => globalThis.categoryMoveActionIds); }
+  finally {
+    await page.evaluate(() => {
+      globalThis.crypto.randomUUID = globalThis.categoryMoveOriginalUUID;
+      delete globalThis.categoryMoveOriginalUUID; delete globalThis.categoryMoveActionIds;
+    });
+  }
+}
+
+export async function assertRuntimeCategoryAcknowledgment(page, language, outcome, prove) {
+  assert.ok(outcome === "unchanged" || outcome === "completed");
+  assert.equal(typeof prove, "function", "Authoritative operation proof is required before UI acknowledgment");
+  const receipt = await prove();
+  assert.equal(receipt.outcome, outcome);
+  assert.equal(receipt.operation.stage, "completed"); assert.equal(receipt.operation.resultKind, outcome);
+  const ordinary = labels[language][outcome === "unchanged" ? "unchanged" : "saved"];
+  const guarded = language === "en" ? "The category move is confirmed. Loading the current project placement after a newer source change."
+    : "Перемещение подтверждено. Загружается актуальное расположение после нового изменения источника.";
+  const messages = await page.locator(".project-category-move").evaluate(node => [...node.querySelectorAll(":scope > .bb-status > .bb-status__title")].map(title => title.textContent));
+  assert.ok(messages.length === 1 && (messages[0] === ordinary || messages[0] === guarded), "Exact proven category acknowledgment");
+  assert.equal(await page.locator("#project-category-move-destination").count(), 0, "Completed editor detached");
+  assert.equal(await page.locator(".category-move-review").count(), 0, "Completed recovery review detached");
+  return receipt;
 }
 
 // Fixture preparation uses the existing service only before the production app
@@ -207,6 +379,8 @@ export async function runProjectCategoryMoveUi(mode = "dev") {
     status: failure ? "failed" : evidence.fixtureCleanup.status === "passed" ? "passed" : "pending", evidence, observations, shutdowns,
     ...(failure ? { error: failure.message } : {}),
   }, null, 2) + "\n");
+  const saveOperationProof = async (language, stage, proof) => writeFile(join(directory, `${mode}-${language}-${stage}-operation-proof.json`),
+    JSON.stringify({ kind: "owned_disposable_fixture_proof", inputs, ...proof }, null, 2) + "\n");
   const check = async (target, stage, assertion) => {
     active = { target, stage };
     const details = await assertion() ?? {};
@@ -332,20 +506,59 @@ export async function runProjectCategoryMoveUi(mode = "dev") {
       const destination = setup.projection.categories.find(c => c.name === "Destination");
       await check(target, "submission", async () => {
         const input = await openEditor(page, setup, t); await input.selectOption(destination.categoryId);
-        await capture(page, language, "editing"); await input.press("Enter");
-        await page.getByText(t.saved, { exact: true }).waitFor(); await input.waitFor({ state: "detached" });
-        const list = await preserved(page, setup, "Destination");
-        assert.equal(list.revision, setup.projection.revision + 1);
-        const events = await page.evaluate(() => globalThis.categoryMoveEvents);
-        assert.equal(events.length, 1); assert.deepEqual(new Set(events[0].workspaceIds), new Set([setup.workspace.workspaceId, setup.sibling.workspaceId]));
+        await capture(page, language, "editing");
+        const before = await captureRuntimeCategoryState(page, setup);
+        const binding = runtimeCategoryBinding(before, setup.project.projectId, destination.categoryId);
+        assert.equal(await page.locator("#workspace-switcher").inputValue(), binding.workspaceId);
+        assert.equal(await input.inputValue(), binding.destinationCategoryId);
+        await saveOperationProof(language, "submission", { binding, before });
+        const ids = await recordRuntimeCategoryAction(page, async () => { await input.press("Enter"); await input.waitFor({ state: "detached" }); });
+        assert.equal(ids.length, 1, "One ID from the authored move Enter");
+        const row = expectedRuntimeCategoryRow(before, binding, ids[0], "completed");
+        const receipt = await assertRuntimeCategoryAcknowledgment(page, language, "completed", async () => {
+          let receipt, after;
+          for (let count = 0; count < 2; count++) {
+            const state = await captureRuntimeCategoryState(page, setup);
+            assertRuntimeCategoryJournal(before.durable.journal, state.durable.journal, row);
+            receipt = assertRuntimeCategoryReceipt(await page.evaluate(input => globalThis.window.workspace.workspace(input),
+              { type: "workspace.getProjectCategoryMove", workspaceId: binding.workspaceId, operationId: ids[0] }), row);
+            const list = await preserved(page, setup, "Destination"); assert.equal(list.revision, binding.expectedRevision + 1);
+            assert.deepEqual(state.sibling, { ...list, workspaceId: setup.sibling.workspaceId });
+            assertMoveEvents(before.events, state.events, binding.sourceId, binding.expectedRevision + 1, [setup.workspace.workspaceId, setup.sibling.workspaceId]);
+            assert.deepEqual(state.text, before.text); assert.deepEqual(state.siblingText, before.siblingText);
+            assert.deepEqual(state.otherText, before.otherText); assert.deepEqual(state.settings, before.settings);
+            assert.deepEqual(state.configurations, before.configurations);
+            if (after) assert.deepEqual(state, after, "Repeated proof cannot create another operation or effect");
+            after = state;
+            await saveOperationProof(language, "submission", { binding, operationId: ids[0], expectedRow: row, before, after, receipt, readOnlyProofs: count + 1 });
+          }
+          return receipt;
+        });
+        return { operationId: ids[0], outcome: "completed", receipt, durableProof: true, submissions: 1, readOnlyProofs: 2 };
       });
       await check(target, "currentCategory", async () => {
-        const before = await query(page, "listProjects", setup.workspace.workspaceId);
-        const input = await openEditor(page, setup, t); await input.selectOption(destination.categoryId); await input.press("Enter");
-        await page.getByText(t.unchanged, { exact: true }).waitFor(); await input.waitFor({ state: "detached" });
-        assert.deepEqual(await query(page, "listProjects", setup.workspace.workspaceId), before);
-        assert.equal((await page.evaluate(() => globalThis.categoryMoveEvents)).length, 1);
+        const input = await openEditor(page, setup, t); await input.selectOption(destination.categoryId);
+        const before = await captureRuntimeCategoryState(page, setup);
+        const binding = runtimeCategoryBinding(before, setup.project.projectId, destination.categoryId);
+        assert.equal(await page.locator("#workspace-switcher").inputValue(), binding.workspaceId);
+        assert.equal(await input.inputValue(), binding.destinationCategoryId);
+        await saveOperationProof(language, "current-category", { binding, before });
+        const ids = await recordRuntimeCategoryAction(page, async () => { await input.press("Enter"); await input.waitFor({ state: "detached" }); });
+        assert.equal(ids.length, 1, "One ID from the authored current-category Enter");
+        const receipt = await assertRuntimeCategoryAcknowledgment(page, language, "unchanged", async () => {
+          let receipt;
+          for (let count = 0; count < 2; count++) {
+            const result = await page.evaluate(input => globalThis.window.workspace.workspace(input),
+              { type: "workspace.getProjectCategoryMove", workspaceId: binding.workspaceId, operationId: ids[0] });
+            const after = await captureRuntimeCategoryState(page, setup);
+            await saveOperationProof(language, "current-category", { binding, operationId: ids[0], before, after, result, readOnlyProofs: count + 1 });
+            receipt = assertRuntimeCategoryUnchanged(before, after, binding, ids[0], result);
+          }
+          return receipt;
+        });
         await preserved(page, setup, "Destination"); await capture(page, language, "unchanged");
+        return { operationId: ids[0], outcome: "unchanged", expectedRevision: binding.expectedRevision, completedRevision: binding.expectedRevision,
+          receipt, durableProof: true, submissions: 1, readOnlyProofs: 2, noEffects: true };
       });
       await check(target, "occupied", async () => {
         const before = await query(page, "listProjects", setup.workspace.workspaceId);
@@ -455,6 +668,7 @@ export async function runProjectCategoryMoveUi(mode = "dev") {
           await assertNoReplay();
         });
         let resolvedStatus;
+        await page.evaluate(() => { globalThis.categoryMoveEvents = []; globalThis.window.workspace.onWorkspaceChange(event => { if (event.type === "workspace.projectsChanged") globalThis.categoryMoveEvents.push(event); }); });
         await check(recovery, "resolution", async () => {
           if (checkpoint === "commit") {
             resolvedStatus = await status(); assert.deepEqual(resolvedStatus, originalStatus);
@@ -474,15 +688,48 @@ export async function runProjectCategoryMoveUi(mode = "dev") {
           assert.equal(await page.locator("#category-move-review-title").evaluate(node => node === globalThis.document.activeElement), true);
           assert.deepEqual(await recoveryState(setup), before, "Fresh UI preview remains read-only");
           await capture(page, language, `recovery-${checkpoint}`);
-          await button.press("Enter");
-          await page.getByText(checkpoint === "keep_original" ? language === "en" ? "Original category folder retained. Category move resolved." : "Папка сохранена в исходной категории. Перемещение разрешено." : t.saved, { exact: true }).waitFor();
-          resolvedStatus = await status();
-          assert.equal(resolvedStatus.outcome, checkpoint === "keep_original" ? "rejected" : "completed");
-          assert.equal(resolvedStatus.operation.stage, checkpoint === "keep_original" ? "failed" : "completed");
-          assert.equal(resolvedStatus.operation.projectId, setup.project.projectId);
-          if (checkpoint === "keep_original") assert.equal(resolvedStatus.problem, "kept_original");
+          const actionBefore = await captureRuntimeCategoryState(page, setup, setup.sibling.workspaceId);
+          const bound = before.journal.find(row => row.operation_id === setup.request.operationId); assert.ok(bound);
+          const kept = checkpoint === "keep_original";
+          const row = { ...bound, stage: kept ? "failed" : "completed", result_kind: kept ? "rejected" : "completed",
+            destination_identity: kept ? bound.destination_identity : bound.native_identity, last_verified_placement: kept ? "original" : "destination",
+            problem: kept ? "kept_original" : null, completed_revision: kept ? null : setup.projection.revision + 1 };
+          assert.equal(await page.locator("#workspace-switcher").inputValue(), setup.sibling.workspaceId);
+          await saveOperationProof(language, `recovery-${checkpoint}`, { action, operationId: row.operation_id, expectedRow: row, before: actionBefore });
+          const ids = await recordRuntimeCategoryAction(page, async () => { await button.press("Enter"); await page.locator(".category-move-review").waitFor({ state: "detached" }); });
+          assert.deepEqual(ids, [], "One chosen recovery Enter uses the existing operation, no new move ID");
+          const prove = async () => {
+            let receipt, after;
+            for (let count = 0; count < 2; count++) {
+              const result = await page.evaluate(input => globalThis.window.workspace.workspace(input),
+                { type: "workspace.getProjectCategoryMove", workspaceId: setup.sibling.workspaceId, operationId: setup.request.operationId });
+              const state = await captureRuntimeCategoryState(page, setup, setup.sibling.workspaceId);
+              await saveOperationProof(language, `recovery-${checkpoint}`, { action, operationId: row.operation_id, expectedRow: row,
+                before: actionBefore, after: state, result, readOnlyProofs: count + 1 });
+              assertRuntimeCategoryJournal(actionBefore.durable.journal, state.durable.journal, row, true);
+              if (kept) {
+                receipt = assertRuntimeCategoryKeptOriginal(actionBefore, state, row, result, setup.projection);
+              } else {
+                receipt = assertRuntimeCategoryReceipt(result, row);
+                await preserved(page, setup, "Destination");
+                assertMoveEvents(actionBefore.events, state.events, row.source_id, row.completed_revision, [setup.workspace.workspaceId, setup.sibling.workspaceId]);
+                assert.deepEqual(state.sibling, { ...await query(page, "listProjects", setup.workspace.workspaceId), workspaceId: setup.sibling.workspaceId });
+                assert.deepEqual(state.text, actionBefore.text); assert.deepEqual(state.siblingText, actionBefore.siblingText);
+                assert.deepEqual(state.otherText, actionBefore.otherText); assert.deepEqual(state.settings, actionBefore.settings);
+                assert.deepEqual(state.configurations, actionBefore.configurations);
+              }
+              if (after) assert.deepEqual(state, after, "Repeated recovery proof remains read-only");
+              after = state;
+            }
+            return receipt;
+          };
+          if (kept) {
+            resolvedStatus = await prove();
+            await page.getByText(language === "en" ? "Original category folder retained. Category move resolved." : "Папка сохранена в исходной категории. Перемещение разрешено.", { exact: true }).waitFor();
+          } else resolvedStatus = await assertRuntimeCategoryAcknowledgment(page, language, "completed", prove);
           assert.deepEqual((await query(page, "listProjectCategoryMoves", setup.sibling.workspaceId)).operations, []);
-          return { action, outcome: resolvedStatus.outcome, mutationRequired: true, freshAdvertisedAction: true };
+          return { action, outcome: resolvedStatus.outcome, mutationRequired: true, freshAdvertisedAction: true,
+            operationId: row.operation_id, receipt: resolvedStatus, durableProof: true, submissions: 1, readOnlyProofs: 2 };
         });
         const placement = checkpoint === "keep_original" ? "Current" : "Destination";
         await check(recovery, "preservation", async () => {

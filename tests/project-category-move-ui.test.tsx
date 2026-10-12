@@ -70,6 +70,30 @@ class Client extends WorkspaceServiceClient {
 }
 for (const language of ["en", "ru"] as const) {
 const t = (key: Parameters<typeof translate>[1]) => translate(language, key);
+for (const observation of [false, true]) test(`${language}: current-category completion ${observation ? "with in-flight sourceObserved guard" : "without observation"} retains one submission and exact project/Text`, async () => {
+  const client = new Client(), response = deferred<ServiceResult<ProjectCategoryMoveResult>>();
+  client.handler = () => response.promise;
+  const before = structuredClone(client.list);
+  render(<DiscoveryWorkspace client={client} workspaceId="workspace" sourceId="source" language={language} disabled={false} />);
+  await userEvent.click(await screen.findByRole("button", { name: new RegExp(`^${t("moveCategory")}:`) }));
+  const select = screen.getByRole("combobox", { name: t("moveCategoryDestination") }) as HTMLSelectElement;
+  assert.equal(select.value, "current"); await userEvent.keyboard("{Enter}");
+  assert.equal(client.moves.length, 1);
+  const operation: ProjectCategoryMoveOperation = { ...client.operation(), resultKind: "unchanged", completedRevision: 1, lastVerifiedPlacement: "original" };
+  const receipt: ProjectCategoryMoveResult = { outcome: "unchanged", operation, project: {
+    operationId: operation.operationId, sourceId: "source", projectId: "project", name: operation.name,
+    relativePath: operation.requestedRelativePath, categoryId: "current", revision: 1,
+  } };
+  if (observation) await act(async () => client.events.forEach(listener => listener({ type: "workspace.sourceObserved", sourceId: "source", workspaceIds: ["workspace"], observationRevision: 1, state: "ready", automaticUpdates: "active" })));
+  await act(async () => response.resolve({ ok: true, value: receipt }));
+  await screen.findByText(t(observation ? "moveCategoryNewer" : "moveCategoryUnchanged"));
+  await waitFor(() => assert.equal(screen.queryByRole("combobox", { name: t("moveCategoryDestination") }), null));
+  assert.deepEqual(client.list, before);
+  assert.deepEqual(client.moves, [{ workspaceId: "workspace", projectId: "project", operationId: operation.operationId, destinationCategoryId: "current", expectedRevision: 1 }]);
+  assert.deepEqual(client.recoveries, []); assert.deepEqual(client.statusCalls, []);
+  assert.ok(screen.getByText("  Exact 📝  ", { selector: "td span", normalizer: value => value }));
+  assert.ok(screen.getByText("  Exact Text\nТекст  ", { normalizer: value => value }));
+});
 test(`${language}: delayed creation list keeps read-only status usable with an unsubmitted category editor open`, async () => {
   const list = deferred<ServiceResult<ProjectCreationList>>(), status = deferred<ServiceResult<ProjectCreationResult>>();
   const operation: ProjectCreationOperation = {
