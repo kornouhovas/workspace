@@ -39,7 +39,7 @@ export function resolveWindowsPowerShell(options: ResolverOptions = {}): string 
   } catch { return undefined; }
 }
 
-type NativeEvent = { stage: "started" | "open" | "select" | "done" | "stopped" | "unknown"; path: string };
+type NativeEvent = { stage: "started" | "open" | "select" | "done" | "stopped" | "unknown" | "failure"; path: string; phase?: string; reason?: string };
 type BridgeOptions = {
   nativeDirectory: string;
   // Resolved once by trusted main; never accepted over renderer IPC or env.
@@ -82,8 +82,8 @@ export async function runWindowsProjectReveal(path: string, context: NativeRevea
     let buffer = "", bytes = 0, closed = false, settled = false;
     let failure: RevealFailure | undefined;
     let killTimer: ReturnType<typeof setTimeout> | undefined;
-    const emit = (stage: NativeEvent["stage"]) => {
-      const event = { stage, path };
+    const emit = (stage: NativeEvent["stage"], details: Pick<NativeEvent, "phase" | "reason"> = {}) => {
+      const event = { stage, path, ...details };
       try {
         if (options.onEvent) options.onEvent(event);
         else process.emit("workspace:native-reveal" as never, event);
@@ -149,7 +149,11 @@ export async function runWindowsProjectReveal(path: string, context: NativeRevea
       else if (value === "READY" && state === "opened") { state = "authorizing"; void permit(); }
       else if (value === "SELECT" && state === "permitted") { state = "selected"; emit("select"); }
       else if (value === "DONE" && state === "selected") { state = "done"; }
-      else fail("native_error");
+      else {
+        const diagnostic = /^FAIL:(input|navigation|readiness|permit|precommand|selection|postcheck):(input|deadline|binding|unready|permit|exception)$/.exec(value);
+        if (diagnostic) emit("failure", { phase: diagnostic[1], reason: diagnostic[2] });
+        fail("native_error");
+      }
     };
     const stdout = (chunk: Buffer | string) => {
       if (settled || failure) return;

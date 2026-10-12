@@ -173,11 +173,15 @@ foreach ($mode in ($env:WORKSPACE_CONTROL_MODES | ConvertFrom-Json)) {
     const selectsOnce = succeeds || mode.endsWith("_after") || ["selection_throw", "late_selection", "late_postcheck"].includes(mode);
     assert.equal(completed, succeeds); assert.equal(opens, invalidInput ? 0 : 1); assert.equal(selects, selectsOnce ? 1 : 0);
     assert.ok(permits === 0 || permits === 1); assert.equal(events.filter((event) => event === "READY").length, permits);
-    assert.equal(events[0], invalidInput ? "FAIL" : "OPEN"); assert.equal(events.at(-1), succeeds ? "DONE" : "FAIL");
+    assert.equal(events[0], invalidInput ? "FAIL:input:input" : "OPEN"); assert.match(events.at(-1), succeeds ? /^DONE$/ : /^FAIL:(input|navigation|readiness|permit|precommand|selection|postcheck):(input|deadline|binding|unready|permit|exception)$/);
     assert.equal(events.filter((event) => event === "SELECT").length, selectsOnce || mode === "late_event" ? 1 : 0);
-    assert.equal(events.filter((event) => event === "FAIL").length, succeeds ? 0 : 1);
+    assert.equal(events.filter((event) => event.startsWith("FAIL:")).length, succeeds ? 0 : 1);
     if (succeeds) assert.ok(elapsed < 10000);
     if (mode === "delayed_ready") assert.equal(elapsed, 200);
+    const expectedFailure = { late_permit: "FAIL:permit:deadline", late_precommand: "FAIL:precommand:deadline",
+      late_postcheck: "FAIL:postcheck:deadline", document_permit: "FAIL:precommand:binding",
+      selection_throw: "FAIL:selection:exception", read_throw: "FAIL:readiness:exception" }[mode];
+    if (expectedFailure) assert.equal(events.at(-1), expectedFailure);
     assert.doesNotMatch(JSON.stringify(report), /private|ordinary source|日本語/);
   });
 });
@@ -255,7 +259,7 @@ try {
       isCurrent: () => true,
       permit: async () => { assert.fail("An invalid root-only target must never request selection permission"); },
     }, {
-      nativeDirectory, program, onEvent: (event) => events.push(event.stage),
+      nativeDirectory, program, onEvent: (event) => events.push(event),
       spawnProcess(executable, args, options) {
         launches++;
         assert.equal(executable, program);
@@ -269,9 +273,10 @@ try {
       },
     }), (error) => error.problem === "native_error" && error.message === "native_error");
     assert.equal(launches, 1);
-    assert.equal(output.trim() === "FAIL", true, "The actual -File entry must execute its sanitized input rejection");
+    assert.equal(output.trim() === "FAIL:input:input", true, "The actual -File entry must execute its sanitized input rejection");
     assert.equal(errors === "", true, "Production must not expose policy or filesystem error details");
-    assert.deepEqual(events, ["started", "stopped"]);
+    assert.deepEqual(events, [{ stage: "started", path: target },
+      { stage: "failure", path: target, phase: "input", reason: "input" }, { stage: "stopped", path: target }]);
     assert.equal(typeof closeResult, "object", "The owned child termination must be confirmed");
     assert.equal(closeResult?.code === 0 && closeResult?.signal === null, false);
   } finally {

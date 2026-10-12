@@ -241,3 +241,22 @@ test("instrumentation failure cannot change actual command completion", async ()
   f.output("SELECT\nDONE\n"); f.close(); await pending;
   await delay(3); assert.deepEqual(f.calls, []);
 });
+
+for (const [phase, reason] of [["permit", "deadline"], ["precommand", "binding"], ["readiness", "exception"]]) {
+  test(`finite bridge failure retains ${phase}/${reason} without authorizing success`, async () => {
+    const f = fixture(); const pending = f.start();
+    f.output("OPEN\nREADY\n"); await tick();
+    f.output(`FAIL:${phase}:${reason}\n`);
+    await assert.rejects(pending, problem("native_error"));
+    assert.deepEqual(f.events.filter(event => event.stage === "failure"), [{ stage: "failure", path: target, phase, reason }]);
+    assert.equal(f.events.some(event => event.stage === "select" || event.stage === "done"), false);
+    assert.deepEqual(f.calls, ["SIGKILL"]);
+  });
+}
+for (const token of ["FAIL:private:deadline", "FAIL:permit:private path", "FAIL:permit:deadline:extra"]) {
+  test(`unknown failure token stays private: ${token}`, async () => {
+    const f = fixture(); const pending = f.start(); f.output(`${token}\n`);
+    await assert.rejects(pending, problem("native_error"));
+    assert.equal(f.events.some(event => event.stage === "failure"), false);
+  });
+}

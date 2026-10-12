@@ -3,6 +3,7 @@ import test from "node:test";
 import React from "react";
 import { Window } from "happy-dom";
 import { DiscoveryWorkspace } from "../src/renderer/components/DiscoveryPanel.js";
+import { createInitialCategoryMoveReviewRefresh } from "../src/renderer/components/category-move-story-preparation.js";
 import { WorkspaceServiceClient } from "../src/renderer/workspace-service-client.js";
 import { translate } from "../src/renderer/localization.js";
 import type { ServiceResult } from "../src/contracts/settings.js";
@@ -525,6 +526,23 @@ for (const language of ["en", "ru"] as const) {
     assert.equal(client.recoveries.length, 0); assert.equal(client.reviews.length, 1);
     if (change !== "selection") await screen.findByText(t("moveCategoryReviewStale"));
     if (["observation", "refresh", "backend"].includes(change)) await waitFor(() => assert.equal(document.activeElement, screen.getByRole("button", { name: t("moveCategoryReviewAgain") })));
+  });
+  test(`${language}: story preparation refreshes one stale initial review without retrying mutations`, async () => {
+    const client = new Client(); client.unfinished = [interrupted];
+    render(<DiscoveryWorkspace {...props(client)} />); await openReview();
+    await screen.findByRole("button", { name: t("moveCategoryRetryOriginal") });
+    const refresh = createInitialCategoryMoveReviewRefresh(language);
+    assert.equal(refresh(document.body), false);
+    for (const revision of [1, 2]) {
+      await act(async () => client.events.forEach((fn) => fn({ type: "workspace.sourceObserved", sourceId: "source", workspaceIds: ["workspace"], observationRevision: revision, automaticUpdates: "active", state: "ready" })));
+      await screen.findByText(t("moveCategoryReviewStale"));
+      await waitFor(() => assert.equal(document.querySelector(".category-move-operations")?.getAttribute("aria-busy"), "false"));
+      await act(async () => assert.equal(refresh(document.body), revision === 1));
+      if (revision === 1) await screen.findByRole("button", { name: t("moveCategoryRetryOriginal") });
+      else assert.ok(screen.getByText(t("moveCategoryReviewStale")), "Repeated instability must remain a fixture failure");
+    }
+    assert.equal(client.reviews.length, 2);
+    assert.equal(client.recoveries.length, 0); assert.equal(client.moves.length, 0);
   });
   for (const change of ["observation", "refresh", "backend", "unmount", "dismissal"] as const) test(`${language}: ${change} discards delayed category recovery preview`, async () => {
     const client = new Client(), response = deferred<ServiceResult<ProjectCategoryMoveRecoveryPreview>>(); client.unfinished = [interrupted]; client.reviewHandler = () => response.promise;

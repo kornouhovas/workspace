@@ -1,4 +1,5 @@
 import { ProjectCreationPanel } from "./ProjectCreationPanel.js";
+import { createInitialCategoryMoveReviewRefresh } from "./category-move-story-preparation.js";
 import { ProjectRevealButton } from "./ProjectRevealButton.js";
 import type { ProjectCreationOperation, ProjectCreationResult } from "../../contracts/project-creation.js";
 import type { ProjectRenameOperation, ProjectRenameResult, ProjectRenameRecoveryPreview } from "../../contracts/project-rename.js";
@@ -1082,6 +1083,7 @@ function CategoryMovePreview({ language, state }: { language: Language; state: C
   });
   useEffect(() => {
     let opened = false, authored = false, submitted = false, observed = false;
+    const refreshInitialReview = createInitialCategoryMoveReviewRefresh(language);
     let submitTimer: ReturnType<typeof setTimeout> | undefined;
     const prepare = () => {
       const target = root.current; if (!target || target.querySelector(".text-properties")?.getAttribute("aria-busy") !== "false") return;
@@ -1104,6 +1106,7 @@ function CategoryMovePreview({ language, state }: { language: Language; state: C
           if (observed && !review.querySelector(".category-move-placements") && review.querySelector("[role=alert]")) done();
           return;
         }
+        if (!submitted && refreshInitialReview(target)) return;
         if (["recovery-pending", "recovery-unknown", "kept-original"].includes(state)) {
           if (!submitted && review.querySelector(".category-move-placements")) {
             submitted = true;

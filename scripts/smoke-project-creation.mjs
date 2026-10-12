@@ -265,15 +265,17 @@ try {
         await current.electron.evaluate(({ shell }) => {
           globalThis.creationNativeCalls = [];
           globalThis.creationNativeOpens = [];
-          globalThis.creationNativeBridge = { started: 0, stopped: 0, active: 0, unknown: false };
+          globalThis.creationNativeBridge = { started: 0, stopped: 0, active: 0, unknown: false, failure: null };
           if (process.platform === "win32") {
             // Main-only instrumentation of actual production bridge messages.
             // No dispatch replacement, path setter or selection manipulation.
-            process.on("workspace:native-reveal", ({ stage, path }) => {
+            process.on("workspace:native-reveal", ({ stage, path, phase, reason }) => {
               const bridge = globalThis.creationNativeBridge;
               if (stage === "started") { bridge.started++; bridge.active++; }
               if (stage === "stopped") { bridge.stopped++; bridge.active--; }
               if (stage === "unknown") bridge.unknown = true;
+              if (stage === "failure" && /^(input|navigation|readiness|permit|precommand|selection|postcheck)$/.test(phase) &&
+                  /^(input|deadline|binding|unready|permit|exception)$/.test(reason)) bridge.failure = { phase, reason };
               if (stage === "open") globalThis.creationNativeOpens.push(path);
               if (stage === "select") globalThis.creationNativeCalls.push({ path, returned: false });
               if (stage === "done") {
@@ -333,7 +335,12 @@ try {
         targetMatched = nativeInvocationOutcome.exactTarget;
         // Persist the finite terminal observation before any strict assertion.
         // Later stage failure and cleanup cannot erase a select without done.
-        observations.push({ discoveryMode, checkpoint, nativeInvocationOutcome });
+        let nativeBridgeFailure = null;
+        if (current.nativeTracking) {
+          try { nativeBridgeFailure = await withDeadline(electron.evaluate(() => globalThis.creationNativeBridge.failure), 1000, "Finite native bridge failure"); }
+          catch { nativeBridgeFailure = { status: "unavailable" }; }
+        }
+        observations.push({ discoveryMode, checkpoint, nativeInvocationOutcome, nativeBridgeFailure });
         await save();
         await retainReceipt();
         assert.equal(nativeInvocationOutcome.readStatus, "available", "Native invocation evidence must be readable");

@@ -128,3 +128,27 @@ test('runtime failure investigation selects only the two original Windows routes
   assert.equal(upload.if, 'always()');
   assert.equal(upload.with['if-no-files-found'], 'error');
 });
+
+test('integration failures select only original macOS layout and Windows 2022 creation routes', () => {
+  const workflow = load(readFileSync('.github/workflows/desktop-ci.yml', 'utf8'));
+  assert.equal(workflow.on.workflow_dispatch.inputs.integration_failures.default, false);
+  for (const event of ['push', 'pull_request', 'workflow_dispatch']) for (const checks of [undefined, 'full', 'failed']) {
+    for (const integration_failures of [undefined, false, true]) for (const runtime_failures of [undefined, false, true]) {
+      const context = { github: { event_name: event }, inputs: { checks, integration_failures, runtime_failures } };
+      const active = Object.entries(workflow.jobs).filter(([, job]) => job.if && runInNewContext(job.if.slice(3, -2), context)).map(([name]) => name);
+      const focused = event === 'workflow_dispatch' && checks === 'failed' && integration_failures === true;
+      for (const name of ['focused-integration-layout', 'focused-integration-reveal']) assert.equal(active.includes(name), focused);
+      if (focused) assert.deepEqual(active.sort(), ['focused-integration-layout', 'focused-integration-reveal']);
+    }
+  }
+  for (const [name, os, command] of [
+    ['focused-integration-layout', 'macos-latest', 'node scripts/smoke-discovery-layouts.mjs --category-move'],
+    ['focused-integration-reveal', 'windows-2022', 'npm run smoke:runtime -- dev --creation --discovery-mode=direct --checkpoint=after_evidence'],
+  ]) {
+    const job = workflow.jobs[name]; assert.equal(job['runs-on'], os);
+    assert.ok(job.steps.some(step => step.run === command));
+    const upload = job.steps.find(step => step.uses === 'actions/upload-artifact@v4');
+    assert.equal(upload.if, 'always()'); assert.equal(upload.with['if-no-files-found'], 'error');
+    for (const field of ['github.sha', 'github.run_id', 'github.run_attempt']) assert.ok(upload.with.name.includes(field));
+  }
+});
