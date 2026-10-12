@@ -32,7 +32,7 @@ async function validateOutputs(paths,source) {
   const reserved = [join(source.dir,'current.json'),join(source.dir,'current.json.tmp'),join(source.dir,'events.jsonl'),join(source.dir,'executor.lock'),source.log];
   const describe = async file => {
     const path = await canonicalPath(file); let identity;
-    try { const info = await stat(file); identity = `${info.dev}:${info.ino}`; } catch (error) { if (error.code !== 'ENOENT') throw error; }
+    try { const info = await stat(file, { bigint: true }); identity = `${info.dev}:${info.ino}`; } catch (error) { if (error.code !== 'ENOENT') throw error; }
     return {path:process.platform === 'win32' || process.platform === 'darwin' ? path.toLowerCase() : path,identity};
   };
   const inputs = await Promise.all(reserved.map(describe));

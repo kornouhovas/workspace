@@ -22,6 +22,151 @@ function fixture(t) {
   return { dir, state, lock, log, options, save() { const temp = join(dir, 'snapshot.tmp'); writeFileSync(temp, JSON.stringify(state)); renameSync(temp, join(dir, 'current.json')); } };
 }
 
+// Return the same controlled identities through either stat representation, so
+// public observe regressions expose Number rounding without a private hook.
+async function withStatIdentities(identities, check) {
+  const original = fsPromises.stat, seen = new Set();
+  fsPromises.stat = async (file, options) => {
+    const info = await original(file, options), identity = identities.get(file);
+    if (!identity) return info;
+    seen.add(file);
+    const copy = Object.assign(Object.create(Object.getPrototypeOf(info)), info);
+    for (const key of ['dev', 'ino']) copy[key] = options?.bigint ? identity[key] : Number(identity[key]);
+    return copy;
+  };
+  try { syncBuiltinESMExports(); await check(); }
+  finally {
+    fsPromises.stat = original; syncBuiltinESMExports();
+    assert.deepEqual(seen, new Set(identities.keys()), 'both controlled stat identities were read');
+  }
+}
+
+test('distinct full-width inode IDs preserve foreign cursor-lock EEXIST refusal', async t => {
+  const f = fixture(t), foreign = `${f.options.cursor}.lock`, snapshot = join(f.dir, 'current.json');
+  writeFileSync(foreign, 'retained foreign observer lock');
+  const paths = [snapshot, join(f.dir, 'executor.lock'), f.log, foreign];
+  const before = paths.map(file => readFileSync(file)), entries = readdirSync(f.dir).sort();
+  const first = 9007199254740992n, second = 9007199254740993n;
+  assert.notEqual(first, second); assert.equal(Number(first), Number(second));
+  await withStatIdentities(new Map([
+    [snapshot, { dev: 1n, ino: first }], [foreign, { dev: 1n, ino: second }],
+  ]), async () => {
+    await assert.rejects(observe(f.options), { code: 'EEXIST' });
+    assert.deepEqual(paths.map(file => readFileSync(file)), before);
+    assert.deepEqual(readdirSync(f.dir).sort(), entries);
+  });
+});
+
+for (const key of ['runId', 'executionId', 'dir', 'worktree', 'log']) {
+  test(`distinct full-width inode IDs reach terminal publication with foreign cursor ${key}`, async t => {
+    const f = fixture(t); f.state.beads = 'fixture-task'; f.save(); await observe(f.options);
+    writeFileSync(join(f.dir, 'events.jsonl'), 'retained runner events\n');
+    const saved = JSON.parse(readFileSync(f.options.cursor)); saved.source[key] = 'foreign';
+    writeFileSync(f.options.cursor, JSON.stringify(saved));
+    const before = readFileSync(f.options.cursor), foreign = join(f.dir, 'foreign-observer.json.lock');
+    writeFileSync(foreign, 'retained foreign observer lock');
+    const foreignBefore = readFileSync(foreign);
+    await withStatIdentities(new Map([
+      [join(f.dir, 'current.json'), { dev: 1n, ino: 9007199254740992n }],
+      [f.options.cursor, { dev: 1n, ino: 9007199254740993n }],
+    ]), async () => {
+      await withSnapshotPublication(f, () => {
+        f.state.status = 'failed'; f.state.lastExit = 9; f.save(); rmSync(join(f.dir, 'executor.lock'));
+      }, async reads => {
+        let calls = 0;
+        const result = await observe({ ...f.options,
+          heartbeat: { task: 'fixture-task', actor: 'fixture-owner', repo: f.dir, ttlMs: 400, intervalMs: 100 },
+          command: async () => { calls++; throw new Error('Foreign cursor must never reach transport'); } });
+        assert.equal(result.reason, 'needs_decision'); assert.equal(result.diagnostic.code, 'source_mismatch');
+        assert.equal(reads(), 1); assert.equal(calls, 0);
+        assert.deepEqual(readFileSync(f.options.cursor), before);
+        assert.deepEqual(readFileSync(foreign), foreignBefore);
+        assert.throws(() => readFileSync(`${f.options.cursor}.lock`), { code: 'ENOENT' });
+      });
+    });
+  });
+}
+
+for (const differentDevice of [false, true]) {
+  test(`equal full-width inode IDs require complete device identity (differentDevice=${differentDevice})`, async t => {
+    const f = fixture(t), snapshot = join(f.dir, 'current.json');
+    writeFileSync(f.options.cursor, 'retained output');
+    const paths = [snapshot, f.options.cursor, join(f.dir, 'executor.lock'), f.log];
+    const before = paths.map(file => readFileSync(file)), entries = readdirSync(f.dir).sort();
+    await withStatIdentities(new Map([
+      [snapshot, { dev: 9007199254740992n, ino: 9007199254740993n }],
+      [f.options.cursor, { dev: differentDevice ? 9007199254740993n : 9007199254740992n, ino: 9007199254740993n }],
+    ]), async () => {
+      if (differentDevice) {
+        const result = await observe(f.options);
+        assert.equal(result.reason, 'needs_decision'); assert.equal(result.diagnostic.code, 'cursor_invalid');
+      } else await assert.rejects(observe(f.options), /observer-owned/);
+      assert.deepEqual(paths.map(file => readFileSync(file)), before);
+      assert.deepEqual(readdirSync(f.dir).sort(), entries);
+    });
+  });
+}
+
+test('output validation propagates non-ENOENT stat errors before creating observer outputs', async t => {
+  for (const target of ['current.json', 'observer.json']) for (const code of ['EACCES', 'EIO']) {
+    const f = fixture(t), original = fsPromises.stat, failure = Object.assign(new Error('Controlled stat failure'), { code });
+    const paths = [join(f.dir, 'current.json'), join(f.dir, 'executor.lock'), f.log];
+    const before = paths.map(file => readFileSync(file)), entries = readdirSync(f.dir).sort();
+    fsPromises.stat = async (...args) => { if (args[0] === join(f.dir, target)) throw failure; return original(...args); };
+    try { syncBuiltinESMExports(); await assert.rejects(observe(f.options), error => error === failure); }
+    finally { fsPromises.stat = original; syncBuiltinESMExports(); }
+    assert.deepEqual(paths.map(file => readFileSync(file)), before);
+    assert.deepEqual(readdirSync(f.dir).sort(), entries);
+  }
+});
+
+test('real file symlinks cannot alias reserved inputs through cursor or derived lock', async t => {
+  for (const derived of [false, true]) {
+    const f = fixture(t), snapshot = join(f.dir, 'current.json'), output = `${f.options.cursor}${derived ? '.lock' : ''}`;
+    symlinkSync(snapshot, output, 'file');
+    const before = readFileSync(snapshot), entries = readdirSync(f.dir).sort();
+    await assert.rejects(observe(f.options), /observer-owned/);
+    assert.deepEqual(readFileSync(snapshot), before); assert.deepEqual(readdirSync(f.dir).sort(), entries);
+  }
+});
+
+test('version-1 cursor continuation retains Number log stat and file.stat identity semantics', async t => {
+  const f = fixture(t), originalStat = fsPromises.stat, originalOpen = fsPromises.open;
+  let validations = 0, logStats = 0, handleStats = 0;
+  const logInfo = info => Object.assign(Object.create(Object.getPrototypeOf(info)), info,
+    { dev: 1, ino: Number(9007199254740993n) });
+  fsPromises.stat = async (file, options) => {
+    const info = await originalStat(file, options);
+    if (file !== f.log) return info;
+    if (options?.bigint) { validations++; return info; }
+    assert.equal(options, undefined); logStats++; return logInfo(info);
+  };
+  fsPromises.open = async (...args) => {
+    const handle = await originalOpen(...args);
+    if (args[0] === f.log) {
+      const original = handle.stat.bind(handle);
+      handle.stat = async options => {
+        assert.equal(options, undefined); handleStats++; return logInfo(await original(options));
+      };
+    }
+    return handle;
+  };
+  try {
+    syncBuiltinESMExports();
+    appendFileSync(f.log, 'RALPHEX_PROGRESS {"task":"Before continuation"}\n');
+    const first = await observe(f.options);
+    assert.equal(first.reason, 'progress');
+    const saved = JSON.parse(readFileSync(f.options.cursor));
+    assert.equal(saved.version, 1); assert.equal(saved.logIdentity, '1:9007199254740992');
+    appendFileSync(f.log, 'RALPHEX_PROGRESS {"task":"After continuation"}\n');
+    const second = await observe(f.options);
+    assert.equal(second.reason, 'progress'); assert.equal(second.task, 'After continuation');
+    assert.equal(second.log.from, first.log.to); assert.equal(second.log.to, readFileSync(f.log).length);
+    assert.equal(JSON.parse(readFileSync(f.options.cursor)).logIdentity, saved.logIdentity);
+    assert.equal(validations, 2); assert.equal(logStats, 2); assert.equal(handleStats, 2);
+  } finally { fsPromises.stat = originalStat; fsPromises.open = originalOpen; syncBuiltinESMExports(); }
+});
+
 // Publish between the snapshot read and the ownership read, without a private
 // observer hook. All other filesystem reads still use the real implementation.
 // Freeze host time before observe establishes its deadline; only the expiration
