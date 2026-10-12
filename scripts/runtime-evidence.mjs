@@ -74,11 +74,13 @@ export function assertRenameAcceptance(evidence) {
   inspect(evidence, createRenameEvidence(), "rename");
 }
 
-// This first graphical slice covers grouped moves/rejections only. Recovery is
-// a separate required contract in the next bounded task, never implied here.
+// Controlled interruptions prepare fixtures; only explicit production UI
+// recovery and subsequent normal shutdowns can establish graphical acceptance.
 export function createCategoryMoveEvidence(inputs) {
   const stages = names => Object.fromEntries(names.map(name => [name, { status: "unreached" }]));
-  const scenario = () => stages(["seed", "readOnlyReopen", "submission", "currentCategory", "occupied", "unavailable", "sibling", "preservation", "restartPersistence", "layout"]);
+  const scenario = () => ({ ...stages(["seed", "readOnlyReopen", "submission", "currentCategory", "occupied", "unavailable", "sibling", "preservation", "restartPersistence", "layout"]),
+    recovery: Object.fromEntries(["intent", "native_effect", "destination_evidence", "commit", "keep_original"].map(checkpoint => [checkpoint,
+      stages(["preparation", "restartNoReplay", "resolution", "preservation", "restartPersistence"])])) });
   return { inputs: structuredClone(inputs), en: scenario(), ru: scenario(), ...stages(["isolation", "normalShutdown", "fixtureCleanup"]) };
 }
 export function recordCategoryMoveEvidence(target, stage, result) {
@@ -107,7 +109,19 @@ export function assertCategoryMoveAcceptance(evidence, expectedInputs) {
     }
   };
   inspect(evidence, createCategoryMoveEvidence(expectedInputs), "categoryMove");
+  for (const language of ["en", "ru"]) for (const [checkpoint, recovery] of Object.entries(evidence[language].recovery)) {
+    const actualCheckpoint = checkpoint === "keep_original" ? "intent" : checkpoint;
+    const stage = { intent: "intent", native_effect: "intent", destination_evidence: "destination_recorded", commit: "completed" }[actualCheckpoint];
+    const preparation = recovery.preparation;
+    if (preparation.kind !== "controlled_fixture_preparation" || preparation.checkpoint !== actualCheckpoint || preparation.stage !== stage ||
+      preparation.workerExited !== true || preparation.cleanupExecuted !== false) throw new Error(`Invalid category recovery preparation: ${language}/${checkpoint}`);
+    const resolution = recovery.resolution;
+    const action = checkpoint === "commit" ? null : checkpoint === "keep_original" ? "keep_original" : checkpoint === "intent" ? "retry_original" : "complete_destination";
+    if (resolution.action !== action || resolution.mutationRequired !== (action !== null) ||
+      resolution.outcome !== (checkpoint === "keep_original" ? "rejected" : "completed") ||
+      action !== null && resolution.freshAdvertisedAction !== true) throw new Error(`Invalid category recovery resolution: ${language}/${checkpoint}`);
+  }
   if (evidence.normalShutdown.normalQuit !== true || evidence.normalShutdown.backendExit !== true || evidence.normalShutdown.forcedCleanup !== false ||
-    !Number.isSafeInteger(evidence.normalShutdown.invocations) || evidence.normalShutdown.invocations < 4) throw new Error("Category move requires normal shutdown and backend exit");
+    !Number.isSafeInteger(evidence.normalShutdown.invocations) || evidence.normalShutdown.invocations < 34) throw new Error("Category move requires normal shutdown and backend exit");
   if (evidence.fixtureCleanup.processesStopped !== true || evidence.fixtureCleanup.removed !== true) throw new Error("Category move requires independently confirmed owned cleanup");
 }

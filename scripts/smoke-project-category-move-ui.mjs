@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
-import { execFileSync } from "node:child_process";
-import { createHash } from "node:crypto";
+import { execFileSync, fork } from "node:child_process";
+import { createHash, randomUUID } from "node:crypto";
+import { once } from "node:events";
 import { lstat, mkdir, mkdtemp, readdir, readFile, realpath, rename, stat, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
@@ -61,6 +62,15 @@ export async function categoryMoveMetadata(database) {
   } finally { db.close(); }
 }
 
+async function recoveryState(setup) {
+  const { default: Database } = await import("better-sqlite3");
+  const db = new Database(setup.database, { readonly: true });
+  let journal;
+  try { journal = db.prepare("SELECT * FROM project_category_move_operations ORDER BY operation_id").all(); }
+  finally { db.close(); }
+  return { journal, metadata: await categoryMoveMetadata(setup.database), tree: await categoryMoveInventory(setup.sourceRoot), otherTree: await categoryMoveInventory(setup.otherRoot) };
+}
+
 // Fixture preparation uses the existing service only before the production app
 // consumes the database. No production failure injection or mutation seam.
 export async function seedCategoryMoveFixture(data) {
@@ -111,6 +121,41 @@ export async function seedCategoryMoveFixture(data) {
   return setup;
 }
 
+export async function interruptCategoryMoveFixture(setup, checkpoint, ownedProcesses) {
+  const stages = { intent: "intent", native_effect: "intent", destination_evidence: "destination_recorded", commit: "completed" };
+  assert.ok(Object.hasOwn(stages, checkpoint), "Supported category interruption checkpoint");
+  const marker = join(setup.data, "cleanup-marker");
+  const child = fork(join(root, "tests/fixtures/project-category-move-crash-worker.mjs"), [setup.database, checkpoint, JSON.stringify(setup.request), marker],
+    { cwd: root, execArgv: [], stdio: ["ignore", "ignore", "pipe", "ipc"] });
+  ownedProcesses.add(child);
+  const exited = once(child, "exit");
+  // Observe the exit promise immediately, including spawn failures, while the
+  // checkpoint wait owns the error. No unhandled rejection may escape cleanup.
+  void exited.catch(() => {});
+  let reached;
+  const result = new Promise((done, reject) => {
+    child.once("error", reject);
+    child.once("exit", () => { if (!reached) reject(new Error("Category interruption worker exited before its checkpoint")); });
+    child.once("message", message => {
+      if (message.checkpoint !== checkpoint || message.operationId !== setup.request.operationId || message.stage !== stages[checkpoint]) reject(new Error("Category interruption worker returned the wrong checkpoint"));
+      else { reached = message; done(message); }
+    });
+  });
+  child.stderr.resume();
+  try {
+    await withDeadline(result, 10000, "Category interruption checkpoint");
+    assert.equal(child.kill("SIGKILL"), true);
+    const [code, signal] = await withDeadline(exited, 5000, "Category interruption termination");
+    assert.ok(process.platform === "win32" ? code !== null || signal !== null : signal === "SIGKILL", "Owned controlled termination");
+    await assert.rejects(stat(marker), { code: "ENOENT" });
+    return { kind: "controlled_fixture_preparation", checkpoint, stage: reached.stage, workerExited: true, cleanupExecuted: false };
+  } finally {
+    if (child.exitCode === null && child.signalCode === null) {
+      child.kill("SIGKILL"); await withDeadline(exited, 5000, "Category interruption cleanup");
+    }
+  }
+}
+
 export async function categoryMoveRuntimeInputs(mode, executablePath) {
   const digest = createHash("sha256");
   const hashes = {};
@@ -125,7 +170,7 @@ export async function categoryMoveRuntimeInputs(mode, executablePath) {
       else { assert.equal(entry.isFile(), true); await include(`${path}/${entry.name}`); }
     }
   }
-  for (const path of ["package.json", "package-lock.json", "scripts/smoke-runtime.mjs", "scripts/smoke-project-category-move-ui.mjs", "scripts/runtime-evidence.mjs", "scripts/runtime-executable.mjs", "scripts/rename-runtime-startup.mjs", "scripts/runtime-startup.mjs", "scripts/runtime-lifecycle.mjs", "scripts/runtime-layout.mjs", "dist/desktop/main.cjs", "dist/desktop/preload.cjs", "dist/service/settings.mjs", "dist/service/entry.cjs", "node_modules/better-sqlite3/package.json", "node_modules/better-sqlite3/lib/binding.js", `node_modules/better-sqlite3/prebuilds/${process.platform}-${process.arch}.node`]) await include(path);
+  for (const path of ["package.json", "package-lock.json", "scripts/smoke-runtime.mjs", "scripts/smoke-project-category-move-ui.mjs", "scripts/runtime-evidence.mjs", "scripts/runtime-executable.mjs", "scripts/rename-runtime-startup.mjs", "scripts/runtime-startup.mjs", "scripts/runtime-lifecycle.mjs", "scripts/runtime-layout.mjs", "tests/fixtures/project-category-move-crash-worker.mjs", "dist/service/project-rename-filesystem.mjs", "dist/service-test-native/project-rename.node", "dist/desktop/main.cjs", "dist/desktop/preload.cjs", "dist/service/settings.mjs", "dist/service/entry.cjs", "node_modules/better-sqlite3/package.json", "node_modules/better-sqlite3/lib/binding.js", `node_modules/better-sqlite3/prebuilds/${process.platform}-${process.arch}.node`]) await include(path);
   for (const path of ["src/contracts", "src/service", "src/desktop", "src/renderer", "dist/renderer", "dist/service/db/migrations", "dist/service/native", "dist/desktop/native"]) await tree(path);
   if (mode === "release") {
     const resources = process.platform === "darwin" ? resolve(dirname(executablePath), "../Resources") : join(dirname(executablePath), "resources");
@@ -158,7 +203,7 @@ export async function runProjectCategoryMoveUi(mode = "dev") {
   const fixture = await realpath(await mkdtemp(join(tmpdir(), "workspace-category-move-ui-")));
   let failure, active;
   const save = async () => writeFile(join(directory, `${mode}-category-move-observations.json`), JSON.stringify({
-    scope: "grouped production UI/preload/backend moves and rejections; recovery and final platform acceptance remain separate", inputs,
+    scope: "grouped production UI/preload/backend moves, rejections and explicit controlled-interruption recovery; final platform acceptance remains separate", inputs,
     status: failure ? "failed" : evidence.fixtureCleanup.status === "passed" ? "passed" : "pending", evidence, observations, shutdowns,
     ...(failure ? { error: failure.message } : {}),
   }, null, 2) + "\n");
@@ -210,7 +255,7 @@ export async function runProjectCategoryMoveUi(mode = "dev") {
       await page.setViewportSize(size);
       const layout = await measureDiscoveryLayout(page);
       assert.equal(layout.document, false); assert.deepEqual(layout.clippedControls, []);
-      for (const button of await page.locator(".project-category-move button, .project-category-move select").all()) {
+      for (const button of await page.locator(".project-category-move button, .project-category-move select, .category-move-review button").all()) {
         const reachable = await button.evaluate(async node => {
           node.scrollIntoView({ block: "center", inline: "nearest", behavior: "instant" });
           await new Promise(done => globalThis.requestAnimationFrame(() => globalThis.requestAnimationFrame(done)));
@@ -352,8 +397,114 @@ export async function runProjectCategoryMoveUi(mode = "dev") {
         assert.equal((await query(page, "load")).activeWorkspace.viewId, setup.workspace.viewId);
       });
       await shutdown();
+      for (const [checkpoint, recovery] of Object.entries(target.recovery)) {
+        console.info(`Category move ${mode}: ${language} controlled preparation ${checkpoint}, read-only startup and explicit recovery`);
+        let setup;
+        await check(recovery, "preparation", async () => {
+          setup = await seedCategoryMoveFixture(join(fixture, `${language}-${checkpoint}`));
+          const { openSettingsService } = await import("../dist/service/settings.mjs");
+          const service = openSettingsService(setup.database);
+          try {
+            unwrap(service.handleCommand({ type: "settings.setLanguage", language }));
+            unwrap(service.handleCommand({ type: "workspace.activate", workspaceId: setup.sibling.workspaceId }));
+          } finally { service.close(); }
+          setup.metadata = await categoryMoveMetadata(setup.database);
+          setup.request = { type: "workspace.moveProjectCategory", workspaceId: setup.workspace.workspaceId, projectId: setup.project.projectId,
+            operationId: randomUUID(), destinationCategoryId: setup.projection.categories.find(c => c.name === "Destination").categoryId, expectedRevision: setup.projection.revision };
+          return interruptCategoryMoveFixture(setup, checkpoint === "keep_original" ? "intent" : checkpoint, ownedProcesses);
+        });
+        const before = await recoveryState(setup);
+        let page = await launch(setup.data); await select(page, setup.sibling, language);
+        const status = () => query(page, "getProjectCategoryMove", setup.sibling.workspaceId, { operationId: setup.request.operationId });
+        let originalStatus;
+        await check(recovery, "restartNoReplay", async () => {
+          originalStatus = await status();
+          assert.equal(originalStatus.operation.stage, recovery.preparation.stage);
+          assert.equal(originalStatus.outcome, checkpoint === "commit" ? "completed" : "recoverable");
+          const operation = originalStatus.operation;
+          assert.equal(operation.operationId, setup.request.operationId); assert.equal(operation.projectId, setup.project.projectId);
+          assert.equal(operation.sourceId, setup.workspace.sourceId); assert.equal(operation.initiatingWorkspaceId, setup.workspace.workspaceId);
+          assert.equal(operation.name, setup.project.name); assert.equal(operation.originalCategoryId, setup.project.categoryId);
+          assert.equal(operation.destinationCategoryId, setup.request.destinationCategoryId);
+          assert.equal(operation.originalRelativePath, `Current/${setup.project.name}`);
+          assert.equal(operation.requestedRelativePath, `Destination/${setup.project.name}`);
+          assert.equal(operation.expectedRevision, setup.projection.revision);
+          await page.evaluate(() => { globalThis.categoryMoveEvents = []; globalThis.window.workspace.onWorkspaceChange(event => { if (event.type === "workspace.projectsChanged") globalThis.categoryMoveEvents.push(event); }); });
+          const assertNoReplay = async () => {
+            const list = await query(page, "listProjectCategoryMoves", setup.sibling.workspaceId);
+            assert.equal(list.workspaceId, setup.sibling.workspaceId); assert.equal(list.sourceId, setup.workspace.sourceId);
+            assert.deepEqual(list.operations, checkpoint === "commit" ? [] : [originalStatus.operation]);
+            const projects = await query(page, "listProjects", setup.sibling.workspaceId);
+            assert.equal([...projects.projects, ...projects.retainedProjects].filter(project => project.projectId === setup.project.projectId).length, 1);
+            assert.deepEqual(await status(), originalStatus);
+            assert.deepEqual(await query(page, "listTextProperties", setup.sibling.workspaceId), { ...setup.properties, workspaceId: setup.sibling.workspaceId });
+            assert.deepEqual(await query(page, "listProjects", setup.other.workspaceId), setup.otherProjection);
+            assert.deepEqual(await recoveryState(setup), before, "UI startup/list/status did not replay or write durable state");
+          };
+          // Drive the production list and status controls, as well as repeated
+          // public reads. Neither control is authorized to recover automatically.
+          await page.getByRole("button", { name: language === "en" ? "Reload interrupted category moves" : "Обновить прерванные перемещения", exact: true }).press("Enter");
+          await page.waitForFunction(() => globalThis.document.querySelector(".category-move-operations")?.getAttribute("aria-busy") === "false");
+          if (checkpoint !== "commit") {
+            await page.getByRole("button", { name: `${language === "en" ? "Check category move status" : "Проверить статус перемещения в категорию"}: ${operation.originalRelativePath}`.replace(/\s+/g, " ").trim(), exact: true }).press("Enter");
+            await page.waitForFunction(() => globalThis.document.querySelector(".category-move-operations")?.getAttribute("aria-busy") === "false");
+          }
+          for (let count = 0; count < 2; count++) await assertNoReplay();
+          assert.deepEqual(await page.evaluate(() => globalThis.categoryMoveEvents), []);
+          await shutdown(); page = await launch(setup.data); await select(page, setup.sibling, language);
+          await assertNoReplay();
+        });
+        let resolvedStatus;
+        await check(recovery, "resolution", async () => {
+          if (checkpoint === "commit") {
+            resolvedStatus = await status(); assert.deepEqual(resolvedStatus, originalStatus);
+            assert.equal(await page.locator(".category-move-review").count(), 0);
+            assert.equal(await page.locator(".category-move-operations button").count(), 1, "Terminal commit offers reload only, no recovery mutation");
+            return { action: null, outcome: "completed", mutationRequired: false };
+          }
+          const action = checkpoint === "keep_original" ? "keep_original" : checkpoint === "intent" ? "retry_original" : "complete_destination";
+          const reviewName = `${language === "en" ? "Review interrupted category move" : "Проверить прерванное перемещение"}: ${originalStatus.operation.originalRelativePath} → ${originalStatus.operation.requestedRelativePath}`.replace(/\s+/g, " ").trim();
+          await page.getByRole("button", { name: reviewName, exact: true }).press("Enter");
+          const actionName = {
+            en: { retry_original: "Retry original category move", complete_destination: "Complete destination category move", keep_original: "Keep original category folder" },
+            ru: { retry_original: "Повторить исходное перемещение", complete_destination: "Подтвердить перемещение в категорию назначения", keep_original: "Сохранить папку в исходной категории" },
+          }[language][action];
+          const button = page.locator(".category-move-review").getByRole("button", { name: actionName, exact: true });
+          await button.waitFor(); assert.equal(await button.isDisabled(), false);
+          assert.equal(await page.locator("#category-move-review-title").evaluate(node => node === globalThis.document.activeElement), true);
+          assert.deepEqual(await recoveryState(setup), before, "Fresh UI preview remains read-only");
+          await capture(page, language, `recovery-${checkpoint}`);
+          await button.press("Enter");
+          await page.getByText(checkpoint === "keep_original" ? language === "en" ? "Original category folder retained. Category move resolved." : "Папка сохранена в исходной категории. Перемещение разрешено." : t.saved, { exact: true }).waitFor();
+          resolvedStatus = await status();
+          assert.equal(resolvedStatus.outcome, checkpoint === "keep_original" ? "rejected" : "completed");
+          assert.equal(resolvedStatus.operation.stage, checkpoint === "keep_original" ? "failed" : "completed");
+          assert.equal(resolvedStatus.operation.projectId, setup.project.projectId);
+          if (checkpoint === "keep_original") assert.equal(resolvedStatus.problem, "kept_original");
+          assert.deepEqual((await query(page, "listProjectCategoryMoves", setup.sibling.workspaceId)).operations, []);
+          return { action, outcome: resolvedStatus.outcome, mutationRequired: true, freshAdvertisedAction: true };
+        });
+        const placement = checkpoint === "keep_original" ? "Current" : "Destination";
+        await check(recovery, "preservation", async () => {
+          const list = await preserved(page, setup, placement);
+          assert.equal(list.revision, setup.projection.revision + (checkpoint === "keep_original" ? 0 : 1));
+          const sibling = await query(page, "listProjects", setup.sibling.workspaceId);
+          assert.deepEqual(sibling, { ...list, workspaceId: setup.sibling.workspaceId });
+          await assertRuntimeCategoryCell(page, setup.project.name, placement, t.move);
+        });
+        const finalState = await recoveryState(setup);
+        await shutdown(); page = await launch(setup.data); await select(page, setup.sibling, language);
+        await check(recovery, "restartPersistence", async () => {
+          await preserved(page, setup, placement); await assertRuntimeCategoryCell(page, setup.project.name, placement, t.move);
+          assert.deepEqual(await status(), resolvedStatus);
+          assert.deepEqual((await query(page, "listProjectCategoryMoves", setup.workspace.workspaceId)).operations, []);
+          assert.deepEqual(await recoveryState(setup), finalState);
+          assert.equal((await query(page, "load")).activeWorkspace.viewId, setup.sibling.viewId);
+        });
+        await shutdown();
+      }
     }
-    assert.ok(shutdowns.length >= 4 && shutdowns.every(outcome => outcome.passed && !outcome.forcedCleanup));
+    assert.ok(shutdowns.length >= 34 && shutdowns.every(outcome => outcome.passed && !outcome.forcedCleanup));
     recordCategoryMoveEvidence(evidence, "normalShutdown", { status: "passed", asserted: true, normalQuit: true, backendExit: true, forcedCleanup: false, invocations: shutdowns.length });
     const finalInputs = (await categoryMoveRuntimeInputs(mode, executablePath)).inputs;
     assert.deepEqual(finalInputs, inputs, "Runtime inputs stayed unchanged for the entire fixture");
