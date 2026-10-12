@@ -21,6 +21,8 @@ interface Props {
   retainedProjects?: ProjectAssociationSummary[];
   locateDisabled?: boolean;
   renameDisabled?: boolean;
+  categoryMoveDisabled?: boolean;
+  onMoveCategory?(project: ProjectSummary, trigger: HTMLButtonElement): void;
   onRename?(project: ProjectSummary, trigger: HTMLButtonElement): void;
   onLocate?(project: ProjectAssociationSummary, trigger: HTMLButtonElement): void;
   categoryProperty?: CategoryProperty | null;
@@ -37,7 +39,7 @@ interface Props {
 export function TextPropertiesTable(props: Props) {
   return <TextPropertiesContent key={`${props.workspaceId}:${props.sourceId}`} {...props} />;
 }
-function TextPropertiesContent({ client, workspaceId, sourceId, projects, retainedProjects = [], onLocate, locateDisabled, onRename, renameDisabled, categoryProperty, categories = [], categoryPropertyRevision = 0, discoveryRevision = 0, minimumDiscoveryRevision, sourceLifetime, minimumCategoryPropertyRevision, onCategoryPropertyCommitted, language, disabled }: Props) {
+function TextPropertiesContent({ client, workspaceId, sourceId, projects, retainedProjects = [], onLocate, locateDisabled, onRename, renameDisabled, onMoveCategory, categoryMoveDisabled, categoryProperty, categories = [], categoryPropertyRevision = 0, discoveryRevision = 0, minimumDiscoveryRevision, sourceLifetime, minimumCategoryPropertyRevision, onCategoryPropertyCommitted, language, disabled }: Props) {
   const categoryDrafts = useRef(new Map<string, CategoryLabelDraft>());
   const t = (key: TranslationKey) => translate(language, key);
   const [snapshot, setSnapshot] = useState<TextPropertySnapshot | null>(null);
@@ -181,7 +183,12 @@ function TextPropertiesContent({ client, workspaceId, sourceId, projects, retain
             <button type="button" className="workspace-button workspace-button--secondary" disabled={disabled || locateDisabled}
               aria-label={`${t("recoveryLocate")}: ${project.name}`} onClick={(event) => onLocate(retained, event.currentTarget)}>{t("recoveryLocate")}</button>}
         </td>
-        {categoryProperty && <td key={categoryProperty.propertyId}>{retained?.categoryName ?? categories.find((category) => category.categoryId === project.categoryId)?.name}</td>}
+        {categoryProperty && <td key={categoryProperty.propertyId}>{retained?.categoryName ?? categories.find((category) => category.categoryId === project.categoryId)?.name}
+          {!retained && onMoveCategory && project.categoryId && "associationState" in project && project.associationState === "active" &&
+            "resolution" in project && project.resolution === "active" && <button type="button" className="workspace-button workspace-button--secondary property-rename"
+              aria-label={`${t("moveCategory")}: ${project.name}`} disabled={disabled || categoryMoveDisabled}
+              onClick={(event) => onMoveCategory(project, event.currentTarget)}>{t("moveCategory")}</button>}
+        </td>}
         {snapshot?.definitions.map((property) => <td key={property.propertyId}>
           <TextPropertyCell workspaceId={workspaceId} sourceId={sourceId} projectId={project.projectId} propertyId={property.propertyId}
             revision={snapshot.revision} minimumRevision={minimumRevision}

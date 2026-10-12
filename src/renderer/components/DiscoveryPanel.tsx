@@ -1,3 +1,4 @@
+import { ProjectCategoryMovePanel } from "./ProjectCategoryMovePanel.js";
 import { ProjectRenamePanel } from "./ProjectRenamePanel.js";
 import { ProjectCreationPanel } from "./ProjectCreationPanel.js";
 import { ProjectRecoveryController } from "./ProjectRecoveryPanel.js";
@@ -242,6 +243,10 @@ export function DiscoveryWorkspace({ client, workspaceId, sourceId, refreshVersi
   const [recoveryProject, setRecoveryProject] = useState<ProjectAssociationSummary | null>(null);
   const [recoverySaved, setRecoverySaved] = useState(false);
   const [renameProject, setRenameProject] = useState<Pick<ProjectAssociationSummary, "projectId" | "name" | "relativePath" | "categoryId"> | null>(null);
+  const [categoryMoveProject, setCategoryMoveProject] = useState<Pick<ProjectAssociationSummary, "projectId" | "name" | "relativePath" | "categoryId"> | null>(null);
+  const [categoryMoveBlocked, setCategoryMoveBlocked] = useState(false);
+  const categoryMoveTrigger = useRef<HTMLButtonElement | null>(null);
+  const restoreCategoryMoveFocus = useRef(false);
   const [renameBlocked, setRenameBlocked] = useState(false);
   const renameTrigger = useRef<HTMLButtonElement | null>(null);
   const restoreRenameFocus = useRef(false);
@@ -261,6 +266,13 @@ export function DiscoveryWorkspace({ client, workspaceId, sourceId, refreshVersi
       restoreRenameFocus.current = false;
     }
   }, [renameProject, renameBlocked]);
+  useEffect(() => {
+    if (!categoryMoveProject && restoreCategoryMoveFocus.current) {
+      const trigger = categoryMoveTrigger.current;
+      (trigger?.isConnected && !trigger.disabled ? trigger : tableHeading.current)?.focus();
+      restoreCategoryMoveFocus.current = false;
+    }
+  }, [categoryMoveProject, categoryMoveBlocked]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const version = useRef(0);
@@ -370,7 +382,7 @@ export function DiscoveryWorkspace({ client, workspaceId, sourceId, refreshVersi
   return <>
     <DiscoveryController client={client} workspaceId={workspaceId} sourceId={sourceId} minimumRevision={minimumRevision}
       observationVersion={observationVersion}
-      invalidation={invalidation} language={language} disabled={disabled || recoveryProject !== null}
+      invalidation={invalidation} language={language} disabled={disabled || recoveryProject !== null || categoryMoveProject !== null || categoryMoveBlocked}
       onApplied={(value, observedVersion) => {
         // The command can succeed while a newer runtime observation changes
         // resolution without a persisted revision. Keep success, reload placement.
@@ -384,13 +396,18 @@ export function DiscoveryWorkspace({ client, workspaceId, sourceId, refreshVersi
         setError(false); setLoading(false);
       }} />
     <ProjectCreationPanel client={client} workspaceId={workspaceId} sourceId={sourceId} language={language}
-      projects={projects} disabled={disabled || loading || error || recoveryProject !== null} invalidation={invalidation}
+      projects={projects} disabled={disabled || loading || error || recoveryProject !== null || categoryMoveProject !== null || categoryMoveBlocked} invalidation={invalidation}
       minimumRevision={minimumRevision} observationVersion={observationVersion} onCompleted={() => void load()} />
     <ProjectRenamePanel client={client} workspaceId={workspaceId} sourceId={sourceId} language={language} project={renameProject}
-      projects={projects} disabled={disabled || loading || error || recoveryProject !== null} minimumRevision={minimumRevision}
+      projects={projects} disabled={disabled || loading || error || recoveryProject !== null || categoryMoveProject !== null || categoryMoveBlocked} minimumRevision={minimumRevision}
       observationVersion={observationVersion} sourceLifetime={sourceLifetime} invalidation={invalidation} onBlockedChange={setRenameBlocked}
       onRestoreFocus={() => tableHeading.current?.focus()}
       onClose={(focus = true) => { restoreRenameFocus.current = focus; setRenameProject(null); }} onCompleted={() => void load()} />
+    <ProjectCategoryMovePanel client={client} workspaceId={workspaceId} sourceId={sourceId} language={language} project={categoryMoveProject}
+      projects={projects} disabled={disabled || loading || error || recoveryProject !== null || renameProject !== null || renameBlocked}
+      minimumRevision={minimumRevision} observationVersion={observationVersion} sourceLifetime={sourceLifetime}
+      onBlockedChange={setCategoryMoveBlocked} onCompleted={() => void load()}
+      onClose={(focus = true) => { restoreCategoryMoveFocus.current = focus; setCategoryMoveProject(null); }} />
     {recoveryProject && <ProjectRecoveryController client={client} workspaceId={workspaceId} sourceId={sourceId}
       project={recoveryProject} minimumRevision={minimumRevision} observationVersion={observationVersion} sourceLifetime={sourceLifetime} invalidation={invalidation} observation={observation} language={language} disabled={disabled}
       onPendingChange={onRecoveryPending}
@@ -430,10 +447,13 @@ export function DiscoveryWorkspace({ client, workspaceId, sourceId, refreshVersi
       </div>}
       <TextPropertiesTable sourceLifetime={sourceLifetime} discoveryRevision={projects?.revision ?? 0} minimumDiscoveryRevision={minimumRevision} categoryPropertyRevision={projects?.categoryPropertyRevision ?? 0} minimumCategoryPropertyRevision={minimumCategoryPropertyRevision}
         onCategoryPropertyCommitted={commitLabel} categoryProperty={projects?.categoryProperty ?? null} categories={projects?.categories ?? []} client={client} workspaceId={workspaceId} sourceId={sourceId}
-        renameDisabled={loading || error || renameBlocked || renameProject !== null || recoveryProject !== null || !projects?.configured ||
+        renameDisabled={loading || error || renameBlocked || renameProject !== null || recoveryProject !== null || categoryMoveProject !== null || categoryMoveBlocked || !projects?.configured ||
           !["ready", "empty"].includes(projects?.state ?? "") || (projects?.revision ?? -1) < minimumRevision.current}
+        categoryMoveDisabled={loading || error || categoryMoveBlocked || categoryMoveProject !== null || renameBlocked || renameProject !== null || recoveryProject !== null || !projects?.configured ||
+          !["ready", "empty"].includes(projects?.state ?? "") || (projects?.revision ?? -1) < minimumRevision.current}
+        onMoveCategory={projects?.mode === "grouped" ? (project, trigger) => { categoryMoveTrigger.current = trigger; setCategoryMoveProject(project); } : undefined}
         onRename={(project, trigger) => { renameTrigger.current = trigger; setRenameProject(project); }}
-        locateDisabled={recoveryProject !== null || renameBlocked || renameProject !== null}
+        locateDisabled={recoveryProject !== null || renameBlocked || renameProject !== null || categoryMoveProject !== null || categoryMoveBlocked}
         onLocate={projects?.configured ? (project, trigger) => {
           recoveryTrigger.current = trigger; setRecoverySaved(false); setRecoveryProject(project);
         } : undefined}

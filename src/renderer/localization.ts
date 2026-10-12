@@ -1,6 +1,24 @@
 import type { Language } from "../contracts/settings.js";
 
 const english = {
+  moveCategory: "Move project category",
+  moveCategoryDestination: "Destination category",
+  moveCategoryCurrentPlacement: "Current source-relative folder",
+  moveCategoryDestinationPlacement: "Destination source-relative folder",
+  moveCategoryHint: "Submitting physically moves the project folder into an existing category. Its exact name and Text values stay the same. Displayed paths are for review; the service validates the placement.",
+  moveCategorySubmit: "Move project folder",
+  moveCategoryPending: "Moving project folder…",
+  moveCategorySaved: "Project folder moved to the selected category.",
+  moveCategoryUnchanged: "The current category was verified. No folder move was needed.",
+  moveCategoryCollision: "The destination is occupied or reserved. Choose another category.",
+  moveCategoryStale: "The source or project changed. Refresh and reopen the editor before submitting again.",
+  moveCategoryUnavailable: "This folder or category is unavailable. Check source access and the project association.",
+  moveCategoryFailed: "The category move was rejected. The selected category is retained for review.",
+  moveCategoryUncertain: "The category move outcome is unknown. The folder may already have moved; do not submit another move until its status is verified.",
+  moveCategoryRecoverable: "The interrupted category move requires explicit recovery review. No move runs automatically.",
+  moveCategoryNewer: "The category move is confirmed. Loading the current project placement after a newer source change.",
+  moveCategoryDismissHint: "Closing this editor does not cancel a submitted folder move.",
+
   renameListTitle: "Interrupted renames",
   renameOperationInterrupted: "Interrupted rename. Explicit recovery review is required.",
   renameOperationUncertain: "Folder placement is uncertain. Explicit recovery review is required.",
@@ -293,6 +311,23 @@ const english = {
 } as const;
 
 const russian: Record<keyof typeof english, string> = {
+  moveCategory: "Переместить проект в категорию",
+  moveCategoryDestination: "Категория назначения",
+  moveCategoryCurrentPlacement: "Текущая папка относительно источника",
+  moveCategoryDestinationPlacement: "Папка назначения относительно источника",
+  moveCategoryHint: "Отправка физически перемещает папку проекта в существующую категорию. Точное имя и значения Text сохраняются. Пути показаны для проверки; сервис проверяет расположение.",
+  moveCategorySubmit: "Переместить папку проекта",
+  moveCategoryPending: "Перемещение папки проекта…",
+  moveCategorySaved: "Папка проекта перемещена в выбранную категорию.",
+  moveCategoryUnchanged: "Текущая категория проверена. Перемещение папки не потребовалось.",
+  moveCategoryCollision: "Назначение занято или зарезервировано. Выберите другую категорию.",
+  moveCategoryStale: "Источник или проект изменился. Обновите данные и откройте редактор снова перед отправкой.",
+  moveCategoryUnavailable: "Папка или категория недоступна. Проверьте доступ к источнику и привязку проекта.",
+  moveCategoryFailed: "Перемещение отклонено. Выбранная категория сохранена для проверки.",
+  moveCategoryUncertain: "Результат перемещения неизвестен. Папка уже могла переместиться; не отправляйте новое перемещение до проверки статуса.",
+  moveCategoryRecoverable: "Прерванное перемещение требует явной проверки восстановления. Перемещение не повторяется автоматически.",
+  moveCategoryNewer: "Перемещение подтверждено. Загружается актуальное расположение после нового изменения источника.",
+  moveCategoryDismissHint: "Закрытие редактора не отменяет отправленное перемещение папки.",
   renameListTitle: "Прерванные переименования",
   renameOperationInterrupted: "Прерванное переименование. Требуется явная проверка восстановления.",
   renameOperationUncertain: "Расположение папки неопределённо. Требуется явная проверка восстановления.",

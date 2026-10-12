@@ -78,17 +78,17 @@ Files:
 
 - Modify: tests/components.test.tsx.
 
-- [ ] Add a category edit trigger only for active, resolved grouped projects. Keep retained rows read-only and direct-mode rows without category controls; preserve category-label editing and ordinary Text behavior.
+- [x] Add a category edit trigger only for active, resolved grouped projects. Keep retained rows read-only and direct-mode rows without category controls; preserve category-label editing and ordinary Text behavior.
 
-- [ ] Add a labeled native select of existing categories, including the current category and eligible empty categories, with no clear option. Show current and destination source-relative placement and explain the physical folder move. Derived display paths provide no authorization.
+- [x] Add a labeled native select of existing categories, including the current category and eligible empty categories, with no clear option. Show current and destination source-relative placement and explain the physical folder move. Derived display paths provide no authorization.
 
-- [ ] Submit exactly one moveProjectCategory command per explicit submission with workspaceId, projectId, a fresh operationId, destinationCategoryId and expectedRevision. Selecting the current category still submits for service-validated no-op.
+- [x] Submit exactly one moveProjectCategory command per explicit submission with workspaceId, projectId, a fresh operationId, destinationCategoryId and expectedRevision. Selecting the current category still submits for service-validated no-op.
 
-- [ ] Handle completed, unchanged, rejected and recoverable results; preserve exact project names and Text, reload actual state and retain confirmed event-before-response success. Distinguish collision, stale and unavailable feedback.
+- [x] Handle completed, unchanged, rejected and recoverable results; preserve exact project names and Text, reload actual state and retain confirmed event-before-response success. Distinguish collision, stale and unavailable feedback.
 
-- [ ] Add EN/RU behavioral tests for payloads, duplicate submission, no clearing, retained/direct restrictions, validated no-op, result/error handling, metadata independence, keyboard submission and Escape dismissal with focus restoration.
+- [x] Add EN/RU behavioral tests for payloads, duplicate submission, no clearing, retained/direct restrictions, validated no-op, result/error handling, metadata independence, keyboard submission and Escape dismissal with focus restoration.
 
-- [ ] Run node --import tsx --test tests/project-category-move-ui.test.tsx tests/components.test.tsx tests/project-rename-ui.test.tsx, npm run typecheck and git diff --check; commit after passing.
+- [x] Run node --import tsx --test tests/project-category-move-ui.test.tsx tests/components.test.tsx tests/project-rename-ui.test.tsx, npm run typecheck and git diff --check; commit after passing.
 
 ### Task 2: Preserve submitted outcomes and add explicit status/recovery
 
@@ -162,6 +162,16 @@ Plan source: work/issue-19/category-move-ui-plan-draft.md. The coordinator mater
 
 ## Execution Evidence
 
-Pending execution.
+Task 1 completed and verified on macOS with the installed Node 22.21.1 binary. The grouped Table category editor uses an existing-category native select, source-relative placement review and one explicit ID/revision command; current-category requests reach the service for validation. Completed/no-op responses reload actual state, rejection preserves the draft, and unknown/recoverable responses block replacement moves. EN/RU tests cover keyboard/focus, restrictions, metadata independence, duplicate submission and event-before-response outcomes. Task 2 owns explicit status/recovery and operation retention across remounts; Task 3 owns presentation fixtures/layout acceptance.
+
+Task 1 evidence directory: `/Users/aleksandersk/Documents/programming/Projects/project_folder/.worktrees/issue-19-category-move/work/issue-19/category-move-ui-task-1/` (ignored local evidence).
+
+- `node --import tsx --test tests/project-category-move-ui.test.tsx tests/components.test.tsx tests/project-rename-ui.test.tsx`: exit 0, 249 passed, zero failed/skipped; `focused-ui.log`. Executed with `/Users/aleksandersk/.nvm/versions/node/v22.21.1/bin/node`.
+- `npm run typecheck`: exit 0; `typecheck.log`. Run-local PATH selects Node 22.21.1.
+- Focused ESLint on changed TypeScript files with `--max-warnings=0`: exit 0; `lint.log`.
+- `git diff --check`: exit 0; `diff-check.log`.
+- Initial missing-editor red test: exit 1; `red-selection.log`. Preliminary Node 20 runs are retained separately and are not the final acceptance evidence.
+
+No full-suite, graphical Electron, layout, package, Windows or external CI acceptance is claimed by Task 1.
 
 Completed observer prerequisite: Actions 38226803150 at that exact SHA has both Windows observer suites 105/105, zero failures/skips, and four schema/provenance/ownership/cleanup-verified artifacts. Overall workflow remains pending. Historical clock attribution remains unproven. Readiness delivery and independent existing Reveal acknowledgment diagnosis are coordinator-owned; neither expands these UI tasks.

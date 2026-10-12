@@ -91,7 +91,8 @@ test("EN/RU retained rows explain exclusion and recovery, display historical cat
       }
     }();
     render(<TextPropertiesTable client={client} workspaceId="workspace" sourceId="source" projects={[]} retainedProjects={rows}
-      categoryProperty={{ propertyId: "category-label", sourceId: "source", name: "Category" }} categories={[]} language={language} disabled={false} />);
+      categoryProperty={{ propertyId: "category-label", sourceId: "source", name: "Category" }} categories={[]} onMoveCategory={() => assert.fail("Retained category must be read-only")} language={language} disabled={false} />);
+    assert.equal(screen.queryByRole("button", { name: new RegExp(`^${translate(language, "moveCategory")}:`) }), null);
     const labels = ["projectExcluded", "projectMissing", "projectUnresolved", "projectReplaced"] as const;
     for (const label of labels) assert.ok(await screen.findByText(translate(language, label)));
     assert.equal(screen.getAllByRole("cell", { name: "Former category" }).length, 4);
