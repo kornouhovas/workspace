@@ -18,6 +18,14 @@ This repository uses a spec-first, agent-ready workflow: the user owns product d
 - Preserve completed work and accepted decisions across interruptions. Incorporate new user guidance into the ongoing task unless it replaces the objective.
 - Do not expand a fix into unrelated refactoring, dependencies or features.
 
+## Executor selection
+
+Use the Matt Pocock implementation workflow directly for ordinary implementation requests. A new Ralphex run requires an explicit user request to use Ralphex or an invocation of `$do-task-ralphex`. For example, “take issue 20” or `$implement` selects ordinary implementation; “implement issue 20 through Ralphex” selects Ralphex.
+
+An issue, reviewed plan, readiness label, CI failure, installed skill or `.ralphex` configuration does not select an executor. Apply this rule before following historical instructions that prescribe Ralphex for every issue. A completed issue does not select Ralphex for the next one; use the user's explicit executor scope.
+
+Continue an already authorized Ralphex run within its existing ownership, selected scope and permissions unless the user pauses or cancels it. This routing change neither starts nor stops an executor and does not revoke existing run authorization. A waiting snapshot remains waiting until its recorded dependency and the user's instructions permit continuation.
+
 ## Read relevant context
 
 Start with the actual checkout, `git status --short --branch`, and affected code. Recheck the path after a project move; another worktree may contain different changes.
