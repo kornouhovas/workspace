@@ -6,6 +6,7 @@ import { join } from 'node:path';
 import test from 'node:test';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { realpath } from 'node:fs/promises';
+import { runInNewContext } from 'node:vm';
 
 const provenance = { sha: 'a'.repeat(40), runId: 'local', attempt: 1, matrix: 'local', platform: process.platform, nodeVersion: process.version };
 
@@ -328,7 +329,7 @@ test('per-call retention preserves failed collection and rejects absent, malform
     value => { value.provenance.sha = 'b'.repeat(40); },
     value => { value.provenance.runId = '999'; },
     value => { value.provenance.attempt += 1; },
-    value => { value.provenance.matrix = 'windows-latest'; },
+    value => { value.provenance.matrix = value.provenance.matrix === 'windows-latest' ? 'windows-2022' : 'windows-latest'; },
     value => { value.provenance.platform = 'foreign'; },
     value => { value.provenance.nodeVersion = 'v1.0.0'; },
     value => { value.collection = 'unreached'; value.processExitCode = 'unavailable'; },
@@ -353,6 +354,24 @@ test('per-call retention preserves failed collection and rejects absent, malform
 });
 
 
+const injections = {
+  readiness: `const original = cp.spawn; cp.spawn = (exe, args, options) => original(exe, args.map(arg => arg.replace("process.send('ready')", "process.send('invalid')")), options);`,
+  child_cleanup: `const original = cp.spawn; cp.spawn = (exe, args, options) => original(exe, args.map(arg => arg.replace('process.exit(0)', 'process.exit(1)')), options);`,
+  case: `const original = fs.readFileSync; fs.readFileSync = (file, ...args) => { if (String(file).endsWith('/current_process/current.json') || String(file).endsWith('\\\\current_process\\\\current.json')) throw Object.assign(new Error('private-path-token'), { errno: -13 }); return original(file, ...args); };`,
+  file_cleanup: `const original = fs.rmSync; fs.rmSync = (file, ...args) => { if (String(file).includes('observer-evidence-')) throw Object.assign(new Error('private-path-token'), { errno: -13 }); return original(file, ...args); };`,
+};
+
+test('generated case injection rejects POSIX and Windows collector paths without affecting other reads', () => {
+  const fs = { readFileSync: () => 'preserved' };
+  runInNewContext(injections.case, { fs });
+  for (const file of ['/fixture/current_process/current.json', String.raw`C:\fixture\current_process\current.json`]) {
+    assert.throws(() => fs.readFileSync(file), error => error.errno === -13);
+  }
+  for (const file of ['/fixture/owned_child/current.json', String.raw`C:\fixture\owned_child\current.json`]) {
+    assert.equal(fs.readFileSync(file), 'preserved');
+  }
+});
+
 for (const boundary of ['readiness', 'case', 'child_cleanup', 'file_cleanup']) {
   test(`injected ${boundary} failure retains its lifecycle boundary and preserves unrelated fixtures`, async t => {
     const { validateEvidence, environmentProvenance } = await import('../scripts/windows-observer-diagnostics.mjs');
@@ -360,12 +379,6 @@ for (const boundary of ['readiness', 'case', 'child_cleanup', 'file_cleanup']) {
     t.after(() => rmSync(dir, { recursive: true, force: true }));
     writeFileSync(join(dir, 'unrelated'), 'preserve');
     const preload = join(dir, 'inject.mjs');
-    const injections = {
-      readiness: `const original = cp.spawn; cp.spawn = (exe, args, options) => original(exe, args.map(arg => arg.replace("process.send('ready')", "process.send('invalid')")), options);`,
-      child_cleanup: `const original = cp.spawn; cp.spawn = (exe, args, options) => original(exe, args.map(arg => arg.replace('process.exit(0)', 'process.exit(1)')), options);`,
-      case: `const original = fs.readFileSync; fs.readFileSync = (file, ...args) => { if (String(file).endsWith('/current_process/current.json') || String(file).endsWith('\\current_process\\current.json')) throw Object.assign(new Error('private-path-token'), { errno: -13 }); return original(file, ...args); };`,
-      file_cleanup: `const original = fs.rmSync; fs.rmSync = (file, ...args) => { if (String(file).includes('observer-evidence-')) throw Object.assign(new Error('private-path-token'), { errno: -13 }); return original(file, ...args); };`,
-    };
     writeFileSync(preload, `import fs from 'node:fs'; import cp from 'node:child_process'; import { syncBuiltinESMExports } from 'node:module'; ${injections[boundary]} syncBuiltinESMExports();`);
     const module = new URL('../scripts/windows-observer-diagnostics.mjs', import.meta.url).href;
     const code = `import { collectObserverDiagnostics, environmentProvenance } from ${JSON.stringify(module)}; const evidence = await collectObserverDiagnostics({ provenance: environmentProvenance(), fixtureParent: ${JSON.stringify(dir)} }); console.log(JSON.stringify(evidence)); process.exitCode = evidence.processExitCode;`;
