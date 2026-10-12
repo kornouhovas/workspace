@@ -92,13 +92,15 @@ Files:
 
 ### Task 2: Preserve submitted outcomes and add explicit status/recovery
 
-Continuation note (provider capacity interruption, 2026-10-12): Task 1 is complete at `6bbd401c1fb83f74ae4433b0b8ab57440af7507c`. The coordinator reaped failed execute session 66292 and verified lock release. Before continuing Task 2, apply the owned partial changes with `git stash apply f6f8463fa9e9ad5177a9b4697389df3449490e10` exactly once. Inspect the preserved diff and continue its first unfinished behavior/check; do not replay Task 1. This stash contains only Task 2 source/test changes, is not verified completion, and must not be dropped or marked complete before the required checks pass. The ignored backup is `work/issue-19/category-move-ui-capacity-partial.patch`; interruption evidence is `work/issue-19/category-move-ui-capacity-interruption.json`. Use Node 22.21.1 explicitly for commands because a login shell may replace PATH.
+Continuation note (finite executor session interruption, 2026-10-12): Task 1 is complete at `6bbd401c1fb83f74ae4433b0b8ab57440af7507c`. The coordinator reaped interrupted execute session 41474 and verified lock release/owned process exit. Before continuing Task 2, apply the latest owned partial changes with `git stash apply 0398b9883bbbd2b1b0bfbc1f2447ba5bb24961fb` exactly once. The earlier capacity stash has already been incorporated into this latest snapshot: do not apply it. Inspect current partial code/tests and continue the first unfinished behavior/check; do not replay Task 1 or replan this stage. The latest ignored backup is `work/issue-19/category-move-ui-timeout-partial.patch`; receipt is `work/issue-19/category-move-ui-timeout-interruption.json`. Existing evidence includes passing status/recovery/binding/list races and EN/RU real-SQLite/native move/remount controls. Two EN/RU pending-creation coordination assertions remained red in the last source-coordination log; inspect subsequent partial test changes before proceeding, preserve red logs and verify coordination then the final focused UI suite/type/lint/docs/diff. Task 2 remains unchecked. Use Node 22.21.1 explicitly because login shells can replace PATH.
 
 Files:
 
 - Modify: src/renderer/components/ProjectCategoryMovePanel.tsx.
 
 - Modify: src/renderer/components/DiscoveryPanel.tsx.
+
+- Modify: src/renderer/components/ProjectCreationPanel.tsx only for the directly affected source-conflict blocking callback; preserve existing creation/status/recovery behavior.
 
 - Modify: src/renderer/localization.ts.
 
