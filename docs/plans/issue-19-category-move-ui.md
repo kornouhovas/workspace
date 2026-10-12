@@ -92,7 +92,7 @@ Files:
 
 ### Task 2: Preserve submitted outcomes and add explicit status/recovery
 
-Continuation note (finite executor session interruption, 2026-10-12): Task 1 is complete at `6bbd401c1fb83f74ae4433b0b8ab57440af7507c`. The coordinator reaped interrupted execute session 41474 and verified lock release/owned process exit. Before continuing Task 2, apply the latest owned partial changes with `git stash apply 0398b9883bbbd2b1b0bfbc1f2447ba5bb24961fb` exactly once. The earlier capacity stash has already been incorporated into this latest snapshot: do not apply it. Inspect current partial code/tests and continue the first unfinished behavior/check; do not replay Task 1 or replan this stage. The latest ignored backup is `work/issue-19/category-move-ui-timeout-partial.patch`; receipt is `work/issue-19/category-move-ui-timeout-interruption.json`. Existing evidence includes passing status/recovery/binding/list races and EN/RU real-SQLite/native move/remount controls. Two EN/RU pending-creation coordination assertions remained red in the last source-coordination log; inspect subsequent partial test changes before proceeding, preserve red logs and verify coordination then the final focused UI suite/type/lint/docs/diff. Task 2 remains unchecked. Use Node 22.21.1 explicitly because login shells can replace PATH.
+Continuation completed on 2026-10-12: the latest owned partial changes were restored exactly once from `0398b9883bbbd2b1b0bfbc1f2447ba5bb24961fb`. The earlier snapshot was not applied again. The pending-creation EN/RU assertions now submit with an explicitly selected required category; source coordination and the final focused UI/type/lint/docs/diff checks pass. Preserved interruption and red evidence remain in `work/issue-19/category-move-ui-timeout-interruption.json` and `work/issue-19/category-move-ui-task-2/`. No further stash restoration is required.
 
 Files:
 
@@ -112,17 +112,17 @@ Files:
 
 - Modify: tests/project-rename-ui.test.tsx and tests/project-recovery-ui.test.tsx where shared surface behavior changes. Adapt other directly affected existing UI fixture clients only to answer the newly mounted read-only category operation list; preserve their original behavioral assertions.
 
-- [ ] Bind submitted operations to immutable source/project/initiating-workspace, basename, original/destination category IDs and relative placements, and expected revision. Retain unknown submissions across dismissal, selection/source remount and backend remount for the same client/source using presentation memory only.
+- [x] Bind submitted operations to immutable source/project/initiating-workspace, basename, original/destination category IDs and relative placements, and expected revision. Retain unknown submissions across dismissal, selection/source remount and backend remount for the same client/source using presentation memory only.
 
-- [ ] Provide explicit getProjectCategoryMove status access. Load and read-refresh unfinished source operations through listProjectCategoryMoves without replaying mutations. Keep command feedback independent from list loading/error/empty state.
+- [x] Provide explicit getProjectCategoryMove status access. Load and read-refresh unfinished source operations through listProjectCategoryMoves without replaying mutations. Keep command feedback independent from list loading/error/empty state.
 
-- [ ] Present original/destination placement, durable stage, last verified placement and finite problem/evidence states. Offer fresh previewProjectCategoryMoveRecovery and only advertised retry_original, complete_destination and keep_original actions with their fresh token.
+- [x] Present original/destination placement, durable stage, last verified placement and finite problem/evidence states. Offer fresh previewProjectCategoryMoveRecovery and only advertised retry_original, complete_destination and keep_original actions with their fresh token.
 
-- [ ] Guard wrong-source, wrong-operation, changed-binding and delayed responses. Invalidate previews on newer project revision, source lifetime/observation, operation changes, refresh and backend generation. Use current authorized workspace IDs for status/recovery without rewriting the operation’s initiating workspace.
+- [x] Guard wrong-source, wrong-operation, changed-binding and delayed responses. Invalidate previews on newer project revision, source lifetime/observation, operation changes, refresh and backend generation. Use current authorized workspace IDs for status/recovery without rewriting the operation’s initiating workspace.
 
-- [ ] Coordinate conflicting source UI effects with existing discovery, creation, rename and reassociation surfaces. Block duplicate effects while keeping explicit status, unrelated sources and ordinary Text usable. Dismissal must not cancel or replay submitted work; pending/stale/recovery states must restore focus intentionally.
+- [x] Coordinate conflicting source UI effects with existing discovery, creation, rename and reassociation surfaces. Block duplicate effects while keeping explicit status, unrelated sources and ordinary Text usable. Dismissal must not cancel or replay submitted work; pending/stale/recovery states must restore focus intentionally.
 
-- [ ] Add boundary tests for unknown outcomes, explicit status, remount/no replay, backend/source changes, list races, immutable-result guards, event timing, preview invalidation, unavailable/unresolved states and all three explicit actions. Run the focused UI suite including project creation, rename, recovery and renderer-app tests, then typecheck and diff checks; commit after passing.
+- [x] Add boundary tests for unknown outcomes, explicit status, remount/no replay, backend/source changes, list races, immutable-result guards, event timing, preview invalidation, unavailable/unresolved states and all three explicit actions. Run the focused UI suite including project creation, rename, recovery and renderer-app tests, then typecheck and diff checks; commit after passing.
 
 ### Task 3: Extend production-component presentation fixtures
 
@@ -179,3 +179,17 @@ Task 1 evidence directory: `/Users/aleksandersk/Documents/programming/Projects/p
 No full-suite, graphical Electron, layout, package, Windows or external CI acceptance is claimed by Task 1.
 
 Completed observer prerequisite: Actions 38226803150 at that exact SHA has both Windows observer suites 105/105, zero failures/skips, and four schema/provenance/ownership/cleanup-verified artifacts. Overall workflow remains pending. Historical clock attribution remains unproven. Readiness delivery and independent existing Reveal acknowledgment diagnosis are coordinator-owned; neither expands these UI tasks.
+
+
+Task 2 completed and verified on macOS using Node 22.21.1. Unknown move/recovery bindings survive dismissal and same-client/source remount without replay; explicit status uses the currently authorized workspace while preserving the initiating workspace and immutable operation fields. The UI reads unfinished source operations, displays durable stage and placement evidence, and exposes only freshly advertised recovery actions. Generation, observation, revision, source-lifetime and operation checks reject stale or foreign responses. Conflicting discovery Apply, creation, rename and reassociation controls coordinate with category moves while explicit status, unrelated sources and ordinary Text remain available. Existing fixture clients were adapted only for the mounted read-only operation list.
+
+Task 2 continuation evidence directory: `/Users/aleksandersk/Documents/programming/Projects/project_folder/.worktrees/issue-19-category-move/work/issue-19/category-move-ui-task-2/` (ignored local evidence).
+
+- `node --import tsx --test --test-name-pattern='conflicting|creation|coordination' tests/project-category-move-ui.test.tsx`: exit 0, 4 passed, zero failed/skipped; `continuation-source-coordination.log`. Earlier red coordination evidence is retained in `source-coordination-red.log` and `source-coordination-green.log` (the latter still recorded two failures despite its historical filename).
+- `node --import tsx --test tests/project-category-move-ui.test.tsx tests/components.test.tsx tests/project-creation-ui.test.tsx tests/project-rename-ui.test.tsx tests/project-recovery-ui.test.tsx tests/renderer-app.test.tsx`: exit 0, 618 passed, zero failed/skipped; `continuation-focused-ui.log`. Includes EN/RU disposable real-SQLite/native move and App remount controls against the unchanged existing service build.
+- `npm run typecheck`: exit 0; `continuation-typecheck.log`.
+- Focused ESLint on all changed TypeScript files with `--max-warnings=0`: exit 0; `continuation-lint.log`.
+- `npm run check:docs`: exit 0; `continuation-docs.log`.
+- `git diff --check`: exit 0; `continuation-diff-check.log`.
+
+Task 3 remains unstarted. No full-suite, Ladle/layout, graphical Electron, package, Windows or external CI acceptance is claimed by Task 2. Separate review and coordinator-owned gates remain pending.

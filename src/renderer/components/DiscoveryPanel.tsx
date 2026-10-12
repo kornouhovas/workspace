@@ -16,6 +16,7 @@ interface PanelProps {
   pending: boolean;
   error: boolean;
   applying?: boolean;
+  disabled?: boolean;
   applyError?: boolean;
   stale?: boolean;
   validationError?: boolean;
@@ -34,7 +35,7 @@ const reasonLabels = {
   service: "discoveryService", archive: "discoveryArchive", unresolved: "discoveryUnresolved",
 } as const;
 
-export function DiscoveryPanel({ language, preview, pending, error, applying, applyError, stale, validationError, onApply, onMode, onExclude, onRetry, onCancel }: PanelProps) {
+export function DiscoveryPanel({ language, preview, pending, error, applying, disabled, applyError, stale, validationError, onApply, onMode, onExclude, onRetry, onCancel }: PanelProps) {
   const t = (key: TranslationKey) => translate(language, key);
   const heading = useRef<HTMLHeadingElement>(null);
   const requestedFocus = useRef<string | null>(null);
@@ -119,21 +120,24 @@ export function DiscoveryPanel({ language, preview, pending, error, applying, ap
       </ul> : preview.previewToken && <EmptyStatePanel>{t("discoveryEmptyDescription")}</EmptyStatePanel>}
     </>}
     <div className="workspace-form-actions">
-      {onApply && <button type="button" className="workspace-button" disabled={pending || !preview?.previewToken} onClick={onApply}>{t("discoveryApply")}</button>}
+      {onApply && <button type="button" className="workspace-button" disabled={disabled || pending || !preview?.previewToken} onClick={onApply}>{t("discoveryApply")}</button>}
       <button ref={retry} type="button" className="workspace-button workspace-button--secondary" disabled={pending} onClick={onRetry}>{t("discoveryRefresh")}</button>
       <button type="button" className="workspace-button workspace-button--secondary" disabled={applying} onClick={onCancel}>{t("cancelRenameWorkspace")}</button>
     </div>
   </section>;
 }
 
-export function DiscoveryController({ client, workspaceId, sourceId, minimumRevision, observationVersion, invalidation, language, disabled, onApplied }: {
+export function DiscoveryController({ client, workspaceId, sourceId, minimumRevision, observationVersion, invalidation, language, disabled, onApplied, onPendingChange }: {
   client: WorkspaceServiceClient; workspaceId: string; sourceId: string; minimumRevision: { current: number }; observationVersion: { current: number }; invalidation: number; language: Language; disabled: boolean; onApplied?(projects: ProjectList, observedVersion: number): void;
+  onPendingChange?(pending: boolean): void;
 }) {
   const [open, setOpen] = useState(false);
   const [preview, setPreview] = useState<DiscoveryPreview | null>(null);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState(false);
   const [applying, setApplying] = useState(false);
+  useEffect(() => { onPendingChange?.(applying); }, [applying, onPendingChange]);
+  useEffect(() => () => { onPendingChange?.(false); }, [onPendingChange]);
   const [applyError, setApplyError] = useState(false);
   const [stale, setStale] = useState(false);
   const [validationError, setValidationError] = useState(false);
@@ -188,7 +192,7 @@ export function DiscoveryController({ client, workspaceId, sourceId, minimumRevi
     finally { if (current === version.current) setPending(false); }
   };
   const apply = async () => {
-    if (pending || applyingRef.current || !preview?.previewToken || preview.revision < minimumRevision.current) return;
+    if (disabled || pending || applyingRef.current || !preview?.previewToken || preview.revision < minimumRevision.current) return;
     const current = ++version.current;
     const observedVersion = observationVersion.current;
     applyingRef.current = true;
@@ -215,7 +219,7 @@ export function DiscoveryController({ client, workspaceId, sourceId, minimumRevi
   return <>
     <button ref={trigger} type="button" className="workspace-button workspace-button--secondary" disabled={disabled || open}
       onClick={() => { mode.current = undefined; setOpen(true); setApplyError(false); setValidationError(false); setStale(false); void request(); }}>{translate(language, "discoveryAction")}</button>
-    {open && <DiscoveryPanel language={language} preview={preview && preview.revision >= minimumRevision.current ? preview : null} pending={pending} error={error} applying={applying} applyError={applyError} stale={stale} validationError={validationError} onApply={() => void apply()}
+    {open && <DiscoveryPanel language={language} preview={preview && preview.revision >= minimumRevision.current ? preview : null} pending={pending} error={error} applying={applying} disabled={disabled} applyError={applyError} stale={stale} validationError={validationError} onApply={() => void apply()}
       onMode={(value) => { mode.current = value; setApplyError(false); setValidationError(false); setStale(false); void request(exclusions.current); }}
       onRetry={() => { setApplyError(false); void request(exclusions.current); }}
       onExclude={(name, excluded) => {
@@ -245,6 +249,8 @@ export function DiscoveryWorkspace({ client, workspaceId, sourceId, refreshVersi
   const [renameProject, setRenameProject] = useState<Pick<ProjectAssociationSummary, "projectId" | "name" | "relativePath" | "categoryId"> | null>(null);
   const [categoryMoveProject, setCategoryMoveProject] = useState<Pick<ProjectAssociationSummary, "projectId" | "name" | "relativePath" | "categoryId"> | null>(null);
   const [categoryMoveBlocked, setCategoryMoveBlocked] = useState(false);
+  const [creationBlocked, setCreationBlocked] = useState(false);
+  const [discoveryPending, setDiscoveryPending] = useState(false);
   const categoryMoveTrigger = useRef<HTMLButtonElement | null>(null);
   const restoreCategoryMoveFocus = useRef(false);
   const [renameBlocked, setRenameBlocked] = useState(false);
@@ -382,7 +388,7 @@ export function DiscoveryWorkspace({ client, workspaceId, sourceId, refreshVersi
   return <>
     <DiscoveryController client={client} workspaceId={workspaceId} sourceId={sourceId} minimumRevision={minimumRevision}
       observationVersion={observationVersion}
-      invalidation={invalidation} language={language} disabled={disabled || recoveryProject !== null || categoryMoveProject !== null || categoryMoveBlocked}
+      invalidation={invalidation} language={language} onPendingChange={setDiscoveryPending} disabled={disabled || creationBlocked || recoveryProject !== null || renameProject !== null || renameBlocked || categoryMoveProject !== null || categoryMoveBlocked}
       onApplied={(value, observedVersion) => {
         // The command can succeed while a newer runtime observation changes
         // resolution without a persisted revision. Keep success, reload placement.
@@ -396,17 +402,17 @@ export function DiscoveryWorkspace({ client, workspaceId, sourceId, refreshVersi
         setError(false); setLoading(false);
       }} />
     <ProjectCreationPanel client={client} workspaceId={workspaceId} sourceId={sourceId} language={language}
-      projects={projects} disabled={disabled || loading || error || recoveryProject !== null || categoryMoveProject !== null || categoryMoveBlocked} invalidation={invalidation}
+      projects={projects} onBlockedChange={setCreationBlocked} disabled={disabled || discoveryPending || loading || error || recoveryProject !== null || renameProject !== null || renameBlocked || categoryMoveProject !== null || categoryMoveBlocked} invalidation={invalidation}
       minimumRevision={minimumRevision} observationVersion={observationVersion} onCompleted={() => void load()} />
     <ProjectRenamePanel client={client} workspaceId={workspaceId} sourceId={sourceId} language={language} project={renameProject}
-      projects={projects} disabled={disabled || loading || error || recoveryProject !== null || categoryMoveProject !== null || categoryMoveBlocked} minimumRevision={minimumRevision}
+      projects={projects} disabled={disabled || creationBlocked || discoveryPending || loading || error || recoveryProject !== null || categoryMoveProject !== null || categoryMoveBlocked} minimumRevision={minimumRevision}
       observationVersion={observationVersion} sourceLifetime={sourceLifetime} invalidation={invalidation} onBlockedChange={setRenameBlocked}
       onRestoreFocus={() => tableHeading.current?.focus()}
       onClose={(focus = true) => { restoreRenameFocus.current = focus; setRenameProject(null); }} onCompleted={() => void load()} />
     <ProjectCategoryMovePanel client={client} workspaceId={workspaceId} sourceId={sourceId} language={language} project={categoryMoveProject}
-      projects={projects} disabled={disabled || loading || error || recoveryProject !== null || renameProject !== null || renameBlocked}
-      minimumRevision={minimumRevision} observationVersion={observationVersion} sourceLifetime={sourceLifetime}
-      onBlockedChange={setCategoryMoveBlocked} onCompleted={() => void load()}
+      projects={projects} disabled={disabled || creationBlocked || discoveryPending || loading || error || recoveryProject !== null || renameProject !== null || renameBlocked}
+      minimumRevision={minimumRevision} observationVersion={observationVersion} sourceLifetime={sourceLifetime} invalidation={invalidation}
+      onRestoreFocus={() => tableHeading.current?.focus()} onBlockedChange={setCategoryMoveBlocked} onCompleted={() => void load()}
       onClose={(focus = true) => { restoreCategoryMoveFocus.current = focus; setCategoryMoveProject(null); }} />
     {recoveryProject && <ProjectRecoveryController client={client} workspaceId={workspaceId} sourceId={sourceId}
       project={recoveryProject} minimumRevision={minimumRevision} observationVersion={observationVersion} sourceLifetime={sourceLifetime} invalidation={invalidation} observation={observation} language={language} disabled={disabled}
@@ -447,13 +453,13 @@ export function DiscoveryWorkspace({ client, workspaceId, sourceId, refreshVersi
       </div>}
       <TextPropertiesTable sourceLifetime={sourceLifetime} discoveryRevision={projects?.revision ?? 0} minimumDiscoveryRevision={minimumRevision} categoryPropertyRevision={projects?.categoryPropertyRevision ?? 0} minimumCategoryPropertyRevision={minimumCategoryPropertyRevision}
         onCategoryPropertyCommitted={commitLabel} categoryProperty={projects?.categoryProperty ?? null} categories={projects?.categories ?? []} client={client} workspaceId={workspaceId} sourceId={sourceId}
-        renameDisabled={loading || error || renameBlocked || renameProject !== null || recoveryProject !== null || categoryMoveProject !== null || categoryMoveBlocked || !projects?.configured ||
+        renameDisabled={creationBlocked || discoveryPending || loading || error || renameBlocked || renameProject !== null || recoveryProject !== null || categoryMoveProject !== null || categoryMoveBlocked || !projects?.configured ||
           !["ready", "empty"].includes(projects?.state ?? "") || (projects?.revision ?? -1) < minimumRevision.current}
-        categoryMoveDisabled={loading || error || categoryMoveBlocked || categoryMoveProject !== null || renameBlocked || renameProject !== null || recoveryProject !== null || !projects?.configured ||
+        categoryMoveDisabled={creationBlocked || discoveryPending || loading || error || categoryMoveBlocked || categoryMoveProject !== null || renameBlocked || renameProject !== null || recoveryProject !== null || !projects?.configured ||
           !["ready", "empty"].includes(projects?.state ?? "") || (projects?.revision ?? -1) < minimumRevision.current}
         onMoveCategory={projects?.mode === "grouped" ? (project, trigger) => { categoryMoveTrigger.current = trigger; setCategoryMoveProject(project); } : undefined}
         onRename={(project, trigger) => { renameTrigger.current = trigger; setRenameProject(project); }}
-        locateDisabled={recoveryProject !== null || renameBlocked || renameProject !== null || categoryMoveProject !== null || categoryMoveBlocked}
+        locateDisabled={creationBlocked || discoveryPending || recoveryProject !== null || renameBlocked || renameProject !== null || categoryMoveProject !== null || categoryMoveBlocked}
         onLocate={projects?.configured ? (project, trigger) => {
           recoveryTrigger.current = trigger; setRecoverySaved(false); setRecoveryProject(project);
         } : undefined}

@@ -37,6 +37,7 @@ class Client extends WorkspaceServiceClient {
   preview = { workspaceId: "workspace", sourceId: "source", operation, revision: 1, destinationState: "unverified", problem: "ownership_uncertain", actions: ["associate_reviewed"], previewToken: "token" } as ProjectCreationRecoveryPreview;
   reviewHandler: (() => Promise<ServiceResult<ProjectCreationRecoveryPreview>>) | null = null;
   revealHandler: () => Promise<ServiceResult<ProjectRevealResult>> = async () => ({ ok: true, value: { workspaceId: "workspace", projectId: "project", outcome: "dispatched" } });
+  override async listProjectCategoryMoves(workspaceId: string) { return { ok: true as const, value: { workspaceId, sourceId: this.list.sourceId, operations: [] } }; }
   override onBackendStatus(listener: (status: BackendStatus) => void) { this.statuses.add(listener); return () => { this.statuses.delete(listener); }; }
   override onWorkspaceChange(listener: (event: WorkspaceChangeEvent) => void) { this.events.add(listener); return () => { this.events.delete(listener); }; }
   override async listProjects(): ReturnType<WorkspaceServiceClient["listProjects"]> { return { ok: true as const, value: this.list }; }

@@ -11,6 +11,7 @@ interface Props {
   projects: ProjectList | null; disabled: boolean; invalidation: number;
   minimumRevision: { current: number }; observationVersion: { current: number };
   onCompleted(): void;
+  onBlockedChange?(blocked: boolean): void;
 }
 const actions: Record<ProjectCreationRecoveryAction, TranslationKey> = {
   retry_missing: "creationRetryMissing", complete_recorded: "creationCompleteRecorded", associate_reviewed: "creationAssociateReviewed",
@@ -18,7 +19,7 @@ const actions: Record<ProjectCreationRecoveryAction, TranslationKey> = {
 export function ProjectCreationPanel(props: Props) {
   return <CreationContent key={`${props.workspaceId}:${props.sourceId}`} {...props} />;
 }
-function CreationContent({ client, workspaceId, sourceId, language, projects, disabled, invalidation, minimumRevision, observationVersion, onCompleted }: Props) {
+function CreationContent({ client, workspaceId, sourceId, language, projects, disabled, invalidation, minimumRevision, observationVersion, onCompleted, onBlockedChange }: Props) {
   const t = (key: TranslationKey) => translate(language, key);
   const [open, setOpen] = useState(false), [name, setName] = useState(""), [categoryId, setCategoryId] = useState("");
   const [pending, setPending] = useState(false), [loading, setLoading] = useState(false);
@@ -28,6 +29,8 @@ function CreationContent({ client, workspaceId, sourceId, language, projects, di
   const originalRequest = useRef<Parameters<WorkspaceServiceClient["createProject"]>[0] | null>(null);
   const [unknownId, setUnknownId] = useState<string | null>(null);
   const [preview, setPreview] = useState<ProjectCreationRecoveryPreview | null>(null);
+  useEffect(() => { onBlockedChange?.(pending || unknownId !== null || operations.length > 0); }, [pending, unknownId, operations, onBlockedChange]);
+  useEffect(() => () => { onBlockedChange?.(false); }, [onBlockedChange]);
   const reviewing = useRef(false);
   const request = useRef(0), lists = useRef(0), busy = useRef(false), mounted = useRef(true);
   const generation = useRef(0), ready = useRef(true), trigger = useRef<HTMLButtonElement>(null), input = useRef<HTMLInputElement>(null);

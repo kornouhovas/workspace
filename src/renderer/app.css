@@ -359,6 +359,8 @@ body {
 .project-category-move form { display: grid; gap: .75rem; padding: 1rem; border: 1px solid var(--border-color, #d5d9df); border-radius: .5rem; min-width: 0; }
 .project-category-move select { width: 100%; min-width: 0; max-width: 100%; font: inherit; padding: .5rem; }
 .project-category-move .workspace-form-actions { flex-wrap: wrap; }
+.category-move-operations, .category-move-review { display: grid; gap: .75rem; min-width: 0; padding: 1rem; border: 1px solid var(--border-color, #d5d9df); border-radius: .5rem; }
+.category-move-operations > div { display: grid; gap: .75rem; min-width: 0; }
 .project-category-move button, .project-category-move p { white-space: normal; overflow-wrap: anywhere; max-width: 100%; }
 .project-category-move dl { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); gap: .5rem 1rem; margin: 0; }
 .project-category-move dt, .project-category-move dd { margin: 0; min-width: 0; overflow-wrap: anywhere; white-space: pre-wrap; }

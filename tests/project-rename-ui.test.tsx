@@ -31,6 +31,7 @@ class Client extends WorkspaceServiceClient {
     return { ...input, sourceId: "source", initiatingWorkspaceId: "workspace", originalName: "Original", originalRelativePath: "Original", requestedRelativePath: input.name, mode: "direct", categoryId: null, stage: "completed", lastVerifiedPlacement: "destination", problem: null, resultKind: "completed", completedRevision: 2 };
   }
   completed(): ProjectRenameResult { const operation = this.operation(); return { outcome: "completed", operation, project: { operationId: operation.operationId, sourceId: "source", projectId: "project", name: operation.name, relativePath: operation.requestedRelativePath, categoryId: null, revision: 2 } }; }
+  override async listProjectCategoryMoves(workspaceId: string) { return { ok: true as const, value: { workspaceId, sourceId: this.list.sourceId, operations: [] } }; }
   override onBackendStatus(listener: (status: BackendStatus) => void) { this.statuses.add(listener); return () => { this.statuses.delete(listener); }; }
   override onWorkspaceChange(listener: (event: WorkspaceChangeEvent) => void) { this.events.add(listener); return () => { this.events.delete(listener); }; }
   override async listProjects() { return { ok: true as const, value: this.list }; }

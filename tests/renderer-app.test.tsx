@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import { readFile, writeFile } from "node:fs/promises";
 import { mkdtempSync, mkdirSync, readdirSync, renameSync, realpathSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -94,6 +94,7 @@ interface MockOptions {
   onWorkspace?: (input: WorkspaceRequest) => Promise<ServiceResult<WorkspaceResponse>>;
   onProjects?: MockOptions["onWorkspace"];
   onCreations?: MockOptions["onWorkspace"];
+  onCategoryMoves?: MockOptions["onWorkspace"];
   onProperties?: MockOptions["onWorkspace"];
   onObservation?: MockOptions["onWorkspace"];
   onSettings?: WorkspaceDesktopApi["settings"];
@@ -121,7 +122,9 @@ function mockApi(options: MockOptions = {}) {
       return () => { changeListeners.delete(listener); };
     },
     settings: onSettings,
-    workspace: ((input: WorkspaceRequest) => input.type === "workspace.listProjectRenames"
+    workspace: ((input: WorkspaceRequest) => input.type === "workspace.listProjectCategoryMoves"
+      ? options.onCategoryMoves?.(input) ?? Promise.resolve(ok({ workspaceId: input.workspaceId, sourceId: (options.load?.ok ? options.load.value.activeWorkspace?.sourceId : null) ?? `source-${input.workspaceId}`, operations: [] }))
+      : input.type === "workspace.listProjectRenames"
       ? Promise.resolve(ok({ workspaceId: input.workspaceId, sourceId: (options.load?.ok ? options.load.value.activeWorkspace?.sourceId : null) ?? `source-${input.workspaceId}`, operations: [] }))
       : input.type === "workspace.listProjectCreations"
       ? options.onCreations?.(input) ?? Promise.resolve(ok({ workspaceId: input.workspaceId, sourceId: (options.load?.ok ? options.load.value.activeWorkspace?.sourceId : null) ?? `source-${input.workspaceId}`, operations: [] }))
@@ -2161,7 +2164,8 @@ test("EN/RU production grouped Apply normalizes child-then-parent exclusions and
       const header = screen.getByRole("columnheader", { name: translate(language, "discoveryCategory") });
       assert.equal(header.querySelectorAll("button").length, 1);
       assert.equal(header.querySelector("input, select"), null);
-      const categoryCell = screen.getByRole("cell", { name: "Category" }); assert.equal(categoryCell.querySelector("button, input, select"), null);
+      const categoryCell = screen.getByText("Category", { selector: "td" }); assert.equal(categoryCell.querySelector("input, select"), null);
+      assert.equal(categoryCell.querySelector("button")?.getAttribute("aria-label"), `${translate(language, "moveCategory")}: Project`);
       assert.ok(screen.getByText("Empty")); assert.ok(screen.getByText(translate(language, "discoveryGroupedMode")));
       const loadedView = service.workspaces.load(); assert.equal(loadedView.ok && loadedView.value.activeWorkspace?.viewId, viewId);
       const valueLabel = `${translate(language, "editTextValue")}: Project / Notes`;
@@ -2339,7 +2343,8 @@ test("EN/RU category label keyboard editor retains drafts and changes only share
       assert.equal(document.activeElement, trigger);
       assert.ok(screen.getByRole("columnheader", { name: "Draft label 日本語" }));
       assert.equal(screen.getByRole("textbox", { name: textLabel }), textEditor); assert.equal((textEditor as HTMLTextAreaElement).value, "Keep Text draft");
-      const categoryCell = screen.getByRole("cell", { name: "Category" }); assert.equal(categoryCell.querySelector("button, input, select"), null);
+      const categoryCell = screen.getByText("Category", { selector: "td" }); assert.equal(categoryCell.querySelector("input, select"), null);
+      assert.equal(categoryCell.querySelector("button")?.getAttribute("aria-label"), `${translate(language, "moveCategory")}: Project`);
       const siblingList = service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId: sibling.value.workspaceId });
       assert.equal(siblingList.ok && siblingList.value.categoryProperty?.name, "  Draft label 日本語  ");
       assert.equal(applied.value.revision, siblingList.ok && siblingList.value.revision);
@@ -2862,7 +2867,7 @@ test("EN/RU production Refresh and observer placement create only a needed categ
       assert.equal(screen.getByRole("textbox", { name: translate(language, "categoryPropertyName") }), labelEditor);
       if (mechanism === "observer") assert.equal(document.activeElement, textEditor);
       assert.equal(document.querySelectorAll("tbody tr").length, 1);
-      assert.ok(screen.getByRole("cell", { name: "Needed" })); assert.equal(screen.queryByText("Unrelated"), null); assert.equal(screen.queryByText("Other"), null); assert.equal(screen.queryByText("Empty"), null);
+      assert.ok(screen.getByText("Needed", { selector: "td" })); assert.equal(screen.queryByText("Unrelated"), null); assert.equal(screen.queryByText("Other"), null); assert.equal(screen.queryByText("Empty"), null);
       const after = unwrap(service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId: sibling.workspaceId }));
       assert.equal(after.projects[0].projectId, projectId); assert.equal(after.categories.length, 2);
       assert.equal(after.categoryProperty!.propertyId, categoryPropertyId); assert.equal(after.categoryProperty!.name, "  Authored label  ");
@@ -3512,4 +3517,56 @@ for (const platform of process.platform === "win32" ? [process.platform] : [proc
       assert.equal(renames.length, 1); assert.equal(statuses.length, 1); assert.equal(nativeCalls, 1);
     } finally { cleanup(); off?.(); service.close(); rmSync(directory, { recursive: true, force: true }); }
   }
+});
+
+for (const language of ["en", "ru"] as const) test(`${language}: production category move survives lost response and App backend remount without replay`, async () => {
+  const { openSettingsService: openMoveService } = await import(new URL("../dist/service/settings.mjs", import.meta.url).href) as { openSettingsService: typeof openSettingsService };
+  const { renameNoReplace } = await import(new URL("../dist/service/project-rename-filesystem.mjs", import.meta.url).href) as typeof import("../src/service/project-rename-filesystem.js");
+  const unwrap = <T,>(result: ServiceResult<T>) => { assert.ok(result.ok, JSON.stringify(result)); return result.value; };
+  const directory = realpathSync.native(mkdtempSync(join(tmpdir(), "category-move-app-ui-"))), root = join(directory, "root");
+  const basename = process.platform === "win32" ? "  Exact Текст 📝" : "  Exact Текст 📝  ";
+  mkdirSync(root); mkdirSync(join(root, "Current")); mkdirSync(join(root, "Empty")); mkdirSync(join(root, "Current", basename));
+  const sentinel = "Preserved project bytes\nТекст"; await writeFile(join(root, "Current", basename, "sentinel.txt"), sentinel);
+  let nativeCalls = 0;
+  const service = openMoveService(join(directory, "workspace.sqlite"), undefined, undefined, undefined, nativeProjectFilesystem, (from, to) => { nativeCalls++; return renameNoReplace(from, to); });
+  let off: (() => void) | undefined;
+  const moves: WorkspaceRequest[] = [], statuses: WorkspaceRequest[] = [];
+  const t = (key: Parameters<typeof translate>[1]) => translate(language, key);
+  try {
+    const workspaceId = unwrap(service.workspaces.create({ type: "workspace.create", name: "Category workspace", rootPath: root })).workspaceId;
+    const preview = unwrap(service.workspaces.previewDiscovery({ type: "workspace.previewDiscovery", workspaceId, mode: "grouped" }));
+    unwrap(service.workspaces.applyDiscovery({ type: "workspace.applyDiscovery", workspaceId, previewToken: preview.previewToken }));
+    const before = unwrap(service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId })), project = before.projects[0];
+    const sibling = unwrap(service.workspaces.create({ type: "workspace.create", name: "Sibling", rootPath: root }));
+    unwrap(service.workspaces.activate({ type: "workspace.activate", workspaceId }));
+    const property = unwrap(service.workspaces.createProperty({ type: "workspace.createProperty", workspaceId, name: "Notes", propertyType: "text" }));
+    const exactText = "  Exact\nТекст 📝  ";
+    unwrap(service.workspaces.setTextValue({ type: "workspace.setTextValue", workspaceId, propertyId: property.propertyId, projectId: project.projectId, value: exactText }));
+    const query = async (input: WorkspaceRequest) => service.handleQuery(input) as ServiceResult<WorkspaceResponse>;
+    const api = mockApi({ language, onProjects: query, onProperties: query, onCreations: query, onCategoryMoves: query, onObservation: query, onWorkspace: async (input) => {
+      if (input.type === "workspace.moveProjectCategory") { moves.push(input); service.handleCommand(input); return fail("service_unavailable"); }
+      if (input.type === "workspace.getProjectCategoryMove") { statuses.push(input); return service.handleQuery(input) as ServiceResult<WorkspaceResponse>; }
+      return (input.type === "workspace.load" ? service.handleQuery(input) : service.handleCommand(input)) as ServiceResult<WorkspaceResponse>;
+    } });
+    off = service.workspaces.subscribe(api.emitChange); render(<App />);
+    await userEvent.click(await screen.findByRole("button", { name: `${t("moveCategory")}: ${basename}`.replace(/\s+/g, " ").trim() }));
+    await userEvent.selectOptions(screen.getByRole("combobox", { name: t("moveCategoryDestination") }), before.categories.find((category) => category.name === "Empty")!.categoryId);
+    await userEvent.keyboard("{Enter}"); await screen.findByText(t("moveCategoryUncertain"));
+    await act(async () => { api.emitStatus("unavailable"); api.emitStatus("ready"); });
+    const status = await screen.findByRole("button", { name: t("moveCategoryStatus") });
+    assert.equal(moves.length, 1); assert.equal(statuses.length, 0); assert.equal(nativeCalls, 1);
+    assert.equal(screen.queryByText(t("moveCategorySaved")), null);
+    await userEvent.click(status); await screen.findByText(t("moveCategorySaved"));
+    const after = unwrap(service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId }));
+    assert.equal(after.projects[0].projectId, project.projectId); assert.equal(after.projects[0].name, basename);
+    assert.equal(after.projects[0].relativePath, `Empty/${basename}`); assert.equal(after.revision, before.revision + 1);
+    assert.deepEqual(unwrap(service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId: sibling.workspaceId })).projects, after.projects);
+    assert.equal(unwrap(service.workspaces.listTextProperties({ type: "workspace.listTextProperties", workspaceId })).values[0].value, exactText);
+    assert.equal(await readFile(join(root, "Empty", basename, "sentinel.txt"), "utf8"), sentinel);
+    assert.deepEqual(readdirSync(join(root, "Current")), []); assert.deepEqual(readdirSync(join(root, "Empty")), [basename]);
+    assert.equal(moves.length, 1); assert.equal(statuses.length, 1); assert.equal(nativeCalls, 1);
+    const command = moves[0]; assert.equal(command.type, "workspace.moveProjectCategory");
+    if (command.type !== "workspace.moveProjectCategory") throw new Error("Unexpected command");
+    assert.deepEqual(statuses[0], { type: "workspace.getProjectCategoryMove", workspaceId, operationId: command.operationId });
+  } finally { cleanup(); off?.(); service.close(); rmSync(directory, { recursive: true, force: true }); }
 });
