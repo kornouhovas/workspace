@@ -929,11 +929,21 @@ async function runningFixture(t,mode = 'quiet',duration = 600,{ startupDelayMs =
   return {...f,dir,worker,exited,options:{...f.options,source:{kind:'runner',dir,log:f.log}}};
 }
 
+async function fixtureExit(f) {
+  let timer;
+  try {
+    return await Promise.race([f.exited, new Promise((_, reject) => {
+      timer = setTimeout(() => reject(new Error('Fixture worker terminal exit timed out')), 10000);
+    })]);
+  } finally { clearTimeout(timer); }
+}
+
 test('real runner fixture observes healthy startup beyond the former readiness budget', async t => {
   const f = await runningFixture(t, 'quiet', 100, { startupDelayMs: 2800 });
+  const exit = await fixtureExit(f);
   const result = await observe({ ...f.options, budgetMs: 2000 });
   assert.equal(result.reason, 'completed');
-  assert.equal((await f.exited).code, 0);
+  assert.equal(exit.code, 0);
   assert.equal(readState(f.dir).status, 'awaiting_review');
 });
 
@@ -951,11 +961,45 @@ test('real runner fixture observes OS launch errors without waiting for an exit 
 
 for(const mode of ['quiet','noisy','failure','throw']) test(`real runner/process ${mode} preserves terminal source and real CLI exit`,async t=>{
   const f=await runningFixture(t,mode,100);
-  const result=await observe({...f.options,budgetMs:2000}); const exit=await f.exited;
+  // This is terminal evidence, not a promise that live ownership is readable.
+  // Running uncertainty and dead launchers have separate strict controls.
+  const exit=await fixtureExit(f); const result=await observe({...f.options,budgetMs:2000});
   assert.equal(result.reason,['failure','throw'].includes(mode)?'failed':'completed');
   assert.equal(exit.code,['failure','throw'].includes(mode)?1:0);
   assert.equal(result.exit,mode==='failure'?9:mode==='throw'?null:0);
   if(mode==='noisy') { assert.ok(readFileSync(f.log).length>100000); assert.ok(result.log.excerpt.length<=2048); }
+});
+
+test('real running PID probe denial stays uncertain until the actual worker exits', async t => {
+  const f = await runningFixture(t, 'gated', 100);
+  const original = process.kill;
+  let denied = 0;
+  let exit, failure;
+  process.kill = (pid, signal) => {
+    if (pid === f.worker.pid && signal === 0) {
+      denied++;
+      throw Object.assign(new Error('Controlled real worker probe denial'), { code: 'EPERM' });
+    }
+    return original(pid, signal);
+  };
+  try {
+    const result = await observe({ ...f.options, budgetMs: 2000 });
+    assert.equal(result.reason, 'ownership_unknown');
+    assert.equal(result.status, 'running');
+    assert.ok(denied > 0);
+  } catch (error) { failure = error; }
+  finally {
+    process.kill = original;
+    try {
+      writeFileSync(join(f.dir, 'fixture-release'), 'release\n');
+      exit = await fixtureExit(f);
+    } catch (error) { failure ??= error; }
+  }
+  if (failure) throw failure;
+  assert.equal(exit.code, 0);
+  const terminal = await observe({ ...f.options, budgetMs: 2000 });
+  assert.equal(terminal.reason, 'completed');
+  assert.equal(terminal.exit, 0);
 });
 
 test('cancelling the actual observer CLI leaves its quiet executor running to successful exit',async t=>{

@@ -150,3 +150,9 @@ The user stopped Ralphex and requested direct diagnosis, repair and focused CI b
 - Historical Windows worker delay versus premature failure remains unproven. Actual Windows focused acceptance is pending.
 - Separate authorized CI work adds manual failed-check scheduling and existing privacy-safe typed Reveal receipt capture to the rename driver. The macOS Actions rejection remains unproven; a local attempt acknowledged Reveal successfully and separately failed Electron shutdown. Neither result is waived.
 - Coordinator owns focused Actions, receipt inspection, any remaining repair and full CI only after focused success.
+
+## Terminal Fixture Follow-up
+
+Full run `38298911484` subsequently returned `ownership_unknown` in the quiet real-process test, rather than the earlier startup assertion. The original failed PID probe or lock-read detail was not retained; historical attribution remains unproven. A controlled denial of the real worker's PID probe reproduces the same assertion in the former terminal test.
+
+Terminal-only tests now await the actual worker exit with a ten-second fixture bound before inspecting its terminal source. This neither retries nor weakens the production observer's uncertain-ownership response. A separate real worker waits for an explicit release file: denied probing must retain running `ownership_unknown`, and only its actual subsequent exit permits completed evidence. Existing foreign ownership, dead-launcher, cancellation and publication-race controls remain required. The controlled former failure passes after the fixture repair; local affected checks passed 159 tests with no failures or skips. Exact-SHA Windows acceptance remains pending.
