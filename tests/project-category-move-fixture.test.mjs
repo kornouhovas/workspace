@@ -16,10 +16,16 @@ const supported = ["darwin", "win32"].includes(process.platform);
 const handshake = ["result", "ack_sent", "ack_received", "exit_sent", "main_exit"];
 const privateValues = ["Original", "Category", "sentinel", "nativeIdentity", "birthtimeNs", "workspace.sqlite", "stack", "private injected",
   "workspace-category-move-service-", "ack.control", "exit.control", "WORKSPACE_CATEGORY_MOVE_SERVICE_ROOT", "EISDIR", "EEXIST", "Error:", "ack\\n", "exit\\n",
-  "Invalid fixture command", "Duplicate fixture command", "Fixture control deadline", "Fixture publication deadline"];
+  "Invalid fixture command", "Duplicate fixture command", "Fixture control deadline", "Fixture publication deadline",
+  '"actual":', '"expected":', '"message":', '"name":', '"sql":', '"pid":', '"token":', '"errno":'];
 function assertPrivate(result) {
   const encoded = JSON.stringify(result);
   for (const secret of privateValues) assert.equal(encoded.includes(secret), false, secret);
+  if (result.diagnostic) {
+    assert.ok(Buffer.byteLength(JSON.stringify(result.diagnostic)) <= 512);
+    for (const record of Object.values(result.diagnostic))
+      assert.deepEqual(Object.keys(record).sort(), ["failure", "scenario", "seam"]);
+  }
 }
 async function checkpoint(fault) {
   const temporary = !controlEvidence(fault ?? "success");
@@ -43,8 +49,8 @@ function assertOrderedOnce(result, stages) {
     assert.ok(index > previous, stage); previous = index;
   }
 }
-function assertProtocol(result, malformed = false) {
-  assert.equal(result.protocolError, malformed);
+function assertProtocol(result, malformed = false, invalidDiagnostic = false) {
+  assert.equal(result.protocolError, malformed || invalidDiagnostic);
   assert.equal(result.protocol.failed, malformed);
   assert.equal(result.protocol.pendingBytes, 0);
   const { ignoredWhitespaceRecords, ignoredWhitespaceTailBytes } = result.protocol.diagnostics;
@@ -72,7 +78,7 @@ function assertCleanup(result, failed = false) {
   assert.equal(result.events.includes("spawn_error"), false);
   assert.equal(result.evidenceWriteFailed ?? false, false);
 }
-function assertNormalHandshake(result, { exitCode = 0, malformed = false, cleanupFailed = false } = {}) {
+function assertNormalHandshake(result, { exitCode = 0, malformed = false, cleanupFailed = false, invalidDiagnostic = false } = {}) {
   assertStages(result, handshake);
   assertOrderedOnce(result, handshake);
   assertCleanup(result, cleanupFailed);
@@ -83,7 +89,7 @@ function assertNormalHandshake(result, { exitCode = 0, malformed = false, cleanu
   assert.equal(result.controlError ?? false, false);
   assert.equal(result.events.includes("control_publish_failed"), false);
   assert.equal(result.events.includes("startup_failed"), false);
-  assertProtocol(result, malformed);
+  assertProtocol(result, malformed, invalidDiagnostic);
 }
 
 test("real Electron service checkpoint requires every scenario, handshake, shutdown and cleanup", { skip: !supported }, async () => {
@@ -97,6 +103,92 @@ test("real Electron service checkpoint requires every scenario, handshake, shutd
   assertNormalHandshake(result);
   assertScenarios(result);
   assertUtilities(result);
+  assert.equal(Object.hasOwn(result, "diagnostic"), false);
+});
+
+test("controlled recovery assertion retains its exact seam and unreached restart in the persisted checkpoint", { skip: !supported }, async () => {
+  const result = await checkpoint("recovery-assertion");
+  assert.deepEqual(result.diagnostic, { firstFailure: {
+    scenario: "grouped.keep_original", seam: "recovery_result", failure: "assertion_failed",
+  } });
+  assert.equal(result.ok, false);
+  assertNormalHandshake(result, { exitCode: 1 });
+  assertScenarios(result, key => key === "grouped.keep_original" ? "failed"
+    : key === "grouped.recovery_restart" ? "unreached" : "passed");
+  assertUtilities(result, 3);
+});
+
+test("controlled lifecycle failure is distinct from a recovery assertion", { skip: !supported }, async () => {
+  const result = await checkpoint("lifecycle-connect");
+  assert.deepEqual(result.diagnostic, { firstFailure: {
+    scenario: "fixture", seam: "connect", failure: "lifecycle_failed",
+  } });
+  assert.equal(result.ok, false);
+  assertNormalHandshake(result, { exitCode: 1 });
+  assertScenarios(result, () => "unreached");
+  assertUtilities(result, 1);
+});
+
+test("a later stop failure cannot replace the first recovery assertion", { skip: !supported }, async () => {
+  const result = await checkpoint("recovery-assertion-lifecycle-stop");
+  assert.deepEqual(result.diagnostic, {
+    firstFailure: { scenario: "grouped.keep_original", seam: "recovery_result", failure: "assertion_failed" },
+    lifecycleFailure: { scenario: "fixture", seam: "final_stop", failure: "lifecycle_failed" },
+  });
+  assert.equal(result.ok, false);
+  assertNormalHandshake(result, { exitCode: 1 });
+  assertScenarios(result, key => key === "grouped.keep_original" ? "failed"
+    : key === "grouped.recovery_restart" ? "unreached" : "passed");
+  assertUtilities(result, 3);
+});
+
+test("a later fixture cleanup failure retains the recovery assertion and failed removal outcome", { skip: !supported }, async () => {
+  const result = await checkpoint("recovery-assertion-cleanup");
+  assert.deepEqual(result.diagnostic, {
+    firstFailure: { scenario: "grouped.keep_original", seam: "recovery_result", failure: "assertion_failed" },
+    lifecycleFailure: { scenario: "fixture", seam: "final_cleanup", failure: "lifecycle_failed" },
+  });
+  assert.equal(result.ok, false);
+  assertNormalHandshake(result, { exitCode: 1, cleanupFailed: true });
+  assertScenarios(result, key => key === "grouped.keep_original" ? "failed"
+    : key === "grouped.recovery_restart" ? "unreached" : "passed");
+  assertUtilities(result, 3);
+});
+
+test("an unknown diagnostic seam cannot be persisted or accepted", { skip: !supported }, async () => {
+  const result = await checkpoint("diagnostic-unknown-seam");
+  assert.equal(result.ok, false);
+  assert.equal(Object.hasOwn(result, "diagnostic"), false);
+  assertNormalHandshake(result, { exitCode: 1, invalidDiagnostic: true });
+  assertScenarios(result, key => key === "grouped.keep_original" ? "failed"
+    : key === "grouped.recovery_restart" ? "unreached" : "passed");
+  assertUtilities(result, 3);
+});
+
+test("invalid diagnostic records fail closed and discard private or unbounded fields", { skip: !supported }, async () => {
+  for (const fault of ["diagnostic-private-field", "diagnostic-unknown-scenario", "diagnostic-unknown-failure",
+    "diagnostic-numeric", "diagnostic-null", "diagnostic-array", "diagnostic-missing", "diagnostic-lifecycle", "diagnostic-success"]) {
+    const result = await checkpoint(fault);
+    assert.equal(result.ok, false, fault);
+    assert.equal(Object.hasOwn(result, "diagnostic"), false, fault);
+    const successfulProcess = fault === "diagnostic-success";
+    assertNormalHandshake(result, { exitCode: successfulProcess ? 0 : 1, invalidDiagnostic: true });
+    assertScenarios(result, key => successfulProcess ? "passed" : key === "grouped.keep_original" ? "failed"
+      : key === "grouped.recovery_restart" ? "unreached" : "passed");
+    assertUtilities(result, successfulProcess ? 4 : 3);
+  }
+});
+
+test("an earlier recovery failure never counts as reaching the malformed-result control", { skip: !supported }, async () => {
+  const result = await checkpoint("recovery-assertion-malformed-result");
+  assert.deepEqual(result.diagnostic, { firstFailure: {
+    scenario: "grouped.keep_original", seam: "recovery_result", failure: "assertion_failed",
+  } });
+  assert.equal(result.ok, false);
+  assertNormalHandshake(result, { exitCode: 1 });
+  assertScenarios(result, key => key === "grouped.keep_original" ? "failed"
+    : key === "grouped.recovery_restart" ? "unreached" : "passed");
+  assertUtilities(result, 3);
 });
 for (const fault of ["failure", "malformed", "missing-assertion", "skipped", "cleanup"]) {
   test(`service ${fault} control proves its intended failure with a complete normal handshake`, { skip: !supported }, async () => {

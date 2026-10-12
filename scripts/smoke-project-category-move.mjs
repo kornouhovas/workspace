@@ -6,13 +6,26 @@ import { mkdtemp, mkdir, rm, lstat, writeFile, readFile, readdir, realpath } fro
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 const require = createRequire(import.meta.url);
-const { SCENARIOS } = require("../tests/fixtures/project-category-move-service-electron.cjs");
+const { SCENARIOS, DIAGNOSTIC_SEAMS, DIAGNOSTIC_FAILURES } = require("../tests/fixtures/project-category-move-service-electron.cjs");
 const { publishCommand } = require("../tests/fixtures/project-rename-service-control.cjs");
 const { createProtocol } = require("../tests/fixtures/project-rename-native-protocol.cjs");
 const repository = fileURLToPath(new URL("../", import.meta.url));
 const alive = pid => { try { process.kill(pid, 0); return true; } catch (error) { return error.code !== "ESRCH"; } };
 const exists = async path => Boolean(await lstat(path).catch(() => null));
 const states = new Set(["passed", "failed", "skipped", "unreached"]);
+
+function validDiagnostic(value) {
+  const exactKeys = (record, keys) => record !== null && typeof record === "object" && !Array.isArray(record)
+    && Object.keys(record).length === keys.length && keys.every(key => Object.hasOwn(record, key));
+  const validFailure = record => exactKeys(record, ["scenario", "seam", "failure"])
+    && ["fixture", ...SCENARIOS].includes(record.scenario)
+    && DIAGNOSTIC_SEAMS.includes(record.seam) && DIAGNOSTIC_FAILURES.includes(record.failure);
+  return (exactKeys(value, ["firstFailure"]) || exactKeys(value, ["firstFailure", "lifecycleFailure"]))
+    && validFailure(value.firstFailure)
+    && (!Object.hasOwn(value, "lifecycleFailure") || (validFailure(value.lifecycleFailure)
+      && ["stop", "connect", "final_stop", "final_cleanup"].includes(value.lifecycleFailure.seam)
+      && value.lifecycleFailure.failure === "lifecycle_failed"));
+}
 
 export async function inputDigest(inputRoot = repository) {
   const hash = createHash("sha256");
@@ -58,6 +71,11 @@ export async function superviseCategoryMoveService({ fault, evidenceDirectory = 
     });
   };
   const record = stage => { if (evidence.events.length < 80) evidence.events.push(stage); else protocolError = true; };
+  const cleanupFailure = () => {
+    const failure = { scenario: "fixture", seam: "final_cleanup", failure: "lifecycle_failed" };
+    if (!evidence.diagnostic) evidence.diagnostic = { firstFailure: failure };
+    else evidence.diagnostic.lifecycleFailure ??= failure;
+  };
   const observe = message => {
     // The receiver can run before the rename callback returns to this process.
     // Defer that observation until publication is accounted for, never infer
@@ -82,6 +100,14 @@ export async function superviseCategoryMoveService({ fault, evidenceDirectory = 
     } else if (message.stage === "result") {
       if (resultSeen) { protocolError = true; return; } resultSeen = true;
       resultOK = message.ok === true;
+      if (Object.hasOwn(message, "diagnostic")) {
+        if (message.ok !== false || !validDiagnostic(message.diagnostic)) protocolError = true;
+        else {
+          const copy = record => ({ scenario: record.scenario, seam: record.seam, failure: record.failure });
+          evidence.diagnostic = { firstFailure: copy(message.diagnostic.firstFailure) };
+          if (message.diagnostic.lifecycleFailure) evidence.diagnostic.lifecycleFailure = copy(message.diagnostic.lifecycleFailure);
+        }
+      }
       for (const key of SCENARIOS) {
         const status = message.scenarios?.[key]?.status;
         if (states.has(status)) evidence.scenarios[key] = { status };
@@ -115,7 +141,7 @@ export async function superviseCategoryMoveService({ fault, evidenceDirectory = 
   };
   const removeFixture = async () => {
     await rm(root, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
-    if (fault === "cleanup") throw new Error("Injected cleanup reporting failure");
+    if (["cleanup", "recovery-assertion-cleanup"].includes(fault)) throw new Error("Injected cleanup reporting failure");
   };
   try {
     evidence.inputSha256 = await inputDigest();
@@ -170,6 +196,7 @@ export async function superviseCategoryMoveService({ fault, evidenceDirectory = 
         await removeFixture();
         evidence.cleanup = await exists(root) ? "failed" : "removed";
       } catch { evidence.cleanup = "failed"; }
+      if (evidence.cleanup === "failed") cleanupFailure();
     } else {
       evidence.cleanup = "unverified_shutdown";
       child.kill(); child.stdout.destroy(); child.stderr.destroy(); child.unref();

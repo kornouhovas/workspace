@@ -8,16 +8,42 @@ const { pathToFileURL } = require("node:url");
 const checks = ["move", "noop", "rejection", "collision", "occupied_insertion", "retention", "events", "restart",
   "complete_destination", "retry_original", "keep_original", "recovery_restart"];
 const SCENARIOS = checks.map(check => `grouped.${check}`);
-module.exports = { SCENARIOS };
+// Fixed fixture-only evidence vocabulary; never derive a code from thrown data.
+const DIAGNOSTIC_SEAMS = ["setup", "scenario", "recovery_prepare", "unfinished_result", "destination_identity",
+  "trigger_remove", "restart_journal", "external_return", "original_identity", "receipt_retry", "receipt_status",
+  "pending_status", "pending_events", "pending_identity", "recovery_preview", "recovery_actions", "recovery_request",
+  "recovery_result", "recovery_events", "recovery_project", "consumed_token", "retained_identity", "retained_state",
+  "final_receipt", "restart_receipts", "restart_status", "stop", "connect", "final_stop", "final_cleanup"];
+const DIAGNOSTIC_FAILURES = ["assertion_failed", "operation_failed", "lifecycle_failed", "deadline"];
+module.exports = { SCENARIOS, DIAGNOSTIC_SEAMS, DIAGNOSTIC_FAILURES };
 
 if (process.versions.electron) {
   const { app, utilityProcess, MessageChannelMain } = require("electron");
   const root = process.env.WORKSPACE_CATEGORY_MOVE_SERVICE_ROOT;
   const fault = process.env.WORKSPACE_CATEGORY_MOVE_SERVICE_FAULT;
+  const diagnosticFaults = ["diagnostic-unknown-seam", "diagnostic-private-field", "diagnostic-unknown-scenario",
+    "diagnostic-unknown-failure", "diagnostic-numeric", "diagnostic-null", "diagnostic-array", "diagnostic-missing",
+    "diagnostic-lifecycle"];
   const scenarios = Object.fromEntries(SCENARIOS.map(key => [key, { status: "unreached" }]));
   const send = (value, flushed) => process.stdout.write(JSON.stringify(value) + "\n", flushed);
   const own = new Set();
-  let activeCheck, sql, controller, deadline, finishing = false, finalOK = false;
+  let activeCheck, activeSeam = "setup", diagnostic, sql, controller, deadline, finishing = false, finalOK = false;
+  const seam = code => { activeSeam = code; };
+  const fail = error => {
+    diagnostic ??= { firstFailure: { scenario: activeCheck ?? "fixture", seam: activeSeam,
+      failure: error instanceof assert.AssertionError ? "assertion_failed" : "operation_failed" } };
+  };
+  const lifecycle = async (code, action) => {
+    const previous = activeSeam; seam(code);
+    try { await action(); seam(previous); }
+    catch (error) {
+      const failure = { scenario: code.startsWith("final_") ? "fixture" : activeCheck ?? "fixture",
+        seam: code, failure: "lifecycle_failed" };
+      if (!diagnostic) diagnostic = { firstFailure: failure };
+      else diagnostic.lifecycleFailure ??= failure;
+      throw error;
+    }
+  };
   // Poll before main_ready; stdout remains the result/receiver-observation route.
   const control = startControlReceiver(root, {
     deadline: Date.now() + 45000,
@@ -38,7 +64,7 @@ if (process.versions.electron) {
     return [stat.dev, stat.ino, stat.birthtimeNs].map(String);
   };
   app.setPath("userData", join(root, "user-data"));
-  async function stop() {
+  async function stopWorkers() {
     if (controller) { await controller.stop(1500); controller = undefined; }
     // The controller's timeout alone is not termination evidence.
     await Promise.all([...own].map(child => new Promise(resolve => {
@@ -48,18 +74,40 @@ if (process.versions.electron) {
     })));
     assert.equal(own.size, 0);
   }
+  const stop = () => lifecycle("stop", stopWorkers);
   async function finish(ok) {
     if (finishing) return; finishing = true; clearTimeout(deadline);
-    try { await stop(); } catch { ok = false; }
-    sql?.close(); sql = undefined;
+    try { await lifecycle("final_stop", async () => {
+      await stopWorkers();
+      // Inject after real termination so this control never leaves a live worker.
+      if (fault === "recovery-assertion-lifecycle-stop") throw new Error("private injected stop failure");
+    }); } catch { ok = false; }
+    try { await lifecycle("final_cleanup", () => { sql?.close(); sql = undefined; }); } catch { ok = false; }
     finalOK = ok;
     // Exit at the control seam after workers stop, before publishing any result.
     if (fault === "premature-main-exit") { app.exit(7); return; }
     // Exclusive publication must fail on an occupied temporary record. The
     // supervisor still uses the bounded real publisher without mocked I/O.
     if (fault === "control-publication") fs.mkdirSync(join(root, "ack.control.pending"));
+    // Fixed malformed-evidence controls mutate only this disposable message.
+    switch (fault) {
+      case "diagnostic-unknown-seam": diagnostic.firstFailure.seam = "private injected unknown seam"; break;
+      case "diagnostic-unknown-scenario": diagnostic.firstFailure.scenario = "private injected unknown scenario"; break;
+      case "diagnostic-unknown-failure": diagnostic.firstFailure.failure = "private injected unknown failure"; break;
+      case "diagnostic-private-field": diagnostic.firstFailure.actual = "private injected actual"; break;
+      case "diagnostic-numeric": diagnostic.firstFailure.errno = Number.MAX_VALUE; break;
+      case "diagnostic-null": diagnostic = null; break;
+      case "diagnostic-array": diagnostic = []; break;
+      case "diagnostic-missing": diagnostic = {}; break;
+      case "diagnostic-lifecycle": diagnostic.lifecycleFailure = {
+        scenario: "fixture", seam: "recovery_result", failure: "assertion_failed",
+      }; break;
+      case "diagnostic-success": diagnostic = { firstFailure: {
+        scenario: "grouped.keep_original", seam: "recovery_result", failure: "assertion_failed",
+      } }; break;
+    }
     control.resultPublished();
-    send({ stage: "result", ok, scenarios,
+    send({ stage: "result", ok, scenarios, ...(diagnostic !== undefined ? { diagnostic } : {}),
       versions: { electron: process.versions.electron, node: process.versions.node } });
     // The receiver cannot read a directory as an exact exit command. Ack
     // publication remains valid; exit publication is never authorized.
@@ -69,11 +117,14 @@ if (process.versions.electron) {
   }
 
   const runCheck = async (mode, check, action) => {
-    activeCheck = `${mode}.${check}`;
+    activeCheck = `${mode}.${check}`; seam("scenario");
     try { await action(); scenarios[activeCheck] = { status: "passed" }; }
-    catch (error) { scenarios[activeCheck] = { status: "failed" }; throw error; }
+    catch (error) { fail(error); scenarios[activeCheck] = { status: "failed" }; throw error; }
   };
-  deadline = setTimeout(() => { void finish(false); }, 35000);
+  deadline = setTimeout(() => {
+    diagnostic ??= { firstFailure: { scenario: activeCheck ?? "fixture", seam: activeSeam, failure: "deadline" } };
+    void finish(false);
+  }, 35000);
   app.whenReady().then(async () => {
     send({ stage: "main_ready" });
     if (fault === "malformed") process.stdout.write("private injected protocol error\n");
@@ -82,16 +133,19 @@ if (process.versions.electron) {
     const native = require("../../dist/service/project-rename-filesystem.cjs");
     const databasePath = join(root, "workspace.sqlite");
     async function connect() {
-      controller = new BackendController();
-      const child = utilityProcess.fork(join(__dirname, "../../dist/service/entry.cjs"), [],
-        { stdio: "pipe", serviceName: "Project category move service checkpoint" });
-      own.add(child);
-      let pid;
-      child.once("spawn", () => { pid = child.pid; send({ stage: "utility_started", pid }); });
-      child.once("exit", code => { own.delete(child); send({ stage: "utility_exit", code, pid }); });
-      child.stdout?.resume(); child.stderr?.resume();
-      const { port1, port2 } = new MessageChannelMain();
-      assert.equal(await controller.start(child, port1, databasePath, port2, 6000), true);
+      await lifecycle("connect", async () => {
+        controller = new BackendController();
+        const child = utilityProcess.fork(join(__dirname, "../../dist/service/entry.cjs"), [],
+          { stdio: "pipe", serviceName: "Project category move service checkpoint" });
+        own.add(child);
+        let pid;
+        child.once("spawn", () => { pid = child.pid; send({ stage: "utility_started", pid }); });
+        child.once("exit", code => { own.delete(child); send({ stage: "utility_exit", code, pid }); });
+        child.stdout?.resume(); child.stderr?.resume();
+        const { port1, port2 } = new MessageChannelMain();
+        assert.equal(await controller.start(child, port1, databasePath, port2, 6000), true);
+        if (fault === "lifecycle-connect") throw new Error("private injected connect failure");
+      });
     }
     const request = async input => {
       const result = await controller.request(input, 6000);
@@ -202,62 +256,82 @@ if (process.versions.electron) {
     const recoveryReceipts = [];
     for (const action of ["complete_destination", "retry_original", "keep_original"]) {
       await runCheck(mode, action, async () => {
+        seam("recovery_prepare");
         const nextParent = currentParent === destinationParent ? originalParent : destinationParent;
         const nextCategoryId = currentCategoryId === destination.categoryId ? project.categoryId : destination.categoryId;
         // Real SQLite transaction rejection after the native effect creates an
         // unfinished operation in the unmodified production utility service.
         sql.exec("CREATE TRIGGER fixture_interrupt BEFORE UPDATE ON projects BEGIN SELECT RAISE(ABORT, 'Fixture completion interruption'); END");
         const recoveryInput = moveInput(nextCategoryId, revision), unfinished = await request(recoveryInput);
-        assert.equal(unfinished.outcome, "recoverable"); assertBytes(nextParent);
+        seam("unfinished_result"); assert.equal(unfinished.outcome, "recoverable");
+        seam("destination_identity"); assertBytes(nextParent);
+        seam("trigger_remove");
         sql.exec("DROP TRIGGER fixture_interrupt");
         if (action === "complete_destination") {
+          seam("restart_journal");
           const saved = sql.prepare("SELECT * FROM project_category_move_operations WHERE operation_id = ?").get(recoveryInput.operationId);
           await stop(); await connect();
+          seam("restart_journal");
           assert.deepEqual(sql.prepare("SELECT * FROM project_category_move_operations WHERE operation_id = ?").get(recoveryInput.operationId), saved);
         } else {
           // Injected external return of the same directory permits an original-
           // placement review. This does not establish an OS failure mechanism.
-          assert.equal(native.renameNoReplace(placement(nextParent), placement(currentParent)), "renamed");
-          assertBytes(currentParent);
+          seam("external_return"); assert.equal(native.renameNoReplace(placement(nextParent), placement(currentParent)), "renamed");
+          seam("original_identity"); assertBytes(currentParent);
         }
         events = []; unsubscribe = controller.onWorkspaceChange(event => events.push(event));
-        assert.deepEqual(await request(recoveryInput), unfinished);
+        seam("receipt_retry"); assert.deepEqual(await request(recoveryInput), unfinished);
+        seam("receipt_status");
         assert.deepEqual(await query("workspace.getProjectCategoryMove", { workspaceId: sibling.workspaceId, operationId: recoveryInput.operationId }), unfinished);
+        seam("pending_status");
         const pending = await query("workspace.listProjectCategoryMoves", { workspaceId: sibling.workspaceId });
         assert.ok(pending.operations.some(row => row.operationId === recoveryInput.operationId));
-        assert.equal(projectEvents().length, 0);
-        assertBytes(action === "complete_destination" ? nextParent : currentParent);
+        seam("pending_events"); assert.equal(projectEvents().length, 0);
+        seam("pending_identity"); assertBytes(action === "complete_destination" ? nextParent : currentParent);
+        seam("recovery_preview");
         const review = await query("workspace.previewProjectCategoryMoveRecovery", { workspaceId: sibling.workspaceId, operationId: recoveryInput.operationId });
-        assert.deepEqual(review.actions, action === "complete_destination" ? [action] : ["retry_original", "keep_original"]);
+        seam("recovery_actions"); assert.deepEqual(review.actions, action === "complete_destination" ? [action] : ["retry_original", "keep_original"]);
         const recover = { type: "workspace.recoverProjectCategoryMove", workspaceId: sibling.workspaceId,
           operationId: recoveryInput.operationId, previewToken: review.previewToken, action };
-        const recovered = await request(recover);
+        seam("recovery_request"); const recovered = await request(recover);
+        seam("recovery_result");
+        if (action === "keep_original" && ["recovery-assertion", "recovery-assertion-lifecycle-stop", "recovery-assertion-cleanup", "recovery-assertion-malformed-result",
+          ...diagnosticFaults].includes(fault))
+          assert.equal("private injected actual", "private injected expected");
         assert.equal(recovered.outcome, action === "keep_original" ? "rejected" : "completed");
-        if (action === "keep_original") { assert.equal(recovered.problem, "kept_original"); assert.equal(projectEvents().length, 0); }
+        if (action === "keep_original") {
+          assert.equal(recovered.problem, "kept_original"); seam("recovery_events"); assert.equal(projectEvents().length, 0);
+        }
         else {
           revision++; currentParent = nextParent; currentCategoryId = nextCategoryId;
-          assert.equal(recovered.project.categoryId, currentCategoryId); assert.equal(recovered.project.revision, revision); assertEvent(revision);
+          seam("recovery_project"); assert.equal(recovered.project.categoryId, currentCategoryId); assert.equal(recovered.project.revision, revision);
+          seam("recovery_events"); assertEvent(revision);
         }
+        seam("consumed_token");
         const consumed = await controller.request(recover, 6000); assert.equal(consumed.ok, false); assert.equal(consumed.error.code, "stale_preview");
-        assertBytes(currentParent); await assertRetained(); assert.deepEqual(await request(recoveryInput), recovered);
+        seam("retained_identity"); assertBytes(currentParent);
+        seam("retained_state"); await assertRetained();
+        seam("final_receipt"); assert.deepEqual(await request(recoveryInput), recovered);
         recoveryReceipts.push([recoveryInput, recovered]); unsubscribe();
       });
     }
     await runCheck(mode, "recovery_restart", async () => {
       unsubscribe(); await stop(); await connect();
+      seam("restart_receipts");
       // Reopen every final recovery receipt in a fresh production backend.
       assert.deepEqual(await request(input), moved); assert.deepEqual(await request(noopInput), noop);
       for (const [recoveryInput, receipt] of recoveryReceipts) assert.deepEqual(await request(recoveryInput), receipt);
-      const list = await query("workspace.listProjects", { workspaceId: sibling.workspaceId });
+      seam("restart_status"); const list = await query("workspace.listProjects", { workspaceId: sibling.workspaceId });
       assert.equal(list.revision, revision); assert.equal(list.projects.find(row => row.projectId === project.projectId).categoryId, currentCategoryId);
       assert.deepEqual((await query("workspace.listProjectCategoryMoves")).operations, []);
-      await assertRetained(); assertBytes(currentParent);
+      seam("retained_state"); await assertRetained(); seam("retained_identity"); assertBytes(currentParent);
     });
     if (fault === "missing-assertion") scenarios[SCENARIOS[0]] = { status: "unreached" };
     if (fault === "skipped") scenarios[SCENARIOS[0]] = { status: "skipped" };
-    if (fault === "malformed-result") scenarios[SCENARIOS[0]] = { status: "invalid" };
+    if (["malformed-result", "recovery-assertion-malformed-result"].includes(fault)) scenarios[SCENARIOS[0]] = { status: "invalid" };
     await finish(true);
-  }).catch(async () => {
+  }).catch(async error => {
+    fail(error);
     if (activeCheck && scenarios[activeCheck].status !== "failed") scenarios[activeCheck] = { status: "failed" };
     await finish(false);
   });
