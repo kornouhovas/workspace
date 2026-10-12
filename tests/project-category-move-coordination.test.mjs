@@ -7,7 +7,7 @@ import test from "node:test";
 import Database from "better-sqlite3";
 import { nativeObserverDependencies } from "../src/service/source-observer.ts";
 import { openSettingsService } from "../dist/service/settings.mjs";
-import { performFixtureRecovery } from "./fixtures/project-category-move-service-electron.cjs";
+import { performFixtureRecovery, prepareFixtureObservation, fixtureTree } from "./fixtures/project-category-move-service-electron.cjs";
 
 async function fixture(run, observerOptions = {}) {
   const directory = fs.realpathSync.native(fs.mkdtempSync(join(tmpdir(), "move-coordination-")));
@@ -374,10 +374,11 @@ for (const terminal of ["failed", "completed", "unchanged"]) test(`${terminal} m
 // Deliver a real observer pass over the returned directory, never clear tokens.
 const recoveryControls = ["second_stale", "other_error", "unknown_error", "changed_state", "changed_bytes", "missing_action",
   "failed_preview", "malformed_preview", "malformed_reply", "foreign_preview", "changed_placement", "reused_token", "empty_token",
-  "changed_after_preview", "second_error", "malformed_fresh_reply"];
+  "changed_after_preview", "second_error", "malformed_fresh_reply", "changed_identity"];
+for (const preparation of ["unprepared", "prepared", "ordinary", "late"])
 for (const pollCategories of [false, true]) for (const action of ["complete_destination", "retry_original", "keep_original"])
-  for (const control of [null, ...(action === "keep_original" && !pollCategories ? recoveryControls : [])]) {
-  test(`controlled sourceObserved invalidation: ${action}, ${pollCategories ? "Windows grouped polling seam" : "category notification seam"}${control ? `, response/state control ${control}` : ""}`, () => fixture(async f => {
+  for (const control of [null, ...(preparation === "unprepared" && action === "keep_original" && !pollCategories ? recoveryControls : [])]) {
+  test(`${preparation} sourceObserved recovery: ${action}, ${pollCategories ? "Windows grouped polling seam" : "category notification seam"}${control ? `, response/state control ${control}` : ""}`, () => fixture(async f => {
     f.flushHints();
     f.sql.exec("CREATE TRIGGER fixture_interrupt BEFORE UPDATE ON projects BEGIN SELECT RAISE(ABORT, 'Fixture completion interruption'); END");
     const input = { type: "workspace.moveProjectCategory", workspaceId: f.workspace.workspaceId,
@@ -399,27 +400,31 @@ for (const pollCategories of [false, true]) for (const action of ["complete_dest
       fs.renameSync(join(f.root, "Destination/Original"), join(f.root, "Category/Original"));
     }
     const previewInput = { type: "workspace.previewProjectCategoryMoveRecovery", workspaceId: f.sibling.workspaceId, operationId: input.operationId };
-    const review = f.service.handleQuery(previewInput).value;
-    assert.ok(review.actions.includes(action));
-    const recover = { type: "workspace.recoverProjectCategoryMove", workspaceId: f.sibling.workspaceId,
-      operationId: input.operationId, previewToken: review.previewToken, action };
     const state = () => ({
       tables: f.snapshot(), operations: f.sql.prepare("SELECT * FROM project_category_move_operations ORDER BY operation_id").all(),
       retained: Object.fromEntries(["workspaces", "active_workspace", "project_creation_operations", "project_rename_operations"]
         .map(table => [table, f.sql.prepare(`SELECT * FROM ${table} ORDER BY 1`).all()])),
       receipt: f.service.handleQuery({ type: "workspace.getProjectCategoryMove", workspaceId: f.sibling.workspaceId, operationId: input.operationId }),
       projects: f.query("workspace.listProjects"), text: f.query("workspace.listTextProperties"),
-      placements: ["", "Category", "Destination", "Category/Original", "Destination/Original", "Category/Other"].map(path => {
-        const absolute = join(f.root, path);
-        if (!fs.existsSync(absolute)) return null;
-        const stat = fs.lstatSync(absolute, { bigint: true });
-        return { path, identity: [stat.dev, stat.ino, stat.birthtimeNs].map(String),
-          bytes: fs.existsSync(join(absolute, "sentinel")) ? fs.readFileSync(join(absolute, "sentinel"), "utf8") : null };
-      }),
+      tree: fixtureTree(f.root), effectEvents: events.filter(event => event.type !== "workspace.sourceObserved"),
     });
-    const before = state(), events = [];
+    const events = [];
+    const cachedBaseline = f.query("workspace.getSourceObservation").value.observation.observationRevision;
     f.service.workspaces.subscribe(event => events.push(event));
-    events.length = 0; // Subscription replays the latest source observation.
+    const newer = baseline => events.filter(event => event.type === "workspace.sourceObserved"
+      && event.observationRevision > baseline);
+    assert.equal(newer(cachedBaseline).length, 0); // Cached subscription replay is not invalidation.
+    if (["prepared", "ordinary"].includes(preparation)) {
+      const observed = await prepareFixtureObservation({ workspaceId: f.sibling.workspaceId, readState: state,
+        request: input => input.type === "workspace.refreshSource" ? f.service.handleCommand(input) : f.service.handleQuery(input) });
+      assert.ok(observed.observationRevision >= cachedBaseline);
+    }
+    const baselineObservation = f.query("workspace.getSourceObservation").value.observation.observationRevision;
+    const review = f.service.handleQuery(previewInput).value;
+    assert.ok(review.actions.includes(action));
+    const recover = { type: "workspace.recoverProjectCategoryMove", workspaceId: f.sibling.workspaceId,
+      operationId: input.operationId, previewToken: review.previewToken, action };
+    const before = state();
     let actions = 0, previews = 0;
     const perform = () => performFixtureRecovery({ review, recover, readState: state, request: async request => {
       if (request.type === "workspace.previewProjectCategoryMoveRecovery") {
@@ -439,18 +444,31 @@ for (const pollCategories of [false, true]) for (const action of ["complete_dest
         return response;
       }
       actions++;
-      if (actions === 1) observe();
+      if (actions === 1) {
+        if (["prepared", "late"].includes(preparation)) {
+          const replacement = f.service.handleQuery(previewInput);
+          assert.equal(replacement.ok, true); assert.notEqual(replacement.value.previewToken, request.previewToken);
+        } else observe();
+      }
+      if (actions === 2 && ["prepared", "late"].includes(preparation)) {
+        observe();
+        assert.equal(newer(baselineObservation).length > 0, preparation === "late");
+        assert.deepEqual(state(), before);
+      }
       if (actions === 2 && control === "second_stale") {
         fs.mkdirSync(join(f.root, "Category/Observed extra")); observe();
       }
       if (actions === 2 && control === "second_error") return f.service.handleCommand({ ...request, action: "invalid" });
       if (actions === 2 && control === "malformed_fresh_reply") return null;
       const response = f.service.handleCommand(request);
-      if (actions === 1) {
+      if (actions === 2 && (preparation === "late" || control === "second_stale")) {
+        assert.equal(response.ok, false); assert.equal(response.error.code, "stale_preview");
+      }
+      if (actions === 1 && preparation !== "ordinary") {
         assert.equal(response.ok, false); assert.equal(response.error.code, "stale_preview");
         assert.deepEqual(state(), before); // Exact no-effect proof before fixture repair.
-        const observed = events.filter(event => event.type === "workspace.sourceObserved");
-        assert.ok(observed.length > 0);
+        const observed = newer(baselineObservation);
+        assert.equal(observed.length > 0, preparation === "unprepared");
         for (const event of observed) {
           assert.equal(event.sourceId, f.workspace.sourceId);
           assert.deepEqual(event.workspaceIds, [f.workspace.workspaceId, f.sibling.workspaceId]);
@@ -462,22 +480,48 @@ for (const pollCategories of [false, true]) for (const action of ["complete_dest
         if (control === "changed_state") assert.equal(f.command("workspace.setTextValue", {
           projectId: f.project.projectId, propertyId: f.propertyId, value: "Changed by control" }).ok, true);
         if (control === "changed_bytes") fs.writeFileSync(join(f.root, "Category/Original/sentinel"), "Changed by control");
+        if (control === "changed_identity") {
+          fs.renameSync(join(f.root, "Category/Original"), join(f.directory, "retained-original"));
+          fs.mkdirSync(join(f.root, "Category/Original"));
+          fs.writeFileSync(join(f.root, "Category/Original/sentinel"), "  Exact bytes 📝\n");
+        }
       }
       return response;
     } });
-    if (control) {
-      await assert.rejects(perform, { name: "AssertionError" });
-      assert.equal(actions, ["second_stale", "second_error", "malformed_fresh_reply"].includes(control) ? 2 : 1);
-      assert.equal(previews, ["other_error", "unknown_error", "malformed_reply", "changed_state", "changed_bytes"].includes(control) ? 0 : 1);
+    if (control || preparation === "late") {
+      if (preparation === "late") await assert.rejects(perform, error => {
+        assert.equal(error.code, "ERR_ASSERTION"); assert.equal(error.actual, false); assert.equal(error.expected, true);
+        assert.match(error.stack, /performFixtureRecovery/); return true;
+      });
+      else await assert.rejects(perform, { name: "AssertionError" });
+      assert.equal(actions, preparation === "late" || ["second_stale", "second_error", "malformed_fresh_reply"].includes(control) ? 2 : 1);
+      assert.equal(previews, ["other_error", "unknown_error", "malformed_reply", "changed_state", "changed_bytes", "changed_identity"].includes(control) ? 0 : 1);
       assert.deepEqual(f.service.handleCommand(input), unfinished);
       assert.equal(events.some(event => event.type === "workspace.projectsChanged"), false);
-      assert.equal(fs.existsSync(join(f.root, "Destination/Original")), false);
-      if (!["changed_state", "changed_bytes", "changed_after_preview"].includes(control)) assert.deepEqual(state(), before);
+      assert.equal(fs.existsSync(join(f.root, "Destination/Original")), action === "complete_destination");
+      if (control === "second_stale") {
+        const after = state(), added = after.tree.entries.Category.entries["Observed extra"];
+        assert.deepEqual(added, fixtureTree(join(f.root, "Category/Observed extra")));
+        assert.deepEqual(added.entries, {});
+        delete after.tree.entries.Category.entries["Observed extra"];
+        assert.deepEqual(after, before); // Only the deliberate invalidating entry changed.
+      } else if (control === "changed_identity") {
+        const after = state(), original = after.tree.entries.Category.entries.Original;
+        assert.notDeepEqual(original.identity, before.tree.entries.Category.entries.Original.identity);
+        assert.deepEqual(fixtureTree(join(f.directory, "retained-original")), before.tree.entries.Category.entries.Original);
+        after.tree.entries.Category.entries.Original = before.tree.entries.Category.entries.Original;
+        const replaced = after.projects.value.retainedProjects.find(project => project.projectId === f.project.projectId);
+        assert.equal(replaced.resolution, "replaced");
+        replaced.resolution = before.projects.value.retainedProjects.find(project => project.projectId === f.project.projectId).resolution;
+        assert.deepEqual(after, before);
+      } else if (!["changed_state", "changed_bytes", "changed_after_preview"].includes(control)) assert.deepEqual(state(), before);
       return;
     }
     const result = await perform();
-    assert.equal(actions, 2); assert.equal(previews, 1);
-    assert.notEqual(result.recover.previewToken, recover.previewToken);
+    assert.equal(actions, preparation === "ordinary" ? 1 : 2); assert.equal(previews, preparation === "ordinary" ? 0 : 1);
+    if (preparation === "ordinary") assert.equal(result.recover.previewToken, recover.previewToken);
+    else assert.notEqual(result.recover.previewToken, recover.previewToken);
+    if (["prepared", "ordinary"].includes(preparation)) assert.equal(newer(baselineObservation).length, 0);
     assert.equal(result.recovered.outcome, action === "keep_original" ? "rejected" : "completed");
     if (action === "keep_original") assert.equal(result.recovered.problem, "kept_original");
     assert.equal(f.service.handleCommand(result.recover).error.code, "stale_preview");

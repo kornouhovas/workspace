@@ -15,6 +15,29 @@ const DIAGNOSTIC_SEAMS = ["setup", "scenario", "recovery_prepare", "unfinished_r
   "recovery_result", "recovery_events", "recovery_project", "consumed_token", "retained_identity", "retained_state",
   "final_receipt", "restart_receipts", "restart_status", "stop", "connect", "final_stop", "final_cleanup"];
 const DIAGNOSTIC_FAILURES = ["assertion_failed", "operation_failed", "lifecycle_failed", "deadline"];
+// Read every entry without following links; retain exact file bytes and native
+// identities independently of the service's selected-project assertions.
+function fixtureTree(path) {
+  let stat;
+  try { stat = fs.lstatSync(path, { bigint: true }); }
+  catch (error) { if (error.code === "ENOENT") return null; throw error; }
+  const identity = [stat.dev, stat.ino, stat.birthtimeNs].map(String);
+  if (stat.isSymbolicLink()) return { identity, link: fs.readlinkSync(path) };
+  if (stat.isDirectory()) return { identity, entries: Object.fromEntries(fs.readdirSync(path).sort()
+    .map(name => [name, fixtureTree(join(path, name))])) };
+  assert.equal(stat.isFile(), true);
+  return { identity, bytes: fs.readFileSync(path).toString("hex") };
+}
+async function prepareFixtureObservation({ workspaceId, request, readState }) {
+  const before = await readState();
+  const refreshed = await request({ type: "workspace.refreshSource", workspaceId });
+  assert.equal(refreshed?.ok, true);
+  assert.deepEqual(await readState(), before);
+  const observed = await request({ type: "workspace.getSourceObservation", workspaceId });
+  assert.equal(observed?.ok, true);
+  assert.ok(Number.isSafeInteger(observed.value.observation.observationRevision));
+  return observed.value.observation;
+}
 // Fixture-only explicit action boundary, also exercised against the public
 // service with controlled observer dependencies. It is not a service retry API.
 async function performFixtureRecovery({ review, recover, request, readState }) {
@@ -58,7 +81,7 @@ async function performFixtureRecovery({ review, recover, request, readState }) {
   assert.equal(result.value.operation.sourceId, review.sourceId);
   return { recovered: result.value, recover: submitted };
 }
-module.exports = { SCENARIOS, DIAGNOSTIC_SEAMS, DIAGNOSTIC_FAILURES, performFixtureRecovery };
+module.exports = { SCENARIOS, DIAGNOSTIC_SEAMS, DIAGNOSTIC_FAILURES, performFixtureRecovery, prepareFixtureObservation, fixtureTree };
 
 if (process.versions.electron) {
   const { app, utilityProcess, MessageChannelMain } = require("electron");
@@ -331,11 +354,6 @@ if (process.versions.electron) {
         assert.ok(pending.operations.some(row => row.operationId === recoveryInput.operationId));
         seam("pending_events"); assert.equal(projectEvents().length, 0);
         seam("pending_identity"); assertBytes(action === "complete_destination" ? nextParent : currentParent);
-        seam("recovery_preview");
-        const review = await query("workspace.previewProjectCategoryMoveRecovery", { workspaceId: sibling.workspaceId, operationId: recoveryInput.operationId });
-        seam("recovery_actions"); assert.deepEqual(review.actions, action === "complete_destination" ? [action] : ["retry_original", "keep_original"]);
-        let recover = { type: "workspace.recoverProjectCategoryMove", workspaceId: sibling.workspaceId,
-          operationId: recoveryInput.operationId, previewToken: review.previewToken, action };
         const readState = async () => {
           assertBytes(action === "complete_destination" ? nextParent : currentParent);
           await assertRetained();
@@ -345,11 +363,27 @@ if (process.versions.electron) {
             tables: Object.fromEntries(["sources", "projects", "categories", "category_properties", "property_definitions", "text_property_values",
               "views", "settings", "workspaces", "active_workspace", "project_category_move_operations", "project_rename_operations", "project_creation_operations"]
               .map(table => [table, sql.prepare(`SELECT * FROM ${table} ORDER BY 1`).all()])),
-            placements: [sourceRoot, originalParent, destinationParent, placement(originalParent), placement(destinationParent), join(originalParent, "Other")]
-              .map(path => fs.existsSync(path) ? { identity: identity(path), entries: fs.readdirSync(path).sort() } : null),
-            projectEventCount: projectEvents().length,
+            trees: [fixtureTree(sourceRoot), fixtureTree(unrelatedRoot)],
+            siblingText: await query("workspace.listTextProperties", { workspaceId: sibling.workspaceId }),
+            text: await query("workspace.listTextProperties"), settings: await request({ type: "settings.load" }),
+            workspaces: await request({ type: "workspace.load" }),
+            unrelated: await query("workspace.listProjects", { workspaceId: unrelated.workspaceId }),
+            effectEvents: events.filter(event => event.type !== "workspace.sourceObserved"),
           };
         };
+        // Acknowledge the controlled external placement before authoring a
+        // review. This read/refresh preparation must have no mutation effects.
+        const observation = await prepareFixtureObservation({ workspaceId: sibling.workspaceId,
+          readState, request: input => controller.request(input, 6000) });
+        const baselineObservation = observation.observationRevision;
+        const observedSincePreparation = () => events.filter(event => event.type === "workspace.sourceObserved"
+          && event.sourceId === workspace.sourceId && event.observationRevision > baselineObservation);
+        seam("recovery_preview");
+        const review = await query("workspace.previewProjectCategoryMoveRecovery", { workspaceId: sibling.workspaceId, operationId: recoveryInput.operationId });
+        seam("recovery_actions"); assert.deepEqual(review.actions, action === "complete_destination" ? [action] : ["retry_original", "keep_original"]);
+        let recover = { type: "workspace.recoverProjectCategoryMove", workspaceId: sibling.workspaceId,
+          operationId: recoveryInput.operationId, previewToken: review.previewToken, action };
+        assert.equal(observedSincePreparation().length, 0);
         seam("recovery_request");
         // Checkpoint-only preview replacement control. Real sourceObserved
         // invalidation and Windows polling are covered separately by the
@@ -359,8 +393,8 @@ if (process.versions.electron) {
         const previewInput = { type: "workspace.previewProjectCategoryMoveRecovery",
           workspaceId: recover.workspaceId, operationId: recover.operationId };
         const recoveryRequest = async input => {
+          if (input.type === "workspace.recoverProjectCategoryMove") recoveryRequests++;
           if (controlled && input.type === "workspace.recoverProjectCategoryMove") {
-            recoveryRequests++;
             if (recoveryRequests === 1 || fault === "recovery-preview-second-stale") {
               const replacement = await controller.request(previewInput, 6000);
               assert.equal(replacement.ok, true);
@@ -387,7 +421,9 @@ if (process.versions.electron) {
           return result;
         };
         const performed = await performFixtureRecovery({ review, recover, readState, request: recoveryRequest });
-        if (controlled) { assert.equal(recoveryRequests, 2); assert.equal(freshPreviews, 1); }
+        assert.equal(recoveryRequests, controlled ? 2 : 1);
+        assert.equal(freshPreviews, controlled ? 1 : 0);
+        assert.equal(observedSincePreparation().length, 0);
         const recovered = performed.recovered; recover = performed.recover;
         seam("recovery_result");
         if (action === "keep_original" && ["recovery-assertion", "recovery-assertion-lifecycle-stop", "recovery-assertion-cleanup", "recovery-assertion-malformed-result",

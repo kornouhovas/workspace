@@ -4,7 +4,8 @@ import { fileURLToPath } from "node:url";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { mkdtemp, rm, readFile, writeFile, cp } from "node:fs/promises";
-import { SCENARIOS, performFixtureRecovery } from "./fixtures/project-category-move-service-electron.cjs";
+import fs from "node:fs";
+import { SCENARIOS, performFixtureRecovery, prepareFixtureObservation, fixtureTree } from "./fixtures/project-category-move-service-electron.cjs";
 import { superviseCategoryMoveService, inputDigest } from "../scripts/smoke-project-category-move.mjs";
 
 
@@ -26,6 +27,41 @@ const fixtureReview = () => ({ workspaceId: "fixture-workspace", sourceId: "fixt
   originalState: "matching", destinationState: "missing", problem: null, actions: ["retry_original", "keep_original"] });
 const fixtureRecover = review => ({ type: "workspace.recoverProjectCategoryMove", workspaceId: review.workspaceId,
   operationId: review.operation.operationId, previewToken: review.previewToken, action: "keep_original" });
+
+test("fixture preparation refreshes only the selected workspace and reads its actual observation baseline", async () => {
+  const requests = [], observation = { observationRevision: 7 };
+  const result = await prepareFixtureObservation({ workspaceId: "selected-sibling", readState: () => ({ exact: true }),
+    request: input => { requests.push(input); return { ok: true, value: { observation } }; } });
+  assert.deepEqual(requests, [{ type: "workspace.refreshSource", workspaceId: "selected-sibling" },
+    { type: "workspace.getSourceObservation", workspaceId: "selected-sibling" }]);
+  assert.deepEqual(result, observation);
+});
+
+test("fixture preparation rejects changed independent state before reading a baseline or authoring a review", async () => {
+  const requests = []; let state = 1;
+  await assert.rejects(() => prepareFixtureObservation({ workspaceId: "selected", readState: () => ({ state }),
+    request: input => { requests.push(input); state++; return { ok: true }; } }), { name: "AssertionError" });
+  assert.deepEqual(requests, [{ type: "workspace.refreshSource", workspaceId: "selected" }]);
+});
+
+test("fixture tree retains nested bytes and identity without following directory links", async () => {
+  const root = await mkdtemp(join(tmpdir(), "category-move-tree-"));
+  try {
+    const owned = join(root, "owned"), external = join(root, "external");
+    fs.mkdirSync(owned); fs.mkdirSync(external);
+    fs.writeFileSync(join(external, "private"), "Outside");
+    fs.mkdirSync(join(owned, "nested")); fs.writeFileSync(join(owned, "nested", "bytes"), Buffer.from([0, 255, 10]));
+    fs.symlinkSync(external, join(owned, "link"), process.platform === "win32" ? "junction" : "dir");
+    const before = fixtureTree(owned);
+    assert.equal(before.entries.nested.entries.bytes.bytes, "00ff0a");
+    assert.deepEqual(Object.keys(before.entries.link).sort(), ["identity", "link"]);
+    fs.writeFileSync(join(external, "private"), "Outside changed");
+    assert.deepEqual(fixtureTree(owned), before);
+    fs.writeFileSync(join(owned, "nested", "bytes"), Buffer.from([0, 255, 11]));
+    assert.notDeepEqual(fixtureTree(owned), before);
+    assert.equal(fixtureTree(join(owned, "absent")), null);
+  } finally { await rm(root, { recursive: true, force: true }); }
+});
 
 test("fixture ordinary recovery performs exactly the chosen action without fresh preview", async () => {
   const review = fixtureReview(), recover = fixtureRecover(review), requests = [];
@@ -162,7 +198,7 @@ test("controlled preview replacement fails closed on a second stale response in 
   assertUtilities(result, 3);
 });
 
-test("controlled preview replacement completes one fresh chosen action with four successful utility exits", { skip: !supported }, async () => {
+test("prepared controlled preview replacement completes one fresh chosen action with four successful utility exits", { skip: !supported }, async () => {
   const result = await checkpoint("recovery-preview-success");
   assert.equal(result.ok, true);
   assertNormalHandshake(result);
