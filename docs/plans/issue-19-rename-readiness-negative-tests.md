@@ -35,11 +35,11 @@ Keep production/helper/fixture/lifecycle/runner/CI/application/dependencies unch
 
 ### Task 2: Verify scope and record the bounded result
 
-- [ ] Inspect Task 1's complete affected-file result, all ten operands, controlled deadlines, actual Electron integration and cleanup. Reuse evidence only for unchanged inputs; rerun affected checks after relevant edits.
-- [ ] Run npx --no-install eslint tests/rename-editor-readiness.test.mjs --max-warnings=0, npm run check:docs and git diff --check. Inspect the complete diff against the two-file allowlist. No full npm test, rebuild, coverage infrastructure or graphical application smoke in this slice.
-- [ ] Record commands/exits/input identities, evidence pointers and limits below. Historical cause remains unproven; exact original full-suite CI is coordinator-owned and pending. No invented coverage percentage.
-- [ ] Preserve the independent runtime diagnosis: 46 normal graphical quits passed, final owned-process termination verification failed and fixture cleanup was skipped. This task changes no lifecycle policy or acceptance of that failure.
-- [ ] Commit completed verified task changes in English. Finish the bounded execution; no executor push, tracker writes, Actions, review or UI work.
+- [x] Inspect Task 1's complete affected-file result, all ten operands, controlled deadlines, actual Electron integration and cleanup. Reuse evidence only for unchanged inputs; rerun affected checks after relevant edits.
+- [x] Run npx --no-install eslint tests/rename-editor-readiness.test.mjs --max-warnings=0, npm run check:docs and git diff --check. Inspect the complete diff against the two-file allowlist. No full npm test, rebuild, coverage infrastructure or graphical application smoke in this slice.
+- [x] Record commands/exits/input identities, evidence pointers and limits below. Historical cause remains unproven; exact original full-suite CI is coordinator-owned and pending. No invented coverage percentage.
+- [x] Preserve the independent runtime diagnosis: 46 normal graphical quits passed, final owned-process termination verification failed and fixture cleanup was skipped. This task changes no lifecycle policy or acceptance of that failure.
+- [x] Commit completed verified task changes in English. Finish the bounded execution; no executor push, tracker writes, Actions, review or UI work.
 
 ## Execution Evidence
 
@@ -52,7 +52,15 @@ Keep production/helper/fixture/lifecycle/runner/CI/application/dependencies unch
 - Green: `node --test tests/rename-editor-readiness.test.mjs`, exit **0**, **25 passed, 0 failed, 0 skipped**. Full log: `green-1.log`. Both commands used the Node 22.21.1 bin directory prepended to PATH.
 - All ten operand cases now forward the real renderer callback with an already-expired renderer deadline while retaining the 200ms host allowance. Initial/final operands, exact finite evidence keys and specific rejection classifications passed. Controlled response delivery before/after 200ms, late-release immutability, exactly one recording, the 30ms never-returning transport, primary/secondary errors and invalid allowances passed.
 - Real ready/delayed-focus/default never-focused integration, host timer disposal, browser frame/timer cleanup and unchanged normal-quit/profile cleanup controls passed. No production helper, fixture, lifecycle, runner, CI, application or dependency changes.
-- Task 2 remains unexecuted. Historical CI timing attribution is unproven; original full-suite CI and actual Windows acceptance remain coordinator-owned and pending. The independent runtime result remains 46 successful normal graphical quits followed by failed final owned-process termination verification and skipped fixture cleanup; this task establishes no acceptance of that failure.
+- At the Task 1 handoff, Task 2 remained unexecuted. Historical CI timing attribution is unproven; original full-suite CI and actual Windows acceptance remain coordinator-owned and pending. The independent runtime result remains 46 successful normal graphical quits followed by failed final owned-process termination verification and skipped fixture cleanup; this task establishes no acceptance of that failure.
+
+### Task 2: verified scope and bounded result
+
+- Starting HEAD: `2bfa28dc3d406ec9ac9645390d02c8a4709a65f5`; immutable issue base remains `4f9f11f785c63a65585ea6f33f167fc438272c64`. Evidence root: `work/issue-19/rename-readiness-test-repair/task2/` (ignored). `verification.json` records command exits, SHA-256 input identities, evidence reuse and the resulting local commit; full logs remain in this directory.
+- Inspected the entire Task 1 test result and bounded diff from `8dd9593fca948d019002a43004b4f4bf469910bd`. All ten literal operands assert real initial/final values and exact finite keys. Controlled delivery at 199ms and expiration at 200ms distinguish operand rejection from unknown transport evidence, preserve late-release immutability and record once. The 30ms never-returning control, timer disposal, primary/secondary errors, invalid allowances, real ready/delayed/default integration and browser/fixture cleanup remain present. No test or production-code edits were needed in Task 2.
+- Verified all recorded test/helper/fixture/dependency hashes, Task 1's final plan hash and the saved red/green log hashes against current bytes. Reused `task1/green-1.log`: `node --test tests/rename-editor-readiness.test.mjs`, exit **0**, **25 passed, 0 failed, 0 skipped** on Node **22.21.1**, macOS arm64. The controlled red remains separate from historical reproduction. The regression was not repeated for unchanged inputs.
+- `npx --no-install eslint tests/rename-editor-readiness.test.mjs --max-warnings=0`, `npm run check:docs` and `git diff --check` all exited **0** with the Node 22.21.1 bin directory prepended to PATH. Logs: `eslint.log`, `docs.log` and `diff-check.log`; final documentation/diff checks after this update are recorded separately in `verification.json`. The complete bounded diff stays within `tests/rename-editor-readiness.test.mjs` and this plan. Task 2 stages only its changed plan path.
+- Historical CI cause remains **unproven**; exact original full-suite CI and actual Windows acceptance remain **pending, coordinator-owned**. No full-suite run, rebuild, coverage percentage, graphical application smoke, lifecycle policy change or acceptance is claimed. Preserve the independent result: **46 normal graphical quits passed; final owned-process termination verification failed; fixture cleanup skipped**. Separate review, integration and publication remain coordinator gates.
 
 ## Coordinator Gates
 
