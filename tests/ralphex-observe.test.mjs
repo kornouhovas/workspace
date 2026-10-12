@@ -6,7 +6,7 @@ import { mkdtempSync, mkdirSync, openSync, closeSync, ftruncateSync, writeFileSy
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
-import fsPromises from 'node:fs/promises';
+import fsPromises, { readFile as builtinReadFile, realpath as builtinRealpath } from 'node:fs/promises';
 import { syncBuiltinESMExports } from 'node:module';
 import { observe } from '../scripts/ralphex-observe.mjs';
 
@@ -414,39 +414,117 @@ test('synchronously published runner identities retain ownership and byte contin
   assert.deepEqual(readFileSync(f.log), log);
 });
 
-test('heartbeat selects the synchronously published physical repository through a directory alias', async t => {
-  const f = fixture(t), alias = join(f.dir, 'heartbeat-alias');
+// Scope global mocks to sequential public-observer tests. Read real snapshot
+// bytes before advancing time, so setup/help/renewal never consume host time.
+async function withHeartbeatAlias(f, check, { helpAdvanceMs = 0, renewalStatus = 0 } = {}) {
+  const alias = join(f.dir, 'heartbeat-alias');
   symlinkSync(f.dir, alias, process.platform === 'win32' ? 'junction' : 'dir');
   f.state.beads = 'fixture-task'; f.save();
   writeFileSync(join(f.dir, 'events.jsonl'), 'retained runner events\n');
   const files = ['current.json', 'executor.lock', 'events.jsonl', 'full.log'];
   const before = files.map(file => readFileSync(join(f.dir, file)));
-  const original = fsPromises.realpath, calls = [];
-  // Model the retained Windows sync/async string inequality for this alias only.
-  fsPromises.realpath = async (...args) => args[0] === alias ? (await original(...args), alias) : original(...args);
-  syncBuiltinESMExports();
+  const originalNow = Date.now, originalRead = fsPromises.readFile, originalRealpath = fsPromises.realpath;
+  const start = originalNow(), calls = [];
+  let now = start, snapshots = 0;
   try {
+    Date.now = () => now;
+    fsPromises.readFile = async (...args) => {
+      const bytes = await originalRead(...args);
+      if (args[0] === join(f.dir, 'current.json') && ++snapshots === 2) now = start + f.options.budgetMs;
+      return bytes;
+    };
+    // Model the retained Windows sync/async string inequality for this alias only.
+    fsPromises.realpath = async (...args) => args[0] === alias ? (await originalRealpath(...args), alias) : originalRealpath(...args);
+    syncBuiltinESMExports();
     assert.equal(await fsPromises.realpath(alias), alias);
     assert.equal(realpathSync(alias), f.state.worktree);
     assert.notEqual(await fsPromises.realpath(alias), realpathSync(alias));
-    const command = async (file, args) => {
+    assert.equal(f.options.budgetMs, 90, 'retain the original observation budget');
+    const command = async (file, args, { timeoutMs }) => {
+      assert.equal(Date.now(), start, 'capability verification and renewal run before controlled expiry');
+      assert.equal(timeoutMs, 90, 'retain the production request deadline');
       assert.equal(file, 'bd');
       assert.deepEqual(args.slice(0, 5), ['--actor', 'fixture-owner', '-C', f.state.worktree, '--sandbox']);
-      assert.deepEqual(args.slice(5), ['heartbeat', args.at(-1) === '--help' ? '--help' : 'fixture-task']);
+      const help = args.at(-1) === '--help';
+      assert.deepEqual(args.slice(5), ['heartbeat', help ? '--help' : 'fixture-task']);
       calls.push(args);
-      return { status: 0, stdout: 'Usage: bd heartbeat <id> Only the current in_progress owner may refresh.' };
+      if (help) now += helpAdvanceMs;
+      return { status: help ? 0 : renewalStatus, stdout: 'Usage: bd heartbeat <id> Only the current in_progress owner may refresh.' };
     };
-    const result = await observe({ ...f.options,
+    const options = { ...f.options,
       source: { kind: 'runner', dir: alias, log: join(alias, 'full.log') }, command,
-      heartbeat: { task: 'fixture-task', actor: 'fixture-owner', repo: alias, ttlMs: 400, intervalMs: 100 } });
-    assert.equal(result.reason, 'deadline'); assert.equal(result.ownership, 'identified');
-    assert.equal(result.source.worktree, f.state.worktree);
-    assert.equal(calls[0].at(-1), '--help');
-    assert.ok(calls.some(args => args.at(-1) === 'fixture-task'));
+      heartbeat: { task: 'fixture-task', actor: 'fixture-owner', repo: alias, ttlMs: 400, intervalMs: 100 } };
+    return await check({ options, calls, reads: () => snapshots });
   } finally {
-    fsPromises.realpath = original; syncBuiltinESMExports();
+    Date.now = originalNow; fsPromises.readFile = originalRead; fsPromises.realpath = originalRealpath;
+    syncBuiltinESMExports();
     assert.deepEqual(files.map(file => readFileSync(join(f.dir, file))), before);
   }
+}
+
+test('heartbeat selects the synchronously published physical repository through a directory alias', async t => {
+  const f = fixture(t);
+  await withHeartbeatAlias(f, async ({ options, calls, reads }) => {
+    const result = await observe(options);
+    assert.equal(result.reason, 'deadline'); assert.equal(result.ownership, 'identified');
+    assert.deepEqual(result.source, { kind: 'runner', dir: f.dir, log: f.log,
+      runId: f.state.runId, executionId: f.state.executionId, worktree: f.state.worktree });
+    assert.equal(result.elapsedMs, 90); assert.equal(reads(), 2);
+    assert.deepEqual(calls.map(args => args.at(-1)), ['--help', 'fixture-task']);
+    assert.equal(result.lease.length, 1);
+    assert.deepEqual(result.lease[0], { at: result.lease[0].at, task: 'fixture-task',
+      actor: 'fixture-owner', repo: f.state.worktree, status: 'renewed' });
+    assert.equal(result.acceptance, 'not_established');
+  });
+});
+
+test('heartbeat alias expiry after valid help loses the lease without renewal', async t => {
+  const f = fixture(t);
+  await withHeartbeatAlias(f, async ({ options, calls, reads }) => {
+    const result = await observe(options);
+    assert.equal(result.reason, 'lease_lost'); assert.equal(result.ownership, 'identified');
+    assert.equal(result.source.worktree, f.state.worktree);
+    assert.equal(result.diagnostic.code, 'lease_lost');
+    assert.match(result.diagnostic.message, /deadline reached before command/);
+    assert.equal(result.elapsedMs, 120); assert.equal(reads(), 1);
+    assert.deepEqual(calls.map(args => args.at(-1)), ['--help']);
+    assert.deepEqual(result.lease, []); assert.equal(result.acceptance, 'not_established');
+  }, { helpAdvanceMs: 120 });
+});
+
+test('heartbeat alias renewal failure remains lease_lost before the second snapshot', async t => {
+  const f = fixture(t);
+  await withHeartbeatAlias(f, async ({ options, calls, reads }) => {
+    const result = await observe(options);
+    assert.equal(result.reason, 'lease_lost'); assert.equal(result.ownership, 'identified');
+    assert.equal(result.source.worktree, f.state.worktree);
+    assert.equal(result.diagnostic.code, 'lease_lost');
+    assert.match(result.diagnostic.message, /command failed \(7\)/);
+    assert.equal(result.elapsedMs, 0); assert.equal(reads(), 1);
+    assert.deepEqual(calls.map(args => args.at(-1)), ['--help', 'fixture-task']);
+    assert.deepEqual(result.lease, []); assert.equal(result.acceptance, 'not_established');
+  }, { renewalStatus: 7 });
+});
+
+for (const outcome of ['success', 'rejection', 'thrown assertion']) test(`heartbeat alias mocks restore after ${outcome} and leave subsequent observations independent`, async t => {
+  const f = fixture(t), originalNow = Date.now, originalRead = fsPromises.readFile, originalRealpath = fsPromises.realpath;
+  const check = async ({ options, calls }) => {
+    if (outcome === 'rejection') return await observe({ ...options, heartbeat: { ...options.heartbeat, task: 'foreign-task' } });
+    const result = await observe(options);
+    assert.equal(result.reason, 'deadline'); assert.equal(calls.length, 2);
+    if (outcome === 'thrown assertion') assert.equal(result.reason, 'deliberate assertion failure');
+  };
+  if (outcome === 'success') await withHeartbeatAlias(f, check);
+  else await assert.rejects(withHeartbeatAlias(f, check), outcome === 'rejection' ? /must match/ : { code: 'ERR_ASSERTION' });
+  assert.equal(Date.now, originalNow); assert.equal(fsPromises.readFile, originalRead);
+  assert.equal(fsPromises.realpath, originalRealpath);
+  assert.equal(builtinReadFile, originalRead); assert.equal(builtinRealpath, originalRealpath);
+  assert.throws(() => readFileSync(`${f.options.cursor}.lock`), { code: 'ENOENT' });
+  appendFileSync(f.log, 'RALPHEX_PROGRESS {"task":"Independent heartbeat control"}\n');
+  const result = await observe({ ...f.options, cursor: join(f.dir, 'independent-observer.json') });
+  assert.equal(result.reason, 'progress'); assert.equal(result.ownership, 'identified');
+  assert.equal(result.task, 'Independent heartbeat control'); assert.equal(result.source.worktree, f.state.worktree);
+  assert.deepEqual(result.lease, []);
 });
 
 test('canonical selection never authorizes foreign or aliased recorded ownership metadata', async t => {
