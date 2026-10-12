@@ -36,14 +36,8 @@ If docs and code disagree, distinguish intended architecture from current implem
 
 ## Product boundaries
 
-The app is a local-first Electron desktop app using React, TypeScript, Vite, Tailwind CSS and shadcn/ui. Renderer calls go through `WorkspaceServiceClient` and Electron preload IPC.
+For runtime/layer changes, read the [runtime guide](architecture.md) and affected architecture sections; they own current wiring, layer ownership and Electron security constraints. Verify the active transport and adapters before changing storage. For product behavior, select the affected product/flow/API contracts through the source map.
 
-React must stay thin: filesystem safety, discovery, folder roles, property normalization, storage, identity and view projection belong in backend/domain modules.
-
-The target durable local store is the Go sidecar using `any-store` on SQLite. The Electron runtime also has transitional JSON adapters. Inspect the active transport and current ADRs before assuming a sidecar-backed operation; do not silently replace a storage path.
-
-- Keep Node builtins, backend storage and sidecar clients out of the renderer.
-- Preserve Electron security settings: `contextIsolation: true`, `nodeIntegration: false`, `sandbox: true`.
 - Validate filesystem operations against the selected source folder. Change user project files only when the request explicitly covers those operations.
 - Treat project IDs as opaque identities and paths as locators. Preserve selected sources, references, values, history and settings during migrations.
 - Keep sidecar routes internal and preserve service contracts unless changing them is in scope.

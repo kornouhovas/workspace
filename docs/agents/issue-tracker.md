@@ -15,11 +15,19 @@ PRs as a request surface: no.
 
 ## Execution and continuation
 
-GitHub Issues is the sole task tracker. Read the issue, comments, native blocking dependencies and parent relationship before work. Keep scope and acceptance criteria in the issue body; add concise execution checkpoints as comments with the branch/worktree, commit, observed checks, remaining gate and next action. Check existing ownership and any executor lock before claiming or resuming work.
+Read the issue and comments, then resolve its blockers and parent under [Dependencies](#dependencies). Keep scope and acceptance criteria in the issue body; add concise execution checkpoints as comments with the branch/worktree, commit, observed checks, remaining gate and next action. Check existing ownership and any executor lock before claiming or resuming work.
 
 Use versioned plans and local run snapshots for execution evidence, not as another backlog. A snapshot may retain legacy IDs for historical correlation; those fields do not require a local tracker or lease. Issue closure requires the accepted criteria and delivery checks, including agreed human acceptance.
 
-For a dependency graph, fetch open issues with `gh issue list --repo kornouhovas/workspace --state open --limit 1000 --json number,title,assignees,labels`, then read each candidate's blockers with `gh api --paginate repos/kornouhovas/workspace/issues/<number>/dependencies/blocked_by`. A task is eligible only when all blockers are closed, its scope is ready and no other coordinator owns it. A readiness label alone does not establish eligibility.
+## Dependencies
+
+Before implementation or when building a dependency graph:
+
+1. Read native blocking dependencies and the parent relationship, plus textual `Blocked by: #<number>` and `Part of #<parent>` fallbacks in the issue body/comments. Native API availability does not retire existing fallbacks.
+2. Resolve every referenced blocker to its current GitHub state. Combine native and textual edges, deduplicating identical edges. If representations disagree, retain the unresolved blocker until its removal or completion is evidenced; clarify only the affected dependency.
+3. Establish eligibility: every blocker is closed, scope is ready and no other coordinator owns the task. A readiness label alone does not establish eligibility. If native dependency access fails, use recorded fallbacks and report discovery limitations; eligibility remains unverified while dependency discovery is incomplete. An API failure is not evidence of zero blockers.
+
+For a graph, fetch candidates with `gh issue list --repo kornouhovas/workspace --state open --limit 1000 --json number,title,body,assignees,labels`, read comments with the issue-view command above, and fetch native blockers with `gh api --paginate repos/kornouhovas/workspace/issues/<number>/dependencies/blocked_by`. Include referenced closed blockers when needed to explain readiness. Every candidate must have its native and fallback relationships accounted for, or an explicit discovery limitation.
 
 ## Legacy migration
 

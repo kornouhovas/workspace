@@ -341,9 +341,9 @@ Every new backend/local-storage feature should include tests at the closest pure
 
 - The app runs as an Electron desktop app.
 - The renderer is built with Vite into `dist/renderer`.
-- Electron loads `dist/renderer/index.html` with context isolation, sandboxing, and no Node integration.
+- Electron loads `dist/renderer/index.html` with `contextIsolation: true`, `sandbox: true` and `nodeIntegration: false`; preserve these security settings.
 - Direct browser/Vite dev mode is not the user-facing runtime.
-- The separately runnable Go HTTP sidecar uses SQLite-backed any-store; Electron does not launch it. Only the confined directory-creation helper invokes the Go binary in the current filesystem operation.
+- The separately runnable Go HTTP sidecar uses SQLite-backed any-store; Electron does not launch it. Project creation and the wired project-rename operation use confined CLI modes of the Go binary, separate from HTTP/storage; see the [creation helper](api/workspace-views.md#confined-directory-helper) and [rename contract](api/workspace-project-rename.md#os-enforcement-and-validation-status) for platform limits.
 - Packaging and distribution details are not part of the current MVP architecture and need a future ADR before release work.
 
 ## ADR Triggers

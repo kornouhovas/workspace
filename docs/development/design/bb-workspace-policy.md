@@ -1,43 +1,21 @@
-# Применение дизайн-правил bb к Workspace
+# bb adaptation policy
 
-Эта политика обязательна для разработки и review UI Workspace вместе с [rules.md](../rules.md). [DESIGN_RULES.md](../DESIGN_RULES.md) сохранён как внешний справочный документ без редактирования; его императивы относятся к описанной системе bb и требуют проверки применимости здесь.
+Read for UI implementation and review. The imported [DESIGN_RULES.md](../DESIGN_RULES.md) is an external reference; this policy controls its applicability to Workspace.
 
-## Происхождение и статус
+## Authority and scope
 
-- Источник: чат Codex «Разобрать архитектуру проекта BB», thread `01a0e90b-43d2-72a0-a5f4-f5e4b2ebf6eb`, завершённый turn `01a0f39c-1afa-7043-86a2-8511a02445a2`.
-- Локальный оригинал: `/Users/aleksandersk/Documents/Codex/2026-09-28/https-github-com-get-bb-bb/outputs/bb-design-system/DESIGN_RULES.md`.
-- Импорт: 30 сентября 2026, 1547 строк, SHA256 `3b52eb4451902dc7e4363dd42dead1b8cf9b9f60e165e181efd415f79a797b2c`.
-- Эталон: get-bb/bb commit `af72bb8167da292198bfa73b1c35ae3ac080bfca`, сохранённый снимок исходников. Во время этого исторического импорта живое bb не запускалось; совпадение скриншотов и полная доступность тогда не подтверждались. Живое сравнение следующей итерации описано в checkpoint workspace-jqv ниже.
-- Статус: полный импорт источника и локальная политика применения. Матрица исходника не является выполненной приёмкой Workspace. Упомянутый в исходнике отдельный `bb-design-tokens.css` не импортирован; CSS-приложение внутри документа сохранено целиком.
+Apply [operational rules](../rules.md) and the current Workspace contracts selected by the [UI reading route](../README.md#ui-reading-route). Use the existing components and semantic tokens. Interface owns screen composition; UI guidelines own geometry and visual rules; flows and APIs own behavior and recovery. Imported values or a newer bb revision do not replace accepted Workspace contracts.
 
-## Приоритет и разрешение конфликтов
+When sources disagree, compare the concrete screen, state and pinned revision. Preserve accepted behavior outside the authorized change; resolve only the dependent product, data, security or architecture decision under the operational rules. Importing a reference grants no additional feature or dependency scope.
 
-Сначала применяйте текущий запрос пользователя и [рабочие правила](../rules.md), затем специализированные принятые контракты Workspace: [Interface](../../interface.md), [UI guidelines](../../ui-guidelines.md), [flows](../../flows/), [архитектуру](../../architecture.md), [модель данных](../../data-model.md), [API](../../api/) и [ADR](../../adr/). Эта политика определяет применимость внешнего справочника; DESIGN_RULES.md не отменяет эти контракты.
+## Reference access
 
-При расхождении сравните конкретный экран, состояние и версию. Сохраните принятое поведение и геометрию, зафиксируйте расхождение и причину. Если для результата нужно изменить продукт, данные, безопасность, зависимости или существенное архитектурное решение вне разрешённого объёма, запросите решение только по этой части. Уже разрешённое изменение выполняется в своём объёме с обновлением контрактов и доказательств. Не выбирайте новую геометрию по дате внешнего документа.
+Read only the imported sections required by the current question: tokens/theme/typography for foundation work; the relevant menu/form/pane family for a component change; accessibility/focus/motion for interaction constraints. The CSS appendix is evidence for comparison. Apply numerical values and CSS only after checking the current Workspace contract.
 
-## Что применять
+Composer, streaming, terminal, Git/diff, agents, IDE, cloud/auth and mobile sections apply only to a separately authorized feature. Keep the complete imported source and license unchanged; identify the pinned revision used for a comparison.
 
-Спокойные нейтральные поверхности, семантические токены, плотная рабочая композиция, ясная иерархия, общие примитивы, доступные имена и видимый focus, корректные loading/empty/error/disabled состояния применимы в рамках существующей системы Workspace. Используйте текущие компоненты и токены; численные значения и CSS из bb сначала сверяйте с текущим UI-контрактом.
+## Runtime and verification
 
-Принятые Workspace chrome: Inter/Hugeicons, 48px headers, 28px tabs/navigation rows, sidebar 320px с диапазоном 240–460px, существующие Board/Table и свойства с ростом контента. Точная геометрия, исключения, responsive поведение и pane/session действия определяются UI guidelines, Interface и ADR-005. Более ранние 256px/64px значения из исторического design-qa не являются новым правилом. Новый исходник bb не меняет эти значения автоматически.
+For changes to runtime or filesystem actions, follow the [runtime guide](../architecture.md) and the affected API, including safety, identity, recovery and platform limits. A visual adaptation does not authorize file operations, metadata migration or storage replacement.
 
-## Что требует отдельной задачи
-
-bb chat/composer/streaming, терминал, Git/diff, агенты, IDE, cloud/auth, mobile/Expo и маркетинговые сценарии не становятся функциями Workspace из-за наличия раздела в справочнике. Рекомендованные Jotai/TanStack Query, monorepo/pnpm/Turbo, server/Hono/Drizzle, замена тестов и копирование CSS/токенов требуют конкретной необходимости и авторизованного изменения. Текущие команды и уже добавленные инструменты описаны в [bb-stack-design](../../design/bb-stack-design.md); его эталон `061685c4…` и bb 0.44.0 implementation evidence отличаются от снимка `af72bb81…` импортированного документа.
-
-## Обязательные границы Workspace
-
-React остаётся представлением; действия идут через WorkspaceServiceClient → renderer transport → sandboxed preload IPC → Electron dispatcher/domain. Node builtins, storage и sidecar clients остаются вне renderer. Сохраняются `contextIsolation: true`, `nodeIntegration: false`, `sandbox: true`.
-
-Активный runtime использует JSON settings/views/properties adapters. Go sidecar/any-store/SQLite — целевой durable store; импорт дизайна и отдельный запуск sidecar не переключают хранение. [ADR-006](../../adr/006-workspace-source-bindings.md) сохраняет независимые bindings Workspaces и общие source-scoped значения при общем корне.
-
-Сохраняйте выбранный источник и валидацию пути/существования/symlink, opaque IDs и ссылки на них, значения, историю и настройки. Визуальная адаптация не разрешает перемещать/удалять пользовательские файлы или мигрировать метаданные. Роли group/status/project и No status сохраняются. Workspace-d9h явно разрешает Status picker в Board/Table, Board drop в статусную колонку и Table drop за внутренний захват между явными Status-группами через существующий безопасный backend; Workspace-9bp дополнительно сохраняет ручной порядок строк Table отдельно для view; это не разрешает произвольные файловые действия. Существующие действия, панель проекта, saved views, группировка, поиск/фильтры, keyboard и session state сверяются с их контрактами.
-
-## Проверка изменений
-
-Следуйте [quality.md](../quality.md). Для реального UI-изменения проверяйте соответствующие состояния и Electron поверхности, layout при 1440×960 и 1024×720; отделяйте renderer diagnostics от native evidence. Применение источника af72bb81 выполнено в workspace-6fh: [матрица всех разделов](../../../work/workspace-6fh/applicability.md), [native before](../../../work/workspace-6fh/before/report.json), [native after](../../../work/workspace-6fh/after/report.json) и [дополнительные состояния](../../../work/workspace-6fh/stress/report.json). Эта историческая итерация сохраняла full-width Settings. В workspace-jqv пользователь разрешил дальнейшую визуальную переработку по живому bb: центрированная колонка Settings до 768px, 16px внутренние отступы, меню действий от 176px и toggle рядом с native controls. Текущий статус и незавершённая native приёмка описаны в [checkpoint workspace-jqv](../../../work/workspace-jqv/executor/visual-checkpoint.md). Матрица исходника не заменяет отчёт о проверке конкретной версии Workspace.
-
-## Conditional reference access
-
-Read imported sections only when the current UI question depends on them: tokens/theme/typography for foundation work; the specific menu/form/pane family for a component change; accessibility/focus/motion for its interaction constraints. The CSS appendix is source evidence, not an automatic stylesheet replacement. Composer, streaming, diff, mobile drawers and plugin sections are reached only for a separately scoped feature needing them. Keep the full imported source/license unchanged and identify which pinned revision supports a comparison.
+Verify the affected surfaces under [quality](../quality.md). Read [reference history](bb-reference-history.md) only for import provenance, revision comparison or continuation of its historical acceptance work; those reports do not replace verification of the current version.

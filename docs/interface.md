@@ -4,7 +4,7 @@
 
 This document defines how the Workspace Project Board interface should look and behave at the screen level.
 
-Use it together with:
+Read the affected screen/feature sections and shared navigation constraints through the [UI reading route](development/README.md#ui-reading-route). Use the corresponding sections of:
 
 - `docs/ui-guidelines.md` for general UI rules;
 - `docs/flows/settings-source-folder-and-roles.md` for Settings behavior;

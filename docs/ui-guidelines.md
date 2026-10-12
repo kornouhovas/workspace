@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This document defines UI implementation rules for Workspace Project Board. It should be read before building or reviewing UI for Settings, Workspaces, Board view, Table view, Project Detail Panel, properties, values, and local file browsing.
+This document defines UI implementation rules for Workspace Project Board. Select its shared rules and affected surface/component sections through the [UI reading route](development/README.md#ui-reading-route) before building or reviewing UI.
 
 The shell and shared chrome follow the pinned bb 0.44.0 reference. Workspace supplies the working data and product functions; visual acceptance requires equivalent states and measured geometry (see [reference matrix](../work/bb-interface-1wx/reference-matrix.md)).
 
@@ -377,26 +377,14 @@ Screenshots should be reviewed against:
 - this file;
 - `docs/prd.md`;
 - relevant flow document under `docs/flows/`;
-- acceptance criteria in the backlog item.
+- acceptance criteria in the originating GitHub issue and relevant versioned specification.
 
 ## Component Placement
-
-Current project structure:
-
-```text
-src/components/
-  app-sidebar.tsx
-  data-table.tsx
-  site-header.tsx
-  ui/
-src/styles.css
-```
 
 Rules:
 
 - Shared reusable primitives stay in `src/components/ui/`.
-- Product-specific components can live in `src/components/` while the app is small.
-- If feature UI grows, introduce feature folders only after approval, for example `src/features/workspace/components/`.
+- Place product components with their existing domain peers; inspect the affected imports and directory layout. Restructure only when ownership requires it, under the [architecture guidance](architecture.md#folder-structure-direction) and authorized scope.
 - Do not move shadcn component files casually; updates and CLI behavior expect stable paths from `components.json`.
 - Global theme tokens belong in `src/styles.css`.
 

@@ -1,13 +1,13 @@
 # Дизайн Workspace и исходник bb
 
-Для UI-разработки обязательна [политика применения bb к Workspace](bb-workspace-policy.md). Она связывает текущие UI-контракты с [полным DESIGN_RULES.md](../DESIGN_RULES.md) и описывает происхождение и ограничения исходника. Импорт не означает приёмку нового интерфейса или выполнение его матрицы.
+Для UI-разработки обязательна [политика применения bb к Workspace](bb-workspace-policy.md). Она связывает текущие UI-контракты с [полным DESIGN_RULES.md](../DESIGN_RULES.md) и задаёт ограничения исходника. Для проверки происхождения, сравнения версий или продолжения старой приёмки читайте [историю источника](bb-reference-history.md). Импорт не означает приёмку нового интерфейса или выполнение его матрицы.
 
 Текущие источники:
 
 - [Interface](../../interface.md) — композиция экранов, навигация и контролы.
 - [UI guidelines](../../ui-guidelines.md) — геометрия, компоненты и визуальная проверка.
 - [Flows](../../flows/) — продуктовые действия и состояния.
-- [ADR-005](../../adr/005-bb-pane-session-chrome.md) — принятый pane/session контракт.
+- [ADR-005](../../adr/005-bb-pane-session-chrome.md) с изменениями [ADR-012](../../adr/012-project-close-and-preview-only-right-host.md) — принятый pane/session контракт.
 - [bb stack adaptation](../../design/bb-stack-design.md) — существующие инструменты и история адаптации.
 - [Reference matrix](../../../work/bb-interface-1wx/reference-matrix.md) — измерения и оставшиеся gaps конкретной реализации.
 - [Исторический Design QA](../../../design-qa.md) — отчёт прежней compact-итерации, не текущие универсальные правила.

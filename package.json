@@ -5,7 +5,7 @@
   "type": "module",
   "main": "electron/main.js",
   "scripts": {
-    "test": "node --test",
+    "test": "node --test test",
     "verify": "npm run build:sidecar && npm test && npm run test:go && npm run typecheck && npm run build:renderer",
     "test:go": "GOFLAGS=-buildvcs=false go test ./...",
     "typecheck": "tsc --noEmit",
