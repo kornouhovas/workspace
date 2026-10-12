@@ -187,6 +187,18 @@ for (const language of ["en", "ru"] as const) {
     await userEvent.keyboard("{Escape}");
     assert.equal(screen.queryByRole("combobox", { name: t("moveCategoryDestination") }), null);
     assert.equal(document.activeElement, trigger); assert.equal(client.moves.length, 0);
+    await userEvent.keyboard("{Enter}");
+    await waitFor(() => {
+      assert.equal(destination().value, "current");
+      assert.equal(document.activeElement, destination());
+      assert.equal(destination().disabled, false);
+    });
+    assert.equal(client.moves.length, 0);
+    await userEvent.selectOptions(destination(), "empty");
+    assert.equal(client.moves.length, 0);
+    await userEvent.keyboard("{Enter}");
+    await waitFor(() => assert.equal(client.moves.length, 1));
+    assert.equal(client.moves[0].destinationCategoryId, "empty");
   });
   test(`${language}: category cannot be cleared or implicitly submitted by selecting`, async () => {
     const client = new Client(); mount(client); await open();

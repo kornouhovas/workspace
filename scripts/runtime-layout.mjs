@@ -36,3 +36,13 @@ export async function measureDiscoveryLayout(page) {
   }
   throw new Error("Runtime layout readiness timed out");
 }
+
+// A focused native select may still carry the previous editor's draft while
+// React commits its passive-effect reset. Observe readiness without authoring it.
+export async function waitForCategoryMoveEditor(page, originalCategoryId) {
+  const ready = await page.waitForFunction((expected) => {
+    const editor = globalThis.document.querySelector("#project-category-move-destination");
+    return !!editor && editor.value === expected && editor === globalThis.document.activeElement && !editor.disabled;
+  }, originalCategoryId, { timeout: 15000 });
+  await ready.dispose();
+}

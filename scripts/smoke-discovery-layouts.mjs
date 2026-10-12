@@ -7,6 +7,7 @@ import { dirname, extname, join, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { _electron, chromium } from "playwright-core";
 import { closeElectron } from "./runtime-lifecycle.mjs";
+import { waitForCategoryMoveEditor } from "./runtime-layout.mjs";
 
 // Deterministic Ladle presentation and interaction fixtures complement runtime smoke.
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -269,7 +270,9 @@ app.on('window-all-closed', () => app.quit());`);
       if (["editing", "collision", "stale", "unavailable", "rejected"].includes(categoryMoveState)) {
         await focused(moveSelect);
         await moveSelect.press("Escape"); await moveSelect.waitFor({ state: "detached" }); await focused(moveTrigger);
-        await moveTrigger.press("Enter"); await moveSelect.waitFor(); await focused(moveSelect);
+        await moveTrigger.press("Enter");
+        await waitForCategoryMoveEditor(page, "move-original-category");
+        await focused(moveSelect);
         assert.equal(await moveSelect.inputValue(), "move-original-category");
         await moveSelect.press("d");
         assert.equal(await moveSelect.inputValue(), "move-destination-category", "Native select keyboard chooses the eligible empty category");

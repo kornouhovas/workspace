@@ -107,38 +107,62 @@ tests/project-category-move-ui.test.tsx.
 src/renderer/components/ProjectCategoryMovePanel.tsx.
   - Create ignored probe/evidence files:
 work/issue-19/residual-acceptance/layout/.
-  - [ ] Retain the original failure, selected Ladle
+  - [x] Retain the original failure, selected Ladle
 observations and local 150-capture success with exact
 provenance; record failed, passed and unreached stages
 separately.
-  - [ ] Rank and announce hypotheses: focus precedes
+  - [x] Rank and announce hypotheses: focus precedes
 committed reset; native select keyboard state affects
 reopening; fixture preparation reruns or restores
 destination. Specify the observable prediction for each.
-  - [ ] Construct a finite actual Electron/Ladle loop
+  - [x] Construct a finite actual Electron/Ladle loop
 using the original editing fixture and public
 Escape/reopen/typeahead/Enter controls in EN/RU. Observe
 selection, focus and mutation counts without setting the
 reopened selection; record single-variable probe outcomes.
-  - [ ] If readiness is demonstrated, add a bounded
+  - [x] If readiness is demonstrated, add a bounded
 condition-based fixture wait for the original category and
 usable focused editor. Preserve the original equality
 assertion and zero preparation mutations. If a product
 defect is demonstrated, retain its evidence and report it
 for coordinator scope review without changing production
 semantics.
-  - [ ] Add or update regression coverage for the
+  - [x] Add or update regression coverage for the
 demonstrated seam before repair; retain red/green results.
 Run node --import tsx --test
 tests/project-category-move-ui.test.tsx and targeted
 ESLint.
-  - [ ] Refresh Ladle only when affected inputs require
+  - [x] Refresh Ladle only when affected inputs require
 it, then run
 WORKSPACE_SMOKE_EVIDENCE_DIR=work/issue-19/residual-acceptance/layout/original
 node scripts/smoke-discovery-layouts.mjs --category-move.
 Require all 150 captures, EN/RU interactions and normal
 Electron quit; retain any failure without an unchanged
 retry.
+
+Task 1 verified evidence (local macOS, Node 22.21.1):
+`work/issue-19/residual-acceptance/layout/diagnosis.json` records the retained
+historical failure, exact artifact hashes, ranked predictions, finite probe
+outcomes, commands/exits and attribution limits. `baseline-inputs.json` and
+`continuity.json` identify unchanged renderer/Ladle inputs; no Ladle refresh
+was required. The actual original editing fixture ran 24 EN/RU reopen cycles
+across two preceding-keyboard variants: 14 focus samples and one immediate
+post-reopen read retained destination before all 24 reset to original without
+input. Preparation/reopen made zero move/recovery calls; each of the four
+probe groups submitted exactly once through public typeahead/Enter controls
+and Electron quit normally. No production semantics changed.
+
+The read-only readiness wait now requires original category, focus and an
+enabled editor under the existing 15-second fixture timeout; the equality
+assertion remains. Focus-only regression was red (two failures), then all
+203 affected helper/readiness/UI tests passed without skips. Targeted ESLint
+and typecheck exited 0. The original `--category-move` rerun exited 0 with
+150 captures, 50 EN/RU interactions and normal Electron quit; evidence is in
+`work/issue-19/residual-acceptance/layout/original/ladle-observations.json`.
+The observed local mechanism matches the symptom; historical CI cause remains
+unproven. Exact reviewed-SHA CI acceptance and separate review remain
+coordinator-owned, outside these executable checkboxes.
+
 ### Task 2: Distinguish observer collection failure
 boundaries
 Files:
