@@ -14,6 +14,10 @@ on:
         description: Run isolated investigation and early-feedback jobs
         type: boolean
         default: false
+      runtime_failures:
+        description: With checks=failed, diagnose the Windows creation Reveal and external category rename failures
+        type: boolean
+        default: false
       legacy_windows_diagnostics:
         description: Run historical unused Windows API and CLI comparisons (known negative outcomes)
         type: boolean
@@ -41,7 +45,7 @@ jobs:
       - run: npm run test:common
 
   focused-windows-observer:
-    if: ${{ github.event_name == 'workflow_dispatch' && inputs.checks == 'failed' }}
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.checks == 'failed' && inputs.runtime_failures != true }}
     name: Focused Windows observer checks
     runs-on: windows-latest
     timeout-minutes: 10
@@ -69,7 +73,7 @@ jobs:
           retention-days: 7
 
   focused-macos-rename:
-    if: ${{ github.event_name == 'workflow_dispatch' && inputs.checks == 'failed' }}
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.checks == 'failed' && inputs.runtime_failures != true }}
     name: Focused macOS rename and Reveal
     runs-on: macos-latest
     timeout-minutes: 20
@@ -89,6 +93,46 @@ jobs:
         with:
           name: issue-19-focused-rename-macos-latest-${{ github.sha }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
           path: work/ci-focused-rename/
+          if-no-files-found: error
+          retention-days: 7
+
+  focused-windows-runtime:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.checks == 'failed' && inputs.runtime_failures == true }}
+    name: Focused Windows runtime failure (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            command: npm run smoke:runtime -- dev --creation --discovery-mode=direct --checkpoint=after_evidence
+          - os: windows-2022
+            command: npm run smoke:runtime -- dev
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.21.1
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+        id: runtime-build
+      - name: Compare real-service category rename and controlled sharing failures
+        if: matrix.os == 'windows-2022'
+        run: node --import tsx scripts/windows-rename-diagnostics.mjs
+        env:
+          WORKSPACE_RENAME_EVIDENCE_DIR: work/ci-focused-runtime/rename-diagnostic
+      - name: Exercise the original failed runtime route
+        if: ${{ !cancelled() && steps.runtime-build.outcome == 'success' }}
+        run: ${{ matrix.command }}
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-focused-runtime/scenario
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: issue-19-focused-runtime-${{ matrix.os }}-${{ github.sha }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
+          path: work/ci-focused-runtime/
           if-no-files-found: error
           retention-days: 7
 

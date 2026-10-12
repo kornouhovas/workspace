@@ -65,6 +65,8 @@ Isolated observer, early rename/category service and Windows selection/rename/re
 
 Manual `workflow_dispatch` defaults to `checks: full`. Select `checks: failed` with diagnostics disabled to run only the Windows latest pure-Node observer suite and the macOS development rename/Reveal route. These independent jobs retain original failures and exact SHA/run/attempt artifacts. Focused success is a prerequisite for requesting full acceptance, not a replacement for the ordinary three-platform routes. Rename diagnostics retain the original typed native Reveal receipt on macOS before checking the UI acknowledgment, including rejected responses; they do not relax acceptance or identify historical causes by themselves.
 
+For the later Windows runtime failures, select `checks: failed` and `runtime_failures: true` instead. This runs only the original direct creation/Reveal route on Windows latest and the development runtime on Windows 2022, preceded by the existing isolated category rename/sharing comparisons on Windows 2022. The original scenario still runs if a comparison fails, provided its build passed. Creation diagnostics retain the existing finite typed Reveal receipt on both desktop platforms before native assertions. These are diagnostic routes, not a waiver or proof of historical causation; original failures and unreached stages remain failures.
+
 This scheduling change reduces repeated execution, not the test inventory. Actual Windows acceptance and any pre-existing failures remain pending until a reviewed-SHA run completes. Compare observed job durations after the change before claiming a measured speed or cost reduction.
 
 ## Current desktop slice

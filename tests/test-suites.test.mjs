@@ -102,3 +102,29 @@ test('manual failed-check scope runs only the Windows observer and macOS rename 
     assert.equal(upload.with['if-no-files-found'], 'error');
   }
 });
+
+test('runtime failure investigation selects only the two original Windows routes', () => {
+  const workflow = load(readFileSync('.github/workflows/desktop-ci.yml', 'utf8'));
+  assert.equal(workflow.on.workflow_dispatch.inputs.runtime_failures.default, false);
+  for (const event of ['push', 'pull_request', 'workflow_dispatch']) for (const checks of [undefined, 'full', 'failed']) {
+    for (const runtime_failures of [undefined, false, true]) {
+      const context = { github: { event_name: event }, inputs: { checks, runtime_failures } };
+      const enabled = name => runInNewContext(workflow.jobs[name].if.slice(3, -2), context);
+      const focused = event === 'workflow_dispatch' && checks === 'failed';
+      assert.equal(enabled('focused-windows-runtime'), focused && runtime_failures === true);
+      for (const name of ['focused-windows-observer', 'focused-macos-rename']) assert.equal(enabled(name), focused && runtime_failures !== true);
+      assert.equal(enabled('common'), !focused);
+    }
+  }
+  const job = workflow.jobs['focused-windows-runtime'];
+  assert.equal(job.strategy['fail-fast'], false);
+  assert.deepEqual(job.strategy.matrix.include, [
+    { os: 'windows-latest', command: 'npm run smoke:runtime -- dev --creation --discovery-mode=direct --checkpoint=after_evidence' },
+    { os: 'windows-2022', command: 'npm run smoke:runtime -- dev' },
+  ]);
+  const run = job.steps.find(step => step.name === 'Exercise the original failed runtime route');
+  assert.ok(run.if.includes("steps.runtime-build.outcome == 'success'"));
+  const upload = job.steps.find(step => step.uses === 'actions/upload-artifact@v4');
+  assert.equal(upload.if, 'always()');
+  assert.equal(upload.with['if-no-files-found'], 'error');
+});

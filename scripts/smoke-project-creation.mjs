@@ -293,7 +293,7 @@ try {
           }
         });
         if (process.platform === "win32") current.nativeTracking = true;
-        if (process.platform === "darwin") {
+        if (["darwin", "win32"].includes(process.platform)) {
           // One armed intent in this owned disposable app; only public port methods.
           current.receiptTracking = true;
           await withDeadline(current.electron.evaluate(installNativeRevealReceipt, { workspaceId: workspace.workspaceId }), 1000, "Native receipt installation");
@@ -335,6 +335,7 @@ try {
         // Later stage failure and cleanup cannot erase a select without done.
         observations.push({ discoveryMode, checkpoint, nativeInvocationOutcome });
         await save();
+        await retainReceipt();
         assert.equal(nativeInvocationOutcome.readStatus, "available", "Native invocation evidence must be readable");
         assert.equal(invocationCount, 1, "Reveal must invoke the real native API exactly once");
         assert.equal(targetMatched, true, "Reveal must use the exact owned target");
