@@ -2,6 +2,7 @@ import { ProjectCreationPanel } from "./ProjectCreationPanel.js";
 import { ProjectRevealButton } from "./ProjectRevealButton.js";
 import type { ProjectCreationOperation, ProjectCreationResult } from "../../contracts/project-creation.js";
 import type { ProjectRenameOperation, ProjectRenameResult, ProjectRenameRecoveryPreview } from "../../contracts/project-rename.js";
+import type { ProjectCategoryMoveOperation, ProjectCategoryMoveResult, ProjectCategoryMoveRecoveryPreview } from "../../contracts/project-category-move.js";
 import type { ProjectRevealResult } from "../../contracts/project-reveal.js";
 import { useEffect, useRef, useState } from "react";
 import type { Language, ServiceResult } from "../../contracts/settings.js";
@@ -84,6 +85,7 @@ function WorkspacePreview({ language, state = "management" }: {
     const failure: ServiceResult<never> = { ok: false, error: { code: "storage", message: "Preview storage failure" } };
     const workspace = async (input: WorkspaceRequest): Promise<ServiceResult<WorkspaceResponse>> => {
       if (input.type === "workspace.load") return { ok: true, value: snapshot() };
+      if (input.type === "workspace.listProjectCategoryMoves") return { ok: true, value: { workspaceId: input.workspaceId, sourceId: records[0].sourceId, operations: [] } };
       if (input.type === "workspace.listProjectRenames") return { ok: true, value: { workspaceId: input.workspaceId, sourceId: records[0].sourceId, operations: [] } };
       if (input.type === "workspace.listProjectCreations") return { ok: true, value: { workspaceId: input.workspaceId, sourceId: records[0].sourceId, operations: [] } };
       if (input.type === "workspace.listProjects") return { ok: true, value: {
@@ -404,6 +406,7 @@ function RecoveryPreview({ language, state }: { language: Language; state: Recov
   const [client] = useState(() => new class extends WorkspaceServiceClient {
     override onBackendStatus() { return () => {}; }
     override async listProjectCreations(workspaceId: string) { return { ok: true as const, value: { workspaceId, sourceId: textStoryIds.sourceId, operations: [] } }; }
+    override async listProjectCategoryMoves(workspaceId: string) { return { ok: true as const, value: { workspaceId, sourceId: textStoryIds.sourceId, operations: [] } }; }
     override async listProjectRenames(workspaceId: string) { return { ok: true as const, value: { workspaceId, sourceId: textStoryIds.sourceId, operations: [] } }; }
     override onWorkspaceChange() { return () => {}; }
     override async listTextProperties() { return { ok: true as const, value: { ...textStoryIds, revision: 7,
@@ -474,6 +477,7 @@ function SourceObservationPreview({ language, state }: { language: Language; sta
     const client = new class extends WorkspaceServiceClient {
     override onBackendStatus() { return () => {}; }
     override async listProjectCreations(workspaceId: string) { return { ok: true as const, value: { workspaceId, sourceId: textStoryIds.sourceId, operations: [] } }; }
+    override async listProjectCategoryMoves(workspaceId: string) { return { ok: true as const, value: { workspaceId, sourceId: textStoryIds.sourceId, operations: [] } }; }
     override async listProjectRenames(workspaceId: string) { return { ok: true as const, value: { workspaceId, sourceId: textStoryIds.sourceId, operations: [] } }; }
       override onWorkspaceChange(listener: (event: WorkspaceChangeEvent) => void) { listeners.add(listener); return () => { listeners.delete(listener); }; }
       override async listProjects() { return { ok: true as const, value: list }; }
@@ -533,6 +537,7 @@ function ModeChangePreview({ language, state }: { language: Language; state: Mod
   const [client] = useState(() => new class extends WorkspaceServiceClient {
     override onBackendStatus() { return () => {}; }
     override async listProjectCreations(workspaceId: string) { return { ok: true as const, value: { workspaceId, sourceId: textStoryIds.sourceId, operations: [] } }; }
+    override async listProjectCategoryMoves(workspaceId: string) { return { ok: true as const, value: { workspaceId, sourceId: textStoryIds.sourceId, operations: [] } }; }
     override async listProjectRenames(workspaceId: string) { return { ok: true as const, value: { workspaceId, sourceId: textStoryIds.sourceId, operations: [] } }; }
     private value: string | null = longTextValue;
     private revision = 1;
@@ -985,3 +990,212 @@ export const RenameKeptOriginalDirectEnglish: Story = () => <RenamePreview langu
 export const RenameKeptOriginalDirectRussian: Story = () => <RenamePreview language="ru" mode="direct" state="kept-original" />;
 export const RenameKeptOriginalGroupedEnglish: Story = () => <RenamePreview language="en" mode="grouped" state="kept-original" />;
 export const RenameKeptOriginalGroupedRussian: Story = () => <RenamePreview language="ru" mode="grouped" state="kept-original" />;
+
+// Category move stories use the production Table/status/recovery controls and typed disposable data.
+type CategoryMoveStoryState = "editing" | "pending" | "saved" | "unchanged" | "rejected" | "collision" | "stale" | "unavailable" | "unknown" | "list-loading" | "list-empty" | "list-error" | "interrupted" | "uncertain" | "recovery-original" | "recovery-destination" | "recovery-blocked" | "review-stale" | "review-loading" | "review-error" | "recovery-pending" | "recovery-unknown" | "kept-original" | "retained" | "direct";
+const categoryMoveName = "  Original-日本語-" + "long-authored-name-".repeat(10) + "  ";
+const categoryMoveDestination = "Destination-日本語-" + "unbroken-category-".repeat(14);
+function CategoryMovePreview({ language, state }: { language: Language; state: CategoryMoveStoryState }) {
+  const mode: DiscoveryMode = state === "direct" ? "direct" : "grouped";
+  const root = useRef<HTMLElement>(null);
+  const [prepared, setPrepared] = useState(false);
+  const [calls, setCalls] = useState({ move: 0, recovery: 0, status: 0, review: 0 });
+  const [fixture] = useState(() => {
+    const reviewState = state.startsWith("recovery-") || state.startsWith("review-") || state === "kept-original";
+    const retained = reviewState || ["interrupted", "uncertain", "retained"].includes(state);
+    const categoryId = mode === "grouped" ? "move-original-category" : null;
+    const path = (name: string) => mode === "grouped" ? `${longCategory}/${name}` : name;
+    const row = { projectId: textStoryIds.projectId, name: categoryMoveName, relativePath: path(categoryMoveName), categoryId,
+      categoryName: categoryId ? longCategory : null, associationState: retained ? "unresolved" as const : "active" as const,
+      resolution: retained ? "unresolved" as const : "active" as const };
+    let projects: ProjectList = { ...textStoryIds, revision: 1, configured: true, mode, state: "ready",
+      projects: retained ? [] : [row], retainedProjects: retained ? [row] : [], retainedCount: retained ? 1 : 0,
+      categories: categoryId ? [{ categoryId, name: longCategory, relativePath: longCategory }, { categoryId: "move-destination-category", name: categoryMoveDestination, relativePath: categoryMoveDestination }] : [],
+      categoryProperty: categoryId ? { propertyId: "category-property", sourceId: textStoryIds.sourceId, name: longPropertyName } : null, categoryPropertyRevision: 0 };
+    let operation: ProjectCategoryMoveOperation = { operationId: "00000000-0000-4000-8000-000000000060", sourceId: textStoryIds.sourceId,
+      initiatingWorkspaceId: textStoryIds.workspaceId, projectId: row.projectId, name: row.name, originalCategoryId: "move-original-category", destinationCategoryId: "move-destination-category",
+      originalRelativePath: row.relativePath, requestedRelativePath: `${categoryMoveDestination}/${row.name}`, expectedRevision: 1,
+      stage: state === "interrupted" ? "intent" : "uncertain", lastVerifiedPlacement: state === "recovery-destination" ? "destination" : "original",
+      problem: state === "interrupted" ? null : "ownership_uncertain", resultKind: null, completedRevision: null };
+    let operations = retained && state !== "retained" ? [operation] : [];
+    const events = new Set<(event: WorkspaceChangeEvent) => void>();
+    const count = (key: keyof typeof calls) => setCalls((value) => ({ ...value, [key]: value[key] + 1 }));
+    const finish = (unchanged = false): ProjectCategoryMoveResult => {
+      operation = { ...operation, stage: "completed", resultKind: unchanged ? "unchanged" : "completed", problem: null,
+        lastVerifiedPlacement: unchanged ? "original" : "destination", completedRevision: unchanged ? 1 : 2 };
+      operations = [];
+      projects = { ...projects, revision: operation.completedRevision!, projects: [{ ...row, categoryId: operation.destinationCategoryId, categoryName: operation.destinationCategoryId === "move-original-category" ? longCategory : categoryMoveDestination,
+        relativePath: operation.requestedRelativePath, associationState: "active", resolution: "active" }], retainedProjects: [], retainedCount: 0 };
+      return { outcome: unchanged ? "unchanged" : "completed", operation, project: { operationId: operation.operationId,
+        sourceId: operation.sourceId, projectId: operation.projectId, name: operation.name, relativePath: operation.requestedRelativePath,
+        categoryId: operation.destinationCategoryId, revision: projects.revision } };
+    };
+    const client = new class extends WorkspaceServiceClient {
+      override onBackendStatus() { return () => {}; }
+      override onWorkspaceChange(listener: (event: WorkspaceChangeEvent) => void) { events.add(listener); return () => { events.delete(listener); }; }
+      override async listProjects() { return { ok: true as const, value: projects }; }
+      override async listProjectCreations() { return { ok: true as const, value: { ...textStoryIds, operations: [] } }; }
+      override async listTextProperties() { return { ok: true as const, value: { ...textStoryIds, revision: 1,
+        definitions: [{ propertyId: textStoryIds.propertyId, sourceId: textStoryIds.sourceId, name: longPropertyName, propertyType: "text" as const }],
+        values: [{ projectId: row.projectId, propertyId: textStoryIds.propertyId, value: longTextValue }] } }; }
+      override async listProjectRenames() { return { ok: true as const, value: { ...textStoryIds, operations: [] } }; }
+      override async listProjectCategoryMoves() {
+        if (state === "list-loading") return new Promise<Awaited<ReturnType<WorkspaceServiceClient["listProjectCategoryMoves"]>>>(() => {});
+        if (state === "list-error") return { ok: false as const, error: { code: "service_unavailable" as const, message: "Disposable list error" } };
+        return { ok: true as const, value: { ...textStoryIds, operations } };
+      }
+      override async moveProjectCategory(input: Parameters<WorkspaceServiceClient["moveProjectCategory"]>[0]) {
+        count("move"); operation = { ...operation, operationId: input.operationId, destinationCategoryId: input.destinationCategoryId, initiatingWorkspaceId: input.workspaceId, requestedRelativePath: `${input.destinationCategoryId === "move-original-category" ? longCategory : categoryMoveDestination}/${row.name}` };
+        if (state === "pending") return new Promise<ServiceResult<ProjectCategoryMoveResult>>(() => {});
+        if (state === "unknown") throw new Error("Disposable lost response");
+        if (["editing", "saved", "unchanged"].includes(state)) return { ok: true as const, value: finish(state === "unchanged") };
+        return { ok: true as const, value: { outcome: "rejected" as const, operation: null,
+          problem: state === "rejected" ? "storage_error" as const : state === "collision" ? "occupied" as const : state === "stale" ? "stale_configuration" as const : "source_unavailable" as const } };
+      }
+      override async getProjectCategoryMove() { count("status"); return { ok: true as const, value: finish() }; }
+      override async previewProjectCategoryMoveRecovery() {
+        count("review");
+        if (state === "review-loading") return new Promise<ServiceResult<ProjectCategoryMoveRecoveryPreview>>(() => {});
+        if (state === "review-error") return { ok: false as const, error: { code: "service_unavailable" as const, message: "Disposable review error" } };
+        const blocked = state === "recovery-blocked", destination = state === "recovery-destination";
+        const preview: ProjectCategoryMoveRecoveryPreview = { ...textStoryIds, operation, revision: projects.revision,
+          originalState: blocked ? "conflicting" : destination ? "missing" : "matching",
+          destinationState: blocked ? "replaced" : destination ? "matching" : "missing",
+          problem: blocked ? "ownership_uncertain" : null, previewToken: blocked ? null : "disposable-fresh-token",
+          actions: blocked ? [] : destination ? ["complete_destination"] : ["retry_original", "keep_original"] };
+        return { ok: true as const, value: preview };
+      }
+      override async recoverProjectCategoryMove(_workspaceId: string, _operationId: string, _token: string, action: Parameters<WorkspaceServiceClient["recoverProjectCategoryMove"]>[3]) {
+        count("recovery");
+        if (state === "recovery-pending") return new Promise<ServiceResult<ProjectCategoryMoveResult>>(() => {});
+        if (state === "recovery-unknown") throw new Error("Disposable lost recovery response");
+        if (action === "keep_original") {
+          operation = { ...operation, stage: "failed", problem: "kept_original", resultKind: "rejected", lastVerifiedPlacement: "original" };
+          operations = []; projects = { ...projects, projects: [{ ...row, associationState: "active", resolution: "active" }], retainedProjects: [], retainedCount: 0 };
+          return { ok: true as const, value: { outcome: "rejected" as const, operation, problem: "kept_original" as const } };
+        }
+        return { ok: true as const, value: finish() };
+      }
+    }();
+    return { client, reviewState, observe: () => events.forEach((listener) => listener({ type: "workspace.sourceObserved",
+      sourceId: textStoryIds.sourceId, workspaceIds: [textStoryIds.workspaceId], observationRevision: 2, state: "ready", automaticUpdates: "active" })) };
+  });
+  useEffect(() => {
+    let opened = false, authored = false, submitted = false, observed = false;
+    let submitTimer: ReturnType<typeof setTimeout> | undefined;
+    const prepare = () => {
+      const target = root.current; if (!target || target.querySelector(".text-properties")?.getAttribute("aria-busy") !== "false") return;
+      const done = () => { setPrepared(true); observer.disconnect(); };
+      if (state.startsWith("list-") || ["interrupted", "uncertain", "retained", "direct"].includes(state)) {
+        const list = target.querySelector(".category-move-operations");
+        if (list && (state === "list-loading" || list.getAttribute("aria-busy") === "false")) done();
+        return;
+      }
+      if (fixture.reviewState) {
+        if (!opened) {
+          const button = target.querySelector<HTMLButtonElement>(".category-move-operations > div > button:last-of-type");
+          if (button && !button.disabled) { opened = true; button.click(); } return;
+        }
+        if (state === "kept-original" && submitted && [...target.querySelectorAll(".project-category-move .bb-status")].some((node) => node.textContent === translate(language, "moveCategoryKeptOriginal"))) { done(); return; }
+        const review = target.querySelector(".category-move-review"); if (!review) return;
+        if (state === "review-loading" && review.getAttribute("aria-busy") === "true" || state === "review-error" && review.querySelector("[role=alert]")) { done(); return; }
+        if (state === "review-stale") {
+          if (!observed && review.querySelector(".category-move-placements")) { observed = true; fixture.observe(); }
+          if (observed && !review.querySelector(".category-move-placements") && review.querySelector("[role=alert]")) done();
+          return;
+        }
+        if (["recovery-pending", "recovery-unknown", "kept-original"].includes(state)) {
+          if (!submitted && review.querySelector(".category-move-placements")) {
+            submitted = true;
+            const action = state === "kept-original" ? "moveCategoryKeepOriginal" : "moveCategoryRetryOriginal";
+            [...review.querySelectorAll<HTMLButtonElement>("button")].find((button) => button.textContent === translate(language, action))?.click();
+          }
+          const key = state === "kept-original" ? "moveCategoryKeptOriginal" : state === "recovery-pending" ? "moveCategoryPending" : "moveCategoryUncertain";
+          if ([...target.querySelectorAll(".project-category-move .bb-status")].some((node) => node.textContent === translate(language, key))) done();
+          return;
+        }
+        if (review.querySelector(".category-move-placements")) done(); return;
+      }
+      if (!opened) { const button = target.querySelector<HTMLButtonElement>("td:nth-child(2) .property-rename"); if (button && !button.disabled) { opened = true; button.click(); } return; }
+      const input = target.querySelector<HTMLSelectElement>("#project-category-move-destination");
+      if (input && !authored) {
+        authored = true;
+        if (state !== "unchanged") {
+          input.value = "move-destination-category";
+          input.dispatchEvent(new Event("change", { bubbles: true }));
+        }
+        if (state === "editing") { done(); return; }
+        submitted = true;
+        submitTimer = setTimeout(() => { if (target.isConnected) input.closest("form")?.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true })); }, 0);
+      }
+      const keys = { pending: "moveCategoryPending", saved: "moveCategorySaved", unchanged: "moveCategoryUnchanged", rejected: "moveCategoryFailed", collision: "moveCategoryCollision", stale: "moveCategoryStale", unavailable: "moveCategoryUnavailable", unknown: "moveCategoryUncertain" } as const;
+      const key = keys[state as keyof typeof keys];
+      if (submitted && key && [...target.querySelectorAll(".project-category-move .bb-status")].some((node) => node.textContent === translate(language, key))) done();
+    };
+    // Wait for committed renders and their passive effects before interacting.
+    // Initial discovery/list invalidation must settle before a recovery review.
+    let frame: number | null = null;
+    const schedule = () => {
+      if (frame !== null) return;
+      frame = requestAnimationFrame(() => { frame = requestAnimationFrame(() => { frame = null; prepare(); }); });
+    };
+    const observer = new MutationObserver(schedule);
+    observer.observe(root.current!, { childList: true, subtree: true, attributes: true }); schedule();
+    return () => { observer.disconnect(); if (frame !== null) cancelAnimationFrame(frame); clearTimeout(submitTimer); };
+  }, [fixture, language, state]);
+  return <main ref={root} className="app-shell" lang={language} data-category-move-fixture={state} data-fixture-ready={prepared}
+    data-move-calls={calls.move} data-recovery-calls={calls.recovery} data-status-calls={calls.status} data-review-calls={calls.review}>
+    <DiscoveryWorkspace client={fixture.client} workspaceId={textStoryIds.workspaceId} sourceId={textStoryIds.sourceId} language={language} disabled={false} />
+  </main>;
+}
+
+export const CategoryMoveEditingEnglish: Story = () => <CategoryMovePreview language="en" state="editing" />;
+export const CategoryMoveEditingRussian: Story = () => <CategoryMovePreview language="ru" state="editing" />;
+export const CategoryMovePendingEnglish: Story = () => <CategoryMovePreview language="en" state="pending" />;
+export const CategoryMovePendingRussian: Story = () => <CategoryMovePreview language="ru" state="pending" />;
+export const CategoryMoveSavedEnglish: Story = () => <CategoryMovePreview language="en" state="saved" />;
+export const CategoryMoveSavedRussian: Story = () => <CategoryMovePreview language="ru" state="saved" />;
+export const CategoryMoveUnchangedEnglish: Story = () => <CategoryMovePreview language="en" state="unchanged" />;
+export const CategoryMoveUnchangedRussian: Story = () => <CategoryMovePreview language="ru" state="unchanged" />;
+export const CategoryMoveCollisionEnglish: Story = () => <CategoryMovePreview language="en" state="collision" />;
+export const CategoryMoveCollisionRussian: Story = () => <CategoryMovePreview language="ru" state="collision" />;
+export const CategoryMoveStaleEnglish: Story = () => <CategoryMovePreview language="en" state="stale" />;
+export const CategoryMoveStaleRussian: Story = () => <CategoryMovePreview language="ru" state="stale" />;
+export const CategoryMoveUnavailableEnglish: Story = () => <CategoryMovePreview language="en" state="unavailable" />;
+export const CategoryMoveUnavailableRussian: Story = () => <CategoryMovePreview language="ru" state="unavailable" />;
+export const CategoryMoveRejectedEnglish: Story = () => <CategoryMovePreview language="en" state="rejected" />;
+export const CategoryMoveRejectedRussian: Story = () => <CategoryMovePreview language="ru" state="rejected" />;
+export const CategoryMoveUnknownEnglish: Story = () => <CategoryMovePreview language="en" state="unknown" />;
+export const CategoryMoveUnknownRussian: Story = () => <CategoryMovePreview language="ru" state="unknown" />;
+export const CategoryMoveListLoadingEnglish: Story = () => <CategoryMovePreview language="en" state="list-loading" />;
+export const CategoryMoveListLoadingRussian: Story = () => <CategoryMovePreview language="ru" state="list-loading" />;
+export const CategoryMoveListEmptyEnglish: Story = () => <CategoryMovePreview language="en" state="list-empty" />;
+export const CategoryMoveListEmptyRussian: Story = () => <CategoryMovePreview language="ru" state="list-empty" />;
+export const CategoryMoveListErrorEnglish: Story = () => <CategoryMovePreview language="en" state="list-error" />;
+export const CategoryMoveListErrorRussian: Story = () => <CategoryMovePreview language="ru" state="list-error" />;
+export const CategoryMoveInterruptedEnglish: Story = () => <CategoryMovePreview language="en" state="interrupted" />;
+export const CategoryMoveInterruptedRussian: Story = () => <CategoryMovePreview language="ru" state="interrupted" />;
+export const CategoryMoveUncertainEnglish: Story = () => <CategoryMovePreview language="en" state="uncertain" />;
+export const CategoryMoveUncertainRussian: Story = () => <CategoryMovePreview language="ru" state="uncertain" />;
+export const CategoryMoveRecoveryOriginalEnglish: Story = () => <CategoryMovePreview language="en" state="recovery-original" />;
+export const CategoryMoveRecoveryOriginalRussian: Story = () => <CategoryMovePreview language="ru" state="recovery-original" />;
+export const CategoryMoveRecoveryDestinationEnglish: Story = () => <CategoryMovePreview language="en" state="recovery-destination" />;
+export const CategoryMoveRecoveryDestinationRussian: Story = () => <CategoryMovePreview language="ru" state="recovery-destination" />;
+export const CategoryMoveRecoveryBlockedEnglish: Story = () => <CategoryMovePreview language="en" state="recovery-blocked" />;
+export const CategoryMoveRecoveryBlockedRussian: Story = () => <CategoryMovePreview language="ru" state="recovery-blocked" />;
+export const CategoryMoveReviewStaleEnglish: Story = () => <CategoryMovePreview language="en" state="review-stale" />;
+export const CategoryMoveReviewStaleRussian: Story = () => <CategoryMovePreview language="ru" state="review-stale" />;
+export const CategoryMoveReviewLoadingEnglish: Story = () => <CategoryMovePreview language="en" state="review-loading" />;
+export const CategoryMoveReviewLoadingRussian: Story = () => <CategoryMovePreview language="ru" state="review-loading" />;
+export const CategoryMoveReviewErrorEnglish: Story = () => <CategoryMovePreview language="en" state="review-error" />;
+export const CategoryMoveReviewErrorRussian: Story = () => <CategoryMovePreview language="ru" state="review-error" />;
+export const CategoryMoveRecoveryPendingEnglish: Story = () => <CategoryMovePreview language="en" state="recovery-pending" />;
+export const CategoryMoveRecoveryPendingRussian: Story = () => <CategoryMovePreview language="ru" state="recovery-pending" />;
+export const CategoryMoveRecoveryUnknownEnglish: Story = () => <CategoryMovePreview language="en" state="recovery-unknown" />;
+export const CategoryMoveRecoveryUnknownRussian: Story = () => <CategoryMovePreview language="ru" state="recovery-unknown" />;
+export const CategoryMoveKeptOriginalEnglish: Story = () => <CategoryMovePreview language="en" state="kept-original" />;
+export const CategoryMoveKeptOriginalRussian: Story = () => <CategoryMovePreview language="ru" state="kept-original" />;
+export const CategoryMoveRetainedEnglish: Story = () => <CategoryMovePreview language="en" state="retained" />;
+export const CategoryMoveRetainedRussian: Story = () => <CategoryMovePreview language="ru" state="retained" />;
+export const CategoryMoveDirectEnglish: Story = () => <CategoryMovePreview language="en" state="direct" />;
+export const CategoryMoveDirectRussian: Story = () => <CategoryMovePreview language="ru" state="direct" />;

@@ -382,7 +382,7 @@ for (const language of ["en", "ru"] as const) {
     await userEvent.click(screen.getByRole("button", { name: t("moveCategoryStatus") })); await screen.findByText(t("moveCategorySaved"));
     assert.deepEqual(client.statusCalls, [["sibling", client.moves[0].operationId], ["sibling", client.moves[0].operationId]]);
     assert.equal(client.moves[0].workspaceId, "workspace");
-    await waitFor(() => assert.equal(document.activeElement, screen.getByRole("heading", { name: t("tableViewTitle") })));
+    await waitFor(() => assert.equal(document.activeElement === screen.getByRole("heading", { name: t("tableViewTitle") }), true));
   });
   test(`${language}: switching away preserves unknown source operation and leaves an unrelated source usable`, async () => {
     const client = new Client(); client.handler = async () => { throw new Error("lost"); };
@@ -598,5 +598,43 @@ for (const language of ["en", "ru"] as const) {
     assert.equal(move.disabled, true); fireEvent.click(move); assert.equal(screen.queryByRole("combobox", { name: t("moveCategoryDestination") }), null);
     await act(async () => response.resolve({ ok: false, error: { code: "storage", message: "failed apply" } }));
     assert.equal(client.moves.length, 0); assert.equal(client.applies, 1);
+  });
+}
+
+for (const language of ["en", "ru"] as const) {
+  test(`${language}: long category labels review physical relative paths and retain the rejected selection`, async () => {
+    const client = new Client();
+    const name = "  日本語-проект-" + "exact-name-".repeat(24) + "  ";
+    const currentLabel = "Authored category label / Категория / " + "long-label-".repeat(20);
+    const destinationLabel = "Empty destination / Назначение / " + "long-label-".repeat(20);
+    const originalPath = "Original-physical-" + "long-folder-".repeat(20);
+    const destinationPath = "Destination-physical-" + "long-folder-".repeat(20);
+    client.list = { ...client.list,
+      projects: [{ ...client.list.projects[0], name, categoryName: currentLabel, relativePath: `${originalPath}/${name}` }],
+      categories: [{ categoryId: "current", name: currentLabel, relativePath: originalPath }, { categoryId: "empty", name: destinationLabel, relativePath: destinationPath }],
+    };
+    client.handler = async () => ({ ok: true, value: { outcome: "rejected", operation: null, problem: "occupied" } });
+    const t = (key: Parameters<typeof translate>[1]) => translate(language, key);
+    render(<DiscoveryWorkspace client={client} workspaceId="workspace" sourceId="source" language={language} disabled={false} />);
+    const trigger = await screen.findByRole("button", { name: new RegExp(`^${t("moveCategory")}:`) });
+    await userEvent.click(trigger);
+    const select = screen.getByRole("combobox", { name: t("moveCategoryDestination") }) as HTMLSelectElement;
+    assert.equal(select.labels?.[0]?.textContent, t("moveCategoryDestination"));
+    assert.deepEqual(within(select).getAllByRole("option").map((option) => option.textContent), [currentLabel, destinationLabel]);
+    await userEvent.selectOptions(select, "empty");
+    assert.equal(client.moves.length, 0);
+    const review = within(document.querySelector(".project-category-move form") as HTMLElement);
+    assert.equal(review.getByText(`${originalPath}/${name}`, { selector: "dd", normalizer: (text) => text }).textContent, `${originalPath}/${name}`);
+    assert.equal(review.getByText(`${destinationPath}/${name}`, { selector: "dd", normalizer: (text) => text }).textContent, `${destinationPath}/${name}`);
+    await userEvent.keyboard("{Enter}");
+    await screen.findByText(t("moveCategoryCollision"));
+    assert.equal(client.moves.length, 1);
+    assert.equal(client.moves[0].destinationCategoryId, "empty");
+    assert.equal(select.value, "empty"); assert.equal(document.activeElement, select);
+    assert.equal(client.list.projects[0].name, name);
+    assert.equal(client.list.projects[0].relativePath, `${originalPath}/${name}`);
+    assert.ok(screen.getByText("  Exact Text\nТекст  ", { normalizer: (text) => text }));
+    await userEvent.keyboard("{Escape}");
+    assert.equal(document.activeElement, trigger); assert.equal(client.moves.length, 1);
   });
 }

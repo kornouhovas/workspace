@@ -136,15 +136,15 @@ Files:
 
 - Modify: src/renderer/app.css and src/renderer/localization.ts if verified presentation fixes are needed.
 
-- [ ] Extend existing typed Ladle fixture patterns with the production category move surface. Update existing DiscoveryWorkspace fixture clients to answer the newly mounted read-only operation list.
+- [x] Extend existing typed Ladle fixture patterns with the production category move surface. Update existing DiscoveryWorkspace fixture clients to answer the newly mounted read-only operation list.
 
-- [ ] Cover relevant EN/RU editing, pending, completed/no-op, rejected, unknown/status, list loading/error/empty, recovery loading/error/blocked, stale review, recovery pending/unknown and retained-original states. Include retained/direct restrictions and long names/relative paths.
+- [x] Cover relevant EN/RU editing, pending, completed/no-op, rejected, unknown/status, list loading/error/empty, recovery loading/error/blocked, stale review, recovery pending/unknown and retained-original states. Include retained/direct restrictions and long names/relative paths.
 
-- [ ] Add focused --category-move layout selection and include these states in normal discovery-layout enumeration without arbitrary story-count goals.
+- [x] Add focused --category-move layout selection and include these states in normal discovery-layout enumeration without arbitrary story-count goals.
 
-- [ ] Assert visible labels, native select keyboard operation, Enter submission, Escape dismissal, focus restoration, advertised-action availability and absence of duplicate mutations. Check wrapping, reachable controls and horizontal overflow at 1440×960, 1024×720 and 420×800.
+- [x] Assert visible labels, native select keyboard operation, Enter submission, Escape dismissal, focus restoration, advertised-action availability and absence of duplicate mutations. Check wrapping, reachable controls and horizontal overflow at 1440×960, 1024×720 and 420×800.
 
-- [ ] Add or update interaction regressions for presentation fixes. Run focused UI tests, npm run typecheck, npm run build:ladle and node scripts/smoke-discovery-layouts.mjs --category-move with a distinct ignored evidence directory; preserve normal-shutdown assertions and commit after passing.
+- [x] Add or update interaction regressions for presentation fixes. Run focused UI tests, npm run typecheck, npm run build:ladle and node scripts/smoke-discovery-layouts.mjs --category-move with a distinct ignored evidence directory; preserve normal-shutdown assertions and commit after passing.
 
 ## Post-Completion: Coordinator-owned gates
 
@@ -192,4 +192,21 @@ Task 2 continuation evidence directory: `/Users/aleksandersk/Documents/programmi
 - `npm run check:docs`: exit 0; `continuation-docs.log`.
 - `git diff --check`: exit 0; `continuation-diff-check.log`.
 
-Task 3 remains unstarted. No full-suite, Ladle/layout, graphical Electron, package, Windows or external CI acceptance is claimed by Task 2. Separate review and coordinator-owned gates remain pending.
+Task 3 evidence is recorded below. No full-suite, Ladle/layout, graphical Electron, package, Windows or external CI acceptance is claimed by Task 2. Separate review and coordinator-owned gates remain pending.
+
+
+Task 3 completed and verified on macOS using Node 22.21.1. Fifty EN/RU Ladle states drive the production DiscoveryWorkspace/Table category editor, operation status and recovery controls through disposable typed clients. Coverage includes existing empty categories, exact long project names and relative placements, completed/no-op and rejected outcomes, pending/unknown status, interrupted lists, stale/loading/error/blocked recovery, all three advertised actions, recovery pending/unknown, retained-original outcomes and retained/direct restrictions. Existing production workspace fixture clients answer the mounted read-only category operation list. The normal layout enumeration includes these states, with `--category-move` selecting the behavior matrix by state name rather than a total story-count target.
+
+Task 3 evidence directory: `/Users/aleksandersk/Documents/programming/Projects/project_folder/.worktrees/issue-19-category-move/work/issue-19/category-move-ui-task-3/` (ignored local evidence).
+
+- `node --import tsx --test tests/project-category-move-ui.test.tsx tests/components.test.tsx tests/project-rename-ui.test.tsx`: exit 0, 392 passed, zero failed/skipped; `focused-ui-final.log`. New EN/RU regressions verify long displayed labels versus physical review paths, exact Name/Text preservation, rejected selection retention and Escape focus. An existing focus assertion now compares the same focus predicate as a boolean to bound transient DOM assertion diagnostics; its behavioral requirement is unchanged.
+- `npm run typecheck`: exit 0; `typecheck-final.log`.
+- `npm run build:ladle`: exit 0; `build-ladle.log`.
+- `node scripts/smoke-discovery-layouts.mjs --category-move`: exit 0; `layout-4.log` and `layout-4/ladle-observations.json`. All 50 states, 150 full-page screenshots at 1440×960, 1024×720 and 420×800, 50 successful interaction records, featurePassed=true and shutdownPassed=true. Native select type-ahead, Enter submission, Escape dismissal, intentional trigger/Table focus, advertised actions, read-only status and mutation counts passed. Long authored values wrap, document/element overflow is absent and controls are reachable after scrolling. Narrow Russian recovery and editing captures were visually inspected.
+- Focused ESLint on the changed TypeScript/script files with `--max-warnings=0`: exit 0; `lint-final.log`.
+- `npm run check:docs`: exit 0; `docs-final.log`.
+- `git diff --check`: exit 0; `diff-check-final.log`.
+
+Preserved pre-green evidence includes missing-story red acceptance (`red-matrix.log`), the initial absent Ladle build (`red-layout.log`), wrapping diagnostics (`layout-wrap-probe/ladle-observations.json`), keyboard/focus adjustments, the failed full focused run and an explicitly terminated isolated probe. `presentation-diagnosis.json` distinguishes observed test/tool behavior from unproven historical causes. One earlier layout run also recorded a shutdown timeout with forced process cleanup; it remains failed evidence and the normal-shutdown assertion was preserved. The final run passed both feature and shutdown checks.
+
+These are disposable production-component presentation checks, not actual filesystem move, development/package UI, Windows, full-suite, external CI or whole Issue19 acceptance. Separate review and coordinator-owned runtime/platform gates remain pending.

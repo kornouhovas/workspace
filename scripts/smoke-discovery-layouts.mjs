@@ -56,19 +56,71 @@ app.on('window-all-closed', () => app.quit());`);
   assert.equal(stories.filter((name) => name.includes("--mode-")).length, 18, "Expected all nine EN/RU mode-change states");
   assert.equal(stories.filter((name) => name.includes("--creation-")).length, 36, "Expected all eighteen EN/RU creation and Reveal states");
   assert.equal(stories.filter((name) => name.includes("--rename-")).length, 96, "Expected all 24 direct/grouped EN/RU rename states");
-  assert.equal(stories.length, 252, "Expected discovery, Text, category, creation, reassociation and rename presentation states");
-  const selectedStories = process.argv.includes("--rename") ? stories.filter((name) => name.includes("--rename-")) : process.argv.includes("--mode-changes") ? stories.filter((name) => name.includes("--mode-")) : process.argv.includes("--creation") ? stories.filter((name) => name.includes("--creation-")) : stories;
+  const categoryMoveStories = stories.filter((name) => name.includes("--category-move-"));
+  // Require the behavior matrix by name, without a total story-count target.
+  const categoryMoveStates = ["editing", "pending", "saved", "unchanged", "collision", "stale", "unavailable", "rejected", "unknown", "list-loading", "list-empty", "list-error", "interrupted", "uncertain", "recovery-original", "recovery-destination", "recovery-blocked", "review-stale", "review-loading", "review-error", "recovery-pending", "recovery-unknown", "kept-original", "retained", "direct"];
+  for (const state of categoryMoveStates) for (const language of ["english", "russian"]) {
+    assert.ok(categoryMoveStories.some((name) => name.endsWith(`--category-move-${state}-${language}`)), `Missing category move ${state} ${language}`);
+  }
+  const selectedStories = process.argv.includes("--category-move") ? categoryMoveStories : process.argv.includes("--rename") ? stories.filter((name) => name.includes("--rename-")) : process.argv.includes("--mode-changes") ? stories.filter((name) => name.includes("--mode-")) : process.argv.includes("--creation") ? stories.filter((name) => name.includes("--creation-")) : stories;
   for (const story of selectedStories) {
     results.currentStory = story;
     await page.goto(`${url}/?story=${story}&mode=preview`);
+    const categoryMoveStory = story.includes("--category-move-");
     const renameStory = story.includes("--rename-");
     const creationStory = story.includes("--creation-");
     const modeStory = story.includes("--mode-");
     const sourceStory = story.includes("--source-");
     const recoveryStory = story.includes("--recovery-");
-    const categoryStory = story.includes("--category-");
+    const categoryStory = story.includes("--category-") && !categoryMoveStory;
     const textStory = story.includes("--text-");
-    await page.locator(renameStory ? "[data-rename-fixture][data-fixture-ready=true]" : creationStory ? "[data-creation-fixture][data-fixture-ready=true]" : modeStory ? "[data-mode-fixture]" : sourceStory ? "[data-source-fixture]" : recoveryStory ? "[data-recovery-fixture]" : categoryStory ? "[data-category-fixture][data-fixture-ready=true]" : textStory ? "[data-text-fixture][data-fixture-ready=true]" : ".discovery-panel, .table-view").waitFor();
+    await page.locator(categoryMoveStory ? "[data-category-move-fixture][data-fixture-ready=true]" : renameStory ? "[data-rename-fixture][data-fixture-ready=true]" : creationStory ? "[data-creation-fixture][data-fixture-ready=true]" : modeStory ? "[data-mode-fixture]" : sourceStory ? "[data-source-fixture]" : recoveryStory ? "[data-recovery-fixture]" : categoryStory ? "[data-category-fixture][data-fixture-ready=true]" : textStory ? "[data-text-fixture][data-fixture-ready=true]" : ".discovery-panel, .table-view").waitFor();
+    const categoryMoveRoot = page.locator("[data-category-move-fixture]");
+    const categoryMoveState = categoryMoveStory ? await categoryMoveRoot.getAttribute("data-category-move-fixture") : null;
+    const categoryMoveLanguage = categoryMoveStory ? await categoryMoveRoot.getAttribute("lang") : null;
+    const moveText = (en, ru) => categoryMoveLanguage === "ru" ? ru : en;
+    const movePanel = page.locator(".project-category-move");
+    const moveSelect = page.locator("#project-category-move-destination");
+    const moveTrigger = page.locator("td:nth-child(2) .property-rename");
+    const moveReview = page.locator(".category-move-review");
+    const moveReviewTrigger = page.locator(".category-move-operations > div > button:last-of-type");
+    const moveCalls = async () => ({ move: Number(await categoryMoveRoot.getAttribute("data-move-calls")), recovery: Number(await categoryMoveRoot.getAttribute("data-recovery-calls")) });
+    if (categoryMoveStory) {
+      const list = page.locator(".category-move-operations");
+      assert.equal(await list.getAttribute("aria-busy"), categoryMoveState === "list-loading" ? "true" : "false");
+      if (categoryMoveState === "list-error") await list.getByRole("alert").waitFor();
+      if (categoryMoveState === "list-empty") await list.getByText(moveText("No interrupted category moves.", "Прерванных перемещений нет."), { exact: true }).waitFor();
+      if (["collision", "stale", "unavailable", "rejected", "unknown"].includes(categoryMoveState)) await movePanel.locator(":scope > [role=alert]").waitFor();
+      if (await moveSelect.count()) {
+        assert.equal(await page.getByLabel(moveText("Destination category", "Категория назначения"), { exact: true }).count(), 1);
+        assert.equal(await moveSelect.evaluate((node) => node.labels.length), 1);
+        assert.deepEqual(await moveSelect.locator("option").evaluateAll((nodes) => nodes.map((node) => node.value)), ["move-original-category", "move-destination-category"]);
+        assert.equal(await moveSelect.isDisabled(), ["pending", "unknown"].includes(categoryMoveState));
+        await movePanel.getByText(moveText("Submitting physically moves the project folder into an existing category. Its exact name and Text values stay the same. Displayed paths are for review; the service validates the placement.", "Отправка физически перемещает папку проекта в существующую категорию. Точное имя и значения Text сохраняются. Пути показаны для проверки; сервис проверяет расположение."), { exact: true }).waitFor();
+      }
+      if (["saved", "unchanged", "kept-original"].includes(categoryMoveState)) {
+        assert.equal(await moveSelect.count(), 0); assert.equal(await moveReview.count(), 0);
+        await movePanel.locator(":scope > [role=status]").waitFor();
+      }
+      if (["retained", "direct"].includes(categoryMoveState)) {
+        assert.equal(await moveTrigger.count(), 0);
+        assert.equal(await moveSelect.count(), 0);
+        assert.equal(await page.locator(".text-property-cell .text-value-button").count(), 1, "Text remains usable on restricted rows");
+      }
+      if (["recovery-original", "recovery-destination", "recovery-blocked"].includes(categoryMoveState)) {
+        await page.locator(".category-move-placements").waitFor();
+        const actions = moveReview.locator(".workspace-form-actions").first().getByRole("button");
+        const expected = categoryMoveState === "recovery-original" ? [moveText("Retry original category move", "Повторить исходное перемещение"), moveText("Keep original category folder", "Сохранить папку в исходной категории")] : categoryMoveState === "recovery-destination" ? [moveText("Complete destination category move", "Подтвердить перемещение в категорию назначения")] : [];
+        assert.deepEqual(await actions.allTextContents(), expected);
+        for (const action of await actions.all()) assert.equal(await action.isEnabled(), true);
+      }
+      if (["review-stale", "review-loading", "review-error", "recovery-pending", "recovery-unknown"].includes(categoryMoveState)) assert.equal(await page.locator(".category-move-placements").count(), 0);
+      if (["unknown", "recovery-unknown"].includes(categoryMoveState)) assert.equal(await movePanel.getByRole("button", { name: moveText("Check category move status", "Проверить статус перемещения в категорию"), exact: true }).isEnabled(), true);
+      assert.deepEqual(await moveCalls(), {
+        move: ["pending", "saved", "unchanged", "collision", "stale", "unavailable", "rejected", "unknown"].includes(categoryMoveState) ? 1 : 0,
+        recovery: ["recovery-pending", "recovery-unknown", "kept-original"].includes(categoryMoveState) ? 1 : 0,
+      }, "Preparation performs only the requested explicit mutation");
+    }
     const renameState = renameStory ? await page.locator("[data-rename-fixture]").getAttribute("data-rename-fixture") : null;
     const renameLanguage = renameStory ? await page.locator("[data-rename-fixture]").getAttribute("lang") : null;
     const renameText = (en, ru) => renameLanguage === "ru" ? ru : en;
@@ -163,16 +215,22 @@ app.on('window-all-closed', () => app.quit());`);
           const bounds = node.getBoundingClientRect(), scroll = node.closest(".project-table-scroll").getBoundingClientRect();
           return bounds.left < scroll.left - 1 || bounds.right > scroll.right + 1;
         }).map((node) => node.textContent),
-        elements: Array.from(globalThis.document.querySelectorAll(".discovery-panel, .discovery-effects, .discovery-effects li, .discovery-entries li, .project-table td, .project-table th, .workspace-root, .workspace-form-actions, .text-value-button, .text-value-editor, .category-property-header, .recovery-review dd, .recovery-candidates, .recovery-path, .source-refresh, .source-refresh .bb-status, .project-creation, .project-creation .bb-status, .project-creation .workspace-form-actions, .creation-review, .project-reveal .bb-status, .project-rename, .project-rename form, .project-rename .bb-status, .rename-operations, .rename-review, .project-rename dl, .project-rename dt, .project-rename dd, .project-rename .workspace-form-actions"))
+        elements: Array.from(globalThis.document.querySelectorAll(".discovery-panel, .discovery-effects, .discovery-effects li, .discovery-entries li, .project-table td, .project-table th, .workspace-root, .workspace-form-actions, .text-value-button, .text-value-editor, .category-property-header, .recovery-review dd, .recovery-candidates, .recovery-path, .source-refresh, .source-refresh .bb-status, .project-creation, .project-creation .bb-status, .project-creation .workspace-form-actions, .creation-review, .project-reveal .bb-status, .project-rename, .project-rename form, .project-rename .bb-status, .rename-operations, .rename-review, .project-rename dl, .project-rename dt, .project-rename dd, .project-rename .workspace-form-actions, .project-category-move, .project-category-move form, .project-category-move .bb-status, .category-move-operations, .category-move-review, .project-category-move dl, .project-category-move dt, .project-category-move dd, .project-category-move .workspace-form-actions"))
           .filter((node) => node.scrollWidth > node.clientWidth + 1).map((node) => node.className || node.tagName),
-        wrapped: Array.from(globalThis.document.querySelectorAll(".discovery-name, .property-authored, .text-value-button:not([hidden]), .project-table td, .saved-categories li, .workspace-root, .recovery-review dd, .recovery-path, .project-rename dd, .project-rename p"))
+        wrapped: Array.from(globalThis.document.querySelectorAll(".discovery-name, .property-authored, .text-value-button:not([hidden]), .project-table td, .saved-categories li, .workspace-root, .recovery-review dd, .recovery-path, .project-rename dd, .project-rename p, .project-category-move dd"))
           .filter((node) => node.textContent.length > 150).every((node) => {
             const range = globalThis.document.createRange(); range.selectNodeContents(node);
             return new Set(Array.from(range.getClientRects(), (rect) => Math.round(rect.top))).size > 1;
           }),
       }));
-      if (renameStory || recoveryStory || modeStory || creationStory) {
-        for (const button of await page.locator(renameStory ? ".project-rename button, td:first-child .property-rename" : creationStory ? ".project-creation button, .project-reveal button" : recoveryStory ? ".recovery-panel button" : ".workspace-form-actions button, [data-mode-fixture] > button").all()) {
+      if (categoryMoveStory && !layout.wrapped) {
+        results.unwrapped = await page.locator(".property-authored, .text-value-button:not([hidden]), .project-table td, .saved-categories li, .project-category-move dd").evaluateAll((nodes) => nodes.filter((node) => {
+          const range = globalThis.document.createRange(); range.selectNodeContents(node);
+          return node.textContent.length > 150 && new Set(Array.from(range.getClientRects(), (rect) => Math.round(rect.top))).size <= 1;
+        }).map((node) => ({ tag: node.tagName, className: node.className, textLength: node.textContent.length, width: node.clientWidth, text: node.textContent })));
+      }
+      if (categoryMoveStory || renameStory || recoveryStory || modeStory || creationStory) {
+        for (const button of await page.locator(categoryMoveStory ? ".project-category-move button, td:nth-child(2) .property-rename" : renameStory ? ".project-rename button, td:first-child .property-rename" : creationStory ? ".project-creation button, .project-reveal button" : recoveryStory ? ".recovery-panel button" : ".workspace-form-actions button, [data-mode-fixture] > button").all()) {
           await button.evaluate(async (node) => {
             node.scrollIntoView({ block: "center", inline: "nearest", behavior: "instant" });
             await new Promise((done) => globalThis.requestAnimationFrame(() => globalThis.requestAnimationFrame(done)));
@@ -186,7 +244,11 @@ app.on('window-all-closed', () => app.quit());`);
       assert.deepEqual(layout.clippedControls, [], `${story} ${size.width} editing controls clipped after scrolling`);
       assert.equal(layout.overflow, false, `${story} ${size.width} document overflow`);
       assert.deepEqual(layout.elements, [], `${story} ${size.width} element overflow`);
-      if (size.width === 420 || renameStory || recoveryStory || creationStory) assert.equal(layout.wrapped, true, `${story} long authored text did not wrap`);
+      if (size.width === 420 || categoryMoveStory || renameStory || recoveryStory || creationStory) assert.equal(layout.wrapped, true, `${story} long authored text did not wrap`);
+      if (categoryMoveStory) {
+        const surface = page.locator(".category-move-review, .project-category-move form").first();
+        await (await surface.count() ? surface : movePanel).evaluate((node) => node.scrollIntoView({ block: "start", behavior: "instant" }));
+      }
       if (renameStory) {
         const surface = page.locator(".rename-review, .project-rename form").first();
         await (await surface.count() ? surface : page.locator(".project-rename")).evaluate((node) => node.scrollIntoView({ block: "start", behavior: "instant" }));
@@ -194,10 +256,71 @@ app.on('window-all-closed', () => app.quit());`);
       const screenshot = `${story}-${size.width}x${size.height}.png`;
       // Keep complete rename surfaces in the captures, including long recovery
       // evidence. Other Chromium states retain their existing viewport captures.
-      await page.screenshot({ path: join(evidence, screenshot), fullPage: !browserOnly || renameStory });
-      results.screenshots.push({ story, ...size, screenshot, capture: !browserOnly || renameStory ? "full-page" : "viewport", layout });
+      await page.screenshot({ path: join(evidence, screenshot), fullPage: !browserOnly || renameStory || categoryMoveStory });
+      results.screenshots.push({ story, ...size, screenshot, capture: !browserOnly || renameStory || categoryMoveStory ? "full-page" : "viewport", layout });
     }
     // Exercise the actual fixture controls after recording the requested state.
+    if (categoryMoveStory) {
+      const initialCalls = await moveCalls();
+      let expectedCalls = { ...initialCalls };
+      const focused = async (locator) => assert.equal(await locator.evaluate((node) => node === globalThis.document.activeElement), true);
+      const table = page.getByRole("heading", { name: moveText("Table", "Таблица"), exact: true });
+      const status = movePanel.getByRole("button", { name: moveText("Check category move status", "Проверить статус перемещения в категорию"), exact: true });
+      if (["editing", "collision", "stale", "unavailable", "rejected"].includes(categoryMoveState)) {
+        await focused(moveSelect);
+        await moveSelect.press("Escape"); await moveSelect.waitFor({ state: "detached" }); await focused(moveTrigger);
+        await moveTrigger.press("Enter"); await moveSelect.waitFor(); await focused(moveSelect);
+        assert.equal(await moveSelect.inputValue(), "move-original-category");
+        await moveSelect.press("d");
+        assert.equal(await moveSelect.inputValue(), "move-destination-category", "Native select keyboard chooses the eligible empty category");
+        assert.deepEqual(await moveCalls(), initialCalls, "Changing selection cannot submit a move");
+        if (categoryMoveState === "editing") {
+          await moveSelect.press("Enter");
+          await movePanel.getByText(moveText("Project folder moved to the selected category.", "Папка проекта перемещена в выбранную категорию."), { exact: true }).waitFor();
+          expectedCalls.move++;
+          assert.equal(await moveTrigger.evaluate((node) => node === globalThis.document.activeElement) || await table.evaluate((node) => node === globalThis.document.activeElement), true, "Completion restores the initiating control or stable Table heading");
+        } else { await moveSelect.press("Escape"); await moveSelect.waitFor({ state: "detached" }); await focused(moveTrigger); }
+      } else if (["pending", "unknown"].includes(categoryMoveState)) {
+        // A duplicate submit event must also be guarded at the command boundary.
+        await moveSelect.evaluate((node) => node.closest("form").dispatchEvent(new Event("submit", { bubbles: true, cancelable: true })));
+        await movePanel.locator("form").press("Escape"); await moveSelect.waitFor({ state: "detached" });
+        assert.equal(await moveTrigger.isDisabled(), true); await focused(table);
+        if (categoryMoveState === "unknown") {
+          await status.press("Enter"); await movePanel.getByText(moveText("Project folder moved to the selected category.", "Папка проекта перемещена в выбранную категорию."), { exact: true }).waitFor();
+          assert.equal(await categoryMoveRoot.getAttribute("data-status-calls"), "1");
+        }
+      } else if (categoryMoveState === "list-error") {
+        await page.locator(".category-move-operations > button").press("Enter"); await page.locator(".category-move-operations [role=alert]").waitFor();
+      } else if (["interrupted", "uncertain"].includes(categoryMoveState)) {
+        await moveReviewTrigger.press("Enter"); await page.locator(".category-move-placements").waitFor();
+        await focused(page.locator("#category-move-review-title"));
+        await moveReview.press("Escape"); await moveReview.waitFor({ state: "detached" }); await focused(moveReviewTrigger);
+        // Explicit read-only status is available independently of recovery review.
+        await page.locator(".category-move-operations > div > button").first().press("Enter");
+        await movePanel.getByText(moveText("Project folder moved to the selected category.", "Папка проекта перемещена в выбранную категорию."), { exact: true }).waitFor();
+        assert.equal(await categoryMoveRoot.getAttribute("data-status-calls"), "1");
+      } else if (categoryMoveState.startsWith("recovery-") || categoryMoveState.startsWith("review-")) {
+        if (categoryMoveState === "review-stale") {
+          await focused(moveReview.getByRole("button").first());
+          await moveReview.getByRole("button").first().press("Enter"); await page.locator(".category-move-placements").waitFor();
+        } else if (!["recovery-pending", "recovery-unknown"].includes(categoryMoveState)) await focused(page.locator("#category-move-review-title"));
+        if (["recovery-original", "recovery-destination"].includes(categoryMoveState)) {
+          await moveReview.locator(".workspace-form-actions").first().getByRole("button").first().press("Enter");
+          await movePanel.getByText(moveText("Project folder moved to the selected category.", "Папка проекта перемещена в выбранную категорию."), { exact: true }).waitFor();
+          expectedCalls.recovery++; await focused(table);
+        } else {
+          await moveReview.press("Escape"); await moveReview.waitFor({ state: "detached" });
+          if (["recovery-pending", "recovery-unknown"].includes(categoryMoveState)) {
+            await focused(table);
+            if (categoryMoveState === "recovery-unknown") {
+              await status.press("Enter"); await movePanel.getByText(moveText("Project folder moved to the selected category.", "Папка проекта перемещена в выбранную категорию."), { exact: true }).waitFor();
+            }
+          } else await focused(moveReviewTrigger);
+        }
+      }
+      assert.deepEqual(await moveCalls(), expectedCalls, "Dismissal, selection, list, review and status cannot duplicate mutations");
+      results.interactions ??= []; results.interactions.push({ story, state: categoryMoveState, passed: true, mutationCalls: await moveCalls(), native: "typed fixture only" });
+    }
     if (renameStory) {
       const root = page.locator("[data-rename-fixture]");
       const trigger = page.locator("td:first-child .property-rename");
