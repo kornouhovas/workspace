@@ -339,28 +339,57 @@ changed.
   - Update plan completion/evidence references.
   - Create ignored handoff:
 work/issue-19/residual-acceptance/handoff.json.
-  - [ ] Inspect every changed file against the plan and
+  - [x] Inspect every changed file against the plan and
 original contracts. Remove temporary instrumentation from
 tracked files; retain labeled probes and full evidence
 under the ignored directory.
-  - [ ] Run the union of affected tests not already
+  - [x] Run the union of affected tests not already
 verified against unchanged inputs, targeted ESLint, npm
 run typecheck when TypeScript/UI changed, npm run
 check:docs and git diff --check. Reuse checks only with
 recorded input continuity; do not replay unrelated suites
 or platform runs.
-  - [ ] Document observed behavior, commands/exits,
+  - [x] Document observed behavior, commands/exits,
 regression results and reproduction-versus-cause limits.
 Extend tests if final evidence/schema changes require
 them; rerun the affected tests before completion.
-  - [ ] Produce a finite handoff for all three failures,
+  - [x] Produce a finite handoff for all three failures,
 including justified changes, unresolved causes, missing
 artifacts, exact input identities and required coordinator
 checks. Diagnostic completion must not imply
 original-scenario or Issue 19 completion.
-  - [ ] Commit coherent verified task changes with
+  - [x] Commit coherent verified task changes with
 explicit paths and English messages. Leave tracker writes,
 push, Actions, merge and publication to the coordinator.
+
+Task 4 verified evidence (local macOS, Node 22.21.1):
+`work/issue-19/residual-acceptance/handoff.json` records all three historical
+failures, justified changes, missing artifacts, reproduction-versus-cause
+limits, exact input identities, commands/exits and pending coordinator gates.
+Every bounded-delta file was inspected against the plan and original contracts;
+no temporary production instrumentation or production change was present.
+The saved complete diff is `bounded-delta.diff` under the same ignored root.
+
+`final/input-continuity.json` verifies all 36 layout, eight observer and 110
+native recorded input hashes, with zero mismatches, and separately checks
+committed test/source/config scopes. Valid affected checks were reused:
+Task 1's 203-test result covers unchanged layout/UI seams, Task 2's 130-test
+result covers collector/runner/transport, and Task 3's 75 passes plus one
+existing macOS Windows-only skip cover native/product/current runtime-readiness.
+The earlier runtime-readiness portion is superseded by Task 3's verification;
+the skipped actual Windows test is not platform acceptance. All 61 tracked
+TypeScript/TSX/compiler/dependency inputs match the verified Task 1 commit,
+so its exit-0 typecheck remains applicable. No new code/schema/test repair,
+full-suite replay, graphical rerun, build or package command was required.
+
+Fresh combined targeted ESLint, `npm run check:docs` (111 Markdown files),
+working diff and complete bounded-delta whitespace checks exited 0; exact
+commands, exits and full log paths are in `final/checks.json`. Documentation
+now explains original collector retention/validation and both observed fixture
+mechanisms without claiming historical causation. Four explicit documentation
+paths, including this plan, form the Task 4 local commit. Exact reviewed-SHA
+macOS/Windows original scenarios, separate review, remaining native/shutdown
+contracts and whole Issue 19 acceptance remain external coordinator gates.
 
 ## Post-Completion
 
