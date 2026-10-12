@@ -149,8 +149,9 @@ when only prose/archive paths changed.
 
 Task 1 started at `e940d96783558cccbd5771ad52e8d01ff64a0a3e`
 and was committed as `beb4d95e54eda0de0aab332690bc0cd72cd15e82`.
-Task 2 starts at that implementation commit. The fixed issue base remains
-`1c44ee960b2449bf522a0e76ae4a9754e437bc78`. Task 1 ran with Node
+Task 2 starts at that implementation commit. The review comparison is
+`1c44ee960b2449bf522a0e76ae4a9754e437bc78`; the fixed issue base remains
+`4f9f11f785c63a65585ea6f33f167fc438272c64`. Task 1 ran with Node
 22.21.1 on darwin arm64, OS release 27.0.0; documentation checks use the
 same installed Node version through a process-local PATH.
 
