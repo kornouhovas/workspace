@@ -217,6 +217,7 @@ test('full product OS comparison retains identical checks and unique evidence/pa
   assert.deepEqual(runs.map((step) => step.run), [
     'npm ci', 'npm test', 'npm run lint', 'npm run typecheck', 'npm run build', 'npm run build:ladle',
     'node scripts/smoke-discovery-layouts.mjs --creation',
+    'node scripts/smoke-discovery-layouts.mjs --category-move',
     'npm run smoke:runtime -- dev --creation --skip-native',
     'npm run smoke:runtime -- dev --creation --discovery-mode=direct --checkpoint=after_evidence',
     'npm run smoke:runtime -- dev --creation --discovery-mode=grouped --checkpoint=after_evidence',
@@ -237,7 +238,7 @@ test('full product OS comparison retains identical checks and unique evidence/pa
   const creationUploads = uploads.filter((step) => step.with.path.includes('work/ci-creation-'));
   assert.equal(creationUploads.length, 1);
   assert.equal(creationUploads[0].if, 'always()');
-  assert.equal(creationUploads[0].with.path, 'work/ci-creation-*/\nwork/ci-runtime-*/\n');
+  assert.equal(creationUploads[0].with.path, 'work/ci-creation-*/\nwork/ci-runtime-*/\nwork/ci-category-move-layouts/\n');
   assert.equal(creationUploads[0].with['if-no-files-found'], 'warn');
   const packageUploads = uploads.filter((step) => step.with.path === 'release/');
   assert.equal(packageUploads.length, 1);

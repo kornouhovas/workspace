@@ -74,6 +74,12 @@ An unknown response retains the submitted operation ID, including after closing 
 
 The native no-replace adapter rejects occupied destinations. Case-only behavior follows actual mounted-filesystem evidence and exact enumerated spelling. Durable intent/evidence and explicit recovery handle process interruption; filesystem and SQLite writes are not atomic, path-based substitution races remain, and coordinated power-loss durability is unestablished. Local macOS development and fresh packaged UI checks passed; actual Windows UI/package acceptance, coordinator review and independent shutdown gates remain open. See [ADR 0007](docs/adr/0007-no-replace-project-renames.md) and [Name/recovery verification](docs/verification/issue-18-project-rename-ui.md).
 
+## Move a project into another category
+
+Choose Move project category on an active grouped Table row, select an existing eligible category and submit explicitly. The physical move retains the exact Name, project ID, folder contents and Text values. Assigning the current category still validates current placement; occupied, unavailable, stale or unauthorized targets show feedback without overwriting a destination. Direct and retained rows keep their existing restrictions.
+
+An unknown response retains the operation ID for explicit Check category move status. Interrupted moves require Review interrupted category move and a fresh advertised action: retry the original move, complete destination metadata or keep the original folder. Startup, refresh, reconnect and status/list reads never replay filesystem effects. See [category UI runtime verification](docs/verification/issue-19-category-move-ui.md) for local development/package checks and pending final Windows/review gates. Filesystem/SQLite atomicity, path substitution and power-loss limits remain unchanged.
+
 ## Create a project and reveal its folder
 
 Apply discovery configuration first, then choose Create project and enter a folder name. Direct mode creates Root/Project; grouped mode requires a selected existing active category and creates Root/Category/Project. Workspace never creates a category implicitly. Valid authored spelling is preserved; invalid platform names, occupied or reserved destinations, unavailable roots and stale categories produce localized feedback. A successful project receives a fresh durable logical ID and no inherited Text values; sibling workspaces share the result and retain independent views.

@@ -250,3 +250,24 @@ test("owned category interruption worker reaches real durable boundaries and rea
     await rm(fixture, { recursive: true, force: true });
   }
 });
+
+test("CI runs category layouts once and retains failures while regular runtimes own category acceptance", async () => {
+  const { readFile } = await import("node:fs/promises");
+  const { load } = await import("js-yaml");
+  const workflow = load(await readFile(new URL("../.github/workflows/desktop-ci.yml", import.meta.url), "utf8"));
+  const steps = workflow.jobs.verify.steps;
+  assert.deepEqual(workflow.jobs.verify.strategy.matrix.include.map(row => row.os), ["macos-latest", "windows-latest", "windows-2022"]);
+  const layouts = steps.filter(step => step.run === "node scripts/smoke-discovery-layouts.mjs --category-move");
+  assert.equal(layouts.length, 1);
+  assert.equal(layouts[0].env.WORKSPACE_SMOKE_EVIDENCE_DIR, "work/ci-category-move-layouts");
+  const upload = steps.find(step => step.uses === "actions/upload-artifact@v4" && step.with.path.includes("work/ci-category-move-layouts/"));
+  assert.equal(upload?.if, "always()");
+  assert.ok(upload.with.path.includes("work/ci-runtime-*/"));
+  for (const mode of ["dev", "release"]) {
+    const normal = steps.filter(step => step.run === `npm run smoke:runtime -- ${mode}`);
+    assert.equal(normal.length, 1);
+    assert.equal(normal[0].if, "${{ !cancelled() }}");
+    assert.equal(normal[0].env.WORKSPACE_SMOKE_EVIDENCE_DIR, `work/ci-runtime-${mode}`);
+  }
+  assert.equal(steps.filter(step => /smoke:runtime.*--category-move/.test(step.run ?? "")).length, 0);
+});

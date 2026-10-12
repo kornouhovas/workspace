@@ -293,6 +293,10 @@ jobs:
         run: node scripts/smoke-discovery-layouts.mjs --creation
         env:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-creation-layouts
+      - name: Capture category move/status/recovery layouts
+        run: node scripts/smoke-discovery-layouts.mjs --category-move
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-category-move-layouts
       - name: Development creation crash/recovery matrix
         if: ${{ !cancelled() }}
         run: npm run smoke:runtime -- dev --creation --skip-native
@@ -335,7 +339,7 @@ jobs:
         if: ${{ !cancelled() }}
         env:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-runtime-release
-      - name: Preserve creation/native failures and unreached stages
+      - name: Preserve creation/native and category UI failures and unreached stages
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -343,6 +347,7 @@ jobs:
           path: |
             work/ci-creation-*/
             work/ci-runtime-*/
+            work/ci-category-move-layouts/
           if-no-files-found: warn
       - uses: actions/upload-artifact@v4
         with:
