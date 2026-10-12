@@ -53,6 +53,18 @@ The application scaffold now provides the scripts below. The legacy documentatio
 
 Use temporary data for destructive and recovery checks. Never use live user project folders as test fixtures. Report completed checks, limitations and the actual commit at handoff; distinguish a written design from an implemented capability.
 
+### CI test scheduling
+
+Ordinary push and pull-request runs execute common DOM/mocked-client and pure-helper tests once on macOS, alongside lint, typecheck and documentation links. The macOS, Windows latest and Windows 2022 matrix builds once per OS and runs the remaining platform tests, then the existing development and packaged runtime acceptance routes. SQLite, real filesystem, process, native and mixed UI/backend suites remain in that matrix. Production move, recovery and native acceptance assertions are unchanged.
+
+`npm test` still builds and runs every test locally. After a build, `npm run test:all` runs every test without rebuilding; `npm run test:platform` selects platform suites. `npm run test:common` requires no application build. The explicit common list lives in [test-suites.mjs](../scripts/test-suites.mjs); new test files default to platform coverage. `node scripts/test-suites.mjs <all|common|platform> --list` prints the selected files. Partition controls require complete, nonoverlapping coverage and preserve platform-sensitive suites.
+
+CI packages its already verified build with `npm run package:built`; local `package:dir` retains its fresh-build behavior. A failed prerequisite stops dependent acceptance steps, while failure evidence uploads retain `always()`. New commits cancel older runs for the same event/ref. Push and pull-request identities remain distinct.
+
+Isolated observer, early rename/category service and Windows selection/rename/resolver investigation jobs are available through manual `workflow_dispatch` with `diagnostics: true`. Historical API/CLI experiments retain their separate `legacy_windows_diagnostics` opt-in. Their focused test files remain covered by platform suites during ordinary CI; their standalone experiments are additional diagnostics. A diagnostic artifact or skipped job does not establish product acceptance. Historical evidence directories and artifact names containing `full-suite` now carry the original platform-suite call/checkpoints; they retain exact SHA/run/attempt provenance.
+
+This scheduling change reduces repeated execution, not the test inventory. Actual Windows acceptance and any pre-existing failures remain pending until a reviewed-SHA run completes. Compare observed job durations after the change before claiming a measured speed or cost reduction.
+
 ## Current desktop slice
 
 The repository currently builds and runs an Electron application with settings, workspace management, direct/grouped project discovery and configured mode changes, required grouped categories, shared Text properties, external folder reconciliation, explicit folder reassociation, recoverable project creation, Table Name editing with explicit rename status/recovery, Table category editing with explicit move status/recovery and native Reveal. Use Node.js 22.21.1 on macOS or Windows, matching the native build and CI matrix, and install the committed dependency resolution with `npm ci`. Building also requires Python and the platform C/C++ toolchain; see the [native adapter checkpoint](#project-rename-native-adapter-checkpoint) for SDK and header prerequisites.

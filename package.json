@@ -21,7 +21,7 @@
     "build": "npm run clean && npm run build:version && npm run build:renderer && npm run build:desktop && npm run build:service-test-lib && npm run build:backend && node scripts/copy-migrations.mjs && npm run check:version",
     "dev": "npm run build && electron .",
     "start": "electron .",
-    "test": "npm run build && tsx --test tests/*.test.mjs tests/*.test.tsx",
+    "test": "npm run build && npm run test:all",
     "test:windows:early": "node --import tsx --test tests/ralphex-run.test.mjs tests/ralphex-observe.test.mjs tests/project-creation-service.test.mjs tests/project-creation-ui.test.tsx tests/project-reveal.test.mjs tests/settings-service.test.mjs tests/windows-product-diagnostics.test.mjs tests/windows-selection-diagnostics.test.mjs tests/file-manager-evidence.test.mjs tests/windows-project-reveal.test.mjs tests/windows-project-reveal-com.test.mjs tests/project-rename-native.test.mjs",
     "smoke:runtime": "node scripts/smoke-runtime.mjs",
     "lint": "eslint . --max-warnings=0",
@@ -37,7 +37,11 @@
     "smoke:category-move:service": "node scripts/smoke-project-category-move.mjs",
     "test:category-move:early": "node --import tsx --test tests/project-category-move-journal.test.mjs tests/project-category-move-coordination.test.mjs tests/project-category-move-service.test.mjs tests/project-category-move-crash.test.mjs tests/project-category-move-ipc.test.mjs tests/project-category-move-fixture.test.mjs",
     "smoke:rename:service": "node scripts/smoke-project-rename.mjs",
-    "test:rename:early": "node --import tsx --test tests/project-rename-journal.test.mjs tests/project-rename-coordination.test.mjs tests/project-rename-service.test.mjs tests/project-rename-crash.test.mjs tests/project-rename-ipc.test.mjs tests/project-rename-fixture.test.mjs"
+    "test:rename:early": "node --import tsx --test tests/project-rename-journal.test.mjs tests/project-rename-coordination.test.mjs tests/project-rename-service.test.mjs tests/project-rename-crash.test.mjs tests/project-rename-ipc.test.mjs tests/project-rename-fixture.test.mjs",
+    "test:all": "node scripts/test-suites.mjs all",
+    "test:common": "node scripts/test-suites.mjs common",
+    "test:platform": "node scripts/test-suites.mjs platform",
+    "package:built": "electron-builder --dir"
   },
   "dependencies": {
     "better-sqlite3": "13.0.3",

@@ -210,19 +210,19 @@ test('full product OS comparison retains identical checks and unique evidence/pa
     { os: 'windows-latest', artifact: 'windows' },
     { os: 'windows-2022', artifact: 'windows-2022' },
   ]);
-  assert.equal(job.needs, undefined);
+  assert.equal(job.needs, 'common');
   assert.equal(job['continue-on-error'], undefined);
   assert.ok(job.steps.every((step) => step['continue-on-error'] === undefined));
   const runs = job.steps.filter((step) => step.run);
   assert.deepEqual(runs.map((step) => step.run), [
-    'npm ci', 'npm test', 'node scripts/windows-observer-diagnostics.mjs validate-call --output work/ci-observer-full-suite',
-    'npm run lint', 'npm run typecheck', 'npm run build', 'npm run build:ladle',
+    'npm ci', 'npm run build', 'npm run test:platform', 'node scripts/windows-observer-diagnostics.mjs validate-call --output work/ci-observer-full-suite',
+    'npm run build:ladle',
     'node scripts/smoke-discovery-layouts.mjs --creation',
     'node scripts/smoke-discovery-layouts.mjs --category-move',
     'npm run smoke:runtime -- dev --creation --skip-native',
     'npm run smoke:runtime -- dev --creation --discovery-mode=direct --checkpoint=after_evidence',
     'npm run smoke:runtime -- dev --creation --discovery-mode=grouped --checkpoint=after_evidence',
-    'npm run smoke:runtime -- dev', 'npm run package:dir', 'npm run check:artifact -- release',
+    'npm run smoke:runtime -- dev', 'npm run package:built', 'npm run check:artifact -- release',
     'npm run smoke:runtime -- release --creation --skip-native',
     'npm run smoke:runtime -- release --creation --discovery-mode=direct --checkpoint=after_evidence',
     'npm run smoke:runtime -- release --creation --discovery-mode=grouped --checkpoint=after_evidence',
@@ -249,7 +249,7 @@ test('full product OS comparison retains identical checks and unique evidence/pa
   const checkpointUploads = uploads.filter((step) => step.with.path.endsWith('/service-checkpoint.json'));
   assert.equal(checkpointUploads.length, 1);
   const checkpoint = checkpointUploads[0];
-  const evidenceDirectory = runs.find((step) => step.run === 'npm test').env.WORKSPACE_CATEGORY_MOVE_SERVICE_EVIDENCE_DIR;
+  const evidenceDirectory = runs.find((step) => step.run === 'npm run test:platform').env.WORKSPACE_CATEGORY_MOVE_SERVICE_EVIDENCE_DIR;
   assert.ok(evidenceDirectory.startsWith('work/ci-category-move-full-suite/'));
   assert.equal(checkpoint.with.path, `${evidenceDirectory}/*/service-checkpoint.json`);
   assert.equal(checkpoint.if, 'always()');
@@ -330,7 +330,7 @@ test('only historical Windows API and CLI comparisons require explicit manual bo
   assert.equal(input.type, 'boolean');
   assert.equal(input.default, false);
   const historical = ['windows-native-selection', 'windows-explorer-selection'];
-  assert.deepEqual(Object.entries(workflow.jobs).filter(([, job]) => job.if !== undefined).map(([name]) => name), historical);
+  assert.ok(historical.every(name => workflow.jobs[name].if !== undefined));
   for (const name of historical) {
     const job = workflow.jobs[name];
     assert.match(job.name, /Historical manual/);
@@ -346,16 +346,18 @@ test('only historical Windows API and CLI comparisons require explicit manual bo
     }
   }
   for (const name of ['windows-product-selection-diagnostic', 'windows-category-rename-diagnostic',
-    'windows-ready-selection', 'verify']) {
+    'windows-ready-selection']) {
     const job = workflow.jobs[name];
     assert.ok(job);
-    assert.equal(job.if, undefined);
+    assert.equal(job.if, "${{ github.event_name == 'workflow_dispatch' && inputs.diagnostics == true }}");
     assert.equal(job.needs, undefined);
     assert.equal(job['continue-on-error'], undefined);
     assert.ok(job.steps.every((step) => step['continue-on-error'] === undefined));
     assert.ok(job.steps.every((step) => !JSON.stringify(step).includes('legacy_windows_diagnostics')));
   }
-  assert.equal(workflow.jobs.verify.steps.some((step) => step.run === 'npm test' && step.if === undefined), true);
+  assert.equal(workflow.jobs.verify.if, undefined);
+  assert.equal(workflow.jobs.verify.needs, 'common');
+  assert.equal(workflow.jobs.verify.steps.some((step) => step.run === 'npm run test:platform' && step.if === undefined), true);
 });
 
 

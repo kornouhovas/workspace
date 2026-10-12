@@ -5,13 +5,37 @@ on:
   pull_request:
   workflow_dispatch:
     inputs:
+      diagnostics:
+        description: Run isolated investigation and early-feedback jobs
+        type: boolean
+        default: false
       legacy_windows_diagnostics:
         description: Run historical unused Windows API and CLI comparisons (known negative outcomes)
         type: boolean
         default: false
 
+concurrency:
+  group: desktop-${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
+  common:
+    name: Common tests and static checks
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.21.1
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run check:docs
+      - run: npm run test:common
+
   windows-observer-diagnostic:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.diagnostics == true }}
     name: Isolated pure-Node observer diagnostic (${{ matrix.os }})
     strategy:
       fail-fast: false
@@ -59,6 +83,7 @@ jobs:
           retention-days: 7
 
   project-category-move-service-early:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.diagnostics == true }}
     name: Early real-service project category move (${{ matrix.os }})
     strategy:
       fail-fast: false
@@ -96,6 +121,7 @@ jobs:
           if-no-files-found: warn
 
   project-rename-service-early:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.diagnostics == true }}
     name: Early real-service project rename (${{ matrix.os }})
     strategy:
       fail-fast: false
@@ -133,6 +159,7 @@ jobs:
           if-no-files-found: warn
 
   windows-product-selection-diagnostic:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.diagnostics == true }}
     name: Isolated Windows product selection diagnostic
     runs-on: windows-latest
     timeout-minutes: 10
@@ -171,6 +198,7 @@ jobs:
           if-no-files-found: warn
 
   windows-category-rename-diagnostic:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.diagnostics == true }}
     name: Isolated Windows real-service category rename diagnostic
     runs-on: windows-latest
     timeout-minutes: 10
@@ -256,6 +284,7 @@ jobs:
           if-no-files-found: error
 
   verify:
+    needs: common
     strategy:
       fail-fast: false
       matrix:
@@ -274,7 +303,8 @@ jobs:
           node-version: 22.21.1
           cache: npm
       - run: npm ci
-      - run: npm test
+      - run: npm run build
+      - run: npm run test:platform
         env:
           OBSERVER_MATRIX: ${{ matrix.os }}
           WORKSPACE_OBSERVER_CALL_EVIDENCE_DIR: work/ci-observer-full-suite
@@ -301,9 +331,6 @@ jobs:
           path: work/ci-category-move-full-suite/${{ matrix.os }}-${{ github.sha }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}/*/service-checkpoint.json
           if-no-files-found: warn
           retention-days: 7
-      - run: npm run lint
-      - run: npm run typecheck
-      - run: npm run build
       - run: npm run build:ladle
       - name: Capture creation/recovery/Reveal layouts
         run: node scripts/smoke-discovery-layouts.mjs --creation
@@ -314,45 +341,35 @@ jobs:
         env:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-category-move-layouts
       - name: Development creation crash/recovery matrix
-        if: ${{ !cancelled() }}
         run: npm run smoke:runtime -- dev --creation --skip-native
         env:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-creation-dev-crash-matrix
       - name: Direct development creation/native evidence
-        if: ${{ !cancelled() }}
         run: npm run smoke:runtime -- dev --creation --discovery-mode=direct --checkpoint=after_evidence
         env:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-creation-dev-direct
       - name: Grouped development creation/native evidence
-        if: ${{ !cancelled() }}
         run: npm run smoke:runtime -- dev --creation --discovery-mode=grouped --checkpoint=after_evidence
         env:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-creation-dev-grouped
       - run: npm run smoke:runtime -- dev
-        if: ${{ !cancelled() }}
         env:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-runtime-dev
-      - run: npm run package:dir
-        if: ${{ !cancelled() }}
+      - run: npm run package:built
       - run: npm run check:artifact -- release
-        if: ${{ !cancelled() }}
       - name: Packaged creation crash/recovery matrix
-        if: ${{ !cancelled() }}
         run: npm run smoke:runtime -- release --creation --skip-native
         env:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-creation-release-crash-matrix
       - name: Direct packaged creation/native evidence
-        if: ${{ !cancelled() }}
         run: npm run smoke:runtime -- release --creation --discovery-mode=direct --checkpoint=after_evidence
         env:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-creation-release-direct
       - name: Grouped packaged creation/native evidence
-        if: ${{ !cancelled() }}
         run: npm run smoke:runtime -- release --creation --discovery-mode=grouped --checkpoint=after_evidence
         env:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-creation-release-grouped
       - run: npm run smoke:runtime -- release
-        if: ${{ !cancelled() }}
         env:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-runtime-release
       - name: Preserve creation/native and category UI failures and unreached stages
@@ -372,6 +389,7 @@ jobs:
           if-no-files-found: error
 
   windows-ready-selection:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.diagnostics == true }}
     name: Isolated ready-parent native-command diagnostic (${{ matrix.os }})
     strategy:
       fail-fast: false

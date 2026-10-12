@@ -304,7 +304,7 @@ test("CI runs category layouts once and retains failures while regular runtimes 
   for (const mode of ["dev", "release"]) {
     const normal = steps.filter(step => step.run === `npm run smoke:runtime -- ${mode}`);
     assert.equal(normal.length, 1);
-    assert.equal(normal[0].if, "${{ !cancelled() }}");
+    assert.equal(normal[0].if, undefined);
     assert.equal(normal[0].env.WORKSPACE_SMOKE_EVIDENCE_DIR, `work/ci-runtime-${mode}`);
   }
   assert.equal(steps.filter(step => /smoke:runtime.*--category-move/.test(step.run ?? "")).length, 0);
