@@ -228,17 +228,33 @@ test('full product OS comparison retains identical checks and unique evidence/pa
   ]);
   // No OS-dependent skip or alternate command in the shared acceptance sequence.
   assert.ok(runs.every((step) => step.if === undefined || step.if === '${{ !cancelled() }}'));
-  assert.ok(runs.every((step) => !JSON.stringify(step).includes('matrix.os')));
+  assert.ok(runs.every(({ run, if: condition }) => !JSON.stringify({ run, condition }).includes('matrix.os')));
   assert.equal(job.steps.find((step) => step.uses === 'actions/setup-node@v4').with['node-version'], '22.21.1');
   const uploads = job.steps.filter((step) => step.uses === 'actions/upload-artifact@v4');
-  assert.equal(uploads.length, 2);
-  const names = job.strategy.matrix.include.flatMap(({ artifact }) => uploads.map((step) =>
-    step.with.name.replace('${{ matrix.artifact }}', artifact)));
-  assert.equal(new Set(names).size, 6);
-  assert.equal(uploads[0].if, 'always()');
-  assert.equal(uploads[0].with.path, 'work/ci-creation-*/\nwork/ci-runtime-*/\n');
-  assert.equal(uploads[1].with.path, 'release/');
-  assert.equal(uploads[1].with['if-no-files-found'], 'error');
+  const names = job.strategy.matrix.include.flatMap(({ os, artifact }) => uploads.map((step) =>
+    step.with.name.replaceAll('${{ matrix.artifact }}', artifact).replaceAll('${{ matrix.os }}', os)));
+  assert.equal(new Set(names).size, names.length);
+  const creationUploads = uploads.filter((step) => step.with.path.includes('work/ci-creation-'));
+  assert.equal(creationUploads.length, 1);
+  assert.equal(creationUploads[0].if, 'always()');
+  assert.equal(creationUploads[0].with.path, 'work/ci-creation-*/\nwork/ci-runtime-*/\n');
+  assert.equal(creationUploads[0].with['if-no-files-found'], 'warn');
+  const packageUploads = uploads.filter((step) => step.with.path === 'release/');
+  assert.equal(packageUploads.length, 1);
+  assert.equal(packageUploads[0].with['if-no-files-found'], 'error');
+  const checkpointUploads = uploads.filter((step) => step.with.path.endsWith('/service-checkpoint.json'));
+  assert.equal(checkpointUploads.length, 1);
+  const checkpoint = checkpointUploads[0];
+  const evidenceDirectory = runs.find((step) => step.run === 'npm test').env.WORKSPACE_CATEGORY_MOVE_SERVICE_EVIDENCE_DIR;
+  assert.ok(evidenceDirectory.startsWith('work/ci-category-move-full-suite/'));
+  assert.equal(checkpoint.with.path, `${evidenceDirectory}/*/service-checkpoint.json`);
+  assert.equal(checkpoint.if, 'always()');
+  assert.equal(checkpoint.with['if-no-files-found'], 'warn');
+  assert.equal(checkpoint.with['retention-days'], 7);
+  for (const provenance of ['${{ matrix.os }}', '${{ github.sha }}', '${{ github.run_id }}', '${{ github.run_attempt }}']) {
+    assert.ok(evidenceDirectory.includes(provenance));
+    assert.ok(checkpoint.with.name.includes(provenance));
+  }
 });
 
 test('Explorer CLI candidate uses identical fresh OS jobs and never replaces native or product acceptance', async () => {
