@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
+import { lstatSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
 import { execFileSync, spawn } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
@@ -82,7 +82,7 @@ const caseNames = ['current_process', 'owned_child'];
 const unavailableCase = name => ({ name, identity: Object.fromEntries(identityKeys.map(key => [key, false])), probe: { status: 'unavailable', errno: 'unavailable' }, observer: emptyObserver('unreached'), inputsUnchanged: false });
 const exactKeys = (value, keys) => value !== null && typeof value === 'object' && !Array.isArray(value) && Object.keys(value).length === keys.length && keys.every(key => Object.hasOwn(value, key));
 const codeValid = value => value === 'unavailable' || numericCode(value) === value;
-const provenanceValid = value => exactKeys(value, ['sha', 'runId', 'attempt', 'matrix', 'platform', 'nodeVersion']) && typeof value.sha === 'string' && /^[a-f0-9]{40}$/.test(value.sha) && typeof value.runId === 'string' && /^(local|[1-9][0-9]{0,19})$/.test(value.runId) && Number.isSafeInteger(value.attempt) && value.attempt >= 1 && value.attempt <= 10000 && ['local', 'windows-latest', 'windows-2022'].includes(value.matrix) && ['darwin', 'win32', 'linux'].includes(value.platform) && typeof value.nodeVersion === 'string' && /^v\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(value.nodeVersion);
+const provenanceValid = value => exactKeys(value, ['sha', 'runId', 'attempt', 'matrix', 'platform', 'nodeVersion']) && typeof value.sha === 'string' && /^[a-f0-9]{40}$/.test(value.sha) && typeof value.runId === 'string' && /^(local|[1-9][0-9]{0,19})$/.test(value.runId) && Number.isSafeInteger(value.attempt) && value.attempt >= 1 && value.attempt <= 10000 && ['local', 'macos-latest', 'windows-latest', 'windows-2022'].includes(value.matrix) && ['darwin', 'win32', 'linux'].includes(value.platform) && typeof value.nodeVersion === 'string' && /^v\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(value.nodeVersion);
 const observerValid = value => exactKeys(value, ['status', 'reason', 'ownership', 'diagnosticCode', 'exitCode', 'errno']) && ['collected', 'error', 'timed_out', 'invalid_result', 'unreached'].includes(value.status) && [...reasons, 'unavailable'].includes(value.reason) && [...ownerships, 'unavailable'].includes(value.ownership) && [...diagnosticCodes, 'unavailable'].includes(value.diagnosticCode) && codeValid(value.exitCode) && codeValid(value.errno) && (value.status !== 'collected' || (reasons.includes(value.reason) && ownerships.includes(value.ownership)));
 const caseValid = value => exactKeys(value, ['name', 'identity', 'probe', 'observer', 'inputsUnchanged']) && caseNames.includes(value.name) && exactKeys(value.identity, identityKeys) && Object.values(value.identity).every(item => typeof item === 'boolean') && exactKeys(value.probe, ['status', 'errno']) && ['allowed', 'denied', 'unavailable'].includes(value.probe.status) && codeValid(value.probe.errno) && observerValid(value.observer) && typeof value.inputsUnchanged === 'boolean';
 // Raw realpath comparisons are diagnostic facts, not ownership requirements.
@@ -164,7 +164,7 @@ function writeEvidence(output, evidence) {
   mkdirSync(dirname(resolve(output)), { recursive: true });
   writeFileSync(output, JSON.stringify(evidence) + '\n');
 }
-function environmentProvenance() {
+export function environmentProvenance() {
   const sha = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8', timeout: 2000, stdio: ['ignore', 'pipe', 'ignore'] }).trim();
   if (process.env.GITHUB_SHA && process.env.GITHUB_SHA !== sha) throw new Error('Checkout provenance mismatch');
   const value = { sha, runId: process.env.GITHUB_RUN_ID ?? 'local', attempt: Number(process.env.GITHUB_RUN_ATTEMPT ?? 1), matrix: process.env.OBSERVER_MATRIX ?? 'local', platform: process.platform, nodeVersion: process.version };
@@ -172,11 +172,39 @@ function environmentProvenance() {
   return value;
 }
 
+// One original full-suite call, retained before its assertions. The filename and
+// 12 KiB schema are fixed; validation never accepts arbitrary directory contents.
+export function retainObserverCall(directory, evidence) {
+  if (!directory) return;
+  assertObserverCall(evidence);
+  const file = join(directory, 'collector.json');
+  mkdirSync(directory, { recursive: true });
+  try {
+    if (!lstatSync(file).isFile()) throw new Error('Invalid collector file');
+  } catch (error) { if (error.code !== 'ENOENT') throw error; }
+  writeEvidence(file, evidence);
+}
+function assertObserverCall(value) {
+  const expected = environmentProvenance();
+  if (!validateEvidence(value) || value.kind !== 'observer_diagnostic' || value.collection === 'unreached' ||
+      !Object.keys(expected).every(key => value.provenance[key] === expected[key])) throw new Error('Invalid collector evidence');
+}
+export function validateObserverCall(directory) {
+  const file = join(directory, 'collector.json');
+  const stat = lstatSync(file);
+  if (!stat.isFile() || stat.size > 12 * 1024) throw new Error('Invalid collector file');
+  const value = JSON.parse(readFileSync(file, 'utf8'));
+  assertObserverCall(value);
+  return value;
+}
+
 async function main() {
   const [mode, flag, output, ...extra] = process.argv.slice(2);
-  if (flag !== '--output' || !output || extra.length || !['diagnostic', 'tests', 'prepare', 'validate'].includes(mode)) throw new Error('Invalid diagnostic command');
+  if (flag !== '--output' || !output || extra.length || !['diagnostic', 'tests', 'prepare', 'validate', 'validate-call'].includes(mode)) throw new Error('Invalid diagnostic command');
   const provenance = environmentProvenance();
-  if (mode === 'prepare') {
+  if (mode === 'validate-call') {
+    validateObserverCall(output);
+  } else if (mode === 'prepare') {
     writeEvidence(join(output, 'diagnostic.json'), initialDiagnostic(provenance));
     writeEvidence(join(output, 'test-status.json'), initialTests(provenance));
   } else if (mode === 'validate') {

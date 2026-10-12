@@ -276,7 +276,23 @@ jobs:
       - run: npm ci
       - run: npm test
         env:
+          OBSERVER_MATRIX: ${{ matrix.os }}
+          WORKSPACE_OBSERVER_CALL_EVIDENCE_DIR: work/ci-observer-full-suite
           WORKSPACE_CATEGORY_MOVE_SERVICE_EVIDENCE_DIR: work/ci-category-move-full-suite/${{ matrix.os }}-${{ github.sha }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
+      - name: Validate the original full-suite collector document
+        id: observer-call-validation
+        if: always()
+        run: node scripts/windows-observer-diagnostics.mjs validate-call --output work/ci-observer-full-suite
+        env:
+          OBSERVER_MATRIX: ${{ matrix.os }}
+      - name: Preserve the validated original collector call including failures
+        if: ${{ always() && steps.observer-call-validation.outcome == 'success' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-19-observer-full-suite-${{ matrix.os }}-${{ github.sha }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
+          path: work/ci-observer-full-suite/collector.json
+          if-no-files-found: error
+          retention-days: 7
       - name: Preserve sanitized category checkpoints from the original full suite
         if: always()
         uses: actions/upload-artifact@v4

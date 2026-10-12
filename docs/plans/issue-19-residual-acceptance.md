@@ -174,38 +174,70 @@ scripts/windows-observer-diagnostics.mjs.
   - Read only: scripts/ralphex-observe.mjs.
   - Create ignored probe/evidence files:
 work/issue-19/residual-acceptance/observer/.
-  - [ ] Record the original strict full-suite failure and
+  - [x] Record the original strict full-suite failure and
 missing per-call document. Rank and announce predictions
 for child readiness failure, case collection failure and
 child/file cleanup failure; do not infer cause from 2677
 ms.
-  - [ ] Exercise collectObserverDiagnostics through
+  - [x] Exercise collectObserverDiagnostics through
 bounded controlled probes, changing one lifecycle boundary
 at a time. Retain strict validated documents, actual exits
 and unrelated-fixture preservation; label injected
 controls explicitly.
-  - [ ] Add bounded per-call evidence retention before
+  - [x] Add bounded per-call evidence retention before
 assertions so a subsequent real full-suite failure
 preserves its collector document with actual checkout SHA,
 platform, matrix, run and attempt. Use strict allowlists
 and size/count limits; exclude PIDs, tokens, raw paths,
 errors, logs and environment contents.
-  - [ ] Extend existing always-upload transport minimally
+  - [x] Extend existing always-upload transport minimally
 if needed, validating only sanitized per-call files and
 exact provenance. Preserve npm test semantics,
 matrix/concurrency, observer ownership, deadlines and
 failed-result status.
-  - [ ] Add red/green regressions for the changed
+  - [x] Add red/green regressions for the changed
 retention/validation seam, including failed collection,
 absent/malformed evidence, privacy rejection and owned
 cleanup. Apply a diagnostic repair only if probes justify
 it; otherwise retain cause unproven.
-  - [ ] Run node --test
+  - [x] Run node --test
 tests/windows-observer-diagnostics.test.mjs
 tests/ralphex-observe.test.mjs tests/ralphex-run.test.mjs,
 relevant workflow tests if transport changed, and targeted
 ESLint. Do not replay local npm test to imitate the
 unavailable historical Windows load.
+
+Task 2 verified evidence (local macOS, Node 22.21.1):
+`work/issue-19/residual-acceptance/observer/diagnosis.json` records the original
+strict Windows full-suite failure and missing per-call artifact, source hashes,
+ranked predictions, commands/exits and attribution limits. Four single-boundary
+injected controls exercised the real collector in child processes: invalid
+readiness left both cases unreached; case access failure left error/collected;
+child-stop failure and file-removal failure each left both cases collected.
+Each produced a strictly validated failed document and actual exit 1, preserved
+an unrelated fixture, and cleaned its owned tree (the deliberately failed file
+cleanup was removed by the test teardown). These demonstrate distinguishable
+mechanisms, not the historical cause. No collector policy repair was justified.
+
+The original full-suite call now uses actual checkout/platform/Node provenance
+and retains one fixed `collector.json` before its first collection assertion when
+`WORKSPACE_OBSERVER_CALL_EVIDENCE_DIR` is set. The CLI validates only this regular
+file, bounded to 12 KiB, rejecting extra/private fields, absent/malformed evidence,
+unreached collection and mismatched SHA/run/attempt/matrix/platform/Node.
+The existing desktop full-suite job uploads this exact file only after successful
+always-run validation; failed collection remains uploadable evidence with exit 1,
+without changing npm test status, deadlines, matrix/concurrency or ownership.
+The finite matrix allowlist includes the existing macos-latest runner.
+
+Retention regressions were red (two failures) before implementation, then green.
+The final required three-suite run passed 130 tests without skips, including
+lifecycle and workflow transport checks. Targeted ESLint and git diff --check
+passed. Two focused checks with synthetic CI provenance on actual macOS and
+validate-call also exited 0. Full logs and controlled documents are under the
+ignored observer evidence directory. No local npm test replay or Actions run was
+performed; exact-reviewed-SHA Windows-latest original full-suite acceptance and
+separate review remain coordinator-owned pending gates.
+
 ### Task 3: Preserve native invocation outcomes without
 changing intent
 Files:

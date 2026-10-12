@@ -67,11 +67,12 @@ test('public diagnostic compares observer identities to synchronous publication 
 });
 
 test('two fixed cases collect finite private evidence and remove only their own fixture and child', async t => {
-  const { collectObserverDiagnostics, validateEvidence } = await import('../scripts/windows-observer-diagnostics.mjs');
+  const { collectObserverDiagnostics, validateEvidence, environmentProvenance, retainObserverCall } = await import('../scripts/windows-observer-diagnostics.mjs');
   const parent = mkdtempSync(join(tmpdir(), 'diagnostic-parent-'));
   t.after(() => rmSync(parent, { recursive: true, force: true }));
   writeFileSync(join(parent, 'unrelated'), 'preserve');
-  const evidence = await collectObserverDiagnostics({ provenance, fixtureParent: parent });
+  const evidence = await collectObserverDiagnostics({ provenance: environmentProvenance(), fixtureParent: parent });
+  retainObserverCall(process.env.WORKSPACE_OBSERVER_CALL_EVIDENCE_DIR, evidence);
   assert.equal(evidence.collection, 'complete');
   assert.deepEqual(evidence.cases.map(item => item.name), ['current_process', 'owned_child']);
   for (const item of evidence.cases) {
@@ -303,4 +304,98 @@ setInterval(() => {}, 1000);`
   const deadline = Date.now() + 1000;
   while (!pids.every(stopped) && Date.now() < deadline) await new Promise(resolve => setTimeout(resolve, 20));
   assert.equal(pids.every(stopped), true, 'owned test child and descendant must stop before timeout handoff');
+});
+
+
+test('per-call retention preserves failed collection and rejects absent, malformed, private or foreign evidence', async t => {
+  const { collectObserverDiagnostics, environmentProvenance, retainObserverCall, validateObserverCall } = await import('../scripts/windows-observer-diagnostics.mjs');
+  const dir = mkdtempSync(join(tmpdir(), 'observer-call-'));
+  t.after(() => rmSync(dir, { recursive: true, force: true }));
+  const file = join(dir, 'collector.json');
+  assert.throws(() => validateObserverCall(dir));
+  const failed = await collectObserverDiagnostics({ provenance: environmentProvenance(), fixtureParent: join(dir, 'absent') });
+  assert.equal(failed.collection, 'failed');
+  retainObserverCall(dir, failed);
+  assert.deepEqual(validateObserverCall(dir), failed);
+  const validate = () => spawnSync(process.execPath, ['scripts/windows-observer-diagnostics.mjs', 'validate-call', '--output', dir], { encoding: 'utf8', timeout: 5000 });
+  assert.equal(validate().status, 0, 'validated failed collection is uploadable, not a passing test');
+
+  assert.equal(failed.processExitCode, 1);
+  writeFileSync(join(dir, 'unrelated'), 'preserve');
+  for (const mutate of [
+    value => { value.pid = process.pid; },
+    value => { value.cases[0].observer.error = 'private-path-token'; },
+    value => { value.provenance.sha = 'b'.repeat(40); },
+    value => { value.provenance.runId = '999'; },
+    value => { value.provenance.attempt += 1; },
+    value => { value.provenance.matrix = 'windows-latest'; },
+    value => { value.provenance.platform = 'foreign'; },
+    value => { value.provenance.nodeVersion = 'v1.0.0'; },
+    value => { value.collection = 'unreached'; value.processExitCode = 'unavailable'; },
+  ]) {
+    const invalid = structuredClone(failed); mutate(invalid);
+    assert.throws(() => retainObserverCall(dir, invalid));
+    writeFileSync(file, JSON.stringify(invalid));
+    assert.throws(() => validateObserverCall(dir));
+    const rejected = validate();
+    assert.equal(rejected.status, 1);
+    assert.equal(rejected.stdout, '');
+    assert.equal(rejected.stderr, 'Observer diagnostic failed: missing or invalid finite evidence\n');
+  }
+  for (const raw of ['{', ' '.repeat(12 * 1024 + 1)]) {
+    writeFileSync(file, raw);
+    assert.throws(() => validateObserverCall(dir));
+  }
+  retainObserverCall(dir, failed);
+  assert.deepEqual(readdirSync(dir).sort(), ['collector.json', 'unrelated']);
+  assert.equal(readFileSync(join(dir, 'unrelated'), 'utf8'), 'preserve');
+  assert.equal(retainObserverCall(undefined, failed), undefined);
+});
+
+
+for (const boundary of ['readiness', 'case', 'child_cleanup', 'file_cleanup']) {
+  test(`injected ${boundary} failure retains its lifecycle boundary and preserves unrelated fixtures`, async t => {
+    const { validateEvidence, environmentProvenance } = await import('../scripts/windows-observer-diagnostics.mjs');
+    const dir = mkdtempSync(join(tmpdir(), 'observer-boundary-'));
+    t.after(() => rmSync(dir, { recursive: true, force: true }));
+    writeFileSync(join(dir, 'unrelated'), 'preserve');
+    const preload = join(dir, 'inject.mjs');
+    const injections = {
+      readiness: `const original = cp.spawn; cp.spawn = (exe, args, options) => original(exe, args.map(arg => arg.replace("process.send('ready')", "process.send('invalid')")), options);`,
+      child_cleanup: `const original = cp.spawn; cp.spawn = (exe, args, options) => original(exe, args.map(arg => arg.replace('process.exit(0)', 'process.exit(1)')), options);`,
+      case: `const original = fs.readFileSync; fs.readFileSync = (file, ...args) => { if (String(file).endsWith('/current_process/current.json') || String(file).endsWith('\\current_process\\current.json')) throw Object.assign(new Error('private-path-token'), { errno: -13 }); return original(file, ...args); };`,
+      file_cleanup: `const original = fs.rmSync; fs.rmSync = (file, ...args) => { if (String(file).includes('observer-evidence-')) throw Object.assign(new Error('private-path-token'), { errno: -13 }); return original(file, ...args); };`,
+    };
+    writeFileSync(preload, `import fs from 'node:fs'; import cp from 'node:child_process'; import { syncBuiltinESMExports } from 'node:module'; ${injections[boundary]} syncBuiltinESMExports();`);
+    const module = new URL('../scripts/windows-observer-diagnostics.mjs', import.meta.url).href;
+    const code = `import { collectObserverDiagnostics, environmentProvenance } from ${JSON.stringify(module)}; const evidence = await collectObserverDiagnostics({ provenance: environmentProvenance(), fixtureParent: ${JSON.stringify(dir)} }); console.log(JSON.stringify(evidence)); process.exitCode = evidence.processExitCode;`;
+    const result = spawnSync(process.execPath, ['--import', pathToFileURL(preload).href, '--input-type=module', '-e', code], { encoding: 'utf8', timeout: 10000 });
+    assert.equal(result.error, undefined);
+    assert.equal(result.status, 1);
+    const evidence = JSON.parse(result.stdout);
+    assert.equal(validateEvidence(evidence), true);
+    assert.deepEqual(evidence.provenance, environmentProvenance());
+    assert.equal(evidence.collection, 'failed');
+    assert.equal(evidence.processExitCode, 1);
+    assert.equal(evidence.cleanup.child, boundary === 'child_cleanup' ? 'failed' : 'exited');
+    assert.equal(evidence.cleanup.files, boundary === 'file_cleanup' ? 'failed' : 'removed');
+    assert.deepEqual(evidence.cases.map(item => item.observer.status), boundary === 'readiness' ? ['unreached', 'unreached'] : boundary === 'case' ? ['error', 'collected'] : ['collected', 'collected']);
+    assert.equal(readFileSync(join(dir, 'unrelated'), 'utf8'), 'preserve');
+    assert.equal(result.stderr, '');
+    assert.ok(!result.stdout.includes(dir));
+    assert.ok(!result.stdout.includes('private-path-token'));
+    if (boundary !== 'file_cleanup') assert.equal(readdirSync(dir).some(name => name.startsWith('observer-evidence-')), false);
+    if (process.env.WORKSPACE_OBSERVER_PROBE_EVIDENCE_DIR) {
+      mkdirSync(process.env.WORKSPACE_OBSERVER_PROBE_EVIDENCE_DIR, { recursive: true });
+      writeFileSync(join(process.env.WORKSPACE_OBSERVER_PROBE_EVIDENCE_DIR, `${boundary}.json`), JSON.stringify({ kind: 'injected-symptom', actualExit: result.status, unrelatedPreserved: true, evidence }) + '\n');
+    }
+  });
+}
+
+test('full-suite workflow validates one exact collector file before always-upload without replacing npm test', () => {
+  const workflow = readFileSync(new URL('../.github/workflows/desktop-ci.yml', import.meta.url), 'utf8');
+  assert.match(workflow, /- run: npm test\n {8}env:\n {10}OBSERVER_MATRIX: \$\{\{ matrix.os \}\}\n {10}WORKSPACE_OBSERVER_CALL_EVIDENCE_DIR: work\/ci-observer-full-suite/);
+  assert.match(workflow, /id: observer-call-validation\n {8}if: always\(\)\n {8}run: node scripts\/windows-observer-diagnostics.mjs validate-call --output work\/ci-observer-full-suite\n {8}env:\n {10}OBSERVER_MATRIX: \$\{\{ matrix.os \}\}/);
+  assert.match(workflow, /if: \$\{\{ always\(\) && steps.observer-call-validation.outcome == 'success' \}\}/);
+  assert.match(workflow, /path: work\/ci-observer-full-suite\/collector.json\n {10}if-no-files-found: error/);
 });
