@@ -1,6 +1,6 @@
 # T20: Manage independent Table and Board views
 
-Approved and published: [GitHub #27](https://github.com/kornouhovas/workspace/issues/27); Beads execution step: `workspace-31i.20`. GitHub owns current requirements and status.
+Approved and published: [GitHub #27](https://github.com/kornouhovas/workspace/issues/27); Archived Beads ID: `workspace-31i.20`. GitHub owns current requirements and status.
 
 ## Parent
 

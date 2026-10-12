@@ -1,6 +1,6 @@
 # T21: Search projects and save typed view filters
 
-Approved and published: [GitHub #28](https://github.com/kornouhovas/workspace/issues/28); Beads execution step: `workspace-31i.21`. GitHub owns current requirements and status.
+Approved and published: [GitHub #28](https://github.com/kornouhovas/workspace/issues/28); Archived Beads ID: `workspace-31i.21`. GitHub owns current requirements and status.
 
 ## Parent
 

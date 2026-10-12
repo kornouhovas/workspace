@@ -1,6 +1,6 @@
 # T34: Keep discovery and views responsive at an agreed project scale
 
-Approved and published: [GitHub #41](https://github.com/kornouhovas/workspace/issues/41); Beads execution step: `workspace-31i.34`. GitHub owns current requirements and status.
+Approved and published: [GitHub #41](https://github.com/kornouhovas/workspace/issues/41); Archived Beads ID: `workspace-31i.34`. GitHub owns current requirements and status.
 
 ## Parent
 

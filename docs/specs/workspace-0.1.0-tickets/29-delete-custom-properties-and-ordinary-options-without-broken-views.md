@@ -1,6 +1,6 @@
 # T29: Delete custom properties and ordinary options without broken views
 
-Approved and published: [GitHub #36](https://github.com/kornouhovas/workspace/issues/36); Beads execution step: `workspace-31i.29`. GitHub owns current requirements and status.
+Approved and published: [GitHub #36](https://github.com/kornouhovas/workspace/issues/36); Archived Beads ID: `workspace-31i.29`. GitHub owns current requirements and status.
 
 ## Parent
 

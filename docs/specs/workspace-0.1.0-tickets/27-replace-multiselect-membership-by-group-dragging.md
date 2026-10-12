@@ -1,6 +1,6 @@
 # T27: Replace MultiSelect membership by group dragging
 
-Approved and published: [GitHub #34](https://github.com/kornouhovas/workspace/issues/34); Beads execution step: `workspace-31i.27`. GitHub owns current requirements and status.
+Approved and published: [GitHub #34](https://github.com/kornouhovas/workspace/issues/34); Archived Beads ID: `workspace-31i.27`. GitHub owns current requirements and status.
 
 ## Parent
 

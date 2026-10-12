@@ -1,6 +1,6 @@
 # T17: Edit Date properties without unintended date shifts
 
-Approved and published: [GitHub #24](https://github.com/kornouhovas/workspace/issues/24); Beads execution step: `workspace-31i.17`. GitHub owns current requirements and status.
+Approved and published: [GitHub #24](https://github.com/kornouhovas/workspace/issues/24); Archived Beads ID: `workspace-31i.17`. GitHub owns current requirements and status.
 
 ## Parent
 

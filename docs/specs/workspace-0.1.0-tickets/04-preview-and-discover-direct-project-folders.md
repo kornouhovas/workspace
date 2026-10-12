@@ -1,6 +1,6 @@
 # T04: Preview and discover direct project folders
 
-Approved and published: [GitHub #11](https://github.com/kornouhovas/workspace/issues/11); Beads execution step: `workspace-31i.4`. GitHub owns current requirements and status.
+Approved and published: [GitHub #11](https://github.com/kornouhovas/workspace/issues/11); Archived Beads ID: `workspace-31i.4`. GitHub owns current requirements and status.
 
 ## Parent
 

@@ -1,6 +1,6 @@
 # T18: Edit ordinary Single Select values and option presentation
 
-Approved and published: [GitHub #25](https://github.com/kornouhovas/workspace/issues/25); Beads execution step: `workspace-31i.18`. GitHub owns current requirements and status.
+Approved and published: [GitHub #25](https://github.com/kornouhovas/workspace/issues/25); Archived Beads ID: `workspace-31i.18`. GitHub owns current requirements and status.
 
 ## Parent
 

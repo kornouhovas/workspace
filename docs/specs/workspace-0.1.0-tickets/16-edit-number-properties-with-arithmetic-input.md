@@ -1,6 +1,6 @@
 # T16: Edit Number properties with arithmetic input
 
-Approved and published: [GitHub #23](https://github.com/kornouhovas/workspace/issues/23); Beads execution step: `workspace-31i.16`. GitHub owns current requirements and status.
+Approved and published: [GitHub #23](https://github.com/kornouhovas/workspace/issues/23); Archived Beads ID: `workspace-31i.16`. GitHub owns current requirements and status.
 
 ## Parent
 

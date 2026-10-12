@@ -1,6 +1,6 @@
 # T15: Archive and restore projects inside their source
 
-Approved and published: [GitHub #22](https://github.com/kornouhovas/workspace/issues/22); Beads execution step: `workspace-31i.15`. GitHub owns current requirements and status.
+Approved and published: [GitHub #22](https://github.com/kornouhovas/workspace/issues/22); Archived Beads ID: `workspace-31i.15`. GitHub owns current requirements and status.
 
 ## Parent
 

@@ -1,8 +1,8 @@
 # Workspace 0.1.0 implementation tickets
 
-Status: approved by the owner and published. All 35 tickets are native sub-issues of [specification #7](https://github.com/kornouhovas/workspace/issues/7), labeled `ready-for-agent`, with native GitHub blockers and matching Beads steps under `workspace-31i`. Publication and both dependency graphs have been verified; implementation has not started.
+Publication snapshot: approved by the owner and published before implementation began; this records publication-time state, not current delivery status. All 35 tickets are native sub-issues of [specification #7](https://github.com/kornouhovas/workspace/issues/7), labeled `ready-for-agent`, with native GitHub blockers and matching Beads steps under `workspace-31i`. Both dependency graphs were verified at publication. Implementation has since progressed; consult GitHub for current acceptance and blockers. Beads is now retired under [tracker policy](../../issue-tracker.md).
 
-Source: [specification #7](https://github.com/kornouhovas/workspace/issues/7), including its full body and comments (none at drafting time). These are approved vertical implementation tickets, not execution plans. The new branch contains documentation/tool configuration and no runtime to prefactor; the first slice introduces a minimal real application path.
+Source: [specification #7](https://github.com/kornouhovas/workspace/issues/7), including its full body and comments (none at drafting time). These are approved vertical implementation tickets, not execution plans. At drafting time the branch contained documentation/tool configuration and no runtime; the first slice subsequently introduced the application path.
 
 ## How to use the tickets
 
@@ -56,11 +56,11 @@ Open design details from the specification stay inside their bounded slice as ex
 
 ## Tracking and execution
 
-GitHub owns requirements and completion; Beads records execution progress/evidence and matching blocking edges. The parent issues remain open with unchanged titles and bodies. Publication did not start implementation or Ralphex.
+GitHub now owns requirements, dependencies, execution checkpoints and completion. The Beads mapping below is archived provenance. Publication-time parent status and bodies are historical observations; read current GitHub state before work.
 
-The mapping below is a publication snapshot, not a second live status tracker. Consult GitHub and Beads for current state; update both deliberately when dependencies change. The machine-readable publication record is [tracking.json](tracking.json).
+The mapping below is a publication snapshot, not a second live status tracker. Consult GitHub for current state and update native/textual relationships under tracker policy when dependencies change. Preserve archived IDs without updating a second tracker. The machine-readable publication record is [tracking.json](tracking.json).
 
-| Ticket | GitHub issue | Beads execution step |
+| Ticket | GitHub issue | Archived Beads ID |
 | --- | --- | --- |
 | T01 | [#8](https://github.com/kornouhovas/workspace/issues/8) | `workspace-31i.1` |
 | T02 | [#9](https://github.com/kornouhovas/workspace/issues/9) | `workspace-31i.2` |
@@ -98,7 +98,7 @@ The mapping below is a publication snapshot, not a second live status tracker. C
 | T34 | [#41](https://github.com/kornouhovas/workspace/issues/41) | `workspace-31i.34` |
 | T35 | [#42](https://github.com/kornouhovas/workspace/issues/42) | `workspace-31i.35` |
 
-Initial ready step: `workspace-31i.1` ([T01 / #8](https://github.com/kornouhovas/workspace/issues/8)). The remaining tickets become available as their actual blockers complete. The execution epic `workspace-31i` groups the work without replacing specification #7.
+At publication, the first ready step was `workspace-31i.1` ([T01 / #8](https://github.com/kornouhovas/workspace/issues/8)); the archived group was `workspace-31i`. Current readiness comes from GitHub blockers and ownership under tracker policy, not this snapshot. Specification #7 remains the parent release contract.
 
 ## Coverage
 
@@ -175,7 +175,7 @@ Initial ready step: `workspace-31i.1` ([T01 / #8](https://github.com/kornouhovas
 - Story 71: T30, T31, T32, T33.
 - Story 72: T32, T33.
 - Story 73: T01, T02, T05, T34.
-- Story 74: Publication mapping and per-ticket GitHub/Beads evidence (cross-cutting).
+- Story 74: Publication mapping, GitHub evidence and archived execution IDs (cross-cutting).
 - Story 75: T01, T32, T33.
 
 T35 performs integration acceptance for all stories; the mapping above identifies earlier feature work so the final verification ticket cannot conceal missing implementation.

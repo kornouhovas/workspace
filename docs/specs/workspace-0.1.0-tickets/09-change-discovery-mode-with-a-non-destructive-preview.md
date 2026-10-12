@@ -1,6 +1,6 @@
 # T09: Change discovery mode with a non-destructive preview
 
-Approved and published: [GitHub #16](https://github.com/kornouhovas/workspace/issues/16); Beads execution step: `workspace-31i.9`. GitHub owns current requirements and status.
+Approved and published: [GitHub #16](https://github.com/kornouhovas/workspace/issues/16); Archived Beads ID: `workspace-31i.9`. GitHub owns current requirements and status.
 
 ## Parent
 

@@ -1,6 +1,6 @@
 # T26: Change scalar and Single Select values by group dragging
 
-Approved and published: [GitHub #33](https://github.com/kornouhovas/workspace/issues/33); Beads execution step: `workspace-31i.26`. GitHub owns current requirements and status.
+Approved and published: [GitHub #33](https://github.com/kornouhovas/workspace/issues/33); Archived Beads ID: `workspace-31i.26`. GitHub owns current requirements and status.
 
 ## Parent
 

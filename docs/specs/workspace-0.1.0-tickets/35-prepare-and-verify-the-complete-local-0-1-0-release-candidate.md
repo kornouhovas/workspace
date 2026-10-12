@@ -1,6 +1,6 @@
 # T35: Prepare and verify the complete local 0.1.0 release candidate
 
-Approved and published: [GitHub #42](https://github.com/kornouhovas/workspace/issues/42); Beads execution step: `workspace-31i.35`. GitHub owns current requirements and status.
+Approved and published: [GitHub #42](https://github.com/kornouhovas/workspace/issues/42); Archived Beads ID: `workspace-31i.35`. GitHub owns current requirements and status.
 
 ## Parent
 

@@ -1,6 +1,6 @@
 # T25: Customize Board columns and card wrapping
 
-Approved and published: [GitHub #32](https://github.com/kornouhovas/workspace/issues/32); Beads execution step: `workspace-31i.25`. GitHub owns current requirements and status.
+Approved and published: [GitHub #32](https://github.com/kornouhovas/workspace/issues/32); Archived Beads ID: `workspace-31i.25`. GitHub owns current requirements and status.
 
 ## Parent
 

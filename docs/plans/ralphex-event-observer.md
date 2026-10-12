@@ -1,5 +1,7 @@
 # Ralphex event observation
 
+Status: executable checklist complete; this is retained execution evidence, not whole-issue acceptance. Coordinator review, required platform/Actions results and integration must be established from current evidence. The path is retained for existing references and run snapshots. Historical Beads IDs/instructions describe the prior process; current tracking and executor selection follow [development](../development.md).
+
 The user approved implementation of the existing cost-reduction plan on 2026-10-11. This slice changes execution tooling in an isolated branch based on `new-workspace`; it does not modify or pilot the active Issue #19 run.
 
 ## Problem and accepted boundary

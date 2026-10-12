@@ -1,6 +1,6 @@
 # T28: Rename and move real folders through group dragging
 
-Approved and published: [GitHub #35](https://github.com/kornouhovas/workspace/issues/35); Beads execution step: `workspace-31i.28`. GitHub owns current requirements and status.
+Approved and published: [GitHub #35](https://github.com/kornouhovas/workspace/issues/35); Archived Beads ID: `workspace-31i.28`. GitHub owns current requirements and status.
 
 ## Parent
 

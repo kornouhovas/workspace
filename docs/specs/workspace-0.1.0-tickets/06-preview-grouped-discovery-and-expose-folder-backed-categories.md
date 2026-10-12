@@ -1,6 +1,6 @@
 # T06: Preview grouped discovery and expose folder-backed categories
 
-Approved and published: [GitHub #13](https://github.com/kornouhovas/workspace/issues/13); Beads execution step: `workspace-31i.6`. GitHub owns current requirements and status.
+Approved and published: [GitHub #13](https://github.com/kornouhovas/workspace/issues/13); Archived Beads ID: `workspace-31i.6`. GitHub owns current requirements and status.
 
 ## Parent
 

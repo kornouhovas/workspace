@@ -1,6 +1,6 @@
 # T10: Create project folders and reveal them in the file manager
 
-Approved and published: [GitHub #17](https://github.com/kornouhovas/workspace/issues/17); Beads execution step: `workspace-31i.10`. GitHub owns current requirements and status.
+Approved and published: [GitHub #17](https://github.com/kornouhovas/workspace/issues/17); Archived Beads ID: `workspace-31i.10`. GitHub owns current requirements and status.
 
 ## Parent
 

@@ -1,6 +1,6 @@
 # T12: Move projects by editing folder-backed Select
 
-Approved and published: [GitHub #19](https://github.com/kornouhovas/workspace/issues/19); Beads execution step: `workspace-31i.12`. GitHub owns current requirements and status.
+Approved and published: [GitHub #19](https://github.com/kornouhovas/workspace/issues/19); Archived Beads ID: `workspace-31i.12`. GitHub owns current requirements and status.
 
 ## Parent
 

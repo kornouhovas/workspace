@@ -1,6 +1,6 @@
 # T31: Create automatic and pre-migration backups with recovery
 
-Approved and published: [GitHub #38](https://github.com/kornouhovas/workspace/issues/38); Beads execution step: `workspace-31i.31`. GitHub owns current requirements and status.
+Approved and published: [GitHub #38](https://github.com/kornouhovas/workspace/issues/38); Archived Beads ID: `workspace-31i.31`. GitHub owns current requirements and status.
 
 ## Parent
 

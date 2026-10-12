@@ -1,6 +1,6 @@
 # T11: Rename project folders without losing identity
 
-Approved and published: [GitHub #18](https://github.com/kornouhovas/workspace/issues/18); Beads execution step: `workspace-31i.11`. GitHub owns current requirements and status.
+Approved and published: [GitHub #18](https://github.com/kornouhovas/workspace/issues/18); Archived Beads ID: `workspace-31i.11`. GitHub owns current requirements and status.
 
 ## Parent
 

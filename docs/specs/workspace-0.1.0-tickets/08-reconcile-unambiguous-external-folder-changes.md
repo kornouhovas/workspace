@@ -1,6 +1,6 @@
 # T08: Reconcile unambiguous external folder changes
 
-Approved and published: [GitHub #15](https://github.com/kornouhovas/workspace/issues/15); Beads execution step: `workspace-31i.8`. GitHub owns current requirements and status.
+Approved and published: [GitHub #15](https://github.com/kornouhovas/workspace/issues/15); Archived Beads ID: `workspace-31i.8`. GitHub owns current requirements and status.
 
 ## Parent
 

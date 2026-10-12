@@ -4,9 +4,9 @@ This roadmap derives from the product interview. It describes intended outcomes,
 
 ## M0 — Development foundation and product contracts
 
-Deliver a fresh branch with preserved Git history, English docs, concise agent instructions, retained Beads configuration, repository Ralphex defaults and release policy. Preserve the previous implementation as a reference, without importing its documentation into the new tree.
+Deliver a fresh branch with preserved Git history, English docs, concise agent instructions, GitHub-only tracking, explicit executor selection and release policy. Preserve the previous implementation as a reference, without importing its documentation into the new tree.
 
-Workspace/source ownership, previewed discovery-mode changes, local folder identity/recovery, typed group dragging, initial folder commands, archived editing and application-data backup scope are settled. Specify remaining folder-backed Select edge cases and archive collision behavior before their implementation slices. Convert accepted milestones into GitHub issues with measurable acceptance criteria; create linked Beads execution steps where needed. Record source provenance for every bb module selected.
+Workspace/source ownership, previewed discovery-mode changes, local folder identity/recovery, typed group dragging, initial folder commands, archived editing and application-data backup scope are settled. Specify remaining folder-backed Select edge cases and archive collision behavior before their implementation slices. Convert accepted milestones into GitHub issues with measurable acceptance criteria; record execution checkpoints in GitHub under [tracker policy](issue-tracker.md). Archived Beads IDs remain historical evidence. Record source provenance for every bb module selected.
 
 Exit: foundational docs are consistent, remaining questions are explicit, and the first implementation slice has an agreed contract and checks. Documentation scaffolding alone does not complete the design interview.
 

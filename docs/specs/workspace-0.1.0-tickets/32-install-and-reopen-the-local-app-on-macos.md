@@ -1,6 +1,6 @@
 # T32: Install and reopen the local app on macOS
 
-Approved and published: [GitHub #39](https://github.com/kornouhovas/workspace/issues/39); Beads execution step: `workspace-31i.32`. GitHub owns current requirements and status.
+Approved and published: [GitHub #39](https://github.com/kornouhovas/workspace/issues/39); Archived Beads ID: `workspace-31i.32`. GitHub owns current requirements and status.
 
 ## Parent
 

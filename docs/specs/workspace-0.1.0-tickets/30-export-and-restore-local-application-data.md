@@ -1,6 +1,6 @@
 # T30: Export and restore local application data
 
-Approved and published: [GitHub #37](https://github.com/kornouhovas/workspace/issues/37); Beads execution step: `workspace-31i.30`. GitHub owns current requirements and status.
+Approved and published: [GitHub #37](https://github.com/kornouhovas/workspace/issues/37); Archived Beads ID: `workspace-31i.30`. GitHub owns current requirements and status.
 
 ## Parent
 

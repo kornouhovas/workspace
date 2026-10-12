@@ -12,6 +12,8 @@ These documents are written for the new implementation. The previous documentati
 | [Workspace 0.1.0 specification](specs/workspace-0.1.0.md) | Local-release requirements and acceptance for M1–M4 |
 | [Workspace 0.1.0 implementation tickets](specs/workspace-0.1.0-tickets/README.md) | Published vertical slices, historical IDs and blocking edges |
 | [Development](development.md) | GitHub-only workflow, executor selection, integration and verification |
+| [CI](ci.md) | Conditional CI routes and scheduling |
+| [Runtime checkpoints](verification/development-checkpoints.md) | Conditional operation details and retained verification evidence |
 | [Releases](releases.md) | Versions, changelog and future distribution |
 | [Reuse](reuse.md) | bb reference, attribution and adaptation rules |
 | [ADRs](adr/) | Significant accepted tradeoffs |

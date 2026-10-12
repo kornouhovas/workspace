@@ -2,7 +2,7 @@
 
 This ledger records the product interview. Accepted choices are separate from proposed implementations. The roadmap remains provisional where its prerequisites are open.
 
-Design tracking: [GitHub #6](https://github.com/kornouhovas/workspace/issues/6). Foundation execution step: `workspace-ty8`; continuing local-release design step: `workspace-1n8` in the shared Beads store.
+Design tracking: [GitHub #6](https://github.com/kornouhovas/workspace/issues/6). Archived execution IDs: foundation `workspace-ty8`, local-release design `workspace-1n8`. Current tracking follows [GitHub-only policy](issue-tracker.md); retained IDs are historical correlation.
 
 ## Accepted
 
@@ -12,7 +12,7 @@ Design tracking: [GitHub #6](https://github.com/kornouhovas/workspace/issues/6).
 | D02 | Start with clean application data; no legacy import is required. Existing external user data remains untouched. |
 | D03 | Use SQLite and Drizzle for structured data; selectively adapt bb architecture/modules and its UI foundations. |
 | D04 | First release is local desktop with preserved view/property capabilities, new folder configuration and EN/RU; shared-folder collaboration, AI and remote hosting follow. |
-| D05 | GitHub Issues owns requirements/status; Beads owns linked execution steps and dependencies. Ralphex can plan and execute bounded implementation work. |
+| D05 | Updated by the owner on 2026-10-12: GitHub Issues is the sole tracker for requirements, dependencies, checkpoints and completion. Use Matt Pocock by default; a new Ralphex run requires explicit selection under [development](development.md#executor-selection). This supersedes the former Beads execution policy while retaining archived history. |
 | D06 | Write documentation, issues, plans and commits in English; communicate with the user in Russian. English is the default product language, with Russian selectable in settings. |
 | D07 | Multiple workspace configurations may use the same selected root. |
 | D08 | Initially support direct projects and projects grouped one level beneath Select-value folders. Expand folder interpretation modes later. |
@@ -69,7 +69,7 @@ Design tracking: [GitHub #6](https://github.com/kornouhovas/workspace/issues/6).
 | O13 | D35/D38-D40 settle owner-only remote access, initial browser features and connected-only operation without an offline mutation queue. Define device authentication, encryption, revocation and reconciliation of runs/commands already accepted before a disconnect. |
 | O14 | Before distribution: choose supported OS versions/architectures, signing, installer/update strategy, privacy/support policy and release automation. |
 | O15 | Before website: settle product name/domain, downloads, changelog rendering/localization and publication workflow. Repository visibility remains private unless explicitly changed. |
-| O16 | Decide when to turn roadmap milestones into GitHub issues and linked Beads steps; reconcile existing tasks without silently importing the legacy backlog. |
+| O16 | For future roadmap milestones, decide when to publish scoped GitHub issues; reconcile archived tasks through [the retirement checkpoint](beads-retirement.md) without silently importing legacy scope. The local-release tickets are already published; Beads is retired. |
 
 ## Decision tree
 

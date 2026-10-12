@@ -1,5 +1,7 @@
 # Issue #10: Manage Multiple Workspace Configurations
 
+Status: executable checklist complete; this is retained execution evidence, not whole-issue acceptance. Coordinator review, required platform/Actions results and integration must be established from current evidence. The path is retained for existing references and run snapshots. Historical Beads IDs/instructions describe the prior process; current tracking and executor selection follow [development](../development.md).
+
 
 ## Overview
 

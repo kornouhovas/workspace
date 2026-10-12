@@ -1,0 +1,20 @@
+# CI checks and diagnostic routes
+
+Read when selecting or diagnosing a CI route, changing CI scheduling, or checking exact-SHA acceptance. [Development](development.md#verification) owns verification policy; [.github/workflows/desktop-ci.yml](../.github/workflows/desktop-ci.yml) owns actual job wiring.
+
+### CI test scheduling
+
+Ordinary push and pull-request runs execute common DOM/mocked-client and pure-helper tests once on macOS, alongside lint, typecheck and documentation links. The macOS, Windows latest and Windows 2022 matrix builds once per OS and runs the remaining platform tests, then the existing development and packaged runtime acceptance routes. SQLite, real filesystem, process, native and mixed UI/backend suites remain in that matrix. Production move, recovery and native acceptance assertions are unchanged.
+
+`npm test` still builds and runs every test locally. Test discovery is explicitly limited to `tests/` by the suite runner; sibling worktrees are outside its inventory. After a build, `npm run test:all` runs every test without rebuilding; `npm run test:platform` selects platform suites. `npm run test:common` requires no application build. The explicit common list lives in [test-suites.mjs](../scripts/test-suites.mjs); new test files default to platform coverage. `node scripts/test-suites.mjs <all|common|platform> --list` prints the selected files. Partition controls require complete, nonoverlapping coverage and preserve platform-sensitive suites.
+
+CI packages its already verified build with `npm run package:built`; local `package:dir` retains its fresh-build behavior. A failed prerequisite stops dependent acceptance steps, while failure evidence uploads retain `always()`. New commits cancel older runs for the same event/ref. Push and pull-request identities remain distinct.
+
+Isolated observer, early rename/category service and Windows selection/rename/resolver investigation jobs are available through manual `workflow_dispatch` with `diagnostics: true`. Historical API/CLI experiments retain their separate `legacy_windows_diagnostics` opt-in. Their focused test files remain covered by platform suites during ordinary CI; their standalone experiments are additional diagnostics. A diagnostic artifact or skipped job does not establish product acceptance. Historical evidence directories and artifact names containing `full-suite` now carry the original platform-suite call/checkpoints; they retain exact SHA/run/attempt provenance.
+
+Manual `workflow_dispatch` defaults to `checks: full`. Select `checks: failed` with diagnostics disabled to run only the Windows latest pure-Node observer suite and the macOS development rename/Reveal route. These independent jobs retain original failures and exact SHA/run/attempt artifacts. Focused success is a prerequisite for requesting full acceptance, not a replacement for the ordinary three-platform routes. Rename diagnostics retain the original typed native Reveal receipt on macOS before checking the UI acknowledgment, including rejected responses; they do not relax acceptance or identify historical causes by themselves.
+
+For the later Windows runtime failures, select `checks: failed` and `runtime_failures: true` instead. This runs only the original direct creation/Reveal route on Windows latest and the development runtime on Windows 2022, preceded by the existing isolated category rename/sharing comparisons on Windows 2022. The original scenario still runs if a comparison fails, provided its build passed. Creation diagnostics retain the existing finite typed Reveal receipt on both desktop platforms before native assertions. These are diagnostic routes, not a waiver or proof of historical causation; original failures and unreached stages remain failures.
+
+This scheduling change reduces repeated execution, not the test inventory. Actual Windows acceptance and any pre-existing failures remain pending until a reviewed-SHA run completes. Compare observed job durations after the change before claiming a measured speed or cost reduction.
+

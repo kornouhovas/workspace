@@ -1,6 +1,6 @@
 # T05: Create and edit shared Text properties
 
-Approved and published: [GitHub #12](https://github.com/kornouhovas/workspace/issues/12); Beads execution step: `workspace-31i.5`. GitHub owns current requirements and status.
+Approved and published: [GitHub #12](https://github.com/kornouhovas/workspace/issues/12); Archived Beads ID: `workspace-31i.5`. GitHub owns current requirements and status.
 
 ## Parent
 

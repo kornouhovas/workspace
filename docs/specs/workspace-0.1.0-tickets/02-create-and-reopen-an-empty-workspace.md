@@ -1,6 +1,6 @@
 # T02: Create and reopen an empty workspace
 
-Approved and published: [GitHub #9](https://github.com/kornouhovas/workspace/issues/9); Beads execution step: `workspace-31i.2`. GitHub owns current requirements and status.
+Approved and published: [GitHub #9](https://github.com/kornouhovas/workspace/issues/9); Archived Beads ID: `workspace-31i.2`. GitHub owns current requirements and status.
 
 ## Parent
 

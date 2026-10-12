@@ -1,6 +1,6 @@
 # T33: Install and reopen the local app on Windows
 
-Approved and published: [GitHub #40](https://github.com/kornouhovas/workspace/issues/40); Beads execution step: `workspace-31i.33`. GitHub owns current requirements and status.
+Approved and published: [GitHub #40](https://github.com/kornouhovas/workspace/issues/40); Archived Beads ID: `workspace-31i.33`. GitHub owns current requirements and status.
 
 ## Parent
 

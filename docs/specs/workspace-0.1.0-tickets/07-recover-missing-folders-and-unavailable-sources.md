@@ -1,6 +1,6 @@
 # T07: Recover missing folders and unavailable sources
 
-Approved and published: [GitHub #14](https://github.com/kornouhovas/workspace/issues/14); Beads execution step: `workspace-31i.7`. GitHub owns current requirements and status.
+Approved and published: [GitHub #14](https://github.com/kornouhovas/workspace/issues/14); Archived Beads ID: `workspace-31i.7`. GitHub owns current requirements and status.
 
 ## Parent
 

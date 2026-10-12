@@ -1,6 +1,6 @@
 # T14: Remove occupied categories with an explicit destination
 
-Approved and published: [GitHub #21](https://github.com/kornouhovas/workspace/issues/21); Beads execution step: `workspace-31i.14`. GitHub owns current requirements and status.
+Approved and published: [GitHub #21](https://github.com/kornouhovas/workspace/issues/21); Archived Beads ID: `workspace-31i.14`. GitHub owns current requirements and status.
 
 ## Parent
 

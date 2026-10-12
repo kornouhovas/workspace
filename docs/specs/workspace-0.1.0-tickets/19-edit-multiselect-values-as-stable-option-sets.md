@@ -1,6 +1,6 @@
 # T19: Edit MultiSelect values as stable option sets
 
-Approved and published: [GitHub #26](https://github.com/kornouhovas/workspace/issues/26); Beads execution step: `workspace-31i.19`. GitHub owns current requirements and status.
+Approved and published: [GitHub #26](https://github.com/kornouhovas/workspace/issues/26); Archived Beads ID: `workspace-31i.19`. GitHub owns current requirements and status.
 
 ## Parent
 

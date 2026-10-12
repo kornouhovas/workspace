@@ -1,6 +1,6 @@
 # T24: Customize Table columns and manual row order
 
-Approved and published: [GitHub #31](https://github.com/kornouhovas/workspace/issues/31); Beads execution step: `workspace-31i.24`. GitHub owns current requirements and status.
+Approved and published: [GitHub #31](https://github.com/kornouhovas/workspace/issues/31); Archived Beads ID: `workspace-31i.24`. GitHub owns current requirements and status.
 
 ## Parent
 

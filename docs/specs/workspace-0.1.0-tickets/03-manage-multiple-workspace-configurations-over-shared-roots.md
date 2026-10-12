@@ -1,6 +1,6 @@
 # T03: Manage multiple workspace configurations over shared roots
 
-Approved and published: [GitHub #10](https://github.com/kornouhovas/workspace/issues/10); Beads execution step: `workspace-31i.3`. GitHub owns current requirements and status.
+Approved and published: [GitHub #10](https://github.com/kornouhovas/workspace/issues/10); Archived Beads ID: `workspace-31i.3`. GitHub owns current requirements and status.
 
 ## Parent
 

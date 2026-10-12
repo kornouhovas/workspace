@@ -1,5 +1,7 @@
 # Issue 17: Targeted Windows Diagnostics and Evidence-Driven Repair
 
+Status: executable checklist complete; this is retained execution evidence, not whole-issue acceptance. Coordinator review, required platform/Actions results and integration must be established from current evidence. The path is retained for existing references and run snapshots. Historical Beads IDs/instructions describe the prior process; current tracking and executor selection follow [development](../development.md).
+
 ## Overview
 
 Deliver a small committed Windows diagnostic stage first. Obtain coordinator-supplied exact-SHA Windows results before dependent repairs. Resolve established selection, external category rename and controlled-fixture defects without replacing completed implementation or weakening acceptance.

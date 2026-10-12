@@ -1,6 +1,6 @@
 # T13: Create and rename category folders through Select options
 
-Approved and published: [GitHub #20](https://github.com/kornouhovas/workspace/issues/20); Beads execution step: `workspace-31i.13`. GitHub owns current requirements and status.
+Approved and published: [GitHub #20](https://github.com/kornouhovas/workspace/issues/20); Archived Beads ID: `workspace-31i.13`. GitHub owns current requirements and status.
 
 ## Parent
 
