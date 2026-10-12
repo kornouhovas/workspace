@@ -405,10 +405,42 @@ for (const boundary of ['readiness', 'case', 'child_cleanup', 'file_cleanup']) {
   });
 }
 
-test('full-suite workflow validates one exact collector file before always-upload without replacing npm test', () => {
-  const workflow = readFileSync(new URL('../.github/workflows/desktop-ci.yml', import.meta.url), 'utf8');
+function assertFullSuiteWorkflow(workflow) {
+  workflow = workflow.replace(/\r\n/g, '\n');
   assert.match(workflow, /- run: npm test\n {8}env:\n {10}OBSERVER_MATRIX: \$\{\{ matrix.os \}\}\n {10}WORKSPACE_OBSERVER_CALL_EVIDENCE_DIR: work\/ci-observer-full-suite/);
   assert.match(workflow, /id: observer-call-validation\n {8}if: always\(\)\n {8}run: node scripts\/windows-observer-diagnostics.mjs validate-call --output work\/ci-observer-full-suite\n {8}env:\n {10}OBSERVER_MATRIX: \$\{\{ matrix.os \}\}/);
   assert.match(workflow, /if: \$\{\{ always\(\) && steps.observer-call-validation.outcome == 'success' \}\}/);
   assert.match(workflow, /path: work\/ci-observer-full-suite\/collector.json\n {10}if-no-files-found: error/);
-});
+}
+
+for (const [format, eol] of [['LF', '\n'], ['CRLF', '\r\n']]) {
+  test(`full-suite workflow validates one exact collector file before always-upload without replacing npm test (${format})`, () => {
+    const workflow = readFileSync(new URL('../.github/workflows/desktop-ci.yml', import.meta.url), 'utf8').replace(/\r?\n/g, eol);
+    assertFullSuiteWorkflow(workflow);
+  });
+}
+
+const workflowMutations = [
+  ['npm test command', '- run: npm test', '- run: npm run test:windows:early'],
+  ['npm test matrix', '- run: npm test\n        env:\n          OBSERVER_MATRIX: ${{ matrix.os }}', '- run: npm test\n        env:\n          OBSERVER_MATRIX: local'],
+  ['npm test evidence directory', 'WORKSPACE_OBSERVER_CALL_EVIDENCE_DIR: work/ci-observer-full-suite', 'WORKSPACE_OBSERVER_CALL_EVIDENCE_DIR: work/other'],
+  ['validation always guard', 'id: observer-call-validation\n        if: always()', 'id: observer-call-validation\n        if: success()'],
+  ['validation command', 'run: node scripts/windows-observer-diagnostics.mjs validate-call --output work/ci-observer-full-suite', 'run: node scripts/windows-observer-diagnostics.mjs validate --output work/ci-observer-full-suite'],
+  ['validation matrix', 'validate-call --output work/ci-observer-full-suite\n        env:\n          OBSERVER_MATRIX: ${{ matrix.os }}', 'validate-call --output work/ci-observer-full-suite\n        env:\n          OBSERVER_MATRIX: local'],
+  ['upload always guard', "always() && steps.observer-call-validation.outcome == 'success'", "success() && steps.observer-call-validation.outcome == 'success'"],
+  ['upload validation outcome', "always() && steps.observer-call-validation.outcome == 'success'", "always() && steps.observer-call-validation.outcome == 'failure'"],
+  ['exact collector path', 'path: work/ci-observer-full-suite/collector.json', 'path: work/ci-observer-full-suite/*.json'],
+  ['missing collector error', 'path: work/ci-observer-full-suite/collector.json\n          if-no-files-found: error', 'path: work/ci-observer-full-suite/collector.json\n          if-no-files-found: warn'],
+  ['missing collector policy indentation', 'collector.json\n          if-no-files-found: error', 'collector.json\n         if-no-files-found: error'],
+];
+
+for (const [format, eol] of [['LF', '\n'], ['CRLF', '\r\n']]) {
+  for (const [requirement, before, after] of workflowMutations) {
+    test(`full-suite workflow validates and rejects changed ${requirement} (${format})`, () => {
+      const workflow = readFileSync(new URL('../.github/workflows/desktop-ci.yml', import.meta.url), 'utf8').replace(/\r?\n/g, '\n');
+      assert.equal(workflow.split(before).length, 2, 'mutation must target exactly one real workflow fragment');
+      const mutated = workflow.replace(before, after).replace(/\n/g, eol);
+      assert.throws(() => assertFullSuiteWorkflow(mutated), { code: 'ERR_ASSERTION' });
+    });
+  }
+}

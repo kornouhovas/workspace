@@ -85,20 +85,20 @@ Files:
 docs/plans/issue-19-workflow-eol-repair.md.
   - Retain ignored evidence under
 work/issue-19/workflow-eol-diagnosis/.
-  - [ ] Establish red evidence before changing EOL
+  - [x] Establish red evidence before changing EOL
 handling. Run node --import
 ./work/issue-19/workflow-eol-diagnosis/crlf-preload.mjs
 --test --test-name-pattern="full-suite workflow validates"
 tests/windows-observer-diagnostics.test.mjs and retain the
 actual failing assertion and exit. Preserve crlf-red.log
 and the original Actions evidence.
-  - [ ] Extract only the existing workflow assertions into
+  - [x] Extract only the existing workflow assertions into
 a simple test-local routine. Add named LF and CRLF cases
 derived from the real checked-in workflow, keeping the
 original test-name prefix so the captured-input command
 still selects them. Confirm the CRLF case fails before
 repairing handling.
-  - [ ] Apply EOL-only handling in the shared routine and
+  - [x] Apply EOL-only handling in the shared routine and
 run both formats through all original semantic assertions:
 npm test with its observer matrix/evidence environment;
 exact validate-call command and matrix environment under
@@ -107,12 +107,12 @@ observer-call-validation; exact collector.json path
 followed by if-no-files-found: error. Do not replace real
 workflow input with a hand-authored fixture or duplicate
 the assertion implementation.
-  - [ ] Verify assertion sensitivity with small in-memory
+  - [x] Verify assertion sensitivity with small in-memory
 mutations of the real workflow for those requirements,
 using the same routine and requiring rejection for both
 EOL formats. Keep tracked workflow bytes unchanged and
 avoid broad whitespace matching.
-  - [ ] Rerun the original CRLF-preload command and the
+  - [x] Rerun the original CRLF-preload command and the
 normal focused workflow test, requiring both formats to
 pass. Then run node --test tests/ralphex-observe.test.mjs
 tests/ralphex-run.test.mjs
@@ -121,7 +121,7 @@ zero and no skipped required regressions. Run npx
 --no-install eslint
 tests/windows-observer-diagnostics.test.mjs
 --max-warnings=0, npm run check:docs and git diff --check.
-  - [ ] Record commands, exits, platform/Node version,
+  - [x] Record commands, exits, platform/Node version,
 starting SHA, test/workflow input hashes and red/green
 evidence in ignored files; update diagnosis.json and add a
 concise verification record to this plan. Keep
@@ -129,7 +129,7 @@ actualWindows pending until coordinator inspection of a
 new reviewed-SHA run. Identify any reused
 native/layout/type evidence and verify unchanged relevant
 inputs; do not infer platform acceptance from local tests.
-  - [ ] Inspect the bounded diff, verify
+  - [x] Inspect the bounded diff, verify
 workflow/runtime/product inputs remain unchanged, stage
 only tests/windows-observer-diagnostics.test.mjs and this
 plan, run git diff --cached --check and commit the
@@ -150,3 +150,23 @@ success does not complete Issue #19 or resolve independent
 failures.
 No executor push, dispatch, merge, publication or issue
 closure is included.
+
+## Executor Verification Record
+
+- Starting SHA: `c63a08a65b41b332f985ecb79b4866e4518b8d7c`.
+- macOS local checks used Node 22.21.1. Original captured-input red
+  exited 1 (initial shell Node 20.18.3); extracted LF/CRLF cases on
+  Node 22.21.1 exited 1 with LF passing and CRLF failing.
+- Original CRLF-preload and normal focused commands each exited 0:
+  24 passed, zero skipped, including 22 rejected semantic mutations.
+- Pure-Node observer suite exited 0: 154 passed, zero skipped.
+  Targeted ESLint, `npm run check:docs` and diff checks exited 0.
+- Commands, exits, SHA-256 input hashes and full log paths are retained
+  in `work/issue-19/workflow-eol-diagnosis/executor-verification.json`;
+  `diagnosis.json` retains historical red evidence and pending Windows.
+- All tracked inputs except the task test and this plan remain unchanged;
+  no native, layout or type evidence is reused for local acceptance.
+  The four original semantic assertions remain unchanged; only CRLF
+  normalization was added inside their shared routine.
+- Separate review, new reviewed-SHA Windows jobs/artifacts and original
+  full-suite platform acceptance remain coordinator-owned and pending.
