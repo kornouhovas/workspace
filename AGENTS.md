@@ -7,7 +7,7 @@ Workspace uses a spec-first workflow: the user owns product direction and major 
 1. Check the actual checkout and `git status --short --branch`; preserve unrelated changes.
 2. For every development task, including documentation, read [operational rules](docs/development/rules.md) and the [source map](docs/development/README.md). Follow only the source-map branches relevant to the task.
 3. For file changes or verification/review of an implementation, read [quality](docs/development/quality.md) and select checks by affected boundary.
-4. For tracked work, read [workflow](docs/development/workflow.md) and the originating issue/specification. For issue operations or triage, follow the tracker and label pointers in the source map.
+4. For tracked work, use GitHub Issues as the sole tracker; read [workflow](docs/development/workflow.md) and the originating issue/specification. For issue operations or triage, follow the tracker and label pointers in the source map.
 
 ## Contract authority
 

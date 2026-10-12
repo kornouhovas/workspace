@@ -8,11 +8,11 @@ build/
 dist/
 .DS_Store
 
-# Beads / Dolt files (added by bd init)
+# Local databases and retired tracker recovery data
 .dolt/
 *.db
 .beads-credential-key
-.beads/proxieddb/
+.beads/
 *.gate.lock*
 
 .workspace-dev/

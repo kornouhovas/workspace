@@ -9,6 +9,6 @@ Use for a long-running task or explicit tracked handoff. Ordinary completed task
 - Evidence / relevant contract links:
 - Known failures, limitations and next concrete step:
 - Unrelated user/agent changes to preserve:
-- Auxiliary Beads execution record, if used:
+- Current executor ownership/lock and run snapshot, if applicable:
 
 [Rules](../development/rules.md) owns authorization/commits, [quality](../development/quality.md) owns verification, and the [tracker](../agents/issue-tracker.md) owns task state. Use relevant fields; the form adds no approval gate or mandatory report.

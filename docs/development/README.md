@@ -15,7 +15,7 @@ For each development task, including documentation, read [rules](rules.md) and s
 | UI implementation/review | [Interface](../interface.md), [UI guidelines](../ui-guidelines.md), affected flow and mandatory [bb adaptation policy](design/bb-workspace-policy.md) |
 | Checks and evidence | [Quality](quality.md); actual commands in [package.json](../../package.json) |
 | Tracked implementation or continuation | [Workflow](workflow.md), originating GitHub issue and relevant versioned specification |
-| Issue operations and execution dependencies | [GitHub/Beads tracker](../agents/issue-tracker.md) |
+| Issue operations and execution dependencies | [GitHub tracker](../agents/issue-tracker.md) |
 | Issue triage | [Triage labels](../agents/triage-labels.md) |
 | Code/domain exploration, specification synthesis or issue drafting | [Domain pointers](../agents/domain.md) |
 

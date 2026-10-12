@@ -1,6 +1,6 @@
 # Issue tracker: GitHub
 
-Workspace uses Issues in the private [kornouhovas/workspace](https://github.com/kornouhovas/workspace) repository as its primary tracker. GitHub owns specifications, acceptance criteria, issue dependencies, and completion status. Use `gh`; verify `isPrivate` before the first write to a new repository. Application and future marketing-site sources remain private; a public website does not change repository visibility.
+Workspace uses Issues in the private [kornouhovas/workspace](https://github.com/kornouhovas/workspace) repository as its sole task tracker. GitHub owns specifications, acceptance criteria, issue dependencies, and completion status. Use `gh`; verify `isPrivate` before the first write to a new repository. Application and future marketing-site sources remain private; a public website does not change repository visibility.
 
 ## Operations
 
@@ -13,11 +13,19 @@ Workspace uses Issues in the private [kornouhovas/workspace](https://github.com/
 
 PRs as a request surface: no.
 
-## Beads as a local execution aid
+## Execution and continuation
 
-Beads stores local steps, execution dependencies, and continuation notes for a selected GitHub issue. New records link to that issue; create them when local execution detail is useful. Read product backlog and completion status from GitHub. Closing a Beads step does not close its GitHub issue. Bidirectional synchronization is not configured.
+GitHub Issues is the sole task tracker. Read the issue, comments, native blocking dependencies and parent relationship before work. Keep scope and acceptance criteria in the issue body; add concise execution checkpoints as comments with the branch/worktree, commit, observed checks, remaining gate and next action. Check existing ownership and any executor lock before claiming or resuming work.
 
-Existing Beads records retain the previous workflow's history. Read status, ownership, criteria, and dependencies before changing them. Reconcile unfinished legacy tasks before importing them into GitHub to avoid duplicates or lost requirements. Keep the existing local Dolt database; a code branch is not an independent copy of its state.
+Use versioned plans and local run snapshots for execution evidence, not as another backlog. A snapshot may retain legacy IDs for historical correlation; those fields do not require a local tracker or lease. Issue closure requires the accepted criteria and delivery checks, including agreed human acceptance.
+
+For a dependency graph, fetch open issues with `gh issue list --repo kornouhovas/workspace --state open --limit 1000 --json number,title,assignees,labels`, then read each candidate's blockers with `gh api --paginate repos/kornouhovas/workspace/issues/<number>/dependencies/blocked_by`. A task is eligible only when all blockers are closed, its scope is ready and no other coordinator owns it. A readiness label alone does not establish eligibility.
+
+## Legacy migration
+
+Beads is retired from this project's execution policy. Its full database and issue export are retained outside the repository for recovery; archived IDs and historical reports remain evidence, not live status. See the [migration record](../development/beads-retirement.md) for reconciliation and continuation boundaries. New work and status updates use GitHub only.
+
+For an already authorized Ralphex run, preserve its existing `current.json`, event history, review SHAs, executor lock, plan and worktree. Use the snapshot's GitHub issue as task identity. Keep an existing `beads` field or older `--beads` initialization argument only as an inert compatibility identifier; omit the observer's opt-in `--heartbeat` option and all `bd` lease/claim/close commands. Continue execute/review and exact-SHA Actions under the existing authorization. If an older skill assumes Beads, apply this project-specific tracker policy instead; the migration does not authorize another executor, a new run, changed model settings or release.
 
 ## Task preparation and implementation
 

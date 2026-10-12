@@ -2,7 +2,7 @@
 
 Read this guide for implementation or continuation of a tracked task. [rules.md](rules.md) owns authorization, Git and handoff; [quality.md](quality.md) owns verification.
 
-Before implementation, read the originating GitHub issue and relevant versioned specification. Identify the requested outcome, scope, acceptance criteria and blocking dependencies. For tracker operations and Beads continuation notes, follow [issue tracker](../agents/issue-tracker.md).
+Before implementation, read the originating GitHub issue and relevant versioned specification. Identify the requested outcome, scope, acceptance criteria and blocking dependencies. For tracker operations, ownership and execution checkpoints, follow [issue tracker](../agents/issue-tracker.md).
 
 ## Task states
 
