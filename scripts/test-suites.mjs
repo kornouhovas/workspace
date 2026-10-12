@@ -15,7 +15,6 @@ const common = new Set([
   'runtime-executable.test.mjs',
   'runtime-layout.test.mjs',
   'runtime-readiness.test.mjs',
-  'test-suites.test.mjs',
 ]);
 
 export function selectTestFiles(files, suite) {
