@@ -275,6 +275,16 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm test
+        env:
+          WORKSPACE_CATEGORY_MOVE_SERVICE_EVIDENCE_DIR: work/ci-category-move-full-suite/${{ matrix.os }}-${{ github.sha }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
+      - name: Preserve sanitized category checkpoints from the original full suite
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-19-category-move-full-suite-${{ matrix.os }}-${{ github.sha }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
+          path: work/ci-category-move-full-suite/${{ matrix.os }}-${{ github.sha }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}/*/service-checkpoint.json
+          if-no-files-found: warn
+          retention-days: 7
       - run: npm run lint
       - run: npm run typecheck
       - run: npm run build
