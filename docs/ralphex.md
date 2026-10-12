@@ -4,7 +4,7 @@ Use the installed `do-task-ralphex` skill for a selected, claimed Beads task. Gi
 
 ## Separate phases and verified continuation
 
-Use Node 22.21.1 and prepend its bin directory to PATH. The repository runner creates a run-local Codex profile using gpt-6.1-sol/high, disables notifications/finalization and preserves global settings.
+Use Node 22.21.1 and prepend its bin directory to PATH. The repository runner creates a run-local Codex profile using gpt-6.1-sol (medium for task execution, high for planning/review), disables notifications/finalization and preserves global settings.
 
 ```sh
 node scripts/ralphex-run.mjs init --dir work/ralphex/example --issue https://github.com/owner/repo/issues/123 --beads example-123 --base HEAD

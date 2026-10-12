@@ -62,7 +62,7 @@ function config(dir, state) {
   // This is a run-local profile; machine/global settings are never rewritten.
   writeFileSync(join(target, 'config'), 'executor = codex\nplans_dir = docs/plans\n' +
     'codex_model = gpt-6.1-sol\ncodex_reasoning_effort = high\ncodex_sandbox = danger-full-access\n' +
-    'plan_model = gpt-6.1-sol:high\ntask_model = gpt-6.1-sol:high\nreview_model = gpt-6.1-sol:high\n' +
+    'plan_model = gpt-6.1-sol:high\ntask_model = gpt-6.1-sol:medium\nreview_model = gpt-6.1-sol:high\n' +
     'finalize_enabled = false\nnotify_channels =\nnotify_on_error = false\nnotify_on_complete = false\n');
   for (const [destination, source] of [['task', 'task'], ['review_first', state.lastReviewedSha ? 'review_followup' : 'review_initial'], ['review_second', 'review_followup']]) {
     const prompt = readFileSync(join(templates, `${source}.txt`), 'utf8');
