@@ -896,12 +896,17 @@ test('legacy snapshot and pid lock are observable with explicitly limited confid
 });
 
 async function runningFixture(t,mode = 'quiet',duration = 600,{ startupDelayMs = 0, startupTimeoutMs = 10000, executable = process.execPath } = {}) {
-  const f=fixture(t, { cleanup: false }); rmSync(join(f.dir,'current.json')); rmSync(join(f.dir,'executor.lock'));
+  const f=fixture(t, { cleanup: false });
+  let stopWorker = async () => {};
+  t.after(async () => { await stopWorker(); rmSync(f.dir, { recursive: true, force: true }); });
+  rmSync(join(f.dir,'current.json')); rmSync(join(f.dir,'executor.lock'));
   const git=(...args)=>execFileSync('git',args,{cwd:f.dir,encoding:'utf8',stdio:['ignore','pipe','pipe']}).trim();
   git('init','-q'); git('config','user.email','fixture@example.invalid'); git('config','user.name','Fixture');
   writeFileSync(join(f.dir,'.gitignore'),'run/\nfull.log\nobserver.json*\n'); mkdirSync(join(f.dir,'docs')); writeFileSync(join(f.dir,'docs/plan.md'),'Fixture plan'); git('add','.'); git('commit','-qm','fixture');
   const dir=join(f.dir,'run'); initialize(dir,{cwd:f.dir,issue:'fixture',beads:'fixture-task',base:'HEAD'});
-  const fd=openSync(f.log,'a'); const worker=spawn(executable,[fileURLToPath(new URL('./fixtures/ralphex-observer-worker.mjs',import.meta.url)),dir,mode,String(duration),String(startupDelayMs)],{stdio:['ignore',fd,fd]}); closeSync(fd);
+  const fd=openSync(f.log,'a'); let worker;
+  try { worker=spawn(executable,[fileURLToPath(new URL('./fixtures/ralphex-observer-worker.mjs',import.meta.url)),dir,mode,String(duration),String(startupDelayMs)],{stdio:['ignore',fd,fd]}); }
+  finally { closeSync(fd); }
   let launchError, closed = false;
   worker.once('error', error => { launchError = error; });
   const exited=new Promise(resolve=>worker.once('exit',(code,signal)=>resolve({code,signal})));
@@ -912,7 +917,7 @@ async function runningFixture(t,mode = 'quiet',duration = 600,{ startupDelayMs =
     try { await Promise.race([completion, new Promise((_, reject) => { timer = setTimeout(() => reject(new Error('Fixture worker cleanup timed out')), 1500); })]); }
     finally { clearTimeout(timer); }
   }
-  t.after(async () => { await stop(); rmSync(f.dir, { recursive: true, force: true }); });
+  stopWorker = stop;
   const started = Date.now(), until = started + startupTimeoutMs;
   while(readState(dir).status==='ready' && !launchError && !closed && Date.now()<until) await new Promise(resolve=>setTimeout(resolve,10));
   if (launchError || readState(dir).status === 'ready') {
