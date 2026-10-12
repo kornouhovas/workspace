@@ -24,8 +24,12 @@ function fixture(t) {
 
 // Publish between the snapshot read and the ownership read, without a private
 // observer hook. All other filesystem reads still use the real implementation.
-async function withSnapshotPublication(f, publish, check) {
+// Freeze host time before observe establishes its deadline; only the expiration
+// control advances it. These global mocks are scoped to sequential tests.
+async function withSnapshotPublication(f, publish, check, { advanceMs = 0 } = {}) {
   const original = fsPromises.readFile, snapshot = join(f.dir, 'current.json');
+  const originalNow = Date.now;
+  let now = originalNow();
   let reads = 0, reached = false, published;
   fsPromises.readFile = async (...args) => {
     const selected = args[0] === snapshot;
@@ -34,16 +38,20 @@ async function withSnapshotPublication(f, publish, check) {
     if (selected && reads === 1) {
       assert.equal(JSON.parse(bytes).status, 'running');
       publish(); reached = true;
+      now += advanceMs;
       published = ['current.json', 'events.jsonl', 'full.log', 'executor.lock'].map(file => {
         try { return readFileSync(join(f.dir, file)); } catch (error) { if (error.code !== 'ENOENT') throw error; return null; }
       });
     }
     return bytes;
   };
-  syncBuiltinESMExports();
-  try { await check(() => reads); }
+  try {
+    Date.now = () => now;
+    syncBuiltinESMExports();
+    await check(() => reads);
+  }
   finally {
-    fsPromises.readFile = original; syncBuiltinESMExports();
+    Date.now = originalNow; fsPromises.readFile = original; syncBuiltinESMExports();
     assert.ok(reached, 'snapshot/lock publication interleaving was reached');
     assert.deepEqual(['current.json', 'events.jsonl', 'full.log', 'executor.lock'].map(file => {
       try { return readFileSync(join(f.dir, file)); } catch (error) { if (error.code !== 'ENOENT') throw error; return null; }
@@ -66,6 +74,44 @@ test('same-execution terminal publication after a retained running read reports 
       runId: 'fixture-run', executionId: 'fixture-execution', worktree: f.dir });
     assert.equal(reads(), 2, 'one bounded consistency reread');
   });
+});
+
+test('expired publication budget retains running ownership uncertainty without reread or heartbeat', async t => {
+  const f = fixture(t); f.state.beads = 'fixture-task'; f.save();
+  writeFileSync(join(f.dir, 'events.jsonl'), 'retained runner events\n');
+  const unrelatedLock = join(f.dir, 'unrelated-observer.json.lock');
+  writeFileSync(unrelatedLock, 'retained foreign observer lock');
+  const before = readFileSync(unrelatedLock);
+  await withSnapshotPublication(f, () => {
+    f.state.status = 'failed'; f.state.lastExit = 9; f.save();
+    rmSync(join(f.dir, 'executor.lock'));
+  }, async reads => {
+    let calls = 0;
+    const result = await observe({ ...f.options,
+      heartbeat: { task: 'fixture-task', actor: 'fixture-owner', repo: f.dir, ttlMs: 400, intervalMs: 100 },
+      command: async () => { calls++; throw new Error('Expired ownership must never reach transport'); } });
+    assert.equal(reads(), 1); assert.equal(calls, 0);
+    assert.equal(result.reason, 'ownership_unknown'); assert.equal(result.status, 'running');
+    assert.equal(result.ownership, 'unknown'); assert.equal(result.acceptance, 'not_established');
+    assert.deepEqual(result.source, { kind: 'runner', dir: f.dir, log: f.log,
+      runId: 'fixture-run', executionId: 'fixture-execution', worktree: f.dir });
+    assert.equal(result.elapsedMs, 1000);
+    const cursor = JSON.parse(readFileSync(f.options.cursor));
+    assert.deepEqual(cursor.source, result.source);
+    assert.equal(JSON.parse(cursor.fingerprint).status, 'running');
+    assert.throws(() => readFileSync(`${f.options.cursor}.lock`), { code: 'ENOENT' });
+    assert.deepEqual(readFileSync(unrelatedLock), before);
+  }, { advanceMs: 1000 });
+});
+
+test('publication mocks restore host time and filesystem reads after a failed check', async t => {
+  const f = fixture(t), originalNow = Date.now, originalRead = fsPromises.readFile;
+  const failure = new Error('Fixture check failure');
+  await assert.rejects(withSnapshotPublication(f, () => {
+    f.state.status = 'failed'; f.save(); rmSync(join(f.dir, 'executor.lock'));
+  }, async () => { await observe(f.options); throw failure; }), error => error === failure);
+  assert.equal(Date.now, originalNow); assert.equal(fsPromises.readFile, originalRead);
+  assert.equal((await observe({ ...f.options, cursor: join(f.dir, 'restored-observer.json') })).reason, 'failed');
 });
 
 test('identified running ownership does not trigger a terminal consistency reread', async t => {
