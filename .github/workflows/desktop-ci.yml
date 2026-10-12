@@ -5,6 +5,11 @@ on:
   pull_request:
   workflow_dispatch:
     inputs:
+      checks:
+        description: Full acceptance or focused checks for the current observer and rename failures
+        type: choice
+        options: [full, failed]
+        default: full
       diagnostics:
         description: Run isolated investigation and early-feedback jobs
         type: boolean
@@ -20,6 +25,7 @@ concurrency:
 
 jobs:
   common:
+    if: ${{ github.event_name != 'workflow_dispatch' || inputs.checks != 'failed' }}
     name: Common tests and static checks
     runs-on: macos-latest
     steps:
@@ -33,6 +39,58 @@ jobs:
       - run: npm run typecheck
       - run: npm run check:docs
       - run: npm run test:common
+
+  focused-windows-observer:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.checks == 'failed' }}
+    name: Focused Windows observer checks
+    runs-on: windows-latest
+    timeout-minutes: 10
+    env:
+      OBSERVER_MATRIX: windows-latest
+      WORKSPACE_OBSERVER_CALL_EVIDENCE_DIR: work/ci-focused-observer
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.21.1
+          cache: npm
+      - run: npm ci
+      - run: node --test tests/ralphex-observe.test.mjs tests/ralphex-run.test.mjs tests/windows-observer-diagnostics.test.mjs
+      - name: Validate original focused observer evidence
+        id: focused-observer-validation
+        if: always()
+        run: node scripts/windows-observer-diagnostics.mjs validate-call --output work/ci-focused-observer
+      - uses: actions/upload-artifact@v4
+        if: ${{ always() && steps.focused-observer-validation.outcome == 'success' }}
+        with:
+          name: issue-19-focused-observer-windows-latest-${{ github.sha }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
+          path: work/ci-focused-observer/collector.json
+          if-no-files-found: error
+          retention-days: 7
+
+  focused-macos-rename:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.checks == 'failed' }}
+    name: Focused macOS rename and Reveal
+    runs-on: macos-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.21.1
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: npm run smoke:runtime -- dev --rename
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-focused-rename
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: issue-19-focused-rename-macos-latest-${{ github.sha }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
+          path: work/ci-focused-rename/
+          if-no-files-found: error
+          retention-days: 7
 
   windows-observer-diagnostic:
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.diagnostics == true }}

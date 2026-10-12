@@ -431,7 +431,7 @@ const workflowMutations = [
   ['upload validation outcome', "always() && steps.observer-call-validation.outcome == 'success'", "always() && steps.observer-call-validation.outcome == 'failure'"],
   ['exact collector path', 'path: work/ci-observer-full-suite/collector.json', 'path: work/ci-observer-full-suite/*.json'],
   ['missing collector error', 'path: work/ci-observer-full-suite/collector.json\n          if-no-files-found: error', 'path: work/ci-observer-full-suite/collector.json\n          if-no-files-found: warn'],
-  ['missing collector policy indentation', 'collector.json\n          if-no-files-found: error', 'collector.json\n         if-no-files-found: error'],
+  ['missing collector policy indentation', 'path: work/ci-observer-full-suite/collector.json\n          if-no-files-found: error', 'path: work/ci-observer-full-suite/collector.json\n         if-no-files-found: error'],
 ];
 
 for (const [format, eol] of [['LF', '\n'], ['CRLF', '\r\n']]) {

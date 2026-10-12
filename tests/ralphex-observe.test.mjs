@@ -10,9 +10,9 @@ import fsPromises, { readFile as builtinReadFile, realpath as builtinRealpath } 
 import { syncBuiltinESMExports } from 'node:module';
 import { observe } from '../scripts/ralphex-observe.mjs';
 
-function fixture(t) {
+function fixture(t, { cleanup = true } = {}) {
   const dir = realpathSync(mkdtempSync(join(tmpdir(), 'ralphex-observe-')));
-  t.after(() => rmSync(dir, { recursive: true, force: true }));
+  if (cleanup) t.after(() => rmSync(dir, { recursive: true, force: true }));
   const state = { version: 1, runId: 'fixture-run', executionId: 'fixture-execution', runDirectory: dir, worktree: dir, status: 'running', phase: 'execute', lastExit: null, nextAction: 'Wait' };
   const lock = { pid: process.pid, token: 'fixture-token', runId: state.runId, executionId: state.executionId, runDirectory: dir, worktree: dir };
   writeFileSync(join(dir, 'current.json'), JSON.stringify(state));
@@ -895,19 +895,54 @@ test('legacy snapshot and pid lock are observable with explicitly limited confid
   const result=await observe(f.options); assert.equal(result.reason,'deadline'); assert.equal(result.ownership,'legacy_limited');
 });
 
-async function runningFixture(t,mode = 'quiet',duration = 600) {
-  const f=fixture(t); rmSync(join(f.dir,'current.json')); rmSync(join(f.dir,'executor.lock'));
+async function runningFixture(t,mode = 'quiet',duration = 600,{ startupDelayMs = 0, startupTimeoutMs = 10000, executable = process.execPath } = {}) {
+  const f=fixture(t, { cleanup: false }); rmSync(join(f.dir,'current.json')); rmSync(join(f.dir,'executor.lock'));
   const git=(...args)=>execFileSync('git',args,{cwd:f.dir,encoding:'utf8',stdio:['ignore','pipe','pipe']}).trim();
   git('init','-q'); git('config','user.email','fixture@example.invalid'); git('config','user.name','Fixture');
   writeFileSync(join(f.dir,'.gitignore'),'run/\nfull.log\nobserver.json*\n'); mkdirSync(join(f.dir,'docs')); writeFileSync(join(f.dir,'docs/plan.md'),'Fixture plan'); git('add','.'); git('commit','-qm','fixture');
   const dir=join(f.dir,'run'); initialize(dir,{cwd:f.dir,issue:'fixture',beads:'fixture-task',base:'HEAD'});
-  const fd=openSync(f.log,'a'); const worker=spawn(process.execPath,[fileURLToPath(new URL('./fixtures/ralphex-observer-worker.mjs',import.meta.url)),dir,mode,String(duration)],{stdio:['ignore',fd,fd]}); closeSync(fd);
+  const fd=openSync(f.log,'a'); const worker=spawn(executable,[fileURLToPath(new URL('./fixtures/ralphex-observer-worker.mjs',import.meta.url)),dir,mode,String(duration),String(startupDelayMs)],{stdio:['ignore',fd,fd]}); closeSync(fd);
+  let launchError, closed = false;
+  worker.once('error', error => { launchError = error; });
   const exited=new Promise(resolve=>worker.once('exit',(code,signal)=>resolve({code,signal})));
-  t.after(async()=>{ if(worker.exitCode===null && worker.signalCode===null) worker.kill(); await exited; });
-  const until=Date.now()+2500; while(readState(dir).status==='ready' && Date.now()<until) await new Promise(resolve=>setTimeout(resolve,10));
-  assert.notEqual(readState(dir).status,'ready');
+  const completion = new Promise(resolve => worker.once('close', () => { closed = true; resolve(); }));
+  async function stop() {
+    if (!closed && worker.pid && worker.exitCode === null && worker.signalCode === null) worker.kill('SIGKILL');
+    let timer;
+    try { await Promise.race([completion, new Promise((_, reject) => { timer = setTimeout(() => reject(new Error('Fixture worker cleanup timed out')), 1500); })]); }
+    finally { clearTimeout(timer); }
+  }
+  t.after(async () => { await stop(); rmSync(f.dir, { recursive: true, force: true }); });
+  const started = Date.now(), until = started + startupTimeoutMs;
+  while(readState(dir).status==='ready' && !launchError && !closed && Date.now()<until) await new Promise(resolve=>setTimeout(resolve,10));
+  if (launchError || readState(dir).status === 'ready') {
+    const diagnostic = { elapsedMs: Date.now() - started, state: readState(dir).status, exitCode: worker.exitCode, signal: worker.signalCode,
+      launchError: launchError?.code ?? null, log: readFileSync(f.log, 'utf8').slice(-2048) };
+    await stop();
+    throw new Error(`Fixture worker startup failed: ${JSON.stringify(diagnostic)}`);
+  }
   return {...f,dir,worker,exited,options:{...f.options,source:{kind:'runner',dir,log:f.log}}};
 }
+
+test('real runner fixture observes healthy startup beyond the former readiness budget', async t => {
+  const f = await runningFixture(t, 'quiet', 100, { startupDelayMs: 2800 });
+  const result = await observe({ ...f.options, budgetMs: 2000 });
+  assert.equal(result.reason, 'completed');
+  assert.equal((await f.exited).code, 0);
+  assert.equal(readState(f.dir).status, 'awaiting_review');
+});
+
+test('real runner fixture rejects an exit before startup with actual exit evidence', async t => {
+  await assert.rejects(runningFixture(t, 'startup-exit', 100), /"state":"ready","exitCode":23/);
+});
+
+test('real runner fixture bounds stalled readiness and reaps the delayed worker', async t => {
+  await assert.rejects(runningFixture(t, 'quiet', 100, { startupDelayMs: 2800, startupTimeoutMs: 100 }), /Fixture worker startup failed:.*"state":"ready"/);
+});
+
+test('real runner fixture observes OS launch errors without waiting for an exit event', async t => {
+  await assert.rejects(runningFixture(t, 'quiet', 100, { executable: join(tmpdir(), 'missing-workspace-fixture-executable') }), /"launchError":"ENOENT"/);
+});
 
 for(const mode of ['quiet','noisy','failure','throw']) test(`real runner/process ${mode} preserves terminal source and real CLI exit`,async t=>{
   const f=await runningFixture(t,mode,100);

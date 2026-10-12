@@ -15,6 +15,7 @@ import { assertRenameAcceptance, createRenameEvidence, recordRenameEvidence } fr
 import { closeDisposableFileManagerTarget, waitForFileManagerTarget } from "./file-manager-evidence.mjs";
 import { createRenameRuntimeStartup } from "./rename-runtime-startup.mjs";
 import { nativeBridgeCleanupEvidence } from "./native-bridge-evidence.mjs";
+import { installNativeRevealReceipt, retainNativeRevealReceipt } from "./native-reveal-receipt.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const unwrap = result => { assert.equal(result.ok, true, JSON.stringify(result)); return result.value; };
@@ -235,6 +236,20 @@ export async function runProjectRenameUi(mode = "dev") {
   }
   async function reveal(page, setup, name, t, targetEvidence) {
     const target = join(setup.parent, name); nativeTargets.add(target);
+    const receiptTracking = process.platform === "darwin";
+    let receiptObservation;
+    const retainReceipt = async primaryFailure => {
+      if (!receiptTracking) return;
+      await retainNativeRevealReceipt({ electron: startup.current.electron, primaryFailure,
+        retain: nativeRevealReceipt => {
+          const observation = { renameNativeRevealReceipt: nativeRevealReceipt };
+          if (receiptObservation === undefined) { receiptObservation = observations.length; observations.push(observation); }
+          else observations[receiptObservation] = observation;
+        }, persist: save });
+    };
+    if (receiptTracking) await withDeadline(startup.current.electron.evaluate(installNativeRevealReceipt,
+      { workspaceId: setup.workspace.workspaceId }), 1000, "Rename native receipt installation");
+    try {
     await startup.current.electron.evaluate(({ shell }) => {
       globalThis.renameNativeCalls = []; globalThis.renameNativeOpens = [];
       globalThis.renameNativeBridge = { started: 0, stopped: 0, active: 0, unknown: false };
@@ -272,6 +287,7 @@ export async function runProjectRenameUi(mode = "dev") {
       }
       return { exactCommittedLocation: true, invocationCount: 1 };
     });
+    await retainReceipt();
     await check(targetEvidence, "revealAcknowledgment", async () => {
       await page.getByText(t.dispatched, { exact: true }).waitFor();
       assert.equal((await startup.current.electron.evaluate(() => globalThis.renameNativeCalls)).length, 1);
@@ -284,6 +300,10 @@ export async function runProjectRenameUi(mode = "dev") {
       const outcome = await closeDisposableFileManagerTarget(target, process.platform, undefined, { ownedParent: true });
       assert.equal(outcome.status, "completed"); nativeTargets.delete(target); return { outcome };
     });
+    } catch (error) {
+      await retainReceipt(error);
+      throw error;
+    }
   }
 
   try {

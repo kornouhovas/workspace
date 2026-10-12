@@ -74,7 +74,7 @@ tests/fixtures/ralphex-observer-worker.mjs.
 docs/plans/issue-19-runner-startup-fixture.md.
   - Retain ignored evidence under
 work/issue-19/runner-startup-diagnosis/.
-  - [ ] Record starting SHA and hashes of the test,
+  - [x] Record starting SHA and hashes of the test,
 worker, executor, retained preload and relevant
 runner/observer/diagnostic inputs. Preserve existing red
 and ordinary-probe logs. Add actual-process regressions
@@ -82,7 +82,7 @@ for healthy startup beyond 2500 ms, premature worker exit,
 launch error and a worker stalled in ready. Capture the
 new regression failures before repairing runningFixture;
 avoid tests that merely mirror helper internals.
-  - [ ] Replace the fixed 2500 ms assertion with bounded
+  - [x] Replace the fixed 2500 ms assertion with bounded
 test-only startup observation that tolerates the retained
 2800 ms healthy delay. Register worker error and exit
 observation immediately after spawn, detect those failures
@@ -91,14 +91,14 @@ code/signal, launch error and a bounded worker-log
 excerpt. Require valid published startup or an explicitly
 interpreted terminal outcome; ready, stalled and failed
 workers must never establish healthy startup.
-  - [ ] Make failure and teardown paths finite, including
+  - [x] Make failure and teardown paths finite, including
 spawn errors that never emit exit. Reap only owned fixture
 processes before removing their disposable roots. Test
 cleanup for delayed success, early exit/error and
 stalled-ready timeout. Preserve worker/executor ownership
 and existing lock/state/CLI assertions; cleanup failure
 remains failure.
-  - [ ] Run the new focused regressions and the retained
+  - [x] Run the new focused regressions and the retained
 preload command: node --import
 ./work/issue-19/runner-startup-diagnosis/delay-worker.mjs
 --import tsx --test --test-name-pattern="real
@@ -108,14 +108,14 @@ after the repair and retain actual commands, numeric exits
 and logs alongside their red evidence. Verify ordinary
 quiet, noisy, failure and throw modes, observer
 cancellation and dead-launcher behavior.
-  - [ ] Run the complete affected pure-Node suite once
+  - [x] Run the complete affected pure-Node suite once
 against the repaired inputs: node --test
 tests/ralphex-observe.test.mjs tests/ralphex-run.test.mjs
 tests/windows-observer-diagnostics.test.mjs. Require exit
 zero, zero failures and zero skips. Preserve any
 unexpected failure and diagnose it before another
 invocation.
-  - [ ] Run targeted ESLint on changed test/fixture files
+  - [x] Run targeted ESLint on changed test/fixture files
 with --max-warnings=0, npm run check:docs and git diff
 --check. Update the ignored diagnosis with hashes,
 platform/Node/SHA, red/green controls, cleanup results,
@@ -123,7 +123,7 @@ actual commands and remaining gates. Keep historical cause
 unproven and original Windows verification pending. Record
 completion evidence in the plan; no unrelated
 documentation changes are needed.
-  - [ ] Inspect the final diff for test-only scope and
+  - [x] Inspect the final diff for test-only scope and
 preserved CI scheduling. Stage only verified task files
 and this plan, create an English local commit and report
 Task 1/1 progress, checks, evidence and actual commit. Do
@@ -139,3 +139,14 @@ fixture robustness, not the cause of the historical
 Windows failure or completion of Issue #19. These external
 gates remain outside executable task checkboxes.
 
+
+## Direct Execution Verification
+
+The user stopped Ralphex and requested direct diagnosis, repair and focused CI before full acceptance. No Ralphex review receipt is claimed.
+
+- The actual worker delayed by 2800 ms failed the former 2500 ms readiness assertion before repair. The new real-process regression and original preload now pass.
+- Fixture startup waits at most ten seconds, observes launch error/close, retains bounded state/exit/log evidence, and reaps the owned worker before root removal. Early exit, ENOENT and bounded ready-state expiry remain failures. Production observer/runner deadlines and ownership are unchanged.
+- Local affected checks: 256 passed, zero failures/skips; targeted ESLint and documentation links passed. Full logs are under `work/issue-19/actions-diagnosis/` and `work/issue-19/runner-startup-diagnosis/`.
+- Historical Windows worker delay versus premature failure remains unproven. Actual Windows focused acceptance is pending.
+- Separate authorized CI work adds manual failed-check scheduling and existing privacy-safe typed Reveal receipt capture to the rename driver. The macOS Actions rejection remains unproven; a local attempt acknowledged Reveal successfully and separately failed Electron shutdown. Neither result is waived.
+- Coordinator owns focused Actions, receipt inspection, any remaining repair and full CI only after focused success.

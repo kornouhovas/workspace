@@ -42,7 +42,7 @@ test('suite CLI lists the selected real files and rejects unknown invocations', 
 test('ordinary CI runs common checks once and retains all three platform acceptance routes', () => {
   const workflow = load(readFileSync('.github/workflows/desktop-ci.yml', 'utf8'));
   const { common, verify } = workflow.jobs;
-  assert.equal(common.if, undefined);
+  assert.equal(common.if, "${{ github.event_name != 'workflow_dispatch' || inputs.checks != 'failed' }}");
   assert.equal(common.strategy, undefined);
   assert.deepEqual(common.steps.filter(step => step.run).map(step => step.run), [
     'npm ci', 'npm run lint', 'npm run typecheck', 'npm run check:docs', 'npm run test:common',
@@ -68,7 +68,7 @@ test('investigation jobs run only with explicit manual diagnostic inputs', () =>
   const diagnostics = ['windows-observer-diagnostic', 'project-category-move-service-early',
     'project-rename-service-early', 'windows-product-selection-diagnostic',
     'windows-category-rename-diagnostic', 'windows-ready-selection'];
-  assert.deepEqual(Object.keys(workflow.jobs).filter(name => !workflow.jobs[name].if).sort(), ['common', 'verify']);
+  assert.deepEqual(Object.keys(workflow.jobs).filter(name => !workflow.jobs[name].if), ['verify']);
   for (const name of diagnostics) {
     const expression = workflow.jobs[name].if.slice(3, -2).trim();
     for (const event of ['push', 'pull_request', 'workflow_dispatch']) {
@@ -77,5 +77,28 @@ test('investigation jobs run only with explicit manual diagnostic inputs', () =>
         assert.equal(enabled, event === 'workflow_dispatch' && value === true, `${name}: ${event}/${value}`);
       }
     }
+  }
+});
+
+test('manual failed-check scope runs only the Windows observer and macOS rename routes', () => {
+  const workflow = load(readFileSync('.github/workflows/desktop-ci.yml', 'utf8'));
+  assert.equal(workflow.on.workflow_dispatch.inputs.checks.default, 'full');
+  assert.deepEqual(workflow.on.workflow_dispatch.inputs.checks.options, ['full', 'failed']);
+  const enabled = (job, event, checks) => runInNewContext(job.if.slice(3, -2), { github: { event_name: event }, inputs: { checks } });
+  for (const event of ['push', 'pull_request', 'workflow_dispatch']) for (const checks of [undefined, 'full', 'failed']) {
+    const focused = event === 'workflow_dispatch' && checks === 'failed';
+    assert.equal(enabled(workflow.jobs.common, event, checks), !focused);
+    for (const name of ['focused-windows-observer', 'focused-macos-rename']) assert.equal(enabled(workflow.jobs[name], event, checks), focused);
+  }
+  assert.equal(workflow.jobs['focused-windows-observer']['runs-on'], 'windows-latest');
+  assert.equal(workflow.jobs['focused-macos-rename']['runs-on'], 'macos-latest');
+  const commands = name => workflow.jobs[name].steps.filter(step => step.run).map(step => step.run);
+  assert.ok(commands('focused-windows-observer').includes('node --test tests/ralphex-observe.test.mjs tests/ralphex-run.test.mjs tests/windows-observer-diagnostics.test.mjs'));
+  assert.ok(commands('focused-macos-rename').includes('npm run smoke:runtime -- dev --rename'));
+  for (const name of ['focused-windows-observer', 'focused-macos-rename']) {
+    const upload = workflow.jobs[name].steps.find(step => step.uses === 'actions/upload-artifact@v4');
+    assert.ok(upload.if.includes('always()'));
+    assert.ok(upload.with.name.includes('github.sha') && upload.with.name.includes('github.run_id') && upload.with.name.includes('github.run_attempt'));
+    assert.equal(upload.with['if-no-files-found'], 'error');
   }
 });
