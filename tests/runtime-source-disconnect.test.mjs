@@ -609,7 +609,8 @@ function assertPersistentObservation(error, blocked) {
   if (error.code === "attempts_exhausted") {
     assert.equal(observation.attempts, 20);
     assert.equal(observation.verificationComplete, true);
-    assert.ok(observation.elapsedMs < 2000);
+    // The helper samples elapsed time again after classifying exhaustion;
+    // recording that failure can cross the deadline without another attempt.
   } else assert.ok(observation.elapsedMs >= 2000);
   assert.equal(observation.sourceAbsent, false);
   assert.equal(observation.destinationIdentityMatches, false);
@@ -711,6 +712,30 @@ for (const { boundary, expiryRead, verificationComplete } of deadlineBoundaries)
   assert.equal(calls, 1);
 });
 
+test("persistent attempts exhaustion remains valid when the deadline crosses during failure observation", async (t) => {
+  const { f, state } = await sharingFixture(t), times = clock();
+  let ticks = 0, calls = 0;
+  const control = await heldSourceControl(f, state, "persistent", {
+    dependencies: { platform: "win32", sleep: times.sleep,
+      // Twenty blocked attempts finish effect checks inside the budget. Only
+      // the catch observation crosses the deadline; no rename is replayed.
+      now: () => ++ticks >= 81 ? 2000 : times.now(),
+      rename: async () => { calls++; throw blockedRename(); } },
+    runProcess: async (_program, _args, options) => {
+      await options.onReady(); assert.equal(state.movePending, false);
+      return completedHolderProcess();
+    },
+  });
+  assert.equal(state.processesStopped, true); assert.equal(state.movePending, false);
+  assert.equal(control.blocked, 20); assert.equal(calls, 20);
+  assert.equal(control.outcome.result, undefined);
+  assert.equal(control.outcome.error.code, "attempts_exhausted");
+  assert.deepEqual(control.outcome.error.fixtureMove, { attempts: 20, elapsedMs: 2000, firstErrorCode: "EPERM",
+    sourceAbsent: false, destinationIdentityMatches: false, contentsMatch: false, verificationComplete: true });
+  await assert.rejects(control.helper("disconnect"), { code: "invalid_state" });
+  assert.equal(calls, 20);
+});
+
 test("persistent observations reject malformed or uncertain exhaustion evidence", async (t) => {
   const { f, state } = await sharingFixture(t);
   const control = await heldSourceControl(f, state, "persistent", {
@@ -723,7 +748,7 @@ test("persistent observations reject malformed or uncertain exhaustion evidence"
     sourceAbsent: false, destinationIdentityMatches: false, contentsMatch: false, verificationComplete: true });
   for (const extra of [{ attempts: 19 }, { attempts: NaN }, { attempts: 20.5 }, { attempts: 21 },
     { elapsedMs: NaN }, { elapsedMs: Infinity }, { elapsedMs: -1 }, { elapsedMs: Number.MAX_VALUE },
-    { elapsedMs: 2000 }, { firstErrorCode: "unknown" }, { sourceAbsent: true }, { sourceAbsent: undefined },
+    { firstErrorCode: "unknown" }, { sourceAbsent: true }, { sourceAbsent: undefined },
     { destinationIdentityMatches: true }, { contentsMatch: true }, { verificationComplete: false },
     { verificationComplete: undefined }, { verificationComplete: 1 }, { verificationComplete: "false" }]) {
     assert.throws(() => assertPersistentObservation({ code: original.code, fixtureMove: { ...original.fixtureMove, ...extra } }, 20));

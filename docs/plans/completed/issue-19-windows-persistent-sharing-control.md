@@ -63,6 +63,14 @@ The input identity record covers 136 bundled source inputs plus emitted settings
 
 These portable injected controls prove the deadline/assertion mechanism and local repair only. Historical Windows scheduling and handle ownership remain unproven. Actual Windows controls were skipped locally and remain external acceptance gates.
 
+## Follow-up review repair
+
+Both independent follow-up perspectives confirmed that the new attempts-exhaustion `elapsedMs < 2000` assertion exceeded the unchanged helper contract. The helper checks the deadline before classifying exhaustion, then samples elapsed again when recording the failure; that final observation may cross 2000 ms. Removed this assertion and its malformed-observation expectation while retaining exactly 20 blocked attempts, completed effect verification, finite nonnegative elapsed, failed move and independent unchanged-state checks. The production helper and all retry/holder bounds remain unchanged.
+
+Added a deterministic control through the same real helper/holder seam: only the failure-observation clock read crosses 2000 ms after 20 blocked attempts. It verifies settled attempts exhaustion, completed effects, confirmed simulated holder exit and rejection of replay. With Node 22.21.1 on macOS, this regression exited 1 before the assertion repair (`regression-red.log`); the complete affected suite then exited 0 with 108 passed and 4 Windows-only skips (`source-disconnect-green.log`). Targeted ESLint exited 0 (`eslint.log`). Evidence and both full review reports are retained under `work/issue-19/windows-persistent-sharing-review/`.
+
+All 184 previously identified inputs matched before repair (`prior-check-continuity.log`). After repair, only the affected test input changed; the other 183 input hashes still match (`reused-check-inputs.log`). Reuse the prior lifecycle/diagnostics result (69 passed, 3 Windows-only skips) and current-source/built-output continuity evidence for those unchanged inputs. Documentation links and diff whitespace are checked again after this plan update. This injected regression proves the assertion defect; historical Windows scheduling/handle ownership and original-scenario acceptance remain unproven and coordinator-owned.
+
 ## Coordinator-owned gates
 
 Perform separate review of assertion strictness, independent filesystem checks, regression evidence and cause-claim limits. Push only under existing authorization after review. Obtain a new reviewed exact-SHA Windows-2022 original npm test result and inspect the persistent-sharing control outcome; inspect required Windows-latest results separately. Original-scenario verification stays pending until actual Windows evidence passes. Portable injected controls and platform skips establish no Windows acceptance.
