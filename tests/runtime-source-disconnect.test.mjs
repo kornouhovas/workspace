@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
-import { lstat, mkdir, mkdtemp, readFile, readdir, readlink, realpath, rename, rm, symlink, unlink, writeFile } from "node:fs/promises";
+import { constants } from "node:fs";
+import { cp, lstat, mkdir, mkdtemp, readFile, readdir, readlink, realpath, rename, rm, symlink, unlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
 import test from "node:test";
@@ -578,10 +579,48 @@ async function sharingFixture(t) {
   return { f, state };
 }
 
+// This independent no-follow inventory keeps literal bytes/link text and exact
+// entries, rather than trusting the move helper's effect observations or hashes.
+async function sharingTree(path) {
+  const stat = await lstat(path, { bigint: true });
+  if (stat.isSymbolicLink()) return { link: await readlink(path) };
+  if (stat.isFile()) return { bytes: await readFile(path, { flag: constants.O_RDONLY | (constants.O_NOFOLLOW ?? 0) }) };
+  assert.equal(stat.isDirectory(), true, "fixture entries must have known kinds");
+  const entries = [];
+  for (const name of (await readdir(path)).sort()) entries.push([name, await sharingTree(join(path, name))]);
+  return { entries };
+}
+
+async function sharingSnapshot(f) {
+  const stat = await lstat(f.source, { bigint: true });
+  assert.equal(stat.isDirectory(), true); assert.equal(stat.isSymbolicLink(), false);
+  await assert.rejects(lstat(f.disconnected), { code: "ENOENT" });
+  return { identity: [stat.dev, stat.ino, stat.birthtimeNs], tree: await sharingTree(f.ownedFixture) };
+}
+
+function assertPersistentObservation(error, blocked) {
+  assert.ok(["attempts_exhausted", "deadline_exhausted"].includes(error?.code));
+  const observation = error.fixtureMove;
+  assert.equal(observation.firstErrorCode, "EPERM");
+  assert.equal(observation.attempts, blocked);
+  assert.ok(Number.isInteger(observation.attempts) && observation.attempts >= 1 && observation.attempts <= 20);
+  assert.ok(Number.isFinite(observation.elapsedMs) && observation.elapsedMs >= 0 && observation.elapsedMs <= Number.MAX_SAFE_INTEGER);
+  assert.equal(typeof observation.verificationComplete, "boolean");
+  if (error.code === "attempts_exhausted") {
+    assert.equal(observation.attempts, 20);
+    assert.equal(observation.verificationComplete, true);
+    assert.ok(observation.elapsedMs < 2000);
+  } else assert.ok(observation.elapsedMs >= 2000);
+  assert.equal(observation.sourceAbsent, false);
+  assert.equal(observation.destinationIdentityMatches, false);
+  assert.equal(observation.contentsMatch, false);
+}
+
 // Reuse the historical bounded runner, not its single-attempt worker/holder:
 // that holder targets a category under another fixture layout. This handshake
 // holds the runtime's fixed descendant until real Node rename has rejected.
 async function heldSourceControl(f, state, mode, { runProcess = runBoundedProcess, dependencies = {} } = {}) {
+  const before = mode === "persistent" ? await sharingSnapshot(f) : undefined;
   let ready = false, blocked = 0, movePending, holderPending, blockedSignal;
   const firstBlocked = new Promise(resolve => { blockedSignal = resolve; });
   const move = dependencies.rename ?? rename;
@@ -627,18 +666,9 @@ async function heldSourceControl(f, state, mode, { runProcess = runBoundedProces
     for (const key of ["sourceAbsent", "destinationIdentityMatches", "contentsMatch", "verificationComplete"]) assert.equal(outcome.result[key], true);
     assert.ok(outcome.result.elapsedMs < 2000);
   } else {
-    assert.ok(["attempts_exhausted", "deadline_exhausted"].includes(outcome.error?.code));
-    const observation = outcome.error.fixtureMove;
-    assert.equal(observation.firstErrorCode, "EPERM");
-    assert.equal(observation.attempts, blocked);
-    assert.ok(observation.attempts >= 1 && observation.attempts <= 20);
-    if (outcome.error.code === "attempts_exhausted") assert.equal(observation.attempts, 20);
-    else assert.ok(observation.elapsedMs >= 2000);
-    assert.equal(observation.sourceAbsent, false);
-    assert.equal(observation.destinationIdentityMatches, false);
-    assert.equal(observation.contentsMatch, false);
-    assert.equal(observation.verificationComplete, true);
-    await unchanged(f);
+    assert.equal(outcome.result, undefined, "exhaustion cannot pass a move");
+    assertPersistentObservation(outcome.error, blocked);
+    assert.deepEqual(await sharingSnapshot(f), before, "holder exit must retain identity and the complete fixture tree");
   }
   return { helper, outcome, blocked };
 }
@@ -646,6 +676,104 @@ async function heldSourceControl(f, state, mode, { runProcess = runBoundedProces
 const completedHolderProcess = (extra = {}) => ({ status: "completed", termination: "confirmed", exitCode: 0,
   stdout: JSON.stringify(holderCompleted), ...extra });
 const blockedRename = () => Object.assign(osError(), { syscall: "rename" });
+
+const deadlineBoundaries = [
+  { boundary: "before next loop", expiryRead: 6, verificationComplete: true },
+  { boundary: "after validation before next rename", expiryRead: 7, verificationComplete: false },
+  { boundary: "after completed effect verification", expiryRead: 4, verificationComplete: true },
+];
+
+for (const { boundary, expiryRead, verificationComplete } of deadlineBoundaries) test(`persistent deadline ${boundary} remains a failed settled move`, async (t) => {
+  const { f, state } = await sharingFixture(t), times = clock();
+  await symlink(join(f.ownedFixture, "unrelated"), join(f.source, "external-link"), process.platform === "win32" ? "junction" : "dir");
+  let ticks = 0, calls = 0;
+  const control = await heldSourceControl(f, state, "persistent", {
+    dependencies: { platform: "win32", sleep: times.sleep,
+      // Clock reads select the real helper's deadline boundaries, without a
+      // copied helper or filesystem sleeps. Each follows one blocked rename.
+      now: () => ++ticks >= expiryRead ? 2000 : times.now(),
+      rename: async () => { calls++; throw blockedRename(); },
+    },
+    runProcess: async (_program, _args, options) => {
+      await options.onReady();
+      assert.equal(calls, 1); assert.equal(state.movePending, false);
+      return completedHolderProcess();
+    },
+  });
+  assert.equal(state.processesStopped, true); assert.equal(state.movePending, false);
+  assert.equal(control.blocked, 1); assert.equal(calls, 1);
+  assert.equal(control.outcome.result, undefined);
+  assert.equal(control.outcome.error.code, "deadline_exhausted");
+  assert.deepEqual(control.outcome.error.fixtureMove, { attempts: 1, elapsedMs: 2000, firstErrorCode: "EPERM",
+    sourceAbsent: false, destinationIdentityMatches: false, contentsMatch: false, verificationComplete });
+  assert.deepEqual(times.waits, expiryRead === 4 ? [] : [100]);
+  await assert.rejects(control.helper("disconnect"), { code: "invalid_state" });
+  assert.equal(calls, 1);
+});
+
+test("persistent observations reject malformed or uncertain exhaustion evidence", async (t) => {
+  const { f, state } = await sharingFixture(t);
+  const control = await heldSourceControl(f, state, "persistent", {
+    dependencies: { ...clock(), platform: "win32", rename: async () => { throw blockedRename(); } },
+    runProcess: async (_program, _args, options) => { await options.onReady(); return completedHolderProcess(); },
+  });
+  const original = control.outcome.error;
+  assert.equal(control.blocked, 20);
+  assert.deepEqual(original.fixtureMove, { attempts: 20, elapsedMs: 1900, firstErrorCode: "EPERM",
+    sourceAbsent: false, destinationIdentityMatches: false, contentsMatch: false, verificationComplete: true });
+  for (const extra of [{ attempts: 19 }, { attempts: NaN }, { attempts: 20.5 }, { attempts: 21 },
+    { elapsedMs: NaN }, { elapsedMs: Infinity }, { elapsedMs: -1 }, { elapsedMs: Number.MAX_VALUE },
+    { elapsedMs: 2000 }, { firstErrorCode: "unknown" }, { sourceAbsent: true }, { sourceAbsent: undefined },
+    { destinationIdentityMatches: true }, { contentsMatch: true }, { verificationComplete: false },
+    { verificationComplete: undefined }, { verificationComplete: 1 }, { verificationComplete: "false" }]) {
+    assert.throws(() => assertPersistentObservation({ code: original.code, fixtureMove: { ...original.fixtureMove, ...extra } }, 20));
+  }
+  const deadline = { code: "deadline_exhausted", fixtureMove: { ...original.fixtureMove, elapsedMs: 2000, verificationComplete: false } };
+  assert.doesNotThrow(() => assertPersistentObservation(deadline, 20));
+  for (const extra of [{ elapsedMs: 1999 }, { elapsedMs: Infinity }, { elapsedMs: NaN },
+    { verificationComplete: undefined }, { verificationComplete: null }, { verificationComplete: "false" },
+    { sourceAbsent: true }, { destinationIdentityMatches: true }, { contentsMatch: true }]) {
+    assert.throws(() => assertPersistentObservation({ ...deadline, fixtureMove: { ...deadline.fixtureMove, ...extra } }, 20));
+  }
+  for (const code of ["validation_failed", "changed_identity", "unexpected_effects", undefined]) {
+    assert.throws(() => assertPersistentObservation({ ...deadline, code }, 20));
+  }
+});
+
+for (const fault of ["identity", "placement", "bytes", "added-entry", "removed-entry", "link-text", "unrelated"]) {
+  test(`persistent post-holder snapshot rejects changed ${fault} despite incomplete effect verification`, async (t) => {
+    const { f, state } = await sharingFixture(t), times = clock();
+    const link = join(f.source, "external-link");
+    const linkType = process.platform === "win32" ? "junction" : "dir";
+    await symlink(join(f.ownedFixture, "unrelated"), link, linkType);
+    let ticks = 0, calls = 0;
+    await assert.rejects(heldSourceControl(f, state, "persistent", {
+      dependencies: { platform: "win32", sleep: times.sleep, now: () => ++ticks >= 7 ? 2000 : times.now(),
+        rename: async () => { calls++; throw blockedRename(); } },
+      runProcess: async (_program, _args, options) => {
+        await options.onReady(); assert.equal(state.movePending, false); assert.equal(calls, 1);
+        // Mutate only after the real helper has settled, beyond all of its
+        // observation checks. The independent post-holder capture must reject.
+        if (fault === "identity") {
+          const retained = f.ownedFixture + "-retained";
+          t.after(() => rm(retained, { recursive: true, force: true }));
+          await rename(f.source, retained);
+          await cp(retained, f.source, { recursive: true, filter: path => path !== join(retained, "external-link") });
+          await symlink(join(f.ownedFixture, "unrelated"), link, linkType);
+          assert.deepEqual(await sharingTree(f.source), await sharingTree(retained));
+        } else if (fault === "placement") await rename(f.source, f.disconnected);
+        else if (fault === "bytes") await writeFile(join(f.source, "nested", "binary"), Buffer.from([0, 255, 1, 0, 129]));
+        else if (fault === "added-entry") await mkdir(join(f.source, "unexpected-empty"));
+        else if (fault === "removed-entry") await unlink(join(f.source, "nested", "binary"));
+        else if (fault === "link-text") {
+          await unlink(link); await symlink(join(f.ownedFixture, "absent-target"), link, linkType);
+        } else await writeFile(join(f.ownedFixture, "unrelated", "sentinel"), "Changed unrelated bytes");
+        return completedHolderProcess();
+      },
+    }), fault === "placement" ? { code: "ENOENT" } : { name: "AssertionError" });
+    assert.equal(state.processesStopped, true); assert.equal(state.movePending, false); assert.equal(calls, 1);
+  });
+}
 
 for (const mode of ["release", "persistent"]) test(`portable ${mode} holder orchestration exercises the real shared helper`, async (t) => {
   const { f, state } = await sharingFixture(t);
