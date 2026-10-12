@@ -8,6 +8,7 @@ import { _electron } from "playwright-core";
 import { packagedExecutablePath } from "./runtime-executable.mjs";
 import { createRuntimeStages, completeRuntimeStage } from "./runtime-evidence.mjs";
 import { cleanupOwnedFixture, closeElectron, closeRuntimeSession, ownedProcessesStopped, withDeadline } from "./runtime-lifecycle.mjs";
+import { assertRuntimeCategoryCell } from "./smoke-project-category-move-ui.mjs";
 import { measureDiscoveryLayout } from "./runtime-layout.mjs";
 import { createRuntimeSourceDisconnect, createRuntimeSourceMoveEvidence } from "./runtime-source-disconnect.mjs";
 
@@ -22,6 +23,9 @@ const executablePath = mode === "dev"
 
 if (process.argv.includes("--creation")) {
   await import("./smoke-project-creation.mjs");
+} else if (process.argv.includes("--category-move")) {
+  const { runProjectCategoryMoveUi } = await import("./smoke-project-category-move-ui.mjs");
+  await runProjectCategoryMoveUi(mode);
 } else if (process.argv.includes("--rename")) {
   const { runProjectRenameUi } = await import("./smoke-project-rename-ui.mjs");
   await runProjectRenameUi(mode);
@@ -668,8 +672,7 @@ try {
   assert.deepEqual(groupedApplied.projects.map((entry) => entry.name).sort(), [groupedProjectName, "Immediate child"].sort());
   assert.equal(groupedApplied.categories.length, 4);
   assert.ok(groupedApplied.projects.every((entry) => groupedApplied.categories.some((category) => category.categoryId === entry.categoryId)));
-  await page.getByRole("cell", { name: categoryName, exact: true }).waitFor();
-  assert.equal(await page.getByRole("cell", { name: categoryName, exact: true }).getByRole("button").count(), 0);
+  await assertRuntimeCategoryCell(page, groupedProjectName, categoryName);
   const categoryPropertyId = groupedApplied.categoryProperty.propertyId;
   const groupedTextName = "Grouped Notes";
   await page.getByRole("button", { name: propertyLabels.en.create, exact: true }).press("Enter");
@@ -788,6 +791,7 @@ try {
   assert.ok(modeBefore.projects.every((row) => modeDirect.retainedProjects.some((retained) => retained.projectId === row.projectId && retained.retentionReason === "mode_change")));
   await page.locator(".table-view[aria-busy=false]").waitFor();
   assert.equal(await page.locator(".category-property-header").count(), 0);
+  assert.equal(await page.locator(".project-table").getByRole("button", { name: /^Переместить проект в категорию:/ }).count(), 0, "Direct and retained rows cannot move categories");
   assert.deepEqual(await properties(page, grouped.workspaceId), savedGroupedProperties);
   assert.ok(modeDirect.projects.every((row) => !savedGroupedProperties.values.some((value) => value.projectId === row.projectId)), "Fresh direct role identities must not inherit child Text");
   for (const row of modeBefore.projects) await page.getByRole("button", { name: accessibleName(`${propertyLabels.ru.edit}: ${row.name} / ${groupedTextName}`), exact: true }).waitFor();
@@ -908,7 +912,7 @@ try {
     projects: categoryBefore.projects.map((entry) => entry.categoryId === groupedKnown.categoryId
       ? { ...entry, relativePath: `${renamedCategory}/${entry.name}`, categoryName: renamedCategory } : entry) });
   categoryName = renamedCategory;
-  await page.getByRole("cell", { name: categoryName, exact: true }).waitFor();
+  await assertRuntimeCategoryCell(page, groupedProjectName, categoryName);
   assert.deepEqual(await folderBytes(groupedRoot), categoryInventory);
   const neededCategory = "Automatically needed category";
   const unrelatedCategory = "Unrelated new category";
@@ -933,7 +937,7 @@ try {
   assert.deepEqual(savedGroupedProjects.categoryProperty, placementBefore.categoryProperty);
   assert.equal(savedGroupedProjects.categoryPropertyRevision, placementBefore.categoryPropertyRevision);
   assert.deepEqual(await properties(page, grouped.workspaceId), savedGroupedProperties);
-  await page.getByRole("cell", { name: neededCategory, exact: true }).waitFor();
+  await assertRuntimeCategoryCell(page, groupedProjectName, neededCategory);
   await page.getByRole("cell", { name: groupedProjectName, exact: true }).waitFor();
   for (const language of ["en", "ru"]) {
     await page.locator("#interface-language").selectOption(language);
@@ -1298,8 +1302,11 @@ try {
 }
 
 // A separate owned fixture follows successful baseline acceptance and cleanup.
-// Failure throws before this stage; regular dev/release routes require both.
+// Failure throws before this stage; regular dev/release require baseline,
+// rename and category acceptance, each with independently owned cleanup.
 const { runProjectRenameUi } = await import("./smoke-project-rename-ui.mjs");
 await runProjectRenameUi(mode);
+const { runProjectCategoryMoveUi } = await import("./smoke-project-category-move-ui.mjs");
+await runProjectCategoryMoveUi(mode);
 
 }
