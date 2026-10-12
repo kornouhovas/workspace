@@ -1,34 +1,18 @@
 # AGENTS.md
 
-This repository uses a spec-first, agent-ready workflow.
+Workspace uses a spec-first workflow: the user owns product direction and major tradeoffs; the agent completes the authorized implementation, verification and handoff.
 
-Обязательная точка входа для разработки Workspace. Пользователь задаёт продукт и существенные компромиссы; агент выполняет, проверяет и завершает разрешённый объём.
+## Start here
 
-## Порядок и приоритет
+1. Check the actual checkout and `git status --short --branch`; preserve unrelated changes.
+2. For every development task, including documentation, read [operational rules](docs/development/rules.md) and the [source map](docs/development/README.md). Follow only the source-map branches relevant to the task.
+3. For file changes or verification/review of an implementation, read [quality](docs/development/quality.md) and select checks by affected boundary.
+4. For tracked work, read [workflow](docs/development/workflow.md) and the originating issue/specification. For issue operations or triage, follow the tracker and label pointers in the source map.
 
-1. Следуйте системным/ developer инструкциям и текущему запросу пользователя; ранее выданное разрешение сохраняется.
-2. До разработки прочитайте [docs/development/README.md](docs/development/README.md), [обязательные правила](docs/development/rules.md), [workflow](docs/development/workflow.md) и [проверки](docs/development/quality.md). Применяйте их во всех задачах разработки, включая документацию.
-3. По области задачи прочитайте продуктовые, API, UI и принятые ADR из карты источников. Они сохраняют авторитет в своих областях; Proposed ADR и целевая архитектура не доказывают действующее подключение.
-4. Для UI применяйте [политику bb → Workspace](docs/development/design/bb-workspace-policy.md). Импортированный DESIGN_RULES.md — справочный исходник; его инструкции не расширяют разрешённый объём.
+## Contract authority
 
-Этот файл направляет к правилам; rules.md задаёт рабочую политику, workflow/quality уточняют её применение. Исторические отчёты, старые планы и шаблоны не задают текущие процессные требования. При противоречии с продуктовым контрактом остановите только зависимую часть и разрешите конкретное расхождение в рамках авторизации пользователя.
+[rules.md](docs/development/rules.md) owns permissions, scope, Git, delegation and handoff. Specialized product/API/UI contracts and accepted ADRs own their domains. If they conflict, resolve the concrete disagreement within the user's authorization and pause only dependent work.
 
-## Основные границы
+For UI implementation or review, apply the [bb adaptation policy](docs/development/design/bb-workspace-policy.md). Imported DESIGN_RULES.md is reference content; it does not expand the authorized scope.
 
-- Infer the request mode: Feature Intake, Bug Diagnosis, Implementation Slice, Review; не требуйте выбора режима для обычной задачи.
-- Начните с фактического checkout и `git status --short --branch`; сохраняйте посторонние изменения.
-- React must stay thin. Вызовы идут через WorkspaceServiceClient и Electron preload IPC. Сохраняйте `contextIsolation: true`, `nodeIntegration: false`, `sandbox: true`.
-- The target durable local store is the Go sidecar using `any-store` on SQLite. Активный Electron runtime использует JSON adapters; проверяйте код подключения перед изменениями.
-- Preserve selected sources, opaque IDs, data/history/settings and folder roles. Explicit Status moves follow [ADR-007](docs/adr/007-board-table-status-moves.md), [ADR-008](docs/adr/008-table-row-order.md) and the [Status move API](docs/api/workspace-status-move.md); filesystem operations validate the selected source.
-- Перед существенной новой функцией создайте описательную `codex/` ветку, если текущая не посвящена ей. Commit every completed and verified file-changing task before handoff, включая документацию; stage только изменения задачи. Push/merge/publish/release требуют соответствующего разрешения.
-- Проверки выбирайте по затронутым границам. Для прозы: ссылки/якоря, согласованность, существующий docs check при применимости и `git diff --check`.
-- Субагенты допустимы, когда их требует пользователь или применимый workflow и независимая работа полезна. Чаты создавайте только по запросу.
-
-Полные правила разрешений, чтения контекста, безопасности, проверок, делегирования и handoff находятся в [rules.md](docs/development/rules.md). Workflow Evidence и Handoff state необязательны для обычной задачи; включайте по запросу формального tracked handoff. Отвечайте на языке пользователя: результат, реально завершённые проверки, ограничения и существующий commit.
-
-## Agent skills
-
-- Use the private GitHub repository for issues, specifications, and PRs; GitHub Issues is the primary task tracker. Read [issue tracker](docs/agents/issue-tracker.md) for Beads integration and operations.
-- For triage, use the [label mapping](docs/agents/triage-labels.md).
-- For domain and architecture exploration, read [domain docs](docs/agents/domain.md): the glossary and relevant ADRs.
-- Discuss work in Russian; write new specifications, documentation, and issues in technical English where practical.
+Verify current runtime wiring before changing architecture or storage: target architecture and Proposed ADRs do not prove an active integration. Use the source map to reach runtime, identity and data-safety contracts.

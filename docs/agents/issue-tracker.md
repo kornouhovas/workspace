@@ -19,10 +19,6 @@ Beads stores local steps, execution dependencies, and continuation notes for a s
 
 Existing Beads records retain the previous workflow's history. Read status, ownership, criteria, and dependencies before changing them. Reconcile unfinished legacy tasks before importing them into GitHub to avoid duplicates or lost requirements. Keep the existing local Dolt database; a code branch is not an independent copy of its state.
 
-## Matt skill integration
+## Task preparation and implementation
 
-`to-spec` publishes specifications to GitHub; `to-tickets` publishes approved issues and blocking relationships; `implement` reads an issue and fulfills its acceptance criteria. Use the current [development rules](../development/rules.md) and [verification policy](../development/quality.md) for implementation and review. The bb architecture program uses `codex/bb-architecture-workflow`; independent features get their own branches.
-
-## Language
-
-Discuss work with the user in Russian. Write new specifications, documentation, issue titles/bodies, acceptance criteria, and PR descriptions in technical English where practical. Preserve canonical product and API identifiers. Translate existing material when it is changed within an authorized task; a language preference does not authorize a repository-wide rewrite.
+Publish specifications and approved issues with acceptance criteria and blocking relationships to GitHub. Implementation starts from the selected issue and fulfills its acceptance criteria under the [development rules](../development/rules.md) and [verification policy](../development/quality.md). Use skills available in the current session when they fit the task; tracker operations do not depend on a particular skill being installed.

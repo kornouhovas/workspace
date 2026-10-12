@@ -12,34 +12,39 @@ test("third party notices document any-store MIT license", async () => {
   assert.match(notices, /https:\/\/raw\.githubusercontent\.com\/anyproto\/any-store\/main\/LICENSE\.md/);
 });
 
-test("agent instructions define the spec-first Codex workflow", async () => {
-  const agents = await readFile(new URL("../AGENTS.md", import.meta.url), "utf8");
-  const removedStyleGuidePath = ["style", "guideline.md"].join("");
-  const removedStyleGuidePattern = new RegExp(removedStyleGuidePath.replace(".", "\\."));
-
-  assert.match(agents, /spec-first, agent-ready workflow/);
-  assert.match(agents, /Feature Intake/);
-  assert.match(agents, /Bug Diagnosis/);
-  assert.match(agents, /Implementation Slice/);
-  assert.match(agents, /Review/);
-  assert.match(agents, /Workflow Evidence/);
-  assert.match(agents, /Infer the request mode/);
-  assert.match(agents, /Handoff state/);
-  assert.match(agents, /Commit every completed and verified file-changing task before handoff/);
-  assert.match(agents, /target durable local store is the Go sidecar using `any-store` on SQLite/);
-  assert.match(agents, /React must stay thin/);
-  assert.match(agents, /Electron preload IPC/);
-  assert.doesNotMatch(agents, removedStyleGuidePattern);
-  await assert.rejects(access(new URL(`../${removedStyleGuidePath}`, import.meta.url)), {
-    code: "ENOENT",
-  });
-  for (const document of [
+test("agent entry point reaches development policies through existing local links", async () => {
+  const documents = new Set([
+    "AGENTS.md",
     "docs/development/README.md",
     "docs/development/rules.md",
     "docs/development/workflow.md",
     "docs/development/quality.md",
     "docs/agents/issue-tracker.md",
-  ]) {
-    await access(new URL(`../${document}`, import.meta.url));
+    "docs/agents/domain.md",
+    "docs/agents/triage-labels.md",
+  ]);
+  const root = new URL("../", import.meta.url);
+  const pending = [new URL("AGENTS.md", root)];
+  const visited = new Set();
+
+  while (pending.length > 0) {
+    const document = pending.pop();
+    if (visited.has(document.href)) continue;
+    visited.add(document.href);
+    const contents = await readFile(document, "utf8");
+    for (const match of contents.matchAll(/\[[^\]]*\]\(([^)]+)\)/g)) {
+      const target = match[1];
+      if (/^[a-z][a-z\d+.-]*:/i.test(target) || target.startsWith("#")) continue;
+      const linkedDocument = new URL(target, document);
+      linkedDocument.hash = "";
+      await access(linkedDocument);
+      if ([...documents].some((path) => new URL(path, root).href === linkedDocument.href)) {
+        pending.push(linkedDocument);
+      }
+    }
+  }
+
+  for (const document of documents) {
+    assert.ok(visited.has(new URL(document, root).href), `${document} must be reachable from AGENTS.md`);
   }
 });

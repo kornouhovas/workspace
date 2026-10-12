@@ -1,11 +1,15 @@
-# Task workflow
+# Tracked-work workflow
 
-[rules.md](rules.md) owns operational policy; [AGENTS.md](../../AGENTS.md) is the entry point. Follow the [source map](README.md) for task-specific contracts and [quality.md](quality.md) for verification. Clear requests do not require a separate intake template or approval at every step.
+Read this guide for implementation or continuation of a tracked task. [rules.md](rules.md) owns authorization, Git and handoff; [quality.md](quality.md) owns verification.
 
-For tracked work, [GitHub Issues](../agents/issue-tracker.md) owns scope, acceptance criteria and completion status. Read the originating issue and relevant versioned specification before implementation. Use the existing dedicated branch when it fits the task; preserve unrelated checkout changes.
+Before implementation, read the originating GitHub issue and relevant versioned specification. Identify the requested outcome, scope, acceptance criteria and blocking dependencies. For tracker operations and Beads continuation notes, follow [issue tracker](../agents/issue-tracker.md).
 
-Beads supports local execution steps and continuation notes linked to a GitHub issue. Inspect existing ownership and dependencies before updating a record. Closing a local step does not close its GitHub issue; Beads does not hold a second independent product backlog.
+## Task states
 
-Complete the authorized scope, inspect the combined diff and run relevant checks. Commit verified task changes before handoff and report the result, checks, limitations and existing commit. Push, merge, publish and release follow the authorization rules in [rules.md](rules.md).
+Use these states as bookkeeping within the existing authorization:
 
-Read historical backlog items, plans and reports only for a task that explicitly needs their context. Their old templates, approval stops and orchestration instructions do not define current policy. Preserve unfinished acceptance evidence when reconciling historical work.
+- Backlog / Ready: establish a sufficiently clear goal, scope and verification approach; a conversation can supply these without a new template.
+- Agent Working / Agent Review: implement the authorized scope, then review and verify the combined result.
+- Human Review: a reviewable result is ready and user acceptance is the next agreed step.
+- Done: the requested outcome and required checks are complete, including human acceptance when the agreed process requires it.
+- Blocked: a concrete required decision, access or conflict prevents progress after safe alternatives have been checked. Continue independent work when possible; unrelated dirty files or optional tools are not automatically blockers.
