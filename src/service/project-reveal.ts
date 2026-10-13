@@ -35,8 +35,9 @@ export function createProjectRevealService(db: BetterSQLite3Database<typeof sche
     verifyTrustedProjectRevealTarget(target, filesystem);
     const exclusions: unknown = JSON.parse(source.excludedRelativePaths);
     if (!validExclusions(exclusions, "grouped") || !validArchive(source.archiveRelativePath)) throw new Error("Invalid source policy");
-    const scanSource = () => (source.discoveryMode === "grouped" ? scanGroupedSource : scanDirectSource)(source.canonicalRoot,
-      source.archiveRelativePath, projectExclusions(exclusions, source.discoveryMode).effective);
+    const discoveryMode = source.discoveryMode;
+    const scanSource = () => (discoveryMode === "grouped" ? scanGroupedSource : scanDirectSource)(source.canonicalRoot,
+      source.archiveRelativePath, projectExclusions(exclusions, discoveryMode).effective);
     let scan = scanSource();
     // Finder can update directory metadata while a read-only snapshot is being
     // collected. Retry that unstable read once; never repeat native dispatch or

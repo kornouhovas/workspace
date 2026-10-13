@@ -8,7 +8,7 @@ on:
       checks:
         description: Full acceptance or a selected focused failure route
         type: choice
-        options: [full, failed, readiness, environment, packaged]
+        options: [full, failed, readiness, environment, packaged, types]
         default: full
       packaged_windows_only:
         description: With checks=packaged, run only the Windows category-move failure
@@ -37,7 +37,7 @@ concurrency:
 
 jobs:
   common:
-    if: ${{ github.event_name != 'workflow_dispatch' || (inputs.checks != 'failed' && inputs.checks != 'readiness' && inputs.checks != 'environment' && inputs.checks != 'packaged') }}
+    if: ${{ github.event_name != 'workflow_dispatch' || (inputs.checks != 'failed' && inputs.checks != 'readiness' && inputs.checks != 'environment' && inputs.checks != 'packaged' && inputs.checks != 'types') }}
     name: Common tests and static checks
     runs-on: macos-latest
     steps:
@@ -52,6 +52,32 @@ jobs:
       - run: npm run typecheck
       - run: npm run check:docs
       - run: npm run test:common
+
+  focused-typecheck:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.checks == 'types' }}
+    name: Focused macOS typecheck
+    runs-on: macos-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: Run original typecheck
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p work/ci-focused-types
+          npm run typecheck 2>&1 | tee work/ci-focused-types/typecheck.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: issue-46-focused-types-${{ github.sha }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
+          path: work/ci-focused-types/
+          if-no-files-found: error
+          retention-days: 7
 
   focused-packaged-runtime:
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.checks == 'packaged' }}

@@ -60,3 +60,12 @@ Local ownership checks passed 58 cases; routing checks passed 33. Both review ax
 
 
 The full file-serial control passed 2,709 tests with zero failures and the same 21 expected skips (2,730 total; 415.7 seconds). Both observer cases passed inside that complete inventory. The parallel failure remains retained rather than erased; isolation supports scheduling sensitivity without proving a particular host stall. No assertions or deadlines were loosened. All ownership code and tests were unchanged during this control; only the reviewed matrix-selector repair and checked report text changed after the earlier parallel run.
+
+
+## Typecheck correction after the ownership focused gate
+
+Windows focused [38439382011](https://github.com/kornouhovas/workspace/actions/runs/38439382011), attempt 1, passed on `cc96ce8eac9729cdf3d742cf10e7b421116b63b8`: 125 relevant regressions passed; downloaded JSON passed canonical acceptance with all 34 normal shutdown/backend-exit checks and independently confirmed fixture removal. The next full [38440185921](https://github.com/kornouhovas/workspace/actions/runs/38440185921) stopped at common macOS typecheck, before platform jobs: TS2345 in the scan closure because mutable `source.discoveryMode` lost its validated narrowing.
+
+Correction: earlier local typecheck claims in this report/checkpoints were wrong. The combined shell command continued after tsc exit 2, and its log was not inspected. The same command now reproduced the exact compiler diagnostic with explicit exit 2. Capturing the already validated mode in a constant before the closure fixes narrowing without a cast or behavior change; a separately inspected typecheck returns exit 0. Future verification commands retain individual statuses or fail fast.
+
+Both review axes found no findings in this scoped correction. A fresh build and all 68 Reveal tests passed; routing passed 34, lint/typecheck/docs/diff checks passed with individually inspected exit codes. The previous complete local inventory remains inherited evidence for unchanged boundaries; affected Reveal/build/type/routing checks are renewed. `checks: types` runs only the original failed macOS typecheck and retains its exact-SHA/run/attempt log with pipefail. GitHub tracks the repaired candidate, focused result and renewed full acceptance; the prior failed run remains retained.

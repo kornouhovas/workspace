@@ -42,7 +42,7 @@ test('suite CLI lists the selected real files and rejects unknown invocations', 
 test('ordinary CI runs common checks once and retains all three platform acceptance routes', () => {
   const workflow = load(readFileSync('.github/workflows/desktop-ci.yml', 'utf8'));
   const { common, verify } = workflow.jobs;
-  assert.equal(common.if, "${{ github.event_name != 'workflow_dispatch' || (inputs.checks != 'failed' && inputs.checks != 'readiness' && inputs.checks != 'environment' && inputs.checks != 'packaged') }}");
+  assert.equal(common.if, "${{ github.event_name != 'workflow_dispatch' || (inputs.checks != 'failed' && inputs.checks != 'readiness' && inputs.checks != 'environment' && inputs.checks != 'packaged' && inputs.checks != 'types') }}");
   assert.equal(common.strategy, undefined);
   assert.deepEqual(common.steps.filter(step => step.run).map(step => step.run), [
     'npm ci', 'npm run check:ci', 'npm run lint', 'npm run typecheck', 'npm run check:docs', 'npm run test:common',
@@ -83,7 +83,7 @@ test('investigation jobs run only with explicit manual diagnostic inputs', () =>
 test('manual failed-check scope runs only the Windows observer and macOS rename routes', () => {
   const workflow = load(readFileSync('.github/workflows/desktop-ci.yml', 'utf8'));
   assert.equal(workflow.on.workflow_dispatch.inputs.checks.default, 'full');
-  assert.deepEqual(workflow.on.workflow_dispatch.inputs.checks.options, ['full', 'failed', 'readiness', 'environment', 'packaged']);
+  assert.deepEqual(workflow.on.workflow_dispatch.inputs.checks.options, ['full', 'failed', 'readiness', 'environment', 'packaged', 'types']);
   const enabled = (job, event, checks) => runInNewContext(job.if.slice(3, -2), { github: { event_name: event }, inputs: { checks } });
   for (const event of ['push', 'pull_request', 'workflow_dispatch']) for (const checks of [undefined, 'full', 'failed']) {
     const focused = event === 'workflow_dispatch' && checks === 'failed';
@@ -240,4 +240,17 @@ test('packaged Windows-only selector excludes the already-passing macOS route', 
   const evaluate = packaged_windows_only => runInNewContext(expression, { inputs: { packaged_windows_only }, fromJSON: JSON.parse });
   assert.equal(JSON.stringify(evaluate(true)), '[{"os":"windows-latest","scenario":"category-move"}]');
   assert.equal(JSON.stringify(evaluate(false)), '[{"os":"macos-latest","scenario":"rename"},{"os":"windows-latest","scenario":"category-move"}]');
+});
+
+
+test('focused typecheck runs only the original failed macOS command', () => {
+  const workflow = load(readFileSync('.github/workflows/desktop-ci.yml', 'utf8'));
+  const active = Object.entries(workflow.jobs).filter(([, job]) => job.if && runInNewContext(job.if.slice(3, -2), { github: { event_name: 'workflow_dispatch' }, inputs: { checks: 'types' } })).map(([name]) => name);
+  assert.deepEqual(active, ['focused-typecheck']);
+  const job = workflow.jobs['focused-typecheck'];
+  assert.equal(job['runs-on'], 'macos-latest');
+  assert.ok(job.steps.find(step => step.name === 'Run original typecheck').run.includes('set -o pipefail'));
+  assert.ok(job.steps.find(step => step.name === 'Run original typecheck').run.includes('npm run typecheck 2>&1 | tee'));
+  const artifact = job.steps.find(step => step.uses === 'actions/upload-artifact@v4');
+  assert.equal(artifact.if, 'always()'); assert.equal(artifact.with['if-no-files-found'], 'error');
 });
