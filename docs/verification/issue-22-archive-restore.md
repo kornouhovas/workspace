@@ -23,6 +23,10 @@ The existing Node/path and native no-replace confinement limits still apply: obs
 - EN/RU DOM interaction tests cover explicit review/Apply, Escape/focus, source-unavailable/mode/collision/missing-parent decisions, interrupted recovery and unknown Apply/recovery outcomes with ID-bound status reads. All 14 archive UI tests pass; the readiness regression passed five consecutive focused runs.
 - Development Electron UI completed 12 scenario checks: archive/Text/restart/restore in both modes and languages, plus 1440/1024 layouts. Native no-replace and the production backend/preload route run against disposable folders. Ordinary quit, backend exit and fixture cleanup pass. Layout styles are renewed before final verification.
 
-## Required final gates
+## Completed local candidate and pending delivery
 
-The [two-axis review](issue-22-code-review.md) produced three P2 findings; repairs and additional UI scenarios are included in the follow-up candidate. Both development and packaged macOS archive UI runs pass 12 checks each with ordinary shutdown and cleanup; screenshots were inspected after the layout repair. Final full suite, repair follow-up review, renewed runtime evidence for the repair SHA, Windows CI and integration acceptance remain pending. GitHub checkpoints own current exact-SHA CI and delivery status; this report does not claim platform acceptance that has not run.
+Both review axes accepted the source repairs; the fixture-only follow-up retained all assertions. On `7a1088504406e188591ceb1d3087c853d60b68d6`, the renewed full suite passes **2709 tests, zero failures, 21 expected platform skips** (2730 total). The unchanged build was reused after the final test-only repair; application source remains identical to `4e9de5a`. Typecheck, lint, local documentation links and diff checks pass.
+
+Renewed development and packaged macOS runs each pass 12 checks on the recorded 7a10885 candidate, including EN/RU direct/grouped archive, archived Text editing, ordinary quit/restart and restore, narrow/wide screenshots, five ordinary application/backend shutdowns and asserted owned-fixture cleanup. Artifact resource validation passes. Local packaging is unsigned and is not a published release.
+
+Exact-SHA three-platform Actions, artifact inspection and integration acceptance remain pending in the GitHub checkpoint. This report does not claim Windows acceptance before those checks complete. Further documentation-only commits identify inherited source/test evidence separately.

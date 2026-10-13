@@ -26,4 +26,4 @@ The issue specifies the typed Workspace service with disposable real SQLite/file
 
 ## Progress
 
-Implementation and focused service/UI/restart checks are in place. Native dependencies #16 and #19 are closed. See the [verification report](../verification/issue-22-archive-restore.md) for observed evidence. Review, final full verification, platform CI and integration remain pending. GitHub checkpoints own current execution and acceptance status.
+Implementation and focused service/UI/restart checks are in place. Native dependencies #16 and #19 are closed. See the [verification report](../verification/issue-22-archive-restore.md) for observed evidence. Both review axes and final local verification are complete. Platform CI/artifact inspection and integration remain pending. GitHub checkpoints own current execution and acceptance status.
