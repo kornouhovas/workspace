@@ -8,7 +8,7 @@ on:
       checks:
         description: Full acceptance or a selected focused failure route
         type: choice
-        options: [full, failed, readiness]
+        options: [full, failed, readiness, environment]
         default: full
       diagnostics:
         description: Run isolated investigation and early-feedback jobs
@@ -33,7 +33,7 @@ concurrency:
 
 jobs:
   common:
-    if: ${{ github.event_name != 'workflow_dispatch' || (inputs.checks != 'failed' && inputs.checks != 'readiness') }}
+    if: ${{ github.event_name != 'workflow_dispatch' || (inputs.checks != 'failed' && inputs.checks != 'readiness' && inputs.checks != 'environment') }}
     name: Common tests and static checks
     runs-on: macos-latest
     steps:
@@ -48,6 +48,52 @@ jobs:
       - run: npm run typecheck
       - run: npm run check:docs
       - run: npm run test:common
+
+  focused-environment-windows:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.checks == 'environment' }}
+    name: Focused Windows environment acceptance (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, windows-2022]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+        id: environment-build
+      - name: Reveal protocol and real COM regressions
+        if: matrix.os == 'windows-latest'
+        run: node --import tsx --test tests/windows-project-reveal.test.mjs tests/windows-project-reveal-com.test.mjs
+      - name: Original Windows latest direct creation Reveal
+        if: ${{ !cancelled() && matrix.os == 'windows-latest' && steps.environment-build.outcome == 'success' }}
+        run: npm run smoke:runtime -- dev --creation --discovery-mode=direct --checkpoint=after_evidence
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-focused-environment/scenario
+      - name: Original Windows 2022 external legacy stress failure
+        if: ${{ !cancelled() && matrix.os == 'windows-2022' && steps.environment-build.outcome == 'success' }}
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p work/ci-focused-environment
+          node --import tsx --test --test-name-pattern='real external child worker overlaps one rename.*stress_legacy' tests/windows-rename-diagnostics.test.mjs 2>&1 | tee work/ci-focused-environment/original-stress.log
+      - name: Bounded idle/native/legacy/scan comparisons
+        if: ${{ !cancelled() && matrix.os == 'windows-2022' && steps.environment-build.outcome == 'success' }}
+        run: node --import tsx --input-type=module -e "const {runRenameDiagnostics}=await import('./scripts/windows-rename-diagnostics.mjs'); const result=await runRenameDiagnostics({scenarios:['stress_idle','stress_native','stress_legacy','stress_scan']}); if(result.status!=='completed') process.exitCode=1;"
+        env:
+          WORKSPACE_RENAME_EVIDENCE_DIR: work/ci-focused-environment/comparisons
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: issue-46-focused-environment-${{ matrix.os }}-${{ github.sha }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
+          path: work/ci-focused-environment/
+          if-no-files-found: error
+          retention-days: 7
 
   focused-macos-readiness:
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.checks == 'readiness' }}

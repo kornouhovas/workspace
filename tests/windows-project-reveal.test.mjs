@@ -253,7 +253,15 @@ for (const [phase, reason] of [["permit", "deadline"], ["precommand", "binding"]
     assert.deepEqual(f.calls, ["SIGKILL"]);
   });
 }
-for (const token of ["FAIL:private:deadline", "FAIL:permit:private path", "FAIL:permit:deadline:extra"]) {
+test("readiness failure retains only the last allowlisted binding stage without dispatch", async () => {
+  const f = fixture(), pending = f.start(); f.output("OPEN\n");
+  f.output("FAIL:readiness:deadline:parent_absent\n");
+  await assert.rejects(pending, problem("native_error"));
+  assert.deepEqual(f.events.filter(event => event.stage === "failure"), [{ stage: "failure", path: target,
+    phase: "readiness", reason: "deadline", bindingStage: "parent_absent" }]);
+  assert.equal(f.events.some(event => event.stage === "select" || event.stage === "done"), false);
+});
+for (const token of ["FAIL:private:deadline", "FAIL:permit:private path", "FAIL:permit:deadline:extra", "FAIL:readiness:deadline:private path"]) {
   test(`unknown failure token stays private: ${token}`, async () => {
     const f = fixture(); const pending = f.start(); f.output(`${token}\n`);
     await assert.rejects(pending, problem("native_error"));

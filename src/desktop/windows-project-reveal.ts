@@ -39,7 +39,7 @@ export function resolveWindowsPowerShell(options: ResolverOptions = {}): string 
   } catch { return undefined; }
 }
 
-type NativeEvent = { stage: "started" | "open" | "select" | "done" | "stopped" | "unknown" | "failure"; path: string; phase?: string; reason?: string };
+type NativeEvent = { stage: "started" | "open" | "select" | "done" | "stopped" | "unknown" | "failure"; path: string; phase?: string; reason?: string; bindingStage?: string };
 type BridgeOptions = {
   nativeDirectory: string;
   // Resolved once by trusted main; never accepted over renderer IPC or env.
@@ -82,7 +82,7 @@ export async function runWindowsProjectReveal(path: string, context: NativeRevea
     let buffer = "", bytes = 0, closed = false, settled = false;
     let failure: RevealFailure | undefined;
     let killTimer: ReturnType<typeof setTimeout> | undefined;
-    const emit = (stage: NativeEvent["stage"], details: Pick<NativeEvent, "phase" | "reason"> = {}) => {
+    const emit = (stage: NativeEvent["stage"], details: Pick<NativeEvent, "phase" | "reason" | "bindingStage"> = {}) => {
       const event = { stage, path, ...details };
       try {
         if (options.onEvent) options.onEvent(event);
@@ -151,7 +151,9 @@ export async function runWindowsProjectReveal(path: string, context: NativeRevea
       else if (value === "DONE" && state === "selected") { state = "done"; }
       else {
         const diagnostic = /^FAIL:(input|navigation|readiness|permit|precommand|selection|postcheck):(input|deadline|binding|unready|permit|exception)$/.exec(value);
-        if (diagnostic) emit("failure", { phase: diagnostic[1], reason: diagnostic[2] });
+        const binding = /^FAIL:readiness:(input|deadline|binding|unready|permit|exception):(parent_absent|target_absent|unready|ready|ambiguous_parent|property_unavailable|wrong_window|view_changed|unknown)$/.exec(value);
+        if (binding) emit("failure", { phase: "readiness", reason: binding[1], bindingStage: binding[2] });
+        else if (diagnostic) emit("failure", { phase: diagnostic[1], reason: diagnostic[2] });
         fail("native_error");
       }
     };

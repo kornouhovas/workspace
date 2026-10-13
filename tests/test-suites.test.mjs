@@ -42,7 +42,7 @@ test('suite CLI lists the selected real files and rejects unknown invocations', 
 test('ordinary CI runs common checks once and retains all three platform acceptance routes', () => {
   const workflow = load(readFileSync('.github/workflows/desktop-ci.yml', 'utf8'));
   const { common, verify } = workflow.jobs;
-  assert.equal(common.if, "${{ github.event_name != 'workflow_dispatch' || (inputs.checks != 'failed' && inputs.checks != 'readiness') }}");
+  assert.equal(common.if, "${{ github.event_name != 'workflow_dispatch' || (inputs.checks != 'failed' && inputs.checks != 'readiness' && inputs.checks != 'environment') }}");
   assert.equal(common.strategy, undefined);
   assert.deepEqual(common.steps.filter(step => step.run).map(step => step.run), [
     'npm ci', 'npm run check:ci', 'npm run lint', 'npm run typecheck', 'npm run check:docs', 'npm run test:common',
@@ -83,7 +83,7 @@ test('investigation jobs run only with explicit manual diagnostic inputs', () =>
 test('manual failed-check scope runs only the Windows observer and macOS rename routes', () => {
   const workflow = load(readFileSync('.github/workflows/desktop-ci.yml', 'utf8'));
   assert.equal(workflow.on.workflow_dispatch.inputs.checks.default, 'full');
-  assert.deepEqual(workflow.on.workflow_dispatch.inputs.checks.options, ['full', 'failed', 'readiness']);
+  assert.deepEqual(workflow.on.workflow_dispatch.inputs.checks.options, ['full', 'failed', 'readiness', 'environment']);
   const enabled = (job, event, checks) => runInNewContext(job.if.slice(3, -2), { github: { event_name: event }, inputs: { checks } });
   for (const event of ['push', 'pull_request', 'workflow_dispatch']) for (const checks of [undefined, 'full', 'failed']) {
     const focused = event === 'workflow_dispatch' && checks === 'failed';
@@ -199,4 +199,21 @@ test('CI setup uses the local Node pin and compact acceptance remains an additio
   assert.equal(original.if, 'always()'); assert.ok(original.with.path.includes('work/ci-runtime-*/'));
   const scripts = JSON.parse(readFileSync('package.json')).scripts;
   assert.equal(scripts['check:ci'], 'node --test tests/test-suites.test.mjs tests/windows-product-diagnostics.test.mjs');
+});
+
+
+test('environment failure scope selects only the two affected Windows commands', () => {
+  const workflow = load(readFileSync('.github/workflows/desktop-ci.yml', 'utf8'));
+  for (const event of ['push', 'pull_request', 'workflow_dispatch']) for (const checks of ['full', 'failed', 'readiness', 'environment']) {
+    const active = Object.entries(workflow.jobs).filter(([, job]) => job.if && runInNewContext(job.if.slice(3, -2), {github:{event_name:event},inputs:{checks}})).map(([name])=>name);
+    if (event === 'workflow_dispatch' && checks === 'environment') assert.deepEqual(active,['focused-environment-windows']);
+  }
+  const job = workflow.jobs['focused-environment-windows'];
+  assert.deepEqual(job.strategy.matrix.os,['windows-latest','windows-2022']);
+  assert.equal(job.strategy['fail-fast'],false);
+  const original = job.steps.find(step=>step.name==='Original Windows 2022 external legacy stress failure');
+  assert.ok(original.run.includes('stress_legacy')); assert.ok(original.run.includes('set -o pipefail'));
+  const reveal=job.steps.find(step=>step.name==='Original Windows latest direct creation Reveal');
+  assert.equal(reveal.run,'npm run smoke:runtime -- dev --creation --discovery-mode=direct --checkpoint=after_evidence');
+  assert.ok(reveal.if.includes("steps.environment-build.outcome == 'success'"));
 });

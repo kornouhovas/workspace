@@ -28,6 +28,7 @@ function Wait-WorkspaceRevealPoll($milliseconds) { Start-Sleep -Milliseconds $mi
 
 function Invoke-WorkspaceProjectReveal($shell, $expected, $watch) {
     $phase = 'input'
+    $binding = $null
     try {
         if ($expected -isnot [string] -or -not [IO.Path]::IsPathRooted($expected) -or
             $expected.Contains([char]0) -or [IO.Path]::GetFullPath($expected) -cne $expected) { throw 'input' }
@@ -77,7 +78,11 @@ function Invoke-WorkspaceProjectReveal($shell, $expected, $watch) {
         # Finite private protocol only: never emit exception text or paths.
         $reason = 'exception'
         if ($_.Exception.Message -cin @('input','deadline','binding','unready','permit')) { $reason = $_.Exception.Message }
-        Write-WorkspaceRevealEvent ('FAIL:{0}:{1}' -f $phase,$reason)
+        if ($phase -eq 'readiness') {
+            $bindingStage = 'unknown'
+            if ($null -ne $binding -and $binding.stage -cin @('parent_absent','target_absent','unready','ready','ambiguous_parent','property_unavailable','wrong_window','view_changed')) { $bindingStage = $binding.stage }
+            Write-WorkspaceRevealEvent ('FAIL:{0}:{1}:{2}' -f $phase,$reason,$bindingStage)
+        } else { Write-WorkspaceRevealEvent ('FAIL:{0}:{1}' -f $phase,$reason) }
         return $false
     }
 }

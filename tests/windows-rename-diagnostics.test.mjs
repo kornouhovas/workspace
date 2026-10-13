@@ -584,3 +584,10 @@ test('production scan comparison retains finite scan states separately from rena
   }
   assert.equal(parseRealpathResponse(JSON.stringify({ ...stressResponse('stress_native'), scanStates: sample.scanStates }), 'stress_native'), null);
 });
+
+
+test('focused stress comparisons reject unknown or duplicated scenario selections', async () => {
+  for (const scenarios of [[], ['private'], ['stress_legacy','stress_legacy']]) {
+    await assert.rejects(runRenameDiagnostics({evidenceDirectory:'unused',scenarios}), /Invalid diagnostic configuration/);
+  }
+});

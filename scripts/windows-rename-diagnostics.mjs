@@ -356,12 +356,13 @@ export async function runRenameFixture(directory, scenario, { rename = invokeExt
 }
 
 export async function runRenameDiagnostics({ evidenceDirectory = process.env.WORKSPACE_RENAME_EVIDENCE_DIR,
-  platform = process.platform, operations = renameBounds.operationsPerScenario,
+  platform = process.platform, operations = renameBounds.operationsPerScenario, scenarios = renameScenarios,
   metadata = collectNativeSelectionMetadata, worker = (directory, scenario) => runBoundedProcess(process.execPath,
     ['--import', 'tsx', script, '--fixture'], { timeoutMs: renameBounds.workerMs, tree: true,
       env: { ...process.env, WORKSPACE_RENAME_FIXTURE: directory, WORKSPACE_RENAME_SCENARIO: scenario } }),
 } = {}) {
-  if (!evidenceDirectory || !count(operations, 2) || operations < 1) throw new Error('Invalid diagnostic configuration');
+  if (!evidenceDirectory || !count(operations, 2) || operations < 1 || !Array.isArray(scenarios) || scenarios.length === 0 ||
+    new Set(scenarios).size !== scenarios.length || scenarios.some(scenario => !renameScenarios.includes(scenario))) throw new Error('Invalid diagnostic configuration');
   const result = { version: 1, kind: 'real-service-external-category-rename', status: 'failed', metadata: await metadata(),
     limits: renameBounds, handleAttribution: 'owned-resources-only',
     renameOperation: { api: 'Node fs.promises.rename', historicalOperation: 'Node fs.promises.rename',
@@ -375,7 +376,7 @@ export async function runRenameDiagnostics({ evidenceDirectory = process.env.WOR
   if (!result.metadata.codeSha) result.failure = 'revision_unavailable';
   else if (platform !== 'win32') result.failure = 'unsupported_host';
   else {
-    for (const scenario of renameScenarios) for (let attempt = 0;
+    for (const scenario of scenarios) for (let attempt = 0;
       attempt < (Object.hasOwn(renameStressModes, scenario) ? renameBounds.stressOperationsPerScenario : operations); attempt++) {
       const directory = fs.realpathSync.native(fs.mkdtempSync(join(tmpdir(), 'workspace-rename-diagnostic-')));
       const operation = { scenario, index: attempt + 1, process: null, evidence: null, cleanup: 'unverified', cleanupCode: null };

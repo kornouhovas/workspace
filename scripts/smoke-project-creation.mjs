@@ -271,13 +271,14 @@ try {
           if (process.platform === "win32") {
             // Main-only instrumentation of actual production bridge messages.
             // No dispatch replacement, path setter or selection manipulation.
-            process.on("workspace:native-reveal", ({ stage, path, phase, reason }) => {
+            process.on("workspace:native-reveal", ({ stage, path, phase, reason, bindingStage }) => {
               const bridge = globalThis.creationNativeBridge;
               if (stage === "started") { bridge.started++; bridge.active++; }
               if (stage === "stopped") { bridge.stopped++; bridge.active--; }
               if (stage === "unknown") bridge.unknown = true;
               if (stage === "failure" && /^(input|navigation|readiness|permit|precommand|selection|postcheck)$/.test(phase) &&
-                  /^(input|deadline|binding|unready|permit|exception)$/.test(reason)) bridge.failure = { phase, reason };
+                  /^(input|deadline|binding|unready|permit|exception)$/.test(reason)) bridge.failure = { phase, reason,
+                    ...(/^(parent_absent|target_absent|unready|ready|ambiguous_parent|property_unavailable|wrong_window|view_changed|unknown)$/.test(bindingStage) ? { bindingStage } : {}) };
               if (stage === "open") globalThis.creationNativeOpens.push(path);
               if (stage === "select") globalThis.creationNativeCalls.push({ path, returned: false });
               if (stage === "done") {

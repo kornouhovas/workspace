@@ -173,14 +173,14 @@ foreach ($mode in ($env:WORKSPACE_CONTROL_MODES | ConvertFrom-Json)) {
     const selectsOnce = succeeds || mode.endsWith("_after") || ["selection_throw", "late_selection", "late_postcheck"].includes(mode);
     assert.equal(completed, succeeds); assert.equal(opens, invalidInput ? 0 : 1); assert.equal(selects, selectsOnce ? 1 : 0);
     assert.ok(permits === 0 || permits === 1); assert.equal(events.filter((event) => event === "READY").length, permits);
-    assert.equal(events[0], invalidInput ? "FAIL:input:input" : "OPEN"); assert.match(events.at(-1), succeeds ? /^DONE$/ : /^FAIL:(input|navigation|readiness|permit|precommand|selection|postcheck):(input|deadline|binding|unready|permit|exception)$/);
+    assert.equal(events[0], invalidInput ? "FAIL:input:input" : "OPEN"); assert.match(events.at(-1), succeeds ? /^DONE$/ : /^FAIL:(input|navigation|readiness|permit|precommand|selection|postcheck):(input|deadline|binding|unready|permit|exception)(:(parent_absent|target_absent|unready|ready|ambiguous_parent|property_unavailable|wrong_window|view_changed|unknown))?$/);
     assert.equal(events.filter((event) => event === "SELECT").length, selectsOnce || mode === "late_event" ? 1 : 0);
     assert.equal(events.filter((event) => event.startsWith("FAIL:")).length, succeeds ? 0 : 1);
     if (succeeds) assert.ok(elapsed < 10000);
     if (mode === "delayed_ready") assert.equal(elapsed, 200);
     const expectedFailure = { late_permit: "FAIL:permit:deadline", late_precommand: "FAIL:precommand:deadline",
       late_postcheck: "FAIL:postcheck:deadline", document_permit: "FAIL:precommand:binding",
-      selection_throw: "FAIL:selection:exception", read_throw: "FAIL:readiness:exception" }[mode];
+      selection_throw: "FAIL:selection:exception", read_throw: "FAIL:readiness:exception:unknown" }[mode];
     if (expectedFailure) assert.equal(events.at(-1), expectedFailure);
     assert.doesNotMatch(JSON.stringify(report), /private|ordinary source|日本語/);
   });
