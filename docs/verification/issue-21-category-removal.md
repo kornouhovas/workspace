@@ -28,7 +28,19 @@ The production graphical route extends the existing category-options acceptance 
 
 ## Platform/integration acceptance
 
-The unchanged ordinary CI matrix runs the new service/crash/UI cases, migration/build/package fixtures and expanded graphical driver on macOS, Windows latest and Windows 2022. No diagnostic route substitutes for full acceptance. Exact-SHA Actions, artifact inspection and delivery into `new-workspace` remain pending at this local checkpoint. GitHub owns current status and the tested/delivered SHAs.
+Full acceptance [38389584529](https://github.com/kornouhovas/workspace/actions/runs/38389584529), attempt 1, passed on exact reviewed SHA `df87b607f0606e85590fe980a3ebd513e1650e9b`, after inspected focused success [38389340988](https://github.com/kornouhovas/workspace/actions/runs/38389340988) on the same SHA. No application changes were made during the readiness-test repair.
+
+| Full CI boundary | Actual test result |
+| --- | --- |
+| Common tests and static checks | 484 passed, zero failures/skips; lint, typecheck and links passed |
+| macOS platform tests | 2,175 passed, zero failures, 21 expected platform/filesystem skips |
+| Windows latest platform tests | 2,272 passed, zero failures, seven expected skips |
+| Windows 2022 platform tests | 2,272 passed, zero failures, seven expected skips |
+| All three platforms | Development and packaged runtime, creation/recovery/native routes, category layouts/options, build, package and artifact checks passed |
+
+All six category-options JSON reports (three OS × development/package) were downloaded and inspected: exact tested SHA, 16 passing checks each (96 total), two ordinary shutdowns with backend exit per report, and asserted owned-fixture cleanup. Their inherited rename/create checks and added removal collision/cancel/Apply, empty-category, persistence and sibling-preservation checks remain enforced. EN/RU removal screenshots at 1440×960 and 1024×720 are retained; representative Windows RU narrow packaged, Windows 2022 EN wide development, macOS RU wide development and macOS EN narrow packaged screens were visually inspected. Local retained CI evidence is under `work/issue-21-final-ci-category-only/`; the Actions run retains the original complete artifacts.
+
+The handoff report is a later documentation-only commit. Its required links/diff checks are separate from platform-tested `df87b607`; application, migrations, tests, scripts, dependencies and CI workflow must remain byte-identical at delivery. GitHub records the delivered SHA and actual integrated checks after fast-forwarding into `new-workspace`.
 
 ## Retained first CI failure and repair
 
@@ -36,7 +48,7 @@ Full run [38386963810](https://github.com/kornouhovas/workspace/actions/runs/383
 
 A 30ms no-delivery reproduction fails the same assertion. Existing real-renderer/controlled-host-clock tests separately confirm timely finite evidence and late unknown evidence. The repaired never-focused control uses actual unfocused Electron snapshots and explicitly schedules both delivery outcomes against the unchanged default 15,000ms host deadline. It requires no early result, one record, timer disposal, rejection of late replacement and preservation of the primary timeout over recording errors. Production behavior, deadlines and readiness operands remain unchanged. The complete original readiness file passed locally: 27 checks, zero failures/skips. CI-route regression checks passed all nine cases. Renewed full `npm run test:all` on the repaired test/workflow candidate passed 2,659 tests, zero failures and the same 21 platform/filesystem skips; it reused the unchanged verified application build. Both Standards and Spec repair reviews found no remaining findings.
 
-The added `checks: readiness` route runs only that macOS file and retains its original command log with SHA/run/attempt provenance. Focused acceptance, renewed full acceptance and integration remain pending; current run IDs and repair SHA belong to the GitHub checkpoint.
+The added `checks: readiness` route runs only that macOS file and retains its original command log with SHA/run/attempt provenance. The focused and renewed full acceptance gates subsequently passed as recorded above. Integration and delivered SHA belong to the GitHub checkpoint.
 
 ## Retained limits
 
