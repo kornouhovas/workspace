@@ -19,6 +19,7 @@ interface Props {
   sourceId: string;
   projects: ProjectSummary[];
   retainedProjects?: ProjectAssociationSummary[];
+  hideReveal?: boolean;
   locateDisabled?: boolean;
   renameDisabled?: boolean;
   categoryMoveDisabled?: boolean;
@@ -39,7 +40,7 @@ interface Props {
 export function TextPropertiesTable(props: Props) {
   return <TextPropertiesContent key={`${props.workspaceId}:${props.sourceId}`} {...props} />;
 }
-function TextPropertiesContent({ client, workspaceId, sourceId, projects, retainedProjects = [], onLocate, locateDisabled, onRename, renameDisabled, onMoveCategory, categoryMoveDisabled, categoryProperty, categories = [], categoryPropertyRevision = 0, discoveryRevision = 0, minimumDiscoveryRevision, sourceLifetime, minimumCategoryPropertyRevision, onCategoryPropertyCommitted, language, disabled }: Props) {
+function TextPropertiesContent({ hideReveal, client, workspaceId, sourceId, projects, retainedProjects = [], onLocate, locateDisabled, onRename, renameDisabled, onMoveCategory, categoryMoveDisabled, categoryProperty, categories = [], categoryPropertyRevision = 0, discoveryRevision = 0, minimumDiscoveryRevision, sourceLifetime, minimumCategoryPropertyRevision, onCategoryPropertyCommitted, language, disabled }: Props) {
   const categoryDrafts = useRef(new Map<string, CategoryLabelDraft>());
   const t = (key: TranslationKey) => translate(language, key);
   const [snapshot, setSnapshot] = useState<TextPropertySnapshot | null>(null);
@@ -167,7 +168,7 @@ function TextPropertiesContent({ client, workspaceId, sourceId, projects, retain
             className="workspace-button workspace-button--secondary property-rename" aria-label={`${t("renameProperty")}: ${property.name}`}
             disabled={disabled || draft !== null} onClick={() => { setMessage(null); setDraft({ propertyId: property.propertyId, name: property.name, originalName: property.name }); }}>{t("renameProperty")}</button>
         </th>)}
-        <th scope="col">{t("revealProject")}</th>
+        {!hideReveal && <th scope="col">{t("revealProject")}</th>}
       </tr></thead><tbody>{[...projects, ...retainedProjects].map((project) => {
         const retained = retainedProjects.find((row) => row.projectId === project.projectId);
         const reason = retained?.associationState === "excluded" && retained.retentionReason !== "mode_change" ? "excluded" : retained?.resolution ?? retained?.associationState;
@@ -196,9 +197,9 @@ function TextPropertiesContent({ client, workspaceId, sourceId, projects, retain
             value={snapshot.values.find((entry) => entry.projectId === project.projectId && entry.propertyId === property.propertyId)?.value ?? null}
             onSave={(value) => saveValue(project.projectId, property.propertyId, value)} />
         </td>)}
-        <td key="project-actions"><ProjectRevealButton client={client} workspaceId={workspaceId} projectId={project.projectId} name={project.name} language={language} disabled={disabled} minimumRevision={minimumDiscoveryRevision} sourceLifetime={sourceLifetime}
+        {!hideReveal && <td key="project-actions"><ProjectRevealButton client={client} workspaceId={workspaceId} projectId={project.projectId} name={project.name} language={language} disabled={disabled} minimumRevision={minimumDiscoveryRevision} sourceLifetime={sourceLifetime}
           targetKey={JSON.stringify([project.relativePath, project.categoryId, categories.find((category) => category.categoryId === project.categoryId)?.relativePath,
-            retained?.associationState, retained?.resolution, retained?.retentionReason])} /></td>
+            retained?.associationState, retained?.resolution, retained?.retentionReason])} /></td>}
       </tr>; })}</tbody></table>
     </div>
   </div>;

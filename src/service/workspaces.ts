@@ -1,3 +1,7 @@
+import { createProjectArchiveMutations } from "./project-archive-mutations.js";
+import type { ProjectArchivePreview, ProjectArchiveResult, ProjectArchiveOperationList, ProjectArchiveRecoveryPreview } from "../contracts/project-archive.js";
+import { createProjectArchiveService } from "./project-archive.js";
+import type { ArchiveSnapshot, ArchiveLocationPreview } from "../contracts/project-archive.js";
 import { createCategoryRemovalService } from "./category-removal.js";
 import type { CategoryRemovalPreview, CategoryRemovalLookup, CategoryRemovalResult, CategoryRemovalList, CategoryRemovalRecoveryPreview } from "../contracts/category-removal.js";
 import { createCategoryOptionsService } from "./category-options.js";
@@ -53,6 +57,15 @@ const nativeFilesystem: WorkspaceFilesystem = {
 };
 
 export interface WorkspaceService {
+  previewProjectArchive(input: unknown): ServiceResult<ProjectArchivePreview>;
+  applyProjectArchive(input: unknown): ServiceResult<ProjectArchiveResult>;
+  listProjectArchiveOperations(input: unknown): ServiceResult<ProjectArchiveOperationList>;
+  getProjectArchiveOperation(input: unknown): ServiceResult<ProjectArchiveResult>;
+  previewProjectArchiveRecovery(input: unknown): ServiceResult<ProjectArchiveRecoveryPreview>;
+  recoverProjectArchive(input: unknown): ServiceResult<ProjectArchiveResult>;
+  previewArchiveLocation(input: unknown): ServiceResult<ArchiveLocationPreview>;
+  applyArchiveLocation(input: unknown): ServiceResult<ArchiveSnapshot>;
+  listArchivedProjects(input: unknown): ServiceResult<ArchiveSnapshot>;
   previewCategoryRemovalRecovery(input: unknown): ServiceResult<CategoryRemovalRecoveryPreview>;
   getCategoryRemoval(input: unknown): ServiceResult<CategoryRemovalLookup>;
   listCategoryRemovals(input: unknown): ServiceResult<CategoryRemovalList>;
@@ -150,6 +163,8 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
     },
   });
   function invalidateSourceReviews(sourceId: string) {
+    archiveMutations.invalidateSource(sourceId);
+    archive.invalidateSource(sourceId);
     recovery.invalidateSource(sourceId);
     creation.invalidateSource(sourceId);
     rename.invalidateSource(sourceId);
@@ -158,6 +173,20 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
     categoryRemoval.invalidateSource(sourceId);
     for (const [id, saved] of previewTokens) if (saved.preview.sourceId === sourceId) previewTokens.delete(id);
   }
+  const archiveMutations = createProjectArchiveMutations(db, {
+    invalidateSourceReviews,
+    committed(sourceId, revision, workspaceIds) {
+      publish([{ type: "workspace.projectsChanged", sourceId, revision, workspaceIds }]);
+      observer.request(sourceId);
+    },
+  }, projectFilesystem, projectRenameNative);
+  const archive = createProjectArchiveService(db, {
+    invalidateSourceReviews,
+    committed(sourceId, revision, workspaceIds) {
+      publish([{ type: "workspace.projectsChanged", sourceId, revision, workspaceIds }]);
+      observer.request(sourceId);
+    },
+  }, projectFilesystem);
   const creation = createProjectCreationService(db, {
     invalidateSourceReviews,
     committed(sourceId, revision, workspaceIds) {
@@ -195,6 +224,15 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
   }, projectFilesystem);
   const reveal = createProjectRevealService(db, projectFilesystem);
   const service: WorkspaceService = {
+    previewProjectArchive: archiveMutations.previewProjectArchive,
+    applyProjectArchive: archiveMutations.applyProjectArchive,
+    listProjectArchiveOperations: archiveMutations.listProjectArchiveOperations,
+    getProjectArchiveOperation: archiveMutations.getProjectArchiveOperation,
+    previewProjectArchiveRecovery: archiveMutations.previewProjectArchiveRecovery,
+    recoverProjectArchive: archiveMutations.recoverProjectArchive,
+    previewArchiveLocation: archive.previewArchiveLocation,
+    applyArchiveLocation: archive.applyArchiveLocation,
+    listArchivedProjects: archive.listArchivedProjects,
     previewCategoryRemovalRecovery: categoryRemoval.previewCategoryRemovalRecovery,
     getCategoryRemoval: categoryRemoval.getCategoryRemoval,
     listCategoryRemovals: categoryRemoval.listCategoryRemovals,
@@ -268,7 +306,7 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
       observer.close();
       for (const timer of subscriptionTimers) timer.cancel();
       subscriptionTimers.clear(); observationEvents.clear(); observationCache.clear(); observationVersions.clear();
-      listeners.clear(); observed.clear(); previewTokens.clear(); recovery.close(); creation.close(); rename.close(); categoryMove.close(); categoryOptions.close(); categoryRemoval.close(); reveal.close();
+      listeners.clear(); observed.clear(); previewTokens.clear(); archive.close(); archiveMutations.close(); recovery.close(); creation.close(); rename.close(); categoryMove.close(); categoryOptions.close(); categoryRemoval.close(); reveal.close();
     },
     previewDiscovery(input) {
       if (!isRecord(input) || input.type !== "workspace.previewDiscovery" || !isUuid(input.workspaceId) ||
@@ -700,7 +738,8 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
     if (!verified) invalidateSourceReviews(source.id);
     const planned = verified ? planDiscovery(currentScan, categories, projects, readReservations(source.id)) : null;
     const interpretation = planned?.projects;
-    const projection = projects.map((row) => {
+    const archivedIds = new Set(db.select().from(schema.projectArchives).where(eq(schema.projectArchives.sourceId, source.id)).all().map(a => a.projectId));
+    const projection = projects.filter(row => !archivedIds.has(row.id)).map((row) => {
       const category = categories.find((category) => category.id === row.categoryId && !category.modeInactive && category.associationState === "active");
       if (!row.modeInactive && row.associationState === "active" && (mode === "grouped" ? !category || row.relativePath.split("/").length !== 2 || row.relativePath.split("/")[0] !== category.relativePath : row.categoryId !== null)) {
         throw new Error("Invalid required category");
@@ -854,7 +893,7 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
     reorder: (input) => run(() => service.reorder(input), returnedSnapshot),
     remove: (input) => {
       const result = run(() => service.remove(input), returnedSnapshot);
-      if (result.ok && isRecord(input) && typeof input.workspaceId === "string") { previewTokens.delete(input.workspaceId); recovery.removeWorkspace(input.workspaceId); creation.removeWorkspace(input.workspaceId); rename.removeWorkspace(input.workspaceId); categoryMove.removeWorkspace(input.workspaceId); }
+      if (result.ok && isRecord(input) && typeof input.workspaceId === "string") { previewTokens.delete(input.workspaceId); archive.removeWorkspace(input.workspaceId); archiveMutations.removeWorkspace(input.workspaceId); recovery.removeWorkspace(input.workspaceId); creation.removeWorkspace(input.workspaceId); rename.removeWorkspace(input.workspaceId); categoryMove.removeWorkspace(input.workspaceId); }
       return result;
     },
     activate: (input) => run(() => service.activate(input), activationSnapshot),

@@ -22,7 +22,7 @@
     "dev": "npm run build && electron .",
     "start": "electron .",
     "test": "npm run build && npm run test:all",
-    "test:migrations": "npm run build && node --import tsx --test tests/artifact-smoke.test.mjs tests/build-smoke.test.mjs tests/settings-service.test.mjs tests/grouped-discovery-service.test.mjs tests/discovery-mode-service.test.mjs tests/external-reconciliation-service.test.mjs tests/project-category-move-journal.test.mjs tests/category-removal-service.test.mjs",
+    "test:migrations": "npm run build && node --import tsx --test tests/artifact-smoke.test.mjs tests/build-smoke.test.mjs tests/settings-service.test.mjs tests/grouped-discovery-service.test.mjs tests/discovery-mode-service.test.mjs tests/external-reconciliation-service.test.mjs tests/project-category-move-journal.test.mjs tests/category-removal-service.test.mjs tests/project-archive-service.test.mjs tests/project-archive-journal.test.mjs",
     "test:windows:early": "node --import tsx --test tests/ralphex-run.test.mjs tests/ralphex-observe.test.mjs tests/project-creation-service.test.mjs tests/project-creation-ui.test.tsx tests/project-reveal.test.mjs tests/settings-service.test.mjs tests/windows-product-diagnostics.test.mjs tests/windows-selection-diagnostics.test.mjs tests/file-manager-evidence.test.mjs tests/windows-project-reveal.test.mjs tests/windows-project-reveal-com.test.mjs tests/project-rename-native.test.mjs",
     "smoke:category-options": "node scripts/smoke-category-options.mjs",
     "smoke:runtime": "node scripts/smoke-runtime.mjs",
@@ -43,7 +43,8 @@
     "test:all": "node scripts/test-suites.mjs all",
     "test:common": "node scripts/test-suites.mjs common",
     "test:platform": "node scripts/test-suites.mjs platform",
-    "package:built": "electron-builder --dir"
+    "package:built": "electron-builder --dir",
+    "smoke:archive": "node scripts/smoke-project-archive.mjs"
   },
   "dependencies": {
     "better-sqlite3": "13.0.3",
@@ -93,7 +94,11 @@
       {
         "from": "dist/desktop/native",
         "to": "native",
-        "filter": ["windows-view.ps1", "windows-binding.ps1", "windows-project-reveal.ps1"]
+        "filter": [
+          "windows-view.ps1",
+          "windows-binding.ps1",
+          "windows-project-reveal.ps1"
+        ]
       },
       {
         "from": "src/renderer/components/bb/LICENSE",

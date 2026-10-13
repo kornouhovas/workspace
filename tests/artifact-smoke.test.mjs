@@ -29,6 +29,7 @@ const packagedFiles = [
   "dist/service/db/migrations/0010_project_category_move.sql",
     "dist/service/db/migrations/0011_category_options.sql",
     "dist/service/db/migrations/0012_category_removal.sql",
+    "dist/service/db/migrations/0013_project_archive.sql",
   "dist/service/db/migrations/meta/_journal.json",
 ];
 

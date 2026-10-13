@@ -540,12 +540,20 @@ jobs:
       - run: npm run smoke:runtime -- dev
         env:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-runtime-dev
+      - name: Development archive and restore UI, Text and restart
+        run: npm run smoke:archive -- dev
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-archive-dev
       - name: Development category options UI and persistence
         run: npm run smoke:category-options -- dev
         env:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-category-options-dev
       - run: npm run package:built
       - run: npm run check:artifact -- release
+      - name: Packaged archive and restore UI, Text and restart
+        run: npm run smoke:archive -- release
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-archive-release
       - name: Packaged category options UI and persistence
         run: npm run smoke:category-options -- release
         env:

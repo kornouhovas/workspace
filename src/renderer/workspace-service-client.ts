@@ -1,3 +1,4 @@
+import type { ArchiveQuery, ArchiveCommand, ArchiveSnapshot, ArchiveLocationPreview, ProjectArchivePreview, ProjectArchiveResult, ProjectArchiveOperationList, ProjectArchiveRecoveryPreview } from "../contracts/project-archive.js";
 import type { CategoryRemovalQuery, CategoryRemovalCommand } from "../contracts/category-removal.js";
 import type { CategoryOptionsQuery, CategoryOptionsCommand } from "../contracts/category-options.js";
 import type { WorkspaceMoveProjectCategoryCommand, ProjectCategoryMoveResult, ProjectCategoryMoveList, ProjectCategoryMoveRecoveryPreview, ProjectCategoryMoveRecoveryAction } from "../contracts/project-category-move.js";
@@ -15,6 +16,16 @@ import { isWorkspaceChangeEvent } from "../contracts/service-protocol.js";
 
 export class WorkspaceServiceClient {
   constructor(private readonly api: WorkspaceDesktopApi = window.workspace) {}
+
+  listArchivedProjects(workspaceId: string): Promise<ServiceResult<ArchiveSnapshot>> { return this.api.workspace({ type: "workspace.listArchivedProjects", workspaceId }); }
+  previewArchiveLocation(workspaceId: string, relativePath: string): Promise<ServiceResult<ArchiveLocationPreview>> { return this.api.workspace({ type: "workspace.previewArchiveLocation", workspaceId, relativePath }); }
+  applyArchiveLocation(workspaceId: string, operationId: string, previewToken: string): Promise<ServiceResult<ArchiveSnapshot>> { return this.api.workspace({ type: "workspace.applyArchiveLocation", workspaceId, operationId, previewToken }); }
+  previewProjectArchive(input: Omit<Extract<ArchiveQuery, { type: "workspace.previewProjectArchive" }>, "type">): Promise<ServiceResult<ProjectArchivePreview>> { return this.api.workspace({ ...input, type: "workspace.previewProjectArchive" }); }
+  applyProjectArchive(input: Omit<Extract<ArchiveCommand, { type: "workspace.applyProjectArchive" }>, "type">): Promise<ServiceResult<ProjectArchiveResult>> { return this.api.workspace({ ...input, type: "workspace.applyProjectArchive" }); }
+  getProjectArchiveOperation(workspaceId: string, operationId: string): Promise<ServiceResult<ProjectArchiveResult>> { return this.api.workspace({ type: "workspace.getProjectArchiveOperation", workspaceId, operationId }); }
+  listProjectArchiveOperations(workspaceId: string): Promise<ServiceResult<ProjectArchiveOperationList>> { return this.api.workspace({ type: "workspace.listProjectArchiveOperations", workspaceId }); }
+  previewProjectArchiveRecovery(workspaceId: string, operationId: string): Promise<ServiceResult<ProjectArchiveRecoveryPreview>> { return this.api.workspace({ type: "workspace.previewProjectArchiveRecovery", workspaceId, operationId }); }
+  recoverProjectArchive(workspaceId: string, operationId: string, previewToken: string, action: "retry_original" | "complete_destination" | "keep_original"): Promise<ServiceResult<ProjectArchiveResult>> { return this.api.workspace({ type: "workspace.recoverProjectArchive", workspaceId, operationId, previewToken, action }); }
 
   applyCategoryRemoval(input: Omit<Extract<CategoryRemovalQuery | CategoryRemovalCommand, { type: "workspace.applyCategoryRemoval" }>, "type">) {
     return this.api.workspace({ ...input, type: "workspace.applyCategoryRemoval" });

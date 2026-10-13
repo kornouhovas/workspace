@@ -144,7 +144,7 @@ test("populated 0000–0009 upgrade and reopen retain creation/rename receipts, 
     const after = records(f.sql);
     for (const [table, rows] of Object.entries(before)) if (table !== "__drizzle_migrations") assert.deepEqual(after[table], rows, table);
     assert.deepEqual(after.__drizzle_migrations.slice(0, 10), before.__drizzle_migrations);
-    assert.equal(after.__drizzle_migrations.length, 13); assert.deepEqual(after.project_category_move_operations, []);
+    assert.equal(after.__drizzle_migrations.length, 14); assert.deepEqual(after.project_category_move_operations, []);
     assert.deepEqual(f.sql.pragma("foreign_key_check"), []);
     assert.deepEqual(fs.readFileSync(join(f.root, "Original category", "Original", "sentinel")), Buffer.from([0, 255, 42]));
   }

@@ -1,3 +1,4 @@
+import { ProjectArchivePanel } from "./ProjectArchivePanel.js";
 import { CategoryOptionsPanel } from "./CategoryOptionsPanel.js";
 import { ProjectCategoryMovePanel } from "./ProjectCategoryMovePanel.js";
 import { ProjectRenamePanel } from "./ProjectRenamePanel.js";
@@ -242,6 +243,8 @@ export function DiscoveryWorkspace({ client, workspaceId, sourceId, refreshVersi
   onSourceState?(workspaceId: string, state: ProjectList["state"]): void; language: Language; disabled: boolean;
   onRecoveryPending?(pending: boolean): void;
 }) {
+  const [showArchived, setShowArchived] = useState(false);
+  const [archiveBlocked, setArchiveBlocked] = useState(false);
   const [projects, setProjects] = useState<ProjectList | null>(null);
   const committedProjects = useRef<ProjectList | null>(null);
   const committedCategoryLabel = useRef<{ property: NonNullable<ProjectList["categoryProperty"]>; revision: number } | null>(null);
@@ -395,7 +398,7 @@ export function DiscoveryWorkspace({ client, workspaceId, sourceId, refreshVersi
   return <>
     <DiscoveryController client={client} workspaceId={workspaceId} sourceId={sourceId} minimumRevision={minimumRevision}
       observationVersion={observationVersion}
-      invalidation={invalidation} language={language} onPendingChange={setDiscoveryPending} disabled={disabled || categoryOptionsBlocked || creationBlocked || recoveryProject !== null || renameProject !== null || renameBlocked || categoryMoveProject !== null || categoryMoveBlocked}
+      invalidation={invalidation} language={language} onPendingChange={setDiscoveryPending} disabled={disabled || archiveBlocked || categoryOptionsBlocked || creationBlocked || recoveryProject !== null || renameProject !== null || renameBlocked || categoryMoveProject !== null || categoryMoveBlocked}
       onApplied={(value, observedVersion) => {
         // The command can succeed while a newer runtime observation changes
         // resolution without a persisted revision. Keep success, reload placement.
@@ -410,19 +413,19 @@ export function DiscoveryWorkspace({ client, workspaceId, sourceId, refreshVersi
       }} />
     {projects?.mode === "grouped" && <CategoryOptionsPanel key={workspaceId} client={client} workspaceId={workspaceId} sourceId={sourceId}
       categories={projects.categories} language={language} revision={projects.revision} invalidation={invalidation}
-      disabled={disabled || creationBlocked || discoveryPending || recoveryProject !== null || renameProject !== null || renameBlocked || categoryMoveProject !== null || categoryMoveBlocked}
+      disabled={disabled || archiveBlocked || creationBlocked || discoveryPending || recoveryProject !== null || renameProject !== null || renameBlocked || categoryMoveProject !== null || categoryMoveBlocked}
       onBlockedChange={setCategoryOptionsBlocked} onCommitted={() => void load()} />}
     <ProjectCreationPanel client={client} workspaceId={workspaceId} sourceId={sourceId} language={language}
-      projects={projects} onBlockedChange={setCreationBlocked} disabled={disabled || categoryOptionsBlocked || discoveryPending || loading || error || recoveryProject !== null || renameProject !== null || renameBlocked}
+      projects={projects} onBlockedChange={setCreationBlocked} disabled={disabled || archiveBlocked || categoryOptionsBlocked || discoveryPending || loading || error || recoveryProject !== null || renameProject !== null || renameBlocked}
       effectsBlocked={categoryMoveProject !== null || categoryMoveBlocked} invalidation={invalidation}
       minimumRevision={minimumRevision} observationVersion={observationVersion} onCompleted={() => void load()} />
     <ProjectRenamePanel client={client} workspaceId={workspaceId} sourceId={sourceId} language={language} project={renameProject}
-      projects={projects} disabled={disabled || categoryOptionsBlocked || creationBlocked || discoveryPending || loading || error || recoveryProject !== null || categoryMoveProject !== null || categoryMoveBlocked} minimumRevision={minimumRevision}
+      projects={projects} disabled={disabled || archiveBlocked || categoryOptionsBlocked || creationBlocked || discoveryPending || loading || error || recoveryProject !== null || categoryMoveProject !== null || categoryMoveBlocked} minimumRevision={minimumRevision}
       observationVersion={observationVersion} sourceLifetime={sourceLifetime} invalidation={invalidation} onBlockedChange={setRenameBlocked}
       onRestoreFocus={() => tableHeading.current?.focus()}
       onClose={(focus = true) => { restoreRenameFocus.current = focus; setRenameProject(null); }} onCompleted={() => void load()} />
     <ProjectCategoryMovePanel client={client} workspaceId={workspaceId} sourceId={sourceId} language={language} project={categoryMoveProject}
-      projects={projects} disabled={disabled || categoryOptionsBlocked || creationBlocked || discoveryPending || loading || error || recoveryProject !== null || renameProject !== null || renameBlocked}
+      projects={projects} disabled={disabled || archiveBlocked || categoryOptionsBlocked || creationBlocked || discoveryPending || loading || error || recoveryProject !== null || renameProject !== null || renameBlocked}
       minimumRevision={minimumRevision} observationVersion={observationVersion} sourceLifetime={sourceLifetime} invalidation={invalidation}
       onRestoreFocus={() => tableHeading.current?.focus()} onBlockedChange={setCategoryMoveBlocked} onCompleted={() => void load()}
       onClose={(focus = true) => { restoreCategoryMoveFocus.current = focus; setCategoryMoveProject(null); }} />
@@ -444,7 +447,11 @@ export function DiscoveryWorkspace({ client, workspaceId, sourceId, refreshVersi
         if (updated.categoryPropertyRevision < minimumCategoryPropertyRevision.current) void load();
       }} />}
     {recoverySaved && <StatusMessage kind="info" title={t("recoverySaved")} />}
-    <section className="table-view" aria-labelledby="table-title" aria-busy={loading}>
+    <ProjectArchivePanel client={client} workspaceId={workspaceId} sourceId={sourceId} projects={projects?.projects ?? []}
+      language={language} revision={projects?.revision ?? 0} invalidation={invalidation} onViewChange={setShowArchived}
+      onBlockedChange={setArchiveBlocked} onCommitted={() => void load()}
+      disabled={disabled || categoryOptionsBlocked || creationBlocked || discoveryPending || recoveryProject !== null || renameProject !== null || renameBlocked || categoryMoveProject !== null || categoryMoveBlocked} />
+    <section hidden={showArchived} className="table-view" aria-labelledby="table-title" aria-busy={loading}>
       <div className="table-view__heading"><div>
         <h3 id="table-title" ref={tableHeading} tabIndex={-1}>{t("tableViewTitle")}</h3>
         <p>{t(projects?.configured ? "projectsApplied" : "emptyTableDescription")}</p>

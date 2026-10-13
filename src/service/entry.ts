@@ -1,3 +1,4 @@
+import { archiveQueries, archiveCommands, isArchiveRequest } from "../contracts/project-archive.js";
 import { categoryRemovalQueries, categoryRemovalCommands, isCategoryRemovalRequest } from "../contracts/category-removal.js";
 import { categoryOptionsQueries, categoryOptionsCommands, isCategoryOptionsRequest } from "../contracts/category-options.js";
 import { isProjectCategoryMoveRequest } from "../contracts/project-category-move.js";
@@ -123,11 +124,12 @@ export function startServiceProcess(
 }
 
 function isLoadQuery(input: unknown): boolean {
-  return isRecord(input) && ((typeof input.type === "string" && [...categoryOptionsQueries, ...categoryRemovalQueries].includes(input.type)) || input.type === "workspace.listProjectCategoryMoves" || input.type === "workspace.getProjectCategoryMove" || input.type === "workspace.previewProjectCategoryMoveRecovery" || input.type === "workspace.listProjectRenames" || input.type === "workspace.getProjectRename" || input.type === "workspace.previewProjectRenameRecovery" || input.type === "settings.load" || input.type === "workspace.load" || input.type === "workspace.previewDiscovery" || input.type === "workspace.getSourceObservation" || input.type === "workspace.listProjects" || input.type === "workspace.listTextProperties" || input.type === "workspace.previewProjectRecovery" || input.type === "workspace.listProjectCreations" || input.type === "workspace.getProjectCreation" || input.type === "workspace.previewProjectCreationRecovery");
+  return isRecord(input) && ((typeof input.type === "string" && [...archiveQueries, ...categoryOptionsQueries, ...categoryRemovalQueries].includes(input.type)) || input.type === "workspace.listProjectCategoryMoves" || input.type === "workspace.getProjectCategoryMove" || input.type === "workspace.previewProjectCategoryMoveRecovery" || input.type === "workspace.listProjectRenames" || input.type === "workspace.getProjectRename" || input.type === "workspace.previewProjectRenameRecovery" || input.type === "settings.load" || input.type === "workspace.load" || input.type === "workspace.previewDiscovery" || input.type === "workspace.getSourceObservation" || input.type === "workspace.listProjects" || input.type === "workspace.listTextProperties" || input.type === "workspace.previewProjectRecovery" || input.type === "workspace.listProjectCreations" || input.type === "workspace.getProjectCreation" || input.type === "workspace.previewProjectCreationRecovery");
 }
 
 function isMalformedWorkspaceRequest(input: unknown): boolean {
   if (!isRecord(input) || typeof input.type !== "string" || !input.type.startsWith("workspace.")) return false;
+  if ([...archiveQueries, ...archiveCommands].includes(input.type)) return !isArchiveRequest(input);
   if ([...categoryRemovalQueries, ...categoryRemovalCommands].includes(input.type)) return !isCategoryRemovalRequest(input);
   if ([...categoryOptionsQueries, ...categoryOptionsCommands].includes(input.type)) return !isCategoryOptionsRequest(input);
   if (["workspace.moveProjectCategory", "workspace.listProjectCategoryMoves", "workspace.getProjectCategoryMove", "workspace.previewProjectCategoryMoveRecovery", "workspace.recoverProjectCategoryMove"].includes(input.type)) return !isProjectCategoryMoveRequest(input);

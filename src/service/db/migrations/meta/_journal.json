@@ -92,6 +92,13 @@
       "when": 1791504012000,
       "tag": "0012_category_removal",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1791504013000,
+      "tag": "0013_project_archive",
+      "breakpoints": true
     }
   ]
 }

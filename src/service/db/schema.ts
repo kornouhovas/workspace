@@ -219,3 +219,32 @@ export const categoryRemovalAttempts = sqliteTable("category_removal_attempts", 
   projectId: text("project_id").notNull().references(() => projects.id), workspaceId: text("workspace_id").notNull(),
   expectedRevision: integer("expected_revision").notNull(), sequence: integer("sequence").notNull(), problem: text("problem"),
 }, table => [unique().on(table.removalId, table.projectId, table.sequence)]);
+
+// Archive keeps the active-model locator as historical evidence. The physical
+// archive locator is separate, and the project is mode-inactive until restore.
+export const projectArchives = sqliteTable("project_archives", {
+  projectId: text("project_id").primaryKey().references(() => projects.id),
+  sourceId: text("source_id").notNull().references(() => sources.id),
+  relativePath: text("relative_path").notNull(),
+  originalRelativePath: text("original_relative_path").notNull(),
+  mode: text("mode", { enum: ["direct", "grouped"] }).notNull(),
+  categoryName: text("category_name"),
+  parentIdentity: text("parent_identity").notNull(),
+  parents: text("parents").notNull(),
+});
+export const projectArchiveOperations = sqliteTable("project_archive_operations", {
+  operationId: text("operation_id").primaryKey(),
+  sourceId: text("source_id").notNull().references(() => sources.id),
+  workspaceId: text("workspace_id").notNull(),
+  projectId: text("project_id").notNull().references(() => projects.id),
+  action: text("action", { enum: ["archive", "restore"] }).notNull(),
+  originalRelativePath: text("original_relative_path").notNull(),
+  requestedRelativePath: text("requested_relative_path").notNull(),
+  nativeIdentity: text("native_identity").notNull(),
+  binding: text("binding").notNull(),
+  previewToken: text("preview_token").notNull(),
+  parents: text("parents").notNull(),
+  stage: text("stage", { enum: ["intent", "destination_recorded", "completed", "failed"] }).notNull(),
+  problem: text("problem"),
+  completedRevision: integer("completed_revision"),
+});

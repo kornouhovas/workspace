@@ -16,7 +16,10 @@ export function readProjectRelocationReservations(db: Reader, sourceId: string) 
   const moves = db.select().from(schema.projectCategoryMoveOperations).where(eq(schema.projectCategoryMoveOperations.sourceId, sourceId))
     .orderBy(asc(schema.projectCategoryMoveOperations.operationId)).all().filter((row) => row.stage !== "completed" && row.stage !== "failed")
     .map((row) => ({ ...row, operationKind: "category_move" as const }));
-  return [...renames, ...moves];
+  const archives = db.select().from(schema.projectArchiveOperations).where(eq(schema.projectArchiveOperations.sourceId, sourceId))
+    .orderBy(asc(schema.projectArchiveOperations.operationId)).all().filter(row => row.stage === "intent" || row.stage === "destination_recorded")
+    .map(row => ({ ...row, operationKind: "project_archive" as const }));
+  return [...renames, ...moves, ...archives];
 }
 
 export function hasUnfinishedProjectRelocation(db: Reader, sourceId: string): boolean {

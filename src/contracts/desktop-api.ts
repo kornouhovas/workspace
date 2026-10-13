@@ -1,3 +1,6 @@
+import type { ProjectArchivePreview, ProjectArchiveResult, ProjectArchiveOperationList, ProjectArchiveRecoveryPreview } from "./project-archive.js";
+import type { ArchiveQuery, ArchiveCommand, ArchiveSnapshot, ArchiveLocationPreview } from "./project-archive.js";
+import type { ArchivePayload } from "./project-archive.js";
 import type { CategoryRemovalQuery, CategoryRemovalCommand, CategoryRemovalPreview, CategoryRemovalPayload, CategoryRemovalLookup, CategoryRemovalResult, CategoryRemovalList, CategoryRemovalRecoveryPreview } from "./category-removal.js";
 import type { CategoryOptionsQuery, CategoryOptionsCommand, CategoryFolderPreview, CategoryFolderResult, CategoryFolderStatus, CategoryFolderRecoveryPreview, CategoryPresentationSnapshot } from "./category-options.js";
 import type { CategoryOptionsPayload } from "./category-options.js";
@@ -13,13 +16,19 @@ import type { CategoryPropertySnapshot, WorkspaceRenameCategoryPropertyCommand, 
 export type BackendStatus = { state: "starting" | "ready" | "unavailable"; message?: string; diagnostic?: import("./startup-diagnostic.js").StartupDiagnostic };
 export type SettingsRequest = SettingsQuery | SettingsCommand;
 export type WorkspaceRequest = WorkspaceQuery | WorkspaceCommand;
-export type WorkspaceResponse = CategoryRemovalPayload | CategoryOptionsPayload | ProjectCategoryMoveResult | ProjectCategoryMoveList | ProjectCategoryMoveRecoveryPreview | ProjectRenameResult | ProjectRenameList | ProjectRenameRecoveryPreview | ProjectRevealResult | ProjectCreationResult | ProjectCreationList | ProjectCreationRecoveryPreview | WorkspaceSourceObservationSnapshot | ProjectRecoveryPreview | CategoryPropertySnapshot | TextPropertySnapshot | TextPropertyMutation | ProjectList | DiscoveryPreview | WorkspaceLoad | WorkspaceCreated | ActiveWorkspace | WorkspaceSourceState;
+export type WorkspaceResponse = ArchivePayload | CategoryRemovalPayload | CategoryOptionsPayload | ProjectCategoryMoveResult | ProjectCategoryMoveList | ProjectCategoryMoveRecoveryPreview | ProjectRenameResult | ProjectRenameList | ProjectRenameRecoveryPreview | ProjectRevealResult | ProjectCreationResult | ProjectCreationList | ProjectCreationRecoveryPreview | WorkspaceSourceObservationSnapshot | ProjectRecoveryPreview | CategoryPropertySnapshot | TextPropertySnapshot | TextPropertyMutation | ProjectList | DiscoveryPreview | WorkspaceLoad | WorkspaceCreated | ActiveWorkspace | WorkspaceSourceState;
 export type RootPickerResult =
   | { outcome: "selected"; path: string }
   | { outcome: "cancelled" }
   | { outcome: "failed" };
 
 export interface WorkspaceDesktopApi {
+  workspace(input: Extract<ArchiveQuery, { type: "workspace.previewProjectArchive" }>): Promise<ServiceResult<ProjectArchivePreview>>;
+  workspace(input: Extract<ArchiveQuery, { type: "workspace.listProjectArchiveOperations" }>): Promise<ServiceResult<ProjectArchiveOperationList>>;
+  workspace(input: Extract<ArchiveQuery, { type: "workspace.getProjectArchiveOperation" }> | Extract<ArchiveCommand, { type: "workspace.applyProjectArchive" | "workspace.recoverProjectArchive" }>): Promise<ServiceResult<ProjectArchiveResult>>;
+  workspace(input: Extract<ArchiveQuery, { type: "workspace.previewProjectArchiveRecovery" }>): Promise<ServiceResult<ProjectArchiveRecoveryPreview>>;
+  workspace(input: Extract<ArchiveQuery, { type: "workspace.previewArchiveLocation" }>): Promise<ServiceResult<ArchiveLocationPreview>>;
+  workspace(input: Extract<ArchiveQuery, { type: "workspace.listArchivedProjects" }> | Extract<ArchiveCommand, { type: "workspace.applyArchiveLocation" }>): Promise<ServiceResult<ArchiveSnapshot>>;
   workspace(input: Extract<CategoryRemovalQuery, { type: "workspace.previewCategoryRemoval" }>): Promise<ServiceResult<CategoryRemovalPreview>>;
   workspace(input: Extract<CategoryRemovalQuery, { type: "workspace.listCategoryRemovals" }>): Promise<ServiceResult<CategoryRemovalList>>;
   workspace(input: Extract<CategoryRemovalQuery, { type: "workspace.getCategoryRemoval" }>): Promise<ServiceResult<CategoryRemovalLookup>>;

@@ -102,7 +102,7 @@ export function createProjectRecoveryService(db: Database, integration: {
         if (!source || (source.discoveryMode !== "direct" && source.discoveryMode !== "grouped")) return invalid();
         const projects = projectsFor(source.id), categories = categoriesFor(source.id);
         const project = projects.find((row) => row.id === input.projectId);
-        if (!project) return invalid();
+        if (!project || db.select().from(schema.projectArchives).where(eq(schema.projectArchives.projectId, project.id)).get()) return invalid();
         const scan = scanSource(source);
         if (!eligible(project, scan, projects, categories, source)) return invalid();
         const preview: ProjectRecoveryPreview = { workspaceId: input.workspaceId, sourceId: source.id, projectId: project.id,
@@ -123,7 +123,7 @@ export function createProjectRecoveryService(db: Database, integration: {
       try {
         const source = sourceFor(input.workspaceId);
         if (!source || !projectsFor(source.id).some((row) => row.id === input.projectId)) return invalid();
-        if (hasUnfinishedProjectRelocation(db, source.id)) return stale();
+        if (hasUnfinishedProjectRelocation(db, source.id) || db.select().from(schema.projectArchives).where(eq(schema.projectArchives.projectId, input.projectId)).get()) return stale();
         const review = reviews.get(reviewKey);
         if (!review || review.preview.previewToken !== input.previewToken) return stale();
         const target = review.preview.entries.find((entry) => entry.relativePath === input.relativePath);
