@@ -34,6 +34,20 @@ test("normal runtime shutdown waits for the owned process to exit", async () => 
   } finally { if (child.exitCode === null && child.signalCode === null) child.kill("SIGKILL"); }
 });
 
+test("quit is requested once while live and driver close starts after owned exit", async () => {
+  const child = await launchFixture(); let requests = 0, closes = 0;
+  try {
+    await closeElectron({ process: () => child,
+      evaluate: async () => { requests++; child.kill(); },
+      close: async () => {
+        assert.ok(child.exitCode !== null || child.signalCode !== null, "Driver close must not issue a concurrent live quit");
+        closes++;
+      },
+    }, 1000);
+    assert.equal(requests, 1); assert.equal(closes, 1);
+  } finally { if (child.exitCode === null && child.signalCode === null) child.kill("SIGKILL"); }
+});
+
 test("stalled runtime shutdown kills the owned process and reports failure within a deadline", async () => {
   const child = await launchFixture();
   try {
@@ -49,7 +63,6 @@ test("stalled runtime shutdown kills the owned process and reports failure withi
 test("Windows forced cleanup errors preserve the original shutdown failure and still await owned exit", async () => {
   const platform = Object.getOwnPropertyDescriptor(process, "platform");
   const child = Object.assign(new EventEmitter(), { pid: 12345, exitCode: null, signalCode: null });
-  const primary = new Error("Electron shutdown timed out after 10000ms");
   Object.defineProperty(process, "platform", { value: "win32" });
   const originalExecFile = childProcess.execFile;
   childProcess.execFile = (program, args, options, callback) => {
@@ -61,8 +74,8 @@ test("Windows forced cleanup errors preserve the original shutdown failure and s
   };
   syncBuiltinESMExports();
   try {
-    await assert.rejects(closeElectron({ process: () => child, evaluate: async () => {}, close: async () => { throw primary; } }), (error) => {
-      assert.equal(error, primary);
+    await assert.rejects(closeElectron({ process: () => child, evaluate: async () => {}, close: async () => assert.fail("A live stalled process must not receive a second quit") }, 20), (error) => {
+      assert.equal(error.message, "Electron shutdown timed out after 20ms");
       assert.equal(child.exitCode, 1, "Failed taskkill must not skip awaiting owned process termination");
       assert.deepEqual(error.forcedCleanup, { status: "failed", processStopped: true, errorCode: 255 });
       assert.equal(JSON.stringify(error.forcedCleanup).includes("private"), false);

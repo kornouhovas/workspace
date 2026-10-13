@@ -16,11 +16,21 @@ export async function withDeadline(operation, timeoutMs, label) {
 
 export async function closeElectron(electron, timeoutMs = 10000) {
   const child = electron.process();
+  let onNormalExit, expired = false;
+  const normalExit = child.exitCode !== null || child.signalCode !== null ? Promise.resolve() : new Promise(resolve => {
+    onNormalExit = resolve; child.once("exit", onNormalExit);
+  });
   // Request quit without waiting for the inspector response from an exiting app.
+  // Playwright close() also calls app.quit(). Defer its channel disposal until
+  // the owned process exits so two live quit paths cannot race backend shutdown.
   void electron.evaluate(({ app }) => app.quit()).catch(() => undefined);
   try {
-    await withDeadline(electron.close(), timeoutMs, "Electron shutdown");
+    await withDeadline((async () => {
+      await normalExit;
+      if (!expired) await electron.close();
+    })(), timeoutMs, "Electron shutdown");
   } catch (error) {
+    expired = true;
     if (child.exitCode === null && child.signalCode === null) {
       let onExit;
       const exited = new Promise((resolve) => { onExit = resolve; child.once("exit", onExit); });
@@ -52,7 +62,7 @@ export async function closeElectron(electron, timeoutMs = 10000) {
       }
     }
     throw error;
-  }
+  } finally { if (onNormalExit) child.removeListener("exit", onNormalExit); }
 }
 
 // Failure diagnostics must never prevent the bounded attempt to close an owned

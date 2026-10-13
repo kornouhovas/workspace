@@ -35,8 +35,13 @@ export function createProjectRevealService(db: BetterSQLite3Database<typeof sche
     verifyTrustedProjectRevealTarget(target, filesystem);
     const exclusions: unknown = JSON.parse(source.excludedRelativePaths);
     if (!validExclusions(exclusions, "grouped") || !validArchive(source.archiveRelativePath)) throw new Error("Invalid source policy");
-    const scan = (source.discoveryMode === "grouped" ? scanGroupedSource : scanDirectSource)(source.canonicalRoot,
+    const scanSource = () => (source.discoveryMode === "grouped" ? scanGroupedSource : scanDirectSource)(source.canonicalRoot,
       source.archiveRelativePath, projectExclusions(exclusions, source.discoveryMode).effective);
+    let scan = scanSource();
+    // Finder can update directory metadata while a read-only snapshot is being
+    // collected. Retry that unstable read once; never repeat native dispatch or
+    // retry missing roots, denied access, identity conflicts or persistent churn.
+    if (scan.state === "changed") scan = scanSource();
     if (!scan.snapshot) throw new RevealFailure(scan.state === "root_identity_conflict" ? "root_replaced" : "unavailable");
     if (!sameIdentity(scan.snapshot.root.identity, JSON.parse(source.appliedRootIdentity))) throw new RevealFailure("root_replaced");
     const entry = scan.entries.find((row) => row.kind === "project" && row.relativePath === project.relativePath);

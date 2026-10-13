@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { basename, join } from "node:path";
 import { randomUUID } from "node:crypto";
 import test from "node:test";
+import { syncBuiltinESMExports } from "node:module";
 import Database from "better-sqlite3";
 import { openSettingsService } from "../dist/service/settings.mjs";
 import { createNativeProjectReveal } from "../src/desktop/project-reveal.ts";
@@ -53,6 +54,55 @@ test("Reveal accepts exact logical IDs and rejects renderer paths, URLs, command
 });
 
 for (const mode of ["direct", "grouped"]) {
+  test(`${mode} Reveal rechecks a single unstable read after native dispatch without repeating the native call`, async t => fixture(mode, async f => {
+    const original = fs.opendirSync;
+    let armed = false, changes = 0, calls = 0;
+    t.mock.method(fs, "opendirSync", (...args) => {
+      const directory = original(...args), read = directory.readSync.bind(directory);
+      directory.readSync = () => {
+        if (armed && args[0] === f.root) { armed = false; changes++; fs.writeFileSync(join(f.root, ".Finder-metadata"), "metadata"); }
+        return read();
+      };
+      return directory;
+    });
+    syncBuiltinESMExports();
+    try {
+      const result = await f.service.revealProject(f.input, async () => {
+        calls++; armed = true; return { outcome: "dispatched" };
+      });
+      assert.equal(result.value.outcome, "dispatched");
+      assert.equal(calls, 1); assert.equal(changes, 1);
+    } finally { t.mock.restoreAll(); syncBuiltinESMExports(); }
+  }));
+  for (const fault of ["persistent churn", "replacement"]) test(`${mode} Reveal still rejects ${fault} during a bounded read recheck`, async t => fixture(mode, async f => {
+    const original = fs.opendirSync; let armed = false, changes = 0, calls = 0;
+    t.mock.method(fs, "opendirSync", (...args) => {
+      const directory = original(...args), read = directory.readSync.bind(directory);
+      let disturbed = false;
+      directory.readSync = () => {
+        if (armed && args[0] === f.root && !disturbed) {
+          disturbed = true; changes++;
+          if (fault === "replacement") {
+            armed = false; fs.renameSync(f.path, join(f.root, "..", "held-project")); fs.mkdirSync(f.path);
+          } else fs.writeFileSync(join(f.root, `.metadata-${changes}`), "metadata");
+        }
+        return read();
+      };
+      return directory;
+    });
+    syncBuiltinESMExports();
+    try {
+      const result = await f.service.revealProject(f.input, async () => { calls++; armed = true; return { outcome: "dispatched" }; });
+      assert.equal(result.value.outcome, "rejected");
+      assert.equal(calls, 1);
+      if (fault === "persistent churn") { assert.equal(result.value.problem, "unavailable"); assert.equal(changes, 2); }
+      else assert.ok(["replaced", "unresolved"].includes(result.value.problem));
+    } finally {
+      t.mock.restoreAll(); syncBuiltinESMExports();
+      const held = join(f.root, "..", "held-project");
+      if (fs.existsSync(held)) { fs.rmdirSync(f.path); fs.renameSync(held, f.path); }
+    }
+  }));
   for (const scenario of ["success", "excluded", "missing", "link", "native_identity", "mode_retained", "cancelled", ...(mode === "grouped" ? ["category_unavailable"] : [])]) {
     test(`${mode} ready adapter reauthorizes ${scenario} at its permit after asynchronous readiness`, async () => fixture(mode, async (f) => {
       let ready, release;

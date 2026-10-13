@@ -8,7 +8,7 @@ on:
       checks:
         description: Full acceptance or a selected focused failure route
         type: choice
-        options: [full, failed, readiness, environment]
+        options: [full, failed, readiness, environment, packaged]
         default: full
       diagnostics:
         description: Run isolated investigation and early-feedback jobs
@@ -33,7 +33,7 @@ concurrency:
 
 jobs:
   common:
-    if: ${{ github.event_name != 'workflow_dispatch' || (inputs.checks != 'failed' && inputs.checks != 'readiness' && inputs.checks != 'environment') }}
+    if: ${{ github.event_name != 'workflow_dispatch' || (inputs.checks != 'failed' && inputs.checks != 'readiness' && inputs.checks != 'environment' && inputs.checks != 'packaged') }}
     name: Common tests and static checks
     runs-on: macos-latest
     steps:
@@ -48,6 +48,44 @@ jobs:
       - run: npm run typecheck
       - run: npm run check:docs
       - run: npm run test:common
+
+  focused-packaged-runtime:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.checks == 'packaged' }}
+    name: Focused packaged runtime (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            scenario: rename
+          - os: windows-latest
+            scenario: category-move
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: node --import tsx --test tests/project-reveal.test.mjs tests/runtime-lifecycle.test.mjs
+      - run: npm run package:built
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+      - run: npm run check:artifact -- release
+      - name: Exercise original packaged failure boundary
+        run: npm run smoke:runtime -- release --${{ matrix.scenario }}
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-focused-packaged
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: issue-46-focused-packaged-${{ matrix.os }}-${{ github.sha }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
+          path: work/ci-focused-packaged/
+          if-no-files-found: error
+          retention-days: 7
 
   focused-environment-windows:
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.checks == 'environment' }}

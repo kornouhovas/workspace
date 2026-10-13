@@ -42,7 +42,7 @@ test('suite CLI lists the selected real files and rejects unknown invocations', 
 test('ordinary CI runs common checks once and retains all three platform acceptance routes', () => {
   const workflow = load(readFileSync('.github/workflows/desktop-ci.yml', 'utf8'));
   const { common, verify } = workflow.jobs;
-  assert.equal(common.if, "${{ github.event_name != 'workflow_dispatch' || (inputs.checks != 'failed' && inputs.checks != 'readiness' && inputs.checks != 'environment') }}");
+  assert.equal(common.if, "${{ github.event_name != 'workflow_dispatch' || (inputs.checks != 'failed' && inputs.checks != 'readiness' && inputs.checks != 'environment' && inputs.checks != 'packaged') }}");
   assert.equal(common.strategy, undefined);
   assert.deepEqual(common.steps.filter(step => step.run).map(step => step.run), [
     'npm ci', 'npm run check:ci', 'npm run lint', 'npm run typecheck', 'npm run check:docs', 'npm run test:common',
@@ -83,7 +83,7 @@ test('investigation jobs run only with explicit manual diagnostic inputs', () =>
 test('manual failed-check scope runs only the Windows observer and macOS rename routes', () => {
   const workflow = load(readFileSync('.github/workflows/desktop-ci.yml', 'utf8'));
   assert.equal(workflow.on.workflow_dispatch.inputs.checks.default, 'full');
-  assert.deepEqual(workflow.on.workflow_dispatch.inputs.checks.options, ['full', 'failed', 'readiness', 'environment']);
+  assert.deepEqual(workflow.on.workflow_dispatch.inputs.checks.options, ['full', 'failed', 'readiness', 'environment', 'packaged']);
   const enabled = (job, event, checks) => runInNewContext(job.if.slice(3, -2), { github: { event_name: event }, inputs: { checks } });
   for (const event of ['push', 'pull_request', 'workflow_dispatch']) for (const checks of [undefined, 'full', 'failed']) {
     const focused = event === 'workflow_dispatch' && checks === 'failed';
@@ -216,4 +216,19 @@ test('environment failure scope selects only the two affected Windows commands',
   const reveal=job.steps.find(step=>step.name==='Original Windows latest direct creation Reveal');
   assert.equal(reveal.run,'npm run smoke:runtime -- dev --creation --discovery-mode=direct --checkpoint=after_evidence');
   assert.ok(reveal.if.includes("steps.environment-build.outcome == 'success'"));
+});
+
+
+test('packaged failure scope preserves the original macOS rename and Windows category-move boundaries', () => {
+  const workflow=load(readFileSync('.github/workflows/desktop-ci.yml','utf8'));
+  const active=Object.entries(workflow.jobs).filter(([,job])=>job.if && runInNewContext(job.if.slice(3,-2),{github:{event_name:'workflow_dispatch'},inputs:{checks:'packaged'}})).map(([name])=>name);
+  assert.deepEqual(active,['focused-packaged-runtime']);
+  const job=workflow.jobs['focused-packaged-runtime'];
+  assert.deepEqual(job.strategy.matrix.include,[{os:'macos-latest',scenario:'rename'},{os:'windows-latest',scenario:'category-move'}]);
+  assert.equal(job.strategy['fail-fast'],false);
+  assert.ok(job.steps.some(step=>step.run==='npm run package:built'));
+  assert.ok(job.steps.some(step=>step.run==='npm run check:artifact -- release'));
+  assert.equal(job.steps.find(step=>step.name==='Exercise original packaged failure boundary').run,'npm run smoke:runtime -- release --${{ matrix.scenario }}');
+  const upload=job.steps.find(step=>step.uses==='actions/upload-artifact@v4');
+  assert.equal(upload.if,'always()'); assert.equal(upload.with['if-no-files-found'],'error');
 });
