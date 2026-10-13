@@ -41,6 +41,8 @@ Use bounded English task snapshots/plans with scope, fixtures, acceptance and ex
 | UI | Relevant interaction tests, type/build checks and inspection of changed screens, including narrow layouts and both languages |
 | Release | Full integrated checks, platform packages, version consistency, migration/recovery and release acceptance matrix |
 
+A failed GitHub Actions check during authorized execution enters the mandatory [diagnose, focused checks, then full CI loop](ci.md#failed-actions-loop). Continue that loop across windows/context resets without waiting for the user to invoke the skill again.
+
 Select actual commands from package.json and the affected tests. Verify observable behavior and data safety; documentation checks verify links/anchors and consistency.
 
 Use temporary data for destructive and recovery checks. Never use live user project folders as test fixtures. Report completed checks, limitations and the actual commit at handoff; distinguish a written design from an implemented capability.

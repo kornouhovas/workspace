@@ -2,6 +2,19 @@
 
 Read when selecting or diagnosing a CI route, changing CI scheduling, or checking exact-SHA acceptance. [Development](development.md#verification) owns verification policy; [.github/workflows/desktop-ci.yml](../.github/workflows/desktop-ci.yml) owns actual job wiring.
 
+## Failed Actions loop
+
+Apply this loop automatically when a GitHub Actions check fails during an authorized task, including continuation in a new window. The agent invokes `diagnosing-bugs` without requiring another user command. Executor selection remains governed by [development](development.md#executor-selection); CI failure does not select Ralphex. Continue within existing implementation/push/Actions authorization; request only genuinely missing access or consequential decisions.
+
+1. **Retain the failure.** Record the run/attempt, exact SHA, failed check, OS, original command and relevant logs/artifacts. Distinguish a failed check from a cancelled run, skipped stage or unavailable evidence.
+2. **Diagnose and repair.** Follow `diagnosing-bugs`: build a red-capable reproduction, test falsifiable hypotheses, make the scoped repair and verify a meaningful regression. If original evidence cannot identify the cause, retain that limitation and add bounded diagnostic evidence instead of claiming causation or retrying unchanged inputs until green. Preserve product assertions, deadlines, ownership and cleanup gates.
+3. **Run only the affected failed checks.** Map the actual failures to focused commands on the affected OS, with necessary build/fixture prerequisites and relevant repair regressions. Select an existing manual route only when it matches those failures. If no matching route exists, add or narrow one before dispatch; the historical route names below are not a generic list to replay. Do not substitute an entire full suite for an addressable failed step. A rerun of an old failed run tests its old SHA, not the repair.
+4. **Keep full CI behind the focused gate.** While preparing repair commits, use the repository's supported push-CI suppression (`[skip ci]`) and explicitly dispatch the focused route for the repaired SHA. Keep ordinary workflow defaults intact. Inspect the original focused command's result and required artifacts; diagnostics alone, missing evidence, skips and unreached stages do not pass this gate. A new focused failure returns to diagnosis.
+5. **Run full CI after focused success.** Once every affected failed check passes and its evidence is inspected, dispatch the full acceptance route on that same reviewed SHA. Finish outstanding coordinated pushes before this dispatch. A new full-CI failure returns to step 1 with a new failure map; retain prior evidence rather than restarting unrelated checks.
+6. **Deliver only after full success.** Inspect required full-run artifacts and apply the existing acceptance/integration policy. Focused success is not task completion and does not reduce required platform/runtime coverage.
+
+Keep the current SHA, failure map, reproduction/repair evidence, focused run/result, full run/result and next unresolved gate in the task's existing checkpoint. On a new window or context reset, read that checkpoint and verify the current branch/SHA and run status before continuing from the unresolved gate. Do not default to full CI or replay completed gates merely because the conversation restarted; code changes or new failures determine which evidence needs renewal.
+
 ### CI test scheduling
 
 Ordinary push and pull-request runs execute common DOM/mocked-client and pure-helper tests once on macOS, alongside lint, typecheck and documentation links. The macOS, Windows latest and Windows 2022 matrix builds once per OS and runs the remaining platform tests, then the existing development and packaged runtime acceptance routes. SQLite, real filesystem, process, native and mixed UI/backend suites remain in that matrix. Production move, recovery and native acceptance assertions are unchanged.
