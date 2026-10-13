@@ -1,3 +1,4 @@
+import { acceptanceProvenance } from "./acceptance-provenance.mjs";
 import assert from "node:assert/strict";
 import { lstat, mkdir, mkdtemp, readdir, readFile, readlink, realpath, rename, stat, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -113,6 +114,7 @@ let fixtureCleanup;
 async function recordEvidence(status, error) {
   if (status === "passed") sourceMoves.assertComplete();
   if (evidenceDirectory) await writeFile(join(evidenceDirectory, `${mode}-observations.json`), JSON.stringify({
+    provenance: acceptanceProvenance(),
     mode, platform: process.platform, arch: process.arch, executablePath, status, stages, shutdowns, fixtureCleanup, sourceMoves: sourceMoves.snapshot(),
     ...(error ? { error: error.message } : {}), observations,
   }, null, 2) + "\n");

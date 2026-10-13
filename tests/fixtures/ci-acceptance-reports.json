@@ -1,0 +1,4238 @@
+{
+  "ci-runtime-dev/dev-observations.json": {
+    "mode": "dev",
+    "platform": "darwin",
+    "arch": "arm64",
+    "status": "passed",
+    "stages": {
+      "modeChangeCancel": true,
+      "modeChangeApply": true,
+      "modeChangeRecovery": true,
+      "modeChangeFeatures": true,
+      "modeChangeRestart": true,
+      "modeChangeSourceReuse": true,
+      "nativeReconciliation": true,
+      "explicitRefresh": true,
+      "shutdownMissed": true,
+      "recoveryFeatures": true,
+      "preQuitFeatures": true,
+      "firstShutdown": true,
+      "restartPersistence": true,
+      "retainedSourceReuse": true,
+      "startupFailure": true
+    },
+    "shutdowns": [
+      {
+        "attempt": 1,
+        "kind": "normal",
+        "passed": true
+      },
+      {
+        "attempt": 2,
+        "kind": "normal",
+        "passed": true
+      },
+      {
+        "attempt": 3,
+        "kind": "normal",
+        "passed": true
+      },
+      {
+        "attempt": 4,
+        "kind": "failed-startup",
+        "passed": true
+      }
+    ],
+    "fixtureCleanup": {
+      "status": "passed",
+      "asserted": true,
+      "processesStopped": true
+    },
+    "sourceMoves": [
+      {
+        "scenario": "subscribed-disconnect",
+        "direction": "disconnect",
+        "status": "passed",
+        "finalCode": null,
+        "attempts": 1,
+        "elapsedMs": 18,
+        "firstErrorCode": null,
+        "sourceAbsent": true,
+        "destinationIdentityMatches": true,
+        "contentsMatch": true,
+        "verificationComplete": true
+      },
+      {
+        "scenario": "subscribed-restore",
+        "direction": "restore",
+        "status": "passed",
+        "finalCode": null,
+        "attempts": 1,
+        "elapsedMs": 18,
+        "firstErrorCode": null,
+        "sourceAbsent": true,
+        "destinationIdentityMatches": true,
+        "contentsMatch": true,
+        "verificationComplete": true
+      },
+      {
+        "scenario": "unsubscribed-disconnect",
+        "direction": "disconnect",
+        "status": "passed",
+        "finalCode": null,
+        "attempts": 1,
+        "elapsedMs": 24,
+        "firstErrorCode": null,
+        "sourceAbsent": true,
+        "destinationIdentityMatches": true,
+        "contentsMatch": true,
+        "verificationComplete": true
+      },
+      {
+        "scenario": "unsubscribed-restore",
+        "direction": "restore",
+        "status": "passed",
+        "finalCode": null,
+        "attempts": 1,
+        "elapsedMs": 14,
+        "firstErrorCode": null,
+        "sourceAbsent": true,
+        "destinationIdentityMatches": true,
+        "contentsMatch": true,
+        "verificationComplete": true
+      }
+    ]
+  },
+  "ci-runtime-dev/dev-rename-observations.json": {
+    "mode": "dev",
+    "platform": "darwin",
+    "arch": "arm64",
+    "node": "v22.21.1",
+    "sourceRevision": "df87b607f0606e85590fe980a3ebd513e1650e9b",
+    "inputDigest": "3b89f16123c5e399f441fff9e60138903c4f8ab5216986ba7fbd0733c8b5ea14",
+    "status": "passed",
+    "scope": "production graphical UI/preload/utilityProcess; interruption in driver-owned real-service child; injected alias policy only where mounted alias absent",
+    "evidence": {
+      "direct": {
+        "submission": {
+          "status": "passed",
+          "asserted": true
+        },
+        "rejections": {
+          "status": "passed",
+          "asserted": true
+        },
+        "caseOnly": {
+          "status": "passed",
+          "asserted": true,
+          "outcome": "completed"
+        },
+        "sibling": {
+          "status": "passed",
+          "asserted": true
+        },
+        "revealInvocation": {
+          "status": "passed",
+          "asserted": true
+        },
+        "revealAcknowledgment": {
+          "status": "passed",
+          "asserted": true
+        },
+        "fileManagerOutcome": {
+          "status": "passed",
+          "asserted": true,
+          "exactTargetObserved": true
+        },
+        "fileManagerCleanup": {
+          "status": "passed",
+          "asserted": true,
+          "outcome": {
+            "status": "completed",
+            "scope": "exact disposable target only"
+          }
+        },
+        "restartPersistence": {
+          "status": "passed",
+          "asserted": true
+        },
+        "recovery": {
+          "intent": {
+            "seed": {
+              "status": "passed",
+              "asserted": true,
+              "checkpoint": "intent",
+              "stage": "intent",
+              "cleanupExecuted": false
+            },
+            "restartNoReplay": {
+              "status": "passed",
+              "asserted": true
+            },
+            "resolution": {
+              "status": "passed",
+              "asserted": true,
+              "action": "retry_original",
+              "outcome": "completed"
+            },
+            "preservation": {
+              "status": "passed",
+              "asserted": true
+            },
+            "restartPersistence": {
+              "status": "passed",
+              "asserted": true
+            }
+          },
+          "keep_original": {
+            "seed": {
+              "status": "passed",
+              "asserted": true,
+              "checkpoint": "intent",
+              "stage": "intent",
+              "cleanupExecuted": false
+            },
+            "restartNoReplay": {
+              "status": "passed",
+              "asserted": true
+            },
+            "resolution": {
+              "status": "passed",
+              "asserted": true,
+              "action": "keep_original",
+              "outcome": "rejected"
+            },
+            "preservation": {
+              "status": "passed",
+              "asserted": true
+            },
+            "restartPersistence": {
+              "status": "passed",
+              "asserted": true
+            }
+          },
+          "first_effect": {
+            "seed": {
+              "status": "passed",
+              "asserted": true,
+              "checkpoint": "first_effect",
+              "stage": "intent",
+              "cleanupExecuted": false
+            },
+            "restartNoReplay": {
+              "status": "passed",
+              "asserted": true
+            },
+            "resolution": {
+              "status": "passed",
+              "asserted": true,
+              "action": "finish_staged",
+              "outcome": "completed"
+            },
+            "preservation": {
+              "status": "passed",
+              "asserted": true
+            },
+            "restartPersistence": {
+              "status": "passed",
+              "asserted": true
+            }
+          },
+          "staged_evidence": {
+            "seed": {
+              "status": "passed",
+              "asserted": true,
+              "checkpoint": "staged_evidence",
+              "stage": "staged",
+              "cleanupExecuted": false
+            },
+            "restartNoReplay": {
+              "status": "passed",
+              "asserted": true
+            },
+            "resolution": {
+              "status": "passed",
+              "asserted": true,
+              "action": "finish_staged",
+              "outcome": "completed"
+            },
+            "preservation": {
+              "status": "passed",
+              "asserted": true
+            },
+            "restartPersistence": {
+              "status": "passed",
+              "asserted": true
+            }
+          },
+          "final_effect": {
+            "seed": {
+              "status": "passed",
+              "asserted": true,
+              "checkpoint": "final_effect",
+              "stage": "staged",
+              "cleanupExecuted": false
+            },
+            "restartNoReplay": {
+              "status": "passed",
+              "asserted": true
+            },
+            "resolution": {
+              "status": "passed",
+              "asserted": true,
+              "action": "complete_destination",
+              "outcome": "completed"
+            },
+            "preservation": {
+              "status": "passed",
+              "asserted": true
+            },
+            "restartPersistence": {
+              "status": "passed",
+              "asserted": true
+            }
+          },
+          "destination_evidence": {
+            "seed": {
+              "status": "passed",
+              "asserted": true,
+              "checkpoint": "destination_evidence",
+              "stage": "destination_recorded",
+              "cleanupExecuted": false
+            },
+            "restartNoReplay": {
+              "status": "passed",
+              "asserted": true
+            },
+            "resolution": {
+              "status": "passed",
+              "asserted": true,
+              "action": "complete_destination",
+              "outcome": "completed"
+            },
+            "preservation": {
+              "status": "passed",
+              "asserted": true
+            },
+            "restartPersistence": {
+              "status": "passed",
+              "asserted": true
+            }
+          },
+          "commit": {
+            "seed": {
+              "status": "passed",
+              "asserted": true,
+              "checkpoint": "commit",
+              "stage": "completed",
+              "cleanupExecuted": false
+            },
+            "restartNoReplay": {
+              "status": "passed",
+              "asserted": true
+            },
+            "resolution": {
+              "status": "passed",
+              "asserted": true,
+              "outcome": "completed_before_interruption",
+              "mutationRequired": false
+            },
+            "preservation": {
+              "status": "passed",
+              "asserted": true
+            },
+            "restartPersistence": {
+              "status": "passed",
+              "asserted": true
+            }
+          }
+        }
+      },
+      "grouped": {
+        "submission": {
+          "status": "passed",
+          "asserted": true
+        },
+        "rejections": {
+          "status": "passed",
+          "asserted": true
+        },
+        "caseOnly": {
+          "status": "passed",
+          "asserted": true,
+          "outcome": "completed"
+        },
+        "sibling": {
+          "status": "passed",
+          "asserted": true
+        },
+        "revealInvocation": {
+          "status": "passed",
+          "asserted": true
+        },
+        "revealAcknowledgment": {
+          "status": "passed",
+          "asserted": true
+        },
+        "fileManagerOutcome": {
+          "status": "passed",
+          "asserted": true,
+          "exactTargetObserved": true
+        },
+        "fileManagerCleanup": {
+          "status": "passed",
+          "asserted": true,
+          "outcome": {
+            "status": "completed",
+            "scope": "exact disposable target only"
+          }
+        },
+        "restartPersistence": {
+          "status": "passed",
+          "asserted": true
+        },
+        "recovery": {
+          "intent": {
+            "seed": {
+              "status": "passed",
+              "asserted": true,
+              "checkpoint": "intent",
+              "stage": "intent",
+              "cleanupExecuted": false
+            },
+            "restartNoReplay": {
+              "status": "passed",
+              "asserted": true
+            },
+            "resolution": {
+              "status": "passed",
+              "asserted": true,
+              "action": "retry_original",
+              "outcome": "completed"
+            },
+            "preservation": {
+              "status": "passed",
+              "asserted": true
+            },
+            "restartPersistence": {
+              "status": "passed",
+              "asserted": true
+            }
+          },
+          "keep_original": {
+            "seed": {
+              "status": "passed",
+              "asserted": true,
+              "checkpoint": "intent",
+              "stage": "intent",
+              "cleanupExecuted": false
+            },
+            "restartNoReplay": {
+              "status": "passed",
+              "asserted": true
+            },
+            "resolution": {
+              "status": "passed",
+              "asserted": true,
+              "action": "keep_original",
+              "outcome": "rejected"
+            },
+            "preservation": {
+              "status": "passed",
+              "asserted": true
+            },
+            "restartPersistence": {
+              "status": "passed",
+              "asserted": true
+            }
+          },
+          "first_effect": {
+            "seed": {
+              "status": "passed",
+              "asserted": true,
+              "checkpoint": "first_effect",
+              "stage": "intent",
+              "cleanupExecuted": false
+            },
+            "restartNoReplay": {
+              "status": "passed",
+              "asserted": true
+            },
+            "resolution": {
+              "status": "passed",
+              "asserted": true,
+              "action": "finish_staged",
+              "outcome": "completed"
+            },
+            "preservation": {
+              "status": "passed",
+              "asserted": true
+            },
+            "restartPersistence": {
+              "status": "passed",
+              "asserted": true
+            }
+          },
+          "staged_evidence": {
+            "seed": {
+              "status": "passed",
+              "asserted": true,
+              "checkpoint": "staged_evidence",
+              "stage": "staged",
+              "cleanupExecuted": false
+            },
+            "restartNoReplay": {
+              "status": "passed",
+              "asserted": true
+            },
+            "resolution": {
+              "status": "passed",
+              "asserted": true,
+              "action": "finish_staged",
+              "outcome": "completed"
+            },
+            "preservation": {
+              "status": "passed",
+              "asserted": true
+            },
+            "restartPersistence": {
+              "status": "passed",
+              "asserted": true
+            }
+          },
+          "final_effect": {
+            "seed": {
+              "status": "passed",
+              "asserted": true,
+              "checkpoint": "final_effect",
+              "stage": "staged",
+              "cleanupExecuted": false
+            },
+            "restartNoReplay": {
+              "status": "passed",
+              "asserted": true
+            },
+            "resolution": {
+              "status": "passed",
+              "asserted": true,
+              "action": "complete_destination",
+              "outcome": "completed"
+            },
+            "preservation": {
+              "status": "passed",
+              "asserted": true
+            },
+            "restartPersistence": {
+              "status": "passed",
+              "asserted": true
+            }
+          },
+          "destination_evidence": {
+            "seed": {
+              "status": "passed",
+              "asserted": true,
+              "checkpoint": "destination_evidence",
+              "stage": "destination_recorded",
+              "cleanupExecuted": false
+            },
+            "restartNoReplay": {
+              "status": "passed",
+              "asserted": true
+            },
+            "resolution": {
+              "status": "passed",
+              "asserted": true,
+              "action": "complete_destination",
+              "outcome": "completed"
+            },
+            "preservation": {
+              "status": "passed",
+              "asserted": true
+            },
+            "restartPersistence": {
+              "status": "passed",
+              "asserted": true
+            }
+          },
+          "commit": {
+            "seed": {
+              "status": "passed",
+              "asserted": true,
+              "checkpoint": "commit",
+              "stage": "completed",
+              "cleanupExecuted": false
+            },
+            "restartNoReplay": {
+              "status": "passed",
+              "asserted": true
+            },
+            "resolution": {
+              "status": "passed",
+              "asserted": true,
+              "outcome": "completed_before_interruption",
+              "mutationRequired": false
+            },
+            "preservation": {
+              "status": "passed",
+              "asserted": true
+            },
+            "restartPersistence": {
+              "status": "passed",
+              "asserted": true
+            }
+          }
+        }
+      },
+      "isolation": {
+        "status": "passed",
+        "asserted": true
+      },
+      "normalShutdown": {
+        "status": "passed",
+        "asserted": true,
+        "invocations": 46
+      },
+      "fixtureCleanup": {
+        "status": "passed",
+        "asserted": true,
+        "processesStopped": true
+      }
+    },
+    "shutdowns": [
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      }
+    ]
+  },
+  "ci-runtime-dev/dev-category-move-observations.json": {
+    "scope": "grouped production UI/preload/backend moves, rejections and explicit controlled-interruption recovery; final platform acceptance remains separate",
+    "inputs": {
+      "mode": "dev",
+      "platform": "darwin",
+      "arch": "arm64",
+      "node": "v22.21.1",
+      "sourceRevision": "df87b607f0606e85590fe980a3ebd513e1650e9b",
+      "inputDigest": "abf63be3640ab514ef2dc5d749dfdce60bf6bd6f29a4cd01c4e9994ed269f588"
+    },
+    "status": "passed",
+    "evidence": {
+      "inputs": {
+        "mode": "dev",
+        "platform": "darwin",
+        "arch": "arm64",
+        "node": "v22.21.1",
+        "sourceRevision": "df87b607f0606e85590fe980a3ebd513e1650e9b",
+        "inputDigest": "abf63be3640ab514ef2dc5d749dfdce60bf6bd6f29a4cd01c4e9994ed269f588"
+      },
+      "en": {
+        "seed": {
+          "status": "passed",
+          "asserted": true
+        },
+        "readOnlyReopen": {
+          "status": "passed",
+          "asserted": true
+        },
+        "submission": {
+          "status": "passed",
+          "asserted": true,
+          "outcome": "completed"
+        },
+        "currentCategory": {
+          "status": "passed",
+          "asserted": true,
+          "outcome": "unchanged"
+        },
+        "occupied": {
+          "status": "passed",
+          "asserted": true
+        },
+        "unavailable": {
+          "status": "passed",
+          "asserted": true
+        },
+        "sibling": {
+          "status": "passed",
+          "asserted": true
+        },
+        "preservation": {
+          "status": "passed",
+          "asserted": true
+        },
+        "restartPersistence": {
+          "status": "passed",
+          "asserted": true
+        },
+        "layout": {
+          "status": "passed",
+          "asserted": true
+        },
+        "recovery": {
+          "intent": {
+            "preparation": {
+              "status": "passed",
+              "asserted": true,
+              "kind": "controlled_fixture_preparation",
+              "checkpoint": "intent",
+              "stage": "intent",
+              "workerExited": true,
+              "cleanupExecuted": false
+            },
+            "restartNoReplay": {
+              "status": "passed",
+              "asserted": true
+            },
+            "resolution": {
+              "status": "passed",
+              "asserted": true,
+              "action": "retry_original",
+              "outcome": "completed",
+              "mutationRequired": true,
+              "freshAdvertisedAction": true
+            },
+            "preservation": {
+              "status": "passed",
+              "asserted": true
+            },
+            "restartPersistence": {
+              "status": "passed",
+              "asserted": true
+            }
+          },
+          "native_effect": {
+            "preparation": {
+              "status": "passed",
+              "asserted": true,
+              "kind": "controlled_fixture_preparation",
+              "checkpoint": "native_effect",
+              "stage": "intent",
+              "workerExited": true,
+              "cleanupExecuted": false
+            },
+            "restartNoReplay": {
+              "status": "passed",
+              "asserted": true
+            },
+            "resolution": {
+              "status": "passed",
+              "asserted": true,
+              "action": "complete_destination",
+              "outcome": "completed",
+              "mutationRequired": true,
+              "freshAdvertisedAction": true
+            },
+            "preservation": {
+              "status": "passed",
+              "asserted": true
+            },
+            "restartPersistence": {
+              "status": "passed",
+              "asserted": true
+            }
+          },
+          "destination_evidence": {
+            "preparation": {
+              "status": "passed",
+              "asserted": true,
+              "kind": "controlled_fixture_preparation",
+              "checkpoint": "destination_evidence",
+              "stage": "destination_recorded",
+              "workerExited": true,
+              "cleanupExecuted": false
+            },
+            "restartNoReplay": {
+              "status": "passed",
+              "asserted": true
+            },
+            "resolution": {
+              "status": "passed",
+              "asserted": true,
+              "action": "complete_destination",
+              "outcome": "completed",
+              "mutationRequired": true,
+              "freshAdvertisedAction": true
+            },
+            "preservation": {
+              "status": "passed",
+              "asserted": true
+            },
+            "restartPersistence": {
+              "status": "passed",
+              "asserted": true
+            }
+          },
+          "commit": {
+            "preparation": {
+              "status": "passed",
+              "asserted": true,
+              "kind": "controlled_fixture_preparation",
+              "checkpoint": "commit",
+              "stage": "completed",
+              "workerExited": true,
+              "cleanupExecuted": false
+            },
+            "restartNoReplay": {
+              "status": "passed",
+              "asserted": true
+            },
+            "resolution": {
+              "status": "passed",
+              "asserted": true,
+              "action": null,
+              "outcome": "completed",
+              "mutationRequired": false
+            },
+            "preservation": {
+              "status": "passed",
+              "asserted": true
+            },
+            "restartPersistence": {
+              "status": "passed",
+              "asserted": true
+            }
+          },
+          "keep_original": {
+            "preparation": {
+              "status": "passed",
+              "asserted": true,
+              "kind": "controlled_fixture_preparation",
+              "checkpoint": "intent",
+              "stage": "intent",
+              "workerExited": true,
+              "cleanupExecuted": false
+            },
+            "restartNoReplay": {
+              "status": "passed",
+              "asserted": true
+            },
+            "resolution": {
+              "status": "passed",
+              "asserted": true,
+              "action": "keep_original",
+              "outcome": "rejected",
+              "mutationRequired": true,
+              "freshAdvertisedAction": true
+            },
+            "preservation": {
+              "status": "passed",
+              "asserted": true
+            },
+            "restartPersistence": {
+              "status": "passed",
+              "asserted": true
+            }
+          }
+        }
+      },
+      "ru": {
+        "seed": {
+          "status": "passed",
+          "asserted": true
+        },
+        "readOnlyReopen": {
+          "status": "passed",
+          "asserted": true
+        },
+        "submission": {
+          "status": "passed",
+          "asserted": true,
+          "outcome": "completed"
+        },
+        "currentCategory": {
+          "status": "passed",
+          "asserted": true,
+          "outcome": "unchanged"
+        },
+        "occupied": {
+          "status": "passed",
+          "asserted": true
+        },
+        "unavailable": {
+          "status": "passed",
+          "asserted": true
+        },
+        "sibling": {
+          "status": "passed",
+          "asserted": true
+        },
+        "preservation": {
+          "status": "passed",
+          "asserted": true
+        },
+        "restartPersistence": {
+          "status": "passed",
+          "asserted": true
+        },
+        "layout": {
+          "status": "passed",
+          "asserted": true
+        },
+        "recovery": {
+          "intent": {
+            "preparation": {
+              "status": "passed",
+              "asserted": true,
+              "kind": "controlled_fixture_preparation",
+              "checkpoint": "intent",
+              "stage": "intent",
+              "workerExited": true,
+              "cleanupExecuted": false
+            },
+            "restartNoReplay": {
+              "status": "passed",
+              "asserted": true
+            },
+            "resolution": {
+              "status": "passed",
+              "asserted": true,
+              "action": "retry_original",
+              "outcome": "completed",
+              "mutationRequired": true,
+              "freshAdvertisedAction": true
+            },
+            "preservation": {
+              "status": "passed",
+              "asserted": true
+            },
+            "restartPersistence": {
+              "status": "passed",
+              "asserted": true
+            }
+          },
+          "native_effect": {
+            "preparation": {
+              "status": "passed",
+              "asserted": true,
+              "kind": "controlled_fixture_preparation",
+              "checkpoint": "native_effect",
+              "stage": "intent",
+              "workerExited": true,
+              "cleanupExecuted": false
+            },
+            "restartNoReplay": {
+              "status": "passed",
+              "asserted": true
+            },
+            "resolution": {
+              "status": "passed",
+              "asserted": true,
+              "action": "complete_destination",
+              "outcome": "completed",
+              "mutationRequired": true,
+              "freshAdvertisedAction": true
+            },
+            "preservation": {
+              "status": "passed",
+              "asserted": true
+            },
+            "restartPersistence": {
+              "status": "passed",
+              "asserted": true
+            }
+          },
+          "destination_evidence": {
+            "preparation": {
+              "status": "passed",
+              "asserted": true,
+              "kind": "controlled_fixture_preparation",
+              "checkpoint": "destination_evidence",
+              "stage": "destination_recorded",
+              "workerExited": true,
+              "cleanupExecuted": false
+            },
+            "restartNoReplay": {
+              "status": "passed",
+              "asserted": true
+            },
+            "resolution": {
+              "status": "passed",
+              "asserted": true,
+              "action": "complete_destination",
+              "outcome": "completed",
+              "mutationRequired": true,
+              "freshAdvertisedAction": true
+            },
+            "preservation": {
+              "status": "passed",
+              "asserted": true
+            },
+            "restartPersistence": {
+              "status": "passed",
+              "asserted": true
+            }
+          },
+          "commit": {
+            "preparation": {
+              "status": "passed",
+              "asserted": true,
+              "kind": "controlled_fixture_preparation",
+              "checkpoint": "commit",
+              "stage": "completed",
+              "workerExited": true,
+              "cleanupExecuted": false
+            },
+            "restartNoReplay": {
+              "status": "passed",
+              "asserted": true
+            },
+            "resolution": {
+              "status": "passed",
+              "asserted": true,
+              "action": null,
+              "outcome": "completed",
+              "mutationRequired": false
+            },
+            "preservation": {
+              "status": "passed",
+              "asserted": true
+            },
+            "restartPersistence": {
+              "status": "passed",
+              "asserted": true
+            }
+          },
+          "keep_original": {
+            "preparation": {
+              "status": "passed",
+              "asserted": true,
+              "kind": "controlled_fixture_preparation",
+              "checkpoint": "intent",
+              "stage": "intent",
+              "workerExited": true,
+              "cleanupExecuted": false
+            },
+            "restartNoReplay": {
+              "status": "passed",
+              "asserted": true
+            },
+            "resolution": {
+              "status": "passed",
+              "asserted": true,
+              "action": "keep_original",
+              "outcome": "rejected",
+              "mutationRequired": true,
+              "freshAdvertisedAction": true
+            },
+            "preservation": {
+              "status": "passed",
+              "asserted": true
+            },
+            "restartPersistence": {
+              "status": "passed",
+              "asserted": true
+            }
+          }
+        }
+      },
+      "isolation": {
+        "status": "passed",
+        "asserted": true
+      },
+      "normalShutdown": {
+        "status": "passed",
+        "asserted": true,
+        "normalQuit": true,
+        "backendExit": true,
+        "forcedCleanup": false,
+        "invocations": 34
+      },
+      "fixtureCleanup": {
+        "status": "passed",
+        "asserted": true,
+        "processesStopped": true,
+        "removed": true
+      }
+    },
+    "shutdowns": [
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      }
+    ]
+  },
+  "ci-creation-dev-crash-matrix/dev-creation-observations.json": {
+    "mode": "dev",
+    "platform": "darwin",
+    "arch": "arm64",
+    "scope": "production UI/IPC/native adapter; interruption seeded by terminated real-service child, not an Electron backend crash",
+    "runs": [
+      {
+        "discoveryMode": "direct",
+        "checkpoint": "after_intent",
+        "evidence": {
+          "direct": {
+            "creation": {
+              "status": "passed",
+              "asserted": true,
+              "checkpoint": "after_intent"
+            },
+            "interruptionRecovery": {
+              "status": "passed",
+              "asserted": true,
+              "checkpoint": "after_intent"
+            },
+            "nativeInvocation": {
+              "status": "skipped",
+              "reason": "Explicit recovery-only run; no native API invoked"
+            },
+            "nativeAcknowledgment": {
+              "status": "unreached"
+            },
+            "fileManagerOutcome": {
+              "status": "skipped",
+              "reason": "Explicit recovery-only run"
+            }
+          },
+          "grouped": {
+            "creation": {
+              "status": "unreached"
+            },
+            "interruptionRecovery": {
+              "status": "unreached"
+            },
+            "nativeInvocation": {
+              "status": "unreached"
+            },
+            "nativeAcknowledgment": {
+              "status": "unreached"
+            },
+            "fileManagerOutcome": {
+              "status": "unreached"
+            }
+          },
+          "normalShutdown": {
+            "status": "passed",
+            "asserted": true,
+            "backendStopped": true
+          },
+          "restartPersistence": {
+            "status": "passed",
+            "asserted": true,
+            "checkpoint": "after_intent"
+          }
+        },
+        "shutdowns": [
+          {
+            "status": "passed",
+            "backendStopped": true
+          },
+          {
+            "status": "passed",
+            "backendStopped": true
+          }
+        ]
+      },
+      {
+        "discoveryMode": "direct",
+        "checkpoint": "after_mkdir",
+        "evidence": {
+          "direct": {
+            "creation": {
+              "status": "passed",
+              "asserted": true,
+              "checkpoint": "after_mkdir"
+            },
+            "interruptionRecovery": {
+              "status": "passed",
+              "asserted": true,
+              "checkpoint": "after_mkdir"
+            },
+            "nativeInvocation": {
+              "status": "skipped",
+              "reason": "Explicit recovery-only run; no native API invoked"
+            },
+            "nativeAcknowledgment": {
+              "status": "unreached"
+            },
+            "fileManagerOutcome": {
+              "status": "skipped",
+              "reason": "Explicit recovery-only run"
+            }
+          },
+          "grouped": {
+            "creation": {
+              "status": "unreached"
+            },
+            "interruptionRecovery": {
+              "status": "unreached"
+            },
+            "nativeInvocation": {
+              "status": "unreached"
+            },
+            "nativeAcknowledgment": {
+              "status": "unreached"
+            },
+            "fileManagerOutcome": {
+              "status": "unreached"
+            }
+          },
+          "normalShutdown": {
+            "status": "passed",
+            "asserted": true,
+            "backendStopped": true
+          },
+          "restartPersistence": {
+            "status": "passed",
+            "asserted": true,
+            "checkpoint": "after_mkdir"
+          }
+        },
+        "shutdowns": [
+          {
+            "status": "passed",
+            "backendStopped": true
+          },
+          {
+            "status": "passed",
+            "backendStopped": true
+          }
+        ]
+      },
+      {
+        "discoveryMode": "direct",
+        "checkpoint": "after_evidence",
+        "evidence": {
+          "direct": {
+            "creation": {
+              "status": "passed",
+              "asserted": true,
+              "checkpoint": "after_evidence"
+            },
+            "interruptionRecovery": {
+              "status": "passed",
+              "asserted": true,
+              "checkpoint": "after_evidence"
+            },
+            "nativeInvocation": {
+              "status": "skipped",
+              "reason": "Explicit recovery-only run; no native API invoked"
+            },
+            "nativeAcknowledgment": {
+              "status": "unreached"
+            },
+            "fileManagerOutcome": {
+              "status": "skipped",
+              "reason": "Explicit recovery-only run"
+            }
+          },
+          "grouped": {
+            "creation": {
+              "status": "unreached"
+            },
+            "interruptionRecovery": {
+              "status": "unreached"
+            },
+            "nativeInvocation": {
+              "status": "unreached"
+            },
+            "nativeAcknowledgment": {
+              "status": "unreached"
+            },
+            "fileManagerOutcome": {
+              "status": "unreached"
+            }
+          },
+          "normalShutdown": {
+            "status": "passed",
+            "asserted": true,
+            "backendStopped": true
+          },
+          "restartPersistence": {
+            "status": "passed",
+            "asserted": true,
+            "checkpoint": "after_evidence"
+          }
+        },
+        "shutdowns": [
+          {
+            "status": "passed",
+            "backendStopped": true
+          },
+          {
+            "status": "passed",
+            "backendStopped": true
+          }
+        ]
+      },
+      {
+        "discoveryMode": "direct",
+        "checkpoint": "after_commit",
+        "evidence": {
+          "direct": {
+            "creation": {
+              "status": "passed",
+              "asserted": true,
+              "checkpoint": "after_commit"
+            },
+            "interruptionRecovery": {
+              "status": "skipped",
+              "reason": "Committed before response loss; status reconciliation verified, no recovery mutation required"
+            },
+            "nativeInvocation": {
+              "status": "skipped",
+              "reason": "Explicit recovery-only run; no native API invoked"
+            },
+            "nativeAcknowledgment": {
+              "status": "unreached"
+            },
+            "fileManagerOutcome": {
+              "status": "skipped",
+              "reason": "Explicit recovery-only run"
+            }
+          },
+          "grouped": {
+            "creation": {
+              "status": "unreached"
+            },
+            "interruptionRecovery": {
+              "status": "unreached"
+            },
+            "nativeInvocation": {
+              "status": "unreached"
+            },
+            "nativeAcknowledgment": {
+              "status": "unreached"
+            },
+            "fileManagerOutcome": {
+              "status": "unreached"
+            }
+          },
+          "normalShutdown": {
+            "status": "passed",
+            "asserted": true,
+            "backendStopped": true
+          },
+          "restartPersistence": {
+            "status": "passed",
+            "asserted": true,
+            "checkpoint": "after_commit"
+          }
+        },
+        "shutdowns": [
+          {
+            "status": "passed",
+            "backendStopped": true
+          },
+          {
+            "status": "passed",
+            "backendStopped": true
+          }
+        ]
+      },
+      {
+        "discoveryMode": "grouped",
+        "checkpoint": "after_intent",
+        "evidence": {
+          "direct": {
+            "creation": {
+              "status": "unreached"
+            },
+            "interruptionRecovery": {
+              "status": "unreached"
+            },
+            "nativeInvocation": {
+              "status": "unreached"
+            },
+            "nativeAcknowledgment": {
+              "status": "unreached"
+            },
+            "fileManagerOutcome": {
+              "status": "unreached"
+            }
+          },
+          "grouped": {
+            "creation": {
+              "status": "passed",
+              "asserted": true,
+              "checkpoint": "after_intent"
+            },
+            "interruptionRecovery": {
+              "status": "passed",
+              "asserted": true,
+              "checkpoint": "after_intent"
+            },
+            "nativeInvocation": {
+              "status": "skipped",
+              "reason": "Explicit recovery-only run; no native API invoked"
+            },
+            "nativeAcknowledgment": {
+              "status": "unreached"
+            },
+            "fileManagerOutcome": {
+              "status": "skipped",
+              "reason": "Explicit recovery-only run"
+            }
+          },
+          "normalShutdown": {
+            "status": "passed",
+            "asserted": true,
+            "backendStopped": true
+          },
+          "restartPersistence": {
+            "status": "passed",
+            "asserted": true,
+            "checkpoint": "after_intent"
+          }
+        },
+        "shutdowns": [
+          {
+            "status": "passed",
+            "backendStopped": true
+          },
+          {
+            "status": "passed",
+            "backendStopped": true
+          }
+        ]
+      },
+      {
+        "discoveryMode": "grouped",
+        "checkpoint": "after_mkdir",
+        "evidence": {
+          "direct": {
+            "creation": {
+              "status": "unreached"
+            },
+            "interruptionRecovery": {
+              "status": "unreached"
+            },
+            "nativeInvocation": {
+              "status": "unreached"
+            },
+            "nativeAcknowledgment": {
+              "status": "unreached"
+            },
+            "fileManagerOutcome": {
+              "status": "unreached"
+            }
+          },
+          "grouped": {
+            "creation": {
+              "status": "passed",
+              "asserted": true,
+              "checkpoint": "after_mkdir"
+            },
+            "interruptionRecovery": {
+              "status": "passed",
+              "asserted": true,
+              "checkpoint": "after_mkdir"
+            },
+            "nativeInvocation": {
+              "status": "skipped",
+              "reason": "Explicit recovery-only run; no native API invoked"
+            },
+            "nativeAcknowledgment": {
+              "status": "unreached"
+            },
+            "fileManagerOutcome": {
+              "status": "skipped",
+              "reason": "Explicit recovery-only run"
+            }
+          },
+          "normalShutdown": {
+            "status": "passed",
+            "asserted": true,
+            "backendStopped": true
+          },
+          "restartPersistence": {
+            "status": "passed",
+            "asserted": true,
+            "checkpoint": "after_mkdir"
+          }
+        },
+        "shutdowns": [
+          {
+            "status": "passed",
+            "backendStopped": true
+          },
+          {
+            "status": "passed",
+            "backendStopped": true
+          }
+        ]
+      },
+      {
+        "discoveryMode": "grouped",
+        "checkpoint": "after_evidence",
+        "evidence": {
+          "direct": {
+            "creation": {
+              "status": "unreached"
+            },
+            "interruptionRecovery": {
+              "status": "unreached"
+            },
+            "nativeInvocation": {
+              "status": "unreached"
+            },
+            "nativeAcknowledgment": {
+              "status": "unreached"
+            },
+            "fileManagerOutcome": {
+              "status": "unreached"
+            }
+          },
+          "grouped": {
+            "creation": {
+              "status": "passed",
+              "asserted": true,
+              "checkpoint": "after_evidence"
+            },
+            "interruptionRecovery": {
+              "status": "passed",
+              "asserted": true,
+              "checkpoint": "after_evidence"
+            },
+            "nativeInvocation": {
+              "status": "skipped",
+              "reason": "Explicit recovery-only run; no native API invoked"
+            },
+            "nativeAcknowledgment": {
+              "status": "unreached"
+            },
+            "fileManagerOutcome": {
+              "status": "skipped",
+              "reason": "Explicit recovery-only run"
+            }
+          },
+          "normalShutdown": {
+            "status": "passed",
+            "asserted": true,
+            "backendStopped": true
+          },
+          "restartPersistence": {
+            "status": "passed",
+            "asserted": true,
+            "checkpoint": "after_evidence"
+          }
+        },
+        "shutdowns": [
+          {
+            "status": "passed",
+            "backendStopped": true
+          },
+          {
+            "status": "passed",
+            "backendStopped": true
+          }
+        ]
+      },
+      {
+        "discoveryMode": "grouped",
+        "checkpoint": "after_commit",
+        "evidence": {
+          "direct": {
+            "creation": {
+              "status": "unreached"
+            },
+            "interruptionRecovery": {
+              "status": "unreached"
+            },
+            "nativeInvocation": {
+              "status": "unreached"
+            },
+            "nativeAcknowledgment": {
+              "status": "unreached"
+            },
+            "fileManagerOutcome": {
+              "status": "unreached"
+            }
+          },
+          "grouped": {
+            "creation": {
+              "status": "passed",
+              "asserted": true,
+              "checkpoint": "after_commit"
+            },
+            "interruptionRecovery": {
+              "status": "skipped",
+              "reason": "Committed before response loss; status reconciliation verified, no recovery mutation required"
+            },
+            "nativeInvocation": {
+              "status": "skipped",
+              "reason": "Explicit recovery-only run; no native API invoked"
+            },
+            "nativeAcknowledgment": {
+              "status": "unreached"
+            },
+            "fileManagerOutcome": {
+              "status": "skipped",
+              "reason": "Explicit recovery-only run"
+            }
+          },
+          "normalShutdown": {
+            "status": "passed",
+            "asserted": true,
+            "backendStopped": true
+          },
+          "restartPersistence": {
+            "status": "passed",
+            "asserted": true,
+            "checkpoint": "after_commit"
+          }
+        },
+        "shutdowns": [
+          {
+            "status": "passed",
+            "backendStopped": true
+          },
+          {
+            "status": "passed",
+            "backendStopped": true
+          }
+        ]
+      }
+    ],
+    "fixtureCleanup": {
+      "status": "passed",
+      "asserted": true,
+      "processesStopped": true
+    },
+    "nativeBridgeCleanup": {
+      "status": "not_required"
+    }
+  },
+  "ci-creation-dev-direct/dev-creation-observations.json": {
+    "mode": "dev",
+    "platform": "darwin",
+    "arch": "arm64",
+    "scope": "production UI/IPC/native adapter; interruption seeded by terminated real-service child, not an Electron backend crash",
+    "runs": [
+      {
+        "discoveryMode": "direct",
+        "checkpoint": "after_evidence",
+        "evidence": {
+          "direct": {
+            "creation": {
+              "status": "passed",
+              "asserted": true,
+              "checkpoint": "after_evidence"
+            },
+            "interruptionRecovery": {
+              "status": "passed",
+              "asserted": true,
+              "checkpoint": "after_evidence"
+            },
+            "nativeInvocation": {
+              "status": "passed",
+              "asserted": true
+            },
+            "nativeAcknowledgment": {
+              "status": "passed",
+              "asserted": true
+            },
+            "fileManagerOutcome": {
+              "status": "passed",
+              "asserted": true,
+              "exactTargetObserved": true
+            }
+          },
+          "grouped": {
+            "creation": {
+              "status": "unreached"
+            },
+            "interruptionRecovery": {
+              "status": "unreached"
+            },
+            "nativeInvocation": {
+              "status": "unreached"
+            },
+            "nativeAcknowledgment": {
+              "status": "unreached"
+            },
+            "fileManagerOutcome": {
+              "status": "unreached"
+            }
+          },
+          "normalShutdown": {
+            "status": "passed",
+            "asserted": true,
+            "backendStopped": true
+          },
+          "restartPersistence": {
+            "status": "passed",
+            "asserted": true,
+            "checkpoint": "after_evidence"
+          }
+        },
+        "shutdowns": [
+          {
+            "status": "passed",
+            "backendStopped": true
+          },
+          {
+            "status": "passed",
+            "backendStopped": true
+          }
+        ]
+      }
+    ],
+    "fixtureCleanup": {
+      "status": "passed",
+      "asserted": true,
+      "processesStopped": true
+    },
+    "nativeBridgeCleanup": {
+      "status": "not_required"
+    }
+  },
+  "ci-creation-dev-grouped/dev-creation-observations.json": {
+    "mode": "dev",
+    "platform": "darwin",
+    "arch": "arm64",
+    "scope": "production UI/IPC/native adapter; interruption seeded by terminated real-service child, not an Electron backend crash",
+    "runs": [
+      {
+        "discoveryMode": "grouped",
+        "checkpoint": "after_evidence",
+        "evidence": {
+          "direct": {
+            "creation": {
+              "status": "unreached"
+            },
+            "interruptionRecovery": {
+              "status": "unreached"
+            },
+            "nativeInvocation": {
+              "status": "unreached"
+            },
+            "nativeAcknowledgment": {
+              "status": "unreached"
+            },
+            "fileManagerOutcome": {
+              "status": "unreached"
+            }
+          },
+          "grouped": {
+            "creation": {
+              "status": "passed",
+              "asserted": true,
+              "checkpoint": "after_evidence"
+            },
+            "interruptionRecovery": {
+              "status": "passed",
+              "asserted": true,
+              "checkpoint": "after_evidence"
+            },
+            "nativeInvocation": {
+              "status": "passed",
+              "asserted": true
+            },
+            "nativeAcknowledgment": {
+              "status": "passed",
+              "asserted": true
+            },
+            "fileManagerOutcome": {
+              "status": "passed",
+              "asserted": true,
+              "exactTargetObserved": true
+            }
+          },
+          "normalShutdown": {
+            "status": "passed",
+            "asserted": true,
+            "backendStopped": true
+          },
+          "restartPersistence": {
+            "status": "passed",
+            "asserted": true,
+            "checkpoint": "after_evidence"
+          }
+        },
+        "shutdowns": [
+          {
+            "status": "passed",
+            "backendStopped": true
+          },
+          {
+            "status": "passed",
+            "backendStopped": true
+          }
+        ]
+      }
+    ],
+    "fixtureCleanup": {
+      "status": "passed",
+      "asserted": true,
+      "processesStopped": true
+    },
+    "nativeBridgeCleanup": {
+      "status": "not_required"
+    }
+  },
+  "ci-category-options-dev/evidence.json": {
+    "issue": 20,
+    "relatedIssues": [
+      21
+    ],
+    "mode": "dev",
+    "platform": "darwin",
+    "sha": "df87b607f0606e85590fe980a3ebd513e1650e9b",
+    "checks": [
+      {
+        "scenario": "preview-layout",
+        "language": "en",
+        "width": 1440,
+        "height": 960,
+        "passed": true
+      },
+      {
+        "scenario": "preview-layout",
+        "language": "en",
+        "width": 1024,
+        "height": 720,
+        "passed": true
+      },
+      {
+        "scenario": "rename-cancel-apply-identity-values-presentation-siblings",
+        "language": "en",
+        "passed": true
+      },
+      {
+        "scenario": "preview-layout",
+        "language": "ru",
+        "width": 1440,
+        "height": 960,
+        "passed": true
+      },
+      {
+        "scenario": "preview-layout",
+        "language": "ru",
+        "width": 1024,
+        "height": 720,
+        "passed": true
+      },
+      {
+        "scenario": "rename-cancel-apply-identity-values-presentation-siblings",
+        "language": "ru",
+        "passed": true
+      },
+      {
+        "scenario": "explicit-create-empty-and-associate-existing-ui",
+        "passed": true
+      },
+      {
+        "scenario": "removal-preview-layout",
+        "language": "en",
+        "width": 1440,
+        "height": 960,
+        "passed": true
+      },
+      {
+        "scenario": "removal-preview-layout",
+        "language": "en",
+        "width": 1024,
+        "height": 720,
+        "passed": true
+      },
+      {
+        "scenario": "removal-collision-cancel-apply-identity-values-siblings",
+        "language": "en",
+        "passed": true
+      },
+      {
+        "scenario": "removal-preview-layout",
+        "language": "ru",
+        "width": 1440,
+        "height": 960,
+        "passed": true
+      },
+      {
+        "scenario": "removal-preview-layout",
+        "language": "ru",
+        "width": 1024,
+        "height": 720,
+        "passed": true
+      },
+      {
+        "scenario": "removal-collision-cancel-apply-identity-values-siblings",
+        "language": "ru",
+        "passed": true
+      },
+      {
+        "scenario": "removal-empty-no-destination-ui",
+        "passed": true
+      },
+      {
+        "scenario": "production-ipc-exact-validation",
+        "passed": true
+      },
+      {
+        "scenario": "electron-restart-persistence",
+        "passed": true
+      }
+    ],
+    "shutdowns": [
+      {
+        "normalQuit": true,
+        "backendExited": true
+      },
+      {
+        "normalQuit": true,
+        "backendExited": true
+      }
+    ],
+    "cleanup": {
+      "status": "passed",
+      "asserted": true,
+      "processesStopped": true
+    },
+    "status": "passed"
+  },
+  "ci-runtime-release/release-observations.json": {
+    "mode": "release",
+    "platform": "darwin",
+    "arch": "arm64",
+    "status": "passed",
+    "stages": {
+      "modeChangeCancel": true,
+      "modeChangeApply": true,
+      "modeChangeRecovery": true,
+      "modeChangeFeatures": true,
+      "modeChangeRestart": true,
+      "modeChangeSourceReuse": true,
+      "nativeReconciliation": true,
+      "explicitRefresh": true,
+      "shutdownMissed": true,
+      "recoveryFeatures": true,
+      "preQuitFeatures": true,
+      "firstShutdown": true,
+      "restartPersistence": true,
+      "retainedSourceReuse": true,
+      "startupFailure": true
+    },
+    "shutdowns": [
+      {
+        "attempt": 1,
+        "kind": "normal",
+        "passed": true
+      },
+      {
+        "attempt": 2,
+        "kind": "normal",
+        "passed": true
+      },
+      {
+        "attempt": 3,
+        "kind": "normal",
+        "passed": true
+      },
+      {
+        "attempt": 4,
+        "kind": "failed-startup",
+        "passed": true
+      }
+    ],
+    "fixtureCleanup": {
+      "status": "passed",
+      "asserted": true,
+      "processesStopped": true
+    },
+    "sourceMoves": [
+      {
+        "scenario": "subscribed-disconnect",
+        "direction": "disconnect",
+        "status": "passed",
+        "finalCode": null,
+        "attempts": 1,
+        "elapsedMs": 11,
+        "firstErrorCode": null,
+        "sourceAbsent": true,
+        "destinationIdentityMatches": true,
+        "contentsMatch": true,
+        "verificationComplete": true
+      },
+      {
+        "scenario": "subscribed-restore",
+        "direction": "restore",
+        "status": "passed",
+        "finalCode": null,
+        "attempts": 1,
+        "elapsedMs": 15,
+        "firstErrorCode": null,
+        "sourceAbsent": true,
+        "destinationIdentityMatches": true,
+        "contentsMatch": true,
+        "verificationComplete": true
+      },
+      {
+        "scenario": "unsubscribed-disconnect",
+        "direction": "disconnect",
+        "status": "passed",
+        "finalCode": null,
+        "attempts": 1,
+        "elapsedMs": 15,
+        "firstErrorCode": null,
+        "sourceAbsent": true,
+        "destinationIdentityMatches": true,
+        "contentsMatch": true,
+        "verificationComplete": true
+      },
+      {
+        "scenario": "unsubscribed-restore",
+        "direction": "restore",
+        "status": "passed",
+        "finalCode": null,
+        "attempts": 1,
+        "elapsedMs": 12,
+        "firstErrorCode": null,
+        "sourceAbsent": true,
+        "destinationIdentityMatches": true,
+        "contentsMatch": true,
+        "verificationComplete": true
+      }
+    ]
+  },
+  "ci-runtime-release/release-rename-observations.json": {
+    "mode": "release",
+    "platform": "darwin",
+    "arch": "arm64",
+    "node": "v22.21.1",
+    "sourceRevision": "df87b607f0606e85590fe980a3ebd513e1650e9b",
+    "inputDigest": "cc46224d399e16ac79d4e06d123c98f44d3d315da18c594e4d278918fb1f9a72",
+    "status": "passed",
+    "scope": "production graphical UI/preload/utilityProcess; interruption in driver-owned real-service child; injected alias policy only where mounted alias absent",
+    "evidence": {
+      "direct": {
+        "submission": {
+          "status": "passed",
+          "asserted": true
+        },
+        "rejections": {
+          "status": "passed",
+          "asserted": true
+        },
+        "caseOnly": {
+          "status": "passed",
+          "asserted": true,
+          "outcome": "completed"
+        },
+        "sibling": {
+          "status": "passed",
+          "asserted": true
+        },
+        "revealInvocation": {
+          "status": "passed",
+          "asserted": true
+        },
+        "revealAcknowledgment": {
+          "status": "passed",
+          "asserted": true
+        },
+        "fileManagerOutcome": {
+          "status": "passed",
+          "asserted": true,
+          "exactTargetObserved": true
+        },
+        "fileManagerCleanup": {
+          "status": "passed",
+          "asserted": true,
+          "outcome": {
+            "status": "completed",
+            "scope": "exact disposable target only"
+          }
+        },
+        "restartPersistence": {
+          "status": "passed",
+          "asserted": true
+        },
+        "recovery": {
+          "intent": {
+            "seed": {
+              "status": "passed",
+              "asserted": true,
+              "checkpoint": "intent",
+              "stage": "intent",
+              "cleanupExecuted": false
+            },
+            "restartNoReplay": {
+              "status": "passed",
+              "asserted": true
+            },
+            "resolution": {
+              "status": "passed",
+              "asserted": true,
+              "action": "retry_original",
+              "outcome": "completed"
+            },
+            "preservation": {
+              "status": "passed",
+              "asserted": true
+            },
+            "restartPersistence": {
+              "status": "passed",
+              "asserted": true
+            }
+          },
+          "keep_original": {
+            "seed": {
+              "status": "passed",
+              "asserted": true,
+              "checkpoint": "intent",
+              "stage": "intent",
+              "cleanupExecuted": false
+            },
+            "restartNoReplay": {
+              "status": "passed",
+              "asserted": true
+            },
+            "resolution": {
+              "status": "passed",
+              "asserted": true,
+              "action": "keep_original",
+              "outcome": "rejected"
+            },
+            "preservation": {
+              "status": "passed",
+              "asserted": true
+            },
+            "restartPersistence": {
+              "status": "passed",
+              "asserted": true
+            }
+          },
+          "first_effect": {
+            "seed": {
+              "status": "passed",
+              "asserted": true,
+              "checkpoint": "first_effect",
+              "stage": "intent",
+              "cleanupExecuted": false
+            },
+            "restartNoReplay": {
+              "status": "passed",
+              "asserted": true
+            },
+            "resolution": {
+              "status": "passed",
+              "asserted": true,
+              "action": "finish_staged",
+              "outcome": "completed"
+            },
+            "preservation": {
+              "status": "passed",
+              "asserted": true
+            },
+            "restartPersistence": {
+              "status": "passed",
+              "asserted": true
+            }
+          },
+          "staged_evidence": {
+            "seed": {
+              "status": "passed",
+              "asserted": true,
+              "checkpoint": "staged_evidence",
+              "stage": "staged",
+              "cleanupExecuted": false
+            },
+            "restartNoReplay": {
+              "status": "passed",
+              "asserted": true
+            },
+            "resolution": {
+              "status": "passed",
+              "asserted": true,
+              "action": "finish_staged",
+              "outcome": "completed"
+            },
+            "preservation": {
+              "status": "passed",
+              "asserted": true
+            },
+            "restartPersistence": {
+              "status": "passed",
+              "asserted": true
+            }
+          },
+          "final_effect": {
+            "seed": {
+              "status": "passed",
+              "asserted": true,
+              "checkpoint": "final_effect",
+              "stage": "staged",
+              "cleanupExecuted": false
+            },
+            "restartNoReplay": {
+              "status": "passed",
+              "asserted": true
+            },
+            "resolution": {
+              "status": "passed",
+              "asserted": true,
+              "action": "complete_destination",
+              "outcome": "completed"
+            },
+            "preservation": {
+              "status": "passed",
+              "asserted": true
+            },
+            "restartPersistence": {
+              "status": "passed",
+              "asserted": true
+            }
+          },
+          "destination_evidence": {
+            "seed": {
+              "status": "passed",
+              "asserted": true,
+              "checkpoint": "destination_evidence",
+              "stage": "destination_recorded",
+              "cleanupExecuted": false
+            },
+            "restartNoReplay": {
+              "status": "passed",
+              "asserted": true
+            },
+            "resolution": {
+              "status": "passed",
+              "asserted": true,
+              "action": "complete_destination",
+              "outcome": "completed"
+            },
+            "preservation": {
+              "status": "passed",
+              "asserted": true
+            },
+            "restartPersistence": {
+              "status": "passed",
+              "asserted": true
+            }
+          },
+          "commit": {
+            "seed": {
+              "status": "passed",
+              "asserted": true,
+              "checkpoint": "commit",
+              "stage": "completed",
+              "cleanupExecuted": false
+            },
+            "restartNoReplay": {
+              "status": "passed",
+              "asserted": true
+            },
+            "resolution": {
+              "status": "passed",
+              "asserted": true,
+              "outcome": "completed_before_interruption",
+              "mutationRequired": false
+            },
+            "preservation": {
+              "status": "passed",
+              "asserted": true
+            },
+            "restartPersistence": {
+              "status": "passed",
+              "asserted": true
+            }
+          }
+        }
+      },
+      "grouped": {
+        "submission": {
+          "status": "passed",
+          "asserted": true
+        },
+        "rejections": {
+          "status": "passed",
+          "asserted": true
+        },
+        "caseOnly": {
+          "status": "passed",
+          "asserted": true,
+          "outcome": "completed"
+        },
+        "sibling": {
+          "status": "passed",
+          "asserted": true
+        },
+        "revealInvocation": {
+          "status": "passed",
+          "asserted": true
+        },
+        "revealAcknowledgment": {
+          "status": "passed",
+          "asserted": true
+        },
+        "fileManagerOutcome": {
+          "status": "passed",
+          "asserted": true,
+          "exactTargetObserved": true
+        },
+        "fileManagerCleanup": {
+          "status": "passed",
+          "asserted": true,
+          "outcome": {
+            "status": "completed",
+            "scope": "exact disposable target only"
+          }
+        },
+        "restartPersistence": {
+          "status": "passed",
+          "asserted": true
+        },
+        "recovery": {
+          "intent": {
+            "seed": {
+              "status": "passed",
+              "asserted": true,
+              "checkpoint": "intent",
+              "stage": "intent",
+              "cleanupExecuted": false
+            },
+            "restartNoReplay": {
+              "status": "passed",
+              "asserted": true
+            },
+            "resolution": {
+              "status": "passed",
+              "asserted": true,
+              "action": "retry_original",
+              "outcome": "completed"
+            },
+            "preservation": {
+              "status": "passed",
+              "asserted": true
+            },
+            "restartPersistence": {
+              "status": "passed",
+              "asserted": true
+            }
+          },
+          "keep_original": {
+            "seed": {
+              "status": "passed",
+              "asserted": true,
+              "checkpoint": "intent",
+              "stage": "intent",
+              "cleanupExecuted": false
+            },
+            "restartNoReplay": {
+              "status": "passed",
+              "asserted": true
+            },
+            "resolution": {
+              "status": "passed",
+              "asserted": true,
+              "action": "keep_original",
+              "outcome": "rejected"
+            },
+            "preservation": {
+              "status": "passed",
+              "asserted": true
+            },
+            "restartPersistence": {
+              "status": "passed",
+              "asserted": true
+            }
+          },
+          "first_effect": {
+            "seed": {
+              "status": "passed",
+              "asserted": true,
+              "checkpoint": "first_effect",
+              "stage": "intent",
+              "cleanupExecuted": false
+            },
+            "restartNoReplay": {
+              "status": "passed",
+              "asserted": true
+            },
+            "resolution": {
+              "status": "passed",
+              "asserted": true,
+              "action": "finish_staged",
+              "outcome": "completed"
+            },
+            "preservation": {
+              "status": "passed",
+              "asserted": true
+            },
+            "restartPersistence": {
+              "status": "passed",
+              "asserted": true
+            }
+          },
+          "staged_evidence": {
+            "seed": {
+              "status": "passed",
+              "asserted": true,
+              "checkpoint": "staged_evidence",
+              "stage": "staged",
+              "cleanupExecuted": false
+            },
+            "restartNoReplay": {
+              "status": "passed",
+              "asserted": true
+            },
+            "resolution": {
+              "status": "passed",
+              "asserted": true,
+              "action": "finish_staged",
+              "outcome": "completed"
+            },
+            "preservation": {
+              "status": "passed",
+              "asserted": true
+            },
+            "restartPersistence": {
+              "status": "passed",
+              "asserted": true
+            }
+          },
+          "final_effect": {
+            "seed": {
+              "status": "passed",
+              "asserted": true,
+              "checkpoint": "final_effect",
+              "stage": "staged",
+              "cleanupExecuted": false
+            },
+            "restartNoReplay": {
+              "status": "passed",
+              "asserted": true
+            },
+            "resolution": {
+              "status": "passed",
+              "asserted": true,
+              "action": "complete_destination",
+              "outcome": "completed"
+            },
+            "preservation": {
+              "status": "passed",
+              "asserted": true
+            },
+            "restartPersistence": {
+              "status": "passed",
+              "asserted": true
+            }
+          },
+          "destination_evidence": {
+            "seed": {
+              "status": "passed",
+              "asserted": true,
+              "checkpoint": "destination_evidence",
+              "stage": "destination_recorded",
+              "cleanupExecuted": false
+            },
+            "restartNoReplay": {
+              "status": "passed",
+              "asserted": true
+            },
+            "resolution": {
+              "status": "passed",
+              "asserted": true,
+              "action": "complete_destination",
+              "outcome": "completed"
+            },
+            "preservation": {
+              "status": "passed",
+              "asserted": true
+            },
+            "restartPersistence": {
+              "status": "passed",
+              "asserted": true
+            }
+          },
+          "commit": {
+            "seed": {
+              "status": "passed",
+              "asserted": true,
+              "checkpoint": "commit",
+              "stage": "completed",
+              "cleanupExecuted": false
+            },
+            "restartNoReplay": {
+              "status": "passed",
+              "asserted": true
+            },
+            "resolution": {
+              "status": "passed",
+              "asserted": true,
+              "outcome": "completed_before_interruption",
+              "mutationRequired": false
+            },
+            "preservation": {
+              "status": "passed",
+              "asserted": true
+            },
+            "restartPersistence": {
+              "status": "passed",
+              "asserted": true
+            }
+          }
+        }
+      },
+      "isolation": {
+        "status": "passed",
+        "asserted": true
+      },
+      "normalShutdown": {
+        "status": "passed",
+        "asserted": true,
+        "invocations": 46
+      },
+      "fixtureCleanup": {
+        "status": "passed",
+        "asserted": true,
+        "processesStopped": true
+      }
+    },
+    "shutdowns": [
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      }
+    ]
+  },
+  "ci-runtime-release/release-category-move-observations.json": {
+    "scope": "grouped production UI/preload/backend moves, rejections and explicit controlled-interruption recovery; final platform acceptance remains separate",
+    "inputs": {
+      "mode": "release",
+      "platform": "darwin",
+      "arch": "arm64",
+      "node": "v22.21.1",
+      "sourceRevision": "df87b607f0606e85590fe980a3ebd513e1650e9b",
+      "inputDigest": "c225f2c19238be49e6ede1aa2f1a3c46b55d67526c7f2b1a2f05a3b78ff25a9f"
+    },
+    "status": "passed",
+    "evidence": {
+      "inputs": {
+        "mode": "release",
+        "platform": "darwin",
+        "arch": "arm64",
+        "node": "v22.21.1",
+        "sourceRevision": "df87b607f0606e85590fe980a3ebd513e1650e9b",
+        "inputDigest": "c225f2c19238be49e6ede1aa2f1a3c46b55d67526c7f2b1a2f05a3b78ff25a9f"
+      },
+      "en": {
+        "seed": {
+          "status": "passed",
+          "asserted": true
+        },
+        "readOnlyReopen": {
+          "status": "passed",
+          "asserted": true
+        },
+        "submission": {
+          "status": "passed",
+          "asserted": true,
+          "outcome": "completed"
+        },
+        "currentCategory": {
+          "status": "passed",
+          "asserted": true,
+          "outcome": "unchanged"
+        },
+        "occupied": {
+          "status": "passed",
+          "asserted": true
+        },
+        "unavailable": {
+          "status": "passed",
+          "asserted": true
+        },
+        "sibling": {
+          "status": "passed",
+          "asserted": true
+        },
+        "preservation": {
+          "status": "passed",
+          "asserted": true
+        },
+        "restartPersistence": {
+          "status": "passed",
+          "asserted": true
+        },
+        "layout": {
+          "status": "passed",
+          "asserted": true
+        },
+        "recovery": {
+          "intent": {
+            "preparation": {
+              "status": "passed",
+              "asserted": true,
+              "kind": "controlled_fixture_preparation",
+              "checkpoint": "intent",
+              "stage": "intent",
+              "workerExited": true,
+              "cleanupExecuted": false
+            },
+            "restartNoReplay": {
+              "status": "passed",
+              "asserted": true
+            },
+            "resolution": {
+              "status": "passed",
+              "asserted": true,
+              "action": "retry_original",
+              "outcome": "completed",
+              "mutationRequired": true,
+              "freshAdvertisedAction": true
+            },
+            "preservation": {
+              "status": "passed",
+              "asserted": true
+            },
+            "restartPersistence": {
+              "status": "passed",
+              "asserted": true
+            }
+          },
+          "native_effect": {
+            "preparation": {
+              "status": "passed",
+              "asserted": true,
+              "kind": "controlled_fixture_preparation",
+              "checkpoint": "native_effect",
+              "stage": "intent",
+              "workerExited": true,
+              "cleanupExecuted": false
+            },
+            "restartNoReplay": {
+              "status": "passed",
+              "asserted": true
+            },
+            "resolution": {
+              "status": "passed",
+              "asserted": true,
+              "action": "complete_destination",
+              "outcome": "completed",
+              "mutationRequired": true,
+              "freshAdvertisedAction": true
+            },
+            "preservation": {
+              "status": "passed",
+              "asserted": true
+            },
+            "restartPersistence": {
+              "status": "passed",
+              "asserted": true
+            }
+          },
+          "destination_evidence": {
+            "preparation": {
+              "status": "passed",
+              "asserted": true,
+              "kind": "controlled_fixture_preparation",
+              "checkpoint": "destination_evidence",
+              "stage": "destination_recorded",
+              "workerExited": true,
+              "cleanupExecuted": false
+            },
+            "restartNoReplay": {
+              "status": "passed",
+              "asserted": true
+            },
+            "resolution": {
+              "status": "passed",
+              "asserted": true,
+              "action": "complete_destination",
+              "outcome": "completed",
+              "mutationRequired": true,
+              "freshAdvertisedAction": true
+            },
+            "preservation": {
+              "status": "passed",
+              "asserted": true
+            },
+            "restartPersistence": {
+              "status": "passed",
+              "asserted": true
+            }
+          },
+          "commit": {
+            "preparation": {
+              "status": "passed",
+              "asserted": true,
+              "kind": "controlled_fixture_preparation",
+              "checkpoint": "commit",
+              "stage": "completed",
+              "workerExited": true,
+              "cleanupExecuted": false
+            },
+            "restartNoReplay": {
+              "status": "passed",
+              "asserted": true
+            },
+            "resolution": {
+              "status": "passed",
+              "asserted": true,
+              "action": null,
+              "outcome": "completed",
+              "mutationRequired": false
+            },
+            "preservation": {
+              "status": "passed",
+              "asserted": true
+            },
+            "restartPersistence": {
+              "status": "passed",
+              "asserted": true
+            }
+          },
+          "keep_original": {
+            "preparation": {
+              "status": "passed",
+              "asserted": true,
+              "kind": "controlled_fixture_preparation",
+              "checkpoint": "intent",
+              "stage": "intent",
+              "workerExited": true,
+              "cleanupExecuted": false
+            },
+            "restartNoReplay": {
+              "status": "passed",
+              "asserted": true
+            },
+            "resolution": {
+              "status": "passed",
+              "asserted": true,
+              "action": "keep_original",
+              "outcome": "rejected",
+              "mutationRequired": true,
+              "freshAdvertisedAction": true
+            },
+            "preservation": {
+              "status": "passed",
+              "asserted": true
+            },
+            "restartPersistence": {
+              "status": "passed",
+              "asserted": true
+            }
+          }
+        }
+      },
+      "ru": {
+        "seed": {
+          "status": "passed",
+          "asserted": true
+        },
+        "readOnlyReopen": {
+          "status": "passed",
+          "asserted": true
+        },
+        "submission": {
+          "status": "passed",
+          "asserted": true,
+          "outcome": "completed"
+        },
+        "currentCategory": {
+          "status": "passed",
+          "asserted": true,
+          "outcome": "unchanged"
+        },
+        "occupied": {
+          "status": "passed",
+          "asserted": true
+        },
+        "unavailable": {
+          "status": "passed",
+          "asserted": true
+        },
+        "sibling": {
+          "status": "passed",
+          "asserted": true
+        },
+        "preservation": {
+          "status": "passed",
+          "asserted": true
+        },
+        "restartPersistence": {
+          "status": "passed",
+          "asserted": true
+        },
+        "layout": {
+          "status": "passed",
+          "asserted": true
+        },
+        "recovery": {
+          "intent": {
+            "preparation": {
+              "status": "passed",
+              "asserted": true,
+              "kind": "controlled_fixture_preparation",
+              "checkpoint": "intent",
+              "stage": "intent",
+              "workerExited": true,
+              "cleanupExecuted": false
+            },
+            "restartNoReplay": {
+              "status": "passed",
+              "asserted": true
+            },
+            "resolution": {
+              "status": "passed",
+              "asserted": true,
+              "action": "retry_original",
+              "outcome": "completed",
+              "mutationRequired": true,
+              "freshAdvertisedAction": true
+            },
+            "preservation": {
+              "status": "passed",
+              "asserted": true
+            },
+            "restartPersistence": {
+              "status": "passed",
+              "asserted": true
+            }
+          },
+          "native_effect": {
+            "preparation": {
+              "status": "passed",
+              "asserted": true,
+              "kind": "controlled_fixture_preparation",
+              "checkpoint": "native_effect",
+              "stage": "intent",
+              "workerExited": true,
+              "cleanupExecuted": false
+            },
+            "restartNoReplay": {
+              "status": "passed",
+              "asserted": true
+            },
+            "resolution": {
+              "status": "passed",
+              "asserted": true,
+              "action": "complete_destination",
+              "outcome": "completed",
+              "mutationRequired": true,
+              "freshAdvertisedAction": true
+            },
+            "preservation": {
+              "status": "passed",
+              "asserted": true
+            },
+            "restartPersistence": {
+              "status": "passed",
+              "asserted": true
+            }
+          },
+          "destination_evidence": {
+            "preparation": {
+              "status": "passed",
+              "asserted": true,
+              "kind": "controlled_fixture_preparation",
+              "checkpoint": "destination_evidence",
+              "stage": "destination_recorded",
+              "workerExited": true,
+              "cleanupExecuted": false
+            },
+            "restartNoReplay": {
+              "status": "passed",
+              "asserted": true
+            },
+            "resolution": {
+              "status": "passed",
+              "asserted": true,
+              "action": "complete_destination",
+              "outcome": "completed",
+              "mutationRequired": true,
+              "freshAdvertisedAction": true
+            },
+            "preservation": {
+              "status": "passed",
+              "asserted": true
+            },
+            "restartPersistence": {
+              "status": "passed",
+              "asserted": true
+            }
+          },
+          "commit": {
+            "preparation": {
+              "status": "passed",
+              "asserted": true,
+              "kind": "controlled_fixture_preparation",
+              "checkpoint": "commit",
+              "stage": "completed",
+              "workerExited": true,
+              "cleanupExecuted": false
+            },
+            "restartNoReplay": {
+              "status": "passed",
+              "asserted": true
+            },
+            "resolution": {
+              "status": "passed",
+              "asserted": true,
+              "action": null,
+              "outcome": "completed",
+              "mutationRequired": false
+            },
+            "preservation": {
+              "status": "passed",
+              "asserted": true
+            },
+            "restartPersistence": {
+              "status": "passed",
+              "asserted": true
+            }
+          },
+          "keep_original": {
+            "preparation": {
+              "status": "passed",
+              "asserted": true,
+              "kind": "controlled_fixture_preparation",
+              "checkpoint": "intent",
+              "stage": "intent",
+              "workerExited": true,
+              "cleanupExecuted": false
+            },
+            "restartNoReplay": {
+              "status": "passed",
+              "asserted": true
+            },
+            "resolution": {
+              "status": "passed",
+              "asserted": true,
+              "action": "keep_original",
+              "outcome": "rejected",
+              "mutationRequired": true,
+              "freshAdvertisedAction": true
+            },
+            "preservation": {
+              "status": "passed",
+              "asserted": true
+            },
+            "restartPersistence": {
+              "status": "passed",
+              "asserted": true
+            }
+          }
+        }
+      },
+      "isolation": {
+        "status": "passed",
+        "asserted": true
+      },
+      "normalShutdown": {
+        "status": "passed",
+        "asserted": true,
+        "normalQuit": true,
+        "backendExit": true,
+        "forcedCleanup": false,
+        "invocations": 34
+      },
+      "fixtureCleanup": {
+        "status": "passed",
+        "asserted": true,
+        "processesStopped": true,
+        "removed": true
+      }
+    },
+    "shutdowns": [
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      },
+      {
+        "passed": true
+      }
+    ]
+  },
+  "ci-creation-release-crash-matrix/release-creation-observations.json": {
+    "mode": "release",
+    "platform": "darwin",
+    "arch": "arm64",
+    "scope": "production UI/IPC/native adapter; interruption seeded by terminated real-service child, not an Electron backend crash",
+    "runs": [
+      {
+        "discoveryMode": "direct",
+        "checkpoint": "after_intent",
+        "evidence": {
+          "direct": {
+            "creation": {
+              "status": "passed",
+              "asserted": true,
+              "checkpoint": "after_intent"
+            },
+            "interruptionRecovery": {
+              "status": "passed",
+              "asserted": true,
+              "checkpoint": "after_intent"
+            },
+            "nativeInvocation": {
+              "status": "skipped",
+              "reason": "Explicit recovery-only run; no native API invoked"
+            },
+            "nativeAcknowledgment": {
+              "status": "unreached"
+            },
+            "fileManagerOutcome": {
+              "status": "skipped",
+              "reason": "Explicit recovery-only run"
+            }
+          },
+          "grouped": {
+            "creation": {
+              "status": "unreached"
+            },
+            "interruptionRecovery": {
+              "status": "unreached"
+            },
+            "nativeInvocation": {
+              "status": "unreached"
+            },
+            "nativeAcknowledgment": {
+              "status": "unreached"
+            },
+            "fileManagerOutcome": {
+              "status": "unreached"
+            }
+          },
+          "normalShutdown": {
+            "status": "passed",
+            "asserted": true,
+            "backendStopped": true
+          },
+          "restartPersistence": {
+            "status": "passed",
+            "asserted": true,
+            "checkpoint": "after_intent"
+          }
+        },
+        "shutdowns": [
+          {
+            "status": "passed",
+            "backendStopped": true
+          },
+          {
+            "status": "passed",
+            "backendStopped": true
+          }
+        ]
+      },
+      {
+        "discoveryMode": "direct",
+        "checkpoint": "after_mkdir",
+        "evidence": {
+          "direct": {
+            "creation": {
+              "status": "passed",
+              "asserted": true,
+              "checkpoint": "after_mkdir"
+            },
+            "interruptionRecovery": {
+              "status": "passed",
+              "asserted": true,
+              "checkpoint": "after_mkdir"
+            },
+            "nativeInvocation": {
+              "status": "skipped",
+              "reason": "Explicit recovery-only run; no native API invoked"
+            },
+            "nativeAcknowledgment": {
+              "status": "unreached"
+            },
+            "fileManagerOutcome": {
+              "status": "skipped",
+              "reason": "Explicit recovery-only run"
+            }
+          },
+          "grouped": {
+            "creation": {
+              "status": "unreached"
+            },
+            "interruptionRecovery": {
+              "status": "unreached"
+            },
+            "nativeInvocation": {
+              "status": "unreached"
+            },
+            "nativeAcknowledgment": {
+              "status": "unreached"
+            },
+            "fileManagerOutcome": {
+              "status": "unreached"
+            }
+          },
+          "normalShutdown": {
+            "status": "passed",
+            "asserted": true,
+            "backendStopped": true
+          },
+          "restartPersistence": {
+            "status": "passed",
+            "asserted": true,
+            "checkpoint": "after_mkdir"
+          }
+        },
+        "shutdowns": [
+          {
+            "status": "passed",
+            "backendStopped": true
+          },
+          {
+            "status": "passed",
+            "backendStopped": true
+          }
+        ]
+      },
+      {
+        "discoveryMode": "direct",
+        "checkpoint": "after_evidence",
+        "evidence": {
+          "direct": {
+            "creation": {
+              "status": "passed",
+              "asserted": true,
+              "checkpoint": "after_evidence"
+            },
+            "interruptionRecovery": {
+              "status": "passed",
+              "asserted": true,
+              "checkpoint": "after_evidence"
+            },
+            "nativeInvocation": {
+              "status": "skipped",
+              "reason": "Explicit recovery-only run; no native API invoked"
+            },
+            "nativeAcknowledgment": {
+              "status": "unreached"
+            },
+            "fileManagerOutcome": {
+              "status": "skipped",
+              "reason": "Explicit recovery-only run"
+            }
+          },
+          "grouped": {
+            "creation": {
+              "status": "unreached"
+            },
+            "interruptionRecovery": {
+              "status": "unreached"
+            },
+            "nativeInvocation": {
+              "status": "unreached"
+            },
+            "nativeAcknowledgment": {
+              "status": "unreached"
+            },
+            "fileManagerOutcome": {
+              "status": "unreached"
+            }
+          },
+          "normalShutdown": {
+            "status": "passed",
+            "asserted": true,
+            "backendStopped": true
+          },
+          "restartPersistence": {
+            "status": "passed",
+            "asserted": true,
+            "checkpoint": "after_evidence"
+          }
+        },
+        "shutdowns": [
+          {
+            "status": "passed",
+            "backendStopped": true
+          },
+          {
+            "status": "passed",
+            "backendStopped": true
+          }
+        ]
+      },
+      {
+        "discoveryMode": "direct",
+        "checkpoint": "after_commit",
+        "evidence": {
+          "direct": {
+            "creation": {
+              "status": "passed",
+              "asserted": true,
+              "checkpoint": "after_commit"
+            },
+            "interruptionRecovery": {
+              "status": "skipped",
+              "reason": "Committed before response loss; status reconciliation verified, no recovery mutation required"
+            },
+            "nativeInvocation": {
+              "status": "skipped",
+              "reason": "Explicit recovery-only run; no native API invoked"
+            },
+            "nativeAcknowledgment": {
+              "status": "unreached"
+            },
+            "fileManagerOutcome": {
+              "status": "skipped",
+              "reason": "Explicit recovery-only run"
+            }
+          },
+          "grouped": {
+            "creation": {
+              "status": "unreached"
+            },
+            "interruptionRecovery": {
+              "status": "unreached"
+            },
+            "nativeInvocation": {
+              "status": "unreached"
+            },
+            "nativeAcknowledgment": {
+              "status": "unreached"
+            },
+            "fileManagerOutcome": {
+              "status": "unreached"
+            }
+          },
+          "normalShutdown": {
+            "status": "passed",
+            "asserted": true,
+            "backendStopped": true
+          },
+          "restartPersistence": {
+            "status": "passed",
+            "asserted": true,
+            "checkpoint": "after_commit"
+          }
+        },
+        "shutdowns": [
+          {
+            "status": "passed",
+            "backendStopped": true
+          },
+          {
+            "status": "passed",
+            "backendStopped": true
+          }
+        ]
+      },
+      {
+        "discoveryMode": "grouped",
+        "checkpoint": "after_intent",
+        "evidence": {
+          "direct": {
+            "creation": {
+              "status": "unreached"
+            },
+            "interruptionRecovery": {
+              "status": "unreached"
+            },
+            "nativeInvocation": {
+              "status": "unreached"
+            },
+            "nativeAcknowledgment": {
+              "status": "unreached"
+            },
+            "fileManagerOutcome": {
+              "status": "unreached"
+            }
+          },
+          "grouped": {
+            "creation": {
+              "status": "passed",
+              "asserted": true,
+              "checkpoint": "after_intent"
+            },
+            "interruptionRecovery": {
+              "status": "passed",
+              "asserted": true,
+              "checkpoint": "after_intent"
+            },
+            "nativeInvocation": {
+              "status": "skipped",
+              "reason": "Explicit recovery-only run; no native API invoked"
+            },
+            "nativeAcknowledgment": {
+              "status": "unreached"
+            },
+            "fileManagerOutcome": {
+              "status": "skipped",
+              "reason": "Explicit recovery-only run"
+            }
+          },
+          "normalShutdown": {
+            "status": "passed",
+            "asserted": true,
+            "backendStopped": true
+          },
+          "restartPersistence": {
+            "status": "passed",
+            "asserted": true,
+            "checkpoint": "after_intent"
+          }
+        },
+        "shutdowns": [
+          {
+            "status": "passed",
+            "backendStopped": true
+          },
+          {
+            "status": "passed",
+            "backendStopped": true
+          }
+        ]
+      },
+      {
+        "discoveryMode": "grouped",
+        "checkpoint": "after_mkdir",
+        "evidence": {
+          "direct": {
+            "creation": {
+              "status": "unreached"
+            },
+            "interruptionRecovery": {
+              "status": "unreached"
+            },
+            "nativeInvocation": {
+              "status": "unreached"
+            },
+            "nativeAcknowledgment": {
+              "status": "unreached"
+            },
+            "fileManagerOutcome": {
+              "status": "unreached"
+            }
+          },
+          "grouped": {
+            "creation": {
+              "status": "passed",
+              "asserted": true,
+              "checkpoint": "after_mkdir"
+            },
+            "interruptionRecovery": {
+              "status": "passed",
+              "asserted": true,
+              "checkpoint": "after_mkdir"
+            },
+            "nativeInvocation": {
+              "status": "skipped",
+              "reason": "Explicit recovery-only run; no native API invoked"
+            },
+            "nativeAcknowledgment": {
+              "status": "unreached"
+            },
+            "fileManagerOutcome": {
+              "status": "skipped",
+              "reason": "Explicit recovery-only run"
+            }
+          },
+          "normalShutdown": {
+            "status": "passed",
+            "asserted": true,
+            "backendStopped": true
+          },
+          "restartPersistence": {
+            "status": "passed",
+            "asserted": true,
+            "checkpoint": "after_mkdir"
+          }
+        },
+        "shutdowns": [
+          {
+            "status": "passed",
+            "backendStopped": true
+          },
+          {
+            "status": "passed",
+            "backendStopped": true
+          }
+        ]
+      },
+      {
+        "discoveryMode": "grouped",
+        "checkpoint": "after_evidence",
+        "evidence": {
+          "direct": {
+            "creation": {
+              "status": "unreached"
+            },
+            "interruptionRecovery": {
+              "status": "unreached"
+            },
+            "nativeInvocation": {
+              "status": "unreached"
+            },
+            "nativeAcknowledgment": {
+              "status": "unreached"
+            },
+            "fileManagerOutcome": {
+              "status": "unreached"
+            }
+          },
+          "grouped": {
+            "creation": {
+              "status": "passed",
+              "asserted": true,
+              "checkpoint": "after_evidence"
+            },
+            "interruptionRecovery": {
+              "status": "passed",
+              "asserted": true,
+              "checkpoint": "after_evidence"
+            },
+            "nativeInvocation": {
+              "status": "skipped",
+              "reason": "Explicit recovery-only run; no native API invoked"
+            },
+            "nativeAcknowledgment": {
+              "status": "unreached"
+            },
+            "fileManagerOutcome": {
+              "status": "skipped",
+              "reason": "Explicit recovery-only run"
+            }
+          },
+          "normalShutdown": {
+            "status": "passed",
+            "asserted": true,
+            "backendStopped": true
+          },
+          "restartPersistence": {
+            "status": "passed",
+            "asserted": true,
+            "checkpoint": "after_evidence"
+          }
+        },
+        "shutdowns": [
+          {
+            "status": "passed",
+            "backendStopped": true
+          },
+          {
+            "status": "passed",
+            "backendStopped": true
+          }
+        ]
+      },
+      {
+        "discoveryMode": "grouped",
+        "checkpoint": "after_commit",
+        "evidence": {
+          "direct": {
+            "creation": {
+              "status": "unreached"
+            },
+            "interruptionRecovery": {
+              "status": "unreached"
+            },
+            "nativeInvocation": {
+              "status": "unreached"
+            },
+            "nativeAcknowledgment": {
+              "status": "unreached"
+            },
+            "fileManagerOutcome": {
+              "status": "unreached"
+            }
+          },
+          "grouped": {
+            "creation": {
+              "status": "passed",
+              "asserted": true,
+              "checkpoint": "after_commit"
+            },
+            "interruptionRecovery": {
+              "status": "skipped",
+              "reason": "Committed before response loss; status reconciliation verified, no recovery mutation required"
+            },
+            "nativeInvocation": {
+              "status": "skipped",
+              "reason": "Explicit recovery-only run; no native API invoked"
+            },
+            "nativeAcknowledgment": {
+              "status": "unreached"
+            },
+            "fileManagerOutcome": {
+              "status": "skipped",
+              "reason": "Explicit recovery-only run"
+            }
+          },
+          "normalShutdown": {
+            "status": "passed",
+            "asserted": true,
+            "backendStopped": true
+          },
+          "restartPersistence": {
+            "status": "passed",
+            "asserted": true,
+            "checkpoint": "after_commit"
+          }
+        },
+        "shutdowns": [
+          {
+            "status": "passed",
+            "backendStopped": true
+          },
+          {
+            "status": "passed",
+            "backendStopped": true
+          }
+        ]
+      }
+    ],
+    "fixtureCleanup": {
+      "status": "passed",
+      "asserted": true,
+      "processesStopped": true
+    },
+    "nativeBridgeCleanup": {
+      "status": "not_required"
+    }
+  },
+  "ci-creation-release-direct/release-creation-observations.json": {
+    "mode": "release",
+    "platform": "darwin",
+    "arch": "arm64",
+    "scope": "production UI/IPC/native adapter; interruption seeded by terminated real-service child, not an Electron backend crash",
+    "runs": [
+      {
+        "discoveryMode": "direct",
+        "checkpoint": "after_evidence",
+        "evidence": {
+          "direct": {
+            "creation": {
+              "status": "passed",
+              "asserted": true,
+              "checkpoint": "after_evidence"
+            },
+            "interruptionRecovery": {
+              "status": "passed",
+              "asserted": true,
+              "checkpoint": "after_evidence"
+            },
+            "nativeInvocation": {
+              "status": "passed",
+              "asserted": true
+            },
+            "nativeAcknowledgment": {
+              "status": "passed",
+              "asserted": true
+            },
+            "fileManagerOutcome": {
+              "status": "passed",
+              "asserted": true,
+              "exactTargetObserved": true
+            }
+          },
+          "grouped": {
+            "creation": {
+              "status": "unreached"
+            },
+            "interruptionRecovery": {
+              "status": "unreached"
+            },
+            "nativeInvocation": {
+              "status": "unreached"
+            },
+            "nativeAcknowledgment": {
+              "status": "unreached"
+            },
+            "fileManagerOutcome": {
+              "status": "unreached"
+            }
+          },
+          "normalShutdown": {
+            "status": "passed",
+            "asserted": true,
+            "backendStopped": true
+          },
+          "restartPersistence": {
+            "status": "passed",
+            "asserted": true,
+            "checkpoint": "after_evidence"
+          }
+        },
+        "shutdowns": [
+          {
+            "status": "passed",
+            "backendStopped": true
+          },
+          {
+            "status": "passed",
+            "backendStopped": true
+          }
+        ]
+      }
+    ],
+    "fixtureCleanup": {
+      "status": "passed",
+      "asserted": true,
+      "processesStopped": true
+    },
+    "nativeBridgeCleanup": {
+      "status": "not_required"
+    }
+  },
+  "ci-creation-release-grouped/release-creation-observations.json": {
+    "mode": "release",
+    "platform": "darwin",
+    "arch": "arm64",
+    "scope": "production UI/IPC/native adapter; interruption seeded by terminated real-service child, not an Electron backend crash",
+    "runs": [
+      {
+        "discoveryMode": "grouped",
+        "checkpoint": "after_evidence",
+        "evidence": {
+          "direct": {
+            "creation": {
+              "status": "unreached"
+            },
+            "interruptionRecovery": {
+              "status": "unreached"
+            },
+            "nativeInvocation": {
+              "status": "unreached"
+            },
+            "nativeAcknowledgment": {
+              "status": "unreached"
+            },
+            "fileManagerOutcome": {
+              "status": "unreached"
+            }
+          },
+          "grouped": {
+            "creation": {
+              "status": "passed",
+              "asserted": true,
+              "checkpoint": "after_evidence"
+            },
+            "interruptionRecovery": {
+              "status": "passed",
+              "asserted": true,
+              "checkpoint": "after_evidence"
+            },
+            "nativeInvocation": {
+              "status": "passed",
+              "asserted": true
+            },
+            "nativeAcknowledgment": {
+              "status": "passed",
+              "asserted": true
+            },
+            "fileManagerOutcome": {
+              "status": "passed",
+              "asserted": true,
+              "exactTargetObserved": true
+            }
+          },
+          "normalShutdown": {
+            "status": "passed",
+            "asserted": true,
+            "backendStopped": true
+          },
+          "restartPersistence": {
+            "status": "passed",
+            "asserted": true,
+            "checkpoint": "after_evidence"
+          }
+        },
+        "shutdowns": [
+          {
+            "status": "passed",
+            "backendStopped": true
+          },
+          {
+            "status": "passed",
+            "backendStopped": true
+          }
+        ]
+      }
+    ],
+    "fixtureCleanup": {
+      "status": "passed",
+      "asserted": true,
+      "processesStopped": true
+    },
+    "nativeBridgeCleanup": {
+      "status": "not_required"
+    }
+  },
+  "ci-category-options-release/evidence.json": {
+    "issue": 20,
+    "relatedIssues": [
+      21
+    ],
+    "mode": "release",
+    "platform": "darwin",
+    "sha": "df87b607f0606e85590fe980a3ebd513e1650e9b",
+    "checks": [
+      {
+        "scenario": "preview-layout",
+        "language": "en",
+        "width": 1440,
+        "height": 960,
+        "passed": true
+      },
+      {
+        "scenario": "preview-layout",
+        "language": "en",
+        "width": 1024,
+        "height": 720,
+        "passed": true
+      },
+      {
+        "scenario": "rename-cancel-apply-identity-values-presentation-siblings",
+        "language": "en",
+        "passed": true
+      },
+      {
+        "scenario": "preview-layout",
+        "language": "ru",
+        "width": 1440,
+        "height": 960,
+        "passed": true
+      },
+      {
+        "scenario": "preview-layout",
+        "language": "ru",
+        "width": 1024,
+        "height": 720,
+        "passed": true
+      },
+      {
+        "scenario": "rename-cancel-apply-identity-values-presentation-siblings",
+        "language": "ru",
+        "passed": true
+      },
+      {
+        "scenario": "explicit-create-empty-and-associate-existing-ui",
+        "passed": true
+      },
+      {
+        "scenario": "removal-preview-layout",
+        "language": "en",
+        "width": 1440,
+        "height": 960,
+        "passed": true
+      },
+      {
+        "scenario": "removal-preview-layout",
+        "language": "en",
+        "width": 1024,
+        "height": 720,
+        "passed": true
+      },
+      {
+        "scenario": "removal-collision-cancel-apply-identity-values-siblings",
+        "language": "en",
+        "passed": true
+      },
+      {
+        "scenario": "removal-preview-layout",
+        "language": "ru",
+        "width": 1440,
+        "height": 960,
+        "passed": true
+      },
+      {
+        "scenario": "removal-preview-layout",
+        "language": "ru",
+        "width": 1024,
+        "height": 720,
+        "passed": true
+      },
+      {
+        "scenario": "removal-collision-cancel-apply-identity-values-siblings",
+        "language": "ru",
+        "passed": true
+      },
+      {
+        "scenario": "removal-empty-no-destination-ui",
+        "passed": true
+      },
+      {
+        "scenario": "production-ipc-exact-validation",
+        "passed": true
+      },
+      {
+        "scenario": "electron-restart-persistence",
+        "passed": true
+      }
+    ],
+    "shutdowns": [
+      {
+        "normalQuit": true,
+        "backendExited": true
+      },
+      {
+        "normalQuit": true,
+        "backendExited": true
+      }
+    ],
+    "cleanup": {
+      "status": "passed",
+      "asserted": true,
+      "processesStopped": true
+    },
+    "status": "passed"
+  },
+  "ci-creation-layouts/ladle-observations.json": {
+    "featurePassed": true,
+    "shutdownPassed": true,
+    "completedStories": 36
+  },
+  "ci-category-move-layouts/ladle-observations.json": {
+    "featurePassed": true,
+    "shutdownPassed": true,
+    "completedStories": 50
+  }
+}

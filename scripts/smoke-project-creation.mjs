@@ -1,3 +1,4 @@
+import { acceptanceProvenance } from "./acceptance-provenance.mjs";
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { randomUUID } from "node:crypto";
@@ -50,6 +51,7 @@ let current;
 let failure;
 const save = async () => {
   await writeFile(join(evidenceDirectory, `${mode}-creation-observations.json`), JSON.stringify({
+    provenance: acceptanceProvenance(),
   mode, platform: process.platform, arch: process.arch, executablePath, fixedBase: "4ac402620dd8139bdef9ff03625aae64bf60e132",
   scope: "production UI/IPC/native adapter; interruption seeded by terminated real-service child, not an Electron backend crash",
   runs, checkpointEvidence, observations, fixtureCleanup, nativeBridgeCleanup, ...(failure ? { error: failure.message } : {}),

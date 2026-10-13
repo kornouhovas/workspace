@@ -114,7 +114,7 @@ test('workflow runs independent fresh Windows diagnostics and always uploads exa
     const job = workflow.jobs[name];
     assert.equal(job['runs-on'], 'windows-latest'); assert.equal(job.needs, undefined);
     assert.ok(job['timeout-minutes'] <= 10);
-    assert.equal(job.steps.find((s) => s.uses === 'actions/setup-node@v4').with['node-version'], '22.21.1');
+    assert.equal(job.steps.find((s) => s.uses === 'actions/setup-node@v4').with['node-version-file'], '.nvmrc');
     assert.equal(job.steps.filter((s) => s.run === 'npm test').length, 0);
     const upload = job.steps.find((s) => s.uses === 'actions/upload-artifact@v4');
     assert.equal(upload.if, name === 'windows-product-selection-diagnostic'
@@ -177,7 +177,7 @@ test('terminal view diagnostic compares one matched condition on two fresh OS ru
   assert.deepEqual(job.strategy.matrix, { os: ['windows-latest', 'windows-2022'] });
   assert.equal(job.needs, undefined);
   assert.equal(job['timeout-minutes'], 5);
-  assert.equal(job.steps.find((s) => s.uses === 'actions/setup-node@v4').with['node-version'], '22.21.1');
+  assert.equal(job.steps.find((s) => s.uses === 'actions/setup-node@v4').with['node-version-file'], '.nvmrc');
   assert.equal(job['continue-on-error'], undefined);
   assert.ok(job.steps.every((s) => s['continue-on-error'] === undefined));
   const commands = job.steps.filter((s) => s.run);
@@ -228,13 +228,14 @@ test('full product OS comparison retains identical checks and unique evidence/pa
     'npm run smoke:runtime -- release --creation --discovery-mode=direct --checkpoint=after_evidence',
     'npm run smoke:runtime -- release --creation --discovery-mode=grouped --checkpoint=after_evidence',
     'npm run smoke:runtime -- release',
+    'npm run collect:acceptance -- work work/ci-acceptance ${{ github.sha }} ${{ github.run_id }} ${{ github.run_attempt }} ${{ matrix.artifact }}',
   ]);
   // No OS-dependent skip or alternate command in the shared acceptance sequence.
   const collectorValidation = runs.find((step) => step.id === 'observer-call-validation');
   assert.equal(collectorValidation.if, 'always()');
-  assert.ok(runs.filter((step) => step !== collectorValidation).every((step) => step.if === undefined || step.if === '${{ !cancelled() }}'));
+  assert.ok(runs.filter((step) => step !== collectorValidation && step.name !== 'Collect and validate compact acceptance evidence').every((step) => step.if === undefined || step.if === '${{ !cancelled() }}'));
   assert.ok(runs.every(({ run, if: condition }) => !JSON.stringify({ run, condition }).includes('matrix.os')));
-  assert.equal(job.steps.find((step) => step.uses === 'actions/setup-node@v4').with['node-version'], '22.21.1');
+  assert.equal(job.steps.find((step) => step.uses === 'actions/setup-node@v4').with['node-version-file'], '.nvmrc');
   const uploads = job.steps.filter((step) => step.uses === 'actions/upload-artifact@v4');
   const names = job.strategy.matrix.include.flatMap(({ os, artifact }) => uploads.map((step) =>
     step.with.name.replaceAll('${{ matrix.artifact }}', artifact).replaceAll('${{ matrix.os }}', os)));
@@ -272,7 +273,7 @@ test('Explorer CLI candidate uses identical fresh OS jobs and never replaces nat
   assert.equal(job['timeout-minutes'], 5);
   assert.equal(job['continue-on-error'], undefined);
   assert.ok(job.steps.every((step) => step['continue-on-error'] === undefined));
-  assert.equal(job.steps.find((step) => step.uses === 'actions/setup-node@v4').with['node-version'], '22.21.1');
+  assert.equal(job.steps.find((step) => step.uses === 'actions/setup-node@v4').with['node-version-file'], '.nvmrc');
   const runs = job.steps.filter((step) => step.run);
   assert.deepEqual(runs.map((step) => step.run), [
     'node scripts/windows-explorer-selection.mjs',
@@ -299,7 +300,7 @@ test('ready-parent command uses matched fresh jobs and preserves historical comp
   assert.equal(job['timeout-minutes'], 5);
   assert.equal(job['continue-on-error'], undefined);
   assert.ok(job.steps.every((step) => step['continue-on-error'] === undefined));
-  assert.equal(job.steps.find((step) => step.uses === 'actions/setup-node@v4').with['node-version'], '22.21.1');
+  assert.equal(job.steps.find((step) => step.uses === 'actions/setup-node@v4').with['node-version-file'], '.nvmrc');
   const runs = job.steps.filter((step) => step.run);
   assert.deepEqual(runs.map((step) => step.run), [
     'node scripts/windows-ready-selection.mjs',

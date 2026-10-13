@@ -43,7 +43,19 @@
     "test:all": "node scripts/test-suites.mjs all",
     "test:common": "node scripts/test-suites.mjs common",
     "test:platform": "node scripts/test-suites.mjs platform",
-    "package:built": "electron-builder --dir"
+    "package:built": "electron-builder --dir",
+    "check:node": "node scripts/check-node-version.mjs",
+    "preinstall": "npm run check:node",
+    "prebuild": "npm run check:node",
+    "pretest": "npm run check:node && npm run check:ci",
+    "pretest:all": "npm run check:node && npm run check:ci",
+    "precheck:ci": "npm run check:node",
+    "check:ci": "node --test tests/test-suites.test.mjs tests/windows-product-diagnostics.test.mjs",
+    "collect:acceptance": "node scripts/ci-acceptance.mjs collect",
+    "check:acceptance": "node scripts/ci-acceptance.mjs validate",
+    "pretest:platform": "npm run check:node && npm run check:ci",
+    "pretest:common": "npm run check:node",
+    "pretest:migrations": "npm run check:node && npm run check:ci"
   },
   "dependencies": {
     "better-sqlite3": "13.0.3",
@@ -93,7 +105,11 @@
       {
         "from": "dist/desktop/native",
         "to": "native",
-        "filter": ["windows-view.ps1", "windows-binding.ps1", "windows-project-reveal.ps1"]
+        "filter": [
+          "windows-view.ps1",
+          "windows-binding.ps1",
+          "windows-project-reveal.ps1"
+        ]
       },
       {
         "from": "src/renderer/components/bb/LICENSE",

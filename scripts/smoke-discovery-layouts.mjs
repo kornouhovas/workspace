@@ -1,3 +1,4 @@
+import { acceptanceProvenance } from "./acceptance-provenance.mjs";
 import assert from "node:assert/strict";
 import { createServer } from "node:http";
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
@@ -30,7 +31,7 @@ const url = `http://127.0.0.1:${server.address().port}`;
 // Browser rendering can verify Ladle even when native Electron shutdown is a
 // separate platform gate. The default retains its normal-quit assertion.
 const browserOnly = process.argv.includes("--chromium");
-const results = { browser: browserOnly ? "Chromium" : "Electron", capture: browserOnly ? "viewport" : "full-page", fixture: "production components with typed disposable Ladle data", screenshots: [], featurePassed: false, shutdownPassed: false };
+const results = { provenance: acceptanceProvenance(), browser: browserOnly ? "Chromium" : "Electron", capture: browserOnly ? "viewport" : "full-page", fixture: "production components with typed disposable Ladle data", screenshots: [], featurePassed: false, shutdownPassed: false };
 const save = () => writeFile(join(evidence, "ladle-observations.json"), JSON.stringify(results, null, 2) + "\n");
 let electron;
 let browser;

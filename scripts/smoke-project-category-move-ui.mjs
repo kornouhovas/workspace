@@ -1,3 +1,4 @@
+import { acceptanceProvenance } from "./acceptance-provenance.mjs";
 import assert from "node:assert/strict";
 import { execFileSync, fork } from "node:child_process";
 import { createHash, randomUUID } from "node:crypto";
@@ -377,6 +378,7 @@ export async function runProjectCategoryMoveUi(mode = "dev") {
   const fixture = await realpath(await mkdtemp(join(tmpdir(), "workspace-category-move-ui-")));
   let failure, active;
   const save = async () => writeFile(join(directory, `${mode}-category-move-observations.json`), JSON.stringify({
+    provenance: acceptanceProvenance(),
     scope: "grouped production UI/preload/backend moves, rejections and explicit controlled-interruption recovery; final platform acceptance remains separate", inputs,
     status: failure ? "failed" : evidence.fixtureCleanup.status === "passed" ? "passed" : "pending", evidence, observations, shutdowns,
     ...(failure ? { error: failure.message } : {}),

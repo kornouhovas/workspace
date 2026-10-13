@@ -40,3 +40,23 @@ This scheduling change reduces repeated execution, not the test inventory. Actua
 For integration run failures in category layouts and direct creation, select `checks: failed` and `integration_failures: true`. This takes precedence over the older runtime-failure selector and runs only the original category-layout command on macOS and direct development creation/Reveal on Windows 2022, with relevant UI and Windows bridge regressions. Failure artifacts retain exact SHA/run/attempt provenance. The Windows bridge emits only finite private phase/reason markers on failure; these diagnose a rejection and never authorize success or expose exception text. Production deadlines, binding guards, single dispatch and cleanup requirements stay unchanged. Focused evidence must be inspected before requesting full acceptance.
 
 For the issue-21 macOS editor-readiness failure, select `checks: readiness` to run only the original real-Electron readiness suite and retain its test log with exact SHA/run/attempt provenance. It requires no application build. Timely and late delivery use real renderer operands and a controlled host clock to verify the unchanged default deadline and truthful unknown evidence. Focused success still precedes full acceptance.
+
+## Compact acceptance artifacts
+
+Every full platform job collects `acceptance-<platform>-<sha>-run-<id>-attempt-<n>` after runtime checks. It contains 16 required JSON reports, eight EN/RU narrow/wide category-removal screenshots and a manifest binding SHA, run, attempt, OS and file hashes. Complete original artifacts remain available for detailed diagnosis and other screenshots. A missing or failed required report fails collection; the available evidence and a failed manifest are still uploaded for diagnosis.
+
+Download only the compact artifacts for ordinary acceptance. For each extracted platform directory, run:
+
+```sh
+npm run check:acceptance -- <directory> <sha> <run-id> <attempt> <macos|windows|windows-2022>
+```
+
+Each report producer records SHA/run/attempt/platform provenance in the full matrix. The offline validator requires those fields on every report, the exact inventory and file hashes, complete scenario gates, normal shutdown/backend exit, owned cleanup and required native outcomes. Recovery-only creation routes explicitly skip native; dedicated direct/grouped routes must pass. Creation interrupted after commit requires status reconciliation without another recovery mutation. Other skips, missing/unreached required outcomes, symlinks and corrupt files fail. Screenshot validation checks bounded PNG dimensions, chunk checksums, compressed pixel data and complete image structure. Visually inspect the supplied screenshots before delivery. The manifest binds reports to a run; it is not a cryptographic attestation from GitHub.
+
+To collect already-produced, provenance-bound full-run reports without replaying applications:
+
+```sh
+npm run collect:acceptance -- <evidence-root> <new-output-directory> <sha> <run-id> <attempt> <platform>
+```
+
+Local and focused reports have no full-run provenance and are diagnostic evidence; they cannot pass this acceptance gate. The evidence root contains the original `ci-runtime-*`, `ci-creation-*`, layout and category-options directories. The output must be new so stale evidence cannot survive collection. Existing runtime acceptance helpers own rename/move semantics; the collector reuses them and validates the remaining report boundaries. Update the inventory alongside intentional changes to the graphical scenarios.

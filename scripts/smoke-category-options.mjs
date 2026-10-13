@@ -1,3 +1,4 @@
+import { acceptanceProvenance } from "./acceptance-provenance.mjs";
 /* global window, document, innerWidth */
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
@@ -17,7 +18,7 @@ const fixture = await realpath(await mkdtemp(join(tmpdir(), "category-options-ru
 const source = join(fixture, "source"), dataDirectory = join(fixture, "app-data");
 const evidenceDirectory = resolve(process.env.WORKSPACE_SMOKE_EVIDENCE_DIR ?? "work/issue-20-category-options-runtime");
 await mkdir(evidenceDirectory, { recursive: true });
-const evidence = { issue: 20, relatedIssues: [21], mode, platform: process.platform, sha: process.env.GITHUB_SHA ?? null, checks: [], shutdowns: [], cleanup: null, status: "running" };
+const evidence = { provenance: acceptanceProvenance(), issue: 20, relatedIssues: [21], mode, platform: process.platform, sha: process.env.GITHUB_SHA ?? null, checks: [], shutdowns: [], cleanup: null, status: "running" };
 const children = new Set(), backendPids = new Set();
 let session, failure, launchUnverified = false;
 const unwrap = result => { assert.equal(result.ok, true, JSON.stringify(result)); return result.value; };

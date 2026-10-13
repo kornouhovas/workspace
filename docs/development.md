@@ -2,7 +2,7 @@
 
 ## Scope and sources
 
-Start from [AGENTS.md](../AGENTS.md), the actual checkout and relevant product/architecture decisions. This branch is a fresh implementation foundation. Historical code can answer factual questions; it does not silently override new decisions. Ask about unresolved consequential behavior and continue independent authorized work.
+For tasks based on `new-workspace`, select its checkout or the derived task checkout and read that checkout's [AGENTS.md](../AGENTS.md). When starting in a historical checkout, `git worktree list` locates existing checkouts and `git show new-workspace:AGENTS.md` supplies the bootstrap instructions. Continue from the actual checkout and relevant product/architecture decisions. This branch is a fresh implementation foundation. Historical code can answer factual questions; it does not silently override new decisions. Ask about unresolved consequential behavior and continue independent authorized work.
 
 Use an isolated task branch based on `new-workspace` for implementation. Preserve unrelated files and existing task ownership. Commit completed, verified file changes in coherent English commits; stage explicit task paths. Push, merge and publication require corresponding authorization.
 
@@ -70,3 +70,9 @@ Use temporary data for destructive and recovery checks. Never use live user proj
 - For CI selection, scheduling changes or exact-SHA failure diagnosis, read [CI checks and diagnostics](ci.md).
 - For runtime operation details or continuation of its acceptance, read only the affected [implementation checkpoint](verification/development-checkpoints.md). Historical local results do not establish current platform acceptance.
 - For plan selection/progress and the distinction between executable completion and issue acceptance, read [plan status](plans/README.md).
+
+## Local runtime and fast checks
+
+Run `nvm install && nvm use` in the task checkout before `npm ci`. `.nvmrc` owns the exact runtime pin; `package.json` agrees with it, npm enforces engines, and install/build/test entry points reject a different Node version with setup guidance. GitHub Actions reads the same file.
+
+Run `npm run check:ci` after changing workflows, suite selection or CI fixtures, before builds/full tests. It invokes the existing routing/diagnostic-contract tests without an application build. Full local test entry points run this guard first, and the common CI job runs it before expensive platform jobs. [CI evidence tooling](ci.md#compact-acceptance-artifacts) handles artifact collection and offline acceptance.

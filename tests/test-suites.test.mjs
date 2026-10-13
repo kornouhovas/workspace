@@ -45,7 +45,7 @@ test('ordinary CI runs common checks once and retains all three platform accepta
   assert.equal(common.if, "${{ github.event_name != 'workflow_dispatch' || (inputs.checks != 'failed' && inputs.checks != 'readiness') }}");
   assert.equal(common.strategy, undefined);
   assert.deepEqual(common.steps.filter(step => step.run).map(step => step.run), [
-    'npm ci', 'npm run lint', 'npm run typecheck', 'npm run check:docs', 'npm run test:common',
+    'npm ci', 'npm run check:ci', 'npm run lint', 'npm run typecheck', 'npm run check:docs', 'npm run test:common',
   ]);
   assert.equal(verify.needs, 'common');
   assert.deepEqual(verify.strategy.matrix.include.map(row => row.os), ['macos-latest', 'windows-latest', 'windows-2022']);
@@ -176,4 +176,27 @@ test('readiness failure scope runs only the original macOS Electron suite', () =
   const upload = job.steps.find(step => step.uses === 'actions/upload-artifact@v4');
   assert.equal(upload.if, 'always()'); assert.equal(upload.with['if-no-files-found'], 'error');
   for (const field of ['github.sha', 'github.run_id', 'github.run_attempt']) assert.ok(upload.with.name.includes(field));
+});
+
+
+test('CI setup uses the local Node pin and compact acceptance remains an additional gate', () => {
+  const workflow = load(readFileSync('.github/workflows/desktop-ci.yml', 'utf8'));
+  for (const job of Object.values(workflow.jobs)) for (const step of job.steps ?? []) {
+    if (step.uses === 'actions/setup-node@v4') {
+      assert.equal(step.with['node-version-file'], '.nvmrc');
+      assert.equal(step.with['node-version'], undefined);
+    }
+  }
+  assert.equal(workflow.jobs.verify.env.WORKSPACE_CI_PLATFORM, '${{ matrix.artifact }}');
+  const steps = workflow.jobs.verify.steps;
+  const collector = steps.find(step => step.name === 'Collect and validate compact acceptance evidence');
+  assert.equal(collector.if, 'always()');
+  assert.ok(collector.run.includes('npm run collect:acceptance -- work work/ci-acceptance'));
+  for (const value of ['github.sha', 'github.run_id', 'github.run_attempt', 'matrix.artifact']) assert.ok(collector.run.includes(value));
+  const compact = steps.find(step => step.name === 'Preserve compact acceptance evidence');
+  assert.equal(compact.if, 'always()'); assert.equal(compact.with['if-no-files-found'], 'error');
+  const original = steps.find(step => step.name === 'Preserve creation/native and category UI failures and unreached stages');
+  assert.equal(original.if, 'always()'); assert.ok(original.with.path.includes('work/ci-runtime-*/'));
+  const scripts = JSON.parse(readFileSync('package.json')).scripts;
+  assert.equal(scripts['check:ci'], 'node --test tests/test-suites.test.mjs tests/windows-product-diagnostics.test.mjs');
 });

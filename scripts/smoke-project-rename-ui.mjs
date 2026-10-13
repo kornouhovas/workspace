@@ -1,3 +1,4 @@
+import { acceptanceProvenance } from "./acceptance-provenance.mjs";
 import assert from "node:assert/strict";
 import { waitForRenameEditor } from "./rename-editor-readiness.mjs";
 import { execFileSync, fork } from "node:child_process";
@@ -130,6 +131,7 @@ export async function runProjectRenameUi(mode = "dev") {
   const inputDigest = digest.digest("hex");
   const fixture = await realpath(await mkdtemp(join(tmpdir(), "workspace-rename-ui-")));
   const save = async () => writeFile(join(evidenceDirectory, `${mode}-rename-observations.json`), JSON.stringify({
+    provenance: acceptanceProvenance(),
     mode, platform: process.platform, arch: process.arch, node: process.version, sourceRevision, inputDigest,
     status: failure ? "failed" : evidence.fixtureCleanup.status === "passed" ? "passed" : "pending",
     scope: "production graphical UI/preload/utilityProcess; interruption in driver-owned real-service child; injected alias policy only where mounted alias absent",

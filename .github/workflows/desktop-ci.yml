@@ -40,9 +40,10 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 22.21.1
+          node-version-file: .nvmrc
           cache: npm
       - run: npm ci
+      - run: npm run check:ci
       - run: npm run lint
       - run: npm run typecheck
       - run: npm run check:docs
@@ -57,7 +58,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 22.21.1
+          node-version-file: .nvmrc
           cache: npm
       - run: npm ci
       - name: Run original readiness suite
@@ -86,7 +87,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 22.21.1
+          node-version-file: .nvmrc
           cache: npm
       - run: npm ci
       - run: node --test tests/ralphex-observe.test.mjs tests/ralphex-run.test.mjs tests/windows-observer-diagnostics.test.mjs
@@ -111,7 +112,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 22.21.1
+          node-version-file: .nvmrc
           cache: npm
       - run: npm ci
       - run: npm run build
@@ -135,7 +136,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 22.21.1
+          node-version-file: .nvmrc
           cache: npm
       - run: npm ci
       - run: node --import tsx --test tests/project-category-move-ui.test.tsx
@@ -160,7 +161,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 22.21.1
+          node-version-file: .nvmrc
           cache: npm
       - run: npm ci
       - run: npm run build
@@ -196,7 +197,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 22.21.1
+          node-version-file: .nvmrc
           cache: npm
       - run: npm ci
       - run: npm run build
@@ -234,7 +235,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 22.21.1
+          node-version-file: .nvmrc
       - name: Initialize finite unreached diagnostic and test status
         id: evidence
         run: node scripts/windows-observer-diagnostics.mjs prepare --output work/ci-windows-observer
@@ -280,7 +281,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 22.21.1
+          node-version-file: .nvmrc
           cache: npm
       - run: npm ci
       - name: Build production service and native inputs
@@ -318,7 +319,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 22.21.1
+          node-version-file: .nvmrc
           cache: npm
       - run: npm ci
       - name: Build production service and native inputs
@@ -352,7 +353,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 22.21.1
+          node-version-file: .nvmrc
           cache: npm
       - run: npm ci
       - run: npm run build
@@ -391,7 +392,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 22.21.1
+          node-version-file: .nvmrc
           cache: npm
       - run: npm ci
       - run: npm run build:service-test-lib
@@ -424,7 +425,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 22.21.1
+          node-version-file: .nvmrc
       - name: Invoke one native selection on an owned Unicode fixture
         run: node scripts/windows-native-selection.mjs
         env:
@@ -454,7 +455,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 22.21.1
+          node-version-file: .nvmrc
       - name: Launch Explorer once on an owned literal Unicode target
         run: node scripts/windows-explorer-selection.mjs
       - name: Verify controlled argument transport lifecycle and exact observer
@@ -470,6 +471,8 @@ jobs:
 
   verify:
     needs: common
+    env:
+      WORKSPACE_CI_PLATFORM: ${{ matrix.artifact }}
     strategy:
       fail-fast: false
       matrix:
@@ -485,7 +488,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 22.21.1
+          node-version-file: .nvmrc
           cache: npm
       - run: npm ci
       - run: npm run build
@@ -565,6 +568,17 @@ jobs:
       - run: npm run smoke:runtime -- release
         env:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-runtime-release
+      - name: Collect and validate compact acceptance evidence
+        if: always()
+        run: npm run collect:acceptance -- work work/ci-acceptance ${{ github.sha }} ${{ github.run_id }} ${{ github.run_attempt }} ${{ matrix.artifact }}
+      - name: Preserve compact acceptance evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: acceptance-${{ matrix.artifact }}-${{ github.sha }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
+          path: work/ci-acceptance/
+          if-no-files-found: error
+          retention-days: 7
       - name: Preserve creation/native and category UI failures and unreached stages
         if: always()
         uses: actions/upload-artifact@v4
@@ -595,7 +609,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 22.21.1
+          node-version-file: .nvmrc
       - name: Open one owned parent and select once only after exact readiness
         run: node scripts/windows-ready-selection.mjs
       - name: Sample the read-only system resolver independently

@@ -4,7 +4,7 @@ This repository uses a spec-first, agent-ready workflow. The user owns product d
 
 ## Start here
 
-1. Check the actual checkout and `git status --short --branch`; preserve unrelated edits.
+1. For work based on `new-workspace`, use the `AGENTS.md` in that checkout or its derived task checkout as the project instructions. Check `git status --short --branch` and preserve unrelated edits. Historical checkout documentation does not govern this branch.
 2. Read [development](docs/development.md) for workflow, tracking and checks; use the [source map](docs/README.md) for affected contracts. Read [product](docs/product.md) and [decisions](docs/decisions.md) before changing behavior; open decisions are not requirements.
 3. Read [architecture](docs/architecture.md) and the relevant [ADRs](docs/adr/) for storage or boundary changes. Use [GLOSSARY.md](GLOSSARY.md) for domain language.
 4. For UI or borrowed modules, read [reuse](docs/reuse.md). For versions, packaging or publication, read [releases](docs/releases.md).

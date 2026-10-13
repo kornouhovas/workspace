@@ -528,9 +528,10 @@ test("a final move cannot complete the scenario while evidence persistence is pe
 });
 
 test("actual runtime evidence writer saves bounded failure outcomes and rejects unreached success", async (t) => {
+  const { acceptanceProvenance } = await import("../scripts/acceptance-provenance.mjs");
   const f = await fixture(t), sourceMoves = createRuntimeSourceMoveEvidence();
   const writerSource = runtime.slice(runtime.indexOf("async function recordEvidence("), runtime.indexOf("async function projects("));
-  const dependencies = { sourceMoves, evidenceDirectory: f.ownedFixture, writeFile, join, mode: "dev", process,
+  const dependencies = { acceptanceProvenance, sourceMoves, evidenceDirectory: f.ownedFixture, writeFile, join, mode: "dev", process,
     executablePath: "test", stages: {}, shutdowns: [], fixtureCleanup: undefined, observations: [] };
   const recordEvidence = new Function("dependencies", `const { ${Object.keys(dependencies).join(", ")} } = dependencies;\n${writerSource}\nreturn recordEvidence;`)(dependencies);
   await assert.rejects(recordEvidence("passed"), { code: "incomplete_moves" });
@@ -539,6 +540,7 @@ test("actual runtime evidence writer saves bounded failure outcomes and rejects 
   await assert.rejects(sourceMoves.run("disconnect", helper, () => recordEvidence("failed")), { code: "missing_effects" });
   const persisted = JSON.parse(await readFile(join(f.ownedFixture, "dev-observations.json"), "utf8"));
   assert.equal(persisted.status, "failed");
+  assert.deepEqual(persisted.provenance, acceptanceProvenance());
   assert.deepEqual(persisted.sourceMoves, sourceMoves.snapshot());
   assert.deepEqual(persisted.sourceMoves.map(outcome => outcome.status), ["failed", "unreached", "unreached", "unreached"]);
   assert.equal(persisted.sourceMoves[0].verificationComplete, true);
