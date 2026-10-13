@@ -1113,6 +1113,16 @@ test("direct recovery traverses production service ports/controller/client and r
 });
 
 test("recovery fanout traverses production preload clients in commit order and clears listeners", async () => {
+  const { openSettingsService } = await import("../dist/service/settings.mjs");
+  const { nativeObserverDependencies } = await import("../src/service/source-observer.ts");
+  const timers = new Set(), watchers = [];
+  const dependencies = { ...nativeObserverDependencies,
+    schedule(callback, delay) { const timer = { callback, delay }; timers.add(timer); return { cancel: () => timers.delete(timer) }; },
+    watch(path, hint) { const watcher = { path, hint, closed: false }; watchers.push(watcher); return { close: () => { watcher.closed = true; } }; },
+  };
+  const flush = () => {
+    for (const timer of [...timers].filter(timer => timer.delay === 100)) { timers.delete(timer); timer.callback(); }
+  };
   const directory = await mkdtemp(join(tmpdir(), "recovery-events-transport-"));
   const root = join(directory, "root"), otherRoot = join(directory, "other");
   await mkdir(join(root, "Original"), { recursive: true }); await mkdir(otherRoot);
@@ -1122,7 +1132,7 @@ test("recovery fanout traverses production preload clients in commit order and c
   desktopPort.postMessage = (message) => servicePort.receive(message);
   parent.postMessage = (message) => child.send(message);
   child.postMessage = (data) => parent.emit("message", { data, ports: [servicePort] });
-  startServiceProcess(parent, undefined, () => child.exit());
+  startServiceProcess(parent, (path, migrations) => openSettingsService(path, migrations, undefined, dependencies), () => child.exit());
   const controller = new BackendController(), ipc = new EventEmitter();
   ipc.invoke = async (channel, input) => { assert.equal(channel, "workspace:command"); return controller.request(input); };
   const relay = controller.onWorkspaceChange((event) => ipc.emit("workspace:change", {}, event));
@@ -1133,10 +1143,10 @@ test("recovery fanout traverses production preload clients in commit order and c
     return { unload, client: new WorkspaceServiceClient(api) };
   };
   const one = surface(), sibling = surface(), unrelated = surface();
-  const events = [], siblingEvents = [], otherEvents = [];
+  const events = [], siblingEvents = [], otherEvents = [], observations = [], siblingObservations = [];
   let otherWorkspace;
-  const offOne = one.client.onWorkspaceChange((event) => events.push(event));
-  const offSibling = sibling.client.onWorkspaceChange((event) => siblingEvents.push(event));
+  const offOne = one.client.onWorkspaceChange((event) => (event.type === "workspace.projectsChanged" ? events : observations).push(event));
+  const offSibling = sibling.client.onWorkspaceChange((event) => (event.type === "workspace.projectsChanged" ? siblingEvents : siblingObservations).push(event));
   const offOther = unrelated.client.onWorkspaceChange((event) => {
     if (event.type === "workspace.projectsChanged" && event.workspaceIds.includes(otherWorkspace?.workspaceId)) otherEvents.push(event);
   });
@@ -1164,11 +1174,19 @@ test("recovery fanout traverses production preload clients in commit order and c
     const next = await sibling.client.reassociateProject(siblingWorkspace.workspaceId, original.projectId, nextReview.previewToken, "Next");
     assert.equal(next.ok, true); assert.equal(next.value.revision, saved.value.revision + 1);
     await mkdir(join(root, "Additional"));
+    observations.length = siblingObservations.length = 0;
+    watchers.filter(watcher => !watcher.closed && watcher.path === root).forEach(watcher => watcher.hint());
+    flush();
     const newerDiscovery = (await sibling.client.previewDiscovery(siblingWorkspace.workspaceId)).value;
     const discovered = await sibling.client.applyDiscovery(siblingWorkspace.workspaceId, newerDiscovery.previewToken);
     assert.equal(discovered.ok, true); assert.equal(discovered.value.revision, next.value.revision + 1);
     assert.deepEqual(events.map((event) => event.revision), [saved.value.revision, next.value.revision, discovered.value.revision]);
     assert.deepEqual(siblingEvents, events); assert.deepEqual(otherEvents, []);
+    assert.equal(observations.length, 1);
+    assert.equal(observations[0].type, "workspace.sourceObserved");
+    assert.ok(Number.isSafeInteger(observations[0].observationRevision));
+    assert.deepEqual(observations[0].workspaceIds, [workspace.workspaceId, siblingWorkspace.workspaceId]);
+    assert.deepEqual(siblingObservations, observations);
     offOne(); sibling.unload.dispatchEvent(new Event("unload"));
     assert.equal(ipc.listenerCount("workspace:change"), 1);
     await mkdir(join(root, "After cleanup"));

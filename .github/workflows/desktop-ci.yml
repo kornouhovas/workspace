@@ -8,7 +8,7 @@ on:
       checks:
         description: Full acceptance or a selected focused failure route
         type: choice
-        options: [full, failed, readiness, windows-release]
+        options: [full, failed, readiness, windows-release, issue22-failures]
         default: full
       diagnostics:
         description: Run isolated investigation and early-feedback jobs
@@ -33,7 +33,7 @@ concurrency:
 
 jobs:
   common:
-    if: ${{ github.event_name != 'workflow_dispatch' || (inputs.checks != 'failed' && inputs.checks != 'readiness' && inputs.checks != 'windows-release') }}
+    if: ${{ github.event_name != 'workflow_dispatch' || (inputs.checks != 'failed' && inputs.checks != 'readiness' && inputs.checks != 'windows-release' && inputs.checks != 'issue22-failures') }}
     name: Common tests and static checks
     runs-on: macos-latest
     steps:
@@ -47,6 +47,44 @@ jobs:
       - run: npm run typecheck
       - run: npm run check:docs
       - run: npm run test:common
+
+  focused-issue22-failures:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.checks == 'issue22-failures' }}
+    name: Issue 22 original failure (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.21.1
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Verify submission diagnostics and failure-route guards
+        run: node --import tsx --test tests/rename-submission-receipt.test.mjs tests/test-suites.test.mjs
+      - name: Original Windows recovery fanout suite
+        if: matrix.os == 'windows-latest'
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p work/ci-focused-issue22-failures
+          node --import tsx --test tests/backend-lifecycle.test.mjs 2>&1 | tee work/ci-focused-issue22-failures/backend-lifecycle.log
+      - name: Original macOS development runtime
+        if: matrix.os == 'macos-latest'
+        run: npm run smoke:runtime -- dev
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-focused-issue22-failures
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: issue-22-original-failures-${{ matrix.os }}-${{ github.sha }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
+          path: work/ci-focused-issue22-failures/
+          if-no-files-found: error
 
   focused-windows-release-runtime:
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.checks == 'windows-release' }}

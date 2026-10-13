@@ -1,3 +1,4 @@
+import { installRenameSubmissionReceipt } from "./rename-submission-receipt.mjs";
 import assert from "node:assert/strict";
 import { waitForRenameEditor } from "./rename-editor-readiness.mjs";
 import { execFileSync, fork } from "node:child_process";
@@ -113,7 +114,7 @@ export async function runProjectRenameUi(mode = "dev") {
   // Identify exercised build inputs; screenshots/results of separate invocations
   // must never be attributed to a different development/packaged artifact.
   const digest = createHash("sha256");
-  for (const path of ["package-lock.json", "scripts/smoke-project-rename-ui.mjs", "scripts/rename-editor-readiness.mjs", "scripts/runtime-evidence.mjs", "scripts/rename-runtime-startup.mjs", "scripts/runtime-startup.mjs", "scripts/runtime-lifecycle.mjs", "tests/fixtures/project-rename-crash-worker.mjs", "dist/desktop/main.cjs", "dist/desktop/preload.cjs", "dist/service/entry.cjs", "dist/service/settings.mjs", "dist/service/native/project-rename.node"]) digest.update(path).update(await readFile(join(root, path)));
+  for (const path of ["package-lock.json", "scripts/smoke-project-rename-ui.mjs", "scripts/rename-editor-readiness.mjs", "scripts/rename-submission-receipt.mjs", "scripts/runtime-evidence.mjs", "scripts/rename-runtime-startup.mjs", "scripts/runtime-startup.mjs", "scripts/runtime-lifecycle.mjs", "tests/fixtures/project-rename-crash-worker.mjs", "dist/desktop/main.cjs", "dist/desktop/preload.cjs", "dist/service/entry.cjs", "dist/service/settings.mjs", "dist/service/native/project-rename.node"]) digest.update(path).update(await readFile(join(root, path)));
   if (mode === "release") {
     const resources = process.platform === "darwin" ? resolve(dirname(executablePath), "../Resources") : join(dirname(executablePath), "resources");
     digest.update(await readFile(join(resources, "app.asar")));
@@ -223,13 +224,29 @@ export async function runProjectRenameUi(mode = "dev") {
     return list;
   }
   async function edit(page, name, draft, t, expectedMessage) {
-    const trigger = page.getByRole("button", { name: `${t.rename}: ${name}`, exact: true });
-    await trigger.press("Enter");
-    await waitForRenameEditor(page, { record: readiness => observations.push({ editorReadiness: readiness }) });
-    const input = page.locator("#project-rename-name");
-    await input.fill(draft); await input.press("Enter");
-    await page.getByText(expectedMessage, { exact: true }).waitFor();
+    const { electron } = startup.current;
+    await electron.evaluate(installRenameSubmissionReceipt, { draft });
+    const observation = { renameSubmission: { editorMatchesDraft: null, receipt: null } };
+    observations.push(observation);
+    let primaryFailure;
+    try {
+      const trigger = page.getByRole("button", { name: `${t.rename}: ${name}`, exact: true });
+      await trigger.press("Enter");
+      await waitForRenameEditor(page, { record: readiness => observations.push({ editorReadiness: readiness }) });
+      const input = page.locator("#project-rename-name");
+      await input.fill(draft);
+      observation.renameSubmission.editorMatchesDraft = await input.inputValue() === draft;
+      await input.press("Enter");
+      await page.getByText(expectedMessage, { exact: true }).waitFor();
+    } catch (error) { primaryFailure = error; }
+    try { observation.renameSubmission.receipt = await withDeadline(electron.evaluate(() => globalThis.renameSubmissionReceipt.snapshot()), 3000, "Rename submission receipt"); }
+    catch { observation.renameSubmission.captureFailed = true; }
+    try { await withDeadline(electron.evaluate(() => globalThis.renameSubmissionReceipt.dispose()), 3000, "Rename submission observer disposal"); }
+    catch { observation.renameSubmission.disposalFailed = true; }
+    try { await save(); } catch (error) { primaryFailure ??= error; }
+    if (primaryFailure) throw primaryFailure;
   }
+
   async function closeEditor(page) {
     if (await page.locator("#project-rename-name").count()) await page.locator("#project-rename-name").press("Escape");
     await page.locator("#project-rename-name").waitFor({ state: "detached" });

@@ -22,3 +22,11 @@ Both reviewers accepted the source repairs in `b73da90`. The Standards reviewer 
 A further UI regression reproduced a recovery `service_unavailable` response clearing unknown-outcome protection. The component now retains the operation and offers only an ID-bound read-only status check unless the service definitively rejects a stale/invalid request. The recovery error regression and all 14 archive UI tests pass. CI artifact retention includes the new archive runtime evidence directories.
 
 The first full local run found three additional fixture mismatches (2706 passed, 3 failed, 21 expected skips): creation tests assumed one global combobox and CI's exact command/evidence inventory omitted the added archive routes. Repairs scope creation selection to its named region and extend the exact CI sequence and artifact expectations without removing platform/failure-policy assertions. Independent review and focused reproduction pass 3/3; both affected full test files pass 110/110. Product source is unchanged from `4e9de5a`; the final full suite is renewed after these test-only repairs.
+
+## Windows runtime diagnostic follow-up
+
+Both independent reviewers accepted `a2949e1` with no findings. Each independently ran the affected lifecycle/startup/CI-route checks (63/63). Review confirmed unchanged conservative ownership/deletion gates and deadlines, finite diagnostics without process identifiers, prerequisites before the original focused command, and preserved ordinary full routes. Neither review establishes a cause for the historical Windows cleanup rejection. The subsequent renewed local full suite passes 2711 tests, zero failures and 21 expected skips.
+
+## Subsequent failure-map follow-up
+
+Both axes reviewed the current diff against `a2949e1` and report no findings: deterministic observer/commit fixture separation, bounded submission capture and its regressions, original two-OS focused route and retained failure reports. Each independently passes 14 receipt/routing tests and the targeted fanout test. Full affected files pass 73/73. Original runtime assertions, deadlines, transport forwarding and deletion gates remain unchanged. Historical macOS submission cause is not established; focused original-scenario/artifact and full-platform gates are still required.
