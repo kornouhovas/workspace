@@ -408,7 +408,8 @@ export async function runProjectCategoryMoveUi(mode = "dev") {
     const closing = startup.current; startup.clearCurrent();
     const outcome = { passed: false }; shutdowns.push(outcome);
     try {
-      await closeRuntimeSession(closing.electron, { shutdown: outcome, readBackendPids: startup.readBackendPids, beforeClose: save,
+      await closeRuntimeSession(closing.electron, { shutdown: outcome, readBackendPids: startup.readBackendPids,
+        recordBackendsStopped: pids => startup.confirmBackendExit(closing.electron, pids), beforeClose: save,
         assertBackendsStopped: async pids => {
           for (const pid of pids) await withDeadline((async () => {
             for (let attempt = 0; attempt < 50; attempt++) {

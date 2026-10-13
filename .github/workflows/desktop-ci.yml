@@ -10,6 +10,10 @@ on:
         type: choice
         options: [full, failed, readiness, environment, packaged]
         default: full
+      packaged_windows_only:
+        description: With checks=packaged, run only the Windows category-move failure
+        type: boolean
+        default: false
       diagnostics:
         description: Run isolated investigation and early-feedback jobs
         type: boolean
@@ -55,11 +59,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - os: macos-latest
-            scenario: rename
-          - os: windows-latest
-            scenario: category-move
+        include: ${{ fromJSON(inputs.packaged_windows_only && '[{"os":"windows-latest","scenario":"category-move"}]' || '[{"os":"macos-latest","scenario":"rename"},{"os":"windows-latest","scenario":"category-move"}]') }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 20
     steps:
@@ -70,7 +70,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
-      - run: node --import tsx --test tests/project-reveal.test.mjs tests/runtime-lifecycle.test.mjs
+      - run: node --import tsx --test tests/project-reveal.test.mjs tests/runtime-lifecycle.test.mjs tests/rename-runtime-startup.test.mjs
       - run: npm run package:built
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'

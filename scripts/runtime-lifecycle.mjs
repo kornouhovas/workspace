@@ -67,7 +67,7 @@ export async function closeElectron(electron, timeoutMs = 10000) {
 
 // Failure diagnostics must never prevent the bounded attempt to close an owned
 // application. Preserve collection failures separately; none counts as a pass.
-export async function closeRuntimeSession(electron, { shutdown, readBackendPids, beforeClose, assertBackendsStopped }, close = closeElectron) {
+export async function closeRuntimeSession(electron, { shutdown, readBackendPids, beforeClose, assertBackendsStopped, recordBackendsStopped }, close = closeElectron) {
   let pids = [], verificationFailure;
   try { pids = await readBackendPids(electron); }
   catch (error) { verificationFailure = error; shutdown.ownershipError = error.message; }
@@ -77,6 +77,7 @@ export async function closeRuntimeSession(electron, { shutdown, readBackendPids,
     await close(electron);
     await assertBackendsStopped(pids);
     if (verificationFailure) throw verificationFailure;
+    await recordBackendsStopped?.(pids);
     shutdown.passed = true;
   } catch (error) {
     shutdown.error = error.message;
@@ -86,7 +87,8 @@ export async function closeRuntimeSession(electron, { shutdown, readBackendPids,
 }
 
 // A cleared UI session is not exit evidence. Callers retain every launched
-// parent and observed backend PID, including launches that failed before UI.
+// parent and unresolved backend PID, including launches that failed before UI.
+// Independently confirmed exit may retire a PID before the OS reuses its number.
 export function ownedProcessesStopped(children, backendPids, { probe = (pid) => process.kill(pid, 0), launchUnverified = false } = {}) {
   if (launchUnverified || ![...children].every(child => child.exitCode != null || child.signalCode != null)) return false;
   return [...backendPids].every(pid => {

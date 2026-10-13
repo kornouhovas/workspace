@@ -9,13 +9,13 @@ export function createRenameRuntimeStartup({ launchElectron, ownedProcesses, bac
   let current;
   async function readBackendPids(electron) {
     const attempt = launches.get(electron);
-    assert.ok(attempt, "Rename metrics require an owned launch");
+    assert.ok(attempt && !attempt.stopped, "Rename metrics require an active owned launch");
     try {
       const pids = await withDeadline(electron.evaluate(({ app }) => app.getAppMetrics().filter(metric => metric.type === "Utility" && metric.serviceName?.includes("Node")).map(metric => metric.pid)), 10000, "Rename backend metrics");
       assert.ok(Array.isArray(pids) && pids.length && pids.every(pid => Number.isSafeInteger(pid) && pid > 0), "Rename backend metrics require nonempty valid PIDs");
-      for (const pid of pids) backendPids.add(pid);
+      for (const pid of pids) { attempt.pids.add(pid); backendPids.add(pid); }
       uncertain.delete(attempt);
-      return pids;
+      return [...attempt.pids];
     } catch (error) { uncertain.add(attempt); throw error; }
   }
   return {
@@ -23,8 +23,19 @@ export function createRenameRuntimeStartup({ launchElectron, ownedProcesses, bac
     clearCurrent() { current = undefined; },
     get launchUnverified() { return uncertain.size > 0; },
     readBackendPids,
+    // Only normal-shutdown callers with independent ESRCH evidence may retire
+    // an observed backend. A later launch can own the same numeric PID again.
+    confirmBackendExit(electron, pids) {
+      const attempt = launches.get(electron);
+      assert.ok(attempt && !uncertain.has(attempt), "Backend exit requires verified launch ownership");
+      assert.deepEqual(new Set(pids), attempt.pids, "Backend exit must cover every observed PID");
+      attempt.stopped = true;
+      for (const pid of attempt.pids) {
+        if (![...launches.values()].some(other => !other.stopped && other.pids.has(pid))) backendPids.delete(pid);
+      }
+    },
     async launch(options) {
-      const attempt = {};
+      const attempt = { pids: new Set(), stopped: false };
       uncertain.add(attempt);
       const electron = await launchElectron(options);
       ownedProcesses.add(electron.process());

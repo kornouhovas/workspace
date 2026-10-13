@@ -163,6 +163,7 @@ export async function runProjectRenameUi(mode = "dev") {
     const shutdown = { passed: false }; shutdowns.push(shutdown);
     try {
       await closeRuntimeSession(closing.electron, { shutdown, readBackendPids: startup.readBackendPids,
+        recordBackendsStopped: pids => startup.confirmBackendExit(closing.electron, pids),
       beforeClose: save,
       assertBackendsStopped: async pids => {
         for (const pid of pids) {

@@ -224,11 +224,20 @@ test('packaged failure scope preserves the original macOS rename and Windows cat
   const active=Object.entries(workflow.jobs).filter(([,job])=>job.if && runInNewContext(job.if.slice(3,-2),{github:{event_name:'workflow_dispatch'},inputs:{checks:'packaged'}})).map(([name])=>name);
   assert.deepEqual(active,['focused-packaged-runtime']);
   const job=workflow.jobs['focused-packaged-runtime'];
-  assert.deepEqual(job.strategy.matrix.include,[{os:'macos-latest',scenario:'rename'},{os:'windows-latest',scenario:'category-move'}]);
+  assert.deepEqual(runInNewContext(job.strategy.matrix.include.slice(3,-2),{inputs:{packaged_windows_only:false},fromJSON:JSON.parse}),[{os:'macos-latest',scenario:'rename'},{os:'windows-latest',scenario:'category-move'}]);
   assert.equal(job.strategy['fail-fast'],false);
   assert.ok(job.steps.some(step=>step.run==='npm run package:built'));
   assert.ok(job.steps.some(step=>step.run==='npm run check:artifact -- release'));
   assert.equal(job.steps.find(step=>step.name==='Exercise original packaged failure boundary').run,'npm run smoke:runtime -- release --${{ matrix.scenario }}');
   const upload=job.steps.find(step=>step.uses==='actions/upload-artifact@v4');
   assert.equal(upload.if,'always()'); assert.equal(upload.with['if-no-files-found'],'error');
+});
+
+
+test('packaged Windows-only selector excludes the already-passing macOS route', () => {
+  const workflow = load(readFileSync(new URL('../.github/workflows/desktop-ci.yml', import.meta.url), 'utf8'));
+  const expression = workflow.jobs['focused-packaged-runtime'].strategy.matrix.include.slice(3, -2);
+  const evaluate = packaged_windows_only => runInNewContext(expression, { inputs: { packaged_windows_only }, fromJSON: JSON.parse });
+  assert.equal(JSON.stringify(evaluate(true)), '[{"os":"windows-latest","scenario":"category-move"}]');
+  assert.equal(JSON.stringify(evaluate(false)), '[{"os":"macos-latest","scenario":"rename"},{"os":"windows-latest","scenario":"category-move"}]');
 });

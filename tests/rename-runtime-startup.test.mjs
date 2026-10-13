@@ -203,3 +203,92 @@ test("failed shutdown metrics retain earlier owned PIDs and uncertainty until a 
   await f.startup.readBackendPids(f.electron);
   assert.equal(f.startup.launchUnverified, false);
 });
+
+
+test("confirmed backend exit survives later numeric PID reuse without skipping fixture cleanup", async () => {
+  const f = fixture(); f.window.resolve(); f.interfaceReady.resolve();
+  f.state.metrics = [{ type: "Utility", serviceName: "Node", pid: 789 }];
+  await f.startup.launch(f.options);
+  const shutdown = { passed: false };
+  let probe = () => { throw Object.assign(new Error(), { code: "ESRCH" }); };
+  await closeRuntimeSession(f.electron, {
+    shutdown, readBackendPids: f.startup.readBackendPids, beforeClose: async () => {},
+    assertBackendsStopped: async pids => {
+      assert.deepEqual(pids, [789]);
+      // At normal shutdown the owned backend is independently observed absent.
+      for (const pid of pids) assert.throws(() => probe(pid), { code: "ESRCH" });
+    },
+    recordBackendsStopped: pids => f.startup.confirmBackendExit(f.electron, pids),
+  }, async () => { f.child.exitCode = 0; });
+  assert.equal(shutdown.passed, true);
+  probe = () => {};
+  let removed = 0;
+  const result = await cleanupOwnedFixture("owned-fixture", {
+    // Later an unrelated process has reused 789. It cannot resurrect the owned backend.
+    processesStopped: ownedProcessesStopped(f.ownedProcesses, f.backendPids, { probe, launchUnverified: f.startup.launchUnverified }),
+    record: async () => {},
+  }, async () => { removed++; });
+  assert.equal(result.status, "passed"); assert.equal(removed, 1);
+});
+
+
+async function stopWithProof(f, electron = f.electron) {
+  return closeRuntimeSession(electron, {
+    shutdown: { passed: false }, readBackendPids: f.startup.readBackendPids, beforeClose: async () => {},
+    assertBackendsStopped: async pids => assert.ok(pids.length > 0),
+    recordBackendsStopped: pids => f.startup.confirmBackendExit(electron, pids),
+  }, async () => { electron.process().exitCode = 0; });
+}
+
+test("a new owned launch reusing a confirmed PID must establish its own exit", async () => {
+  const f = fixture(); f.window.resolve(); f.interfaceReady.resolve();
+  f.state.metrics = [{ type: "Utility", serviceName: "Node", pid: 789 }];
+  await f.startup.launch(f.options); await stopWithProof(f);
+  const second = { ...f.electron, process: () => secondChild }, secondChild = { exitCode: null, signalCode: null };
+  f.state.electron = second;
+  await f.startup.launch(f.options);
+  assert.deepEqual([...f.backendPids], [789]);
+  secondChild.exitCode = 0;
+  assert.equal(ownedProcessesStopped(f.ownedProcesses, f.backendPids, { probe: () => {} }), false);
+  await stopWithProof(f, second);
+  assert.equal(ownedProcessesStopped(f.ownedProcesses, f.backendPids, { probe: () => {} }), true);
+});
+
+test("another unconfirmed launch sharing a numeric PID cannot be retired by its predecessor", async () => {
+  const f = fixture(); f.window.resolve(); f.interfaceReady.resolve();
+  f.state.metrics = [{ type: "Utility", serviceName: "Node", pid: 789 }];
+  await f.startup.launch(f.options);
+  const secondChild = { exitCode: 0, signalCode: null };
+  const second = { ...f.electron, process: () => secondChild }; f.state.electron = second;
+  await f.startup.launch(f.options); await stopWithProof(f);
+  assert.deepEqual([...f.backendPids], [789]);
+  assert.equal(ownedProcessesStopped(f.ownedProcesses, f.backendPids, { probe: () => {} }), false);
+  await stopWithProof(f, second);
+  assert.equal(ownedProcessesStopped(f.ownedProcesses, f.backendPids, { probe: () => {} }), true);
+});
+
+test("shutdown exit evidence must cover initial and replacement backend PIDs", async () => {
+  const f = fixture(); f.window.resolve(); f.interfaceReady.resolve();
+  f.state.metrics = [{ type: "Utility", serviceName: "Node", pid: 789 }];
+  await f.startup.launch(f.options);
+  f.state.metrics = [{ type: "Utility", serviceName: "Node", pid: 790 }];
+  assert.deepEqual(await f.startup.readBackendPids(f.electron), [789, 790]);
+  assert.throws(() => f.startup.confirmBackendExit(f.electron, [790]), /every observed PID/);
+  assert.deepEqual([...f.backendPids], [789, 790]);
+  await stopWithProof(f);
+  assert.deepEqual([...f.backendPids], []);
+  await assert.rejects(f.startup.readBackendPids(f.electron), /active owned launch/);
+});
+
+test("failed backend verification never records an exit proof", async () => {
+  const f = fixture(); f.window.resolve(); f.interfaceReady.resolve();
+  f.state.metrics = [{ type: "Utility", serviceName: "Node", pid: 789 }];
+  await f.startup.launch(f.options);
+  let recorded = false;
+  await assert.rejects(closeRuntimeSession(f.electron, {
+    shutdown: { passed: false }, readBackendPids: f.startup.readBackendPids, beforeClose: async () => {},
+    assertBackendsStopped: async () => { throw new Error("backend survived"); },
+    recordBackendsStopped: pids => { recorded = true; f.startup.confirmBackendExit(f.electron, pids); },
+  }, async () => { f.child.exitCode = 0; }), /backend survived/);
+  assert.equal(recorded, false); assert.deepEqual([...f.backendPids], [789]);
+});
