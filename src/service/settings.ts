@@ -1,3 +1,4 @@
+import type { CategoryRemovalPreview } from "../contracts/category-removal.js";
 import type { CategoryOptionsPayload } from "../contracts/category-options.js";
 import type { ProjectCategoryMoveResult, ProjectCategoryMoveList, ProjectCategoryMoveRecoveryPreview } from "../contracts/project-category-move.js";
 import type { ProjectRenameResult, ProjectRenameList, ProjectRenameRecoveryPreview } from "../contracts/project-rename.js";
@@ -39,7 +40,7 @@ export interface SettingsService {
   previewProjectRenameRecovery(input: unknown): ServiceResult<ProjectRenameRecoveryPreview>;
   recoverProjectRename(input: unknown): ServiceResult<ProjectRenameResult>;
   revealProject(input: unknown, native?: NativeProjectReveal): Promise<ServiceResult<ProjectRevealResult>>;
-  handleQuery(input: unknown): ServiceResult<CategoryOptionsPayload | ProjectCategoryMoveResult | ProjectCategoryMoveList | ProjectCategoryMoveRecoveryPreview | ProjectRenameResult | ProjectRenameList | ProjectRenameRecoveryPreview | ProjectCreationResult | ProjectCreationList | ProjectCreationRecoveryPreview | WorkspaceSourceObservationSnapshot | ProjectRecoveryPreview | TextPropertySnapshot | Settings | WorkspaceLoad | DiscoveryPreview | ProjectList>;
+  handleQuery(input: unknown): ServiceResult<CategoryRemovalPreview | CategoryOptionsPayload | ProjectCategoryMoveResult | ProjectCategoryMoveList | ProjectCategoryMoveRecoveryPreview | ProjectRenameResult | ProjectRenameList | ProjectRenameRecoveryPreview | ProjectCreationResult | ProjectCreationList | ProjectCreationRecoveryPreview | WorkspaceSourceObservationSnapshot | ProjectRecoveryPreview | TextPropertySnapshot | Settings | WorkspaceLoad | DiscoveryPreview | ProjectList>;
   handleCommand(input: unknown): ServiceResult<CategoryOptionsPayload | ProjectCategoryMoveResult | ProjectRenameResult | ProjectCreationResult | CategoryPropertySnapshot | TextPropertyMutation | Settings | WorkspaceCreated | ActiveWorkspace | WorkspaceLoad | WorkspaceSourceState | ProjectList>;
   workspaces: WorkspaceService;
   close(): void;
@@ -103,6 +104,7 @@ export function openSettingsService(
     recoverProjectRename: workspaces.recoverProjectRename,
     revealProject: workspaces.revealProject,
     handleQuery(input) {
+      if (isRecord(input) && input.type === "workspace.previewCategoryRemoval") return workspaces.previewCategoryRemoval(input);
       if (isRecord(input) && input.type === "workspace.getCategoryFolderOperation") return workspaces.getCategoryFolderOperation(input);
       if (isRecord(input) && input.type === "workspace.previewCategoryFolder") return workspaces.previewCategoryFolder(input);
       if (isRecord(input) && input.type === "workspace.listCategoryFolderOperations") return workspaces.listCategoryFolderOperations(input);

@@ -1,3 +1,4 @@
+import type { CategoryRemovalQuery } from "../contracts/category-removal.js";
 import type { CategoryOptionsQuery, CategoryOptionsCommand } from "../contracts/category-options.js";
 import type { WorkspaceMoveProjectCategoryCommand, ProjectCategoryMoveResult, ProjectCategoryMoveList, ProjectCategoryMoveRecoveryPreview, ProjectCategoryMoveRecoveryAction } from "../contracts/project-category-move.js";
 import type { WorkspaceRenameProjectCommand, ProjectRenameResult, ProjectRenameList, ProjectRenameRecoveryPreview, ProjectRenameRecoveryAction } from "../contracts/project-rename.js";
@@ -14,6 +15,10 @@ import { isWorkspaceChangeEvent } from "../contracts/service-protocol.js";
 
 export class WorkspaceServiceClient {
   constructor(private readonly api: WorkspaceDesktopApi = window.workspace) {}
+
+  previewCategoryRemoval(input: Omit<CategoryRemovalQuery, "type">) {
+    return this.api.workspace({ ...input, type: "workspace.previewCategoryRemoval" });
+  }
 
   previewCategoryFolder(input: Omit<Extract<CategoryOptionsQuery | CategoryOptionsCommand, { type: "workspace.previewCategoryFolder" }>, "type">) {
     return this.api.workspace({ ...input, type: "workspace.previewCategoryFolder" });

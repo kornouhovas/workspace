@@ -1,3 +1,5 @@
+import { createCategoryRemovalService } from "./category-removal.js";
+import type { CategoryRemovalPreview } from "../contracts/category-removal.js";
 import { createCategoryOptionsService } from "./category-options.js";
 import type { CategoryFolderPreview, CategoryFolderResult, CategoryFolderStatus, CategoryFolderRecoveryPreview, CategoryPresentationSnapshot } from "../contracts/category-options.js";
 import { createProjectCategoryMoveService } from "./project-category-move.js";
@@ -51,6 +53,7 @@ const nativeFilesystem: WorkspaceFilesystem = {
 };
 
 export interface WorkspaceService {
+  previewCategoryRemoval(input: unknown): ServiceResult<CategoryRemovalPreview>;
   getCategoryFolderOperation(input: unknown): ServiceResult<CategoryFolderResult>;
   previewCategoryFolder(input: unknown): ServiceResult<CategoryFolderPreview>;
   applyCategoryFolder(input: unknown): ServiceResult<CategoryFolderResult>;
@@ -179,8 +182,10 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
     publish([{ type: "workspace.projectsChanged", sourceId, revision, workspaceIds }]);
     observer.request(sourceId);
   }, projectFilesystem, projectRenameNative);
+  const categoryRemoval = createCategoryRemovalService(db, projectFilesystem);
   const reveal = createProjectRevealService(db, projectFilesystem);
   const service: WorkspaceService = {
+    previewCategoryRemoval: categoryRemoval.previewCategoryRemoval,
     getCategoryFolderOperation: categoryOptions.getCategoryFolderOperation,
     previewCategoryFolder: categoryOptions.previewCategoryFolder,
     applyCategoryFolder: categoryOptions.applyCategoryFolder,
