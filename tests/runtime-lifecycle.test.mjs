@@ -554,3 +554,21 @@ test("rename assertion failure survives normal owned shutdown, evidence failure 
     await rm(fixture, { recursive: true, force: true });
   }
 });
+
+test("owned-process diagnostics retain the original cleanup rejection without exposing process identifiers", async () => {
+  const { inspectOwnedProcesses, cleanupOwnedFixture } = await import("../scripts/runtime-lifecycle.mjs");
+  const children = new Set([{ exitCode: 0, signalCode: null }]);
+  const inspection = inspectOwnedProcesses(children, new Set([987654]), { probe: () => {} });
+  assert.deepEqual(inspection, { stopped: false, reason: "backend_present", parentCount: 1, unconfirmedParents: 0, backendCount: 1, checkedBackends: 1, launchUnverified: false });
+  assert.equal(JSON.stringify(inspection).includes("987654"), false);
+  let removed = false;
+  await assert.rejects(cleanupOwnedFixture("owned-fixture", { processesStopped: inspection.stopped, record: async () => {} }, async () => { removed = true; }), /Owned-process termination is unverified/);
+  assert.equal(removed, false);
+  const parent = inspectOwnedProcesses(new Set([{ exitCode: null, signalCode: null }]), new Set(), { probe: () => { throw new Error("must not probe"); } });
+  assert.equal(parent.reason, "parent_exit_unconfirmed"); assert.equal(parent.stopped, false);
+  const uncertain = inspectOwnedProcesses(children, new Set(), { launchUnverified: true });
+  assert.equal(uncertain.reason, "launch_unverified"); assert.equal(uncertain.stopped, false);
+  const gone = inspectOwnedProcesses(children, new Set([987654]), { probe: () => { throw Object.assign(new Error("private exception"), { code: "ESRCH" }); } });
+  assert.equal(gone.stopped, true); assert.equal(gone.reason, "confirmed");
+  assert.equal(JSON.stringify(gone).includes("private"), false);
+});

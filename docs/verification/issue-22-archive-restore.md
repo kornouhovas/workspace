@@ -30,3 +30,8 @@ Both review axes accepted the source repairs; the fixture-only follow-up retaine
 Renewed development and packaged macOS runs each pass 12 checks on the recorded 7a10885 candidate, including EN/RU direct/grouped archive, archived Text editing, ordinary quit/restart and restore, narrow/wide screenshots, five ordinary application/backend shutdowns and asserted owned-fixture cleanup. Artifact resource validation passes. Local packaging is unsigned and is not a published release.
 
 Exact-SHA three-platform Actions, artifact inspection and integration acceptance remain pending in the GitHub checkpoint. This report does not claim Windows acceptance before those checks complete. Further documentation-only commits identify inherited source/test evidence separately.
+
+
+## First platform run and required focused continuation
+
+Full run [38450516144](https://github.com/kornouhovas/workspace/actions/runs/38450516144) on `04fd8c5` passes common checks, all platform suites, and the complete macOS/Windows-2022 routes. All six new archive reports pass 72 checks in total. Windows latest fails its final existing graphical rename fixture cleanup in `smoke:runtime -- release`; subsequent category-move runtime acceptance is unreached. The overall run is a failure and has not been integrated. See the [retained diagnosis and focused route](issue-22-windows-release-runtime.md). Original ownership predicates are not recorded, so the historical cause remains unestablished; bounded diagnostics preserve the conservative gate without relaxing it.

@@ -42,7 +42,7 @@ test('suite CLI lists the selected real files and rejects unknown invocations', 
 test('ordinary CI runs common checks once and retains all three platform acceptance routes', () => {
   const workflow = load(readFileSync('.github/workflows/desktop-ci.yml', 'utf8'));
   const { common, verify } = workflow.jobs;
-  assert.equal(common.if, "${{ github.event_name != 'workflow_dispatch' || (inputs.checks != 'failed' && inputs.checks != 'readiness') }}");
+  assert.equal(common.if, "${{ github.event_name != 'workflow_dispatch' || (inputs.checks != 'failed' && inputs.checks != 'readiness' && inputs.checks != 'windows-release') }}");
   assert.equal(common.strategy, undefined);
   assert.deepEqual(common.steps.filter(step => step.run).map(step => step.run), [
     'npm ci', 'npm run lint', 'npm run typecheck', 'npm run check:docs', 'npm run test:common',
@@ -83,7 +83,7 @@ test('investigation jobs run only with explicit manual diagnostic inputs', () =>
 test('manual failed-check scope runs only the Windows observer and macOS rename routes', () => {
   const workflow = load(readFileSync('.github/workflows/desktop-ci.yml', 'utf8'));
   assert.equal(workflow.on.workflow_dispatch.inputs.checks.default, 'full');
-  assert.deepEqual(workflow.on.workflow_dispatch.inputs.checks.options, ['full', 'failed', 'readiness']);
+  assert.deepEqual(workflow.on.workflow_dispatch.inputs.checks.options, ['full', 'failed', 'readiness', 'windows-release']);
   const enabled = (job, event, checks) => runInNewContext(job.if.slice(3, -2), { github: { event_name: event }, inputs: { checks } });
   for (const event of ['push', 'pull_request', 'workflow_dispatch']) for (const checks of [undefined, 'full', 'failed']) {
     const focused = event === 'workflow_dispatch' && checks === 'failed';
@@ -173,6 +173,25 @@ test('readiness failure scope runs only the original macOS Electron suite', () =
   assert.equal(commands[0], 'npm ci');
   assert.ok(commands[1].includes('set -o pipefail'));
   assert.ok(commands[1].includes('node --test tests/rename-editor-readiness.test.mjs 2>&1 | tee'));
+  const upload = job.steps.find(step => step.uses === 'actions/upload-artifact@v4');
+  assert.equal(upload.if, 'always()'); assert.equal(upload.with['if-no-files-found'], 'error');
+  for (const field of ['github.sha', 'github.run_id', 'github.run_attempt']) assert.ok(upload.with.name.includes(field));
+});
+
+
+test('Windows release failure scope runs only the original packaged runtime with its prerequisites', () => {
+  const workflow = load(readFileSync('.github/workflows/desktop-ci.yml', 'utf8'));
+  for (const event of ['push', 'pull_request', 'workflow_dispatch']) for (const checks of [undefined, 'full', 'failed', 'readiness', 'windows-release']) {
+    const context = { github: { event_name: event }, inputs: { checks } };
+    const active = Object.entries(workflow.jobs).filter(([, job]) => job.if && runInNewContext(job.if.slice(3, -2), context)).map(([name]) => name);
+    if (event === 'workflow_dispatch' && checks === 'windows-release') assert.deepEqual(active, ['focused-windows-release-runtime']);
+    else assert.equal(active.includes('focused-windows-release-runtime'), false);
+  }
+  const job = workflow.jobs['focused-windows-release-runtime'];
+  assert.equal(job['runs-on'], 'windows-latest');
+  const commands = job.steps.filter(step => step.run).map(step => step.run);
+  assert.deepEqual(commands, ['npm ci', 'npm run build', 'node --import tsx --test tests/runtime-lifecycle.test.mjs tests/rename-runtime-startup.test.mjs tests/test-suites.test.mjs', 'npm run package:built', 'npm run check:artifact -- release', 'npm run smoke:runtime -- release']);
+  assert.ok(job.steps.every(step => step['continue-on-error'] === undefined));
   const upload = job.steps.find(step => step.uses === 'actions/upload-artifact@v4');
   assert.equal(upload.if, 'always()'); assert.equal(upload.with['if-no-files-found'], 'error');
   for (const field of ['github.sha', 'github.run_id', 'github.run_attempt']) assert.ok(upload.with.name.includes(field));

@@ -10,7 +10,7 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { _electron } from "playwright-core";
 import { packagedExecutablePath } from "./runtime-executable.mjs";
-import { cleanupOwnedFixture, closeRuntimeSession, ownedProcessesStopped, withDeadline } from "./runtime-lifecycle.mjs";
+import { cleanupOwnedFixture, closeRuntimeSession, inspectOwnedProcesses, withDeadline } from "./runtime-lifecycle.mjs";
 import { assertRenameAcceptance, createRenameEvidence, recordRenameEvidence } from "./runtime-evidence.mjs";
 import { closeDisposableFileManagerTarget, waitForFileManagerTarget } from "./file-manager-evidence.mjs";
 import { createRenameRuntimeStartup } from "./rename-runtime-startup.mjs";
@@ -459,7 +459,11 @@ export async function runProjectRenameUi(mode = "dev") {
       if (cleanup.status !== "completed") failure ??= new Error("Rename file-manager cleanup unverified");
       else nativeTargets.delete(target);
     }
-    await cleanupOwnedFixture(fixture, { processesStopped: nativeStopped && nativeTargets.size === 0 && ownedProcessesStopped(ownedProcesses, backendPids, { launchUnverified: startup.launchUnverified }), primaryFailure: failure,
+    const termination = inspectOwnedProcesses(ownedProcesses, backendPids, { launchUnverified: startup.launchUnverified });
+    // Retain the predicate that actually governs cleanup, without PIDs, paths or
+    // raw probe exceptions. Diagnostics never turn uncertainty into a pass.
+    observations.push({ fixtureOwnership: { ...termination, nativeStopped, nativeTargetCount: nativeTargets.size } });
+    await cleanupOwnedFixture(fixture, { processesStopped: nativeStopped && nativeTargets.size === 0 && termination.stopped, primaryFailure: failure,
       record: async outcome => {
         recordRenameEvidence(evidence, "fixtureCleanup", outcome);
         try { if (!failure) assertRenameAcceptance(evidence); } catch (error) { failure = error; }

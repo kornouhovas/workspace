@@ -77,13 +77,24 @@ export async function closeRuntimeSession(electron, { shutdown, readBackendPids,
 
 // A cleared UI session is not exit evidence. Callers retain every launched
 // parent and observed backend PID, including launches that failed before UI.
-export function ownedProcessesStopped(children, backendPids, { probe = (pid) => process.kill(pid, 0), launchUnverified = false } = {}) {
-  if (launchUnverified || ![...children].every(child => child.exitCode != null || child.signalCode != null)) return false;
-  return [...backendPids].every(pid => {
-    if (!Number.isSafeInteger(pid) || pid <= 0) return false;
-    try { probe(pid); return false; }
-    catch (error) { return error.code === "ESRCH"; }
-  });
+export function inspectOwnedProcesses(children, backendPids, { probe = (pid) => process.kill(pid, 0), launchUnverified = false } = {}) {
+  const parents = [...children], backends = [...backendPids];
+  const result = { stopped: false, reason: "confirmed", parentCount: parents.length,
+    unconfirmedParents: parents.filter(child => child.exitCode == null && child.signalCode == null).length,
+    backendCount: backends.length, checkedBackends: 0, launchUnverified };
+  if (launchUnverified) return { ...result, reason: "launch_unverified" };
+  if (result.unconfirmedParents) return { ...result, reason: "parent_exit_unconfirmed" };
+  for (const pid of backends) {
+    if (!Number.isSafeInteger(pid) || pid <= 0) return { ...result, reason: "invalid_backend_pid" };
+    result.checkedBackends++;
+    try { probe(pid); return { ...result, reason: "backend_present" }; }
+    catch (error) { if (error.code !== "ESRCH") return { ...result, reason: "backend_probe_unverified" }; }
+  }
+  return { ...result, stopped: true };
+}
+
+export function ownedProcessesStopped(children, backendPids, options) {
+  return inspectOwnedProcesses(children, backendPids, options).stopped;
 }
 
 // The caller owns this disposable tree and verifies all its processes first.
