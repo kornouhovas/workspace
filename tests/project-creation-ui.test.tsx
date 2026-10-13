@@ -21,7 +21,7 @@ import type { ProjectList, WorkspaceChangeEvent } from "../src/contracts/workspa
 const browser = new Window({ url: "http://localhost" });
 Object.assign(globalThis, { window: browser, document: browser.document, HTMLElement: browser.HTMLElement, Node: browser.Node, MutationObserver: browser.MutationObserver });
 Object.defineProperty(globalThis, "navigator", { configurable: true, value: browser.navigator });
-const { render, screen, cleanup, act, fireEvent } = await import("@testing-library/react");
+const { render, screen, cleanup, act, fireEvent, within } = await import("@testing-library/react");
 const { default: userEvent } = await import("@testing-library/user-event");
 test.afterEach(cleanup);
 const initial: ProjectList = { workspaceId: "workspace", sourceId: "source", revision: 1, configured: true, mode: "direct", state: "empty", projects: [], retainedProjects: [], retainedCount: 0, categories: [], categoryProperty: null, categoryPropertyRevision: 0 };
@@ -255,7 +255,7 @@ for (const language of ["en", "ru"] as const) {
     render(<DiscoveryWorkspace client={client} workspaceId="workspace" sourceId="source" language={language} disabled={false} />);
     await userEvent.click(await screen.findByRole("button", { name: `${t("renameCategoryProperty")}: Category` }));
     const label = screen.getByRole("textbox", { name: t("categoryPropertyName") }); await userEvent.clear(label); await userEvent.type(label, "Unsaved label");
-    await userEvent.click(screen.getByRole("button", { name: t("createProject") })); await userEvent.type(screen.getByRole("textbox", { name: t("creationName") }), "Authored folder"); await userEvent.selectOptions(screen.getByRole("combobox"), "category");
+    await userEvent.click(screen.getByRole("button", { name: t("createProject") })); await userEvent.type(screen.getByRole("textbox", { name: t("creationName") }), "Authored folder"); await userEvent.selectOptions(within(screen.getByRole("region", { name: t("createProject") })).getByRole("combobox"), "category");
     label.focus(); await act(async () => { client.list = { ...client.list, revision: 2 }; client.events.forEach((listener) => listener({ type: "workspace.projectsChanged", sourceId: "source", workspaceIds: ["workspace"], revision: 2 })); });
     assert.equal((label as HTMLInputElement).value, "Unsaved label"); assert.ok(document.activeElement === label); assert.equal((screen.getByRole("textbox", { name: t("creationName") }) as HTMLInputElement).value, "Authored folder");
   });
