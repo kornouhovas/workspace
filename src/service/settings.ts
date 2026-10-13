@@ -1,4 +1,4 @@
-import type { CategoryRemovalPreview } from "../contracts/category-removal.js";
+import type { CategoryRemovalPayload } from "../contracts/category-removal.js";
 import type { CategoryOptionsPayload } from "../contracts/category-options.js";
 import type { ProjectCategoryMoveResult, ProjectCategoryMoveList, ProjectCategoryMoveRecoveryPreview } from "../contracts/project-category-move.js";
 import type { ProjectRenameResult, ProjectRenameList, ProjectRenameRecoveryPreview } from "../contracts/project-rename.js";
@@ -40,8 +40,8 @@ export interface SettingsService {
   previewProjectRenameRecovery(input: unknown): ServiceResult<ProjectRenameRecoveryPreview>;
   recoverProjectRename(input: unknown): ServiceResult<ProjectRenameResult>;
   revealProject(input: unknown, native?: NativeProjectReveal): Promise<ServiceResult<ProjectRevealResult>>;
-  handleQuery(input: unknown): ServiceResult<CategoryRemovalPreview | CategoryOptionsPayload | ProjectCategoryMoveResult | ProjectCategoryMoveList | ProjectCategoryMoveRecoveryPreview | ProjectRenameResult | ProjectRenameList | ProjectRenameRecoveryPreview | ProjectCreationResult | ProjectCreationList | ProjectCreationRecoveryPreview | WorkspaceSourceObservationSnapshot | ProjectRecoveryPreview | TextPropertySnapshot | Settings | WorkspaceLoad | DiscoveryPreview | ProjectList>;
-  handleCommand(input: unknown): ServiceResult<CategoryOptionsPayload | ProjectCategoryMoveResult | ProjectRenameResult | ProjectCreationResult | CategoryPropertySnapshot | TextPropertyMutation | Settings | WorkspaceCreated | ActiveWorkspace | WorkspaceLoad | WorkspaceSourceState | ProjectList>;
+  handleQuery(input: unknown): ServiceResult<CategoryRemovalPayload | CategoryOptionsPayload | ProjectCategoryMoveResult | ProjectCategoryMoveList | ProjectCategoryMoveRecoveryPreview | ProjectRenameResult | ProjectRenameList | ProjectRenameRecoveryPreview | ProjectCreationResult | ProjectCreationList | ProjectCreationRecoveryPreview | WorkspaceSourceObservationSnapshot | ProjectRecoveryPreview | TextPropertySnapshot | Settings | WorkspaceLoad | DiscoveryPreview | ProjectList>;
+  handleCommand(input: unknown): ServiceResult<CategoryRemovalPayload | CategoryOptionsPayload | ProjectCategoryMoveResult | ProjectRenameResult | ProjectCreationResult | CategoryPropertySnapshot | TextPropertyMutation | Settings | WorkspaceCreated | ActiveWorkspace | WorkspaceLoad | WorkspaceSourceState | ProjectList>;
   workspaces: WorkspaceService;
   close(): void;
 }
@@ -104,6 +104,9 @@ export function openSettingsService(
     recoverProjectRename: workspaces.recoverProjectRename,
     revealProject: workspaces.revealProject,
     handleQuery(input) {
+      if (isRecord(input) && input.type === "workspace.previewCategoryRemovalRecovery") return workspaces.previewCategoryRemovalRecovery(input);
+      if (isRecord(input) && input.type === "workspace.getCategoryRemoval") return workspaces.getCategoryRemoval(input);
+      if (isRecord(input) && input.type === "workspace.listCategoryRemovals") return workspaces.listCategoryRemovals(input);
       if (isRecord(input) && input.type === "workspace.previewCategoryRemoval") return workspaces.previewCategoryRemoval(input);
       if (isRecord(input) && input.type === "workspace.getCategoryFolderOperation") return workspaces.getCategoryFolderOperation(input);
       if (isRecord(input) && input.type === "workspace.previewCategoryFolder") return workspaces.previewCategoryFolder(input);
@@ -140,6 +143,8 @@ export function openSettingsService(
     },
 
     handleCommand(input) {
+      if (isRecord(input) && input.type === "workspace.recoverCategoryRemoval") return workspaces.recoverCategoryRemoval(input);
+      if (isRecord(input) && input.type === "workspace.applyCategoryRemoval") return workspaces.applyCategoryRemoval(input);
       if (isRecord(input) && input.type === "workspace.applyCategoryFolder") return workspaces.applyCategoryFolder(input);
       if (isRecord(input) && input.type === "workspace.recoverCategoryFolder") return workspaces.recoverCategoryFolder(input);
       if (isRecord(input) && input.type === "workspace.setCategoryPresentation") return workspaces.setCategoryPresentation(input);

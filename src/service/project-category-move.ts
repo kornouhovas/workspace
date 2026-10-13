@@ -10,7 +10,7 @@ import { isChildName, reliableIdentity, sameIdentity, validArchive, validExclusi
 import { CreationFailure, filesystemCode, filesystemProblem, nativeProjectFilesystem, validProjectBasename,
   assertCreationDestinationFree, verifyCreationDirectory, verifyCreationParents, type ProjectFilesystem } from "./project-filesystem.js";
 import { renameNoReplace, type ProjectRenameFilesystemResult } from "./project-rename-filesystem.js";
-import { readProjectReservations } from "./project-rename-reservations.js";
+import { categoryRemovalOwner, readProjectReservations } from "./project-rename-reservations.js";
 import { filesystemAlias } from "./path-alias.js";
 import * as schema from "./db/schema.js";
 
@@ -78,8 +78,10 @@ export function createProjectCategoryMoveService(db: Database, integration: {
       (archive.length === 1 || filesystemAlias(parts[1]) === filesystemAlias(archive[1]))) fail("archive");
   }
   function reservations(row: Operation) {
+    const removalOwner = categoryRemovalOwner(db, row);
     if (readProjectReservations(db, row.sourceId)
-      .some((op) => op.operationKind !== "category_move" || op.operationId !== row.operationId)) fail("reserved_destination");
+      .some((op) => !(op.operationKind === "category_move" && op.operationId === row.operationId) &&
+        !(op.operationKind === "category_removal" && op.operationId === removalOwner))) fail("reserved_destination");
     const paths = [row.originalRelativePath, row.requestedRelativePath];
     const records = [...db.select().from(schema.projects).where(eq(schema.projects.sourceId, row.sourceId)).all().filter((p) => p.id !== row.projectId),
       ...db.select().from(schema.categories).where(eq(schema.categories.sourceId, row.sourceId)).all()];

@@ -1,4 +1,4 @@
-import { categoryRemovalQueries, isCategoryRemovalRequest } from "../contracts/category-removal.js";
+import { categoryRemovalQueries, categoryRemovalCommands, isCategoryRemovalRequest } from "../contracts/category-removal.js";
 import { categoryOptionsQueries, categoryOptionsCommands, isCategoryOptionsRequest } from "../contracts/category-options.js";
 import { isProjectCategoryMoveRequest } from "../contracts/project-category-move.js";
 import { isProjectRenameRequest } from "../contracts/project-rename.js";
@@ -128,7 +128,7 @@ function isLoadQuery(input: unknown): boolean {
 
 function isMalformedWorkspaceRequest(input: unknown): boolean {
   if (!isRecord(input) || typeof input.type !== "string" || !input.type.startsWith("workspace.")) return false;
-  if (categoryRemovalQueries.includes(input.type)) return !isCategoryRemovalRequest(input);
+  if ([...categoryRemovalQueries, ...categoryRemovalCommands].includes(input.type)) return !isCategoryRemovalRequest(input);
   if ([...categoryOptionsQueries, ...categoryOptionsCommands].includes(input.type)) return !isCategoryOptionsRequest(input);
   if (["workspace.moveProjectCategory", "workspace.listProjectCategoryMoves", "workspace.getProjectCategoryMove", "workspace.previewProjectCategoryMoveRecovery", "workspace.recoverProjectCategoryMove"].includes(input.type)) return !isProjectCategoryMoveRequest(input);
   if (["workspace.renameProject", "workspace.listProjectRenames", "workspace.getProjectRename", "workspace.previewProjectRenameRecovery", "workspace.recoverProjectRename"].includes(input.type)) return !isProjectRenameRequest(input);

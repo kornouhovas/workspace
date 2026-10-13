@@ -1,6 +1,6 @@
 import type { ProjectRevealProblem } from "../contracts/project-reveal.js";
 import { isTrustedProjectRevealTarget, type TrustedProjectRevealTarget } from "../contracts/service-protocol.js";
-import { accessSync, constants, lstatSync, mkdirSync, opendirSync, readdirSync, realpathSync } from "node:fs";
+import { accessSync, constants, lstatSync, mkdirSync, opendirSync, readdirSync, realpathSync, rmdirSync } from "node:fs";
 import { isAbsolute, join, relative, sep } from "node:path";
 import { reliableIdentity, sameIdentity, type NativeIdentity } from "./discovery.js";
 import type { ProjectCreationProblem } from "../contracts/project-creation.js";
@@ -12,6 +12,7 @@ export interface ProjectFilesystem {
   realpath(path: string): string;
   names(path: string): string[];
   mkdir(path: string): void;
+  removeEmptyDirectory?(path: string): void;
   assertAccessible?(path: string): void;
 }
 
@@ -29,6 +30,7 @@ export const nativeProjectFilesystem: ProjectFilesystem = {
   realpath: (path) => realpathSync.native(path),
   names: (path) => readdirSync(path),
   mkdir: (path) => { mkdirSync(path, { recursive: false }); },
+  removeEmptyDirectory: (path) => { rmdirSync(path); },
 };
 
 export class CreationFailure extends Error {

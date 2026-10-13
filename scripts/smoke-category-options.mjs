@@ -1,7 +1,8 @@
 /* global window, document, innerWidth */
 import assert from "node:assert/strict";
+import { randomUUID } from "node:crypto";
 import { createRequire } from "node:module";
-import { mkdir, mkdtemp, readFile, readdir, realpath, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, readdir, realpath, rmdir, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -16,7 +17,7 @@ const fixture = await realpath(await mkdtemp(join(tmpdir(), "category-options-ru
 const source = join(fixture, "source"), dataDirectory = join(fixture, "app-data");
 const evidenceDirectory = resolve(process.env.WORKSPACE_SMOKE_EVIDENCE_DIR ?? "work/issue-20-category-options-runtime");
 await mkdir(evidenceDirectory, { recursive: true });
-const evidence = { issue: 20, mode, platform: process.platform, sha: process.env.GITHUB_SHA ?? null, checks: [], shutdowns: [], cleanup: null, status: "running" };
+const evidence = { issue: 20, relatedIssues: [21], mode, platform: process.platform, sha: process.env.GITHUB_SHA ?? null, checks: [], shutdowns: [], cleanup: null, status: "running" };
 const children = new Set(), backendPids = new Set();
 let session, failure, launchUnverified = false;
 const unwrap = result => { assert.equal(result.ok, true, JSON.stringify(result)); return result.value; };
@@ -133,6 +134,71 @@ try {
   assert.ok(associated.projects.some(p => p.relativePath === "Existing category/Second project"));
   assert.equal(await readFile(join(source, "Existing category", "Second project", "sentinel"), "utf8"), "associated bytes");
   evidence.checks.push({ scenario: "explicit-create-empty-and-associate-existing-ui", passed: true });
+  // Issue 21 uses the production category-options UI and the same owned source.
+  // EN removes Existing into Empty; RU then removes Empty into the renamed
+  // category. Both retain the associated project identity, values and bytes.
+  const removalLabels = {
+    en: { title: "Remove category", category: "Category to remove", destination: "Destination for its projects", preview: "Preview category removal", apply: "Move projects and remove empty category", done: "Category removed. All reviewed projects are preserved at their destinations.", close: "Close category removal" },
+    ru: { title: "Удалить категорию", category: "Категория для удаления", destination: "Куда перенести её проекты", preview: "Предпросмотр удаления категории", apply: "Перенести проекты и удалить пустую категорию", done: "Категория удалена. Все проекты из предпросмотра сохранены в выбранной категории.", close: "Закрыть удаление категории" },
+  };
+  const associatedProject = associated.projects.find(p => p.name === "Second project");
+  assert.ok(associatedProject);
+  for (const language of ["en", "ru"]) {
+    const l = labels[language], r = removalLabels[language];
+    unwrap(await page.evaluate(language => window.workspace.settings({ type: "settings.setLanguage", language }), language));
+    await page.reload();
+    const list = await query(page, { type: "workspace.listProjects", workspaceId });
+    const original = list.categories.find(c => c.name === (language === "en" ? "Existing category" : "Empty category"));
+    const destination = list.categories.find(c => c.name === (language === "en" ? "Empty category" : "Переименованная категория"));
+    assert.ok(original && destination);
+    await page.getByRole("button", { name: l.options, exact: true }).click();
+    await page.getByRole("button", { name: r.title, exact: true }).click();
+    await page.getByLabel(r.category, { exact: true }).selectOption(original.categoryId);
+    await page.getByLabel(r.destination, { exact: true }).selectOption(destination.categoryId);
+    // An independently created empty collision must be shown and preserved.
+    await mkdir(join(source, destination.name, "Second project"));
+    await query(page, { type: "workspace.refreshSource", workspaceId });
+    await page.getByRole("button", { name: r.preview, exact: true }).click();
+    const apply = page.getByRole("button", { name: r.apply, exact: true });
+    await apply.waitFor(); assert.equal(await apply.isDisabled(), true);
+    await page.keyboard.press("Escape");
+    await rmdir(join(source, destination.name, "Second project"));
+    await query(page, { type: "workspace.refreshSource", workspaceId });
+    await page.getByRole("button", { name: r.preview, exact: true }).click();
+    await apply.waitFor(); assert.equal(await apply.isEnabled(), true);
+    for (const [width, height] of [[1440, 960], [1024, 720]]) {
+      await app.evaluate(({ BrowserWindow }, size) => BrowserWindow.getAllWindows()[0].setContentSize(...size), [width, height]);
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+      await page.screenshot({ path: join(evidenceDirectory, `removal-${language}-${width}-${mode}.png`), fullPage: true });
+      evidence.checks.push({ scenario: "removal-preview-layout", language, width, height, passed: true });
+    }
+    await page.keyboard.press("Escape");
+    assert.equal(await apply.count(), 0);
+    assert.equal(await readFile(join(source, original.name, "Second project", "sentinel"), "utf8"), "associated bytes");
+    await page.getByRole("button", { name: r.preview, exact: true }).click();
+    await apply.click(); await page.getByText(r.done, { exact: true }).waitFor();
+    const siblingState = await query(page, { type: "workspace.listProjects", workspaceId: sibling.workspaceId });
+    assert.equal(siblingState.projects.find(p => p.projectId === associatedProject.projectId).relativePath, `${destination.name}/Second project`);
+    assert.equal(siblingState.categories.some(c => c.categoryId === original.categoryId), false);
+    assert.equal((await readdir(source)).includes(original.name), false);
+    assert.equal(await readFile(join(source, destination.name, "Second project", "sentinel"), "utf8"), "associated bytes");
+    assert.deepEqual(await query(page, { type: "workspace.listTextProperties", workspaceId }), beforeValues);
+    assert.deepEqual((await query(page, { type: "workspace.listCategoryRemovals", workspaceId })).operations, []);
+    evidence.checks.push({ scenario: "removal-collision-cancel-apply-identity-values-siblings", language, passed: true });
+    await page.getByRole("button", { name: r.close, exact: true }).click();
+    await page.getByRole("button", { name: l.close, exact: true }).click();
+  }
+  const emptyPreview = await query(page, { type: "workspace.previewCategoryFolder", workspaceId, action: "create", name: "Disposable empty", categoryId: null });
+  const emptyCategory = await query(page, { type: "workspace.applyCategoryFolder", workspaceId, operationId: randomUUID(), previewToken: emptyPreview.previewToken });
+  await page.reload();
+  await page.getByRole("button", { name: labels.ru.options, exact: true }).click();
+  await page.getByRole("button", { name: removalLabels.ru.title, exact: true }).click();
+  await page.getByLabel(removalLabels.ru.category, { exact: true }).selectOption(emptyCategory.operation.categoryId);
+  await page.getByRole("button", { name: removalLabels.ru.preview, exact: true }).click();
+  await page.getByRole("button", { name: removalLabels.ru.apply, exact: true }).click();
+  await page.getByText(removalLabels.ru.done, { exact: true }).waitFor();
+  assert.equal((await readdir(source)).includes("Disposable empty"), false);
+  evidence.checks.push({ scenario: "removal-empty-no-destination-ui", passed: true });
   const invalid = await page.evaluate(workspaceId => window.workspace.workspace({ type: "workspace.previewCategoryFolder", workspaceId, action: "create", name: "Escape", categoryId: null, path: "../escape" }), workspaceId);
   assert.equal(invalid.ok, false); assert.equal(invalid.error.code, "invalid_input");
   evidence.checks.push({ scenario: "production-ipc-exact-validation", passed: true });
@@ -142,7 +208,8 @@ try {
   const reopened = await query(page, { type: "workspace.listProjects", workspaceId });
   assert.deepEqual(reopened, expected);
   assert.equal(await readFile(join(source, "Переименованная категория", "Project", "sentinel"), "utf8"), "  exact bytes\n");
-  assert.deepEqual((await readdir(source)).sort(), ["Empty category", "Existing category", "Переименованная категория"]);
+  assert.deepEqual((await readdir(source)).sort(), ["Переименованная категория"]);
+  assert.equal(await readFile(join(source, "Переименованная категория", "Second project", "sentinel"), "utf8"), "associated bytes");
   evidence.checks.push({ scenario: "electron-restart-persistence", passed: true });
   await close(); evidence.status = "passed";
 } catch (error) {

@@ -1,4 +1,4 @@
-import type { CategoryRemovalQuery } from "../contracts/category-removal.js";
+import type { CategoryRemovalQuery, CategoryRemovalCommand } from "../contracts/category-removal.js";
 import type { CategoryOptionsQuery, CategoryOptionsCommand } from "../contracts/category-options.js";
 import type { WorkspaceMoveProjectCategoryCommand, ProjectCategoryMoveResult, ProjectCategoryMoveList, ProjectCategoryMoveRecoveryPreview, ProjectCategoryMoveRecoveryAction } from "../contracts/project-category-move.js";
 import type { WorkspaceRenameProjectCommand, ProjectRenameResult, ProjectRenameList, ProjectRenameRecoveryPreview, ProjectRenameRecoveryAction } from "../contracts/project-rename.js";
@@ -16,7 +16,27 @@ import { isWorkspaceChangeEvent } from "../contracts/service-protocol.js";
 export class WorkspaceServiceClient {
   constructor(private readonly api: WorkspaceDesktopApi = window.workspace) {}
 
-  previewCategoryRemoval(input: Omit<CategoryRemovalQuery, "type">) {
+  applyCategoryRemoval(input: Omit<Extract<CategoryRemovalQuery | CategoryRemovalCommand, { type: "workspace.applyCategoryRemoval" }>, "type">) {
+    return this.api.workspace({ ...input, type: "workspace.applyCategoryRemoval" });
+  }
+
+  recoverCategoryRemoval(input: Omit<Extract<CategoryRemovalQuery | CategoryRemovalCommand, { type: "workspace.recoverCategoryRemoval" }>, "type">) {
+    return this.api.workspace({ ...input, type: "workspace.recoverCategoryRemoval" });
+  }
+
+  listCategoryRemovals(input: Omit<Extract<CategoryRemovalQuery | CategoryRemovalCommand, { type: "workspace.listCategoryRemovals" }>, "type">) {
+    return this.api.workspace({ ...input, type: "workspace.listCategoryRemovals" });
+  }
+
+  getCategoryRemoval(input: Omit<Extract<CategoryRemovalQuery | CategoryRemovalCommand, { type: "workspace.getCategoryRemoval" }>, "type">) {
+    return this.api.workspace({ ...input, type: "workspace.getCategoryRemoval" });
+  }
+
+  previewCategoryRemovalRecovery(input: Omit<Extract<CategoryRemovalQuery | CategoryRemovalCommand, { type: "workspace.previewCategoryRemovalRecovery" }>, "type">) {
+    return this.api.workspace({ ...input, type: "workspace.previewCategoryRemovalRecovery" });
+  }
+
+  previewCategoryRemoval(input: Omit<Extract<CategoryRemovalQuery, { type: "workspace.previewCategoryRemoval" }>, "type">) {
     return this.api.workspace({ ...input, type: "workspace.previewCategoryRemoval" });
   }
 

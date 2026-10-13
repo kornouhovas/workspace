@@ -1,3 +1,4 @@
+import { CategoryRemovalPanel } from "./CategoryRemovalPanel.js";
 import { useEffect, useId, useRef, useState } from "react";
 import type { Language } from "../../contracts/settings.js";
 import type { CategorySummary } from "../../contracts/workspaces.js";
@@ -14,6 +15,7 @@ const colors: Record<CategoryPresentation["color"], TranslationKey> = { default:
 export function CategoryOptionsPanel({ client, workspaceId, sourceId, categories, language, disabled, revision, invalidation, onCommitted, onBlockedChange }: Props) {
   const t = (key: TranslationKey) => translate(language, key);
   const id = useId(), trigger = useRef<HTMLButtonElement>(null), heading = useRef<HTMLHeadingElement>(null), nameInput = useRef<HTMLInputElement>(null);
+  const [removalActive, setRemovalActive] = useState(false);
   const [open, setOpen] = useState(false), [pending, setPending] = useState(false), [loading, setLoading] = useState(false);
   const [action, setAction] = useState<CategoryFolderAction>("create"), [name, setName] = useState(""), [categoryId, setCategoryId] = useState("");
   const [preview, setPreview] = useState<CategoryFolderPreview | null>(null);
@@ -115,17 +117,17 @@ export function CategoryOptionsPanel({ client, workspaceId, sourceId, categories
     if (result.ok && result.value.workspaceId === workspaceId && result.value.sourceId === sourceId) { setOptions(result.value.options); onCommitted(); setMessage("categorySaved"); }
     else setMessage("categoryError");
   });
-  const effectsDisabled = disabled || pending || loading || unknownOperation !== null || operations.length > 0;
-  return <section className="category-options" aria-busy={pending || loading} onKeyDown={event => { if (event.key === "Escape" && !pending) { event.preventDefault(); cancel(); } }}>
-    <button ref={trigger} type="button" className="workspace-button workspace-button--secondary" disabled={disabled || pending} aria-expanded={open} onClick={() => { if (open) { setOpen(false); setPreview(null); setRecovery(null); } else { setOpen(true); void load(); } }}>{t("categoryOptions")}</button>
+  const effectsDisabled = removalActive || disabled || pending || loading || unknownOperation !== null || operations.length > 0;
+  return <section className="category-options" aria-busy={pending || loading} onKeyDown={event => { if (event.key === "Escape" && !pending && !removalActive) { event.preventDefault(); cancel(); } }}>
+    <button ref={trigger} type="button" className="workspace-button workspace-button--secondary" disabled={removalActive || disabled || pending} aria-expanded={open} onClick={() => { if (open) { setOpen(false); setPreview(null); setRecovery(null); } else { setOpen(true); void load(); } }}>{t("categoryOptions")}</button>
     {open && <div className="category-options__body">
       <h3 ref={heading} tabIndex={-1}>{t("categoryOptions")}</h3>
       <p>{t("categorySharedEffect")}</p>
       {loading && <StatusMessage kind="info" title={t("categoryLoading")} />}
       {pending && <StatusMessage kind="info" title={t("categoryPending")} />}
       {message && <StatusMessage kind={message === "categoryError" || message === "categoryUnknown" ? "error" : "info"} title={t(message)} />}
-      {unknownOperation && <button type="button" className="workspace-button" disabled={pending} onClick={check}>{t("categoryCheck")}</button>}
-      <button type="button" className="workspace-button workspace-button--secondary" disabled={pending || loading} onClick={() => { setPreview(null); setRecovery(null); void load(); }}>{t("categoryRefresh")}</button>
+      {unknownOperation && <button type="button" className="workspace-button" disabled={removalActive || pending} onClick={check}>{t("categoryCheck")}</button>}
+      <button type="button" className="workspace-button workspace-button--secondary" disabled={removalActive || pending || loading} onClick={() => { setPreview(null); setRecovery(null); void load(); }}>{t("categoryRefresh")}</button>
       <form className="category-options__form" onSubmit={event => { event.preventDefault(); if (!effectsDisabled) review(); }}>
         <label htmlFor={`${id}-action`}>{t("categoryAction")}</label>
         <select id={`${id}-action`} disabled={effectsDisabled} value={action} onChange={e => { setAction(e.currentTarget.value as CategoryFolderAction); setPreview(null); }}>
@@ -140,30 +142,33 @@ export function CategoryOptionsPanel({ client, workspaceId, sourceId, categories
         <p>{t("categoryPhysicalEffect")}</p><p className="workspace-root">{preview.originalRelativePath ?? "∅"} → {preview.requestedRelativePath}</p>
         {preview.affectedProjects.length ? <ul>{preview.affectedProjects.map(p => <li key={p.originalRelativePath} className="workspace-root">{p.originalRelativePath} → {p.requestedRelativePath}</li>)}</ul> : <p>{t("categoryEmptyEffect")}</p>}
         <button type="button" className="workspace-button" disabled={effectsDisabled} onClick={apply}>{t("categoryApply")}</button>
-        <button type="button" className="workspace-button workspace-button--secondary" disabled={pending} onClick={cancel}>{t("categoryCancel")}</button>
+        <button type="button" className="workspace-button workspace-button--secondary" disabled={removalActive || pending} onClick={cancel}>{t("categoryCancel")}</button>
       </div>}
       {operations.length > 0 && <div><h4>{t("categoryInterrupted")}</h4><ul>{operations.map(o => <li key={o.operationId}>
         <span className="workspace-root">{o.originalRelativePath ?? "∅"} → {o.requestedRelativePath}</span>
-        <button type="button" className="workspace-button workspace-button--secondary" disabled={pending} onClick={() => reviewRecovery(o.operationId)}>{t("categoryReviewRecovery")}</button>
+        <button type="button" className="workspace-button workspace-button--secondary" disabled={removalActive || pending} onClick={() => reviewRecovery(o.operationId)}>{t("categoryReviewRecovery")}</button>
       </li>)}</ul></div>}
       {recovery && <div className="category-options__review">
         <p className="workspace-root">{recovery.operation.originalRelativePath ?? "∅"} → {recovery.operation.requestedRelativePath}</p>
         <p>{t("categoryOriginal")}: {t(recovery.originalState === "matching" ? "categoryMatching" : recovery.originalState === "missing" ? "categoryMissing" : "categoryChanged")}</p>
         <p>{t("categoryDestination")}: {t(recovery.destinationState === "matching" ? "categoryMatching" : recovery.destinationState === "missing" ? "categoryMissing" : "categoryChanged")}</p>
         {recovery.actions.length ? recovery.actions.map(a => <button type="button" className="workspace-button" key={a} disabled={disabled || pending || !recovery.previewToken} onClick={() => recover(a)}>{t(a === "complete_destination" ? "categoryComplete" : "categoryKeep")}</button>) : <p>{t("categoryUnresolved")}</p>}
-        <button type="button" className="workspace-button workspace-button--secondary" disabled={pending} onClick={cancel}>{t("categoryCancel")}</button>
+        <button type="button" className="workspace-button workspace-button--secondary" disabled={removalActive || pending} onClick={cancel}>{t("categoryCancel")}</button>
       </div>}
+      <CategoryRemovalPanel key={sourceId} client={client} workspaceId={workspaceId} sourceId={sourceId} categories={categories} language={language}
+        disabled={disabled || pending || loading || unknownOperation !== null || operations.length > 0} revision={revision} invalidation={invalidation}
+        onCommitted={() => { void load(); onCommitted(); }} onOpenChange={setRemovalActive} />
       <h4>{t("categoryPresentationScope")}</h4>
       {options.length === 0 && !loading && <p>{t("savedCategoriesEmpty")}</p>}
       <ol className="category-options__list">{options.map((o, i) => <li key={o.categoryId}>
         <span className="category-chip" data-color={o.color}>{categories.find(c => c.categoryId === o.categoryId)?.name ?? t("discoveryCategory")}</span>
-        <label>{t("categoryColor")}<select aria-label={`${t("categoryColor")}: ${categories.find(c => c.categoryId === o.categoryId)?.name ?? i + 1}`} value={o.color} disabled={pending || loading || disabled} onChange={e => update(i, { color: e.currentTarget.value as CategoryPresentation["color"] })}>{Object.entries(colors).map(([color, label]) => <option key={color} value={color}>{t(label)}</option>)}</select></label>
-        <label><input type="checkbox" checked={o.hidden} disabled={pending || loading || disabled} onChange={e => update(i, { hidden: e.currentTarget.checked })} />{t("categoryHidden")}</label>
-        <button type="button" className="workspace-button workspace-button--secondary" disabled={pending || disabled || i === 0} onClick={() => move(i, -1)} aria-label={`${t("categoryUp")}: ${categories.find(c => c.categoryId === o.categoryId)?.name ?? i + 1}`}>{t("categoryUp")}</button>
-        <button type="button" className="workspace-button workspace-button--secondary" disabled={pending || disabled || i === options.length - 1} onClick={() => move(i, 1)} aria-label={`${t("categoryDown")}: ${categories.find(c => c.categoryId === o.categoryId)?.name ?? i + 1}`}>{t("categoryDown")}</button>
+        <label>{t("categoryColor")}<select aria-label={`${t("categoryColor")}: ${categories.find(c => c.categoryId === o.categoryId)?.name ?? i + 1}`} value={o.color} disabled={removalActive || pending || loading || disabled} onChange={e => update(i, { color: e.currentTarget.value as CategoryPresentation["color"] })}>{Object.entries(colors).map(([color, label]) => <option key={color} value={color}>{t(label)}</option>)}</select></label>
+        <label><input type="checkbox" checked={o.hidden} disabled={removalActive || pending || loading || disabled} onChange={e => update(i, { hidden: e.currentTarget.checked })} />{t("categoryHidden")}</label>
+        <button type="button" className="workspace-button workspace-button--secondary" disabled={removalActive || pending || disabled || i === 0} onClick={() => move(i, -1)} aria-label={`${t("categoryUp")}: ${categories.find(c => c.categoryId === o.categoryId)?.name ?? i + 1}`}>{t("categoryUp")}</button>
+        <button type="button" className="workspace-button workspace-button--secondary" disabled={removalActive || pending || disabled || i === options.length - 1} onClick={() => move(i, 1)} aria-label={`${t("categoryDown")}: ${categories.find(c => c.categoryId === o.categoryId)?.name ?? i + 1}`}>{t("categoryDown")}</button>
       </li>)}</ol>
-      <button type="button" className="workspace-button" disabled={disabled || pending || loading} onClick={savePresentation}>{t("categorySavePresentation")}</button>
-      <button type="button" className="workspace-button workspace-button--secondary" disabled={pending} onClick={() => { setOpen(false); setPreview(null); setRecovery(null); trigger.current?.focus(); }}>{t("categoryClose")}</button>
+      <button type="button" className="workspace-button" disabled={removalActive || disabled || pending || loading} onClick={savePresentation}>{t("categorySavePresentation")}</button>
+      <button type="button" className="workspace-button workspace-button--secondary" disabled={removalActive || pending} onClick={() => { setOpen(false); setPreview(null); setRecovery(null); trigger.current?.focus(); }}>{t("categoryClose")}</button>
     </div>}
   </section>;
 }

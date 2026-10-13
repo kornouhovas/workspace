@@ -1,4 +1,4 @@
-import type { CategoryRemovalQuery, CategoryRemovalPreview } from "./category-removal.js";
+import type { CategoryRemovalQuery, CategoryRemovalCommand, CategoryRemovalPreview, CategoryRemovalPayload, CategoryRemovalLookup, CategoryRemovalResult, CategoryRemovalList, CategoryRemovalRecoveryPreview } from "./category-removal.js";
 import type { CategoryOptionsQuery, CategoryOptionsCommand, CategoryFolderPreview, CategoryFolderResult, CategoryFolderStatus, CategoryFolderRecoveryPreview, CategoryPresentationSnapshot } from "./category-options.js";
 import type { CategoryOptionsPayload } from "./category-options.js";
 import type { ProjectCategoryMoveResult, ProjectCategoryMoveList, ProjectCategoryMoveRecoveryPreview, WorkspaceMoveProjectCategoryCommand, WorkspaceListProjectCategoryMovesQuery, WorkspaceGetProjectCategoryMoveQuery, WorkspacePreviewProjectCategoryMoveRecoveryQuery, WorkspaceRecoverProjectCategoryMoveCommand } from "./project-category-move.js";
@@ -13,14 +13,18 @@ import type { CategoryPropertySnapshot, WorkspaceRenameCategoryPropertyCommand, 
 export type BackendStatus = { state: "starting" | "ready" | "unavailable"; message?: string; diagnostic?: import("./startup-diagnostic.js").StartupDiagnostic };
 export type SettingsRequest = SettingsQuery | SettingsCommand;
 export type WorkspaceRequest = WorkspaceQuery | WorkspaceCommand;
-export type WorkspaceResponse = CategoryRemovalPreview | CategoryOptionsPayload | ProjectCategoryMoveResult | ProjectCategoryMoveList | ProjectCategoryMoveRecoveryPreview | ProjectRenameResult | ProjectRenameList | ProjectRenameRecoveryPreview | ProjectRevealResult | ProjectCreationResult | ProjectCreationList | ProjectCreationRecoveryPreview | WorkspaceSourceObservationSnapshot | ProjectRecoveryPreview | CategoryPropertySnapshot | TextPropertySnapshot | TextPropertyMutation | ProjectList | DiscoveryPreview | WorkspaceLoad | WorkspaceCreated | ActiveWorkspace | WorkspaceSourceState;
+export type WorkspaceResponse = CategoryRemovalPayload | CategoryOptionsPayload | ProjectCategoryMoveResult | ProjectCategoryMoveList | ProjectCategoryMoveRecoveryPreview | ProjectRenameResult | ProjectRenameList | ProjectRenameRecoveryPreview | ProjectRevealResult | ProjectCreationResult | ProjectCreationList | ProjectCreationRecoveryPreview | WorkspaceSourceObservationSnapshot | ProjectRecoveryPreview | CategoryPropertySnapshot | TextPropertySnapshot | TextPropertyMutation | ProjectList | DiscoveryPreview | WorkspaceLoad | WorkspaceCreated | ActiveWorkspace | WorkspaceSourceState;
 export type RootPickerResult =
   | { outcome: "selected"; path: string }
   | { outcome: "cancelled" }
   | { outcome: "failed" };
 
 export interface WorkspaceDesktopApi {
-  workspace(input: CategoryRemovalQuery): Promise<ServiceResult<CategoryRemovalPreview>>;
+  workspace(input: Extract<CategoryRemovalQuery, { type: "workspace.previewCategoryRemoval" }>): Promise<ServiceResult<CategoryRemovalPreview>>;
+  workspace(input: Extract<CategoryRemovalQuery, { type: "workspace.listCategoryRemovals" }>): Promise<ServiceResult<CategoryRemovalList>>;
+  workspace(input: Extract<CategoryRemovalQuery, { type: "workspace.getCategoryRemoval" }>): Promise<ServiceResult<CategoryRemovalLookup>>;
+  workspace(input: Extract<CategoryRemovalQuery, { type: "workspace.previewCategoryRemovalRecovery" }>): Promise<ServiceResult<CategoryRemovalRecoveryPreview>>;
+  workspace(input: CategoryRemovalCommand): Promise<ServiceResult<CategoryRemovalResult>>;
   workspace(input: Extract<CategoryOptionsQuery, { type: "workspace.getCategoryFolderOperation" }>): Promise<ServiceResult<CategoryFolderResult>>;
   workspace(input: Extract<CategoryOptionsQuery | CategoryOptionsCommand, { type: "workspace.previewCategoryFolder" }>): Promise<ServiceResult<CategoryFolderPreview>>;
   workspace(input: Extract<CategoryOptionsQuery | CategoryOptionsCommand, { type: "workspace.applyCategoryFolder" }>): Promise<ServiceResult<CategoryFolderResult>>;

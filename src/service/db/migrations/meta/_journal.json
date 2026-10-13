@@ -85,6 +85,13 @@
       "when": 1791504011000,
       "tag": "0011_category_options",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1791504012000,
+      "tag": "0012_category_removal",
+      "breakpoints": true
     }
   ]
 }

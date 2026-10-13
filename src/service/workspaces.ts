@@ -1,5 +1,5 @@
 import { createCategoryRemovalService } from "./category-removal.js";
-import type { CategoryRemovalPreview } from "../contracts/category-removal.js";
+import type { CategoryRemovalPreview, CategoryRemovalLookup, CategoryRemovalResult, CategoryRemovalList, CategoryRemovalRecoveryPreview } from "../contracts/category-removal.js";
 import { createCategoryOptionsService } from "./category-options.js";
 import type { CategoryFolderPreview, CategoryFolderResult, CategoryFolderStatus, CategoryFolderRecoveryPreview, CategoryPresentationSnapshot } from "../contracts/category-options.js";
 import { createProjectCategoryMoveService } from "./project-category-move.js";
@@ -53,6 +53,11 @@ const nativeFilesystem: WorkspaceFilesystem = {
 };
 
 export interface WorkspaceService {
+  previewCategoryRemovalRecovery(input: unknown): ServiceResult<CategoryRemovalRecoveryPreview>;
+  getCategoryRemoval(input: unknown): ServiceResult<CategoryRemovalLookup>;
+  listCategoryRemovals(input: unknown): ServiceResult<CategoryRemovalList>;
+  recoverCategoryRemoval(input: unknown): ServiceResult<CategoryRemovalResult>;
+  applyCategoryRemoval(input: unknown): ServiceResult<CategoryRemovalResult>;
   previewCategoryRemoval(input: unknown): ServiceResult<CategoryRemovalPreview>;
   getCategoryFolderOperation(input: unknown): ServiceResult<CategoryFolderResult>;
   previewCategoryFolder(input: unknown): ServiceResult<CategoryFolderPreview>;
@@ -150,6 +155,7 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
     rename.invalidateSource(sourceId);
     categoryMove.invalidateSource(sourceId);
     categoryOptions.invalidateSource(sourceId);
+    categoryRemoval.invalidateSource(sourceId);
     for (const [id, saved] of previewTokens) if (saved.preview.sourceId === sourceId) previewTokens.delete(id);
   }
   const creation = createProjectCreationService(db, {
@@ -182,9 +188,18 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
     publish([{ type: "workspace.projectsChanged", sourceId, revision, workspaceIds }]);
     observer.request(sourceId);
   }, projectFilesystem, projectRenameNative);
-  const categoryRemoval = createCategoryRemovalService(db, projectFilesystem);
+  const categoryRemoval = createCategoryRemovalService(db, categoryMove, (sourceId, revision, workspaceIds) => {
+    invalidateSourceReviews(sourceId);
+    publish([{ type: "workspace.projectsChanged", sourceId, revision, workspaceIds }]);
+    observer.request(sourceId);
+  }, projectFilesystem);
   const reveal = createProjectRevealService(db, projectFilesystem);
   const service: WorkspaceService = {
+    previewCategoryRemovalRecovery: categoryRemoval.previewCategoryRemovalRecovery,
+    getCategoryRemoval: categoryRemoval.getCategoryRemoval,
+    listCategoryRemovals: categoryRemoval.listCategoryRemovals,
+    recoverCategoryRemoval: categoryRemoval.recoverCategoryRemoval,
+    applyCategoryRemoval: categoryRemoval.applyCategoryRemoval,
     previewCategoryRemoval: categoryRemoval.previewCategoryRemoval,
     getCategoryFolderOperation: categoryOptions.getCategoryFolderOperation,
     previewCategoryFolder: categoryOptions.previewCategoryFolder,
@@ -253,7 +268,7 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
       observer.close();
       for (const timer of subscriptionTimers) timer.cancel();
       subscriptionTimers.clear(); observationEvents.clear(); observationCache.clear(); observationVersions.clear();
-      listeners.clear(); observed.clear(); previewTokens.clear(); recovery.close(); creation.close(); rename.close(); categoryMove.close(); categoryOptions.close(); reveal.close();
+      listeners.clear(); observed.clear(); previewTokens.clear(); recovery.close(); creation.close(); rename.close(); categoryMove.close(); categoryOptions.close(); categoryRemoval.close(); reveal.close();
     },
     previewDiscovery(input) {
       if (!isRecord(input) || input.type !== "workspace.previewDiscovery" || !isUuid(input.workspaceId) ||

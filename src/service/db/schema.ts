@@ -204,3 +204,18 @@ export const categoryPresentation = sqliteTable("category_presentation", {
   color: text("color").$type<import("../../contracts/category-options.js").CategoryPresentation["color"]>().notNull(),
   hidden: integer("hidden", { mode: "boolean" }).notNull(), position: integer("position").notNull(),
 }, table => [primaryKey({ columns: [table.workspaceId, table.categoryId] })]);
+
+// Migration 0012 retains immutable batch bindings and append-only move attempts.
+export const categoryRemovalOperations = sqliteTable("category_removal_operations", {
+  operationId: text("operation_id").primaryKey(), sourceId: text("source_id").notNull().references(() => sources.id),
+  workspaceId: text("workspace_id").notNull(), categoryId: text("category_id").notNull(), destinationCategoryId: text("destination_category_id"),
+  originalRelativePath: text("original_relative_path").notNull(), requestedRelativePath: text("requested_relative_path"),
+  nativeIdentity: text("native_identity").notNull(), previewToken: text("preview_token").notNull(), binding: text("binding").notNull(),
+  stage: text("stage", { enum: ["moving", "cleanup_intent", "completed", "abandoned"] }).notNull(),
+  problem: text("problem"), completedRevision: integer("completed_revision"),
+});
+export const categoryRemovalAttempts = sqliteTable("category_removal_attempts", {
+  moveId: text("move_id").primaryKey(), removalId: text("removal_id").notNull().references(() => categoryRemovalOperations.operationId),
+  projectId: text("project_id").notNull().references(() => projects.id), workspaceId: text("workspace_id").notNull(),
+  expectedRevision: integer("expected_revision").notNull(), sequence: integer("sequence").notNull(), problem: text("problem"),
+}, table => [unique().on(table.removalId, table.projectId, table.sequence)]);
