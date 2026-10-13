@@ -15,10 +15,20 @@ The owner accepted persistent empty category folders, separate explicit associat
 
 The existing migration assertions advance from 11 to 12 migrations; preserved source/project/value/view checks remain intact. The additional journal is append-only; terminal receipts and immutable request bindings are protected by SQLite triggers. Cross-command operation IDs cannot be reused.
 
-## Remaining delivery gates
+## Delivery acceptance
 
 Full local suite: 2623 passed, zero failed, 20 existing platform skips. The final focused category service/UI run passed all 28 checks, including persisted order and keyboard ordering. Lint, typecheck, docs links and diff checks passed. Standards and Spec reviews reported zero findings on the frozen implementation and final policy-guard delta.
 
 Final macOS arm64 development **and packaged** runtime routes each passed nine checks, including actual UI creation and association as well as rename, presentation, IPC validation and restart. Both routes verified normal quit, backend exit and fixture cleanup; artifact resources were checked. Generated evidence: `work/issue-20-dev-final/evidence.json` and `work/issue-20-release-final/evidence.json`.
 
-Final commit, exact-SHA macOS/Windows Actions and integration verification remain pending. Local macOS evidence does not prove Windows acceptance. No release or merge to `main` is authorized by this issue.
+[Full Actions run 38364448912](https://github.com/kornouhovas/workspace/actions/runs/38364448912) passed all four ordinary jobs for implementation SHA `26084663beccceac388db535a2cc773d6c0fd669`:
+
+| Platform | Platform tests | Category options runtime |
+| --- | --- | --- |
+| macOS | 2141 passed; 20 existing skips | Development + packaged: nine checks each |
+| Windows latest | 2238 passed; six existing skips | Development + packaged: nine checks each |
+| Windows 2022 | 2238 passed; six existing skips | Development + packaged: nine checks each |
+
+All six category-options `evidence.json` files were downloaded and inspected. Each binds the tested SHA, reports all nine checks passed, two normal application-quit/backend-exit confirmations and passed owned-fixture cleanup. EN/RU preview captures cover 1440×960 and 1024×720; representative macOS and Windows screenshots were visually inspected. Artifact IDs: macOS `11796378594`, Windows latest `11797382751`, Windows 2022 `11796793046` (existing shared evidence artifact naming). Generated local inspection files are under `work/ci-issue20-review/`.
+
+The implementation was fast-forward integrated into `new-workspace` and its SHA/tree verified identical to the tested implementation. The subsequent handoff commit changes only delivery documentation, verified by fresh local link/diff checks; application, migrations, tests, scripts and CI configuration remain byte-identical to the tested implementation. No release or merge to `main`.

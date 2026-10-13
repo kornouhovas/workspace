@@ -14,11 +14,11 @@ Roadmap scope: M2. Specification user stories: 22, 23, 28, 30, 44.
 
 ## Acceptance criteria
 
-- [ ] Creating a category option creates or explicitly associates an eligible category folder under the source; settle existing/empty-folder rules before enabling the action.
-- [ ] Rename preview lists the folder operation and affected projects; cancel leaves all state untouched.
-- [ ] Applying a valid category rename retains project IDs/values and updates category projections, locators and sibling workspaces after restart.
-- [ ] Display-label changes remain metadata-only; invalid names, collisions, stale previews and source escapes fail without overwriting.
-- [ ] Color, hide/show and option-order controls preserve category identity and use an explicit presentation scope without renaming or moving folders; interruption and external-change fixtures verify recoverable operation state.
+- [x] Creating a category option creates or explicitly associates an eligible category folder under the source; settle existing/empty-folder rules before enabling the action.
+- [x] Rename preview lists the folder operation and affected projects; cancel leaves all state untouched.
+- [x] Applying a valid category rename retains project IDs/values and updates category projections, locators and sibling workspaces after restart.
+- [x] Display-label changes remain metadata-only; invalid names, collisions, stale previews and source escapes fail without overwriting.
+- [x] Color, hide/show and option-order controls preserve category identity and use an explicit presentation scope without renaming or moving folders; interruption and external-change fixtures verify recoverable operation state.
 
 ## Blocked by
 
@@ -36,3 +36,7 @@ Resolve this slice's listed design details before its dependent mutations; ordin
 - An existing eligible immediate-child folder requires a separate explicit association action with a preview of projects to enroll.
 - Folder identity and names are source-owned. Color, hidden state and option order are workspace-owned and do not rename or move folders.
 - The public GitHub repository is intentional for Actions; continued issue publication and delivery there were explicitly authorized.
+
+## Delivery
+
+Implementation: `26084663beccceac388db535a2cc773d6c0fd669`, verified by [full macOS/Windows Actions](https://github.com/kornouhovas/workspace/actions/runs/38364448912) and fast-forward integrated into `new-workspace`. [Verification and retained limits](../../verification/issue-20-category-options.md) record local/service, UI, process interruption, platform, review and artifact evidence. No release to `main`.
