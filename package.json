@@ -23,6 +23,7 @@
     "start": "electron .",
     "test": "npm run build && npm run test:all",
     "test:windows:early": "node --import tsx --test tests/ralphex-run.test.mjs tests/ralphex-observe.test.mjs tests/project-creation-service.test.mjs tests/project-creation-ui.test.tsx tests/project-reveal.test.mjs tests/settings-service.test.mjs tests/windows-product-diagnostics.test.mjs tests/windows-selection-diagnostics.test.mjs tests/file-manager-evidence.test.mjs tests/windows-project-reveal.test.mjs tests/windows-project-reveal-com.test.mjs tests/project-rename-native.test.mjs",
+    "smoke:category-options": "node scripts/smoke-category-options.mjs",
     "smoke:runtime": "node scripts/smoke-runtime.mjs",
     "lint": "eslint . --max-warnings=0",
     "typecheck": "tsc --noEmit",

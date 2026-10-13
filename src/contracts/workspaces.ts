@@ -1,3 +1,4 @@
+import type { CategoryOptionsQuery, CategoryOptionsCommand } from "./category-options.js";
 import type { WorkspaceMoveProjectCategoryCommand, WorkspaceListProjectCategoryMovesQuery, WorkspaceGetProjectCategoryMoveQuery, WorkspacePreviewProjectCategoryMoveRecoveryQuery, WorkspaceRecoverProjectCategoryMoveCommand } from "./project-category-move.js";
 import type { WorkspaceRenameProjectCommand, WorkspaceListProjectRenamesQuery, WorkspaceGetProjectRenameQuery, WorkspacePreviewProjectRenameRecoveryQuery, WorkspaceRecoverProjectRenameCommand } from "./project-rename.js";
 import type { WorkspaceRevealProjectCommand } from "./project-reveal.js";
@@ -53,14 +54,15 @@ export type WorkspaceChangeEvent =
       state: DiscoveryPreview["state"]; automaticUpdates: "active" | "degraded" }
   | { type: "workspace.propertiesChanged"; sourceId: string; workspaceIds: string[]; revision: number }
   | { type: "workspace.categoryPropertyChanged"; sourceId: string; workspaceIds: string[]; revision: number }
+  | { type: "workspace.categoryPresentationChanged"; sourceId: string; workspaceIds: string[] }
   | { type: "workspace.projectsChanged"; sourceId: string; workspaceIds: string[]; revision: number };
 
 export type WorkspaceSourceObservation = Extract<WorkspaceChangeEvent, { type: "workspace.sourceObserved" }>;
 export type WorkspaceSourceObservationSnapshot = { observation: WorkspaceSourceObservation | null };
 export type WorkspaceGetSourceObservationQuery = { type: "workspace.getSourceObservation"; workspaceId: string };
 
-export type WorkspaceQuery = WorkspaceListProjectCategoryMovesQuery | WorkspaceGetProjectCategoryMoveQuery | WorkspacePreviewProjectCategoryMoveRecoveryQuery | WorkspaceListProjectRenamesQuery | WorkspaceGetProjectRenameQuery | WorkspacePreviewProjectRenameRecoveryQuery | WorkspaceListProjectCreationsQuery | WorkspaceGetProjectCreationQuery | WorkspacePreviewProjectCreationRecoveryQuery | WorkspaceGetSourceObservationQuery | WorkspacePreviewProjectRecoveryQuery | WorkspaceListTextPropertiesQuery | WorkspaceLoadQuery | WorkspacePreviewDiscoveryQuery | WorkspaceListProjectsQuery;
-export type WorkspaceCommand = WorkspaceMoveProjectCategoryCommand | WorkspaceRecoverProjectCategoryMoveCommand | WorkspaceRenameProjectCommand | WorkspaceRecoverProjectRenameCommand | WorkspaceRevealProjectCommand | WorkspaceCreateProjectCommand | WorkspaceRecoverProjectCreationCommand | WorkspaceReassociateProjectCommand | WorkspaceRenameCategoryPropertyCommand | WorkspaceSetTextValueCommand | WorkspaceCreatePropertyCommand | WorkspaceRenamePropertyCommand | WorkspaceCreateCommand | WorkspaceActivateCommand | WorkspaceRenameCommand | WorkspaceReorderCommand | WorkspaceRemoveCommand | WorkspaceRefreshSourceCommand | WorkspaceApplyDiscoveryCommand;
+export type WorkspaceQuery = CategoryOptionsQuery | WorkspaceListProjectCategoryMovesQuery | WorkspaceGetProjectCategoryMoveQuery | WorkspacePreviewProjectCategoryMoveRecoveryQuery | WorkspaceListProjectRenamesQuery | WorkspaceGetProjectRenameQuery | WorkspacePreviewProjectRenameRecoveryQuery | WorkspaceListProjectCreationsQuery | WorkspaceGetProjectCreationQuery | WorkspacePreviewProjectCreationRecoveryQuery | WorkspaceGetSourceObservationQuery | WorkspacePreviewProjectRecoveryQuery | WorkspaceListTextPropertiesQuery | WorkspaceLoadQuery | WorkspacePreviewDiscoveryQuery | WorkspaceListProjectsQuery;
+export type WorkspaceCommand = CategoryOptionsCommand | WorkspaceMoveProjectCategoryCommand | WorkspaceRecoverProjectCategoryMoveCommand | WorkspaceRenameProjectCommand | WorkspaceRecoverProjectRenameCommand | WorkspaceRevealProjectCommand | WorkspaceCreateProjectCommand | WorkspaceRecoverProjectCreationCommand | WorkspaceReassociateProjectCommand | WorkspaceRenameCategoryPropertyCommand | WorkspaceSetTextValueCommand | WorkspaceCreatePropertyCommand | WorkspaceRenamePropertyCommand | WorkspaceCreateCommand | WorkspaceActivateCommand | WorkspaceRenameCommand | WorkspaceReorderCommand | WorkspaceRemoveCommand | WorkspaceRefreshSourceCommand | WorkspaceApplyDiscoveryCommand;
 
 export interface WorkspaceSummary {
   workspaceId: string;
@@ -143,6 +145,7 @@ export type WorkspaceApplyDiscoveryCommand = {
 };
 export type WorkspaceListProjectsQuery = { type: "workspace.listProjects"; workspaceId: string };
 export interface CategorySummary {
+  presentation?: import("./category-options.js").CategoryPresentation;
   categoryId: string;
   name: string;
   relativePath: string;

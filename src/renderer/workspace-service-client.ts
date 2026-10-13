@@ -1,3 +1,4 @@
+import type { CategoryOptionsQuery, CategoryOptionsCommand } from "../contracts/category-options.js";
 import type { WorkspaceMoveProjectCategoryCommand, ProjectCategoryMoveResult, ProjectCategoryMoveList, ProjectCategoryMoveRecoveryPreview, ProjectCategoryMoveRecoveryAction } from "../contracts/project-category-move.js";
 import type { WorkspaceRenameProjectCommand, ProjectRenameResult, ProjectRenameList, ProjectRenameRecoveryPreview, ProjectRenameRecoveryAction } from "../contracts/project-rename.js";
 import type { WorkspaceCreateProjectCommand, ProjectCreationResult, ProjectCreationList, ProjectCreationRecoveryPreview, ProjectCreationRecoveryAction } from "../contracts/project-creation.js";
@@ -13,6 +14,31 @@ import { isWorkspaceChangeEvent } from "../contracts/service-protocol.js";
 
 export class WorkspaceServiceClient {
   constructor(private readonly api: WorkspaceDesktopApi = window.workspace) {}
+
+  previewCategoryFolder(input: Omit<Extract<CategoryOptionsQuery | CategoryOptionsCommand, { type: "workspace.previewCategoryFolder" }>, "type">) {
+    return this.api.workspace({ ...input, type: "workspace.previewCategoryFolder" });
+  }
+  applyCategoryFolder(input: Omit<Extract<CategoryOptionsQuery | CategoryOptionsCommand, { type: "workspace.applyCategoryFolder" }>, "type">) {
+    return this.api.workspace({ ...input, type: "workspace.applyCategoryFolder" });
+  }
+  listCategoryFolderOperations(input: Omit<Extract<CategoryOptionsQuery | CategoryOptionsCommand, { type: "workspace.listCategoryFolderOperations" }>, "type">) {
+    return this.api.workspace({ ...input, type: "workspace.listCategoryFolderOperations" });
+  }
+  getCategoryFolderOperation(input: Omit<Extract<CategoryOptionsQuery | CategoryOptionsCommand, { type: "workspace.getCategoryFolderOperation" }>, "type">) {
+    return this.api.workspace({ ...input, type: "workspace.getCategoryFolderOperation" });
+  }
+  previewCategoryFolderRecovery(input: Omit<Extract<CategoryOptionsQuery | CategoryOptionsCommand, { type: "workspace.previewCategoryFolderRecovery" }>, "type">) {
+    return this.api.workspace({ ...input, type: "workspace.previewCategoryFolderRecovery" });
+  }
+  recoverCategoryFolder(input: Omit<Extract<CategoryOptionsQuery | CategoryOptionsCommand, { type: "workspace.recoverCategoryFolder" }>, "type">) {
+    return this.api.workspace({ ...input, type: "workspace.recoverCategoryFolder" });
+  }
+  listCategoryPresentation(input: Omit<Extract<CategoryOptionsQuery | CategoryOptionsCommand, { type: "workspace.listCategoryPresentation" }>, "type">) {
+    return this.api.workspace({ ...input, type: "workspace.listCategoryPresentation" });
+  }
+  setCategoryPresentation(input: Omit<Extract<CategoryOptionsQuery | CategoryOptionsCommand, { type: "workspace.setCategoryPresentation" }>, "type">) {
+    return this.api.workspace({ ...input, type: "workspace.setCategoryPresentation" });
+  }
 
   getBackendStatus(): Promise<BackendStatus> {
     return this.api.getBackendStatus();

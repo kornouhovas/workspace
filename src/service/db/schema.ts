@@ -188,3 +188,19 @@ export const projectCategoryMoveOperations = sqliteTable("project_category_move_
   foreignKey({ columns: [table.originalCategoryId, table.sourceId], foreignColumns: [categories.id, categories.sourceId] }),
   foreignKey({ columns: [table.destinationCategoryId, table.sourceId], foreignColumns: [categories.id, categories.sourceId] }),
 ]);
+
+export const categoryFolderOperations = sqliteTable("category_folder_operations", {
+  operationId: text("operation_id").primaryKey(), sourceId: text("source_id").notNull().references(() => sources.id),
+  workspaceId: text("workspace_id").notNull(), previewToken: text("preview_token").notNull(), categoryId: text("category_id").notNull(),
+  action: text("action", { enum: ["create", "associate", "rename"] }).notNull(),
+  originalRelativePath: text("original_relative_path"), requestedRelativePath: text("requested_relative_path").notNull(),
+  binding: text("binding").notNull(), nativeIdentity: text("native_identity"),
+  stage: text("stage", { enum: ["intent", "destination_recorded", "completed", "failed"] }).notNull(),
+  problem: text("problem"), completedRevision: integer("completed_revision"),
+});
+export const categoryPresentation = sqliteTable("category_presentation", {
+  workspaceId: text("workspace_id").notNull().references(() => workspaces.id, { onDelete: "cascade" }),
+  categoryId: text("category_id").notNull().references(() => categories.id),
+  color: text("color").$type<import("../../contracts/category-options.js").CategoryPresentation["color"]>().notNull(),
+  hidden: integer("hidden", { mode: "boolean" }).notNull(), position: integer("position").notNull(),
+}, table => [primaryKey({ columns: [table.workspaceId, table.categoryId] })]);

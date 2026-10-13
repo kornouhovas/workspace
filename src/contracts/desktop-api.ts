@@ -1,3 +1,5 @@
+import type { CategoryOptionsQuery, CategoryOptionsCommand, CategoryFolderPreview, CategoryFolderResult, CategoryFolderStatus, CategoryFolderRecoveryPreview, CategoryPresentationSnapshot } from "./category-options.js";
+import type { CategoryOptionsPayload } from "./category-options.js";
 import type { ProjectCategoryMoveResult, ProjectCategoryMoveList, ProjectCategoryMoveRecoveryPreview, WorkspaceMoveProjectCategoryCommand, WorkspaceListProjectCategoryMovesQuery, WorkspaceGetProjectCategoryMoveQuery, WorkspacePreviewProjectCategoryMoveRecoveryQuery, WorkspaceRecoverProjectCategoryMoveCommand } from "./project-category-move.js";
 import type { ProjectRenameResult, ProjectRenameList, ProjectRenameRecoveryPreview, WorkspaceRenameProjectCommand, WorkspaceListProjectRenamesQuery, WorkspaceGetProjectRenameQuery, WorkspacePreviewProjectRenameRecoveryQuery, WorkspaceRecoverProjectRenameCommand } from "./project-rename.js";
 import type { ProjectRevealResult, WorkspaceRevealProjectCommand } from "./project-reveal.js";
@@ -10,13 +12,22 @@ import type { CategoryPropertySnapshot, WorkspaceRenameCategoryPropertyCommand, 
 export type BackendStatus = { state: "starting" | "ready" | "unavailable"; message?: string; diagnostic?: import("./startup-diagnostic.js").StartupDiagnostic };
 export type SettingsRequest = SettingsQuery | SettingsCommand;
 export type WorkspaceRequest = WorkspaceQuery | WorkspaceCommand;
-export type WorkspaceResponse = ProjectCategoryMoveResult | ProjectCategoryMoveList | ProjectCategoryMoveRecoveryPreview | ProjectRenameResult | ProjectRenameList | ProjectRenameRecoveryPreview | ProjectRevealResult | ProjectCreationResult | ProjectCreationList | ProjectCreationRecoveryPreview | WorkspaceSourceObservationSnapshot | ProjectRecoveryPreview | CategoryPropertySnapshot | TextPropertySnapshot | TextPropertyMutation | ProjectList | DiscoveryPreview | WorkspaceLoad | WorkspaceCreated | ActiveWorkspace | WorkspaceSourceState;
+export type WorkspaceResponse = CategoryOptionsPayload | ProjectCategoryMoveResult | ProjectCategoryMoveList | ProjectCategoryMoveRecoveryPreview | ProjectRenameResult | ProjectRenameList | ProjectRenameRecoveryPreview | ProjectRevealResult | ProjectCreationResult | ProjectCreationList | ProjectCreationRecoveryPreview | WorkspaceSourceObservationSnapshot | ProjectRecoveryPreview | CategoryPropertySnapshot | TextPropertySnapshot | TextPropertyMutation | ProjectList | DiscoveryPreview | WorkspaceLoad | WorkspaceCreated | ActiveWorkspace | WorkspaceSourceState;
 export type RootPickerResult =
   | { outcome: "selected"; path: string }
   | { outcome: "cancelled" }
   | { outcome: "failed" };
 
 export interface WorkspaceDesktopApi {
+  workspace(input: Extract<CategoryOptionsQuery, { type: "workspace.getCategoryFolderOperation" }>): Promise<ServiceResult<CategoryFolderResult>>;
+  workspace(input: Extract<CategoryOptionsQuery | CategoryOptionsCommand, { type: "workspace.previewCategoryFolder" }>): Promise<ServiceResult<CategoryFolderPreview>>;
+  workspace(input: Extract<CategoryOptionsQuery | CategoryOptionsCommand, { type: "workspace.applyCategoryFolder" }>): Promise<ServiceResult<CategoryFolderResult>>;
+  workspace(input: Extract<CategoryOptionsQuery | CategoryOptionsCommand, { type: "workspace.listCategoryFolderOperations" }>): Promise<ServiceResult<CategoryFolderStatus>>;
+  workspace(input: Extract<CategoryOptionsQuery | CategoryOptionsCommand, { type: "workspace.previewCategoryFolderRecovery" }>): Promise<ServiceResult<CategoryFolderRecoveryPreview>>;
+  workspace(input: Extract<CategoryOptionsQuery | CategoryOptionsCommand, { type: "workspace.recoverCategoryFolder" }>): Promise<ServiceResult<CategoryFolderResult>>;
+  workspace(input: Extract<CategoryOptionsQuery | CategoryOptionsCommand, { type: "workspace.listCategoryPresentation" }>): Promise<ServiceResult<CategoryPresentationSnapshot>>;
+  workspace(input: Extract<CategoryOptionsQuery | CategoryOptionsCommand, { type: "workspace.setCategoryPresentation" }>): Promise<ServiceResult<CategoryPresentationSnapshot>>;
+
   getBackendStatus(): Promise<BackendStatus>;
   onBackendStatus(listener: (status: BackendStatus) => void): () => void;
   settings(input: SettingsRequest): Promise<ServiceResult<Settings>>;

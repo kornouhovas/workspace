@@ -1,3 +1,5 @@
+import { createCategoryOptionsService } from "./category-options.js";
+import type { CategoryFolderPreview, CategoryFolderResult, CategoryFolderStatus, CategoryFolderRecoveryPreview, CategoryPresentationSnapshot } from "../contracts/category-options.js";
 import { createProjectCategoryMoveService } from "./project-category-move.js";
 import type { ProjectCategoryMoveResult, ProjectCategoryMoveList, ProjectCategoryMoveRecoveryPreview } from "../contracts/project-category-move.js";
 import { hasUnfinishedProjectRelocation, readProjectReservations } from "./project-rename-reservations.js";
@@ -49,6 +51,15 @@ const nativeFilesystem: WorkspaceFilesystem = {
 };
 
 export interface WorkspaceService {
+  getCategoryFolderOperation(input: unknown): ServiceResult<CategoryFolderResult>;
+  previewCategoryFolder(input: unknown): ServiceResult<CategoryFolderPreview>;
+  applyCategoryFolder(input: unknown): ServiceResult<CategoryFolderResult>;
+  listCategoryFolderOperations(input: unknown): ServiceResult<CategoryFolderStatus>;
+  previewCategoryFolderRecovery(input: unknown): ServiceResult<CategoryFolderRecoveryPreview>;
+  recoverCategoryFolder(input: unknown): ServiceResult<CategoryFolderResult>;
+  listCategoryPresentation(input: unknown): ServiceResult<CategoryPresentationSnapshot>;
+  setCategoryPresentation(input: unknown): ServiceResult<CategoryPresentationSnapshot>;
+
   moveProjectCategory(input: unknown): ServiceResult<ProjectCategoryMoveResult>;
   listProjectCategoryMoves(input: unknown): ServiceResult<ProjectCategoryMoveList>;
   getProjectCategoryMove(input: unknown): ServiceResult<ProjectCategoryMoveResult>;
@@ -135,6 +146,7 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
     creation.invalidateSource(sourceId);
     rename.invalidateSource(sourceId);
     categoryMove.invalidateSource(sourceId);
+    categoryOptions.invalidateSource(sourceId);
     for (const [id, saved] of previewTokens) if (saved.preview.sourceId === sourceId) previewTokens.delete(id);
   }
   const creation = createProjectCreationService(db, {
@@ -161,8 +173,23 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
       observer.request(sourceId);
     },
   }, projectFilesystem, projectRenameNative);
+  const categoryOptions = createCategoryOptionsService(db, (sourceId, revision, workspaceIds, presentation) => {
+    if (presentation) { publish([{ type: "workspace.categoryPresentationChanged", sourceId, workspaceIds }]); return; }
+    invalidateSourceReviews(sourceId);
+    publish([{ type: "workspace.projectsChanged", sourceId, revision, workspaceIds }]);
+    observer.request(sourceId);
+  }, projectFilesystem, projectRenameNative);
   const reveal = createProjectRevealService(db, projectFilesystem);
   const service: WorkspaceService = {
+    getCategoryFolderOperation: categoryOptions.getCategoryFolderOperation,
+    previewCategoryFolder: categoryOptions.previewCategoryFolder,
+    applyCategoryFolder: categoryOptions.applyCategoryFolder,
+    listCategoryFolderOperations: categoryOptions.listCategoryFolderOperations,
+    previewCategoryFolderRecovery: categoryOptions.previewCategoryFolderRecovery,
+    recoverCategoryFolder: categoryOptions.recoverCategoryFolder,
+    listCategoryPresentation: categoryOptions.listCategoryPresentation,
+    setCategoryPresentation: categoryOptions.setCategoryPresentation,
+
     moveProjectCategory: categoryMove.moveProjectCategory,
     listProjectCategoryMoves: categoryMove.listProjectCategoryMoves,
     getProjectCategoryMove: categoryMove.getProjectCategoryMove,
@@ -221,7 +248,7 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
       observer.close();
       for (const timer of subscriptionTimers) timer.cancel();
       subscriptionTimers.clear(); observationEvents.clear(); observationCache.clear(); observationVersions.clear();
-      listeners.clear(); observed.clear(); previewTokens.clear(); recovery.close(); creation.close(); rename.close(); categoryMove.close(); reveal.close();
+      listeners.clear(); observed.clear(); previewTokens.clear(); recovery.close(); creation.close(); rename.close(); categoryMove.close(); categoryOptions.close(); reveal.close();
     },
     previewDiscovery(input) {
       if (!isRecord(input) || input.type !== "workspace.previewDiscovery" || !isUuid(input.workspaceId) ||
@@ -665,13 +692,15 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
           ? modeRetainedResolution(verified ? currentScan : { ...currentScan, snapshot: null }, row, JSON.parse(source.excludedRelativePaths), source.archiveRelativePath)
           : interpretation?.retained.find((observed) => observed.id === row.id)?.associationState ?? null };
     }).sort((a, b) => a.relativePath < b.relativePath ? -1 : a.relativePath > b.relativePath ? 1 : 0);
+    const presentations = db.select().from(schema.categoryPresentation).where(eq(schema.categoryPresentation.workspaceId, workspaceId)).all();
     const active = projection.filter((row) => row.retentionReason === null && row.associationState === "active" && (row.resolution === "active" || row.resolution === null));
     const retainedProjects = projection.filter((row) => !active.includes(row));
     return { workspaceId, sourceId: source.id, revision: source.discoveryRevision, configured: mode !== null, mode,
       categories: categories.filter((row) => mode === "grouped" && !row.modeInactive && row.associationState === "active" &&
         (!planned || planned.categories.retained.find((observed) => observed.id === row.id)?.associationState === "active")).map((row) => ({
         categoryId: row.id, relativePath: row.relativePath, name: row.relativePath,
-      })).sort((a, b) => a.relativePath < b.relativePath ? -1 : a.relativePath > b.relativePath ? 1 : 0),
+        ...(presentations.find(p => p.categoryId === row.id) ? { presentation: (() => { const p = presentations.find(p => p.categoryId === row.id)!; return { categoryId: row.id, color: p.color, hidden: p.hidden, position: p.position }; })() } : {}),
+      })).sort((a, b) => (a.presentation?.position ?? Number.MAX_SAFE_INTEGER) - (b.presentation?.position ?? Number.MAX_SAFE_INTEGER) || (a.relativePath < b.relativePath ? -1 : a.relativePath > b.relativePath ? 1 : 0)),
       categoryProperty: mode === "grouped" && property ? { propertyId: property.id, sourceId: property.sourceId, name: property.name } : null,
       categoryPropertyRevision: source.categoryPropertyRevision,
       state, projects: active, retainedProjects, retainedCount: retainedProjects.length };

@@ -183,7 +183,7 @@ function TextPropertiesContent({ client, workspaceId, sourceId, projects, retain
             <button type="button" className="workspace-button workspace-button--secondary" disabled={disabled || locateDisabled}
               aria-label={`${t("recoveryLocate")}: ${project.name}`} onClick={(event) => onLocate(retained, event.currentTarget)}>{t("recoveryLocate")}</button>}
         </td>
-        {categoryProperty && <td key={categoryProperty.propertyId}>{retained?.categoryName ?? categories.find((category) => category.categoryId === project.categoryId)?.name}
+        {categoryProperty && <td key={categoryProperty.propertyId} className="category-cell" data-color={categories.find(category => category.categoryId === project.categoryId)?.presentation?.color ?? "default"}>{retained?.categoryName ?? categories.find((category) => category.categoryId === project.categoryId)?.name}
           {!retained && onMoveCategory && project.categoryId && "associationState" in project && project.associationState === "active" &&
             "resolution" in project && project.resolution === "active" && <button type="button" className="workspace-button workspace-button--secondary property-rename"
               aria-label={`${t("moveCategory")}: ${project.name}`} disabled={disabled || categoryMoveDisabled}

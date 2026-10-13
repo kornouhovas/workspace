@@ -29,3 +29,10 @@ Roadmap scope: M2. Specification user stories: 22, 23, 28, 30, 44.
 Test the observable result through the typed Workspace service with temporary real SQLite and filesystem fixtures where applicable, plus focused UI/IPC or actual-platform checks. Every new UI surface includes EN/RU text, keyboard operation and relevant empty/loading/error states. Extend regression fixtures when new types or workflows are added. Preserve the accepted source/workspace ownership, selected-source containment and renderer isolation. Record copied bb module provenance and applicable notices in any ticket that introduces them.
 
 Resolve this slice's listed design details before its dependent mutations; ordinary implementation choices stay within the accepted contract. An unresolved consequential product choice requires a specific owner decision, not a silent new requirement. Keep synchronization, AI, remote access, website and legacy import out of scope.
+
+## Owner refinements (2026-10-13)
+
+- A new category creates a new empty folder. Empty categories persist and remain valid for project creation and moves.
+- An existing eligible immediate-child folder requires a separate explicit association action with a preview of projects to enroll.
+- Folder identity and names are source-owned. Color, hidden state and option order are workspace-owned and do not rename or move folders.
+- The public GitHub repository is intentional for Actions; continued issue publication and delivery there were explicitly authorized.

@@ -20,7 +20,7 @@ export function readProjectRelocationReservations(db: Reader, sourceId: string) 
 }
 
 export function hasUnfinishedProjectRelocation(db: Reader, sourceId: string): boolean {
-  return readProjectRelocationReservations(db, sourceId).length > 0;
+  return readProjectRelocationReservations(db, sourceId).length > 0 || readCategoryFolderReservations(db, sourceId).length > 0;
 }
 
 // Keep the entire immutable binding and mutable evidence on each placement so
@@ -34,5 +34,13 @@ export function readProjectReservations(db: Reader, sourceId: string) {
     [...new Set([row.originalRelativePath, row.requestedRelativePath, ...(row.operationKind === "rename" ? [row.stagingRelativePath] : [])])]
       .filter((relativePath): relativePath is string => relativePath !== null)
       .map((relativePath) => ({ ...row, relativePath })));
-  return [...creations, ...relocations];
+  const categoryFolders = readCategoryFolderReservations(db, sourceId).flatMap(row =>
+    [...new Set([row.originalRelativePath, row.requestedRelativePath])].filter((p): p is string => p !== null)
+      .map(relativePath => ({ ...row, operationKind: "category_folder" as const, projectId: row.categoryId, relativePath })));
+  return [...creations, ...relocations, ...categoryFolders];
+}
+
+export function readCategoryFolderReservations(db: Reader, sourceId: string) {
+  return db.select().from(schema.categoryFolderOperations).where(eq(schema.categoryFolderOperations.sourceId, sourceId))
+    .orderBy(asc(schema.categoryFolderOperations.operationId)).all().filter(row => row.stage !== "completed" && row.stage !== "failed");
 }

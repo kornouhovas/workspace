@@ -78,6 +78,13 @@
       "when": 1791504010000,
       "tag": "0010_project_category_move",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1791504011000,
+      "tag": "0011_category_options",
+      "breakpoints": true
     }
   ]
 }

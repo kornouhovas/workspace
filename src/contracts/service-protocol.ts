@@ -1,3 +1,4 @@
+import type { CategoryOptionsPayload } from "./category-options.js";
 import type { ProjectCategoryMoveResult, ProjectCategoryMoveList, ProjectCategoryMoveRecoveryPreview } from "./project-category-move.js";
 import type { ProjectRenameResult, ProjectRenameList, ProjectRenameRecoveryPreview } from "./project-rename.js";
 import type { ProjectCreationResult, ProjectCreationOperation, ProjectCreationList, ProjectCreationRecoveryPreview } from "./project-creation.js";
@@ -8,7 +9,7 @@ import type { ServiceResult } from "./settings.js";
 import type { CategoryPropertySnapshot, ProjectList, DiscoveryPreview, ActiveWorkspace, WorkspaceCreated, WorkspaceLoad, WorkspaceSourceObservationSnapshot, WorkspaceSourceState, WorkspaceChangeEvent } from "./workspaces.js";
 import type { Settings } from "./settings.js";
 
-export type ServicePayload = ProjectCategoryMoveResult | ProjectCategoryMoveList | ProjectCategoryMoveRecoveryPreview | ProjectRenameResult | ProjectRenameList | ProjectRenameRecoveryPreview | ProjectRevealResult | ProjectCreationResult | ProjectCreationOperation | ProjectCreationList | ProjectCreationRecoveryPreview | WorkspaceSourceObservationSnapshot | ProjectRecoveryPreview | CategoryPropertySnapshot | TextPropertySnapshot | TextPropertyMutation | ProjectList | DiscoveryPreview | Settings | WorkspaceLoad | WorkspaceCreated | ActiveWorkspace | WorkspaceSourceState;
+export type ServicePayload = CategoryOptionsPayload | ProjectCategoryMoveResult | ProjectCategoryMoveList | ProjectCategoryMoveRecoveryPreview | ProjectRenameResult | ProjectRenameList | ProjectRenameRecoveryPreview | ProjectRevealResult | ProjectCreationResult | ProjectCreationOperation | ProjectCreationList | ProjectCreationRecoveryPreview | WorkspaceSourceObservationSnapshot | ProjectRecoveryPreview | CategoryPropertySnapshot | TextPropertySnapshot | TextPropertyMutation | ProjectList | DiscoveryPreview | Settings | WorkspaceLoad | WorkspaceCreated | ActiveWorkspace | WorkspaceSourceState;
 
 export type ServiceRequest = {
   id: number;
@@ -48,6 +49,7 @@ export type ServiceEvent = { type: "workspace.change"; change: WorkspaceChangeEv
 
 export function isWorkspaceChangeEvent(value: unknown): value is WorkspaceChangeEvent {
   if (!record(value)) return false;
+  if (value.type === "workspace.categoryPresentationChanged") return exact(value, ["type", "sourceId", "workspaceIds"]) && uuid(value.sourceId) && ids(value.workspaceIds) && value.workspaceIds.length > 0;
   if (value.type === "workspace.sourceObserved") {
     return exact(value, ["type", "sourceId", "workspaceIds", "observationRevision", "state", "automaticUpdates"]) &&
       uuid(value.sourceId) && ids(value.workspaceIds) && value.workspaceIds.length > 0 &&

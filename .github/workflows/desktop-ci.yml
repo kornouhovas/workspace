@@ -514,8 +514,16 @@ jobs:
       - run: npm run smoke:runtime -- dev
         env:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-runtime-dev
+      - name: Development category options UI and persistence
+        run: npm run smoke:category-options -- dev
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-category-options-dev
       - run: npm run package:built
       - run: npm run check:artifact -- release
+      - name: Packaged category options UI and persistence
+        run: npm run smoke:category-options -- release
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-category-options-release
       - name: Packaged creation crash/recovery matrix
         run: npm run smoke:runtime -- release --creation --skip-native
         env:
@@ -540,6 +548,7 @@ jobs:
             work/ci-creation-*/
             work/ci-runtime-*/
             work/ci-category-move-layouts/
+            work/ci-category-options-*/
           if-no-files-found: warn
       - uses: actions/upload-artifact@v4
         with:
