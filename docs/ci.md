@@ -2,6 +2,12 @@
 
 Read when selecting or diagnosing a CI route, changing CI scheduling, or checking exact-SHA acceptance. [Development](development.md#verification) owns verification policy; [.github/workflows/desktop-ci.yml](../.github/workflows/desktop-ci.yml) owns actual job wiring.
 
+## Candidate and handoff
+
+Use the [implementation sequence](development.md#implementation-sequence) before dispatching candidate acceptance. The candidate includes application changes, tests, fixtures, CI routes and relevant repository reports. Record observed local results before committing it; keep pending CI/integration status in the GitHub issue checkpoint linked from the plan.
+
+After acceptance, record the run/attempt, tested SHA, actual checks/artifacts, delivered SHA and integration verification in that checkpoint. A fast-forward delivery of the same commit retains exact-SHA evidence. If a required later change creates another commit, identify its affected boundary and renew the checks it requires; state explicitly when a documentation-only change has separate checks rather than describing its SHA as platform-tested. Preserve existing workflow defaults and required platform coverage.
+
 ## Failed Actions loop
 
 Apply this loop automatically when a GitHub Actions check fails during an authorized task, including continuation in a new window. The agent invokes `diagnosing-bugs` without requiring another user command. Executor selection remains governed by [development](development.md#executor-selection); CI failure does not select Ralphex. Continue within existing implementation/push/Actions authorization; request only genuinely missing access or consequential decisions.

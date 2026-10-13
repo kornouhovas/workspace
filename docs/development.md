@@ -10,7 +10,25 @@ Use an isolated task branch based on `new-workspace` for implementation. Preserv
 
 `new-workspace` is the integration branch for every issue. Start a new issue branch from its latest verified tip. Once the selected issue's acceptance criteria, review and required checks pass (including agreed human acceptance), merge the verified issue branch into `new-workspace`, verify the integrated result and record the delivered SHA. The owner has authorized this issue-by-issue integration route. It does not select/start the next issue or authorize release or merge into `main`.
 
-Issue 19 receives the completed agent-workflow changes now. Its merge into `new-workspace` remains conditional on successful completion: the current waiting state, residual native/platform gates and exact-SHA Actions acceptance remain unresolved until evidenced. A completed local documentation merge is not issue acceptance.
+Current issue ownership, waiting states and unresolved acceptance gates belong to its GitHub checkpoint. Verify that checkpoint when resuming; historical issue-specific instructions do not establish current readiness.
+
+## Implementation sequence
+
+Apply this sequence to the affected boundaries; small documentation changes need only their documented checks.
+
+1. Resolve the selected issue's blockers and consequential open decisions. Record a compact scenario list in the existing plan or GitHub checkpoint: each acceptance criterion, failure/recovery case, persistence/ownership boundary and required platform/UI route has a check or an explicit unresolved gate.
+2. Implement in vertical slices at the agreed public seams. Add regression scenarios while implementing their behavior; update the scenario list when evidence expands the scope.
+3. Before the final review/full run, reconcile all changed contracts with existing fixtures and checks. For a migration, inspect the source journal and find every dependent migration count/tag, schema inventory, build/package fixture and upgrade/reopen test. Run `npm run test:migrations` and fix each affected failure while retaining data-preservation and rejection assertions. Extend this focused command when a new migration fixture boundary is introduced; its selected files are defined in `package.json`.
+4. Finish the scoped implementation and scenario coverage, then review against the issue and project standards. Apply review repairs and rerun their affected checks. The resulting source, tests, fixtures and CI routes form the candidate for final verification.
+5. Run the required full suite once on that completed candidate. Reuse an unchanged verified build with `npm run test:all`; use `npm test` when a fresh build is needed. Run artifact-producing builds and their consumers sequentially. A new failure or required code/test change reopens affected verification; record which final evidence was renewed.
+6. Commit the complete candidate, including relevant contracts and the observed local verification report. Keep CI/integration acceptance in the GitHub checkpoint, with a pointer from the versioned plan. Select CI routes under [CI checks](ci.md); report which checks were inherited and which were added for this issue.
+7. Inspect the candidate's CI results and required artifacts, follow the integration route, and record the tested/delivered SHA and remaining limits in GitHub.
+
+Final acceptance requires passing evidence for every required scenario in step 1; recording an unresolved gate does not satisfy it. A newly discovered required case goes back through implementation/review and the affected verification; it is not added after a final pass without updating that evidence.
+
+## Progress updates
+
+Report changed acceptance gates, findings, failures and decisions. Coalesce CI polling into these updates instead of repeating the full job list. During an unchanged wait, send only the short heartbeat required by the conversation's update cadence; keep detailed polling output in the local log/checkpoint.
 
 ## GitHub tracker
 
