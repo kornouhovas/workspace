@@ -30,6 +30,14 @@ The production graphical route extends the existing category-options acceptance 
 
 The unchanged ordinary CI matrix runs the new service/crash/UI cases, migration/build/package fixtures and expanded graphical driver on macOS, Windows latest and Windows 2022. No diagnostic route substitutes for full acceptance. Exact-SHA Actions, artifact inspection and delivery into `new-workspace` remain pending at this local checkpoint. GitHub owns current status and the tested/delivered SHAs.
 
+## Retained first CI failure and repair
+
+Full run [38386963810](https://github.com/kornouhovas/workspace/actions/runs/38386963810), attempt 1, tested `287ead815f6e927eb36e94d75d7ccfcd2a13efe0`. The macOS platform suite reported 2,171 passes, one failure and 21 skips. Its inherited never-focused Electron readiness control expected renderer `timed_out`, but received host `deadline exceeded`. The log proves the mismatched assertion; it does not identify the underlying delivery delay. No category-removal product failure was reported in that job; dependent macOS runtime/package stages were unreached.
+
+A 30ms no-delivery reproduction fails the same assertion. Existing real-renderer/controlled-host-clock tests separately confirm timely finite evidence and late unknown evidence. The repaired never-focused control uses actual unfocused Electron snapshots and explicitly schedules both delivery outcomes against the unchanged default 15,000ms host deadline. It requires no early result, one record, timer disposal, rejection of late replacement and preservation of the primary timeout over recording errors. Production behavior, deadlines and readiness operands remain unchanged. The complete original readiness file passed locally: 27 checks, zero failures/skips. CI-route regression checks passed all nine cases. Renewed full `npm run test:all` on the repaired test/workflow candidate passed 2,659 tests, zero failures and the same 21 platform/filesystem skips; it reused the unchanged verified application build. Both Standards and Spec repair reviews found no remaining findings.
+
+The added `checks: readiness` route runs only that macOS file and retains its original command log with SHA/run/attempt provenance. Focused acceptance, renewed full acceptance and integration remain pending; current run IDs and repair SHA belong to the GitHub checkpoint.
+
 ## Retained limits
 
 No-replace protects the target; repeated path/identity checks are not an atomic filesystem ancestor lock. Filesystem effects and SQLite are not one transaction. Process-interruption evidence does not establish machine-crash or power-loss durability. See [ADR 0007](../adr/0007-no-replace-project-renames.md). Category/project-content deletion, automatic rollback, synchronization, archive redesign and release to `main` are outside this issue. Local packaging produced an unsigned development artifact, not a published release. No new bb module or dependency was copied.

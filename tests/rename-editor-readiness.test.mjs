@@ -163,20 +163,41 @@ test("already-ready editor passes immediately with strict finite operands", asyn
   });
 });
 
-test("never-focused real Electron page exhausts one default allowance without passing", async () => {
+test("never-focused real Electron page exhausts one default allowance without passing", async t => {
   await withPage(async page => {
     await mount(page, "unfocused");
-    let evidence;
-    const started = performance.now();
-    await assert.rejects(waitForRenameEditor(page, { record: value => {
-      evidence = value;
-      throw new Error("Secondary evidence failure must not replace timeout");
-    } }), /readiness timed out/);
-    const elapsed = performance.now() - started;
-    assert.ok(elapsed >= 14000 && elapsed < 15500, `One allowance took ${elapsed}ms`);
-    assert.equal(evidence.classification, "unfocused");
-    assert.equal(evidence.initial.focused, false); assert.equal(evidence.final.focused, false);
-    assert.equal(evidence.status, "timed_out");
+    // Obtain real read-only operands, then control delivery against the host's
+    // default deadline. Runner load must not choose which timeout we assert.
+    const outcome = await page.evaluate(observeRenameEditor, { deadline: 0 });
+    assert.equal(outcome.status, "timed_out");
+    assert.equal(outcome.initial.focused, false); assert.equal(outcome.final.focused, false);
+    for (const late of [false, true]) await t.test(late ? "late delivery" : "timely delivery", async t => {
+      const deferred = Promise.withResolvers(), records = [];
+      const clock = controlledHostClock(t);
+      let pending;
+      try {
+        pending = waitForRenameEditor({ evaluate: () => deferred.promise }, { record: value => {
+          records.push(value);
+          throw new Error("Secondary evidence failure must not replace timeout");
+        } });
+        const rejected = assert.rejects(pending, late ? /readiness deadline exceeded/ : /readiness timed out/);
+        clock.tick(14999);
+        assert.equal(records.length, 0); assert.equal(clock.active.size, 1);
+        if (late) clock.tick(1);
+        else deferred.resolve(outcome);
+        await rejected;
+        assert.deepEqual(records, [late ? unknownEvidence("timeout") : {
+          ...outcome, failure: "timeout", classification: "unfocused",
+        }]);
+        assert.equal(clock.active.size, 0);
+        deferred.resolve(outcome); await deferred.promise;
+        await pending.catch(() => {});
+        clock.tick(15000);
+        assert.equal(records.length, 1);
+      } finally {
+        deferred.resolve(outcome); await pending?.catch(() => {}); clock.restore();
+      }
+    });
   });
 });
 

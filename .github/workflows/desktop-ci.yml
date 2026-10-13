@@ -8,7 +8,7 @@ on:
       checks:
         description: Full acceptance or a selected focused failure route
         type: choice
-        options: [full, failed]
+        options: [full, failed, readiness]
         default: full
       diagnostics:
         description: Run isolated investigation and early-feedback jobs
@@ -33,7 +33,7 @@ concurrency:
 
 jobs:
   common:
-    if: ${{ github.event_name != 'workflow_dispatch' || inputs.checks != 'failed' }}
+    if: ${{ github.event_name != 'workflow_dispatch' || (inputs.checks != 'failed' && inputs.checks != 'readiness') }}
     name: Common tests and static checks
     runs-on: macos-latest
     steps:
@@ -47,6 +47,32 @@ jobs:
       - run: npm run typecheck
       - run: npm run check:docs
       - run: npm run test:common
+
+  focused-macos-readiness:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.checks == 'readiness' }}
+    name: Focused macOS editor readiness
+    runs-on: macos-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.21.1
+          cache: npm
+      - run: npm ci
+      - name: Run original readiness suite
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p work/ci-focused-readiness
+          node --test tests/rename-editor-readiness.test.mjs 2>&1 | tee work/ci-focused-readiness/tests.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: issue-21-focused-readiness-${{ github.sha }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
+          path: work/ci-focused-readiness/
+          if-no-files-found: error
+          retention-days: 7
 
   focused-windows-observer:
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.checks == 'failed' && inputs.runtime_failures != true && inputs.integration_failures != true }}

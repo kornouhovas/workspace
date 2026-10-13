@@ -42,7 +42,7 @@ test('suite CLI lists the selected real files and rejects unknown invocations', 
 test('ordinary CI runs common checks once and retains all three platform acceptance routes', () => {
   const workflow = load(readFileSync('.github/workflows/desktop-ci.yml', 'utf8'));
   const { common, verify } = workflow.jobs;
-  assert.equal(common.if, "${{ github.event_name != 'workflow_dispatch' || inputs.checks != 'failed' }}");
+  assert.equal(common.if, "${{ github.event_name != 'workflow_dispatch' || (inputs.checks != 'failed' && inputs.checks != 'readiness') }}");
   assert.equal(common.strategy, undefined);
   assert.deepEqual(common.steps.filter(step => step.run).map(step => step.run), [
     'npm ci', 'npm run lint', 'npm run typecheck', 'npm run check:docs', 'npm run test:common',
@@ -83,7 +83,7 @@ test('investigation jobs run only with explicit manual diagnostic inputs', () =>
 test('manual failed-check scope runs only the Windows observer and macOS rename routes', () => {
   const workflow = load(readFileSync('.github/workflows/desktop-ci.yml', 'utf8'));
   assert.equal(workflow.on.workflow_dispatch.inputs.checks.default, 'full');
-  assert.deepEqual(workflow.on.workflow_dispatch.inputs.checks.options, ['full', 'failed']);
+  assert.deepEqual(workflow.on.workflow_dispatch.inputs.checks.options, ['full', 'failed', 'readiness']);
   const enabled = (job, event, checks) => runInNewContext(job.if.slice(3, -2), { github: { event_name: event }, inputs: { checks } });
   for (const event of ['push', 'pull_request', 'workflow_dispatch']) for (const checks of [undefined, 'full', 'failed']) {
     const focused = event === 'workflow_dispatch' && checks === 'failed';
@@ -151,4 +151,29 @@ test('integration failures select only original macOS layout and Windows 2022 cr
     assert.equal(upload.if, 'always()'); assert.equal(upload.with['if-no-files-found'], 'error');
     for (const field of ['github.sha', 'github.run_id', 'github.run_attempt']) assert.ok(upload.with.name.includes(field));
   }
+});
+
+
+test('readiness failure scope runs only the original macOS Electron suite', () => {
+  const workflow = load(readFileSync('.github/workflows/desktop-ci.yml', 'utf8'));
+  for (const event of ['push', 'pull_request', 'workflow_dispatch']) {
+    for (const checks of [undefined, 'full', 'failed', 'readiness']) {
+      const context = { github: { event_name: event }, inputs: { checks } };
+      const active = Object.entries(workflow.jobs).filter(([, job]) => job.if &&
+        runInNewContext(job.if.slice(3, -2), context)).map(([name]) => name);
+      const focused = event === 'workflow_dispatch' && checks === 'readiness';
+      assert.equal(active.includes('focused-macos-readiness'), focused);
+      if (focused) assert.deepEqual(active, ['focused-macos-readiness']);
+    }
+  }
+  const job = workflow.jobs['focused-macos-readiness'];
+  assert.equal(job['runs-on'], 'macos-latest');
+  const commands = job.steps.filter(step => step.run).map(step => step.run);
+  assert.equal(commands.length, 2);
+  assert.equal(commands[0], 'npm ci');
+  assert.ok(commands[1].includes('set -o pipefail'));
+  assert.ok(commands[1].includes('node --test tests/rename-editor-readiness.test.mjs 2>&1 | tee'));
+  const upload = job.steps.find(step => step.uses === 'actions/upload-artifact@v4');
+  assert.equal(upload.if, 'always()'); assert.equal(upload.with['if-no-files-found'], 'error');
+  for (const field of ['github.sha', 'github.run_id', 'github.run_attempt']) assert.ok(upload.with.name.includes(field));
 });
