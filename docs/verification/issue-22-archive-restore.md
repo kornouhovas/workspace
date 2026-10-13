@@ -20,7 +20,7 @@ The existing Node/path and native no-replace confinement limits still apply: obs
 - Abrupt separate-process fixtures cover intent, native effect, destination evidence and completed commit for both actions and discovery modes, plus unrecorded parent creation. Tests exposed and corrected an outer transaction that initially prevented intent durability.
 - Populated migration-0012 upgrade/reopen preserves exact source/workspace/project/Text data and earlier tables; schema count becomes 14 with empty archive tables and valid foreign keys. Existing migration inventories and packaged/build fixture lists include migration 0013.
 - The migration command passes 314 tests with one existing platform skip; the focused archive service/journal/UI set passes 49/49. Existing application UI regressions pass 95/95 after extending their mock transport with the new read-only archive queries.
-- EN/RU DOM interaction tests cover explicit review/Apply, Escape/focus and unknown Apply outcomes with ID-bound status reads.
+- EN/RU DOM interaction tests cover explicit review/Apply, Escape/focus, source-unavailable/mode/collision/missing-parent decisions, interrupted recovery and unknown Apply/recovery outcomes with ID-bound status reads. All 14 archive UI tests pass; the readiness regression passed five consecutive focused runs.
 - Development Electron UI completed 12 scenario checks: archive/Text/restart/restore in both modes and languages, plus 1440/1024 layouts. Native no-replace and the production backend/preload route run against disposable folders. Ordinary quit, backend exit and fixture cleanup pass. Layout styles are renewed before final verification.
 
 ## Required final gates

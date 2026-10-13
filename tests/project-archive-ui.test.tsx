@@ -23,7 +23,9 @@ for (const language of ["en", "ru"] as const) test(`${language}: archive review 
   }, onWorkspaceChange: () => () => {} } as unknown as WorkspaceDesktopApi;
   render(<ProjectArchivePanel client={new WorkspaceServiceClient(api)} workspaceId="w" sourceId="s" projects={[{ projectId: "p", categoryId: null, name: "Project", relativePath: "Project" }]} language={language} disabled={false} revision={1} invalidation={0} onCommitted={() => {}} onViewChange={() => {}} />);
   const user = userEvent.setup({ document });
-  await user.selectOptions(await screen.findByLabelText(t("archiveProject")), "p");
+  const projectSelect = await screen.findByLabelText(t("archiveProject")) as HTMLSelectElement;
+  await waitFor(() => assert.equal(projectSelect.disabled, false));
+  await user.selectOptions(projectSelect, "p");
   const review = screen.getByRole("button", { name: t("archiveReview") }); review.focus(); await user.keyboard("{Enter}");
   await screen.findByRole("button", { name: t("archiveApply") });
   await user.keyboard("{Escape}");
@@ -46,7 +48,9 @@ test("a lost Apply response keeps its exact request and checks status without an
   let committed = 0;
   render(<ProjectArchivePanel client={new WorkspaceServiceClient(api)} workspaceId="w" sourceId="s" projects={[{ projectId: "p", categoryId: null, name: "Project", relativePath: "Project" }]} language="en" disabled={false} revision={1} invalidation={0} onCommitted={() => committed++} onViewChange={() => {}} />);
   const user = userEvent.setup({ document });
-  await user.selectOptions(await screen.findByLabelText("Project to archive"), "p");
+  const projectSelect = await screen.findByLabelText("Project to archive") as HTMLSelectElement;
+  await waitFor(() => assert.equal(projectSelect.disabled, false));
+  await user.selectOptions(projectSelect, "p");
   await user.click(screen.getByRole("button", { name: "Review archive" }));
   await user.click(await screen.findByRole("button", { name: "Archive project" }));
   await screen.findByText(translate("en", "archiveUnknown"));
@@ -79,7 +83,9 @@ for (const language of ["en", "ru"] as const) {
       render(<ProjectArchivePanel client={new WorkspaceServiceClient(api)} workspaceId="w" sourceId="s" projects={[]} language={language} disabled={false} revision={1} invalidation={0} onCommitted={() => {}} onViewChange={() => {}} />);
       const user = userEvent.setup({ document });
       await user.click(screen.getByRole("button", { name: t("archiveArchived") }));
-      await user.selectOptions(await screen.findByLabelText(t("archiveRestoreProject")), "p");
+      const projectSelect = await screen.findByLabelText(t("archiveRestoreProject")) as HTMLSelectElement;
+  await waitFor(() => assert.equal(projectSelect.disabled, false));
+  await user.selectOptions(projectSelect, "p");
       await user.click(screen.getByRole("button", { name: t("archiveRestoreReview") }));
       const problemKey = scenario === "occupied" ? "archiveProblemOccupied" : scenario === "missing_parent" ? "archiveProblemMissingParent" : scenario === "incompatible_mode" ? "archiveProblemMode" : "archiveProblemUnavailable";
       await screen.findByText(t(problemKey));
@@ -125,3 +131,27 @@ for (const language of ["en", "ru"] as const) {
     assert.deepEqual(calls.find(c => c.type === "workspace.recoverProjectArchive"), { type: "workspace.recoverProjectArchive", workspaceId: "w", operationId: "interrupted", previewToken: "recovery-token", action: "retry_original" });
   });
 }
+
+test("unavailable recovery transport retains an unknown outcome until a read-only status check", async () => {
+  const calls: Record<string, unknown>[] = [];
+  const operation = { operationId: "interrupted", sourceId: "s", projectId: "p", action: "archive", originalRelativePath: "Project", requestedRelativePath: "Archive/Project", stage: "intent", problem: "busy", completedRevision: null };
+  const api = { workspace: async (input: Record<string, unknown>) => {
+    calls.push(input);
+    if (input.type === "workspace.listArchivedProjects") return { ok: true, value: { workspaceId: "w", sourceId: "s", relativePath: "Archive", revision: 1, projects: [] } };
+    if (input.type === "workspace.listProjectArchiveOperations") return { ok: true, value: { workspaceId: "w", sourceId: "s", operations: [operation] } };
+    if (input.type === "workspace.previewProjectArchiveRecovery") return { ok: true, value: { workspaceId: "w", sourceId: "s", operation, actions: ["retry_original"], problem: null, previewToken: "token" } };
+    if (input.type === "workspace.recoverProjectArchive") return { ok: false, error: { code: "service_unavailable", message: "Disconnected" } };
+    if (input.type === "workspace.getProjectArchiveOperation") return { ok: true, value: { operation: { ...operation, stage: "completed", problem: null, completedRevision: 2 } } };
+    throw new Error("Unexpected request");
+  }, onWorkspaceChange: () => () => {} } as unknown as WorkspaceDesktopApi;
+  render(<ProjectArchivePanel client={new WorkspaceServiceClient(api)} workspaceId="w" sourceId="s" projects={[]} language="en" disabled={false} revision={1} invalidation={0} onCommitted={() => {}} onViewChange={() => {}} />);
+  const user = userEvent.setup({ document });
+  await user.click(await screen.findByRole("button", { name: "Review interrupted operation" }));
+  await user.click(await screen.findByRole("button", { name: "Retry original move" }));
+  await screen.findByText(translate("en", "archiveUnknown"));
+  assert.equal(screen.queryByRole("button", { name: "Retry original request" }), null);
+  assert.equal((screen.getByRole("button", { name: "Active" }) as HTMLButtonElement).disabled, true);
+  await user.click(screen.getByRole("button", { name: "Check saved outcome" }));
+  await screen.findByText(translate("en", "archiveCompleted"));
+  assert.equal(calls.filter(c => c.type === "workspace.recoverProjectArchive").length, 1);
+});

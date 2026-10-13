@@ -583,6 +583,7 @@ jobs:
             work/ci-runtime-*/
             work/ci-category-move-layouts/
             work/ci-category-options-*/
+            work/ci-archive-*/
           if-no-files-found: warn
       - uses: actions/upload-artifact@v4
         with:

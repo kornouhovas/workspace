@@ -14,3 +14,9 @@ Two P2 findings:
 - Required UI failure/recovery routes lacked focused coverage. Added EN/RU tests for unavailable sources, interrupted operations and explicit token-bound keyboard recovery, collision/alternative basename, missing-parent consent and incompatible-mode blockers. These verify service-client payloads, lack of mutation before a fresh accepted preview and localized feedback. Existing runtime checks cover the production happy path, Text and restart; pending platform gates remain explicit.
 
 Initial totals: Standards 1 finding (worst P2), Spec 2 findings (worst P2). All were reproduced or acknowledged against concrete missing coverage before repair. Follow-up review and final verification are recorded in GitHub; neither initial report established platform acceptance.
+
+## Follow-up
+
+Both reviewers accepted the source repairs in `b73da90`. The Standards reviewer identified a test-readiness race: the initial project select existed before loading finished. Tests now wait for that control to become enabled; the previously failing EN test passed five consecutive focused runs. This changes the readiness assertion, not a production deadline.
+
+A further UI regression reproduced a recovery `service_unavailable` response clearing unknown-outcome protection. The component now retains the operation and offers only an ID-bound read-only status check unless the service definitively rejects a stale/invalid request. The recovery error regression and all 14 archive UI tests pass. CI artifact retention includes the new archive runtime evidence directories.

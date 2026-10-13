@@ -139,7 +139,7 @@ function ArchiveContent({ client, workspaceId, sourceId, projects, language, dis
     setUnknown({ workspaceId, operationId: saved.operation.operationId, previewToken: saved.previewToken! });
     try {
       const result = await client.recoverProjectArchive(workspaceId, saved.operation.operationId, saved.previewToken!, action);
-      if (alive.current) { if (result.ok) acceptOperation(result.value.operation, saved.operation.operationId); else { setUnknown(null); setError(true); } }
+      if (alive.current) { if (result.ok) acceptOperation(result.value.operation, saved.operation.operationId); else if (result.error.code === "invalid_input" || result.error.code === "stale_preview") { setUnknown(null); setError(true); } else setMessage("archiveUnknown"); }
     } catch { if (alive.current) setMessage("archiveUnknown"); }
     finally { if (alive.current) { busy.current = false; setPending(false); } }
   }
