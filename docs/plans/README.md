@@ -15,4 +15,6 @@ The following executable checklists are complete, but retain stable paths for ex
 | [Runner startup fixture](issue-19-runner-startup-fixture.md) | Issue #19 waiting snapshot and remaining review/Actions/native gates |
 | [Ralphex observer](ralphex-event-observer.md) | Recorded review/platform evidence and separately scoped adoption/deployment |
 
+Plan checklists track executable work and observed local verification. Link the GitHub checkpoint for candidate CI and delivery status; update post-commit run URLs and integration receipts there so recording acceptance does not routinely change the verified candidate.
+
 Preserve product decisions in their contracts/ADRs; a plan cannot silently replace them. Update executable progress only from observed verification and report skipped, failed and unreached checks separately.
