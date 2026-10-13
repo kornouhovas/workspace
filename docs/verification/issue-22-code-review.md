@@ -30,3 +30,7 @@ Both independent reviewers accepted `a2949e1` with no findings. Each independent
 ## Subsequent failure-map follow-up
 
 Both axes reviewed the current diff against `a2949e1` and report no findings: deterministic observer/commit fixture separation, bounded submission capture and its regressions, original two-OS focused route and retained failure reports. Each independently passes 14 receipt/routing tests and the targeted fanout test. Full affected files pass 73/73. Original runtime assertions, deadlines, transport forwarding and deletion gates remain unchanged. Historical macOS submission cause is not established; focused original-scenario/artifact and full-platform gates are still required.
+
+## Final evidence
+
+Reviewed source candidate `ce37f64d` passes the renewed local full suite (2715 passed, zero failed, 21 expected skips) and complete three-platform run 38462098920, attempt 1. Required exact-SHA artifacts and representative EN/RU wide/narrow archive screens were inspected. Final delivery-report/plan edits are Markdown only and retain the tested/delivered-SHA distinction. No code-review findings remain.

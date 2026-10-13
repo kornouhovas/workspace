@@ -23,7 +23,7 @@ The existing Node/path and native no-replace confinement limits still apply: obs
 - EN/RU DOM interaction tests cover explicit review/Apply, Escape/focus, source-unavailable/mode/collision/missing-parent decisions, interrupted recovery and unknown Apply/recovery outcomes with ID-bound status reads. All 14 archive UI tests pass; the readiness regression passed five consecutive focused runs.
 - Development Electron UI completed 12 scenario checks: archive/Text/restart/restore in both modes and languages, plus 1440/1024 layouts. Native no-replace and the production backend/preload route run against disposable folders. Ordinary quit, backend exit and fixture cleanup pass. Layout styles are renewed before final verification.
 
-## Completed local candidate and pending delivery
+## Initial local candidate checkpoint
 
 Both review axes accepted the source repairs; the fixture-only follow-up retained all assertions. On `7a1088504406e188591ceb1d3087c853d60b68d6`, the renewed full suite passes **2709 tests, zero failures, 21 expected platform skips** (2730 total). The unchanged build was reused after the final test-only repair; application source remains identical to `4e9de5a`. Typecheck, lint, local documentation links and diff checks pass.
 
@@ -45,3 +45,19 @@ Focused Windows-latest run [38456446117](https://github.com/kornouhovas/workspac
 Full acceptance run [38457451345](https://github.com/kornouhovas/workspace/actions/runs/38457451345), attempt 1, uses the same reviewed SHA. Its final results/artifacts and integration remain tracked in the issue checkpoint.
 
 The subsequent full run fails the existing macOS development-runtime grouped no-op message and Windows-latest recovery fanout fixture. These are new acceptance blockers; see the [retained failure map](issue-22-windows-release-runtime.md#subsequent-full-run-failure-map). The Windows fixture has deterministic exact-symptom red/green evidence; the macOS candidate adds bounded submission diagnostics and retains the unknown-cause limitation. Both reviewers accepted this follow-up without findings; affected full files pass 73/73 and type/lint/docs/diff checks pass. The local instrumented graphical rename route passes all original checks. Required focused platform acceptance, renewed full CI and integration remain pending.
+
+## Renewed focused acceptance and local full suite
+
+Candidate `ce37f64df5ad37fb9b53c88ea23504740415c91c` passes [focused run 38461193904](https://github.com/kornouhovas/workspace/actions/runs/38461193904), attempt 1. Windows-latest backend-lifecycle tests pass 59/59. Inspected macOS artifacts confirm all original baseline stages, 46 rename shutdowns, 34 category-move shutdowns and asserted fixture cleanup. Ten finite rename captures have matching editor/request, observed response and no observer failure: four completed, four rejected and two unchanged. Both no-op requests/receipts preserve exact original-name equality. Historical macOS cause remains unknown.
+
+The renewed local full suite on this candidate passes **2715 tests, zero failures, 21 expected platform skips** (2736 total). It reuses the unchanged verified application build; changes after `a2949e1` are test/runtime-harness/CI and documentation only. Full three-platform [run 38462098920](https://github.com/kornouhovas/workspace/actions/runs/38462098920), attempt 1, tests the same reviewed candidate; final results/artifact inspection and integration are recorded in the issue checkpoint.
+
+## Final platform acceptance
+
+Full [run 38462098920](https://github.com/kornouhovas/workspace/actions/runs/38462098920), attempt 1, **passes** common/static checks and complete macOS-latest, Windows-latest and Windows-2022 jobs on exact reviewed SHA `ce37f64df5ad37fb9b53c88ea23504740415c91c`. All required stages were reached. Downloaded evidence was inspected for every OS: six archive reports pass **72 checks**, exact SHA, ordinary application/backend shutdown and asserted owned-fixture cleanup; 48 archive screenshots are retained. Representative EN/direct/wide and RU/grouped/narrow packaged screenshots were visually inspected on each OS.
+
+Inherited creation/native Reveal, baseline runtime, graphical rename/category-move, category-options, restart/interruption, layout and package/resource routes all pass with retained positive shutdown/cleanup evidence. Both development and packaged rename reports on each OS contain all ten finite submission receipts with matching editor/request and expected completed/rejected/unchanged outcomes; no capture failures were retained. Exact-SHA observer documents and positive category-move service checkpoints also pass. Negative diagnostic controls and explicit non-native creation-matrix skips remain distinct from acceptance.
+
+Earlier failed runs 38450516144 and 38457451345 remain retained. The Windows fanout fixture cause is reproduced and corrected; historical Windows ownership and macOS no-op causes remain unknown. Successful current scenarios establish acceptance without a causal claim. Existing path-confinement and power-loss limits above remain applicable.
+
+The final report/plan commit changes Markdown only; application, tests, harnesses and CI match tested `ce37f64d`. Documentation links and diff checks cover that delivery update. The [GitHub delivery checkpoint](https://github.com/kornouhovas/workspace/issues/22) records the delivered SHA and authorized integration verification separately from the platform-tested SHA.

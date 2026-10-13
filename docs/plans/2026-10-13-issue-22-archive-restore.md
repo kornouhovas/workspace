@@ -26,4 +26,6 @@ The issue specifies the typed Workspace service with disposable real SQLite/file
 
 ## Progress
 
-Implementation and focused service/UI/restart checks are in place. Native dependencies #16 and #19 are closed. See the [verification report](../verification/issue-22-archive-restore.md) for observed evidence. Both review axes and final local verification are complete. Platform CI/artifact inspection and integration remain pending. GitHub checkpoints own current execution and acceptance status.
+Implementation, service/UI/restart and migration coverage, both review axes, final local verification and three-platform acceptance are complete. Native dependencies #16 and #19 are closed. Reviewed source `ce37f64df5ad37fb9b53c88ea23504740415c91c` passes 2715 local tests with zero failures/21 expected skips and [full run 38462098920](https://github.com/kornouhovas/workspace/actions/runs/38462098920), attempt 1. All required artifacts are inspected, including 72 archive checks and EN/RU wide/narrow screenshots on each OS. Earlier failed runs, reproduced Windows fanout fixture repair and unknown historical causes are retained in the reports.
+
+See the [verification report](../verification/issue-22-archive-restore.md) for observed evidence and limitations. Delivery follows the owner-authorized `new-workspace` integration route; final report/plan changes are Markdown only. The [GitHub checkpoint](https://github.com/kornouhovas/workspace/issues/22) owns the delivered SHA, integration verification and closure status. No release or next issue is selected.
