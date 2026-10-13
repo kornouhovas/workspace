@@ -275,3 +275,29 @@ test("multiple archived siblings restore into the explicitly recreated original 
   const restored = f.query("workspace.listProjects").value.projects;
   assert.equal(restored.length, 2); assert.equal(restored[0].categoryId, restored[1].categoryId);
 }, "grouped"));
+
+for (const mode of ["direct", "grouped"]) test(`${mode}: alternative restore names are basenames, never another relative path`, () => fixture(f => {
+  const projectId = archiveProject(f);
+  for (const name of ["Nested/Restored", "../Outside", "/Outside", "", ".", ".."]) {
+    const preview = f.query("workspace.previewProjectArchive", { projectId, action: "restore", name, createParent: true });
+    assert.equal(preview.ok, false, name);
+  }
+}, mode));
+
+test("an unavailable archived category branch does not block restoration of a healthy archived sibling", () => fixture(f => {
+  fs.mkdirSync(join(f.root, "Other")); fs.mkdirSync(join(f.root, "Other", "Second"));
+  const discovery = f.query("workspace.previewDiscovery").value;
+  const projects = f.command("workspace.applyDiscovery", { previewToken: discovery.previewToken }).value.projects;
+  designate(f);
+  for (const project of projects) {
+    const preview = f.query("workspace.previewProjectArchive", { projectId: project.projectId, action: "archive", name: null, createParent: false }).value;
+    assert.equal(f.command("workspace.applyProjectArchive", { operationId: randomUUID(), previewToken: preview.previewToken }).value.operation.stage, "completed");
+  }
+  fs.renameSync(join(f.root, "Archive", "Client"), join(f.directory, "unavailable-client"));
+  const healthy = projects.find(p => p.relativePath === "Other/Second");
+  const preview = f.query("workspace.previewProjectArchive", { projectId: healthy.projectId, action: "restore", name: null, createParent: false }).value;
+  assert.deepEqual(preview.blockers, []);
+  const result = f.command("workspace.applyProjectArchive", { operationId: randomUUID(), previewToken: preview.previewToken });
+  assert.equal(result.value.operation.stage, "completed");
+  assert.equal(f.query("workspace.listArchivedProjects").value.projects.length, 1);
+}, "grouped"));

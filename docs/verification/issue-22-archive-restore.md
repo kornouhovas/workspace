@@ -16,13 +16,13 @@ The existing Node/path and native no-replace confinement limits still apply: obs
 
 ## Observed local evidence
 
-- Node 22.21.1, real temporary SQLite and project folders: 32 service scenarios pass. Coverage includes direct/grouped identity and exact Text/file preservation, restart, collisions, explicit alternate name and missing-parent creation, mode round trip, occupied designation, invalid/foreign/extra requests, links and unavailable source, native-boundary collision, immutable receipt retry and no automatic replay.
+- Node 22.21.1, real temporary SQLite and project folders: 35 service scenarios pass. Coverage includes direct/grouped identity and exact Text/file preservation, restart, collisions, explicit alternate name and missing-parent creation, mode round trip, occupied designation, invalid/foreign/extra requests, links and unavailable source, native-boundary collision, immutable receipt retry and no automatic replay.
 - Abrupt separate-process fixtures cover intent, native effect, destination evidence and completed commit for both actions and discovery modes, plus unrecorded parent creation. Tests exposed and corrected an outer transaction that initially prevented intent durability.
 - Populated migration-0012 upgrade/reopen preserves exact source/workspace/project/Text data and earlier tables; schema count becomes 14 with empty archive tables and valid foreign keys. Existing migration inventories and packaged/build fixture lists include migration 0013.
-- The migration command passes 314 tests with one existing platform skip; the focused archive service/journal/UI set passes 36/36. Existing application UI regressions pass 95/95 after extending their mock transport with the new read-only archive queries.
+- The migration command passes 314 tests with one existing platform skip; the focused archive service/journal/UI set passes 49/49. Existing application UI regressions pass 95/95 after extending their mock transport with the new read-only archive queries.
 - EN/RU DOM interaction tests cover explicit review/Apply, Escape/focus and unknown Apply outcomes with ID-bound status reads.
 - Development Electron UI completed 12 scenario checks: archive/Text/restart/restore in both modes and languages, plus 1440/1024 layouts. Native no-replace and the production backend/preload route run against disposable folders. Ordinary quit, backend exit and fixture cleanup pass. Layout styles are renewed before final verification.
 
 ## Required final gates
 
-Review, final full suite, renewed development layout evidence, packaged/Windows CI and integration acceptance are pending. GitHub checkpoints own current exact-SHA CI and delivery status; this report does not claim platform acceptance that has not run.
+The [two-axis review](issue-22-code-review.md) produced three P2 findings; repairs and additional UI scenarios are included in the follow-up candidate. Both development and packaged macOS archive UI runs pass 12 checks each with ordinary shutdown and cleanup; screenshots were inspected after the layout repair. Final full suite, repair follow-up review, renewed runtime evidence for the repair SHA, Windows CI and integration acceptance remain pending. GitHub checkpoints own current exact-SHA CI and delivery status; this report does not claim platform acceptance that has not run.

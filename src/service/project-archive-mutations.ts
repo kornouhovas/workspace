@@ -112,7 +112,7 @@ export function createProjectArchiveMutations(db: Database, integration: {
     root(source);
     const archive = archiveFor(project.id), category = project.categoryId ? db.select().from(schema.categories).where(eq(schema.categories.id, project.categoryId)).get() ?? null : null;
     if (input.action === "archive" && (archive || project.modeInactive || project.associationState !== "active" || input.name !== null || input.createParent)) return null;
-    if (input.action === "restore" && !archive) return null;
+    if (input.action === "restore" && (!archive || (input.name !== null && !validProjectBasename(input.name, filesystem.platform)))) return null;
     const original = archive?.relativePath ?? project.relativePath;
     const restoreOriginal = archive?.originalRelativePath ?? project.relativePath;
     const destination = input.action === "archive" ? `${source.archiveRelativePath}/${project.relativePath}`
@@ -142,7 +142,10 @@ export function createProjectArchiveMutations(db: Database, integration: {
     const others = db.select().from(schema.projects).where(eq(schema.projects.sourceId, source.id)).all();
     if (others.some(p => p.id !== project.id && p.associationState !== "replaced" && filesystemAlias(p.relativePath) === filesystemAlias(destination))) blockers.push("reserved_destination");
     const allArchives = db.select().from(schema.projectArchives).where(eq(schema.projectArchives.sourceId, source.id)).all();
-    for (const existing of allArchives) verifyParents(source, JSON.parse(existing.parents));
+    // Unrelated archived branches may be unavailable. Only their common
+    // designation ancestors authorize reuse of this archive root.
+    for (const existing of allArchives) verifyParents(source, (JSON.parse(existing.parents) as Parent[]).filter(parent =>
+      source.archiveRelativePath === parent.path || source.archiveRelativePath!.startsWith(`${parent.path}/`)));
     if (others.some(p => p.id !== project.id && p.associationState !== "replaced" && (() => {
       const identity = JSON.parse(p.nativeIdentity), current = JSON.parse(project.nativeIdentity);
       return identity.dev === current.dev && identity.ino === current.ino;

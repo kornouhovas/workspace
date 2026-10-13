@@ -31,6 +31,7 @@ function ArchiveContent({ client, workspaceId, sourceId, projects, language, dis
   const [message, setMessage] = useState<TranslationKey | null>(null);
   const [unknown, setUnknown] = useState<{ workspaceId: string; operationId: string; previewToken: string; initial?: boolean } | null>(null);
   const alive = useRef(true), busy = useRef(false), epoch = useRef(0), listVersion = useRef(0), minimumRevision = useRef(revision);
+  const returnFocus = useRef<HTMLButtonElement | null>(null);
   const trigger = useRef<HTMLButtonElement>(null), section = useRef<HTMLElement>(null);
   const blocked = pending || unknown !== null;
   useEffect(() => { onBlockedChange?.(blocked); return () => onBlockedChange?.(false); }, [blocked, onBlockedChange]);
@@ -61,7 +62,7 @@ function ArchiveContent({ client, workspaceId, sourceId, projects, language, dis
     minimumRevision.current = Math.max(minimumRevision.current, revision);
     epoch.current++; setReview(null); setLocationReview(null); setRecovery(null); void load();
   }, [revision, invalidation]);
-  const cancel = () => { if (busy.current || unknown) return; epoch.current++; setReview(null); setLocationReview(null); setRecovery(null); setMessage(null); trigger.current?.focus(); };
+  const cancel = () => { if (busy.current || unknown) return; epoch.current++; setReview(null); setLocationReview(null); setRecovery(null); setMessage(null); (returnFocus.current?.isConnected && !returnFocus.current.disabled ? returnFocus.current : section.current)?.focus(); };
   const changeDraft = (fn: () => void) => { epoch.current++; fn(); setReview(null); setLocationReview(null); setRecovery(null); setMessage(null); };
   async function preview(locationOnly: boolean) {
     if (busy.current || disabled || unknown) return;
@@ -157,14 +158,14 @@ function ArchiveContent({ client, workspaceId, sourceId, projects, language, dis
     <details onToggle={event => setLocationEditor(event.currentTarget.open)}><summary>{t("archiveLocation")}: {snapshot?.relativePath ?? "Archive"}</summary>
       {locationEditor && <div><p>{t("archiveLocationPolicy")}</p>
       <label className="bb-field"><span>{t("archiveLocation")}</span><input className="bb-input" value={location} disabled={controlsDisabled} onChange={e => changeDraft(() => setLocation(e.currentTarget.value))} /></label>
-      <button type="button" disabled={controlsDisabled} className="workspace-button workspace-button--secondary" onClick={() => void preview(true)}>{t("archiveReviewLocation")}</button>
+      <button type="button" disabled={controlsDisabled} className="workspace-button workspace-button--secondary" onClick={event => { returnFocus.current = event.currentTarget; void preview(true); }}>{t("archiveReviewLocation")}</button>
       {locationReview && <div><p>{locationReview.relativePath}</p>{problems(locationReview.blockers)}
         {locationReview.previewToken && <button type="button" disabled={controlsDisabled} className="workspace-button workspace-button--secondary" onClick={() => void confirmLocation()}>{t("archiveConfirmLocation")}</button>}
         <button type="button" disabled={blocked} onClick={cancel} className="workspace-button workspace-button--secondary">{t("archiveCancel")}</button></div>}
       </div>}
     </details>
     {!snapshot?.relativePath && <p>{t("archiveNoLocation")}</p>}
-    <form onSubmit={e => { e.preventDefault(); void preview(false); }}>
+    <form onSubmit={e => { e.preventDefault(); returnFocus.current = trigger.current; void preview(false); }}>
       <div className="bb-field"><label htmlFor={projectSelectId}>{t(archived ? "archiveRestoreProject" : "archiveProject")}</label>
         <select id={projectSelectId} className="bb-input" disabled={controlsDisabled} value={projectId} onChange={e => changeDraft(() => setProjectId(e.currentTarget.value))}>
           <option value="">{t("archiveChoose")}</option>{(archived ? snapshot?.projects ?? [] : projects).map(p => <option key={p.projectId} value={p.projectId}>{p.relativePath}</option>)}
@@ -177,7 +178,7 @@ function ArchiveContent({ client, workspaceId, sourceId, projects, language, dis
       {review.previewToken && <button type="button" disabled={controlsDisabled} className="workspace-button workspace-button--secondary" onClick={() => void apply()}>{t(review.action === "archive" ? "archiveApply" : "archiveRestoreApply")}</button>}
       <button type="button" disabled={blocked} onClick={cancel} className="workspace-button workspace-button--secondary">{t("archiveCancel")}</button></div>}
     {operations.length ? <ul>{operations.map(op => <li key={op.operationId}><p>{op.originalRelativePath} → {op.requestedRelativePath}</p><p>{t("archiveUnfinished")}</p>
-      <button type="button" disabled={controlsDisabled} className="workspace-button workspace-button--secondary" onClick={() => void reviewRecovery(op.operationId)}>{t("archiveRecovery")}</button></li>)}</ul> : <p>{t("archiveNoOperations")}</p>}
+      <button type="button" disabled={controlsDisabled} className="workspace-button workspace-button--secondary" onClick={event => { returnFocus.current = event.currentTarget; void reviewRecovery(op.operationId); }}>{t("archiveRecovery")}</button></li>)}</ul> : <p>{t("archiveNoOperations")}</p>}
     {recovery && <div>{recovery.problem && problems([recovery.problem])}{recovery.actions.map(action => <button type="button" key={action} disabled={controlsDisabled} className="workspace-button workspace-button--secondary" onClick={() => void recover(action)}>{t(action === "retry_original" ? "archiveRetryOriginal" : action === "complete_destination" ? "archiveCompleteDestination" : "archiveKeepOriginal")}</button>)}
       <button type="button" disabled={blocked} onClick={cancel} className="workspace-button workspace-button--secondary">{t("archiveCancel")}</button></div>}
     {archived && <>{snapshot?.projects.length ? <>

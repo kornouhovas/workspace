@@ -56,3 +56,72 @@ test("a lost Apply response keeps its exact request and checks status without an
   assert.equal(calls.filter(c => c.type === "workspace.applyProjectArchive").length, 1);
   assert.equal(calls.find(c => c.type === "workspace.getProjectArchiveOperation")?.operationId, acceptedId);
 });
+
+for (const language of ["en", "ru"] as const) {
+  for (const scenario of ["occupied", "missing_parent", "incompatible_mode", "source_unavailable"] as const) {
+    test(`${language}: restore ${scenario} shows a blocker and requires an explicit corrected review`, async () => {
+      const t = (key: Parameters<typeof translate>[1]) => translate(language, key);
+      const calls: Record<string, unknown>[] = [];
+      let corrected = false;
+      const archivedProject = { projectId: "p", categoryId: "category", categoryName: "Client", name: "Project", relativePath: "Archive/Client/Project", originalRelativePath: "Client/Project" };
+      const api = { workspace: async (input: Record<string, unknown>) => {
+        calls.push(input);
+        if (input.type === "workspace.listArchivedProjects") return { ok: true, value: { workspaceId: "w", sourceId: "s", relativePath: "Archive", revision: 1, projects: [archivedProject] } };
+        if (input.type === "workspace.listProjectArchiveOperations") return { ok: true, value: { workspaceId: "w", sourceId: "s", operations: [] } };
+        if (input.type === "workspace.listTextProperties") return { ok: true, value: { workspaceId: "w", sourceId: "s", revision: 0, definitions: [], values: [] } };
+        if (input.type === "workspace.previewProjectArchive") {
+          corrected = scenario === "occupied" ? input.name === "Alternative" : scenario === "missing_parent" ? input.createParent === true : false;
+          return { ok: true, value: { workspaceId: "w", sourceId: "s", projectId: "p", action: "restore", originalRelativePath: archivedProject.relativePath, requestedRelativePath: `Client/${input.name ?? "Project"}`, revision: 1, missingParents: scenario === "missing_parent" ? ["Client"] : [], blockers: corrected ? [] : [scenario], previewToken: corrected ? "corrected" : null } };
+        }
+        if (input.type === "workspace.applyProjectArchive") return { ok: true, value: { operation: { operationId: input.operationId, sourceId: "s", projectId: "p", action: "restore", originalRelativePath: archivedProject.relativePath, requestedRelativePath: "Client/Project", stage: "completed", problem: null, completedRevision: 2 } } };
+        throw new Error("Unexpected request");
+      }, onWorkspaceChange: () => () => {} } as unknown as WorkspaceDesktopApi;
+      render(<ProjectArchivePanel client={new WorkspaceServiceClient(api)} workspaceId="w" sourceId="s" projects={[]} language={language} disabled={false} revision={1} invalidation={0} onCommitted={() => {}} onViewChange={() => {}} />);
+      const user = userEvent.setup({ document });
+      await user.click(screen.getByRole("button", { name: t("archiveArchived") }));
+      await user.selectOptions(await screen.findByLabelText(t("archiveRestoreProject")), "p");
+      await user.click(screen.getByRole("button", { name: t("archiveRestoreReview") }));
+      const problemKey = scenario === "occupied" ? "archiveProblemOccupied" : scenario === "missing_parent" ? "archiveProblemMissingParent" : scenario === "incompatible_mode" ? "archiveProblemMode" : "archiveProblemUnavailable";
+      await screen.findByText(t(problemKey));
+      assert.equal(screen.queryByRole("button", { name: t("archiveRestoreApply") }), null);
+      assert.equal(calls.some(c => c.type === "workspace.applyProjectArchive"), false);
+      if (scenario === "occupied" || scenario === "missing_parent") {
+        if (scenario === "occupied") await user.type(screen.getByLabelText(t("archiveName")), "Alternative");
+        else await user.click(screen.getByLabelText(t("archiveCreateParent")));
+        await user.click(screen.getByRole("button", { name: t("archiveRestoreReview") }));
+        const apply = await screen.findByRole("button", { name: t("archiveRestoreApply") });
+        apply.focus(); await user.keyboard("{Enter}");
+        await screen.findByText(t("archiveCompleted"));
+        const request = calls.filter(c => c.type === "workspace.previewProjectArchive").at(-1);
+        assert.equal(request?.name, scenario === "occupied" ? "Alternative" : null);
+        assert.equal(request?.createParent, scenario === "missing_parent");
+        assert.equal(calls.filter(c => c.type === "workspace.applyProjectArchive").length, 1);
+      }
+    });
+  }
+  test(`${language}: interrupted operation recovery is explicit, token-bound and keyboard operable`, async () => {
+    const t = (key: Parameters<typeof translate>[1]) => translate(language, key), calls: Record<string, unknown>[] = [];
+    const operation = { operationId: "interrupted", sourceId: "s", projectId: "p", action: "archive", originalRelativePath: "Project", requestedRelativePath: "Archive/Project", stage: "intent", problem: "busy", completedRevision: null };
+    let done = false;
+    const api = { workspace: async (input: Record<string, unknown>) => {
+      calls.push(input);
+      if (input.type === "workspace.listArchivedProjects") return { ok: true, value: { workspaceId: "w", sourceId: "s", relativePath: "Archive", revision: 1, projects: [] } };
+      if (input.type === "workspace.listProjectArchiveOperations") return { ok: true, value: { workspaceId: "w", sourceId: "s", operations: done ? [] : [operation] } };
+      if (input.type === "workspace.previewProjectArchiveRecovery") return { ok: true, value: { workspaceId: "w", sourceId: "s", operation, actions: ["retry_original", "keep_original"], problem: null, previewToken: "recovery-token" } };
+      if (input.type === "workspace.recoverProjectArchive") { done = true; return { ok: true, value: { operation: { ...operation, stage: "completed", problem: null, completedRevision: 2 } } }; }
+      throw new Error("Unexpected request");
+    }, onWorkspaceChange: () => () => {} } as unknown as WorkspaceDesktopApi;
+    render(<ProjectArchivePanel client={new WorkspaceServiceClient(api)} workspaceId="w" sourceId="s" projects={[]} language={language} disabled={false} revision={1} invalidation={0} onCommitted={() => {}} onViewChange={() => {}} />);
+    const user = userEvent.setup({ document });
+    const recoveryTrigger = await screen.findByRole("button", { name: t("archiveRecovery") });
+    await user.click(recoveryTrigger);
+    await screen.findByRole("button", { name: t("archiveRetryOriginal") });
+    await user.keyboard("{Escape}");
+    await waitFor(() => assert.equal(document.activeElement, recoveryTrigger));
+    await user.click(recoveryTrigger);
+    assert.equal(calls.some(c => c.type === "workspace.recoverProjectArchive"), false);
+    const retry = await screen.findByRole("button", { name: t("archiveRetryOriginal") }); retry.focus(); await user.keyboard("{Enter}");
+    await screen.findByText(t("archiveCompleted"));
+    assert.deepEqual(calls.find(c => c.type === "workspace.recoverProjectArchive"), { type: "workspace.recoverProjectArchive", workspaceId: "w", operationId: "interrupted", previewToken: "recovery-token", action: "retry_original" });
+  });
+}
