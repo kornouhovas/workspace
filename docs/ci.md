@@ -97,3 +97,16 @@ failure. Malformed-result controls now corrupt only their reached injection, ret
 real service/lifecycle failures. No restart retry, deadline, production assertion or cleanup gate
 is relaxed. Inspect original-file success and retained checkpoints before full acceptance on
 the same reviewed SHA; a better diagnostic does not establish the historical restart cause.
+
+
+For the subsequent issue-24 Windows latest initial category-service connect and
+Electron cleanup-control mount failures, select `checks: issue24-startup`.
+It builds once and independently runs the original category fixture and readiness
+files on Windows latest; readiness still runs after a category failure if build
+passed. Strict pipefail and exact-SHA logs/checkpoints retain both original exits.
+The fixture-owned navigation completes within the existing firstWindow allowance;
+cleanup controls retain primary/secondary errors without an unrelated DOM mount.
+Category connect failures retain finite controller startup stages, including before
+a diagnostic injection is reached. The original 6s startup, scenarios, shutdown,
+cleanup and invalid-diagnostic assertions remain mandatory. Focused success and
+artifact inspection precede full acceptance on that same reviewed candidate.

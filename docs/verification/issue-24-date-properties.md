@@ -378,3 +378,58 @@ held and buffered single renames; routing passed 17 tests. Lint, typecheck,
 docs, diff and both follow-up reviews passed. Only Windows focused original
 suite/contrast is newly required before full same-SHA acceptance; the already
 inspected macOS focused source is unchanged.
+
+
+Full run 38628352818 on `1f671e86af5760b5593b5c63625e8fb70a150567`
+completed: common, macOS and Windows 2022 passed. Windows latest job 116074067110
+failed two platform tests: category fixture invalid-diagnostic control at line289
+found a retained diagnostic instead of the expected malformed-control result;
+readiness cleanup-control validation received a page.setContent 30s timeout
+instead of its deliberate cleanup error. The saved diagnostic-success checkpoint
+retains initial fixture/connect/lifecycle_failed, all scenarios unreached, one
+utility exit and normal handshake/cleanup. Injection was unreached, not accepted
+as a successful malformed control; the original assertion lacked finite context.
+Actual initial-connect cause and renderer timeout cause remain unproven.
+
+Controlled pending fixture navigation erased the mounted editor (count0 rather
+than1) in 1.7s. The readiness helper now waits for its app-owned load promise
+within the original firstWindow 30s budget before caller mounting; a fixed-delay
+control passed in 1.2s. The cleanup-only test no longer mounts unrelated DOM;
+a controlled mount error reproduced the exact primary-vs-secondary validation
+failure red in 1.9s before this removal, then passed in 1.9s. Temporary mount-error
+injection and failed throwaway startup probes were removed. Existing primary,
+secondary, process-exit/profile-removal assertions remain.
+
+An owned directory at the controlled SQLite database path reproduces an initial
+service-open failure before diagnostic-success injection. Before repair its
+substage was lost as generic connect; the single-test loop was red in 0.86s.
+Finite allowlisted connect stages now read the real controller status after
+failed start, retaining connect_service_open or connect_readiness_timeout rather
+than any thrown text. The loop passed in 0.88s with one utility exit and complete
+normal handshake/cleanup. Original start still has its 6s limit; original
+malformed-control assertions now include the sanitized checkpoint when failing.
+This is improved diagnostic evidence, not attribution of the historical startup
+actor. The matching issue24-startup route independently runs both original files
+on Windows latest before renewed full same-SHA acceptance.
+
+
+Both reviews identified that a fixed 200ms navigation delay could produce a
+false green on a slow runner. The final control instead gates its real second
+navigation on the first read of the fixture-owned promise: before repair that
+read occurs after mounting and always erases the editor; after repair it occurs
+before mounting. With only the awaited-load lines removed, a diff against the
+pristine candidate confirmed the mutation and the control failed count0 vs1 in
+1.6s. Restoring those lines passed. No timer, manually injected DOM value/focus
+or changed production predicate is used by this control. Original readiness
+allowances remain; the old speculative delayed-first-navigation probe was removed.
+The first combined local file run also correctly caught inputDigest drift while
+I was editing the fixture. Source was then frozen for renewed complete verification;
+that mismatch is not a production or hashing defect and no digest assertion changed.
+
+
+Final frozen local startup candidate on Node 22.21.1: 2,778 tests, 2,757 passed,
+zero failures and 21 platform skips. Routing18, lint, typecheck, docs and diff
+passed. Both reviews have zero outstanding findings after the timer-based
+regression was replaced with the deterministic real-navigation gate. Required
+Windows latest focused original-file evidence and renewed full same-SHA acceptance
+remain before integration; no production runner/service deadline or predicate changed.

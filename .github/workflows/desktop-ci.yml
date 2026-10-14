@@ -8,7 +8,7 @@ on:
       checks:
         description: Full acceptance or a selected focused failure route
         type: choice
-        options: [full, failed, readiness, windows-release, issue22-failures, creation-shutdown, raw-rename, issue24-failures, category-fixture]
+        options: [full, failed, readiness, windows-release, issue22-failures, creation-shutdown, raw-rename, issue24-failures, category-fixture, issue24-startup]
         default: full
       raw_windows_only:
         description: With checks=raw-rename, run only the remaining Windows failure after macOS focused success
@@ -37,7 +37,7 @@ concurrency:
 
 jobs:
   common:
-    if: ${{ github.event_name != 'workflow_dispatch' || (inputs.checks != 'failed' && inputs.checks != 'readiness' && inputs.checks != 'windows-release' && inputs.checks != 'issue22-failures' && inputs.checks != 'creation-shutdown' && inputs.checks != 'raw-rename' && inputs.checks != 'issue24-failures' && inputs.checks != 'category-fixture') }}
+    if: ${{ github.event_name != 'workflow_dispatch' || (inputs.checks != 'failed' && inputs.checks != 'readiness' && inputs.checks != 'windows-release' && inputs.checks != 'issue22-failures' && inputs.checks != 'creation-shutdown' && inputs.checks != 'raw-rename' && inputs.checks != 'issue24-failures' && inputs.checks != 'category-fixture' && inputs.checks != 'issue24-startup') }}
     name: Common tests and static checks
     runs-on: macos-latest
     steps:
@@ -183,6 +183,43 @@ jobs:
         with:
           name: issue-24-issue24-failures-${{ matrix.os }}-${{ github.sha }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
           path: work/issue24-failures/
+          if-no-files-found: error
+
+  focused-issue24-startup:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.checks == 'issue24-startup' }}
+    name: Focused Windows latest category and readiness startup
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.21.1
+          cache: npm
+      - run: npm ci
+      - id: build
+        run: npm run build
+      - name: Original category diagnostic fixture file
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p work/ci-issue24-startup
+          node --import tsx --test tests/project-category-move-fixture.test.mjs 2>&1 | tee work/ci-issue24-startup/category-tests.txt
+        env:
+          WORKSPACE_CATEGORY_MOVE_SERVICE_EVIDENCE_DIR: work/ci-issue24-startup/category
+      - name: Original Electron readiness fixture file
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p work/ci-issue24-startup
+          node --import tsx --test tests/rename-editor-readiness.test.mjs 2>&1 | tee work/ci-issue24-startup/readiness-tests.txt
+      - name: Preserve exact-SHA startup checkpoints and independent original results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-24-startup-${{ github.sha }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
+          path: work/ci-issue24-startup/
           if-no-files-found: error
 
   focused-raw-rename:

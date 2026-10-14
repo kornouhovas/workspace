@@ -5,20 +5,28 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
+import { withDeadline } from "../scripts/runtime-lifecycle.mjs";
 import { _electron } from "playwright-core";
 import { fillExactRenameDraft } from "../scripts/smoke-project-rename-ui.mjs";
 import { observeRenameEditor, waitForRenameEditor } from "../scripts/rename-editor-readiness.mjs";
 
 const fixture = fileURLToPath(new URL("./fixtures/rename-editor-readiness-electron.cjs", import.meta.url));
 
-async function withPage(run, removeProfile = rm) {
+async function withPage(run, removeProfile = rm, controlLoad = false) {
   const profile = await mkdtemp(join(tmpdir(), "workspace-editor-readiness-"));
   const app = await _electron.launch({ executablePath: createRequire(import.meta.url)("electron"), args: [fixture],
-    env: { ...process.env, WORKSPACE_RENAME_EDITOR_PROFILE: profile }, timeout: 10000 });
+    env: { ...process.env, WORKSPACE_RENAME_EDITOR_PROFILE: profile, WORKSPACE_RENAME_EDITOR_CONTROL_LOAD: String(controlLoad) }, timeout: 10000 });
   const child = app.process();
   let failed = false;
   let primary;
-  try { await run(await app.firstWindow()); }
+  try {
+    // Share the original firstWindow allowance with the fixture-owned load.
+    const deadline = Date.now() + 30000;
+    const page = await app.firstWindow({ timeout: Math.max(1, deadline - Date.now()) });
+    assert.equal(await withDeadline(app.evaluate(() => globalThis.renameEditorInitialLoad),
+      Math.max(1, deadline - Date.now()), "Fixture initial navigation"), true);
+    await run(page, app);
+  }
   catch (error) { failed = true; primary = error; }
   try {
     await app.close();
@@ -101,7 +109,7 @@ test("fixture cleanup errors retain a failed control's primary error and fail a 
   };
   await assert.rejects(withPage(async () => { throw primary; }, failCleanup), error => error === primary);
   assert.equal(cleanupCalls, 1);
-  await assert.rejects(withPage(async page => { await mount(page, "ready"); }, failCleanup), error => error === secondary);
+  await assert.rejects(withPage(async () => {}, failCleanup), error => error === secondary);
   assert.equal(cleanupCalls, 2);
 });
 
@@ -366,4 +374,14 @@ test("exact rename authoring survives selection loss between locator actions in 
     assert.equal(await fillExactRenameDraft(locator, ""), true);
     assert.equal(await locator.inputValue(), "");
   });
+});
+
+
+test("fixture initial navigation cannot erase an authored editor after firstWindow", async () => {
+  await withPage(async (page, app) => {
+    await mount(page, "ready");
+    await withDeadline(app.evaluate(() => globalThis.renameEditorInitialLoad), 30000, "Controlled fixture navigation");
+    assert.equal(await page.locator("#project-rename-name").count(), 1);
+    assert.equal(await page.locator("#project-rename-name").evaluate(node => node === globalThis.document.activeElement), true);
+  }, rm, true);
 });

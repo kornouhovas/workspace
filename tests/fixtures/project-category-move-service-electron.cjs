@@ -8,12 +8,19 @@ const { pathToFileURL } = require("node:url");
 const checks = ["move", "noop", "rejection", "collision", "occupied_insertion", "retention", "events", "restart",
   "complete_destination", "retry_original", "keep_original", "recovery_restart"];
 const SCENARIOS = checks.map(check => `grouped.${check}`);
+const CONNECT_SEAMS = Object.freeze(Object.fromEntries(["service_open", "service_port", "service_subscribe", "service_start",
+  "process_start", "process_error", "process_exit", "readiness_timeout"].map(stage => [stage, `connect_${stage}`])));
+const CONNECT_DIAGNOSTIC_SEAMS = [...Object.values(CONNECT_SEAMS), "connect_unknown"];
+function connectFailureSeam(status) {
+  const stage = status?.diagnostic?.stage;
+  return status?.state === "unavailable" && typeof stage === "string" && Object.hasOwn(CONNECT_SEAMS, stage) ? CONNECT_SEAMS[stage] : "connect_unknown";
+}
 // Fixed fixture-only evidence vocabulary; never derive a code from thrown data.
 const DIAGNOSTIC_SEAMS = ["setup", "scenario", "recovery_prepare", "unfinished_result", "destination_identity",
   "trigger_remove", "restart_journal", "external_return", "original_identity", "receipt_retry", "receipt_status",
   "pending_status", "pending_events", "pending_identity", "recovery_preview", "recovery_actions", "recovery_request",
   "recovery_result", "recovery_events", "recovery_project", "consumed_token", "retained_identity", "retained_state",
-  "final_receipt", "restart_receipts", "restart_status", "stop", "stop_controller", "stop_owned", "stop_count", "connect", "final_stop", "final_cleanup"];
+  "final_receipt", "restart_receipts", "restart_status", "stop", "stop_controller", "stop_owned", "stop_count", "connect", "final_stop", "final_cleanup", ...CONNECT_DIAGNOSTIC_SEAMS];
 const DIAGNOSTIC_FAILURES = ["assertion_failed", "operation_failed", "lifecycle_failed", "deadline"];
 // Read every entry without following links; retain exact file bytes and native
 // identities independently of the service's selected-project assertions.
@@ -81,7 +88,7 @@ async function performFixtureRecovery({ review, recover, request, readState }) {
   assert.equal(result.value.operation.sourceId, review.sourceId);
   return { recovered: result.value, recover: submitted };
 }
-module.exports = { SCENARIOS, DIAGNOSTIC_SEAMS, DIAGNOSTIC_FAILURES, performFixtureRecovery, prepareFixtureObservation, fixtureTree };
+module.exports = { CONNECT_DIAGNOSTIC_SEAMS, connectFailureSeam, SCENARIOS, DIAGNOSTIC_SEAMS, DIAGNOSTIC_FAILURES, performFixtureRecovery, prepareFixtureObservation, fixtureTree };
 
 if (process.versions.electron) {
   const { app, utilityProcess, MessageChannelMain } = require("electron");
@@ -105,7 +112,8 @@ if (process.versions.electron) {
     try { await action(); seam(previous); }
     catch (error) {
       const failure = { scenario: code.startsWith("final_") ? "fixture" : activeCheck ?? "fixture",
-        seam: code === "stop" && ["stop_controller", "stop_owned", "stop_count"].includes(activeSeam) ? activeSeam : code,
+        seam: (code === "stop" && ["stop_controller", "stop_owned", "stop_count"].includes(activeSeam))
+          || (code === "connect" && CONNECT_DIAGNOSTIC_SEAMS.includes(activeSeam)) ? activeSeam : code,
         failure: "lifecycle_failed" };
       if (!diagnostic) diagnostic = { firstFailure: failure };
       else diagnostic.lifecycleFailure ??= failure;
@@ -164,7 +172,7 @@ if (process.versions.electron) {
     if (fault === "control-publication") fs.mkdirSync(join(root, "ack.control.pending"));
     // Corrupt only an actually reached injected result; retain any earlier or
     // real lifecycle failure instead of erasing the primary diagnostic.
-    if ((injectedDiagnosticFailure && !diagnostic?.lifecycleFailure) || (fault === "diagnostic-success" && ok)) switch (fault) {
+    if ((injectedDiagnosticFailure && !diagnostic?.lifecycleFailure) || (["diagnostic-success", "initial-connect-diagnostic-success"].includes(fault) && ok)) switch (fault) {
       case "diagnostic-unknown-seam": diagnostic.firstFailure.seam = "private injected unknown seam"; break;
       case "diagnostic-unknown-scenario": diagnostic.firstFailure.scenario = "private injected unknown scenario"; break;
       case "diagnostic-unknown-failure": diagnostic.firstFailure.failure = "private injected unknown failure"; break;
@@ -177,6 +185,7 @@ if (process.versions.electron) {
       case "diagnostic-lifecycle": diagnostic.lifecycleFailure = {
         scenario: "fixture", seam: "recovery_result", failure: "assertion_failed",
       }; break;
+      case "initial-connect-diagnostic-success":
       case "diagnostic-success": diagnostic = { firstFailure: {
         scenario: "grouped.keep_original", seam: "recovery_result", failure: "assertion_failed",
       } }; break;
@@ -220,7 +229,11 @@ if (process.versions.electron) {
         child.once("exit", code => { own.delete(child); send({ stage: "utility_exit", code, pid }); });
         child.stdout?.resume(); child.stderr?.resume();
         const { port1, port2 } = new MessageChannelMain();
-        assert.equal(await controller.start(child, port1, databasePath, port2, 6000), true);
+        const startupPath = fault === "initial-connect-diagnostic-success" && connectCount === 1 ? join(root, "startup-conflict") : databasePath;
+        if (startupPath !== databasePath) fs.mkdirSync(startupPath);
+        const connected = await controller.start(child, port1, startupPath, port2, 6000);
+        if (!connected) seam(connectFailureSeam(controller.currentStatus));
+        assert.equal(connected, true);
         if (fault === "lifecycle-connect") throw new Error("private injected connect failure");
       });
     }

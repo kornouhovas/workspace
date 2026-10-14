@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { mkdtemp, rm, readFile, writeFile, cp } from "node:fs/promises";
 import fs from "node:fs";
-import { SCENARIOS, performFixtureRecovery, prepareFixtureObservation, fixtureTree } from "./fixtures/project-category-move-service-electron.cjs";
+import { SCENARIOS, connectFailureSeam, performFixtureRecovery, prepareFixtureObservation, fixtureTree } from "./fixtures/project-category-move-service-electron.cjs";
 import { superviseCategoryMoveService, inputDigest } from "../scripts/smoke-project-category-move.mjs";
 
 
@@ -285,8 +285,8 @@ test("invalid diagnostic records fail closed and discard private or unbounded fi
   for (const fault of ["diagnostic-private-field", "diagnostic-unknown-scenario", "diagnostic-unknown-failure",
     "diagnostic-numeric", "diagnostic-null", "diagnostic-array", "diagnostic-missing", "diagnostic-lifecycle", "diagnostic-success"]) {
     const result = await checkpoint(fault);
-    assert.equal(result.ok, false, fault);
-    assert.equal(Object.hasOwn(result, "diagnostic"), false, fault);
+    assert.equal(result.ok, false, `${fault}: ${JSON.stringify(result)}`);
+    assert.equal(Object.hasOwn(result, "diagnostic"), false, `${fault}: ${JSON.stringify(result)}`);
     const successfulProcess = fault === "diagnostic-success";
     assertNormalHandshake(result, { exitCode: successfulProcess ? 0 : 1, invalidDiagnostic: true });
     assertScenarios(result, key => successfulProcess ? "passed" : key === "grouped.keep_original" ? "failed"
@@ -432,4 +432,25 @@ test("a malformed scenario result fails despite a successful process and complet
   assert.equal(result.protocolError, true); assert.equal(result.protocol.failed, false);
   assertScenarios(result, key => key === "grouped.move" ? "unreached" : "passed");
   assertUtilities(result);
+});
+
+
+test("initial service-open failure preserves its connect stage before diagnostic-success injection", { skip: !supported }, async () => {
+  const result = await checkpoint("initial-connect-diagnostic-success");
+  assert.equal(result.ok, false);
+  assert.deepEqual(result.diagnostic, { firstFailure: {
+    scenario: "fixture", seam: "connect_service_open", failure: "lifecycle_failed",
+  } });
+  assertNormalHandshake(result, { exitCode: 1 });
+  assertScenarios(result, () => "unreached");
+  assert.equal(result.utilityCount, 1); assert.equal(result.utilityExitCount, 1);
+});
+
+
+test("connect diagnostic stages remain finite and discard unrecognized private data", () => {
+  assert.equal(connectFailureSeam({ state: "unavailable", diagnostic: { stage: "readiness_timeout", message: "private" } }), "connect_readiness_timeout");
+  for (const status of [null, {}, { state: "ready", diagnostic: { stage: "service_open" } },
+    { state: "unavailable", diagnostic: { stage: "toString" } },
+    { state: "unavailable", diagnostic: { stage: "private" } },
+    { state: "unavailable", diagnostic: { stage: { toString: () => { throw new Error("private"); } } } }]) assert.equal(connectFailureSeam(status), "connect_unknown");
 });

@@ -11,6 +11,15 @@ for (const name of ["userData", "sessionData"]) {
 }
 app.whenReady().then(() => {
   const window = new BrowserWindow({ webPreferences: { contextIsolation: true, nodeIntegration: false, sandbox: true } });
-  window.loadURL("about:blank");
+  const initialLoad = window.loadURL("about:blank");
+  if (env.WORKSPACE_RENAME_EDITOR_CONTROL_LOAD === "true") {
+    let controlledLoad;
+    // First read owns the controlled navigation: an unfixed driver reads only
+    // after mounting, so it deterministically erases that editor. No timer.
+    Object.defineProperty(globalThis, "renameEditorInitialLoad", { get() {
+      controlledLoad ??= initialLoad.then(() => window.loadURL("about:blank")).then(() => true);
+      return controlledLoad;
+    } });
+  } else globalThis.renameEditorInitialLoad = initialLoad.then(() => true);
 });
 app.on("window-all-closed", () => app.quit());
