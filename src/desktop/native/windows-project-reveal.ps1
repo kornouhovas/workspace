@@ -16,7 +16,7 @@ function Write-WorkspaceRevealEvent($event) {
 
 # Optional bounded read-only boundary evidence. It cannot supply a target or GO.
 function Write-WorkspaceRevealTrace($phase) {
-    if ($env:WORKSPACE_REVEAL_TRACE -cne '1' -or $phase -cnotin @('assemblies','compile','shell','open','enumeration','document','parent','owner','uia_root','uia_properties','uia_tabs','readiness','item','document_recheck','readiness_recheck')) { return }
+    if ($env:WORKSPACE_REVEAL_TRACE -cne '1' -or $phase -cnotin @('assemblies','compile','shell','open','enumeration','collection','window_item','document','parent','owner','uia_root','uia_properties','uia_tabs','readiness','item','document_recheck','readiness_recheck')) { return }
     if ($null -eq $script:workspaceRevealTraceSeen) { $script:workspaceRevealTraceSeen = [Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal) }
     if ($script:workspaceRevealTraceSeen.Add($phase)) { Write-WorkspaceRevealEvent ('TRACE:' + $phase) }
 }

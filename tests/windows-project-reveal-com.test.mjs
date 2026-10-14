@@ -292,13 +292,13 @@ $ErrorActionPreference = 'Stop'
 . ./src/desktop/native/windows-project-reveal.ps1
 $events = [Collections.Generic.List[string]]::new()
 function Write-WorkspaceRevealEvent($event) { $script:events.Add($event) }
-foreach ($phase in @('assemblies','compile','shell','open','enumeration','document','parent','owner','uia_root','uia_properties','uia_tabs','readiness','item','document_recheck','readiness_recheck')) { Write-WorkspaceRevealTrace $phase }
+foreach ($phase in @('assemblies','compile','shell','open','enumeration','collection','window_item','document','parent','owner','uia_root','uia_properties','uia_tabs','readiness','item','document_recheck','readiness_recheck')) { Write-WorkspaceRevealTrace $phase }
 Write-WorkspaceRevealTrace 'assemblies'
 Write-WorkspaceRevealTrace 'private path'
-if ($events.Count -ne 15 -or $events[0] -cne 'TRACE:assemblies' -or $events[14] -cne 'TRACE:readiness_recheck') { throw 'trace_control' }
+if ($events.Count -ne 17 -or $events[0] -cne 'TRACE:assemblies' -or $events[16] -cne 'TRACE:readiness_recheck') { throw 'trace_control' }
 $env:WORKSPACE_REVEAL_TRACE = '0'
 Write-WorkspaceRevealTrace 'assemblies'
-if ($events.Count -ne 15) { throw 'trace_disabled' }
+if ($events.Count -ne 17) { throw 'trace_disabled' }
 $shell = [pscustomobject]@{}
 $shell | Add-Member ScriptMethod Windows { throw 'REAL_QUERY' }
 try {

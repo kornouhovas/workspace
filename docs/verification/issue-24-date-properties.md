@@ -639,3 +639,25 @@ Both review axes have zero findings. The additional skip is the new Windows
 actual-interpreter trace control; it must execute on both focused Windows jobs.
 This candidate adds diagnostic/context coverage, not an asserted historical
 native cause repair. Windows original contextual native evidence remains open.
+
+
+Contextual focused38651166252 on `73b04f00` passed both Windows original
+regression/actual interpreter files, all original layout/crash predecessors and
+macOS original packaged command, but reproduced exact Windowslatest native0vs1.
+Downloaded first-received trace: assemblies189ms, compile247ms, shell312ms,
+open338ms, enumeration784ms, then opened/owner_deadline. No document/owner/UIA
+boundary was reached in the first observed path. This disproves slow bootstrap
+and first UIA-query hypotheses for this reproduction. The remaining box spans
+Shell.Windows(), collection Count and Item before document acquisition; two
+additional fixed boundaries distinguish collection receipt from Item entry.
+They increase the bounded unique labels from15 to17, still under the unchanged
+1024bytes/12s, and do not alter enumeration, count or item guard behavior.
+Historical repeated-poll call timing remains unproven; contextual native failure
+is now reproduced rather than replaced with isolated green evidence.
+
+
+The two-label intermediate diagnostic passed fresh build, lint, typecheck,
+docs/diff and affected trace/static-COM/routing checks79/79 with4 explicit
+Windows skips; both scoped reviews have zero findings. Previous complete
+2813-test evidence is retained, not claimed as a new full run. No operation,
+policy or deadline changed. Final repair will renew its required full evidence.

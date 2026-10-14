@@ -163,7 +163,7 @@ dev creation/crash command before the exact failed direct native command. The
 last command still runs independently after successful application build if a
 regression or prefix fails; every failed predecessor remains a failed job.
 Only this focused native command enables `WORKSPACE_REVEAL_TRACE=1`. Fixed
-bootstrap/read-boundary markers are deduplicated (15 maximum), validated under
+bootstrap/read-boundary markers are deduplicated (17 maximum), validated under
 the unchanged1024-byte protocol limit and retained as first received boundary
 latencies from adapter spawn. They neither authorize GO nor identify the current
 blocked call after repeated polls. Default runtime behavior has tracing disabled.

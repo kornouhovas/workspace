@@ -35,11 +35,13 @@ function Read-WorkspaceReadyBinding($shell, $expected, $anchor, $trace = $null) 
     $parent = [IO.Path]::GetDirectoryName($expected)
     if ($null -ne $trace) { try { [void](& $trace 'enumeration') } catch { } }
     $windows = $shell.Windows()
+    if ($null -ne $trace) { try { [void](& $trace 'collection') } catch { } }
     if ($null -eq $windows -or $windows.Count -isnot [int] -or $windows.Count -lt 0 -or $windows.Count -gt 256) {
         return @{ stage = 'property_unavailable' }
     }
     $owned = [Collections.Generic.List[object]]::new()
     for ($i = 0; $i -lt $windows.Count; $i++) {
+        if ($null -ne $trace) { try { [void](& $trace 'window_item') } catch { } }
         $candidate = $windows.Item($i)
         if ($null -ne $trace) { try { [void](& $trace 'document') } catch { } }
         $document = $candidate.Document
