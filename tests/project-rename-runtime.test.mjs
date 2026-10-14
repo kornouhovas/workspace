@@ -4,10 +4,8 @@ import { createRenameEvidence, recordRenameEvidence, assertRenameAcceptance } fr
 import { fillExactRenameDraft } from "../scripts/smoke-project-rename-ui.mjs";
 
 test("rename driver clears existing text and authors the exact draft before any mutation", async () => {
-  let value = "Existing", submissions = 0, selected = false;
-  const input = { selectText: async () => { selected = true; },
-    press: async key => { if (key === "Backspace") { value = selected ? "" : value.slice(0, -1); selected = false; } },
-    fill: async draft => { value += draft; }, inputValue: async () => value };
+  let value = "Existing", submissions = 0;
+  const input = { fill: async draft => { value = draft; }, inputValue: async () => value };
   const matched = await fillExactRenameDraft(input, "  Exact 日本語");
   assert.equal(matched, true); assert.equal(value, "  Exact 日本語"); assert.equal(submissions, 0);
   await assert.rejects(async () => {

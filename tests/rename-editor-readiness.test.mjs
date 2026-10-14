@@ -6,6 +6,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
 import { _electron } from "playwright-core";
+import { fillExactRenameDraft } from "../scripts/smoke-project-rename-ui.mjs";
 import { observeRenameEditor, waitForRenameEditor } from "../scripts/rename-editor-readiness.mjs";
 
 const fixture = fileURLToPath(new URL("./fixtures/rename-editor-readiness-electron.cjs", import.meta.url));
@@ -330,5 +331,39 @@ test("browser frame and timer observations are released on success, timeout and 
     await assert.rejects(waitForRenameEditor(page, { timeoutMs: 500, record: value => { evidence = value; } }), /Controlled snapshot failure/);
     assert.equal(evidence.status, "observation_failed"); assert.equal(evidence.failure, "observation_error");
     assert.deepEqual(await page.evaluate(() => globalThis.fixtureResourceCounts()), { frames: 0, timers: 0 });
+  });
+});
+
+
+test("exact rename authoring survives selection loss between locator actions in real Electron", async () => {
+  await withPage(async page => {
+    await mount(page, "ready");
+    const locator = page.locator("#project-rename-name");
+    await locator.fill("  Renamed 日本語");
+    let submissions = 0;
+    await page.evaluate(() => {
+      globalThis.fixtureSubmissions = 0;
+      globalThis.document.querySelector("input").addEventListener("keydown", event => {
+        if (event.key === "Enter") globalThis.fixtureSubmissions++;
+      });
+    });
+    // Fixture-only selection loss after a successful text-selection action.
+    // The driver still uses real locator/keyboard actions; no fake input values.
+    const input = {
+      selectText: async () => {
+        await locator.selectText();
+        await locator.evaluate(node => { node.setSelectionRange(node.value.length, node.value.length); });
+      },
+      press: key => locator.press(key),
+      fill: draft => locator.fill(draft),
+      inputValue: () => locator.inputValue(),
+    };
+    assert.equal(await fillExactRenameDraft(input, "  Exact 日本語  "), true);
+    assert.equal(await locator.inputValue(), "  Exact 日本語  ");
+    submissions = await page.evaluate(() => globalThis.fixtureSubmissions);
+    assert.equal(submissions, 0);
+    // Ordinary authoring and empty drafts use the same actual locator seam.
+    assert.equal(await fillExactRenameDraft(locator, ""), true);
+    assert.equal(await locator.inputValue(), "");
   });
 });

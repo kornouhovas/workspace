@@ -313,3 +313,40 @@ the full local suite (2,750 passed, zero failures, 21 skips), lint/docs/diff and
 reviews. Actual isolated rename dev UI also passed all direct/grouped scenarios,
 exact input/no-op/rejection, native Reveal, preservation, seven interruption/restart
 cases per mode, shutdown and cleanup under `work/issue-24-select-rename-local`.
+
+
+Focused run 38623576129 on `eba0aab88064f471bbf0a11768c79a7d1aa2894f`
+failed both affected jobs. macOS job 116056971751 again failed before submission:
+selectText/Backspace left `  Renamed 日本` instead of the required empty input.
+Windows 2022 job 116056972433 failed only original `stress_scan`: one Node rename
+returned EPERM, while 12 scans were ready, service observers were closed and all
+data/restart/cleanup invariants passed. The finite original response is retained;
+neither historical OS actor nor macOS selection-loss cause is established.
+
+A real Electron control collapses the selection between separate locator actions.
+`node --import tsx --test --test-name-pattern='exact rename authoring'
+tests/rename-editor-readiness.test.mjs` failed with the same truncated name in
+2.6 seconds before repair. Clearing now uses one ordinary locator fill of the
+empty string and checks it before filling/checking the exact draft; Enter remains
+separate. The control passed in 2.2 seconds, and the editor/runtime focused files
+passed 32 tests. Date service tests on Node 22.21.1 passed 7 tests. No production
+renderer/service mutation, alternate outcome or filesystem replay was added.
+
+An additional Windows-only directory-enumeration contrast uses separate owned
+fixtures, one original rename each, and a finally-closed held stream. It compares
+an open category opendir stream with completed buffered readdir enumeration,
+retaining sentinel bytes and finite operation details. Actual Windows evidence is
+required to validate the predicted handle conflict; this local platform skip is
+not cause evidence. Original legacy and production-scan rename-success assertions
+are unchanged. Both follow-up reviews report zero findings. Lint, typecheck, docs
+and diff checks passed. Matching focused runtime/Windows original checks remain
+required before full acceptance and integration.
+
+
+Final local follow-up suite on Node 22.21.1: 2,773 tests, 2,751 passed,
+zero failures and 22 platform skips (including the new Windows contrast).
+Actual isolated rename development UI passed all direct/grouped EN/RU authoring,
+no-op/rejection, preservation, native Reveal and seven recovery/restart cases per
+mode; all 46 shutdowns and fixture cleanup passed. Evidence is under
+`work/issue-24-fill-rename-local`. Reviews remain at zero findings; Windows
+contrast and original focused outcomes are still required on the new candidate.

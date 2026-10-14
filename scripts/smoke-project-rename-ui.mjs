@@ -21,10 +21,9 @@ import { installNativeRevealReceipt, retainNativeRevealReceipt } from "./native-
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const unwrap = result => { assert.equal(result.ok, true, JSON.stringify(result)); return result.value; };
 export async function fillExactRenameDraft(input, draft) {
-  // Standard locator text selection and keyboard editing, before Enter can
-  // authorize a filesystem mutation; no injected input values or service calls.
-  await input.selectText();
-  await input.press("Backspace");
+  // One standard locator fill owns clearing and its input event; a later
+  // keyboard action cannot collapse a selection before clearing it.
+  await input.fill("");
   assert.equal(await input.inputValue(), "", "Rename driver must clear the old name before authoring");
   await input.fill(draft);
   assert.equal(await input.inputValue() === draft, true, "Rename driver must author the exact draft before submitting");
