@@ -6,7 +6,7 @@ import { mkdtemp, mkdir, rm, lstat, writeFile, readFile, readdir, realpath } fro
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 const require = createRequire(import.meta.url);
-const { SCENARIOS, DIAGNOSTIC_SEAMS, DIAGNOSTIC_FAILURES, CONNECT_DIAGNOSTIC_SEAMS } = require("../tests/fixtures/project-category-move-service-electron.cjs");
+const { SCENARIOS, DIAGNOSTIC_SEAMS, DIAGNOSTIC_FAILURES, CONNECT_DIAGNOSTIC_SEAMS, STOP_OWNED_TIMEOUT_SEAMS } = require("../tests/fixtures/project-category-move-service-electron.cjs");
 const { publishCommand } = require("../tests/fixtures/project-rename-service-control.cjs");
 const { createProtocol } = require("../tests/fixtures/project-rename-native-protocol.cjs");
 const repository = fileURLToPath(new URL("../", import.meta.url));
@@ -23,7 +23,7 @@ function validDiagnostic(value) {
   return (exactKeys(value, ["firstFailure"]) || exactKeys(value, ["firstFailure", "lifecycleFailure"]))
     && validFailure(value.firstFailure)
     && (!Object.hasOwn(value, "lifecycleFailure") || (validFailure(value.lifecycleFailure)
-      && ["stop", "stop_controller", "stop_owned", "stop_count", "connect", "final_stop", "final_cleanup", ...CONNECT_DIAGNOSTIC_SEAMS].includes(value.lifecycleFailure.seam)
+      && ["stop", "stop_controller", "stop_owned", "stop_count", "connect", "final_stop", "final_cleanup", ...CONNECT_DIAGNOSTIC_SEAMS, ...STOP_OWNED_TIMEOUT_SEAMS].includes(value.lifecycleFailure.seam)
       && value.lifecycleFailure.failure === "lifecycle_failed"));
 }
 

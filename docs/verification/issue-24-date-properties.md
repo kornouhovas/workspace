@@ -433,3 +433,32 @@ passed. Both reviews have zero outstanding findings after the timer-based
 regression was replaced with the deterministic real-navigation gate. Required
 Windows latest focused original-file evidence and renewed full same-SHA acceptance
 remain before integration; no production runner/service deadline or predicate changed.
+
+
+Focused run 38632952532 on `2a6910712834d56de6cec96558cabf4380029af1`
+passed the complete readiness file, but category had 48 passed/1 failed:
+original service cleanup control expected main exit0 but observed1. Its checkpoint
+retains grouped.restart / stop_count / lifecycle_failed, one utility exit and all
+later recovery scenarios unreached; final_cleanup is the deliberately injected
+cleanup failure. It did not reach the intended successful-service cleanup seam.
+
+The owned waiter resolved its Promise at timer expiry, before checking real exit.
+Extracting the unchanged call-site wait into the fixture's shared helper produced
+a deterministic red clock test: at the original1000ms expiry, expected rejection
+was missing (0.18s loop). Expiry now rejects, removes its listener, preserves the
+original final kill attempt and cannot be promoted by a late exit event. At that
+same deadline a non-signaling probe of only the captured owned PID records the
+finite running/stopped/unknown state. Even a stopped process without its required
+exit event remains failure. Controlled expiry/actual-exit/private-probe regressions
+pass; original start/stop deadlines, scenario/count/exit/cleanup assertions remain.
+The historical OS actor/notification cause is still unknown. The category-only
+focused flag narrows the existing startup route after inspected unchanged
+readiness success; full acceptance still follows only on that same repaired SHA.
+
+
+Final owned-wait candidate on Node22.21.1: 2,780 tests, 2,759 passed, zero
+failures and 21 platform skips. Routing18, lint, typecheck, docs and diff passed;
+both reviews have zero findings. Source remained frozen during this complete run.
+The original Windows latest category file is required next; readiness source is
+unchanged from its inspected focused success. No claim is made that the historical
+Windows stop actor is fixed by better deadline semantics or evidence.

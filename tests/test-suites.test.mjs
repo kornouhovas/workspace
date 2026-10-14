@@ -357,7 +357,12 @@ test('issue24-startup runs only original Windows latest category and readiness f
     assert.ok(step.run.includes(`node --import tsx --test tests/${file} 2>&1 | tee`));
     assert.equal(step['continue-on-error'], undefined);
   }
-  assert.equal(commands[3].if, "${{ !cancelled() && steps.build.outcome == 'success' }}");
+  assert.equal(commands[3].if, "${{ !cancelled() && steps.build.outcome == 'success' && !inputs.startup_category_only }}");
+  assert.equal(workflow.on.workflow_dispatch.inputs.startup_category_only.default, false);
+  for (const startup_category_only of [undefined, false, true]) {
+    const context = { cancelled: () => false, steps: { build: { outcome: 'success' } }, inputs: { startup_category_only } };
+    assert.equal(runInNewContext(commands[3].if.slice(3, -2), context), !startup_category_only);
+  }
   const upload = job.steps.find(step => step.uses === 'actions/upload-artifact@v4');
   assert.equal(upload.if, 'always()'); assert.equal(upload.with['if-no-files-found'], 'error');
   for (const field of ['github.sha', 'github.run_id', 'github.run_attempt']) assert.ok(upload.with.name.includes(field));

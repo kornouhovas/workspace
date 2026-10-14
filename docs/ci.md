@@ -110,3 +110,12 @@ Category connect failures retain finite controller startup stages, including bef
 a diagnostic injection is reached. The original 6s startup, scenarios, shutdown,
 cleanup and invalid-diagnostic assertions remain mandatory. Focused success and
 artifact inspection precede full acceptance on that same reviewed candidate.
+
+
+After that route's unchanged readiness file passes, `startup_category_only: true`
+focuses a remaining category failure; the flag defaults to false and affects
+only the focused readiness step. A timed-out owned-worker wait is now explicitly
+rejected at its original 1s deadline, retaining a finite running/stopped/unknown
+probe of only its captured owned PID. A stopped probe without an exit event still
+fails. Original scenario, terminal, count, normal shutdown and cleanup assertions
+remain; actual OS stop/notification causation is not inferred from the snapshot.

@@ -15,12 +15,34 @@ function connectFailureSeam(status) {
   const stage = status?.diagnostic?.stage;
   return status?.state === "unavailable" && typeof stage === "string" && Object.hasOwn(CONNECT_SEAMS, stage) ? CONNECT_SEAMS[stage] : "connect_unknown";
 }
+const STOP_OWNED_TIMEOUT_SEAMS = ["stop_owned_timeout_running", "stop_owned_timeout_stopped", "stop_owned_timeout_unknown"];
+function waitForOwnedUtilityExit(child, { probe = () => "unknown", record = () => {} } = {}) {
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    const finish = (error, outcome) => {
+      if (settled) return; settled = true;
+      clearTimeout(timer); child.removeListener("exit", exited);
+      try { record(outcome); } catch (recordError) { error ??= recordError; }
+      if (error) reject(error); else resolve();
+    };
+    const exited = () => finish(undefined, { timedOut: false, processState: "stopped", exitObserved: true });
+    const timer = setTimeout(() => {
+      let processState = "unknown";
+      try { const state = probe(); if (["running", "stopped"].includes(state)) processState = state; } catch { /* Finite unknown only. */ }
+      // Expiry is failure even if the final kill immediately emits exit.
+      finish(new Error("Owned utility exit deadline exceeded"), { timedOut: true, processState, exitObserved: false });
+      try { child.kill(); } catch { /* Deadline remains the primary failure. */ }
+    }, 1000);
+    child.once("exit", exited);
+    try { child.kill(); } catch (error) { finish(error, { timedOut: false, processState: "unknown", exitObserved: false }); }
+  });
+}
 // Fixed fixture-only evidence vocabulary; never derive a code from thrown data.
 const DIAGNOSTIC_SEAMS = ["setup", "scenario", "recovery_prepare", "unfinished_result", "destination_identity",
   "trigger_remove", "restart_journal", "external_return", "original_identity", "receipt_retry", "receipt_status",
   "pending_status", "pending_events", "pending_identity", "recovery_preview", "recovery_actions", "recovery_request",
   "recovery_result", "recovery_events", "recovery_project", "consumed_token", "retained_identity", "retained_state",
-  "final_receipt", "restart_receipts", "restart_status", "stop", "stop_controller", "stop_owned", "stop_count", "connect", "final_stop", "final_cleanup", ...CONNECT_DIAGNOSTIC_SEAMS];
+  "final_receipt", "restart_receipts", "restart_status", "stop", "stop_controller", "stop_owned", "stop_count", "connect", "final_stop", "final_cleanup", ...CONNECT_DIAGNOSTIC_SEAMS, ...STOP_OWNED_TIMEOUT_SEAMS];
 const DIAGNOSTIC_FAILURES = ["assertion_failed", "operation_failed", "lifecycle_failed", "deadline"];
 // Read every entry without following links; retain exact file bytes and native
 // identities independently of the service's selected-project assertions.
@@ -88,7 +110,7 @@ async function performFixtureRecovery({ review, recover, request, readState }) {
   assert.equal(result.value.operation.sourceId, review.sourceId);
   return { recovered: result.value, recover: submitted };
 }
-module.exports = { CONNECT_DIAGNOSTIC_SEAMS, connectFailureSeam, SCENARIOS, DIAGNOSTIC_SEAMS, DIAGNOSTIC_FAILURES, performFixtureRecovery, prepareFixtureObservation, fixtureTree };
+module.exports = { STOP_OWNED_TIMEOUT_SEAMS, waitForOwnedUtilityExit, CONNECT_DIAGNOSTIC_SEAMS, connectFailureSeam, SCENARIOS, DIAGNOSTIC_SEAMS, DIAGNOSTIC_FAILURES, performFixtureRecovery, prepareFixtureObservation, fixtureTree };
 
 if (process.versions.electron) {
   const { app, utilityProcess, MessageChannelMain } = require("electron");
@@ -99,7 +121,7 @@ if (process.versions.electron) {
     "diagnostic-lifecycle"];
   const scenarios = Object.fromEntries(SCENARIOS.map(key => [key, { status: "unreached" }]));
   const send = (value, flushed) => process.stdout.write(JSON.stringify(value) + "\n", flushed);
-  const own = new Set();
+  const own = new Set(), spawnedPids = new WeakMap();
   let activeCheck, activeSeam = "setup", diagnostic, sql, controller, deadline, finishing = false, finalOK = false;
   let injectedDiagnosticFailure = false;
   const seam = code => { activeSeam = code; };
@@ -112,7 +134,7 @@ if (process.versions.electron) {
     try { await action(); seam(previous); }
     catch (error) {
       const failure = { scenario: code.startsWith("final_") ? "fixture" : activeCheck ?? "fixture",
-        seam: (code === "stop" && ["stop_controller", "stop_owned", "stop_count"].includes(activeSeam))
+        seam: (code === "stop" && ["stop_controller", "stop_owned", "stop_count", ...STOP_OWNED_TIMEOUT_SEAMS].includes(activeSeam))
           || (code === "connect" && CONNECT_DIAGNOSTIC_SEAMS.includes(activeSeam)) ? activeSeam : code,
         failure: "lifecycle_failed" };
       if (!diagnostic) diagnostic = { firstFailure: failure };
@@ -146,10 +168,13 @@ if (process.versions.electron) {
     if (activeCheck === "grouped.restart" && !finishing && fault === "restart-stop-controller") throw new Error("private injected controller stop failure");
     // The controller's timeout alone is not termination evidence.
     seam("stop_owned");
-    await Promise.all([...own].map(child => new Promise(resolve => {
-      const timer = setTimeout(() => { child.kill(); resolve(); }, 1000);
-      child.once("exit", () => { clearTimeout(timer); resolve(); });
-      child.kill();
+    await Promise.all([...own].map(child => waitForOwnedUtilityExit(child, {
+      probe: () => {
+        const pid = spawnedPids.get(child);
+        if (!Number.isSafeInteger(pid) || pid <= 0) return "unknown";
+        try { process.kill(pid, 0); return "running"; } catch (error) { return error.code === "ESRCH" ? "stopped" : "unknown"; }
+      },
+      record: outcome => { if (outcome.timedOut) seam(`stop_owned_timeout_${outcome.processState}`); },
     })));
     seam("stop_count");
     if (activeCheck === "grouped.restart" && !finishing && fault === "restart-stop-count") assert.equal(1, 0);
@@ -225,7 +250,7 @@ if (process.versions.electron) {
           { stdio: "pipe", serviceName: "Project category move service checkpoint" });
         own.add(child);
         let pid;
-        child.once("spawn", () => { pid = child.pid; send({ stage: "utility_started", pid }); });
+        child.once("spawn", () => { pid = child.pid; spawnedPids.set(child, pid); send({ stage: "utility_started", pid }); });
         child.once("exit", code => { own.delete(child); send({ stage: "utility_exit", code, pid }); });
         child.stdout?.resume(); child.stderr?.resume();
         const { port1, port2 } = new MessageChannelMain();

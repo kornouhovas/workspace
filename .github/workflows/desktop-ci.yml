@@ -10,6 +10,10 @@ on:
         type: choice
         options: [full, failed, readiness, windows-release, issue22-failures, creation-shutdown, raw-rename, issue24-failures, category-fixture, issue24-startup]
         default: full
+      startup_category_only:
+        description: With checks=issue24-startup, focus a remaining category failure after unchanged readiness success
+        type: boolean
+        default: false
       raw_windows_only:
         description: With checks=raw-rename, run only the remaining Windows failure after macOS focused success
         type: boolean
@@ -208,7 +212,7 @@ jobs:
         env:
           WORKSPACE_CATEGORY_MOVE_SERVICE_EVIDENCE_DIR: work/ci-issue24-startup/category
       - name: Original Electron readiness fixture file
-        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        if: ${{ !cancelled() && steps.build.outcome == 'success' && !inputs.startup_category_only }}
         shell: bash
         run: |
           set -o pipefail

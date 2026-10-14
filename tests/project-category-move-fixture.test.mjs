@@ -1,11 +1,12 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { EventEmitter } from "node:events";
 import { fileURLToPath } from "node:url";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { mkdtemp, rm, readFile, writeFile, cp } from "node:fs/promises";
 import fs from "node:fs";
-import { SCENARIOS, connectFailureSeam, performFixtureRecovery, prepareFixtureObservation, fixtureTree } from "./fixtures/project-category-move-service-electron.cjs";
+import { SCENARIOS, waitForOwnedUtilityExit, connectFailureSeam, performFixtureRecovery, prepareFixtureObservation, fixtureTree } from "./fixtures/project-category-move-service-electron.cjs";
 import { superviseCategoryMoveService, inputDigest } from "../scripts/smoke-project-category-move.mjs";
 
 
@@ -453,4 +454,34 @@ test("connect diagnostic stages remain finite and discard unrecognized private d
     { state: "unavailable", diagnostic: { stage: "toString" } },
     { state: "unavailable", diagnostic: { stage: "private" } },
     { state: "unavailable", diagnostic: { stage: { toString: () => { throw new Error("private"); } } } }]) assert.equal(connectFailureSeam(status), "connect_unknown");
+});
+
+
+test("owned utility wait rejects its original 1s deadline instead of reporting exit completion", async t => {
+  t.mock.timers.enable({ apis: ["setTimeout"] });
+  const child = new EventEmitter(), records = []; let kills = 0;
+  child.kill = () => { kills++; };
+  const pending = waitForOwnedUtilityExit(child, { probe: () => "running", record: value => records.push(value) });
+  const rejected = assert.rejects(pending, /Owned utility exit deadline/);
+  t.mock.timers.tick(999); assert.equal(records.length, 0); assert.equal(kills, 1);
+  t.mock.timers.tick(1); await rejected;
+  assert.deepEqual(records, [{ timedOut: true, processState: "running", exitObserved: false }]);
+  assert.equal(kills, 2); assert.equal(child.listenerCount("exit"), 0);
+  child.emit("exit", 0); t.mock.timers.tick(1000); assert.equal(records.length, 1);
+});
+
+
+test("owned utility actual exit clears the deadline and private probes remain unknown", async t => {
+  t.mock.timers.enable({ apis: ["setTimeout"] });
+  const child = new EventEmitter(), records = []; child.kill = () => {};
+  const done = waitForOwnedUtilityExit(child, { record: value => records.push(value) });
+  child.emit("exit", 0); await done; t.mock.timers.tick(1000);
+  assert.deepEqual(records, [{ timedOut: false, processState: "stopped", exitObserved: true }]);
+  assert.equal(child.listenerCount("exit"), 0);
+  for (const [probe, processState] of [[() => "stopped", "stopped"], [() => "private", "unknown"], [() => { throw new Error("private"); }, "unknown"]]) {
+    const stuck = new EventEmitter(); stuck.kill = () => {}; const outcomes = [];
+    const pending = waitForOwnedUtilityExit(stuck, { probe, record: value => outcomes.push(value) });
+    const rejected = assert.rejects(pending, /Owned utility exit deadline/); t.mock.timers.tick(1000); await rejected;
+    assert.deepEqual(outcomes, [{ timedOut: true, processState, exitObserved: false }]);
+  }
 });
