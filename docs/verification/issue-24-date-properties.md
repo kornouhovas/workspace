@@ -69,3 +69,28 @@ Exact-SHA CI/integration results remain in the GitHub checkpoint.
 
 Review totals: Standards 1 original / 0 outstanding; Spec 0 findings. The nonblocking
 notification-test observation and inherited fixture follow-ups are resolved.
+
+
+## First candidate CI failure
+
+Candidate `5497153c5e09d310d53e63d7f029d26d78a21e23`, run 38587076865 attempt 1:
+Windows 2022 job 115932477801 failed `npm run test:platform` at the existing
+`windows-rename-diagnostics.test.mjs` raw `stress_legacy` case. Its allowlisted response
+records one completed `fs.rename`, `renamed: false`, `nodeCode: EPERM`, `syscall: rename`,
+no injected lock, identical start/end milliseconds. It does not identify an OS handle,
+external actor or cause; this is not a Date mutation failure. Date runtime on that OS
+was unreached. The original test still rejects this negative.
+
+The four raw-stress cases passed locally on macOS, which cannot reproduce a Windows-only
+permission result. Ranked hypotheses are transient legacy resolver/lstat access, external
+runner access and fixture preparation/path interaction. No cause is established from
+source inspection alone. A bounded `raw-rename` Windows 2022 route now retains the existing
+idle/native/legacy/production-scan differential plus the original regression file. Assertion
+failure context adds sanitized stress counters, overlap, resource and data invariants;
+no product code, rename retry, raw-test expectation, deadline or cleanup gate changes.
+Focused and full outcomes remain in the GitHub checkpoint.
+
+The diagnostic-only follow-up passed local route/rename checks: 58 passed, zero failed,
+three platform skips; lint, documentation links and diff checks passed. Both independent
+review axes reported zero findings. This does not reproduce the Windows EPERM locally or
+establish its cause. The original legacy rename-success assertion remains unchanged.

@@ -417,3 +417,26 @@ test('terminal snapshot allowlists reject private values and invalid counts with
   assert.equal(JSON.stringify(result).includes(privateText), false);
   assert.equal(snapshot(evidence).invocation.terminal, null);
 });
+
+
+test('raw-rename dispatch selects only Windows 2022 comparisons and original regression without weakening failures', async () => {
+  const workflow = load(await readFile('.github/workflows/desktop-ci.yml', 'utf8'));
+  assert.ok(workflow.on.workflow_dispatch.inputs.checks.options.includes('raw-rename'));
+  const commonCondition = workflow.jobs.common.if.slice(3, -2).replaceAll('github.event_name', 'event').replaceAll('inputs.checks', 'checks');
+  assert.equal(runInNewContext(commonCondition, { event: 'workflow_dispatch', checks: 'raw-rename' }), false);
+  assert.equal(runInNewContext(commonCondition, { event: 'push', checks: 'raw-rename' }), true);
+  assert.equal(runInNewContext(commonCondition, { event: 'workflow_dispatch', checks: 'full' }), true);
+  const job = workflow.jobs['focused-raw-rename'];
+  assert.equal(job.if, "${{ github.event_name == 'workflow_dispatch' && inputs.checks == 'raw-rename' }}");
+  assert.equal(job['runs-on'], 'windows-2022'); assert.equal(job['timeout-minutes'], 10);
+  assert.equal(job.needs, undefined); assert.equal(job['continue-on-error'], undefined);
+  assert.ok(job.steps.every(step => step['continue-on-error'] === undefined));
+  assert.deepEqual(job.steps.filter(step => step.run).map(step => step.run), ['npm ci', 'npm run build:service-test-lib',
+    'node --import tsx scripts/windows-rename-diagnostics.mjs', 'node --import tsx --test tests/windows-rename-diagnostics.test.mjs']);
+  const original = job.steps.find(step => step.run === 'node --import tsx --test tests/windows-rename-diagnostics.test.mjs');
+  assert.equal(original.if, "${{ !cancelled() && steps.build.outcome == 'success' }}");
+  const upload = job.steps.find(step => step.uses === 'actions/upload-artifact@v4');
+  assert.equal(upload.if, 'always()'); assert.equal(upload.with.path, 'work/ci-raw-rename/');
+  assert.equal(upload.with['if-no-files-found'], 'error');
+  assert.ok(upload.with.name.includes('${{ github.sha }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}'));
+});

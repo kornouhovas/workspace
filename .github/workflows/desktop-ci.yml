@@ -8,7 +8,7 @@ on:
       checks:
         description: Full acceptance or a selected focused failure route
         type: choice
-        options: [full, failed, readiness, windows-release, issue22-failures, creation-shutdown]
+        options: [full, failed, readiness, windows-release, issue22-failures, creation-shutdown, raw-rename]
         default: full
       diagnostics:
         description: Run isolated investigation and early-feedback jobs
@@ -33,7 +33,7 @@ concurrency:
 
 jobs:
   common:
-    if: ${{ github.event_name != 'workflow_dispatch' || (inputs.checks != 'failed' && inputs.checks != 'readiness' && inputs.checks != 'windows-release' && inputs.checks != 'issue22-failures' && inputs.checks != 'creation-shutdown') }}
+    if: ${{ github.event_name != 'workflow_dispatch' || (inputs.checks != 'failed' && inputs.checks != 'readiness' && inputs.checks != 'windows-release' && inputs.checks != 'issue22-failures' && inputs.checks != 'creation-shutdown' && inputs.checks != 'raw-rename') }}
     name: Common tests and static checks
     runs-on: macos-latest
     steps:
@@ -47,6 +47,35 @@ jobs:
       - run: npm run typecheck
       - run: npm run check:docs
       - run: npm run test:common
+
+  focused-raw-rename:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.checks == 'raw-rename' }}
+    name: Focused Windows 2022 raw rename stress
+    runs-on: windows-2022
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.21.1
+          cache: npm
+      - run: npm ci
+      - id: build
+        run: npm run build:service-test-lib
+      - name: Retain bounded idle, native, legacy and production scan comparisons
+        run: node --import tsx scripts/windows-rename-diagnostics.mjs
+        env:
+          WORKSPACE_RENAME_EVIDENCE_DIR: work/ci-raw-rename
+      - name: Original raw rename regression suite
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: node --import tsx --test tests/windows-rename-diagnostics.test.mjs
+      - name: Preserve exact-SHA raw rename evidence including negative operations
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-24-raw-rename-${{ github.sha }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
+          path: work/ci-raw-rename/
+          if-no-files-found: error
 
   focused-creation-shutdown:
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.checks == 'creation-shutdown' }}

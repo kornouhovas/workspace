@@ -54,3 +54,14 @@ normal-quit/exit/cleanup assertions and deadlines remain unchanged. The exact-SH
 retains all original scenario outcomes, including failure or unreached restart stages.
 Missing phase evidence does not prove a cause, and a diagnostic run alone is not full
 acceptance. Inspect original-step focused success before dispatching full CI on that SHA.
+
+
+For the issue-24 Windows 2022 raw legacy realpath stress failure, select `checks: raw-rename`.
+This runs only Windows 2022 with the existing service-fixture build, bounded idle/native/
+legacy/production-scan comparisons and the original Windows rename regression file.
+The original test runs after a comparison failure when its build passed; no continuation
+or success waiver is applied. Exact-SHA comparison artifacts preserve negative renames,
+data invariants, overlap and termination. The regression assertion now retains complete
+allowlisted fixture context, while legacy rejection remains failure. This adds diagnostic
+evidence, not a claim of cause or production repair. Original-step focused success is
+required before dispatching full acceptance on the same reviewed SHA.
