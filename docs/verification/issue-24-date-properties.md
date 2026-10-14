@@ -290,3 +290,26 @@ and resolved an initially misplaced contrast-context edit and an outdated Window
 route sentence. Full run 38618003758 finished with Windows latest passing completely;
 macOS draft divergence and Windows 2022 contrast failures remain mapped above.
 Matching focused checks precede full acceptance of this new candidate.
+
+Focused run 38622211849 on `563fef74cd4f873d47ea2d66556ede734a5e7d8f`
+failed macOS job 116052307128 before mutation: the new empty-input assertion
+observed the old name minus its last character after Select All/Backspace. The
+accelerator did not select the text in this runner; why it was ineffective is not
+established. Both immediate/delayed actual CLI cancellation cases passed on macOS.
+Windows 2022 comparison/original regression outcomes remain pending.
+
+A controlled ineffective-accelerator regression reproduced the same clear failure
+red. The driver now uses Playwright's standard locator selectText action, then
+Backspace, retaining empty-input and exact-draft assertions before Enter. There is
+no script-injected value/focus, alternate accepted message or mutation replay.
+The real-platform focused command remains required before full same-SHA acceptance.
+
+The focused Windows 2022 job in run 38622211849 passed all 40 original diagnostic
+tests without skips; downloaded comparison evidence passed all 32 operations with
+data invariants, confirmed termination and cleanup, retaining native negative
+responses rather than turning them into successful renames. This does not identify
+the historical contrast cause. The selectText follow-up passed 34 focused tests,
+the full local suite (2,750 passed, zero failures, 21 skips), lint/docs/diff and both
+reviews. Actual isolated rename dev UI also passed all direct/grouped scenarios,
+exact input/no-op/rejection, native Reveal, preservation, seven interruption/restart
+cases per mode, shutdown and cleanup under `work/issue-24-select-rename-local`.
