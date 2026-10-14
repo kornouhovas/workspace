@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 import type { Language, ServiceResult } from "../../contracts/settings.js";
 import type { TextPropertyMutation } from "../../contracts/text-properties.js";
+import { formatCalendarDate } from "../date-display.js";
 import { translate, type TranslationKey } from "../localization.js";
 import { StatusMessage } from "./bb-foundation.js";
 
@@ -12,7 +13,7 @@ interface Props {
   projectName: string;
   propertyName: string;
   value: string | null;
-  numeric?: boolean;
+  propertyType?: "text" | "number" | "date";
   revision: number;
   minimumRevision: { current: number };
   language: Language;
@@ -20,10 +21,12 @@ interface Props {
   onSave(value: string | null): Promise<ServiceResult<TextPropertyMutation>>;
 }
 
-export function TextPropertyCell({ workspaceId, sourceId, projectId, propertyId, projectName, propertyName, value, revision, minimumRevision, language, disabled, numeric = false, onSave }: Props) {
+export function TextPropertyCell({ workspaceId, sourceId, projectId, propertyId, projectName, propertyName, value, revision, minimumRevision, language, disabled, propertyType = "text", onSave }: Props) {
+  const numeric = propertyType === "number";
+  const date = propertyType === "date";
   const t = (key: TranslationKey) => translate(language, key);
-  const label = `${t(numeric ? "editNumberValue" : "editTextValue")}: ${projectName} / ${propertyName}`;
-  const displayValue = numeric && language === "ru" && value !== null ? value.replace(".", ",") : value;
+  const label = `${t(date ? "editDateValue" : numeric ? "editNumberValue" : "editTextValue")}: ${projectName} / ${propertyName}`;
+  const displayValue = date && value !== null ? formatCalendarDate(value, language) : numeric && language === "ru" && value !== null ? value.replace(".", ",") : value;
   const id = useId();
   const [draft, setDraft] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -68,17 +71,17 @@ export function TextPropertyCell({ workspaceId, sourceId, projectId, propertyId,
   };
   return <div className="text-property-cell" aria-busy={pending}>
     <button ref={button} type="button" className="text-value-button" aria-label={label} hidden={editing} disabled={disabled}
-      onClick={() => { originalValue.current = value; setDraft(displayValue ?? ""); setMessage(null); }}>{value === null ? t("textValueAbsent") : value === "" ? t("textValueEmpty") : displayValue}</button>
+      onClick={() => { originalValue.current = value; setDraft((date ? value : displayValue) ?? ""); setMessage(null); }}>{value === null ? t("textValueAbsent") : value === "" ? t("textValueEmpty") : displayValue}</button>
     {editing && <div className="text-value-editor" onKeyDown={(event) => {
       if (event.key === "Escape") { event.preventDefault(); cancel(); }
-      else if (event.key === "Enter" && (numeric || event.ctrlKey || event.metaKey) && !event.nativeEvent.isComposing) { event.preventDefault(); void save(draft); }
+      else if (event.key === "Enter" && (date || numeric || event.ctrlKey || event.metaKey) && !event.nativeEvent.isComposing) { event.preventDefault(); void save(draft); }
     }}>
       <label className="text-value-label" htmlFor={id}>{label}</label>
-      {numeric ? <input ref={(element) => { editor.current = element; }} id={id} className="bb-input" type="text" maxLength={512} value={draft} disabled={disabled || pending}
+      {date || numeric ? <input ref={(element) => { editor.current = element; }} id={id} className="bb-input" type="text" maxLength={numeric ? 512 : undefined} placeholder={date ? "YYYY-MM-DD" : undefined} value={draft} disabled={disabled || pending}
         aria-invalid={message === "textValueValidation"} aria-describedby={`${id}-hint`} onChange={(event) => setDraft(event.currentTarget.value)} />
         : <textarea ref={(element) => { editor.current = element; }} id={id} className="workspace-input" rows={3} value={draft} disabled={disabled || pending}
           aria-invalid={message === "textValueValidation"} onChange={(event) => setDraft(event.currentTarget.value)} />}
-      <p id={`${id}-hint`} className="text-value-hint">{t(numeric ? "numberValueHint" : "textValueKeyboardHint")}</p>
+      <p id={`${id}-hint`} className="text-value-hint">{t(date ? "dateValueHint" : numeric ? "numberValueHint" : "textValueKeyboardHint")}</p>
       <div className="workspace-form-actions">
         <button type="button" className="workspace-button" disabled={disabled || pending} onClick={() => void save(draft)}>{t(pending ? "textValueSaving" : "saveTextValue")}</button>
         <button type="button" className="workspace-button workspace-button--secondary" disabled={disabled || pending} onClick={() => void save(null)}>{t("clearTextValue")}</button>
@@ -86,6 +89,6 @@ export function TextPropertyCell({ workspaceId, sourceId, projectId, propertyId,
       </div>
     </div>}
     {editing && !pending && value !== originalValue.current && <StatusMessage kind="info" title={t("textValueExternalChange")} />}
-    {message && <StatusMessage kind={message === "textValueSaved" || message === "textValueNewerChange" ? "info" : "error"} title={t(numeric && message === "textValueValidation" ? "numberValueValidation" : message)} />}
+    {message && <StatusMessage kind={message === "textValueSaved" || message === "textValueNewerChange" ? "info" : "error"} title={t(message === "textValueValidation" ? (date ? "dateValueValidation" : numeric ? "numberValueValidation" : message) : message)} />}
   </div>;
 }

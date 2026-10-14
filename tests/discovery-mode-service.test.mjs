@@ -429,9 +429,9 @@ test("actual populated 0000–0006 upgrade preserves authored data, selection, I
         service = openSettingsService(databasePath);
         const inspected = new Database(databasePath);
         try {
-          assert.deepEqual(databaseInventory(inspected).filter(([table]) => !["__drizzle_migrations", "project_creation_operations", "project_rename_operations", "project_category_move_operations", "category_folder_operations", "category_presentation", "category_removal_operations", "category_removal_attempts", "project_archives", "project_archive_operations", "number_property_values"].includes(table)), before.map(([table, rows]) =>
+          assert.deepEqual(databaseInventory(inspected).filter(([table]) => !["__drizzle_migrations", "project_creation_operations", "project_rename_operations", "project_category_move_operations", "category_folder_operations", "category_presentation", "category_removal_operations", "category_removal_attempts", "project_archives", "project_archive_operations", "number_property_values", "date_property_values"].includes(table)), before.map(([table, rows]) =>
             [table, rows.map((row) => table === "projects" || table === "categories" ? { ...row, mode_inactive: 0 } : row)]));
-          assert.equal(inspected.prepare("SELECT COUNT(*) AS count FROM __drizzle_migrations").get().count, 15);
+          assert.equal(inspected.prepare("SELECT COUNT(*) AS count FROM __drizzle_migrations").get().count, 16);
           assert.deepEqual(inspected.prepare("SELECT * FROM project_creation_operations").all(), []);
           assert.deepEqual(inspected.prepare("SELECT * FROM project_rename_operations").all(), []);
           assert.deepEqual(inspected.prepare("SELECT * FROM project_category_move_operations").all(), []);

@@ -634,6 +634,10 @@ jobs:
       - run: npm run smoke:runtime -- dev
         env:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-runtime-dev
+      - name: Development Date boundaries, EN/RU keyboard, timezone and restart
+        run: npm run smoke:date -- dev
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-date-dev
       - name: Development Number arithmetic, EN/RU keyboard, sibling and restart
         run: npm run smoke:number -- dev
         env:
@@ -648,6 +652,10 @@ jobs:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-category-options-dev
       - run: npm run package:built
       - run: npm run check:artifact -- release
+      - name: Packaged Date boundaries, EN/RU keyboard, timezone and restart
+        run: npm run smoke:date -- release
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-date-release
       - name: Packaged Number arithmetic, EN/RU keyboard, sibling and restart
         run: npm run smoke:number -- release
         env:
@@ -687,6 +695,7 @@ jobs:
             work/ci-category-options-*/
             work/ci-archive-*/
             work/ci-number-*/
+            work/ci-date-*/
           if-no-files-found: warn
       - uses: actions/upload-artifact@v4
         with:

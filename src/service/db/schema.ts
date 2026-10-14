@@ -70,7 +70,7 @@ export const propertyDefinitions = sqliteTable("property_definitions", {
   id: text("id").primaryKey(),
   sourceId: text("source_id").notNull().references(() => sources.id),
   name: text("name").notNull(),
-  propertyType: text("property_type", { enum: ["text", "number"] }).notNull(),
+  propertyType: text("property_type", { enum: ["text", "number", "date"] }).notNull(),
   position: integer("position").notNull(),
 }, (table) => [unique().on(table.sourceId, table.position), unique().on(table.id, table.sourceId)]);
 
@@ -254,6 +254,16 @@ export const numberPropertyValues = sqliteTable("number_property_values", {
   propertyId: text("property_id").notNull(),
   sourceId: text("source_id").notNull().references(() => sources.id),
   value: real("value").notNull(),
+}, (table) => [
+  primaryKey({ columns: [table.projectId, table.propertyId] }),
+  foreignKey({ columns: [table.projectId, table.sourceId], foreignColumns: [projects.id, projects.sourceId] }),
+  foreignKey({ columns: [table.propertyId, table.sourceId], foreignColumns: [propertyDefinitions.id, propertyDefinitions.sourceId] }),
+]);
+export const datePropertyValues = sqliteTable("date_property_values", {
+  projectId: text("project_id").notNull(),
+  propertyId: text("property_id").notNull(),
+  sourceId: text("source_id").notNull().references(() => sources.id),
+  value: text("value").notNull(),
 }, (table) => [
   primaryKey({ columns: [table.projectId, table.propertyId] }),
   foreignKey({ columns: [table.projectId, table.sourceId], foreignColumns: [projects.id, projects.sourceId] }),

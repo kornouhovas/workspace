@@ -6,6 +6,8 @@ User-facing changes are maintained in English. The first target release is 0.1.0
 
 ### Added
 
+- Source-owned calendar Date properties with English/Russian keyboard editing, validation and clearing; intended days survive restart, language and timezone changes, including years 0001–9999.
+
 - A launchable local desktop settings screen with English and Russian interface languages.
 - A separate local TypeScript backend and SQLite persistence for the selected interface language, including English as the first-launch default.
 - Named workspaces rooted at accessible folders, each with a persisted default Table view and active selection that restores after restart.

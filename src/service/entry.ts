@@ -142,14 +142,14 @@ function isMalformedWorkspaceRequest(input: unknown): boolean {
   }
   if (input.type === "workspace.createProperty") {
     return !hasExactKeys(input, ["type", "workspaceId", "name", "propertyType"]) ||
-      typeof input.workspaceId !== "string" || typeof input.name !== "string" || (input.propertyType !== "text" && input.propertyType !== "number");
+      typeof input.workspaceId !== "string" || typeof input.name !== "string" || (input.propertyType !== "text" && input.propertyType !== "number" && input.propertyType !== "date");
   }
   if (input.type === "workspace.setNumberValue") {
     return !hasExactKeys(input, ["type", "workspaceId", "projectId", "propertyId", "expression"]) ||
       typeof input.workspaceId !== "string" || typeof input.projectId !== "string" || typeof input.propertyId !== "string" ||
       (input.expression !== null && typeof input.expression !== "string");
   }
-  if (input.type === "workspace.setTextValue") {
+  if (input.type === "workspace.setTextValue" || input.type === "workspace.setDateValue") {
     return !hasExactKeys(input, ["type", "workspaceId", "projectId", "propertyId", "value"]) ||
       typeof input.workspaceId !== "string" || typeof input.projectId !== "string" || typeof input.propertyId !== "string" ||
       (input.value !== null && typeof input.value !== "string");

@@ -31,6 +31,7 @@ test("build emits desktop, renderer, backend, and matching version artifacts", a
     "dist/service/db/migrations/0012_category_removal.sql",
     "dist/service/db/migrations/0013_project_archive.sql",
     "dist/service/db/migrations/0014_number_properties.sql",
+    "dist/service/db/migrations/0015_date_properties.sql",
     "dist/service/db/migrations/meta/_journal.json",
   ]) {
     await assert.doesNotReject(readFile(artifact));
@@ -38,8 +39,8 @@ test("build emits desktop, renderer, backend, and matching version artifacts", a
 
   const journal = JSON.parse(await readFile("dist/service/db/migrations/meta/_journal.json", "utf8"));
   assert.deepEqual(journal, JSON.parse(await readFile("src/service/db/migrations/meta/_journal.json", "utf8")));
-  assert.equal(journal.entries.at(-1).idx, 14);
-  assert.equal(journal.entries.at(-1).tag, "0014_number_properties");
+  assert.equal(journal.entries.at(-1).idx, 15);
+  assert.equal(journal.entries.at(-1).tag, "0015_date_properties");
   assert.equal(await readFile("dist/service/db/migrations/0007_discovery_mode_changes.sql", "utf8"),
     await readFile("src/service/db/migrations/0007_discovery_mode_changes.sql", "utf8"));
 

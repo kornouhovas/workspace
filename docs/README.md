@@ -28,6 +28,7 @@ Read development's scope, integration, tracker, executor-selection and verificat
 | Task | Relevant contracts |
 | --- | --- |
 | Service, storage or filesystem changes | Affected sections in [architecture](architecture.md), [ADRs](adr/) and typed contracts in `src/shared/`; inspect the active service wiring |
+| Date properties | [Date contract/scenarios](plans/issue-24-date-properties.md), typed property commands and [verification](verification/issue-24-date-properties.md) |
 | Number properties | [Number implementation](architecture.md#implemented-number-properties), [grammar/scenarios](plans/issue-23-number-properties.md), typed property contracts and [verification](verification/issue-23-number-properties.md) |
 | Project rename | [No-replace rename ADR](adr/0007-no-replace-project-renames.md), Architecture's rename/recovery sections, [rename ticket](specs/workspace-0.1.0-tickets/11-rename-project-folders-without-losing-identity.md) and originating issue |
 | Category move | Architecture's category-move/recovery sections, [move ticket](specs/workspace-0.1.0-tickets/12-move-projects-by-editing-folder-backed-select.md) and originating issue |
