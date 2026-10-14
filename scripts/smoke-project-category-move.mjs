@@ -23,7 +23,7 @@ function validDiagnostic(value) {
   return (exactKeys(value, ["firstFailure"]) || exactKeys(value, ["firstFailure", "lifecycleFailure"]))
     && validFailure(value.firstFailure)
     && (!Object.hasOwn(value, "lifecycleFailure") || (validFailure(value.lifecycleFailure)
-      && ["stop", "connect", "final_stop", "final_cleanup"].includes(value.lifecycleFailure.seam)
+      && ["stop", "stop_controller", "stop_owned", "stop_count", "connect", "final_stop", "final_cleanup"].includes(value.lifecycleFailure.seam)
       && value.lifecycleFailure.failure === "lifecycle_failed"));
 }
 

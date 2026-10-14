@@ -577,12 +577,28 @@ export async function runProjectCategoryMoveUi(mode = "dev") {
         // the editor is open. No permissions/global or production seam changes.
         const from = join(setup.sourceRoot, category.name), to = join(setup.data, "unavailable-category");
         const beforeTree = await categoryMoveInventory(setup.sourceRoot);
+        const unavailableProof = { categoryId: category.categoryId, beforeTree,
+          before: await captureRuntimeCategoryState(page, setup) };
+        await saveOperationProof(language, "unavailable", unavailableProof);
         await rename(from, to);
         const beforeSubmit = await categoryMoveInventory(setup.sourceRoot);
-        await input.press("Enter");
-        // Production revalidates the selected unavailable destination. A later
-        // observer update may reset an unsubmitted editor; it must not move.
-        await page.getByText(t.unavailable, { exact: true }).waitFor();
+        try {
+          await input.press("Enter");
+          // Production revalidates the selected unavailable destination. A later
+          // observer update may reset an unsubmitted editor; it must not move.
+          await page.getByText(t.unavailable, { exact: true }).waitFor();
+        } catch (error) {
+          // Diagnostic reads concern this disposable fixture only; a failure to
+          // capture evidence must not replace the original assertion/timeout.
+          try {
+            await saveOperationProof(language, "unavailable", { ...unavailableProof, beforeSubmit,
+              after: await captureRuntimeCategoryState(page, setup),
+              editorVisible: await input.isVisible(),
+              tableText: (await page.locator(".table-view").innerText()).slice(0, 4096),
+              afterTree: await categoryMoveInventory(setup.sourceRoot) });
+          } catch { /* Retain the primary runtime failure. */ }
+          throw error;
+        }
         assert.deepEqual(await categoryMoveInventory(setup.sourceRoot), beforeSubmit);
         await capture(page, language, "unavailable"); await closeEditor(page);
         await rename(to, from);

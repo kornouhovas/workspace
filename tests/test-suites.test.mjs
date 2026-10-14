@@ -246,7 +246,10 @@ test('raw rename and routing focused modes preserve strict original commands and
   for (const event of ['push', 'pull_request', 'workflow_dispatch']) for (const checks of ['raw-rename', 'issue24-failures', 'category-fixture']) {
     const context = { github: { event_name: event }, inputs: { checks } };
     const active = Object.entries(workflow.jobs).filter(([, job]) => job.if && runInNewContext(job.if.slice(3, -2), context)).map(([name]) => name);
-    if (event === 'workflow_dispatch') assert.deepEqual(active, [{ 'raw-rename': 'focused-raw-rename', 'issue24-failures': 'focused-issue24-failures', 'category-fixture': 'focused-category-fixture' }[checks]]);
+    if (event === 'workflow_dispatch') assert.deepEqual(active, {
+      'raw-rename': ['focused-raw-rename'], 'issue24-failures': ['focused-issue24-failures'],
+      'category-fixture': ['focused-category-fixture', 'focused-category-runtime'],
+    }[checks]);
     else assert.deepEqual(active, ['common']);
   }
   const job = workflow.jobs['focused-issue24-failures'];
@@ -280,6 +283,23 @@ test('category-fixture scope retains the original Windows latest regression and 
   assert.ok(job.steps.every(step => step['continue-on-error'] === undefined));
   const upload = job.steps.find(step => step.uses === 'actions/upload-artifact@v4');
   assert.equal(upload.if, 'always()'); assert.equal(upload.with.path, 'work/ci-category-fixture/');
+  assert.equal(upload.with['if-no-files-found'], 'error');
+  for (const field of ['github.sha', 'github.run_id', 'github.run_attempt']) assert.ok(upload.with.name.includes(field));
+});
+
+test('category-fixture also reproduces the original Windows 2022 development runtime failure', () => {
+  const workflow = load(readFileSync('.github/workflows/desktop-ci.yml', 'utf8'));
+  const job = workflow.jobs['focused-category-runtime'];
+  assert.equal(job.if, workflow.jobs['focused-category-fixture'].if);
+  assert.equal(job['runs-on'], 'windows-2022'); assert.equal(job['timeout-minutes'], 25);
+  const commands = job.steps.filter(step => step.run);
+  assert.deepEqual(commands.slice(0, 2).map(step => step.run), ['npm ci', 'npm run build']);
+  assert.equal(commands[2].shell, 'bash'); assert.ok(commands[2].run.includes('set -o pipefail'));
+  assert.ok(commands[2].run.includes('npm run smoke:runtime -- dev 2>&1 | tee'));
+  assert.equal(commands[2].env.WORKSPACE_SMOKE_EVIDENCE_DIR, 'work/ci-category-runtime');
+  assert.ok(job.steps.every(step => step['continue-on-error'] === undefined));
+  const upload = job.steps.find(step => step.uses === 'actions/upload-artifact@v4');
+  assert.equal(upload.if, 'always()'); assert.equal(upload.with.path, 'work/ci-category-runtime/');
   assert.equal(upload.with['if-no-files-found'], 'error');
   for (const field of ['github.sha', 'github.run_id', 'github.run_attempt']) assert.ok(upload.with.name.includes(field));
 });

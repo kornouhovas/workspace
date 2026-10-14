@@ -77,6 +77,35 @@ jobs:
           path: work/ci-category-fixture/
           if-no-files-found: error
 
+  focused-category-runtime:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.checks == 'category-fixture' }}
+    name: Focused Windows 2022 original development runtime
+    runs-on: windows-2022
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.21.1
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Original failed development runtime command
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p work/ci-category-runtime
+          npm run smoke:runtime -- dev 2>&1 | tee work/ci-category-runtime/tests.txt
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-category-runtime
+      - name: Preserve exact-SHA runtime proofs and original result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-24-category-runtime-${{ github.sha }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
+          path: work/ci-category-runtime/
+          if-no-files-found: error
+
   focused-issue24-failures:
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.checks == 'issue24-failures' }}
     name: Focused issue 24 unit failures (${{ matrix.os }})

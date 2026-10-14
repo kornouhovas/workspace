@@ -411,6 +411,19 @@ test("category move input digest covers reused executable controls and the fixtu
   } finally { await rm(root, { recursive: true, force: true }); }
 });
 
+for (const [fault, seam] of [["restart-stop-controller", "stop_controller"], ["restart-stop-count", "stop_count"]]) {
+  test(`restart stop diagnostics distinguish ${seam} without hiding lifecycle failure`, { skip: !supported }, async () => {
+    const result = await checkpoint(fault);
+    assert.equal(result.ok, false);
+    assert.deepEqual(result.diagnostic, { firstFailure: {
+      scenario: "grouped.restart", seam, failure: "lifecycle_failed",
+    } });
+    assertNormalHandshake(result, { exitCode: 1 }); assertUtilities(result, 1);
+    const restart = SCENARIOS.indexOf("grouped.restart");
+    assertScenarios(result, key => SCENARIOS.indexOf(key) < restart ? "passed" : key === "grouped.restart" ? "failed" : "unreached");
+  });
+}
+
 test("a malformed scenario result fails despite a successful process and complete handshake", { skip: !supported }, async () => {
   const result = await checkpoint("malformed-result");
   assert.equal(result.ok, false);

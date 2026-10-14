@@ -163,3 +163,44 @@ full run's macOS and Windows 2022 jobs passed; Windows 2022 Date dev/package rep
 and the RU narrow-window screenshot were inspected, with all EN/RU checks, ordinary
 shutdowns and cleanup passing on that run's exact SHA. These partial platform
 results do not constitute acceptance of the new candidate.
+
+Focused Windows latest run 38611165614 passed all 45 original category-fixture
+tests on `cbc83a681b6332de4dce51f05978ae86d905e3f6`; downloaded success, numeric
+diagnostic and controlled reconnect checkpoints confirm their required reachability,
+utility exit counts, handshake and cleanup. Renewed full run 38611841609 failed
+Windows latest job 116017599263 in malformed-result. This time the primary record
+was retained: grouped.restart / stop / lifecycle_failed, with one utility exit,
+normal handshake and cleanup. The malformed-result injection was unreached.
+This narrows the failure to stop but does not identify its underlying cause.
+
+Fixture-only finite sub-seams now distinguish controller stop, owned-worker
+termination and remaining ownership assertion. Two controlled real-Electron
+stop failures first failed red and check these exact primary seams, fail-closed
+reachability, normal shutdown and cleanup. No stop timing, kill behavior, production
+controller, retry or success assertion changes. The existing category-fixture route
+will run the original file before another full same-SHA acceptance attempt.
+
+The same full run's Windows 2022 job 116017599849 passed platform tests but failed
+`npm run smoke:runtime -- dev`: RU unavailable-category feedback at
+smoke-project-category-move-ui.mjs:585 was not visible within the original 15 seconds.
+Downloaded runtime observations confirm EN completed and RU failed at unavailable;
+the underlying UI/service ordering cause is not established. The owned-fixture script
+now retains state before submission and, on failure, after-state, editor visibility,
+bounded table text and filesystem inventory without replacing the primary error.
+The matching category-fixture selector also runs the original dev runtime command on
+Windows 2022. No alternate accepted message, artificial input, timeout or assertion waiver.
+
+The updated original fixture/routing tests passed 61 before the extra runtime-route
+test. The complete local suite including that route passed 2,767 tests: 2,746 passed,
+zero failures and 21 platform skips. Lint, typecheck, docs and diff checks passed;
+both reviews found zero outstanding findings. A concurrent local category runtime
+attempt failed the existing 10-second ordinary Electron shutdown bound, with owned
+forced cleanup confirmed. This is not a pass or proof of either Windows failure's
+cause; an isolated runtime verification follows. Proof capture before the external
+rename preserves the original rename → inventory → Enter sequence.
+
+The isolated local category UI dev run passed EN/RU moves, rejections, unavailable
+feedback, restart, all five controlled preparation/recovery checkpoints, ordinary
+shutdown and cleanup. Evidence is retained under
+`work/issue-24-category-runtime-local-isolated`. This verifies the current script
+locally and does not establish the cause of the preceding shutdown or Windows failures.

@@ -13,7 +13,7 @@ const DIAGNOSTIC_SEAMS = ["setup", "scenario", "recovery_prepare", "unfinished_r
   "trigger_remove", "restart_journal", "external_return", "original_identity", "receipt_retry", "receipt_status",
   "pending_status", "pending_events", "pending_identity", "recovery_preview", "recovery_actions", "recovery_request",
   "recovery_result", "recovery_events", "recovery_project", "consumed_token", "retained_identity", "retained_state",
-  "final_receipt", "restart_receipts", "restart_status", "stop", "connect", "final_stop", "final_cleanup"];
+  "final_receipt", "restart_receipts", "restart_status", "stop", "stop_controller", "stop_owned", "stop_count", "connect", "final_stop", "final_cleanup"];
 const DIAGNOSTIC_FAILURES = ["assertion_failed", "operation_failed", "lifecycle_failed", "deadline"];
 // Read every entry without following links; retain exact file bytes and native
 // identities independently of the service's selected-project assertions.
@@ -105,7 +105,8 @@ if (process.versions.electron) {
     try { await action(); seam(previous); }
     catch (error) {
       const failure = { scenario: code.startsWith("final_") ? "fixture" : activeCheck ?? "fixture",
-        seam: code, failure: "lifecycle_failed" };
+        seam: code === "stop" && ["stop_controller", "stop_owned", "stop_count"].includes(activeSeam) ? activeSeam : code,
+        failure: "lifecycle_failed" };
       if (!diagnostic) diagnostic = { firstFailure: failure };
       else diagnostic.lifecycleFailure ??= failure;
       throw error;
@@ -132,13 +133,18 @@ if (process.versions.electron) {
   };
   app.setPath("userData", join(root, "user-data"));
   async function stopWorkers() {
+    seam("stop_controller");
     if (controller) { await controller.stop(1500); controller = undefined; }
+    if (activeCheck === "grouped.restart" && !finishing && fault === "restart-stop-controller") throw new Error("private injected controller stop failure");
     // The controller's timeout alone is not termination evidence.
+    seam("stop_owned");
     await Promise.all([...own].map(child => new Promise(resolve => {
       const timer = setTimeout(() => { child.kill(); resolve(); }, 1000);
       child.once("exit", () => { clearTimeout(timer); resolve(); });
       child.kill();
     })));
+    seam("stop_count");
+    if (activeCheck === "grouped.restart" && !finishing && fault === "restart-stop-count") assert.equal(1, 0);
     assert.equal(own.size, 0);
   }
   const stop = () => lifecycle("stop", stopWorkers);
