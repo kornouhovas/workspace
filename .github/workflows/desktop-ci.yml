@@ -8,7 +8,7 @@ on:
       checks:
         description: Full acceptance or a selected focused failure route
         type: choice
-        options: [full, failed, readiness, windows-release, issue22-failures, creation-shutdown, raw-rename, issue24-failures]
+        options: [full, failed, readiness, windows-release, issue22-failures, creation-shutdown, raw-rename, issue24-failures, category-fixture]
         default: full
       diagnostics:
         description: Run isolated investigation and early-feedback jobs
@@ -33,7 +33,7 @@ concurrency:
 
 jobs:
   common:
-    if: ${{ github.event_name != 'workflow_dispatch' || (inputs.checks != 'failed' && inputs.checks != 'readiness' && inputs.checks != 'windows-release' && inputs.checks != 'issue22-failures' && inputs.checks != 'creation-shutdown' && inputs.checks != 'raw-rename' && inputs.checks != 'issue24-failures') }}
+    if: ${{ github.event_name != 'workflow_dispatch' || (inputs.checks != 'failed' && inputs.checks != 'readiness' && inputs.checks != 'windows-release' && inputs.checks != 'issue22-failures' && inputs.checks != 'creation-shutdown' && inputs.checks != 'raw-rename' && inputs.checks != 'issue24-failures' && inputs.checks != 'category-fixture') }}
     name: Common tests and static checks
     runs-on: macos-latest
     steps:
@@ -47,6 +47,35 @@ jobs:
       - run: npm run typecheck
       - run: npm run check:docs
       - run: npm run test:common
+
+  focused-category-fixture:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.checks == 'category-fixture' }}
+    name: Focused Windows latest category checkpoint
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.21.1
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Original category checkpoint regression file
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p work/ci-category-fixture
+          node --import tsx --test tests/project-category-move-fixture.test.mjs 2>&1 | tee work/ci-category-fixture/tests.txt
+        env:
+          WORKSPACE_CATEGORY_MOVE_SERVICE_EVIDENCE_DIR: work/ci-category-fixture
+      - name: Preserve exact-SHA category checkpoints and original test result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-24-category-fixture-${{ github.sha }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
+          path: work/ci-category-fixture/
+          if-no-files-found: error
 
   focused-issue24-failures:
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.checks == 'issue24-failures' }}

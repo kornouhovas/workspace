@@ -76,3 +76,12 @@ unrelated runtime suite. Pipefail retains both commands' exits; exact-SHA/run/at
 logs upload even on failure. Ordinary push/full defaults and the original three-platform
 acceptance route remain unchanged. Inspect every affected focused result before full
 acceptance on that same reviewed SHA.
+
+
+For the issue-24 Windows latest category-checkpoint failure, select `checks: category-fixture`.
+Only Windows latest runs the existing build and original `project-category-move-fixture.test.mjs`
+file. Pipefail preserves its exit; exact-SHA logs and each sanitized checkpoint upload even on
+failure. Malformed-result controls now corrupt only their reached injection, retaining earlier
+real service/lifecycle failures. No restart retry, deadline, production assertion or cleanup gate
+is relaxed. Inspect original-file success and retained checkpoints before full acceptance on
+the same reviewed SHA; a better diagnostic does not establish the historical restart cause.

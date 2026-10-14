@@ -135,3 +135,31 @@ routing checks passed 142; the nine original/new real-runner startup/terminal ca
 Lint, docs and diff checks passed. Both follow-up reviews found no behavioral/standards
 issue; one stale route-description sentence was corrected. Aggregate outstanding findings
 are zero (initial Standards duplicate and later Spec report wording are resolved).
+
+
+## Windows latest category-checkpoint failure
+
+Full run 38596368794 on `b516fb0c23bfe43018fb7e872e8e66da7cfcaa08` failed
+Windows latest job 115964837245 in the inherited invalid-diagnostic-record control.
+Downloaded `diagnostic-numeric` checkpoint shows grouped.restart failed, later recovery
+cases unreached, only one utility started/exited, normal handshake and cleanup. Its
+malformed-result injection erased the primary diagnostic even though that control was
+not reached. The original OS/service restart cause is not recoverable from this checkpoint.
+
+A controlled second-connect failure combined with numeric diagnostic injection reproduced
+the lost primary record locally (red, 1.4 seconds). The fixture now corrupts a diagnostic
+only after the intended injected recovery-result assertion is actually reached, preserving
+earlier and real lifecycle failures. The controlled regression checks exact reconnect seam,
+scenario reachability, one utility exit, normal handshake, cleanup and the persisted record.
+No production service/controller, restart retry, deadline or existing assertion changes.
+The new category-fixture route runs the original regression on Windows latest and retains
+all finite checkpoints/logs. Focused/full outcomes remain in GitHub.
+
+The repaired candidate passed a fresh build and complete local `npm test`: 2,764
+tests, 2,743 passed, zero failures, 21 platform skips. The original category-fixture
+file passed 45 tests; routing/diagnostics passed 35. Typecheck, lint, docs and diff
+checks passed, and both follow-up reviews found no outstanding issue. The previous
+full run's macOS and Windows 2022 jobs passed; Windows 2022 Date dev/package reports
+and the RU narrow-window screenshot were inspected, with all EN/RU checks, ordinary
+shutdowns and cleanup passing on that run's exact SHA. These partial platform
+results do not constitute acceptance of the new candidate.

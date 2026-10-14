@@ -94,6 +94,7 @@ if (process.versions.electron) {
   const send = (value, flushed) => process.stdout.write(JSON.stringify(value) + "\n", flushed);
   const own = new Set();
   let activeCheck, activeSeam = "setup", diagnostic, sql, controller, deadline, finishing = false, finalOK = false;
+  let injectedDiagnosticFailure = false;
   const seam = code => { activeSeam = code; };
   const fail = error => {
     diagnostic ??= { firstFailure: { scenario: activeCheck ?? "fixture", seam: activeSeam,
@@ -155,12 +156,14 @@ if (process.versions.electron) {
     // Exclusive publication must fail on an occupied temporary record. The
     // supervisor still uses the bounded real publisher without mocked I/O.
     if (fault === "control-publication") fs.mkdirSync(join(root, "ack.control.pending"));
-    // Fixed malformed-evidence controls mutate only this disposable message.
-    switch (fault) {
+    // Corrupt only an actually reached injected result; retain any earlier or
+    // real lifecycle failure instead of erasing the primary diagnostic.
+    if ((injectedDiagnosticFailure && !diagnostic?.lifecycleFailure) || (fault === "diagnostic-success" && ok)) switch (fault) {
       case "diagnostic-unknown-seam": diagnostic.firstFailure.seam = "private injected unknown seam"; break;
       case "diagnostic-unknown-scenario": diagnostic.firstFailure.scenario = "private injected unknown scenario"; break;
       case "diagnostic-unknown-failure": diagnostic.firstFailure.failure = "private injected unknown failure"; break;
       case "diagnostic-private-field": diagnostic.firstFailure.actual = "private injected actual"; break;
+      case "restart-connect-malformed-result":
       case "diagnostic-numeric": diagnostic.firstFailure.errno = Number.MAX_VALUE; break;
       case "diagnostic-null": diagnostic = null; break;
       case "diagnostic-array": diagnostic = []; break;
@@ -198,8 +201,10 @@ if (process.versions.electron) {
     const Database = require("better-sqlite3");
     const native = require("../../dist/service/project-rename-filesystem.cjs");
     const databasePath = join(root, "workspace.sqlite");
+    let connectCount = 0;
     async function connect() {
       await lifecycle("connect", async () => {
+        if (++connectCount === 2 && fault === "restart-connect-malformed-result") throw new Error("private injected reconnect failure");
         controller = new BackendController();
         const child = utilityProcess.fork(join(__dirname, "../../dist/service/entry.cjs"), [],
           { stdio: "pipe", serviceName: "Project category move service checkpoint" });
@@ -427,8 +432,10 @@ if (process.versions.electron) {
         const recovered = performed.recovered; recover = performed.recover;
         seam("recovery_result");
         if (action === "keep_original" && ["recovery-assertion", "recovery-assertion-lifecycle-stop", "recovery-assertion-cleanup", "recovery-assertion-malformed-result",
-          ...diagnosticFaults].includes(fault))
+          ...diagnosticFaults].includes(fault)) {
+          injectedDiagnosticFailure = true;
           assert.equal("private injected actual", "private injected expected");
+        }
         assert.equal(recovered.outcome, action === "keep_original" ? "rejected" : "completed");
         if (action === "keep_original") {
           assert.equal(recovered.problem, "kept_original"); seam("recovery_events"); assert.equal(projectEvents().length, 0);

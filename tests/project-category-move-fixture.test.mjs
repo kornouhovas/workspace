@@ -269,6 +269,18 @@ test("an unknown diagnostic seam cannot be persisted or accepted", { skip: !supp
   assertUtilities(result, 3);
 });
 
+test("an earlier reconnect failure retains its primary seam before malformed diagnostic injection", { skip: !supported }, async () => {
+  const result = await checkpoint("restart-connect-malformed-result");
+  assert.equal(result.ok, false);
+  assert.deepEqual(result.diagnostic, { firstFailure: {
+    scenario: "grouped.restart", seam: "connect", failure: "lifecycle_failed",
+  } });
+  assertNormalHandshake(result, { exitCode: 1 });
+  const beforeRestart = SCENARIOS.slice(0, SCENARIOS.indexOf("grouped.restart"));
+  assertScenarios(result, key => beforeRestart.includes(key) ? "passed" : key === "grouped.restart" ? "failed" : "unreached");
+  assertUtilities(result, 1);
+});
+
 test("invalid diagnostic records fail closed and discard private or unbounded fields", { skip: !supported }, async () => {
   for (const fault of ["diagnostic-private-field", "diagnostic-unknown-scenario", "diagnostic-unknown-failure",
     "diagnostic-numeric", "diagnostic-null", "diagnostic-array", "diagnostic-missing", "diagnostic-lifecycle", "diagnostic-success"]) {
