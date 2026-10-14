@@ -55,7 +55,7 @@ test("invalid IDs, names, extra keys, types and foreign definitions fail without
   const before = list(f.service, f.one.workspaceId);
   const events = []; f.service.workspaces.subscribe((event) => events.push(event));
   const base = { type: "workspace.createProperty", workspaceId: f.one.workspaceId, name: "Name", propertyType: "text" };
-  for (const input of [null, {}, { ...base, name: " \n\t" }, { ...base, name: 42 }, { ...base, propertyType: "number" },
+  for (const input of [null, {}, { ...base, name: " \n\t" }, { ...base, name: 42 }, { ...base, propertyType: "date" },
     { ...base, workspaceId: "bad" }, { ...base, workspaceId: randomUUID() }, { ...base, extra: true },
     { type: "workspace.renameProperty", workspaceId: f.one.workspaceId, propertyId, name: "Changed", propertyType: "number" },
     { type: "workspace.renameProperty", workspaceId: f.other.workspaceId, propertyId, name: "Foreign" },

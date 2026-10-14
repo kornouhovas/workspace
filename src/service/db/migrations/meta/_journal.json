@@ -99,6 +99,13 @@
       "when": 1791504013000,
       "tag": "0013_project_archive",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1791504014000,
+      "tag": "0014_number_properties",
+      "breakpoints": true
     }
   ]
 }

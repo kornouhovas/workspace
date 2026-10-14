@@ -46,7 +46,7 @@ function TextPropertiesContent({ hideReveal, client, workspaceId, sourceId, proj
   const [snapshot, setSnapshot] = useState<TextPropertySnapshot | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
-  const [draft, setDraft] = useState<{ propertyId: string | null; name: string; originalName: string } | null>(null);
+  const [draft, setDraft] = useState<{ propertyId: string | null; name: string; originalName: string; propertyType: "text" | "number" } | null>(null);
   const [pending, setPending] = useState(false);
   const [message, setMessage] = useState<"propertyValidation" | "propertySaveError" | "propertySaved" | "propertyNewerChange" | null>(null);
   const minimumRevision = useRef(0);
@@ -55,6 +55,8 @@ function TextPropertiesContent({ hideReveal, client, workspaceId, sourceId, proj
   const saving = useRef(false);
   const savedRevision = useRef(0);
   const trigger = useRef<HTMLButtonElement>(null);
+  const numberTrigger = useRef<HTMLButtonElement>(null);
+  const creationType = useRef<"text" | "number">("text");
   const renameButtons = useRef(new Map<string, HTMLButtonElement>());
   const focusTarget = useRef<string | null | undefined>(undefined);
   const input = useRef<HTMLInputElement>(null);
@@ -66,7 +68,7 @@ function TextPropertiesContent({ hideReveal, client, workspaceId, sourceId, proj
   useEffect(() => {
     if (draft) input.current?.focus();
     else if (focusTarget.current !== undefined) {
-      (focusTarget.current === null ? trigger.current : renameButtons.current.get(focusTarget.current) ?? trigger.current)?.focus();
+      (focusTarget.current === null ? (creationType.current === "number" ? numberTrigger.current : trigger.current) : renameButtons.current.get(focusTarget.current) ?? trigger.current)?.focus();
       focusTarget.current = undefined;
     }
   }, [draft?.propertyId, draft === null]);
@@ -105,7 +107,7 @@ function TextPropertiesContent({ hideReveal, client, workspaceId, sourceId, proj
     saving.current = true; setPending(true); setMessage(null);
     try {
       const result = draft.propertyId === null
-        ? await client.createProperty(workspaceId, draft.name)
+        ? await client.createProperty(workspaceId, draft.name, draft.propertyType)
         : await client.renameProperty(workspaceId, draft.propertyId, draft.name);
       if (current !== lifetime.current) return;
       if (result.ok && result.value.snapshot.workspaceId === workspaceId && result.value.snapshot.sourceId === sourceId) {
@@ -123,9 +125,9 @@ function TextPropertiesContent({ hideReveal, client, workspaceId, sourceId, proj
       if (current === lifetime.current) { saving.current = false; setPending(false); }
     }
   };
-  const saveValue = async (projectId: string, propertyId: string, value: string | null) => {
+  const saveValue = async (projectId: string, propertyId: string, value: string | null, numeric = false) => {
     const current = lifetime.current;
-    const result = await client.setTextValue(workspaceId, projectId, propertyId, value);
+    const result = numeric ? await client.setNumberValue(workspaceId, projectId, propertyId, value) : await client.setTextValue(workspaceId, projectId, propertyId, value);
     if (current === lifetime.current && result.ok && result.value.projectId === projectId && result.value.propertyId === propertyId && accepts(result.value.snapshot)) {
       listVersion.current++; setLoading(false); setLoadError(false);
       minimumRevision.current = result.value.snapshot.revision; setSnapshot(result.value.snapshot);
@@ -137,7 +139,9 @@ function TextPropertiesContent({ hideReveal, client, workspaceId, sourceId, proj
     {loadError && <><StatusMessage kind="error" title={t("propertiesLoadError")} />
       <button type="button" className="workspace-button workspace-button--secondary" disabled={disabled || loading} onClick={() => void load()}>{t("propertiesRetry")}</button></>}
     <button ref={trigger} type="button" className="workspace-button workspace-button--secondary" disabled={disabled || loading || loadError || draft !== null}
-      onClick={() => { setMessage(null); setDraft({ propertyId: null, name: "", originalName: "" }); }}>{t("createTextProperty")}</button>
+      onClick={() => { setMessage(null); creationType.current = "text"; setDraft({ propertyId: null, name: "", originalName: "", propertyType: "text" }); }}>{t("createTextProperty")}</button>
+    <button ref={numberTrigger} type="button" className="workspace-button workspace-button--secondary" disabled={disabled || loading || loadError || draft !== null}
+      onClick={() => { setMessage(null); creationType.current = "number"; setDraft({ propertyId: null, name: "", originalName: "", propertyType: "number" }); }}>{t("createNumberProperty")}</button>
     {draft && <form className="property-form" onSubmit={(event) => { event.preventDefault(); void save(); }}
       onKeyDown={(event) => { if (event.key === "Escape") { event.preventDefault(); cancel(); } }}>
       <label htmlFor="property-name">{t("propertyName")}</label>
@@ -166,7 +170,7 @@ function TextPropertiesContent({ hideReveal, client, workspaceId, sourceId, proj
           <span className="property-authored">{property.name}</span>
           <button type="button" ref={(element) => { if (element) renameButtons.current.set(property.propertyId, element); else renameButtons.current.delete(property.propertyId); }}
             className="workspace-button workspace-button--secondary property-rename" aria-label={`${t("renameProperty")}: ${property.name}`}
-            disabled={disabled || draft !== null} onClick={() => { setMessage(null); setDraft({ propertyId: property.propertyId, name: property.name, originalName: property.name }); }}>{t("renameProperty")}</button>
+            disabled={disabled || draft !== null} onClick={() => { setMessage(null); setDraft({ propertyId: property.propertyId, name: property.name, originalName: property.name, propertyType: property.propertyType }); }}>{t("renameProperty")}</button>
         </th>)}
         {!hideReveal && <th scope="col">{t("revealProject")}</th>}
       </tr></thead><tbody>{[...projects, ...retainedProjects].map((project) => {
@@ -194,8 +198,12 @@ function TextPropertiesContent({ hideReveal, client, workspaceId, sourceId, proj
           <TextPropertyCell workspaceId={workspaceId} sourceId={sourceId} projectId={project.projectId} propertyId={property.propertyId}
             revision={snapshot.revision} minimumRevision={minimumRevision}
             projectName={project.name} propertyName={property.name} language={language} disabled={disabled || loadError || draft !== null}
-            value={snapshot.values.find((entry) => entry.projectId === project.projectId && entry.propertyId === property.propertyId)?.value ?? null}
-            onSave={(value) => saveValue(project.projectId, property.propertyId, value)} />
+            numeric={property.propertyType === "number"}
+            value={property.propertyType === "number" ? (() => {
+              const numeric = snapshot.numberValues?.find(entry => entry.projectId === project.projectId && entry.propertyId === property.propertyId)?.value;
+              return numeric === undefined ? null : String(numeric);
+            })() : snapshot.values.find((entry) => entry.projectId === project.projectId && entry.propertyId === property.propertyId)?.value ?? null}
+            onSave={(value) => saveValue(project.projectId, property.propertyId, value, property.propertyType === "number")} />
         </td>)}
         {!hideReveal && <td key="project-actions"><ProjectRevealButton client={client} workspaceId={workspaceId} projectId={project.projectId} name={project.name} language={language} disabled={disabled} minimumRevision={minimumDiscoveryRevision} sourceLifetime={sourceLifetime}
           targetKey={JSON.stringify([project.relativePath, project.categoryId, categories.find((category) => category.categoryId === project.categoryId)?.relativePath,

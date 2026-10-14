@@ -168,6 +168,7 @@ export function openSettingsService(
       if (isRecord(input) && input.type === "workspace.reassociateProject") return workspaces.reassociateProject(input);
       if (isRecord(input) && input.type === "workspace.renameCategoryProperty") return workspaces.renameCategoryProperty(input);
       if (isRecord(input) && input.type === "workspace.createProperty") return workspaces.createProperty(input);
+      if (isRecord(input) && input.type === "workspace.setNumberValue") return workspaces.setNumberValue(input);
       if (isRecord(input) && input.type === "workspace.setTextValue") return workspaces.setTextValue(input);
       if (isRecord(input) && input.type === "workspace.renameProperty") return workspaces.renameProperty(input);
       if (isRecord(input) && input.type === "workspace.applyDiscovery") return workspaces.applyDiscovery(input);

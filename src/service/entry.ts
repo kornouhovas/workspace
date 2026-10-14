@@ -142,7 +142,12 @@ function isMalformedWorkspaceRequest(input: unknown): boolean {
   }
   if (input.type === "workspace.createProperty") {
     return !hasExactKeys(input, ["type", "workspaceId", "name", "propertyType"]) ||
-      typeof input.workspaceId !== "string" || typeof input.name !== "string" || input.propertyType !== "text";
+      typeof input.workspaceId !== "string" || typeof input.name !== "string" || (input.propertyType !== "text" && input.propertyType !== "number");
+  }
+  if (input.type === "workspace.setNumberValue") {
+    return !hasExactKeys(input, ["type", "workspaceId", "projectId", "propertyId", "expression"]) ||
+      typeof input.workspaceId !== "string" || typeof input.projectId !== "string" || typeof input.propertyId !== "string" ||
+      (input.expression !== null && typeof input.expression !== "string");
   }
   if (input.type === "workspace.setTextValue") {
     return !hasExactKeys(input, ["type", "workspaceId", "projectId", "propertyId", "value"]) ||

@@ -2,7 +2,7 @@ import type { ProjectCategoryMoveProblem, ProjectCategoryMoveStage, ProjectCateg
 import { sql } from "drizzle-orm";
 import type { ProjectRenameProblem, ProjectRenameStage, ProjectRenamePlacement } from "../../contracts/project-rename.js";
 import type { ProjectCreationProblem, ProjectCreationStage } from "../../contracts/project-creation.js";
-import { integer, text, sqliteTable, primaryKey, unique, foreignKey, index, uniqueIndex } from "drizzle-orm/sqlite-core";
+import { integer, real, text, sqliteTable, primaryKey, unique, foreignKey, index, uniqueIndex } from "drizzle-orm/sqlite-core";
 
 export const settings = sqliteTable("settings", {
   key: text("key").primaryKey(),
@@ -70,7 +70,7 @@ export const propertyDefinitions = sqliteTable("property_definitions", {
   id: text("id").primaryKey(),
   sourceId: text("source_id").notNull().references(() => sources.id),
   name: text("name").notNull(),
-  propertyType: text("property_type", { enum: ["text"] }).notNull(),
+  propertyType: text("property_type", { enum: ["text", "number"] }).notNull(),
   position: integer("position").notNull(),
 }, (table) => [unique().on(table.sourceId, table.position), unique().on(table.id, table.sourceId)]);
 
@@ -248,3 +248,14 @@ export const projectArchiveOperations = sqliteTable("project_archive_operations"
   problem: text("problem"),
   completedRevision: integer("completed_revision"),
 });
+
+export const numberPropertyValues = sqliteTable("number_property_values", {
+  projectId: text("project_id").notNull(),
+  propertyId: text("property_id").notNull(),
+  sourceId: text("source_id").notNull().references(() => sources.id),
+  value: real("value").notNull(),
+}, (table) => [
+  primaryKey({ columns: [table.projectId, table.propertyId] }),
+  foreignKey({ columns: [table.projectId, table.sourceId], foreignColumns: [projects.id, projects.sourceId] }),
+  foreignKey({ columns: [table.propertyId, table.sourceId], foreignColumns: [propertyDefinitions.id, propertyDefinitions.sourceId] }),
+]);

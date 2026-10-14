@@ -147,8 +147,8 @@ export class WorkspaceServiceClient {
   listTextProperties(workspaceId: string): Promise<ServiceResult<TextPropertySnapshot>> {
     return this.api.workspace({ type: "workspace.listTextProperties", workspaceId });
   }
-  createProperty(workspaceId: string, name: string): Promise<ServiceResult<TextPropertyMutation>> {
-    return this.api.workspace({ type: "workspace.createProperty", workspaceId, name, propertyType: "text" });
+  createProperty(workspaceId: string, name: string, propertyType: "text" | "number" = "text"): Promise<ServiceResult<TextPropertyMutation>> {
+    return this.api.workspace({ type: "workspace.createProperty", workspaceId, name, propertyType });
   }
   renameProperty(workspaceId: string, propertyId: string, name: string): Promise<ServiceResult<TextPropertyMutation>> {
     return this.api.workspace({ type: "workspace.renameProperty", workspaceId, propertyId, name });
@@ -158,6 +158,9 @@ export class WorkspaceServiceClient {
     return this.api.workspace({ type: "workspace.renameCategoryProperty", workspaceId, propertyId, name });
   }
 
+  setNumberValue(workspaceId: string, projectId: string, propertyId: string, expression: string | null): Promise<ServiceResult<TextPropertyMutation>> {
+    return this.api.workspace({ type: "workspace.setNumberValue", workspaceId, projectId, propertyId, expression });
+  }
   setTextValue(workspaceId: string, projectId: string, propertyId: string, value: string | null): Promise<ServiceResult<TextPropertyMutation>> {
     return this.api.workspace({ type: "workspace.setTextValue", workspaceId, projectId, propertyId, value });
   }

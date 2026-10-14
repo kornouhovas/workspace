@@ -222,8 +222,8 @@ test('full product OS comparison retains identical checks and unique evidence/pa
     'npm run smoke:runtime -- dev --creation --skip-native',
     'npm run smoke:runtime -- dev --creation --discovery-mode=direct --checkpoint=after_evidence',
     'npm run smoke:runtime -- dev --creation --discovery-mode=grouped --checkpoint=after_evidence',
-    'npm run smoke:runtime -- dev', 'npm run smoke:archive -- dev', 'npm run smoke:category-options -- dev', 'npm run package:built', 'npm run check:artifact -- release',
-    'npm run smoke:archive -- release', 'npm run smoke:category-options -- release',
+    'npm run smoke:runtime -- dev', 'npm run smoke:number -- dev', 'npm run smoke:archive -- dev', 'npm run smoke:category-options -- dev', 'npm run package:built', 'npm run check:artifact -- release',
+    'npm run smoke:number -- release', 'npm run smoke:archive -- release', 'npm run smoke:category-options -- release',
     'npm run smoke:runtime -- release --creation --skip-native',
     'npm run smoke:runtime -- release --creation --discovery-mode=direct --checkpoint=after_evidence',
     'npm run smoke:runtime -- release --creation --discovery-mode=grouped --checkpoint=after_evidence',
@@ -242,7 +242,7 @@ test('full product OS comparison retains identical checks and unique evidence/pa
   const creationUploads = uploads.filter((step) => step.with.path.includes('work/ci-creation-'));
   assert.equal(creationUploads.length, 1);
   assert.equal(creationUploads[0].if, 'always()');
-  assert.equal(creationUploads[0].with.path, 'work/ci-creation-*/\nwork/ci-runtime-*/\nwork/ci-category-move-layouts/\nwork/ci-category-options-*/\nwork/ci-archive-*/\n');
+  assert.equal(creationUploads[0].with.path, 'work/ci-creation-*/\nwork/ci-runtime-*/\nwork/ci-category-move-layouts/\nwork/ci-category-options-*/\nwork/ci-archive-*/\nwork/ci-number-*/\n');
   assert.equal(creationUploads[0].with['if-no-files-found'], 'warn');
   const packageUploads = uploads.filter((step) => step.with.path === 'release/');
   assert.equal(packageUploads.length, 1);

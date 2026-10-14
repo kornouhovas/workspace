@@ -810,7 +810,7 @@ test("Text definitions and values traverse typed client and real service entry w
       { type: "workspace.setTextValue", workspaceId: one.workspaceId, projectId, propertyId, value: 4 },
       { type: "workspace.setTextValue", workspaceId: one.workspaceId, projectId, propertyId },
       { type: "workspace.renameProperty", workspaceId: one.workspaceId, propertyId: created.value.propertyId, name: "Bad", propertyType: "number" },
-      { type: "workspace.createProperty", workspaceId: one.workspaceId, name: "Bad", propertyType: "number" },
+      { type: "workspace.createProperty", workspaceId: one.workspaceId, name: "Bad", propertyType: "date" },
       { type: "workspace.listTextProperties", workspaceId: one.workspaceId, extra: true },
     ]) {
       port.sent.length = 0; assert.equal((await workspace(input)).error.code, "invalid_input");

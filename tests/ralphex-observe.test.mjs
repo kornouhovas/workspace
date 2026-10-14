@@ -1225,11 +1225,36 @@ test('large CI step reports keep every outcome in evidence and return a compact 
 
 for (const withHeartbeat of [false,true]) test(`fresh observer binds its first execution for the whole invocation (heartbeat=${withHeartbeat})`,async t=>{
   const f=fixture(t);f.state.beads='fixture-task';f.save();
-  const timer=setTimeout(()=>{f.state.executionId='second-execution';f.lock.executionId='second-execution';writeFileSync(join(f.dir,'executor.lock'),JSON.stringify(f.lock));f.save();},25);t.after(()=>clearTimeout(timer));
-  const command=async(file,args)=>{if(args.at(-1)==='--help')await new Promise(resolve=>setTimeout(resolve,40));return{status:0,stdout:'Usage: bd heartbeat <id> Only the current in_progress owner'};};
-  const result=await observe({...f.options,budgetMs:200,pollMs:50,command,heartbeat:withHeartbeat?{task:'fixture-task',actor:'fixture-owner',repo:f.dir,ttlMs:400,intervalMs:100}:undefined});
-  assert.equal(result.reason,'needs_decision');assert.equal(result.diagnostic.code,'source_mismatch');assert.throws(()=>readFileSync(f.options.cursor),/ENOENT/);
-  assert.equal(readFileSync(join(f.dir,'executor.lock'),'utf8'),JSON.stringify(f.lock));
+  // Publish only after the first complete snapshot/owner read. A wall timer can
+  // fire before that read under suite load, so the observer correctly binds the
+  // replacement and reaches its deadline instead of the intended mismatch seam.
+  const originalRead = fsPromises.readFile, originalNow = Date.now, start = originalNow();
+  let published = false;
+  const controller = new AbortController();
+  // Independent host timer makes a missed-mismatch regression fail boundedly
+  // even while the observer's logical clock is held before its 200ms deadline.
+  const timeout = setTimeout(() => controller.abort(), 5000);
+  fsPromises.readFile = async (...args) => {
+    const bytes = await originalRead(...args);
+    if (args[0] === join(f.dir, 'executor.lock') && !published) {
+      assert.equal(JSON.parse(bytes).executionId, 'fixture-execution');
+      f.state.executionId='second-execution';f.lock.executionId='second-execution';
+      writeFileSync(join(f.dir,'executor.lock'),JSON.stringify(f.lock));f.save();published = true;
+    }
+    return bytes;
+  };
+  try {
+    Date.now = () => start; syncBuiltinESMExports();
+    const command=async()=>({status:0,stdout:'Usage: bd heartbeat <id> Only the current in_progress owner'});
+    const result=await observe({...f.options,budgetMs:200,pollMs:50,signal:controller.signal,command,heartbeat:withHeartbeat?{task:'fixture-task',actor:'fixture-owner',repo:f.dir,ttlMs:400,intervalMs:100}:undefined});
+    assert.equal(published,true);assert.equal(result.reason,'needs_decision');assert.equal(result.diagnostic.code,'source_mismatch');
+    assert.equal(result.source.executionId,'second-execution');assert.throws(()=>readFileSync(f.options.cursor),/ENOENT/);
+    assert.equal(readFileSync(join(f.dir,'executor.lock'),'utf8'),JSON.stringify(f.lock));
+  } finally {
+    clearTimeout(timeout); controller.abort();
+    Date.now = originalNow; fsPromises.readFile = originalRead; syncBuiltinESMExports();
+  }
+  assert.equal(Date.now, originalNow); assert.equal(builtinReadFile, originalRead);
 });
 
 for (const alias of [false,true]) test(`derived cursor lock cannot create or remove the runner executor lock (alias=${alias})`,async t=>{

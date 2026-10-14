@@ -9,7 +9,7 @@ import type { ProjectRenameResult, ProjectRenameList, ProjectRenameRecoveryPrevi
 import type { ProjectRevealResult, WorkspaceRevealProjectCommand } from "./project-reveal.js";
 import type { ProjectCreationResult, ProjectCreationList, ProjectCreationRecoveryPreview, WorkspaceCreateProjectCommand, WorkspaceListProjectCreationsQuery, WorkspaceGetProjectCreationQuery, WorkspacePreviewProjectCreationRecoveryQuery, WorkspaceRecoverProjectCreationCommand } from "./project-creation.js";
 import type { ProjectRecoveryPreview, WorkspacePreviewProjectRecoveryQuery, WorkspaceReassociateProjectCommand } from "./project-recovery.js";
-import type { TextPropertySnapshot, TextPropertyMutation, WorkspaceListTextPropertiesQuery, WorkspaceCreatePropertyCommand, WorkspaceRenamePropertyCommand, WorkspaceSetTextValueCommand } from "./text-properties.js";
+import type { TextPropertySnapshot, TextPropertyMutation, WorkspaceListTextPropertiesQuery, WorkspaceCreatePropertyCommand, WorkspaceRenamePropertyCommand, WorkspaceSetTextValueCommand, WorkspaceSetNumberValueCommand } from "./text-properties.js";
 import type { ServiceResult, Settings, SettingsCommand, SettingsQuery } from "./settings.js";
 import type { CategoryPropertySnapshot, WorkspaceRenameCategoryPropertyCommand, ProjectList, WorkspaceApplyDiscoveryCommand, WorkspaceListProjectsQuery, DiscoveryPreview, WorkspacePreviewDiscoveryQuery, ActiveWorkspace, WorkspaceActivateCommand, WorkspaceCommand, WorkspaceCreateCommand, WorkspaceCreated, WorkspaceLoad, WorkspaceLoadQuery, WorkspaceQuery, WorkspaceRenameCommand, WorkspaceReorderCommand, WorkspaceRemoveCommand, WorkspaceRefreshSourceCommand, WorkspaceGetSourceObservationQuery, WorkspaceSourceObservationSnapshot, WorkspaceSourceState, WorkspaceChangeEvent } from "./workspaces.js";
 
@@ -68,6 +68,7 @@ export interface WorkspaceDesktopApi {
   workspace(input: WorkspaceRenameCategoryPropertyCommand): Promise<ServiceResult<CategoryPropertySnapshot>>;
   workspace(input: WorkspaceListTextPropertiesQuery): Promise<ServiceResult<TextPropertySnapshot>>;
   workspace(input: WorkspaceCreatePropertyCommand): Promise<ServiceResult<TextPropertyMutation>>;
+  workspace(input: WorkspaceSetNumberValueCommand): Promise<ServiceResult<TextPropertyMutation>>;
   workspace(input: WorkspaceSetTextValueCommand): Promise<ServiceResult<TextPropertyMutation>>;
   workspace(input: WorkspaceRenamePropertyCommand): Promise<ServiceResult<TextPropertyMutation>>;
   workspace(input: WorkspaceApplyDiscoveryCommand): Promise<ServiceResult<ProjectList>>;

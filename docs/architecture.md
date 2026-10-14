@@ -2,11 +2,11 @@
 
 ## Status and accepted foundation
 
-This branch contains a runnable local desktop application with settings, workspace management, reviewed direct/grouped project discovery and configured mode changes, persisted required grouped categories, shared Text properties, external reconciliation and explicit folder reassociation, recoverable project creation, Table Name editing with explicit status/recovery, Table category editing with explicit move status/recovery and trusted native Reveal. The service persists canonical sources, named workspaces, one default Table view per workspace and the active workspace/view selection in SQLite.
+This branch contains a runnable local desktop application with settings, workspace management, reviewed direct/grouped project discovery and configured mode changes, persisted required grouped categories, shared Text and Number properties, external reconciliation and explicit folder reassociation, recoverable project creation, Table Name editing with explicit status/recovery, Table category editing with explicit move status/recovery and trusted native Reveal. The service persists canonical sources, named workspaces, one default Table view per workspace and the active workspace/view selection in SQLite.
 
 Workspace names, order and active selection survive restart. Rename/reorder/remove validate IDs and commit snapshots transactionally. Removal deletes only the workspace and its owned views, retains the source even after its last reference, and never deletes external files. Active removal selects the first remaining configuration and its existing Table view; final removal clears selection.
 
-The desktop includes a native directory picker, EN/RU direct/grouped preview/exclusions/Apply and editable project names with source-owned Text columns and required grouped categories in the default Table. The service persists source-owned exclusions/configuration and logical project records. Category creation/rename/deletion, ordinary non-Text property types, property deletion/hiding/reordering, filtering/grouping/dragging, Board/general view management and further filesystem mutations remain future work. Source archive/restore is described below. SQLite with Drizzle is the selected persistence foundation.
+The desktop includes a native directory picker, EN/RU direct/grouped preview/exclusions/Apply and editable project names with source-owned Text/Number columns and required grouped categories in the default Table. The service persists source-owned exclusions/configuration and logical project records. Category creation/rename/deletion, ordinary Date/Select/MultiSelect property types, property deletion/hiding/reordering, filtering/grouping/dragging, Board/general view management and further filesystem mutations remain future work. Source archive/restore is described below. SQLite with Drizzle is the selected persistence foundation.
 
 The product uses selected bb architecture and UI foundations while retaining its own folder/project domain. Adopt useful modules deliberately, with provenance and boundary tests; do not assume a whole bb package is independent of its chat/session model.
 
@@ -18,9 +18,9 @@ The runtime uses Electron `utilityProcess` with message ports, React with Vite, 
 
 | Boundary | Responsibility | Pending decision |
 | --- | --- | --- |
-| Desktop renderer | React settings, workspace creation/management, removal confirmation, discovery/recovery review, project creation/Name/category move/status/recovery/Reveal and source Refresh, Text definition/value and category-label editing and applied Table screens; interaction, localization and presentation state | Future routing and state needs as features are added |
-| Typed service boundary | Settings/workspace commands, committed snapshots, discovery preview/Apply/project-list and recovery preview/reassociate commands, creation/status/recovery, project rename/status/recovery, category move/status/recovery and ID-only Reveal, source refresh/current observation, Text list/create/rename/set-value and category-property rename commands and validated change events through preload and IPC | Additional domain contracts as features are added |
-| Local application service | Settings and workspace/source identity persistence in a separate TypeScript process; canonical root validation, transactional workspace creation/rename/order/removal, active Table view selection, direct/grouped discovery/identity matching, validated project reassociation, reconciliation transactions, durable creation, project rename/category move/recovery and bounded source observation | Physical category editing, other property types and future domain capabilities |
+| Desktop renderer | React settings, workspace creation/management, removal confirmation, discovery/recovery review, project creation/Name/category move/status/recovery/Reveal and source Refresh, Text/Number definition/value and category-label editing and applied Table screens; interaction, localization and presentation state | Future routing and state needs as features are added |
+| Typed service boundary | Settings/workspace commands, committed snapshots, discovery preview/Apply/project-list and recovery preview/reassociate commands, creation/status/recovery, project rename/status/recovery, category move/status/recovery and ID-only Reveal, source refresh/current observation, Text/Number list/create/rename/set-value and category-property rename commands and validated change events through preload and IPC | Additional domain contracts as features are added |
+| Local application service | Settings and workspace/source identity persistence in a separate TypeScript process; canonical root validation, transactional workspace creation/rename/order/removal, active Table view selection, direct/grouped discovery/identity matching, validated project reassociation, reconciliation transactions, durable creation, project rename/category move/recovery and bounded source observation | Remaining property types and future domain capabilities |
 | Machine filesystem adapter | Implemented contained direct/grouped scanning and nonrecursive root/category notification hints, exclusive nonrecursive project mkdir and private native no-replace rename/category move; trusted desktop macOS shell.showItemInFolder and Windows ready-parent/SelectItem adapter for file-manager selection; recoverable source archive/restore | Further native integration and OS-specific recovery |
 | Persistence | SQLite schema, Drizzle migrations and repositories | Database partitioning and backup strategy |
 | Shared-folder exchange, later | Durable changes, snapshots, identity and conflict handling | Protocol/library, tombstones and compaction |
@@ -332,3 +332,34 @@ Migration 0013 separates physical archived placement from the existing historica
 Restore uses the original location. Occupied destinations require removing the conflict or explicitly selecting another basename in the original parent. Missing parents require explicit creation; a recreated grouped parent receives a new category identity. Replaced parents are not adopted automatically, and incompatible source modes require returning to the original mode. There is no overwrite, silent renaming or bulk relocation.
 
 `project_archive_operations` records intent before filesystem effects, append-only parent evidence, verified destination evidence and immutable terminal receipts. Existing source-wide reservation readers include unfinished archive/restore operations before observation and discovery. Explicit reviewed recovery offers only evidenced original retry, destination completion or original-placement retention; reads/reconnect/retries never replay filesystem effects. An unrecorded mkdir after interruption may be left intact by explicit original-placement retention before a new preview. The existing native no-replace primitive and ADR 0007's path-based confinement/power-loss limitations remain unchanged. No additional bb code was copied. See [issue-22 verification](verification/issue-22-archive-restore.md) for observed checks and pending platform gates.
+
+## Implemented Number properties
+
+Issue #23 extends the existing source-owned ordinary-property projection with Number
+creation, immutable type, stable ordering, rename and numeric values. Migration 0014
+preserves populated Text rows and rebuilds definitions with both accepted types; source,
+project and property foreign keys, immutable-type and value-type triggers remain enforced.
+The existing `workspace.listTextProperties` endpoint and Text type aliases remain compatible
+projection names; Number definitions add a separate `numberValues` array. `values` continues
+to carry exact Text. Sources without Number retain their original response shape.
+
+`workspace.setNumberValue` validates IDs, exact payload keys, ownership and a bounded
+arithmetic expression behind the Workspace service. The IPC entry validator accepts the
+new command and creation type. A recursive-descent parser accepts decimal dot/comma,
+optional exponent, unary signs, parentheses and `+ - * /`; it never evaluates host code.
+Input is limited to 512 characters, 256 tokens and 32 nesting/unary levels. Every literal
+and intermediate/final value must be finite with magnitude no greater than
+Number.MAX_SAFE_INTEGER; nonzero literal or multiplication/division underflow to zero
+is rejected. Results use IEEE-754 precision and normalize negative zero. Null or blank
+input clears the row; only the computed number is persisted. Malformed arithmetic leaves
+the previous value/revision intact. Changed transactions increment the shared property
+revision and notify source siblings; equivalent results emit no change.
+
+The existing Table/value cell now supports Number creation and single-line arithmetic
+entry, EN/RU instructions and error feedback, Enter Save, Escape Cancel, Clear and focus
+restoration. EN renders round-trippable dot decimals; RU substitutes comma without grouping.
+Both separators are accepted in either language. Drafts survive errors and sibling changes;
+a language change preserves the draft and stored value. Number metadata remains editable
+on retained and archived projects, independently of discovery and folder mutations. No
+additional bb module or dependency was copied. See the [plan](plans/issue-23-number-properties.md)
+and [verification](verification/issue-23-number-properties.md) for observed evidence and gates.
