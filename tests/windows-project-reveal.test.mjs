@@ -180,11 +180,13 @@ test("a child without confirmed termination rejects within its bounded kill wait
   const f = fixture({ autoClose: false, timeoutMs: 8, killConfirmationMs: 8 });
   await assert.rejects(f.start(), problem("native_unavailable"));
   assert.deepEqual(f.calls, ["SIGKILL"]);
-  assert.deepEqual(f.events, ["started", "unknown"].map((stage) => ({ stage, path: target })));
+  const expiredEvents = [{ stage: "started", path: target },
+    { stage: "failure", path: target, phase: "initial", reason: "owner_deadline" }, { stage: "unknown", path: target }];
+  assert.deepEqual(f.events, expiredEvents);
   f.child.emit("error", new Error("late owned child error"));
   f.child.stdin.emit("error", new Error("late pipe error"));
   f.close(null, "SIGKILL");
-  assert.deepEqual(f.events, ["started", "unknown", "stopped"].map((stage) => ({ stage, path: target })));
+  assert.deepEqual(f.events, [...expiredEvents, { stage: "stopped", path: target }]);
   f.close(null, "SIGKILL");
   assert.equal(f.events.filter((event) => event.stage === "stopped").length, 1);
   assert.equal(f.child.listenerCount("error"), 0);
@@ -258,5 +260,24 @@ for (const token of ["FAIL:private:deadline", "FAIL:permit:private path", "FAIL:
     const f = fixture(); const pending = f.start(); f.output(`${token}\n`);
     await assert.rejects(pending, problem("native_error"));
     assert.equal(f.events.some(event => event.stage === "failure"), false);
+  });
+}
+
+for (const [output, phase] of [["", "initial"], ["OPEN\n", "opened"], ["OPEN\nREADY\n", "authorizing"]]) {
+  test(`owned deadline retains its exact protocol state ${phase} without granting a late permit`, async (t) => {
+    const timers = [], original = globalThis.setTimeout;
+    t.mock.method(globalThis, "setTimeout", (callback, milliseconds, ...args) => {
+      if (milliseconds === 12000) { const timer = { callback }; timers.push(timer); return timer; }
+      return original(callback, milliseconds, ...args);
+    });
+    let allow;
+    const f = fixture({ timeoutMs: 12000, permit: dispatch => new Promise(resolve => { allow = () => { dispatch(); resolve(); }; }) });
+    const pending = f.start(); f.output(output);
+    assert.equal(timers.length, 1); timers[0].callback();
+    await assert.rejects(pending, problem("native_unavailable"));
+    if (allow) { allow(); await tick(); }
+    assert.deepEqual(f.events.filter(event => event.stage === "failure"), [{ stage: "failure", path: target, phase, reason: "owner_deadline" }]);
+    assert.deepEqual(f.writes, []); assert.deepEqual(f.calls, ["SIGKILL"]);
+    assert.equal(f.events.some(event => event.stage === "select" || event.stage === "done"), false);
   });
 }

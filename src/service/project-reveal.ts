@@ -24,6 +24,7 @@ export function createProjectRevealService(db: BetterSQLite3Database<typeof sche
       readProjectReservations(db, source.id), readProjectRelocationReservations(db, source.id)]);
   }
   function targetFor(workspaceId: string, projectId: string): { target: TrustedProjectRevealTarget; authorization: string } {
+    const authorization = authorizationFor(workspaceId, projectId);
     const source = db.select().from(schema.workspaces).innerJoin(schema.sources, eq(schema.workspaces.sourceId, schema.sources.id))
       .where(eq(schema.workspaces.id, workspaceId)).get()?.sources;
     const project = db.select().from(schema.projects).where(eq(schema.projects.id, projectId)).get();
@@ -72,7 +73,8 @@ export function createProjectRevealService(db: BetterSQLite3Database<typeof sche
       sameIdentity(JSON.parse(row.nativeIdentity), identity)) || scan.snapshot.children.some((row) => row.kind === "directory" &&
         row.relativePath !== project.relativePath && sameIdentity(row.identity, identity))) throw new RevealFailure("unresolved");
     verifyTrustedProjectRevealTarget(target, filesystem);
-    return { target, authorization: authorizationFor(workspaceId, projectId) };
+    if (authorizationFor(workspaceId, projectId) !== authorization) throw new RevealFailure("unresolved");
+    return { target, authorization };
   }
   return {
     close() { closed = true; },
@@ -108,6 +110,7 @@ export function createProjectRevealService(db: BetterSQLite3Database<typeof sche
           // that unrelated file-manager metadata stop changing after the effect.
           if (!(error instanceof UnstableRevealScan) || authorizationFor(input.workspaceId, input.projectId) !== authorization) throw error;
           verifyTrustedProjectRevealTarget(target, filesystem);
+          if (authorizationFor(input.workspaceId, input.projectId) !== authorization) return rejected("unresolved");
         }
         return { ok: true, value: { outcome: "dispatched", workspaceId: input.workspaceId, projectId: input.projectId } };
       } catch (error) {

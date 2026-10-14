@@ -527,3 +527,79 @@ both normal shutdowns/backend stop and owned fixture removal, with no skips:
 `work/issue24-reveal-ack-local/release-creation-observations.json`. Lint, typecheck,
 docs and diff passed. Both review axes have zero findings; required focused/full
 CI and integration remain in the GitHub checkpoint.
+
+
+Full run38641861932 on `c0886707` Windows2022 job116119603175
+failed only the new Reveal controls: direct/grouped excluded controls observed
+dispatched, direct retained observed unresolved instead of unavailable, and both
+predispatch dirty controls observed dispatched. Real file creation did not force
+the expected changed scan on this OS; visible timestamps were not captured in
+that run, so delayed timestamp delivery is a hypothesis, not historical proof.
+Other OS results are retained separately once complete.
+
+A public real-SQLite control with fixed directory timestamps reproduced the
+excluded-policy stale success on both modes in0.36s. The policy was changed from
+an owned filesystem call while targetFor retained earlier source policy, and the
+authorization fingerprint was previously taken only after its checks. Capturing
+it before validation and requiring the same persisted bindings afterward now
+rejects unresolved. This also protects successful stable scans; no dirty-scan
+fallback is involved. The dirty tests now pin changed timestamp observations
+monotonically while still performing the same real owned file writes; native
+identity, realpath, enumeration, access and sentinels remain real. Exact outcomes
+and original zero-native-call assertions are unchanged. New stable-scan controls
+and the entire Reveal79/routing20 suites passed99/99. No deadline or production
+scanner policy changed. Required Windows original-file and macOS exact packaged
+focused acceptance still precede renewed full same-SHA acceptance.
+
+
+Spec review found a further P2: the dirty-scan fallback compared persisted
+authority before final physical checks, but not afterward. Its independent owned
+real-SQLite/native-filesystem reproduction changed exclusions only during final
+fallback access and incorrectly acknowledged dispatched in both modes. The
+permanent public settings-service regression also went red in0.32s with exactly
+one owned metadata write and confirmed late policy change. Fallback now requires
+the same persisted bindings after final target verification as well. The added
+before/after guard prevents acknowledgment after that authority change; target
+evidence/access remains real and original deadlines/assertions unchanged.
+
+
+Full38641861932 completed: common and macOS passed. Windowslatest
+job116119603311 passed all platform files, then original direct development
+creation/native failed0vs1 selection. Its downloaded receipt shows OPEN1,
+READY unreached, valid service rejection native_unavailable after12039ms,
+no select/return and exactly one owned bridge started/stopped with confirmed
+cleanup. The finite script failure marker was absent; this records owner expiry
+while waiting past OPEN, not proof of a particular COM call or OS actor.
+
+The owner deadline had no failure-state event. Controlled original12s timer
+expiry was red missing diagnostic in initial/opened/authorizing states (0.14s).
+Expiry now retains its finite last protocol state and owner_deadline reason,
+including timer, live-clock and close-time checks. Native rejection, sole owned
+kill, absent/late GO prohibition and unknown termination remain unchanged. The
+smoke retains only that allowlisted state/reason. Existing unknown-termination
+assertion now includes the added diagnostic while still requiring unknown state.
+The focused union includes both original Windows Reveal files/bridge regressions,
+Windows latest exact direct dev creation command and macOS exact grouped packaged
+command. No deadline, permit/view guard or original native assertion is waived.
+
+Local frozen authority candidate before the deadline-marker addition passed
+2,802 tests/2,781 passed/zero failures/21 platform skips (110.2s). Its first local
+packaged creation attempt failed form-open before native while I concurrently
+started other Electron tests; that overlap did not provide isolated UI evidence.
+After tests stopped, the exact packaged command passed native/RU acknowledgment,
+exact Finder target, restart, two normal shutdowns and owned cleanup, no skips:
+`work/issue24-authority-ack-isolated/release-creation-observations.json`. The
+execution order changed; no form assertion/deadline or retry loop was added.
+Historical cause of that first form-open timeout remains unproven. Both reviews
+closed the authority P2; final marker candidate verification is renewed below.
+
+
+Final frozen authority/expiry-marker candidate on Node22.21.1: 2,806 tests,
+2,785 passed, zero failures and21 platform skips (108.1s). Fresh build,
+package/artifact check, lint, typecheck, docs and diff passed. Exact original
+local grouped packaged creation passed native/RU acknowledgment, exact Finder
+target, restart, two normal shutdowns and owned cleanup with no skips before
+the full tests started: `work/issue24-marker-ack-isolated/release-creation-observations.json`.
+Both complete review axes have zero outstanding findings. Required focused
+Windows original-file/native and macOS packaged evidence precede full same-SHA
+acceptance; integration/closure remain in the GitHub checkpoint.

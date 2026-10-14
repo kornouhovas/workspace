@@ -392,3 +392,42 @@ test('readiness union adds the exact macOS packaged creation route only with its
   assert.equal(upload.if, 'always()'); assert.equal(upload.with['if-no-files-found'], 'error');
   for (const field of ['github.sha', 'github.run_id', 'github.run_attempt']) assert.ok(upload.with.name.includes(field));
 });
+
+
+test('remaining Reveal scope replaces unrelated readiness with the original file on both Windows runners', () => {
+  const workflow = load(readFileSync('.github/workflows/desktop-ci.yml', 'utf8'));
+  const job = workflow.jobs['focused-windows-reveal'];
+  assert.equal(workflow.on.workflow_dispatch.inputs.readiness_reveal_windows.default, false);
+  for (const event of ['push', 'pull_request', 'workflow_dispatch']) for (const checks of ['full', 'readiness'])
+    for (const readiness_reveal_windows of [undefined, false, true]) {
+      const context = { github: { event_name: event }, inputs: { checks, readiness_reveal_windows, readiness_package_creation: true } };
+      const active = Object.entries(workflow.jobs).filter(([, j]) => j.if && runInNewContext(j.if.slice(3, -2), context)).map(([name]) => name);
+      assert.equal(active.includes('focused-windows-reveal'), event === 'workflow_dispatch' && checks === 'readiness' && readiness_reveal_windows === true);
+      if (event === 'workflow_dispatch' && checks === 'readiness' && readiness_reveal_windows === true)
+        assert.deepEqual(active.sort(), ['focused-macos-package-creation', 'focused-windows-reveal']);
+    }
+  assert.deepEqual(job.strategy.matrix.os, ['windows-latest', 'windows-2022']); assert.equal(job.strategy['fail-fast'], false);
+  const commands = job.steps.filter(step => step.run).map(step => step.run);
+  assert.deepEqual(commands.slice(0, 2), ['npm ci', 'npm run build']); assert.equal(commands.length, 4);
+  assert.ok(commands[2].includes('set -o pipefail')); assert.ok(commands[2].includes('node --import tsx --test tests/project-reveal.test.mjs tests/windows-project-reveal.test.mjs 2>&1 | tee'));
+  const upload = job.steps.find(step => step.uses === 'actions/upload-artifact@v4');
+  assert.equal(upload.if, 'always()'); assert.equal(upload.with['if-no-files-found'], 'error');
+  for (const field of ['matrix.os', 'github.sha', 'github.run_id', 'github.run_attempt']) assert.ok(upload.with.name.includes(field));
+});
+
+
+test('remaining Reveal scope includes the exact Windows latest native failure independently after build', () => {
+  const workflow = load(readFileSync('.github/workflows/desktop-ci.yml', 'utf8'));
+  const job = workflow.jobs['focused-windows-reveal'];
+  assert.equal(workflow.on.workflow_dispatch.inputs.readiness_native_windows.default, false);
+  const native = job.steps.find(step => step.name === 'Original Windows latest direct creation native evidence');
+  assert.equal(native.run, 'npm run smoke:runtime -- dev --creation --discovery-mode=direct --checkpoint=after_evidence');
+  assert.ok(job.steps.find(step => step.id === 'reveal-build').run === 'npm run build');
+  for (const os of ['windows-latest', 'windows-2022']) for (const build of ['success', 'failure']) for (const flag of [undefined, false, true]) {
+    const context = { cancelled: () => false, steps: { 'reveal-build': { outcome: build } }, inputs: { readiness_native_windows: flag }, matrix: { os } };
+    const expression = native.if.slice(3, -2).replaceAll('steps.reveal-build', 'steps["reveal-build"]');
+    assert.equal(runInNewContext(expression, context), build === 'success' && os === 'windows-latest' && flag === true);
+  }
+  assert.ok(!native.if.includes('reveal-tests')); // A regression failure cannot skip the original native command.
+  assert.ok(native.env.WORKSPACE_SMOKE_EVIDENCE_DIR.startsWith('work/ci-focused-windows-reveal/'));
+});

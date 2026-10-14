@@ -139,3 +139,19 @@ Its separate artifact retains exact SHA/run/attempt and all original target, rep
 shutdown/restart and owned cleanup assertions. One union dispatch avoids branch
 concurrency cancelling a second focused run. Full acceptance still follows only
 after every affected focused result and artifact passes on the same SHA.
+
+For full run38641861932's original Reveal-file failures on Windows, dispatch
+`checks: readiness, readiness_reveal_windows: true, readiness_package_creation: true`.
+This replaces the unrelated editor file with the original Reveal regression file
+on both Windows runners and preserves the exact macOS packaged native command
+after the service repair. Both Windows logs retain OS/SHA/run/attempt provenance;
+the original assertions and full/default scheduling remain unchanged.
+
+Add `readiness_native_windows: true` to that same union for the complete
+run38641861932 failure map: Windows latest independently runs the exact original
+direct development creation/native command after a successful build, even if
+its service/bridge regression file fails. Both Windows jobs include the existing
+bridge regression file. Native owner expiry retains its finite protocol state
+and owner_deadline reason without changing the12-second deadline, one navigation,
+one GO/selection, exact-view guards or owned-process cleanup. This state is the
+last token acknowledged by main, not proof of the blocked COM call or OS actor.

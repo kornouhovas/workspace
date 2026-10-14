@@ -110,6 +110,10 @@ export async function runWindowsProjectReveal(path: string, context: NativeRevea
       settled = true; cleanup();
       if (failure) reject(failure); else { emit("done"); resolve(); }
     };
+    const expired = () => {
+      if (!failure && !settled) emit("failure", { phase: state, reason: "owner_deadline" });
+      return new RevealFailure("native_unavailable");
+    };
     const fail = (problem: "native_error" | "native_unavailable" | "request_expired", error?: unknown) => {
       if (settled || failure) return;
       failure = error instanceof RevealFailure ? error : new RevealFailure(problem);
@@ -126,7 +130,7 @@ export async function runWindowsProjectReveal(path: string, context: NativeRevea
     };
     const live = () => {
       if (!current()) { fail("request_expired"); return false; }
-      if (performance.now() >= deadline) { fail("native_unavailable"); return false; }
+      if (performance.now() >= deadline) { fail("native_unavailable", expired()); return false; }
       return !failure && !settled;
     };
     const permit = async () => {
@@ -180,12 +184,12 @@ export async function runWindowsProjectReveal(path: string, context: NativeRevea
       if (settled) { cleanup(); return; }
       if (!failure) {
         if (!current()) failure = new RevealFailure("request_expired");
-        else if (performance.now() >= deadline) failure = new RevealFailure("native_unavailable");
+        else if (performance.now() >= deadline) failure = expired();
         else if (code !== 0 || signal !== null || state !== "done" || buffer !== "") failure = new RevealFailure("native_error");
       }
       finish();
     };
-    const timer = setTimeout(() => fail("native_unavailable"), timeoutMs);
+    const timer = setTimeout(() => fail("native_unavailable", expired()), timeoutMs);
     const poll = setInterval(() => { live(); }, options.pollMs ?? 10);
     child.stdout.on("data", stdout); child.stderr.on("data", stderr);
     child.stdin.on("error", pipeError); child.stdout.on("error", pipeError); child.stderr.on("error", pipeError);

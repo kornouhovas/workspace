@@ -10,12 +10,12 @@ import { openSettingsService } from "../dist/service/settings.mjs";
 import { createNativeProjectReveal } from "../src/desktop/project-reveal.ts";
 import { isProjectRevealRequest } from "../src/contracts/project-reveal.ts";
 
-async function fixture(mode, run) {
+async function fixture(mode, run, projectFilesystem) {
   const directory = fs.realpathSync.native(fs.mkdtempSync(join(tmpdir(), "project-reveal-")));
   const root = join(directory, "root"), other = join(directory, "other"), database = join(directory, "data.sqlite");
   fs.mkdirSync(root); fs.mkdirSync(other);
   if (mode === "grouped") fs.mkdirSync(join(root, "Category"));
-  const service = openSettingsService(database);
+  const service = openSettingsService(database, undefined, undefined, undefined, projectFilesystem);
   const sql = new Database(database);
   try {
     const workspace = service.workspaces.create({ type: "workspace.create", name: "One", rootPath: root }).value;
@@ -176,7 +176,7 @@ for (const mode of ["direct", "grouped"]) {
 
   for (const change of ["none", "excluded", "retained", "workspace_rebound", "missing", "replaced", ...(mode === "grouped" ? ["category_unavailable"] : [])]) {
     test(`${mode} post-dispatch dirty scan acknowledges only unchanged authority and target: ${change}`, async () => fixture(mode, async (f) => {
-      const original = fs.opendirSync;
+      const original = fs.opendirSync, originalStat = fs.lstatSync;
       const parent = mode === "grouped" ? join(f.root, "Category") : f.root;
       let dispatched = false, writes = 0, moved = false;
       fs.opendirSync = (path, ...args) => {
@@ -196,6 +196,12 @@ for (const mode of ["direct", "grouped"]) {
         }
         return directory;
       };
+      fs.lstatSync = (path, ...args) => {
+        const stat = originalStat(path, ...args);
+        // Pin dirty observations independently of platform timestamp delivery.
+        if (path === parent && args[0]?.bigint) { stat.mtimeNs = BigInt(writes) + 1n; stat.ctimeNs = BigInt(writes) + 1n; }
+        return stat;
+      };
       syncBuiltinESMExports();
       try {
         const result = await f.service.revealProject(f.input, async () => {
@@ -210,25 +216,89 @@ for (const mode of ["direct", "grouped"]) {
           assert.equal(result.value.problem, ["missing", "replaced"].includes(change) ? change : "unavailable");
         }
       } finally {
-        fs.opendirSync = original; syncBuiltinESMExports();
+        fs.opendirSync = original; fs.lstatSync = originalStat; syncBuiltinESMExports();
         if (moved) { fs.rmSync(f.path, { recursive: true, force: true }); fs.renameSync(`${f.path}-moved`, f.path); }
       }
     }));
   }
 
+  test(`${mode} changed authority during final dirty-scan fallback verification cannot acknowledge dispatch`, async () => {
+    const { nativeProjectFilesystem } = await import("../src/service/project-filesystem.ts");
+    let f, dispatched = false, changed = false, checkingAccess = false, writes = 0;
+    const filesystem = { ...nativeProjectFilesystem, assertAccessible(path) {
+      if (f && dispatched && writes > 0 && path === f.root && !changed) {
+        changed = true;
+        f.sql.prepare("UPDATE sources SET excluded_relative_paths = ? WHERE id = ?").run(JSON.stringify([f.project.relativePath]), f.workspace.sourceId);
+      }
+      checkingAccess = true;
+      try { nativeProjectFilesystem.assertAccessible(path); } finally { checkingAccess = false; }
+    } };
+    await fixture(mode, async (value) => {
+      f = value;
+      const originalOpen = fs.opendirSync, originalStat = fs.lstatSync;
+      const parent = mode === "grouped" ? join(f.root, "Category") : f.root;
+      fs.opendirSync = (path, ...args) => {
+        const directory = originalOpen(path, ...args);
+        if (dispatched && !checkingAccess && path === parent) fs.writeFileSync(join(parent, `.reveal-fallback-${writes++}`), "owned fixture metadata");
+        return directory;
+      };
+      fs.lstatSync = (path, ...args) => {
+        const stat = originalStat(path, ...args);
+        if (path === parent && args[0]?.bigint) { stat.mtimeNs = BigInt(writes) + 1n; stat.ctimeNs = BigInt(writes) + 1n; }
+        return stat;
+      };
+      syncBuiltinESMExports();
+      try {
+        const result = await f.service.revealProject(f.input, async () => { dispatched = true; return { outcome: "dispatched" }; });
+        assert.equal(changed, true); assert.equal(writes, 1);
+        assert.equal(result.value.outcome, "rejected"); assert.equal(result.value.problem, "unresolved");
+      } finally { fs.opendirSync = originalOpen; fs.lstatSync = originalStat; syncBuiltinESMExports(); }
+    }, filesystem);
+  });
+
+  test(`${mode} a policy change during a metadata-stable scan cannot inherit stale authorization`, async () => fixture(mode, async (f) => {
+    const originalOpen = fs.opendirSync, originalStat = fs.lstatSync;
+    const parent = mode === "grouped" ? join(f.root, "Category") : f.root;
+    let dispatched = false, changed = false;
+    fs.opendirSync = (path, ...args) => {
+      const directory = originalOpen(path, ...args);
+      if (dispatched && path === parent && !changed) {
+        changed = true;
+        f.sql.prepare("UPDATE sources SET excluded_relative_paths = ? WHERE id = ?").run(JSON.stringify([f.project.relativePath]), f.workspace.sourceId);
+      }
+      return directory;
+    };
+    fs.lstatSync = (path, ...args) => {
+      const stat = originalStat(path, ...args);
+      if (args[0]?.bigint) { stat.mtimeNs = 1n; stat.ctimeNs = 1n; }
+      return stat;
+    };
+    syncBuiltinESMExports();
+    try {
+      const result = await f.service.revealProject(f.input, async () => { dispatched = true; return { outcome: "dispatched" }; });
+      assert.equal(changed, true);
+      assert.equal(result.value.outcome, "rejected"); assert.equal(result.value.problem, "unresolved");
+    } finally { fs.opendirSync = originalOpen; fs.lstatSync = originalStat; syncBuiltinESMExports(); }
+  }));
+
   test(`${mode} a dirty authorization scan cannot dispatch the native command`, async () => fixture(mode, async (f) => {
-    const original = fs.opendirSync, parent = mode === "grouped" ? join(f.root, "Category") : f.root;
+    const original = fs.opendirSync, originalStat = fs.lstatSync, parent = mode === "grouped" ? join(f.root, "Category") : f.root;
     let writes = 0, calls = 0;
     fs.opendirSync = (path, ...args) => {
       const directory = original(path, ...args);
       if (path === parent) fs.writeFileSync(join(parent, `.reveal-preflight-${writes++}`), "owned fixture metadata");
       return directory;
     };
+    fs.lstatSync = (path, ...args) => {
+      const stat = originalStat(path, ...args);
+      if (path === parent && args[0]?.bigint) { stat.mtimeNs = BigInt(writes) + 1n; stat.ctimeNs = BigInt(writes) + 1n; }
+      return stat;
+    };
     syncBuiltinESMExports();
     try {
       const result = await f.service.revealProject(f.input, async () => { calls++; return { outcome: "dispatched" }; });
       assert.equal(result.value.problem, "unavailable"); assert.equal(calls, 0); assert.ok(writes > 0);
-    } finally { fs.opendirSync = original; syncBuiltinESMExports(); }
+    } finally { fs.opendirSync = original; fs.lstatSync = originalStat; syncBuiltinESMExports(); }
   }));
 
   test(`${mode} native errors and unavailable adapters give bounded useful failures without leaking paths`, async () => fixture(mode, async (f) => {

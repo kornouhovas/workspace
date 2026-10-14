@@ -278,8 +278,8 @@ try {
               if (stage === "started") { bridge.started++; bridge.active++; }
               if (stage === "stopped") { bridge.stopped++; bridge.active--; }
               if (stage === "unknown") bridge.unknown = true;
-              if (stage === "failure" && /^(input|navigation|readiness|permit|precommand|selection|postcheck)$/.test(phase) &&
-                  /^(input|deadline|binding|unready|permit|exception)$/.test(reason)) bridge.failure = { phase, reason };
+              if (stage === "failure" && /^(input|navigation|readiness|permit|precommand|selection|postcheck|initial|opened|authorizing|permitted|selected|done)$/.test(phase) &&
+                  /^(input|deadline|binding|unready|permit|exception|owner_deadline)$/.test(reason)) bridge.failure = { phase, reason };
               if (stage === "open") globalThis.creationNativeOpens.push(path);
               if (stage === "select") globalThis.creationNativeCalls.push({ path, returned: false });
               if (stage === "done") {

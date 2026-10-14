@@ -14,6 +14,14 @@ on:
         description: With checks=readiness, reproduce original Windows latest and 2022 editor failures
         type: boolean
         default: false
+      readiness_native_windows:
+        description: With checks=readiness and readiness_reveal_windows, also run the original Windows latest direct creation and Reveal command
+        type: boolean
+        default: false
+      readiness_reveal_windows:
+        description: With checks=readiness, run the original Reveal regression file on both Windows runners instead of editor tests
+        type: boolean
+        default: false
       readiness_package_creation:
         description: With checks=readiness, reproduce original macOS grouped packaged creation and Reveal failure
         type: boolean
@@ -358,7 +366,7 @@ jobs:
           if-no-files-found: error
 
   focused-macos-readiness:
-    if: ${{ github.event_name == 'workflow_dispatch' && inputs.checks == 'readiness' }}
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.checks == 'readiness' && inputs.readiness_reveal_windows != true }}
     name: Focused original Electron editor readiness
     strategy:
       fail-fast: false
@@ -384,6 +392,43 @@ jobs:
         with:
           name: issue-21-focused-readiness-${{ matrix.os }}-${{ github.sha }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
           path: work/ci-focused-readiness/
+          if-no-files-found: error
+          retention-days: 7
+
+  focused-windows-reveal:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.checks == 'readiness' && inputs.readiness_reveal_windows == true }}
+    name: Focused original Reveal service regressions (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, windows-2022]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.21.1
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+        id: reveal-build
+      - name: Original Reveal file including dirty and stable authority controls
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p work/ci-focused-windows-reveal
+          node --import tsx --test tests/project-reveal.test.mjs tests/windows-project-reveal.test.mjs 2>&1 | tee work/ci-focused-windows-reveal/tests.log
+      - name: Original Windows latest direct creation native evidence
+        if: ${{ !cancelled() && steps.reveal-build.outcome == 'success' && inputs.readiness_native_windows == true && matrix.os == 'windows-latest' }}
+        run: npm run smoke:runtime -- dev --creation --discovery-mode=direct --checkpoint=after_evidence
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-focused-windows-reveal/native
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: issue-24-focused-reveal-${{ matrix.os }}-${{ github.sha }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
+          path: work/ci-focused-windows-reveal/
           if-no-files-found: error
           retention-days: 7
 
