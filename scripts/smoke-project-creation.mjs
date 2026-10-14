@@ -269,17 +269,18 @@ try {
         await current.electron.evaluate(({ shell }) => {
           globalThis.creationNativeCalls = [];
           globalThis.creationNativeOpens = [];
-          globalThis.creationNativeBridge = { started: 0, stopped: 0, active: 0, unknown: false, failure: null };
+          globalThis.creationNativeBridge = { started: 0, stopped: 0, active: 0, unknown: false, failure: null, trace: [] };
           if (process.platform === "win32") {
             // Main-only instrumentation of actual production bridge messages.
             // No dispatch replacement, path setter or selection manipulation.
-            process.on("workspace:native-reveal", ({ stage, path, phase, reason }) => {
+            process.on("workspace:native-reveal", ({ stage, path, phase, reason, elapsedMs }) => {
               const bridge = globalThis.creationNativeBridge;
               if (stage === "started") { bridge.started++; bridge.active++; }
               if (stage === "stopped") { bridge.stopped++; bridge.active--; }
               if (stage === "unknown") bridge.unknown = true;
               if (stage === "failure" && /^(input|navigation|readiness|permit|precommand|selection|postcheck|initial|opened|authorizing|permitted|selected|done)$/.test(phase) &&
                   /^(input|deadline|binding|unready|permit|exception|owner_deadline)$/.test(reason)) bridge.failure = { phase, reason };
+              if (stage === "trace" && /^(assemblies|compile|shell|open|enumeration|document|parent|owner|uia_root|uia_properties|uia_tabs|readiness|item|document_recheck|readiness_recheck)$/.test(phase) && Number.isFinite(elapsedMs) && elapsedMs >= 0 && elapsedMs <= 12000 && bridge.trace.length < 15) bridge.trace.push({ phase, elapsedMs });
               if (stage === "open") globalThis.creationNativeOpens.push(path);
               if (stage === "select") globalThis.creationNativeCalls.push({ path, returned: false });
               if (stage === "done") {
@@ -339,12 +340,14 @@ try {
         targetMatched = nativeInvocationOutcome.exactTarget;
         // Persist the finite terminal observation before any strict assertion.
         // Later stage failure and cleanup cannot erase a select without done.
-        let nativeBridgeFailure = null;
+        let nativeBridgeFailure = null, nativeBridgeTrace = [];
         if (current.nativeTracking) {
-          try { nativeBridgeFailure = await withDeadline(electron.evaluate(() => globalThis.creationNativeBridge.failure), 1000, "Finite native bridge failure"); }
-          catch { nativeBridgeFailure = { status: "unavailable" }; }
+          try {
+            const diagnostic = await withDeadline(electron.evaluate(() => ({ failure: globalThis.creationNativeBridge.failure, trace: globalThis.creationNativeBridge.trace })), 1000, "Finite native bridge failure");
+            nativeBridgeFailure = diagnostic.failure; nativeBridgeTrace = diagnostic.trace;
+          } catch { nativeBridgeFailure = { status: "unavailable" }; nativeBridgeTrace = null; }
         }
-        observations.push({ discoveryMode, checkpoint, nativeInvocationOutcome, nativeBridgeFailure });
+        observations.push({ discoveryMode, checkpoint, nativeInvocationOutcome, nativeBridgeFailure, nativeBridgeTrace });
         await save();
         await retainReceipt();
         assert.equal(nativeInvocationOutcome.readStatus, "available", "Native invocation evidence must be readable");

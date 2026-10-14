@@ -281,3 +281,26 @@ for (const [output, phase] of [["", "initial"], ["OPEN\n", "opened"], ["OPEN\nRE
     assert.equal(f.events.some(event => event.stage === "select" || event.stage === "done"), false);
   });
 }
+
+test("finite readiness trace preserves ordering without authorizing a native command", async () => {
+  const f = fixture(); const pending = f.start(); pending.catch(() => {});
+  f.output("TRACE:assemblies\nOPEN\nTRACE:enumeration\n");
+  assert.deepEqual(f.writes, []);
+  f.output("READY\n"); await tick();
+  f.output("SELECT\nDONE\n"); f.close(); await pending;
+  assert.deepEqual(f.writes, ["GO\n"]);
+  const trace = f.events.filter(event => event.stage === "trace");
+  assert.deepEqual(trace.map(event => event.phase), ["assemblies", "enumeration"]);
+  for (const event of trace) assert.ok(Number.isFinite(event.elapsedMs) && event.elapsedMs >= 0 && event.elapsedMs < 5000);
+});
+
+
+for (const output of ['TRACE:private path\n', 'TRACE:uia_tabs:extra\n', 'TRACE:uia_tabs\nTRACE:uia_tabs\n', 'OPEN\nREADY\nTRACE:assemblies\n']) {
+  test(`invalid or late trace stays a failed protocol: ${JSON.stringify(output)}`, async () => {
+    const f = fixture(); const pending = f.start(); f.output(output);
+    await assert.rejects(pending, problem('native_error'));
+    assert.equal(f.events.some(event => event.stage === 'select' || event.stage === 'done'), false);
+    assert.deepEqual(f.calls, ['SIGKILL']);
+    assert.equal(JSON.stringify(f.events).includes('private path'), false);
+  });
+}

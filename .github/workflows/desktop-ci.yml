@@ -14,6 +14,10 @@ on:
         description: With checks=readiness, reproduce original Windows latest and 2022 editor failures
         type: boolean
         default: false
+      readiness_native_prefix:
+        description: With readiness native Windows, reproduce the original layout and creation prefix before the failed command
+        type: boolean
+        default: false
       readiness_native_windows:
         description: With checks=readiness and readiness_reveal_windows, also run the original Windows latest direct creation and Reveal command
         type: boolean
@@ -418,12 +422,31 @@ jobs:
         run: |
           set -o pipefail
           mkdir -p work/ci-focused-windows-reveal
-          node --import tsx --test tests/project-reveal.test.mjs tests/windows-project-reveal.test.mjs 2>&1 | tee work/ci-focused-windows-reveal/tests.log
+          node --import tsx --test tests/project-reveal.test.mjs tests/windows-project-reveal.test.mjs tests/windows-project-reveal-com.test.mjs tests/windows-ready-selection-com.test.mjs 2>&1 | tee work/ci-focused-windows-reveal/tests.log
+      - name: Build original native predecessor layouts
+        if: ${{ !cancelled() && steps.reveal-build.outcome == 'success' && inputs.readiness_native_windows == true && inputs.readiness_native_prefix == true && matrix.os == 'windows-latest' }}
+        run: npm run build:ladle
+      - name: Original predecessor creation layouts
+        if: ${{ !cancelled() && steps.reveal-build.outcome == 'success' && inputs.readiness_native_windows == true && inputs.readiness_native_prefix == true && matrix.os == 'windows-latest' }}
+        run: node scripts/smoke-discovery-layouts.mjs --creation
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-focused-windows-reveal/prefix-creation-layouts
+      - name: Original predecessor category move layouts
+        if: ${{ !cancelled() && steps.reveal-build.outcome == 'success' && inputs.readiness_native_windows == true && inputs.readiness_native_prefix == true && matrix.os == 'windows-latest' }}
+        run: node scripts/smoke-discovery-layouts.mjs --category-move
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-focused-windows-reveal/prefix-category-layouts
+      - name: Original predecessor development creation crash matrix
+        if: ${{ !cancelled() && steps.reveal-build.outcome == 'success' && inputs.readiness_native_windows == true && inputs.readiness_native_prefix == true && matrix.os == 'windows-latest' }}
+        run: npm run smoke:runtime -- dev --creation --skip-native
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-focused-windows-reveal/prefix-creation-crash
       - name: Original Windows latest direct creation native evidence
         if: ${{ !cancelled() && steps.reveal-build.outcome == 'success' && inputs.readiness_native_windows == true && matrix.os == 'windows-latest' }}
         run: npm run smoke:runtime -- dev --creation --discovery-mode=direct --checkpoint=after_evidence
         env:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-focused-windows-reveal/native
+          WORKSPACE_REVEAL_TRACE: '1'
       - uses: actions/upload-artifact@v4
         if: always()
         with:

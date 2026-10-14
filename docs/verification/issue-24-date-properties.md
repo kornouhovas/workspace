@@ -603,3 +603,39 @@ the full tests started: `work/issue24-marker-ack-isolated/release-creation-obser
 Both complete review axes have zero outstanding findings. Required focused
 Windows original-file/native and macOS packaged evidence precede full same-SHA
 acceptance; integration/closure remain in the GitHub checkpoint.
+
+
+Full38645981450 on `11fbfa87` completed: common, macOS and Windows2022
+passed their full suites/native/runtime/packages, including both Date modes.
+Windowslatest passed all platform tests and its layout/crash prefix, then failed
+the exact direct development native command0vs1. Downloaded receipt retains
+opened/owner_deadline, OPEN1/READY0/select0, valid native_unavailable after
+12039.5ms, one confirmed owned bridge stop and fixture cleanup. The expiry
+marker is now present; it does not establish the blocked COM call or OS actor.
+
+The isolated focused command had passed on both prior candidates. The focused
+loop now includes the original UI/layout/crash predecessors rather than treating
+that isolated command as a sufficient reproduction of the full-call pattern.
+Optional first-visit bootstrap and read-boundary probes distinguish assembly/
+compile/shell/open/enumeration/document/parent/owner/UIA/readiness/item checks.
+They contain only allowlisted labels and finite receiver elapsed times, are
+deduplicated15 maximum and stay inside the original1024-byte protocol bound.
+Trace frames cannot advance the permission state, repeat, appear after READY or
+carry unknown/private labels; failures still reject and kill only the owned
+bridge. Observer callback faults cannot replace a real query failure. Normal
+tracing is disabled; the focused native command opts in without changing target,
+GO, view/identity/ownership guards or any deadline. The initial trace replay was
+red native_error in0.15s before the bounded protocol extension; trace/invalid/
+late-frame controls passed locally. Windows interpreter proof and contextual
+original native evidence remain before any renewed full acceptance.
+
+
+Final frozen boundary-probe candidate on Node22.21.1: 2,813 tests, 2,791
+passed, zero failures and22 platform skips (107.9s). Fresh build, package/artifact
+check, lint, typecheck, docs and diff passed; exact isolated local grouped
+packaged creation/native command passed with no skips before tests started:
+`work/issue24-boundary-mac-isolated/release-creation-observations.json`.
+Both review axes have zero findings. The additional skip is the new Windows
+actual-interpreter trace control; it must execute on both focused Windows jobs.
+This candidate adds diagnostic/context coverage, not an asserted historical
+native cause repair. Windows original contextual native evidence remains open.

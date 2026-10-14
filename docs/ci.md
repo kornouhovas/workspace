@@ -155,3 +155,17 @@ bridge regression file. Native owner expiry retains its finite protocol state
 and owner_deadline reason without changing the12-second deadline, one navigation,
 one GO/selection, exact-view guards or owned-process cleanup. This state is the
 last token acknowledged by main, not proof of the blocked COM call or OS actor.
+
+For run38645981450's repeated Windows latest native expiry after the full UI
+prefix, add `readiness_native_prefix: true` to the focused Reveal/native union.
+It retains the original Ladle build, both original layout commands and original
+dev creation/crash command before the exact failed direct native command. The
+last command still runs independently after successful application build if a
+regression or prefix fails; every failed predecessor remains a failed job.
+Only this focused native command enables `WORKSPACE_REVEAL_TRACE=1`. Fixed
+bootstrap/read-boundary markers are deduplicated (15 maximum), validated under
+the unchanged1024-byte protocol limit and retained as first received boundary
+latencies from adapter spawn. They neither authorize GO nor identify the current
+blocked call after repeated polls. Default runtime behavior has tracing disabled.
+Actual Windows interpreter controls, existing view/binding/permit/deadline tests
+and original target/native/quit/cleanup assertions remain required.

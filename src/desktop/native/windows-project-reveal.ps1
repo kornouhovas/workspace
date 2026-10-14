@@ -14,6 +14,13 @@ function Write-WorkspaceRevealEvent($event) {
     [Console]::Out.Flush()
 }
 
+# Optional bounded read-only boundary evidence. It cannot supply a target or GO.
+function Write-WorkspaceRevealTrace($phase) {
+    if ($env:WORKSPACE_REVEAL_TRACE -cne '1' -or $phase -cnotin @('assemblies','compile','shell','open','enumeration','document','parent','owner','uia_root','uia_properties','uia_tabs','readiness','item','document_recheck','readiness_recheck')) { return }
+    if ($null -eq $script:workspaceRevealTraceSeen) { $script:workspaceRevealTraceSeen = [Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal) }
+    if ($script:workspaceRevealTraceSeen.Add($phase)) { Write-WorkspaceRevealEvent ('TRACE:' + $phase) }
+}
+
 function Read-WorkspaceRevealPermit {
     # Exactly one ASCII GO line followed by EOF; read at most four characters.
     # The owner closes stdin after its permit. Waiting for EOF stays within the
@@ -28,6 +35,8 @@ function Wait-WorkspaceRevealPoll($milliseconds) { Start-Sleep -Milliseconds $mi
 
 function Invoke-WorkspaceProjectReveal($shell, $expected, $watch) {
     $phase = 'input'
+    $trace = $null
+    if ($env:WORKSPACE_REVEAL_TRACE -ceq '1') { $trace = { param($boundary) Write-WorkspaceRevealTrace $boundary } }
     try {
         if ($expected -isnot [string] -or -not [IO.Path]::IsPathRooted($expected) -or
             $expected.Contains([char]0) -or [IO.Path]::GetFullPath($expected) -cne $expected) { throw 'input' }
@@ -36,12 +45,13 @@ function Invoke-WorkspaceProjectReveal($shell, $expected, $watch) {
         $phase = 'navigation'
         $watch.Start()
         Write-WorkspaceRevealEvent 'OPEN'
+        Write-WorkspaceRevealTrace 'open'
         [void]$shell.Open($parent)
         $phase = 'readiness'
         $anchor = $null
         for ($iteration = 0; $iteration -lt 128; $iteration++) {
             if ((Get-WorkspaceRevealMilliseconds $watch) -ge 10000) { throw 'deadline' }
-            $binding = Read-WorkspaceReadyBinding $shell $expected $anchor
+            $binding = Read-WorkspaceReadyBinding $shell $expected $anchor $trace
             $elapsed = Get-WorkspaceRevealMilliseconds $watch
             if ($elapsed -ge 10000) { throw 'deadline' }
             if ($binding.stage -eq 'ready') { $anchor = $binding; break }
@@ -57,7 +67,7 @@ function Invoke-WorkspaceProjectReveal($shell, $expected, $watch) {
         if ((Read-WorkspaceRevealPermit) -cne 'GO') { throw 'permit' }
         if ((Get-WorkspaceRevealMilliseconds $watch) -ge 10000) { throw 'deadline' }
         $phase = 'precommand'
-        $before = Read-WorkspaceReadyBinding $shell $expected $anchor
+        $before = Read-WorkspaceReadyBinding $shell $expected $anchor $trace
         if ((Get-WorkspaceRevealMilliseconds $watch) -ge 10000) { throw 'deadline' }
         if ($before.stage -ne 'ready' -or -not (Test-WorkspaceReadyPath $anchor.item.Path $expected)) { throw 'binding' }
         Write-WorkspaceRevealEvent 'SELECT'
@@ -68,7 +78,7 @@ function Invoke-WorkspaceProjectReveal($shell, $expected, $watch) {
         [void]$anchor.document.SelectItem($anchor.item, 5)
         if ((Get-WorkspaceRevealMilliseconds $watch) -ge 10000) { throw 'deadline' }
         $phase = 'postcheck'
-        $after = Read-WorkspaceReadyBinding $shell $expected $anchor
+        $after = Read-WorkspaceReadyBinding $shell $expected $anchor $trace
         if ((Get-WorkspaceRevealMilliseconds $watch) -ge 10000) { throw 'deadline' }
         if ($after.stage -ne 'ready') { throw 'binding' }
         Write-WorkspaceRevealEvent 'DONE'
@@ -91,7 +101,9 @@ function Invoke-WorkspaceProjectRevealFromEnvironment($shell, $watch) {
 if ($MyInvocation.InvocationName -ne '.') {
     $ErrorActionPreference = 'Stop'
     try {
+        Write-WorkspaceRevealTrace 'assemblies'
         Add-Type -AssemblyName UIAutomationClient, UIAutomationTypes -ErrorAction Stop
+        Write-WorkspaceRevealTrace 'compile'
         Add-Type -TypeDefinition @'
 using System;
 using System.Runtime.InteropServices;
@@ -102,6 +114,7 @@ public static class WorkspaceReadyWindow {
     public static extern uint GetWindowThreadProcessId(IntPtr hwnd, out uint processId);
 }
 '@ | Out-Null
+        Write-WorkspaceRevealTrace 'shell'
         $shell = New-Object -ComObject Shell.Application
         $completed = Invoke-WorkspaceProjectRevealFromEnvironment $shell ([Diagnostics.Stopwatch]::new())
         if ($completed) { exit 0 }

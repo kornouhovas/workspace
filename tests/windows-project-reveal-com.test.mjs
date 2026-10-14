@@ -285,3 +285,31 @@ try {
     assert.equal(process.env.WORKSPACE_PROJECT_REVEAL_TARGET, parentTarget);
   }
 });
+
+test("Windows finite trace deduplicates boundaries and cannot replace a real query failure", { skip: process.platform !== "win32" }, async () => {
+  const script = String.raw`
+$ErrorActionPreference = 'Stop'
+. ./src/desktop/native/windows-project-reveal.ps1
+$events = [Collections.Generic.List[string]]::new()
+function Write-WorkspaceRevealEvent($event) { $script:events.Add($event) }
+foreach ($phase in @('assemblies','compile','shell','open','enumeration','document','parent','owner','uia_root','uia_properties','uia_tabs','readiness','item','document_recheck','readiness_recheck')) { Write-WorkspaceRevealTrace $phase }
+Write-WorkspaceRevealTrace 'assemblies'
+Write-WorkspaceRevealTrace 'private path'
+if ($events.Count -ne 15 -or $events[0] -cne 'TRACE:assemblies' -or $events[14] -cne 'TRACE:readiness_recheck') { throw 'trace_control' }
+$env:WORKSPACE_REVEAL_TRACE = '0'
+Write-WorkspaceRevealTrace 'assemblies'
+if ($events.Count -ne 15) { throw 'trace_disabled' }
+$shell = [pscustomobject]@{}
+$shell | Add-Member ScriptMethod Windows { throw 'REAL_QUERY' }
+try {
+  [void](Read-WorkspaceReadyBinding $shell 'C:\owned\Project' $null { throw 'TRACE_FAULT' })
+  throw 'missing_query'
+} catch {
+  if (-not $_.Exception.Message.Contains('REAL_QUERY') -or $_.Exception.Message.Contains('TRACE_FAULT')) { throw 'trace_interference' }
+}
+[Console]::Out.WriteLine('TRACE_CONTROL')
+`;
+  const result = await promisify(execFile)("powershell.exe", ["-NoProfile", "-NonInteractive", "-STA", "-ExecutionPolicy", "Bypass", "-Command", script],
+    { env: { ...process.env, WORKSPACE_REVEAL_TRACE: "1" }, windowsHide: true, timeout: 10000 });
+  assert.equal(result.stdout.trim(), "TRACE_CONTROL"); assert.equal(result.stderr, "");
+});

@@ -39,7 +39,7 @@ export function resolveWindowsPowerShell(options: ResolverOptions = {}): string 
   } catch { return undefined; }
 }
 
-type NativeEvent = { stage: "started" | "open" | "select" | "done" | "stopped" | "unknown" | "failure"; path: string; phase?: string; reason?: string };
+type NativeEvent = { stage: "started" | "open" | "select" | "done" | "stopped" | "unknown" | "failure" | "trace"; path: string; phase?: string; reason?: string; elapsedMs?: number };
 type BridgeOptions = {
   nativeDirectory: string;
   // Resolved once by trusted main; never accepted over renderer IPC or env.
@@ -80,9 +80,10 @@ export async function runWindowsProjectReveal(path: string, context: NativeRevea
   return new Promise<void>((resolve, reject) => {
     let state: "initial" | "opened" | "authorizing" | "permitted" | "selected" | "done" = "initial";
     let buffer = "", bytes = 0, closed = false, settled = false;
+    const tracePhases = new Set<string>();
     let failure: RevealFailure | undefined;
     let killTimer: ReturnType<typeof setTimeout> | undefined;
-    const emit = (stage: NativeEvent["stage"], details: Pick<NativeEvent, "phase" | "reason"> = {}) => {
+    const emit = (stage: NativeEvent["stage"], details: Pick<NativeEvent, "phase" | "reason" | "elapsedMs"> = {}) => {
       const event = { stage, path, ...details };
       try {
         if (options.onEvent) options.onEvent(event);
@@ -149,6 +150,13 @@ export async function runWindowsProjectReveal(path: string, context: NativeRevea
     };
     const line = (value: string) => {
       if (!live()) return;
+      const trace = /^TRACE:(assemblies|compile|shell|open|enumeration|document|parent|owner|uia_root|uia_properties|uia_tabs|readiness|item|document_recheck|readiness_recheck)$/.exec(value);
+      if (trace) {
+        if (tracePhases.has(trace[1]) || (state !== "initial" && state !== "opened")) { fail("native_error"); return; }
+        tracePhases.add(trace[1]);
+        emit("trace", { phase: trace[1], elapsedMs: Math.max(0, performance.now() - started) });
+        return;
+      }
       if (value === "OPEN" && state === "initial") { state = "opened"; emit("open"); }
       else if (value === "READY" && state === "opened") { state = "authorizing"; void permit(); }
       else if (value === "SELECT" && state === "permitted") { state = "selected"; emit("select"); }

@@ -408,8 +408,8 @@ test('remaining Reveal scope replaces unrelated readiness with the original file
     }
   assert.deepEqual(job.strategy.matrix.os, ['windows-latest', 'windows-2022']); assert.equal(job.strategy['fail-fast'], false);
   const commands = job.steps.filter(step => step.run).map(step => step.run);
-  assert.deepEqual(commands.slice(0, 2), ['npm ci', 'npm run build']); assert.equal(commands.length, 4);
-  assert.ok(commands[2].includes('set -o pipefail')); assert.ok(commands[2].includes('node --import tsx --test tests/project-reveal.test.mjs tests/windows-project-reveal.test.mjs 2>&1 | tee'));
+  assert.deepEqual(commands.slice(0, 2), ['npm ci', 'npm run build']); assert.equal(commands.length, 8);
+  assert.ok(commands[2].includes('set -o pipefail')); assert.ok(commands[2].includes('node --import tsx --test tests/project-reveal.test.mjs tests/windows-project-reveal.test.mjs tests/windows-project-reveal-com.test.mjs tests/windows-ready-selection-com.test.mjs 2>&1 | tee'));
   const upload = job.steps.find(step => step.uses === 'actions/upload-artifact@v4');
   assert.equal(upload.if, 'always()'); assert.equal(upload.with['if-no-files-found'], 'error');
   for (const field of ['matrix.os', 'github.sha', 'github.run_id', 'github.run_attempt']) assert.ok(upload.with.name.includes(field));
@@ -430,4 +430,24 @@ test('remaining Reveal scope includes the exact Windows latest native failure in
   }
   assert.ok(!native.if.includes('reveal-tests')); // A regression failure cannot skip the original native command.
   assert.ok(native.env.WORKSPACE_SMOKE_EVIDENCE_DIR.startsWith('work/ci-focused-windows-reveal/'));
+});
+
+
+test('native prefix scope retains the exact original UI predecessors and bounded private trace', () => {
+  const workflow = load(readFileSync('.github/workflows/desktop-ci.yml', 'utf8'));
+  assert.equal(workflow.on.workflow_dispatch.inputs.readiness_native_prefix.default, false);
+  const job = workflow.jobs['focused-windows-reveal'];
+  const prefix = job.steps.filter(step => step.name?.includes('predecessor'));
+  assert.deepEqual(prefix.map(step => step.run), ['npm run build:ladle', 'node scripts/smoke-discovery-layouts.mjs --creation',
+    'node scripts/smoke-discovery-layouts.mjs --category-move', 'npm run smoke:runtime -- dev --creation --skip-native']);
+  for (const step of prefix) for (const native of [false, true]) for (const readiness_native_prefix of [undefined, false, true])
+    for (const os of ['windows-latest', 'windows-2022']) {
+      const context = { cancelled: () => false, steps: { 'reveal-build': { outcome: 'success' } },
+        inputs: { readiness_native_windows: native, readiness_native_prefix }, matrix: { os } };
+      assert.equal(runInNewContext(step.if.slice(3, -2).replaceAll('steps.reveal-build', 'steps["reveal-build"]'), context),
+        native && readiness_native_prefix === true && os === 'windows-latest');
+    }
+  const native = job.steps.find(step => step.name === 'Original Windows latest direct creation native evidence');
+  assert.equal(native.env.WORKSPACE_REVEAL_TRACE, '1');
+  assert.ok(job.steps.indexOf(native) > job.steps.indexOf(prefix.at(-1)));
 });
