@@ -8,7 +8,7 @@ on:
       checks:
         description: Full acceptance or a selected focused failure route
         type: choice
-        options: [full, failed, readiness, windows-release, issue22-failures]
+        options: [full, failed, readiness, windows-release, issue22-failures, creation-shutdown]
         default: full
       diagnostics:
         description: Run isolated investigation and early-feedback jobs
@@ -33,7 +33,7 @@ concurrency:
 
 jobs:
   common:
-    if: ${{ github.event_name != 'workflow_dispatch' || (inputs.checks != 'failed' && inputs.checks != 'readiness' && inputs.checks != 'windows-release' && inputs.checks != 'issue22-failures') }}
+    if: ${{ github.event_name != 'workflow_dispatch' || (inputs.checks != 'failed' && inputs.checks != 'readiness' && inputs.checks != 'windows-release' && inputs.checks != 'issue22-failures' && inputs.checks != 'creation-shutdown') }}
     name: Common tests and static checks
     runs-on: macos-latest
     steps:
@@ -47,6 +47,33 @@ jobs:
       - run: npm run typecheck
       - run: npm run check:docs
       - run: npm run test:common
+
+  focused-creation-shutdown:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.checks == 'creation-shutdown' }}
+    name: Focused Windows latest creation shutdown
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.21.1
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Verify quit evidence and lifecycle/route regressions
+        run: node --import tsx --test tests/runtime-quit-evidence.test.mjs tests/runtime-lifecycle.test.mjs tests/test-suites.test.mjs
+      - name: Original creation crash/recovery matrix
+        run: npm run smoke:runtime -- dev --creation --skip-native
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-focused-creation-shutdown
+      - name: Retain original shutdown result and finite quit phases
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-23-creation-shutdown-${{ github.sha }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
+          path: work/ci-focused-creation-shutdown/
+          if-no-files-found: error
 
   focused-issue22-failures:
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.checks == 'issue22-failures' }}

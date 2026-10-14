@@ -9,6 +9,7 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { _electron } from "playwright-core";
 import { packagedExecutablePath } from "./runtime-executable.mjs";
+import { collectQuitEvidence, installQuitEvidence } from "./runtime-quit-evidence.mjs";
 import { cleanupOwnedFixture, closeElectron, withDeadline } from "./runtime-lifecycle.mjs";
 import { createCreationEvidence, recordCreationEvidence } from "./runtime-evidence.mjs";
 import { waitForFileManagerTarget, closeDisposableFileManagerTarget } from "./file-manager-evidence.mjs";
@@ -158,16 +159,19 @@ async function shutdown() {
   const pids = await closing.electron.evaluate(({ app }) => app.getAppMetrics().filter((metric) => metric.type === "Utility" && metric.serviceName?.includes("Node")).map((metric) => metric.pid));
   assert.ok(pids.length);
   for (const pid of pids) backendPids.add(pid);
+  const quitCapture = collectQuitEvidence(closing.electron.process());
+  try { await withDeadline(installQuitEvidence(closing.electron), 1000, "Quit evidence installation"); }
+  catch { quitCapture.record.installationUnavailable = true; }
   current = undefined;
   try {
     await closeElectron(closing.electron); // Unchanged ten-second normal quit; forced cleanup throws.
     for (const pid of pids) assert.throws(() => process.kill(pid, 0), { code: "ESRCH" });
-    activeRun.shutdowns.push({ status: "passed", backendStopped: true });
+    activeRun.shutdowns.push({ status: "passed", backendStopped: true, quitPhases: quitCapture.stop() });
     await record(null, "normalShutdown", { status: "passed", asserted: true, backendStopped: true });
   } catch (error) {
-    activeRun.shutdowns.push({ status: "failed", reason: error.message, forcedCleanup: error.forcedCleanup });
+    activeRun.shutdowns.push({ status: "failed", reason: error.message, forcedCleanup: error.forcedCleanup, quitPhases: quitCapture.stop() });
     await record(null, "normalShutdown", { status: "failed", reason: error.message, forcedCleanup: error.forcedCleanup }); throw error;
-  }
+  } finally { quitCapture.stop(); }
 }
 const labels = {
   en: { create: "Create project folder", saved: "Project folder created.", review: "Review recovery", complete: "Complete the recorded folder association", retry: "Retry creation at the verified missing destination", associate: "Accept this reviewed folder for the reserved project", reveal: "Reveal folder", dispatched: "Request sent to the system file manager." },

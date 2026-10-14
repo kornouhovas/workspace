@@ -98,3 +98,25 @@ and Windows 2022 acceptance route and retains Number evidence in the existing up
 The new service/SQLite/IPC/mixed UI tests default to platform coverage. Existing common,
 filesystem/recovery/native routes and packaging assertions remain required and unchanged.
 No platform/integration outcome is inferred from dispatch or a missing artifact.
+
+## First candidate CI failure
+
+Candidate `bab3c4b016f82237a7899de85753f27552c17604`, run 38522832305 attempt 1:
+common checks, the macOS full job and Windows 2022 full job passed. Both successful jobs
+included Number development and packaged EN/RU runtime. Windows latest passed platform
+and layout checks, then failed the original development creation crash/recovery matrix
+(`npm run smoke:runtime -- dev --creation --skip-native`, job 115716670702).
+
+Its retained creation report shows 14 successful ordinary shutdowns followed by a 10-second
+shutdown timeout on grouped `after_commit`, before restart persistence. Forced cleanup
+confirmed parent stop but retained command error 255; fixture cleanup passed. Number native
+stages on that OS were unreached. The original evidence has no quit-dispatch/lifecycle phases,
+so it cannot identify whether inspector dispatch, backend waiting or later Electron quit
+was responsible. The inherited shutdown failure is not described as a Number defect or fixed.
+
+A bounded fixture-only quit-phase capture and `creation-shutdown` focused CI route now
+preserve finite before-quit/will-quit/quit phase fields and owned-parent exit. They do not
+retain names, paths, PIDs or exception text, change production code/deadlines, veto quit,
+relax the original command or convert forced cleanup into normal shutdown. Local lifecycle
+and evidence/route regressions passed; independent Standards review found no issue.
+Focused and subsequent full acceptance outcomes remain in the GitHub checkpoint.

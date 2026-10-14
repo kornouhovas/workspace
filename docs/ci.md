@@ -44,3 +44,13 @@ For the issue-21 macOS editor-readiness failure, select `checks: readiness` to r
 For the issue-22 Windows latest final packaged-runtime cleanup failure, select `checks: windows-release`. This skips common/full-matrix jobs and runs only Windows latest: build prerequisites, lifecycle/startup/route regressions, packaging/resource validation and the original `npm run smoke:runtime -- release` command. Exact SHA/run/attempt evidence is retained even on failure. The rename harness records the finite cleanup predicate and counts without PIDs, paths or raw probe exceptions. This is diagnostic evidence; parent/backend exit, native cleanup and fixture-removal gates and their deadlines are unchanged. Focused original-step success is required before dispatching full acceptance on the same candidate.
 
 For the subsequent issue-22 recovery-fanout and grouped rename failures, select `checks: issue22-failures`. Only Windows latest and macOS run: build/capture/route prerequisites, the Windows `backend-lifecycle.test.mjs` file and original macOS `npm run smoke:runtime -- dev`. Commit/observer event contracts remain distinct, original runtime assertions/deadlines stay intact, and finite submission receipts contain no names or paths. Both focused scenarios and retained artifacts must pass before full CI.
+
+For the issue-23 Windows latest development creation crash/recovery shutdown failure,
+select `checks: creation-shutdown`. This runs only Windows latest: the existing build,
+quit-evidence/lifecycle/route regressions, and the original
+`npm run smoke:runtime -- dev --creation --skip-native` command. The fixture captures
+finite owned-process quit phases without names, paths, PIDs or exception text; original
+normal-quit/exit/cleanup assertions and deadlines remain unchanged. The exact-SHA artifact
+retains all original scenario outcomes, including failure or unreached restart stages.
+Missing phase evidence does not prove a cause, and a diagnostic run alone is not full
+acceptance. Inspect original-step focused success before dispatching full CI on that SHA.

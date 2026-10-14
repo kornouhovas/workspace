@@ -42,7 +42,7 @@ test('suite CLI lists the selected real files and rejects unknown invocations', 
 test('ordinary CI runs common checks once and retains all three platform acceptance routes', () => {
   const workflow = load(readFileSync('.github/workflows/desktop-ci.yml', 'utf8'));
   const { common, verify } = workflow.jobs;
-  assert.equal(common.if, "${{ github.event_name != 'workflow_dispatch' || (inputs.checks != 'failed' && inputs.checks != 'readiness' && inputs.checks != 'windows-release' && inputs.checks != 'issue22-failures') }}");
+  assert.equal(common.if, "${{ github.event_name != 'workflow_dispatch' || (inputs.checks != 'failed' && inputs.checks != 'readiness' && inputs.checks != 'windows-release' && inputs.checks != 'issue22-failures' && inputs.checks != 'creation-shutdown') }}");
   assert.equal(common.strategy, undefined);
   assert.deepEqual(common.steps.filter(step => step.run).map(step => step.run), [
     'npm ci', 'npm run lint', 'npm run typecheck', 'npm run check:docs', 'npm run test:common',
@@ -83,7 +83,7 @@ test('investigation jobs run only with explicit manual diagnostic inputs', () =>
 test('manual failed-check scope runs only the Windows observer and macOS rename routes', () => {
   const workflow = load(readFileSync('.github/workflows/desktop-ci.yml', 'utf8'));
   assert.equal(workflow.on.workflow_dispatch.inputs.checks.default, 'full');
-  assert.deepEqual(workflow.on.workflow_dispatch.inputs.checks.options, ['full', 'failed', 'readiness', 'windows-release', 'issue22-failures']);
+  assert.deepEqual(workflow.on.workflow_dispatch.inputs.checks.options, ['full', 'failed', 'readiness', 'windows-release', 'issue22-failures', 'creation-shutdown']);
   const enabled = (job, event, checks) => runInNewContext(job.if.slice(3, -2), { github: { event_name: event }, inputs: { checks } });
   for (const event of ['push', 'pull_request', 'workflow_dispatch']) for (const checks of [undefined, 'full', 'failed']) {
     const focused = event === 'workflow_dispatch' && checks === 'failed';
@@ -219,4 +219,23 @@ test('issue 22 failure scope selects only the affected Windows suite and origina
   const upload = job.steps.find(step => step.uses === 'actions/upload-artifact@v4');
   assert.equal(upload.if, 'always()'); assert.equal(upload.with['if-no-files-found'], 'error');
   for (const field of ['matrix.os', 'github.sha', 'github.run_id', 'github.run_attempt']) assert.ok(upload.with.name.includes(field));
+});
+
+test('creation shutdown failure route preserves the original Windows latest command and skips full acceptance', () => {
+  const workflow = load(readFileSync('.github/workflows/desktop-ci.yml', 'utf8'));
+  for (const event of ['push', 'pull_request', 'workflow_dispatch']) for (const checks of [undefined, 'full', 'failed', 'readiness', 'windows-release', 'issue22-failures', 'creation-shutdown']) {
+    const context = { github: { event_name: event }, inputs: { checks } };
+    const active = Object.entries(workflow.jobs).filter(([, job]) => job.if && runInNewContext(job.if.slice(3, -2), context)).map(([name]) => name);
+    if (event === 'workflow_dispatch' && checks === 'creation-shutdown') assert.deepEqual(active, ['focused-creation-shutdown']);
+    else assert.equal(active.includes('focused-creation-shutdown'), false);
+  }
+  const job = workflow.jobs['focused-creation-shutdown'];
+  assert.equal(job['runs-on'], 'windows-latest');
+  assert.deepEqual(job.steps.filter(step => step.run).map(step => step.run), ['npm ci', 'npm run build', 'node --import tsx --test tests/runtime-quit-evidence.test.mjs tests/runtime-lifecycle.test.mjs tests/test-suites.test.mjs', 'npm run smoke:runtime -- dev --creation --skip-native']);
+  assert.ok(job.steps.every(step => step['continue-on-error'] === undefined));
+  const original = job.steps.find(step => step.run === 'npm run smoke:runtime -- dev --creation --skip-native');
+  assert.equal(original.if, undefined); assert.equal(original.env.WORKSPACE_SMOKE_EVIDENCE_DIR, 'work/ci-focused-creation-shutdown');
+  const upload = job.steps.find(step => step.uses === 'actions/upload-artifact@v4');
+  assert.equal(upload.if, 'always()'); assert.equal(upload.with['if-no-files-found'], 'error');
+  for (const field of ['github.sha', 'github.run_id', 'github.run_attempt']) assert.ok(upload.with.name.includes(field));
 });
