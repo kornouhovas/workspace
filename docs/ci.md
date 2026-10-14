@@ -57,7 +57,13 @@ acceptance. Inspect original-step focused success before dispatching full CI on 
 
 
 For the issue-24 Windows 2022 raw legacy realpath stress failure, select `checks: raw-rename`.
-This runs only Windows 2022 with the existing service-fixture build, bounded idle/native/
+The same selector now independently runs the original failed macOS dev runtime command
+after build, preserving exact-SHA submission receipts and logs. Both matching jobs must
+pass before renewed full acceptance; input preparation verifies exact authored text
+before Enter without replaying filesystem effects or accepting a different outcome.
+macOS also runs the original observer CLI cancellation cases after dependencies,
+including when runtime fails, with strict exit and retained output.
+The Windows raw-rename job runs only Windows 2022 with the existing service-fixture build, bounded idle/native/
 legacy/production-scan comparisons and the original Windows rename regression file.
 The original test runs after a comparison failure when its build passed; no continuation
 or success waiver is applied. Exact-SHA comparison artifacts preserve negative renames,

@@ -1,6 +1,20 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { createRenameEvidence, recordRenameEvidence, assertRenameAcceptance } from "../scripts/runtime-evidence.mjs";
+import { fillExactRenameDraft } from "../scripts/smoke-project-rename-ui.mjs";
+
+test("rename driver clears existing text and authors the exact draft before any mutation", async () => {
+  let value = "Existing", submissions = 0;
+  const input = { press: async key => { if (key === "Backspace") value = ""; },
+    fill: async draft => { value += draft; }, inputValue: async () => value };
+  const matched = await fillExactRenameDraft(input, "  Exact 日本語");
+  assert.equal(matched, true); assert.equal(value, "  Exact 日本語"); assert.equal(submissions, 0);
+  await assert.rejects(async () => {
+    await fillExactRenameDraft({ ...input, fill: async () => { value = "Changed draft"; } }, "Expected");
+    submissions++;
+  }, { name: "AssertionError" });
+  assert.equal(submissions, 0);
+});
 
 test("rename acceptance rejects unreached stages and cannot promote skipped or failed assertions", () => {
   const evidence = createRenameEvidence();

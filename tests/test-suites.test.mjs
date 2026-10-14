@@ -247,7 +247,7 @@ test('raw rename and routing focused modes preserve strict original commands and
     const context = { github: { event_name: event }, inputs: { checks } };
     const active = Object.entries(workflow.jobs).filter(([, job]) => job.if && runInNewContext(job.if.slice(3, -2), context)).map(([name]) => name);
     if (event === 'workflow_dispatch') assert.deepEqual(active, {
-      'raw-rename': ['focused-raw-rename'], 'issue24-failures': ['focused-issue24-failures'],
+      'raw-rename': ['focused-rename-runtime', 'focused-raw-rename'], 'issue24-failures': ['focused-issue24-failures'],
       'category-fixture': ['focused-category-fixture', 'focused-category-runtime'],
     }[checks]);
     else assert.deepEqual(active, ['common']);
@@ -300,6 +300,26 @@ test('category-fixture also reproduces the original Windows 2022 development run
   assert.ok(job.steps.every(step => step['continue-on-error'] === undefined));
   const upload = job.steps.find(step => step.uses === 'actions/upload-artifact@v4');
   assert.equal(upload.if, 'always()'); assert.equal(upload.with.path, 'work/ci-category-runtime/');
+  assert.equal(upload.with['if-no-files-found'], 'error');
+  for (const field of ['github.sha', 'github.run_id', 'github.run_attempt']) assert.ok(upload.with.name.includes(field));
+});
+
+test('raw-rename also retains the original macOS development runtime command and submission receipts', () => {
+  const workflow = load(readFileSync('.github/workflows/desktop-ci.yml', 'utf8'));
+  const job = workflow.jobs['focused-rename-runtime'];
+  assert.equal(job.if, workflow.jobs['focused-raw-rename'].if);
+  assert.equal(job['runs-on'], 'macos-latest'); assert.equal(job['timeout-minutes'], 25);
+  const commands = job.steps.filter(step => step.run);
+  assert.deepEqual(commands.slice(0, 2).map(step => step.run), ['npm ci', 'npm run build']);
+  assert.equal(commands[2].shell, 'bash'); assert.ok(commands[2].run.includes('set -o pipefail'));
+  assert.ok(commands[2].run.includes('npm run smoke:runtime -- dev 2>&1 | tee'));
+  assert.equal(commands[2].env.WORKSPACE_SMOKE_EVIDENCE_DIR, 'work/ci-rename-runtime');
+  assert.equal(commands[3].if, "${{ !cancelled() && steps.dependencies.outcome == 'success' }}");
+  assert.equal(commands[3].shell, 'bash'); assert.ok(commands[3].run.includes('set -o pipefail'));
+  assert.ok(commands[3].run.includes("node --test --test-name-pattern='cancelling the actual observer CLI' tests/ralphex-observe.test.mjs"));
+  assert.ok(job.steps.every(step => step['continue-on-error'] === undefined));
+  const upload = job.steps.find(step => step.uses === 'actions/upload-artifact@v4');
+  assert.equal(upload.if, 'always()'); assert.equal(upload.with.path, 'work/ci-rename-runtime/');
   assert.equal(upload.with['if-no-files-found'], 'error');
   for (const field of ['github.sha', 'github.run_id', 'github.run_attempt']) assert.ok(upload.with.name.includes(field));
 });

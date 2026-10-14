@@ -20,6 +20,15 @@ import { installNativeRevealReceipt, retainNativeRevealReceipt } from "./native-
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const unwrap = result => { assert.equal(result.ok, true, JSON.stringify(result)); return result.value; };
+export async function fillExactRenameDraft(input, draft) {
+  // Native editing only, before Enter can authorize a filesystem mutation.
+  await input.press("ControlOrMeta+A");
+  await input.press("Backspace");
+  assert.equal(await input.inputValue(), "", "Rename driver must clear the old name before authoring");
+  await input.fill(draft);
+  assert.equal(await input.inputValue() === draft, true, "Rename driver must author the exact draft before submitting");
+  return true;
+}
 const query = async (page, type, workspaceId, extra = {}) => unwrap(await page.evaluate(input => globalThis.window.workspace.workspace(input), { type: `workspace.${type}`, ...(workspaceId === undefined ? {} : { workspaceId }), ...extra }));
 
 // The driver alone prepares owned disposable roots/SQLite before Electron opens
@@ -234,8 +243,7 @@ export async function runProjectRenameUi(mode = "dev") {
       await trigger.press("Enter");
       await waitForRenameEditor(page, { record: readiness => observations.push({ editorReadiness: readiness }) });
       const input = page.locator("#project-rename-name");
-      await input.fill(draft);
-      observation.renameSubmission.editorMatchesDraft = await input.inputValue() === draft;
+      observation.renameSubmission.editorMatchesDraft = await fillExactRenameDraft(input, draft);
       await input.press("Enter");
       await page.getByText(expectedMessage, { exact: true }).waitFor();
     } catch (error) { primaryFailure = error; }

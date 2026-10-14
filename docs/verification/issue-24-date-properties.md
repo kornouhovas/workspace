@@ -233,3 +233,60 @@ Spec review caught a full-tree assertion placed before restoring the owned absen
 category; it now runs after restoration/refresh, with exact project/Text and
 post-rename inventory checks retained while absent. New matching focused/full CI
 is required for this final oracle change before integration.
+
+Focused run 38617014757 passed on `e65738802e013018838c4aba22bda2c9bb31813b`:
+47 original Windows latest category tests and the original Windows 2022 dev runtime.
+Downloaded exact-SHA category report, both unavailable-operation proofs and fixture
+success checkpoint confirm one authored unavailable UUID per language, no effects,
+34 normal shutdowns, cleanup and 4 utility exits. Full run 38618003758 then failed
+Windows 2022 job 116038704972 in inherited DELETE-shared contrast test at
+windows-rename-diagnostics.test.mjs:355. Its log records only status failed vs
+completed and lacks the finite operation response; exact underlying cause is unknown.
+Windows latest passed platform tests; remaining runtime jobs are still pending.
+
+The contrast assertion now includes the existing allowlisted parseFixtureResponse
+checkpoint, and separately requires failed evidence to remain parseable. Actual
+rename success and verified handle lifetime remain mandatory; no retries, deadline,
+native API or production behavior changes. The existing Windows 2022 raw-rename
+focused route runs the original file and bounded differential diagnostics before
+another full same-SHA acceptance run. Improved failure context is not a causal fix.
+
+The same full run's macOS job 116038705027 passed platform tests but failed original
+dev runtime at grouped RU current-name rename: the unchanged message did not appear.
+Downloaded screenshot shows a completed rename, and the bounded submission receipt
+establishes editorMatchesDraft=false, requestMatchesDraft=false, serviceOk=true,
+outcome=completed and responseMatchesDraft=false. The driver submitted different
+authored text before its timeout; this is not evidence of a broken service no-op.
+The exact cause of draft divergence is not established by the receipt.
+
+The fixture driver now uses native select-all/Backspace to clear the old name, checks
+empty input, fills the exact intended draft and requires equality before Enter. It
+never retries a service mutation or edits the production DOM/state directly. A
+controlled divergent-input regression failed red first and requires no mutation on
+divergence. Original expected messages, no-op outcome and project/file preservation
+remain unchanged. Focused readiness/receipt/runtime checks passed 34 tests. The
+raw-rename route now independently retains the original failed dev runtime command
+on macOS alongside Windows 2022's original diagnostic file/comparison.
+
+The subsequent complete local suite also found an inherited observer CLI cancellation
+fixture race: after a fixed 100ms, SIGTERM could arrive before cancellation handlers,
+leaving empty stdout and failing JSON parsing. A controlled 250ms real CLI startup
+delay reproduced that same failure red. The fixture now waits for the actual owned
+cursor lock published after handler installation, before SIGTERM, and observes close
+so stdout has drained. Its controlled executor is gated until cancellation assertions
+finish, then released to its required successful terminal state. Immediate and delayed
+CLI startup cases passed; production observer/runner and shutdown assertions are
+unchanged. No actual Ralphex executor is launched. The matching focused macOS job
+retains these original cancellation cases even if its independent runtime step fails.
+
+The combined follow-up candidate passed the complete local suite: 2,771 tests,
+2,750 passed, zero failures and 21 platform skips. Original Windows diagnostics
+passed 37 with three platform skips. Lint, typecheck, docs and diff checks passed.
+Actual isolated rename dev UI passed direct/grouped exact authoring, unchanged/rejected
+outcomes, Text/inventory/identity preservation, sibling/native Reveal and all seven
+interruption/restart scenarios per mode; evidence is retained under
+`work/issue-24-exact-rename-local`. Reviews have zero outstanding findings. They caught
+and resolved an initially misplaced contrast-context edit and an outdated Windows-only
+route sentence. Full run 38618003758 finished with Windows latest passing completely;
+macOS draft divergence and Windows 2022 contrast failures remain mapped above.
+Matching focused checks precede full acceptance of this new candidate.

@@ -1024,13 +1024,32 @@ test('real running PID probe denial stays uncertain until the actual worker exit
   assert.equal(terminal.exit, 0);
 });
 
-test('cancelling the actual observer CLI leaves its quiet executor running to successful exit',async t=>{
-  const f=await runningFixture(t,'quiet',500);
-  const observer=spawn(process.execPath,[fileURLToPath(new URL('../scripts/ralphex-observe.mjs',import.meta.url)),'runner','--dir',f.dir,'--log',f.log,'--cursor',f.options.cursor,'--budget-ms','2000'],{stdio:['ignore','pipe','pipe']});
-  let stdout='';observer.stdout.on('data',data=>stdout+=data);const exit=new Promise(resolve=>observer.once('exit',resolve));
-  await new Promise(resolve=>setTimeout(resolve,100));observer.kill('SIGTERM'); await exit;
-  if (process.platform !== 'win32') assert.equal(JSON.parse(stdout).reason,'cancelled'); assert.equal(readState(f.dir).status,'running');
-  assert.equal((await f.exited).code,0); assert.equal(readState(f.dir).status,'awaiting_review');
+for (const startupDelay of [0, 250]) test(`cancelling the actual observer CLI after ${startupDelay}ms startup leaves its quiet executor running to successful exit`, async t => {
+  const f = await runningFixture(t, 'gated', 500);
+  const observer = spawn(process.execPath, ['--import', `data:text/javascript,await new Promise(resolve=>setTimeout(resolve,${startupDelay}));`,
+    fileURLToPath(new URL('../scripts/ralphex-observe.mjs', import.meta.url)), 'runner', '--dir', f.dir, '--log', f.log,
+    '--cursor', f.options.cursor, '--budget-ms', '2000'], { stdio: ['ignore', 'pipe', 'pipe'] });
+  let stdout = '', closed = false;
+  observer.stdout.on('data', data => { stdout += data; }); observer.stderr.resume();
+  const exit = new Promise(resolve => observer.once('close', () => { closed = true; resolve(); }));
+  const awaitExit = async () => {
+    let timer;
+    try { await Promise.race([exit, new Promise((_, reject) => { timer = setTimeout(() => reject(new Error('Observer CLI termination timed out')), 1500); })]); }
+    finally { clearTimeout(timer); }
+  };
+  try {
+    // Cursor ownership is published after the real CLI installed cancellation handlers.
+    const until = Date.now() + 2000;
+    while (!fs.existsSync(`${f.options.cursor}.lock`) && !closed && Date.now() < until) await new Promise(resolve => setTimeout(resolve, 10));
+    assert.equal(fs.existsSync(`${f.options.cursor}.lock`), true, 'Observer CLI must own its cursor before cancellation');
+    observer.kill('SIGTERM'); await awaitExit();
+    if (process.platform !== 'win32') assert.equal(JSON.parse(stdout).reason, 'cancelled');
+    assert.equal(readState(f.dir).status, 'running');
+  } finally {
+    if (!closed) { observer.kill('SIGKILL'); await awaitExit(); }
+    writeFileSync(join(f.dir, 'fixture-release'), 'release\n');
+  }
+  assert.equal((await fixtureExit(f)).code, 0); assert.equal(readState(f.dir).status, 'awaiting_review');
 });
 
 test('a dead launcher retains running evidence and cannot infer executor completion',async t=>{

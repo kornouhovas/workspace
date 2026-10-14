@@ -77,6 +77,43 @@ jobs:
           path: work/ci-category-fixture/
           if-no-files-found: error
 
+  focused-rename-runtime:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.checks == 'raw-rename' }}
+    name: Focused macOS original development runtime
+    runs-on: macos-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.21.1
+          cache: npm
+      - id: dependencies
+        run: npm ci
+      - run: npm run build
+      - name: Original failed development runtime command
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p work/ci-rename-runtime
+          npm run smoke:runtime -- dev 2>&1 | tee work/ci-rename-runtime/tests.txt
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-rename-runtime
+      - name: Original observer CLI cancellation cases
+        if: ${{ !cancelled() && steps.dependencies.outcome == 'success' }}
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p work/ci-rename-runtime
+          node --test --test-name-pattern='cancelling the actual observer CLI' tests/ralphex-observe.test.mjs 2>&1 | tee work/ci-rename-runtime/cancellation-tests.txt
+      - name: Preserve exact-SHA submission receipts and original result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-24-rename-runtime-${{ github.sha }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
+          path: work/ci-rename-runtime/
+          if-no-files-found: error
+
   focused-category-runtime:
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.checks == 'category-fixture' }}
     name: Focused Windows 2022 original development runtime

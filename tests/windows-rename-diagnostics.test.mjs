@@ -352,7 +352,9 @@ test('DELETE-shared contrast requires actual rename plus verified handle lifetim
     } });
     return response;
   } });
-  assert.equal(good.status, 'completed'); assert.equal(good.invariants.controlDetected, true);
+  const diagnostic = parseFixtureResponse(JSON.stringify(good), 'delete_shared_control');
+  assert.ok(diagnostic, 'A finite contrast checkpoint must remain parseable even on failure');
+  assert.equal(good.status, 'completed', JSON.stringify(diagnostic)); assert.equal(good.invariants.controlDetected, true);
   const negative = await runRenameFixture(fixture(t), 'delete_shared_control', { rename: async () => ({ process: processResult(),
     response: nativeResponse({ renamed: false, nodeCode: 'EPERM', syscall: 'rename', lockOpened: true, lockReleased: true }) }) });
   assert.equal(negative.status, 'failed'); assert.equal(negative.invariants.controlDetected, false);
