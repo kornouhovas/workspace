@@ -119,3 +119,23 @@ rejected at its original 1s deadline, retaining a finite running/stopped/unknown
 probe of only its captured owned PID. A stopped probe without an exit event still
 fails. Original scenario, terminal, count, normal shutdown and cleanup assertions
 remain; actual OS stop/notification causation is not inferred from the snapshot.
+
+
+For the later Windows latest and Windows 2022 readiness navigation/context failures in issue24,
+dispatch `checks: readiness, readiness_windows: true`. This existing route
+runs only the original readiness file and its regressions on both Windows runners with
+npm dependencies and distinct OS/SHA/run artifacts; the flag defaults to the historical macOS route and does not
+change ordinary/full coverage. Main load receipts are followed by the exact
+fixture data URL's Page load within the same30s firstWindow allowance. Different
+fixture navigation URLs prevent an old load state from satisfying a new load.
+Inspect the original-file result/log before renewed full same-SHA acceptance.
+
+For issue24 full run38636598781's additional macOS grouped packaged creation/native
+acknowledgment failure, include `readiness_package_creation: true` in that same
+`checks: readiness, readiness_windows: true` dispatch. The independent macOS job
+builds, checks the Reveal service regressions, packages and validates the artifact,
+then runs the exact original grouped packaged creation/native command without skips.
+Its separate artifact retains exact SHA/run/attempt and all original target, reply,
+shutdown/restart and owned cleanup assertions. One union dispatch avoids branch
+concurrency cancelling a second focused run. Full acceptance still follows only
+after every affected focused result and artifact passes on the same SHA.

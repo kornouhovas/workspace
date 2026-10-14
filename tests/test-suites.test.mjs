@@ -167,7 +167,12 @@ test('readiness failure scope runs only the original macOS Electron suite', () =
     }
   }
   const job = workflow.jobs['focused-macos-readiness'];
-  assert.equal(job['runs-on'], 'macos-latest');
+  assert.equal(job['runs-on'], "${{ matrix.os }}");
+  assert.equal(job.strategy['fail-fast'], false);
+  assert.equal(workflow.on.workflow_dispatch.inputs.readiness_windows.default, false);
+  for (const readiness_windows of [undefined, false, true])
+    assert.deepEqual(Array.from(runInNewContext(job.strategy.matrix.os.slice(3, -2), { fromJSON: JSON.parse, inputs: { readiness_windows } })),
+      readiness_windows ? ['windows-latest', 'windows-2022'] : ['macos-latest']);
   const commands = job.steps.filter(step => step.run).map(step => step.run);
   assert.equal(commands.length, 2);
   assert.equal(commands[0], 'npm ci');
@@ -175,7 +180,7 @@ test('readiness failure scope runs only the original macOS Electron suite', () =
   assert.ok(commands[1].includes('node --test tests/rename-editor-readiness.test.mjs 2>&1 | tee'));
   const upload = job.steps.find(step => step.uses === 'actions/upload-artifact@v4');
   assert.equal(upload.if, 'always()'); assert.equal(upload.with['if-no-files-found'], 'error');
-  for (const field of ['github.sha', 'github.run_id', 'github.run_attempt']) assert.ok(upload.with.name.includes(field));
+  for (const field of ['matrix.os', 'github.sha', 'github.run_id', 'github.run_attempt']) assert.ok(upload.with.name.includes(field));
 });
 
 
@@ -363,6 +368,26 @@ test('issue24-startup runs only original Windows latest category and readiness f
     const context = { cancelled: () => false, steps: { build: { outcome: 'success' } }, inputs: { startup_category_only } };
     assert.equal(runInNewContext(commands[3].if.slice(3, -2), context), !startup_category_only);
   }
+  const upload = job.steps.find(step => step.uses === 'actions/upload-artifact@v4');
+  assert.equal(upload.if, 'always()'); assert.equal(upload.with['if-no-files-found'], 'error');
+  for (const field of ['github.sha', 'github.run_id', 'github.run_attempt']) assert.ok(upload.with.name.includes(field));
+});
+
+
+test('readiness union adds the exact macOS packaged creation route only with its explicit flag', () => {
+  const workflow = load(readFileSync('.github/workflows/desktop-ci.yml', 'utf8'));
+  const job = workflow.jobs['focused-macos-package-creation'];
+  assert.equal(workflow.on.workflow_dispatch.inputs.readiness_package_creation.default, false);
+  for (const event of ['push', 'pull_request', 'workflow_dispatch']) for (const checks of ['full', 'readiness'])
+    for (const readiness_package_creation of [undefined, false, true]) {
+      const context = { github: { event_name: event }, inputs: { checks, readiness_package_creation } };
+      assert.equal(runInNewContext(job.if.slice(3, -2), context), event === 'workflow_dispatch' && checks === 'readiness' && readiness_package_creation === true);
+    }
+  assert.equal(job['runs-on'], 'macos-latest');
+  assert.deepEqual(job.steps.filter(step => step.run).map(step => step.run), [
+    'npm ci', 'npm run build', 'node --import tsx --test tests/project-reveal.test.mjs', 'npm run package:built',
+    'npm run check:artifact -- release', 'npm run smoke:runtime -- release --creation --discovery-mode=grouped --checkpoint=after_evidence',
+  ]);
   const upload = job.steps.find(step => step.uses === 'actions/upload-artifact@v4');
   assert.equal(upload.if, 'always()'); assert.equal(upload.with['if-no-files-found'], 'error');
   for (const field of ['github.sha', 'github.run_id', 'github.run_attempt']) assert.ok(upload.with.name.includes(field));

@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { basename, join } from "node:path";
 import { randomUUID } from "node:crypto";
 import test from "node:test";
+import { syncBuiltinESMExports } from "node:module";
 import Database from "better-sqlite3";
 import { openSettingsService } from "../dist/service/settings.mjs";
 import { createNativeProjectReveal } from "../src/desktop/project-reveal.ts";
@@ -171,6 +172,63 @@ for (const mode of ["direct", "grouped"]) {
     const result = await f.service.revealProject(f.input, (target) => native(target, () => true));
     assert.equal(result.value.outcome, "rejected"); assert.equal(result.value.problem, "missing");
     fs.renameSync(`${f.path}-moved`, f.path);
+  }));
+
+  for (const change of ["none", "excluded", "retained", "workspace_rebound", "missing", "replaced", ...(mode === "grouped" ? ["category_unavailable"] : [])]) {
+    test(`${mode} post-dispatch dirty scan acknowledges only unchanged authority and target: ${change}`, async () => fixture(mode, async (f) => {
+      const original = fs.opendirSync;
+      const parent = mode === "grouped" ? join(f.root, "Category") : f.root;
+      let dispatched = false, writes = 0, moved = false;
+      fs.opendirSync = (path, ...args) => {
+        const directory = original(path, ...args);
+        if (dispatched && path === parent) {
+          fs.writeFileSync(join(parent, `.reveal-metadata-${writes++}`), "owned fixture metadata");
+          if (writes === 1) {
+            if (change === "excluded") f.sql.prepare("UPDATE sources SET excluded_relative_paths = ? WHERE id = ?").run(JSON.stringify([f.project.relativePath]), f.workspace.sourceId);
+            if (change === "retained") f.sql.prepare("UPDATE projects SET association_state = 'unresolved' WHERE id = ?").run(f.project.projectId);
+            if (change === "category_unavailable") f.sql.prepare("UPDATE categories SET association_state = 'missing' WHERE id = ?").run(f.project.categoryId);
+            if (change === "workspace_rebound") f.sql.prepare("UPDATE workspaces SET source_id = ? WHERE id = ?").run(f.foreign.sourceId, f.workspace.workspaceId);
+            if (change === "missing" || change === "replaced") {
+              fs.renameSync(f.path, `${f.path}-moved`); moved = true;
+              if (change === "replaced") fs.mkdirSync(f.path);
+            }
+          }
+        }
+        return directory;
+      };
+      syncBuiltinESMExports();
+      try {
+        const result = await f.service.revealProject(f.input, async () => {
+          dispatched = true;
+          return { outcome: "dispatched" };
+        });
+        assert.ok(writes > 0, "The post-dispatch scan must overlap a real file write");
+        if (change === "none") assert.deepEqual(result, { ok: true, value: { outcome: "dispatched", workspaceId: f.workspace.workspaceId, projectId: f.project.projectId } });
+        else if (change === "workspace_rebound") { assert.equal(result.ok, false); assert.equal(result.error.code, "invalid_input"); }
+        else {
+          assert.equal(result.ok, true); assert.equal(result.value.outcome, "rejected");
+          assert.equal(result.value.problem, ["missing", "replaced"].includes(change) ? change : "unavailable");
+        }
+      } finally {
+        fs.opendirSync = original; syncBuiltinESMExports();
+        if (moved) { fs.rmSync(f.path, { recursive: true, force: true }); fs.renameSync(`${f.path}-moved`, f.path); }
+      }
+    }));
+  }
+
+  test(`${mode} a dirty authorization scan cannot dispatch the native command`, async () => fixture(mode, async (f) => {
+    const original = fs.opendirSync, parent = mode === "grouped" ? join(f.root, "Category") : f.root;
+    let writes = 0, calls = 0;
+    fs.opendirSync = (path, ...args) => {
+      const directory = original(path, ...args);
+      if (path === parent) fs.writeFileSync(join(parent, `.reveal-preflight-${writes++}`), "owned fixture metadata");
+      return directory;
+    };
+    syncBuiltinESMExports();
+    try {
+      const result = await f.service.revealProject(f.input, async () => { calls++; return { outcome: "dispatched" }; });
+      assert.equal(result.value.problem, "unavailable"); assert.equal(calls, 0); assert.ok(writes > 0);
+    } finally { fs.opendirSync = original; syncBuiltinESMExports(); }
   }));
 
   test(`${mode} native errors and unavailable adapters give bounded useful failures without leaking paths`, async () => fixture(mode, async (f) => {

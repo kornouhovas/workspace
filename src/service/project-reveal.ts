@@ -11,7 +11,19 @@ import { filesystemAlias } from "./path-alias.js";
 
 export function createProjectRevealService(db: BetterSQLite3Database<typeof schema>, filesystem: ProjectFilesystem = nativeProjectFilesystem) {
   let closed = false;
-  function targetFor(workspaceId: string, projectId: string): TrustedProjectRevealTarget {
+  // A request-local receipt can acknowledge an already completed native call
+  // across a dirty scan only while every persisted authorization input is unchanged.
+  function authorizationFor(workspaceId: string, projectId: string): string {
+    const workspace = db.select().from(schema.workspaces).where(eq(schema.workspaces.id, workspaceId)).get();
+    const source = workspace && db.select().from(schema.sources).where(eq(schema.sources.id, workspace.sourceId)).get();
+    const project = db.select().from(schema.projects).where(eq(schema.projects.id, projectId)).get();
+    if (!source || !project || project.sourceId !== source.id) throw new InvalidReveal();
+    const ordered = <T extends { id: string }>(rows: T[]) => rows.sort((a, b) => a.id.localeCompare(b.id));
+    return JSON.stringify([workspace, source, ordered(db.select().from(schema.projects).where(eq(schema.projects.sourceId, source.id)).all()),
+      ordered(db.select().from(schema.categories).where(eq(schema.categories.sourceId, source.id)).all()),
+      readProjectReservations(db, source.id), readProjectRelocationReservations(db, source.id)]);
+  }
+  function targetFor(workspaceId: string, projectId: string): { target: TrustedProjectRevealTarget; authorization: string } {
     const source = db.select().from(schema.workspaces).innerJoin(schema.sources, eq(schema.workspaces.sourceId, schema.sources.id))
       .where(eq(schema.workspaces.id, workspaceId)).get()?.sources;
     const project = db.select().from(schema.projects).where(eq(schema.projects.id, projectId)).get();
@@ -37,7 +49,10 @@ export function createProjectRevealService(db: BetterSQLite3Database<typeof sche
     if (!validExclusions(exclusions, "grouped") || !validArchive(source.archiveRelativePath)) throw new Error("Invalid source policy");
     const scan = (source.discoveryMode === "grouped" ? scanGroupedSource : scanDirectSource)(source.canonicalRoot,
       source.archiveRelativePath, projectExclusions(exclusions, source.discoveryMode).effective);
-    if (!scan.snapshot) throw new RevealFailure(scan.state === "root_identity_conflict" ? "root_replaced" : "unavailable");
+    if (!scan.snapshot) {
+      if (scan.state === "changed") throw new UnstableRevealScan();
+      throw new RevealFailure(scan.state === "root_identity_conflict" ? "root_replaced" : "unavailable");
+    }
     if (!sameIdentity(scan.snapshot.root.identity, JSON.parse(source.appliedRootIdentity))) throw new RevealFailure("root_replaced");
     const entry = scan.entries.find((row) => row.kind === "project" && row.relativePath === project.relativePath);
     if (!entry || entry.reason !== null) throw new RevealFailure(entry?.reason === "link" ? "replaced" : "excluded");
@@ -57,7 +72,7 @@ export function createProjectRevealService(db: BetterSQLite3Database<typeof sche
       sameIdentity(JSON.parse(row.nativeIdentity), identity)) || scan.snapshot.children.some((row) => row.kind === "directory" &&
         row.relativePath !== project.relativePath && sameIdentity(row.identity, identity))) throw new RevealFailure("unresolved");
     verifyTrustedProjectRevealTarget(target, filesystem);
-    return target;
+    return { target, authorization: authorizationFor(workspaceId, projectId) };
   }
   return {
     close() { closed = true; },
@@ -67,21 +82,33 @@ export function createProjectRevealService(db: BetterSQLite3Database<typeof sche
         value: { outcome: "rejected", workspaceId: input.workspaceId, projectId: input.projectId, problem } });
       try {
         if (closed) return rejected("request_expired");
-        const target = targetFor(input.workspaceId, input.projectId);
+        const initial = targetFor(input.workspaceId, input.projectId);
+        const target = initial.target;
+        let authorization = initial.authorization;
         if (!native) return rejected("native_unavailable");
         const revalidate = (): NativeProjectRevealValidation => {
           if (closed) return { outcome: "rejected", problem: "request_expired" };
           try {
-            return JSON.stringify(targetFor(input.workspaceId, input.projectId)) === JSON.stringify(target)
-              ? { outcome: "verified" } : { outcome: "rejected", problem: "unresolved" };
+            const current = targetFor(input.workspaceId, input.projectId);
+            if (JSON.stringify(current.target) !== JSON.stringify(target)) return { outcome: "rejected", problem: "unresolved" };
+            authorization = current.authorization;
+            return { outcome: "verified" };
           } catch (error) { return { outcome: "rejected", problem: error instanceof RevealFailure ? error.problem : "request_expired" }; }
         };
         let result;
         try { result = await native(target, revalidate); } catch { return rejected("native_error"); }
         if (closed) return rejected("request_expired");
         if (result.outcome === "rejected") return rejected(result.problem);
-        const current = targetFor(input.workspaceId, input.projectId);
-        if (JSON.stringify(current) !== JSON.stringify(target)) return rejected("unresolved");
+        try {
+          const current = targetFor(input.workspaceId, input.projectId);
+          if (JSON.stringify(current.target) !== JSON.stringify(target)) return rejected("unresolved");
+        } catch (error) {
+          // This cannot authorize a native effect: that already returned dispatched.
+          // Retain policy/ownership and physical target checks without demanding
+          // that unrelated file-manager metadata stop changing after the effect.
+          if (!(error instanceof UnstableRevealScan) || authorizationFor(input.workspaceId, input.projectId) !== authorization) throw error;
+          verifyTrustedProjectRevealTarget(target, filesystem);
+        }
         return { ok: true, value: { outcome: "dispatched", workspaceId: input.workspaceId, projectId: input.projectId } };
       } catch (error) {
         if (error instanceof InvalidReveal) return invalid();
@@ -92,6 +119,9 @@ export function createProjectRevealService(db: BetterSQLite3Database<typeof sche
   };
 }
 class InvalidReveal extends Error {}
+class UnstableRevealScan extends RevealFailure {
+  constructor() { super("unavailable"); }
+}
 function invalid(): ServiceResult<never> {
   return { ok: false, error: { code: "invalid_input", message: "Choose a saved workspace and one of its projects." } };
 }

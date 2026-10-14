@@ -462,3 +462,68 @@ both reviews have zero findings. Source remained frozen during this complete run
 The original Windows latest category file is required next; readiness source is
 unchanged from its inspected focused success. No claim is made that the historical
 Windows stop actor is fixed by better deadline semantics or evidence.
+
+
+Full run38636598781 on `dcdc4c3ddb930134ef341c09fd7d6088a4f24873`
+Windows2022 job116102080524 failed only the new real navigation regression:
+page.setContent reported Execution context was destroyed, most likely because of
+a navigation (0.68s), after main's load receipt. All other platform tests passed.
+Main and Page delivery use separate transports; main receipt alone did not prove
+Page context readiness. The completed full failure map is retained below.
+
+A coupled main/Page control reproduced the exact destroyed-context error after
+the real helper consumed a completed main receipt (0.52s loop). Main-owned
+fixture URLs are now distinct encoded data URLs for initial/controlled navigation,
+and the same helper awaits that exact Page URL with waitUntil load before mounting.
+FirstWindow, main receipt and Page load share the original30s allowance; no retry,
+mount replay, injected DOM value/focus or extended timeout is added. The coupled
+and actual Electron navigation controls passed. The existing readiness selector
+has a default-false Windows flag to match both affected original failed files;
+original focused result/artifact inspection still precedes full acceptance.
+
+
+The same full run's Windows latest job116102080308 failed only that identical
+navigation regression/destroyed-context error. Category and all other platform
+files passed. The readiness focused flag therefore selects both affected Windows
+OS, preserving independent original results and distinct OS/SHA/run/attempt logs.
+Default macOS and ordinary/full coverage remain unchanged.
+
+
+The same full run's macOS job116102080249 failed only grouped packaged
+creation/native evidence. The receipt proves native verified → reply dispatched
+(245.9ms) → service rejected/unavailable (267.5ms); Finder separately selected the
+exact target in405ms. Native latency132ms rules out the adapter deadline. The
+post-native service authorization is the failure boundary; the historical actor
+and exact scan state are not present in that receipt and remain unknown.
+
+The exact original local packaged command passed with an owned, finite temporary
+scan-state probe. A public real-SQLite/real-filesystem control then reproduced
+service rejected/unavailable after native dispatched in0.32s: owned ordinary
+metadata files were created during the post-dispatch scan. Both direct/grouped
+cases failed; the probe retained only scan.state changed. No target identity,
+policy or authored sentinel changed. This establishes the failure mechanism,
+without attributing the historical CI actor to Finder metadata.
+
+The request now retains the last successful full authorization's persisted
+bindings. Only a changed scan after actual native dispatched can acknowledge the
+call across that instability, and only when all those bindings remain identical
+and fresh physical root/category/selected-target identity/accessibility pass.
+Pre-dispatch scans and permit reauthorization stay strict, with no retry, altered
+scanner policy or deadline. Dirty-scan controls reject changed exclusions, retained
+associations, workspace source rebinding, unavailable category, missing/replaced
+target; unchanged authority/target acknowledges the actual command. Original
+post-target, policy, duplicate/ownership/reservation, cancellation and permit
+regressions remain. Temporary DEBUG instrumentation was removed before review.
+Reveal77 and CI routing19 passed locally (96/96). The focused union retains both
+Windows original readiness files plus the macOS exact packaged command. Both
+actual focused success and subsequent full same-SHA evidence remain required.
+
+
+Final frozen acknowledgment/navigation candidate on Node22.21.1: 2,797 tests,
+2,776 passed, zero failures and21 platform skips (113.4s). Fresh production build,
+package and release artifact check passed. Exact local original grouped packaged
+creation command passed RU acknowledgment, Finder exact target, restart persistence,
+both normal shutdowns/backend stop and owned fixture removal, with no skips:
+`work/issue24-reveal-ack-local/release-creation-observations.json`. Lint, typecheck,
+docs and diff passed. Both review axes have zero findings; required focused/full
+CI and integration remain in the GitHub checkpoint.

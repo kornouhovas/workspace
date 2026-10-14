@@ -10,6 +10,14 @@ on:
         type: choice
         options: [full, failed, readiness, windows-release, issue22-failures, creation-shutdown, raw-rename, issue24-failures, category-fixture, issue24-startup]
         default: full
+      readiness_windows:
+        description: With checks=readiness, reproduce original Windows latest and 2022 editor failures
+        type: boolean
+        default: false
+      readiness_package_creation:
+        description: With checks=readiness, reproduce original macOS grouped packaged creation and Reveal failure
+        type: boolean
+        default: false
       startup_category_only:
         description: With checks=issue24-startup, focus a remaining category failure after unchanged readiness success
         type: boolean
@@ -351,8 +359,12 @@ jobs:
 
   focused-macos-readiness:
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.checks == 'readiness' }}
-    name: Focused macOS editor readiness
-    runs-on: macos-latest
+    name: Focused original Electron editor readiness
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ${{ fromJSON(inputs.readiness_windows && '["windows-latest","windows-2022"]' || '["macos-latest"]') }}
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
@@ -370,8 +382,36 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: issue-21-focused-readiness-${{ github.sha }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
+          name: issue-21-focused-readiness-${{ matrix.os }}-${{ github.sha }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
           path: work/ci-focused-readiness/
+          if-no-files-found: error
+          retention-days: 7
+
+  focused-macos-package-creation:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.checks == 'readiness' && inputs.readiness_package_creation == true }}
+    name: Focused original macOS grouped packaged creation and Reveal
+    runs-on: macos-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.21.1
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: node --import tsx --test tests/project-reveal.test.mjs
+      - run: npm run package:built
+      - run: npm run check:artifact -- release
+      - name: Original grouped packaged creation native evidence
+        run: npm run smoke:runtime -- release --creation --discovery-mode=grouped --checkpoint=after_evidence
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-focused-package-creation
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: issue-24-focused-package-creation-macos-${{ github.sha }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
+          path: work/ci-focused-package-creation/
           if-no-files-found: error
           retention-days: 7
 

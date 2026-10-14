@@ -49,6 +49,7 @@ code or dependency was copied; the existing adapted foundation is reused.
 | Actual Electron preload/IPC/backend, timezone boundaries, language switch, restart, narrow/wide screens | `smoke:date` in development and packaged modes |
 | Existing behavior and migration/build/package/CI consumers | Inherited full suite plus updated inventory expectations |
 | Standards/spec correctness | Independent two-axis review of the complete candidate |
+| Inherited full-CI navigation and post-dispatch acknowledgment failures | Original Windows latest/2022 readiness file; exact macOS grouped packaged creation/native command; unchanged-authority dirty-scan rejection controls |
 | Target-OS CI and integration | Existing macOS/Windows latest/Windows 2022 routes plus Date dev/package steps/artifacts |
 
 Observed local evidence belongs to [verification](../verification/issue-24-date-properties.md).

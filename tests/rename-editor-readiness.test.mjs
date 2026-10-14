@@ -12,6 +12,20 @@ import { observeRenameEditor, waitForRenameEditor } from "../scripts/rename-edit
 
 const fixture = fileURLToPath(new URL("./fixtures/rename-editor-readiness-electron.cjs", import.meta.url));
 
+async function waitForFixtureNavigation(page, app, deadline) {
+  const remaining = () => {
+    const value = deadline - Date.now();
+    if (value <= 0) throw new Error("Fixture initial navigation deadline exceeded");
+    return value;
+  };
+  const finalURL = await withDeadline(app.evaluate(() => globalThis.renameEditorInitialLoad),
+    remaining(), "Fixture initial navigation");
+  assert.equal(typeof finalURL, "string"); assert.ok(finalURL.startsWith("data:text/html,"));
+  // Main and Page use separate transports; await this exact navigation's
+  // browser-context load before any caller can mount or author an input.
+  await page.waitForURL(finalURL, { waitUntil: "load", timeout: remaining() });
+}
+
 async function withPage(run, removeProfile = rm, controlLoad = false) {
   const profile = await mkdtemp(join(tmpdir(), "workspace-editor-readiness-"));
   const app = await _electron.launch({ executablePath: createRequire(import.meta.url)("electron"), args: [fixture],
@@ -23,8 +37,7 @@ async function withPage(run, removeProfile = rm, controlLoad = false) {
     // Share the original firstWindow allowance with the fixture-owned load.
     const deadline = Date.now() + 30000;
     const page = await app.firstWindow({ timeout: Math.max(1, deadline - Date.now()) });
-    assert.equal(await withDeadline(app.evaluate(() => globalThis.renameEditorInitialLoad),
-      Math.max(1, deadline - Date.now()), "Fixture initial navigation"), true);
+    await waitForFixtureNavigation(page, app, deadline);
     await run(page, app);
   }
   catch (error) { failed = true; primary = error; }
@@ -384,4 +397,24 @@ test("fixture initial navigation cannot erase an authored editor after firstWind
     assert.equal(await page.locator("#project-rename-name").count(), 1);
     assert.equal(await page.locator("#project-rename-name").evaluate(node => node === globalThis.document.activeElement), true);
   }, rm, true);
+});
+
+
+test("fixture main load receipt cannot authorize mounting before Page navigation commits", async () => {
+  const finalURL = "data:text/html,fixture-controlled", calls = []; let pendingNavigation = true;
+  const app = { evaluate: async () => { calls.push("main_loaded"); return finalURL; } };
+  const page = {
+    waitForURL: async (url, options) => {
+      assert.equal(url, finalURL); assert.equal(options.waitUntil, "load");
+      assert.ok(options.timeout > 0 && options.timeout <= 30000);
+      calls.push("page_loaded"); pendingNavigation = false;
+    },
+    setContent: async () => {
+      if (pendingNavigation) throw new Error("page.setContent: Execution context was destroyed, most likely because of a navigation");
+      calls.push("mounted");
+    },
+  };
+  await waitForFixtureNavigation(page, app, Date.now() + 30000);
+  await page.setContent("<input>");
+  assert.deepEqual(calls, ["main_loaded", "page_loaded", "mounted"]);
 });
