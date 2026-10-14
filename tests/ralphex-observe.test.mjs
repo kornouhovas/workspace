@@ -6,6 +6,8 @@ import { mkdtempSync, mkdirSync, openSync, closeSync, ftruncateSync, writeFileSy
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
+import fs from 'node:fs';
+import { basename, dirname } from 'node:path';
 import fsPromises, { readFile as builtinReadFile, realpath as builtinRealpath } from 'node:fs/promises';
 import { syncBuiltinESMExports } from 'node:module';
 import { observe } from '../scripts/ralphex-observe.mjs';
@@ -919,11 +921,13 @@ async function runningFixture(t,mode = 'quiet',duration = 600,{ startupDelayMs =
   }
   stopWorker = stop;
   const started = Date.now(), until = started + startupTimeoutMs;
-  while(readState(dir).status==='ready' && !launchError && !closed && Date.now()<until) await new Promise(resolve=>setTimeout(resolve,10));
-  if (launchError || readState(dir).status === 'ready') {
+  const startupMarker = join(dir, 'fixture-started');
+  // Poll a separate publication receipt, never the snapshot being replaced.
+  while(!fs.existsSync(startupMarker) && !launchError && !closed && Date.now()<until) await new Promise(resolve=>setTimeout(resolve,10));
+  if (launchError || !fs.existsSync(startupMarker)) {
+    await stop();
     const diagnostic = { elapsedMs: Date.now() - started, state: readState(dir).status, exitCode: worker.exitCode, signal: worker.signalCode,
       launchError: launchError?.code ?? null, log: readFileSync(f.log, 'utf8').slice(-2048) };
-    await stop();
     throw new Error(`Fixture worker startup failed: ${JSON.stringify(diagnostic)}`);
   }
   return {...f,dir,worker,exited,options:{...f.options,source:{kind:'runner',dir,log:f.log}}};
@@ -937,6 +941,24 @@ async function fixtureExit(f) {
     })]);
   } finally { clearTimeout(timer); }
 }
+
+test('real runner fixture waits for publication without opening the replaceable startup snapshot', async t => {
+  const original = fs.readFileSync;
+  let prematureReads = 0;
+  fs.readFileSync = function (path, ...args) {
+    if (typeof path === 'string' && basename(path) === 'current.json' && basename(dirname(path)) === 'run' &&
+      basename(dirname(dirname(path))).startsWith('ralphex-observe-') && !fs.existsSync(join(dirname(path), 'fixture-started'))) prematureReads++;
+    return original.call(this, path, ...args);
+  };
+  syncBuiltinESMExports();
+  try {
+    const f = await runningFixture(t, 'quiet', 100, { startupDelayMs: 100 });
+    const exit = await fixtureExit(f);
+    assert.equal(exit.code, 0);
+    assert.equal(prematureReads, 0, 'Startup polling must not hold the destination while the worker replaces it');
+    assert.equal(readState(f.dir).status, 'awaiting_review');
+  } finally { fs.readFileSync = original; syncBuiltinESMExports(); }
+});
 
 test('real runner fixture observes healthy startup beyond the former readiness budget', async t => {
   const f = await runningFixture(t, 'quiet', 100, { startupDelayMs: 2800 });

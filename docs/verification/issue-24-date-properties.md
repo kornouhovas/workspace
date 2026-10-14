@@ -94,3 +94,44 @@ The diagnostic-only follow-up passed local route/rename checks: 58 passed, zero 
 three platform skips; lint, documentation links and diff checks passed. Both independent
 review axes reported zero findings. This does not reproduce the Windows EPERM locally or
 establish its cause. The original legacy rename-success assertion remains unchanged.
+
+
+## Renewed CI routing fixture failure
+
+Renewed full run 38591060169 on `f3f6093611ed8e60bbaf7259cc824f4e9868e34a`
+failed the inherited `test-suites.test.mjs` exact guard and dispatch-option inventories:
+the diagnostic route was added but these two consumers were missed. This is an agent
+bookkeeping error, not a Date or platform behavior failure. The same original file
+reproduced locally: 10 passes, two failures in less than one second. The observed expected/
+actual differences directly establish stale fixture inventories; no speculative runtime
+hypothesis or extra instrumentation is needed for this deterministic failure.
+
+The expectations now include the authorized raw-rename route and the matching issue-24
+focused route. All previous default/partition/original-command/failure assertions are
+retained; explicit selector checks verify only the selected focused job runs. The new
+`issue24-failures` command runs this scheduling file on all three OS and the original runner
+startup/terminal cases on Windows 2022, retaining fail-fast=false, original exits via
+pipefail and exact-SHA test-log artifacts.
+Focused/full outcomes remain in GitHub; no integration is inferred from local repair.
+
+
+Windows 2022 in the renewed run additionally failed the real `noisy` runner fixture startup:
+the child exited 1 while publishing `started` because `current.json.tmp` replacement returned
+EPERM. The original log has no handle attribution. A local pre-publication file-read probe
+reproduced the overlapping-read pattern deterministically (19 snapshot opens; expected zero)
+without claiming to reproduce Windows EPERM. The fixture parent now waits on a separate
+worker publication marker emitted only after `phase` saved running; failed-startup state is
+read after owned-worker termination. Production runner/save/observer code, ownership,
+startup/exit deadlines and terminal assertions are unchanged. A system-file-read probe
+checks this ordering and restores its patched builtin in finally. Real startup-exit,
+stall/cleanup, delayed healthy startup and quiet/noisy/failure/throw cases remain required.
+This removes the demonstrated fixture read/write overlap; the exact Windows OS cause
+remains unproven until further evidence. No actual Ralphex executor is launched by these
+controlled process fixtures.
+
+The complete renewed local candidate passed `test:all`: 2,762 tests, 2,741 passed,
+zero failures, 21 platform skips, using the unchanged application build. Focused observer/
+routing checks passed 142; the nine original/new real-runner startup/terminal cases passed.
+Lint, docs and diff checks passed. Both follow-up reviews found no behavioral/standards
+issue; one stale route-description sentence was corrected. Aggregate outstanding findings
+are zero (initial Standards duplicate and later Spec report wording are resolved).

@@ -65,3 +65,14 @@ data invariants, overlap and termination. The regression assertion now retains c
 allowlisted fixture context, while legacy rejection remains failure. This adds diagnostic
 evidence, not a claim of cause or production repair. Original-step focused success is
 required before dispatching full acceptance on the same reviewed SHA.
+
+
+For the renewed issue-24 unit failures, select `checks: issue24-failures`. The original
+`test-suites.test.mjs` scheduling/routing file runs on macOS, Windows latest and Windows
+2022. Windows 2022 also runs the original runner startup/terminal cases from
+`ralphex-observe.test.mjs`; that independent step still runs after a routing failure when
+its dependencies passed. Only npm dependencies are required, with no application build or
+unrelated runtime suite. Pipefail retains both commands' exits; exact-SHA/run/attempt test
+logs upload even on failure. Ordinary push/full defaults and the original three-platform
+acceptance route remain unchanged. Inspect every affected focused result before full
+acceptance on that same reviewed SHA.
