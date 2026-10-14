@@ -22,6 +22,19 @@ const labels = {
   ru: { move: "Переместить проект в категорию", submit: "Переместить папку проекта", saved: "Папка проекта перемещена в выбранную категорию.", unchanged: "Текущая категория проверена. Перемещение папки не потребовалось.", occupied: "Назначение занято или зарезервировано. Выберите другую категорию.", unavailable: "Папка или категория недоступна. Проверьте доступ к источнику и привязку проекта." },
 };
 
+export function assertRuntimeCategoryUnavailableGuard({ stale, ids, editorDisabled, submitDisabled }) {
+  assert.equal(typeof stale, "boolean");
+  assert.ok(Array.isArray(ids));
+  if (stale) {
+    assert.equal(editorDisabled, true); assert.equal(submitDisabled, true);
+    assert.deepEqual(ids, [], "A stale editor must author no mutation ID");
+    return "stale_before_submission";
+  }
+  assert.equal(ids.length, 1, "Exactly one rejected unavailable-destination submission");
+  assert.match(ids[0], /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
+  return "destination_unavailable";
+}
+
 // Bind by the intended project action and category, then assert exact authored
 // text. No guessed composite accessible cell name; both may repeat across rows.
 export async function assertRuntimeCategoryCell(page, projectName, categoryName, moveLabel, eligible = true) {
@@ -580,13 +593,28 @@ export async function runProjectCategoryMoveUi(mode = "dev") {
         const unavailableProof = { categoryId: category.categoryId, beforeTree,
           before: await captureRuntimeCategoryState(page, setup) };
         await saveOperationProof(language, "unavailable", unavailableProof);
-        await rename(from, to);
-        const beforeSubmit = await categoryMoveInventory(setup.sourceRoot);
+        let beforeSubmit;
+        const staleText = language === "en" ? "The source or project changed. Refresh and reopen the editor before submitting again."
+          : "Источник или проект изменился. Обновите данные и откройте редактор снова перед отправкой.";
+        let guard;
         try {
-          await input.press("Enter");
-          // Production revalidates the selected unavailable destination. A later
-          // observer update may reset an unsubmitted editor; it must not move.
-          await page.getByText(t.unavailable, { exact: true }).waitFor();
+          const ids = await recordRuntimeCategoryAction(page, async () => {
+            await rename(from, to);
+            beforeSubmit = await categoryMoveInventory(setup.sourceRoot);
+            await input.press("Enter");
+            // An observed source change blocks the unsubmitted editor. If the
+            // command wins that race, the service rejects the missing category.
+            await page.getByText(t.unavailable, { exact: true }).or(page.getByText(staleText, { exact: true })).waitFor();
+          });
+          const stale = await page.getByText(staleText, { exact: true }).isVisible();
+          guard = assertRuntimeCategoryUnavailableGuard({ stale, ids, editorDisabled: await input.isDisabled(),
+            submitDisabled: await page.getByRole("button", { name: t.submit, exact: true }).isDisabled() });
+          const after = await captureRuntimeCategoryState(page, setup);
+          if (stale) assert.deepEqual(after.durable.journal, unavailableProof.before.durable.journal);
+          assert.deepEqual(after.durable.metadata.projects, unavailableProof.before.durable.metadata.projects);
+          assert.deepEqual(after.text, unavailableProof.before.text);
+          assert.deepEqual(after.siblingText, unavailableProof.before.siblingText);
+          await saveOperationProof(language, "unavailable", { ...unavailableProof, beforeSubmit, after, guard, ids });
         } catch (error) {
           // Diagnostic reads concern this disposable fixture only; a failure to
           // capture evidence must not replace the original assertion/timeout.
@@ -605,6 +633,8 @@ export async function runProjectCategoryMoveUi(mode = "dev") {
         assert.deepEqual(await categoryMoveInventory(setup.sourceRoot), beforeTree);
         await page.getByRole("button", { name: language === "en" ? "Refresh source" : "Обновить источник", exact: true }).press("Enter");
         await page.waitForFunction(() => globalThis.document.querySelector(".table-view")?.getAttribute("aria-busy") === "false");
+        await preserved(page, setup, "Destination");
+        return { guard, noEffects: true };
       });
       await check(target, "sibling", async () => {
         await select(page, setup.sibling, language);

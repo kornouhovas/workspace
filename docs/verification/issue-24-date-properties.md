@@ -188,7 +188,8 @@ the underlying UI/service ordering cause is not established. The owned-fixture s
 now retains state before submission and, on failure, after-state, editor visibility,
 bounded table text and filesystem inventory without replacing the primary error.
 The matching category-fixture selector also runs the original dev runtime command on
-Windows 2022. No alternate accepted message, artificial input, timeout or assertion waiver.
+Windows 2022. The first diagnostic candidate retained the original single-message
+expectation, input and timeout without an assertion waiver.
 
 The updated original fixture/routing tests passed 61 before the extra runtime-route
 test. The complete local suite including that route passed 2,767 tests: 2,746 passed,
@@ -204,3 +205,31 @@ feedback, restart, all five controlled preparation/recovery checkpoints, ordinar
 shutdown and cleanup. Evidence is retained under
 `work/issue-24-category-runtime-local-isolated`. This verifies the current script
 locally and does not establish the cause of the preceding shutdown or Windows failures.
+
+The downloaded Windows 2022 failed screenshot subsequently established the actual
+visible state: the exact RU source/project-changed warning with both editor and
+submission disabled. Existing EN/RU renderer regressions explicitly require this
+unsubmitted sourceObserved guard and zero mutations. The smoke's single unavailable
+message expectation therefore rejected a valid production guard when observation won
+the race. Production behavior is unchanged. The runtime oracle now distinguishes
+the two existing outcomes: exact stale warning requires disabled editor/submit, zero
+authored mutation IDs and unchanged durable journal; exact unavailable warning requires
+one authored UUID. Both require unchanged post-rename filesystem inventory and exact
+selected-project/Text preservation. Evidence records the outcome and before/after state.
+The new guard regression rejects submitted stale actions, enabled stale controls,
+absent/duplicate/malformed unavailable submission IDs; the focused renderer/runtime
+suite passed 221 tests. This screenshot establishes the UI expectation mismatch;
+it does not explain the separate Windows latest stop failure.
+
+Focused run 38615644574 passed on `86b9f0671657f48e8d3cdb5953db39502e3b7a88`:
+Windows latest original fixture 47/47 and Windows 2022 original dev runtime. Downloaded
+success/stop-control checkpoints and the exact-SHA category runtime report confirm
+EN/RU completion, 34 shutdowns and cleanup. The refined guard oracle then passed the
+full local suite: 2,768 tests, 2,747 passed, zero failures, 21 platform skips. Lint,
+typecheck, docs and diff passed. Isolated actual category UI dev runtime passed all
+EN/RU operations, recovery, restart, normal shutdown and cleanup with proofs under
+`work/issue-24-category-guard-local`. Reviews have zero outstanding findings: the
+Spec review caught a full-tree assertion placed before restoring the owned absent
+category; it now runs after restoration/refresh, with exact project/Text and
+post-rename inventory checks retained while absent. New matching focused/full CI
+is required for this final oracle change before integration.

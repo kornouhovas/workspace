@@ -4,7 +4,21 @@ import React from "react";
 import { Window } from "happy-dom";
 import { assertRuntimeCategoryCell, assertRuntimeCategoryAcknowledgment, captureRuntimeCategoryState, runtimeCategoryBinding,
   expectedRuntimeCategoryRow, assertRuntimeCategoryReceipt, assertRuntimeCategoryJournal, assertRuntimeCategoryUnchanged,
-  recordRuntimeCategoryAction, assertRuntimeCategoryKeptOriginal } from "../scripts/smoke-project-category-move-ui.mjs";
+  recordRuntimeCategoryAction, assertRuntimeCategoryKeptOriginal, assertRuntimeCategoryUnavailableGuard } from "../scripts/smoke-project-category-move-ui.mjs";
+
+test("unavailable-category evidence distinguishes a blocked stale editor from one rejected submission", () => {
+  const id = "11111111-1111-4111-8111-111111111111";
+  assert.equal(assertRuntimeCategoryUnavailableGuard({ stale: true, ids: [], editorDisabled: true, submitDisabled: true }), "stale_before_submission");
+  assert.equal(assertRuntimeCategoryUnavailableGuard({ stale: false, ids: [id], editorDisabled: false, submitDisabled: false }), "destination_unavailable");
+  for (const invalid of [
+    { stale: true, ids: [id], editorDisabled: true, submitDisabled: true },
+    { stale: true, ids: [], editorDisabled: false, submitDisabled: true },
+    { stale: true, ids: [], editorDisabled: true, submitDisabled: false },
+    { stale: false, ids: [], editorDisabled: false, submitDisabled: false },
+    { stale: false, ids: [id, id], editorDisabled: false, submitDisabled: false },
+    { stale: false, ids: ["malformed"], editorDisabled: false, submitDisabled: false },
+  ]) assert.throws(() => assertRuntimeCategoryUnavailableGuard(invalid), { name: "AssertionError" });
+});
 
 const browser = new Window({ url: "http://localhost" });
 Object.assign(globalThis, { window: browser, document: browser.document, HTMLElement: browser.HTMLElement, Node: browser.Node, MutationObserver: browser.MutationObserver });
