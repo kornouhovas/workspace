@@ -307,7 +307,7 @@ test('category-fixture also reproduces the original Windows 2022 development run
 test('raw-rename also retains the original macOS development runtime command and submission receipts', () => {
   const workflow = load(readFileSync('.github/workflows/desktop-ci.yml', 'utf8'));
   const job = workflow.jobs['focused-rename-runtime'];
-  assert.equal(job.if, workflow.jobs['focused-raw-rename'].if);
+  assert.equal(job.if, "${{ github.event_name == 'workflow_dispatch' && inputs.checks == 'raw-rename' && !inputs.raw_windows_only }}");
   assert.equal(job['runs-on'], 'macos-latest'); assert.equal(job['timeout-minutes'], 25);
   const commands = job.steps.filter(step => step.run);
   assert.deepEqual(commands.slice(0, 2).map(step => step.run), ['npm ci', 'npm run build']);
@@ -322,4 +322,19 @@ test('raw-rename also retains the original macOS development runtime command and
   assert.equal(upload.if, 'always()'); assert.equal(upload.with.path, 'work/ci-rename-runtime/');
   assert.equal(upload.with['if-no-files-found'], 'error');
   for (const field of ['github.sha', 'github.run_id', 'github.run_attempt']) assert.ok(upload.with.name.includes(field));
+});
+
+
+test('raw-rename can focus only the remaining Windows failure without changing ordinary defaults', () => {
+  const workflow = load(readFileSync('.github/workflows/desktop-ci.yml', 'utf8'));
+  assert.equal(workflow.on.workflow_dispatch.inputs.raw_windows_only.default, false);
+  for (const event of ['push', 'pull_request', 'workflow_dispatch']) {
+    for (const checks of ['full', 'raw-rename']) for (const raw_windows_only of [undefined, false, true]) {
+      const context = { github: { event_name: event }, inputs: { checks, raw_windows_only } };
+      const active = Object.entries(workflow.jobs).filter(([, job]) => job.if && runInNewContext(job.if.slice(3, -2), context)).map(([name]) => name);
+      if (event === 'workflow_dispatch' && checks === 'raw-rename') assert.deepEqual(active,
+        raw_windows_only ? ['focused-raw-rename'] : ['focused-rename-runtime', 'focused-raw-rename']);
+      else { assert.deepEqual(active, ['common']); assert.equal(workflow.jobs.verify.if, undefined); }
+    }
+  }
 });

@@ -589,7 +589,7 @@ test('production scan comparison retains finite scan states separately from rena
 });
 
 
-test('Windows category enumeration handle contrast retains one original rename per owned fixture', { skip: process.platform !== 'win32' }, async t => {
+test('category enumeration handle contrast retains one original rename per owned fixture', async t => {
   for (const held of [true, false]) {
     const directory = fixture(t), root = join(directory, 'root');
     const category = join(root, renameFixtureNames.category), child = join(category, renameFixtureNames.project);
@@ -602,10 +602,10 @@ test('Windows category enumeration handle contrast retains one original rename p
       // A finite contrast result, not attribution of the historical runner actor.
       t.diagnostic(JSON.stringify({ kind: "category_enumeration_contrast", held, response }));
       assert.equal(response.stage, 'completed'); assert.equal(response.invocationCount, 1);
-      assert.equal(response.renamed, !held, JSON.stringify({ held, response }));
-      assert.equal(response.nodeCode, held ? 'EPERM' : null, JSON.stringify({ held, response }));
-      assert.equal(response.syscall, held ? 'rename' : null);
-      assert.equal(fs.readFileSync(join(root, held ? renameFixtureNames.category : renameFixtureNames.target, renameFixtureNames.project, 'sentinel'), 'utf8'), 'unchanged');
+      assert.equal(response.renamed, true, JSON.stringify({ held, response }));
+      assert.equal(response.nodeCode, null, JSON.stringify({ held, response }));
+      assert.equal(response.syscall, null);
+      assert.equal(fs.readFileSync(join(root, renameFixtureNames.target, renameFixtureNames.project, 'sentinel'), 'utf8'), 'unchanged');
     } finally { stream?.closeSync(); }
   }
 });

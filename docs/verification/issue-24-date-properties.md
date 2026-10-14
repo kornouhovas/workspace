@@ -350,3 +350,31 @@ no-op/rejection, preservation, native Reveal and seven recovery/restart cases pe
 mode; all 46 shutdowns and fixture cleanup passed. Evidence is under
 `work/issue-24-fill-rename-local`. Reviews remain at zero findings; Windows
 contrast and original focused outcomes are still required on the new candidate.
+
+
+Focused run 38626264952 on `7a23c865cf0aa223b6b8cceec77475f7b931bf26`
+passed the original macOS dev runtime and CLI cancellation cases. Downloaded
+exact-SHA rename report confirms complete EN/RU direct/grouped acceptance,
+46 normal shutdowns and cleanup; category report confirms 34 shutdowns/cleanup.
+Windows 2022 passed the bounded comparison and all 40 original tests, but the
+new enumeration contrast failed: held category opendir still permitted its
+single rename. The predicted opendir conflict is therefore falsified, not a
+production repair finding. The historical scan EPERM actor remains unknown.
+
+The new diagnostic's incorrect rejection expectation was reproduced locally by
+running the same case on macOS (one test failed in 0.24 seconds). The contrast
+now requires actual rename success in both independently owned held/buffered
+fixtures, retains finite responses, sentinel bytes and finally-closed handles.
+No original assertion is relaxed. A default-false raw_windows_only dispatch flag
+focuses only the remaining Windows job after the unchanged macOS source passed;
+ordinary/full matrix behavior is unchanged and has an explicit route regression.
+The corrected Windows contrast/original suite is required on the new SHA before
+renewed full acceptance of that SHA.
+
+
+Final corrected local candidate on Node 22.21.1: 2,774 tests, 2,753 passed,
+zero failures and 21 platform skips. The cross-platform contrast passed both
+held and buffered single renames; routing passed 17 tests. Lint, typecheck,
+docs, diff and both follow-up reviews passed. Only Windows focused original
+suite/contrast is newly required before full same-SHA acceptance; the already
+inspected macOS focused source is unchanged.

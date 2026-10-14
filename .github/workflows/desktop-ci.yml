@@ -10,6 +10,10 @@ on:
         type: choice
         options: [full, failed, readiness, windows-release, issue22-failures, creation-shutdown, raw-rename, issue24-failures, category-fixture]
         default: full
+      raw_windows_only:
+        description: With checks=raw-rename, run only the remaining Windows failure after macOS focused success
+        type: boolean
+        default: false
       diagnostics:
         description: Run isolated investigation and early-feedback jobs
         type: boolean
@@ -78,7 +82,7 @@ jobs:
           if-no-files-found: error
 
   focused-rename-runtime:
-    if: ${{ github.event_name == 'workflow_dispatch' && inputs.checks == 'raw-rename' }}
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.checks == 'raw-rename' && !inputs.raw_windows_only }}
     name: Focused macOS original development runtime
     runs-on: macos-latest
     timeout-minutes: 25

@@ -61,6 +61,10 @@ The same selector now independently runs the original failed macOS dev runtime c
 after build, preserving exact-SHA submission receipts and logs. Both matching jobs must
 pass before renewed full acceptance; input preparation verifies exact authored text
 before Enter without replaying filesystem effects or accepting a different outcome.
+After macOS original focused success with unchanged runtime sources, dispatch
+`checks: raw-rename, raw_windows_only: true` to focus a remaining Windows-only
+failure. The flag defaults to false, affects only this manual macOS job, and
+leaves ordinary/full platform coverage intact.
 macOS also runs the original observer CLI cancellation cases after dependencies,
 including when runtime fails, with strict exit and retained output.
 The Windows raw-rename job runs only Windows 2022 with the existing service-fixture build, bounded idle/native/
