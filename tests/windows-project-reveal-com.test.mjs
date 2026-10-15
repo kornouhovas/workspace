@@ -42,6 +42,12 @@ test("production and diagnostic scripts share the exact binding guards without d
   assert.match(bridge, /return Invoke-WorkspaceProjectReveal \$shell \$env:WORKSPACE_PROJECT_REVEAL_TARGET \$watch/);
   assert.match(bridge, /\$completed = Invoke-WorkspaceProjectRevealFromEnvironment \$shell/);
   assert.doesNotMatch(bridge, /WORKSPACE_CONTROL_TARGET/);
+  // Every read in the COM binding uses direct IDispatch; PowerShell member
+  // discovery on a cold Explorer must not return to this path.
+  assert.match(binding, /\[System.__ComObject\].InvokeMember\(\$name, \[Reflection.BindingFlags\]::GetProperty/);
+  assert.match(binding, /\[System.__ComObject\].InvokeMember\(\$name, \[Reflection.BindingFlags\]::InvokeMethod/);
+  assert.doesNotMatch(binding, /\$windows\.Count|\$windows\.Item\(|\$candidate\.Document|\$document\.Folder|\$window\.(Document|HWND|Busy|ReadyState)|\$item\.Path/);
+  assert.doesNotMatch(bridge, /\$anchor.item.Path/);
   assert.equal((bridge.match(/\.SelectItem\(/g) ?? []).length, 1);
   assert.equal((bridge.match(/\$shell\.Open\(/g) ?? []).length, 1);
 });
@@ -58,6 +64,7 @@ test("Windows shipped environment consumer requires one timely permit and retain
   const script = String.raw`
 $ErrorActionPreference = 'Stop'
 . ./src/desktop/native/windows-project-reveal.ps1
+. ./tests/fixtures/windows-com-read-controls.ps1
 # Test the unchanged COM identity helper with genuine, distinct COM objects.
 $a = New-Object -ComObject Scripting.Dictionary
 $b = New-Object -ComObject Scripting.Dictionary
@@ -184,6 +191,38 @@ foreach ($mode in ($env:WORKSPACE_CONTROL_MODES | ConvertFrom-Json)) {
     if (expectedFailure) assert.equal(events.at(-1), expectedFailure);
     assert.doesNotMatch(JSON.stringify(report), /private|ordinary source|日本語/);
   });
+});
+
+test("Windows direct COM reads preserve scalar, collection and error results without PowerShell member lookup", {
+  skip: process.platform !== "win32",
+}, async () => {
+  const script = String.raw`
+$ErrorActionPreference = 'Stop'
+. ./src/desktop/native/windows-binding.ps1
+$dictionary = New-Object -ComObject Scripting.Dictionary
+try {
+  if ((Get-WorkspaceComProperty $dictionary 'Count') -cne 0) { throw 'empty_count' }
+  [void](Invoke-WorkspaceComMethod $dictionary 'Add' @('one', 1))
+  [void](Invoke-WorkspaceComMethod $dictionary 'Add' @('two', 2))
+  if ((Get-WorkspaceComProperty $dictionary 'Count') -cne 2) { throw 'count' }
+  if ((Invoke-WorkspaceComMethod $dictionary 'Exists' @('missing')) -cne $false) { throw 'false_scalar' }
+  if ((Invoke-WorkspaceComMethod $dictionary 'Exists' @('one')) -cne $true) { throw 'true_scalar' }
+  $keys = Invoke-WorkspaceComMethod $dictionary 'Keys' @()
+  if ($keys -isnot [Array] -or $keys.Count -ne 2 -or $keys[0] -cne 'one' -or $keys[1] -cne 'two') { throw 'collection' }
+  $rejected = $false
+  try { [void](Get-WorkspaceComProperty $dictionary 'MissingProperty') } catch { $rejected = $true }
+  if (-not $rejected) { throw 'missing_property_accepted' }
+  [void](Invoke-WorkspaceComMethod $dictionary 'RemoveAll' @())
+  $empty = Invoke-WorkspaceComMethod $dictionary 'Keys' @()
+  if ($empty -isnot [Array] -or $empty.Count -ne 0) { throw 'empty_collection' }
+} finally { [void][Runtime.InteropServices.Marshal]::ReleaseComObject($dictionary) }
+[Console]::Out.WriteLine('COM_READ_CONTROL')
+`;
+  const result = await promisify(execFile)(String.raw`C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe`,
+    ["-NoProfile", "-NonInteractive", "-STA", "-ExecutionPolicy", "Bypass", "-Command", script],
+    { windowsHide: true, timeout: 10000 });
+  assert.equal(result.stdout.trim(), "COM_READ_CONTROL");
+  assert.equal(result.stderr, "");
 });
 
 test("Windows production file bridge uses only child-session policy under inherited Restricted without opening Explorer", {

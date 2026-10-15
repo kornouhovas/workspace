@@ -306,16 +306,10 @@ run afterwards, even if that native command fails. The default early flag is
 false, preserving the historical reproduction order. Exact-SHA artifacts and
 full acceptance are required after focused success.
 
-For the issue26 early native expiry, add `readiness_com_profile: true` to the
-existing focused Reveal selector to compare original and reflection COM reads on
-four fresh disposable parents in both orders. The original mutation, guards and
-deadlines stay intact; this opt-in temporary diagnostic never replaces original
-native acceptance. Finite comparison output is retained in `com-dispatch.json`
-inside the existing exact-SHA artifact. Unknown termination or failed owned-parent
-cleanup preserves the fixture. Diagnostic success alone does not open full CI.
-
-The COM profile currently runs **before** early native acceptance and puts
-reflection first to measure cold access. Therefore original success in that
-explicit diagnostic run is warmed evidence and cannot satisfy the unresolved
-cold original gate or authorize full CI. Ordinary/full and profile-disabled
-routes retain their original order and requirements.
+The temporary issue26 COM comparison route was removed after its cold/warm
+artifacts were retained. Renew the actual repaired cold native gate with
+`checks: readiness`, `readiness_reveal_windows: true`,
+`readiness_native_windows: true`, `readiness_native_early: true`; keep the
+historical prefix disabled for this cold gate. No comparison or other Explorer
+warm-up precedes the original command. Inspect the original exact-SHA outcome,
+COM/UIA target evidence, restart, shutdown and cleanup before full acceptance.

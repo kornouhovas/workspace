@@ -411,29 +411,13 @@ test('remaining Reveal scope replaces unrelated readiness with the original file
         assert.deepEqual(active.sort(), ['focused-macos-package-creation', 'focused-windows-reveal']);
     }
   assert.deepEqual(job.strategy.matrix.os, ['windows-latest', 'windows-2022']); assert.equal(job.strategy['fail-fast'], false);
-  const commands = job.steps.filter(step => step.run && !step.name?.startsWith('Early original') && step.name !== 'Isolated COM dispatch comparison').map(step => step.run);
+  const commands = job.steps.filter(step => step.run && !step.name?.startsWith('Early original')).map(step => step.run);
   assert.deepEqual(commands.slice(0, 2), ['npm ci', 'npm run build']); assert.equal(commands.length, 8);
   assert.ok(commands[2].includes('set -o pipefail')); assert.ok(commands[2].includes('node --import tsx --test tests/project-reveal.test.mjs tests/windows-project-reveal.test.mjs tests/windows-project-reveal-com.test.mjs tests/windows-ready-selection-com.test.mjs 2>&1 | tee'));
   const upload = job.steps.find(step => step.uses === 'actions/upload-artifact@v4');
   assert.equal(upload.if, 'always()'); assert.equal(upload.with['if-no-files-found'], 'error');
   for (const field of ['matrix.os', 'github.sha', 'github.run_id', 'github.run_attempt']) assert.ok(upload.with.name.includes(field));
 });
-
-test('COM dispatch comparison is opt-in inside the focused Reveal job and retains original checks', () => {
-  const workflow = load(readFileSync('.github/workflows/desktop-ci.yml', 'utf8'));
-  assert.equal(workflow.on.workflow_dispatch.inputs.readiness_com_profile.default, false);
-  const job = workflow.jobs['focused-windows-reveal'];
-  const probe = job.steps.find(step => step.name === 'Isolated COM dispatch comparison');
-  assert.equal(probe.run, 'node --import tsx scripts/diagnostics/windows-com-dispatch.mjs');
-  assert.equal(probe.env.WORKSPACE_COM_PROFILE_OUTPUT, 'work/ci-focused-windows-reveal/com-dispatch.json');
-  assert.ok(job.steps.indexOf(probe) < job.steps.findIndex(step => step.name === 'Early original Windows latest direct creation native evidence'));
-  for (const enabled of [undefined, false, true]) for (const cancelled of [false, true]) for (const outcome of ['failure', 'success']) {
-    assert.equal(runInNewContext(probe.if.slice(3, -2).replace('steps.reveal-build', "steps['reveal-build']"), { cancelled: () => cancelled,
-      steps: { 'reveal-build': { outcome } }, inputs: { readiness_com_profile: enabled } }),
-    !cancelled && outcome === 'success' && enabled === true);
-  }
-});
-
 
 test('remaining Reveal scope includes the exact Windows latest native failure independently after build', () => {
   const workflow = load(readFileSync('.github/workflows/desktop-ci.yml', 'utf8'));

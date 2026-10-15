@@ -70,11 +70,11 @@ function Invoke-WorkspaceProjectReveal($shell, $expected, $watch) {
         $phase = 'precommand'
         $before = Read-WorkspaceReadyBinding $shell $expected $anchor $trace
         if ((Get-WorkspaceRevealMilliseconds $watch) -ge 10000) { throw 'deadline' }
-        if ($before.stage -ne 'ready' -or -not (Test-WorkspaceReadyPath $anchor.item.Path $expected)) { throw 'binding' }
+        if ($before.stage -ne 'ready' -or -not (Test-WorkspaceReadyPath (Get-WorkspaceComProperty $anchor.item 'Path') $expected)) { throw 'binding' }
         Write-WorkspaceRevealEvent 'SELECT'
         # Check again after the flushed event, immediately before the mutation.
         if ((Get-WorkspaceRevealMilliseconds $watch) -ge 10000 -or
-            -not (Test-WorkspaceReadyPath $anchor.item.Path $expected)) { throw 'deadline' }
+            -not (Test-WorkspaceReadyPath (Get-WorkspaceComProperty $anchor.item 'Path') $expected)) { throw 'deadline' }
         $phase = 'selection'
         [void]$anchor.document.SelectItem($anchor.item, 5)
         if ((Get-WorkspaceRevealMilliseconds $watch) -ge 10000) { throw 'deadline' }

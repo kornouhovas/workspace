@@ -1,4 +1,17 @@
-# Shared exact parent/target/Explorer/Document binding. Extracted unchanged from
+function Get-WorkspaceComProperty($value, [string]$name) {
+    # Call IDispatch through .NET without PowerShell's COM member discovery.
+    # Preserve collection/null results as one value rather than pipeline items.
+    return ,([System.__ComObject].InvokeMember($name, [Reflection.BindingFlags]::GetProperty, $null, $value, $null))
+}
+function Invoke-WorkspaceComMethod($value, [string]$name, [object[]]$arguments) {
+    return ,([System.__ComObject].InvokeMember($name, [Reflection.BindingFlags]::InvokeMethod, $null, $value, $arguments))
+}
+function Read-WorkspaceReadyParentPath($document) {
+    $folder = Get-WorkspaceComProperty $document 'Folder'
+    $self = Get-WorkspaceComProperty $folder 'Self'
+    return (Get-WorkspaceComProperty $self 'Path')
+}
+# Shared exact parent/target/Explorer/Document binding, originally extracted from
 # scripts/windows-ready-selection.ps1. No navigation or selection here; an optional
 # guarded callback observes only fixed read boundaries.
 function Test-WorkspaceReadyPath($actual, $expected) {
@@ -36,45 +49,45 @@ function Read-WorkspaceReadyBinding($shell, $expected, $anchor, $trace = $null) 
     if ($null -ne $trace) { try { [void](& $trace 'enumeration') } catch { } }
     $windows = $shell.Windows()
     if ($null -ne $trace) { try { [void](& $trace 'collection') } catch { } }
-    if ($null -eq $windows -or $windows.Count -isnot [int] -or $windows.Count -lt 0 -or $windows.Count -gt 256) {
+    if ($null -eq $windows -or (Get-WorkspaceComProperty $windows 'Count') -isnot [int] -or (Get-WorkspaceComProperty $windows 'Count') -lt 0 -or (Get-WorkspaceComProperty $windows 'Count') -gt 256) {
         return @{ stage = 'property_unavailable' }
     }
     $owned = [Collections.Generic.List[object]]::new()
-    for ($i = 0; $i -lt $windows.Count; $i++) {
+    for ($i = 0; $i -lt (Get-WorkspaceComProperty $windows 'Count'); $i++) {
         if ($null -ne $trace) { try { [void](& $trace 'window_item') } catch { } }
-        $candidate = $windows.Item($i)
+        $candidate = (Invoke-WorkspaceComMethod $windows 'Item' @($i))
         if ($null -ne $trace) { try { [void](& $trace 'document') } catch { } }
-        $document = $candidate.Document
+        $document = (Get-WorkspaceComProperty $candidate 'Document')
         if ($null -ne $trace) { try { [void](& $trace 'parent') } catch { } }
-        if (Test-WorkspaceReadyPath $document.Folder.Self.Path $parent) {
+        if (Test-WorkspaceReadyPath (Read-WorkspaceReadyParentPath $document) $parent) {
             $owned.Add(@{ window = $candidate; document = $document })
         }
     }
     if ($owned.Count -eq 0) { return @{ stage = 'parent_absent' } }
     if ($owned.Count -ne 1) { return @{ stage = 'ambiguous_parent' } }
     $window = $owned[0].window; $document = $owned[0].document
-    $handle = $window.HWND
+    $handle = (Get-WorkspaceComProperty $window 'HWND')
     if ($null -ne $trace) { try { [void](& $trace 'owner') } catch { } }
     $owner = Read-WorkspaceReadyOwner $handle $trace
     if ($null -eq $owner) { return @{ stage = 'wrong_window' } }
     if ($null -ne $anchor -and ($anchor.handle -ne $handle -or $anchor.owner -ne $owner -or
         -not (Test-WorkspaceReadyDocument $anchor.document $document))) { return @{ stage = 'view_changed' } }
     if ($null -ne $trace) { try { [void](& $trace 'readiness') } catch { } }
-    $busy = $window.Busy; $ready = $window.ReadyState
+    $busy = (Get-WorkspaceComProperty $window 'Busy'); $ready = (Get-WorkspaceComProperty $window 'ReadyState')
     if ($busy -isnot [bool] -or $null -eq $ready -or
         ($ready -isnot [int] -and $ready -isnot [System.Enum]) -or $ready -notin @(0,1,2,3,4)) {
         return @{ stage = 'property_unavailable' }
     }
     if ($null -ne $trace) { try { [void](& $trace 'item') } catch { } }
-    $item = $document.Folder.ParseName([IO.Path]::GetFileName($expected))
-    if ($null -eq $item -or -not (Test-WorkspaceReadyPath $item.Path $expected)) { return @{ stage = 'target_absent' } }
+    $item = (Invoke-WorkspaceComMethod (Get-WorkspaceComProperty $document 'Folder') 'ParseName' @([IO.Path]::GetFileName($expected)))
+    if ($null -eq $item -or -not (Test-WorkspaceReadyPath (Get-WorkspaceComProperty $item 'Path') $expected)) { return @{ stage = 'target_absent' } }
     # Re-read the same window/document after the potentially blocking item query.
     if ($null -ne $trace) { try { [void](& $trace 'document_recheck') } catch { } }
-    if ($window.HWND -ne $handle -or -not (Test-WorkspaceReadyDocument $document $window.Document) -or
-        -not (Test-WorkspaceReadyPath $document.Folder.Self.Path $parent) -or
+    if ((Get-WorkspaceComProperty $window 'HWND') -ne $handle -or -not (Test-WorkspaceReadyDocument $document (Get-WorkspaceComProperty $window 'Document')) -or
+        -not (Test-WorkspaceReadyPath (Read-WorkspaceReadyParentPath $document) $parent) -or
         (Read-WorkspaceReadyOwner $handle $trace) -ne $owner) { return @{ stage = 'view_changed' } }
     if ($null -ne $trace) { try { [void](& $trace 'readiness_recheck') } catch { } }
-    $busyAfter = $window.Busy; $readyAfter = $window.ReadyState
+    $busyAfter = (Get-WorkspaceComProperty $window 'Busy'); $readyAfter = (Get-WorkspaceComProperty $window 'ReadyState')
     if ($busyAfter -isnot [bool] -or $null -eq $readyAfter -or
         ($readyAfter -isnot [int] -and $readyAfter -isnot [System.Enum]) -or $readyAfter -notin @(0,1,2,3,4)) {
         return @{ stage = 'property_unavailable' }

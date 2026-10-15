@@ -18,6 +18,7 @@ test("Windows actual command controller enforces readiness exact binding one int
   const script = String.raw`
 $ErrorActionPreference = 'Stop'
 . ./scripts/windows-ready-selection.ps1
+. ./tests/fixtures/windows-com-read-controls.ps1
 # Exercise the actual identity helper on distinct controlled COM instances first.
 $a = New-Object -ComObject Scripting.Dictionary
 $b = New-Object -ComObject Scripting.Dictionary
