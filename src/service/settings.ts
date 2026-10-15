@@ -1,3 +1,4 @@
+import { selectCommands } from "../contracts/text-properties.js";
 import type { ArchivePayload } from "../contracts/project-archive.js";
 import type { CategoryRemovalPayload } from "../contracts/category-removal.js";
 import type { CategoryOptionsPayload } from "../contracts/category-options.js";
@@ -167,6 +168,7 @@ export function openSettingsService(
       if (isRecord(input) && input.type === "workspace.createProject") return workspaces.createProject(input);
       if (isRecord(input) && input.type === "workspace.reassociateProject") return workspaces.reassociateProject(input);
       if (isRecord(input) && input.type === "workspace.renameCategoryProperty") return workspaces.renameCategoryProperty(input);
+      if (isRecord(input) && typeof input.type === "string" && selectCommands.includes(input.type)) return workspaces.selectCommand(input);
       if (isRecord(input) && input.type === "workspace.createProperty") return workspaces.createProperty(input);
       if (isRecord(input) && input.type === "workspace.setDateValue") return workspaces.setDateValue(input);
       if (isRecord(input) && input.type === "workspace.setNumberValue") return workspaces.setNumberValue(input);

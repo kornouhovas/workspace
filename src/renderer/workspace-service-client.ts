@@ -1,3 +1,4 @@
+import type { SelectCommand } from "../contracts/text-properties.js";
 import type { ArchiveQuery, ArchiveCommand, ArchiveSnapshot, ArchiveLocationPreview, ProjectArchivePreview, ProjectArchiveResult, ProjectArchiveOperationList, ProjectArchiveRecoveryPreview } from "../contracts/project-archive.js";
 import type { CategoryRemovalQuery, CategoryRemovalCommand } from "../contracts/category-removal.js";
 import type { CategoryOptionsQuery, CategoryOptionsCommand } from "../contracts/category-options.js";
@@ -147,7 +148,7 @@ export class WorkspaceServiceClient {
   listTextProperties(workspaceId: string): Promise<ServiceResult<TextPropertySnapshot>> {
     return this.api.workspace({ type: "workspace.listTextProperties", workspaceId });
   }
-  createProperty(workspaceId: string, name: string, propertyType: "text" | "number" | "date" = "text"): Promise<ServiceResult<TextPropertyMutation>> {
+  createProperty(workspaceId: string, name: string, propertyType: "text" | "number" | "date" | "single_select" = "text"): Promise<ServiceResult<TextPropertyMutation>> {
     return this.api.workspace({ type: "workspace.createProperty", workspaceId, name, propertyType });
   }
   renameProperty(workspaceId: string, propertyId: string, name: string): Promise<ServiceResult<TextPropertyMutation>> {
@@ -157,6 +158,8 @@ export class WorkspaceServiceClient {
   renameCategoryProperty(workspaceId: string, propertyId: string, name: string): Promise<ServiceResult<CategoryPropertySnapshot>> {
     return this.api.workspace({ type: "workspace.renameCategoryProperty", workspaceId, propertyId, name });
   }
+
+  selectCommand(input: SelectCommand): Promise<ServiceResult<TextPropertyMutation>> { return this.api.workspace(input); }
 
   setDateValue(workspaceId: string, projectId: string, propertyId: string, value: string | null): Promise<ServiceResult<TextPropertyMutation>> {
     return this.api.workspace({ type: "workspace.setDateValue", workspaceId, projectId, propertyId, value });

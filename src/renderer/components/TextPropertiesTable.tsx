@@ -6,6 +6,7 @@ import { WorkspaceServiceClient } from "../workspace-service-client.js";
 import { translate, type TranslationKey } from "../localization.js";
 import { CategoryPropertyHeader, type CategoryLabelDraft } from "./CategoryPropertyHeader.js";
 import { ProjectRevealButton } from "./ProjectRevealButton.js";
+import { SelectOptionsEditor } from "./SelectOptionsEditor.js";
 import { TextPropertyCell } from "./TextPropertyCell.js";
 import { StatusMessage } from "./bb-foundation.js";
 
@@ -46,7 +47,7 @@ function TextPropertiesContent({ hideReveal, client, workspaceId, sourceId, proj
   const [snapshot, setSnapshot] = useState<TextPropertySnapshot | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
-  const [draft, setDraft] = useState<{ propertyId: string | null; name: string; originalName: string; propertyType: "text" | "number" | "date" } | null>(null);
+  const [draft, setDraft] = useState<{ propertyId: string | null; name: string; originalName: string; propertyType: "text" | "number" | "date" | "single_select" } | null>(null);
   const [pending, setPending] = useState(false);
   const [message, setMessage] = useState<"propertyValidation" | "propertySaveError" | "propertySaved" | "propertyNewerChange" | null>(null);
   const minimumRevision = useRef(0);
@@ -55,9 +56,10 @@ function TextPropertiesContent({ hideReveal, client, workspaceId, sourceId, proj
   const saving = useRef(false);
   const savedRevision = useRef(0);
   const trigger = useRef<HTMLButtonElement>(null);
+  const selectTrigger = useRef<HTMLButtonElement>(null);
   const dateTrigger = useRef<HTMLButtonElement>(null);
   const numberTrigger = useRef<HTMLButtonElement>(null);
-  const creationType = useRef<"text" | "number" | "date">("text");
+  const creationType = useRef<"text" | "number" | "date" | "single_select">("text");
   const renameButtons = useRef(new Map<string, HTMLButtonElement>());
   const focusTarget = useRef<string | null | undefined>(undefined);
   const input = useRef<HTMLInputElement>(null);
@@ -69,7 +71,7 @@ function TextPropertiesContent({ hideReveal, client, workspaceId, sourceId, proj
   useEffect(() => {
     if (draft) input.current?.focus();
     else if (focusTarget.current !== undefined) {
-      (focusTarget.current === null ? (creationType.current === "date" ? dateTrigger.current : creationType.current === "number" ? numberTrigger.current : trigger.current) : renameButtons.current.get(focusTarget.current) ?? trigger.current)?.focus();
+      (focusTarget.current === null ? (creationType.current === "single_select" ? selectTrigger.current : creationType.current === "date" ? dateTrigger.current : creationType.current === "number" ? numberTrigger.current : trigger.current) : renameButtons.current.get(focusTarget.current) ?? trigger.current)?.focus();
       focusTarget.current = undefined;
     }
   }, [draft?.propertyId, draft === null]);
@@ -126,9 +128,9 @@ function TextPropertiesContent({ hideReveal, client, workspaceId, sourceId, proj
       if (current === lifetime.current) { saving.current = false; setPending(false); }
     }
   };
-  const saveValue = async (projectId: string, propertyId: string, value: string | null, propertyType: "text" | "number" | "date") => {
+  const saveValue = async (projectId: string, propertyId: string, value: string | null, propertyType: "text" | "number" | "date" | "single_select") => {
     const current = lifetime.current;
-    const result = propertyType === "date" ? await client.setDateValue(workspaceId, projectId, propertyId, value) : propertyType === "number" ? await client.setNumberValue(workspaceId, projectId, propertyId, value) : await client.setTextValue(workspaceId, projectId, propertyId, value);
+    const result = propertyType === "single_select" ? await client.selectCommand({ type: "workspace.setSelectValue", workspaceId, projectId, propertyId, optionId: value }) : propertyType === "date" ? await client.setDateValue(workspaceId, projectId, propertyId, value) : propertyType === "number" ? await client.setNumberValue(workspaceId, projectId, propertyId, value) : await client.setTextValue(workspaceId, projectId, propertyId, value);
     if (current === lifetime.current && result.ok && result.value.projectId === projectId && result.value.propertyId === propertyId && accepts(result.value.snapshot)) {
       listVersion.current++; setLoading(false); setLoadError(false);
       minimumRevision.current = result.value.snapshot.revision; setSnapshot(result.value.snapshot);
@@ -145,6 +147,11 @@ function TextPropertiesContent({ hideReveal, client, workspaceId, sourceId, proj
       onClick={() => { setMessage(null); creationType.current = "number"; setDraft({ propertyId: null, name: "", originalName: "", propertyType: "number" }); }}>{t("createNumberProperty")}</button>
     <button ref={dateTrigger} type="button" className="workspace-button workspace-button--secondary" disabled={disabled || loading || loadError || draft !== null}
       onClick={() => { setMessage(null); creationType.current = "date"; setDraft({ propertyId: null, name: "", originalName: "", propertyType: "date" }); }}>{t("createDateProperty")}</button>
+    <button ref={selectTrigger} type="button" className="workspace-button workspace-button--secondary" disabled={disabled || loading || loadError || draft !== null}
+      onClick={() => { setMessage(null); creationType.current = "single_select"; setDraft({ propertyId: null, name: "", originalName: "", propertyType: "single_select" }); }}>{t("createSelectProperty")}</button>
+    {snapshot?.definitions.filter(property => property.propertyType === "single_select").map(property => <SelectOptionsEditor key={property.propertyId}
+      client={client} workspaceId={workspaceId} property={property} snapshot={snapshot} language={language} disabled={disabled || loadError || draft !== null}
+      onCommitted={value => { if (accepts(value)) { listVersion.current++; minimumRevision.current = value.revision; setSnapshot(value); setLoading(false); setLoadError(false); } }} />)}
     {draft && <form className="property-form" onSubmit={(event) => { event.preventDefault(); void save(); }}
       onKeyDown={(event) => { if (event.key === "Escape") { event.preventDefault(); cancel(); } }}>
       <label htmlFor="property-name">{t("propertyName")}</label>
@@ -201,8 +208,8 @@ function TextPropertiesContent({ hideReveal, client, workspaceId, sourceId, proj
           <TextPropertyCell workspaceId={workspaceId} sourceId={sourceId} projectId={project.projectId} propertyId={property.propertyId}
             revision={snapshot.revision} minimumRevision={minimumRevision}
             projectName={project.name} propertyName={property.name} language={language} disabled={disabled || loadError || draft !== null}
-            propertyType={property.propertyType}
-            value={property.propertyType === "number" ? (() => {
+            propertyType={property.propertyType} options={snapshot.selectOptions?.filter(option => option.propertyId === property.propertyId)}
+            value={property.propertyType === "single_select" ? snapshot.selectValues?.find(entry => entry.projectId === project.projectId && entry.propertyId === property.propertyId)?.optionId ?? null : property.propertyType === "number" ? (() => {
               const numeric = snapshot.numberValues?.find(entry => entry.projectId === project.projectId && entry.propertyId === property.propertyId)?.value;
               return numeric === undefined ? null : String(numeric);
             })() : property.propertyType === "date" ? snapshot.dateValues?.find(entry => entry.projectId === project.projectId && entry.propertyId === property.propertyId)?.value ?? null : snapshot.values.find((entry) => entry.projectId === project.projectId && entry.propertyId === property.propertyId)?.value ?? null}

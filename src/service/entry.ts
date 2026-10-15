@@ -1,3 +1,4 @@
+import { isSelectCommand, selectCommands } from "../contracts/text-properties.js";
 import { archiveQueries, archiveCommands, isArchiveRequest } from "../contracts/project-archive.js";
 import { categoryRemovalQueries, categoryRemovalCommands, isCategoryRemovalRequest } from "../contracts/category-removal.js";
 import { categoryOptionsQueries, categoryOptionsCommands, isCategoryOptionsRequest } from "../contracts/category-options.js";
@@ -140,9 +141,10 @@ function isMalformedWorkspaceRequest(input: unknown): boolean {
     const keys = ["type", "workspaceId", "projectId", ...(input.type === "workspace.reassociateProject" ? ["previewToken", "relativePath"] : [])];
     return !hasExactKeys(input, keys) || keys.some((key) => typeof input[key] !== "string");
   }
+  if (selectCommands.includes(input.type)) return !isSelectCommand(input);
   if (input.type === "workspace.createProperty") {
     return !hasExactKeys(input, ["type", "workspaceId", "name", "propertyType"]) ||
-      typeof input.workspaceId !== "string" || typeof input.name !== "string" || (input.propertyType !== "text" && input.propertyType !== "number" && input.propertyType !== "date");
+      typeof input.workspaceId !== "string" || typeof input.name !== "string" || (input.propertyType !== "text" && input.propertyType !== "number" && input.propertyType !== "date" && input.propertyType !== "single_select");
   }
   if (input.type === "workspace.setNumberValue") {
     return !hasExactKeys(input, ["type", "workspaceId", "projectId", "propertyId", "expression"]) ||

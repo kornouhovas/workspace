@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef, useState } from "react";
 import type { Language, ServiceResult } from "../../contracts/settings.js";
-import type { TextPropertyMutation } from "../../contracts/text-properties.js";
+import type { SelectOption, TextPropertyMutation } from "../../contracts/text-properties.js";
 import { formatCalendarDate } from "../date-display.js";
 import { translate, type TranslationKey } from "../localization.js";
 import { StatusMessage } from "./bb-foundation.js";
@@ -13,7 +13,8 @@ interface Props {
   projectName: string;
   propertyName: string;
   value: string | null;
-  propertyType?: "text" | "number" | "date";
+  propertyType?: "text" | "number" | "date" | "single_select";
+  options?: SelectOption[];
   revision: number;
   minimumRevision: { current: number };
   language: Language;
@@ -21,12 +22,13 @@ interface Props {
   onSave(value: string | null): Promise<ServiceResult<TextPropertyMutation>>;
 }
 
-export function TextPropertyCell({ workspaceId, sourceId, projectId, propertyId, projectName, propertyName, value, revision, minimumRevision, language, disabled, propertyType = "text", onSave }: Props) {
+export function TextPropertyCell({ workspaceId, sourceId, projectId, propertyId, projectName, propertyName, value, revision, minimumRevision, language, disabled, propertyType = "text", options = [], onSave }: Props) {
+  const select = propertyType === "single_select";
   const numeric = propertyType === "number";
   const date = propertyType === "date";
   const t = (key: TranslationKey) => translate(language, key);
-  const label = `${t(date ? "editDateValue" : numeric ? "editNumberValue" : "editTextValue")}: ${projectName} / ${propertyName}`;
-  const displayValue = date && value !== null ? formatCalendarDate(value, language) : numeric && language === "ru" && value !== null ? value.replace(".", ",") : value;
+  const label = `${t(select ? "editSelectValue" : date ? "editDateValue" : numeric ? "editNumberValue" : "editTextValue")}: ${projectName} / ${propertyName}`;
+  const displayValue = select ? options.find(option => option.optionId === value)?.name ?? value : date && value !== null ? formatCalendarDate(value, language) : numeric && language === "ru" && value !== null ? value.replace(".", ",") : value;
   const id = useId();
   const [draft, setDraft] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -34,7 +36,7 @@ export function TextPropertyCell({ workspaceId, sourceId, projectId, propertyId,
   const originalValue = useRef(value);
   const savedRevision = useRef(0);
   const button = useRef<HTMLButtonElement>(null);
-  const editor = useRef<HTMLTextAreaElement | HTMLInputElement>(null);
+  const editor = useRef<HTMLTextAreaElement | HTMLInputElement | HTMLSelectElement>(null);
   const saving = useRef(false);
   const lifetime = useRef(0);
   const restoreFocus = useRef(false);
@@ -69,26 +71,30 @@ export function TextPropertyCell({ workspaceId, sourceId, projectId, propertyId,
     } catch { if (current === lifetime.current) setMessage("textValueSaveError"); }
     finally { if (current === lifetime.current) { saving.current = false; setPending(false); } }
   };
-  return <div className="text-property-cell" aria-busy={pending}>
+  return <div className="text-property-cell" data-color={select ? options.find(option => option.optionId === value)?.color : undefined} aria-busy={pending}>
     <button ref={button} type="button" className="text-value-button" aria-label={label} hidden={editing} disabled={disabled}
-      onClick={() => { originalValue.current = value; setDraft((date ? value : displayValue) ?? ""); setMessage(null); }}>{value === null ? t("textValueAbsent") : value === "" ? t("textValueEmpty") : displayValue}</button>
+      onClick={() => { originalValue.current = value; setDraft((date || select ? value : displayValue) ?? ""); setMessage(null); }}>{value === null ? t("textValueAbsent") : value === "" ? t("textValueEmpty") : displayValue}</button>
     {editing && <div className="text-value-editor" onKeyDown={(event) => {
       if (event.key === "Escape") { event.preventDefault(); cancel(); }
-      else if (event.key === "Enter" && (date || numeric || event.ctrlKey || event.metaKey) && !event.nativeEvent.isComposing) { event.preventDefault(); void save(draft); }
+      else if (event.key === "Enter" && (date || numeric || select || event.ctrlKey || event.metaKey) && !event.nativeEvent.isComposing) { event.preventDefault(); void save(select && draft === "" ? null : draft); }
     }}>
       <label className="text-value-label" htmlFor={id}>{label}</label>
-      {date || numeric ? <input ref={(element) => { editor.current = element; }} id={id} className="bb-input" type="text" maxLength={numeric ? 512 : undefined} placeholder={date ? "YYYY-MM-DD" : undefined} value={draft} disabled={disabled || pending}
+      {select ? <select ref={(element) => { editor.current = element; }} id={id} className="workspace-input" value={draft} disabled={disabled || pending}
+        aria-invalid={message === "textValueValidation"} onChange={event => setDraft(event.currentTarget.value)}>
+        <option value="">{t("textValueAbsent")}</option>
+        {options.filter(option => !option.hidden || option.optionId === draft).map(option => <option key={option.optionId} value={option.optionId}>{option.name}{option.hidden ? ` (${t("selectHidden")})` : ""}</option>)}
+      </select> : date || numeric ? <input ref={(element) => { editor.current = element; }} id={id} className="bb-input" type="text" maxLength={numeric ? 512 : undefined} placeholder={date ? "YYYY-MM-DD" : undefined} value={draft} disabled={disabled || pending}
         aria-invalid={message === "textValueValidation"} aria-describedby={`${id}-hint`} onChange={(event) => setDraft(event.currentTarget.value)} />
         : <textarea ref={(element) => { editor.current = element; }} id={id} className="workspace-input" rows={3} value={draft} disabled={disabled || pending}
           aria-invalid={message === "textValueValidation"} onChange={(event) => setDraft(event.currentTarget.value)} />}
-      <p id={`${id}-hint`} className="text-value-hint">{t(date ? "dateValueHint" : numeric ? "numberValueHint" : "textValueKeyboardHint")}</p>
+      <p id={`${id}-hint`} className="text-value-hint">{t(select ? "selectValueHint" : date ? "dateValueHint" : numeric ? "numberValueHint" : "textValueKeyboardHint")}</p>
       <div className="workspace-form-actions">
-        <button type="button" className="workspace-button" disabled={disabled || pending} onClick={() => void save(draft)}>{t(pending ? "textValueSaving" : "saveTextValue")}</button>
+        <button type="button" className="workspace-button" disabled={disabled || pending} onClick={() => void save(select && draft === "" ? null : draft)}>{t(pending ? "textValueSaving" : "saveTextValue")}</button>
         <button type="button" className="workspace-button workspace-button--secondary" disabled={disabled || pending} onClick={() => void save(null)}>{t("clearTextValue")}</button>
         <button type="button" className="workspace-button workspace-button--secondary" disabled={pending} onClick={cancel}>{t("cancelTextValue")}</button>
       </div>
     </div>}
     {editing && !pending && value !== originalValue.current && <StatusMessage kind="info" title={t("textValueExternalChange")} />}
-    {message && <StatusMessage kind={message === "textValueSaved" || message === "textValueNewerChange" ? "info" : "error"} title={t(message === "textValueValidation" ? (date ? "dateValueValidation" : numeric ? "numberValueValidation" : message) : message)} />}
+    {message && <StatusMessage kind={message === "textValueSaved" || message === "textValueNewerChange" ? "info" : "error"} title={t(message === "textValueValidation" ? (select ? "selectValueValidation" : date ? "dateValueValidation" : numeric ? "numberValueValidation" : message) : message)} />}
   </div>;
 }

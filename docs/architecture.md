@@ -6,7 +6,7 @@ This branch contains a runnable local desktop application with settings, workspa
 
 Workspace names, order and active selection survive restart. Rename/reorder/remove validate IDs and commit snapshots transactionally. Removal deletes only the workspace and its owned views, retains the source even after its last reference, and never deletes external files. Active removal selects the first remaining configuration and its existing Table view; final removal clears selection.
 
-The desktop includes a native directory picker, EN/RU direct/grouped preview/exclusions/Apply and editable project names with source-owned Text/Number/Date columns and required grouped categories in the default Table. The service persists source-owned exclusions/configuration and logical project records. Category creation/rename/deletion, ordinary Select/MultiSelect property types, property deletion/hiding/reordering, filtering/grouping/dragging, Board/general view management and further filesystem mutations remain future work. Source archive/restore is described below. SQLite with Drizzle is the selected persistence foundation.
+The desktop includes a native directory picker, EN/RU direct/grouped preview/exclusions/Apply and editable project names with source-owned Text/Number/Date columns and required grouped categories in the default Table. The service persists source-owned exclusions/configuration and logical project records. Category creation/rename/deletion, MultiSelect property types, property deletion/hiding/reordering, filtering/grouping/dragging, Board/general view management and further filesystem mutations remain future work. Source archive/restore is described below. SQLite with Drizzle is the selected persistence foundation.
 
 The product uses selected bb architecture and UI foundations while retaining its own folder/project domain. Adopt useful modules deliberately, with provenance and boundary tests; do not assume a whole bb package is independent of its chat/session model.
 
@@ -384,3 +384,30 @@ it does not convert stored dates into time-of-day or timezone values. Language c
 preserve active drafts and intended days. See the [Date contract/scenarios](plans/issue-24-date-properties.md)
 and [observed verification](verification/issue-24-date-properties.md); current platform and
 integration acceptance belongs to GitHub #24.
+
+
+## Implemented ordinary Single Select
+
+Issue #25 adds immutable `single_select` definitions through the existing property service,
+with stable source-owned option UUIDs, exact nonblank names, named colors and order.
+Create/update/reorder commands and nullable project assignment validate exact payloads and
+source/property/project/option ownership. All writes are transactional and increment the
+independent property revision only on change, notifying source siblings after commit.
+The compatible `workspace.listTextProperties` projection adds `selectOptions` and
+`selectValues` only for sources with Single Select definitions. Text/Number/Date retain
+separate arrays and their current semantics.
+
+The owner confirmed workspace-local option hiding. The picker omits hidden options for
+new assignments in that workspace; an assigned hidden option remains displayed, editable
+and clearable. Siblings share names/colors/order and values but retain independent
+visibility. Typed assignment is independent of presentation. Migration 0016 preserves all
+existing typed values and guards while adding ownership-checked option/value tables and
+workspace-owned visibility with workspace-removal cascade. Ordinary Select operations
+never invoke filesystem commands or change project identities/locators.
+
+Table reuses its keyboard editor with a native select, empty choice, Save/Clear/Cancel,
+pending/validation/error feedback and focus restoration. An EN/RU option editor exposes
+create/rename/color/reorder/hide/show. Option/property deletion, MultiSelect and general
+view/grouping behavior remain separate work. Existing bb primitives are reused; no new
+upstream module/dependency was copied. See the [contract/scenarios](plans/issue-25-single-select.md)
+and [verification](verification/issue-25-single-select.md); GitHub #25 owns CI/integration status.

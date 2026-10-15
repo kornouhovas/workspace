@@ -1,3 +1,4 @@
+import type { SelectCommand } from "./text-properties.js";
 import type { ProjectArchivePreview, ProjectArchiveResult, ProjectArchiveOperationList, ProjectArchiveRecoveryPreview } from "./project-archive.js";
 import type { ArchiveQuery, ArchiveCommand, ArchiveSnapshot, ArchiveLocationPreview } from "./project-archive.js";
 import type { ArchivePayload } from "./project-archive.js";
@@ -68,6 +69,7 @@ export interface WorkspaceDesktopApi {
   workspace(input: WorkspaceRenameCategoryPropertyCommand): Promise<ServiceResult<CategoryPropertySnapshot>>;
   workspace(input: WorkspaceListTextPropertiesQuery): Promise<ServiceResult<TextPropertySnapshot>>;
   workspace(input: WorkspaceCreatePropertyCommand): Promise<ServiceResult<TextPropertyMutation>>;
+  workspace(input: SelectCommand): Promise<ServiceResult<TextPropertyMutation>>;
   workspace(input: WorkspaceSetDateValueCommand): Promise<ServiceResult<TextPropertyMutation>>;
   workspace(input: WorkspaceSetNumberValueCommand): Promise<ServiceResult<TextPropertyMutation>>;
   workspace(input: WorkspaceSetTextValueCommand): Promise<ServiceResult<TextPropertyMutation>>;

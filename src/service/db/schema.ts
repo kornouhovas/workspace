@@ -70,7 +70,7 @@ export const propertyDefinitions = sqliteTable("property_definitions", {
   id: text("id").primaryKey(),
   sourceId: text("source_id").notNull().references(() => sources.id),
   name: text("name").notNull(),
-  propertyType: text("property_type", { enum: ["text", "number", "date"] }).notNull(),
+  propertyType: text("property_type", { enum: ["text", "number", "date", "single_select"] }).notNull(),
   position: integer("position").notNull(),
 }, (table) => [unique().on(table.sourceId, table.position), unique().on(table.id, table.sourceId)]);
 
@@ -269,3 +269,21 @@ export const datePropertyValues = sqliteTable("date_property_values", {
   foreignKey({ columns: [table.projectId, table.sourceId], foreignColumns: [projects.id, projects.sourceId] }),
   foreignKey({ columns: [table.propertyId, table.sourceId], foreignColumns: [propertyDefinitions.id, propertyDefinitions.sourceId] }),
 ]);
+
+export const selectOptions = sqliteTable("select_options", {
+  id: text("id").primaryKey(), sourceId: text("source_id").notNull().references(() => sources.id),
+  propertyId: text("property_id").notNull(), name: text("name").notNull(),
+  color: text("color").$type<import("../../contracts/text-properties.js").SelectColor>().notNull(),
+  position: integer("position").notNull(),
+}, (table) => [uniqueIndex("select_options_owner").on(table.id, table.propertyId, table.sourceId),
+  foreignKey({ columns: [table.propertyId, table.sourceId], foreignColumns: [propertyDefinitions.id, propertyDefinitions.sourceId] })]);
+export const selectPropertyValues = sqliteTable("select_property_values", {
+  projectId: text("project_id").notNull(), propertyId: text("property_id").notNull(),
+  sourceId: text("source_id").notNull().references(() => sources.id), optionId: text("option_id").notNull(),
+}, (table) => [primaryKey({ columns: [table.projectId, table.propertyId] }),
+  foreignKey({ columns: [table.projectId, table.sourceId], foreignColumns: [projects.id, projects.sourceId] }),
+  foreignKey({ columns: [table.optionId, table.propertyId, table.sourceId], foreignColumns: [selectOptions.id, selectOptions.propertyId, selectOptions.sourceId] })]);
+export const selectOptionVisibility = sqliteTable("select_option_visibility", {
+  workspaceId: text("workspace_id").notNull().references(() => workspaces.id, { onDelete: "cascade" }),
+  optionId: text("option_id").notNull().references(() => selectOptions.id), hidden: integer("hidden", { mode: "boolean" }).notNull(),
+}, (table) => [primaryKey({ columns: [table.workspaceId, table.optionId] })]);

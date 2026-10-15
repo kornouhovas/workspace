@@ -103,6 +103,7 @@ export interface WorkspaceService {
   renameCategoryProperty(input: unknown): ServiceResult<CategoryPropertySnapshot>;
   listTextProperties(input: unknown): ServiceResult<TextPropertySnapshot>;
   createProperty(input: unknown): ServiceResult<TextPropertyMutation>;
+  selectCommand(input: unknown): ServiceResult<TextPropertyMutation>;
   setDateValue(input: unknown): ServiceResult<TextPropertyMutation>;
   setNumberValue(input: unknown): ServiceResult<TextPropertyMutation>;
   setTextValue(input: unknown): ServiceResult<TextPropertyMutation>;

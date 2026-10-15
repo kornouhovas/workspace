@@ -82,3 +82,18 @@
   color: #62666d;
   text-align: center;
 }
+
+.select-options { padding: 0.75rem; margin-block: 0.75rem; border: 1px solid var(--border, #888); border-radius: 0.5rem; }
+.select-options summary { cursor: pointer; overflow-wrap: anywhere; }
+.select-options ul { padding-inline-start: 1rem; }
+.select-options li { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; margin-block: 0.5rem; }
+.select-options form { max-width: 28rem; display: grid; gap: 0.5rem; }
+.select-options button { min-height: 2rem; }
+[data-color="gray"] { --option-color: #777; }
+[data-color="red"] { --option-color: #d44; }
+[data-color="orange"] { --option-color: #c70; }
+[data-color="yellow"] { --option-color: #aa8a00; }
+[data-color="green"] { --option-color: #39844b; }
+[data-color="blue"] { --option-color: #3980cb; }
+[data-color="purple"] { --option-color: #9654c4; }
+.select-options li, .text-property-cell[data-color] { border-inline-start: 0.25rem solid var(--option-color, transparent); padding-inline-start: 0.4rem; }
