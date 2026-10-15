@@ -6,6 +6,7 @@ function Initialize-WorkspaceNativeBinding {
 using System;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Management.Automation;
 
 public static class WorkspaceReadyWindow {
     [DllImport("user32.dll", ExactSpelling=true)]
@@ -28,8 +29,17 @@ public sealed class WorkspaceReadyComReference {
 
 public static class WorkspaceReadyCom {
     private static object Unwrap(object value) {
-        var reference = value as WorkspaceReadyComReference;
-        return reference == null ? value : reference.Value;
+        // PowerShell can retain PSObject wrappers in object[] arguments and
+        // reflection construction. Unwrap those as well as our opaque holder.
+        while (true) {
+            var reference = value as WorkspaceReadyComReference;
+            if (reference != null) { value = reference.Value; continue; }
+            var shellObject = value as PSObject;
+            if (shellObject == null) return value;
+            var raw = shellObject.BaseObject;
+            if (Object.ReferenceEquals(raw, value)) return value;
+            value = raw;
+        }
     }
     private static object Wrap(object value) {
         return value != null && Marshal.IsComObject(value)

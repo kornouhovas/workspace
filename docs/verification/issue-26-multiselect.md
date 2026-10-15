@@ -961,3 +961,34 @@ opaque-reference compatibility in the ready-selection diagnostic. Fresh supporte
 Node22 `npm test` rebuilt and passed2849tests:2825passed,0failed,24platform skips,
 114.7seconds. Typecheck, lint, documentation links and whitespace passed. Local
 success skips actual Windows COM controls; cold Windows evidence is the next gate.
+
+### Opaque candidate red: distinguish control defect from native timeout
+
+Focused38804048062 on5dfb6611 failed. Both downloaded artifacts retain229controls:
+228passed/1failed per OS. The genuine control failed before reaching its COM
+assertions: reflection construction through object[] retained a PSObject receiver,
+so the managed forwarding method tried PSObject.SelectItem and raised
+MissingMethodException. The actual cold latest original still retained one parent
+open, zero selections, opened/owner_deadline; bridge/fixture cleanup passed. Thus
+that run proves neither opaque-helper correctness nor a native repair.
+
+Repair the concrete control/boundary defect by unwrapping PSObject.BaseObject as
+well as opaque holders before dispatch/argument/identity operations. The same
+managed-forwarding regression must move from missing-method failure to exactly one
+call, preserving the underlying item and flags5. Raw and wrapped property reads
+also check this boundary. Microsoft documents PSObject.BaseObject and the default
+Windows Add-Type reference to System.Management.Automation:
+[PSObject](https://learn.microsoft.com/en-us/dotnet/api/system.management.automation.psobject),
+[Add-Type](https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.utility/add-type?view=powershell-5.1).
+The prior ranked native hypotheses remain open; new cold evidence is required.
+
+The managed PSObject defect reproduced locally with portable PowerShell7.6.7 on
+macOS (its Utility manifest imported explicitly): extracted managed-forwarding
+control against5dfb6611 fails PSObject.SelectItem MissingMethod; repaired helper
+passes MANAGED_FORWARDING_CONTROL, flags/underlying object/exception and property
+checks. This executes the language/managed boundary, not Windows COM or PowerShell5.
+Both review axes found no remaining delta findings. Two static tests passed,
+fiveWindows controls remain platform-skipped locally. The unchanged local full
+5dfb candidate receipt is retained; Windows controls/cold originals on the repaired
+SHA are the affected gate. Trace-off plus explicit trace-on same-SHA cold runs
+will distinguish actual default behavior from diagnostic evidence/perturbation.

@@ -217,6 +217,7 @@ public sealed class WorkspaceSelectionControl {
     public object Expected;
     public int Calls;
     public bool Fail;
+    public int Count { get { return Calls; } }
     public void SelectItem(object item, int flags) {
         Calls++;
         if (!Object.ReferenceEquals(item, Expected) || flags != 5 || Fail) throw new InvalidOperationException();
@@ -231,6 +232,7 @@ $control.Expected = New-Object object
 $documentReference = New-ControlReference $control
 $itemReference = New-ControlReference $control.Expected
 $documentReference.SelectItem($itemReference, 5)
+if ((Get-WorkspaceComProperty $control 'Count') -ne 1 -or (Get-WorkspaceComProperty $documentReference 'Count') -ne 1) { throw 'shell_object_property' }
 if ($control.Calls -ne 1) { throw 'selection_count' }
 foreach ($flags in @(0, 1, 4, 7)) {
   $rejected = $false
