@@ -16,8 +16,18 @@ async function withPage(run) {
   const app = await _electron.launch({ executablePath: createRequire(import.meta.url)("electron"), args: [fixture],
     env: { ...process.env, WORKSPACE_RENAME_EDITOR_PROFILE: profile }, timeout: 10000 });
   const child = app.process();
+  const quitEvents = [];
+  child.once("exit", () => quitEvents.push("parent-exit"));
+  child.stderr.on("data", data => {
+    for (const event of ["before-quit", "will-quit", "quit"])
+      if (data.toString().includes(`[property-fixture]${event}`) && !quitEvents.includes(event)) quitEvents.push(event);
+  });
   let primary;
   try {
+    await app.evaluate(({ app }) => {
+      for (const event of ["before-quit", "will-quit", "quit"])
+        app.on(event, () => process.stderr.write(`[property-fixture]${event}\n`));
+    });
     const deadline = Date.now() + 30000;
     const page = await app.firstWindow({ timeout: 30000 });
     const url = await withDeadline(app.evaluate(() => globalThis.renameEditorInitialLoad), Math.max(1, deadline - Date.now()), "Property fixture navigation");
@@ -29,6 +39,8 @@ async function withPage(run) {
     assert.ok(child.exitCode !== null || child.signalCode !== null);
     await rm(profile, { recursive: true, force: true });
   } catch (error) {
+    error.message = `[property-fixture] ${JSON.stringify({ quitEvents, parentExited: child.exitCode !== null || child.signalCode !== null,
+      forcedCleanup: error.forcedCleanup ?? null })}\n${error.message}`;
     if (primary) console.error("Additional property fixture cleanup failure:", error);
     else primary = error;
   }

@@ -146,3 +146,18 @@ native precision setup and filter hypotheses. The new `checks: etw-controls` rou
 matches the actual Windows latest file without replaying unrelated historical
 diagnostics. Exact-SHA review, local checks, focused artifact and renewed full
 acceptance receipts remain in GitHub #26.
+
+### Local native fixture failure during ETW preparation
+
+The first renewed local full suite had 2838 tests: 2813 passed, two failed,
+23 skips, 126.1 seconds. Both failures were the new property-driver fixture's
+10-second Electron shutdown guard after its page assertions, not the ETW test
+(which is Windows-only). This run is not accepted. The original log is retained
+locally as `work/issue-26-ci/local-full-etw-failed.log`.
+
+The fixture now captures only finite normal-quit/parent-exit markers and existing
+forced-cleanup outcome on failure; original close helper, timeout and assertions
+are unchanged. An isolated run of both original property tests passed, but cannot
+prove the historical cause or replace a renewed full run. Transport completion,
+actual process shutdown and unfinished page work remain distinct hypotheses.
+Current review and renewed full acceptance receipts remain in GitHub #26.
