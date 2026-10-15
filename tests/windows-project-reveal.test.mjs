@@ -295,7 +295,7 @@ test("finite readiness trace preserves ordering without authorizing a native com
 });
 
 
-for (const phase of ["binding_returned", "item_returned", "item_invoking", "item_fast", "item_cpu_bound", "item_wait_bound"]) test(`a ${phase} trace retains the owned deadline and never grants a permit`, async (t) => {
+for (const phase of ["binding_returned", "item_returned"]) test(`a ${phase} trace retains the owned deadline and never grants a permit`, async (t) => {
   let deadline;
   const original = globalThis.setTimeout;
   t.mock.method(globalThis, "setTimeout", (callback, milliseconds, ...args) => {

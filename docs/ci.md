@@ -199,7 +199,7 @@ dev creation/crash command before the exact failed direct native command. The
 last command still runs independently after successful application build if a
 regression or prefix fails; every failed predecessor remains a failed job.
 Only this focused native command enables `WORKSPACE_REVEAL_TRACE=1`. Fixed
-bootstrap/read-boundary markers are deduplicated (23 maximum), validated under
+bootstrap/read-boundary markers are deduplicated (19 maximum), validated under
 the unchanged1024-byte protocol limit and retained as first received boundary
 latencies from adapter spawn. They neither authorize GO nor identify the current
 blocked call after repeated polls. The `binding_returned` marker records whether at least one binding read completed; its presence confirms a completed read; absence means no completion marker was received and leaves read/exception/delivery hypotheses unresolved. Default runtime behavior has tracing disabled.
@@ -306,46 +306,12 @@ run afterwards, even if that native command fails. The default early flag is
 false, preserving the historical reproduction order. Exact-SHA artifacts and
 full acceptance are required after focused success.
 
-The temporary issue26 COM comparison route was removed after its cold/warm
-artifacts were retained. Renew the actual repaired cold native gate with
-`checks: readiness`, `readiness_reveal_windows: true`,
-`readiness_native_windows: true`, `readiness_native_early: true`; keep the
-historical prefix and `readiness_minimal_electron` disabled for this cold gate.
-With both disabled, no comparison or other Explorer warm-up precedes the original command. Inspect the original exact-SHA outcome,
-COM/UIA target evidence, restart, shutdown and cleanup before full acceptance.
-
-The opt-in `readiness_minimal_electron: true` inserts a Phase-2 diagnostic before
-the original command on both Windows runners. It executes the real native adapter
-from a bare Electron host without the Workspace service, database or observers,
-retaining native deadlines, COM/UIA selection and owned cleanup assertions. Its
-`minimal-electron.json` explicitly records `acceptance: false`. The later original
-is warmed diagnostic evidence regardless of the diagnostic outcome. A fresh VM
-run with this flag disabled must pass the cold original before full acceptance.
-Focused install logs retain verbose npm failure evidence with strict pipe failure
-propagation, including failures before build; no retry changes their verdict.
-
-`readiness_minimal_host: workspace` restores the actual main process, renderer and
-backend with an empty owned database. The same diagnostic adapter call remains
-direct; there is no registered source, observer, crash recovery or project creation.
-Owned backend termination joins the fixture-removal gate. The default `bare` host
-removes those startup components; neither variant replaces cold original acceptance.
-
-`readiness_minimal_host: source` adds one direct-discovery source through the public
-Workspace API to that actual startup. It asserts automatic updates are active
-before the same direct native call. The target folder already exists; no crash
-recovery or project-creation command precedes it. Evidence omits source identities
-and paths; the same backend/process/Explorer/fixture ownership gates apply.
-
-`readiness_minimal_compare: true` plus the enabled minimal diagnostic expands its
-focused matrix to fresh `bare`, `watch` and `source` VMs per OS. The watch-only
-variant keeps bare Electron and adds the same nonrecursive nonpersistent root
-`fs.watch` in main, without service/SQLite/renderer source state. This differs from
-production's utility-process watch location and is a sufficiency probe. Each
-context caches the trusted executable before intent; host-specific artifact names
-prevent collisions. With comparison disabled, exactly one selected host runs.
-Neither comparison nor its later warmed originals satisfies cold acceptance.
-
-`readiness_item_timing: true` independently enables the optional first-Item
-CPU/wall probe in focused native/minimal commands; default false retains tracing
-without metric reads. Compare enabled/disabled fresh VMs on the same SHA to audit
-observer perturbation. This flag never changes native deadlines or acceptance.
+The Windows binding uses direct .NET IDispatch reads rather than PowerShell COM
+member discovery. Renew its cold original with `checks: readiness`,
+`readiness_reveal_windows: true`, `readiness_native_windows: true`,
+`readiness_native_early: true`; leave the historical prefix disabled. Inspect the
+exact-SHA native result, COM/UIA target evidence, restart, shutdown and cleanup
+before full acceptance. Temporary COM/host/timing comparison routes are removed;
+no Explorer warm-up precedes this original. Focused npm installation retains
+verbose failure output under strict pipefail, including failures before build,
+without retry or runtime substitution.

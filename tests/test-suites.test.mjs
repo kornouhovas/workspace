@@ -411,7 +411,7 @@ test('remaining Reveal scope replaces unrelated readiness with the original file
         assert.deepEqual(active.sort(), ['focused-macos-package-creation', 'focused-windows-reveal']);
     }
   assert.deepEqual(job.strategy.matrix.os, ['windows-latest', 'windows-2022']); assert.equal(job.strategy['fail-fast'], false);
-  const commands = job.steps.filter(step => step.run && !step.name?.startsWith('Early original') && step.name !== 'Minimal Electron cold native reproduction').map(step => step.run);
+  const commands = job.steps.filter(step => step.run && !step.name?.startsWith('Early original')).map(step => step.run);
   assert.match(commands[0], /set -o pipefail/);
   assert.match(commands[0], /npm ci --loglevel verbose 2>&1 \| tee work\/ci-focused-windows-reveal\/install.log/);
   assert.equal(commands[1], 'npm run build'); assert.equal(commands.length, 8);
@@ -421,49 +421,6 @@ test('remaining Reveal scope replaces unrelated readiness with the original file
   for (const field of ['matrix.os', 'github.sha', 'github.run_id', 'github.run_attempt']) assert.ok(upload.with.name.includes(field));
 });
 
-test('minimal Electron reproduction is opt-in and cannot replace original native acceptance', () => {
-  const workflow = load(readFileSync('.github/workflows/desktop-ci.yml', 'utf8'));
-  assert.equal(workflow.on.workflow_dispatch.inputs.readiness_minimal_electron.default, false);
-  const job = workflow.jobs['focused-windows-reveal'];
-  const probe = job.steps.find(step => step.name === 'Minimal Electron cold native reproduction');
-  assert.equal(probe.run, 'node scripts/diagnostics/windows-electron-reveal.mjs');
-  assert.equal(probe.env.WORKSPACE_MINIMAL_REVEAL_OUTPUT, 'work/ci-focused-windows-reveal/minimal-electron.json');
-  assert.deepEqual(workflow.on.workflow_dispatch.inputs.readiness_minimal_host.options, ['bare', 'watch', 'workspace', 'source']);
-  assert.equal(workflow.on.workflow_dispatch.inputs.readiness_minimal_host.default, 'bare');
-  assert.equal(probe.env.WORKSPACE_MINIMAL_REVEAL_HOST, "${{ matrix.probe_host }}");
-  const original = job.steps.find(step => step.name === 'Early original Windows latest direct creation native evidence');
-  assert.ok(job.steps.indexOf(probe) < job.steps.indexOf(original));
-  assert.ok(!original.if.includes('readiness_minimal_electron'));
-  for (const enabled of [undefined, false, true]) for (const cancelled of [false, true]) for (const outcome of ['success', 'failure']) {
-    assert.equal(runInNewContext(probe.if.slice(3, -2).replace('steps.reveal-build', 'steps["reveal-build"]'),
-      { cancelled: () => cancelled, steps: { 'reveal-build': { outcome } }, inputs: { readiness_minimal_electron: enabled } }),
-    !cancelled && outcome === 'success' && enabled === true);
-  }
-});
-
-test('native Item timing is independently opt-in for focused commands', () => {
-  const workflow = load(readFileSync('.github/workflows/desktop-ci.yml', 'utf8'));
-  assert.equal(workflow.on.workflow_dispatch.inputs.readiness_item_timing.default, false);
-  const job = workflow.jobs['focused-windows-reveal'];
-  const steps = job.steps.filter(step => step.name === 'Minimal Electron cold native reproduction' || step.name?.includes('Windows latest direct creation native evidence'));
-  assert.equal(steps.length, 3);
-  for (const step of steps) for (const enabled of [undefined, false, true]) {
-    assert.equal(runInNewContext(step.env.WORKSPACE_REVEAL_ITEM_TIMING.slice(3, -2), { inputs: { readiness_item_timing: enabled } }), enabled === true ? '1' : '0');
-  }
-});
-
-test('minimal host comparisons isolate contexts on fresh VMs only when explicitly enabled', () => {
-  const workflow = load(readFileSync('.github/workflows/desktop-ci.yml', 'utf8'));
-  assert.equal(workflow.on.workflow_dispatch.inputs.readiness_minimal_compare.default, false);
-  const job = workflow.jobs['focused-windows-reveal'];
-  const expression = job.strategy.matrix.probe_host.slice(3, -2);
-  for (const probe of [undefined, false, true]) for (const compare of [undefined, false, true]) for (const host of [undefined, 'bare', 'watch', 'source', 'workspace']) {
-    const actual = runInNewContext(expression, { inputs: { readiness_minimal_electron: probe, readiness_minimal_compare: compare, readiness_minimal_host: host },
-      fromJSON: JSON.parse, format: (template, value) => template.replace('{0}', value) });
-    assert.deepEqual(Array.from(actual), probe === true && compare === true ? ['bare', 'watch', 'source'] : [host ?? 'bare']);
-  }
-  assert.ok(job.steps.find(step => step.uses === 'actions/upload-artifact@v4').with.name.includes('matrix.probe_host'));
-});
 
 test('remaining Reveal scope includes the exact Windows latest native failure independently after build', () => {
   const workflow = load(readFileSync('.github/workflows/desktop-ci.yml', 'utf8'));

@@ -3,36 +3,8 @@ function Get-WorkspaceComProperty($value, [string]$name) {
     # Preserve collection/null results as one value rather than pipeline items.
     return ,([System.__ComObject].InvokeMember($name, [Reflection.BindingFlags]::GetProperty, $null, $value, $null))
 }
-# [DEBUG-issue26] First traced Item only; no timing work when tracing is disabled.
-$script:workspaceComTimingProbed = $false
-function Read-WorkspaceComTimingSnapshot {
-    $process = [Diagnostics.Process]::GetCurrentProcess()
-    try {
-        return @{ cpu = $process.TotalProcessorTime.TotalMilliseconds;
-            wall = [Diagnostics.Stopwatch]::GetTimestamp() * 1000.0 / [Diagnostics.Stopwatch]::Frequency }
-    } finally { $process.Dispose() }
-}
-function Get-WorkspaceComTimingPhase($before, $after) {
-    $wall = $after.wall - $before.wall; $cpu = $after.cpu - $before.cpu
-    if ($wall -lt 0 -or $cpu -lt 0) { return $null }
-    if ($wall -lt 1000) { return 'item_fast' }
-    if ($cpu -ge $wall * 0.5) { return 'item_cpu_bound' }
-    return 'item_wait_bound'
-}
 function Invoke-WorkspaceComMethod($value, [string]$name, [object[]]$arguments, $trace = $null) {
-    $before = $null
-    if ($null -ne $trace -and $env:WORKSPACE_REVEAL_ITEM_TIMING -ceq '1' -and -not $script:workspaceComTimingProbed) {
-        $script:workspaceComTimingProbed = $true
-        try { [void](& $trace 'item_invoking') } catch { }
-        try { $before = Read-WorkspaceComTimingSnapshot } catch { }
-    }
     $result = [System.__ComObject].InvokeMember($name, [Reflection.BindingFlags]::InvokeMethod, $null, $value, $arguments)
-    if ($null -ne $before) {
-        try {
-            $phase = Get-WorkspaceComTimingPhase $before (Read-WorkspaceComTimingSnapshot)
-            if ($null -ne $phase) { [void](& $trace $phase) }
-        } catch { }
-    }
     if ($null -ne $trace) { try { [void](& $trace 'item_returned') } catch { } }
     return ,$result
 }

@@ -877,3 +877,27 @@ call timing; both green supports environment variance rather than a proven fix.
 Genuine COM controls retain tracing with metrics disabled, require no metric reads,
 and preserve scalar/error behavior. No full acceptance is opened by the prior
 diagnostic-only green.
+
+### Same-SHA timing A/B passed; remove experiments for final candidate
+
+On a43a88fb, fresh cold-original timing-off38800010878 and timing-on38800016157
+both passed. Four artifacts12004251341/12004680191/12003548098/12004235984 inspected:
+233Windows controls per OS/arm passed; latest originals had COM/UIA agreement,
+restart, normal quit and confirmed cleanup. Timing-off retained no timing labels,
+readiness5963ms; timing-on readiness5344ms, ~1.3second low-local-CPU Item. Neither
+probe-perturbation dependency nor a failed call's CPU behavior is established.
+Failed and passed latest jobs advertised the same image windows-2025-vs2026,
+20261007.264.1; an advertised image-version change is not the explanation.
+
+Remove both minimal host files and all temporary comparison/timing workflow
+inputs, matrices, tests and tagged instrumentation. Keep the direct COM-read
+implementation, fixed SDK Item dispatch identity controls,19finite read boundaries,
+and the single-owner property-fixture cleanup repair. Preserve strict native/quit
+deadlines, actual command, observer and ownership assertions. Install failure logs
+remain useful evidence with no retry. Historical experiment results above remain
+retained, including their failures and corrected limits; unique historical Item
+latency cause remains unproven.
+
+The completed candidate needs fresh local checks, two-axis review, a diagnostic-free
+cold original and exact-SHA full platform acceptance before integration. Prior
+A/B success does not substitute for checks after this cleanup.

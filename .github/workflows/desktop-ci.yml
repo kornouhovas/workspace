@@ -14,27 +14,6 @@ on:
         description: With checks=readiness, reproduce original Windows latest and 2022 editor failures
         type: boolean
         default: false
-      readiness_item_timing:
-        description: Enable optional first native Item CPU/wall probe in focused Reveal diagnostics
-        type: boolean
-        default: false
-      readiness_minimal_compare:
-        description: Compare bare, watch-only and source contexts on fresh focused Windows VMs
-        type: boolean
-        default: false
-      readiness_minimal_host:
-        description: Host context for the opt-in minimal Electron native diagnostic
-        type: choice
-        options:
-          - bare
-          - watch
-          - workspace
-          - source
-        default: bare
-      readiness_minimal_electron:
-        description: With focused Reveal checks, minimize cold native Reveal in Electron without Workspace services
-        type: boolean
-        default: false
       readiness_native_prefix:
         description: With readiness native Windows, reproduce the original layout and creation prefix before the failed command
         type: boolean
@@ -610,12 +589,11 @@ jobs:
 
   focused-windows-reveal:
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.checks == 'readiness' && inputs.readiness_reveal_windows == true }}
-    name: Focused original Reveal service regressions (${{ matrix.os }}, ${{ matrix.probe_host }})
+    name: Focused original Reveal service regressions (${{ matrix.os }})
     strategy:
       fail-fast: false
       matrix:
         os: [windows-latest, windows-2022]
-        probe_host: ${{ inputs.readiness_minimal_electron == true && inputs.readiness_minimal_compare == true && fromJSON('["bare","watch","source"]') || fromJSON(format('["{0}"]', inputs.readiness_minimal_host || 'bare')) }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 10
     steps:
@@ -632,20 +610,12 @@ jobs:
           npm ci --loglevel verbose 2>&1 | tee work/ci-focused-windows-reveal/install.log
       - run: npm run build
         id: reveal-build
-      - name: Minimal Electron cold native reproduction
-        if: ${{ !cancelled() && steps.reveal-build.outcome == 'success' && inputs.readiness_minimal_electron == true }}
-        run: node scripts/diagnostics/windows-electron-reveal.mjs
-        env:
-          WORKSPACE_MINIMAL_REVEAL_OUTPUT: work/ci-focused-windows-reveal/minimal-electron.json
-          WORKSPACE_MINIMAL_REVEAL_HOST: ${{ matrix.probe_host }}
-          WORKSPACE_REVEAL_ITEM_TIMING: ${{ inputs.readiness_item_timing == true && '1' || '0' }}
       - name: Early original Windows latest direct creation native evidence
         if: ${{ !cancelled() && steps.reveal-build.outcome == 'success' && inputs.readiness_native_windows == true && inputs.readiness_native_early == true && matrix.os == 'windows-latest' }}
         run: npm run smoke:runtime -- dev --creation --discovery-mode=direct --checkpoint=after_evidence
         env:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-focused-windows-reveal/native
           WORKSPACE_REVEAL_TRACE: '1'
-          WORKSPACE_REVEAL_ITEM_TIMING: ${{ inputs.readiness_item_timing == true && '1' || '0' }}
       - name: Original Reveal file including dirty and stable authority controls
         if: ${{ !cancelled() && steps.reveal-build.outcome == 'success' }}
         shell: bash
@@ -677,11 +647,10 @@ jobs:
         env:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-focused-windows-reveal/native
           WORKSPACE_REVEAL_TRACE: '1'
-          WORKSPACE_REVEAL_ITEM_TIMING: ${{ inputs.readiness_item_timing == true && '1' || '0' }}
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: issue-24-focused-reveal-${{ matrix.os }}-${{ matrix.probe_host }}-${{ github.sha }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
+          name: issue-24-focused-reveal-${{ matrix.os }}-${{ github.sha }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
           path: work/ci-focused-windows-reveal/
           if-no-files-found: error
           retention-days: 7
