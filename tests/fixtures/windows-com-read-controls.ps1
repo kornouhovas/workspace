@@ -5,5 +5,6 @@ function Get-WorkspaceComProperty($value, [string]$name) {
     return ,($value.$name)
 }
 function Invoke-WorkspaceComMethod($value, [string]$name, [object[]]$arguments) {
+    if ($name -ceq '[DispID=0]') { $name = 'Item' }
     return ,($value.PSObject.Methods[$name].Invoke($arguments))
 }

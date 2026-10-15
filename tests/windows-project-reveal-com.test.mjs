@@ -47,6 +47,7 @@ test("production and diagnostic scripts share the exact binding guards without d
   assert.match(binding, /\[System.__ComObject\].InvokeMember\(\$name, \[Reflection.BindingFlags\]::GetProperty/);
   assert.match(binding, /\[System.__ComObject\].InvokeMember\(\$name, \[Reflection.BindingFlags\]::InvokeMethod/);
   assert.doesNotMatch(binding, /\$windows\.Count|\$windows\.Item\(|\$candidate\.Document|\$document\.Folder|\$window\.(Document|HWND|Busy|ReadyState)|\$item\.Path/);
+  assert.match(binding, /Invoke-WorkspaceComMethod \$windows '\[DispID=0\]' @\(\$i\) \$trace/);
   assert.doesNotMatch(bridge, /\$anchor.item.Path/);
   assert.equal((bridge.match(/\.SelectItem\(/g) ?? []).length, 1);
   assert.equal((bridge.match(/\$shell\.Open\(/g) ?? []).length, 1);
@@ -199,6 +200,12 @@ test("Windows direct COM reads preserve scalar, collection and error results wit
   const script = String.raw`
 $ErrorActionPreference = 'Stop'
 . ./src/desktop/native/windows-binding.ps1
+$shell = New-Object -ComObject Shell.Application
+$windows = $shell.Windows()
+$named = Invoke-WorkspaceComMethod $windows 'Item' @(0)
+$identified = Invoke-WorkspaceComMethod $windows '[DispID=0]' @(0)
+if (($null -eq $named) -ne ($null -eq $identified)) { throw 'dispatch_null_identity' }
+if ($null -ne $named -and -not (Test-WorkspaceReadyDocument $named $identified)) { throw 'dispatch_identity' }
 $dictionary = New-Object -ComObject Scripting.Dictionary
 try {
   if ((Get-WorkspaceComProperty $dictionary 'Count') -cne 0) { throw 'empty_count' }

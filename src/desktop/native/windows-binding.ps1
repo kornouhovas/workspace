@@ -57,7 +57,9 @@ function Read-WorkspaceReadyBinding($shell, $expected, $anchor, $trace = $null) 
     $owned = [Collections.Generic.List[object]]::new()
     for ($i = 0; $i -lt (Get-WorkspaceComProperty $windows 'Count'); $i++) {
         if ($null -ne $trace) { try { [void](& $trace 'window_item') } catch { } }
-        $candidate = (Invoke-WorkspaceComMethod $windows 'Item' @($i) $trace)
+        # IShellWindows::Item is DISPID 0 in the Windows SDK ExDisp.idl.
+        # Invoke that same member without a GetIDsOfNames lookup.
+        $candidate = (Invoke-WorkspaceComMethod $windows '[DispID=0]' @($i) $trace)
         if ($null -ne $trace) { try { [void](& $trace 'document') } catch { } }
         $document = (Get-WorkspaceComProperty $candidate 'Document')
         if ($null -ne $trace) { try { [void](& $trace 'parent') } catch { } }
