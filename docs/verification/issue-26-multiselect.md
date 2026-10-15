@@ -424,3 +424,15 @@ verify marker absence on a thrown first read and one marker on a completed read
 followed by failure. These controls establish diagnostic semantics, not an
 historical COM cause. Review, local renewal and exact-SHA focused/full acceptance
 remain GitHub gates.
+
+### Reviewed completion-marker candidate
+
+Both independent review axes found one documentation overstatement about missing
+trace evidence; `27ad1da` corrects it and both reviewers confirmed resolution.
+There are no remaining implementation findings. Fresh build plus complete local
+suite passed2845 tests:2822 passed,zero failures,23 platform/conditional skips,
+113.8seconds. The139 focused Reveal checks passed with five actual-Windows skips;
+typecheck, lint, documentation links and whitespace checks passed. Windows
+consumer controls, original focused native command/artifact and subsequent full
+CI must pass on the exact published candidate; local controls do not establish
+Windows native acceptance or a historical cause.
