@@ -20,8 +20,8 @@ Executor: Matt Pocock implement/TDD. Local checkpoint pending publication permis
 - [x] Upgrade populated pre-MultiSelect database with all existing typed values/options/visibility, ownership and immutable-type guards; update migration inventories.
 - [x] EN/RU Table: create property/options, keyboard toggle/remove/clear/cancel, focus, empty/loading/pending/failure, retained draft and sibling change.
 - [x] Built IPC validates new type/command and malformed payloads.
-- [ ] Actual Electron development and packaged macOS narrow/wide EN/RU workflow and restart; add required CI route.
-- [ ] Standards/spec review, repairs, type/lint/docs/migrations, final full local suite and local commit.
+- [x] Actual Electron development and packaged macOS narrow/wide EN/RU workflow and restart; add required CI route.
+- [x] Standards/spec review, repairs, type/lint/docs/migrations, final full local suite and local commit.
 - [ ] Explicit public publication permission, exact-SHA platform CI, integration acceptance and GitHub checkpoint.
 
 ## Verification

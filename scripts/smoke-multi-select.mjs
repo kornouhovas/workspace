@@ -134,7 +134,7 @@ try {
     await reopened.waitFor();
     assert.deepEqual((await query(page, { type: "workspace.listTextProperties", workspaceId })).multiSelectValues, []);
     await reopened.press("Enter");
-    assert.equal(await page.getByRole("group", { name: label, exact: true }).getByRole("checkbox").filter({ hasText: "Готово" }).count(), 0);
+    assert.equal(await page.getByRole("group", { name: label, exact: true }).getByRole("checkbox", { name: en ? "Готово (Hidden)" : "Готово (Скрыта)", exact: true }).count(), 0);
     await page.keyboard.press("Escape");
     await query(page, { type: "workspace.updateSelectOption", workspaceId: sibling.workspaceId, propertyId, optionId, name: "Sibling rename", color: "red" });
     await page.locator("summary").filter({ hasText: en ? "Select options: Status" : "Опции Select: Status" }).click();
