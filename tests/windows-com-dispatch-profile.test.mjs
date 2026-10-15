@@ -1,7 +1,16 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
-import { reflectionPrototype } from '../scripts/diagnostics/windows-com-dispatch.mjs';
+import { reflectionPrototype, assertComparisonReachedRead } from '../scripts/diagnostics/windows-com-dispatch.mjs';
+
+test('input rejection or navigation without a COM read cannot count as comparison execution', () => {
+  // Exact finite shape from the first failed diagnostic: child stopped cleanly
+  // after bootstrap, without opening or reading an Explorer view.
+  assert.throws(() => assertComparisonReachedRead({ opens: 0, trace: [{ phase: 'assemblies' }, { phase: 'shell' }] }), /navigation/);
+  assert.throws(() => assertComparisonReachedRead({ opens: 1, trace: [{ phase: 'open' }] }), /actual COM read/);
+  assert.throws(() => assertComparisonReachedRead({ opens: 2, trace: [{ phase: 'enumeration' }] }), /navigation/);
+  assertComparisonReachedRead({ opens: 1, trace: [{ phase: 'enumeration' }] });
+});
 
 test('isolated reflection prototype retains guards, bounds and the sole selection', async () => {
   const binding = await readFile(new URL('../src/desktop/native/windows-binding.ps1', import.meta.url), 'utf8');

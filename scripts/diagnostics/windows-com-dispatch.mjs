@@ -1,7 +1,7 @@
 // Throwaway, opt-in comparison on four disposable Explorer parents. This does
 // not replace product acceptance or change the shipped native bridge.
 import assert from 'node:assert/strict';
-import { mkdtemp, mkdir, readFile, writeFile, rm } from 'node:fs/promises';
+import { mkdtemp, mkdir, readFile, writeFile, rm, realpath } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -37,11 +37,16 @@ export function reflectionPrototype(source) {
   return reflection + source;
 }
 
+export function assertComparisonReachedRead(report) {
+  assert.equal(report.opens, 1, 'Comparison must reach navigation exactly once');
+  assert.ok(report.trace.some(event => event.phase === 'enumeration'), 'Comparison must reach the actual COM read');
+}
+
 async function run() {
   assert.equal(process.platform, 'win32');
   const output = process.env.WORKSPACE_COM_PROFILE_OUTPUT;
   assert.ok(output, 'An explicit evidence destination is required');
-  const root = await mkdtemp(join(tmpdir(), 'workspace-com-profile-'));
+  const root = await realpath(await mkdtemp(join(tmpdir(), 'workspace-com-profile-')));
   const prototype = join(root, 'native');
   const evidence = { kind: 'isolated-com-dispatch-comparison', acceptance: false, runs: [] };
   let safeToRemove = true;
@@ -53,8 +58,9 @@ async function run() {
     }
     // Reverse order in the second pair to expose Explorer warm-up as a confound.
     for (const [index, variant] of ['original', 'reflection', 'reflection', 'original'].entries()) {
-      const parent = join(root, `case-${index}`), target = join(parent, 'Project 日本語');
-      await mkdir(target, { recursive: true });
+      const parent = join(root, `case-${index}`);
+      await mkdir(join(parent, 'Project 日本語'), { recursive: true });
+      const target = await realpath(join(parent, 'Project 日本語'));
       const report = { variant, outcome: 'failed', permits: 0, opens: 0, selections: 0, stopped: 0, unknown: false, trace: [] };
       evidence.runs.push(report);
       const started = performance.now();
@@ -82,6 +88,7 @@ async function run() {
       const cleanup = await closeDisposableFileManagerTarget(target, 'win32', undefined, { ownedParent: true });
       report.cleanup = { status: cleanup.status, matched: cleanup.matched, closed: cleanup.closed, errorCount: cleanup.errorCount };
       if (cleanup.status !== 'completed') { safeToRemove = false; throw new Error('Owned Explorer cleanup unconfirmed'); }
+      assertComparisonReachedRead(report);
     }
   } finally {
     evidence.fixtureRemoval = safeToRemove ? 'completed' : 'preserved';
