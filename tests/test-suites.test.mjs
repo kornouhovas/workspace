@@ -4,7 +4,7 @@ import { spawnSync } from 'node:child_process';
 import { runInNewContext } from 'node:vm';
 import test from 'node:test';
 import { load } from 'js-yaml';
-import { selectTestFiles } from '../scripts/test-suites.mjs';
+import { selectTestFiles, selectTestBatches, runTestBatches } from '../scripts/test-suites.mjs';
 
 const files = readdirSync('tests').filter(name => /\.test\.(mjs|tsx)$/.test(name)).sort();
 
@@ -299,7 +299,7 @@ test('category-fixture scope retains the original Windows latest regression and 
 test('category-fixture also reproduces the original Windows 2022 development runtime failure', () => {
   const workflow = load(readFileSync('.github/workflows/desktop-ci.yml', 'utf8'));
   const job = workflow.jobs['focused-category-runtime'];
-  assert.equal(job.if, workflow.jobs['focused-category-fixture'].if);
+  assert.equal(job.if, "${{ github.event_name == 'workflow_dispatch' && inputs.checks == 'category-fixture' && inputs.category_fixture_only != true }}");
   assert.equal(job['runs-on'], 'windows-2022'); assert.equal(job['timeout-minutes'], 25);
   const commands = job.steps.filter(step => step.run);
   assert.deepEqual(commands.slice(0, 2).map(step => step.run), ['npm ci', 'npm run build']);
@@ -537,4 +537,46 @@ test('ETW and property fixture route retains the exact failed files on their ori
   const upload = job.steps.find(step => step.uses === 'actions/upload-artifact@v4');
   assert.equal(upload.if, 'always()'); assert.equal(upload.with['if-no-files-found'], 'error');
   for (const field of ['github.sha', 'github.run_id', 'github.run_attempt']) assert.ok(upload.with.name.includes(field));
+});
+
+
+test('Windows utility exit controls have an exclusive batch while every selected file still runs once', () => {
+  const control = 'tests/project-category-move-fixture.test.mjs';
+  for (const suite of ['all', 'common', 'platform']) {
+    const selected = selectTestFiles(files, suite).map(name => `tests/${name}`);
+    for (const platform of ['win32', 'darwin', 'linux']) {
+      const batches = selectTestBatches(selected, platform);
+      assert.deepEqual(batches.flat().sort(), [...selected].sort());
+      assert.equal(new Set(batches.flat()).size, selected.length);
+      assert.ok(batches.every(batch => batch.length > 0));
+      if (platform === 'win32' && selected.includes(control)) {
+        assert.deepEqual(batches[0], [control]);
+        assert.ok(!batches[1].includes(control));
+      } else assert.deepEqual(batches, [selected]);
+    }
+  }
+});
+
+
+test('a failed or signaled exclusive batch remains failed after the remaining files pass', () => {
+  const batches = [['exclusive'], ['remaining']];
+  for (const statuses of [[1, 0], [null, 0], [0, 1], [0, 0]]) {
+    const calls = [];
+    const exit = runTestBatches(batches, batch => { calls.push(batch); return { status: statuses[calls.length - 1] }; });
+    assert.deepEqual(calls, batches);
+    assert.equal(exit, statuses.every(status => status === 0) ? 0 : 1);
+  }
+  const failure = new Error('Test process could not start');
+  assert.throws(() => runTestBatches(batches, () => ({ error: failure })), error => error === failure);
+});
+
+test('category checkpoint-only selector avoids unrelated historical Windows runtime checks', () => {
+  const workflow = load(readFileSync('.github/workflows/desktop-ci.yml', 'utf8'));
+  assert.equal(workflow.on.workflow_dispatch.inputs.category_fixture_only.default, false);
+  for (const event of ['push', 'pull_request', 'workflow_dispatch']) for (const flag of [undefined, false, true]) {
+    const context = { github: { event_name: event }, inputs: { checks: 'category-fixture', category_fixture_only: flag } };
+    const active = Object.entries(workflow.jobs).filter(([, job]) => job.if && runInNewContext(job.if.slice(3, -2), context)).map(([name]) => name);
+    assert.deepEqual(active, event !== 'workflow_dispatch' ? ['common']
+      : flag === true ? ['focused-category-fixture'] : ['focused-category-fixture', 'focused-category-runtime']);
+  }
 });

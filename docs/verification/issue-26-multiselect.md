@@ -304,3 +304,40 @@ checks passed. The final full local suite on that reviewed source passed:
 120.8 seconds. Existing original local creation acceptance is unchanged.
 Current exact-SHA focused Windows and subsequent full/integration gates remain
 in GitHub #26; earlier failed runs and causal limitations remain retained.
+
+## Fifth full CI: Windows latest category utility exit
+
+Focused creation run 38767178725 passed on `f5a19f1e7c824ebb4aad2c3c5cd7300c95f4e353`;
+artifact 11989247216 was inspected (64 regressions, eight original cases,16 normal
+quits/backend exits, no forced cleanup, asserted fixture removal). Full
+[run 38767720986](https://github.com/kornouhovas/workspace/actions/runs/38767720986),
+attempt 1 on that SHA, passed common checks. Windows latest platform job
+116535963218 failed only the existing reconnect/malformed-result category fixture
+control, before its intended injected reconnect error. The real earlier seam was
+`stop_owned_timeout_stopped`, with a later `final_stop` failure. Other jobs were
+still running when diagnosis began; final receipts remain in GitHub.
+
+Artifact 11989409806 was inspected (41 JSON checkpoint files). The failed control
+kept the actual primary error: utility exit notification missed its existing
+one-second bound, while the final OS probe reported stopped. Its `utility_exit`
+arrived after result/ack/exit_sent; supervisor eventually confirmed one utility
+exit, main exit and fixture removal. This eventual cleanup does not satisfy the
+earlier deadline or expected injected-connect outcome. The original full-suite
+command is the red-capable remote reproduction. Delayed event delivery under
+parallel native work, late backend termination and notification behavior remain
+hypotheses; exact historical cause is not proven.
+
+On Windows all/platform execution, that existing control file now runs as an
+exclusive first batch before other native workers. Every selected file still runs
+exactly once; a failed/signaled first batch stays failed even when later batches
+pass. Common, inventory/list and non-Windows execution retain one batch. The
+one-second guard, fixture and every expected diagnostic assertion are unchanged.
+A scheduling control went red before isolation and green afterwards; coverage and
+aggregate failure tests verify the boundary. This is a controlled scheduling
+change, not proof of the historical event-delivery cause.
+
+Use existing `checks: category-fixture` with `category_fixture_only: true` to run
+only the original Windows latest file and retained checkpoint/output artifact.
+The historical Windows2022 runtime route remains available under its unchanged
+default flag. Review, final local renewal and focused original evidence must pass
+before renewed full acceptance on the same candidate.

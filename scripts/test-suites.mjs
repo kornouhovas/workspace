@@ -27,6 +27,24 @@ export function selectTestFiles(files, suite) {
   return files.filter(name => suite === 'all' || (suite === 'common' ? common.has(name) : !common.has(name))).sort();
 }
 
+export function selectTestBatches(files, platform) {
+  const control = 'tests/project-category-move-fixture.test.mjs';
+  if (platform !== 'win32' || !files.includes(control)) return [files];
+  // Exercise the existing 1s utility-exit controls without other native workers
+  // competing for process/event delivery; retain every selected file once.
+  return [[control], files.filter(file => file !== control)].filter(batch => batch.length);
+}
+
+export function runTestBatches(batches, run) {
+  let failed = false;
+  for (const batch of batches) {
+    const result = run(batch);
+    if (result.error) throw result.error;
+    if (result.status !== 0) failed = true;
+  }
+  return failed ? 1 : 0;
+}
+
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   try {
     const [suite, option, ...extra] = process.argv.slice(2);
@@ -38,9 +56,8 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
       // Electron installs lazily on first require. Finish that shared mutation
       // before native test workers can concurrently extract/use the same binary.
       if (suite !== 'common') createRequire(import.meta.url)('electron');
-      const result = spawnSync(process.execPath, ['--import', 'tsx', '--test', ...files], { stdio: 'inherit' });
-      if (result.error) throw result.error;
-      process.exitCode = result.status ?? 1;
+      process.exitCode = runTestBatches(selectTestBatches(files, process.platform), batch =>
+        spawnSync(process.execPath, ['--import', 'tsx', '--test', ...batch], { stdio: 'inherit' }));
     }
   } catch (error) {
     console.error(error.message);

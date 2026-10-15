@@ -30,6 +30,10 @@ on:
         description: With checks=readiness, reproduce original macOS grouped packaged creation and Reveal failure
         type: boolean
         default: false
+      category_fixture_only:
+        description: With checks=category-fixture, run only the Windows latest checkpoint regression
+        type: boolean
+        default: false
       startup_category_only:
         description: With checks=issue24-startup, focus a remaining category failure after unchanged readiness success
         type: boolean
@@ -195,7 +199,7 @@ jobs:
           if-no-files-found: error
 
   focused-category-runtime:
-    if: ${{ github.event_name == 'workflow_dispatch' && inputs.checks == 'category-fixture' }}
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.checks == 'category-fixture' && inputs.category_fixture_only != true }}
     name: Focused Windows 2022 original development runtime
     runs-on: windows-2022
     timeout-minutes: 25

@@ -268,3 +268,14 @@ their existing behavior. The creation-focused route performs the same serial
 preparation before its native regressions; original creation runs independently
 after build/preparation success. No deadline, assertion, inventory or failed-step
 result is relaxed. The historical OS-level extraction mechanism remains unproven.
+
+For issue #26 run 38767720986's Windows latest category checkpoint utility-exit
+failure, select `checks: category-fixture, category_fixture_only: true`. This
+runs only the original failed Windows latest file; the flag defaults false and
+preserves the historical Windows2022 runtime route. On Windows, all/platform
+suite execution runs the category fixture file in an exclusive first batch,
+then every other selected file once. Failures/signals remain failed across
+batches; the original one-second exit deadline, diagnostic and cleanup assertions
+are unchanged. Common/list and non-Windows execution are unchanged. Isolation
+tests a native-load/event-delivery hypothesis; exact historical causation remains
+unproven. Focused original/artifact acceptance still precedes full CI.
