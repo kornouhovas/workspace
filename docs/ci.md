@@ -335,3 +335,12 @@ Workspace API to that actual startup. It asserts automatic updates are active
 before the same direct native call. The target folder already exists; no crash
 recovery or project-creation command precedes it. Evidence omits source identities
 and paths; the same backend/process/Explorer/fixture ownership gates apply.
+
+`readiness_minimal_compare: true` plus the enabled minimal diagnostic expands its
+focused matrix to fresh `bare`, `watch` and `source` VMs per OS. The watch-only
+variant keeps bare Electron and adds the same nonrecursive nonpersistent root
+`fs.watch` in main, without service/SQLite/renderer source state. This differs from
+production's utility-process watch location and is a sufficiency probe. Each
+context caches the trusted executable before intent; host-specific artifact names
+prevent collisions. With comparison disabled, exactly one selected host runs.
+Neither comparison nor its later warmed originals satisfies cold acceptance.

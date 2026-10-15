@@ -14,14 +14,14 @@ import { closeDisposableFileManagerTarget, waitForFileManagerTarget } from '../f
 assert.equal(process.platform, 'win32');
 const output = process.env.WORKSPACE_MINIMAL_REVEAL_OUTPUT;
 const host = process.env.WORKSPACE_MINIMAL_REVEAL_HOST ?? 'bare';
-assert.ok(['bare', 'workspace', 'source'].includes(host));
-const workspaceHost = host !== 'bare';
+assert.ok(['bare', 'watch', 'workspace', 'source'].includes(host));
+const workspaceHost = ['workspace', 'source'].includes(host);
 assert.ok(output, 'An explicit evidence destination is required');
 const root = await realpath(await mkdtemp(join(tmpdir(), 'workspace-minimal-reveal-')));
 const evidence = { kind: 'minimal-electron-native-reveal', acceptance: false, host, native: null, normalQuit: false };
 const target = join(root, 'root', 'Project 日本語'), profile = join(root, 'profile'), bundle = join(root, 'native.cjs');
 let app, child, primary, bridgeStopped = true, launchUnverified = false, stage = 'build';
-let backendVerified = host === 'bare';
+let backendVerified = !workspaceHost;
 const backendPids = new Set();
 async function collectBackends() {
   if (!workspaceHost) return;
@@ -54,6 +54,11 @@ try {
     await collectBackends();
     await waitForRuntimeInterface(page, async status => { evidence.startup = status; });
   } else await page.waitForURL('data:text/html,' + encodeURIComponent('<title>Minimal Reveal</title>'), { waitUntil: 'load', timeout: 30000 });
+  if (host === 'watch') {
+    stage = 'watch';
+    evidence.watch = await app.evaluate(() => globalThis.minimalWatchSetup());
+    assert.deepEqual(evidence.watch, { active: true, error: false });
+  }
   if (host === 'source') {
     stage = 'source';
     const request = async input => {
@@ -72,6 +77,10 @@ try {
   stage = 'native'; bridgeStopped = false;
   evidence.native = await withDeadline(app.evaluate(() => globalThis.minimalReveal()), 17000, 'Minimal native Reveal');
   bridgeStopped = evidence.native.stopped === 1 && evidence.native.unknown === false;
+  if (host === 'watch') {
+    evidence.watchAfter = await app.evaluate(() => globalThis.minimalWatchState());
+    assert.deepEqual(evidence.watchAfter, { active: true, error: false });
+  }
   assert.equal(bridgeStopped, true, 'Owned native bridge must stop');
   assert.equal(evidence.native.opens, 1, 'Minimal reproduction must reach actual navigation');
   assert.ok(evidence.native.trace.some(event => event.phase === 'enumeration'), 'Minimal reproduction must reach COM');

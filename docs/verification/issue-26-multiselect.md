@@ -800,3 +800,25 @@ program explicitly as production does. No PATH/env executable override is added;
 a missing program retains the production unavailable behavior. Native deadlines,
 readiness, permissions and cleanup remain identical. Run the cold source variant
 again only as a changed fidelity probe, retaining the prior result as diagnostic.
+
+### Reduced source scenario reproduced the actual failure
+
+Focused38796787756 on d2f2b4b: artifact12002801300 latest reproduced zero selection,
+no permit, owner expiry with one active source, without recovery or creation.
+window_item3317ms → item_returned8844ms → parent8853ms → owner10919ms. All owned
+main/backend/bridge/Explorer/fixture cleanup passed. Its later warmed original and
+229controls passed. Artifact12001364825 Windows2022 source variant passed COM/UIA,
+cleanup and229controls. Resolver timing correction5f8e61f remains required for
+production fidelity; source context is sufficient in this retained failing run,
+not established as the unique cause.
+
+Next changed probe compares fresh cached-resolver bare/watch-only/source contexts
+in parallel. Predictions: (1) watch alone sufficient → bare passes, watch fails;
+(2) further source context necessary → bare/watch pass, source fails; (3) baseline
+or host variance dominates → bare also fails, requiring reassessment. Watch-only
+is in main rather than production utility; a pass does not eliminate utility or
+observer scheduling. No artificial wait or observer suppression changes original.
+
+Comparison-route local verification:65routing/lifecycle tests, lint/docs and
+whitespace passed. The opt-in matrix has fresh host-qualified artifacts and
+retains all original controls; actual cached-resolver comparison remains pending.

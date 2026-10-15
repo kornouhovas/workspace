@@ -428,9 +428,9 @@ test('minimal Electron reproduction is opt-in and cannot replace original native
   const probe = job.steps.find(step => step.name === 'Minimal Electron cold native reproduction');
   assert.equal(probe.run, 'node scripts/diagnostics/windows-electron-reveal.mjs');
   assert.equal(probe.env.WORKSPACE_MINIMAL_REVEAL_OUTPUT, 'work/ci-focused-windows-reveal/minimal-electron.json');
-  assert.deepEqual(workflow.on.workflow_dispatch.inputs.readiness_minimal_host.options, ['bare', 'workspace', 'source']);
+  assert.deepEqual(workflow.on.workflow_dispatch.inputs.readiness_minimal_host.options, ['bare', 'watch', 'workspace', 'source']);
   assert.equal(workflow.on.workflow_dispatch.inputs.readiness_minimal_host.default, 'bare');
-  assert.equal(probe.env.WORKSPACE_MINIMAL_REVEAL_HOST, "${{ inputs.readiness_minimal_host || 'bare' }}");
+  assert.equal(probe.env.WORKSPACE_MINIMAL_REVEAL_HOST, "${{ matrix.probe_host }}");
   const original = job.steps.find(step => step.name === 'Early original Windows latest direct creation native evidence');
   assert.ok(job.steps.indexOf(probe) < job.steps.indexOf(original));
   assert.ok(!original.if.includes('readiness_minimal_electron'));
@@ -439,6 +439,19 @@ test('minimal Electron reproduction is opt-in and cannot replace original native
       { cancelled: () => cancelled, steps: { 'reveal-build': { outcome } }, inputs: { readiness_minimal_electron: enabled } }),
     !cancelled && outcome === 'success' && enabled === true);
   }
+});
+
+test('minimal host comparisons isolate contexts on fresh VMs only when explicitly enabled', () => {
+  const workflow = load(readFileSync('.github/workflows/desktop-ci.yml', 'utf8'));
+  assert.equal(workflow.on.workflow_dispatch.inputs.readiness_minimal_compare.default, false);
+  const job = workflow.jobs['focused-windows-reveal'];
+  const expression = job.strategy.matrix.probe_host.slice(3, -2);
+  for (const probe of [undefined, false, true]) for (const compare of [undefined, false, true]) for (const host of [undefined, 'bare', 'watch', 'source', 'workspace']) {
+    const actual = runInNewContext(expression, { inputs: { readiness_minimal_electron: probe, readiness_minimal_compare: compare, readiness_minimal_host: host },
+      fromJSON: JSON.parse, format: (template, value) => template.replace('{0}', value) });
+    assert.deepEqual(Array.from(actual), probe === true && compare === true ? ['bare', 'watch', 'source'] : [host ?? 'bare']);
+  }
+  assert.ok(job.steps.find(step => step.uses === 'actions/upload-artifact@v4').with.name.includes('matrix.probe_host'));
 });
 
 test('remaining Reveal scope includes the exact Windows latest native failure independently after build', () => {
