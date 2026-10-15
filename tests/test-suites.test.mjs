@@ -426,6 +426,7 @@ test('COM dispatch comparison is opt-in inside the focused Reveal job and retain
   const probe = job.steps.find(step => step.name === 'Isolated COM dispatch comparison');
   assert.equal(probe.run, 'node --import tsx scripts/diagnostics/windows-com-dispatch.mjs');
   assert.equal(probe.env.WORKSPACE_COM_PROFILE_OUTPUT, 'work/ci-focused-windows-reveal/com-dispatch.json');
+  assert.ok(job.steps.indexOf(probe) < job.steps.findIndex(step => step.name === 'Early original Windows latest direct creation native evidence'));
   for (const enabled of [undefined, false, true]) for (const cancelled of [false, true]) for (const outcome of ['failure', 'success']) {
     assert.equal(runInNewContext(probe.if.slice(3, -2).replace('steps.reveal-build', "steps['reveal-build']"), { cancelled: () => cancelled,
       steps: { 'reveal-build': { outcome } }, inputs: { readiness_com_profile: enabled } }),

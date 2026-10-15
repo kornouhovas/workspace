@@ -56,8 +56,9 @@ async function run() {
       const source = await readFile(join(sourceDirectory, name), 'utf8');
       await writeFile(join(prototype, name), name === 'windows-view.ps1' ? source : reflectionPrototype(source));
     }
-    // Reverse order in the second pair to expose Explorer warm-up as a confound.
-    for (const [index, variant] of ['original', 'reflection', 'reflection', 'original'].entries()) {
+    // Reflection must be the first Explorer caller on this fresh diagnostic VM.
+    // Later original success is warmed evidence, never cold product acceptance.
+    for (const [index, variant] of ['reflection', 'original', 'original', 'reflection'].entries()) {
       const parent = join(root, `case-${index}`);
       await mkdir(join(parent, 'Project 日本語'), { recursive: true });
       const target = await realpath(join(parent, 'Project 日本語'));

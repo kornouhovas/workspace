@@ -609,17 +609,17 @@ jobs:
       - run: npm ci
       - run: npm run build
         id: reveal-build
+      - name: Isolated COM dispatch comparison
+        if: ${{ !cancelled() && steps.reveal-build.outcome == 'success' && inputs.readiness_com_profile == true }}
+        run: node --import tsx scripts/diagnostics/windows-com-dispatch.mjs
+        env:
+          WORKSPACE_COM_PROFILE_OUTPUT: work/ci-focused-windows-reveal/com-dispatch.json
       - name: Early original Windows latest direct creation native evidence
         if: ${{ !cancelled() && steps.reveal-build.outcome == 'success' && inputs.readiness_native_windows == true && inputs.readiness_native_early == true && matrix.os == 'windows-latest' }}
         run: npm run smoke:runtime -- dev --creation --discovery-mode=direct --checkpoint=after_evidence
         env:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-focused-windows-reveal/native
           WORKSPACE_REVEAL_TRACE: '1'
-      - name: Isolated COM dispatch comparison
-        if: ${{ !cancelled() && steps.reveal-build.outcome == 'success' && inputs.readiness_com_profile == true }}
-        run: node --import tsx scripts/diagnostics/windows-com-dispatch.mjs
-        env:
-          WORKSPACE_COM_PROFILE_OUTPUT: work/ci-focused-windows-reveal/com-dispatch.json
       - name: Original Reveal file including dirty and stable authority controls
         if: ${{ !cancelled() && steps.reveal-build.outcome == 'success' }}
         shell: bash
