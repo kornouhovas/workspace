@@ -22,8 +22,9 @@ Executor: Matt Pocock implement/TDD. Candidate CI, ownership and integration rec
 - [x] Populated pre-Select upgrade preserves Text/Number/Date, identities and type/ownership guards; all dependent migration fixtures updated.
 - [x] EN/RU keyboard Table workflow with real service, empty values, validation and sibling reloads.
 - [x] Built backend IPC accepts every command and rejects invalid payloads without mutation.
-- [ ] Real Electron dev/package UI at 1024/1440, EN/RU keyboard, invalid drafts, presentation, restart, source-sibling updates and unchanged folders.
-- [ ] Two-axis review, final type/lint/docs/migration and full local suite.
+- [x] Real Electron dev/package UI at 1024/1440, EN/RU keyboard, invalid drafts, presentation, restart, source-sibling updates and unchanged folders.
+- [x] Two-axis review and repair; final type/lint/docs/migration checks.
+- [x] Full local suite on the completed candidate (2825 tests, zero failures, 23 skips).
 - [ ] Candidate commit, required platform CI/artifacts and authorized integration.
 
 ## Boundaries and checks
