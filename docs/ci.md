@@ -88,7 +88,10 @@ filtered reader retains only the existing 1-second-before/25ms-after window and 
 miss older name associations. Unknown reader termination forbids a second reader
 and raw cleanup. The probe requires successful interpreter controls; original
 comparisons/regression remain independent. Raw ETL stays outside artifacts;
-only numeric owned-fixture event fields are retained. IRP/FileObject reuse is guarded,
+only numeric owned-fixture event fields are retained, capped at 256 per reader.
+The native query preserves subsecond UTC values as round-trip strings. Installed
+PowerShell hashtable-builder controls require precision loss with DateTime operands
+and exact millisecond preservation with strings; actual ETL proof remains separate. IRP/FileObject reuse is guarded,
 and separate before/during/after queues retain at most 256 records. Missing or truncated
 events never establish handle absence (`lossVerified: false`); positive event correlation
 does not by itself identify the actor that blocked a historical rename. Collector stop

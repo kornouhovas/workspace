@@ -762,3 +762,29 @@ peek termination prevents subsequent reads and raw cleanup. This distinguishes
 query failure and retained clock-window evidence without attributing a handle
 owner or claiming event absence. Both independent reviews requested corrected
 reader-count/order metadata, now recorded. Actual Windows execution is pending.
+
+
+Focused38662232364 on3d0 passed actual PowerShell controls, all original
+comparisons and strict regression. The owned collector lifecycle and cleanup
+passed; clock peek found63 Kernel-File records in64, at -640 through -227ms.
+Full decode now completed with160 owned-path/window events, while the native
+provider/time query on the same ETL returned NoMatchingEventsFound. This
+falsifies a missing collector or absent retained window as the explanation for
+this query result, without resolving historical rename refusal. Full-reader
+timeout remains demonstrated only on180.
+
+Ranked query hypotheses: (1) native hashtable time conversion loses subsecond
+precision; (2) ProviderName differs from decoded ETL identity; (3) other native
+time filtering differs from decoded TimeCreated. Primary PowerShell source
+HandleStartTimeHashValue converts each operand via ToString before DateTime.Parse:
+[GetEventCommand.cs](https://github.com/PowerShell/PowerShell/blob/master/src/Microsoft.PowerShell.Commands.Diagnostics/GetEventCommand.cs).
+This is source evidence, not yet proof of installed Windows PowerShell behavior.
+The next actual interpreter control invokes the installed private hashtable builder
+and requires DateTime operands to lose the original end millisecond, then round-trip
+strings to preserve both exact bounds. The probe changes only timestamp operand
+representation, retains ProviderName and the shared decoder/window. Baseline also
+retains its filtered finite events (256 per reader) rather than only their count,
+allowing positive event inspection. Privacy, lifecycle, reader bounds and original
+rename assertions remain unchanged. No actor claim or actual-Windows success for
+this change is made. The unpublished provider-removal probe was replaced before
+dispatch because primary source evidence supports a narrower precision seam.

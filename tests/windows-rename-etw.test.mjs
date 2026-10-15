@@ -26,6 +26,21 @@ test('Windows owned ETW filter retires reused identifiers and preserves rename e
   ];
   const control = String.raw`
 $ErrorActionPreference = 'Stop'
+# Exercise the installed native hashtable builder, not a reimplementation.
+$type = (Get-Command Get-WinEvent).ImplementingType
+$method = $type.GetMethod('HandleStartTimeHashValue', [Reflection.BindingFlags]'NonPublic,Instance')
+if ($null -eq $method) { throw 'native builder unavailable' }
+$cmdlet = [Activator]::CreateInstance($type)
+$startDate = [DateTimeOffset]::FromUnixTimeMilliseconds([long]$env:WORKSPACE_ETW_RENAME_START - 1000).UtcDateTime
+$endDate = [DateTimeOffset]::FromUnixTimeMilliseconds([long]$env:WORKSPACE_ETW_RENAME_END + 25).UtcDateTime
+$redQuery = $method.Invoke($cmdlet, [object[]]@($startDate, @{ endtime = $endDate }))
+$startText = [DateTimeOffset]::FromUnixTimeMilliseconds([long]$env:WORKSPACE_ETW_RENAME_START - 1000).ToString('o')
+$endText = [DateTimeOffset]::FromUnixTimeMilliseconds([long]$env:WORKSPACE_ETW_RENAME_END + 25).ToString('o')
+$greenQuery = $method.Invoke($cmdlet, [object[]]@($startText, @{ endtime = $endText }))
+$expectedStart = $startDate.ToString('yyyy-MM-ddTHH:mm:ss.fffZ', [Globalization.CultureInfo]::InvariantCulture)
+$expectedEnd = $endDate.ToString('yyyy-MM-ddTHH:mm:ss.fffZ', [Globalization.CultureInfo]::InvariantCulture)
+if ($redQuery.Contains($expectedEnd)) { throw 'native precision defect not reproduced' }
+if (-not $greenQuery.Contains($expectedStart) -or -not $greenQuery.Contains($expectedEnd)) { throw 'native precision repair missing' }
 $script:controlled = [Collections.Generic.List[object]]::new()
 foreach ($row in ($env:WORKSPACE_ETW_CONTROL_EVENTS | ConvertFrom-Json)) {
   $data = ''
@@ -42,7 +57,8 @@ foreach ($row in ($env:WORKSPACE_ETW_CONTROL_EVENTS | ConvertFrom-Json)) {
 function Get-WinEvent {
   param([hashtable]$FilterHashtable, [string]$Path, [switch]$Oldest, [string]$ErrorAction)
   if ($null -ne $FilterHashtable) {
-    if ($FilterHashtable.ProviderName -cne 'Microsoft-Windows-Kernel-File' -or
+    if ($FilterHashtable.StartTime -isnot [string] -or $FilterHashtable.EndTime -isnot [string] -or
+        $FilterHashtable.ProviderName -cne 'Microsoft-Windows-Kernel-File' -or
         $FilterHashtable.Path -cne $env:WORKSPACE_ETW_TRACE -or
         ([DateTimeOffset]$FilterHashtable.StartTime).ToUnixTimeMilliseconds() -ne [long]$env:WORKSPACE_ETW_RENAME_START - 1000 -or
         ([DateTimeOffset]$FilterHashtable.EndTime).ToUnixTimeMilliseconds() -ne [long]$env:WORKSPACE_ETW_RENAME_END + 25) { throw 'fixed window query' }

@@ -107,15 +107,16 @@ try {
 } catch { [Console]::Out.WriteLine('{"status":"unavailable"}') }
 `;
 
-// Differential reader: the same decoder and bounds, one native query change.
+// Differential reader: the same decoder, provider and bounds. Preserve
+// subsecond UTC values through Get-WinEvent hashtable string conversion.
 // Older name associations outside this window may be missing; absence remains
 // unverified and must never be used to attribute or rule out a handle owner.
 const originalQuery = 'Get-WinEvent -Path $env:WORKSPACE_ETW_TRACE -Oldest -ErrorAction Stop';
 if (!parseScript.includes(originalQuery)) throw new Error('Owned event query unavailable');
 export const boundedParseScript = parseScript.replace(originalQuery, String.raw`Get-WinEvent -FilterHashtable @{
     Path = $env:WORKSPACE_ETW_TRACE; ProviderName = 'Microsoft-Windows-Kernel-File'
-    StartTime = [DateTimeOffset]::FromUnixTimeMilliseconds($start - 1000).UtcDateTime
-    EndTime = [DateTimeOffset]::FromUnixTimeMilliseconds($end + 25).UtcDateTime
+    StartTime = [DateTimeOffset]::FromUnixTimeMilliseconds($start - 1000).ToString('o')
+    EndTime = [DateTimeOffset]::FromUnixTimeMilliseconds($end + 25).ToString('o')
   } -Oldest -ErrorAction Stop`);
 
 async function runOwnedKernelFileProbe() {
@@ -125,7 +126,7 @@ const program = resolveWindowsPowerShell();
 if (!program) throw new Error('System PowerShell unavailable');
 const logman = win32.resolve(win32.dirname(program), '../..', 'logman.exe');
 const output = { kind: 'debug-owned-fixture-kernel-file', sha: process.env.GITHUB_SHA ?? null,
-  limits: { operations: 4, circularMegabytes: 16, collectorRunForSeconds: 15, collectorCommandMs: 5000, readers: 3, clockPeekEvents: 64, readerOrder: 'clock-peek-first-then-alternating-full-window', parseMsPerReader: 10000, exportedEvents: 256 },
+  limits: { operations: 4, circularMegabytes: 16, collectorRunForSeconds: 15, collectorCommandMs: 5000, readers: 3, clockPeekEvents: 64, readerOrder: 'clock-peek-first-then-alternating-full-window', parseMsPerReader: 10000, exportedEventsPerReader: 256 },
   attribution: 'positive owned-path events only; missing events never prove absence of handles', operations: [] };
 fs.mkdirSync(evidenceDirectory, { recursive: true });
 for (let index = 0; index < 4; index++) {
@@ -197,7 +198,8 @@ for (let index = 0; index < 4; index++) {
         for (const [label, scriptText] of readers) {
           const reading = await read(scriptText);
           if (label === 'full') observation.baseline = { process: reading.process, status: reading.kernel.status,
-            events: reading.kernel.events?.length ?? null, phase: reading.kernel.phase ?? null, code: reading.kernel.code ?? null };
+            eventCount: reading.kernel.events?.length ?? null, events: reading.kernel.events ?? [],
+            truncated: reading.kernel.truncated ?? null, lossVerified: false, phase: reading.kernel.phase ?? null, code: reading.kernel.code ?? null };
           else { observation.parser = reading.process; observation.kernel = reading.kernel; }
           if (reading.process.termination === 'unknown') return result;
         }
