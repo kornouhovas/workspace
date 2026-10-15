@@ -23,7 +23,7 @@ The independent reviewer found no product-contract violation or scope creep. It 
 
 ## Final local suite
 
-The final `npm run test:all` passed on the reviewed implementation/test/runtime candidate,
+Before the first CI run, `npm run test:all` passed on the reviewed implementation/test/runtime candidate,
 reusing the unchanged final application build: 2834 tests, 2811 passed, zero failures,
 23 platform/conditional skips, 151.5 seconds. Typecheck, lint, documentation links and
 whitespace checks also passed after the review repair. No production assertion,
@@ -69,3 +69,20 @@ related driver/MultiSelect regressions, package/resource checks and exact-SHA ru
 artifacts. Original product assertions, keyboard editing, timeouts and cleanup gates
 are retained. Current repair review, focused CI and renewed full acceptance receipts
 belong to the GitHub checkpoint.
+
+### Reviewed repair and renewed local acceptance
+
+The two independent reviewers checked `e40b0c1...aa6a107`. Spec reported no findings;
+Standards reported no hard/blocking findings and suggested retaining secondary cleanup
+errors in the isolated fixture. Those errors are now logged while the primary failure
+remains primary; the Standards reviewer confirmed the change, with no remaining
+actionable findings. Existing rename fixture/tests are unchanged.
+
+After this repair, typecheck, lint, documentation links and focused routing/native/UI
+checks passed (49 tests, zero failures). The original packaged EN/RU MultiSelect command
+passed locally with normal quit/backend exit and owned cleanup. A renewed complete
+`npm run test:all` on the final reviewed source/test candidate passed: 2837 tests,
+2814 passed, zero failures, 23 conditional/platform skips, 137.7 seconds. It reuses the
+unchanged verified application build because the repair affects the acceptance driver,
+regressions and CI routing, not application behavior or persistence. Current focused
+and full exact-SHA CI receipts remain in the GitHub checkpoint.

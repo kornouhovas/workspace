@@ -28,7 +28,10 @@ async function withPage(run) {
     await closeElectron(app);
     assert.ok(child.exitCode !== null || child.signalCode !== null);
     await rm(profile, { recursive: true, force: true });
-  } catch (error) { primary ??= error; }
+  } catch (error) {
+    if (primary) console.error("Additional property fixture cleanup failure:", error);
+    else primary = error;
+  }
   if (primary) throw primary;
 }
 
