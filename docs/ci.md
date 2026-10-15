@@ -313,3 +313,9 @@ deadlines stay intact; this opt-in temporary diagnostic never replaces original
 native acceptance. Finite comparison output is retained in `com-dispatch.json`
 inside the existing exact-SHA artifact. Unknown termination or failed owned-parent
 cleanup preserves the fixture. Diagnostic success alone does not open full CI.
+
+The COM profile currently runs **before** early native acceptance and puts
+reflection first to measure cold access. Therefore original success in that
+explicit diagnostic run is warmed evidence and cannot satisfy the unresolved
+cold original gate or authorize full CI. Ordinary/full and profile-disabled
+routes retain their original order and requirements.

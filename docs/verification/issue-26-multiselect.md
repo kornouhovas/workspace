@@ -571,3 +571,21 @@ read. All33focused profile/routing tests, lint and whitespace passed. Shipped
 native sources remain unchanged. Renewed actual Windows comparison and original
 acceptance are required; final full acceptance will follow an actual verified
 repair, not this diagnostic-only publication.
+
+### Valid warm comparison; cold-access experiment
+
+Focused38787470572/attempt1 on440390df again failed only the original early
+Windowslatest native command (owner expiry/zero selections). Original controls
+passed on both OSes. Artifacts11997969777(latest) and11998189336(2022) were
+inspected: all four comparison cases reached COM, dispatched one selection,
+independently observed the exact target and confirmed bridge/window/fixture
+cleanup. Latest original cases took1706/1592ms and reflection1565/1588ms.
+The comparison occurred after the failed original command and therefore tested
+warmed state. It neither reproduces the cold failure nor proves a dispatch cause.
+
+The opt-in profile now runs before the original command on a fresh runner and
+uses reflection/original/original/reflection order. Default/full scheduling and
+all original commands remain. Original success after this profile is warmed
+evidence, not cold product acceptance; it cannot open full CI. This changes
+experiment order only. All33focused checks, lint and whitespace passed; actual
+cold reflection evidence is pending. Shipped native behavior remains unchanged.
