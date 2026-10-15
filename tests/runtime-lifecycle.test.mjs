@@ -27,8 +27,7 @@ test("normal runtime shutdown waits for the owned process to exit", async () => 
   try {
     await closeElectron({
       process: () => child,
-      evaluate: async () => { child.kill(); },
-      close: () => exited,
+      close: () => { child.kill(); return exited; },
     }, 1000);
     assert.ok(child.exitCode !== null || child.signalCode !== null);
   } finally { if (child.exitCode === null && child.signalCode === null) child.kill("SIGKILL"); }
@@ -469,8 +468,8 @@ for (const lineEnding of ["LF", "CRLF"]) for (const forced of [false, true]) for
     const tail = normalizedSource.slice(normalizedSource.indexOf('} catch (error) {\n  scenarioFailure = error;'), normalizedSource.lastIndexOf("\n\n}"));
     assert.ok(tail.startsWith("} catch (error)"));
     const child = await launchFixture(), exited = once(child, "exit");
-    const electron = { process: () => child, evaluate: () => forced ? new Promise(() => {}) : Promise.resolve(child.kill()),
-      close: () => forced ? new Promise(() => {}) : exited };
+    const electron = { process: () => child,
+      close: () => { if (forced) return new Promise(() => {}); child.kill(); return exited; } };
     const shutdown = { passed: false }, evidence = [];
     let quitAttempts = 0, backendChecks = 0;
     const recordEvidence = async (status) => {
@@ -537,7 +536,7 @@ test("rename assertion failure survives normal owned shutdown, evidence failure 
   recordRenameEvidence(evidence.direct.recovery.final_effect, "preservation", { status: "failed", reason: primary.message });
   const shutdown = { passed: false };
   try {
-    await assert.rejects(closeRuntimeSession({ process: () => child, evaluate: async () => { child.kill(); }, close: () => exited }, {
+    await assert.rejects(closeRuntimeSession({ process: () => child, close: () => { child.kill(); return exited; } }, {
       shutdown, readBackendPids: async () => [child.pid], beforeClose: async () => { throw new Error("Evidence write failed"); },
       assertBackendsStopped: async () => assert.throws(() => process.kill(child.pid, 0), { code: "ESRCH" }),
     }), /Evidence write failed/);

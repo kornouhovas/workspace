@@ -16,8 +16,8 @@ export async function withDeadline(operation, timeoutMs, label) {
 
 export async function closeElectron(electron, timeoutMs = 10000) {
   const child = electron.process();
-  // Request quit without waiting for the inspector response from an exiting app.
-  void electron.evaluate(({ app }) => app.quit()).catch(() => undefined);
+  // Playwright close owns the normal quit request and debugger disconnection.
+  // A competing app.quit() can bypass the application's deferred backend stop.
   try {
     await withDeadline(electron.close(), timeoutMs, "Electron shutdown");
   } catch (error) {

@@ -194,3 +194,36 @@ tests passed. The complete local suite on the final reviewed candidate passed:
 This renews local acceptance without erasing the retained failed runs or proving
 the exact historical scheduler cause. Windows ETW and macOS native focused evidence,
 then full exact-SHA platform acceptance and integration remain GitHub gates.
+
+## Fourth full CI: Windows latest creation shutdown
+
+Both native focused gates passed on `cedb3362d28fda80de36bab73088d5574e354870`
+in run 38761311867 (artifacts 11985298886 and 11984969411 inspected). Full
+[run 38761764716](https://github.com/kornouhovas/workspace/actions/runs/38761764716),
+attempt 1 on that SHA, passed common checks and all three platform test suites.
+Windows latest job 116515421626 then failed original
+`npm run smoke:runtime -- dev --creation --skip-native`: ten-second normal Electron
+shutdown timeout, forced cleanup reported error 255 but parent termination was
+confirmed. Artifact 11986107987 was inspected. The first direct/after_intent run
+records before-quit prevented true, before-quit false, will-quit/quit false; normal
+shutdown is failed. Fixture removal passed. Later matrix scenarios/runtime/package
+stages were unreached and are not accepted. Other full jobs were still running
+when diagnosis began; their final receipts belong to the GitHub checkpoint.
+
+The installed Playwright close implementation owns app.quit and debugger
+disconnection. A real Electron regression now reproduces the application's deferred
+before-quit/cleanup shape: the original helper's competing quit bypassed that
+cleanup (red, cleanupComplete false). Removing only its preliminary evaluate/quit
+lets Playwright close own one request (green, cleanupComplete true). The ten-second
+normal deadline, original failure, five-second owned forced cleanup and caller
+backend/fixture gates are unchanged. Three Node lifecycle adapters now model the
+close operation owning normal process exit; their preservation/failure assertions
+remain. This proves the competing-request defect, without claiming the exact
+historical Windows timeout's debugger/scheduler cause.
+
+All 63 focused native/lifecycle/phase/route/property tests passed after adapter
+reconciliation. Existing `checks: creation-shutdown` matches the original failed
+Windows latest command and adds this native regression. The original command runs
+independently after a regression failure when its build passed; failed steps remain
+failed. Focused original result/artifact and renewed full acceptance on the same
+reviewed SHA remain required.

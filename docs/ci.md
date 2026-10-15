@@ -246,3 +246,12 @@ property-driver native fixture on macOS, in an independent job running only
 output and failures; both original files and artifacts must pass before full CI.
 The native fixture uses one Playwright-owned normal quit under the unchanged
 ten-second bound; forced cleanup after failure never satisfies normal closure.
+
+For issue #26 run 38761764716's Windows latest creation shutdown timeout, the
+existing `checks: creation-shutdown` route matches the exact original command.
+It includes the real-Electron deferred-quit regression and runs the original
+creation matrix independently after regression failure when the build succeeded.
+The runtime helper gives Playwright sole ownership of the normal quit request;
+its ten-second bound, strict failure/forced-cleanup behavior and all caller
+backend/fixture checks remain. The native red/green control proves a competing
+quit can bypass deferred cleanup, not the exact historical timeout cause.
