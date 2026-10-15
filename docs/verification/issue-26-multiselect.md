@@ -1133,3 +1133,68 @@ hypothesis, not permission to accept an unproved command. A rigorous repair must
 retain zeroIDs for truly blocked submission, prove any single in-flight rejection
 through its actual bound typed reply, and independently verify no effects. Full
 CI stays gated on bothWindows original failures plus the repaired macOS file.
+
+
+### Category stale-authoring regression and exact unavailable reply proof
+
+The Windowslatest post-action stale message alone cannot establish command order.
+An actual same-turn EN/RU component reproduction emits the new observation and
+presses Enter before React commits its disabled state. Old code authors one UUID
+and command; the live-ref pre-authoring predicate now blocks both (zero UUIDs and
+commands). Revision and source-unavailable same-turn cases are covered too; an
+already-authored rejected request remains distinct. Recovery/status is unchanged.
+
+The runtime oracle now observes the real main MessagePortMain request and reply,
+correlated by exact immutable command fields, UUID, port and transport ID. It
+accepts zero IDs only with zero requests/replies and disabled stale controls. One
+ID requires exactly one bound request and actual typed rejected reply with an
+explicit null operation and a finite justified problem. ENOENT during destination
+parent inspection can legitimately produce source_unavailable before observation;
+category_unavailable/stale_configuration/filesystem_changed are also retained.
+Duplicate counts remain active through action/state/UI inspection, then atomic
+disposal returns the final snapshot. A later forwarding wrapper cannot reactivate
+the disposed observer. No command, preload or forwarding replacement is supplied.
+Both branches independently compare the journal, captured metadata, projects,
+sibling, Text, other source, settings/configuration/events and no-follow trees;
+only the deliberate removed empty category is allowed. Failure evidence retains
+IDs and receipt too. Two review axes identified and repaired the missing ENOENT
+classification and forwarding-wrapper lifecycle case.
+
+Fresh supportedNode22 npm test rebuilt and passed2868tests/2844passed/0failed/
+24platform skips,112.5s. This predates the small review/CI evidence-only delta;
+its affected checks and actual local category UI are being renewed.
+
+### Windows2022 original advances; next native rename boundary is unresolved
+
+Runtime-observation38811438671 on54c7bf2e completed. Its exact original dev command
+passed the previously failing external category rename and full baseline runtime,
+then failed direct rename Reveal: Native rename Reveal did not return. Owned
+native/Explorer/backend/fixture cleanup was confirmed. Artifact downloaded and
+inspected. All30 comparison operations completed with preserved invariants and
+cleanup: idle/observation/concurrent production scan and legacy/production-scan
+stress rename succeeded; native descendant realpath stress failed EPERM4/4;
+child held-handle controls failed EPERM as expected. This does not attribute the
+historical one-off EPERM to current production scans or justify adding a retry.
+
+Ranked next native hypotheses before probing: (1) the existing fixed COM/UIA
+readiness chain exceeds its unchanged12s owner/10s child bound on Windows2022;
+(2) strict binding/target/readiness fails for this post-rename fixture; (3) the
+service rejects before native selection, or the graphical request never arrives.
+The old runtime receipt did not retain Windows native/service failures, so it
+cannot distinguish these. Extend only the existing passive actual native receipt
+to Windows and retain the same finite bridge failure/19 trace phases already used
+by creation. Compare default-off originals against explicit trace-on evidence;
+no assertion, deadline, selection/navigation count, ownership or product retry is
+changed. runtime-observation now selects both affected Windows originals, with
+actual minimized category UI and regressions before an independently gated full
+original. Historical category-fixture remainsWindows2022-only; full/push stays
+unchanged. Focused originals and same-final-SHA full acceptance remain required.
+
+
+After the review repairs and CI evidence delta, focused checks passed320/320 with
+zero skips, lint/typecheck/docs/whitespace passed. Actual local Electron
+`npm run smoke:runtime -- dev --category-move` passed the full EN/RU category,
+rejection, restart and controlled recovery routes with normal shutdown/owned
+cleanup. Both unavailable receipts contained one exact bound request/reply,
+rejected/source_unavailable/null operation and unchanged independent state proofs.
+Both narrow EN/RU unavailable screenshots were inspected. Windows remains required.

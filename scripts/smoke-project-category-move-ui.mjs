@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { installCategorySubmissionReceipt } from "./category-submission-receipt.mjs";
 import { execFileSync, fork } from "node:child_process";
 import { createHash, randomUUID } from "node:crypto";
 import { once } from "node:events";
@@ -22,17 +23,38 @@ const labels = {
   ru: { move: "Переместить проект в категорию", submit: "Переместить папку проекта", saved: "Папка проекта перемещена в выбранную категорию.", unchanged: "Текущая категория проверена. Перемещение папки не потребовалось.", occupied: "Назначение занято или зарезервировано. Выберите другую категорию.", unavailable: "Папка или категория недоступна. Проверьте доступ к источнику и привязку проекта." },
 };
 
-export function assertRuntimeCategoryUnavailableGuard({ stale, ids, editorDisabled, submitDisabled }) {
-  assert.equal(typeof stale, "boolean");
-  assert.ok(Array.isArray(ids));
-  if (stale) {
-    assert.equal(editorDisabled, true); assert.equal(submitDisabled, true);
-    assert.deepEqual(ids, [], "A stale editor must author no mutation ID");
+export function assertRuntimeCategoryUnavailableGuard({ stale, ids, editorDisabled, submitDisabled, receipt }) {
+  assert.equal(typeof stale, "boolean"); assert.ok(Array.isArray(ids));
+  assert.ok(receipt, "Bound request/reply evidence is required");
+  assert.equal(receipt.observerFailed, false); assert.equal(receipt.expired, false);
+  if (ids.length === 0) {
+    assert.equal(stale, true); assert.equal(editorDisabled, true); assert.equal(submitDisabled, true);
+    assert.equal(receipt.requests, 0); assert.equal(receipt.responses, 0);
     return "stale_before_submission";
   }
   assert.equal(ids.length, 1, "Exactly one rejected unavailable-destination submission");
   assert.match(ids[0], /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
-  return "destination_unavailable";
+  assert.equal(receipt.requests, 1); assert.equal(receipt.requestBindingMatches, true);
+  assert.equal(receipt.operationId, ids[0]); assert.equal(receipt.responses, 1);
+  assert.equal(receipt.serviceOk, true); assert.equal(receipt.responseShapeMatches, true);
+  assert.equal(receipt.outcome, "rejected"); assert.equal(receipt.operationAbsent, true);
+  // A command can beat observation: the active category row still exists,
+  // while inspecting its removed parent maps ENOENT to source_unavailable.
+  assert.ok(["category_unavailable", "source_unavailable", "stale_configuration", "filesystem_changed"].includes(receipt.problem));
+  if (stale) { assert.equal(editorDisabled, true); assert.equal(submitDisabled, true); }
+  return stale ? "rejected_before_stale" : "destination_unavailable";
+}
+
+export function assertRuntimeCategoryUnavailablePreservation(before, after, beforeSubmit, categoryId) {
+  assert.deepEqual(after.durable.journal, before.durable.journal);
+  assert.deepEqual(after.durable.metadata, before.durable.metadata);
+  assert.deepEqual(after.durable.tree, beforeSubmit);
+  assert.deepEqual(after.durable.otherTree, before.durable.otherTree);
+  for (const key of ["projects", "sibling"]) {
+    assert.equal(before[key].categories.filter(category => category.categoryId === categoryId).length, 1);
+    assert.deepEqual(after[key], { ...before[key], categories: before[key].categories.filter(category => category.categoryId !== categoryId) });
+  }
+  for (const key of ["other", "text", "siblingText", "otherText", "configurations", "settings", "events"]) assert.deepEqual(after[key], before[key]);
 }
 
 // Bind by the intended project action and category, then assert exact authored
@@ -357,7 +379,7 @@ export async function categoryMoveRuntimeInputs(mode, executablePath) {
       else { assert.equal(entry.isFile(), true); await include(`${path}/${entry.name}`); }
     }
   }
-  for (const path of ["package.json", "package-lock.json", "scripts/smoke-runtime.mjs", "scripts/smoke-project-category-move-ui.mjs", "scripts/runtime-evidence.mjs", "scripts/runtime-executable.mjs", "scripts/rename-runtime-startup.mjs", "scripts/runtime-startup.mjs", "scripts/runtime-lifecycle.mjs", "scripts/runtime-layout.mjs", "tests/fixtures/project-category-move-crash-worker.mjs", "dist/service/project-rename-filesystem.mjs", "dist/service-test-native/project-rename.node", "dist/desktop/main.cjs", "dist/desktop/preload.cjs", "dist/service/settings.mjs", "dist/service/entry.cjs", "node_modules/better-sqlite3/package.json", "node_modules/better-sqlite3/lib/binding.js", `node_modules/better-sqlite3/prebuilds/${process.platform}-${process.arch}.node`]) await include(path);
+  for (const path of ["package.json", "package-lock.json", "scripts/smoke-runtime.mjs", "scripts/smoke-project-category-move-ui.mjs", "scripts/category-submission-receipt.mjs", "scripts/runtime-evidence.mjs", "scripts/runtime-executable.mjs", "scripts/rename-runtime-startup.mjs", "scripts/runtime-startup.mjs", "scripts/runtime-lifecycle.mjs", "scripts/runtime-layout.mjs", "tests/fixtures/project-category-move-crash-worker.mjs", "dist/service/project-rename-filesystem.mjs", "dist/service-test-native/project-rename.node", "dist/desktop/main.cjs", "dist/desktop/preload.cjs", "dist/service/settings.mjs", "dist/service/entry.cjs", "node_modules/better-sqlite3/package.json", "node_modules/better-sqlite3/lib/binding.js", `node_modules/better-sqlite3/prebuilds/${process.platform}-${process.arch}.node`]) await include(path);
   for (const path of ["src/contracts", "src/service", "src/desktop", "src/renderer", "dist/renderer", "dist/service/db/migrations", "dist/service/native", "dist/desktop/native"]) await tree(path);
   if (mode === "release") {
     const resources = process.platform === "darwin" ? resolve(dirname(executablePath), "../Resources") : join(dirname(executablePath), "resources");
@@ -596,37 +618,45 @@ export async function runProjectCategoryMoveUi(mode = "dev") {
         let beforeSubmit;
         const staleText = language === "en" ? "The source or project changed. Refresh and reopen the editor before submitting again."
           : "Источник или проект изменился. Обновите данные и откройте редактор снова перед отправкой.";
-        let guard;
+        const binding = runtimeCategoryBinding(unavailableProof.before, setup.project.projectId, category.categoryId);
+        await withDeadline(startup.current.electron.evaluate(installCategorySubmissionReceipt, binding), 5000, "Category receipt installation");
+        const snapshotReceipt = () => withDeadline(startup.current.electron.evaluate(() => globalThis.categorySubmissionReceipt.snapshot()), 5000, "Category receipt snapshot");
+        let guard, ids = [], receipt, after, primary;
         try {
-          const ids = await recordRuntimeCategoryAction(page, async () => {
+          ids = await recordRuntimeCategoryAction(page, async () => {
             await rename(from, to);
             beforeSubmit = await categoryMoveInventory(setup.sourceRoot);
             await input.press("Enter");
-            // An observed source change blocks the unsubmitted editor. If the
-            // command wins that race, the service rejects the missing category.
+            // A later stale message cannot establish whether the command was
+            // blocked or was already in flight. Correlate the actual reply.
             await page.getByText(t.unavailable, { exact: true }).or(page.getByText(staleText, { exact: true })).waitFor();
           });
           const stale = await page.getByText(staleText, { exact: true }).isVisible();
-          guard = assertRuntimeCategoryUnavailableGuard({ stale, ids, editorDisabled: await input.isDisabled(),
-            submitDisabled: await page.getByRole("button", { name: t.submit, exact: true }).isDisabled() });
-          const after = await captureRuntimeCategoryState(page, setup);
-          if (stale) assert.deepEqual(after.durable.journal, unavailableProof.before.durable.journal);
-          assert.deepEqual(after.durable.metadata.projects, unavailableProof.before.durable.metadata.projects);
-          assert.deepEqual(after.text, unavailableProof.before.text);
-          assert.deepEqual(after.siblingText, unavailableProof.before.siblingText);
-          await saveOperationProof(language, "unavailable", { ...unavailableProof, beforeSubmit, after, guard, ids });
+          after = await captureRuntimeCategoryState(page, setup);
+          const editorDisabled = await input.isDisabled();
+          const submitDisabled = await page.getByRole("button", { name: t.submit, exact: true }).isDisabled();
+          // End observation only after action/state/control inspection. Dispose
+          // and snapshot atomically in main, retaining late duplicate counts.
+          receipt = await withDeadline(startup.current.electron.evaluate(() => globalThis.categorySubmissionReceipt.dispose()), 5000, "Category receipt completion");
+          await saveOperationProof(language, "unavailable", { ...unavailableProof, binding, beforeSubmit, after, ids, receipt });
+          guard = assertRuntimeCategoryUnavailableGuard({ stale, ids, receipt, editorDisabled, submitDisabled });
+          assertRuntimeCategoryUnavailablePreservation(unavailableProof.before, after, beforeSubmit, category.categoryId);
+          await saveOperationProof(language, "unavailable", { ...unavailableProof, binding, beforeSubmit, after, guard, ids, receipt });
         } catch (error) {
-          // Diagnostic reads concern this disposable fixture only; a failure to
-          // capture evidence must not replace the original assertion/timeout.
+          primary = error;
           try {
-            await saveOperationProof(language, "unavailable", { ...unavailableProof, beforeSubmit,
-              after: await captureRuntimeCategoryState(page, setup),
+            receipt = await snapshotReceipt();
+            await saveOperationProof(language, "unavailable", { ...unavailableProof, binding, beforeSubmit,
+              after: after ?? await captureRuntimeCategoryState(page, setup), ids, receipt,
               editorVisible: await input.isVisible(),
               tableText: (await page.locator(".table-view").innerText()).slice(0, 4096),
               afterTree: await categoryMoveInventory(setup.sourceRoot) });
           } catch { /* Retain the primary runtime failure. */ }
-          throw error;
+        } finally {
+          try { await withDeadline(startup.current.electron.evaluate(() => globalThis.categorySubmissionReceipt.dispose()), 5000, "Category receipt disposal"); }
+          catch (error) { primary ??= error; observations.push({ categoryReceiptCleanup: "failed" }); }
         }
+        if (primary) throw primary;
         assert.deepEqual(await categoryMoveInventory(setup.sourceRoot), beforeSubmit);
         await capture(page, language, "unavailable"); await closeEditor(page);
         await rename(to, from);

@@ -291,6 +291,38 @@ for (const language of ["en", "ru"] as const) {
       assert.equal(client.moves.length, 1); assert.ok(client.lists >= 3);
     });
   }
+  for (const change of ["observation", "revision", "unavailable"] as const) test(`${language}: same-turn ${change} invalidates authoring before React rerenders`, async () => {
+    const client = new Client(); mount(client); await open(); await userEvent.selectOptions(destination(), "empty");
+    const input = destination(), original = globalThis.crypto.randomUUID;
+    let authored = 0;
+    globalThis.crypto.randomUUID = () => { authored++; return original.call(globalThis.crypto); };
+    try {
+      await act(async () => {
+        if (change === "revision") client.list = { ...client.list, revision: 2 };
+        client.events.forEach(listener => listener(change === "revision"
+          ? { type: "workspace.projectsChanged", sourceId: "source", workspaceIds: ["workspace"], revision: 2 }
+          : { type: "workspace.sourceObserved", sourceId: "source", workspaceIds: ["workspace"], observationRevision: 1, state: change === "unavailable" ? "unavailable" : "ready", automaticUpdates: "active" }));
+        fireEvent.keyDown(input, { key: "Enter" });
+      });
+      assert.equal(authored, 0, "Invalidation before Enter must not author an ID");
+      assert.equal(client.moves.length, 0, "Invalidation before Enter must not author a command");
+      assert.equal(submit().disabled, true);
+    } finally { globalThis.crypto.randomUUID = original; }
+  });
+  test(`${language}: observation after authoring preserves a single rejected command and displays stale`, async () => {
+    const client = new Client(), response = deferred<ServiceResult<ProjectCategoryMoveResult>>();
+    client.handler = () => response.promise;
+    const before = structuredClone(client.list);
+    mount(client); await open(); await userEvent.selectOptions(destination(), "empty");
+    await userEvent.keyboard("{Enter}"); assert.equal(client.moves.length, 1);
+    await act(async () => client.events.forEach(listener => listener({ type: "workspace.sourceObserved", sourceId: "source", workspaceIds: ["workspace"], observationRevision: 1, state: "ready", automaticUpdates: "active" })));
+    await act(async () => response.resolve({ ok: true, value: { outcome: "rejected", operation: null, problem: "category_unavailable" } }));
+    await screen.findByText(t("moveCategoryStale"));
+    assert.equal(destination().disabled, true); assert.equal(submit().disabled, true);
+    fireEvent.click(submit()); fireEvent.keyDown(destination(), { key: "Enter" });
+    assert.equal(client.moves.length, 1); assert.deepEqual(client.list, before);
+    assert.deepEqual(client.recoveries, []); assert.deepEqual(client.statusCalls, []);
+  });
   test(`${language}: an observed source change makes an unsubmitted editor stale`, async () => {
     const client = new Client(); mount(client); await open(); await userEvent.selectOptions(destination(), "empty");
     await act(async () => client.events.forEach((listener) => listener({ type: "workspace.sourceObserved", sourceId: "source", workspaceIds: ["workspace"], observationRevision: 1, state: "ready", automaticUpdates: "active" })));

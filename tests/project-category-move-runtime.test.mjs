@@ -4,12 +4,20 @@ import React from "react";
 import { Window } from "happy-dom";
 import { assertRuntimeCategoryCell, assertRuntimeCategoryAcknowledgment, captureRuntimeCategoryState, runtimeCategoryBinding,
   expectedRuntimeCategoryRow, assertRuntimeCategoryReceipt, assertRuntimeCategoryJournal, assertRuntimeCategoryUnchanged,
-  recordRuntimeCategoryAction, assertRuntimeCategoryKeptOriginal, assertRuntimeCategoryUnavailableGuard } from "../scripts/smoke-project-category-move-ui.mjs";
+  recordRuntimeCategoryAction, assertRuntimeCategoryKeptOriginal, assertRuntimeCategoryUnavailableGuard, assertRuntimeCategoryUnavailablePreservation } from "../scripts/smoke-project-category-move-ui.mjs";
 
 test("unavailable-category evidence distinguishes a blocked stale editor from one rejected submission", () => {
   const id = "11111111-1111-4111-8111-111111111111";
-  assert.equal(assertRuntimeCategoryUnavailableGuard({ stale: true, ids: [], editorDisabled: true, submitDisabled: true }), "stale_before_submission");
-  assert.equal(assertRuntimeCategoryUnavailableGuard({ stale: false, ids: [id], editorDisabled: false, submitDisabled: false }), "destination_unavailable");
+  const empty = { requests: 0, responses: 0, observerFailed: false, expired: false };
+  const rejected = { ...empty, requests: 1, responses: 1, requestBindingMatches: true, operationId: id, serviceOk: true,
+    responseShapeMatches: true, outcome: "rejected", problem: "category_unavailable", operationAbsent: true };
+  assert.equal(assertRuntimeCategoryUnavailableGuard({ stale: true, ids: [], editorDisabled: true, submitDisabled: true, receipt: empty }), "stale_before_submission");
+  assert.equal(assertRuntimeCategoryUnavailableGuard({ stale: false, ids: [id], editorDisabled: false, submitDisabled: false, receipt: rejected }), "destination_unavailable");
+  for (const change of [{ requests: 2 }, { responses: 0 }, { responses: 2 }, { requestBindingMatches: false }, { operationId: "22222222-2222-4222-8222-222222222222" },
+    { serviceOk: false }, { responseShapeMatches: false }, { outcome: "completed" }, { outcome: "recoverable" }, { problem: "unknown" }, { operationAbsent: false }, { observerFailed: true }, { expired: true }]) {
+    assert.throws(() => assertRuntimeCategoryUnavailableGuard({ stale: true, ids: [id], editorDisabled: true, submitDisabled: true, receipt: { ...rejected, ...change } }));
+  }
+  assert.throws(() => assertRuntimeCategoryUnavailableGuard({ stale: true, ids: [], editorDisabled: true, submitDisabled: true, receipt: { ...empty, requests: 1 } }));
   for (const invalid of [
     { stale: true, ids: [id], editorDisabled: true, submitDisabled: true },
     { stale: true, ids: [], editorDisabled: false, submitDisabled: true },
@@ -18,6 +26,32 @@ test("unavailable-category evidence distinguishes a blocked stale editor from on
     { stale: false, ids: [id, id], editorDisabled: false, submitDisabled: false },
     { stale: false, ids: ["malformed"], editorDisabled: false, submitDisabled: false },
   ]) assert.throws(() => assertRuntimeCategoryUnavailableGuard(invalid), { name: "AssertionError" });
+});
+
+test("post-submission stale text accepts only the exact bound unavailable rejection", () => {
+  const id = "11111111-1111-4111-8111-111111111111";
+  const receipt = { requests: 1, requestBindingMatches: true, operationId: id, responses: 1,
+    serviceOk: true, responseShapeMatches: true, outcome: "rejected", problem: "category_unavailable", operationAbsent: true,
+    observerFailed: false, expired: false };
+  for (const problem of ["category_unavailable", "source_unavailable", "stale_configuration", "filesystem_changed"]) {
+    assert.equal(assertRuntimeCategoryUnavailableGuard({ stale: true, ids: [id], editorDisabled: true, submitDisabled: true, receipt: { ...receipt, problem } }), "rejected_before_stale");
+  }
+});
+
+test("unavailable-category proof rejects effects beyond the deliberate missing empty category", () => {
+  const projection = { revision: 2, projects: [{ projectId: "project", relativePath: "Destination/project" }], categories: [{ categoryId: "current" }, { categoryId: "missing" }] };
+  const before = { durable: { journal: [], metadata: { projects: ["unchanged"], settings: ["unchanged"] }, tree: "before", otherTree: "other" },
+    projects: projection, sibling: { ...projection, workspaceId: "sibling" }, other: "other", text: "text", siblingText: "siblingText", otherText: "otherText", configurations: "configurations", settings: "settings", events: [] };
+  const after = structuredClone(before); after.durable.tree = "post-removal";
+  for (const key of ["projects", "sibling"]) after[key].categories = [{ categoryId: "current" }];
+  assertRuntimeCategoryUnavailablePreservation(before, after, "post-removal", "missing");
+  for (const path of [["durable", "journal"], ["durable", "metadata"], ["durable", "tree"], ["durable", "otherTree"],
+    ["projects"], ["sibling"], ["other"], ["text"], ["siblingText"], ["otherText"], ["configurations"], ["settings"], ["events"]]) {
+    const broken = structuredClone(after); let target = broken;
+    for (const key of path.slice(0, -1)) target = target[key];
+    target[path.at(-1)] = "unexpected effect";
+    assert.throws(() => assertRuntimeCategoryUnavailablePreservation(before, broken, "post-removal", "missing"));
+  }
 });
 
 const browser = new Window({ url: "http://localhost" });

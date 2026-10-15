@@ -239,8 +239,12 @@ jobs:
 
   focused-category-runtime:
     if: ${{ github.event_name == 'workflow_dispatch' && ((inputs.checks == 'category-fixture' && inputs.category_fixture_only != true) || inputs.checks == 'runtime-observation') }}
-    name: Focused Windows 2022 original development runtime
-    runs-on: windows-2022
+    name: Focused original development runtime (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ${{ fromJSON(inputs.checks == 'runtime-observation' && '["windows-latest","windows-2022"]' || '["windows-2022"]') }}
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
@@ -258,11 +262,23 @@ jobs:
           set -o pipefail
           mkdir -p work/ci-category-runtime
           node --import tsx --test tests/source-observer.test.mjs tests/windows-rename-diagnostics.test.mjs 2>&1 | tee work/ci-category-runtime/controls.txt
-      - name: Compare isolated category rename and sharing contexts
+      - name: Category stale submission and actual reply controls
         if: ${{ !cancelled() && steps.runtime_build.outcome == 'success' && inputs.checks == 'runtime-observation' }}
+        shell: bash
+        run: |
+          set -o pipefail
+          node --import tsx --test tests/category-submission-receipt.test.mjs tests/project-category-move-runtime.test.mjs tests/project-category-move-ui.test.tsx tests/native-reveal-receipt.test.mjs tests/test-suites.test.mjs 2>&1 | tee work/ci-category-runtime/category-controls.txt
+      - name: Compare isolated category rename and sharing contexts
+        if: ${{ !cancelled() && steps.runtime_build.outcome == 'success' && inputs.checks == 'runtime-observation' && matrix.os == 'windows-2022' }}
         run: node --import tsx scripts/windows-rename-diagnostics.mjs
         env:
           WORKSPACE_RENAME_EVIDENCE_DIR: work/ci-category-runtime/rename-diagnostic
+      - name: Minimized original category UI scenario
+        if: ${{ !cancelled() && steps.runtime_build.outcome == 'success' && inputs.checks == 'runtime-observation' }}
+        run: npm run smoke:runtime -- dev --category-move
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-category-runtime/minimized-category
+          WORKSPACE_REVEAL_TRACE: ${{ inputs.readiness_native_trace == true && '1' || '0' }}
       - name: Original failed development runtime command
         if: ${{ !cancelled() && steps.runtime_build.outcome == 'success' }}
         shell: bash
@@ -272,11 +288,12 @@ jobs:
           npm run smoke:runtime -- dev 2>&1 | tee work/ci-category-runtime/tests.txt
         env:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-category-runtime
+          WORKSPACE_REVEAL_TRACE: ${{ inputs.readiness_native_trace == true && '1' || '0' }}
       - name: Preserve exact-SHA runtime proofs and original result
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: issue-24-category-runtime-${{ github.sha }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
+          name: issue-24-category-runtime-${{ matrix.os }}-${{ github.sha }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
           path: work/ci-category-runtime/
           if-no-files-found: error
 

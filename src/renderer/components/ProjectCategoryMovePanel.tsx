@@ -158,9 +158,10 @@ function CategoryMoveContent({ client, workspaceId, sourceId, language, project,
     if (pending && project) cancel.current?.focus();
     if (!pending && restoreInput.current && project && !disabled && !unresolved && !input.current?.disabled) { input.current?.focus(); restoreInput.current = false; }
   }, [pending, project, disabled, unresolved, editorState]);
+  const editorCurrent = () => !!projects && projects.revision >= minimumRevision.current && projects.revision === editorState.revision &&
+    observationVersion.current === editorState.observation && sourceLifetime.current === editorState.lifetime;
   const available = !!projects && projects.workspaceId === workspaceId && projects.sourceId === sourceId && projects.configured && projects.mode === "grouped" &&
-    ["ready", "empty"].includes(projects.state) && projects.revision >= minimumRevision.current && projects.revision === editorState.revision &&
-    observationVersion.current === editorState.observation && sourceLifetime.current === editorState.lifetime && !!project &&
+    ["ready", "empty"].includes(projects.state) && editorCurrent() && !!project &&
     projects.projects.some((row) => row.associationState === "active" && row.resolution === "active" && row.projectId === project.projectId && row.name === project.name && row.relativePath === project.relativePath && row.categoryId === project.categoryId);
   const destinationCategory = projects?.categories.find((category) => category.categoryId === destination);
   // Display paths explain the move; the service authorizes placement from IDs.
@@ -230,6 +231,9 @@ function CategoryMoveContent({ client, workspaceId, sourceId, language, project,
         unresolved && (binding.current?.uncertain || submitted.current?.operationId !== preview.operation.operationId)) { invalidateReview(); return; }
       bindOperation(preview.operation);
     } else if (!status) {
+      // Source refs advance before React renders disabled controls. An older
+      // event handler must recheck them before authoring any operation ID.
+      if (!editorCurrent()) { setMessage("moveCategoryStale"); return; }
       submitted.current = { workspaceId, projectId: project!.projectId, operationId: crypto.randomUUID(), destinationCategoryId: destination, expectedRevision: projects!.revision };
       binding.current = { command: submitted.current, sourceId, project: { ...project! }, requestedPath: destinationPath, uncertain: true };
       requests.set(sourceId, binding.current);

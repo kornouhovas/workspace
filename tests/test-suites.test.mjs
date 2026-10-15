@@ -300,7 +300,7 @@ test('category-fixture also reproduces the original Windows 2022 development run
   const workflow = load(readFileSync('.github/workflows/desktop-ci.yml', 'utf8'));
   const job = workflow.jobs['focused-category-runtime'];
   assert.equal(job.if, "${{ github.event_name == 'workflow_dispatch' && ((inputs.checks == 'category-fixture' && inputs.category_fixture_only != true) || inputs.checks == 'runtime-observation') }}");
-  assert.equal(job['runs-on'], 'windows-2022'); assert.equal(job['timeout-minutes'], 25);
+  assert.equal(job['runs-on'], '${{ matrix.os }}'); assert.equal(job['timeout-minutes'], 25);
   const context = { inputs: { checks: 'category-fixture' }, cancelled: () => false, steps: { runtime_build: { outcome: 'success' } } };
   const commands = job.steps.filter(step => step.run && (!step.if || runInNewContext(step.if.slice(3, -2), context)));
   assert.deepEqual(commands.slice(0, 2).map(step => step.run), ['npm ci', 'npm run build']);
@@ -663,7 +663,7 @@ test('Windows latest direct native acceptance runs once before other desktop wor
 });
 
 
-test('runtime-observation runs the exact Windows2022 runtime independently of sharing diagnosis', () => {
+test('runtime-observation runs both exact Windows runtimes independently of focused diagnosis', () => {
   const workflow = load(readFileSync('.github/workflows/desktop-ci.yml', 'utf8'));
   for (const event of ['push', 'pull_request', 'workflow_dispatch']) {
     const context = { github: { event_name: event }, inputs: { checks: 'runtime-observation' } };
@@ -671,7 +671,11 @@ test('runtime-observation runs the exact Windows2022 runtime independently of sh
     assert.deepEqual(active, event === 'workflow_dispatch' ? ['focused-category-runtime'] : ['common']);
   }
   const job = workflow.jobs['focused-category-runtime'];
-  assert.equal(job['runs-on'], 'windows-2022');
+  assert.equal(job['runs-on'], '${{ matrix.os }}'); assert.equal(job.strategy['fail-fast'], false);
+  for (const checks of ['runtime-observation', 'category-fixture']) {
+    assert.deepEqual(Array.from(runInNewContext(job.strategy.matrix.os.slice(3, -2), { fromJSON: JSON.parse, inputs: { checks } })),
+      checks === 'runtime-observation' ? ['windows-latest', 'windows-2022'] : ['windows-2022']);
+  }
   assert.ok(job.steps.every(step => step['continue-on-error'] === undefined));
   const build = job.steps.find(step => step.id === 'runtime_build');
   assert.equal(build.run, 'npm run build');
@@ -679,6 +683,10 @@ test('runtime-observation runs the exact Windows2022 runtime independently of sh
   assert.ok(controls.run.includes('tests/source-observer.test.mjs tests/windows-rename-diagnostics.test.mjs'));
   const comparison = job.steps.find(step => step.name === 'Compare isolated category rename and sharing contexts');
   assert.equal(comparison.run, 'node --import tsx scripts/windows-rename-diagnostics.mjs');
+  assert.ok(comparison.if.includes("matrix.os == 'windows-2022'"));
+  const category = job.steps.find(step => step.name === 'Minimized original category UI scenario');
+  assert.equal(category.run, 'npm run smoke:runtime -- dev --category-move');
+  assert.equal(category.env.WORKSPACE_SMOKE_EVIDENCE_DIR, 'work/ci-category-runtime/minimized-category');
   const original = job.steps.find(step => step.name === 'Original failed development runtime command');
   assert.ok(original.run.includes('npm run smoke:runtime -- dev 2>&1 | tee'));
   assert.equal(original.if, "${{ !cancelled() && steps.runtime_build.outcome == 'success' }}");

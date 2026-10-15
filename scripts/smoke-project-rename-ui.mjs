@@ -261,7 +261,7 @@ export async function runProjectRenameUi(mode = "dev") {
   }
   async function reveal(page, setup, name, t, targetEvidence) {
     const target = join(setup.parent, name); nativeTargets.add(target);
-    const receiptTracking = process.platform === "darwin";
+    const receiptTracking = process.platform === "darwin" || process.platform === "win32";
     let receiptObservation;
     const retainReceipt = async primaryFailure => {
       if (!receiptTracking) return;
@@ -277,13 +277,16 @@ export async function runProjectRenameUi(mode = "dev") {
     try {
     await startup.current.electron.evaluate(({ shell }) => {
       globalThis.renameNativeCalls = []; globalThis.renameNativeOpens = [];
-      globalThis.renameNativeBridge = { started: 0, stopped: 0, active: 0, unknown: false };
+      globalThis.renameNativeBridge = { started: 0, stopped: 0, active: 0, unknown: false, failure: null, trace: [] };
       if (process.platform === "win32") {
-        process.on("workspace:native-reveal", ({ stage, path }) => {
+        process.on("workspace:native-reveal", ({ stage, path, phase, reason, elapsedMs }) => {
           const bridge = globalThis.renameNativeBridge;
           if (stage === "started") { bridge.started++; bridge.active++; }
           if (stage === "stopped") { bridge.stopped++; bridge.active--; }
           if (stage === "unknown") bridge.unknown = true;
+          if (stage === "failure" && /^(input|navigation|readiness|permit|precommand|selection|postcheck|initial|opened|authorizing|permitted|selected|done)$/.test(phase) &&
+              /^(input|deadline|binding|unready|permit|exception|owner_deadline)$/.test(reason)) bridge.failure = { phase, reason };
+          if (stage === "trace" && /^(assemblies|compile|shell|open|enumeration|collection|window_item|document|parent|owner|uia_root|uia_properties|uia_tabs|readiness|item|document_recheck|readiness_recheck|binding_returned|item_returned)$/.test(phase) && Number.isFinite(elapsedMs) && elapsedMs >= 0 && elapsedMs <= 12000 && bridge.trace.length < 19) bridge.trace.push({ phase, elapsedMs });
           if (stage === "open") globalThis.renameNativeOpens.push(path);
           if (stage === "select") globalThis.renameNativeCalls.push({ path, returned: false });
           if (stage === "done") { const call = globalThis.renameNativeCalls.at(-1); if (call?.path === path) call.returned = true; }
@@ -326,6 +329,17 @@ export async function runProjectRenameUi(mode = "dev") {
       assert.equal(outcome.status, "completed"); nativeTargets.delete(target); return { outcome };
     });
     } catch (error) {
+      if (process.platform === "win32") {
+        try {
+          const boundary = await withDeadline(startup.current.electron.evaluate(() => ({
+            bridge: globalThis.renameNativeBridge,
+            opens: globalThis.renameNativeOpens.length,
+            selections: globalThis.renameNativeCalls.length,
+            returns: globalThis.renameNativeCalls.filter(call => call.returned).length,
+          })), 1000, "Rename native boundary failure evidence");
+          observations.push({ renameNativeBoundary: boundary });
+        } catch { observations.push({ renameNativeBoundary: { collectionFailed: true } }); }
+      }
       await retainReceipt(error);
       throw error;
     }

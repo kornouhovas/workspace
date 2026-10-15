@@ -326,14 +326,18 @@ verbose failure output under strict pipefail, including failures before build,
 without retry or runtime substitution.
 
 
-For full38808047668's Windows2022 external category `rename` EPERM failure, select
-`checks: runtime-observation`. Only the original Windows2022 development runtime
-job runs, preceded by observer/diagnostic controls and the existing isolated
-real-service, idle, child-sharing and native/legacy-realpath/production-scan
+For full38808047668's Windows category failures and the later Windows2022 rename
+Reveal failure, select `checks: runtime-observation`. Both Windows latest and 2022
+original development runtimes run, preceded by observer/receipt/UI controls and
+the minimized real category UI command. Only Windows2022 also runs the existing
+isolated real-service, idle, child-sharing and native/legacy-realpath/production-scan
 comparisons. Those comparisons own disposable roots and do not attribute the
-historical OS handle. The original command runs independently after a successful
-build, including after control/comparison failure. Default/full scheduling and the
-historical category-fixture selector remain unchanged. No retry, observer
+historical OS handle. Each original command runs independently after a successful
+build, including after control/comparison/minimized failure. `readiness_native_trace`
+defaults off; enable it explicitly only for the bounded native boundary comparison.
+Inspect actual bound replies, independent no-effects proofs and native failure
+stages in the exact-SHA artifacts. Default/full scheduling and the historical
+Windows2022-only category-fixture selector remain unchanged. No retry, observer
 suppression, settling wait or deadline change is added to product or original
 runtime acceptance. Inspect original/comparison artifacts before choosing a repair
 or requesting full acceptance.
