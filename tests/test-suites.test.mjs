@@ -195,7 +195,7 @@ test('Windows release failure scope runs only the original packaged runtime with
   const job = workflow.jobs['focused-windows-release-runtime'];
   assert.equal(job['runs-on'], 'windows-latest');
   const commands = job.steps.filter(step => step.run).map(step => step.run);
-  assert.deepEqual(commands, ['npm ci', 'npm run build', 'node --import tsx --test tests/runtime-lifecycle.test.mjs tests/rename-runtime-startup.test.mjs tests/test-suites.test.mjs', 'npm run package:built', 'npm run check:artifact -- release', 'npm run smoke:runtime -- release']);
+  assert.deepEqual(commands, ['npm ci', 'npm run build', 'node --import tsx --test tests/runtime-lifecycle.test.mjs tests/rename-runtime-startup.test.mjs tests/project-category-move-runtime.test.mjs tests/test-suites.test.mjs', 'npm run package:built', 'npm run check:artifact -- release', 'npm run smoke:runtime -- release']);
   assert.ok(job.steps.every(step => step['continue-on-error'] === undefined));
   const upload = job.steps.find(step => step.uses === 'actions/upload-artifact@v4');
   assert.equal(upload.if, 'always()'); assert.equal(upload.with['if-no-files-found'], 'error');

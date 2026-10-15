@@ -86,3 +86,29 @@ passed locally with normal quit/backend exit and owned cleanup. A renewed comple
 unchanged verified application build because the repair affects the acceptance driver,
 regressions and CI routing, not application behavior or persistence. Current focused
 and full exact-SHA CI receipts remain in the GitHub checkpoint.
+
+## Second full CI: Windows latest ownership gate
+
+Focused macOS run 38731833753 passed on `0335f0f5955a23a15d2ed64738c6693e8d029e0c`;
+its exact-SHA/run/attempt artifact 11970566654 was inspected. All 35 regressions and
+original packaged EN/RU assertions passed, including three normal quits/backend exits
+and owned cleanup. Russian creation entered with an initially disabled button and
+passed through the repaired readiness path.
+
+Renewed full run [38732178491](https://github.com/kornouhovas/workspace/actions/runs/38732178491),
+attempt 1 on that same SHA, passed common, complete macOS and complete Windows 2022
+jobs. MultiSelect development/package passed on all three platforms. The sole failure
+was Windows latest's final `npm run smoke:runtime -- release`, in category-move fixture
+cleanup: owned-process termination was unverified, so removal was correctly skipped.
+Artifact 11974065540 records all 34 normal quits/backend exits passed and no failed
+shutdowns, but lacks the final ownership predicate. This does not prove PID reuse,
+a live owned process or the exact source of uncertainty.
+
+The category fixture now retains the same sanitized `inspectOwnedProcesses` result
+already used by the rename fixture (finite reason/counts, no PIDs/paths/raw errors).
+Its `stopped` value is the original boolean gate; no guard, deadline, cleanup restriction
+or scenario assertion changes. The existing `checks: windows-release` route matches
+the exact failed OS/command and adds the affected category runtime regression file.
+The original failed CI command is the red-capable remote reproduction; a new diagnostic
+candidate is needed because the historical artifact cannot distinguish the three
+ownership hypotheses. Current review/focused/full receipts remain in GitHub #26.

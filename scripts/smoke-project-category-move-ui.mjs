@@ -9,7 +9,7 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { _electron } from "playwright-core";
 import { packagedExecutablePath } from "./runtime-executable.mjs";
-import { cleanupOwnedFixture, closeRuntimeSession, ownedProcessesStopped, withDeadline } from "./runtime-lifecycle.mjs";
+import { cleanupOwnedFixture, closeRuntimeSession, inspectOwnedProcesses, withDeadline } from "./runtime-lifecycle.mjs";
 import { createRenameRuntimeStartup } from "./rename-runtime-startup.mjs";
 import { measureDiscoveryLayout } from "./runtime-layout.mjs";
 import { assertCategoryMoveAcceptance, createCategoryMoveEvidence, recordCategoryMoveEvidence } from "./runtime-evidence.mjs";
@@ -810,7 +810,11 @@ export async function runProjectCategoryMoveUi(mode = "dev") {
     await save().catch(() => {});
   } finally {
     if (startup.current) { try { await shutdown(); } catch (error) { failure ??= error; } }
-    await cleanupOwnedFixture(fixture, { processesStopped: ownedProcessesStopped(ownedProcesses, backendPids, { launchUnverified: startup.launchUnverified }), primaryFailure: failure,
+    const termination = inspectOwnedProcesses(ownedProcesses, backendPids, { launchUnverified: startup.launchUnverified });
+    // Preserve the actual cleanup predicate without PIDs, paths or raw errors.
+    // Its stopped value keeps exactly the original ownership/cleanup gate.
+    observations.push({ fixtureOwnership: termination });
+    await cleanupOwnedFixture(fixture, { processesStopped: termination.stopped, primaryFailure: failure,
       record: async outcome => {
         if (outcome.status === "passed") await assert.rejects(stat(fixture), { code: "ENOENT" });
         recordCategoryMoveEvidence(evidence, "fixtureCleanup", { ...outcome, removed: outcome.status === "passed" });

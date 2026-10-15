@@ -442,7 +442,7 @@ jobs:
       - run: npm ci
       - run: npm run build
       - name: Verify lifecycle and focused route guards
-        run: node --import tsx --test tests/runtime-lifecycle.test.mjs tests/rename-runtime-startup.test.mjs tests/test-suites.test.mjs
+        run: node --import tsx --test tests/runtime-lifecycle.test.mjs tests/rename-runtime-startup.test.mjs tests/project-category-move-runtime.test.mjs tests/test-suites.test.mjs
       - run: npm run package:built
       - run: npm run check:artifact -- release
       - name: Original Windows latest packaged runtime failure

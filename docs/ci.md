@@ -216,3 +216,15 @@ JSON/screenshots are retained. Production deadlines, keyboard activation, EN/RU,
 restart, set/visibility, normal quit/backend exit and owned cleanup assertions remain
 unchanged. Inspect both the original command and required evidence before renewed
 full acceptance on that same reviewed SHA.
+
+Issue #26 full run 38732178491's sole Windows latest failure is the final category-move
+fixture ownership gate inside the original packaged `npm run smoke:runtime -- release`.
+Use the same `checks: windows-release` selector. Its regression prefix now includes
+`project-category-move-runtime.test.mjs` alongside lifecycle/startup/route checks.
+Category-move evidence retains the exact finite `inspectOwnedProcesses` predicate used
+for cleanup (reason/counts only), matching the existing rename fixture's diagnostics.
+The stopped value, all PID/parent/startup uncertainty restrictions, original scenarios,
+34 normal quits/backend exits, deadlines and confirmed-removal requirements remain
+unchanged. Missing earlier predicate evidence cannot establish whether the failure was
+PID reuse, an owned live process, or incomplete observation. Inspect the original
+Windows command and this evidence before any renewed full acceptance on the same SHA.
