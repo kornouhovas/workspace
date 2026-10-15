@@ -202,7 +202,7 @@ Only this focused native command enables `WORKSPACE_REVEAL_TRACE=1`. Fixed
 bootstrap/read-boundary markers are deduplicated (18 maximum), validated under
 the unchanged1024-byte protocol limit and retained as first received boundary
 latencies from adapter spawn. They neither authorize GO nor identify the current
-blocked call after repeated polls. The `binding_returned` marker records whether at least one binding read completed; its absence distinguishes a first-read stall from repeated polls. Default runtime behavior has tracing disabled.
+blocked call after repeated polls. The `binding_returned` marker records whether at least one binding read completed; its presence confirms a completed read; absence means no completion marker was received and leaves read/exception/delivery hypotheses unresolved. Default runtime behavior has tracing disabled.
 Actual Windows interpreter controls, existing view/binding/permit/deadline tests
 and original target/native/quit/cleanup assertions remain required.
 
