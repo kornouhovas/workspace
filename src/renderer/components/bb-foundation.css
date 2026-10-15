@@ -97,3 +97,6 @@
 [data-color="blue"] { --option-color: #3980cb; }
 [data-color="purple"] { --option-color: #9654c4; }
 .select-options li, .text-property-cell[data-color] { border-inline-start: 0.25rem solid var(--option-color, transparent); padding-inline-start: 0.4rem; }
+
+.select-options select, .text-value-editor select { min-width: 0; max-width: 100%; width: 100%; padding: 0.5rem; font: inherit; border: 1px solid #cdd1dc; border-radius: 0.35rem; }
+.select-options select:focus-visible, .text-value-editor select:focus-visible { outline: 2px solid #526ed3; outline-offset: 2px; }

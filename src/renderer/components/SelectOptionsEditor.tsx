@@ -13,7 +13,7 @@ export function SelectOptionsEditor({ client, workspaceId, property, snapshot, l
   const t = (key: TranslationKey) => translate(language, key);
   const id = useId();
   const options = snapshot.selectOptions?.filter(option => option.propertyId === property.propertyId) ?? [];
-  const [draft, setDraft] = useState<{ optionId: string | null; name: string; color: SelectColor } | null>(null);
+  const [draft, setDraft] = useState<{ optionId: string | null; name: string; color: SelectColor; originalName: string; originalColor: SelectColor } | null>(null);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState(false);
   const saving = useRef(false), lifetime = useRef(0);
@@ -37,7 +37,7 @@ export function SelectOptionsEditor({ client, workspaceId, property, snapshot, l
     finally { if (current === lifetime.current) { saving.current = false; setPending(false); } }
   };
   const edit = (option: SelectOption, trigger: HTMLButtonElement) => {
-    returnFocus.current = trigger; setError(false); setDraft({ optionId: option.optionId, name: option.name, color: option.color });
+    returnFocus.current = trigger; setError(false); setDraft({ optionId: option.optionId, name: option.name, color: option.color, originalName: option.name, originalColor: option.color });
   };
   const move = (index: number, delta: number) => {
     const optionIds = options.map(option => option.optionId);
@@ -55,7 +55,7 @@ export function SelectOptionsEditor({ client, workspaceId, property, snapshot, l
       <button className="workspace-button workspace-button--secondary" type="button" disabled={disabled || pending || draft !== null} aria-label={`${t(option.hidden ? "selectShow" : "selectHide")}: ${option.name}`}
         onClick={() => void commit({ type: "workspace.setSelectOptionHidden", workspaceId, propertyId: property.propertyId, optionId: option.optionId, hidden: !option.hidden })}>{t(option.hidden ? "selectShow" : "selectHide")}</button>
     </li>)}</ul>
-    <button className="workspace-button workspace-button--secondary" ref={add} type="button" disabled={disabled || pending || draft !== null} onClick={() => { returnFocus.current = add.current; setError(false); setDraft({ optionId: null, name: "", color: "default" }); }}>{t("selectAddOption")}</button>
+    <button className="workspace-button workspace-button--secondary" ref={add} type="button" disabled={disabled || pending || draft !== null} onClick={() => { returnFocus.current = add.current; setError(false); setDraft({ optionId: null, name: "", color: "default", originalName: "", originalColor: "default" }); }}>{t("selectAddOption")}</button>
     {draft && <form aria-busy={pending} onKeyDown={event => { if (event.key === "Escape") { event.preventDefault(); cancel(); } }} onSubmit={event => {
       event.preventDefault();
       if (!draft.name.trim()) { setError(true); input.current?.focus(); return; }
@@ -71,6 +71,8 @@ export function SelectOptionsEditor({ client, workspaceId, property, snapshot, l
       <div className="workspace-form-actions"><button className="workspace-button" type="submit" disabled={disabled || pending}>{t(pending ? "propertySaving" : "savePropertyName")}</button>
         <button className="workspace-button workspace-button--secondary" type="button" disabled={pending} onClick={cancel}>{t("cancelTextValue")}</button></div>
     </form>}
+    {draft?.optionId && !pending && options.some(option => option.optionId === draft.optionId && (option.name !== draft.originalName || option.color !== draft.originalColor)) &&
+      <StatusMessage kind="info" title={t("selectOptionExternalChange")} />}
     {error && <StatusMessage kind="error" title={t("selectOptionError")} />}
   </details>;
 }

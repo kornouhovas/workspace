@@ -80,7 +80,7 @@ export function TextPropertyCell({ workspaceId, sourceId, projectId, propertyId,
     }}>
       <label className="text-value-label" htmlFor={id}>{label}</label>
       {select ? <select ref={(element) => { editor.current = element; }} id={id} className="workspace-input" value={draft} disabled={disabled || pending}
-        aria-invalid={message === "textValueValidation"} onChange={event => setDraft(event.currentTarget.value)}>
+        aria-invalid={message === "textValueValidation"} aria-describedby={`${id}-hint`} onChange={event => setDraft(event.currentTarget.value)}>
         <option value="">{t("textValueAbsent")}</option>
         {options.filter(option => !option.hidden || option.optionId === draft).map(option => <option key={option.optionId} value={option.optionId}>{option.name}{option.hidden ? ` (${t("selectHidden")})` : ""}</option>)}
       </select> : date || numeric ? <input ref={(element) => { editor.current = element; }} id={id} className="bb-input" type="text" maxLength={numeric ? 512 : undefined} placeholder={date ? "YYYY-MM-DD" : undefined} value={draft} disabled={disabled || pending}

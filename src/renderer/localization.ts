@@ -1,6 +1,7 @@
 import type { Language } from "../contracts/settings.js";
 
 const english = {
+  selectOptionExternalChange: "This option changed in another workspace. Save submits your retained name and color; Cancel shows the latest option.",
   createSelectProperty: "Create Single Select property",
   editSelectValue: "Edit Single Select value",
   selectValueHint: "Choose one option or an empty value. Enter saves; Escape cancels. Hidden options are unavailable for new assignments.",
@@ -511,6 +512,7 @@ const english = {
 } as const;
 
 const russian: Record<keyof typeof english, string> = {
+  selectOptionExternalChange: "Опция изменилась в другом рабочем пространстве. Сохранение отправит ваши название и цвет; отмена покажет текущую опцию.",
   createSelectProperty: "Создать Single Select-свойство",
   editSelectValue: "Редактировать Single Select-значение",
   selectValueHint: "Выберите одну опцию или пустое значение. Enter сохраняет; Escape отменяет. Скрытые опции недоступны для новых назначений.",
