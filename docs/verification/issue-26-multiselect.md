@@ -112,3 +112,13 @@ the exact failed OS/command and adds the affected category runtime regression fi
 The original failed CI command is the red-capable remote reproduction; a new diagnostic
 candidate is needed because the historical artifact cannot distinguish the three
 ownership hypotheses. Current review/focused/full receipts remain in GitHub #26.
+
+### Reviewed diagnostic candidate
+
+Both independent reviewers checked `0335f0f...118c21e` and reported no findings.
+Typecheck, lint, documentation links, whitespace and 101 focused lifecycle, startup,
+category and CI-route tests passed. The complete local suite on the reviewed candidate
+passed: 2837 tests, 2814 passed, zero failures, 23 conditional/platform skips,
+127.8 seconds. The diagnostic does not change application behavior or the existing
+process-ownership decision; exact-SHA Windows reproduction and subsequent full
+acceptance remain required and are recorded in the GitHub checkpoint.
