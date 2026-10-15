@@ -305,3 +305,11 @@ relevant native/service controls and original layout/recovery predecessors still
 run afterwards, even if that native command fails. The default early flag is
 false, preserving the historical reproduction order. Exact-SHA artifacts and
 full acceptance are required after focused success.
+
+For the issue26 early native expiry, add `readiness_com_profile: true` to the
+existing focused Reveal selector to compare original and reflection COM reads on
+four fresh disposable parents in both orders. The original mutation, guards and
+deadlines stay intact; this opt-in temporary diagnostic never replaces original
+native acceptance. Finite comparison output is retained in `com-dispatch.json`
+inside the existing exact-SHA artifact. Unknown termination or failed owned-parent
+cleanup preserves the fixture. Diagnostic success alone does not open full CI.

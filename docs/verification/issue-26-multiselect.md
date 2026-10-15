@@ -515,3 +515,36 @@ Ladle occupied-candidate check, lint, documentation and whitespace checks passed
 prior typecheck and verified build are unchanged. Earlier failed full logs remain
 retained. Exact-SHA focused early native plus retained workloads/artifact and
 subsequent full platform acceptance remain in GitHub #26 before integration.
+
+## Early native failure retained; isolated COM read comparison
+
+Focused 38784362321 / attempt 1 on `25f014b8` completed with the same Windows
+latest original direct native failure: zero selections, owner deadline. All retained
+controls/workloads and Windows2022 controls passed. Artifact11997891490 was
+inspected: one exact parent navigation; first binding returned1807ms, first window
+item2502ms, document7217ms, parent11763ms; bridge/Explorer/fixture cleanup passed.
+Moving native before the UI prefix did not remove the failure, falsifying that
+prefix's necessity. First-received markers alone do not prove individual COM call
+latency or its OS-level cause.
+
+Opt-in `readiness_com_profile` in the existing focused Reveal route compares the
+original bridge with disposable script copies using direct .NET reflection for
+COM reads. Four fresh owned parents use original/reflection/reflection/original
+order. All deadlines, exact-view guards, permit protocol and the original selection
+call remain. Only finite timings, protocol outcomes and cleanup operands are
+retained. Unknown bridge termination or unsuccessful exact-parent cleanup preserves
+the fixture. This is a diagnostic comparison, not product acceptance or a repair.
+Microsoft's [Type.InvokeMember contract](https://learn.microsoft.com/en-us/dotnet/api/system.type.invokemember)
+defines the alternate COM invocation; comparative Windows results remain pending.
+
+Both review axes approved the diagnostic after the spec finding was repaired in
+`ee55661`: the comparison now changes only reads, retaining the original selection.
+The32 focused profile/routing tests, typecheck, lint, documentation and whitespace
+checks passed. The local full run on the initial diagnostic source failed2848tests:
+2823passed,2failed,23skipped,125.2seconds. Both failures were existing property
+fixture normal shutdowns: before-quit/will-quit/quit received but parent-exit not
+confirmed within10seconds. This failure is retained in
+`work/issue-26-ci/local-full-com-profile.log`; no final/full success is claimed.
+Focused32tests were renewed after the read-only repair. Original Windows focused
+failure, comparison artifacts, local shutdown failure and subsequent full acceptance
+remain open gates in GitHub#26. Diagnostic publication does not satisfy them.
