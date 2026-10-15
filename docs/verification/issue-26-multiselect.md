@@ -36,3 +36,36 @@ results. Current exact-SHA CI and integration receipts are tracked in [GitHub #2
 ## Delivery gates
 
 The owner explicitly authorized publishing #26 to the current public repository, its GitHub checkpoint, CI and successful integration into `new-workspace` on 2026-10-15, resolving the issue-specific publication gate under [tracker policy](../issue-tracker.md). Exact-SHA platform CI, artifact inspection and integration acceptance are recorded in the GitHub checkpoint; local macOS evidence alone cannot establish Windows acceptance. This authorization does not publish a release or change the repository-wide default policy.
+
+## First exact-SHA CI and property-creator repair
+
+Full run [38727412661](https://github.com/kornouhovas/workspace/actions/runs/38727412661),
+attempt 1 on `e40b0c151818aca444f925d1c26ceec5849d44c2`, passed common checks and
+both complete Windows jobs. The sole failure was macOS's original
+`npm run smoke:multiselect -- release`: a 15-second `Property name` locator timeout.
+The macOS platform tests, development MultiSelect, package build/resource check had
+passed. Its retained artifact 11969832549 shows no created property/form and zero
+completed language checks; normal quit, backend exit and cleanup passed. This is
+separate from the earlier local shutdown timeout.
+
+A controlled real-Electron disabled-button fixture reproduced the same lost Enter
+symptom with the original focus/press driver (red: property-name input absent).
+The driver now resolves the same accessible button together with native `:enabled`
+before focus and a single keyboard activation, under the caller's original timeout.
+The initial enabled operand is retained in new runtime evidence. The original CI
+artifact lacks that initial operand, so this reproduction establishes a faulty driver
+path without proving the exact original scheduler/focus cause.
+
+The new isolated real-Electron driver file verifies delayed enablement, one activation,
+property-name entry and rejection without activation when loading never finishes.
+It passes with the repair, and the original packaged EN/RU smoke passes locally with
+normal quit/backend exit and cleanup. During regression preparation, an invocation
+using the existing rename suite stalled after its host-clock cases and was terminated;
+it is not counted as passing evidence. The new tests use a separate process/fixture
+and existing bounded strict quit helper; the original rename test file is unchanged.
+
+`checks: multiselect` selects only the original failed macOS route with build,
+related driver/MultiSelect regressions, package/resource checks and exact-SHA runtime
+artifacts. Original product assertions, keyboard editing, timeouts and cleanup gates
+are retained. Current repair review, focused CI and renewed full acceptance receipts
+belong to the GitHub checkpoint.

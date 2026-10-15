@@ -8,7 +8,7 @@ on:
       checks:
         description: Full acceptance or a selected focused failure route
         type: choice
-        options: [full, failed, readiness, windows-release, issue22-failures, creation-shutdown, raw-rename, issue24-failures, category-fixture, issue24-startup]
+        options: [full, failed, readiness, windows-release, issue22-failures, creation-shutdown, raw-rename, issue24-failures, category-fixture, issue24-startup, multiselect]
         default: full
       readiness_windows:
         description: With checks=readiness, reproduce original Windows latest and 2022 editor failures
@@ -65,7 +65,7 @@ concurrency:
 
 jobs:
   common:
-    if: ${{ github.event_name != 'workflow_dispatch' || (inputs.checks != 'failed' && inputs.checks != 'readiness' && inputs.checks != 'windows-release' && inputs.checks != 'issue22-failures' && inputs.checks != 'creation-shutdown' && inputs.checks != 'raw-rename' && inputs.checks != 'issue24-failures' && inputs.checks != 'category-fixture' && inputs.checks != 'issue24-startup') }}
+    if: ${{ github.event_name != 'workflow_dispatch' || (inputs.checks != 'failed' && inputs.checks != 'readiness' && inputs.checks != 'windows-release' && inputs.checks != 'issue22-failures' && inputs.checks != 'creation-shutdown' && inputs.checks != 'raw-rename' && inputs.checks != 'issue24-failures' && inputs.checks != 'category-fixture' && inputs.checks != 'issue24-startup' && inputs.checks != 'multiselect') }}
     name: Common tests and static checks
     runs-on: macos-latest
     steps:
@@ -79,6 +79,54 @@ jobs:
       - run: npm run typecheck
       - run: npm run check:docs
       - run: npm run test:common
+
+  focused-multiselect:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.checks == 'multiselect' }}
+    name: Focused macOS packaged MultiSelect
+    runs-on: macos-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.21.1
+          cache: npm
+      - run: npm ci
+      - name: Build prerequisites and retain exact-run provenance
+        id: build
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p work/ci-focused-multiselect
+          node --input-type=module -e 'import { writeFileSync } from "node:fs"; writeFileSync("work/ci-focused-multiselect/run.json", JSON.stringify({sha: process.env.GITHUB_SHA, run: process.env.GITHUB_RUN_ID, attempt: process.env.GITHUB_RUN_ATTEMPT, platform: process.platform}) + "\n")'
+          npm run build 2>&1 | tee work/ci-focused-multiselect/build.log
+      - name: Real Electron loading and MultiSelect regressions
+        id: regressions
+        shell: bash
+        run: |
+          set -o pipefail
+          node --import tsx --test tests/property-editor-driver.test.mjs tests/multi-select-service.test.mjs tests/multi-select-ui.test.tsx tests/multi-select-ipc.test.mjs tests/test-suites.test.mjs 2>&1 | tee work/ci-focused-multiselect/regressions.log
+      - name: Package the original failed application route
+        id: package
+        if: ${{ always() && steps.build.outcome == 'success' }}
+        run: npm run package:built
+      - name: Validate packaged resources
+        id: artifact
+        if: ${{ always() && steps.package.outcome == 'success' }}
+        run: npm run check:artifact -- release
+      - name: Original macOS packaged MultiSelect EN/RU command
+        if: ${{ always() && steps.artifact.outcome == 'success' }}
+        run: npm run smoke:multiselect -- release
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-focused-multiselect/runtime
+      - name: Preserve original command, regression and exact-SHA evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-26-focused-multiselect-${{ github.sha }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
+          path: work/ci-focused-multiselect/
+          if-no-files-found: error
+          retention-days: 7
 
   focused-category-fixture:
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.checks == 'category-fixture' }}

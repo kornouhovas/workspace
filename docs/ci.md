@@ -205,3 +205,14 @@ latencies from adapter spawn. They neither authorize GO nor identify the current
 blocked call after repeated polls. Default runtime behavior has tracing disabled.
 Actual Windows interpreter controls, existing view/binding/permit/deadline tests
 and original target/native/quit/cleanup assertions remain required.
+
+For issue #26 full run 38727412661's macOS packaged MultiSelect property-creator timeout,
+select `checks: multiselect`. This runs only macOS build prerequisites, real Electron
+loading/keyboard and MultiSelect regressions, packaging/resource validation and the
+original `npm run smoke:multiselect -- release` command. The original command still
+runs after successful packaging even if a regression fails, and every failed step
+keeps the job failed. Exact SHA/run/attempt metadata, regression output and runtime
+JSON/screenshots are retained. Production deadlines, keyboard activation, EN/RU,
+restart, set/visibility, normal quit/backend exit and owned cleanup assertions remain
+unchanged. Inspect both the original command and required evidence before renewed
+full acceptance on that same reviewed SHA.
