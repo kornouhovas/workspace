@@ -1,3 +1,4 @@
+import { waitForFocusedInput } from "./property-editor-driver.mjs";
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { randomUUID } from "node:crypto";
@@ -257,7 +258,7 @@ try {
       activeStage = [discoveryMode, "creation"];
       const name = `Created-${checkpoint}-日本語${directoryPackage ? ".app" : ""}`;
       await page.getByRole("button", { name: t.create, exact: true }).click();
-      const input = page.locator("#project-creation-name"); await input.waitFor();
+      const input = page.locator("#project-creation-name"); await waitForFocusedInput(page, "#project-creation-name");
       assert.equal(await input.evaluate((node) => node === globalThis.document.activeElement), true);
       await input.fill(name);
       if (discoveryMode === "grouped") await page.locator(".project-creation select").selectOption(seed.request.categoryId);

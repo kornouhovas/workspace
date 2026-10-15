@@ -255,3 +255,8 @@ The runtime helper gives Playwright sole ownership of the normal quit request;
 its ten-second bound, strict failure/forced-cleanup behavior and all caller
 backend/fixture checks remain. The native red/green control proves a competing
 quit can bypass deferred cleanup, not the exact historical timeout cause.
+
+The same creation route includes the native input-focus readiness regression
+after a local original-matrix one-shot focus failure. Creation waits for visible,
+app-focused input in its existing 15-second page allowance, retaining the explicit
+focus assertion; the driver never acquires focus. Absent app focus still times out.

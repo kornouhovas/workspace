@@ -1,6 +1,8 @@
 const { app, BrowserWindow } = require("electron");
 const { mkdirSync } = require("node:fs");
 const { join } = require("node:path");
+const process = require("node:process");
+const { setTimeout } = require("node:timers");
 const profile = process.env.WORKSPACE_QUIT_CONTROL_PROFILE;
 if (!profile) throw new Error("Disposable profile is required");
 for (const name of ["userData", "sessionData"]) {

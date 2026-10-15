@@ -378,7 +378,7 @@ jobs:
       - run: npm run build
         id: creation-build
       - name: Verify quit evidence and lifecycle/route regressions
-        run: node --import tsx --test tests/runtime-electron-quit.test.mjs tests/runtime-quit-evidence.test.mjs tests/runtime-lifecycle.test.mjs tests/test-suites.test.mjs
+        run: node --import tsx --test tests/runtime-electron-quit.test.mjs tests/runtime-quit-evidence.test.mjs tests/runtime-lifecycle.test.mjs tests/property-editor-driver.test.mjs tests/test-suites.test.mjs
       - name: Original creation crash/recovery matrix
         if: ${{ !cancelled() && steps.creation-build.outcome == 'success' }}
         run: npm run smoke:runtime -- dev --creation --skip-native

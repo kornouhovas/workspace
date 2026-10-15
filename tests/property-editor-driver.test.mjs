@@ -7,7 +7,7 @@ import { fileURLToPath } from "node:url";
 import test from "node:test";
 import { _electron } from "playwright-core";
 import { closeElectron, withDeadline } from "../scripts/runtime-lifecycle.mjs";
-import { openPropertyCreator } from "../scripts/property-editor-driver.mjs";
+import { openPropertyCreator, waitForFocusedInput } from "../scripts/property-editor-driver.mjs";
 
 // Isolate native browser timers from the rename suite's host-clock mocks.
 async function withPage(run) {
@@ -93,5 +93,24 @@ test("property creation keeps the caller deadline and never activates a still-lo
     await assert.rejects(openPropertyCreator(page, { createLabel: "Create MultiSelect property", propertyNameLabel: "Property name" }), /Timeout/);
     assert.equal(await page.evaluate(() => globalThis.fixturePropertyActivations), 0);
     assert.equal(await page.getByLabel("Property name", { exact: true }).count(), 0);
+  });
+});
+
+
+test("creation input readiness observes delayed app-owned focus without taking it", async () => {
+  await withPage(async page => {
+    page.setDefaultTimeout(1000);
+    await page.setContent('<label for="project-creation-name">Name</label><input id="project-creation-name">');
+    await page.evaluate(() => {
+      globalThis.setTimeout(() => globalThis.document.querySelector("input").focus(), 200);
+    });
+    assert.equal(await page.locator("input").evaluate(node => node === globalThis.document.activeElement), false);
+    await waitForFocusedInput(page, "#project-creation-name");
+    assert.equal(await page.locator("input").evaluate(node => node === globalThis.document.activeElement), true);
+    assert.equal(await page.locator("input").inputValue(), "");
+    await page.locator("input").evaluate(node => node.blur());
+    page.setDefaultTimeout(100);
+    await assert.rejects(waitForFocusedInput(page, "#project-creation-name"), /Timeout/);
+    assert.equal(await page.locator("input").evaluate(node => node === globalThis.document.activeElement), false);
   });
 });

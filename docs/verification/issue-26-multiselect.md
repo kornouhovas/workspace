@@ -227,3 +227,19 @@ Windows latest command and adds this native regression. The original command run
 independently after a regression failure when its build passed; failed steps remain
 failed. Focused original result/artifact and renewed full acceptance on the same
 reviewed SHA remain required.
+
+### Creation focus observation during local reproduction
+
+The first local original creation matrix after the quit repair passed eight
+normal shutdown/backend-exit assertions, then failed the existing immediate focus
+assertion when opening the grouped/after_intent form. It remains a failed run
+(`work/issue-26-ci/local-creation-single-quit-failed.log`); cleanup passed.
+The application focuses that input in a React effect. A real-Electron visible
+input with delayed app-owned focus reproduces the one-shot assertion's failure.
+The driver now observes visible input plus actual activeElement in the existing
+15-second page allowance instead of checking immediately after visibility. It
+never focuses or fills the input itself; the original explicit focus assertion
+remains. The same native regression verifies delayed focus, unchanged contents
+and timeout without acquiring focus if the app never supplies it. All 64
+focused native/lifecycle/phase/property/route tests passed. The creation-focused
+CI route includes this regression before its unchanged original command.

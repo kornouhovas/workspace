@@ -236,7 +236,7 @@ test('creation shutdown failure route preserves the original Windows latest comm
   }
   const job = workflow.jobs['focused-creation-shutdown'];
   assert.equal(job['runs-on'], 'windows-latest');
-  assert.deepEqual(job.steps.filter(step => step.run).map(step => step.run), ['npm ci', 'npm run build', 'node --import tsx --test tests/runtime-electron-quit.test.mjs tests/runtime-quit-evidence.test.mjs tests/runtime-lifecycle.test.mjs tests/test-suites.test.mjs', 'npm run smoke:runtime -- dev --creation --skip-native']);
+  assert.deepEqual(job.steps.filter(step => step.run).map(step => step.run), ['npm ci', 'npm run build', 'node --import tsx --test tests/runtime-electron-quit.test.mjs tests/runtime-quit-evidence.test.mjs tests/runtime-lifecycle.test.mjs tests/property-editor-driver.test.mjs tests/test-suites.test.mjs', 'npm run smoke:runtime -- dev --creation --skip-native']);
   assert.equal(job.steps.find(step => step.id === 'creation-build').run, 'npm run build');
   assert.equal(job.steps.find(step => step.name === 'Original creation crash/recovery matrix').if,
     "${{ !cancelled() && steps.creation-build.outcome == 'success' }}");
