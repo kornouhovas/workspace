@@ -9,13 +9,18 @@ for (const name of ["userData", "sessionData"]) {
   mkdirSync(join(profile, name)); app.setPath(name, join(profile, name));
 }
 let quitting = false, cleanupComplete = false;
+const phases = new Set();
+function phase(value) {
+  if (!phases.has(value)) { phases.add(value); process.stdout.write("WORKSPACE_QUIT_PHASE " + value + "\n"); }
+}
 // Match the application's deferred backend-stop boundary: a second concurrent
 // quit would bypass the first prevented event while cleanup is still pending.
 app.on("before-quit", event => {
-  if (quitting) return;
-  event.preventDefault(); quitting = true;
-  setTimeout(() => { cleanupComplete = true; app.quit(); }, 1000);
+  if (quitting) { phase("reentered"); return; }
+  event.preventDefault(); quitting = true; phase("prevented");
+  setTimeout(() => { cleanupComplete = true; phase("cleanup_complete"); app.quit(); }, 1000);
 });
+app.on("will-quit", () => phase("will_quit"));
 app.on("quit", () => process.stdout.write("WORKSPACE_QUIT_CONTROL " + JSON.stringify({ cleanupComplete }) + "\n"));
 app.whenReady().then(() => {
   const window = new BrowserWindow({ webPreferences: { contextIsolation: true, nodeIntegration: false, sandbox: true } });

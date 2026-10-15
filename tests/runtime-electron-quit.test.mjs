@@ -33,5 +33,10 @@ test("runtime normal quit waits for deferred application cleanup without a concu
     if (primary) console.error("Additional quit control cleanup failure:", error);
     else primary = error;
   }
-  if (primary) throw primary;
+  if (primary) {
+    const phases = output.split(/\r?\n/).filter(line => /^WORKSPACE_QUIT_PHASE (prevented|reentered|cleanup_complete|will_quit)$/.test(line)).slice(0, 4);
+    console.error("Native quit control evidence", JSON.stringify({ phases, parentExited: child.exitCode !== null || child.signalCode !== null,
+      forcedCleanup: primary.forcedCleanup ?? null }));
+    throw primary;
+  }
 });

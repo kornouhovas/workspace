@@ -464,3 +464,24 @@ the same command before controls and the retained original predecessor block.
 The late variant is mutually exclusive. Native/service/observer/deadline and
 cleanup gates are unchanged. Review, local renewal, focused exact-SHA original
 plus all retained workloads/artifacts, then full acceptance remain required.
+
+### Local scheduling renewal findings
+
+The first local full renewal retained2846 tests:2820 passed,three failed,23
+skipped. Two failures were historical workflow inventories counting both
+mutually exclusive native positions as executions. They now evaluate each OS's
+active commands and require the complete original multiset, four unique
+creation/native evidence directories and unchanged guards on every other
+command. No acceptance command is removed.
+
+The third failure was the existing native deferred-quit control's ten-second
+normal-close timeout under the full workload. Its original log is retained;
+missing phase operands cannot identify a historical cause. Ranked hypotheses
+are quit-request delivery, deferred cleanup progress and exit notification.
+The owned fixture now emits four fixed, deduplicated phase labels; on failure,
+the control retains only those labels, parent-exit status and the existing finite
+forced-cleanup result. It preserves the original error, ten-second limit,
+cleanup-complete assertion and profile-removal gate. No product/shared shutdown
+helper changed. The isolated actual-Electron control plus both final workflow
+inventories passed52 tests with no skips. This is diagnostic evidence, not proof
+of the historical timeout cause. Review and final local renewal remain required.

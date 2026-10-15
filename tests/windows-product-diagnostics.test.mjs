@@ -145,7 +145,12 @@ test('workflow runs independent fresh Windows diagnostics and always uploads exa
     ['npm ci', 'npm run build:service-test-lib', 'node --import tsx scripts/windows-rename-diagnostics.mjs']);
   // The full platform acceptance matrix keeps its original independent scenarios.
   assert.deepEqual(workflow.jobs.verify.strategy.matrix.include.map((s) => s.os), ['macos-latest', 'windows-latest', 'windows-2022']);
-  assert.equal(workflow.jobs.verify.steps.filter((s) => /--creation --discovery-mode=/.test(s.run ?? '')).length, 4);
+  for (const os of ['windows-latest', 'windows-2022', 'macos-latest']) {
+    const active = workflow.jobs.verify.steps.filter(step => /--creation --discovery-mode=/.test(step.run ?? '') &&
+      (!step.if || runInNewContext(step.if.slice(3, -2), { matrix: { os } })));
+    assert.equal(active.length, 4);
+    assert.equal(new Set(active.map(step => step.env.WORKSPACE_SMOKE_EVIDENCE_DIR)).size, 4);
+  }
 });
 
 test('fixture cleanup failure cannot label a completed scenario successful', () => {
@@ -214,7 +219,9 @@ test('full product OS comparison retains identical checks and unique evidence/pa
   assert.equal(job['continue-on-error'], undefined);
   assert.ok(job.steps.every((step) => step['continue-on-error'] === undefined));
   const runs = job.steps.filter((step) => step.run);
-  assert.deepEqual(runs.map((step) => step.run), [
+  const early = runs.find(step => step.name === 'Early Windows latest direct development creation/native evidence');
+  const late = runs.find(step => step.name === 'Direct development creation/native evidence');
+  assert.deepEqual(runs.filter(step => step !== early).map((step) => step.run), [
     'npm ci', 'npm run build', 'npm run test:platform', 'node scripts/windows-observer-diagnostics.mjs validate-call --output work/ci-observer-full-suite',
     'npm run build:ladle',
     'node scripts/smoke-discovery-layouts.mjs --creation',
@@ -229,11 +236,18 @@ test('full product OS comparison retains identical checks and unique evidence/pa
     'npm run smoke:runtime -- release --creation --discovery-mode=grouped --checkpoint=after_evidence',
     'npm run smoke:runtime -- release',
   ]);
-  // No OS-dependent skip or alternate command in the shared acceptance sequence.
+  // Only the unchanged direct native command changes position. Each OS retains
+  // the complete original command multiset, with no skipped acceptance route.
+  assert.equal(early.run, late.run);
+  for (const os of ['windows-latest', 'windows-2022', 'macos-latest']) {
+    const active = runs.filter(step => step !== early && step !== late ||
+      runInNewContext(step.if.slice(3, -2), { matrix: { os } }));
+    assert.deepEqual(active.map(step => step.run).sort(), runs.filter(step => step !== early).map(step => step.run).sort());
+  }
   const collectorValidation = runs.find((step) => step.id === 'observer-call-validation');
   assert.equal(collectorValidation.if, 'always()');
-  assert.ok(runs.filter((step) => step !== collectorValidation).every((step) => step.if === undefined || step.if === '${{ !cancelled() }}'));
-  assert.ok(runs.every(({ run, if: condition }) => !JSON.stringify({ run, condition }).includes('matrix.os')));
+  assert.ok(runs.filter((step) => ![collectorValidation, early, late].includes(step)).every((step) => step.if === undefined || step.if === '${{ !cancelled() }}'));
+  assert.ok(runs.filter(step => ![early, late].includes(step)).every(({ run, if: condition }) => !JSON.stringify({ run, condition }).includes('matrix.os')));
   assert.equal(job.steps.find((step) => step.uses === 'actions/setup-node@v4').with['node-version'], '22.21.1');
   const uploads = job.steps.filter((step) => step.uses === 'actions/upload-artifact@v4');
   const names = job.strategy.matrix.include.flatMap(({ os, artifact }) => uploads.map((step) =>
