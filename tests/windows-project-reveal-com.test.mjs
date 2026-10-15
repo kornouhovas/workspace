@@ -474,3 +474,20 @@ foreach ($firstReadThrows in @($true, $false)) {
     { env: { ...process.env, WORKSPACE_REVEAL_TRACE: "1" }, windowsHide: true, timeout: 10000 });
   assert.equal(result.stdout.trim(), "TRACE_CONTROL"); assert.equal(result.stderr, "");
 });
+
+for (const mode of ['off', 'active', 'timer', 'complete', 'throw', 'disposed', 'fault', 'race', 'both'])
+  test(`deferred managed checkpoint is finite, single-shot and non-authorizing: ${mode}`, { skip: process.platform !== 'win32' }, async () => {
+    const result = await promisify(execFile)('powershell.exe', ['-NoProfile', '-NonInteractive', '-STA', '-ExecutionPolicy', 'Bypass', '-File', 'tests/fixtures/windows-deferred-checkpoint-control.ps1'], {
+      env: { ...process.env, WORKSPACE_CHECKPOINT_CONTROL: mode, WORKSPACE_REVEAL_DEFERRED_TRACE: mode === 'off' ? '0' : '1', WORKSPACE_REVEAL_TRACE: mode === 'both' ? '1' : '0' },
+      windowsHide: true, timeout: 10000, maxBuffer: 4096,
+    });
+    assert.equal(result.stderr, ''); const receipt = JSON.parse(result.stdout);
+    assert.equal(receipt.mode, mode);
+    if (['off', 'disposed', 'fault'].includes(mode)) assert.deepEqual(receipt.lines, []);
+    else {
+      assert.equal(receipt.lines.length, 1);
+      assert.match(receipt.lines[0], new RegExp(`^CHECKPOINT:other_call:${['active', 'timer'].includes(mode) ? 'active' : 'complete'}:1:[0-9]{1,5}$`));
+      assert.ok(Number(receipt.lines[0].split(':').at(-1)) <= 12000);
+    }
+    assert.doesNotMatch(result.stdout, /PRIVATE|TRACE:|GO|READY|SELECT/);
+  });

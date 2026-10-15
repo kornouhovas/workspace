@@ -18,6 +18,10 @@ on:
         description: Enable bounded native read tracing for focused Windows diagnosis; cold acceptance defaults off
         type: boolean
         default: false
+      runtime_native_checkpoint:
+        description: With runtime-observation, collect one deferred managed checkpoint instead of immediate tracing
+        type: boolean
+        default: false
       readiness_native_prefix:
         description: With readiness native Windows, reproduce the original layout and creation prefix before the failed command
         type: boolean
@@ -286,6 +290,7 @@ jobs:
         env:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-category-runtime/minimized-category
           WORKSPACE_REVEAL_TRACE: ${{ inputs.readiness_native_trace == true && '1' || '0' }}
+          WORKSPACE_REVEAL_DEFERRED_TRACE: ${{ inputs.runtime_native_checkpoint == true && '1' || '0' }}
       - name: Original failed development runtime command
         if: ${{ !cancelled() && steps.runtime_build.outcome == 'success' }}
         shell: bash
@@ -296,6 +301,7 @@ jobs:
         env:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-category-runtime
           WORKSPACE_REVEAL_TRACE: ${{ inputs.readiness_native_trace == true && '1' || '0' }}
+          WORKSPACE_REVEAL_DEFERRED_TRACE: ${{ inputs.runtime_native_checkpoint == true && '1' || '0' }}
       - name: Preserve exact-SHA runtime proofs and original result
         if: always()
         uses: actions/upload-artifact@v4

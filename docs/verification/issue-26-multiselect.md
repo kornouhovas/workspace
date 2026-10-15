@@ -1326,3 +1326,71 @@ skips,109.0s. Lint/typecheck/docs/whitespace passed. Actual Windows controls and
 ordinary originals are still required; full acceptance has not been requested.
 Earlier checkpoint text said30 comparisons; exact artifacts contain32 operations
 per complete comparison run. Original negative counts remain separate and retained.
+
+
+### Opaque collection does not resolve the quiet native failure
+
+On reviewedee4c3683, all four focused builds, native/diagnostic/occurrence controls
+passed. Ordinary38818781252 Windows2022 completed the entire original; latest
+again failed direct rename Reveal at opened/owner_deadline, one open/zero
+selection/return, valid bound rejected/native_unavailable at12037ms. Its owned
+main/backend/bridge exit was confirmed, but exact Explorer cleanup timed out and
+left one native target; fixture cleanup correctly stayed skipped/preserved.
+Immediate-trace38818811358 passed both complete Windows originals and all controls.
+All four exact-SHA artifacts were downloaded and inspected. The three passing
+originals retain46 normal rename shutdowns,34 category shutdowns per category run,
+and successful process/native/fixture cleanup. Both2022 comparison artifacts
+completed32operations, retaining3 ordinary/4 traced original negative outcomes.
+The collection
+repair is therefore insufficient; traced successes do not establish native repair.
+
+Next ranked hypotheses: (1) a specific managed Read/Call/identity boundary remains
+in flight beyond budget, including unwrap/dispatch/wrap; (2) the last managed call
+completed and execution stalls elsewhere in PowerShell/owner/UIA/Open; (3) frequent
+trace callback/output perturbs scheduling, while quiet observation may differ too.
+Existing bare/main/source/CPU experiments above already constrain these cases;
+do not repeat them or guess another production rewrite without a failed-boundary
+observation. A matched default-off/quiet-checkpoint diagnostic tests this directly.
+
+Temporary DEBUG-issue26 code is explicitly gated by runtime_native_checkpoint /
+WORKSPACE_REVEAL_DEFERRED_TRACE=1, defaultfalse. Start one managed timer immediately
+after helper initialization/compilation, before Shell creation, with its callback
+scheduled for nine seconds later; this is not the
+adapter-spawn time origin. Record only fixed last-operation/inflight/sequence in
+managed Read/Call/SameIdentity entry/finally, with no per-call clock, CPU, scriptblock
+or console output. At the one timer callback, capture coherent state plus actual
+helper-clock elapsed before writing one bounded line. No COM/PS objects or locks
+held across COM/IO enter observation. Callback/init/env/output faults are caught;
+normal/failure stop disposes without waiting. Already captured output can race
+stop/DONE but remains evidence only. Sequence is capped100000, elapsed12000ms.
+Deferred mode suppresses immediate trace callbacks/output, even when both flags
+are set. The parent accepts at most one strictly allowlisted requested line,
+retains actual adapter-receipt elapsed separately, never changes protocol state,
+GO, native selection, byte budget or12s/10s deadlines. Unrequested, malformed,
+duplicate or immediate-trace lines in deferred mode fail closed.
+
+An active snapshot covers helper unwrap, dispatch and result wrapping, not a
+uniquely identified substep. Inactive means last completed helper, not current
+execution location. Missing checkpoint is unknown (late timer/exit/delivery or
+observer failure); it is never handle absence or a pass. Tracking/JIT/timer setup
+can perturb earlier execution, and output may perturb it after the snapshot.
+This probe is diagnostic, not product acceptance or a repair. Remove temporary
+instrumentation before final acceptance unless explicitly retained as diagnostics.
+
+Exact shared code compiles under portablePS7.6.7. Nine controlled pure-managed
+cases cover off, deliberately blocked method, real timer delivery during a blocked
+method, completed/throwing method, disposed,
+console failure, writer-versus-disposal race and dual-flag precedence. No Windows
+COM or PS5 acceptance follows from this portable check. Node protocol controls
+cover noGO/state/deadline changes, finite fields, requested-only/single marker,
+malformed/duplicate/range errors and already-captured output afterDONE. Actual
+WindowsPS5 controls and matched original results remain required.
+
+The added real-timer control passed portablePS7 (active other_call, sequence1,
+32ms actual elapsed). Both review axes accepted the temporary diagnostic after
+the timer-delivery regression and chronology clarification. Fresh supportedNode22
+build passed; affected protocol/COM/routing/artifact/build checks passed164tests/
+150passed/0failed/14platform skips. Lint, typecheck, documentation links and
+whitespace passed. The prior completed production candidate's full2879test local
+result is inherited; this diagnostic has focused verification and no full or
+platform acceptance claim.

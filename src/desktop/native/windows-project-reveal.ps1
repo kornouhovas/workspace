@@ -16,6 +16,7 @@ function Write-WorkspaceRevealEvent($event) {
 
 # Optional bounded read-only boundary evidence. It cannot supply a target or GO.
 function Write-WorkspaceRevealTrace($phase) {
+    if ($env:WORKSPACE_REVEAL_DEFERRED_TRACE -ceq '1') { return }
     if ($env:WORKSPACE_REVEAL_TRACE -cne '1' -or $phase -cnotin @('assemblies','compile','shell','open','enumeration','collection','window_item','document','parent','owner','uia_root','uia_properties','uia_tabs','readiness','item','document_recheck','readiness_recheck','binding_returned','item_returned')) { return }
     if ($null -eq $script:workspaceRevealTraceSeen) { $script:workspaceRevealTraceSeen = [Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal) }
     if ($script:workspaceRevealTraceSeen.Add($phase)) { Write-WorkspaceRevealEvent ('TRACE:' + $phase) }
@@ -36,7 +37,7 @@ function Wait-WorkspaceRevealPoll($milliseconds) { Start-Sleep -Milliseconds $mi
 function Invoke-WorkspaceProjectReveal($shell, $expected, $watch) {
     $phase = 'input'
     $trace = $null
-    if ($env:WORKSPACE_REVEAL_TRACE -ceq '1') { $trace = { param($boundary) Write-WorkspaceRevealTrace $boundary } }
+    if ($env:WORKSPACE_REVEAL_TRACE -ceq '1' -and $env:WORKSPACE_REVEAL_DEFERRED_TRACE -cne '1') { $trace = { param($boundary) Write-WorkspaceRevealTrace $boundary } }
     try {
         if ($expected -isnot [string] -or -not [IO.Path]::IsPathRooted($expected) -or
             $expected.Contains([char]0) -or [IO.Path]::GetFullPath($expected) -cne $expected) { throw 'input' }
@@ -106,10 +107,14 @@ if ($MyInvocation.InvocationName -ne '.') {
         Add-Type -AssemblyName UIAutomationClient, UIAutomationTypes -ErrorAction Stop
         Write-WorkspaceRevealTrace 'compile'
         Initialize-WorkspaceNativeBinding
+        if ($env:WORKSPACE_REVEAL_DEFERRED_TRACE -ceq '1') { [WorkspaceReadyCom]::StartDeferredTrace() }
         Write-WorkspaceRevealTrace 'shell'
         $shell = New-Object -ComObject Shell.Application
         $completed = Invoke-WorkspaceProjectRevealFromEnvironment $shell ([Diagnostics.Stopwatch]::new())
         if ($completed) { exit 0 }
     } catch { Write-WorkspaceRevealEvent 'FAIL' }
+    finally {
+        if ($env:WORKSPACE_REVEAL_DEFERRED_TRACE -ceq '1' -and ('WorkspaceReadyCom' -as [type])) { [WorkspaceReadyCom]::StopDeferredTrace() }
+    }
     exit 1
 }

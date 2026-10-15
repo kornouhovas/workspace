@@ -323,3 +323,52 @@ for (const output of ['TRACE:private path\n', 'TRACE:uia_tabs:extra\n', 'TRACE:u
     assert.equal(JSON.stringify(f.events).includes('private path'), false);
   });
 }
+
+async function withDeferredCheckpoint(enabled, run) {
+  const previous = process.env.WORKSPACE_REVEAL_DEFERRED_TRACE;
+  process.env.WORKSPACE_REVEAL_DEFERRED_TRACE = enabled ? "1" : "0";
+  try { await run(); }
+  finally { if (previous === undefined) delete process.env.WORKSPACE_REVEAL_DEFERRED_TRACE; else process.env.WORKSPACE_REVEAL_DEFERRED_TRACE = previous; }
+}
+
+test("one enabled deferred checkpoint retains ordering without authorizing GO", async () => withDeferredCheckpoint(true, async () => {
+  const f = fixture(); const pending = f.start();
+  f.output("OPEN\nCHECKPOINT:call_window_item:active:7:9001\n");
+  assert.deepEqual(f.writes, []);
+  const event = f.events.find(event => event.stage === "checkpoint");
+  assert.deepEqual({ ...event, elapsedMs: 0 }, { stage: "checkpoint", path: target, phase: "call_window_item", reason: "active", sequence: 7, helperElapsedMs: 9001, elapsedMs: 0 });
+  f.output("READY\n"); await tick(); f.output("SELECT\nDONE\n"); f.close(); await pending;
+  assert.deepEqual(f.writes, ["GO\n"]);
+}));
+
+test("deferred checkpoint leaves the owner deadline and failed intent intact", async t => withDeferredCheckpoint(true, async () => {
+  let deadline; const original = globalThis.setTimeout;
+  t.mock.method(globalThis, "setTimeout", (callback, milliseconds, ...args) => {
+    if (milliseconds === 12000) { deadline = callback; return {}; }
+    return original(callback, milliseconds, ...args);
+  });
+  const f = fixture({ timeoutMs: 12000 }), pending = f.start(); pending.catch(() => {});
+  f.output("OPEN\nCHECKPOINT:other_read:complete:9:9000\n"); deadline();
+  await assert.rejects(pending, problem("native_unavailable"));
+  assert.deepEqual(f.writes, []); assert.deepEqual(f.calls, ["SIGKILL"]);
+  assert.deepEqual(f.events.find(event => event.stage === "failure"), { stage: "failure", path: target, phase: "opened", reason: "owner_deadline" });
+}));
+
+for (const [enabled, output] of [[false, "CHECKPOINT:none:complete:0:9000\n"],
+  [true, "CHECKPOINT:private_path:active:1:9000\n"], [true, "CHECKPOINT:read_count:complete:0:9000\n"],
+  [true, "CHECKPOINT:none:active:0:9000\n"], [true, "CHECKPOINT:read_count:active:100001:9000\n"],
+  [true, "CHECKPOINT:read_count:active:1:12001\n"], [true, "CHECKPOINT:read_count:active:1:9000:extra\n"],
+  [true, "CHECKPOINT:read_count:active:1:9000\nCHECKPOINT:read_count:active:1:9000\n"], [true, "TRACE:assemblies\n"]])
+  test(`unrequested/malformed/duplicate checkpoint cannot advance protocol: ${JSON.stringify(output)}`, async () => withDeferredCheckpoint(enabled, async () => {
+    const f = fixture(), pending = f.start(); f.output(output);
+    await assert.rejects(pending, problem("native_error")); assert.deepEqual(f.writes, []);
+    assert.equal(f.events.some(event => event.stage === "select" || event.stage === "done"), false);
+    assert.equal(JSON.stringify(f.events).includes("private_path"), false);
+  }));
+
+test("an already captured callback racing disposal may report after DONE without another command", async () => withDeferredCheckpoint(true, async () => {
+  const f = fixture(), pending = f.start(); f.output("OPEN\nREADY\n"); await tick();
+  f.output("SELECT\nDONE\nCHECKPOINT:call_select:complete:27:9000\n"); f.close(); await pending;
+  assert.deepEqual(f.writes, ["GO\n"]); assert.equal(f.events.filter(event => event.stage === "checkpoint").length, 1);
+  assert.equal(f.events.filter(event => event.stage === "done").length, 1);
+}));

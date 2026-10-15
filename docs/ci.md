@@ -359,3 +359,19 @@ Windows2022-only category-fixture selector remain unchanged. No retry, observer
 suppression, settling wait or deadline change is added to product or original
 runtime acceptance. Inspect original/comparison artifacts before choosing a repair
 or requesting full acceptance.
+
+For the still-unresolved quiet native failure, temporary `DEBUG-issue26` diagnostics
+support `runtime_native_checkpoint: true` with `checks: runtime-observation`.
+This defaults false and suppresses immediate tracing when enabled. One managed
+timer starts immediately after helper initialization, before Shell creation;
+its callback is scheduled for nine seconds later and captures fixed last-helper
+operation/in-flight/sequence and actual elapsed time. Adapter-receipt
+elapsed is retained separately. No per-call clocks/CPU/scriptblocks or console
+output are added; the single snapshot precedes its output. Active covers the whole
+helper, inactive means only its last completed operation, and a missing checkpoint
+is unknown. Timer/tracking may still perturb scheduling. Requested finite evidence
+never changes GO, protocol state, deadlines or acceptance; malformed/unrequested/
+duplicate output fails. Dispose does not wait for a captured callback, whose line
+may race DONE. Match a fresh default-off original against this quiet diagnostic;
+neither diagnostic success nor a missing line is a repair. Remove the temporary
+probe before final acceptance unless explicitly retained as diagnostics.

@@ -7,6 +7,8 @@ using System;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Management.Automation;
+using System.Diagnostics;
+using System.Threading;
 
 public static class WorkspaceReadyWindow {
     [DllImport("user32.dll", ExactSpelling=true)]
@@ -45,6 +47,91 @@ public sealed class WorkspaceReadyComReference {
 }
 
 public static class WorkspaceReadyCom {
+    // [DEBUG-issue26] Optional one-shot quiet-call observation. This timer never
+    // enters COM/PowerShell and never owns a permit or changes a command result.
+    private static bool ReadCheckpointEnabled() {
+        try { return Environment.GetEnvironmentVariable("WORKSPACE_REVEAL_DEFERRED_TRACE") == "1"; } catch { return false; }
+    }
+    private static readonly bool checkpointEnabled = ReadCheckpointEnabled();
+    private static readonly object checkpointGate = new object();
+    private static Timer checkpointTimer;
+    private static Stopwatch checkpointWatch;
+    private static string checkpointOperation = "none";
+    private static int checkpointSequence;
+    private static bool checkpointActive, checkpointReported, checkpointDisposed;
+    public static void StartDeferredTrace() {
+        if (!checkpointEnabled) return;
+        try {
+            lock (checkpointGate) {
+                if (checkpointWatch != null || checkpointDisposed) return;
+                checkpointWatch = Stopwatch.StartNew();
+                checkpointTimer = new Timer(EmitDeferredCheckpoint, null, 9000, Timeout.Infinite);
+            }
+        } catch { /* A missing checkpoint is unknown, never command authority. */ }
+    }
+    public static void StopDeferredTrace() {
+        if (!checkpointEnabled) return;
+        try {
+            Timer timer;
+            lock (checkpointGate) { checkpointDisposed = true; timer = checkpointTimer; checkpointTimer = null; }
+            if (timer != null) timer.Dispose(); // Do not wait for an in-flight callback.
+        } catch { }
+    }
+    private static void EmitDeferredCheckpoint(object unused) {
+        try {
+            string line;
+            lock (checkpointGate) {
+                if (!checkpointEnabled || checkpointDisposed || checkpointReported || checkpointWatch == null) return;
+                long elapsed = checkpointWatch.ElapsedMilliseconds;
+                if (elapsed > 12000) return;
+                checkpointReported = true;
+                line = "CHECKPOINT:" + checkpointOperation + ":" + (checkpointActive ? "active" : "complete") + ":" +
+                    checkpointSequence.ToString(System.Globalization.CultureInfo.InvariantCulture) + ":" +
+                    elapsed.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            }
+            // Snapshot precedes output. Disposal may race this already captured
+            // line; output is atomic, bounded and cannot advance the protocol.
+            Console.Out.WriteLine(line);
+            Console.Out.Flush();
+        } catch { /* Observation/console faults never replace a COM result. */ }
+    }
+    private static int EnterCheckpoint(string operation) {
+        if (!checkpointEnabled) return 0;
+        try {
+            lock (checkpointGate) {
+                if (checkpointDisposed) return 0;
+                checkpointSequence = Math.Min(100000, checkpointSequence + 1);
+                checkpointOperation = operation; checkpointActive = true;
+                return checkpointSequence;
+            }
+        } catch { return 0; }
+    }
+    private static void LeaveCheckpoint(int sequence) {
+        if (sequence == 0) return;
+        try { lock (checkpointGate) { if (checkpointSequence == sequence) checkpointActive = false; } } catch { }
+    }
+    private static string CheckpointName(string name, bool read) {
+        if (read) {
+            switch (name) {
+                case "Count": return "read_count";
+                case "Document": return "read_document";
+                case "Folder": return "read_folder";
+                case "Self": return "read_self";
+                case "Path": return "read_path";
+                case "HWND": return "read_hwnd";
+                case "Busy": return "read_busy";
+                case "ReadyState": return "read_ready";
+                default: return "other_read";
+            }
+        }
+        switch (name) {
+            case "Windows": return "call_windows";
+            case "[DispID=0]": return "call_window_item";
+            case "ParseName": return "call_parse";
+            case "SelectItem": return "call_select";
+            default: return "other_call";
+        }
+    }
     private static object Unwrap(object value) {
         // PowerShell can retain PSObject wrappers in object[] arguments and
         // reflection construction. Unwrap those as well as our opaque holder.
@@ -63,11 +150,16 @@ public static class WorkspaceReadyCom {
             ? new WorkspaceReadyComReference(value) : value;
     }
     public static object Read(object value, string name) {
+        int sequence = checkpointEnabled ? EnterCheckpoint(CheckpointName(name, true)) : 0;
+        try {
         var raw = Unwrap(value);
         if (raw == null) throw new ArgumentNullException();
         return Wrap(raw.GetType().InvokeMember(name, BindingFlags.GetProperty, null, raw, null));
+        } finally { LeaveCheckpoint(sequence); }
     }
     public static object Call(object value, string name, object[] arguments) {
+        int sequence = checkpointEnabled ? EnterCheckpoint(CheckpointName(name, false)) : 0;
+        try {
         var raw = Unwrap(value);
         if (raw == null) throw new ArgumentNullException();
         var unwrapped = new object[arguments.Length];
@@ -81,8 +173,11 @@ public static class WorkspaceReadyCom {
             return Wrap(window);
         }
         return Wrap(raw.GetType().InvokeMember(name, BindingFlags.InvokeMethod, null, raw, unwrapped));
+        } finally { LeaveCheckpoint(sequence); }
     }
     public static bool SameIdentity(object left, object right) {
+        int sequence = EnterCheckpoint("identity");
+        try {
         left = Unwrap(left); right = Unwrap(right);
         if (left == null || right == null) return false;
         IntPtr a = IntPtr.Zero, b = IntPtr.Zero;
@@ -94,6 +189,7 @@ public static class WorkspaceReadyCom {
             if (b != IntPtr.Zero) Marshal.Release(b);
             if (a != IntPtr.Zero) Marshal.Release(a);
         }
+        } finally { LeaveCheckpoint(sequence); }
     }
 }
 '@ | Out-Null
