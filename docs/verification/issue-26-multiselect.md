@@ -161,3 +161,20 @@ are unchanged. An isolated run of both original property tests passed, but canno
 prove the historical cause or replace a renewed full run. Transport completion,
 actual process shutdown and unfinished page work remain distinct hypotheses.
 Current review and renewed full acceptance receipts remain in GitHub #26.
+
+The diagnostic full renewal also failed (2838 tests,2814pass,1fail,23skips,
+118.1 seconds): the never-ready property test captured all three normal quit
+markers but required forced parent cleanup. It remains failed; markers alone
+do not establish normal process exit. The local log is retained as
+`work/issue-26-ci/local-full-etw-quit-failed.log`.
+
+Inspection of the installed Playwright implementation confirms that its
+`app.close()` already owns `app.quit()` and debugger disconnection. The property
+fixture now calls that close operation once under the same ten-second bound,
+instead of preceding it with the general helper's concurrent quit request.
+The existing exit assertion/profile-removal gate remain. After a normal-close
+failure, the general helper is used only for bounded owned-process cleanup;
+the original failure is always rethrown. This narrowly tests the double-request
+hypothesis without changing production/runtime helpers or accepting forced exit.
+The original full property tests remain the native regression; exact historical
+scheduler causation is not claimed.

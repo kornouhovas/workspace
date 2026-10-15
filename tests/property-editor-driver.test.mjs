@@ -35,7 +35,19 @@ async function withPage(run) {
     await run(page);
   } catch (error) { primary = error; }
   try {
-    await closeElectron(app);
+    try {
+      // Playwright owns app.quit() and debugger disconnection. Avoid a second
+      // concurrent quit request from the general runtime helper in this fixture.
+      await withDeadline(app.close(), 10000, "Electron shutdown");
+    } catch (error) {
+      // Failed normal closure stays failed. Reuse owned forced cleanup only to
+      // stop a remaining fixture process, never to turn that failure into a pass.
+      if (child.exitCode === null && child.signalCode === null) {
+        try { await closeElectron(app, 1); }
+        catch (cleanupError) { error.forcedCleanup = cleanupError.forcedCleanup ?? { status: "unverified" }; }
+      }
+      throw error;
+    }
     assert.ok(child.exitCode !== null || child.signalCode !== null);
     await rm(profile, { recursive: true, force: true });
   } catch (error) {
