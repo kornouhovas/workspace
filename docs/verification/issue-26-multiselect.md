@@ -31,8 +31,8 @@ shutdown deadline, platform route or cleanup gate was relaxed.
 
 Implementation and the initial review baseline are committed as `63f2be03`; the follow-up
 commit records the reviewer-confirmed smoke assertion correction and these observed
-results. Exact-SHA CI and integration receipts must be recorded in GitHub once authorized.
+results. Current exact-SHA CI and integration receipts are tracked in [GitHub #26](https://github.com/kornouhovas/workspace/issues/26).
 
 ## Delivery gates
 
-Public publication requires specific owner permission under [tracker policy](../issue-tracker.md). The repository is public; the recorded #25 exception applies only to #25. No #26 code, checkpoint or issue closure has been published. Exact-SHA platform CI, artifact inspection and integration acceptance remain open; local macOS evidence cannot establish Windows acceptance.
+The owner explicitly authorized publishing #26 to the current public repository, its GitHub checkpoint, CI and successful integration into `new-workspace` on 2026-10-15, resolving the issue-specific publication gate under [tracker policy](../issue-tracker.md). Exact-SHA platform CI, artifact inspection and integration acceptance are recorded in the GitHub checkpoint; local macOS evidence alone cannot establish Windows acceptance. This authorization does not publish a release or change the repository-wide default policy.

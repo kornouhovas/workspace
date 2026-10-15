@@ -2,7 +2,7 @@
 
 Origin: [GitHub #26](https://github.com/kornouhovas/workspace/issues/26).
 Baseline: `19bfb28e` on `new-workspace`; dependency #25 is closed.
-Executor: Matt Pocock implement/TDD. Local checkpoint pending publication permission: the repository is public and #25's exception does not authorize #26 publication.
+Executor: Matt Pocock implement/TDD. The owner explicitly authorized publishing #26 to the current public repository, its GitHub checkpoint, CI and successful integration into `new-workspace` on 2026-10-15. Current execution/CI/delivery receipts belong to [GitHub #26](https://github.com/kornouhovas/workspace/issues/26).
 
 ## Contract and seams
 
@@ -22,7 +22,8 @@ Executor: Matt Pocock implement/TDD. Local checkpoint pending publication permis
 - [x] Built IPC validates new type/command and malformed payloads.
 - [x] Actual Electron development and packaged macOS narrow/wide EN/RU workflow and restart; add required CI route.
 - [x] Standards/spec review, repairs, type/lint/docs/migrations, final full local suite and local commit.
-- [ ] Explicit public publication permission, exact-SHA platform CI, integration acceptance and GitHub checkpoint.
+- [x] Explicit public publication permission for #26 (owner confirmation on 2026-10-15).
+- [ ] Exact-SHA platform CI, integration acceptance and GitHub checkpoint (current status in GitHub #26).
 
 ## Verification
 
