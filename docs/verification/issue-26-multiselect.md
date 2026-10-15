@@ -548,3 +548,26 @@ confirmed within10seconds. This failure is retained in
 Focused32tests were renewed after the read-only repair. Original Windows focused
 failure, comparison artifacts, local shutdown failure and subsequent full acceptance
 remain open gates in GitHub#26. Diagnostic publication does not satisfy them.
+
+### Supported runtime and rejected comparison inputs
+
+The complete unchanged candidate `45b739b6` passed on the project's supported
+Node22.21.1:2848tests/2825pass/zero failures/23skips,141.2seconds. Its earlier
+Node26 run remains failed; this comparison does not prove the historical shutdown
+cause. The isolated unchanged property fixture also passed3tests.
+
+Focused38786715908 / attempt1 retained the original Windowslatest native failure,
+owner_deadline with zero selections. Both required control files passed. Artifacts
+11998268069(latest) and11998741776(2022) were downloaded and inspected. Every
+comparison child rejected input before OPEN; those timings cannot compare COM
+reads, despite the comparison step exiting successfully. This was a diagnostic
+harness defect, not evidence for a product hypothesis.
+
+Unlike the original creation smoke, the probe had not canonicalized its temporary
+root/target with realpath. `ef91ed1` now does so and rejects a comparison unless it
+emits exactly one OPEN and reaches the actual enumeration boundary. Its regression
+rejects the exact retained input-rejection shape as well as navigation without a
+read. All33focused profile/routing tests, lint and whitespace passed. Shipped
+native sources remain unchanged. Renewed actual Windows comparison and original
+acceptance are required; final full acceptance will follow an actual verified
+repair, not this diagnostic-only publication.
