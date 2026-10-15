@@ -183,3 +183,14 @@ The focused selector also includes an independent macOS job for the original
 property-driver file after this local failure. Both failed seams now have an
 OS-matching original-file gate and exact-SHA/run/attempt output before full CI.
 Focused local property/route checks passed: 27 tests, zero failures.
+
+### Reviewed native candidate and renewed local acceptance
+
+Both independent review axes reported no findings for the ETW diagnostic and
+subsequent property-fixture repair/focused routes through `51e72ca0`. Typecheck,
+lint, documentation links and whitespace checks passed; 27 focused property/route
+tests passed. The complete local suite on the final reviewed candidate passed:
+2838 tests, 2815 passed, zero failures, 23 conditional/platform skips, 118.2 seconds.
+This renews local acceptance without erasing the retained failed runs or proving
+the exact historical scheduler cause. Windows ETW and macOS native focused evidence,
+then full exact-SHA platform acceptance and integration remain GitHub gates.
