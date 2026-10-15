@@ -122,3 +122,27 @@ passed: 2837 tests, 2814 passed, zero failures, 23 conditional/platform skips,
 127.8 seconds. The diagnostic does not change application behavior or the existing
 process-ownership decision; exact-SHA Windows reproduction and subsequent full
 acceptance remain required and are recorded in the GitHub checkpoint.
+
+## Third full CI: Windows latest ETW control
+
+Focused Windows release run 38737119214 passed on `76cc1ac41cecf07084fddd5e5c328b8849d4be04`;
+artifact 11973748466 was inspected. Category ownership was `confirmed`, all 34 normal
+quits/backend exits and asserted fixture removal passed. This does not prove the
+historical ownership failure's cause.
+
+Full [run 38738171579](https://github.com/kornouhovas/workspace/actions/runs/38738171579),
+attempt 1 on that same SHA, passed common checks and complete macOS/Windows 2022
+jobs. Windows latest's platform suite had one failure:
+`tests/windows-rename-etw.test.mjs`, owned ETW attribution/retention controls. Its
+PowerShell child rejected after 10.9 seconds; TAP preserved the command but omitted
+exit/signal/killed/stderr operands. Later Windows latest runtime/package stages were
+unreached, so they are not accepted. The original job log is retained locally;
+collector artifact 11974931622 is supplemental observer evidence, not an ETW verdict.
+
+The original Windows test is the red-capable remote reproduction. Its existing
+ten-second limit and assertions are preserved; finite error phase, duration,
+killed/signal/code and recognized-error markers distinguish child timeout/exit,
+native precision setup and filter hypotheses. The new `checks: etw-controls` route
+matches the actual Windows latest file without replaying unrelated historical
+diagnostics. Exact-SHA review, local checks, focused artifact and renewed full
+acceptance receipts remain in GitHub #26.

@@ -228,3 +228,14 @@ The stopped value, all PID/parent/startup uncertainty restrictions, original sce
 unchanged. Missing earlier predicate evidence cannot establish whether the failure was
 PID reuse, an owned live process, or incomplete observation. Inspect the original
 Windows command and this evidence before any renewed full acceptance on the same SHA.
+
+For issue #26 full run 38738171579's Windows latest ETW-control regression failure,
+select `checks: etw-controls`. It runs only the original
+`node --import tsx --test tests/windows-rename-etw.test.mjs` file on Windows latest,
+with route guards and exact-SHA/run/attempt test-output evidence. The test retains
+finite phase, elapsed, killed/signal/code and known-error markers when PowerShell
+fails; no raw additional stderr, paths or event payloads are logged. The existing
+ten-second child limit, native-builder precision control and all attribution,
+retention, privacy and equality assertions remain unchanged. This diagnostic does
+not prove the historical cause; focused original success and artifact inspection
+are required before another full run on the same reviewed SHA.

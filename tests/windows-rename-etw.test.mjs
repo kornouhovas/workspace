@@ -66,14 +66,29 @@ function Get-WinEvent {
   return $script:controlled.ToArray()
 }
 `;
-  async function run(script) {
-    const { stdout, stderr } = await promisify(execFile)(resolveWindowsPowerShell(),
+  async function run(script, phase) {
+    const started = performance.now();
+    let result;
+    try {
+      result = await promisify(execFile)(resolveWindowsPowerShell(),
       ['-NoProfile', '-NonInteractive', '-STA', '-Command', control + script], {
         timeout: 10000, maxBuffer: 65536, windowsHide: true,
         env: { ...process.env, WORKSPACE_ETW_FIXTURE: fixture, WORKSPACE_ETW_RENAME_START: '1700000000100',
           WORKSPACE_ETW_RENAME_END: '1700000000101', WORKSPACE_ETW_TRACE: 'controlled-no-file-read',
           WORKSPACE_ETW_CONTROL_EVENTS: JSON.stringify(events) },
       });
+    } catch (error) {
+      // Retain finite operands the test reporter omits from child-process errors.
+      const reasons = ['native builder unavailable', 'native precision defect not reproduced', 'native precision repair missing', 'fixed window query'];
+      const detail = { phase, elapsedMs: Math.round(performance.now() - started), killed: error.killed === true,
+        signal: ['SIGTERM', 'SIGKILL'].includes(error.signal) ? error.signal : null,
+        code: Number.isInteger(error.code) ? error.code : ['ETIMEDOUT', 'ENOBUFS', 'ENOENT'].includes(error.code) ? error.code : 'unknown',
+        reason: reasons.find(reason => String(error.stderr ?? '').includes(reason)) ?? 'unknown',
+        stdoutBytes: Buffer.byteLength(error.stdout ?? ''), stderrBytes: Buffer.byteLength(error.stderr ?? '') };
+      error.message = `[ETW-control] ${JSON.stringify(detail)}\n${error.message}`;
+      throw error;
+    }
+    const { stdout, stderr } = result;
     assert.equal(stderr, '');
     return JSON.parse(stdout.trim());
   }
@@ -83,10 +98,10 @@ function Get-WinEvent {
   for (const line of ["    if ($event.Id -ne 24) { $irps.Remove([string]$irp) }", "    if ($event.Id -eq 24) { $irps.Remove([string]$irp) }"]) {
     assert.ok(unretired.includes(line)); unretired = unretired.replace(line, '');
   }
-  const red = await run(unretired);
+  const red = await run(unretired, 'unretired-red');
   assert.equal(red.status, 'observed');
   assert.ok(red.events.some(e => e.Irp === '0x1' && e.Status === '3221225506'), 'Unretired IRP must reproduce false owned attribution');
-  const green = await run(parseScript);
+  const green = await run(parseScript, 'retired-green');
   assert.equal(green.status, 'observed'); assert.equal(green.lossVerified, false); assert.equal(green.truncated, true);
   assert.ok(green.events.length <= 256);
   assert.equal(green.events.some(e => e.Irp === '0x1' && e.Status === '3221225506'), false);
@@ -95,5 +110,5 @@ function Get-WinEvent {
   assert.ok(green.events.some(e => e.eventId === 24 && e.Irp === '0x4' && e.Status === '3221225506' && e.IssuingThreadId === '72'));
   assert.ok(green.events.some(e => e.ShareAccess === '7' && e.IssuingThreadId === '71'));
   assert.doesNotMatch(JSON.stringify(green), /private|Category|Project|workspace-rename-diagnostic/);
-  assert.deepEqual(await run(boundedParseScript), green, 'Both readers retain the same controlled in-window events');
+  assert.deepEqual(await run(boundedParseScript, 'bounded-green'), green, 'Both readers retain the same controlled in-window events');
 });

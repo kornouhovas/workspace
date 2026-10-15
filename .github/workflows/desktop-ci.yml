@@ -8,7 +8,7 @@ on:
       checks:
         description: Full acceptance or a selected focused failure route
         type: choice
-        options: [full, failed, readiness, windows-release, issue22-failures, creation-shutdown, raw-rename, issue24-failures, category-fixture, issue24-startup, multiselect]
+        options: [full, failed, readiness, windows-release, issue22-failures, creation-shutdown, raw-rename, issue24-failures, category-fixture, issue24-startup, multiselect, etw-controls]
         default: full
       readiness_windows:
         description: With checks=readiness, reproduce original Windows latest and 2022 editor failures
@@ -65,7 +65,7 @@ concurrency:
 
 jobs:
   common:
-    if: ${{ github.event_name != 'workflow_dispatch' || (inputs.checks != 'failed' && inputs.checks != 'readiness' && inputs.checks != 'windows-release' && inputs.checks != 'issue22-failures' && inputs.checks != 'creation-shutdown' && inputs.checks != 'raw-rename' && inputs.checks != 'issue24-failures' && inputs.checks != 'category-fixture' && inputs.checks != 'issue24-startup' && inputs.checks != 'multiselect') }}
+    if: ${{ github.event_name != 'workflow_dispatch' || (inputs.checks != 'failed' && inputs.checks != 'readiness' && inputs.checks != 'windows-release' && inputs.checks != 'issue22-failures' && inputs.checks != 'creation-shutdown' && inputs.checks != 'raw-rename' && inputs.checks != 'issue24-failures' && inputs.checks != 'category-fixture' && inputs.checks != 'issue24-startup' && inputs.checks != 'multiselect' && inputs.checks != 'etw-controls') }}
     name: Common tests and static checks
     runs-on: macos-latest
     steps:
@@ -426,6 +426,36 @@ jobs:
         with:
           name: issue-22-original-failures-${{ matrix.os }}-${{ github.sha }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
           path: work/ci-focused-issue22-failures/
+          if-no-files-found: error
+
+  focused-etw-controls:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.checks == 'etw-controls' }}
+    name: Focused Windows latest original ETW controls
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.21.1
+          cache: npm
+      - run: npm ci
+        id: install
+      - name: Verify focused route guards
+        run: node --import tsx --test tests/test-suites.test.mjs
+      - name: Original Windows latest ETW regression file
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p work/ci-focused-etw
+          node --import tsx --test tests/windows-rename-etw.test.mjs 2>&1 | tee work/ci-focused-etw/tests.txt
+      - name: Preserve exact-SHA original ETW result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-26-etw-${{ github.sha }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
+          path: work/ci-focused-etw/
           if-no-files-found: error
 
   focused-windows-release-runtime:
