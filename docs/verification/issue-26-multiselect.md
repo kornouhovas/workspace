@@ -267,3 +267,30 @@ The final complete local suite on this reviewed candidate passed: 2840 tests,
 application build is unchanged; harness/regression changes are tested against it.
 Current exact-SHA focused Windows creation, renewed full platform and integration
 receipts remain GitHub #26 gates. Earlier failed evidence is retained.
+
+## Focused Windows creation: native-binary preparation
+
+Focused [run 38765621210](https://github.com/kornouhovas/workspace/actions/runs/38765621210),
+attempt 1 on `f97f59dac7a656149d3678e268fefcb07871b3c7`, passed the original
+creation crash/recovery command independently after its regression step failed.
+Artifact 11990021114 was inspected: eight cases, 16 normal quits/backend exits,
+asserted owned cleanup; native API stages intentionally skipped. The focused
+gate remains failed: three property-driver tests could not launch Electron,
+while the actual deferred-quit regression and other 60 controls passed.
+
+The job log contains two concurrent `Downloading Electron binary...` messages
+from separate native test workers. Installed Electron resolves its executable
+by synchronously invoking installation on first require, then extracting the
+shared dist directory. Concurrent cold extraction/use is the leading hypothesis;
+the historical launch artifact does not prove its exact OS-level mechanism.
+Fixture-specific startup or missing native resources are alternatives.
+
+The all/platform suite runner now resolves the pinned Electron package once
+before starting parallel test workers; pure common and inventory/list routes do
+not materialize it. The focused creation route has the same explicit preparation
+prerequisite before concurrent native regressions. Original creation remains
+independent of regression outcome after build and binary preparation succeed.
+No worker assertion, deadline, test inventory or runtime behavior is changed.
+All 64 focused tests passed locally with sequential preparation. Exact-SHA
+review, final local renewal and the focused Windows result/artifact must pass
+before another full dispatch.

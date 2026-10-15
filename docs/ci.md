@@ -260,3 +260,11 @@ The same creation route includes the native input-focus readiness regression
 after a local original-matrix one-shot focus failure. Creation waits for visible,
 app-focused input in its existing 15-second page allowance, retaining the explicit
 focus assertion; the driver never acquires focus. Absent app focus still times out.
+
+After focused run 38765621210 exposed concurrent first-use Electron downloads
+and native launch failures, all/platform suite execution resolves the pinned
+Electron binary once before parallel workers. Common tests and `--list` retain
+their existing behavior. The creation-focused route performs the same serial
+preparation before its native regressions; original creation runs independently
+after build/preparation success. No deadline, assertion, inventory or failed-step
+result is relaxed. The historical OS-level extraction mechanism remains unproven.

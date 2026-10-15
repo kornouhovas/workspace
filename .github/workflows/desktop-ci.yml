@@ -377,10 +377,13 @@ jobs:
       - run: npm ci
       - run: npm run build
         id: creation-build
+      - name: Prepare Electron binary before concurrent native regressions
+        id: creation-electron
+        run: node -e "require('electron')"
       - name: Verify quit evidence and lifecycle/route regressions
         run: node --import tsx --test tests/runtime-electron-quit.test.mjs tests/runtime-quit-evidence.test.mjs tests/runtime-lifecycle.test.mjs tests/property-editor-driver.test.mjs tests/test-suites.test.mjs
       - name: Original creation crash/recovery matrix
-        if: ${{ !cancelled() && steps.creation-build.outcome == 'success' }}
+        if: ${{ !cancelled() && steps.creation-build.outcome == 'success' && steps.creation-electron.outcome == 'success' }}
         run: npm run smoke:runtime -- dev --creation --skip-native
         env:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-focused-creation-shutdown

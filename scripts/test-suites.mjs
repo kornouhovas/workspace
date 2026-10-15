@@ -1,5 +1,6 @@
 import { spawnSync } from 'node:child_process';
 import { readdirSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -34,6 +35,9 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
     const files = selectTestFiles(inventory, suite).map(name => `tests/${name}`);
     if (option === '--list') console.log(JSON.stringify(files));
     else {
+      // Electron installs lazily on first require. Finish that shared mutation
+      // before native test workers can concurrently extract/use the same binary.
+      if (suite !== 'common') createRequire(import.meta.url)('electron');
       const result = spawnSync(process.execPath, ['--import', 'tsx', '--test', ...files], { stdio: 'inherit' });
       if (result.error) throw result.error;
       process.exitCode = result.status ?? 1;
