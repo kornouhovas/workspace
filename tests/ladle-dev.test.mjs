@@ -1,14 +1,24 @@
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { once } from "node:events";
+import { createServer } from "node:net";
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import test from "node:test";
 import { withDeadline } from "../scripts/runtime-lifecycle.mjs";
 
 test("Ladle serves its bootstrap assets and transforms workspace stories", { timeout: 40000 }, async (t) => {
+  // A nonzero occupied candidate makes Ladle check every host before choosing
+  // its fallback. Its port-zero probe checks only the default bind address.
+  const occupied = createServer();
+  await new Promise((resolve, reject) => {
+    occupied.once("error", reject);
+    occupied.listen(0, "127.0.0.1", resolve);
+  });
+  t.after(() => new Promise((resolve, reject) => occupied.close(error => error ? reject(error) : resolve())));
+  const occupiedPort = occupied.address().port;
   const child = spawn(process.execPath, [
-    "node_modules/@ladle/react/lib/cli/cli.js", "serve", "--host", "127.0.0.1", "--port", "0",
+    "node_modules/@ladle/react/lib/cli/cli.js", "serve", "--host", "127.0.0.1", "--port", String(occupiedPort),
   ], { env: { ...process.env, BROWSER: "none" }, stdio: ["ignore", "pipe", "pipe"] });
   let output = "";
   child.stderr.on("data", (data) => { output += data; });
@@ -29,6 +39,8 @@ test("Ladle serves its bootstrap assets and transforms workspace stories", { tim
       if (url) resolve(url[0]);
     });
   }), 25000, "Ladle startup");
+  assert.notEqual(Number(new URL(origin).port), occupiedPort, "Ladle must leave the occupied listener intact");
+  assert.equal(occupied.listening, true);
   const get = async (path) => {
     const response = await fetch(new URL(path, origin), { signal: AbortSignal.timeout(10000) });
     assert.equal(response.status, 200, `${path}: ${await response.clone().text()}`);

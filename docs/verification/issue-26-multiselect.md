@@ -485,3 +485,22 @@ cleanup-complete assertion and profile-removal gate. No product/shared shutdown
 helper changed. The isolated actual-Electron control plus both final workflow
 inventories passed52 tests with no skips. This is diagnostic evidence, not proof
 of the historical timeout cause. Review and final local renewal remain required.
+
+### Local Ladle port conflict
+
+The next complete local renewal retained2846 tests:2822 passed,one failed,23
+skipped. Native quit and both workflow inventories passed. The sole failure was
+Ladle startup EADDRINUSE on127.0.0.1:60610. A subsequent read-only ownership probe
+found an unrelated Codex listener there; it was not stopped or changed. Installed
+Ladle selects a port before creating its HTTP listener. Its port-zero get-port
+path probes only the default bind host; a nonzero candidate uses all local-host
+checks. Whether the original occupant predated the probe or won the release/bind
+race is not established.
+
+The existing real Ladle test now holds its own loopback listener and supplies
+that occupied nonzero candidate. Ladle must choose a different port while the
+owned listener stays open, then still serve every original bootstrap resource
+and transform the workspace stories. Its25-second startup,40-second test and
+owned child exit gates are unchanged; no retry or unrelated-process cleanup is
+added. The dependency's release/bind race is not claimed eliminated. This is a
+controlled occupied-candidate path, followed by final full renewal.
