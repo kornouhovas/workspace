@@ -203,6 +203,28 @@ foreach ($mode in ($env:WORKSPACE_CONTROL_MODES | ConvertFrom-Json)) {
     if (expectedFailure) assert.equal(events.at(-1), expectedFailure);
     assert.doesNotMatch(JSON.stringify(report), /private|ordinary source|日本語/);
   });
+
+});
+
+for (const [mode, marker] of [
+  ['root_active', 'uia_root:active:1'], ['root_throw', 'uia_root:complete:1'],
+  ['properties_early', 'uia_properties:complete:2'], ['properties_active', 'uia_properties:active:2'],
+  ['tabs_active', 'uia_tabs:active:3'], ['owner_early', 'owner_validation:complete:1'],
+  ['invalid', 'none:complete:0'], ['helper_absent', null],
+]) test(`deferred owner checkpoint preserves actual PowerShell wrapper behavior: ${mode}`, { skip: process.platform !== 'win32' }, async () => {
+  const result = await promisify(execFile)('powershell.exe', ['-NoProfile', '-NonInteractive', '-STA', '-ExecutionPolicy', 'Bypass', '-File', 'tests/fixtures/windows-owner-checkpoint-control.ps1'], {
+    env: { ...process.env, WORKSPACE_CHECKPOINT_CONTROL: mode, WORKSPACE_REVEAL_DEFERRED_TRACE: '1', WORKSPACE_REVEAL_TRACE: '1' },
+    windowsHide: true, timeout: 10000, maxBuffer: 4096,
+  });
+  assert.equal(result.stderr, ''); const receipt = JSON.parse(result.stdout);
+  assert.equal(receipt.mode, mode);
+  if (marker === null) assert.deepEqual(receipt.lines, []);
+  else {
+    assert.equal(receipt.lines.length, 1);
+    assert.match(receipt.lines[0], new RegExp(`^CHECKPOINT:${marker}:[0-9]{1,5}$`));
+    assert.ok(Number(receipt.lines[0].split(':').at(-1)) <= 12000);
+  }
+  assert.doesNotMatch(result.stdout, /PRIVATE|TRACE:|GO|READY|SELECT/);
 });
 
 test("Windows direct COM reads preserve scalar, collection and error results without PowerShell member lookup", {

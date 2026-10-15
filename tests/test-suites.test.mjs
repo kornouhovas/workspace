@@ -673,9 +673,9 @@ test('runtime-observation runs both exact Windows runtimes independently of focu
   const job = workflow.jobs['focused-category-runtime'];
   assert.equal(workflow.on.workflow_dispatch.inputs.runtime_native_checkpoint.default, false);
   assert.equal(job['runs-on'], '${{ matrix.os }}'); assert.equal(job.strategy['fail-fast'], false);
-  for (const checks of ['runtime-observation', 'category-fixture']) {
-    assert.deepEqual(Array.from(runInNewContext(job.strategy.matrix.os.slice(3, -2), { fromJSON: JSON.parse, inputs: { checks } })),
-      checks === 'runtime-observation' ? ['windows-latest', 'windows-2022'] : ['windows-2022']);
+  for (const checks of ['runtime-observation', 'category-fixture']) for (const runtime_native_checkpoint of [undefined, false, true]) {
+    assert.deepEqual(Array.from(runInNewContext(job.strategy.matrix.os.slice(3, -2), { fromJSON: JSON.parse, inputs: { checks, runtime_native_checkpoint } })),
+      checks === 'runtime-observation' ? (runtime_native_checkpoint ? ['windows-latest'] : ['windows-latest', 'windows-2022']) : ['windows-2022']);
   }
   assert.ok(job.steps.every(step => step['continue-on-error'] === undefined));
   const build = job.steps.find(step => step.id === 'runtime_build');

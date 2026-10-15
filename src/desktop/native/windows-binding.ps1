@@ -110,6 +110,15 @@ public static class WorkspaceReadyCom {
         if (sequence == 0) return;
         try { lock (checkpointGate) { if (checkpointSequence == sequence) checkpointActive = false; } } catch { }
     }
+    public static int BeginOwnerCheckpoint(string operation) {
+        if (!checkpointEnabled) return 0;
+        switch (operation) {
+            case "owner_validation": case "uia_root": case "uia_properties": case "uia_tabs": case "uia_owner":
+                return EnterCheckpoint(operation);
+            default: return 0;
+        }
+    }
+    public static void EndOwnerCheckpoint(int sequence) { LeaveCheckpoint(sequence); }
     private static string CheckpointName(string name, bool read) {
         if (read) {
             switch (name) {
@@ -224,15 +233,23 @@ function Test-WorkspaceReadyDocument($left, $right) {
 }
 
 function Read-WorkspaceReadyOwner($handle, $trace = $null) {
+    $checkpoint = 0
+    if ($env:WORKSPACE_REVEAL_DEFERRED_TRACE -ceq '1' -and ('WorkspaceReadyCom' -as [type])) { $checkpoint = [WorkspaceReadyCom]::BeginOwnerCheckpoint('owner_validation') }
+    try {
     [uint32]$owner = 0
     if ($handle -isnot [int] -and $handle -isnot [long]) { return $null }
     if ($handle -le 0 -or -not [WorkspaceReadyWindow]::IsWindow([IntPtr]$handle) -or
         [WorkspaceReadyWindow]::GetWindowThreadProcessId([IntPtr]$handle, [ref]$owner) -eq 0 -or
         $owner -eq 0 -or (Get-Process -Id $owner -ErrorAction Stop).ProcessName -ne 'explorer') { return $null }
+    } finally { if ($checkpoint -ne 0) { [WorkspaceReadyCom]::EndOwnerCheckpoint($checkpoint) } }
     # The existing exact-HWND guard rejects shared tabbed views. No desktop UIA.
     $binding = Read-WorkspaceUiaWindow $handle $trace
     if ($binding.stage -ne 'verified') { return $null }
-    if ($binding.root.Current.ProcessId -ne $owner) { return $null }
+    $checkpoint = 0
+    if ($env:WORKSPACE_REVEAL_DEFERRED_TRACE -ceq '1' -and ('WorkspaceReadyCom' -as [type])) { $checkpoint = [WorkspaceReadyCom]::BeginOwnerCheckpoint('uia_owner') }
+    try {
+        if ($binding.root.Current.ProcessId -ne $owner) { return $null }
+    } finally { if ($checkpoint -ne 0) { [WorkspaceReadyCom]::EndOwnerCheckpoint($checkpoint) } }
     return $owner
 }
 

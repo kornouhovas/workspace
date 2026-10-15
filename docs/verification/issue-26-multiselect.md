@@ -1394,3 +1394,64 @@ build passed; affected protocol/COM/routing/artifact/build checks passed164tests
 whitespace passed. The prior completed production candidate's full2879test local
 result is inherited; this diagnostic has focused verification and no full or
 platform acceptance claim.
+
+### Quiet failed snapshot reaches the owner/UIA boundary
+
+On18781e20, ordinary38821357781 passed both Windows originals. Deferred38821362378
+passed2022 but latest failed the original direct rename Reveal, one open/zero
+selection/return, opened/owner_deadline. The retained single checkpoint is
+read_hwnd/complete/sequence82, helper9001ms, adapter9487.16ms; the actual bound
+reply is rejected/native_unavailable after12101.62ms. This rules out an in-flight
+managed Read/Call/identity at that snapshot only. It does not identify later work
+or prove that the observer caused or repaired anything. The next source segment
+after that initial HWND read is Read-WorkspaceReadyOwner: exact Win32 ownership,
+process identity and UIA root/current properties/tab guard. No selection was sent.
+Owned main/backend/bridge exit was confirmed, but exact Explorer cleanup retained
+one native target and fixture removal correctly stayed skipped. Artifact12012822840
+and exact job116718447731 log were inspected. All625PS5 controls passed, including
+the nine managed snapshot controls and actual timer delivery. Both passing
+ordinary originals and deferred2022 retained46 normal rename shutdowns and cleanup.
+All four artifacts were downloaded. Default-off success plus deferred failure
+keeps host variance/observer perturbation possible; neither is uniquely proven.
+
+Next discrimination ranks UIA root retrieval, UIA current-property reads and
+descendant tab query as possible delays, with Win32/process probes remaining
+separate alternatives. Refine only finite in-flight leaf labels around those
+existing operations, keeping the single timer, no per-leaf output/clock/callback,
+all owner/tab guards and unchanged deadlines. A failed leaf snapshot is required
+before choosing a product rewrite; no full acceptance is requested yet.
+
+The refinement adds five non-nested fixed scopes: owner_validation (the existing
+Win32/type/process short-circuit predicate), uia_root (the whole existing
+Get-WorkspaceUiaRoot call, including assembly load and PS return), uia_properties
+(the existing Current/process predicate), uia_tabs (FindAll and Count guard), and
+uia_owner (final Current.ProcessId comparison). No reads are cached/hoisted or
+reordered; existing early returns and exceptions pass through finally cleanup.
+Opt-in direct managed Begin/End calls neither output nor enter observer callbacks;
+the shared script checks helper presence without initializing/compiling it.
+The one timer, snapshot limits, strict parent allowlist and zero authority remain.
+These blocks still include multiple operations and PS overhead; a label cannot
+identify an individual COM/UIA subcall or prove scheduling is unaffected.
+
+Actual PowerShell wrapper controls use the production-created timer with only a
+test-shortened due time: managed root, Current getter and tab-query blockers;
+throw/early-return cleanup; invalid-tag rejection; helper-absent standalone load;
+dual-flag precedence. Six portablePS7 cases passed. Two controls requiring actual
+Windows UIA types and all WindowsPS5/original evidence remain pending.
+The checkpoint opt-in now selects Windows latest only, matching the remaining
+failure; ordinary runtime-observation still selects both Windows variants.
+Category-fixture and all default/full coverage remain unchanged. No unchanged
+ordinary2022 rerun is needed for this diagnostic-only refinement.
+
+Refined-probe local supportedNode22 verification: fresh build, lint, typecheck,
+documentation links and whitespace passed. Affected protocol/COM/shared-controller/
+routing/artifact/build checks passed178tests/155passed/0failed/23platform skips.
+The eight wrapper cases are registered as independent top-level tests (review
+caught initial nesting under an unrelated Windows test). Both2022 matched
+comparison artifacts retained32operations/4original negatives; all four matched
+jobs passed85observer/rename and625category/native/occurrence controls. Passing
+category scenarios retain34normal shutdowns and successful cleanup. These are
+diagnostic receipts; the refined actual Windows-only controls and original remain
+required, followed by cause-supported repair/cleanup and final acceptance.
+Both review axes accepted the refined probe after fixing top-level registration;
+the spec review also confirmed the opt-in-only latest matrix boundary.

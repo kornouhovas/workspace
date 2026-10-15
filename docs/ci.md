@@ -375,3 +375,15 @@ duplicate output fails. Dispose does not wait for a captured callback, whose lin
 may race DONE. Match a fresh default-off original against this quiet diagnostic;
 neither diagnostic success nor a missing line is a repair. Remove the temporary
 probe before final acceptance unless explicitly retained as diagnostics.
+
+The quiet failed snapshot last completed HWND lookup, so the same temporary probe
+also brackets five non-nested existing owner/UIA blocks with fixed labels. These
+cover initial owner validation, whole UIA-root acquisition (including assembly/PS
+return), Current/process predicate, tab query/count guard and final UIA owner check.
+Direct opt-in Begin/End calls preserve all reads, short-circuiting and finally
+cleanup; standalone scripts never initialize the helper. Block labels cannot
+attribute an individual OS call. Actual-wrapper real-timer/throw/early-return/
+helper-absent controls are diagnostic gates, not acceptance or a native repair.
+After the matched2022 originals passed, the checkpoint opt-in now focuses only
+the remaining Windows latest failure. Default-off runtime-observation still runs
+both Windows variants; category-fixture/default/full scheduling stays unchanged.

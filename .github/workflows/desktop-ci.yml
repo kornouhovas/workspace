@@ -19,7 +19,7 @@ on:
         type: boolean
         default: false
       runtime_native_checkpoint:
-        description: With runtime-observation, collect one deferred managed checkpoint instead of immediate tracing
+        description: With runtime-observation, diagnose Windows latest using one deferred checkpoint instead of immediate tracing
         type: boolean
         default: false
       readiness_native_prefix:
@@ -247,7 +247,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: ${{ fromJSON(inputs.checks == 'runtime-observation' && '["windows-latest","windows-2022"]' || '["windows-2022"]') }}
+        os: ${{ fromJSON(inputs.checks == 'runtime-observation' && (inputs.runtime_native_checkpoint == true && '["windows-latest"]' || '["windows-latest","windows-2022"]') || '["windows-2022"]') }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 25
     steps:

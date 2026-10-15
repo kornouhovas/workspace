@@ -331,12 +331,13 @@ async function withDeferredCheckpoint(enabled, run) {
   finally { if (previous === undefined) delete process.env.WORKSPACE_REVEAL_DEFERRED_TRACE; else process.env.WORKSPACE_REVEAL_DEFERRED_TRACE = previous; }
 }
 
-test("one enabled deferred checkpoint retains ordering without authorizing GO", async () => withDeferredCheckpoint(true, async () => {
+for (const phase of ["call_window_item", "owner_validation", "uia_root", "uia_properties", "uia_tabs", "uia_owner"])
+test(`one enabled deferred checkpoint retains ordering without authorizing GO: ${phase}`, async () => withDeferredCheckpoint(true, async () => {
   const f = fixture(); const pending = f.start();
-  f.output("OPEN\nCHECKPOINT:call_window_item:active:7:9001\n");
+  f.output(`OPEN\nCHECKPOINT:${phase}:active:7:9001\n`);
   assert.deepEqual(f.writes, []);
   const event = f.events.find(event => event.stage === "checkpoint");
-  assert.deepEqual({ ...event, elapsedMs: 0 }, { stage: "checkpoint", path: target, phase: "call_window_item", reason: "active", sequence: 7, helperElapsedMs: 9001, elapsedMs: 0 });
+  assert.deepEqual({ ...event, elapsedMs: 0 }, { stage: "checkpoint", path: target, phase, reason: "active", sequence: 7, helperElapsedMs: 9001, elapsedMs: 0 });
   f.output("READY\n"); await tick(); f.output("SELECT\nDONE\n"); f.close(); await pending;
   assert.deepEqual(f.writes, ["GO\n"]);
 }));
