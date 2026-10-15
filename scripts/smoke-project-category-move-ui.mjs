@@ -445,7 +445,7 @@ export async function runProjectCategoryMoveUi(mode = "dev") {
         assertBackendsStopped: async pids => {
           for (const pid of pids) await withDeadline((async () => {
             for (let attempt = 0; attempt < 50; attempt++) {
-              try { process.kill(pid, 0); } catch (error) { if (error.code === "ESRCH") return; throw error; }
+              if (startup.confirmBackendExit(closing.electron, pid)) return;
               await new Promise(done => setTimeout(done, 100));
             }
             throw new Error("Category move backend survived normal quit");
@@ -840,10 +840,11 @@ export async function runProjectCategoryMoveUi(mode = "dev") {
     await save().catch(() => {});
   } finally {
     if (startup.current) { try { await shutdown(); } catch (error) { failure ??= error; } }
-    const termination = inspectOwnedProcesses(ownedProcesses, backendPids, { launchUnverified: startup.launchUnverified });
+    const termination = inspectOwnedProcesses(ownedProcesses, startup.pendingBackendPids, { launchUnverified: startup.launchUnverified });
     // Preserve the actual cleanup predicate without PIDs, paths or raw errors.
-    // Its stopped value keeps exactly the original ownership/cleanup gate.
-    observations.push({ fixtureOwnership: termination });
+    // Confirmed exits belong to their own launch occurrence, never a numeric
+    // PID exemption that a later owned launch could inherit.
+    observations.push({ fixtureOwnership: { ...termination, backendExitEvidence: startup.backendExitEvidence } });
     await cleanupOwnedFixture(fixture, { processesStopped: termination.stopped, primaryFailure: failure,
       record: async outcome => {
         if (outcome.status === "passed") await assert.rejects(stat(fixture), { code: "ENOENT" });

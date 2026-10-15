@@ -303,7 +303,7 @@ test('category-fixture also reproduces the original Windows 2022 development run
   assert.equal(job['runs-on'], '${{ matrix.os }}'); assert.equal(job['timeout-minutes'], 25);
   const context = { inputs: { checks: 'category-fixture' }, cancelled: () => false, steps: { runtime_build: { outcome: 'success' } } };
   const commands = job.steps.filter(step => step.run && (!step.if || runInNewContext(step.if.slice(3, -2), context)));
-  assert.deepEqual(commands.slice(0, 2).map(step => step.run), ['npm ci', 'npm run build']);
+  assert.equal(commands[0].run, 'npm ci'); assert.ok(commands[1].run.includes('npm run build 2>&1 | tee'));
   assert.equal(commands[2].shell, 'bash'); assert.ok(commands[2].run.includes('set -o pipefail'));
   assert.ok(commands[2].run.includes('npm run smoke:runtime -- dev 2>&1 | tee'));
   assert.equal(commands[2].env.WORKSPACE_SMOKE_EVIDENCE_DIR, 'work/ci-category-runtime');
@@ -678,7 +678,9 @@ test('runtime-observation runs both exact Windows runtimes independently of focu
   }
   assert.ok(job.steps.every(step => step['continue-on-error'] === undefined));
   const build = job.steps.find(step => step.id === 'runtime_build');
-  assert.equal(build.run, 'npm run build');
+  assert.ok(build.run.includes('set -o pipefail'));
+  assert.ok(build.run.includes('npm run build 2>&1 | tee work/ci-category-runtime/build.txt'));
+  assert.equal(build.env.npm_config_loglevel, 'verbose');
   const controls = job.steps.find(step => step.name === 'Retain observer and rename diagnostic controls');
   assert.ok(controls.run.includes('tests/source-observer.test.mjs tests/windows-rename-diagnostics.test.mjs'));
   const comparison = job.steps.find(step => step.name === 'Compare isolated category rename and sharing contexts');

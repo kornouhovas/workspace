@@ -49,6 +49,7 @@ function fixture() {
   const startup = createRenameRuntimeStartup({
     launchElectron: async received => { assert.equal(received, options); if (state.launchError) throw state.launchError; return state.electron ?? electron; },
     ownedProcesses, backendPids, recordStartup: async outcome => { outcomes.push(outcome); if (state.recordError) throw state.recordError; },
+    probeBackendPid: pid => state.probe(pid),
   });
   return { startup, electron, child, page, state, window, interfaceReady, ownedProcesses, backendPids, outcomes, options };
 }
@@ -202,4 +203,65 @@ test("failed shutdown metrics retain earlier owned PIDs and uncertainty until a 
   f.state.metricsError = undefined;
   await f.startup.readBackendPids(f.electron);
   assert.equal(f.startup.launchUnverified, false);
+});
+
+test("confirmed exit belongs to one owned launch occurrence despite later numeric PID reuse", async () => {
+  const f = fixture(); f.window.resolve(); f.interfaceReady.resolve();
+  f.state.metrics = [{ type: "Utility", serviceName: "Node", pid: 789 }];
+  await f.startup.launch(f.options); f.child.exitCode = 0;
+  // The existing cumulative predicate mistakes a later unrelated process for
+  // this already exited backend. Exit proof must attach to its owned launch.
+  const absent = () => { throw Object.assign(new Error(), { code: "ESRCH" }); };
+  assert.equal(ownedProcessesStopped(f.ownedProcesses, f.backendPids, { probe: absent }), true);
+  assert.equal(ownedProcessesStopped(f.ownedProcesses, f.backendPids, { probe: () => {} }), false);
+  f.state.probe = absent;
+  const shutdown = { passed: false };
+  await closeRuntimeSession(f.electron, { shutdown, readBackendPids: f.startup.readBackendPids,
+    beforeClose: async () => {}, assertBackendsStopped: async pids => {
+      for (const pid of pids) assert.equal(f.startup.confirmBackendExit(f.electron, pid), true);
+    } }, async () => {
+      f.child.exitCode = 0;
+      f.electron.process = () => { throw new Error("Playwright no longer exposes a disposed application"); };
+    });
+  assert.equal(shutdown.passed, true);
+  assert.deepEqual([...f.startup.pendingBackendPids], []);
+  assert.deepEqual(f.startup.backendExitEvidence, { observedOccurrences: 1, confirmedExits: 1, pendingOccurrences: 0 });
+  assert.equal(ownedProcessesStopped(f.ownedProcesses, f.startup.pendingBackendPids, { probe: () => {} }), true);
+
+  const secondChild = { exitCode: null, signalCode: null };
+  const second = { ...f.electron, process: () => secondChild }; f.state.electron = second;
+  await f.startup.launch(f.options);
+  assert.deepEqual([...f.startup.pendingBackendPids], [789], "A new owned occurrence cannot inherit the old exit proof");
+  assert.throws(() => f.startup.confirmBackendExit(second, 789), /parent exit/);
+  secondChild.exitCode = 0; f.state.probe = () => {};
+  assert.equal(f.startup.confirmBackendExit(second, 789), false);
+  assert.deepEqual(f.startup.backendExitEvidence, { observedOccurrences: 2, confirmedExits: 1, pendingOccurrences: 1 });
+  const denied = Object.assign(new Error(), { code: "EPERM" }); f.state.probe = () => { throw denied; };
+  assert.throws(() => f.startup.confirmBackendExit(second, 789), error => error === denied);
+  assert.throws(() => f.startup.confirmBackendExit(second, 999), /owned backend/);
+  f.state.probe = absent;
+  assert.equal(f.startup.confirmBackendExit(second, 789), true);
+  f.state.probe = () => { throw new Error("must not re-probe an exited occurrence"); };
+  assert.equal(f.startup.confirmBackendExit(second, 789), true);
+  assert.deepEqual(f.startup.backendExitEvidence, { observedOccurrences: 2, confirmedExits: 2, pendingOccurrences: 0 });
+});
+
+test("shutdown retains every backend observed in its owned launch, including one absent from later metrics", async () => {
+  const f = fixture(); f.window.resolve(); f.interfaceReady.resolve();
+  f.state.metrics = [{ type: "Utility", serviceName: "Node", pid: 789 }];
+  await f.startup.launch(f.options);
+  f.state.metrics = [{ type: "Utility", serviceName: "Node", pid: 790 }];
+  assert.deepEqual(await f.startup.readBackendPids(f.electron), [789, 790]);
+  assert.deepEqual([...f.startup.pendingBackendPids], [789, 790]);
+  f.child.exitCode = 0;
+  f.state.probe = pid => { if (pid === 789) throw Object.assign(new Error(), { code: "ESRCH" }); };
+  assert.equal(f.startup.confirmBackendExit(f.electron, 789), true);
+  assert.equal(f.startup.confirmBackendExit(f.electron, 790), false);
+  assert.deepEqual([...f.startup.pendingBackendPids], [790]);
+  assert.equal(ownedProcessesStopped(f.ownedProcesses, f.startup.pendingBackendPids, { probe: () => {} }), false);
+  f.state.metricsError = new Error("metrics unavailable");
+  await assert.rejects(f.startup.readBackendPids(f.electron), /metrics unavailable/);
+  assert.equal(ownedProcessesStopped(f.ownedProcesses, f.startup.pendingBackendPids, {
+    probe: () => { throw Object.assign(new Error(), { code: "ESRCH" }); }, launchUnverified: f.startup.launchUnverified,
+  }), false, "Later absence cannot clear unresolved ownership evidence");
 });

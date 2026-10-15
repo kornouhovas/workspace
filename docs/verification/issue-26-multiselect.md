@@ -1198,3 +1198,63 @@ rejection, restart and controlled recovery routes with normal shutdown/owned
 cleanup. Both unavailable receipts contained one exact bound request/reply,
 rejected/source_unavailable/null operation and unchanged independent state proofs.
 Both narrow EN/RU unavailable screenshots were inspected. Windows remains required.
+
+
+### Reviewed682e Windows map and per-launch exit-proof repair
+
+Focused38813308051 on682e4430: Windows2022 completed the entire unchanged original
+dev command, including rename/category EN/RU, native Reveal, restart/recovery and
+owned cleanup. Its original and minimized unavailable receipts were exact single
+rejected/source_unavailable/null-operation replies; preservation passed. Latest
+passed its minimized category command but original direct rename Reveal failed:
+opened/owner_deadline, one open/zero selection/return, actual valid bound service
+rejection native_unavailable at12036ms, stopped owned bridge and cleanup confirmed.
+This refutes a completed native latency repair even after earlier cold greens.
+
+Trace-on38813313552: latest passed both native Reveal invocations (7020ms/2135ms)
+and every rename/recovery route/46 normal shutdowns, then rejected final cleanup:
+backend_present on the sixth cumulative PID probe;60 parents exited. Windows2022
+failed before runtime while preparing Electron headers: node-gyp12.4.0 reported
+Completion callback never invoked afterHTTP200. No compiler source error was
+reported; exact underlying download/stream cause remains unresolved. Complete
+job log retained locally. No artifact existed because build had not created its
+evidence directory. Add strict build tee/mkdir and node-gyp verbose logging to
+this focused route only; no retry or compiler/production change. All downloaded
+runtime artifacts and required receipts were inspected; all focused gates have
+not passed and full acceptance remains pending.
+
+Cleanup hypotheses: (1) historical numeric PID reused after its already-confirmed
+exit; (2) genuine backend survival, constrained by46 passed shutdown/ESRCH probes;
+(3) an earlier backend omitted by final metrics, constrained by retaining the
+union for each owned launch. Historical per-PID attribution is unavailable.
+Microsoft documents that [process IDs can be reused after termination](https://learn.microsoft.com/en-us/dotnet/api/system.diagnostics.process.id).
+A deterministic old-predicate reproduction confirms absence/normal shutdown, then
+simulates unrelated numeric reuse; cumulative final inspection wrongly reports a
+surviving backend. The repair attaches immutable ESRCH proof to the exact owned
+launch/PID occurrence, after confirmed parent exit. Every new launch/PID occurrence
+starts unconfirmed, even when its number matches a previous exited occurrence.
+Retain the union of all PIDs observed within a launch, including earlier ones
+omitted by final metrics. Final inspection probes only unconfirmed occurrences;
+unknown launches, failed metrics, parent uncertainty, non-ESRCH and normal-quit
+failure remain vetoes. Publish only finite occurrence counts, never process data.
+
+The initial actual local rename run exposed a repair bug: querying
+ElectronApplication.process after disposal throws in Playwright. Capture its
+ChildProcess once at launch, retain it for parent-exit evidence, and add a test
+whose disposed application refuses process access. Actual local original is being
+repeated. Native phase evidence is also retained on success so traced intervals
+can be compared; defaults, selection authority and12s/10s bounds are unchanged.
+
+
+Both review axes approved the occurrence correction, including its category
+consumer. Actual local rename repeated successfully:60 parent launches exited,
+46/46 backend occurrences confirmed,0pending. Actual category repeated
+successfully:44 parents exited,34/34 backend occurrences confirmed,0pending.
+Both fixture cleanups passed. SupportedNode22 full unchanged-build test:all then
+passed2870tests/2846passed/0failed/24platform skips,110.8s;54 startup/routing and
+59 lifecycle/rename focused checks passed, with affected small deltas renewed.
+Typecheck/docs/whitespace passed. Current Windows native latency remains unresolved;
+next focused trace-off/on originals run the reviewed ownership/build-evidence
+candidate before full acceptance. Artifacts12009827088/12008909993/12009657444 from
+682e were downloaded and inspected; trace-on2022 had no runtime artifact because
+its prerequisite build failed.

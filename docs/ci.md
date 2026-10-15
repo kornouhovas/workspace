@@ -336,7 +336,12 @@ historical OS handle. Each original command runs independently after a successfu
 build, including after control/comparison/minimized failure. `readiness_native_trace`
 defaults off; enable it explicitly only for the bounded native boundary comparison.
 Inspect actual bound replies, independent no-effects proofs and native failure
-stages in the exact-SHA artifacts. Default/full scheduling and the historical
+stages in the exact-SHA artifacts. The focused build retains strict-pipefail output
+and verbose dependency preparation diagnostics even when runtime is unreached.
+Rename cleanup records confirmed backend exits per owned launch occurrence, so
+later numeric PID reuse does not invalidate an earlier exit proof. Unknown or
+new owned occurrences remain unconfirmed until independently verified absent.
+Default/full scheduling and the historical
 Windows2022-only category-fixture selector remain unchanged. No retry, observer
 suppression, settling wait or deadline change is added to product or original
 runtime acceptance. Inspect original/comparison artifacts before choosing a repair

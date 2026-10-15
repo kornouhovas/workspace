@@ -176,7 +176,7 @@ export async function runProjectRenameUi(mode = "dev") {
         for (const pid of pids) {
           await withDeadline((async () => {
             for (let attempt = 0; attempt < 50; attempt++) {
-              try { process.kill(pid, 0); } catch (error) { if (error.code === "ESRCH") return; throw error; }
+              if (startup.confirmBackendExit(closing.electron, pid)) return;
               await new Promise(done => setTimeout(done, 100));
             }
             throw new Error("Rename backend survived normal quit");
@@ -310,8 +310,9 @@ export async function runProjectRenameUi(mode = "dev") {
       assert.deepEqual(calls, [{ path: target, returned: true }]);
       if (process.platform === "win32") {
         assert.deepEqual(await startup.current.electron.evaluate(() => globalThis.renameNativeOpens), [target]);
-        const bridge = nativeBridgeCleanupEvidence(await startup.current.electron.evaluate(() => globalThis.renameNativeBridge));
-        observations.push({ bridge }); nativeStopped &&= bridge.status === "passed"; assert.equal(nativeStopped, true);
+        const boundary = await startup.current.electron.evaluate(() => globalThis.renameNativeBridge);
+        const bridge = nativeBridgeCleanupEvidence(boundary);
+        observations.push({ bridge, nativeReadTrace: boundary.trace }); nativeStopped &&= bridge.status === "passed"; assert.equal(nativeStopped, true);
       }
       return { exactCommittedLocation: true, invocationCount: 1 };
     });
@@ -498,10 +499,10 @@ export async function runProjectRenameUi(mode = "dev") {
       if (cleanup.status !== "completed") failure ??= new Error("Rename file-manager cleanup unverified");
       else nativeTargets.delete(target);
     }
-    const termination = inspectOwnedProcesses(ownedProcesses, backendPids, { launchUnverified: startup.launchUnverified });
+    const termination = inspectOwnedProcesses(ownedProcesses, startup.pendingBackendPids, { launchUnverified: startup.launchUnverified });
     // Retain the predicate that actually governs cleanup, without PIDs, paths or
     // raw probe exceptions. Diagnostics never turn uncertainty into a pass.
-    observations.push({ fixtureOwnership: { ...termination, nativeStopped, nativeTargetCount: nativeTargets.size } });
+    observations.push({ fixtureOwnership: { ...termination, backendExitEvidence: startup.backendExitEvidence, nativeStopped, nativeTargetCount: nativeTargets.size } });
     await cleanupOwnedFixture(fixture, { processesStopped: nativeStopped && nativeTargets.size === 0 && termination.stopped, primaryFailure: failure,
       record: async outcome => {
         recordRenameEvidence(evidence, "fixtureCleanup", outcome);
