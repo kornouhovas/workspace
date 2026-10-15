@@ -589,3 +589,44 @@ all original commands remain. Original success after this profile is warmed
 evidence, not cold product acceptance; it cannot open full CI. This changes
 experiment order only. All33focused checks, lint and whitespace passed; actual
 cold reflection evidence is pending. Shipped native behavior remains unchanged.
+
+## Cold COM read repair candidate
+
+Diagnostic38788236265/attempt1 on5592e3f1 passed. Artifacts11999815279(latest)
+and11999105594(2022) were downloaded and inspected. Reflection was the first
+Explorer caller on fresh runners:6104ms latest,4565ms2022, one navigation,
+permit and completed selection, independently confirmed exact COM/UIA target,
+bridge/window/fixture cleanup. Remaining warmed cases also passed; the original
+runtime after them passed normal shutdown/restart but is not cold acceptance.
+Repeated original cold failures versus this successful cold reflection support
+avoiding PowerShell COM read member discovery; they do not prove the exact OS,
+RPC, type-library or scheduler mechanism.
+
+Sourcea79e5e4 carries the tested direct .NET IDispatch reads into the shared binding
+and captured-item checks. It retains the exact parent/target, HWND/Explorer owner,
+Document identity, readiness/rechecks, one GO permit and original SelectItem call.
+The10-second child budget and12-second owner deadline stay unchanged. A small
+parent-path reader preserves the same Folder/Self/Path reads. Genuine Windows
+COM helper controls cover scalar/empty/collection/error results; existing full
+binding/permit/deadline controls use test-only dispatch for their PSCustomObjects.
+The repeated original cold command is the regression at the actual bug seam.
+
+Temporary comparator source, tests, input and CI step are removed. Historical
+comparison source/evidence remains at its immutable runSHA; no Explorer warm-up
+precedes the renewed original focused gate. Both review axes found no findings.
+Local focused checks:175tests,169pass,zero failures,6actual-Windows skips.
+Typecheck, lint, documentation and whitespace passed. Fresh supportedNode22 build
+and full suite are running; their actual result, fresh cold original focused
+result/artifact, subsequent full acceptance and integration remain pending.
+
+### Reviewed repair local acceptance
+
+Fresh `npm test` on supportedNode22.21.1 rebuilt the complete application and
+passed2847tests:2823passed,zero failures,24conditional/platform skips,115.4seconds.
+The extra Windows skip is the new genuine COM read control; it must run without
+skips in the focused Windows jobs. Both reviewers found no remaining findings;
+169focused checks and typecheck/lint/docs/whitespace passed. Only the report changed
+after that verified source. Publish this candidate with CI suppression, then run
+the actual original early native command on a fresh Windowslatest VM with no
+comparison/prefix. Inspect original and all Windows controls/artifacts before
+full acceptance on the same SHA. No integration is claimed yet.
