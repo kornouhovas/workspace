@@ -428,6 +428,32 @@ jobs:
           path: work/ci-focused-issue22-failures/
           if-no-files-found: error
 
+  focused-property-fixture:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.checks == 'etw-controls' }}
+    name: Focused macOS original property fixture
+    runs-on: macos-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.21.1
+          cache: npm
+      - run: npm ci
+      - name: Original macOS property driver regression file
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p work/ci-focused-property-fixture
+          node --import tsx --test tests/property-editor-driver.test.mjs 2>&1 | tee work/ci-focused-property-fixture/tests.txt
+      - name: Preserve exact-SHA original property fixture result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-26-property-fixture-${{ github.sha }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
+          path: work/ci-focused-property-fixture/
+          if-no-files-found: error
+
   focused-etw-controls:
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.checks == 'etw-controls' }}
     name: Focused Windows latest original ETW controls

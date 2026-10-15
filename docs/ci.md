@@ -239,3 +239,10 @@ ten-second child limit, native-builder precision control and all attribution,
 retention, privacy and equality assertions remain unchanged. This diagnostic does
 not prove the historical cause; focused original success and artifact inspection
 are required before another full run on the same reviewed SHA.
+
+The same `etw-controls` selector additionally renews the subsequently failed local
+property-driver native fixture on macOS, in an independent job running only
+`tests/property-editor-driver.test.mjs`. It retains its own exact-SHA/run/attempt
+output and failures; both original files and artifacts must pass before full CI.
+The native fixture uses one Playwright-owned normal quit under the unchanged
+ten-second bound; forced cleanup after failure never satisfies normal closure.

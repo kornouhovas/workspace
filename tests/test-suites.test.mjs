@@ -507,13 +507,22 @@ test('MultiSelect failure route runs the original macOS packaged command indepen
 });
 
 
-test('ETW failure route runs only the original Windows latest file and retains its failure', () => {
+test('ETW and property fixture route retains the exact failed files on their original OS', () => {
   const workflow = load(readFileSync('.github/workflows/desktop-ci.yml', 'utf8'));
   for (const event of ['push', 'pull_request', 'workflow_dispatch']) {
     const context = { github: { event_name: event }, inputs: { checks: 'etw-controls' } };
     const active = Object.entries(workflow.jobs).filter(([, job]) => job.if && runInNewContext(job.if.slice(3, -2), context)).map(([name]) => name);
-    assert.deepEqual(active, event === 'workflow_dispatch' ? ['focused-etw-controls'] : ['common']);
+    assert.deepEqual(active, event === 'workflow_dispatch' ? ['focused-property-fixture', 'focused-etw-controls'] : ['common']);
   }
+  const native = workflow.jobs['focused-property-fixture'];
+  assert.equal(native['runs-on'], 'macos-latest'); assert.equal(native.needs, undefined);
+  assert.ok(native.steps.every(step => step['continue-on-error'] === undefined));
+  const nativeOriginal = native.steps.find(step => step.name === 'Original macOS property driver regression file');
+  assert.equal(nativeOriginal.shell, 'bash'); assert.ok(nativeOriginal.run.includes('set -o pipefail'));
+  assert.ok(nativeOriginal.run.includes('node --import tsx --test tests/property-editor-driver.test.mjs 2>&1 | tee work/ci-focused-property-fixture/tests.txt'));
+  const nativeUpload = native.steps.find(step => step.uses === 'actions/upload-artifact@v4');
+  assert.equal(nativeUpload.if, 'always()'); assert.equal(nativeUpload.with['if-no-files-found'], 'error');
+  for (const field of ['github.sha', 'github.run_id', 'github.run_attempt']) assert.ok(nativeUpload.with.name.includes(field));
   const job = workflow.jobs['focused-etw-controls'];
   assert.equal(job['runs-on'], 'windows-latest'); assert.equal(job.needs, undefined);
   assert.ok(job.steps.every(step => step['continue-on-error'] === undefined));

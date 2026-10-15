@@ -178,3 +178,8 @@ the original failure is always rethrown. This narrowly tests the double-request
 hypothesis without changing production/runtime helpers or accepting forced exit.
 The original full property tests remain the native regression; exact historical
 scheduler causation is not claimed.
+
+The focused selector also includes an independent macOS job for the original
+property-driver file after this local failure. Both failed seams now have an
+OS-matching original-file gate and exact-SHA/run/attempt output before full CI.
+Focused local property/route checks passed: 27 tests, zero failures.
