@@ -787,3 +787,16 @@ the next probe toward later context, without excluding environment variance. Def
 Source-variant local checks:64routing/lifecycle tests, lint/docs/diff passed. The
 exact public setup sequence ran in actual macOS Electron and confirmed active
 observation, normal quit and backend exit. Windows native behavior remains pending.
+
+### Match production executable-resolution timing
+
+Fidelity audit found the direct adapter's default resolver was running inside
+each minimal invocation, before its12second owner timer. Production caches the
+trusted executable in main startup. Therefore prior minimal passes differ in
+pre-intent diagnostic-report/module-resolution work and cannot establish which
+Workspace context is necessary. Cache the same trusted system resolver once when
+the diagnostic callable is installed, before source setup/intent, and pass that
+program explicitly as production does. No PATH/env executable override is added;
+a missing program retains the production unavailable behavior. Native deadlines,
+readiness, permissions and cleanup remain identical. Run the cold source variant
+again only as a changed fidelity probe, retaining the prior result as diagnostic.

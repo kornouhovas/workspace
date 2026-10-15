@@ -3,7 +3,9 @@ const { app, BrowserWindow } = require('electron');
 const { mkdirSync } = require('node:fs');
 const { join } = require('node:path');
 const { env } = require('node:process');
-const { runWindowsProjectReveal } = require(env.WORKSPACE_MINIMAL_REVEAL_MODULE);
+const { runWindowsProjectReveal, resolveWindowsPowerShell } = require(env.WORKSPACE_MINIMAL_REVEAL_MODULE);
+// Production resolves the trusted executable once at main startup, before intent.
+const program = resolveWindowsPowerShell();
 if (env.WORKSPACE_MINIMAL_REVEAL_HOST === 'bare') for (const name of ['userData', 'sessionData']) {
   const directory = join(env.WORKSPACE_MINIMAL_REVEAL_PROFILE, name);
   mkdirSync(directory);
@@ -14,7 +16,7 @@ globalThis.minimalReveal = async () => {
   try {
     await runWindowsProjectReveal(env.WORKSPACE_MINIMAL_REVEAL_TARGET,
       { isCurrent: () => true, permit: dispatch => { result.permits++; dispatch(); } },
-      { nativeDirectory: env.WORKSPACE_MINIMAL_REVEAL_NATIVE, onEvent: event => {
+      { program, nativeDirectory: env.WORKSPACE_MINIMAL_REVEAL_NATIVE, onEvent: event => {
         if (event.stage === 'open') result.opens++;
         if (event.stage === 'select') result.selections++;
         if (event.stage === 'stopped') result.stopped++;
