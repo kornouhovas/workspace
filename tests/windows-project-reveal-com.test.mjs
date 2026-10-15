@@ -216,11 +216,20 @@ try {
   if ((Invoke-WorkspaceComMethod $dictionary 'Exists' @('one')) -cne $true) { throw 'true_scalar' }
   $boundaries = [Collections.Generic.List[string]]::new()
   if ((Invoke-WorkspaceComMethod $dictionary 'Exists' @('one') { param($phase) $boundaries.Add($phase) }) -cne $true -or
-      $boundaries.Count -ne 1 -or $boundaries[0] -cne 'item_returned') { throw 'completion_marker' }
+      $boundaries.Count -ne 3 -or $boundaries[0] -cne 'item_invoking' -or $boundaries[1] -notin @('item_fast','item_cpu_bound','item_wait_bound') -or $boundaries[2] -cne 'item_returned') { throw 'completion_marker' }
+  foreach ($case in @(@(100,99,'item_fast'),@(5000,4000,'item_cpu_bound'),@(5000,100,'item_wait_bound'))) {
+    if ((Get-WorkspaceComTimingPhase @{wall=0;cpu=0} @{wall=$case[0];cpu=$case[1]}) -cne $case[2]) { throw 'timing_bucket' }
+  }
   $methodRejected = $false
   try { [void](Invoke-WorkspaceComMethod $dictionary 'MissingMethod' @() { param($phase) $boundaries.Add($phase) }) } catch { $methodRejected = $true }
-  if (-not $methodRejected -or $boundaries.Count -ne 1) { throw 'exception_marker' }
+  if (-not $methodRejected -or $boundaries.Count -ne 3) { throw 'exception_marker' }
+  $script:workspaceComTimingProbed = $false
   if ((Invoke-WorkspaceComMethod $dictionary 'Exists' @('one') { throw 'TRACE_FAULT' }) -cne $true) { throw 'trace_interference' }
+  $script:workspaceComTimingProbed = $false
+  function Read-WorkspaceComTimingSnapshot { throw 'PRIVATE_METRICS_FAULT' }
+  $metricBoundaries = [Collections.Generic.List[string]]::new()
+  if ((Invoke-WorkspaceComMethod $dictionary 'Exists' @('one') { param($phase) $metricBoundaries.Add($phase) }) -cne $true -or
+      $metricBoundaries.Count -ne 2 -or $metricBoundaries[0] -cne 'item_invoking' -or $metricBoundaries[1] -cne 'item_returned') { throw 'metrics_interference' }
   $keys = Invoke-WorkspaceComMethod $dictionary 'Keys' @()
   if ($keys -isnot [Array] -or $keys.Count -ne 2 -or $keys[0] -cne 'one' -or $keys[1] -cne 'two') { throw 'collection' }
   $rejected = $false
@@ -345,13 +354,13 @@ $ErrorActionPreference = 'Stop'
 . ./src/desktop/native/windows-project-reveal.ps1
 $events = [Collections.Generic.List[string]]::new()
 function Write-WorkspaceRevealEvent($event) { $script:events.Add($event) }
-foreach ($phase in @('assemblies','compile','shell','open','enumeration','collection','window_item','document','parent','owner','uia_root','uia_properties','uia_tabs','readiness','item','document_recheck','readiness_recheck','binding_returned','item_returned')) { Write-WorkspaceRevealTrace $phase }
+foreach ($phase in @('assemblies','compile','shell','open','enumeration','collection','window_item','document','parent','owner','uia_root','uia_properties','uia_tabs','readiness','item','document_recheck','readiness_recheck','binding_returned','item_returned','item_invoking','item_fast','item_cpu_bound','item_wait_bound')) { Write-WorkspaceRevealTrace $phase }
 Write-WorkspaceRevealTrace 'assemblies'
 Write-WorkspaceRevealTrace 'private path'
-if ($events.Count -ne 19 -or $events[0] -cne 'TRACE:assemblies' -or $events[18] -cne 'TRACE:item_returned') { throw 'trace_control' }
+if ($events.Count -ne 23 -or $events[0] -cne 'TRACE:assemblies' -or $events[22] -cne 'TRACE:item_wait_bound') { throw 'trace_control' }
 $env:WORKSPACE_REVEAL_TRACE = '0'
 Write-WorkspaceRevealTrace 'assemblies'
-if ($events.Count -ne 19) { throw 'trace_disabled' }
+if ($events.Count -ne 23) { throw 'trace_disabled' }
 $shell = [pscustomobject]@{}
 $shell | Add-Member ScriptMethod Windows { throw 'REAL_QUERY' }
 try {

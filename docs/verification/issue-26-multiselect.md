@@ -822,3 +822,40 @@ observer scheduling. No artificial wait or observer suppression changes original
 Comparison-route local verification:65routing/lifecycle tests, lint/docs and
 whitespace passed. The opt-in matrix has fresh host-qualified artifacts and
 retains all original controls; actual cached-resolver comparison remains pending.
+
+### Watch-only case red; distinguish CPU, wait and receipt delay
+
+Fresh comparison38797785140 oncf794318: all six host artifacts downloaded and
+inspected. Five native contexts passed exact COM/UIA and fixture cleanup. Latest
+bare readiness4661ms/source5390ms;2022bare8402ms/source8331ms/watch11168ms. Latest
+watch-only failed the exact native pattern: Item3421→returned9142ms, parent9156ms,
+then owner expiry, no permit/selection. Its root watcher was active/error-free
+before and after. Main and bridge stopped normally, but exact Explorer cleanup
+returned pending and the fixture was preserved. All229controls per context and
+later warmed originals passed. Artifact12003022323 retains the watch failure;
+other artifacts12003550546/12003565661/12003815448/12003785574/12002209219.
+
+Thus Workspace/backend/SQLite/recovery/creation are not necessary in the retained
+watch-only failure. One bare pass versus one watch failure supports watch-context
+sufficiency but does not establish a unique handle/path mechanism or eliminate
+host variance. Cached-resolution source passing constrains earlier overstrong
+source-necessity claims; resolver timing alone is not a proven repair.
+
+Next cold-original probe (no minimal/comparison/prefix) adds optional first-traced
+method entry plus coarse local process CPU/wall classification. Predictions:
+(1) slow measured call with CPU at least half its wall interval supports local
+PowerShell/CLR process work; (2) slow call with lower CPU supports waiting or
+descheduling, not uniquely remote COM; (3) a fast measured call despite a long
+receiver interval points outside that expression, with entry marker distinguishing
+pre-helper binding from receipt timing. Buckets use1000ms slow threshold/50%CPU;
+they are diagnostic, not acceptance or a profiler. Metric/callback faults cannot
+change the COM result. Only the first traced helper call is measured; tracing-off
+behavior has no timing reads.23finite deduplicated labels retain1024byte, native
+12second/10second child deadlines and zero diagnostic authority. Tagged temporary
+instrumentation `[DEBUG-issue26]` must be removed or retained only as explicit
+diagnostics before delivery.
+
+CPU-probe local verification:109focused checks (102passed,7Windows-only skips),
+typecheck/lint/docs/whitespace passed. Review repaired the current CI marker
+inventory to23; historical retained counts remain historical. Actual Windows
+metrics/control execution and cold original outcome remain pending.

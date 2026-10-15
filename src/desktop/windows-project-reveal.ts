@@ -150,7 +150,7 @@ export async function runWindowsProjectReveal(path: string, context: NativeRevea
     };
     const line = (value: string) => {
       if (!live()) return;
-      const trace = /^TRACE:(assemblies|compile|shell|open|enumeration|collection|window_item|document|parent|owner|uia_root|uia_properties|uia_tabs|readiness|item|document_recheck|readiness_recheck|binding_returned|item_returned)$/.exec(value);
+      const trace = /^TRACE:(assemblies|compile|shell|open|enumeration|collection|window_item|document|parent|owner|uia_root|uia_properties|uia_tabs|readiness|item|document_recheck|readiness_recheck|binding_returned|item_returned|item_invoking|item_fast|item_cpu_bound|item_wait_bound)$/.exec(value);
       if (trace) {
         if (tracePhases.has(trace[1]) || (state !== "initial" && state !== "opened")) { fail("native_error"); return; }
         tracePhases.add(trace[1]);
