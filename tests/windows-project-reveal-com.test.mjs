@@ -214,6 +214,7 @@ try {
   if ((Get-WorkspaceComProperty $dictionary 'Count') -cne 2) { throw 'count' }
   if ((Invoke-WorkspaceComMethod $dictionary 'Exists' @('missing')) -cne $false) { throw 'false_scalar' }
   if ((Invoke-WorkspaceComMethod $dictionary 'Exists' @('one')) -cne $true) { throw 'true_scalar' }
+  $env:WORKSPACE_REVEAL_ITEM_TIMING = '1'
   $boundaries = [Collections.Generic.List[string]]::new()
   if ((Invoke-WorkspaceComMethod $dictionary 'Exists' @('one') { param($phase) $boundaries.Add($phase) }) -cne $true -or
       $boundaries.Count -ne 3 -or $boundaries[0] -cne 'item_invoking' -or $boundaries[1] -notin @('item_fast','item_cpu_bound','item_wait_bound') -or $boundaries[2] -cne 'item_returned') { throw 'completion_marker' }
@@ -230,6 +231,11 @@ try {
   $metricBoundaries = [Collections.Generic.List[string]]::new()
   if ((Invoke-WorkspaceComMethod $dictionary 'Exists' @('one') { param($phase) $metricBoundaries.Add($phase) }) -cne $true -or
       $metricBoundaries.Count -ne 2 -or $metricBoundaries[0] -cne 'item_invoking' -or $metricBoundaries[1] -cne 'item_returned') { throw 'metrics_interference' }
+  $env:WORKSPACE_REVEAL_ITEM_TIMING = '0'
+  $script:workspaceComTimingProbed = $false
+  $disabledBoundaries = [Collections.Generic.List[string]]::new()
+  if ((Invoke-WorkspaceComMethod $dictionary 'Exists' @('one') { param($phase) $disabledBoundaries.Add($phase) }) -cne $true -or
+      $disabledBoundaries.Count -ne 1 -or $disabledBoundaries[0] -cne 'item_returned' -or $script:workspaceComTimingProbed) { throw 'disabled_metrics' }
   $keys = Invoke-WorkspaceComMethod $dictionary 'Keys' @()
   if ($keys -isnot [Array] -or $keys.Count -ne 2 -or $keys[0] -cne 'one' -or $keys[1] -cne 'two') { throw 'collection' }
   $rejected = $false

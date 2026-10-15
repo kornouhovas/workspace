@@ -21,7 +21,7 @@ function Get-WorkspaceComTimingPhase($before, $after) {
 }
 function Invoke-WorkspaceComMethod($value, [string]$name, [object[]]$arguments, $trace = $null) {
     $before = $null
-    if ($null -ne $trace -and -not $script:workspaceComTimingProbed) {
+    if ($null -ne $trace -and $env:WORKSPACE_REVEAL_ITEM_TIMING -ceq '1' -and -not $script:workspaceComTimingProbed) {
         $script:workspaceComTimingProbed = $true
         try { [void](& $trace 'item_invoking') } catch { }
         try { $before = Read-WorkspaceComTimingSnapshot } catch { }

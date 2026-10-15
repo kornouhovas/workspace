@@ -859,3 +859,21 @@ CPU-probe local verification:109focused checks (102passed,7Windows-only skips),
 typecheck/lint/docs/whitespace passed. Review repaired the current CI marker
 inventory to23; historical retained counts remain historical. Actual Windows
 metrics/control execution and cold original outcome remain pending.
+
+### CPU-probed cold original passed; audit observer perturbation
+
+Focused38799037162 on d569a381 passed the cold original and all233Windows controls
+per OS; artifacts12003317241/12004056117 inspected. Latest Item1160ms → invoking1163ms
+→ item_wait_bound2182ms, readiness4480ms. Original COM/UIA agreed; restart, normal
+quit and owned cleanup passed. This measures a successful call (~1second with low
+local CPU), not the retained5–6second failure. It cannot prove the failed call's
+CPU behavior or root cause, and diagnostic-only instrumentation is not a repair.
+
+Independently gate metric reads with `WORKSPACE_REVEAL_ITEM_TIMING=1` (default off),
+keeping ordinary trace behavior and all deadlines. Compare fresh enabled/disabled
+originals on identical source SHA using the two already owned CI refs. Predictions:
+consistent off-red/on-green supports probe perturbation; both red exposes failed
+call timing; both green supports environment variance rather than a proven fix.
+Genuine COM controls retain tracing with metrics disabled, require no metric reads,
+and preserve scalar/error behavior. No full acceptance is opened by the prior
+diagnostic-only green.

@@ -344,3 +344,8 @@ production's utility-process watch location and is a sufficiency probe. Each
 context caches the trusted executable before intent; host-specific artifact names
 prevent collisions. With comparison disabled, exactly one selected host runs.
 Neither comparison nor its later warmed originals satisfies cold acceptance.
+
+`readiness_item_timing: true` independently enables the optional first-Item
+CPU/wall probe in focused native/minimal commands; default false retains tracing
+without metric reads. Compare enabled/disabled fresh VMs on the same SHA to audit
+observer perturbation. This flag never changes native deadlines or acceptance.

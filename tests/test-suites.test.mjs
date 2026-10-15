@@ -441,6 +441,17 @@ test('minimal Electron reproduction is opt-in and cannot replace original native
   }
 });
 
+test('native Item timing is independently opt-in for focused commands', () => {
+  const workflow = load(readFileSync('.github/workflows/desktop-ci.yml', 'utf8'));
+  assert.equal(workflow.on.workflow_dispatch.inputs.readiness_item_timing.default, false);
+  const job = workflow.jobs['focused-windows-reveal'];
+  const steps = job.steps.filter(step => step.name === 'Minimal Electron cold native reproduction' || step.name?.includes('Windows latest direct creation native evidence'));
+  assert.equal(steps.length, 3);
+  for (const step of steps) for (const enabled of [undefined, false, true]) {
+    assert.equal(runInNewContext(step.env.WORKSPACE_REVEAL_ITEM_TIMING.slice(3, -2), { inputs: { readiness_item_timing: enabled } }), enabled === true ? '1' : '0');
+  }
+});
+
 test('minimal host comparisons isolate contexts on fresh VMs only when explicitly enabled', () => {
   const workflow = load(readFileSync('.github/workflows/desktop-ci.yml', 'utf8'));
   assert.equal(workflow.on.workflow_dispatch.inputs.readiness_minimal_compare.default, false);

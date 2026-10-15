@@ -14,6 +14,10 @@ on:
         description: With checks=readiness, reproduce original Windows latest and 2022 editor failures
         type: boolean
         default: false
+      readiness_item_timing:
+        description: Enable optional first native Item CPU/wall probe in focused Reveal diagnostics
+        type: boolean
+        default: false
       readiness_minimal_compare:
         description: Compare bare, watch-only and source contexts on fresh focused Windows VMs
         type: boolean
@@ -634,12 +638,14 @@ jobs:
         env:
           WORKSPACE_MINIMAL_REVEAL_OUTPUT: work/ci-focused-windows-reveal/minimal-electron.json
           WORKSPACE_MINIMAL_REVEAL_HOST: ${{ matrix.probe_host }}
+          WORKSPACE_REVEAL_ITEM_TIMING: ${{ inputs.readiness_item_timing == true && '1' || '0' }}
       - name: Early original Windows latest direct creation native evidence
         if: ${{ !cancelled() && steps.reveal-build.outcome == 'success' && inputs.readiness_native_windows == true && inputs.readiness_native_early == true && matrix.os == 'windows-latest' }}
         run: npm run smoke:runtime -- dev --creation --discovery-mode=direct --checkpoint=after_evidence
         env:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-focused-windows-reveal/native
           WORKSPACE_REVEAL_TRACE: '1'
+          WORKSPACE_REVEAL_ITEM_TIMING: ${{ inputs.readiness_item_timing == true && '1' || '0' }}
       - name: Original Reveal file including dirty and stable authority controls
         if: ${{ !cancelled() && steps.reveal-build.outcome == 'success' }}
         shell: bash
@@ -671,6 +677,7 @@ jobs:
         env:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-focused-windows-reveal/native
           WORKSPACE_REVEAL_TRACE: '1'
+          WORKSPACE_REVEAL_ITEM_TIMING: ${{ inputs.readiness_item_timing == true && '1' || '0' }}
       - uses: actions/upload-artifact@v4
         if: always()
         with:
