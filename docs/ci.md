@@ -80,7 +80,7 @@ control and four separate original legacy fixtures with a unique owned Kernel-Fi
 collector set. The owned set is created with a 15-second run-for setting before
 start, explicitly stopped/deleted, and has a 16 MB circular file,
 5-second command bounds and a 10-second bound per reader. A full-decode baseline
-and a provider/time-filtered reader inspect the same ETL in alternating order, after
+and a time-filtered reader inspect the same ETL in alternating order, after
 a clock-only peek capped at 64 records (three readers total). The peek exports
 only aggregate provider count and relative time range; query errors use fixed
 allowlisted IDs without exception text. The
@@ -91,7 +91,9 @@ comparisons/regression remain independent. Raw ETL stays outside artifacts;
 only numeric owned-fixture event fields are retained, capped at 256 per reader.
 The native query preserves subsecond UTC values as round-trip strings. Installed
 PowerShell hashtable-builder controls require precision loss with DateTime operands
-and exact millisecond preservation with strings; actual ETL proof remains separate. IRP/FileObject reuse is guarded,
+and exact millisecond preservation with strings. Native ProviderName filtering
+is removed as a separate one-variable comparison; the shared decoder still checks
+the exact provider before any fields are decoded. Actual ETL proof remains separate. IRP/FileObject reuse is guarded,
 and separate before/during/after queues retain at most 256 records. Missing or truncated
 events never establish handle absence (`lossVerified: false`); positive event correlation
 does not by itself identify the actor that blocked a historical rename. Collector stop

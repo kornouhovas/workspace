@@ -58,7 +58,7 @@ function Get-WinEvent {
   param([hashtable]$FilterHashtable, [string]$Path, [switch]$Oldest, [string]$ErrorAction)
   if ($null -ne $FilterHashtable) {
     if ($FilterHashtable.StartTime -isnot [string] -or $FilterHashtable.EndTime -isnot [string] -or
-        $FilterHashtable.ProviderName -cne 'Microsoft-Windows-Kernel-File' -or
+        $FilterHashtable.ContainsKey('ProviderName') -or
         $FilterHashtable.Path -cne $env:WORKSPACE_ETW_TRACE -or
         ([DateTimeOffset]$FilterHashtable.StartTime).ToUnixTimeMilliseconds() -ne [long]$env:WORKSPACE_ETW_RENAME_START - 1000 -or
         ([DateTimeOffset]$FilterHashtable.EndTime).ToUnixTimeMilliseconds() -ne [long]$env:WORKSPACE_ETW_RENAME_END + 25) { throw 'fixed window query' }

@@ -107,14 +107,14 @@ try {
 } catch { [Console]::Out.WriteLine('{"status":"unavailable"}') }
 `;
 
-// Differential reader: the same decoder, provider and bounds. Preserve
-// subsecond UTC values through Get-WinEvent hashtable string conversion.
+// Differential reader: preserve subsecond UTC values and existing bounds.
+// Filter the exact provider in the decoder, avoiding the native name term.
 // Older name associations outside this window may be missing; absence remains
 // unverified and must never be used to attribute or rule out a handle owner.
 const originalQuery = 'Get-WinEvent -Path $env:WORKSPACE_ETW_TRACE -Oldest -ErrorAction Stop';
 if (!parseScript.includes(originalQuery)) throw new Error('Owned event query unavailable');
 export const boundedParseScript = parseScript.replace(originalQuery, String.raw`Get-WinEvent -FilterHashtable @{
-    Path = $env:WORKSPACE_ETW_TRACE; ProviderName = 'Microsoft-Windows-Kernel-File'
+    Path = $env:WORKSPACE_ETW_TRACE
     StartTime = [DateTimeOffset]::FromUnixTimeMilliseconds($start - 1000).ToString('o')
     EndTime = [DateTimeOffset]::FromUnixTimeMilliseconds($end + 25).ToString('o')
   } -Oldest -ErrorAction Stop`);

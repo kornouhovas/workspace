@@ -788,3 +788,19 @@ allowing positive event inspection. Privacy, lifecycle, reader bounds and origin
 rename assertions remain unchanged. No actor claim or actual-Windows success for
 this change is made. The unpublished provider-removal probe was replaced before
 dispatch because primary source evidence supports a narrower precision seam.
+
+
+Focused38663294417 ond991 passed installed PowerShell builder red-to-green,
+actual correlation controls, original comparisons and strict regression. Collector
+lifecycle/cleanup passed. Peek found63 Kernel-File records at +14..+15ms, yet the
+precision-preserving native provider/time query still returned NoMatchingEventsFound;
+full decode timed out with confirmed termination. Timestamp precision is a proven
+reader defect, but insufficient to explain or repair the complete query failure.
+Fresh local evidence on d991:2814 tests,2791 passes,0 failures,23 platform skips,
+110.1s; lint/type/docs/diff passed. No historical rename cause is attributed.
+
+The next one-variable probe removes only native ProviderName, retaining exact
+round-trip time operands, installed precision controls and the decoder's exact
+provider/path/window guards. The query control requires no native provider key.
+This tests the second ranked query hypothesis without broadening exported data,
+changing deadlines or accepting missing events. Actual Windows proof is pending.
