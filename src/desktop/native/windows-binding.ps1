@@ -15,6 +15,23 @@ public static class WorkspaceReadyWindow {
     public static extern uint GetWindowThreadProcessId(IntPtr hwnd, out uint processId);
 }
 
+// ExDisp.idl: IShellWindows derives from IDispatch; Count and Item are its
+// first two members. Preserve the four inherited IDispatch slots exactly.
+// The opaque returned interface is the SDK's IDispatch**, not a discovered type.
+[ComImport, Guid("00020400-0000-0000-C000-000000000046"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+internal interface WorkspaceReturnedDispatch { }
+[ComImport, Guid("85CB6900-4D95-11CF-960C-0080C7F4EE85"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+internal interface WorkspaceShellWindows {
+    [PreserveSig] int GetTypeInfoCount(out uint count);
+    [PreserveSig] int GetTypeInfo(uint index, uint locale, out IntPtr info);
+    [PreserveSig] int GetIDsOfNames(ref Guid id, IntPtr names, uint count, uint locale, IntPtr ids);
+    [PreserveSig] int Invoke(int member, ref Guid id, uint locale, ushort flags,
+        IntPtr arguments, IntPtr result, IntPtr exception, IntPtr argumentError);
+    [PreserveSig] int GetCount(out int count);
+    [PreserveSig] int Item([In, MarshalAs(UnmanagedType.Struct)] object index,
+        [Out, MarshalAs(UnmanagedType.Interface)] out WorkspaceReturnedDispatch window);
+}
+
 // Keep returned RCWs inside managed code. Handing a raw COM result back to
 // PowerShell can trigger its COM adapter before the next binding guard runs.
 public sealed class WorkspaceReadyComReference {
@@ -55,6 +72,14 @@ public static class WorkspaceReadyCom {
         if (raw == null) throw new ArgumentNullException();
         var unwrapped = new object[arguments.Length];
         for (int i = 0; i < arguments.Length; i++) unwrapped[i] = Unwrap(arguments[i]);
+        if (name == "[DispID=0]") {
+            if (unwrapped.Length != 1 || !(unwrapped[0] is int) || (int)unwrapped[0] < 0 || (int)unwrapped[0] > 255)
+                throw new ArgumentException();
+            WorkspaceReturnedDispatch window;
+            int status = ((WorkspaceShellWindows)raw).Item(unwrapped[0], out window);
+            Marshal.ThrowExceptionForHR(status);
+            return Wrap(window);
+        }
         return Wrap(raw.GetType().InvokeMember(name, BindingFlags.InvokeMethod, null, raw, unwrapped));
     }
     public static bool SameIdentity(object left, object right) {

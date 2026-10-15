@@ -48,6 +48,9 @@ test("production and diagnostic scripts share the exact binding guards without d
   assert.match(binding, /raw.GetType\(\).InvokeMember\(name, BindingFlags.GetProperty/);
   assert.match(binding, /raw.GetType\(\).InvokeMember\(name, BindingFlags.InvokeMethod/);
   assert.match(binding, /new WorkspaceReadyComReference\(value\)/);
+  assert.match(binding, /Guid\("85CB6900-4D95-11CF-960C-0080C7F4EE85"\)/);
+  assert.match(binding, /Guid\("00020400-0000-0000-C000-000000000046"\)/);
+  assert.match(binding, /\(\(WorkspaceShellWindows\)raw\).Item\(unwrapped\[0\], out window\)/);
   assert.match(binding, /left = Unwrap\(left\); right = Unwrap\(right\)/);
   assert.match(bridge, /Initialize-WorkspaceNativeBinding/);
   assert.match(readyDiagnostic, /Initialize-WorkspaceNativeBinding/);
@@ -251,8 +254,8 @@ try { $documentReference.SelectItem($itemReference, 5) } catch { $rejected = $tr
 if (-not $rejected -or $control.Calls -ne 2) { throw 'selection_exception' }
 $shell = New-Object -ComObject Shell.Application
 $windows = $shell.Windows()
-$named = Invoke-WorkspaceComMethod $windows 'Item' @(0)
 $identified = Invoke-WorkspaceComMethod $windows '[DispID=0]' @(0)
+$named = Invoke-WorkspaceComMethod $windows 'Item' @(0)
 if (($null -eq $named) -ne ($null -eq $identified)) { throw 'dispatch_null_identity' }
 if ($null -ne $named -and -not (Test-WorkspaceReadyDocument $named $identified)) { throw 'dispatch_identity' }
 $filesystem = New-Object -ComObject Scripting.FileSystemObject
@@ -270,6 +273,14 @@ try {
 } finally { [void][Runtime.InteropServices.Marshal]::ReleaseComObject($filesystem) }
 $dictionary = New-Object -ComObject Scripting.Dictionary
 try {
+  foreach ($arguments in @(@(), @(-1), @(256), @('0'), @(0, 1))) {
+    $rejected = $false
+    try { [void](Invoke-WorkspaceComMethod $windows '[DispID=0]' $arguments) } catch { $rejected = $true }
+    if (-not $rejected) { throw 'invalid_window_index' }
+  }
+  $rejected = $false
+  try { [void](Invoke-WorkspaceComMethod $dictionary '[DispID=0]' @(0)) } catch { $rejected = $true }
+  if (-not $rejected) { throw 'unrelated_collection' }
   $referenceA = New-ControlReference $dictionary
   $referenceB = New-ControlReference $dictionary
   if ([object]::ReferenceEquals($referenceA, $referenceB) -or -not (Test-WorkspaceReadyDocument $referenceA $referenceB) -or

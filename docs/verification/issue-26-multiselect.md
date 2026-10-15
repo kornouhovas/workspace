@@ -1015,3 +1015,40 @@ Fresh0cd9ffd6 supportedNode22 full local receipt:2849tests/2825passed/0failed/
 24platform skips,113.7seconds. The fixture delta's two static checks pass, five
 Windows checks skip locally. Its actual Windows controls and unchanged cold command
 must pass on the completed candidate before full same-SHA acceptance.
+
+### Opaque-only repair insufficient; type the original collection Item call
+
+Focused38805690325 on09bf7a8b:229/229controls passed on bothWindows OS, including
+all genuine managed/COM controls. The unchanged cold latest original still failed
+navigation1/selection0/return0, opened/owner_deadline, with confirmed bridge and
+fixture cleanup. Artifacts downloaded and inspected. This refutes opaque holder
+sufficiency; the two prior cold greens were not a completed repair.
+
+Next ranked native hypotheses: (1) generic reflection/object-result COM marshaling
+performs expensive runtime type discovery; a typed IShellWindows::Item call with
+the SDK's known IDispatch return should avoid that discovery; (2) intrinsic remote
+Item latency remains slow even with typed ABI, refuting that sufficiency; (3) host
+initialization/scheduling also contributes, so single passes remain weak cause
+evidence. The preceding successful trace measured ~2secondItem versus retained
+~5–6second failures, not CPU or unique root cause.
+
+Narrow candidate: replace only the fixedDISPID0 reflection call with the original
+IShellWindows::Item vtable call. Four inherited IDispatch slots, Count, then Item
+match the official [ExDisp.idl](https://github.com/microsoft/win32metadata/blob/main/generation/WinSDK/RecompiledIdlHeaders/um/ExDisp.Idl#L598-L611).
+VARIANT index is still the same integer0..255 by value; the returned IDispatch is
+an opaque typed interface. Let the CLR marshal both, with no manual VARIANT memory,
+manual vtable pointers or new executable. HRESULT failure throws with no fallback.
+All collection-count, exact parent/target, IUnknown, HWND/Explorer/UIA, readiness,
+pre/post, captured-item, permit and single selection guards/deadlines stay intact.
+Genuine controls compare the typed Item result to the named original identity,
+reject malformed indices against the real ShellWindows collection, and separately
+reject unrelated COM collections. Local managed-boundary controls compile/pass on
+portablePS7;72focused checks passed/6Windows skips, whitespace passed. Windows cold
+and actual controls on this new candidate remain required.
+
+Typed-item candidate review: both axes found no remaining findings after moving
+invalid-index controls to the real ShellWindows receiver. Fresh supportedNode22
+`npm test` rebuilt and passed2849tests/2825passed/0failed/24platform skips,114.4s.
+Lint/typecheck/docs/whitespace and the portablePS7 managed control passed. Same-SHA
+trace-off original plus explicit trace-on interval evidence are next; full CI
+remains behind the affected original/control/artifact gate.
