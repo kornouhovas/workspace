@@ -329,3 +329,9 @@ backend with an empty owned database. The same diagnostic adapter call remains
 direct; there is no registered source, observer, crash recovery or project creation.
 Owned backend termination joins the fixture-removal gate. The default `bare` host
 removes those startup components; neither variant replaces cold original acceptance.
+
+`readiness_minimal_host: source` adds one direct-discovery source through the public
+Workspace API to that actual startup. It asserts automatic updates are active
+before the same direct native call. The target folder already exists; no crash
+recovery or project-creation command precedes it. Evidence omits source identities
+and paths; the same backend/process/Explorer/fixture ownership gates apply.

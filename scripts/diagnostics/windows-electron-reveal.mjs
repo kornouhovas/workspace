@@ -14,7 +14,8 @@ import { closeDisposableFileManagerTarget, waitForFileManagerTarget } from '../f
 assert.equal(process.platform, 'win32');
 const output = process.env.WORKSPACE_MINIMAL_REVEAL_OUTPUT;
 const host = process.env.WORKSPACE_MINIMAL_REVEAL_HOST ?? 'bare';
-assert.ok(['bare', 'workspace'].includes(host));
+assert.ok(['bare', 'workspace', 'source'].includes(host));
+const workspaceHost = host !== 'bare';
 assert.ok(output, 'An explicit evidence destination is required');
 const root = await realpath(await mkdtemp(join(tmpdir(), 'workspace-minimal-reveal-')));
 const evidence = { kind: 'minimal-electron-native-reveal', acceptance: false, host, native: null, normalQuit: false };
@@ -23,7 +24,7 @@ let app, child, primary, bridgeStopped = true, launchUnverified = false, stage =
 let backendVerified = host === 'bare';
 const backendPids = new Set();
 async function collectBackends() {
-  if (host !== 'workspace') return;
+  if (!workspaceHost) return;
   const pids = await withDeadline(app.evaluate(({ app }) => app.getAppMetrics().filter(metric =>
     metric.type === 'Utility' && metric.serviceName?.includes('Node')).map(metric => metric.pid)), 1000, 'Owned backend evidence');
   assert.ok(pids.length > 0 && pids.every(pid => Number.isSafeInteger(pid) && pid > 0));
@@ -36,23 +37,38 @@ try {
   launchUnverified = true; stage = 'launch';
   app = await _electron.launch({ executablePath: createRequire(import.meta.url)('electron'),
     cwd: resolve(fileURLToPath(new URL('../../', import.meta.url))),
-    args: [resolve(fileURLToPath(new URL(host === 'workspace' ? '../../' : './windows-electron-reveal.cjs', import.meta.url)))],
+    args: [resolve(fileURLToPath(new URL(workspaceHost ? '../../' : './windows-electron-reveal.cjs', import.meta.url)))],
     env: { ...process.env, WORKSPACE_REVEAL_TRACE: '1', WORKSPACE_MINIMAL_REVEAL_PROFILE: profile, WORKSPACE_USER_DATA_DIR: profile,
       WORKSPACE_MINIMAL_REVEAL_HOST: host,
       WORKSPACE_MINIMAL_REVEAL_MODULE: bundle, WORKSPACE_MINIMAL_REVEAL_TARGET: await realpath(target),
-      WORKSPACE_MINIMAL_REVEAL_NATIVE: fileURLToPath(new URL('../../src/desktop/native/', import.meta.url)) }, timeout: host === 'workspace' ? 30000 : 10000 });
+      WORKSPACE_MINIMAL_REVEAL_NATIVE: fileURLToPath(new URL('../../src/desktop/native/', import.meta.url)) }, timeout: workspaceHost ? 30000 : 10000 });
   child = app.process();
   launchUnverified = false;
   stage = 'window';
   const page = await app.firstWindow({ timeout: 30000 });
   stage = 'startup';
-  if (host === 'workspace') {
+  if (workspaceHost) {
     // Load only the diagnostic callable into trusted main after actual app startup.
     await app.evaluate((_, script) => process.getBuiltinModule('node:module').createRequire(script)(script),
       fileURLToPath(new URL('./windows-electron-reveal.cjs', import.meta.url)));
     await collectBackends();
     await waitForRuntimeInterface(page, async status => { evidence.startup = status; });
   } else await page.waitForURL('data:text/html,' + encodeURIComponent('<title>Minimal Reveal</title>'), { waitUntil: 'load', timeout: 30000 });
+  if (host === 'source') {
+    stage = 'source';
+    const request = async input => {
+      const result = await page.evaluate(input => globalThis.window.workspace.workspace(input), input);
+      assert.equal(result.ok, true, 'Owned source setup must succeed');
+      return result.value;
+    };
+    const workspace = await request({ type: 'workspace.create', rootPath: dirname(target), name: 'Native minimization' });
+    const preview = await request({ type: 'workspace.previewDiscovery', workspaceId: workspace.workspaceId, mode: 'direct' });
+    await request({ type: 'workspace.applyDiscovery', workspaceId: workspace.workspaceId, previewToken: preview.previewToken });
+    await request({ type: 'workspace.activate', workspaceId: workspace.workspaceId });
+    const observation = await request({ type: 'workspace.getSourceObservation', workspaceId: workspace.workspaceId });
+    assert.equal(observation.observation?.automaticUpdates, 'active');
+    evidence.source = { automaticUpdates: observation.observation.automaticUpdates, state: observation.observation.state };
+  }
   stage = 'native'; bridgeStopped = false;
   evidence.native = await withDeadline(app.evaluate(() => globalThis.minimalReveal()), 17000, 'Minimal native Reveal');
   bridgeStopped = evidence.native.stopped === 1 && evidence.native.unknown === false;

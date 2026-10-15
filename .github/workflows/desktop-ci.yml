@@ -20,6 +20,7 @@ on:
         options:
           - bare
           - workspace
+          - source
         default: bare
       readiness_minimal_electron:
         description: With focused Reveal checks, minimize cold native Reveal in Electron without Workspace services

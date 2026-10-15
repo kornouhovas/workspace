@@ -428,7 +428,7 @@ test('minimal Electron reproduction is opt-in and cannot replace original native
   const probe = job.steps.find(step => step.name === 'Minimal Electron cold native reproduction');
   assert.equal(probe.run, 'node scripts/diagnostics/windows-electron-reveal.mjs');
   assert.equal(probe.env.WORKSPACE_MINIMAL_REVEAL_OUTPUT, 'work/ci-focused-windows-reveal/minimal-electron.json');
-  assert.deepEqual(workflow.on.workflow_dispatch.inputs.readiness_minimal_host.options, ['bare', 'workspace']);
+  assert.deepEqual(workflow.on.workflow_dispatch.inputs.readiness_minimal_host.options, ['bare', 'workspace', 'source']);
   assert.equal(workflow.on.workflow_dispatch.inputs.readiness_minimal_host.default, 'bare');
   assert.equal(probe.env.WORKSPACE_MINIMAL_REVEAL_HOST, "${{ inputs.readiness_minimal_host || 'bare' }}");
   const original = job.steps.find(step => step.name === 'Early original Windows latest direct creation native evidence');

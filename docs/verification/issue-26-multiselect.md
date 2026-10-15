@@ -766,3 +766,24 @@ zero-selection/owner_deadline with successful owned cleanup. No diagnostic Explo
 warm-up occurred. Normalize the repository argument and explicitly retain the
 original cwd alongside the original startup guard; both match existing launch.
 Both review axes accepted the finite Playwright-specific timeout label.
+
+### Actual empty Workspace passed; restore one observed source
+
+Focused38796156893 on4b284f3b passed both Windows jobs. Artifacts12002133071 and
+12001813874 inspected: actual empty Workspace startup, one native selection,
+independent COM/UIA agreement, normal quit, backend/bridge exit, exact Explorer
+cleanup and fixture removal all passed. Latest readiness5232ms,2022readiness3960ms.
+All229controls per OS and latest's later warmed original passed. No original cold
+acceptance is claimed. Both normalized launch/cwd and the original30second startup
+guard now match original; previous10second before-handle failures do not identify
+the native cause.
+
+The next variant restores one source through public create/preview/apply/activate
+commands and confirms active source observation. Target and direct adapter call
+remain identical; no mutation notification, recovery or project creation is added.
+A native failure here would support source-context sufficiency; a pass directs
+the next probe toward later context, without excluding environment variance. Default bare mode and cold-original gate remain separate.
+
+Source-variant local checks:64routing/lifecycle tests, lint/docs/diff passed. The
+exact public setup sequence ran in actual macOS Electron and confirmed active
+observation, normal quit and backend exit. Windows native behavior remains pending.
