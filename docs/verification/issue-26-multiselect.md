@@ -243,3 +243,13 @@ remains. The same native regression verifies delayed focus, unchanged contents
 and timeout without acquiring focus if the app never supplies it. All 64
 focused native/lifecycle/phase/property/route tests passed. The creation-focused
 CI route includes this regression before its unchanged original command.
+
+The two-axis follow-up review found one regression setup race: its 200 ms focus
+timer was armed before the separate initial-unfocused IPC assertion. The test
+now verifies that precondition before arming the app timer. This preserves the
+behavioral control without allowing a slow runner to invalidate correct behavior.
+After this repair, all 64 focused checks passed. The original local
+`npm run smoke:runtime -- dev --creation --skip-native` completed all eight
+direct/grouped interruption cases: 16 normal quits/backend exits and asserted
+owned fixture cleanup passed. Its native API stages are intentionally skipped by
+that original command and are not claimed as native acceptance.

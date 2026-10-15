@@ -101,10 +101,10 @@ test("creation input readiness observes delayed app-owned focus without taking i
   await withPage(async page => {
     page.setDefaultTimeout(1000);
     await page.setContent('<label for="project-creation-name">Name</label><input id="project-creation-name">');
+    assert.equal(await page.locator("input").evaluate(node => node === globalThis.document.activeElement), false);
     await page.evaluate(() => {
       globalThis.setTimeout(() => globalThis.document.querySelector("input").focus(), 200);
     });
-    assert.equal(await page.locator("input").evaluate(node => node === globalThis.document.activeElement), false);
     await waitForFocusedInput(page, "#project-creation-name");
     assert.equal(await page.locator("input").evaluate(node => node === globalThis.document.activeElement), true);
     assert.equal(await page.locator("input").inputValue(), "");
