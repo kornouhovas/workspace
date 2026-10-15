@@ -260,7 +260,15 @@ jobs:
       - run: npm ci
       - id: build
         run: npm run build:service-test-lib
+      - name: Verify actual PowerShell owned event correlation and retention controls
+        run: node --import tsx --test tests/windows-rename-etw.test.mjs
+      - name: Observe owned fixture kernel file handles without changing rename acceptance
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: node --import tsx scripts/debug/windows-rename-etw.mjs
+        env:
+          WORKSPACE_RENAME_EVIDENCE_DIR: work/ci-raw-rename/kernel-file
       - name: Retain bounded idle, native, legacy and production scan comparisons
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: node --import tsx scripts/windows-rename-diagnostics.mjs
         env:
           WORKSPACE_RENAME_EVIDENCE_DIR: work/ci-raw-rename

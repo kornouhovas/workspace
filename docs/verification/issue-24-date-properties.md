@@ -661,3 +661,33 @@ docs/diff and affected trace/static-COM/routing checks79/79 with4 explicit
 Windows skips; both scoped reviews have zero findings. Previous complete
 2813-test evidence is retained, not claimed as a new full run. No operation,
 policy or deadline changed. Final repair will renew its required full evidence.
+
+
+Focused38653944953 on `6d8f1595` passed both original Windows regression/
+actual PowerShell files (226/226 each without skips), contextual Windowslatest
+Ladle/layout/crash predecessors and its original direct native command, plus
+the original macOS grouped packaged command. Downloaded native evidence retains
+one exact navigation/selection, returned/dispatched receipt, independent COM/UIA
+agreement, restart, two normal exits, one confirmed bridge stop and fixture cleanup.
+The native reply boundary was approximately6.7s; observation-only label changes
+are not asserted as a repair of the historical COM expiry actor. Renewed local
+full evidence on that exact SHA:2813 tests,2791 passes,0 failures,22 platform skips,
+113.7s; lint/type/docs/diff passed. Full38654899485 then reproduced Windows2022
+original stress_legacy: one fs.rename EPERM during4235 successful resolver calls,
+closed service/resources zero and all data/restart/cleanup invariants true.
+
+Both independent failure reviews found no demonstrated fixture repair seam or
+historical OS-handle attribution. Current CI keeps legacy rejection as failure;
+a proposed owner-only diagnostic expectation change is not applied. The default
+remains strict diagnosis. A temporary owned-fixture Kernel-File experiment wraps
+four original single-rename fixtures, exports no paths/raw ETL, and retains a
+finite event window. Review identified lifetime and recycled-identifier/retention
+errors in the first prototype before publication. Repairs add an autonomous15s
+collector bound, explicit verified stop, IRP begin/completion retirement, unrelated
+FileObject retirement, zero-identifier rejection, actual Status/issuing-thread
+fields and separate128/96/32 event queues. Actual PowerShell controls replay the
+unretired defect then require its absence and retain rename events despite a
+300-event postrename flood. Local syntax/lint/routing checks passed22 tests with
+one explicit new Windows interpreter skip; Windows execution and original raw
+checks remain required. This is intermediate instrumentation, not final full-suite
+or causal-repair evidence. Exact-SHA outcomes stay in GitHub.
