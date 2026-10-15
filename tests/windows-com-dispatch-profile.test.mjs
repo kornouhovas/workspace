@@ -14,7 +14,9 @@ test('isolated reflection prototype retains guards, bounds and the sole selectio
     assert.equal(changed.split(stage).length, binding.split(stage).length, stage);
   }
   const dispatch = reflectionPrototype(bridge);
-  assert.equal((dispatch.match(/Invoke-WorkspaceComMethod \$anchor.document 'SelectItem' @\(\$anchor.item, 5\)/g) ?? []).length, 1);
+  assert.equal((dispatch.match(/\$anchor.document.SelectItem\(\$anchor.item, 5\)/g) ?? []).length, 1);
+  assert.doesNotMatch(dispatch, /Invoke-WorkspaceComMethod.*'SelectItem'/);
+  assert.doesNotMatch(dispatch, /\$value.GetType\(\)/);
   assert.equal((dispatch.match(/10000/g) ?? []).length, (bridge.match(/10000/g) ?? []).length);
   assert.equal((dispatch.match(/\$shell.Open\(\$parent\)/g) ?? []).length, 1);
   assert.match(dispatch, /Read-WorkspaceRevealPermit/);

@@ -13,10 +13,10 @@ import { closeDisposableFileManagerTarget, waitForFileManagerTarget } from '../f
 const sourceDirectory = fileURLToPath(new URL('../../src/desktop/native/', import.meta.url));
 const reflection = String.raw`
 function Get-WorkspaceComProperty($value, [string]$name) {
-    return ,($value.GetType().InvokeMember($name, [Reflection.BindingFlags]::GetProperty, $null, $value, $null))
+    return ,([System.__ComObject].InvokeMember($name, [Reflection.BindingFlags]::GetProperty, $null, $value, $null))
 }
 function Invoke-WorkspaceComMethod($value, [string]$name, [object[]]$arguments) {
-    return ,($value.GetType().InvokeMember($name, [Reflection.BindingFlags]::InvokeMethod, $null, $value, $arguments))
+    return ,([System.__ComObject].InvokeMember($name, [Reflection.BindingFlags]::InvokeMethod, $null, $value, $arguments))
 }
 `;
 
@@ -29,7 +29,6 @@ export function reflectionPrototype(source) {
     ['$candidate.Document', "(Get-WorkspaceComProperty $candidate 'Document')"],
     ['$window.Document', "(Get-WorkspaceComProperty $window 'Document')"],
     ['$anchor.item.Path', "(Get-WorkspaceComProperty $anchor.item 'Path')"],
-    ['$anchor.document.SelectItem($anchor.item, 5)', "(Invoke-WorkspaceComMethod $anchor.document 'SelectItem' @($anchor.item, 5))"],
     ...['Count'].map(name => [`$windows.${name}`, `(Get-WorkspaceComProperty $windows '${name}')`]),
     ...['HWND', 'Busy', 'ReadyState'].map(name => [`$window.${name}`, `(Get-WorkspaceComProperty $window '${name}')`]),
     ['$item.Path', "(Get-WorkspaceComProperty $item 'Path')"],
