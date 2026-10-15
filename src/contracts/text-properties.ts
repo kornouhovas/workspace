@@ -2,7 +2,7 @@ export interface PropertyDefinition {
   propertyId: string;
   sourceId: string;
   name: string;
-  propertyType: "text" | "number" | "date" | "single_select";
+  propertyType: "text" | "number" | "date" | "single_select" | "multi_select";
 }
 export interface PropertySnapshot {
   workspaceId: string;
@@ -10,6 +10,7 @@ export interface PropertySnapshot {
   revision: number;
   definitions: PropertyDefinition[];
   selectOptions?: SelectOption[];
+  multiSelectValues?: { projectId: string; propertyId: string; optionId: string }[];
   selectValues?: { projectId: string; propertyId: string; optionId: string }[];
   dateValues?: { projectId: string; propertyId: string; value: string }[];
   numberValues?: { projectId: string; propertyId: string; value: number }[];
@@ -21,7 +22,7 @@ export interface PropertyMutation {
   projectId: string | null;
 }
 export type WorkspaceListTextPropertiesQuery = { type: "workspace.listTextProperties"; workspaceId: string };
-export type WorkspaceCreatePropertyCommand = { type: "workspace.createProperty"; workspaceId: string; name: string; propertyType: "text" | "number" | "date" | "single_select" };
+export type WorkspaceCreatePropertyCommand = { type: "workspace.createProperty"; workspaceId: string; name: string; propertyType: "text" | "number" | "date" | "single_select" | "multi_select" };
 export type WorkspaceRenamePropertyCommand = { type: "workspace.renameProperty"; workspaceId: string; propertyId: string; name: string };
 export type WorkspaceSetTextValueCommand = { type: "workspace.setTextValue"; workspaceId: string; projectId: string; propertyId: string; value: string | null };
 
@@ -44,8 +45,9 @@ export type SelectCommand =
   | { type: "workspace.updateSelectOption"; workspaceId: string; propertyId: string; optionId: string; name: string; color: SelectColor }
   | { type: "workspace.reorderSelectOptions"; workspaceId: string; propertyId: string; optionIds: string[] }
   | { type: "workspace.setSelectOptionHidden"; workspaceId: string; propertyId: string; optionId: string; hidden: boolean }
+  | { type: "workspace.setMultiSelectValue"; workspaceId: string; propertyId: string; projectId: string; optionIds: string[] }
   | { type: "workspace.setSelectValue"; workspaceId: string; propertyId: string; projectId: string; optionId: string | null };
-export const selectCommands = ["workspace.createSelectOption", "workspace.updateSelectOption", "workspace.reorderSelectOptions", "workspace.setSelectOptionHidden", "workspace.setSelectValue"];
+export const selectCommands = ["workspace.createSelectOption", "workspace.updateSelectOption", "workspace.reorderSelectOptions", "workspace.setSelectOptionHidden", "workspace.setSelectValue", "workspace.setMultiSelectValue"];
 export function isSelectCommand(input: unknown): input is SelectCommand {
   if (typeof input !== "object" || input === null || Array.isArray(input)) return false;
   const v = input as Record<string, unknown>;
@@ -56,8 +58,9 @@ export function isSelectCommand(input: unknown): input is SelectCommand {
   switch (v.type) {
     case "workspace.createSelectOption": return exact("name", "color") && named();
     case "workspace.updateSelectOption": return exact("optionId", "name", "color") && uuid(v.optionId) && named();
-    case "workspace.reorderSelectOptions": return exact("optionIds") && Array.isArray(v.optionIds) && v.optionIds.every(uuid) && new Set(v.optionIds).size === v.optionIds.length;
+    case "workspace.reorderSelectOptions": return exact("optionIds") && Array.isArray(v.optionIds) && Array.from(v.optionIds).every(uuid) && new Set(v.optionIds).size === v.optionIds.length;
     case "workspace.setSelectOptionHidden": return exact("optionId", "hidden") && uuid(v.optionId) && typeof v.hidden === "boolean";
+    case "workspace.setMultiSelectValue": return exact("projectId", "optionIds") && uuid(v.projectId) && Array.isArray(v.optionIds) && Array.from(v.optionIds).every(uuid) && new Set(v.optionIds).size === v.optionIds.length;
     case "workspace.setSelectValue": return exact("projectId", "optionId") && uuid(v.projectId) && (v.optionId === null || uuid(v.optionId));
     default: return false;
   }

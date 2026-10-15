@@ -391,3 +391,10 @@ body {
 .project-archive { display: grid; gap: 0.75rem; padding: 1rem; border: 1px solid #e0e1e3; border-radius: 0.75rem; }
 .project-archive form, .project-archive details { display: grid; gap: 0.5rem; }
 .project-archive p, .project-archive li { overflow-wrap: anywhere; }
+
+.multi-select-values { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+.multi-select-option { border-inline-start: 0.25rem solid var(--option-color, transparent); padding: 0.15rem 0.4rem; border-radius: 0.2rem; background: #eef0f4; overflow-wrap: anywhere; }
+.multi-select-editor { display: grid; gap: 0.4rem; min-width: 0; margin: 0; padding: 0.5rem; border: 1px solid #cdd1dc; border-radius: 0.35rem; }
+.multi-select-choice { display: flex; align-items: baseline; gap: 0.5rem; border-inline-start: 0.25rem solid var(--option-color, transparent); padding: 0.35rem; overflow-wrap: anywhere; }
+.multi-select-choice input { flex: none; }
+.multi-select-choice:focus-within { outline: 2px solid #526ed3; outline-offset: 1px; }

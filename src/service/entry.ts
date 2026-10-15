@@ -144,7 +144,7 @@ function isMalformedWorkspaceRequest(input: unknown): boolean {
   if (selectCommands.includes(input.type)) return !isSelectCommand(input);
   if (input.type === "workspace.createProperty") {
     return !hasExactKeys(input, ["type", "workspaceId", "name", "propertyType"]) ||
-      typeof input.workspaceId !== "string" || typeof input.name !== "string" || (input.propertyType !== "text" && input.propertyType !== "number" && input.propertyType !== "date" && input.propertyType !== "single_select");
+      typeof input.workspaceId !== "string" || typeof input.name !== "string" || (input.propertyType !== "text" && input.propertyType !== "number" && input.propertyType !== "date" && input.propertyType !== "single_select" && input.propertyType !== "multi_select");
   }
   if (input.type === "workspace.setNumberValue") {
     return !hasExactKeys(input, ["type", "workspaceId", "projectId", "propertyId", "expression"]) ||

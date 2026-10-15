@@ -70,7 +70,7 @@ export const propertyDefinitions = sqliteTable("property_definitions", {
   id: text("id").primaryKey(),
   sourceId: text("source_id").notNull().references(() => sources.id),
   name: text("name").notNull(),
-  propertyType: text("property_type", { enum: ["text", "number", "date", "single_select"] }).notNull(),
+  propertyType: text("property_type", { enum: ["text", "number", "date", "single_select", "multi_select"] }).notNull(),
   position: integer("position").notNull(),
 }, (table) => [unique().on(table.sourceId, table.position), unique().on(table.id, table.sourceId)]);
 
@@ -281,6 +281,12 @@ export const selectPropertyValues = sqliteTable("select_property_values", {
   projectId: text("project_id").notNull(), propertyId: text("property_id").notNull(),
   sourceId: text("source_id").notNull().references(() => sources.id), optionId: text("option_id").notNull(),
 }, (table) => [primaryKey({ columns: [table.projectId, table.propertyId] }),
+  foreignKey({ columns: [table.projectId, table.sourceId], foreignColumns: [projects.id, projects.sourceId] }),
+  foreignKey({ columns: [table.optionId, table.propertyId, table.sourceId], foreignColumns: [selectOptions.id, selectOptions.propertyId, selectOptions.sourceId] })]);
+export const multiSelectPropertyValues = sqliteTable("multi_select_property_values", {
+  projectId: text("project_id").notNull(), propertyId: text("property_id").notNull(),
+  sourceId: text("source_id").notNull().references(() => sources.id), optionId: text("option_id").notNull(),
+}, (table) => [primaryKey({ columns: [table.projectId, table.propertyId, table.optionId] }),
   foreignKey({ columns: [table.projectId, table.sourceId], foreignColumns: [projects.id, projects.sourceId] }),
   foreignKey({ columns: [table.optionId, table.propertyId, table.sourceId], foreignColumns: [selectOptions.id, selectOptions.propertyId, selectOptions.sourceId] })]);
 export const selectOptionVisibility = sqliteTable("select_option_visibility", {

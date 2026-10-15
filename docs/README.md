@@ -28,6 +28,7 @@ Read development's scope, integration, tracker, executor-selection and verificat
 | Task | Relevant contracts |
 | --- | --- |
 | Service, storage or filesystem changes | Affected sections in [architecture](architecture.md), [ADRs](adr/) and typed contracts in `src/shared/`; inspect the active service wiring |
+| MultiSelect | [Set contract/scenarios](plans/issue-26-multiselect.md), typed property commands and [verification](verification/issue-26-multiselect.md) |
 | Ordinary Single Select | [Contract/scenarios](plans/issue-25-single-select.md), typed property commands and [verification](verification/issue-25-single-select.md) |
 | Date properties | [Date contract/scenarios](plans/issue-24-date-properties.md), typed property commands and [verification](verification/issue-24-date-properties.md) |
 | Number properties | [Number implementation](architecture.md#implemented-number-properties), [grammar/scenarios](plans/issue-23-number-properties.md), typed property contracts and [verification](verification/issue-23-number-properties.md) |

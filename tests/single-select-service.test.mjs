@@ -140,7 +140,7 @@ test('populated pre-Select migration preserves Text/Number/Date and identities w
       assert.throws(() => db.prepare("INSERT INTO text_property_values VALUES (?, ?, ?, 'wrong')").run(projectId, propertyId, workspace.sourceId), /Text definition/);
       assert.throws(() => db.prepare("INSERT INTO number_property_values VALUES (?, ?, ?, 42)").run(projectId, propertyId, workspace.sourceId), /Number definition/);
       assert.throws(() => db.prepare("INSERT INTO date_property_values VALUES (?, ?, ?, '2024-02-29')").run(projectId, propertyId, workspace.sourceId), /Date definition/);
-      assert.throws(() => db.prepare("UPDATE select_property_values SET property_id = ?").run(textId), /FOREIGN KEY/);
+      assert.throws(() => db.prepare("UPDATE select_property_values SET property_id = ?").run(textId), /Single Select definition|FOREIGN KEY/);
     } finally { db.close(); }
     service.close(); service = openSettingsService(path);
     assert.equal(service.handleQuery({ type: 'workspace.listTextProperties', workspaceId }).value.selectValues[0].optionId, optionId);

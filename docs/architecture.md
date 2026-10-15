@@ -6,7 +6,7 @@ This branch contains a runnable local desktop application with settings, workspa
 
 Workspace names, order and active selection survive restart. Rename/reorder/remove validate IDs and commit snapshots transactionally. Removal deletes only the workspace and its owned views, retains the source even after its last reference, and never deletes external files. Active removal selects the first remaining configuration and its existing Table view; final removal clears selection.
 
-The desktop includes a native directory picker, EN/RU direct/grouped preview/exclusions/Apply and editable project names with source-owned Text/Number/Date columns and required grouped categories in the default Table. The service persists source-owned exclusions/configuration and logical project records. Category creation/rename/deletion, MultiSelect property types, property deletion/hiding/reordering, filtering/grouping/dragging, Board/general view management and further filesystem mutations remain future work. Source archive/restore is described below. SQLite with Drizzle is the selected persistence foundation.
+The desktop includes a native directory picker, EN/RU direct/grouped preview/exclusions/Apply and editable project names with source-owned Text/Number/Date columns and required grouped categories in the default Table. The service persists source-owned exclusions/configuration and logical project records. Property deletion/hiding/reordering, filtering/grouping/dragging, Board/general view management and further filesystem mutations remain future work. Source archive/restore is described below. SQLite with Drizzle is the selected persistence foundation.
 
 The product uses selected bb architecture and UI foundations while retaining its own folder/project domain. Adopt useful modules deliberately, with provenance and boundary tests; do not assume a whole bb package is independent of its chat/session model.
 
@@ -411,3 +411,28 @@ create/rename/color/reorder/hide/show. Option/property deletion, MultiSelect and
 view/grouping behavior remain separate work. Existing bb primitives are reused; no new
 upstream module/dependency was copied. See the [contract/scenarios](plans/issue-25-single-select.md)
 and [verification](verification/issue-25-single-select.md); GitHub #25 owns CI/integration status.
+
+## Implemented MultiSelect sets
+
+Issue #26 adds immutable source-owned `multi_select` definitions and atomic complete-set
+assignment through `workspace.setMultiSelectValue`. Empty arrays clear all memberships;
+duplicate, malformed and foreign option IDs fail without changing values or revisions.
+Input order is irrelevant; membership rows are returned by stable option ID while Table
+presentation follows the shared option order. Same-set writes publish no event.
+
+Definitions reuse ordinary option UUIDs, names, palette, order and workspace-local hiding.
+Renaming, recoloring, ordering and hiding never clear memberships. Hidden assigned options
+remain visible/removable; hidden unassigned options are omitted from this workspace's
+picker. Siblings share values and settings with independent visibility. Complete-set
+replacement, revision and sibling notification are transactional. No folder command or
+project creation is involved, including for retained or archived projects.
+
+Migration 0017 preserves Text/Number/Date/Single Select values, options and visibility
+while expanding the definition constraint. A membership composite key prevents duplicates;
+foreign keys enforce project/property/option source ownership and triggers guard immutable
+types and matching Single Select/MultiSelect value tables. React reuses the typed preload
+route and options editor, with an EN/RU checkbox editor, Save/Clear/Cancel, keyboard focus,
+pending/error feedback and retained drafts during sibling changes. No new bb module or
+dependency was copied. Grouping, dragging and destructive option/property deletion remain
+separate slices. See [contract/scenarios](plans/issue-26-multiselect.md) and
+[observed verification](verification/issue-26-multiselect.md).

@@ -2,6 +2,10 @@ import type { Language } from "../contracts/settings.js";
 
 const english = {
   selectOptionExternalChange: "This option changed in another workspace. Save submits your retained name and color; Cancel shows the latest option.",
+  createMultiSelectProperty: "Create MultiSelect property",
+  editMultiSelectValue: "Edit MultiSelect value",
+  multiSelectNoVisibleOptions: "No visible options. Show an option in the option settings, or create one.",
+  multiSelectValueHint: "Tab between options; Space toggles a membership. Enter saves the complete selection; Escape cancels. Hidden assigned options can be removed. Clear removes all memberships.",
   createSelectProperty: "Create Single Select property",
   editSelectValue: "Edit Single Select value",
   selectValueHint: "Choose one option or an empty value. Enter saves; Escape cancels. Hidden options are unavailable for new assignments.",
@@ -513,6 +517,10 @@ const english = {
 
 const russian: Record<keyof typeof english, string> = {
   selectOptionExternalChange: "Опция изменилась в другом рабочем пространстве. Сохранение отправит ваши название и цвет; отмена покажет текущую опцию.",
+  createMultiSelectProperty: "Создать MultiSelect-свойство",
+  editMultiSelectValue: "Редактировать MultiSelect-значение",
+  multiSelectNoVisibleOptions: "Нет видимых опций. Покажите опцию в настройках или создайте новую.",
+  multiSelectValueHint: "Tab переключает опции; пробел добавляет или убирает значение. Enter сохраняет весь набор; Escape отменяет. Назначенные скрытые опции можно убрать. Очистка удаляет все значения.",
   createSelectProperty: "Создать Single Select-свойство",
   editSelectValue: "Редактировать Single Select-значение",
   selectValueHint: "Выберите одну опцию или пустое значение. Enter сохраняет; Escape отменяет. Скрытые опции недоступны для новых назначений.",

@@ -120,6 +120,13 @@
       "when": 1791504016000,
       "tag": "0016_single_select",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1791504017000,
+      "tag": "0017_multi_select",
+      "breakpoints": true
     }
   ]
 }

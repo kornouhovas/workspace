@@ -148,7 +148,7 @@ export class WorkspaceServiceClient {
   listTextProperties(workspaceId: string): Promise<ServiceResult<TextPropertySnapshot>> {
     return this.api.workspace({ type: "workspace.listTextProperties", workspaceId });
   }
-  createProperty(workspaceId: string, name: string, propertyType: "text" | "number" | "date" | "single_select" = "text"): Promise<ServiceResult<TextPropertyMutation>> {
+  createProperty(workspaceId: string, name: string, propertyType: "text" | "number" | "date" | "single_select" | "multi_select" = "text"): Promise<ServiceResult<TextPropertyMutation>> {
     return this.api.workspace({ type: "workspace.createProperty", workspaceId, name, propertyType });
   }
   renameProperty(workspaceId: string, propertyId: string, name: string): Promise<ServiceResult<TextPropertyMutation>> {
