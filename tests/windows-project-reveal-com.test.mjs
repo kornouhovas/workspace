@@ -56,6 +56,7 @@ test("production and diagnostic scripts share the exact binding guards without d
   assert.match(readyDiagnostic, /Initialize-WorkspaceNativeBinding/);
   assert.doesNotMatch(binding, /\$windows\.Count|\$windows\.Item\(|\$candidate\.Document|\$document\.Folder|\$window\.(Document|HWND|Busy|ReadyState)|\$item\.Path/);
   assert.match(binding, /Invoke-WorkspaceComMethod \$windows '\[DispID=0\]' @\(\$i\) \$trace/);
+  assert.match(binding, /\$windows = \(Invoke-WorkspaceComMethod \$shell 'Windows' @\(\)\)/);
   assert.doesNotMatch(bridge + readyDiagnostic, /\$anchor.item.Path|\$anchor.document.SelectedItems\(|\$selected\.(Count|Item)/);
   assert.equal((bridge.match(/\.SelectItem\(/g) ?? []).length, 1);
   assert.equal((bridge.match(/\$shell\.Open\(/g) ?? []).length, 1);
@@ -169,7 +170,7 @@ foreach ($mode in ($env:WORKSPACE_CONTROL_MODES | ConvertFrom-Json)) {
   $completed = Invoke-WorkspaceProjectRevealFromEnvironment $shell ([Diagnostics.Stopwatch]::new())
   $env:WORKSPACE_PROJECT_REVEAL_TARGET = $expected
   [ordered]@{ mode = $mode; completed = $completed; opens = $script:opens; selects = $script:selects;
-    permits = $script:permits; events = @($script:events.ToArray()); elapsed = $script:now } | ConvertTo-Json -Compress
+    permits = $script:permits; enumerations = $script:enumerations; events = @($script:events.ToArray()); elapsed = $script:now } | ConvertTo-Json -Compress
 }
 `;
   const target = "C:\\ordinary source\\日本語, & $literal 'quote' %x% !^; `tick` (folder)";
@@ -193,6 +194,8 @@ foreach ($mode in ($env:WORKSPACE_CONTROL_MODES | ConvertFrom-Json)) {
     assert.equal(events.filter((event) => event === "SELECT").length, selectsOnce || mode === "late_event" ? 1 : 0);
     assert.equal(events.filter((event) => event.startsWith("FAIL:")).length, succeeds ? 0 : 1);
     if (succeeds) assert.ok(elapsed < 10000);
+    if (mode === "selected") assert.equal(report.enumerations, 3);
+    if (mode === "delayed_ready") assert.equal(report.enumerations, 5);
     if (mode === "delayed_ready") assert.equal(elapsed, 200);
     const expectedFailure = { late_permit: "FAIL:permit:deadline", late_precommand: "FAIL:precommand:deadline",
       late_postcheck: "FAIL:postcheck:deadline", document_permit: "FAIL:precommand:binding",
@@ -253,7 +256,13 @@ $rejected = $false
 try { $documentReference.SelectItem($itemReference, 5) } catch { $rejected = $true }
 if (-not $rejected -or $control.Calls -ne 2) { throw 'selection_exception' }
 $shell = New-Object -ComObject Shell.Application
-$windows = $shell.Windows()
+$rawWindows = $shell.Windows()
+$sameWindows = New-ControlReference $rawWindows
+if (-not (Test-WorkspaceReadyDocument $rawWindows $sameWindows)) { throw 'collection_identity' }
+$windows = Invoke-WorkspaceComMethod $shell 'Windows' @()
+if ($windows -isnot [WorkspaceReadyComReference] -or [Runtime.InteropServices.Marshal]::IsComObject($windows)) { throw 'raw_collection_returned' }
+$count = Get-WorkspaceComProperty $windows 'Count'
+if ($count -isnot [int] -or $count -lt 0 -or $count -gt 256) { throw 'collection_count' }
 $identified = Invoke-WorkspaceComMethod $windows '[DispID=0]' @(0)
 $named = Invoke-WorkspaceComMethod $windows 'Item' @(0)
 if (($null -eq $named) -ne ($null -eq $identified)) { throw 'dispatch_null_identity' }
@@ -432,6 +441,7 @@ Write-WorkspaceRevealTrace 'assemblies'
 if ($events.Count -ne 19) { throw 'trace_disabled' }
 $shell = [pscustomobject]@{}
 $shell | Add-Member ScriptMethod Windows { throw 'REAL_QUERY' }
+. ./tests/fixtures/windows-com-read-controls.ps1
 try {
   [void](Read-WorkspaceReadyBinding $shell 'C:\owned\Project' $null { throw 'TRACE_FAULT' })
   throw 'missing_query'

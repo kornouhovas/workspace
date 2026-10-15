@@ -17,6 +17,9 @@ const stressResponse = (scenario, extra = {}) => ({ version: 1, target: scenario
   iterations: scenario === 'stress_idle' ? 0 : 1, successes: scenario === 'stress_idle' ? 0 : 1,
   errors: { ENOENT: 0, EPERM: 0, EACCES: 0, EBUSY: 0, ENOTDIR: 0, unknown: 0 },
   afterRenameSignalEnoent: 0, renameCompletedSignal: true, scanStates: scenario === 'stress_scan' ? { ready: 1, empty: 0, changed: 0, unavailable: 0, unreadable: 0, root_identity_conflict: 0 } : null, startedUnixMs: 99, readyUnixMs: 100, endedUnixMs: 1100, ...extra });
+const controlProof = () => ({ beforeUnchanged: true, movedIdentity: true, restored: true, collectionFailed: false,
+  move: { process: processResult(), response: nativeResponse({ startedUnixMs: 1200, endedUnixMs: 1201 }) },
+  restore: { process: processResult(), response: nativeResponse({ startedUnixMs: 1300, endedUnixMs: 1301 }) } });
 function fixture(t) {
   const directory = fs.realpathSync.native(fs.mkdtempSync(join(tmpdir(), 'workspace-rename-diagnostic-')));
   t.after(() => fs.rmSync(directory, { recursive: true, force: true }));
@@ -167,6 +170,7 @@ test('bounded orchestration uses distinct fixtures, retains every real failure a
       if (scenario === 'delete_shared_control') Object.assign(evidence.rename.response, { lockOpened: true, lockReleased: true, renamed: true, nodeCode: null, syscall: null });
       if (scenario === 'collision_control') Object.assign(evidence.rename.response, { api: 'move_file_ex', win32Code: 183, nodeCode: null, syscall: null });
       if (scenario.startsWith('stress_')) evidence.rename.stress = { process: processResult(), response: stressResponse(scenario) };
+      if (scenario === 'stress_legacy') evidence.quiescentControl = controlProof();
       return { ...processResult(), stdout: JSON.stringify({ ...evidence, private: privateText }) };
     } });
   assert.equal(result.status, 'completed'); assert.equal(result.operations.length, 32);
@@ -205,6 +209,11 @@ test('unverified worker/descendant termination or protocol preserves fixtures an
       if (scenario === 'observation') return { ...processResult(), stdout: privateText };
       const evidence = structuredClone(sample); evidence.scenario = scenario; evidence.status = 'failed';
       evidence.rename.process.termination = 'unknown'; evidence.rename.process.status = 'timeout'; evidence.rename.response = null;
+      if (scenario === 'stress_legacy') {
+        evidence.serviceState = 'closed'; evidence.rename = blockedLegacyResult();
+        evidence.quiescentControl = { ...controlProof(), restored: false,
+          move: { process: processResult({ status: 'timeout', termination: 'unknown' }), response: null }, restore: null };
+      }
       return { ...processResult(), stdout: JSON.stringify(evidence) };
     } });
   assert.equal(result.status, 'failed'); assert.equal(result.failure, 'operation_failed');
@@ -288,19 +297,21 @@ test('external Node worker preserves real rename error codes/syscall without gue
   assert.equal(fs.readFileSync(join(root, renameFixtureNames.target, 'occupied'), 'utf8'), 'retain destination');
 });
 
-test('external Node worker rejects caller paths, reparse source and preoccupied noncontrol destinations before invocation', async (t) => {
-  const caller = await runExternalNodeRename({ WORKSPACE_RENAME_FIXTURE: privateText, WORKSPACE_RENAME_SCENARIO: 'idle' });
+for (const scenario of ['idle', 'quiescent_restore']) test(`external Node worker rejects caller paths, reparse source and preoccupied ${scenario} destinations before invocation`, async (t) => {
+  const caller = await runExternalNodeRename({ WORKSPACE_RENAME_FIXTURE: privateText, WORKSPACE_RENAME_SCENARIO: scenario });
   assert.equal(caller.invocationCount, 0); assert.equal(JSON.stringify(caller).includes(privateText), false);
   const directory = fixture(t), root = join(directory, 'root');
-  fs.mkdirSync(join(root, renameFixtureNames.category, renameFixtureNames.project), { recursive: true });
-  fs.mkdirSync(join(root, renameFixtureNames.target));
-  const env = { WORKSPACE_RENAME_FIXTURE: directory, WORKSPACE_RENAME_SCENARIO: 'idle' };
+  const source = scenario === 'idle' ? renameFixtureNames.category : renameFixtureNames.target;
+  const destination = scenario === 'idle' ? renameFixtureNames.target : renameFixtureNames.category;
+  fs.mkdirSync(join(root, source, renameFixtureNames.project), { recursive: true });
+  fs.mkdirSync(join(root, destination));
+  const env = { WORKSPACE_RENAME_FIXTURE: directory, WORKSPACE_RENAME_SCENARIO: scenario };
   assert.equal((await runExternalNodeRename(env)).invocationCount, 0);
-  fs.rmSync(join(root, renameFixtureNames.target), { recursive: true });
-  fs.rmSync(join(root, renameFixtureNames.category), { recursive: true });
-  fs.symlinkSync(root, join(root, renameFixtureNames.category), process.platform === 'win32' ? 'junction' : 'dir');
+  fs.rmSync(join(root, destination), { recursive: true });
+  fs.rmSync(join(root, source), { recursive: true });
+  fs.symlinkSync(root, join(root, source), process.platform === 'win32' ? 'junction' : 'dir');
   assert.equal((await runExternalNodeRename(env)).invocationCount, 0);
-  assert.equal(fs.lstatSync(join(root, renameFixtureNames.category)).isSymbolicLink(), true);
+  assert.equal(fs.lstatSync(join(root, source)).isSymbolicLink(), true);
 });
 
 const holderResponse = (extra = {}) => nativeResponse({ stage: 'rename', invocationCount: 0, renamed: false,
@@ -430,10 +441,15 @@ for (const scenario of ['stress_idle', 'stress_native', 'stress_legacy', 'stress
   const response = result.rename.response;
   // Retain the finite fixture/stress counters, overlap, termination and data
   // invariants, never raw worker output, paths or native exception text.
-  // A denied legacy rename still fails; this context does not permit retries.
+  // A blocked legacy stress attempt stays failed. Its separately recorded
+  // post-reader control must prove movability/restoration before acceptance.
   const diagnostic = JSON.stringify(parseFixtureResponse(JSON.stringify(result), scenario));
-  if (process.platform === 'win32' && scenario === 'stress_native' && !response.renamed) {
+  if (process.platform === 'win32' && ['stress_native', 'stress_legacy'].includes(scenario) && !response.renamed) {
     assert.equal(response.nodeCode, 'EPERM', diagnostic); assert.equal(response.syscall, 'rename', diagnostic);
+    if (scenario === 'stress_legacy') {
+      assert.ok(result.quiescentControl.beforeUnchanged && result.quiescentControl.movedIdentity && result.quiescentControl.restored);
+      assert.equal(result.quiescentControl.move.response.invocationCount, 1); assert.equal(result.quiescentControl.restore.response.invocationCount, 1);
+    }
   } else { assert.equal(response.renamed, true, diagnostic); assert.equal(response.nodeCode, null, diagnostic); }
   assert.ok(Object.values(result.invariants).every(Boolean));
   const stress = result.rename.stress;
@@ -609,3 +625,59 @@ test('category enumeration handle contrast retains one original rename per owned
     } finally { stream?.closeSync(); }
   }
 });
+
+const blockedLegacyResult = () => ({ process: processResult(), response: nativeResponse({ renamed: false, nodeCode: 'EPERM', syscall: 'rename' }),
+  stress: { process: processResult(), response: stressResponse('stress_legacy') } });
+
+test('blocked legacy attempt retains its failure while a separate real move and restore prove post-quiescence movability', async t => {
+  const directory = fixture(t), calls = []; let initialCalls = 0;
+  const result = await runRenameFixture(directory, 'stress_legacy', { platform: 'win32',
+    rename: async () => { initialCalls++; return blockedLegacyResult(); },
+    controlRename: async (path, scenario) => { calls.push(scenario); return invokeExternalRename(path, scenario); } });
+  assert.equal(initialCalls, 1); assert.deepEqual(calls, ['idle', 'quiescent_restore']);
+  assert.equal(result.status, 'completed', JSON.stringify(result));
+  assert.equal(result.rename.response.renamed, false); assert.equal(result.rename.response.nodeCode, 'EPERM');
+  assert.equal(result.rename.response.invocationCount, 1); assert.equal(result.rename.stress.response.afterRenameSignalEnoent, 0);
+  assert.ok(result.quiescentControl.beforeUnchanged && result.quiescentControl.movedIdentity && result.quiescentControl.restored);
+  const parsed = parseFixtureResponse(JSON.stringify(result), 'stress_legacy'); assert.ok(parsed);
+  assert.equal(parsed.rename.response.renamed, false); assert.equal(parsed.quiescentControl.restore.response.invocationCount, 1);
+  assert.equal(JSON.stringify(parsed).includes(directory), false);
+  for (const mutate of [value => { delete value.quiescentControl; }, value => { value.quiescentControl.beforeUnchanged = false; },
+    value => { value.quiescentControl.movedIdentity = false; }, value => { value.quiescentControl.restored = false; },
+    value => { value.quiescentControl.collectionFailed = true; }, value => { value.quiescentControl.restore = null; },
+    value => { value.quiescentControl.move.response.invocationCount = 2; }, value => { value.quiescentControl.restore.response.renamed = false; },
+    value => { value.quiescentControl.move.process.termination = 'unknown'; }, value => { value.rename.stress.process.termination = 'unknown'; },
+    value => { value.quiescentControl.restore.process.exitCode = 1; },
+    value => { value.rename.process.termination = 'unknown'; }, value => { value.quiescentControl.move.response.startedUnixMs = 100; },
+    value => { value.rename.response.nodeCode = 'EACCES'; }, value => { value.quiescentControl.restore.response.syscall = privateText; }]) {
+    const broken = structuredClone(result); mutate(broken); assert.equal(parseFixtureResponse(JSON.stringify(broken), 'stress_legacy'), null);
+  }
+});
+
+for (const failure of ['changed_before', 'move_denied', 'move_unknown', 'move_changed_identity', 'restore_denied', 'restore_changed_bytes', 'restore_metadata'])
+  test(`legacy move/restore control refuses ${failure} without promoting the original attempt`, async t => {
+    const directory = fixture(t), calls = [];
+    const result = await runRenameFixture(directory, 'stress_legacy', { platform: 'win32', rename: async () => {
+      if (failure === 'changed_before') fs.writeFileSync(join(directory, 'root', renameFixtureNames.category, renameFixtureNames.project, 'sentinel'), 'unexpected');
+      return blockedLegacyResult();
+    }, controlRename: async (path, scenario) => {
+      calls.push(scenario);
+      if ((scenario === 'idle' && failure === 'move_denied') || (scenario === 'quiescent_restore' && failure === 'restore_denied'))
+        return { process: processResult(), response: nativeResponse({ renamed: false, nodeCode: 'EPERM', syscall: 'rename' }) };
+      if (failure === 'move_unknown') return { process: processResult({ status: 'timeout', termination: 'unknown' }), response: null };
+      const operation = await invokeExternalRename(path, scenario);
+      if (scenario === 'idle' && failure === 'move_changed_identity') {
+        const moved = join(path, 'root', renameFixtureNames.target); fs.renameSync(moved, join(path, 'root', 'replaced'));
+        fs.mkdirSync(moved);
+      }
+      if (scenario === 'quiescent_restore' && failure === 'restore_changed_bytes')
+        fs.writeFileSync(join(path, 'root', renameFixtureNames.category, renameFixtureNames.project, 'sentinel'), 'unexpected');
+      if (scenario === 'quiescent_restore' && failure === 'restore_metadata') fs.appendFileSync(join(path, 'data', 'workspace.sqlite'), 'unexpected');
+      return operation;
+    } });
+    assert.equal(result.status, 'failed', JSON.stringify(result)); assert.equal(result.rename.response.renamed, false);
+    assert.equal(result.rename.response.invocationCount, 1); assert.equal(result.quiescentControl.restored, false);
+    assert.ok(calls.length <= 2);
+    if (failure === 'changed_before') assert.equal(calls.length, 0);
+    if (failure === 'move_unknown') assert.equal(result.quiescentControl.move.process.termination, 'unknown');
+  });

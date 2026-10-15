@@ -143,7 +143,9 @@ function Read-WorkspaceReadyOwner($handle, $trace = $null) {
 function Read-WorkspaceReadyBinding($shell, $expected, $anchor, $trace = $null) {
     $parent = [IO.Path]::GetDirectoryName($expected)
     if ($null -ne $trace) { try { [void](& $trace 'enumeration') } catch { } }
-    $windows = $shell.Windows()
+    # Keep the collection RCW opaque too; a raw return would re-enter the
+    # PowerShell COM adapter before Count and typed Item guards can run.
+    $windows = (Invoke-WorkspaceComMethod $shell 'Windows' @())
     if ($null -ne $trace) { try { [void](& $trace 'collection') } catch { } }
     if ($null -eq $windows -or (Get-WorkspaceComProperty $windows 'Count') -isnot [int] -or (Get-WorkspaceComProperty $windows 'Count') -lt 0 -or (Get-WorkspaceComProperty $windows 'Count') -gt 256) {
         return @{ stage = 'property_unavailable' }

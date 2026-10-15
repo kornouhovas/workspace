@@ -72,8 +72,18 @@ legacy/production-scan comparisons and the original Windows rename regression fi
 The original test runs after a comparison failure when its build passed; no continuation
 or success waiver is applied. Exact-SHA comparison artifacts preserve negative renames,
 data invariants, overlap and termination. The regression assertion now retains complete
-allowlisted fixture context, while legacy rejection remains failure. This adds diagnostic
-evidence, not a claim of cause or production repair. Original-step focused success is
+allowlisted fixture context. A later actual legacy-stress EPERM disproved the
+blanket always-success diagnostic expectation: Windows can deny a parent move
+while child metadata is being read. The initial single failure remains negative
+and counted. Only Windows stress_legacy EPERM may add a separate post-reader
+move/restore control: both workers exited, service closed, zero watches/timers,
+unchanged full fixture identity/bytes before the control, one same-API forward move
+and one restore, exact identity/bytes (including SQLite) after each. Missing proof,
+extra attempts, persistent denial, other errors, changed state or unknown child
+termination remain failures. Idle, production-scan and product originals stay
+strict. This proves post-quiescence movability, not the historical blocking actor.
+The finite parser retains both additional operations and original negative response/
+failure count; no reader-side ENOENT is invented. Original-step focused success is
 required before dispatching full acceptance on the same reviewed SHA.
 After the additional local App fixture initial-list race, add
 `raw_renderer_check: true` to the raw-only selector. A separate macOS job builds
@@ -110,7 +120,8 @@ and owned set deletion must be confirmed before raw trace cleanup; unknown stop
 or unavailable event evidence aborts further probes. Original
 bounded comparisons and the original regression still execute independently after a
 probe/control failure when the build passed. This temporary debug route changes no
-product operation, deadline, retry, skip or original legacy-success assertion.
+product operation, deadline, retry or skip. Its historical strict legacy-success
+oracle is now governed by the explicit post-quiescence diagnostic contract above.
 
 
 For the renewed issue-24 unit failures, select `checks: issue24-failures`. The original
@@ -316,7 +327,9 @@ false, preserving the historical reproduction order. Exact-SHA artifacts and
 full acceptance are required after focused success.
 
 The Windows binding uses direct .NET IDispatch reads rather than PowerShell COM
-member discovery. Renew its cold original with `checks: readiness`,
+member discovery. The ShellWindows collection return also passes through the
+opaque managed helper, with genuine Count/IUnknown/typed-Item controls; this is a
+scoped latency hypothesis, not unique historical-cause proof. Renew its cold original with `checks: readiness`,
 `readiness_reveal_windows: true`, `readiness_native_windows: true`,
 `readiness_native_early: true`; leave the historical prefix and `readiness_native_trace` disabled. Inspect the
 exact-SHA native result, COM/UIA target evidence, restart, shutdown and cleanup

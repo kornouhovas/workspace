@@ -14,15 +14,15 @@ const allowedCodes = ['EPERM', 'EACCES', 'ENOENT', 'ENOTEMPTY', 'EEXIST', 'EBUSY
 export const renameStressModes = Object.freeze({ stress_idle: 'idle', stress_native: 'native', stress_legacy: 'legacy', stress_scan: 'scan' });
 export const renameStressBounds = Object.freeze({ stressMs: 1000, stressIterations: 100000, stressOperationsPerScenario: 4 });
 const nodeScenarios = ['idle', 'observation', 'concurrent_scan', 'injected_conflict', 'delete_shared_control',
-  'child_injected_conflict', 'child_delete_shared_control', ...Object.keys(renameStressModes)];
+  'child_injected_conflict', 'child_delete_shared_control', 'quiescent_restore', ...Object.keys(renameStressModes)];
 
 // Fixed descendants only; a caller path, alias or reparse component cannot
 // authorize either the rename or the child realpath worker.
-export function ownedRenamePaths(directory) {
+export function ownedRenamePaths(directory, restore = false) {
   if (!directory || dirname(directory) !== realpathSync.native(tmpdir()) ||
     !/^workspace-rename-diagnostic-[A-Za-z0-9]{6}$/.test(basename(directory)) || realpathSync.native(directory) !== directory) throw new Error('input');
-  const root = join(directory, 'root'), source = join(root, renameFixtureNames.category);
-  const child = join(source, renameFixtureNames.project), destination = join(root, renameFixtureNames.target);
+  const root = join(directory, 'root'), source = join(root, restore ? renameFixtureNames.target : renameFixtureNames.category);
+  const child = join(source, renameFixtureNames.project), destination = join(root, restore ? renameFixtureNames.category : renameFixtureNames.target);
   for (const path of [directory, root, source, child]) {
     const stat = lstatSync(path);
     // Match the previous external worker: canonicalize its owned fixture root,
@@ -42,7 +42,7 @@ export async function runExternalNodeRename(env = process.env) {
   try {
     const directory = env.WORKSPACE_RENAME_FIXTURE;
     if (!nodeScenarios.includes(env.WORKSPACE_RENAME_SCENARIO)) return result;
-    const { source, destination } = ownedRenamePaths(directory);
+    const { source, destination } = ownedRenamePaths(directory, env.WORKSPACE_RENAME_SCENARIO === 'quiescent_restore');
     try { await fs.lstat(destination); return result; } catch (error) { if (error.code !== 'ENOENT') return result; }
     if (env.WORKSPACE_RENAME_SCENARIO === 'concurrent_scan') {
       process.stdout.write('WORKSPACE_RENAME_READY\n');

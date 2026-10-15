@@ -26,6 +26,59 @@ const serviceClosed = scenario => scenario === 'idle' || Object.hasOwn(renameStr
 // category DELETE-sharing success contrast.
 const conflictControl = scenario => ['injected_conflict', 'child_injected_conflict', 'child_delete_shared_control'].includes(scenario);
 const sharedControl = scenario => scenario === 'delete_shared_control';
+const blockedLegacy = (scenario, response) => scenario === 'stress_legacy' && response?.api === 'node_fs_rename' &&
+  response.stage === 'completed' && response.invocationCount === 1 && !response.renamed && response.nodeCode === 'EPERM' && response.syscall === 'rename';
+
+// Identity and bytes, without following aliases or exporting fixture paths.
+function fixtureTree(path) {
+  const stat = fs.lstatSync(path, { bigint: true });
+  assert.equal(stat.isSymbolicLink(), false);
+  const identity = [String(stat.dev), String(stat.ino), String(stat.birthtimeNs), String(stat.mode)];
+  if (stat.isDirectory()) return { identity, children: fs.readdirSync(path).sort().map(name => [name, fixtureTree(join(path, name))]) };
+  assert.equal(stat.isFile(), true);
+  return { identity, bytes: fs.readFileSync(path).toString('hex') };
+}
+const successfulControlOperation = operation => operation?.process?.status === 'completed' && operation.process.termination === 'confirmed' && operation.process.exitCode === 0 &&
+  operation.response?.api === 'node_fs_rename' && operation.response.stage === 'completed' && operation.response.invocationCount === 1 && operation.response.renamed &&
+  operation.response.nodeCode === null && operation.response.syscall === null && !operation.response.lockOpened && !operation.response.lockReleased;
+
+// This is a separate counterfactual, never a retry or promotion of the original
+// failed rename. The original response and failure count remain unchanged.
+async function quiescentControl(directory, before, invoke) {
+  const proof = { beforeUnchanged: false, movedIdentity: false, restored: false, collectionFailed: false, move: null, restore: null };
+  try {
+    assert.deepEqual(fixtureTree(directory), before); proof.beforeUnchanged = true;
+    const allBefore = before, rootBefore = before.children.find(([name]) => name === 'root')[1];
+    proof.move = await invoke(directory, 'idle');
+    if (!successfulControlOperation(proof.move)) return proof;
+    const moved = { ...rootBefore, children: rootBefore.children.map(([name, entry]) => [name === renameFixtureNames.category ? renameFixtureNames.target : name, entry]).sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0) };
+    const allMoved = { ...allBefore, children: allBefore.children.map(([name, entry]) => [name, name === 'root' ? moved : entry]) };
+    assert.deepEqual(fixtureTree(directory), allMoved); proof.movedIdentity = true;
+    proof.restore = await invoke(directory, 'quiescent_restore');
+    if (!successfulControlOperation(proof.restore)) return proof;
+    assert.deepEqual(fixtureTree(directory), allBefore); proof.restored = true;
+  } catch { proof.collectionFailed = true; }
+  return proof;
+}
+
+function parseQuiescentControl(value) {
+  if (!value || !['beforeUnchanged', 'movedIdentity', 'restored', 'collectionFailed'].every(key => typeof value[key] === 'boolean')) return null;
+  const result = Object.fromEntries(['beforeUnchanged', 'movedIdentity', 'restored', 'collectionFailed'].map(key => [key, value[key]]));
+  for (const key of ['move', 'restore']) {
+    const operation = value[key];
+    if (operation === null) { result[key] = null; continue; }
+    if (!validProcess(operation?.process)) return null;
+    const response = operation.response === null ? null : parseRenameResponse(JSON.stringify(operation.response));
+    if (operation.response !== null && !response) return null;
+    result[key] = { process: withoutOutput(operation.process), response };
+  }
+  return result;
+}
+const passedQuiescentControl = (proof, endedUnixMs) => proof?.beforeUnchanged && proof.movedIdentity && proof.restored && !proof.collectionFailed &&
+  successfulControlOperation(proof.move) && successfulControlOperation(proof.restore) &&
+  proof.move.response.startedUnixMs >= endedUnixMs && proof.restore.response.startedUnixMs >= proof.move.response.endedUnixMs;
+const controlTerminated = proof => !proof || (!proof.collectionFailed &&
+  [proof.move, proof.restore].every(operation => !operation || operation.process?.termination === 'confirmed'));
 
 export function parseRealpathResponse(text, scenario) {
   if (typeof text !== 'string' || Buffer.byteLength(text) > 4096 || !Object.hasOwn(renameStressModes, scenario)) return null;
@@ -217,6 +270,10 @@ export function parseFixtureResponse(text, scenario) {
       if (v.status === 'completed' && (stress.process.status !== 'completed' || stress.process.termination !== 'confirmed' || !reading?.renameCompletedSignal ||
         response?.startedUnixMs < reading.readyUnixMs || response?.endedUnixMs > reading.endedUnixMs)) return null;
     } else if (v.rename.stress != null) return null;
+    const quiescence = v.quiescentControl == null ? null : parseQuiescentControl(v.quiescentControl);
+    if (v.quiescentControl != null && (!quiescence || !blockedLegacy(scenario, response))) return null;
+    if (v.status === 'completed' && blockedLegacy(scenario, response) &&
+      !passedQuiescentControl(quiescence, stress.response.endedUnixMs)) return null;
     if (v.status === 'completed' && (v.stage !== 'completed' || v.errorCode !== null || !Object.values(v.invariants).every((n) => n === true) ||
       response?.stage !== 'completed' || v.rename.process.status !== 'completed' || v.rename.process.termination !== 'confirmed' ||
       !controlDetected(scenario, response) || v.resources.liveWatches !== 0 || v.resources.liveTimers !== 0 ||
@@ -226,6 +283,7 @@ export function parseFixtureResponse(text, scenario) {
       (scenario === 'concurrent_scan' && v.scans.length === 0))) return null;
     return { version: 1, scenario, serviceState: v.serviceState, status: v.status, stage: v.stage, errorCode: v.errorCode,
       rename: { process: withoutOutput(v.rename.process), response, ...(stress ? { stress } : {}) },
+      ...(quiescence ? { quiescentControl: quiescence } : {}),
       invariants: Object.fromEntries(invariantNames.map((k) => [k, v.invariants[k]])),
       resources: Object.fromEntries([...resourceNames, 'pollCategories'].map((k) => [k, v.resources[k]])),
       atRename: Object.fromEntries(['liveWatches', 'liveTimers', 'healthCallbacks'].map((k) => [k, v.atRename[k]])), scans: v.scans };
@@ -234,7 +292,7 @@ export function parseFixtureResponse(text, scenario) {
 
 // A single generated fixture, real production service and SQLite. Wrappers only
 // count owned native resources; they do not change scheduling/watch policy.
-export async function runRenameFixture(directory, scenario, { rename = invokeExternalRename } = {}) {
+export async function runRenameFixture(directory, scenario, { rename = invokeExternalRename, controlRename = invokeExternalRename, platform = process.platform } = {}) {
   if (!renameScenarios.includes(scenario)) throw new Error('Invalid diagnostic scenario');
   const result = { version: 1, scenario, serviceState: serviceClosed(scenario) ? 'closed' : 'active', status: 'failed', stage: 'setup', errorCode: null,
     rename: { process: { status: 'not_attempted', termination: 'not_started', exitCode: null }, response: null },
@@ -261,7 +319,7 @@ export async function runRenameFixture(directory, scenario, { rename = invokeExt
   };
   const root = join(directory, 'root'), { category, target, project } = renameFixtureNames;
   const bytes = Buffer.from([0, 255, 42, 10]), text = '  Exact\nТекст 文  ', historyText = '\n Historical  ';
-  let service, sqlite, pendingRename;
+  let service, sqlite, pendingRename, before;
   try {
     // The worker only populates an empty directory created by the coordinator
     // process. A mistaken caller path must never overwrite existing content.
@@ -293,6 +351,10 @@ export async function runRenameFixture(directory, scenario, { rename = invokeExt
     const metadata = ['property_definitions', 'category_properties', 'workspaces', 'views'].map((t) => rows(t));
     if (serviceClosed(scenario)) { service.close(); service = null; }
     if (scenario === 'observation') { await delay(5200); assert.ok(r.healthCallbacks >= 1); }
+    if (scenario === 'stress_legacy') {
+      sqlite.close(); sqlite = null;
+      before = fixtureTree(directory);
+    }
     result.stage = 'rename';
     result.atRename = { liveWatches: r.liveWatches, liveTimers: r.liveTimers, healthCallbacks: r.healthCallbacks };
     let done = false;
@@ -325,8 +387,14 @@ export async function runRenameFixture(directory, scenario, { rename = invokeExt
     }
     if (scenario === 'concurrent_scan') assert.ok(result.scans.length > 0);
     result.invariants.controlDetected = controlDetected(scenario, response);
+    if (platform === 'win32' && blockedLegacy(scenario, response)) {
+      assert.equal(service, null); assert.equal(r.liveWatches, 0); assert.equal(r.liveTimers, 0);
+      result.quiescentControl = await quiescentControl(directory, before, controlRename);
+      assert.ok(passedQuiescentControl(result.quiescentControl, result.rename.stress.response.endedUnixMs));
+    }
     result.stage = 'verification';
     if (!service) service = open();
+    if (!sqlite) sqlite = new Database(databasePath);
     command('workspace.refreshSource');
     const current = query('workspace.listProjects'), expectedCategory = response.renamed ? target : category;
     result.invariants.logicalIds = current.projects.find((p) => p.relativePath === `${expectedCategory}/${project}`)?.projectId === projectId &&
@@ -351,7 +419,9 @@ export async function runRenameFixture(directory, scenario, { rename = invokeExt
     try { service?.close(); sqlite?.close(); } catch (error) { result.errorCode ??= code(error); }
     result.invariants.observerCleanup = r.liveWatches === 0 && r.liveTimers === 0 && r.watchesOpened === r.watchesClosed;
   }
-  if (Object.values(result.invariants).every(Boolean) && !result.errorCode) { result.status = 'completed'; result.stage = 'completed'; }
+  const validQuiescence = !blockedLegacy(scenario, result.rename.response) ||
+    passedQuiescentControl(result.quiescentControl, result.rename.stress?.response?.endedUnixMs);
+  if (Object.values(result.invariants).every(Boolean) && !result.errorCode && validQuiescence) { result.status = 'completed'; result.stage = 'completed'; }
   return result;
 }
 
@@ -385,7 +455,7 @@ export async function runRenameDiagnostics({ evidenceDirectory = process.env.WOR
         operation.process = withoutOutput(response);
         operation.evidence = response.status === 'completed' ? parseFixtureResponse(response.stdout, scenario) : null;
         if (response.termination === 'not_started' || (response.termination === 'confirmed' && operation.evidence &&
-          operation.evidence.rename.process.termination !== 'unknown')) {
+          operation.evidence.rename.process.termination !== 'unknown' && controlTerminated(operation.evidence.quiescentControl))) {
           fs.rmSync(directory, { recursive: true, force: true, maxRetries: 0 }); operation.cleanup = 'completed';
         }
       } catch (error) { operation.cleanupCode = code(error); }

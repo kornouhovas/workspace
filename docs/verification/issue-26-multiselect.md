@@ -1170,7 +1170,7 @@ Runtime-observation38811438671 on54c7bf2e completed. Its exact original dev comm
 passed the previously failing external category rename and full baseline runtime,
 then failed direct rename Reveal: Native rename Reveal did not return. Owned
 native/Explorer/backend/fixture cleanup was confirmed. Artifact downloaded and
-inspected. All30 comparison operations completed with preserved invariants and
+inspected. All32 comparison operations completed with preserved invariants and
 cleanup: idle/observation/concurrent production scan and legacy/production-scan
 stress rename succeeded; native descendant realpath stress failed EPERM4/4;
 child held-handle controls failed EPERM as expected. This does not attribute the
@@ -1258,3 +1258,71 @@ next focused trace-off/on originals run the reviewed ownership/build-evidence
 candidate before full acceptance. Artifacts12009827088/12008909993/12009657444 from
 682e were downloaded and inspected; trace-on2022 had no runtime artifact because
 its prerequisite build failed.
+
+
+### b9ba focused map: lifetime repair passes; remaining native/diagnostic cases
+
+Ordinary38815558139: latest again failed the original direct rename Reveal at
+opened/owner_deadline, one open/zero selection/return; actual ownership correction
+passed with1/1backend occurrence confirmed. Windows2022 original passed the whole
+runtime, but its separate diagnostic-control test failed stress_legacy: first
+single rename EPERM during6414successful child legacy realpath reads, service
+closed, reader/renamer exited, all original state invariants passed. Trace-on
+38815586818 passed both complete Windows jobs, originals and controls. Its actual
+latest rename retained46/46backend proofs,0pending, normal quit and cleanup;
+category passed too. All runtime artifacts downloaded/inspected. Native latency
+is not fixed merely by these traced greens. Header preparation passed all four
+builds this time; historical node-gyp stream failure remains unattributed.
+
+New ranked native hypotheses: (1) the remaining raw ShellWindows return re-enters
+PowerShell COM adaptation before opaque Count/typedItem reads; (2) remote Item,
+Explorer/UIA initialization or host scheduling varies independently; (3) tracing
+perturbs the readiness race. Healthy first trace reaches enumeration1224ms,
+collection1232,Item1761→returned2901,owner3522,UIAroot4945→properties5616,
+readiness5959. These intervals do not isolate the failed untraced boundary.
+The narrow next candidate routes only Windows() through the existing managed
+opaque helper, without passing its Item-completion trace callback. Original exact
+Count/index/parent/target/Document/HWND/owner/UIA/readiness/GO/prepost guards and
+single selection remain intact. Genuine Windows controls now cover opaque
+ShellWindows ingress itself, raw/wrapped IUnknown, integerCount and typed/named
+Item equivalence through the wrapped collection. Fixed-controller enumeration
+counts remain3 for immediate readiness/5 for delayed readiness. Existing static
+boundary test is red before/fixed after; local native checks72passed/6Windows
+skips. This is a testable repair hypothesis, not historical latency attribution.
+
+The legacy stress assertion was an unsupported deterministic contrast. Its old
+actual red is retained. Node22 legacy realpath walks components via lstat; see
+[Node fs implementation](https://raw.githubusercontent.com/nodejs/node/v22.21.1/lib/fs.js)
+and [libuv Windows fs implementation](https://raw.githubusercontent.com/nodejs/node/v22.21.1/deps/uv/src/win/fs.c).
+This makes transient child metadata sharing compatible with the result, but does
+not identify the exact historical handle. Ranked alternatives are transient
+reader overlap, unrelated external/host interference and permanent fixture/state
+failure. An independent quiescent control distinguishes the last alternative;
+it does not establish the actor. Two-axis design review requires keeping original
+negative response/timestamps/single invocation/realRenameFailures unchanged.
+
+Only Windows stress_legacy exact EPERM can add this diagnostic control. Close
+service and extraSQLite handle before the original snapshot. Require confirmed
+reader/renamer exits,0watches/timers, then compare the entire no-follow owned
+fixture's identities/bytes against before-first-attempt state. Only then record
+one separate same-API forward move and one restore, with full identity/bytes/SQLite
+checks after each. No observer reopens before control completion. Failures,
+unknown children, changed state, missing/extra operations or other errors cannot
+pass. Parser exports finite classifications/counts only; an unknown control child
+blocks coordinator cleanup. Product/idle/production-scan originals stay strict;
+no product retry/deadline/observer change is introduced. The documented diagnostic
+oracle change is explicit and preserves historical failed evidence. Actual Windows
+acceptance of both this control and the native candidate remains required.
+
+
+Both axes accepted this native/diagnostic candidate after correcting a test-only
+assumption: two separate Shell.Windows calls need not return identical collections.
+Same-object IUnknown is now checked by wrapping one exact collection; actual new
+ingress separately checks opaque return/integerCount/typedItem. Counterfactual
+move/restore also requires exitCode0. Focused diagnostics/routing:82tests/79passed/
+0failed/3Windows skips; native78tests/72passed/0failed/6Windows skips. Fresh
+supportedNode22 npm test rebuilt and passed2879tests/2855passed/0failed/24platform
+skips,109.0s. Lint/typecheck/docs/whitespace passed. Actual Windows controls and
+ordinary originals are still required; full acceptance has not been requested.
+Earlier checkpoint text said30 comparisons; exact artifacts contain32 operations
+per complete comparison run. Original negative counts remain separate and retained.
