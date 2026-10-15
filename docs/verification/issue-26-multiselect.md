@@ -341,3 +341,14 @@ only the original Windows latest file and retained checkpoint/output artifact.
 The historical Windows2022 runtime route remains available under its unchanged
 default flag. Review, final local renewal and focused original evidence must pass
 before renewed full acceptance on the same candidate.
+
+### Reviewed scheduling candidate
+
+Both independent reviewers found no findings in `f5a19f1e...d2276770`.
+All79 focused category-fixture/scheduling/route checks passed. Typecheck, lint,
+documentation links and whitespace passed. The renewed complete local suite on
+the reviewed source passed:2843 tests,2820 passed,zero failures,23 conditional/
+platform skips,112.1 seconds. Local macOS execution retains the existing single
+batch; this is not Windows scheduling acceptance. Exact-SHA focused Windows
+original/artifact, subsequent full platform and integration gates remain in
+GitHub #26.
