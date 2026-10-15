@@ -126,7 +126,7 @@ const program = resolveWindowsPowerShell();
 if (!program) throw new Error('System PowerShell unavailable');
 const logman = win32.resolve(win32.dirname(program), '../..', 'logman.exe');
 const output = { kind: 'debug-owned-fixture-kernel-file', sha: process.env.GITHUB_SHA ?? null,
-  limits: { operations: 4, circularMegabytes: 16, collectorRunForSeconds: 15, collectorCommandMs: 5000, readers: 3, clockPeekEvents: 64, readerOrder: 'clock-peek-first-then-alternating-full-window', parseMsPerReader: 10000, exportedEventsPerReader: 256 },
+  limits: { operations: 4, circularMegabytes: 16, collectorRunForSeconds: 15, collectorCommandMs: 5000, readers: 3, clockPeekEvents: 64, readerOrder: 'clock-peek-first-then-alternating-full-window', collectorStopTrigger: 'rename-worker-close-with-finally-fallback', parseMsPerReader: 10000, exportedEventsPerReader: 256 },
   attribution: 'positive owned-path events only; missing events never prove absence of handles', operations: [] };
 fs.mkdirSync(evidenceDirectory, { recursive: true });
 for (let index = 0; index < 4; index++) {
@@ -140,11 +140,25 @@ for (let index = 0; index < 4; index++) {
   output.operations.push(observation);
   let started = false, attempted = false, created = false;
   const readerTerminations = [];
+  let stopPending;
   async function command(phase, args) {
     const result = await runBoundedProcess(logman, args, { timeoutMs: 5000, maxBytes: 4096 });
     observation.commands[phase] = { status: result.status, termination: result.termination, exitCode: result.exitCode,
       errorHex: result.stdout.match(/\b0x[0-9a-fA-F]{1,8}\b/g)?.at(-1) ?? null };
     return result;
+  }
+  function requestStop(trigger) {
+    if (stopPending || !attempted) return;
+    observation.stopTrigger = trigger;
+    observation.stopRequestedUnixMs = Date.now();
+    stopPending = command('stop', ['stop', session]).then(result => {
+      observation.stopped = result.status === 'completed';
+      observation.stopSettledUnixMs = Date.now();
+      return result;
+    });
+    // Teardown awaits this owned command; retain no unhandled rejection while
+    // the original stress worker finishes its unchanged one-second lifetime.
+    stopPending.catch(() => {});
   }
   try {
     observation.fixture = await runRenameFixture(fixture, 'stress_legacy', { rename: async (directory, scenario, options) => {
@@ -159,14 +173,19 @@ for (let index = 0; index < 4; index++) {
       try { result = await invokeExternalRename(directory, scenario, { ...options, runProcess: (workerProgram, args, settings) =>
         runBoundedProcess(workerProgram, args, { ...settings, spawnProcess: (...spawnArgs) => {
           const child = spawn(...spawnArgs);
+          if (args.at(-1).endsWith('windows-rename-node-worker.mjs')) {
+            // Let original completion/signal microtasks run before launching
+            // observation teardown. Do not await it in the rename worker path.
+            child.once('close', () => setImmediate(() => requestStop('rename_worker_close')));
+          }
           if (Number.isInteger(child.pid)) observation.workerPids.push({ pid: child.pid,
             role: args.at(-1).endsWith('realpath-worker.mjs') ? 'resolver' : 'rename' });
           return child;
         } }) }); }
       finally {
         if (attempted) {
-          const stop = await command('stop', ['stop', session]);
-          observation.stopped = stop.status === 'completed';
+          requestStop('fixture_finally');
+          await stopPending;
           if (observation.stopped || !started) {
             const deleted = await command('delete', ['delete', session]);
             observation.deleted = deleted.status === 'completed';

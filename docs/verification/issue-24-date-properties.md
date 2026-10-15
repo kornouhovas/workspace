@@ -804,3 +804,25 @@ round-trip time operands, installed precision controls and the decoder's exact
 provider/path/window guards. The query control requires no native provider key.
 This tests the second ranked query hypothesis without broadening exported data,
 changing deadlines or accepting missing events. Actual Windows proof is pending.
+
+
+Focused38663900630 onff23873 passed actual precision/correlation controls,
+original comparisons and strict regression. Collector lifecycle/cleanup passed.
+Time-only query still returned NoMatchingEventsFound; full reader timed out with
+confirmed termination. Oldest clock sample contained63 Kernel-File records at
++127ms, beyond the actual1ms rename plus25ms window. Native provider removal
+alone is insufficient; this comparison cannot isolate provider filtering when
+the sampled retained interval is already outside the query window.
+
+Ranked retention hypotheses: (1) late collector stop permits circular overwrite
+of the early rename interval; (2) kernel timestamps differ from worker clock;
+(3) native time-query semantics differ despite preserved precision. The next
+probe changes only collector stop trigger. An owned rename-worker close schedules
+stop via setImmediate after original completion/signal microtasks; it does not
+await teardown in the original rename path, shorten the resolver's one-second
+loop, repeat rename or change stress overlap. Fixture-finally awaits the same
+owned stop promise (fallback if the close was not observed), then deletes the
+owned set before parsing/cleanup. Finite stop trigger/request/settled timestamps
+allow inspection. All prior collector/reader/event limits remain. Clock samples
+are incomplete and do not prove loss/absence/handle actor. Actual Windows evidence
+for the earlier stop is pending.

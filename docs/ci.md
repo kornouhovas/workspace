@@ -78,7 +78,10 @@ required before dispatching full acceptance on the same reviewed SHA.
 The renewed raw-only investigation also executes an actual PowerShell event-filter
 control and four separate original legacy fixtures with a unique owned Kernel-File
 collector set. The owned set is created with a 15-second run-for setting before
-start, explicitly stopped/deleted, and has a 16 MB circular file,
+start, explicitly stopped/deleted, and has a 16 MB circular file. Stop is requested
+asynchronously after the owned rename-worker close, with fixture-finally fallback;
+the original completion signal and one-second resolver lifetime do not await it.
+The collector retains
 5-second command bounds and a 10-second bound per reader. A full-decode baseline
 and a time-filtered reader inspect the same ETL in alternating order, after
 a clock-only peek capped at 64 records (three readers total). The peek exports
