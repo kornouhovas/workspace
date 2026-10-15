@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import test from 'node:test';
-import { parseScript } from '../scripts/debug/windows-rename-etw.mjs';
+import { boundedParseScript, parseScript } from '../scripts/debug/windows-rename-etw.mjs';
 import { resolveWindowsPowerShell } from '../src/desktop/windows-project-reveal.ts';
 
 test('Windows owned ETW filter retires reused identifiers and preserves rename events against postrename floods', {
@@ -39,7 +39,16 @@ foreach ($row in ($env:WORKSPACE_ETW_CONTROL_EVENTS | ConvertFrom-Json)) {
   $record | Add-Member ScriptMethod ToXml { return $this.Xml }
   $script:controlled.Add($record)
 }
-function Get-WinEvent { return $script:controlled.ToArray() }
+function Get-WinEvent {
+  param([hashtable]$FilterHashtable, [string]$Path, [switch]$Oldest, [string]$ErrorAction)
+  if ($null -ne $FilterHashtable) {
+    if ($FilterHashtable.ProviderName -cne 'Microsoft-Windows-Kernel-File' -or
+        $FilterHashtable.Path -cne $env:WORKSPACE_ETW_TRACE -or
+        ([DateTimeOffset]$FilterHashtable.StartTime).ToUnixTimeMilliseconds() -ne [long]$env:WORKSPACE_ETW_RENAME_START - 1000 -or
+        ([DateTimeOffset]$FilterHashtable.EndTime).ToUnixTimeMilliseconds() -ne [long]$env:WORKSPACE_ETW_RENAME_END + 25) { throw 'fixed window query' }
+  }
+  return $script:controlled.ToArray()
+}
 `;
   async function run(script) {
     const { stdout, stderr } = await promisify(execFile)(resolveWindowsPowerShell(),
@@ -70,4 +79,5 @@ function Get-WinEvent { return $script:controlled.ToArray() }
   assert.ok(green.events.some(e => e.eventId === 24 && e.Irp === '0x4' && e.Status === '3221225506' && e.IssuingThreadId === '72'));
   assert.ok(green.events.some(e => e.ShareAccess === '7' && e.IssuingThreadId === '71'));
   assert.doesNotMatch(JSON.stringify(green), /private|Category|Project|workspace-rename-diagnostic/);
+  assert.deepEqual(await run(boundedParseScript), green, 'Both readers retain the same controlled in-window events');
 });

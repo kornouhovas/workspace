@@ -83,6 +83,17 @@ try {
 }
 `;
 
+// Differential reader: the same decoder and bounds, one native query change.
+// Older name associations outside this window may be missing; absence remains
+// unverified and must never be used to attribute or rule out a handle owner.
+const originalQuery = 'Get-WinEvent -Path $env:WORKSPACE_ETW_TRACE -Oldest -ErrorAction Stop';
+if (!parseScript.includes(originalQuery)) throw new Error('Owned event query unavailable');
+export const boundedParseScript = parseScript.replace(originalQuery, String.raw`Get-WinEvent -FilterHashtable @{
+    Path = $env:WORKSPACE_ETW_TRACE; ProviderName = 'Microsoft-Windows-Kernel-File'
+    StartTime = [DateTimeOffset]::FromUnixTimeMilliseconds($start - 1000).UtcDateTime
+    EndTime = [DateTimeOffset]::FromUnixTimeMilliseconds($end + 25).UtcDateTime
+  } -Oldest -ErrorAction Stop`);
+
 async function runOwnedKernelFileProbe() {
 const evidenceDirectory = process.env.WORKSPACE_RENAME_EVIDENCE_DIR;
 if (process.platform !== 'win32' || !evidenceDirectory) throw new Error('Windows diagnostic environment required');
@@ -90,7 +101,7 @@ const program = resolveWindowsPowerShell();
 if (!program) throw new Error('System PowerShell unavailable');
 const logman = win32.resolve(win32.dirname(program), '../..', 'logman.exe');
 const output = { kind: 'debug-owned-fixture-kernel-file', sha: process.env.GITHUB_SHA ?? null,
-  limits: { operations: 4, circularMegabytes: 16, collectorRunForSeconds: 15, collectorCommandMs: 5000, parseMs: 10000, exportedEvents: 256 },
+  limits: { operations: 4, circularMegabytes: 16, collectorRunForSeconds: 15, collectorCommandMs: 5000, readers: 2, parseMsPerReader: 10000, exportedEvents: 256 },
   attribution: 'positive owned-path events only; missing events never prove absence of handles', operations: [] };
 fs.mkdirSync(evidenceDirectory, { recursive: true });
 for (let index = 0; index < 4; index++) {
@@ -103,6 +114,7 @@ for (let index = 0; index < 4; index++) {
   const observation = { index: index + 1, collectorId: session, collector: 'not_started', stopped: false, deleted: false, commands: {}, workerPids: [], kernel: null, fixture: null };
   output.operations.push(observation);
   let started = false, attempted = false, created = false;
+  const readerTerminations = [];
   async function command(phase, args) {
     const result = await runBoundedProcess(logman, args, { timeoutMs: 5000, maxBytes: 4096 });
     observation.commands[phase] = { status: result.status, termination: result.termination, exitCode: result.exitCode,
@@ -140,12 +152,29 @@ for (let index = 0; index < 4; index++) {
         try {
         const traces = fs.readdirSync(traceDirectory, { recursive: true }).filter(name => /\.etl$/i.test(name));
         const actualTrace = traces.length === 1 ? join(traceDirectory, traces[0]) : tracePath;
-        const parsed = await runBoundedProcess(program, ['-NoProfile', '-NonInteractive', '-STA', '-ExecutionPolicy', 'Bypass', '-File', scriptPath],
+        async function read(scriptText) {
+          fs.writeFileSync(scriptPath, scriptText);
+          const parsed = await runBoundedProcess(program, ['-NoProfile', '-NonInteractive', '-STA', '-ExecutionPolicy', 'Bypass', '-File', scriptPath],
           { timeoutMs: 10000, maxBytes: 65536, env: { ...process.env, WORKSPACE_ETW_FIXTURE: directory,
             WORKSPACE_ETW_TRACE: actualTrace, WORKSPACE_ETW_RENAME_START: String(result.response.startedUnixMs),
             WORKSPACE_ETW_RENAME_END: String(result.response.endedUnixMs) } });
-        try { observation.kernel = parsed.status === 'completed' ? JSON.parse(parsed.stdout) : { status: 'unavailable' }; }
-        catch { observation.kernel = { status: 'protocol_error' }; }
+          readerTerminations.push(parsed.termination);
+          let kernel;
+          try { kernel = parsed.status === 'completed' ? JSON.parse(parsed.stdout) : { status: 'unavailable' }; }
+          catch { kernel = { status: 'protocol_error' }; }
+          return { process: { status: parsed.status, termination: parsed.termination, exitCode: parsed.exitCode }, kernel };
+        }
+        const readers = index % 2 === 0 ? [['full', parseScript], ['window', boundedParseScript]] :
+          [['window', boundedParseScript], ['full', parseScript]];
+        observation.readerOrder = readers.map(([label]) => label);
+        for (const [label, scriptText] of readers) {
+          const reading = await read(scriptText);
+          if (label === 'full') observation.baseline = { process: reading.process, status: reading.kernel.status,
+            events: reading.kernel.events?.length ?? null, phase: reading.kernel.phase ?? null, code: reading.kernel.code ?? null };
+          else { observation.parser = reading.process; observation.kernel = reading.kernel; }
+          if (reading.process.termination === 'unknown') return result;
+        }
+        observation.queryWindow = { beforeMs: 1000, afterMs: 25, missingOlderAssociations: 'unverified' };
         } catch { observation.kernel = { status: 'unavailable', phase: 'trace_discovery' }; }
       }
       return result;
@@ -153,7 +182,8 @@ for (let index = 0; index < 4; index++) {
   } finally {
     // Never publish ETL, exception text or unrelated host paths. A failed stop
     // leaves the trace-local directory on the disposable runner for investigation.
-    const commandsTerminated = Object.values(observation.commands).every(value => value.termination === 'confirmed');
+    const commandsTerminated = Object.values(observation.commands).every(value => value.termination === 'confirmed') &&
+      readerTerminations.every(value => value === 'confirmed' || value === 'not_started');
     observation.traceCleanup = 'unverified';
     if (!attempted || (commandsTerminated && observation.stopped && observation.deleted)) {
       try { fs.rmSync(traceDirectory, { recursive: true, force: true }); observation.traceCleanup = 'completed'; }

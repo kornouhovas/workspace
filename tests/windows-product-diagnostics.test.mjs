@@ -432,9 +432,25 @@ test('raw-rename dispatch selects only Windows 2022 comparisons and original reg
   assert.equal(job.needs, undefined); assert.equal(job['continue-on-error'], undefined);
   assert.ok(job.steps.every(step => step['continue-on-error'] === undefined));
   assert.deepEqual(job.steps.filter(step => step.run).map(step => step.run), ['npm ci', 'npm run build:service-test-lib',
+    'node --import tsx --test tests/windows-rename-etw.test.mjs', 'node --import tsx scripts/debug/windows-rename-etw.mjs',
     'node --import tsx scripts/windows-rename-diagnostics.mjs', 'node --import tsx --test tests/windows-rename-diagnostics.test.mjs']);
+  const control = job.steps.find(step => step.id === 'etw_controls');
+  assert.equal(control.run, 'node --import tsx --test tests/windows-rename-etw.test.mjs');
+  const probe = job.steps.find(step => step.run === 'node --import tsx scripts/debug/windows-rename-etw.mjs');
+  assert.equal(probe.if, "${{ !cancelled() && steps.build.outcome == 'success' && steps.etw_controls.outcome == 'success' }}");
+  assert.equal(probe.env.WORKSPACE_RENAME_EVIDENCE_DIR, 'work/ci-raw-rename/kernel-file');
+  const comparisons = job.steps.find(step => step.run === 'node --import tsx scripts/windows-rename-diagnostics.mjs');
+  assert.equal(comparisons.if, "${{ !cancelled() && steps.build.outcome == 'success' }}");
   const original = job.steps.find(step => step.run === 'node --import tsx --test tests/windows-rename-diagnostics.test.mjs');
   assert.equal(original.if, "${{ !cancelled() && steps.build.outcome == 'success' }}");
+  for (const [cancelled, build, controls, expectedProbe, expectedOriginal] of [
+    [false, 'success', 'success', true, true], [false, 'success', 'failure', false, true],
+    [false, 'failure', 'success', false, false], [true, 'success', 'success', false, false],
+  ]) {
+    const context = { cancelled: () => cancelled, steps: { build: { outcome: build }, etw_controls: { outcome: controls }, probe: { outcome: 'failure' } } };
+    assert.equal(runInNewContext(probe.if.slice(3, -2), context), expectedProbe);
+    for (const step of [comparisons, original]) assert.equal(runInNewContext(step.if.slice(3, -2), context), expectedOriginal);
+  }
   const upload = job.steps.find(step => step.uses === 'actions/upload-artifact@v4');
   assert.equal(upload.if, 'always()'); assert.equal(upload.with.path, 'work/ci-raw-rename/');
   assert.equal(upload.with['if-no-files-found'], 'error');

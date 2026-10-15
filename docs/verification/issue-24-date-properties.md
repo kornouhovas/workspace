@@ -721,3 +721,25 @@ trace-discovery findings. Teardown attempts stop/delete after any unique owned
 creation attempt; all collector commands must have confirmed termination before
 raw removal. Trace/fixture cleanup errors are finite and cannot erase the original
 rename response. No new full local or actual collector evidence is claimed.
+
+
+Focused38658954709 oncfc passed actual PowerShell controls, original comparisons
+and the unchanged strict regression. Its owned collector set create/start/stop/
+delete all returned0 with confirmed termination and trace/fixture cleanup. The
+reader remained unavailable without a process outcome, so no handle evidence or
+historical cause is established. Fresh local build/full suite on that SHA found
+one missed raw-command inventory assertion (2814 tests,2790 passes,1 failure,
+23 platform skips,108.7s); no complete local success is attributed. The dependent
+workflow inventory now includes the two diagnostic commands and tests control/
+build/cancellation gating while preserving independent original failure checks.
+The scoped routing/product/parser files passed43 tests with one Windows skip.
+
+The next intermediate probe retains finite reader process status/termination/code;
+it does not mislabel successful FileObject/IRP hex values as errors. Full decode
+and a provider/time-filtered reader use the same ETL and decoder, each under the
+unchanged10s bound, in alternating order across fixtures. Only the native query
+changes. Missing older associations, truncation, millisecond timing and event loss
+remain unverified; no absence/actor inference is authorized. The actual interpreter
+control checks query arguments and equal in-window decoding; real ETL execution
+remains pending. Unknown reader termination blocks further readers and raw cleanup.
+Both reviews report no findings. No product, original assertion or budget changed.
