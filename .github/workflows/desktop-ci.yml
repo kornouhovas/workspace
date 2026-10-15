@@ -14,6 +14,13 @@ on:
         description: With checks=readiness, reproduce original Windows latest and 2022 editor failures
         type: boolean
         default: false
+      readiness_minimal_host:
+        description: Host context for the opt-in minimal Electron native diagnostic
+        type: choice
+        options:
+          - bare
+          - workspace
+        default: bare
       readiness_minimal_electron:
         description: With focused Reveal checks, minimize cold native Reveal in Electron without Workspace services
         type: boolean
@@ -619,6 +626,7 @@ jobs:
         run: node scripts/diagnostics/windows-electron-reveal.mjs
         env:
           WORKSPACE_MINIMAL_REVEAL_OUTPUT: work/ci-focused-windows-reveal/minimal-electron.json
+          WORKSPACE_MINIMAL_REVEAL_HOST: ${{ inputs.readiness_minimal_host || 'bare' }}
       - name: Early original Windows latest direct creation native evidence
         if: ${{ !cancelled() && steps.reveal-build.outcome == 'success' && inputs.readiness_native_windows == true && inputs.readiness_native_early == true && matrix.os == 'windows-latest' }}
         run: npm run smoke:runtime -- dev --creation --discovery-mode=direct --checkpoint=after_evidence

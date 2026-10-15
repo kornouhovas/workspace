@@ -8,28 +8,48 @@ import { fileURLToPath } from 'node:url';
 import { build } from 'esbuild';
 import { _electron } from 'playwright-core';
 import { closeElectron, withDeadline } from '../runtime-lifecycle.mjs';
+import { waitForRuntimeInterface } from '../runtime-startup.mjs';
 import { closeDisposableFileManagerTarget, waitForFileManagerTarget } from '../file-manager-evidence.mjs';
 
 assert.equal(process.platform, 'win32');
 const output = process.env.WORKSPACE_MINIMAL_REVEAL_OUTPUT;
+const host = process.env.WORKSPACE_MINIMAL_REVEAL_HOST ?? 'bare';
+assert.ok(['bare', 'workspace'].includes(host));
 assert.ok(output, 'An explicit evidence destination is required');
 const root = await realpath(await mkdtemp(join(tmpdir(), 'workspace-minimal-reveal-')));
-const evidence = { kind: 'minimal-electron-native-reveal', acceptance: false, native: null, normalQuit: false };
+const evidence = { kind: 'minimal-electron-native-reveal', acceptance: false, host, native: null, normalQuit: false };
 const target = join(root, 'root', 'Project 日本語'), profile = join(root, 'profile'), bundle = join(root, 'native.cjs');
 let app, child, primary, bridgeStopped = true, launchUnverified = false;
+let backendVerified = host === 'bare';
+const backendPids = new Set();
+async function collectBackends() {
+  if (host !== 'workspace') return;
+  const pids = await withDeadline(app.evaluate(({ app }) => app.getAppMetrics().filter(metric =>
+    metric.type === 'Utility' && metric.serviceName?.includes('Node')).map(metric => metric.pid)), 1000, 'Owned backend evidence');
+  assert.ok(pids.length > 0 && pids.every(pid => Number.isSafeInteger(pid) && pid > 0));
+  for (const pid of pids) backendPids.add(pid);
+  backendVerified = true;
+}
 try {
   await mkdir(target, { recursive: true }); await mkdir(profile);
   await build({ entryPoints: ['src/desktop/windows-project-reveal.ts'], platform: 'node', bundle: true, format: 'cjs', outfile: bundle });
   launchUnverified = true;
   app = await _electron.launch({ executablePath: createRequire(import.meta.url)('electron'),
-    args: [fileURLToPath(new URL('./windows-electron-reveal.cjs', import.meta.url))],
-    env: { ...process.env, WORKSPACE_REVEAL_TRACE: '1', WORKSPACE_MINIMAL_REVEAL_PROFILE: profile,
+    args: [fileURLToPath(new URL(host === 'workspace' ? '../../' : './windows-electron-reveal.cjs', import.meta.url))],
+    env: { ...process.env, WORKSPACE_REVEAL_TRACE: '1', WORKSPACE_MINIMAL_REVEAL_PROFILE: profile, WORKSPACE_USER_DATA_DIR: profile,
+      WORKSPACE_MINIMAL_REVEAL_HOST: host,
       WORKSPACE_MINIMAL_REVEAL_MODULE: bundle, WORKSPACE_MINIMAL_REVEAL_TARGET: await realpath(target),
       WORKSPACE_MINIMAL_REVEAL_NATIVE: fileURLToPath(new URL('../../src/desktop/native/', import.meta.url)) }, timeout: 10000 });
   child = app.process();
   launchUnverified = false;
   const page = await app.firstWindow({ timeout: 30000 });
-  await page.waitForURL('data:text/html,' + encodeURIComponent('<title>Minimal Reveal</title>'), { waitUntil: 'load', timeout: 30000 });
+  if (host === 'workspace') {
+    // Load only the diagnostic callable into trusted main after actual app startup.
+    await app.evaluate((_, script) => process.getBuiltinModule('node:module').createRequire(script)(script),
+      fileURLToPath(new URL('./windows-electron-reveal.cjs', import.meta.url)));
+    await collectBackends();
+    await waitForRuntimeInterface(page, async status => { evidence.startup = status; });
+  } else await page.waitForURL('data:text/html,' + encodeURIComponent('<title>Minimal Reveal</title>'), { waitUntil: 'load', timeout: 30000 });
   bridgeStopped = false;
   evidence.native = await withDeadline(app.evaluate(() => globalThis.minimalReveal()), 17000, 'Minimal native Reveal');
   bridgeStopped = evidence.native.stopped === 1 && evidence.native.unknown === false;
@@ -54,12 +74,21 @@ try {
 } catch (error) { primary = error; }
 finally {
   if (app) {
+    if (!backendVerified) {
+      try { await collectBackends(); } catch { primary ??= new Error('Owned backend evidence unavailable'); }
+    }
     try { await closeElectron(app); evidence.normalQuit = true; }
     catch (error) { primary ??= error; evidence.normalQuit = false; }
   }
   const mainStopped = !launchUnverified && (!child || child.exitCode !== null || child.signalCode !== null);
+  let backendsStopped = backendVerified;
+  for (const pid of backendPids) {
+    try { process.kill(pid, 0); backendsStopped = false; }
+    catch (error) { if (error.code !== 'ESRCH') backendsStopped = false; }
+  }
+  evidence.backendsStopped = backendsStopped; evidence.backendCount = backendPids.size;
   evidence.mainStopped = mainStopped; evidence.bridgeStopped = bridgeStopped;
-  if (mainStopped && bridgeStopped) {
+  if (mainStopped && bridgeStopped && backendsStopped) {
     const cleanup = await closeDisposableFileManagerTarget(target, 'win32', undefined, { ownedParent: true });
     evidence.windowCleanup = { status: cleanup.status, matched: cleanup.matched, closed: cleanup.closed, errorCount: cleanup.errorCount };
     if (cleanup.status === 'completed') {

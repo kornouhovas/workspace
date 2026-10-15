@@ -323,3 +323,9 @@ is warmed diagnostic evidence regardless of the diagnostic outcome. A fresh VM
 run with this flag disabled must pass the cold original before full acceptance.
 Focused install logs retain verbose npm failure evidence with strict pipe failure
 propagation, including failures before build; no retry changes their verdict.
+
+`readiness_minimal_host: workspace` restores the actual main process, renderer and
+backend with an empty owned database. The same diagnostic adapter call remains
+direct; there is no registered source, observer, crash recovery or project creation.
+Owned backend termination joins the fixture-removal gate. The default `bare` host
+removes those startup components; neither variant replaces cold original acceptance.

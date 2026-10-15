@@ -722,3 +722,29 @@ overstated that evidence. The ordinary original smoke explicitly enables UIA;
 its evidence is separate. The new minimal runner enables it and requires verified
 selected-target agreement. Review caught and repaired the default-mode omission
 before any Windows execution of the minimal runner.
+
+### Bare Electron passed; restore production startup only
+
+Focused38794492680 on3b262f63 passed both Windows jobs; artifacts12002485214 and
+12002295374 inspected. The bare host selected once with COM/UIA agreement and
+confirmed parent/bridge/Explorer/fixture cleanup. Latest reached first Item1575ms,
+returned2888ms, UIAroot5128ms and readiness5977ms;2022 readiness4930ms. Latest's
+later warmed original also passed exact COM/UIA, restart and all cleanup;229controls
+passed on each OS. This is not cold-original acceptance. npm installation passed,
+which alone does not identify the previous install failure's cause.
+
+Fresh Node22 `npm test` on3b262f63 passed2849tests:2825passed,0failed,24skipped in
+117.3seconds after build. Log `work/issue-26-ci/local-full-minimal-3b262f6.log`.
+
+Next minimization restores production main/renderer/backend startup with an empty
+database while retaining the identical direct adapter call, target and timing.
+Ranked predictions: (1) if startup context is sufficient, the Workspace host fails;
+(2) if an active source observer is necessary, empty startup passes and a subsequent
+source-registered variant fails; (3) if recovery/creation history is necessary, both
+pass until that history is restored. Single Windows passes constrain these
+hypotheses without proving necessity or eliminating environment variance.
+
+Local minimization checks:64routing/lifecycle tests, lint/docs/diff passed. A real
+macOS launch of the actual repository entry confirmed unchanged appPath, ready
+backend, trusted diagnostic callable installation, normal close and owned backend
+exit. This checks the harness startup/cleanup seam, not Windows native behavior.
