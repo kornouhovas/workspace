@@ -14,6 +14,10 @@ on:
         description: With checks=readiness, reproduce original Windows latest and 2022 editor failures
         type: boolean
         default: false
+      readiness_minimal_electron:
+        description: With focused Reveal checks, minimize cold native Reveal in Electron without Workspace services
+        type: boolean
+        default: false
       readiness_native_prefix:
         description: With readiness native Windows, reproduce the original layout and creation prefix before the failed command
         type: boolean
@@ -602,9 +606,19 @@ jobs:
         with:
           node-version: 22.21.1
           cache: npm
-      - run: npm ci
+      - name: Install focused Reveal dependencies with failure evidence
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p work/ci-focused-windows-reveal
+          npm ci --loglevel verbose 2>&1 | tee work/ci-focused-windows-reveal/install.log
       - run: npm run build
         id: reveal-build
+      - name: Minimal Electron cold native reproduction
+        if: ${{ !cancelled() && steps.reveal-build.outcome == 'success' && inputs.readiness_minimal_electron == true }}
+        run: node scripts/diagnostics/windows-electron-reveal.mjs
+        env:
+          WORKSPACE_MINIMAL_REVEAL_OUTPUT: work/ci-focused-windows-reveal/minimal-electron.json
       - name: Early original Windows latest direct creation native evidence
         if: ${{ !cancelled() && steps.reveal-build.outcome == 'success' && inputs.readiness_native_windows == true && inputs.readiness_native_early == true && matrix.os == 'windows-latest' }}
         run: npm run smoke:runtime -- dev --creation --discovery-mode=direct --checkpoint=after_evidence

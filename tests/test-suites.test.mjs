@@ -411,12 +411,31 @@ test('remaining Reveal scope replaces unrelated readiness with the original file
         assert.deepEqual(active.sort(), ['focused-macos-package-creation', 'focused-windows-reveal']);
     }
   assert.deepEqual(job.strategy.matrix.os, ['windows-latest', 'windows-2022']); assert.equal(job.strategy['fail-fast'], false);
-  const commands = job.steps.filter(step => step.run && !step.name?.startsWith('Early original')).map(step => step.run);
-  assert.deepEqual(commands.slice(0, 2), ['npm ci', 'npm run build']); assert.equal(commands.length, 8);
+  const commands = job.steps.filter(step => step.run && !step.name?.startsWith('Early original') && step.name !== 'Minimal Electron cold native reproduction').map(step => step.run);
+  assert.match(commands[0], /set -o pipefail/);
+  assert.match(commands[0], /npm ci --loglevel verbose 2>&1 \| tee work\/ci-focused-windows-reveal\/install.log/);
+  assert.equal(commands[1], 'npm run build'); assert.equal(commands.length, 8);
   assert.ok(commands[2].includes('set -o pipefail')); assert.ok(commands[2].includes('node --import tsx --test tests/project-reveal.test.mjs tests/windows-project-reveal.test.mjs tests/windows-project-reveal-com.test.mjs tests/windows-ready-selection-com.test.mjs 2>&1 | tee'));
   const upload = job.steps.find(step => step.uses === 'actions/upload-artifact@v4');
   assert.equal(upload.if, 'always()'); assert.equal(upload.with['if-no-files-found'], 'error');
   for (const field of ['matrix.os', 'github.sha', 'github.run_id', 'github.run_attempt']) assert.ok(upload.with.name.includes(field));
+});
+
+test('minimal Electron reproduction is opt-in and cannot replace original native acceptance', () => {
+  const workflow = load(readFileSync('.github/workflows/desktop-ci.yml', 'utf8'));
+  assert.equal(workflow.on.workflow_dispatch.inputs.readiness_minimal_electron.default, false);
+  const job = workflow.jobs['focused-windows-reveal'];
+  const probe = job.steps.find(step => step.name === 'Minimal Electron cold native reproduction');
+  assert.equal(probe.run, 'node scripts/diagnostics/windows-electron-reveal.mjs');
+  assert.equal(probe.env.WORKSPACE_MINIMAL_REVEAL_OUTPUT, 'work/ci-focused-windows-reveal/minimal-electron.json');
+  const original = job.steps.find(step => step.name === 'Early original Windows latest direct creation native evidence');
+  assert.ok(job.steps.indexOf(probe) < job.steps.indexOf(original));
+  assert.ok(!original.if.includes('readiness_minimal_electron'));
+  for (const enabled of [undefined, false, true]) for (const cancelled of [false, true]) for (const outcome of ['success', 'failure']) {
+    assert.equal(runInNewContext(probe.if.slice(3, -2).replace('steps.reveal-build', 'steps["reveal-build"]'),
+      { cancelled: () => cancelled, steps: { 'reveal-build': { outcome } }, inputs: { readiness_minimal_electron: enabled } }),
+    !cancelled && outcome === 'success' && enabled === true);
+  }
 });
 
 test('remaining Reveal scope includes the exact Windows latest native failure independently after build', () => {
