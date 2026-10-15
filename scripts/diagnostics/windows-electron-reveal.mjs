@@ -37,8 +37,15 @@ try {
   assert.equal(evidence.native.opens, 1, 'Minimal reproduction must reach actual navigation');
   assert.ok(evidence.native.trace.some(event => event.phase === 'enumeration'), 'Minimal reproduction must reach COM');
   if (evidence.native.outcome === 'dispatched') {
-    const observed = await waitForFileManagerTarget(target, 'win32');
+    const observed = await waitForFileManagerTarget(target, 'win32', undefined, { windowsDiagnostics: true });
     evidence.exactTargetObserved = observed.status === 'passed' && observed.exactTargetObserved === true;
+    evidence.independentSelection = observed.independentSelection;
+    evidence.selectionAgreement = observed.selectionAgreement;
+    assert.equal(observed.independentSelection?.status, 'observed');
+    assert.equal(observed.independentSelection?.windowVerified, true);
+    assert.equal(observed.independentSelection?.targetVerified, true);
+    assert.equal(observed.independentSelection?.selected, true);
+    assert.equal(observed.selectionAgreement, 'agree');
   }
   assert.equal(evidence.native.selections, 1, 'Minimal native Reveal must select exactly once');
   assert.equal(evidence.native.permits, 1);

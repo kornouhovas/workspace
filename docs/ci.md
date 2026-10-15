@@ -310,6 +310,16 @@ The temporary issue26 COM comparison route was removed after its cold/warm
 artifacts were retained. Renew the actual repaired cold native gate with
 `checks: readiness`, `readiness_reveal_windows: true`,
 `readiness_native_windows: true`, `readiness_native_early: true`; keep the
-historical prefix disabled for this cold gate. No comparison or other Explorer
-warm-up precedes the original command. Inspect the original exact-SHA outcome,
+historical prefix and `readiness_minimal_electron` disabled for this cold gate.
+With both disabled, no comparison or other Explorer warm-up precedes the original command. Inspect the original exact-SHA outcome,
 COM/UIA target evidence, restart, shutdown and cleanup before full acceptance.
+
+The opt-in `readiness_minimal_electron: true` inserts a Phase-2 diagnostic before
+the original command on both Windows runners. It executes the real native adapter
+from a bare Electron host without the Workspace service, database or observers,
+retaining native deadlines, COM/UIA selection and owned cleanup assertions. Its
+`minimal-electron.json` explicitly records `acceptance: false`. The later original
+is warmed diagnostic evidence regardless of the diagnostic outcome. A fresh VM
+run with this flag disabled must pass the cold original before full acceptance.
+Focused install logs retain verbose npm failure evidence with strict pipe failure
+propagation, including failures before build; no retry changes their verdict.

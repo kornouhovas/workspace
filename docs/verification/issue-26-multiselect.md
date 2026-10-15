@@ -689,3 +689,36 @@ The log remains `work/issue-26-ci/local-full-item-dispid.log`. No full success,
 platform acceptance or integration is claimed. The fixed-identifier Windows
 trial and the local shutdown failure are separate unresolved gates; scoped
 Windows diagnosis may proceed without representing this local run as passing.
+
+## Fixed identifier insufficient; minimize the Electron host
+
+Focused38792159524 on a2589726 failed the unchanged cold Windowslatest original.
+Artifact12000741165: window_item3771.5ms, item_returned8874.2ms, document8874.9ms,
+parent8883.9ms, owner10779.6ms; zero selection and owner expiry. The fixed dispatch
+identifier does not remove the delay. All229 latest controls and owned cleanup
+passed. Windows2022 failed during npm installation before tests: node-gyp12.4.0
+reported `Completion callback never invoked!` on Node22.21.1/Python3.14.8 after
+successful header download. Its cause is unresolved; retain verbose install output
+on the next changed diagnostic, without retry or runtime substitution.
+
+4786abf repairs a separate property fixture cleanup defect: use the shared normal
+close helper once, rather than starting a second close after a timeout. Forced
+owned termination never converts normal-quit failure into success. The lifecycle
+regression requires one close and confirmed owned-child termination;37focused
+checks and12real property cases across4parallel processes passed. This does not
+prove the cause of the intermittent normal shutdown timeout or repair that gate.
+
+2e3d8b2 plus review repairs introduces an opt-in bare Electron minimization in
+`scripts/diagnostics`. The actual adapter, target, selection count,12second owner,
+independent COM/UIA evidence and strict owned cleanup remain required. Removing
+Workspace service/SQLite/observer distinguishes host-level behavior from app
+context. This diagnostic is not acceptance: it warms the later original. Renew
+the diagnostic-disabled cold original on a fresh VM before considering full CI.
+
+Evidence correction: the removed COM comparison runner used the observer's COM-only
+default. Its successful exact-target observations confirm COM selection, not
+independent UIA agreement. Earlier COM/UIA wording for those comparison results
+overstated that evidence. The ordinary original smoke explicitly enables UIA;
+its evidence is separate. The new minimal runner enables it and requires verified
+selected-target agreement. Review caught and repaired the default-mode omission
+before any Windows execution of the minimal runner.
