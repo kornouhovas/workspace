@@ -1,10 +1,76 @@
+# Loading the fixed scripts defines helpers only. Compile on use so policy/load
+# probes do not instantiate COM or change their existing execution boundary.
+function Initialize-WorkspaceNativeBinding {
+    if ('WorkspaceReadyCom' -as [type]) { return }
+    Add-Type -TypeDefinition @'
+using System;
+using System.Reflection;
+using System.Runtime.InteropServices;
+
+public static class WorkspaceReadyWindow {
+    [DllImport("user32.dll", ExactSpelling=true)]
+    [return: MarshalAs(UnmanagedType.Bool)] public static extern bool IsWindow(IntPtr hwnd);
+    [DllImport("user32.dll", ExactSpelling=true)]
+    public static extern uint GetWindowThreadProcessId(IntPtr hwnd, out uint processId);
+}
+
+// Keep returned RCWs inside managed code. Handing a raw COM result back to
+// PowerShell can trigger its COM adapter before the next binding guard runs.
+public sealed class WorkspaceReadyComReference {
+    internal readonly object Value;
+    internal WorkspaceReadyComReference(object value) { Value = value; }
+
+    public void SelectItem(WorkspaceReadyComReference item, int flags) {
+        if (item == null || flags != 5) throw new ArgumentException();
+        WorkspaceReadyCom.Call(this, "SelectItem", new object[] { item, flags });
+    }
+}
+
+public static class WorkspaceReadyCom {
+    private static object Unwrap(object value) {
+        var reference = value as WorkspaceReadyComReference;
+        return reference == null ? value : reference.Value;
+    }
+    private static object Wrap(object value) {
+        return value != null && Marshal.IsComObject(value)
+            ? new WorkspaceReadyComReference(value) : value;
+    }
+    public static object Read(object value, string name) {
+        var raw = Unwrap(value);
+        if (raw == null) throw new ArgumentNullException();
+        return Wrap(raw.GetType().InvokeMember(name, BindingFlags.GetProperty, null, raw, null));
+    }
+    public static object Call(object value, string name, object[] arguments) {
+        var raw = Unwrap(value);
+        if (raw == null) throw new ArgumentNullException();
+        var unwrapped = new object[arguments.Length];
+        for (int i = 0; i < arguments.Length; i++) unwrapped[i] = Unwrap(arguments[i]);
+        return Wrap(raw.GetType().InvokeMember(name, BindingFlags.InvokeMethod, null, raw, unwrapped));
+    }
+    public static bool SameIdentity(object left, object right) {
+        left = Unwrap(left); right = Unwrap(right);
+        if (left == null || right == null) return false;
+        IntPtr a = IntPtr.Zero, b = IntPtr.Zero;
+        try {
+            a = Marshal.GetIUnknownForObject(left);
+            b = Marshal.GetIUnknownForObject(right);
+            return a == b;
+        } finally {
+            if (b != IntPtr.Zero) Marshal.Release(b);
+            if (a != IntPtr.Zero) Marshal.Release(a);
+        }
+    }
+}
+'@ | Out-Null
+}
 function Get-WorkspaceComProperty($value, [string]$name) {
-    # Call IDispatch through .NET without PowerShell's COM member discovery.
+    Initialize-WorkspaceNativeBinding
     # Preserve collection/null results as one value rather than pipeline items.
-    return ,([System.__ComObject].InvokeMember($name, [Reflection.BindingFlags]::GetProperty, $null, $value, $null))
+    return ,([WorkspaceReadyCom]::Read($value, $name))
 }
 function Invoke-WorkspaceComMethod($value, [string]$name, [object[]]$arguments, $trace = $null) {
-    $result = [System.__ComObject].InvokeMember($name, [Reflection.BindingFlags]::InvokeMethod, $null, $value, $arguments)
+    Initialize-WorkspaceNativeBinding
+    $result = [WorkspaceReadyCom]::Call($value, $name, $arguments)
     if ($null -ne $trace) { try { [void](& $trace 'item_returned') } catch { } }
     return ,$result
 }
@@ -22,15 +88,8 @@ function Test-WorkspaceReadyPath($actual, $expected) {
 
 function Test-WorkspaceReadyDocument($left, $right) {
     if ($null -eq $left -or $null -eq $right) { return $false }
-    $a = [IntPtr]::Zero; $b = [IntPtr]::Zero
-    try {
-        $a = [Runtime.InteropServices.Marshal]::GetIUnknownForObject($left)
-        $b = [Runtime.InteropServices.Marshal]::GetIUnknownForObject($right)
-        return $a -eq $b
-    } finally {
-        if ($b -ne [IntPtr]::Zero) { [void][Runtime.InteropServices.Marshal]::Release($b) }
-        if ($a -ne [IntPtr]::Zero) { [void][Runtime.InteropServices.Marshal]::Release($a) }
-    }
+    Initialize-WorkspaceNativeBinding
+    return [WorkspaceReadyCom]::SameIdentity($left, $right)
 }
 
 function Read-WorkspaceReadyOwner($handle, $trace = $null) {

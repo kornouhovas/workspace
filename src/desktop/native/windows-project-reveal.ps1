@@ -105,16 +105,7 @@ if ($MyInvocation.InvocationName -ne '.') {
         Write-WorkspaceRevealTrace 'assemblies'
         Add-Type -AssemblyName UIAutomationClient, UIAutomationTypes -ErrorAction Stop
         Write-WorkspaceRevealTrace 'compile'
-        Add-Type -TypeDefinition @'
-using System;
-using System.Runtime.InteropServices;
-public static class WorkspaceReadyWindow {
-    [DllImport("user32.dll", ExactSpelling=true)]
-    [return: MarshalAs(UnmanagedType.Bool)] public static extern bool IsWindow(IntPtr hwnd);
-    [DllImport("user32.dll", ExactSpelling=true)]
-    public static extern uint GetWindowThreadProcessId(IntPtr hwnd, out uint processId);
-}
-'@ | Out-Null
+        Initialize-WorkspaceNativeBinding
         Write-WorkspaceRevealTrace 'shell'
         $shell = New-Object -ComObject Shell.Application
         $completed = Invoke-WorkspaceProjectRevealFromEnvironment $shell ([Diagnostics.Stopwatch]::new())

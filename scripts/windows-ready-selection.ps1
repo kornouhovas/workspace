@@ -43,7 +43,7 @@ function Invoke-WorkspaceReadySelection($shell, $expected, $watch) {
         if ($result.elapsedMs -ge 10000) { $result.stage = 'deadline'; return $result }
         if ($before.stage -ne 'ready') { $result.stage = $(if ($before.stage -eq 'unready') { 'unready' } else { $before.stage }); return $result }
         # Revalidate the captured FolderItem's path; use its captured Document.
-        if (-not (Test-WorkspaceReadyPath $anchor.item.Path $expected)) { $result.stage = 'view_changed'; return $result }
+        if (-not (Test-WorkspaceReadyPath (Get-WorkspaceComProperty $anchor.item 'Path') $expected)) { $result.stage = 'view_changed'; return $result }
         $result.selectionMs = Get-WorkspaceReadyMilliseconds $watch
         if ($result.selectionMs -ge 10000) { $result.elapsedMs = $result.selectionMs; $result.selectionMs = $null; $result.stage = 'deadline'; return $result }
         $result.stage = 'selection_error'; $result.selectionCount = 1
@@ -58,11 +58,11 @@ function Invoke-WorkspaceReadySelection($shell, $expected, $watch) {
             $result.elapsedMs = Get-WorkspaceReadyMilliseconds $watch
             if ($result.elapsedMs -ge 10000) { $result.stage = 'deadline'; return $result }
             if ($after.stage -ne 'ready') { $result.stage = $after.stage; return $result }
-            $selected = $anchor.document.SelectedItems()
-            if ($null -eq $selected -or $selected.Count -isnot [int] -or $selected.Count -lt 0 -or $selected.Count -gt 256) {
+            $selected = Invoke-WorkspaceComMethod $anchor.document 'SelectedItems' @()
+            if ($null -eq $selected -or (Get-WorkspaceComProperty $selected 'Count') -isnot [int] -or (Get-WorkspaceComProperty $selected 'Count') -lt 0 -or (Get-WorkspaceComProperty $selected 'Count') -gt 256) {
                 $result.stage = 'property_unavailable'; return $result
             }
-            $match = $selected.Count -eq 1 -and (Test-WorkspaceReadyPath $selected.Item(0).Path $expected)
+            $match = (Get-WorkspaceComProperty $selected 'Count') -eq 1 -and (Test-WorkspaceReadyPath (Get-WorkspaceComProperty (Invoke-WorkspaceComMethod $selected 'Item' @(0)) 'Path') $expected)
             $verified = Read-WorkspaceReadyBinding $shell $expected $anchor
             $result.elapsedMs = Get-WorkspaceReadyMilliseconds $watch
             if ($result.elapsedMs -ge 10000) { $result.stage = 'deadline'; return $result }
@@ -85,16 +85,7 @@ if ($MyInvocation.InvocationName -ne '.') {
     try {
         . "$PSScriptRoot/windows-selection-diagnostics.ps1"
         Add-Type -AssemblyName UIAutomationClient, UIAutomationTypes -ErrorAction Stop
-        Add-Type -TypeDefinition @'
-using System;
-using System.Runtime.InteropServices;
-public static class WorkspaceReadyWindow {
-    [DllImport("user32.dll", ExactSpelling=true)]
-    [return: MarshalAs(UnmanagedType.Bool)] public static extern bool IsWindow(IntPtr hwnd);
-    [DllImport("user32.dll", ExactSpelling=true)]
-    public static extern uint GetWindowThreadProcessId(IntPtr hwnd, out uint processId);
-}
-'@ | Out-Null
+        Initialize-WorkspaceNativeBinding
         $expected = [IO.Path]::GetFullPath($env:WORKSPACE_READY_SELECTION_TARGET)
         # Only the orchestrator's fresh owned shape is accepted, including Unicode.
         $parent = [IO.Path]::GetDirectoryName($expected)

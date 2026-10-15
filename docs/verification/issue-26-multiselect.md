@@ -916,3 +916,48 @@ query/selection counts, observers, deadlines or cleanup. Focused routing control
 cover default/false/true for both early and historical original paths. This avoids
 using diagnostic tracing as a hidden final-acceptance precondition. Fresh cold
 Windows and same-SHA full platform gates remain pending.
+
+### Diagnostic-free cold original red; isolate returned COM adaptation
+
+Focused38801930332 on39b8b6ed failed the actual first/cold original with tracing
+explicitly off. Artifacts12005355650/12005545319 downloaded and inspected:229native
+controls per OS passed, but latest original retained navigation1, selection0,
+returned0 and `owner_deadline` in opened phase. The bridge stopped (started1,
+stopped1, active0, unknownfalse), fixture cleanup passed; no trace timings exist
+for this run. This reopens repair work; no full CI or integration is authorized by
+that result.
+
+Ranked, falsifiable next hypotheses:
+1. Passing returned COM RCWs into PowerShell triggers costly adapter work. Keep
+   returned RCWs behind a managed opaque reference and repeat the unchanged cold
+   original. A retained slow Item/failure would refute sufficiency of this repair.
+2. CLR COM marshaling or the remote Explorer call itself consumes that time. An
+   opaque-return failure after the managed call starts remains compatible; a pass
+   alone does not identify this alternative or establish a unique historical cause.
+3. Host initialization/scheduling varies independently of this boundary. Prior
+   same-image red/green results support keeping this alternative; exact-SHA full
+   acceptance and explicit evidence are required after any focused green.
+
+The candidate compiles one fixed managed helper on use (load/policy probes remain
+non-executing). It wraps returned COM references before returning to PowerShell,
+unwraps receivers/arguments inside .NET, and compares underlying IUnknown identity
+with both temporary references released in finally. It forwards the captured
+Document's sole SelectItem with the captured FolderItem and flags5, without retry.
+The owned process retains RCWs until exit; it does not release live captured RCWs
+or add another authority, target, selection, deadline or readiness bypass.
+Existing user32 declarations share the same compile step before Open. The ready
+selection diagnostic's remaining reads also use the shared helpers so opaque
+references cannot silently break that consumer.
+
+Windows controls cover opaque real FSO method/property results, separate wrappers
+over the same genuine dictionary IUnknown, raw-to-wrapped identity, and managed
+SelectItem forwarding of the exact underlying item/flags, one call and exception
+propagation. Scalar/null/array/error and controlled ownership/readiness/permit
+checks remain. These are regression seams, not substitutes for actual cold
+COM/UIA agreement. New Windows execution and full acceptance remain pending.
+
+Candidate verification: both review axes found no remaining findings after fixing
+opaque-reference compatibility in the ready-selection diagnostic. Fresh supported
+Node22 `npm test` rebuilt and passed2849tests:2825passed,0failed,24platform skips,
+114.7seconds. Typecheck, lint, documentation links and whitespace passed. Local
+success skips actual Windows COM controls; cold Windows evidence is the next gate.

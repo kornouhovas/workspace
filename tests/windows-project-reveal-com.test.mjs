@@ -1,8 +1,9 @@
 import assert from "node:assert/strict";
 import { execFile, spawn } from "node:child_process";
-import { readFile } from "node:fs/promises";
+import { mkdtemp, mkdir, readFile, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
-import { win32 } from "node:path";
+import { join, win32 } from "node:path";
 import { promisify } from "node:util";
 import test from "node:test";
 
@@ -44,11 +45,15 @@ test("production and diagnostic scripts share the exact binding guards without d
   assert.doesNotMatch(bridge, /WORKSPACE_CONTROL_TARGET/);
   // Every read in the COM binding uses direct IDispatch; PowerShell member
   // discovery on a cold Explorer must not return to this path.
-  assert.match(binding, /\[System.__ComObject\].InvokeMember\(\$name, \[Reflection.BindingFlags\]::GetProperty/);
-  assert.match(binding, /\[System.__ComObject\].InvokeMember\(\$name, \[Reflection.BindingFlags\]::InvokeMethod/);
+  assert.match(binding, /raw.GetType\(\).InvokeMember\(name, BindingFlags.GetProperty/);
+  assert.match(binding, /raw.GetType\(\).InvokeMember\(name, BindingFlags.InvokeMethod/);
+  assert.match(binding, /new WorkspaceReadyComReference\(value\)/);
+  assert.match(binding, /left = Unwrap\(left\); right = Unwrap\(right\)/);
+  assert.match(bridge, /Initialize-WorkspaceNativeBinding/);
+  assert.match(readyDiagnostic, /Initialize-WorkspaceNativeBinding/);
   assert.doesNotMatch(binding, /\$windows\.Count|\$windows\.Item\(|\$candidate\.Document|\$document\.Folder|\$window\.(Document|HWND|Busy|ReadyState)|\$item\.Path/);
   assert.match(binding, /Invoke-WorkspaceComMethod \$windows '\[DispID=0\]' @\(\$i\) \$trace/);
-  assert.doesNotMatch(bridge, /\$anchor.item.Path/);
+  assert.doesNotMatch(bridge + readyDiagnostic, /\$anchor.item.Path|\$anchor.document.SelectedItems\(|\$selected\.(Count|Item)/);
   assert.equal((bridge.match(/\.SelectItem\(/g) ?? []).length, 1);
   assert.equal((bridge.match(/\$shell\.Open\(/g) ?? []).length, 1);
 });
@@ -196,18 +201,71 @@ foreach ($mode in ($env:WORKSPACE_CONTROL_MODES | ConvertFrom-Json)) {
 
 test("Windows direct COM reads preserve scalar, collection and error results without PowerShell member lookup", {
   skip: process.platform !== "win32",
-}, async () => {
+}, async (t) => {
+  const root = await mkdtemp(join(tmpdir(), "workspace-com-reference-"));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const folder = join(root, "日本語, & literal 'quote'");
+  await mkdir(folder);
   const script = String.raw`
 $ErrorActionPreference = 'Stop'
 . ./src/desktop/native/windows-binding.ps1
+Initialize-WorkspaceNativeBinding
+# Exercise the managed forwarding boundary independently of fake PS methods.
+Add-Type -TypeDefinition @'
+using System;
+public sealed class WorkspaceSelectionControl {
+    public object Expected;
+    public int Calls;
+    public bool Fail;
+    public void SelectItem(object item, int flags) {
+        Calls++;
+        if (!Object.ReferenceEquals(item, Expected) || flags != 5 || Fail) throw new InvalidOperationException();
+    }
+}
+'@ | Out-Null
+function New-ControlReference($value) {
+  return [Activator]::CreateInstance([WorkspaceReadyComReference], [Reflection.BindingFlags]'Instance,NonPublic', $null, @($value), $null)
+}
+$control = New-Object WorkspaceSelectionControl
+$control.Expected = New-Object object
+$documentReference = New-ControlReference $control
+$itemReference = New-ControlReference $control.Expected
+$documentReference.SelectItem($itemReference, 5)
+if ($control.Calls -ne 1) { throw 'selection_count' }
+foreach ($flags in @(0, 1, 4, 7)) {
+  $rejected = $false
+  try { $documentReference.SelectItem($itemReference, $flags) } catch { $rejected = $true }
+  if (-not $rejected -or $control.Calls -ne 1) { throw 'selection_flags' }
+}
+$control.Fail = $true
+$rejected = $false
+try { $documentReference.SelectItem($itemReference, 5) } catch { $rejected = $true }
+if (-not $rejected -or $control.Calls -ne 2) { throw 'selection_exception' }
 $shell = New-Object -ComObject Shell.Application
 $windows = $shell.Windows()
 $named = Invoke-WorkspaceComMethod $windows 'Item' @(0)
 $identified = Invoke-WorkspaceComMethod $windows '[DispID=0]' @(0)
 if (($null -eq $named) -ne ($null -eq $identified)) { throw 'dispatch_null_identity' }
 if ($null -ne $named -and -not (Test-WorkspaceReadyDocument $named $identified)) { throw 'dispatch_identity' }
+$filesystem = New-Object -ComObject Scripting.FileSystemObject
+try {
+  $folder = Invoke-WorkspaceComMethod $filesystem 'GetFolder' @($env:WORKSPACE_COM_REFERENCE_TARGET)
+  $again = Invoke-WorkspaceComMethod $filesystem 'GetFolder' @($env:WORKSPACE_COM_REFERENCE_TARGET)
+  if ($folder -isnot [WorkspaceReadyComReference] -or [Runtime.InteropServices.Marshal]::IsComObject($folder)) { throw 'raw_com_returned' }
+  if (-not (Test-WorkspaceReadyPath (Get-WorkspaceComProperty $folder 'Path') $env:WORKSPACE_COM_REFERENCE_TARGET)) { throw 'wrapped_property' }
+  # ParentFolder is another genuine COM result, reached through a property.
+  $parent = Get-WorkspaceComProperty $folder 'ParentFolder'
+  $parentAgain = Get-WorkspaceComProperty $folder 'ParentFolder'
+  if ($parent -isnot [WorkspaceReadyComReference] -or $parentAgain -isnot [WorkspaceReadyComReference]) { throw 'wrapped_property_reference' }
+  if (Test-WorkspaceReadyDocument $parent $folder) { throw 'distinct_identity' }
+  if ((Get-WorkspaceComProperty $again 'Path') -cne (Get-WorkspaceComProperty $folder 'Path')) { throw 'wrapped_method' }
+} finally { [void][Runtime.InteropServices.Marshal]::ReleaseComObject($filesystem) }
 $dictionary = New-Object -ComObject Scripting.Dictionary
 try {
+  $referenceA = [Activator]::CreateInstance([WorkspaceReadyComReference], [Reflection.BindingFlags]'Instance,NonPublic', $null, @($dictionary), $null)
+  $referenceB = [Activator]::CreateInstance([WorkspaceReadyComReference], [Reflection.BindingFlags]'Instance,NonPublic', $null, @($dictionary), $null)
+  if ([object]::ReferenceEquals($referenceA, $referenceB) -or -not (Test-WorkspaceReadyDocument $referenceA $referenceB) -or
+      -not (Test-WorkspaceReadyDocument $dictionary $referenceA)) { throw 'wrapped_identity' }
   if ((Get-WorkspaceComProperty $dictionary 'Count') -cne 0) { throw 'empty_count' }
   [void](Invoke-WorkspaceComMethod $dictionary 'Add' @('one', 1))
   [void](Invoke-WorkspaceComMethod $dictionary 'Add' @('two', 2))
@@ -234,7 +292,8 @@ try {
 `;
   const result = await promisify(execFile)(String.raw`C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe`,
     ["-NoProfile", "-NonInteractive", "-STA", "-ExecutionPolicy", "Bypass", "-Command", script],
-    { windowsHide: true, timeout: 10000 });
+    { windowsHide: true, timeout: 10000,
+      env: { ...process.env, WORKSPACE_COM_REFERENCE_TARGET: folder } });
   assert.equal(result.stdout.trim(), "COM_READ_CONTROL");
   assert.equal(result.stderr, "");
 });
