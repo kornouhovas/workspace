@@ -630,3 +630,26 @@ after that verified source. Publish this candidate with CI suppression, then run
 the actual original early native command on a fresh Windowslatest VM with no
 comparison/prefix. Inspect original and all Windows controls/artifacts before
 full acceptance on the same SHA. No integration is claimed yet.
+
+## Production cold gate still failed; Item return probe
+
+Focused38789427546/attempt1 on a66cb544 failed the original cold Windowslatest
+command with the same zero-selection/owner_deadline result. Both Windows control
+steps, including actual COM scalar/collection/error coverage, passed. Artifact
+12000135552 was downloaded/inspected: window_item3565ms, document8590ms,
+parent8601ms, owner10529ms; no UIA-root boundary before expiry. Document reads
+improved, but the Item-to-document interval still consumed about5seconds and
+parent/owner reads consumed another1.9seconds. All owned cleanup passed. This
+falsifies sufficiency of the direct-read repair; no full CI is authorized yet.
+
+Ranked hypotheses distinguish blocking Item invocation, PowerShell result
+marshalling/pipeline processing, and receipt delivery. One optional `item_returned`
+marker follows the InvokeMember expression's local assignment and precedes helper
+return. Presence confirms that expression returned at least once; absence means
+no completion marker was received, not proof of a blocked COM call. No query,
+selection, permission, deadline or cleanup gate is changed. Default tracing stays
+off,19fixed deduplicated tokens fit the original1024bytes. Genuine Windows controls
+cover completion, exception and throwing callback behavior; the adapter retains
+zero permits and the owner deadline for both completion-marker kinds. Local170
+focused tests passed/6Windows skips, plus typecheck/lint/docs/whitespace. Exact-SHA
+original Windows evidence remains necessary; this probe is not a repair claim.
