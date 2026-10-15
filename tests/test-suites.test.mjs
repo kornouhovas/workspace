@@ -411,7 +411,7 @@ test('remaining Reveal scope replaces unrelated readiness with the original file
         assert.deepEqual(active.sort(), ['focused-macos-package-creation', 'focused-windows-reveal']);
     }
   assert.deepEqual(job.strategy.matrix.os, ['windows-latest', 'windows-2022']); assert.equal(job.strategy['fail-fast'], false);
-  const commands = job.steps.filter(step => step.run).map(step => step.run);
+  const commands = job.steps.filter(step => step.run && !step.name?.startsWith('Early original')).map(step => step.run);
   assert.deepEqual(commands.slice(0, 2), ['npm ci', 'npm run build']); assert.equal(commands.length, 8);
   assert.ok(commands[2].includes('set -o pipefail')); assert.ok(commands[2].includes('node --import tsx --test tests/project-reveal.test.mjs tests/windows-project-reveal.test.mjs tests/windows-project-reveal-com.test.mjs tests/windows-ready-selection-com.test.mjs 2>&1 | tee'));
   const upload = job.steps.find(step => step.uses === 'actions/upload-artifact@v4');
@@ -600,4 +600,44 @@ test('App fixture scope matches only the original Windows 2022 file and preserve
   const upload = job.steps.find(step => step.uses === 'actions/upload-artifact@v4');
   assert.equal(upload.if, 'always()'); assert.equal(upload.with['if-no-files-found'], 'error');
   for (const field of ['github.sha', 'github.run_id', 'github.run_attempt']) assert.ok(upload.with.name.includes(field));
+});
+
+test('Windows latest direct native acceptance runs once before other desktop work and retains every later command', () => {
+  const workflow = load(readFileSync('.github/workflows/desktop-ci.yml', 'utf8'));
+  const original = 'npm run smoke:runtime -- dev --creation --discovery-mode=direct --checkpoint=after_evidence';
+  const steps = workflow.jobs.verify.steps;
+  const native = steps.filter(step => step.run === original);
+  for (const os of ['windows-latest', 'windows-2022', 'macos-latest']) {
+    const active = native.filter(step => !step.if || runInNewContext(step.if.slice(3, -2), { matrix: { os } }));
+    assert.equal(active.length, 1);
+    const index = steps.indexOf(active[0]);
+    assert.ok(index > steps.findIndex(step => step.run === 'npm run build'));
+    assert.equal(index < steps.findIndex(step => step.run === 'npm run test:platform'), os === 'windows-latest');
+    assert.equal(active[0].env.WORKSPACE_SMOKE_EVIDENCE_DIR, 'work/ci-creation-dev-direct');
+  }
+  for (const command of ['npm run test:platform', 'npm run build:ladle', 'node scripts/smoke-discovery-layouts.mjs --creation',
+    'node scripts/smoke-discovery-layouts.mjs --category-move', 'npm run smoke:runtime -- dev --creation --skip-native']) {
+    assert.equal(steps.filter(step => step.run === command).length, 1);
+  }
+  const job = workflow.jobs['focused-windows-reveal'];
+  assert.equal(workflow.on.workflow_dispatch.inputs.readiness_native_early.default, false);
+  const focused = job.steps.filter(step => step.run === original);
+  assert.equal(focused.length, 2);
+  for (const early of [undefined, false, true]) for (const os of ['windows-latest', 'windows-2022'])
+    for (const build of ['success', 'failure']) for (const flag of [undefined, false, true]) {
+      const context = { cancelled: () => false, steps: { 'reveal-build': { outcome: build } },
+        inputs: { readiness_native_early: early, readiness_native_windows: flag }, matrix: { os } };
+      const active = focused.filter(step => runInNewContext(step.if.slice(3, -2).replaceAll('steps.reveal-build', 'steps["reveal-build"]'), context));
+      assert.equal(active.length, build === 'success' && flag === true && os === 'windows-latest' ? 1 : 0);
+      if (active.length) {
+        const index = job.steps.indexOf(active[0]);
+        const regressions = job.steps.findIndex(step => step.name === 'Original Reveal file including dirty and stable authority controls');
+        assert.equal(index < regressions, early === true);
+        assert.equal(active[0].env.WORKSPACE_REVEAL_TRACE, '1');
+        assert.equal(active[0].env.WORKSPACE_SMOKE_EVIDENCE_DIR, 'work/ci-focused-windows-reveal/native');
+      }
+    }
+  assert.ok(steps.every(step => step['continue-on-error'] === undefined));
+  assert.equal(job.steps.find(step => step.name === 'Original Reveal file including dirty and stable authority controls').if, "${{ !cancelled() && steps.reveal-build.outcome == 'success' }}");
+  assert.ok(job.steps.every(step => step['continue-on-error'] === undefined));
 });

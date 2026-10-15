@@ -288,3 +288,20 @@ retains finite click/typed receipt/lifetime counters and known-message booleans;
 original interactions, waits and assertions remain unchanged. Diagnostic evidence
 and local success do not prove the historical cause; focused original/artifact
 acceptance remains required before full CI on the same reviewed SHA.
+
+For issue #26's repeated Windows latest direct creation/native owner expiry,
+focused38781872446 removed only the UI predecessor block and passed the unchanged
+original command, exact selected-target observation, restart and cleanup. The
+Windows latest full job now runs that direct native command immediately after
+build, before platform workers and layout/recovery workloads. Other OS order is
+unchanged. The original command runs exactly once per OS; all later checks and
+strict native/ownership/deadline/cleanup assertions remain required. This is
+scheduling isolation, not proof of the historical Windows/COM cause.
+
+Validate this order with `checks: readiness`, `readiness_reveal_windows: true`,
+`readiness_native_windows: true`, `readiness_native_prefix: true` and
+`readiness_native_early: true`. Native acceptance runs first after build; all
+relevant native/service controls and original layout/recovery predecessors still
+run afterwards, even if that native command fails. The default early flag is
+false, preserving the historical reproduction order. Exact-SHA artifacts and
+full acceptance are required after focused success.

@@ -436,3 +436,31 @@ typecheck, lint, documentation links and whitespace checks passed. Windows
 consumer controls, original focused native command/artifact and subsequent full
 CI must pass on the exact published candidate; local controls do not establish
 Windows native acceptance or a historical cause.
+
+## Native predecessor minimization and scheduling isolation
+
+Focused38780861987 / attempt1 on `89c107a3` repeated the original zero-selection
+owner expiry after all UI predecessors. Artifact11996541927 inspected: initial
+binding returned1052ms, first window item2546ms, first document8520ms, no parent
+marker before12sec expiry; every cleanup passed. This rules out an incomplete
+initial binding read but not a later COM/read/delivery cause.
+
+Focused38781872446 / attempt1 on the same SHA changed only
+readiness_native_prefix to false. Windows latest's original native command
+passed; artifact11996781130 was downloaded and inspected. One parent navigation,
+one completed selection, exact-target COM/UIA agreement, acknowledgment,
+restart and both normal quits/backend exits passed, with confirmed bridge,
+Explorer and fixture cleanup. Document/parent first receipts were2726/5004ms,
+readiness recheck6314ms. The different runs establish a useful predecessor/load
+hypothesis, not causal proof about the OS actor.
+
+Windows latest full acceptance now runs the exact direct native command just
+after build, before other platform/layout/recovery work. Every other command
+still runs; macOS/Windows2022 order is unchanged. A route regression went red
+before this order change. It verifies exactly one execution on each OS, retains
+every later original workload and forbids continue-on-error. The existing focused
+Reveal route gains opt-in readiness_native_early with false default; true runs
+the same command before controls and the retained original predecessor block.
+The late variant is mutually exclusive. Native/service/observer/deadline and
+cleanup gates are unchanged. Review, local renewal, focused exact-SHA original
+plus all retained workloads/artifacts, then full acceptance remain required.

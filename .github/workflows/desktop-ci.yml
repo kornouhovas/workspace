@@ -18,6 +18,10 @@ on:
         description: With readiness native Windows, reproduce the original layout and creation prefix before the failed command
         type: boolean
         default: false
+      readiness_native_early:
+        description: With readiness native Windows, run native acceptance before the retained desktop prefix
+        type: boolean
+        default: false
       readiness_native_windows:
         description: With checks=readiness and readiness_reveal_windows, also run the original Windows latest direct creation and Reveal command
         type: boolean
@@ -601,7 +605,14 @@ jobs:
       - run: npm ci
       - run: npm run build
         id: reveal-build
+      - name: Early original Windows latest direct creation native evidence
+        if: ${{ !cancelled() && steps.reveal-build.outcome == 'success' && inputs.readiness_native_windows == true && inputs.readiness_native_early == true && matrix.os == 'windows-latest' }}
+        run: npm run smoke:runtime -- dev --creation --discovery-mode=direct --checkpoint=after_evidence
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-focused-windows-reveal/native
+          WORKSPACE_REVEAL_TRACE: '1'
       - name: Original Reveal file including dirty and stable authority controls
+        if: ${{ !cancelled() && steps.reveal-build.outcome == 'success' }}
         shell: bash
         run: |
           set -o pipefail
@@ -626,7 +637,7 @@ jobs:
         env:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-focused-windows-reveal/prefix-creation-crash
       - name: Original Windows latest direct creation native evidence
-        if: ${{ !cancelled() && steps.reveal-build.outcome == 'success' && inputs.readiness_native_windows == true && matrix.os == 'windows-latest' }}
+        if: ${{ !cancelled() && steps.reveal-build.outcome == 'success' && inputs.readiness_native_windows == true && inputs.readiness_native_early != true && matrix.os == 'windows-latest' }}
         run: npm run smoke:runtime -- dev --creation --discovery-mode=direct --checkpoint=after_evidence
         env:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-focused-windows-reveal/native
@@ -1082,6 +1093,11 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
+      - name: Early Windows latest direct development creation/native evidence
+        if: ${{ matrix.os == 'windows-latest' }}
+        run: npm run smoke:runtime -- dev --creation --discovery-mode=direct --checkpoint=after_evidence
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-creation-dev-direct
       - run: npm run test:platform
         env:
           OBSERVER_MATRIX: ${{ matrix.os }}
@@ -1123,6 +1139,7 @@ jobs:
         env:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-creation-dev-crash-matrix
       - name: Direct development creation/native evidence
+        if: ${{ matrix.os != 'windows-latest' }}
         run: npm run smoke:runtime -- dev --creation --discovery-mode=direct --checkpoint=after_evidence
         env:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-creation-dev-direct
