@@ -1092,3 +1092,44 @@ changed in this repair. New `checks: property-fixture` selects only the existing
 macOS original-file job; historical ETW union and default full/push coverage remain.
 Actual macOS original and exact-SHA full acceptance remain pending. The old full
 run's Windows platform suites both passed and runtime stages are still in progress.
+
+### Complete full failure map; property original passes on repaired source
+
+Focused38810096474 on36aca7a4 passed the exact macOS property-driver file3/3 with
+normal quit; artifact12008136997 downloaded/inspected. Full38808047668 onbc74
+completed with three failed jobs. BothWindows platform suites and all cold/direct/
+grouped creation-native predecessors passed. macOS retains the setup100ms failure
+above; MultiSelect dev/package stages remain unreached on allOS.
+
+Windows2022 job116674476987: original `npm run smoke:runtime -- dev` failed raw
+external category rename at smoke-runtime.mjs906 with EPERM. The category fixture
+is owned/Unicode/long-path; mode-change/recovery passed, automatic reconciliation
+and subsequent lifecycle stages unreached. Artifact12007229183 and complete job
+log downloaded/inspected; fixture cleanup passed. No Explorer invocation occurs in
+that ordinary runtime's pre-rename code. Production Windows observer already
+watches only source roots; category scans remain active, using legacy descendant
+realpath and complete identity checks. No new retry/settling/observer bypass is a
+repair until the actual boundary is diagnosed.
+
+Ranked EPERM hypotheses: (1) transient production scan/descendant-handle overlap,
+compared by existing idle/observation/concurrent-scan/native/legacy stress cases;
+(2) a persistent owned handle or external Windows sharing conflict, constrained
+by category/child held-handle and DELETE-sharing controls; (3) unrelated host/
+antivirus or long-path behavior, constrained by identical owned idle fixtures,
+without claiming exact historical OS attribution. A narrow runtime-observation
+selector reuses the realWindows2022 original and existing comparisons; diagnostic
+failure cannot skip the original after successful build. It changes no product,
+original command, deadline or assertion.32routingcontrols pass locally.
+
+Windowslatest job116674476751: original `npm run smoke:runtime -- dev` passed its
+main runtime and rename portions, then failed RU category-unavailable guard at
+smoke-project-category-move-ui.mjs610: post-action staleText with one authored ID,
+while the oracle assumes stale means pre-submission zeroIDs. Artifact12007768429
+and complete job log downloaded/inspected. RU unavailable proof has unchanged
+durable journal; visible stale editor/metadata/text retained. Component code can
+accept a rejected response and then display stale when observation advanced while
+that already-authored request was in flight. This is a falsifiable oracle-race
+hypothesis, not permission to accept an unproved command. A rigorous repair must
+retain zeroIDs for truly blocked submission, prove any single in-flight rejection
+through its actual bound typed reply, and independently verify no effects. Full
+CI stays gated on bothWindows original failures plus the repaired macOS file.
