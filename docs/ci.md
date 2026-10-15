@@ -77,13 +77,15 @@ evidence, not a claim of cause or production repair. Original-step focused succe
 required before dispatching full acceptance on the same reviewed SHA.
 The renewed raw-only investigation also executes an actual PowerShell event-filter
 control and four separate original legacy fixtures with a unique owned Kernel-File
-collector. The collector has a 15-second autonomous lifetime, a 16 MB circular file,
+collector set. The owned set is created with a 15-second run-for setting before
+start, explicitly stopped/deleted, and has a 16 MB circular file,
 5-second command bounds and a 10-second parser bound. Raw ETL stays outside artifacts;
 only numeric owned-fixture event fields are retained. IRP/FileObject reuse is guarded,
 and separate before/during/after queues retain at most 256 records. Missing or truncated
 events never establish handle absence (`lossVerified: false`); positive event correlation
 does not by itself identify the actor that blocked a historical rename. Collector stop
-must be confirmed before raw trace cleanup; unknown stop aborts further probes. Original
+and owned set deletion must be confirmed before raw trace cleanup; unknown stop
+or unavailable event evidence aborts further probes. Original
 bounded comparisons and the original regression still execute independently after a
 probe/control failure when the build passed. This temporary debug route changes no
 product operation, deadline, retry, skip or original legacy-success assertion.

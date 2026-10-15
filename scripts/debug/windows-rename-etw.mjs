@@ -13,6 +13,7 @@ import { invokeExternalRename, runBoundedProcess, runRenameFixture } from '../wi
 
 export const parseScript = String.raw`
 $ErrorActionPreference = 'Stop'
+$phase = 'input'
 try {
   $root = $env:WORKSPACE_ETW_FIXTURE
   $start = [long]$env:WORKSPACE_ETW_RENAME_START
@@ -24,12 +25,15 @@ try {
   $objects = @{}; $irps = @{}
   $before = [Collections.Generic.List[object]]::new(); $during = [Collections.Generic.List[object]]::new(); $after = [Collections.Generic.List[object]]::new()
   $inspected = 0; $truncated = $false
+  $phase = 'query'
   foreach ($event in (Get-WinEvent -Path $env:WORKSPACE_ETW_TRACE -Oldest -ErrorAction Stop)) {
     if (++$inspected -gt 200000) { $truncated = $true; break }
     if ($event.ProviderName -ne 'Microsoft-Windows-Kernel-File') { continue }
+    $phase = 'decode'
     [xml]$xml = $event.ToXml()
     $fields = @{}
     foreach ($item in $xml.Event.EventData.Data) { $fields[[string]$item.Name] = [string]$item.'#text' }
+    $phase = 'filter'
     $target = $null
     foreach ($name in @('FileName','OpenPath')) {
       $path = $fields[$name]
@@ -69,9 +73,14 @@ try {
       if ($after.Count -ge 32) { $truncated = $true } else { $after.Add($record) }
     }
   }
+  $phase = 'serialize'
   [ordered]@{ status = 'observed'; inspected = $inspected; truncated = $truncated;
     lossVerified = $false; events = @($before.ToArray() + $during.ToArray() + $after.ToArray()) } | ConvertTo-Json -Depth 6 -Compress
-} catch { [Console]::Out.WriteLine('{"status":"unavailable"}') }
+} catch {
+  $kind = $_.Exception.GetType().Name
+  if ($kind -notin @('CommandNotFoundException','RuntimeException','EventLogException','EventLogNotFoundException','FileNotFoundException')) { $kind = 'unknown' }
+  [ordered]@{ status = 'unavailable'; phase = $phase; kind = $kind; code = [int]$_.Exception.HResult } | ConvertTo-Json -Compress
+}
 `;
 
 async function runOwnedKernelFileProbe() {
@@ -91,16 +100,23 @@ for (let index = 0; index < 4; index++) {
   const scriptPath = join(traceDirectory, 'filter.ps1');
   fs.writeFileSync(scriptPath, parseScript);
   const session = 'workspace-owned-rename-' + randomUUID();
-  const observation = { index: index + 1, collector: 'not_started', stopped: false, workerPids: [], kernel: null, fixture: null };
+  const observation = { index: index + 1, collectorId: session, collector: 'not_started', stopped: false, deleted: false, commands: {}, workerPids: [], kernel: null, fixture: null };
   output.operations.push(observation);
-  let started = false, attempted = false;
+  let started = false, attempted = false, created = false;
+  async function command(phase, args) {
+    const result = await runBoundedProcess(logman, args, { timeoutMs: 5000, maxBytes: 4096 });
+    observation.commands[phase] = { status: result.status, termination: result.termination, exitCode: result.exitCode,
+      errorHex: result.stdout.match(/\b0x[0-9a-fA-F]{1,8}\b/g)?.at(-1) ?? null };
+    return result;
+  }
   try {
     observation.fixture = await runRenameFixture(fixture, 'stress_legacy', { rename: async (directory, scenario, options) => {
       attempted = true;
-      const start = await runBoundedProcess(logman, ['start', session, '-ets', '-o', tracePath, '-f', 'bincirc', '-max', '16',
-        '-nb', '2', '16', '-bs', '64', '-ct', 'system', '-rf', '00:00:15', '-p', 'Microsoft-Windows-Kernel-File', '0x8f0', '5'],
-      { timeoutMs: 5000, maxBytes: 4096 });
-      started = start.status === 'completed';
+      const create = await command('create', ['create', 'trace', session, '-o', tracePath, '-f', 'bincirc', '-max', '16',
+        '-nb', '2', '16', '-bs', '64', '-ct', 'system', '-rf', '00:00:15', '-p', 'Microsoft-Windows-Kernel-File', '0x8f0', '5']);
+      created = create.status === 'completed';
+      const start = created ? await command('start', ['start', session]) : null;
+      started = start?.status === 'completed';
       observation.collector = started ? 'started' : 'unavailable';
       let result;
       try { result = await invokeExternalRename(directory, scenario, { ...options, runProcess: (workerProgram, args, settings) =>
@@ -112,31 +128,50 @@ for (let index = 0; index < 4; index++) {
         } }) }); }
       finally {
         if (attempted) {
-          const stop = await runBoundedProcess(logman, ['stop', session, '-ets'], { timeoutMs: 5000, maxBytes: 4096 });
+          const stop = await command('stop', ['stop', session]);
           observation.stopped = stop.status === 'completed';
+          if (observation.stopped || !started) {
+            const deleted = await command('delete', ['delete', session]);
+            observation.deleted = deleted.status === 'completed';
+          }
         }
       }
-      if (attempted && !observation.stopped) throw new Error('Owned diagnostic collector stop unverified');
       if (observation.stopped && result.response?.startedUnixMs != null) {
+        try {
+        const traces = fs.readdirSync(traceDirectory, { recursive: true }).filter(name => /\.etl$/i.test(name));
+        const actualTrace = traces.length === 1 ? join(traceDirectory, traces[0]) : tracePath;
         const parsed = await runBoundedProcess(program, ['-NoProfile', '-NonInteractive', '-STA', '-ExecutionPolicy', 'Bypass', '-File', scriptPath],
           { timeoutMs: 10000, maxBytes: 65536, env: { ...process.env, WORKSPACE_ETW_FIXTURE: directory,
-            WORKSPACE_ETW_TRACE: tracePath, WORKSPACE_ETW_RENAME_START: String(result.response.startedUnixMs),
+            WORKSPACE_ETW_TRACE: actualTrace, WORKSPACE_ETW_RENAME_START: String(result.response.startedUnixMs),
             WORKSPACE_ETW_RENAME_END: String(result.response.endedUnixMs) } });
         try { observation.kernel = parsed.status === 'completed' ? JSON.parse(parsed.stdout) : { status: 'unavailable' }; }
         catch { observation.kernel = { status: 'protocol_error' }; }
+        } catch { observation.kernel = { status: 'unavailable', phase: 'trace_discovery' }; }
       }
       return result;
     } });
   } finally {
     // Never publish ETL, exception text or unrelated host paths. A failed stop
     // leaves the trace-local directory on the disposable runner for investigation.
-    if (!attempted || observation.stopped) fs.rmSync(traceDirectory, { recursive: true, force: true });
+    const commandsTerminated = Object.values(observation.commands).every(value => value.termination === 'confirmed');
+    observation.traceCleanup = 'unverified';
+    if (!attempted || (commandsTerminated && observation.stopped && observation.deleted)) {
+      try { fs.rmSync(traceDirectory, { recursive: true, force: true }); observation.traceCleanup = 'completed'; }
+      catch { observation.traceCleanup = 'failed'; process.exitCode = 1; }
+    }
     const terminated = observation.fixture?.rename?.process?.termination === 'confirmed' &&
       observation.fixture?.rename?.stress?.process?.termination === 'confirmed';
-    if (terminated) fs.rmSync(fixture, { recursive: true, force: true });
+    observation.fixtureCleanup = 'unverified';
+    if (terminated) {
+      try { fs.rmSync(fixture, { recursive: true, force: true }); observation.fixtureCleanup = 'completed'; }
+      catch { observation.fixtureCleanup = 'failed'; process.exitCode = 1; }
+    }
     fs.writeFileSync(join(evidenceDirectory, 'owned-kernel-file.json'), JSON.stringify(output, null, 2));
   }
-  if (attempted && !observation.stopped) { process.exitCode = 1; break; }
+  if (attempted && (observation.traceCleanup !== 'completed' || observation.fixtureCleanup !== 'completed' ||
+    !observation.stopped || !observation.deleted || observation.kernel?.status !== 'observed' || !observation.kernel.events?.length)) {
+    process.exitCode = 1; break;
+  }
 }
 console.info('Owned fixture kernel-file investigation retained; this is not rename acceptance.');
 }

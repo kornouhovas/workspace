@@ -691,3 +691,33 @@ unretired defect then require its absence and retain rename events despite a
 one explicit new Windows interpreter skip; Windows execution and original raw
 checks remain required. This is intermediate instrumentation, not final full-suite
 or causal-repair evidence. Exact-SHA outcomes stay in GitHub.
+
+
+Full38654899485 on6d8 passed complete common/macOS/Windowslatest; the only
+failure was Windows2022 raw legacy stress. Downloaded Date dev/package JSONs and
+screenshots on both passing OSs verify the exact SHA, all EN/RU/calendar/timezone/
+invalid/clear/sibling/restart checks, three normal quits and cleanup. Eight original
+direct/grouped dev/package native reports on those OSs verify exact target, acknowledgment,
+restart, two normal exits and cleanup. Windows2022 Date stages were unreached.
+
+Focused38657762876 on929 passed the actual PowerShell correlation/retention
+controls, all original bounded comparisons and the unchanged strict raw regression.
+Its temporary ETW step failed with collector unavailable/stop unverified and no
+kernel events. Four legacy and four production-scan comparisons succeeded; three
+raw-native negatives remain EPERM with cleanup. This does not explain the original
+legacy refusal. The probe previously masked confirmed rename process evidence when
+its separate stop failed; it now retains the real result independently. Collector
+startup uses documented create-trace/run-for then owned-set start/stop/delete,
+exports finite command status/code/hex and owned UUID, and requires stop/delete
+before raw cleanup. Parser failures retain only phase/type/Hresult, and absent
+event evidence stays a probe failure. Actual collector-set lifetime/availability
+is a new Windows diagnostic gate, not a product repair or full acceptance finding.
+
+
+The collector-set follow-up passed local syntax/lint/type/docs/diff and the22
+routing tests with one actual-Windows control skip. Both independent reviews
+closed the initial lifetime/parser findings and the follow-up uncertain-create/
+trace-discovery findings. Teardown attempts stop/delete after any unique owned
+creation attempt; all collector commands must have confirmed termination before
+raw removal. Trace/fixture cleanup errors are finite and cannot erase the original
+rename response. No new full local or actual collector evidence is claimed.
