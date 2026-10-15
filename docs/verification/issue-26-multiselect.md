@@ -653,3 +653,39 @@ cover completion, exception and throwing callback behavior; the adapter retains
 zero permits and the owner deadline for both completion-marker kinds. Local170
 focused tests passed/6Windows skips, plus typecheck/lint/docs/whitespace. Exact-SHA
 original Windows evidence remains necessary; this probe is not a repair claim.
+
+## Item return confirmed late; fixed dispatch identifier trial
+
+Focused38790722907/attempt1 on5b851a79 failed the same cold original command;
+artifact11999902980 inspected. window_item3669ms, item_returned9270.4ms,
+document9271.3ms, parent9276.6ms, owner11361ms, then owner expiry. Thus the
+InvokeMember expression/local assignment had returned by9270ms, and the next
+caller boundary arrived under1ms later. A later helper-result pipeline delay is
+not necessary for this failure; name lookup, COM invocation/return marshalling
+and earlier argument work remain unresolved. Both Windows control steps and all
+owned cleanup passed. No full CI was dispatched.
+
+`0c532b3` changes only the collection Item call to its fixed dispatch identifier0.
+[Microsoft's SDK IDL](https://github.com/microsoft/win32metadata/blob/main/generation/WinSDK/RecompiledIdlHeaders/um/ExDisp.Idl#L604-L611)
+assigns that member0; [.NET InvokeMember](https://learn.microsoft.com/en-us/dotnet/api/system.type.invokemember)
+supports the fixed identifier syntax. This avoids name resolution while retaining
+the identical member, index, query/selection count, binding guards and deadlines.
+The genuine Windows control compares null/object IUnknown identity for named and
+identifier reads without opening or mutating any window; controlled fixtures map
+the same member explicitly. Both reviewers found no findings;170focused tests
+passed with6Windows skips, lint/docs/whitespace passed. Fresh Node22 build/full
+suite is running. Actual cold original result remains required; this trial does
+not establish name resolution as the historical cause.
+
+### Trial local renewal retained as failed
+
+Fresh Node22 `npm test` on the reviewed fixed-identifier source rebuilt successfully
+but failed2848tests:2823passed,1failed,24skipped,114.9seconds. The sole failure was
+the existing property fixture delayed-focus test's normal shutdown, after all
+before-quit/will-quit/quit events but no parent-exit within10seconds. Its focus
+behavior was not the failed assertion. This repeats the separately retained
+native-close failure on the supported runtime, so Node26 alone is not its cause.
+The log remains `work/issue-26-ci/local-full-item-dispid.log`. No full success,
+platform acceptance or integration is claimed. The fixed-identifier Windows
+trial and the local shutdown failure are separate unresolved gates; scoped
+Windows diagnosis may proceed without representing this local run as passing.
