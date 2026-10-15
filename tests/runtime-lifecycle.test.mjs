@@ -35,12 +35,20 @@ test("normal runtime shutdown waits for the owned process to exit", async () => 
 
 test("stalled runtime shutdown kills the owned process and reports failure within a deadline", async () => {
   const child = await launchFixture();
+  let closes = 0;
   try {
     await assert.rejects(closeElectron({
       process: () => child,
       evaluate: () => new Promise(() => {}),
-      close: () => new Promise(() => {}),
-    }, 20), /Electron shutdown timed out/);
+      // A handle already marked closing may make a second close resolve while
+      // its process remains alive. Forced cleanup must not depend on that call.
+      close: () => ++closes === 1 ? new Promise(() => {}) : Promise.resolve(),
+    }, 20), error => {
+      assert.match(error.message, /Electron shutdown timed out/);
+      assert.equal(error.forcedCleanup.processStopped, true);
+      return true;
+    });
+    assert.equal(closes, 1);
     assert.ok(child.exitCode !== null || child.signalCode !== null);
   } finally { if (child.exitCode === null && child.signalCode === null) child.kill("SIGKILL"); }
 });

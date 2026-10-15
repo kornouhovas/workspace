@@ -17,16 +17,23 @@ async function withPage(run) {
     env: { ...process.env, WORKSPACE_RENAME_EDITOR_PROFILE: profile }, timeout: 10000 });
   const child = app.process();
   const quitEvents = [];
+  let debuggerWaiting = false;
+  let stderrTail = "";
   child.once("exit", () => quitEvents.push("parent-exit"));
   child.stderr.on("data", data => {
-    for (const event of ["before-quit", "will-quit", "quit"])
-      if (data.toString().includes(`[property-fixture]${event}`) && !quitEvents.includes(event)) quitEvents.push(event);
+    const text = stderrTail + data.toString();
+    stderrTail = text.slice(-128);
+    debuggerWaiting ||= text.includes("Waiting for the debugger to disconnect...");
+    for (const event of ["before-quit", "will-quit", "quit", "node-before-exit", "node-exit"])
+      if (text.includes(`[property-fixture]${event}`) && !quitEvents.includes(event)) quitEvents.push(event);
   });
   let primary;
   try {
     await app.evaluate(({ app }) => {
       for (const event of ["before-quit", "will-quit", "quit"])
         app.on(event, () => process.stderr.write(`[property-fixture]${event}\n`));
+      for (const event of ["beforeExit", "exit"])
+        process.once(event, () => process.stderr.write(`[property-fixture]${event === "exit" ? "node-exit" : "node-before-exit"}\n`));
     });
     const deadline = Date.now() + 30000;
     const page = await app.firstWindow({ timeout: 30000 });
@@ -35,23 +42,15 @@ async function withPage(run) {
     await run(page);
   } catch (error) { primary = error; }
   try {
-    try {
-      // Playwright owns app.quit() and debugger disconnection. Avoid a second
-      // concurrent quit request from the general runtime helper in this fixture.
-      await withDeadline(app.close(), 10000, "Electron shutdown");
-    } catch (error) {
-      // Failed normal closure stays failed. Reuse owned forced cleanup only to
-      // stop a remaining fixture process, never to turn that failure into a pass.
-      if (child.exitCode === null && child.signalCode === null) {
-        try { await closeElectron(app, 1); }
-        catch (cleanupError) { error.forcedCleanup = cleanupError.forcedCleanup ?? { status: "unverified" }; }
-      }
-      throw error;
-    }
+    // The shared helper now owns one Playwright quit, with the same 10s normal
+    // deadline and finite forced cleanup that preserves the original failure.
+    // A second close() on a closing Playwright handle can resolve immediately
+    // without stopping its native process, so do not use it as forced cleanup.
+    await closeElectron(app);
     assert.ok(child.exitCode !== null || child.signalCode !== null);
     await rm(profile, { recursive: true, force: true });
   } catch (error) {
-    error.message = `[property-fixture] ${JSON.stringify({ quitEvents, parentExited: child.exitCode !== null || child.signalCode !== null,
+    error.message = `[property-fixture] ${JSON.stringify({ quitEvents, debuggerWaiting, parentExited: child.exitCode !== null || child.signalCode !== null,
       forcedCleanup: error.forcedCleanup ?? null })}\n${error.message}`;
     if (primary) console.error("Additional property fixture cleanup failure:", error);
     else primary = error;
