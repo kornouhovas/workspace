@@ -38,6 +38,10 @@ on:
         description: With checks=raw-rename, run only the remaining Windows failure after macOS focused success
         type: boolean
         default: false
+      raw_renderer_check:
+        description: With checks=raw-rename, also verify the original macOS App fixture after the local initial-list failure
+        type: boolean
+        default: false
       diagnostics:
         description: Run isolated investigation and early-feedback jobs
         type: boolean
@@ -282,6 +286,33 @@ jobs:
         with:
           name: issue-24-raw-rename-${{ github.sha }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
           path: work/ci-raw-rename/
+          if-no-files-found: error
+
+  focused-raw-renderer:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.checks == 'raw-rename' && inputs.raw_renderer_check }}
+    name: Focused macOS original App fixture
+    runs-on: macos-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.21.1
+          cache: npm
+      - run: npm ci
+      - run: npm run build:service-test-lib
+      - name: Original renderer App regression file
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p work/ci-raw-renderer
+          node --import tsx --test tests/renderer-app.test.tsx 2>&1 | tee work/ci-raw-renderer/tests.txt
+      - name: Preserve exact-SHA App fixture result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-24-raw-renderer-${{ github.sha }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
+          path: work/ci-raw-renderer/
           if-no-files-found: error
 
   focused-creation-shutdown:

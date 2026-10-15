@@ -451,3 +451,35 @@ test('native prefix scope retains the exact original UI predecessors and bounded
   assert.equal(native.env.WORKSPACE_REVEAL_TRACE, '1');
   assert.ok(job.steps.indexOf(native) > job.steps.indexOf(prefix.at(-1)));
 });
+
+
+test('raw-rename App fixture repair is opt-in and retains its original file without changing Windows checks', () => {
+  const workflow = load(readFileSync('.github/workflows/desktop-ci.yml', 'utf8'));
+  assert.equal(workflow.on.workflow_dispatch.inputs.raw_renderer_check.default, false);
+  const job = workflow.jobs['focused-raw-renderer'];
+  for (const event of ['push', 'pull_request', 'workflow_dispatch']) for (const checks of ['full', 'raw-rename']) {
+    for (const raw_renderer_check of [undefined, false, true]) {
+      const context = { github: { event_name: event }, inputs: { checks, raw_renderer_check, raw_windows_only: true } };
+      assert.equal(Boolean(runInNewContext(job.if.slice(3, -2), context)),
+        event === 'workflow_dispatch' && checks === 'raw-rename' && raw_renderer_check === true);
+      if (event === 'workflow_dispatch' && checks === 'raw-rename' && raw_renderer_check) {
+        const active = Object.entries(workflow.jobs).filter(([, candidate]) => candidate.if && runInNewContext(candidate.if.slice(3, -2), context)).map(([name]) => name);
+        assert.deepEqual(active, ['focused-raw-rename', 'focused-raw-renderer']);
+      }
+    }
+  }
+  assert.equal(job['runs-on'], 'macos-latest');
+  assert.equal(job.needs, undefined);
+  assert.ok(job.steps.every(step => step['continue-on-error'] === undefined));
+  const commands = job.steps.filter(step => step.run);
+  assert.deepEqual(commands.slice(0, 2).map(step => step.run), ['npm ci', 'npm run build:service-test-lib']);
+  assert.equal(commands.length, 3);
+  assert.equal(commands[2].shell, 'bash');
+  assert.ok(commands[2].run.includes('set -o pipefail'));
+  assert.ok(commands[2].run.includes('node --import tsx --test tests/renderer-app.test.tsx 2>&1 | tee work/ci-raw-renderer/tests.txt'));
+  const upload = job.steps.find(step => step.uses === 'actions/upload-artifact@v4');
+  assert.equal(upload.if, 'always()');
+  assert.equal(upload.with.path, 'work/ci-raw-renderer/');
+  assert.equal(upload.with['if-no-files-found'], 'error');
+  for (const field of ['github.sha', 'github.run_id', 'github.run_attempt']) assert.ok(upload.with.name.includes(field));
+});

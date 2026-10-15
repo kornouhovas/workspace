@@ -826,3 +826,31 @@ owned set before parsing/cleanup. Finite stop trigger/request/settled timestamps
 allow inspection. All prior collector/reader/event limits remain. Clock samples
 are incomplete and do not prove loss/absence/handle actor. Actual Windows evidence
 for the earlier stop is pending.
+
+
+Focused38664587955 on4d7 passed all job steps. Four traced fixtures retain
+160/256/256/201 owned-window events with positive data, original single rename,
+1000ms resolver, completion signals and confirmed commands/cleanup. Early stop
+requests occurred around worker close (wall-clock4/-1/3/6ms, not monotonic proof).
+Two full baselines observed events and two returned unavailable; filtered readers
+all observed truncated events with loss unverified. No Rename19/actor finding is
+made. Independent32-comparison artifact preserves one stress_legacy EPERM
+(index3) plus four native negatives; strict regression is a distinct execution
+and passed. Both evidence reviews permit the original-command focused gate but
+explicitly reject causal legacy-repair claims.
+
+Fresh local full on4d7 found a new existing App test-preparation race:2814 tests,
+2790 passes,1 failure,23 skips,108.3s. The configured delayed Apply scenario opens
+preview before its initial project-list revision arrives; the later list correctly
+invalidates it, removing the combobox. Ranked predictions: initial-list arrival
+will invalidate an early preview; a language-only defect would fail only RU; an
+Apply defect would require Apply to have begun. A controlled mutation defers only
+the initial list until after preview open and reproduces the exact combobox
+failure in EN before Apply (1.1s); its diff is retained outside the checkout.
+The pristine fixture is restored, then waits for the initial Direct cell before
+opening preview. Existing deterministic EN/RU early-list invalidation and the
+repaired delayed Apply scenarios both pass at the real App seam. Production,
+sibling ordering, application count/focus, locale and deadline assertions stay
+unchanged. Original App-file/full verification is renewed on the next candidate.
+An opt-in focused macOS App file is added alongside original Windows raw checks
+so both observed boundaries can pass on the same final SHA before full CI.

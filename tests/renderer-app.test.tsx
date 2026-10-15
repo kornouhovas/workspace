@@ -3328,7 +3328,11 @@ test("EN/RU configured mode Apply keeps confirmed delayed success and never over
       if (input.type === "workspace.applyDiscovery") { applies++; return new Promise((resolve) => { finish = resolve; }); }
       return fail("invalid_input");
     } });
-    render(<App />); const trigger = await screen.findByRole("button", { name: translate(language, "discoveryAction") });
+    render(<App />);
+    // Establish the initial source revision before exercising delayed Apply.
+    // Opening a preview during initial loading deliberately makes it stale.
+    await screen.findByRole("cell", { name: "Direct" });
+    const trigger = await screen.findByRole("button", { name: translate(language, "discoveryAction") });
     await userEvent.click(trigger); await userEvent.selectOptions(await screen.findByRole("combobox", { name: translate(language, "discoveryMode") }), "grouped");
     await userEvent.click(screen.getByRole("button", { name: translate(language, "discoveryApply") }));
     listed = newerSibling ? { ...projectList(active, ["Latest direct"], 3), configured: true } : applied;

@@ -75,6 +75,12 @@ data invariants, overlap and termination. The regression assertion now retains c
 allowlisted fixture context, while legacy rejection remains failure. This adds diagnostic
 evidence, not a claim of cause or production repair. Original-step focused success is
 required before dispatching full acceptance on the same reviewed SHA.
+After the additional local App fixture initial-list race, add
+`raw_renderer_check: true` to the raw-only selector. A separate macOS job builds
+the service fixture and runs the original `renderer-app.test.tsx` file with strict
+pipefail and exact-SHA logs, alongside unchanged Windows raw checks. This flag
+defaults false; ordinary/full routes and `raw_windows_only` behavior stay intact.
+Both affected original files must pass before full same-SHA acceptance.
 The renewed raw-only investigation also executes an actual PowerShell event-filter
 control and four separate original legacy fixtures with a unique owned Kernel-File
 collector set. The owned set is created with a 15-second run-for setting before
