@@ -80,7 +80,10 @@ control and four separate original legacy fixtures with a unique owned Kernel-Fi
 collector set. The owned set is created with a 15-second run-for setting before
 start, explicitly stopped/deleted, and has a 16 MB circular file,
 5-second command bounds and a 10-second bound per reader. A full-decode baseline
-and a provider/time-filtered reader inspect the same ETL in alternating order; the
+and a provider/time-filtered reader inspect the same ETL in alternating order, after
+a clock-only peek capped at 64 records (three readers total). The peek exports
+only aggregate provider count and relative time range; query errors use fixed
+allowlisted IDs without exception text. The
 filtered reader retains only the existing 1-second-before/25ms-after window and may
 miss older name associations. Unknown reader termination forbids a second reader
 and raw cleanup. The probe requires successful interpreter controls; original

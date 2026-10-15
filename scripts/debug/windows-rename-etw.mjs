@@ -78,9 +78,33 @@ try {
     lossVerified = $false; events = @($before.ToArray() + $during.ToArray() + $after.ToArray()) } | ConvertTo-Json -Depth 6 -Compress
 } catch {
   $kind = $_.Exception.GetType().Name
-  if ($kind -notin @('CommandNotFoundException','RuntimeException','EventLogException','EventLogNotFoundException','FileNotFoundException')) { $kind = 'unknown' }
-  [ordered]@{ status = 'unavailable'; phase = $phase; kind = $kind; code = [int]$_.Exception.HResult } | ConvertTo-Json -Compress
+  if ($kind -notin @('Exception','CommandNotFoundException','RuntimeException','EventLogException','EventLogNotFoundException','FileNotFoundException','ParameterBindingException')) { $kind = 'unknown' }
+  $id = ([string]$_.FullyQualifiedErrorId).Split(',')[0]
+  if ($id -notin @('NoMatchingEventsFound','NoMatchingLogsFound','NoMatchingProvidersFound','PathNotFound','InvalidArgument','InvalidData','ParameterArgumentValidationError')) { $id = 'unknown' }
+  [ordered]@{ status = 'unavailable'; phase = $phase; kind = $kind; errorId = $id; code = [int]$_.Exception.HResult } | ConvertTo-Json -Compress
 }
+`;
+
+const peekScript = String.raw`
+$ErrorActionPreference = 'Stop'
+try {
+  $start = [long]$env:WORKSPACE_ETW_RENAME_START
+  $inspected = 0; $kernelCount = 0; $firstKernelMs = $null; $lastKernelMs = $null
+  foreach ($event in (Get-WinEvent -Path $env:WORKSPACE_ETW_TRACE -Oldest -MaxEvents 64 -ErrorAction Stop)) {
+    $inspected++
+    if ($event.ProviderName -eq 'Microsoft-Windows-Kernel-File') {
+      $kernelCount++
+      if ($null -ne $event.TimeCreated) {
+        $delta = ([DateTimeOffset]$event.TimeCreated.ToUniversalTime()).ToUnixTimeMilliseconds() - $start
+        if ($null -eq $firstKernelMs) { $firstKernelMs = $delta }
+        $lastKernelMs = $delta
+      }
+    }
+  }
+  @{ status = 'observed'; limitedTo = 64; inspected = $inspected; kernelFileCount = $kernelCount;
+    firstKernelRelativeMs = $firstKernelMs; lastKernelRelativeMs = $lastKernelMs;
+    attribution = 'collector-clock-sample-only' } | ConvertTo-Json -Depth 4 -Compress
+} catch { [Console]::Out.WriteLine('{"status":"unavailable"}') }
 `;
 
 // Differential reader: the same decoder and bounds, one native query change.
@@ -101,7 +125,7 @@ const program = resolveWindowsPowerShell();
 if (!program) throw new Error('System PowerShell unavailable');
 const logman = win32.resolve(win32.dirname(program), '../..', 'logman.exe');
 const output = { kind: 'debug-owned-fixture-kernel-file', sha: process.env.GITHUB_SHA ?? null,
-  limits: { operations: 4, circularMegabytes: 16, collectorRunForSeconds: 15, collectorCommandMs: 5000, readers: 2, parseMsPerReader: 10000, exportedEvents: 256 },
+  limits: { operations: 4, circularMegabytes: 16, collectorRunForSeconds: 15, collectorCommandMs: 5000, readers: 3, clockPeekEvents: 64, readerOrder: 'clock-peek-first-then-alternating-full-window', parseMsPerReader: 10000, exportedEvents: 256 },
   attribution: 'positive owned-path events only; missing events never prove absence of handles', operations: [] };
 fs.mkdirSync(evidenceDirectory, { recursive: true });
 for (let index = 0; index < 4; index++) {
@@ -164,6 +188,9 @@ for (let index = 0; index < 4; index++) {
           catch { kernel = { status: 'protocol_error' }; }
           return { process: { status: parsed.status, termination: parsed.termination, exitCode: parsed.exitCode }, kernel };
         }
+        const peek = await read(peekScript);
+        observation.peek = peek;
+        if (peek.process.termination === 'unknown') return result;
         const readers = index % 2 === 0 ? [['full', parseScript], ['window', boundedParseScript]] :
           [['window', boundedParseScript], ['full', parseScript]];
         observation.readerOrder = readers.map(([label]) => label);

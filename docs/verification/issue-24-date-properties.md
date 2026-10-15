@@ -743,3 +743,22 @@ remain unverified; no absence/actor inference is authorized. The actual interpre
 control checks query arguments and equal in-window decoding; real ETL execution
 remains pending. Unknown reader termination blocks further readers and raw cleanup.
 Both reviews report no findings. No product, original assertion or budget changed.
+
+
+Focused38660535060 on180 passed actual PowerShell controls, original comparisons
+and strict raw regression. The full reader timed out with confirmed termination;
+the window reader completed but returned query/unavailable with CLR Hresult
+-2146233088 and unknown type. All four collector commands returned0; owned trace
+and fixture cleanup completed. No kernel attribution or historical cause follows.
+The same SHA passed a fresh local2814-test suite (2791 passes,0 failures,23 platform
+skips), package/artifact verification, original macOS grouped packaged native
+command, lint/type/docs/diff. Both reviews had zero findings.
+
+The next temporary probe exports an allowlisted query ErrorId and adds one
+clock-only reader before the differential pair: at most64 records, aggregate
+Kernel-File count and first/last time relative to rename, no event rows or host
+identifiers. All three readers retain the existing10s individual bound. Unknown
+peek termination prevents subsequent reads and raw cleanup. This distinguishes
+query failure and retained clock-window evidence without attributing a handle
+owner or claiming event absence. Both independent reviews requested corrected
+reader-count/order metadata, now recorded. Actual Windows execution is pending.
