@@ -83,12 +83,13 @@ test("property creation waits for initial loading before keyboard activation in 
 
 test("property creation keeps the caller deadline and never activates a still-loading control", async () => {
   await withPage(async page => {
-    page.setDefaultTimeout(100);
     await page.setContent('<button disabled>Create MultiSelect property</button>');
     await page.evaluate(() => {
       globalThis.fixturePropertyActivations = 0;
       globalThis.document.querySelector("button").addEventListener("click", () => { globalThis.fixturePropertyActivations++; });
     });
+    // The 100ms subject deadline starts after HTML/listener preparation.
+    page.setDefaultTimeout(100);
     await assert.rejects(openPropertyCreator(page, { createLabel: "Create MultiSelect property", propertyNameLabel: "Property name" }), /Timeout/);
     assert.equal(await page.evaluate(() => globalThis.fixturePropertyActivations), 0);
     assert.equal(await page.getByLabel("Property name", { exact: true }).count(), 0);

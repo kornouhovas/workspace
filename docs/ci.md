@@ -248,6 +248,14 @@ output and failures; both original files and artifacts must pass before full CI.
 The native fixture uses one Playwright-owned normal quit under the unchanged
 ten-second bound; forced cleanup after failure never satisfies normal closure.
 
+For full run38808047668's sole macOS property-driver setup failure, select
+`checks: property-fixture`. It runs that exact original property-driver file only,
+using the existing artifact/normal-quit contract. The old `etw-controls` union and
+ordinary full/push defaults remain intact. The negative test arms its unchanged
+100ms caller deadline after HTML/listener preparation; it still requires timeout,
+zero activation and no editor. Setup is not the operation under this short deadline.
+Inspect its original-file result before renewed full acceptance on the same SHA.
+
 For issue #26 run 38761764716's Windows latest creation shutdown timeout, the
 existing `checks: creation-shutdown` route matches the exact original command.
 It includes the real-Electron deferred-quit regression and runs the original

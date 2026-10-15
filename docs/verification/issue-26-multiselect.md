@@ -1052,3 +1052,43 @@ invalid-index controls to the real ShellWindows receiver. Fresh supportedNode22
 Lint/typecheck/docs/whitespace and the portablePS7 managed control passed. Same-SHA
 trace-off original plus explicit trace-on interval evidence are next; full CI
 remains behind the affected original/control/artifact gate.
+
+### Full candidate: Windows cold passes; macOS fixture setup budget fails
+
+Reviewedbc74cd01 passed trace-off38807089714/trace-on38807095565. All229controls
+per OS/arm and both cold originals passed; four artifacts12007655490/12006921595/
+12006683510/12005919198 inspected. Both originals retained exact single navigation/
+selection/return, COM/UIA agreement, acknowledgment, normal quit/restart and owned
+cleanup. TracedItem1478→returned2870ms/readiness5894ms. Full38808047668 on the same
+SHA also passed its ordinary cold Windows latest command, then continued platform
+checks. These are acceptance observations, not unique historical latency proof.
+
+New full failure: macOS platform suite original command `npm run test:platform`,
+job116674477000,2340passed/1failed/24skipped. Sole failure is property-driver file
+line87: `page.setContent: Timeout100ms exceeded`, before openPropertyCreator.
+Full job log and artifacts12008310869/12008116080 retained/inspected; expected
+negative category-fixture receipts are controls, not additional failed tests.
+Other OS results remain pending; downstream macOS runtime/package stages unreached.
+
+Ranked hypotheses before repair: (1) the negative test installs the subject's100ms
+page deadline before fixture HTML preparation, so slow setup fails before testing
+its intended driver deadline; (2) initial navigation/readiness is incomplete, but
+withPage already awaits the fixture's initial URL load, and the retained exception
+specifically identifies the later setContent; (3) shutdown fails independently,
+but this receipt has no cleanup failure and every other property case passed.
+A minimized local setup slowed by a deliberate250ms inline fixture script should
+reproduce setContent failure with the old ordering. Scope the same100ms deadline
+after fixture preparation, repeat that control and the unchanged original file;
+keep driver refusal/zeroactivation/noeditor and the10second normal quit unchanged.
+The artificial load belongs only to ignored local reproduction, never product or
+acceptance source. No product deadline is raised.
+
+The ignored250ms slow-HTML reproduction failed at the same setContent100ms with
+old ordering and passed after moving only deadline arming. The original property
+file plus routing tests passed34/34 locally. Both review axes found no remaining
+findings. Fresh supportedNode22 `npm test` rebuilt and passed2849tests/2825passed/
+0failed/24platform skips,109.5s; lint/docs/whitespace passed. No application code
+changed in this repair. New `checks: property-fixture` selects only the existing
+macOS original-file job; historical ETW union and default full/push coverage remain.
+Actual macOS original and exact-SHA full acceptance remain pending. The old full
+run's Windows platform suites both passed and runtime stages are still in progress.
