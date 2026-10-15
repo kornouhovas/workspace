@@ -207,6 +207,13 @@ try {
   if ((Get-WorkspaceComProperty $dictionary 'Count') -cne 2) { throw 'count' }
   if ((Invoke-WorkspaceComMethod $dictionary 'Exists' @('missing')) -cne $false) { throw 'false_scalar' }
   if ((Invoke-WorkspaceComMethod $dictionary 'Exists' @('one')) -cne $true) { throw 'true_scalar' }
+  $boundaries = [Collections.Generic.List[string]]::new()
+  if ((Invoke-WorkspaceComMethod $dictionary 'Exists' @('one') { param($phase) $boundaries.Add($phase) }) -cne $true -or
+      $boundaries.Count -ne 1 -or $boundaries[0] -cne 'item_returned') { throw 'completion_marker' }
+  $methodRejected = $false
+  try { [void](Invoke-WorkspaceComMethod $dictionary 'MissingMethod' @() { param($phase) $boundaries.Add($phase) }) } catch { $methodRejected = $true }
+  if (-not $methodRejected -or $boundaries.Count -ne 1) { throw 'exception_marker' }
+  if ((Invoke-WorkspaceComMethod $dictionary 'Exists' @('one') { throw 'TRACE_FAULT' }) -cne $true) { throw 'trace_interference' }
   $keys = Invoke-WorkspaceComMethod $dictionary 'Keys' @()
   if ($keys -isnot [Array] -or $keys.Count -ne 2 -or $keys[0] -cne 'one' -or $keys[1] -cne 'two') { throw 'collection' }
   $rejected = $false
@@ -331,13 +338,13 @@ $ErrorActionPreference = 'Stop'
 . ./src/desktop/native/windows-project-reveal.ps1
 $events = [Collections.Generic.List[string]]::new()
 function Write-WorkspaceRevealEvent($event) { $script:events.Add($event) }
-foreach ($phase in @('assemblies','compile','shell','open','enumeration','collection','window_item','document','parent','owner','uia_root','uia_properties','uia_tabs','readiness','item','document_recheck','readiness_recheck','binding_returned')) { Write-WorkspaceRevealTrace $phase }
+foreach ($phase in @('assemblies','compile','shell','open','enumeration','collection','window_item','document','parent','owner','uia_root','uia_properties','uia_tabs','readiness','item','document_recheck','readiness_recheck','binding_returned','item_returned')) { Write-WorkspaceRevealTrace $phase }
 Write-WorkspaceRevealTrace 'assemblies'
 Write-WorkspaceRevealTrace 'private path'
-if ($events.Count -ne 18 -or $events[0] -cne 'TRACE:assemblies' -or $events[17] -cne 'TRACE:binding_returned') { throw 'trace_control' }
+if ($events.Count -ne 19 -or $events[0] -cne 'TRACE:assemblies' -or $events[18] -cne 'TRACE:item_returned') { throw 'trace_control' }
 $env:WORKSPACE_REVEAL_TRACE = '0'
 Write-WorkspaceRevealTrace 'assemblies'
-if ($events.Count -ne 18) { throw 'trace_disabled' }
+if ($events.Count -ne 19) { throw 'trace_disabled' }
 $shell = [pscustomobject]@{}
 $shell | Add-Member ScriptMethod Windows { throw 'REAL_QUERY' }
 try {

@@ -3,8 +3,10 @@ function Get-WorkspaceComProperty($value, [string]$name) {
     # Preserve collection/null results as one value rather than pipeline items.
     return ,([System.__ComObject].InvokeMember($name, [Reflection.BindingFlags]::GetProperty, $null, $value, $null))
 }
-function Invoke-WorkspaceComMethod($value, [string]$name, [object[]]$arguments) {
-    return ,([System.__ComObject].InvokeMember($name, [Reflection.BindingFlags]::InvokeMethod, $null, $value, $arguments))
+function Invoke-WorkspaceComMethod($value, [string]$name, [object[]]$arguments, $trace = $null) {
+    $result = [System.__ComObject].InvokeMember($name, [Reflection.BindingFlags]::InvokeMethod, $null, $value, $arguments)
+    if ($null -ne $trace) { try { [void](& $trace 'item_returned') } catch { } }
+    return ,$result
 }
 function Read-WorkspaceReadyParentPath($document) {
     $folder = Get-WorkspaceComProperty $document 'Folder'
@@ -55,7 +57,7 @@ function Read-WorkspaceReadyBinding($shell, $expected, $anchor, $trace = $null) 
     $owned = [Collections.Generic.List[object]]::new()
     for ($i = 0; $i -lt (Get-WorkspaceComProperty $windows 'Count'); $i++) {
         if ($null -ne $trace) { try { [void](& $trace 'window_item') } catch { } }
-        $candidate = (Invoke-WorkspaceComMethod $windows 'Item' @($i))
+        $candidate = (Invoke-WorkspaceComMethod $windows 'Item' @($i) $trace)
         if ($null -ne $trace) { try { [void](& $trace 'document') } catch { } }
         $document = (Get-WorkspaceComProperty $candidate 'Document')
         if ($null -ne $trace) { try { [void](& $trace 'parent') } catch { } }

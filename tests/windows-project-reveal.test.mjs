@@ -295,7 +295,7 @@ test("finite readiness trace preserves ordering without authorizing a native com
 });
 
 
-test("a returned binding trace retains the owned deadline and never grants a permit", async (t) => {
+for (const phase of ["binding_returned", "item_returned"]) test(`a ${phase} trace retains the owned deadline and never grants a permit`, async (t) => {
   let deadline;
   const original = globalThis.setTimeout;
   t.mock.method(globalThis, "setTimeout", (callback, milliseconds, ...args) => {
@@ -304,8 +304,8 @@ test("a returned binding trace retains the owned deadline and never grants a per
   });
   const f = fixture({ timeoutMs: 12000 });
   const pending = f.start(); pending.catch(() => {});
-  f.output("OPEN\nTRACE:binding_returned\n");
-  assert.deepEqual(f.events.filter(event => event.stage === "trace").map(event => event.phase), ["binding_returned"]);
+  f.output(`OPEN\nTRACE:${phase}\n`);
+  assert.deepEqual(f.events.filter(event => event.stage === "trace").map(event => event.phase), [phase]);
   assert.deepEqual(f.writes, []);
   deadline();
   await assert.rejects(pending, problem("native_unavailable"));
