@@ -748,3 +748,21 @@ Local minimization checks:64routing/lifecycle tests, lint/docs/diff passed. A re
 macOS launch of the actual repository entry confirmed unchanged appPath, ready
 backend, trusted diagnostic callable installation, normal close and owned backend
 exit. This checks the harness startup/cleanup seam, not Windows native behavior.
+
+### Workspace minimization launch guard correction
+
+On280e0015, Windows2022's new diagnostic failed before returning a process handle:
+artifact12000869426 has native:null and preserves the fixture because launch and
+backend ownership are unknown. All229Windows controls passed. This is not a native
+Reveal reproduction. The restored actual app inherited the bare harness's10second
+launch guard instead of the original product smoke's30seconds. Align only that
+startup guard with the unchanged original. Native owner12seconds/child10seconds
+and normal quit10seconds remain unchanged. Add finite failure-stage/Playwright-timeout/assertion
+classification so another harness failure can be distinguished without raw errors.
+
+The same launch-before-handle failure also occurred on Windowslatest:
+artifact12001937913 preserved the unknown fixture. Its later original again failed
+zero-selection/owner_deadline with successful owned cleanup. No diagnostic Explorer
+warm-up occurred. Normalize the repository argument and explicitly retain the
+original cwd alongside the original startup guard; both match existing launch.
+Both review axes accepted the finite Playwright-specific timeout label.

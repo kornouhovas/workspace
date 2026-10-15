@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdtemp, mkdir, realpath, writeFile, rm } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
-import { dirname, join } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { build } from 'esbuild';
 import { _electron } from 'playwright-core';
@@ -19,7 +19,7 @@ assert.ok(output, 'An explicit evidence destination is required');
 const root = await realpath(await mkdtemp(join(tmpdir(), 'workspace-minimal-reveal-')));
 const evidence = { kind: 'minimal-electron-native-reveal', acceptance: false, host, native: null, normalQuit: false };
 const target = join(root, 'root', 'Project 日本語'), profile = join(root, 'profile'), bundle = join(root, 'native.cjs');
-let app, child, primary, bridgeStopped = true, launchUnverified = false;
+let app, child, primary, bridgeStopped = true, launchUnverified = false, stage = 'build';
 let backendVerified = host === 'bare';
 const backendPids = new Set();
 async function collectBackends() {
@@ -33,16 +33,19 @@ async function collectBackends() {
 try {
   await mkdir(target, { recursive: true }); await mkdir(profile);
   await build({ entryPoints: ['src/desktop/windows-project-reveal.ts'], platform: 'node', bundle: true, format: 'cjs', outfile: bundle });
-  launchUnverified = true;
+  launchUnverified = true; stage = 'launch';
   app = await _electron.launch({ executablePath: createRequire(import.meta.url)('electron'),
-    args: [fileURLToPath(new URL(host === 'workspace' ? '../../' : './windows-electron-reveal.cjs', import.meta.url))],
+    cwd: resolve(fileURLToPath(new URL('../../', import.meta.url))),
+    args: [resolve(fileURLToPath(new URL(host === 'workspace' ? '../../' : './windows-electron-reveal.cjs', import.meta.url)))],
     env: { ...process.env, WORKSPACE_REVEAL_TRACE: '1', WORKSPACE_MINIMAL_REVEAL_PROFILE: profile, WORKSPACE_USER_DATA_DIR: profile,
       WORKSPACE_MINIMAL_REVEAL_HOST: host,
       WORKSPACE_MINIMAL_REVEAL_MODULE: bundle, WORKSPACE_MINIMAL_REVEAL_TARGET: await realpath(target),
-      WORKSPACE_MINIMAL_REVEAL_NATIVE: fileURLToPath(new URL('../../src/desktop/native/', import.meta.url)) }, timeout: 10000 });
+      WORKSPACE_MINIMAL_REVEAL_NATIVE: fileURLToPath(new URL('../../src/desktop/native/', import.meta.url)) }, timeout: host === 'workspace' ? 30000 : 10000 });
   child = app.process();
   launchUnverified = false;
+  stage = 'window';
   const page = await app.firstWindow({ timeout: 30000 });
+  stage = 'startup';
   if (host === 'workspace') {
     // Load only the diagnostic callable into trusted main after actual app startup.
     await app.evaluate((_, script) => process.getBuiltinModule('node:module').createRequire(script)(script),
@@ -50,13 +53,14 @@ try {
     await collectBackends();
     await waitForRuntimeInterface(page, async status => { evidence.startup = status; });
   } else await page.waitForURL('data:text/html,' + encodeURIComponent('<title>Minimal Reveal</title>'), { waitUntil: 'load', timeout: 30000 });
-  bridgeStopped = false;
+  stage = 'native'; bridgeStopped = false;
   evidence.native = await withDeadline(app.evaluate(() => globalThis.minimalReveal()), 17000, 'Minimal native Reveal');
   bridgeStopped = evidence.native.stopped === 1 && evidence.native.unknown === false;
   assert.equal(bridgeStopped, true, 'Owned native bridge must stop');
   assert.equal(evidence.native.opens, 1, 'Minimal reproduction must reach actual navigation');
   assert.ok(evidence.native.trace.some(event => event.phase === 'enumeration'), 'Minimal reproduction must reach COM');
   if (evidence.native.outcome === 'dispatched') {
+    stage = 'selection_evidence';
     const observed = await waitForFileManagerTarget(target, 'win32', undefined, { windowsDiagnostics: true });
     evidence.exactTargetObserved = observed.status === 'passed' && observed.exactTargetObserved === true;
     evidence.independentSelection = observed.independentSelection;
@@ -67,11 +71,15 @@ try {
     assert.equal(observed.independentSelection?.selected, true);
     assert.equal(observed.selectionAgreement, 'agree');
   }
+  stage = 'native_assertions';
   assert.equal(evidence.native.selections, 1, 'Minimal native Reveal must select exactly once');
   assert.equal(evidence.native.permits, 1);
   assert.equal(evidence.native.outcome, 'dispatched');
   assert.equal(evidence.exactTargetObserved, true);
-} catch (error) { primary = error; }
+} catch (error) {
+  primary = error;
+  evidence.failure = { stage, playwrightTimeout: error?.name === 'TimeoutError', assertion: error?.code === 'ERR_ASSERTION' };
+}
 finally {
   if (app) {
     if (!backendVerified) {
