@@ -3359,6 +3359,8 @@ test("EN/RU production App immediately Reveals creation through an active observ
     mkdirSync(root); if (mode === "grouped") mkdirSync(join(root, "Existing category"));
     let service = openSettingsService(database), off: (() => void) | undefined, dispatches = 0;
     let finishNative!: () => void, projectionReads = 0, observationRevision = 0;
+    let revealAttempts = 0, disabledAtMissingClick: boolean | null = null;
+    const revealReceipts: { outcome: string; problem?: string }[] = [];
     const nativeCompletion = new Promise<void>((resolve) => { finishNative = resolve; });
     const targets: { canonicalRoot: string; relativePath: string; validation: string }[] = [];
     const creationRequests: WorkspaceRequest[] = [];
@@ -3377,10 +3379,17 @@ test("EN/RU production App immediately Reveals creation through an active observ
         };
         const api = mockApi({ language, onProjects: query, onProperties: query, onCreations: query,
           onWorkspace: async (input) => {
-            if (input.type === "workspace.revealProject") return service.revealProject(input, async (target, validate) => {
-              targets.push({ canonicalRoot: target.canonicalRoot, relativePath: target.relativePath, validation: validate().outcome });
-              dispatches++; await nativeCompletion; return { outcome: "dispatched" };
-            });
+            if (input.type === "workspace.revealProject") {
+              revealAttempts++;
+              const response = await service.revealProject(input, async (target, validate) => {
+                targets.push({ canonicalRoot: target.canonicalRoot, relativePath: target.relativePath, validation: validate().outcome });
+                dispatches++; await nativeCompletion; return { outcome: "dispatched" };
+              });
+              if (revealReceipts.length < 4) revealReceipts.push(response.ok ? { outcome: response.value.outcome,
+                ...("problem" in response.value ? { problem: response.value.problem } : {}) }
+                : { outcome: "transport_error", problem: response.error.code });
+              return response;
+            }
             if (input.type === "workspace.createProject") creationRequests.push(input);
             return (input.type === "workspace.load" ? service.handleQuery(input) : service.handleCommand(input)) as ServiceResult<WorkspaceResponse>;
           } });
@@ -3429,8 +3438,17 @@ test("EN/RU production App immediately Reveals creation through an active observ
       const after = service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId }); assert.ok(after.ok); if (!after.ok) throw new Error("Fixture failed");
       assert.equal(after.value.projects[0].projectId, projectId);
       rmSync(join(root, ...(mode === "grouped" ? ["Existing category", "Authored folder"] : ["Authored folder"])), { recursive: true });
-      await userEvent.click(screen.getByRole("button", { name: `${t("revealProject")}: Authored folder` }));
+      const missingReveal = screen.getByRole("button", { name: `${t("revealProject")}: Authored folder` }) as HTMLButtonElement;
+      disabledAtMissingClick = missingReveal.disabled;
+      await userEvent.click(missingReveal);
       await screen.findByText(t("revealMissing")); assert.equal(screen.queryByText(t("revealDispatched")), null); assert.equal(dispatches, 1);
+    } catch (error) {
+      if (error instanceof Error) error.message = `[creation-reveal] ${JSON.stringify({ language, mode,
+        revealAttempts, revealReceipts, disabledAtMissingClick, dispatches, projectionReads, observationRevision,
+        revealButtonCount: screen.queryAllByRole("button", { name: `${t("revealProject")}: Authored folder` }).length,
+        messages: { missing: !!screen.queryByText(t("revealMissing")), uncertain: !!screen.queryByText(t("revealUncertain")),
+          error: !!screen.queryByText(t("revealError")), dispatched: !!screen.queryByText(t("revealDispatched")) } })}\n${error.message}`;
+      throw error;
     } finally { cleanup(); off?.(); service.close(); rmSync(directory, { recursive: true, force: true }); }
   }
 });

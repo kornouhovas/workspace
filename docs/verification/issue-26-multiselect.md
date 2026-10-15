@@ -352,3 +352,32 @@ platform skips,112.1 seconds. Local macOS execution retains the existing single
 batch; this is not Windows scheduling acceptance. Exact-SHA focused Windows
 original/artifact, subsequent full platform and integration gates remain in
 GitHub #26.
+
+## Sixth full CI: Windows 2022 App Reveal feedback
+
+Focused category run 38771221477 passed51 original tests on
+`f189f441e9a29f284c8d4d30d4666c1129aaa932`; artifact11991342979 was inspected.
+Full [run38772058082](https://github.com/kornouhovas/workspace/actions/runs/38772058082),
+attempt1 on that SHA, passed common checks and Windows2022's exclusive category
+batch (51pass,zero failures/skips). Its remaining platform batch failed only the
+existing EN/RU real-service App creation/Reveal/reopen test at renderer-app line3433:
+after deleting the reopened folder, the expected revealMissing message was absent.
+The retained job log has a truncated DOM and no final click/receipt/lifetime
+operands. Windows2022 runtime/package stages were unreached. Other platform jobs
+were still running when diagnosis began; final receipts belong to GitHub.
+
+The original Windows2022 file/command is the red-capable remote reproduction.
+Hypotheses: a click while reload disables the button; observation invalidating
+the asynchronous response; row/message lifetime changes. The test now retains
+finite language/mode, request/receipt counts (at most four typed outcome/problem
+records), disabled-at-click, projection/observation counters, button count and
+known message booleans when it fails, preserving the original error. No click,
+wait, fixture behavior, deadline or assertion is changed. Original App/route
+focused local checks passed121 tests. Local replay results and exact-SHA Windows
+evidence remain in the GitHub checkpoint; local success cannot establish cause.
+
+New `checks: app-fixture` matches only the original Windows2022 App file after
+its build and route checks. The original file runs independently of route-check
+failure after build succeeds, with strict pipefail and exactSHA/run/attempt output.
+No existing route matches that OS/file without unrelated diagnostics. Review,
+local renewal, focused original evidence and full acceptance remain required.

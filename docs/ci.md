@@ -279,3 +279,12 @@ batches; the original one-second exit deadline, diagnostic and cleanup assertion
 are unchanged. Common/list and non-Windows execution are unchanged. Isolation
 tests a native-load/event-delivery hypothesis; exact historical causation remains
 unproven. Focused original/artifact acceptance still precedes full CI.
+
+For issue #26 run38772058082's Windows2022 App Reveal-feedback failure, select
+`checks: app-fixture`. It builds and runs only the original renderer-app file on
+Windows2022, independently after route-check failure when build succeeds, with
+strict output retention and exactSHA/run/attempt provenance. The failing test
+retains finite click/typed receipt/lifetime counters and known-message booleans;
+original interactions, waits and assertions remain unchanged. Diagnostic evidence
+and local success do not prove the historical cause; focused original/artifact
+acceptance remains required before full CI on the same reviewed SHA.

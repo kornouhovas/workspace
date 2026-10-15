@@ -8,7 +8,7 @@ on:
       checks:
         description: Full acceptance or a selected focused failure route
         type: choice
-        options: [full, failed, readiness, windows-release, issue22-failures, creation-shutdown, raw-rename, issue24-failures, category-fixture, issue24-startup, multiselect, etw-controls]
+        options: [full, failed, readiness, windows-release, issue22-failures, creation-shutdown, raw-rename, issue24-failures, category-fixture, issue24-startup, multiselect, etw-controls, app-fixture]
         default: full
       readiness_windows:
         description: With checks=readiness, reproduce original Windows latest and 2022 editor failures
@@ -69,7 +69,7 @@ concurrency:
 
 jobs:
   common:
-    if: ${{ github.event_name != 'workflow_dispatch' || (inputs.checks != 'failed' && inputs.checks != 'readiness' && inputs.checks != 'windows-release' && inputs.checks != 'issue22-failures' && inputs.checks != 'creation-shutdown' && inputs.checks != 'raw-rename' && inputs.checks != 'issue24-failures' && inputs.checks != 'category-fixture' && inputs.checks != 'issue24-startup' && inputs.checks != 'multiselect' && inputs.checks != 'etw-controls') }}
+    if: ${{ github.event_name != 'workflow_dispatch' || (inputs.checks != 'failed' && inputs.checks != 'readiness' && inputs.checks != 'windows-release' && inputs.checks != 'issue22-failures' && inputs.checks != 'creation-shutdown' && inputs.checks != 'raw-rename' && inputs.checks != 'issue24-failures' && inputs.checks != 'category-fixture' && inputs.checks != 'issue24-startup' && inputs.checks != 'multiselect' && inputs.checks != 'etw-controls' && inputs.checks != 'app-fixture') }}
     name: Common tests and static checks
     runs-on: macos-latest
     steps:
@@ -131,6 +131,37 @@ jobs:
           path: work/ci-focused-multiselect/
           if-no-files-found: error
           retention-days: 7
+
+  focused-app-fixture:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.checks == 'app-fixture' }}
+    name: Focused Windows 2022 original App fixture
+    runs-on: windows-2022
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.21.1
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+        id: app-build
+      - name: Verify focused route guards
+        run: node --import tsx --test tests/test-suites.test.mjs
+      - name: Original Windows 2022 App regression file
+        if: ${{ !cancelled() && steps.app-build.outcome == 'success' }}
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p work/ci-focused-app
+          node --import tsx --test tests/renderer-app.test.tsx 2>&1 | tee work/ci-focused-app/tests.txt
+      - name: Preserve exact-SHA original App result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-26-app-${{ github.sha }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
+          path: work/ci-focused-app/
+          if-no-files-found: error
 
   focused-category-fixture:
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.checks == 'category-fixture' }}
