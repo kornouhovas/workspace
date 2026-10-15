@@ -294,3 +294,13 @@ No worker assertion, deadline, test inventory or runtime behavior is changed.
 All 64 focused tests passed locally with sequential preparation. Exact-SHA
 review, final local renewal and the focused Windows result/artifact must pass
 before another full dispatch.
+
+### Reviewed preparation candidate
+
+Both independent review axes found no findings in `f97f59da...9fced98c`.
+Typecheck, lint, documentation links and whitespace passed; all 64 focused
+checks passed. The final full local suite on that reviewed source passed:
+2840 tests, 2817 passed, zero failures, 23 conditional/platform skips,
+120.8 seconds. Existing original local creation acceptance is unchanged.
+Current exact-SHA focused Windows and subsequent full/integration gates remain
+in GitHub #26; earlier failed runs and causal limitations remain retained.
