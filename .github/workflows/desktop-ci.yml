@@ -14,6 +14,10 @@ on:
         description: With checks=readiness, reproduce original Windows latest and 2022 editor failures
         type: boolean
         default: false
+      readiness_com_profile:
+        description: With focused Reveal checks, compare original and reflection COM dispatch on disposable fixtures
+        type: boolean
+        default: false
       readiness_native_prefix:
         description: With readiness native Windows, reproduce the original layout and creation prefix before the failed command
         type: boolean
@@ -611,6 +615,11 @@ jobs:
         env:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-focused-windows-reveal/native
           WORKSPACE_REVEAL_TRACE: '1'
+      - name: Isolated COM dispatch comparison
+        if: ${{ !cancelled() && steps.reveal-build.outcome == 'success' && inputs.readiness_com_profile == true }}
+        run: node --import tsx scripts/diagnostics/windows-com-dispatch.mjs
+        env:
+          WORKSPACE_COM_PROFILE_OUTPUT: work/ci-focused-windows-reveal/com-dispatch.json
       - name: Original Reveal file including dirty and stable authority controls
         if: ${{ !cancelled() && steps.reveal-build.outcome == 'success' }}
         shell: bash
