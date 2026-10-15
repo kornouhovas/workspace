@@ -439,6 +439,18 @@ test('remaining Reveal scope includes the exact Windows latest native failure in
 });
 
 
+test('focused cold originals default to production tracing-off while diagnosis explicitly opts in', () => {
+  const workflow = load(readFileSync('.github/workflows/desktop-ci.yml', 'utf8'));
+  assert.equal(workflow.on.workflow_dispatch.inputs.readiness_native_trace.default, false);
+  const job = workflow.jobs['focused-windows-reveal'];
+  const originals = job.steps.filter(step => step.run === 'npm run smoke:runtime -- dev --creation --discovery-mode=direct --checkpoint=after_evidence');
+  assert.equal(originals.length, 2);
+  for (const step of originals) for (const readiness_native_trace of [undefined, false, true]) {
+    const trace = runInNewContext(step.env.WORKSPACE_REVEAL_TRACE.slice(3, -2), { inputs: { readiness_native_trace } });
+    assert.equal(trace, readiness_native_trace === true ? '1' : '0');
+  }
+});
+
 test('native prefix scope retains the exact original UI predecessors and bounded private trace', () => {
   const workflow = load(readFileSync('.github/workflows/desktop-ci.yml', 'utf8'));
   assert.equal(workflow.on.workflow_dispatch.inputs.readiness_native_prefix.default, false);
@@ -454,7 +466,7 @@ test('native prefix scope retains the exact original UI predecessors and bounded
         native && readiness_native_prefix === true && os === 'windows-latest');
     }
   const native = job.steps.find(step => step.name === 'Original Windows latest direct creation native evidence');
-  assert.equal(native.env.WORKSPACE_REVEAL_TRACE, '1');
+  assert.equal(native.env.WORKSPACE_REVEAL_TRACE, "${{ inputs.readiness_native_trace == true && '1' || '0' }}");
   assert.ok(job.steps.indexOf(native) > job.steps.indexOf(prefix.at(-1)));
 });
 
@@ -635,7 +647,7 @@ test('Windows latest direct native acceptance runs once before other desktop wor
         const index = job.steps.indexOf(active[0]);
         const regressions = job.steps.findIndex(step => step.name === 'Original Reveal file including dirty and stable authority controls');
         assert.equal(index < regressions, early === true);
-        assert.equal(active[0].env.WORKSPACE_REVEAL_TRACE, '1');
+        assert.equal(runInNewContext(active[0].env.WORKSPACE_REVEAL_TRACE.slice(3, -2), context), '0');
         assert.equal(active[0].env.WORKSPACE_SMOKE_EVIDENCE_DIR, 'work/ci-focused-windows-reveal/native');
       }
     }

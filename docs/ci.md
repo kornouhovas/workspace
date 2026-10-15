@@ -198,7 +198,8 @@ It retains the original Ladle build, both original layout commands and original
 dev creation/crash command before the exact failed direct native command. The
 last command still runs independently after successful application build if a
 regression or prefix fails; every failed predecessor remains a failed job.
-Only this focused native command enables `WORKSPACE_REVEAL_TRACE=1`. Fixed
+The focused command defaults to `WORKSPACE_REVEAL_TRACE=0`, matching the full
+product runtime. `readiness_native_trace: true` explicitly enables diagnosis. Fixed
 bootstrap/read-boundary markers are deduplicated (19 maximum), validated under
 the unchanged1024-byte protocol limit and retained as first received boundary
 latencies from adapter spawn. They neither authorize GO nor identify the current
@@ -309,7 +310,7 @@ full acceptance are required after focused success.
 The Windows binding uses direct .NET IDispatch reads rather than PowerShell COM
 member discovery. Renew its cold original with `checks: readiness`,
 `readiness_reveal_windows: true`, `readiness_native_windows: true`,
-`readiness_native_early: true`; leave the historical prefix disabled. Inspect the
+`readiness_native_early: true`; leave the historical prefix and `readiness_native_trace` disabled. Inspect the
 exact-SHA native result, COM/UIA target evidence, restart, shutdown and cleanup
 before full acceptance. Temporary COM/host/timing comparison routes are removed;
 no Explorer warm-up precedes this original. Focused npm installation retains

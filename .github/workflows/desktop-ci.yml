@@ -14,6 +14,10 @@ on:
         description: With checks=readiness, reproduce original Windows latest and 2022 editor failures
         type: boolean
         default: false
+      readiness_native_trace:
+        description: Enable bounded native read tracing for focused Windows diagnosis; cold acceptance defaults off
+        type: boolean
+        default: false
       readiness_native_prefix:
         description: With readiness native Windows, reproduce the original layout and creation prefix before the failed command
         type: boolean
@@ -615,7 +619,7 @@ jobs:
         run: npm run smoke:runtime -- dev --creation --discovery-mode=direct --checkpoint=after_evidence
         env:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-focused-windows-reveal/native
-          WORKSPACE_REVEAL_TRACE: '1'
+          WORKSPACE_REVEAL_TRACE: ${{ inputs.readiness_native_trace == true && '1' || '0' }}
       - name: Original Reveal file including dirty and stable authority controls
         if: ${{ !cancelled() && steps.reveal-build.outcome == 'success' }}
         shell: bash
@@ -646,7 +650,7 @@ jobs:
         run: npm run smoke:runtime -- dev --creation --discovery-mode=direct --checkpoint=after_evidence
         env:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-focused-windows-reveal/native
-          WORKSPACE_REVEAL_TRACE: '1'
+          WORKSPACE_REVEAL_TRACE: ${{ inputs.readiness_native_trace == true && '1' || '0' }}
       - uses: actions/upload-artifact@v4
         if: always()
         with:

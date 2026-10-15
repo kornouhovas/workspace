@@ -901,3 +901,18 @@ latency cause remains unproven.
 The completed candidate needs fresh local checks, two-axis review, a diagnostic-free
 cold original and exact-SHA full platform acceptance before integration. Prior
 A/B success does not substitute for checks after this cleanup.
+
+### Clean candidate review and fresh local verification
+
+Both review axes found no remaining findings in25f014b...18d27f6. Fresh supported
+Node22 `npm test` rebuilt and passed2848tests:2824passed,0failed,24platform skips,
+114.3seconds.139focused checks (132passed/7Windows skips), typecheck/lint/docs and
+whitespace also passed. Source is free of the temporary timing/host probes.
+
+Final focused route normalization is CI-only: ordinary cold originals now default
+to tracing off, matching full CI/product. An independent explicit
+`readiness_native_trace` opt-in retains bounded diagnosis without changing checks,
+query/selection counts, observers, deadlines or cleanup. Focused routing controls
+cover default/false/true for both early and historical original paths. This avoids
+using diagnostic tracing as a hidden final-acceptance precondition. Fresh cold
+Windows and same-SHA full platform gates remain pending.
