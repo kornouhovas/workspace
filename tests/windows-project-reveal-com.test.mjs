@@ -225,8 +225,14 @@ public sealed class WorkspaceSelectionControl {
 }
 '@ | Out-Null
 function New-ControlReference($value) {
-  return [Activator]::CreateInstance([WorkspaceReadyComReference], [Reflection.BindingFlags]'Instance,NonPublic', $null, @($value), $null)
+  # Array expressions enumerate empty COM collections. Pass one literal receiver.
+  $arguments = [object[]]::new(1)
+  $arguments[0] = $value
+  return [Activator]::CreateInstance([WorkspaceReadyComReference], [Reflection.BindingFlags]'Instance,NonPublic', $null, $arguments, $null)
 }
+$emptyCollection = [Collections.Generic.List[object]]::new()
+$emptyReference = New-ControlReference $emptyCollection
+if ((Get-WorkspaceComProperty $emptyReference 'Count') -ne 0) { throw 'empty_receiver' }
 $control = New-Object WorkspaceSelectionControl
 $control.Expected = New-Object object
 $documentReference = New-ControlReference $control
@@ -264,8 +270,8 @@ try {
 } finally { [void][Runtime.InteropServices.Marshal]::ReleaseComObject($filesystem) }
 $dictionary = New-Object -ComObject Scripting.Dictionary
 try {
-  $referenceA = [Activator]::CreateInstance([WorkspaceReadyComReference], [Reflection.BindingFlags]'Instance,NonPublic', $null, @($dictionary), $null)
-  $referenceB = [Activator]::CreateInstance([WorkspaceReadyComReference], [Reflection.BindingFlags]'Instance,NonPublic', $null, @($dictionary), $null)
+  $referenceA = New-ControlReference $dictionary
+  $referenceB = New-ControlReference $dictionary
   if ([object]::ReferenceEquals($referenceA, $referenceB) -or -not (Test-WorkspaceReadyDocument $referenceA $referenceB) -or
       -not (Test-WorkspaceReadyDocument $dictionary $referenceA)) { throw 'wrapped_identity' }
   if ((Get-WorkspaceComProperty $dictionary 'Count') -cne 0) { throw 'empty_count' }

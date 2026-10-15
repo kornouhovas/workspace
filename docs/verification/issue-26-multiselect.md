@@ -992,3 +992,26 @@ fiveWindows controls remain platform-skipped locally. The unchanged local full
 5dfb candidate receipt is retained; Windows controls/cold originals on the repaired
 SHA are the affected gate. Trace-off plus explicit trace-on same-SHA cold runs
 will distinguish actual default behavior from diagnostic evidence/perturbation.
+
+### Repaired managed boundary: both cold originals pass, fixture still red
+
+On0cd9ffd6 the cold original passed both trace-off38804975183 and trace-on38804981106.
+Artifacts12006790521/12006121489/12006676071/12005863077 downloaded and inspected.
+Both latest originals retained exact navigation1/selection1/return1, actual COM/UIA
+selection agreement, restart persistence, normal quit and confirmed owned cleanup.
+Trace-on Item2563→returned4639ms, Document4640→parent4650ms, readiness9097ms; trace-off
+retained no trace. This is original-command success on two fresh hosts, not unique
+historical latency-cause proof. Both2022 contexts run controls, not the cold UI.
+
+EachOS/arm still had228/229controls pass. The sole failure moved past forwarding,
+FSO, property/opacity checks to the identity fixture's constructor: @($dictionary)
+enumerates an empty COM dictionary, passing zero arguments. Fix only this fixture:
+build object[1] and assign the receiver into its sole slot; reuse it for both
+identity wrappers. Add an empty managed-list receiver guard. PortablePS7 reproduces
+the old Constructor-not-found and passes the fixed managed control. Production
+source is unchanged by this fixture repair; all prior assertions remain.
+
+Fresh0cd9ffd6 supportedNode22 full local receipt:2849tests/2825passed/0failed/
+24platform skips,113.7seconds. The fixture delta's two static checks pass, five
+Windows checks skip locally. Its actual Windows controls and unchanged cold command
+must pass on the completed candidate before full same-SHA acceptance.
