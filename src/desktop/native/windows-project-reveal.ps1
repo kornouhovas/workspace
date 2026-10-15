@@ -16,7 +16,7 @@ function Write-WorkspaceRevealEvent($event) {
 
 # Optional bounded read-only boundary evidence. It cannot supply a target or GO.
 function Write-WorkspaceRevealTrace($phase) {
-    if ($env:WORKSPACE_REVEAL_TRACE -cne '1' -or $phase -cnotin @('assemblies','compile','shell','open','enumeration','collection','window_item','document','parent','owner','uia_root','uia_properties','uia_tabs','readiness','item','document_recheck','readiness_recheck')) { return }
+    if ($env:WORKSPACE_REVEAL_TRACE -cne '1' -or $phase -cnotin @('assemblies','compile','shell','open','enumeration','collection','window_item','document','parent','owner','uia_root','uia_properties','uia_tabs','readiness','item','document_recheck','readiness_recheck','binding_returned')) { return }
     if ($null -eq $script:workspaceRevealTraceSeen) { $script:workspaceRevealTraceSeen = [Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal) }
     if ($script:workspaceRevealTraceSeen.Add($phase)) { Write-WorkspaceRevealEvent ('TRACE:' + $phase) }
 }
@@ -52,6 +52,7 @@ function Invoke-WorkspaceProjectReveal($shell, $expected, $watch) {
         for ($iteration = 0; $iteration -lt 128; $iteration++) {
             if ((Get-WorkspaceRevealMilliseconds $watch) -ge 10000) { throw 'deadline' }
             $binding = Read-WorkspaceReadyBinding $shell $expected $anchor $trace
+            Write-WorkspaceRevealTrace 'binding_returned'
             $elapsed = Get-WorkspaceRevealMilliseconds $watch
             if ($elapsed -ge 10000) { throw 'deadline' }
             if ($binding.stage -eq 'ready') { $anchor = $binding; break }

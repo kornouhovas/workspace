@@ -292,13 +292,13 @@ $ErrorActionPreference = 'Stop'
 . ./src/desktop/native/windows-project-reveal.ps1
 $events = [Collections.Generic.List[string]]::new()
 function Write-WorkspaceRevealEvent($event) { $script:events.Add($event) }
-foreach ($phase in @('assemblies','compile','shell','open','enumeration','collection','window_item','document','parent','owner','uia_root','uia_properties','uia_tabs','readiness','item','document_recheck','readiness_recheck')) { Write-WorkspaceRevealTrace $phase }
+foreach ($phase in @('assemblies','compile','shell','open','enumeration','collection','window_item','document','parent','owner','uia_root','uia_properties','uia_tabs','readiness','item','document_recheck','readiness_recheck','binding_returned')) { Write-WorkspaceRevealTrace $phase }
 Write-WorkspaceRevealTrace 'assemblies'
 Write-WorkspaceRevealTrace 'private path'
-if ($events.Count -ne 17 -or $events[0] -cne 'TRACE:assemblies' -or $events[16] -cne 'TRACE:readiness_recheck') { throw 'trace_control' }
+if ($events.Count -ne 18 -or $events[0] -cne 'TRACE:assemblies' -or $events[17] -cne 'TRACE:binding_returned') { throw 'trace_control' }
 $env:WORKSPACE_REVEAL_TRACE = '0'
 Write-WorkspaceRevealTrace 'assemblies'
-if ($events.Count -ne 17) { throw 'trace_disabled' }
+if ($events.Count -ne 18) { throw 'trace_disabled' }
 $shell = [pscustomobject]@{}
 $shell | Add-Member ScriptMethod Windows { throw 'REAL_QUERY' }
 try {
@@ -306,6 +306,26 @@ try {
   throw 'missing_query'
 } catch {
   if (-not $_.Exception.Message.Contains('REAL_QUERY') -or $_.Exception.Message.Contains('TRACE_FAULT')) { throw 'trace_interference' }
+}
+
+# The actual consumer emits the completion marker only after a read returns.
+function Wait-WorkspaceRevealPoll($milliseconds) { }
+function Read-WorkspaceReadyBinding($shell, $expected, $anchor, $trace) {
+  $script:reads++
+  if ($script:firstReadThrows -or $script:reads -gt 1) { throw 'CONTROL_QUERY' }
+  return @{ stage = 'parent_absent' }
+}
+$shell = [pscustomobject]@{}
+$shell | Add-Member ScriptMethod Open { param($parent) }
+$env:WORKSPACE_REVEAL_TRACE = '1'
+foreach ($firstReadThrows in @($true, $false)) {
+  $script:firstReadThrows = $firstReadThrows; $script:reads = 0
+  $script:workspaceRevealTraceSeen = $null; $events.Clear()
+  $completed = Invoke-WorkspaceProjectReveal $shell 'C:\owned\Project' ([Diagnostics.Stopwatch]::new())
+  $returned = @($events | Where-Object { $_ -ceq 'TRACE:binding_returned' }).Count
+  if ($completed -or $returned -ne $(if ($firstReadThrows) { 0 } else { 1 }) -or
+      $events.Contains('READY') -or $events.Contains('SELECT') -or
+      $events[$events.Count - 1] -cne 'FAIL:readiness:exception') { throw 'completion_boundary' }
 }
 [Console]::Out.WriteLine('TRACE_CONTROL')
 `;

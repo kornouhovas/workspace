@@ -392,3 +392,35 @@ local suite on this reviewed candidate passed:2844 tests,2821 passed,zero
 failures,23 conditional/platform skips,110.8 seconds. Observation may perturb
 scheduling; no historical cause or product fix is claimed. Exact-SHA focused
 Windows original/artifact, full acceptance and integration remain GitHub gates.
+
+## Windows latest native creation: first binding completion evidence
+
+Full38775873085 / attempt1 on `315eb61f` passed common checks and all three
+platform test suites; complete macOS and Windows2022 acceptance passed. Windows
+latest failed the original direct development creation/native command with zero
+selections instead of one. Artifact11994278158 retained one exact parent
+navigation, bridge state `opened`, owner_deadline, rejected native_unavailable
+receipt and confirmed bridge/Explorer/fixture cleanup. Failure cleanup does not
+complete the scenario's normal shutdown/restart acceptance.
+
+The existing matching Reveal/native route with its original UI predecessors and
+trace enabled reproduced the exact failure in focused38779174513 / attempt1,
+same SHA. Artifact11996460002 was inspected: all predecessors and native/service
+controls passed; first received `document` boundary was6446ms, followed by owner
+expiry without a received `parent` boundary. Deduplicated first-received markers
+do not identify the current COM call after repeated polls, so historical cause
+remains unproven. Ranked hypotheses distinguish a blocked read, readiness polling
+and child-token delivery. Windows2022's226 relevant controls passed separately.
+
+One new opt-in `binding_returned` marker records whether at least one complete
+binding read returned. If absent at expiry, an initial binding read has not
+reported completion; if present, the first-read stall hypothesis is falsified.
+The existing private protocol remains1024bytes;18 fixed deduplicated markers fit
+inside it. Tracing defaults off. There is no change to navigation, COM reads,
+permit, selection, binding guards, deadlines or cleanup. The adapter control went
+red before accepting the marker, then green while retaining the unchanged
+owner-deadline rejection and zero permits. Actual Windows consumer controls
+verify marker absence on a thrown first read and one marker on a completed read
+followed by failure. These controls establish diagnostic semantics, not an
+historical COM cause. Review, local renewal and exact-SHA focused/full acceptance
+remain GitHub gates.

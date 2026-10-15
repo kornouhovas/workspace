@@ -295,6 +295,25 @@ test("finite readiness trace preserves ordering without authorizing a native com
 });
 
 
+test("a returned binding trace retains the owned deadline and never grants a permit", async (t) => {
+  let deadline;
+  const original = globalThis.setTimeout;
+  t.mock.method(globalThis, "setTimeout", (callback, milliseconds, ...args) => {
+    if (milliseconds === 12000) { deadline = callback; return {}; }
+    return original(callback, milliseconds, ...args);
+  });
+  const f = fixture({ timeoutMs: 12000 });
+  const pending = f.start(); pending.catch(() => {});
+  f.output("OPEN\nTRACE:binding_returned\n");
+  assert.deepEqual(f.events.filter(event => event.stage === "trace").map(event => event.phase), ["binding_returned"]);
+  assert.deepEqual(f.writes, []);
+  deadline();
+  await assert.rejects(pending, problem("native_unavailable"));
+  assert.deepEqual(f.events.filter(event => event.stage === "failure"), [{ stage: "failure", path: target, phase: "opened", reason: "owner_deadline" }]);
+  assert.deepEqual(f.calls, ["SIGKILL"]);
+  assert.equal(f.events.some(event => event.stage === "select" || event.stage === "done"), false);
+});
+
 for (const output of ['TRACE:private path\n', 'TRACE:uia_tabs:extra\n', 'TRACE:uia_tabs\nTRACE:uia_tabs\n', 'OPEN\nREADY\nTRACE:assemblies\n']) {
   test(`invalid or late trace stays a failed protocol: ${JSON.stringify(output)}`, async () => {
     const f = fixture(); const pending = f.start(); f.output(output);
