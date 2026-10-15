@@ -381,3 +381,14 @@ its build and route checks. The original file runs independently of route-check
 failure after build succeeds, with strict pipefail and exactSHA/run/attempt output.
 No existing route matches that OS/file without unrelated diagnostics. Review,
 local renewal, focused original evidence and full acceptance remain required.
+
+### Reviewed App diagnostic candidate
+
+Both independent review axes found no findings in `f189f441...4d9417e7`.
+Typecheck, lint, documentation links and whitespace passed;121 focused App/route
+tests passed. Twenty filtered local repetitions of the original App case passed,
+so they do not reproduce or explain the Windows failure. The renewed complete
+local suite on this reviewed candidate passed:2844 tests,2821 passed,zero
+failures,23 conditional/platform skips,110.8 seconds. Observation may perturb
+scheduling; no historical cause or product fix is claimed. Exact-SHA focused
+Windows original/artifact, full acceptance and integration remain GitHub gates.
