@@ -253,3 +253,17 @@ After this repair, all 64 focused checks passed. The original local
 direct/grouped interruption cases: 16 normal quits/backend exits and asserted
 owned fixture cleanup passed. Its native API stages are intentionally skipped by
 that original command and are not claimed as native acceptance.
+
+### Final reviewed quit/focus candidate
+
+The independent reviewers confirmed the focus-control race repair in `0b83781b`;
+no actionable findings remain in the helper/focus changes. Typecheck, lint,
+documentation links and whitespace passed. All 64 focused native/lifecycle/phase/
+property/route tests passed; the original local creation matrix completed all
+eight cases with 16 normal quits/backend exits and asserted cleanup.
+
+The final complete local suite on this reviewed candidate passed: 2840 tests,
+2817 passed, zero failures, 23 conditional/platform skips, 120.5 seconds. The
+application build is unchanged; harness/regression changes are tested against it.
+Current exact-SHA focused Windows creation, renewed full platform and integration
+receipts remain GitHub #26 gates. Earlier failed evidence is retained.
