@@ -548,9 +548,9 @@ test('bounded window enumerator rejects incomplete, duplicate, malformed and cha
     if (['changed_count', 'after_throw'].includes(r.mode)) assert.equal(r.afterCalls, 1);
   }
   assert.deepEqual(genuine, [
-    { mode: 'empty', count: 0, opaque: true, exactNames: true },
-    { mode: 'single', count: 1, opaque: true, exactNames: true },
-    { mode: 'multiple', count: 2, opaque: true, exactNames: true },
+    { mode: 'empty', count: 0, opaque: true, exactNames: true, formerCastRejected: true },
+    { mode: 'single', count: 1, opaque: true, exactNames: true, formerCastRejected: true },
+    { mode: 'multiple', count: 2, opaque: true, exactNames: true, formerCastRejected: true },
   ]);
   assert.doesNotMatch(result.stdout, /PRIVATE|C:\\|HRESULT|Exception/);
 });

@@ -398,3 +398,7 @@ All downstream guards and selection/deadline/cleanup gates remain common.
 Compare matched checkpoint-enabled latest originals with this flag off/on;
 diagnostic success supports a candidate strategy but establishes no repair or
 historical OS-call cause. Remove temporary experiments before final acceptance.
+Focused runtime-observation also uploads completed control logs before starting
+the long original runtime, so a control failure can be inspected while original
+evidence is still being collected. This has its own exact-SHA/run/attempt artifact;
+the original build-only prerequisite, strict exits and final always-upload remain.

@@ -308,7 +308,7 @@ test('category-fixture also reproduces the original Windows 2022 development run
   assert.ok(commands[2].run.includes('npm run smoke:runtime -- dev 2>&1 | tee'));
   assert.equal(commands[2].env.WORKSPACE_SMOKE_EVIDENCE_DIR, 'work/ci-category-runtime');
   assert.ok(job.steps.every(step => step['continue-on-error'] === undefined));
-  const upload = job.steps.find(step => step.uses === 'actions/upload-artifact@v4');
+  const upload = job.steps.find(step => step.name === 'Preserve exact-SHA runtime proofs and original result');
   assert.equal(upload.if, 'always()'); assert.equal(upload.with.path, 'work/ci-category-runtime/');
   assert.equal(upload.with['if-no-files-found'], 'error');
   for (const field of ['github.sha', 'github.run_id', 'github.run_attempt']) assert.ok(upload.with.name.includes(field));
@@ -685,6 +685,15 @@ test('runtime-observation runs both exact Windows runtimes independently of focu
   assert.equal(build.env.npm_config_loglevel, 'verbose');
   const controls = job.steps.find(step => step.name === 'Retain observer and rename diagnostic controls');
   assert.ok(controls.run.includes('tests/source-observer.test.mjs tests/windows-rename-diagnostics.test.mjs'));
+  const controlUpload = job.steps.find(step => step.name === 'Preserve completed control logs before original runtime');
+  assert.equal(controlUpload.uses, 'actions/upload-artifact@v4');
+  for (const checks of ['runtime-observation', 'category-fixture']) for (const outcome of ['success', 'failure']) for (const isCancelled of [false, true]) {
+    assert.equal(runInNewContext(controlUpload.if.slice(3, -2), { cancelled: () => isCancelled, inputs: { checks }, steps: { runtime_build: { outcome } } }),
+      !isCancelled && checks === 'runtime-observation' && outcome === 'success');
+  }
+  assert.equal(controlUpload.with.path.trim(), 'work/ci-category-runtime/controls.txt\nwork/ci-category-runtime/category-controls.txt');
+  assert.equal(controlUpload.with['if-no-files-found'], 'error');
+  for (const field of ['github.sha', 'github.run_id', 'github.run_attempt']) assert.ok(controlUpload.with.name.includes(field));
   const comparison = job.steps.find(step => step.name === 'Compare isolated category rename and sharing contexts');
   assert.equal(comparison.run, 'node --import tsx scripts/windows-rename-diagnostics.mjs');
   assert.ok(comparison.if.includes("matrix.os == 'windows-2022'"));
@@ -702,6 +711,6 @@ test('runtime-observation runs both exact Windows runtimes independently of focu
     const result = runInNewContext(original.if.slice(3, -2), { cancelled: () => false, steps: { 'runtime_build': { outcome } } });
     assert.equal(result, outcome === 'success');
   }
-  const upload = job.steps.find(step => step.uses === 'actions/upload-artifact@v4');
+  const upload = job.steps.find(step => step.name === 'Preserve exact-SHA runtime proofs and original result');
   assert.equal(upload.if, 'always()'); assert.equal(upload.with['if-no-files-found'], 'error');
 });

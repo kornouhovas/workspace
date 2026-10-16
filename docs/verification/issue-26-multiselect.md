@@ -1524,3 +1524,37 @@ before its IEnumVARIANT cast; that test-only path does not change production.
 Expanded endpoint controls add COM work before the original, so the next off/on
 comparison must use this same SHA with identical prerequisites. Earlier replicas
 are retained historical evidence, not a matched baseline for this acquisition change.
+
+### First enumerator comparison passes originals, exposes fixture marshaling
+
+Matched e2ca48fd Item38827446948 and enumerator38827451165 both passed the complete
+originals. Native direct/grouped latencies: Item5438.93/2183.14ms;
+enumerator4853.90/1860.30ms. Both retain46normal rename shutdowns/46owned exit proofs/
+zero pending, native/fixture cleanup. These single-host timings do not establish
+a performance improvement or resolve intermittent latency.
+
+Both jobs instead failed exactly one of684controls (683passed): the new genuine
+MSXML fixture reflected DISPID_NEWENUM and cast its result to IEnumVARIANT.
+.NET Framework returns EnumeratorViewOfEnumVariant there, causing InvalidCastException
+before the positive collection assertions. The17reducer receipts are not accepted
+as a passed control because that enclosing test failed. Both exact artifacts and
+logs were inspected; no full acceptance follows from passing originals.
+
+Repair only that fixture acquisition through SDK-typed IXMLDOMNodeList::get__newEnum,
+preserving four IDispatch plus item/length/nextNode/reset slots and raw IUnknown
+return. The [official SDK](https://raw.githubusercontent.com/microsoft/win32metadata/main/generation/WinSDK/RecompiledIdlHeaders/um/MsXml6.h#L4406-L4426)
+defines its IID/order. Retain the actual old reflection call and require its finite
+formerCastRejected predicate (IEnumerator and not IEnumVARIANT), then require typed
+0/1/2-node positives. No managed-enumerator adapter or production change substitutes
+for genuine COM variant marshaling. PortablePS7 compiles the exact repaired fixture
+and passes seven portable controls; actual WindowsPS5 positive results remain required.
+
+Tighten focused feedback by uploading the two completed control logs immediately
+before long runtime scenarios, with exact SHA/run/attempt metadata, even after
+control failure. Existing original execution still depends only on successful
+build/cancellation, and the final always-upload retains all original artifacts.
+Default/full/category-fixture coverage, exits and deadlines remain unchanged.
+Local supportedNode22 protocol/COM/routing132tests/109passed/0failed/23Windows skips,
+lint/links/whitespace passed. Production build/type evidence is inherited unchanged
+from e2ca48fd. Both review axes approved the fixture ABI and early-log boundary;
+actual repaired-control and matched original evidence remain pending.

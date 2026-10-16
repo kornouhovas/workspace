@@ -10,6 +10,22 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.ComTypes;
+// SDK MsXml6.h IXMLDOMNodeList: preserve IDispatch and four node-list slots.
+// Call only typed get__newEnum so .NET Framework cannot apply its automatic
+// DISPID_NEWENUM IEnumerator view before the IEnumVARIANT control sees it.
+[ComImport, Guid("2933BF82-7B36-11D2-B20E-00C04F983E60"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+internal interface WindowEnumeratorXmlNodeList {
+    [PreserveSig] int GetTypeInfoCount(out uint count);
+    [PreserveSig] int GetTypeInfo(uint index, uint locale, out IntPtr info);
+    [PreserveSig] int GetIDsOfNames(ref Guid id, IntPtr names, uint count, uint locale, IntPtr ids);
+    [PreserveSig] int Invoke(int member, ref Guid id, uint locale, ushort flags,
+        IntPtr arguments, IntPtr result, IntPtr exception, IntPtr argumentError);
+    [PreserveSig] int GetItem(int index, out IntPtr node);
+    [PreserveSig] int GetLength(out int length);
+    [PreserveSig] int NextNode(out IntPtr node);
+    [PreserveSig] int Reset();
+    [PreserveSig] int NewEnum([Out, MarshalAs(UnmanagedType.IUnknown)] out object enumerator);
+}
 public sealed class WindowEnumeratorControl : IEnumVARIANT {
     public object[] Values;
     public string Mode;
@@ -36,7 +52,10 @@ public static class WindowEnumeratorControls {
     public static Array CollectGenuine(MethodInfo collect, object value, int count, Func<int> after) {
         while (value is System.Management.Automation.PSObject)
             value = ((System.Management.Automation.PSObject)value).BaseObject;
-        return (Array)collect.Invoke(null, new object[] { (IEnumVARIANT)value, count, after });
+        object enumerator;
+        if (((WindowEnumeratorXmlNodeList)value).NewEnum(out enumerator) != 0 || enumerator == null || !Marshal.IsComObject(enumerator))
+            throw new InvalidOperationException();
+        return (Array)collect.Invoke(null, new object[] { (IEnumVARIANT)enumerator, count, after });
     }
     public static WindowEnumeratorReceipt[] Run(MethodInfo collect, bool portable) {
         object[] pool = new object[257];
@@ -96,10 +115,12 @@ if ($env:WORKSPACE_ENUM_PORTABLE -cne '1') {
         if ([WorkspaceReadyCom]::Call($document, 'loadXML', [object[]]@($xml)) -cne $true) { throw 'xml_control' }
         $items = [WorkspaceReadyCom]::Call($document, 'selectNodes', [object[]]@('/root/*'))
         $raw = $items.GetType().GetField('Value', [Reflection.BindingFlags]'Instance,NonPublic').GetValue($items)
-        $enumerator = $raw.GetType().InvokeMember('[DispID=-4]', [Reflection.BindingFlags]::GetProperty, $null, $raw, $null)
+        $reflectionView = $raw.GetType().InvokeMember('[DispID=-4]', [Reflection.BindingFlags]::GetProperty, $null, $raw, $null)
+        $formerCastRejected = $reflectionView -is [Collections.IEnumerator] -and $reflectionView -isnot [Runtime.InteropServices.ComTypes.IEnumVARIANT]
+        if (-not $formerCastRejected) { throw 'missing_reflection_counterexample' }
         $count = [WorkspaceReadyCom]::Read($items, 'length')
         $counter = [Func[int]]{ [WorkspaceReadyCom]::Read($items, 'length') }
-        $collected = [WindowEnumeratorControls]::CollectGenuine($collect, $enumerator, $count, $counter)
+        $collected = [WindowEnumeratorControls]::CollectGenuine($collect, $raw, $count, $counter)
         $expected = @()
         if ($shape -ceq 'single') { $expected = @('a') }
         elseif ($shape -ceq 'multiple') { $expected = @('a','b') }
@@ -111,7 +132,7 @@ if ($env:WORKSPACE_ENUM_PORTABLE -cne '1') {
         }
         if ($collected -isnot [Array] -or $names.Count -ne $expected.Length -or $collected.Length -ne $expected.Length) { throw 'node_count' }
         foreach ($name in $expected) { if (-not $names.Contains($name)) { throw 'node_identity' } }
-        $realReports.Add([ordered]@{ mode = $shape; count = $collected.Length; opaque = $opaque; exactNames = $true })
+        $realReports.Add([ordered]@{ mode = $shape; count = $collected.Length; opaque = $opaque; exactNames = $true; formerCastRejected = $formerCastRejected })
     }
 }
 [ordered]@{ controlled = $reports; genuine = $realReports.ToArray() } | ConvertTo-Json -Depth 4 -Compress

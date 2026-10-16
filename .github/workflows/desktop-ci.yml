@@ -283,6 +283,15 @@ jobs:
         run: |
           set -o pipefail
           node --import tsx --test tests/category-submission-receipt.test.mjs tests/project-category-move-runtime.test.mjs tests/project-category-move-ui.test.tsx tests/native-reveal-receipt.test.mjs tests/rename-runtime-startup.test.mjs tests/runtime-lifecycle.test.mjs tests/project-reveal.test.mjs tests/windows-project-reveal.test.mjs tests/windows-project-reveal-com.test.mjs tests/windows-ready-selection-com.test.mjs tests/test-suites.test.mjs 2>&1 | tee work/ci-category-runtime/category-controls.txt
+      - name: Preserve completed control logs before original runtime
+        if: ${{ !cancelled() && steps.runtime_build.outcome == 'success' && inputs.checks == 'runtime-observation' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-26-runtime-controls-${{ matrix.os }}-${{ github.sha }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
+          path: |
+            work/ci-category-runtime/controls.txt
+            work/ci-category-runtime/category-controls.txt
+          if-no-files-found: error
       - name: Compare isolated category rename and sharing contexts
         if: ${{ !cancelled() && steps.runtime_build.outcome == 'success' && inputs.checks == 'runtime-observation' && matrix.os == 'windows-2022' }}
         run: node --import tsx scripts/windows-rename-diagnostics.mjs
