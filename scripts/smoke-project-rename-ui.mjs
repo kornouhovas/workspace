@@ -284,7 +284,7 @@ export async function runProjectRenameUi(mode = "dev") {
           if (stage === "started") { bridge.started++; bridge.active++; }
           if (stage === "stopped") { bridge.stopped++; bridge.active--; }
           if (stage === "unknown") bridge.unknown = true;
-          if (stage === "checkpoint" && bridge.checkpoint === null && /^(none|read_count|read_document|read_folder|read_self|read_path|read_hwnd|read_busy|read_ready|call_windows|call_window_item|call_parse|call_select|other_read|other_call|identity|owner_validation|uia_root|uia_properties|uia_tabs|uia_owner)$/.test(phase) &&
+          if (stage === "checkpoint" && bridge.checkpoint === null && /^(none|read_count|read_document|read_folder|read_self|read_path|read_hwnd|read_busy|read_ready|call_windows|call_window_item|call_window_enum|call_parse|call_select|other_read|other_call|identity|owner_validation|uia_root|uia_properties|uia_tabs|uia_owner)$/.test(phase) &&
               ["active", "complete"].includes(reason) && Number.isInteger(sequence) && sequence >= 0 && sequence <= 100000 && Number.isInteger(helperElapsedMs) && helperElapsedMs >= 0 && helperElapsedMs <= 12000 && Number.isFinite(elapsedMs) && elapsedMs >= 0 && elapsedMs <= 12000) {
             bridge.checkpoint = { operation: phase, state: reason, sequence, helperElapsedMs, adapterElapsedMs: elapsedMs };
           }

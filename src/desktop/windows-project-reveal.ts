@@ -155,7 +155,7 @@ export async function runWindowsProjectReveal(path: string, context: NativeRevea
       // [DEBUG-issue26] One optional managed-helper snapshot. It does not alter
       // protocol state or deadlines; even a captured callback racing disposal
       // can only report evidence before this owned child closes.
-      const checkpoint = /^CHECKPOINT:(none|read_count|read_document|read_folder|read_self|read_path|read_hwnd|read_busy|read_ready|call_windows|call_window_item|call_parse|call_select|other_read|other_call|identity|owner_validation|uia_root|uia_properties|uia_tabs|uia_owner):(active|complete):([0-9]{1,6}):([0-9]{1,5})$/.exec(value);
+      const checkpoint = /^CHECKPOINT:(none|read_count|read_document|read_folder|read_self|read_path|read_hwnd|read_busy|read_ready|call_windows|call_window_item|call_window_enum|call_parse|call_select|other_read|other_call|identity|owner_validation|uia_root|uia_properties|uia_tabs|uia_owner):(active|complete):([0-9]{1,6}):([0-9]{1,5})$/.exec(value);
       if (checkpoint) {
         const sequence = Number(checkpoint[3]), helperElapsedMs = Number(checkpoint[4]);
         if (!checkpointEnabled || checkpointSeen || sequence > 100000 || helperElapsedMs > 12000 ||

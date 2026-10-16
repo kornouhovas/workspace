@@ -331,7 +331,7 @@ async function withDeferredCheckpoint(enabled, run) {
   finally { if (previous === undefined) delete process.env.WORKSPACE_REVEAL_DEFERRED_TRACE; else process.env.WORKSPACE_REVEAL_DEFERRED_TRACE = previous; }
 }
 
-for (const phase of ["call_window_item", "owner_validation", "uia_root", "uia_properties", "uia_tabs", "uia_owner"])
+for (const phase of ["call_window_item", "call_window_enum", "owner_validation", "uia_root", "uia_properties", "uia_tabs", "uia_owner"])
 test(`one enabled deferred checkpoint retains ordering without authorizing GO: ${phase}`, async () => withDeferredCheckpoint(true, async () => {
   const f = fixture(); const pending = f.start();
   f.output(`OPEN\nCHECKPOINT:${phase}:active:7:9001\n`);

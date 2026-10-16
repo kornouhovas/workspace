@@ -1455,3 +1455,72 @@ diagnostic receipts; the refined actual Windows-only controls and original remai
 required, followed by cause-supported repair/cleanup and final acceptance.
 Both review axes accepted the refined probe after fixing top-level registration;
 the spec review also confirmed the opt-in-only latest matrix boundary.
+
+### Bounded fresh-host replication captures Item again
+
+Refined38823349864 passed all85observer/638category-native controls, including
+all eight actualPS5 wrappers, and both original native calls at3936.87/1193.56ms.
+Neither reached the9s timer. All46owned backend exits and native/fixture cleanup
+passed. This success did not locate the intermittent failed leaf or prove repair.
+
+The evidence review accepted exactly two predeclared fresh Windowslatest hosts
+on0f8936bc with the validated quiet probe, seeking red evidence rather than retrying
+until green; the batch ended after both. ReplicaA38824555668 failed direct native
+Reveal at opened/owner_deadline, one open/zero selection/return. Its checkpoint is
+call_window_item/active/sequence91, helper9001ms, adapter9435.87ms. All638controls
+passed; owned parent/backend/bridge/native cleanup and fixture removal passed.
+ReplicaB38824560016 passed the complete original; native5368.85/2143.28ms, no9s
+checkpoint,46exit proofs/zero pending and cleanup passed. Both artifacts/logA
+were inspected. The active Item helper covers unwrap, dispatch/marshaling and wrap;
+it is not a call-duration measurement or identification of an OS blocking actor.
+The earlier read_hwnd/complete snapshot still does not establish a unique UIA cause.
+
+Next ranked predictions: a bounded alternative to indexed Item acquisition may
+avoid that boundary; cumulative repeated COM checks may consume the budget even
+with a different acquisition method; independent host/scheduling variance may
+still dominate. Test the first as an explicitly gated counterfactual, not a claimed
+repair. Preserve all downstream identity/parent/owner/UIA/readiness/path/GO guards.
+
+`runtime_native_enumerator` / WORKSPACE_REVEAL_ENUMERATOR=1 defaults false and
+changes only candidate acquisition. The same Shell.Windows opaque collection
+uses SDK-typed get_Count and _NewEnum, then managed IEnumVARIANT.Next(1) with
+IntPtr.Zero fetched pointer, exact S_OK entry/S_FALSE exhaustion. Accept at most
+256entries plus one terminal check; reject errors/other HRESULTs/null/nonCOM/
+duplicate IUnknown/short/extra/changed counts. Count is validated before and after,
+and length must match. No prefix acceptance, retry, Item fallback, warm-up or
+cached enumeration. Return only opaque holder arrays; RCWs remain owned by the
+short-lived bridge. Every binding invocation gets a fresh enumeration, then one
+common downstream validation/selection path. Baseline indexed order/count calls
+remain unchanged when disabled. Matching counts cannot detect same-count
+replacement; this is bounded enumeration, not an atomic membership snapshot.
+
+The ABI follows [SDK ExDisp.idl](https://github.com/microsoft/win32metadata/blob/main/generation/WinSDK/RecompiledIdlHeaders/um/ExDisp.Idl#L604-L614),
+[Microsoft _NewEnum](https://learn.microsoft.com/en-us/windows/win32/api/exdisp/nf-exdisp-ishellwindows-_newenum)
+and [managed IEnumVARIANT.Next](https://learn.microsoft.com/en-us/dotnet/api/system.runtime.interopservices.comtypes.ienumvariant.next).
+The explicit pointer count uses the documented one-element return convention;
+no manual unmanaged buffer or marshaler is introduced. Finite quiet-checkpoint
+allowlists add only call_window_enum, with unchanged byte/deadline/authority limits.
+
+Controls cover both acquisition branches through the existing shipped consumer's
+entire readiness/permit/identity/late/rejection matrix. Managed reducer controls
+use genuine COM-valued entries for0/1/2/256 positives and malformed/duplicate/
+short/extra/count-change/exception/257th-entry negatives. Separate genuine MSXML
+IEnumVARIANT0/1/2-node controls exercise positive COM variant marshaling without
+opening Explorer UI; these are not multiple Explorer windows. The actual
+ShellWindows endpoint checks the available collection's typed count/opaque results
+and unordered Item-versus-enumerator identity set. The actual original remains
+required for positive Explorer acquisition/selection/cleanup. Seven portablePS7
+empty/error/type/limit controls passed; genuine COM/PS5 controls and matched native
+counterfactual evidence remain pending. No production repair/full acceptance claim.
+
+Both review axes approved this diagnostic candidate against the SDK ABI and
+common guard contract. Fresh supportedNode22 build, lint, typecheck, documentation
+links and whitespace passed; affected protocol/COM/shared-controller/routing/
+artifact/build checks180tests/156passed/0failed/24Windows skips. PortablePS7 compiled
+the exact helper/control and passed all seven portable controls. A direct portable
+reflection check confirms the empty result remains an Array of length0 across the
+PowerShell boundary. The MSXML fixture explicitly unwraps PSObject in managed code
+before its IEnumVARIANT cast; that test-only path does not change production.
+Expanded endpoint controls add COM work before the original, so the next off/on
+comparison must use this same SHA with identical prerequisites. Earlier replicas
+are retained historical evidence, not a matched baseline for this acquisition change.

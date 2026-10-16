@@ -387,3 +387,14 @@ helper-absent controls are diagnostic gates, not acceptance or a native repair.
 After the matched2022 originals passed, the checkpoint opt-in now focuses only
 the remaining Windows latest failure. Default-off runtime-observation still runs
 both Windows variants; category-fixture/default/full scheduling stays unchanged.
+
+After the bounded fresh-host replica captured Item active, the temporary
+`runtime_native_enumerator: true` input selects an explicit acquisition
+counterfactual for the focused original. Defaultfalse retains indexed Item.
+The alternative uses SDK _NewEnum/IEnumVARIANT inside managed code, validated
+counts before/after, exact finite exhaustion, COM-valued unique identities and
+opaque return holders; no retry/fallback/prefix or membership-atomicity claim.
+All downstream guards and selection/deadline/cleanup gates remain common.
+Compare matched checkpoint-enabled latest originals with this flag off/on;
+diagnostic success supports a candidate strategy but establishes no repair or
+historical OS-call cause. Remove temporary experiments before final acceptance.

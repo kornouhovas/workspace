@@ -32,6 +32,7 @@ internal interface WorkspaceShellWindows {
     [PreserveSig] int GetCount(out int count);
     [PreserveSig] int Item([In, MarshalAs(UnmanagedType.Struct)] object index,
         [Out, MarshalAs(UnmanagedType.Interface)] out WorkspaceReturnedDispatch window);
+    [PreserveSig] int NewEnum([Out, MarshalAs(UnmanagedType.IUnknown)] out object enumerator);
 }
 
 // Keep returned RCWs inside managed code. Handing a raw COM result back to
@@ -158,6 +159,49 @@ public static class WorkspaceReadyCom {
         return value != null && Marshal.IsComObject(value)
             ? new WorkspaceReadyComReference(value) : value;
     }
+    private static int ReadWindowCount(WorkspaceShellWindows windows) {
+        int count;
+        if (windows.GetCount(out count) != 0 || count < 0 || count > 256) throw new InvalidOperationException();
+        return count;
+    }
+    private static WorkspaceReadyComReference[] CollectWindowEnumerator(
+        System.Runtime.InteropServices.ComTypes.IEnumVARIANT enumerator, int before, Func<int> readAfter) {
+        if (enumerator == null || before < 0 || before > 256 || readAfter == null) throw new ArgumentException();
+        var entries = new System.Collections.Generic.List<WorkspaceReadyComReference>();
+        var identities = new System.Collections.Generic.HashSet<IntPtr>();
+        // Accept at most 256 entries and one terminal check; never accept a prefix.
+        for (int index = 0; index <= 256; index++) {
+            var value = new object[1];
+            int status = enumerator.Next(1, value, IntPtr.Zero);
+            if (status == 1) {
+                if (value[0] != null || entries.Count != before || readAfter() != before) throw new InvalidOperationException();
+                return entries.ToArray();
+            }
+            if (status < 0) Marshal.ThrowExceptionForHR(status);
+            if (status != 0 || entries.Count >= before || index == 256 || value[0] == null || !Marshal.IsComObject(value[0]))
+                throw new InvalidOperationException();
+            IntPtr identity = Marshal.GetIUnknownForObject(value[0]);
+            try { if (identity == IntPtr.Zero || !identities.Add(identity)) throw new InvalidOperationException(); }
+            finally { Marshal.Release(identity); }
+            entries.Add(new WorkspaceReadyComReference(value[0]));
+        }
+        throw new InvalidOperationException();
+    }
+    // [DEBUG-issue26] Explicit counterfactual acquisition; all downstream guards
+    // remain common. A fresh enumeration is bounded, not an atomic membership proof.
+    public static WorkspaceReadyComReference[] WindowsByEnumerator(object value) {
+        int sequence = EnterCheckpoint("call_window_enum");
+        try {
+            var windows = (WorkspaceShellWindows)Unwrap(value);
+            int before = ReadWindowCount(windows);
+            object rawEnumerator;
+            if (windows.NewEnum(out rawEnumerator) != 0 || rawEnumerator == null || !Marshal.IsComObject(rawEnumerator))
+                throw new InvalidOperationException();
+            return CollectWindowEnumerator((System.Runtime.InteropServices.ComTypes.IEnumVARIANT)rawEnumerator,
+                before, delegate { return ReadWindowCount(windows); });
+            // Enumerator and window RCWs stay owned by this short-lived process.
+        } finally { LeaveCheckpoint(sequence); }
+    }
     public static object Read(object value, string name) {
         int sequence = checkpointEnabled ? EnterCheckpoint(CheckpointName(name, true)) : 0;
         try {
@@ -214,6 +258,10 @@ function Invoke-WorkspaceComMethod($value, [string]$name, [object[]]$arguments, 
     if ($null -ne $trace) { try { [void](& $trace 'item_returned') } catch { } }
     return ,$result
 }
+function Read-WorkspaceWindowEnumerator($windows) {
+    Initialize-WorkspaceNativeBinding
+    return ,([WorkspaceReadyCom]::WindowsByEnumerator($windows))
+}
 function Read-WorkspaceReadyParentPath($document) {
     $folder = Get-WorkspaceComProperty $document 'Folder'
     $self = Get-WorkspaceComProperty $folder 'Self'
@@ -260,15 +308,19 @@ function Read-WorkspaceReadyBinding($shell, $expected, $anchor, $trace = $null) 
     # PowerShell COM adapter before Count and typed Item guards can run.
     $windows = (Invoke-WorkspaceComMethod $shell 'Windows' @())
     if ($null -ne $trace) { try { [void](& $trace 'collection') } catch { } }
-    if ($null -eq $windows -or (Get-WorkspaceComProperty $windows 'Count') -isnot [int] -or (Get-WorkspaceComProperty $windows 'Count') -lt 0 -or (Get-WorkspaceComProperty $windows 'Count') -gt 256) {
+    $useEnumerator = $env:WORKSPACE_REVEAL_ENUMERATOR -ceq '1'
+    $candidates = $null
+    if ($useEnumerator) { $candidates = Read-WorkspaceWindowEnumerator $windows }
+    elseif ($null -eq $windows -or (Get-WorkspaceComProperty $windows 'Count') -isnot [int] -or (Get-WorkspaceComProperty $windows 'Count') -lt 0 -or (Get-WorkspaceComProperty $windows 'Count') -gt 256) {
         return @{ stage = 'property_unavailable' }
     }
     $owned = [Collections.Generic.List[object]]::new()
-    for ($i = 0; $i -lt (Get-WorkspaceComProperty $windows 'Count'); $i++) {
+    for ($i = 0; $i -lt $(if ($useEnumerator) { $candidates.Length } else { Get-WorkspaceComProperty $windows 'Count' }); $i++) {
         if ($null -ne $trace) { try { [void](& $trace 'window_item') } catch { } }
         # IShellWindows::Item is DISPID 0 in the Windows SDK ExDisp.idl.
         # Invoke that same member without a GetIDsOfNames lookup.
-        $candidate = (Invoke-WorkspaceComMethod $windows '[DispID=0]' @($i) $trace)
+        if ($useEnumerator) { $candidate = $candidates[$i] }
+        else { $candidate = (Invoke-WorkspaceComMethod $windows '[DispID=0]' @($i) $trace) }
         if ($null -ne $trace) { try { [void](& $trace 'document') } catch { } }
         $document = (Get-WorkspaceComProperty $candidate 'Document')
         if ($null -ne $trace) { try { [void](& $trace 'parent') } catch { } }

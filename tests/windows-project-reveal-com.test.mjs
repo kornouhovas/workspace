@@ -174,16 +174,17 @@ foreach ($mode in ($env:WORKSPACE_CONTROL_MODES | ConvertFrom-Json)) {
 }
 `;
   const target = "C:\\ordinary source\\日本語, & $literal 'quote' %x% !^; `tick` (folder)";
+  for (const strategy of ['0', '1']) {
   const { stdout, stderr } = await promisify(execFile)(String.raw`C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe`,
     ["-STA", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-Command", script], {
       timeout: 30000, maxBuffer: 65536, windowsHide: true,
-      env: { ...process.env, WORKSPACE_PROJECT_REVEAL_TARGET: target,
+      env: { ...process.env, WORKSPACE_PROJECT_REVEAL_TARGET: target, WORKSPACE_REVEAL_ENUMERATOR: strategy,
         WORKSPACE_CONTROL_TARGET: "C:\\unrelated diagnostic target", WORKSPACE_CONTROL_MODES: JSON.stringify(modes) },
     });
   assert.equal(stderr, "");
   const reports = stdout.trim().split(/\r?\n/).map((line) => JSON.parse(line));
   assert.equal(reports.length, modes.length);
-  for (const report of reports) await t.test(report.mode, () => {
+  for (const report of reports) await t.test(`enumerator=${strategy}: ${report.mode}`, () => {
     const { mode, completed, opens, selects, permits, events, elapsed } = report;
     const succeeds = ["selected", "delayed_ready"].includes(mode);
     const invalidInput = ["relative_input", "empty_input"].includes(mode);
@@ -203,7 +204,7 @@ foreach ($mode in ($env:WORKSPACE_CONTROL_MODES | ConvertFrom-Json)) {
     if (expectedFailure) assert.equal(events.at(-1), expectedFailure);
     assert.doesNotMatch(JSON.stringify(report), /private|ordinary source|日本語/);
   });
-
+  }
 });
 
 for (const [mode, marker] of [
@@ -285,6 +286,17 @@ $windows = Invoke-WorkspaceComMethod $shell 'Windows' @()
 if ($windows -isnot [WorkspaceReadyComReference] -or [Runtime.InteropServices.Marshal]::IsComObject($windows)) { throw 'raw_collection_returned' }
 $count = Get-WorkspaceComProperty $windows 'Count'
 if ($count -isnot [int] -or $count -lt 0 -or $count -gt 256) { throw 'collection_count' }
+$enumerated = Read-WorkspaceWindowEnumerator $windows
+if ($enumerated -isnot [Array] -or $enumerated.Length -ne $count) { throw 'enumerator_count' }
+for ($index = 0; $index -lt $count; $index++) {
+  $indexed = Invoke-WorkspaceComMethod $windows '[DispID=0]' @($index)
+  $matches = 0
+  foreach ($entry in $enumerated) {
+    if ($entry -isnot [WorkspaceReadyComReference] -or [Runtime.InteropServices.Marshal]::IsComObject($entry)) { throw 'enumerator_raw_com' }
+    if (Test-WorkspaceReadyDocument $entry $indexed) { $matches++ }
+  }
+  if ($matches -ne 1) { throw 'enumerator_identity_set' }
+}
 $identified = Invoke-WorkspaceComMethod $windows '[DispID=0]' @(0)
 $named = Invoke-WorkspaceComMethod $windows 'Item' @(0)
 if (($null -eq $named) -ne ($null -eq $identified)) { throw 'dispatch_null_identity' }
@@ -513,3 +525,32 @@ for (const mode of ['off', 'active', 'timer', 'complete', 'throw', 'disposed', '
     }
     assert.doesNotMatch(result.stdout, /PRIVATE|TRACE:|GO|READY|SELECT/);
   });
+
+test('bounded window enumerator rejects incomplete, duplicate, malformed and changed collections', { skip: process.platform !== 'win32' }, async () => {
+  const result = await promisify(execFile)('powershell.exe', ['-NoProfile', '-NonInteractive', '-STA', '-ExecutionPolicy', 'Bypass', '-File', 'tests/fixtures/windows-enumerator-controls.ps1'], {
+    env: { ...process.env, WORKSPACE_ENUM_PORTABLE: '0', WORKSPACE_REVEAL_DEFERRED_TRACE: '0' },
+    windowsHide: true, timeout: 15000, maxBuffer: 16384,
+  });
+  assert.equal(result.stderr, ''); const { controlled: reports, genuine } = JSON.parse(result.stdout);
+  assert.equal(reports.length, 17);
+  assert.deepEqual(reports.map(r => r.mode), ['empty', 'single', 'multiple', 'maximum', 'negative', 'oversize', 'short', 'extra',
+    'duplicate', 'null', 'non_com', 'error', 'bad_status', 'false_value', 'changed_count', 'after_throw', 'overrun']);
+  for (const r of reports) {
+    const count = { empty: 0, single: 1, multiple: 2, maximum: 256 }[r.mode];
+    assert.equal(r.accepted, count !== undefined, JSON.stringify(r));
+    assert.ok(r.nextCalls <= 257); assert.ok(r.afterCalls <= 1);
+    if (count !== undefined) {
+      assert.equal(r.length, count); assert.equal(r.nextCalls, count + 1); assert.equal(r.afterCalls, 1);
+      assert.equal(r.opaque, true); assert.equal(r.exactIdentity, true);
+    }
+    if (['negative', 'oversize'].includes(r.mode)) assert.equal(r.nextCalls, 0);
+    if (r.mode === 'overrun') assert.equal(r.nextCalls, 257);
+    if (['changed_count', 'after_throw'].includes(r.mode)) assert.equal(r.afterCalls, 1);
+  }
+  assert.deepEqual(genuine, [
+    { mode: 'empty', count: 0, opaque: true, exactNames: true },
+    { mode: 'single', count: 1, opaque: true, exactNames: true },
+    { mode: 'multiple', count: 2, opaque: true, exactNames: true },
+  ]);
+  assert.doesNotMatch(result.stdout, /PRIVATE|C:\\|HRESULT|Exception/);
+});
