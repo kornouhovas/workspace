@@ -109,8 +109,8 @@ test("upgrade from populated baseline 0000–0004 preserves settings, sources, p
     sql.prepare("INSERT INTO sources (id, canonical_root, discovery_mode, discovery_revision, excluded_relative_paths, archive_relative_path, applied_root_identity) VALUES (?, ?, 'direct', 7, '[\"Excluded\"]', 'Archive', 'baseline identity')").run(sourceId, root);
     sql.prepare("INSERT INTO workspaces (id, name, source_id, position) VALUES (?, ?, ?, ?)").run(one, "One", sourceId, 0);
     sql.prepare("INSERT INTO workspaces (id, name, source_id, position) VALUES (?, ?, ?, ?)").run(sibling, "Sibling", sourceId, 1);
-    sql.prepare("INSERT INTO views VALUES (?, ?, ?, 'table')").run(viewOne, one, "Independent one");
-    sql.prepare("INSERT INTO views VALUES (?, ?, ?, 'table')").run(viewTwo, sibling, "Independent two");
+    sql.prepare("INSERT INTO views (id, workspace_id, name, kind) VALUES (?, ?, ?, 'table')").run(viewOne, one, "Independent one");
+    sql.prepare("INSERT INTO views (id, workspace_id, name, kind) VALUES (?, ?, ?, 'table')").run(viewTwo, sibling, "Independent two");
     sql.prepare("INSERT INTO active_workspace VALUES ('active', ?, ?)").run(sibling, viewTwo);
     sql.prepare("INSERT INTO projects VALUES (?, ?, 'Project', 'native identity', 'active')").run(projectId, sourceId);
     const tables = ["settings", "sources", "projects", "workspaces", "views", "active_workspace"];
@@ -125,6 +125,7 @@ test("upgrade from populated baseline 0000–0004 preserves settings, sources, p
           const actual = inspected.prepare(`SELECT * FROM ${table}`).all();
           if (table === "sources") actual.forEach((row) => { delete row.property_revision; delete row.category_property_revision; });
           if (table === "projects") actual.forEach((row) => { delete row.category_id; delete row.mode_inactive; });
+          if (table === "views") actual.forEach(row => { assert.equal(row.position, 0); delete row.position; });
           assert.deepEqual(actual, before[table]);
         }
       } finally { inspected.close(); }

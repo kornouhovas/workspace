@@ -1,3 +1,4 @@
+import type { ViewCommand, ViewSnapshot } from "../contracts/views.js";
 import type { SelectCommand } from "../contracts/text-properties.js";
 import type { ArchiveQuery, ArchiveCommand, ArchiveSnapshot, ArchiveLocationPreview, ProjectArchivePreview, ProjectArchiveResult, ProjectArchiveOperationList, ProjectArchiveRecoveryPreview } from "../contracts/project-archive.js";
 import type { CategoryRemovalQuery, CategoryRemovalCommand } from "../contracts/category-removal.js";
@@ -17,6 +18,9 @@ import { isWorkspaceChangeEvent } from "../contracts/service-protocol.js";
 
 export class WorkspaceServiceClient {
   constructor(private readonly api: WorkspaceDesktopApi = window.workspace) {}
+
+  listViews(workspaceId: string): Promise<ServiceResult<ViewSnapshot>> { return this.api.workspace({ type: "workspace.listViews", workspaceId }); }
+  changeView(input: ViewCommand): Promise<ServiceResult<ViewSnapshot>> { return this.api.workspace(input); }
 
   listArchivedProjects(workspaceId: string): Promise<ServiceResult<ArchiveSnapshot>> { return this.api.workspace({ type: "workspace.listArchivedProjects", workspaceId }); }
   previewArchiveLocation(workspaceId: string, relativePath: string): Promise<ServiceResult<ArchiveLocationPreview>> { return this.api.workspace({ type: "workspace.previewArchiveLocation", workspaceId, relativePath }); }

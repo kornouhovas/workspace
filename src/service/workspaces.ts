@@ -1,3 +1,5 @@
+import { createViewService, readViews } from "./views.js";
+import type { ViewSnapshot } from "../contracts/views.js";
 import { createProjectArchiveMutations } from "./project-archive-mutations.js";
 import type { ProjectArchivePreview, ProjectArchiveResult, ProjectArchiveOperationList, ProjectArchiveRecoveryPreview } from "../contracts/project-archive.js";
 import { createProjectArchiveService } from "./project-archive.js";
@@ -57,6 +59,7 @@ const nativeFilesystem: WorkspaceFilesystem = {
 };
 
 export interface WorkspaceService {
+  viewRequest(input: unknown): ServiceResult<ViewSnapshot>;
   previewProjectArchive(input: unknown): ServiceResult<ProjectArchivePreview>;
   applyProjectArchive(input: unknown): ServiceResult<ProjectArchiveResult>;
   listProjectArchiveOperations(input: unknown): ServiceResult<ProjectArchiveOperationList>;
@@ -227,6 +230,7 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
   }, projectFilesystem);
   const reveal = createProjectRevealService(db, projectFilesystem);
   const service: WorkspaceService = {
+    viewRequest: createViewService(db),
     previewProjectArchive: archiveMutations.previewProjectArchive,
     applyProjectArchive: archiveMutations.applyProjectArchive,
     listProjectArchiveOperations: archiveMutations.listProjectArchiveOperations,
@@ -566,6 +570,7 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
           tx.insert(schema.views).values({
             id: viewId, workspaceId, name: "Table", kind: "table",
           }).run();
+          tx.insert(schema.workspaceViewSelection).values({ workspaceId, viewId }).run();
           tx.insert(schema.activeWorkspace).values({ key: "active", workspaceId, viewId })
             .onConflictDoUpdate({
               target: schema.activeWorkspace.key,
@@ -638,15 +643,14 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
           if (active?.workspaceId === workspaceId) {
             const fallback = remaining[0];
             if (fallback) {
-              const view = tx.select().from(schema.views).where(eq(schema.views.workspaceId, fallback.id))
-                .orderBy(asc(schema.views.id)).all().find((candidate) => candidate.kind === "table");
-              if (!view) throw new Error("Missing fallback Table view.");
+              const view = { id: readViews(tx, fallback.id).activeViewId };
               tx.update(schema.activeWorkspace).set({ workspaceId: fallback.id, viewId: view.id })
                 .where(eq(schema.activeWorkspace.key, "active")).run();
             } else {
               tx.delete(schema.activeWorkspace).where(eq(schema.activeWorkspace.key, "active")).run();
             }
           }
+          tx.delete(schema.workspaceViewSelection).where(eq(schema.workspaceViewSelection.workspaceId, workspaceId)).run();
           tx.delete(schema.views).where(eq(schema.views.workspaceId, workspaceId)).run();
           tx.delete(schema.workspaces).where(eq(schema.workspaces.id, workspaceId)).run();
           remaining.forEach((workspace, position) => {
@@ -689,9 +693,7 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
           .innerJoin(schema.sources, eq(schema.workspaces.sourceId, schema.sources.id))
           .where(eq(schema.workspaces.id, input.workspaceId)).get();
         if (!workspace) return invalid("Choose a saved workspace.");
-        const view = db.select().from(schema.views)
-          .where(eq(schema.views.workspaceId, workspace.workspaceId)).get();
-        if (!view || view.kind !== "table") return storageFailure();
+        const view = { id: readViews(db, workspace.workspaceId).activeViewId };
         const value = db.transaction((tx) => {
           const sourceState = normalizeSource(tx, workspace.sourceId, workspace.canonicalRoot, filesystem, observe);
           tx.insert(schema.activeWorkspace).values({
@@ -891,6 +893,7 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
   if (db.all<{ name: string }>(sql`PRAGMA table_info(projects)`).some((column) => column.name === "category_id")) syncObserverReferences();
   return {
     ...service,
+    viewRequest: input => run(() => service.viewRequest(input), isRecord(input) && input.type === "workspace.listViews" ? undefined : currentSnapshot),
     create: (input) => run(() => service.create(input), currentSnapshot),
     rename: (input) => run(() => service.rename(input), returnedSnapshot),
     reorder: (input) => run(() => service.reorder(input), returnedSnapshot),
@@ -929,8 +932,8 @@ function readWorkspaceLoad(
   if (!active) return { workspaces: summaries, activeWorkspace: null };
 
   const current = workspaces.find((workspace) => workspace.workspaceId === active.workspaceId);
-  const view = db.select().from(schema.views).where(eq(schema.views.id, active.viewId)).get();
-  if (!current || !view || view.workspaceId !== current.workspaceId || view.kind !== "table") {
+  const view = db.select({ id: schema.views.id, workspaceId: schema.views.workspaceId, kind: schema.views.kind }).from(schema.views).where(eq(schema.views.id, active.viewId)).get();
+  if (!current || !view || view.workspaceId !== current.workspaceId || (view.kind !== "table" && view.kind !== "board")) {
     throw new Error("Invalid active workspace or view.");
   }
   const sourceState = observedSource?.sourceId === current.sourceId

@@ -122,7 +122,9 @@ function mockApi(options: MockOptions = {}) {
       return () => { changeListeners.delete(listener); };
     },
     settings: onSettings,
-    workspace: ((input: WorkspaceRequest) => input.type === "workspace.listArchivedProjects"
+    workspace: ((input: WorkspaceRequest) => input.type === "workspace.listViews"
+      ? Promise.resolve(ok({ workspaceId: input.workspaceId, activeViewId: `view-${input.workspaceId}`, views: [{ viewId: `view-${input.workspaceId}`, name: translate(options.language ?? "en", "tableViewTitle"), kind: "table" as const }] }))
+      : input.type === "workspace.listArchivedProjects"
       ? Promise.resolve(ok({ workspaceId: input.workspaceId, sourceId: (options.load?.ok ? options.load.value.activeWorkspace?.sourceId : null) ?? `source-${input.workspaceId}`, revision: 0, relativePath: null, projects: [] }))
       : input.type === "workspace.listProjectArchiveOperations"
       ? Promise.resolve(ok({ workspaceId: input.workspaceId, sourceId: (options.load?.ok ? options.load.value.activeWorkspace?.sourceId : null) ?? `source-${input.workspaceId}`, operations: [] }))

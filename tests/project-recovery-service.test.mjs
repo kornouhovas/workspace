@@ -791,7 +791,8 @@ test("populated baseline reopens and recovers direct/grouped records without sch
         .run(sourceId, root, mode, mode === "grouped" ? 4 : 0, JSON.stringify([path("excluded")]), identity(root));
       for (const [id, view, position] of [[workspaceId, viewId, 0], [siblingId, siblingViewId, 1]]) {
         sqlite.prepare("INSERT INTO workspaces (id, name, source_id, position) VALUES (?, ?, ?, ?)").run(id, `  Workspace ${position}  `, sourceId, position);
-        sqlite.prepare("INSERT INTO views VALUES (?, ?, 'Table', 'table')").run(view, id);
+        sqlite.prepare("INSERT INTO views (id, workspace_id, name, kind) VALUES (?, ?, 'Table', 'table')").run(view, id);
+        sqlite.prepare("INSERT INTO workspace_view_selection VALUES (?, ?)").run(id, view);
       }
       sqlite.prepare("INSERT INTO active_workspace VALUES ('active', ?, ?)").run(siblingId, siblingViewId);
       if (mode === "grouped") {

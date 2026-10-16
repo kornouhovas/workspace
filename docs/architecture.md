@@ -2,11 +2,11 @@
 
 ## Status and accepted foundation
 
-This branch contains a runnable local desktop application with settings, workspace management, reviewed direct/grouped project discovery and configured mode changes, persisted required grouped categories, shared Text, Number and Date properties, external reconciliation and explicit folder reassociation, recoverable project creation, Table Name editing with explicit status/recovery, Table category editing with explicit move status/recovery and trusted native Reveal. The service persists canonical sources, named workspaces, one default Table view per workspace and the active workspace/view selection in SQLite.
+This branch contains a runnable local desktop application with settings, workspace management, reviewed direct/grouped project discovery and configured mode changes, persisted required grouped categories, shared Text, Number and Date properties, external reconciliation and explicit folder reassociation, recoverable project creation, Table Name editing with explicit status/recovery, Table category editing with explicit move status/recovery and trusted native Reveal. The service persists canonical sources, named workspaces, an ordered collection of Table/Board views per workspace and the active workspace/view selection in SQLite.
 
-Workspace names, order and active selection survive restart. Rename/reorder/remove validate IDs and commit snapshots transactionally. Removal deletes only the workspace and its owned views, retains the source even after its last reference, and never deletes external files. Active removal selects the first remaining configuration and its existing Table view; final removal clears selection.
+Workspace names, order and active selection survive restart. Rename/reorder/remove validate IDs and commit snapshots transactionally. Removal deletes only the workspace and its owned views, retains the source even after its last reference, and never deletes external files. Active removal selects the first remaining configuration and its saved selected view; final removal clears selection.
 
-The desktop includes a native directory picker, EN/RU direct/grouped preview/exclusions/Apply and editable project names with source-owned Text/Number/Date columns and required grouped categories in the default Table. The service persists source-owned exclusions/configuration and logical project records. Property deletion/hiding/reordering, filtering/grouping/dragging, Board/general view management and further filesystem mutations remain future work. Source archive/restore is described below. SQLite with Drizzle is the selected persistence foundation.
+The desktop includes a native directory picker, EN/RU direct/grouped preview/exclusions/Apply and editable project names with source-owned Text/Number/Date columns and required grouped categories in the default Table. The service persists source-owned exclusions/configuration and logical project records. Property deletion/hiding/reordering, filtering/grouping/dragging, detailed view controls and further filesystem mutations remain future work. Source archive/restore is described below. SQLite with Drizzle is the selected persistence foundation.
 
 The product uses selected bb architecture and UI foundations while retaining its own folder/project domain. Adopt useful modules deliberately, with provenance and boundary tests; do not assume a whole bb package is independent of its chat/session model.
 
@@ -18,9 +18,9 @@ The runtime uses Electron `utilityProcess` with message ports, React with Vite, 
 
 | Boundary | Responsibility | Pending decision |
 | --- | --- | --- |
-| Desktop renderer | React settings, workspace creation/management, removal confirmation, discovery/recovery review, project creation/Name/category move/status/recovery/Reveal and source Refresh, Text/Number/Date definition/value and category-label editing and applied Table screens; interaction, localization and presentation state | Future routing and state needs as features are added |
+| Desktop renderer | React settings, workspace creation/management, removal confirmation, discovery/recovery review, project creation/Name/category move/status/recovery/Reveal and source Refresh, Text/Number/Date definition/value and category-label editing and applied Table/Board screens; interaction, localization and presentation state | Future routing and state needs as features are added |
 | Typed service boundary | Settings/workspace commands, committed snapshots, discovery preview/Apply/project-list and recovery preview/reassociate commands, creation/status/recovery, project rename/status/recovery, category move/status/recovery and ID-only Reveal, source refresh/current observation, Text/Number/Date list/create/rename/set-value and category-property rename commands and validated change events through preload and IPC | Additional domain contracts as features are added |
-| Local application service | Settings and workspace/source identity persistence in a separate TypeScript process; canonical root validation, transactional workspace creation/rename/order/removal, active Table view selection, direct/grouped discovery/identity matching, validated project reassociation, reconciliation transactions, durable creation, project rename/category move/recovery and bounded source observation | Remaining property types and future domain capabilities |
+| Local application service | Settings and workspace/source identity persistence in a separate TypeScript process; canonical root validation, transactional workspace creation/rename/order/removal, workspace-owned Table/Board views and selection, direct/grouped discovery/identity matching, validated project reassociation, reconciliation transactions, durable creation, project rename/category move/recovery and bounded source observation | Remaining property types and future domain capabilities |
 | Machine filesystem adapter | Implemented contained direct/grouped scanning and nonrecursive root/category notification hints, exclusive nonrecursive project mkdir and private native no-replace rename/category move; trusted desktop macOS shell.showItemInFolder and Windows ready-parent/SelectItem adapter for file-manager selection; recoverable source archive/restore | Further native integration and OS-specific recovery |
 | Persistence | SQLite schema, Drizzle migrations and repositories | Database partitioning and backup strategy |
 | Shared-folder exchange, later | Durable changes, snapshots, identity and conflict handling | Protocol/library, tombstones and compaction |
@@ -33,7 +33,7 @@ The renderer uses a narrow preload/service boundary. It cannot directly read SQL
 
 The service publishes workspace-list snapshots after successful mutations and source-state events after changed availability or committed locator observations. Source events carry source ID, canonical root, availability and the actual referencing workspace IDs. Load/create/activate and the real refresh-source command observe folder state using the existing canonicalization/access rules; unchanged observations and failed transactions do not publish committed changes. Source availability and observation status are runtime state, separate from persisted discovery revisions.
 
-Validated event envelopes are separate from responses on utilityProcess message ports. BackendController forwards events to main, narrow preload subscriptions and WorkspaceServiceClient. Unsubscription, renderer unload and backend shutdown release listeners. React applies source changes only to a referencing configuration and guards delayed command results against newer selection/source observations. The unavailable-folder screen exposes an EN/RU retry action. Applied discovery commits publish workspace.projectsChanged with source ID, actual referencing workspace IDs and committed revision. Sibling configurations reload applied projects and invalidate previews; unchanged Apply and failed transactions emit no project event. Events precede command responses, including an initiating Apply. Renderer revision guards accept that own successful response and reject older responses after newer sibling commits. Property commits use the same transport with an independent revision, described below. External folder watchers use this route with a service-local observation revision, described below; general view management remains future work.
+Validated event envelopes are separate from responses on utilityProcess message ports. BackendController forwards events to main, narrow preload subscriptions and WorkspaceServiceClient. Unsubscription, renderer unload and backend shutdown release listeners. React applies source changes only to a referencing configuration and guards delayed command results against newer selection/source observations. The unavailable-folder screen exposes an EN/RU retry action. Applied discovery commits publish workspace.projectsChanged with source ID, actual referencing workspace IDs and committed revision. Sibling configurations reload applied projects and invalidate previews; unchanged Apply and failed transactions emit no project event. Events precede command responses, including an initiating Apply. Renderer revision guards accept that own successful response and reject older responses after newer sibling commits. Property commits use the same transport with an independent revision, described below. External folder watchers use this route with a service-local observation revision, described below; view lifecycle uses the committed workspace-list route described below.
 
 ## Implemented direct discovery and persistence
 
@@ -444,3 +444,30 @@ pending/error feedback and retained drafts during sibling changes. No new bb mod
 dependency was copied. Grouping, dragging and destructive option/property deletion remain
 separate slices. See [contract/scenarios](plans/issue-26-multiselect.md) and
 [observed verification](verification/issue-26-multiselect.md).
+
+## Independent Table and Board views (Issue 27)
+
+The typed `workspace.listViews` query and create/activate/rename/update/layout/reorder/
+duplicate/delete commands own a nonempty ordered view collection per workspace. Names
+retain authored text and require 1–200 characters with a nonblank character. Only Table
+and Board layouts are accepted. Exact payloads and workspace/view ownership are checked
+behind the service boundary. Create/duplicate select the new view; deleting the selection
+chooses the first remaining view. Reorder requires the complete collection once each.
+Duplication copies the layout into an independent row. Grouping, filtering, widths,
+wrapping and manual project ordering remain separate slices rather than opaque settings.
+
+Migration 0018 preserves existing view IDs, names, layouts and active selection, adds
+stable view positions and `workspace_view_selection`. Every workspace retains its own
+selection during workspace switches and restart. Workspace removal clears owned selection
+before views; fallback may be a Board-only workspace. View mutations and the resulting
+workspace-list snapshot share the existing transaction/event wrapper: failures roll back
+partial inserts and publish no committed event. Source projects, properties and revisions
+are unaffected.
+
+The EN/RU view controls support native keyboard selection, creation/editing, independent
+duplication, reordering, confirmed deletion, Escape cancellation, focus restoration and
+read/save errors. Active and Archived projects follow the selected layout. Board cards and Table rows reuse the same property projection/editors
+for category, Text, Number, Date, Single Select and MultiSelect. Property changes continue
+to fan out to source siblings without sharing view collections/layouts. No new bb module
+or dependency was copied. See [view scenarios](plans/issue-27-views.md) and
+[verification](verification/issue-27-views.md); GitHub #27 owns CI/integration acceptance.

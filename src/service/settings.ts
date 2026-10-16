@@ -1,3 +1,4 @@
+import { viewCommands, type ViewSnapshot } from "../contracts/views.js";
 import { selectCommands } from "../contracts/text-properties.js";
 import type { ArchivePayload } from "../contracts/project-archive.js";
 import type { CategoryRemovalPayload } from "../contracts/category-removal.js";
@@ -42,8 +43,8 @@ export interface SettingsService {
   previewProjectRenameRecovery(input: unknown): ServiceResult<ProjectRenameRecoveryPreview>;
   recoverProjectRename(input: unknown): ServiceResult<ProjectRenameResult>;
   revealProject(input: unknown, native?: NativeProjectReveal): Promise<ServiceResult<ProjectRevealResult>>;
-  handleQuery(input: unknown): ServiceResult<ArchivePayload | CategoryRemovalPayload | CategoryOptionsPayload | ProjectCategoryMoveResult | ProjectCategoryMoveList | ProjectCategoryMoveRecoveryPreview | ProjectRenameResult | ProjectRenameList | ProjectRenameRecoveryPreview | ProjectCreationResult | ProjectCreationList | ProjectCreationRecoveryPreview | WorkspaceSourceObservationSnapshot | ProjectRecoveryPreview | TextPropertySnapshot | Settings | WorkspaceLoad | DiscoveryPreview | ProjectList>;
-  handleCommand(input: unknown): ServiceResult<ArchivePayload | CategoryRemovalPayload | CategoryOptionsPayload | ProjectCategoryMoveResult | ProjectRenameResult | ProjectCreationResult | CategoryPropertySnapshot | TextPropertyMutation | Settings | WorkspaceCreated | ActiveWorkspace | WorkspaceLoad | WorkspaceSourceState | ProjectList>;
+  handleQuery(input: unknown): ServiceResult<ViewSnapshot | ArchivePayload | CategoryRemovalPayload | CategoryOptionsPayload | ProjectCategoryMoveResult | ProjectCategoryMoveList | ProjectCategoryMoveRecoveryPreview | ProjectRenameResult | ProjectRenameList | ProjectRenameRecoveryPreview | ProjectCreationResult | ProjectCreationList | ProjectCreationRecoveryPreview | WorkspaceSourceObservationSnapshot | ProjectRecoveryPreview | TextPropertySnapshot | Settings | WorkspaceLoad | DiscoveryPreview | ProjectList>;
+  handleCommand(input: unknown): ServiceResult<ViewSnapshot | ArchivePayload | CategoryRemovalPayload | CategoryOptionsPayload | ProjectCategoryMoveResult | ProjectRenameResult | ProjectCreationResult | CategoryPropertySnapshot | TextPropertyMutation | Settings | WorkspaceCreated | ActiveWorkspace | WorkspaceLoad | WorkspaceSourceState | ProjectList>;
   workspaces: WorkspaceService;
   close(): void;
 }
@@ -106,6 +107,7 @@ export function openSettingsService(
     recoverProjectRename: workspaces.recoverProjectRename,
     revealProject: workspaces.revealProject,
     handleQuery(input) {
+      if (isRecord(input) && input.type === "workspace.listViews") return workspaces.viewRequest(input);
       if (isRecord(input) && input.type === "workspace.previewProjectArchive") return workspaces.previewProjectArchive(input);
       if (isRecord(input) && input.type === "workspace.listProjectArchiveOperations") return workspaces.listProjectArchiveOperations(input);
       if (isRecord(input) && input.type === "workspace.getProjectArchiveOperation") return workspaces.getProjectArchiveOperation(input);
@@ -151,6 +153,7 @@ export function openSettingsService(
     },
 
     handleCommand(input) {
+      if (isRecord(input) && typeof input.type === "string" && viewCommands.includes(input.type)) return workspaces.viewRequest(input);
       if (isRecord(input) && input.type === "workspace.applyProjectArchive") return workspaces.applyProjectArchive(input);
       if (isRecord(input) && input.type === "workspace.recoverProjectArchive") return workspaces.recoverProjectArchive(input);
       if (isRecord(input) && input.type === "workspace.applyArchiveLocation") return workspaces.applyArchiveLocation(input);

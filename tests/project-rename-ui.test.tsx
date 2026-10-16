@@ -18,6 +18,7 @@ test.afterEach(cleanup);
 function deferred<T>() { let resolve!: (value: T) => void; const promise = new Promise<T>((done) => { resolve = done; }); return { promise, resolve }; }
 const initial: ProjectList = { workspaceId: "workspace", sourceId: "source", revision: 1, configured: true, mode: "direct", state: "ready", projects: [{ projectId: "project", name: "Original", relativePath: "Original", categoryId: null, associationState: "active", resolution: "active", categoryName: null }], retainedProjects: [], retainedCount: 0, categories: [], categoryProperty: null, categoryPropertyRevision: 0 };
 class Client extends WorkspaceServiceClient {
+  override async listViews(workspaceId: string) { return { ok: true as const, value: { workspaceId, activeViewId: "view", views: [{ viewId: "view", name: "Table", kind: "table" as const }] } }; }
   statuses = new Set<(status: BackendStatus) => void>(); events = new Set<(event: WorkspaceChangeEvent) => void>();
   list = structuredClone(initial); renames: Parameters<WorkspaceServiceClient["renameProject"]>[0][] = []; statusCalls: string[][] = [];
   handler: () => Promise<ServiceResult<ProjectRenameResult>> = async () => {
@@ -94,7 +95,7 @@ for (const language of ["en", "ru"] as const) {
     fireEvent.click(submit); fireEvent.click(submit); assert.equal(client.renames.length, 1);
     assert.ok(screen.getByText("Original", { selector: "td span" })); assert.equal(document.activeElement, screen.getByRole("button", { name: t("cancelRenameWorkspace") }));
     await userEvent.click(screen.getByRole("button", { name: t("cancelRenameWorkspace") }));
-    assert.ok(document.activeElement === screen.getByRole("heading", { name: t("tableViewTitle") }));
+    assert.ok(document.activeElement === screen.getByRole("heading", { name: "Table" }));
     const trigger = screen.getByRole("button", { name: `${t("renameProject")}: Original` }); assert.equal((trigger as HTMLButtonElement).disabled, true);
     await act(async () => response.resolve({ ok: false, error: { code: "service_unavailable", message: "Lost response" } }));
     await userEvent.click(screen.getByRole("button", { name: t("renameStatus") }));
@@ -108,7 +109,7 @@ for (const language of ["en", "ru"] as const) {
     };
     mount(client); const trigger = await edit(); await userEvent.type(screen.getByRole("textbox", { name: t("projectName") }), "{Enter}");
     await screen.findByText(t("renameUnchanged")); assert.equal(client.renames[0].name, "Original");
-    assert.ok([trigger, screen.getByRole("heading", { name: t("tableViewTitle") })].includes(document.activeElement as HTMLElement));
+    assert.ok([trigger, screen.getByRole("heading", { name: "Table" })].includes(document.activeElement as HTMLElement));
     assert.equal(client.list.revision, 1);
   });
   for (const [problem, key] of [["invalid_name", "renameInvalid"], ["occupied", "renameCollision"], ["stale_configuration", "renameStale"], ["source_unavailable", "renameUnavailable"], ["storage_error", "renameFailed"]] as const) {
@@ -338,7 +339,7 @@ for (const language of ["en", "ru"] as const) {
       await screen.findByText(retained ? "Original" : "Requested", { selector: "td span" });
       assert.ok(screen.getByText("Exact text")); assert.equal(client.statusCalls.length, 0); assert.equal(client.reviews.length, 1); assert.equal(client.renames.length, 0);
       assert.equal(screen.queryByRole("heading", { name: t("renameReviewTitle") }), null);
-      assert.ok(document.activeElement === screen.getByRole("heading", { name: t("tableViewTitle") }));
+      assert.ok(document.activeElement === screen.getByRole("heading", { name: "Table" }));
     });
   }
   for (const state of ["missing", "replaced", "link", "unavailable", "conflicting"] as const) test(`${language}: ${state} evidence advertises no action and cannot adopt a folder`, async () => {
@@ -367,7 +368,7 @@ for (const language of ["en", "ru"] as const) {
     client.statusHandler = async () => { client.unfinished = []; return { ok: true, value: { outcome: "rejected", problem: "kept_original", operation: { ...interrupted, stage: "failed", resultKind: "rejected", problem: "kept_original" } } }; };
     await userEvent.click(screen.getByRole("button", { name: t("renameStatus") })); await screen.findByText(t("renameKeptOriginal"));
     assert.deepEqual(client.statusCalls, [["workspace", "interrupted"]]); assert.equal(client.recoveries.length, 1); assert.equal(client.renames.length, 0);
-    await waitFor(() => assert.ok(document.activeElement === screen.getByRole("heading", { name: t("tableViewTitle") }), "Status resolution restores Table focus"));
+    await waitFor(() => assert.ok(document.activeElement === screen.getByRole("heading", { name: "Table" }), "Status resolution restores Table focus"));
   });
   test(`${language}: a stale recovery token requires explicit status and fresh review; no mutation retry`, async () => {
     const client = new Client(); client.unfinished = [interrupted];

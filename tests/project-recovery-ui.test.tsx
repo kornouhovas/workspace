@@ -28,6 +28,7 @@ const initial: ProjectList = { workspaceId: "workspace", sourceId: "source", rev
 const committed: ProjectList = { ...initial, revision: 2, projects: [{ ...retained, relativePath: preview.entries[0].relativePath, name: preview.entries[0].name, associationState: "active", resolution: "active" }],
   retainedProjects: [initial.retainedProjects[1]], retainedCount: 1 };
 class RecoveryClient extends WorkspaceServiceClient {
+  override async listViews(workspaceId: string) { return { ok: true as const, value: { workspaceId, activeViewId: "view", views: [{ viewId: "view", name: "Table", kind: "table" as const }] } }; }
   override async listProjectCategoryMoves(workspaceId: string) { return { ok: true as const, value: { workspaceId, sourceId: "source", operations: [] } }; }
   override onBackendStatus() { return () => {}; }
   override async listProjectCreations(workspaceId: string) { return { ok: true as const, value: { workspaceId, sourceId: "source", operations: [] } }; }
@@ -159,7 +160,7 @@ for (const language of ["en", "ru"] as const) {
     await screen.findByText(t("recoverySaved"));
     assert.equal(client.saves, 1);
     assert.ok(screen.getByRole("button", { name: `${t("editTextValue")}: Target authored name / Notes` }).textContent?.includes("Exact authored Text"));
-    assert.equal(document.activeElement, screen.getByRole("heading", { name: t("tableViewTitle") }));
+    assert.equal(document.activeElement, screen.getByRole("heading", { name: "Table" }));
     cleanup();
   });
   test(`${language}: pending prevents duplicate submission/cancel; stale requires refresh and explicit reselection`, async () => {
@@ -258,7 +259,7 @@ for (const language of ["en", "ru"] as const) {
     confirm.focus(); await userEvent.keyboard("{Enter}");
     await screen.findByText(t("recoverySaved"));
     assert.equal(client.saves, 2); assert.equal(client.previews, 2);
-    assert.equal(document.activeElement, screen.getByRole("heading", { name: t("tableViewTitle") }));
+    assert.equal(document.activeElement, screen.getByRole("heading", { name: "Table" }));
     assert.ok(screen.getByRole("button", { name: `${t("editTextValue")}: Target authored name / Notes` }).textContent?.includes("Exact authored Text"));
     cleanup();
   });

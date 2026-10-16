@@ -127,6 +127,13 @@
       "when": 1791504017000,
       "tag": "0017_multi_select",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1791504018000,
+      "tag": "0018_workspace_views",
+      "breakpoints": true
     }
   ]
 }

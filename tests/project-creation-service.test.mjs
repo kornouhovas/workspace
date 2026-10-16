@@ -55,7 +55,7 @@ function fixture(mode, run, legacy = false) {
     for (const [id, position] of [[workspaceId, 0], [siblingId, 1]]) {
       const viewId = randomUUID();
       sql.prepare("INSERT INTO workspaces (id, name, source_id, position) VALUES (?, ?, ?, ?)").run(id, `  Workspace ${position}  `, sourceId, position);
-      sql.prepare("INSERT INTO views VALUES (?, ?, 'Table', 'table')").run(viewId, id);
+      sql.prepare("INSERT INTO views (id, workspace_id, name, kind) VALUES (?, ?, 'Table', 'table')").run(viewId, id);
       if (position === 1) sql.prepare("INSERT INTO active_workspace VALUES ('active', ?, ?)").run(id, viewId);
     }
     sql.prepare(`INSERT INTO categories (id, source_id, relative_path, native_identity, association_state, mode_inactive)
@@ -123,7 +123,7 @@ for (const mode of ["direct", "grouped"]) {
     for (let attempt = 0; attempt < 2; attempt++) {
       const service = f.open();
       const after = records(f.sql);
-      for (const [table, rows] of Object.entries(before)) if (table !== "__drizzle_migrations") assert.deepEqual(after[table], rows, table);
+      for (const [table, rows] of Object.entries(before)) if (table !== "__drizzle_migrations") assert.deepEqual(after[table], table === "views" ? rows.map(row => ({ ...row, position: 0 })) : rows, table);
       assert.deepEqual(after.project_creation_operations, []);
       assert.deepEqual(after.__drizzle_migrations.slice(0, 8), before.__drizzle_migrations);
       assert.equal(after.__drizzle_migrations.length, journal.entries.length);
@@ -742,7 +742,7 @@ test("late migration failure rolls back journal/schema changes and every populat
   assert.deepEqual(inventory(f.root), files);
   f.open(); f.close(); f.open();
   const after = records(f.sql);
-  for (const [table, rows] of Object.entries(before)) if (table !== "__drizzle_migrations") assert.deepEqual(after[table], rows);
+  for (const [table, rows] of Object.entries(before)) if (table !== "__drizzle_migrations") assert.deepEqual(after[table], table === "views" ? rows.map(row => ({ ...row, position: 0 })) : rows);
   assert.equal(after.__drizzle_migrations.length, journal.entries.length); assert.deepEqual(after.project_creation_operations, []);
   assert.deepEqual(inventory(f.root), files);
 }, true));

@@ -343,7 +343,7 @@ test("actual populated migrations 0000–0005 upgrade without changing settings,
     sql.prepare("INSERT INTO sources (id, canonical_root, discovery_mode, discovery_revision, property_revision, applied_root_identity) VALUES (?, ?, 'direct', 7, 9, ?)").run(sourceId, root, identity(root));
     for (const [id, view, name, position] of [[workspaceId, viewId, "One", 0], [siblingId, siblingView, "Sibling", 1]]) {
       sql.prepare("INSERT INTO workspaces (id, name, source_id, position) VALUES (?, ?, ?, ?)").run(id, name, sourceId, position);
-      sql.prepare("INSERT INTO views VALUES (?, ?, ?, 'table')").run(view, id, name);
+      sql.prepare("INSERT INTO views (id, workspace_id, name, kind) VALUES (?, ?, ?, 'table')").run(view, id, name);
     }
     sql.prepare("INSERT INTO active_workspace VALUES ('active', ?, ?)").run(siblingId, siblingView);
     sql.prepare("INSERT INTO projects VALUES (?, ?, 'Project', ?, 'active')").run(projectId, sourceId, identity(join(root, "Project")));
@@ -356,10 +356,10 @@ test("actual populated migrations 0000–0005 upgrade without changing settings,
       const inspected = new Database(databasePath);
       try {
         for (const table of tables) {
-          const expected = before[table].map((row) => table === "sources" ? { ...row, category_property_revision: 0 } : table === "projects" ? { ...row, category_id: null, mode_inactive: 0 } : row);
+          const expected = before[table].map((row) => table === "sources" ? { ...row, category_property_revision: 0 } : table === "projects" ? { ...row, category_id: null, mode_inactive: 0 } : table === "views" ? { ...row, position: 0 } : row);
           assert.deepEqual(inspected.prepare(`SELECT * FROM ${table}`).all(), expected);
         }
-        assert.equal(inspected.prepare('SELECT COUNT(*) AS count FROM "__drizzle_migrations"').get().count, 18);
+        assert.equal(inspected.prepare('SELECT COUNT(*) AS count FROM "__drizzle_migrations"').get().count, 19);
         assert.deepEqual(inspected.prepare("SELECT * FROM categories").all(), []);
         assert.deepEqual(inspected.prepare("SELECT * FROM category_properties").all(), []);
         assert.deepEqual(inspected.prepare("SELECT * FROM project_rename_operations").all(), []);

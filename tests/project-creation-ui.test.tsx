@@ -30,6 +30,7 @@ function completed(op = operation): ProjectCreationResult { return { outcome: "c
 function value<T>(result: ServiceResult<T>): T { assert.ok(result.ok, JSON.stringify(result)); return result.value; }
 function deferred<T>() { let resolve!: (value: T) => void; const promise = new Promise<T>((done) => { resolve = done; }); return { promise, resolve }; }
 class Client extends WorkspaceServiceClient {
+  override async listViews(workspaceId: string) { return { ok: true as const, value: { workspaceId, activeViewId: "view", views: [{ viewId: "view", name: "Table", kind: "table" as const }] } }; }
   statuses = new Set<(status: BackendStatus) => void>(); events = new Set<(event: WorkspaceChangeEvent) => void>();
   list = initial; operations: ProjectCreationOperation[] = []; creates: Omit<WorkspaceCreateProjectCommand, "type">[] = []; recoveries: string[][] = []; statusesRequested: string[] = []; reveals = 0;
   handler: () => Promise<ServiceResult<ProjectCreationResult>> = async () => ({ ok: true, value: completed({ ...operation, ...this.creates.at(-1)! }) });

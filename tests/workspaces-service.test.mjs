@@ -650,6 +650,7 @@ test("invalid, unknown and removed rename targets preserve every remaining recor
     const removed = service.workspaces.create({ type: "workspace.create", name: "Removed", rootPath: root }).value;
     const current = service.workspaces.create({ type: "workspace.create", name: "Current", rootPath: root }).value;
     const sqlite = new Database(databasePath);
+    sqlite.prepare("DELETE FROM workspace_view_selection WHERE workspace_id = ?").run(removed.workspaceId);
     sqlite.prepare("DELETE FROM views WHERE workspace_id = ?").run(removed.workspaceId);
     sqlite.prepare("DELETE FROM workspaces WHERE id = ?").run(removed.workspaceId);
     sqlite.close();
@@ -714,7 +715,7 @@ test("upgrades populated two-migration databases in insertion order without chan
     const viewIds = ids.map(() => randomUUID());
     ids.forEach((id, index) => {
       sqlite.prepare("INSERT INTO workspaces VALUES (?, ?, ?)").run(id, `  Saved ${index}  `, sourceId);
-      sqlite.prepare("INSERT INTO views VALUES (?, ?, ?, ?)").run(viewIds[index], id, `Independent ${index}`, "table");
+      sqlite.prepare("INSERT INTO views (id, workspace_id, name, kind) VALUES (?, ?, ?, ?)").run(viewIds[index], id, `Independent ${index}`, "table");
     });
     sqlite.prepare("INSERT INTO active_workspace VALUES (?, ?, ?)").run("active", ids[1], viewIds[1]);
     sqlite.close();
@@ -726,7 +727,8 @@ test("upgrades populated two-migration databases in insertion order without chan
         const after = records(databasePath);
         assert.deepEqual(after, { ...before,
           sources: before.sources.map((row) => ({ ...row, ...unconfiguredDiscovery })),
-          workspaces: before.workspaces.map((row, position) => ({ ...row, position })) });
+          workspaces: before.workspaces.map((row, position) => ({ ...row, position })),
+          views: before.views.map(row => ({ ...row, position: 0 })) });
         const preview = discoveryPreview(service, ids[1]);
         assert.equal(preview.ok, true);
         assert.equal(preview.value.state, "empty");
@@ -801,6 +803,7 @@ test("reorder rejects malformed permutations and stale membership after creation
       const oldIds = [one.workspaceId, two.workspaceId, third.workspaceId];
       // Removal is delivered in Task 3; model a removed inactive configuration at the storage boundary.
       const sqlite = new Database(databasePath);
+      sqlite.prepare("DELETE FROM workspace_view_selection WHERE workspace_id = ?").run(one.workspaceId);
       sqlite.prepare("DELETE FROM views WHERE workspace_id = ?").run(one.workspaceId);
       sqlite.prepare("DELETE FROM workspaces WHERE id = ?").run(one.workspaceId);
       sqlite.close();
@@ -1552,7 +1555,7 @@ test("populated discovery configuration upgrades to projects, applies and reopen
     sqlite.prepare("INSERT INTO settings VALUES ('language', 'ru')").run();
     sqlite.prepare("INSERT INTO sources (id, canonical_root) VALUES (?, ?)").run(workspace.sourceId, realpathSync.native(root));
     sqlite.prepare("INSERT INTO workspaces (id, name, source_id, position) VALUES (?, 'Original', ?, 0)").run(workspace.workspaceId, workspace.sourceId);
-    sqlite.prepare("INSERT INTO views VALUES (?, ?, 'Table', 'table')").run(workspace.viewId, workspace.workspaceId);
+    sqlite.prepare("INSERT INTO views (id, workspace_id, name, kind) VALUES (?, ?, 'Table', 'table')").run(workspace.viewId, workspace.workspaceId);
     sqlite.prepare("INSERT INTO active_workspace VALUES ('active', ?, ?)").run(workspace.workspaceId, workspace.viewId);
     sqlite.prepare("UPDATE sources SET excluded_relative_paths = '[\"Excluded\"]', archive_relative_path = 'Archive', discovery_revision = 7").run();
     sqlite.close();
@@ -1560,7 +1563,7 @@ test("populated discovery configuration upgrades to projects, applies and reopen
     let service = openSettingsService(databasePath);
     let projects;
     try {
-      assert.deepEqual(records(databasePath), { ...before, sources: before.sources.map((row) => ({ ...row, property_revision: 0, category_property_revision: 0 })) });
+      assert.deepEqual(records(databasePath), { ...before, sources: before.sources.map((row) => ({ ...row, property_revision: 0, category_property_revision: 0 })), views: before.views.map(row => ({ ...row, position: 0 })) });
       assert.deepEqual(projectRecords(databasePath), []);
       projects = applyDiscovery(service, workspace.workspaceId).value;
       assert.deepEqual(projects.projects.map((p) => p.name), ["Kept"]);
@@ -1572,7 +1575,7 @@ test("populated discovery configuration upgrades to projects, applies and reopen
       assert.equal(service.workspaces.load().value.activeWorkspace.viewId, workspace.viewId);
       assert.equal(service.handleQuery({ type: "settings.load" }).value.language, "ru");
       assert.deepEqual(records(databasePath).workspaces, before.workspaces);
-      assert.deepEqual(records(databasePath).views, before.views);
+      assert.deepEqual(records(databasePath).views, before.views.map(row => ({ ...row, position: 0 })));
     } finally { service.close(); }
   });
 });

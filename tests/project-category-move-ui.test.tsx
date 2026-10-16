@@ -27,6 +27,7 @@ const initial: ProjectList = {
   categoryProperty: { propertyId: "category-label", sourceId: "source", name: "Client" }, categoryPropertyRevision: 0,
 };
 class Client extends WorkspaceServiceClient {
+  override async listViews(workspaceId: string) { return { ok: true as const, value: { workspaceId, activeViewId: "view", views: [{ viewId: "view", name: "Table", kind: "table" as const }] } }; }
   list = structuredClone(initial);
   lists = 0;
   events = new Set<(event: WorkspaceChangeEvent) => void>();
@@ -179,7 +180,7 @@ for (const language of ["en", "ru"] as const) {
     await screen.findByText(t("moveCategoryUnchanged"));
     assert.equal(client.moves.length, 1); assert.equal(client.moves[0].destinationCategoryId, "current");
     assert.equal(client.list.revision, 1); assert.equal(client.list.projects[0].relativePath, "Current/  Exact 📝  ");
-    assert.ok(document.activeElement === trigger || document.activeElement === screen.getByRole("heading", { name: t("tableViewTitle") }));
+    assert.ok(document.activeElement === trigger || document.activeElement === screen.getByRole("heading", { name: "Table" }));
     assert.equal(screen.queryByRole("combobox", { name: t("moveCategoryDestination") }), null);
   });
   test(`${language}: Escape dismisses an unsubmitted editor and restores the category trigger`, async () => {
@@ -218,7 +219,7 @@ for (const language of ["en", "ru"] as const) {
     fireEvent.click(submit()); fireEvent.click(submit());
     assert.equal(client.moves.length, 1); assert.equal(destination().disabled, true);
     assert.equal(document.activeElement, screen.getByRole("button", { name: t("cancelRenameWorkspace") }));
-    assert.ok(screen.getByRole("button", { name: new RegExp(`^${t("editTextValue")}:`) }));
+    assert.ok(await screen.findByRole("button", { name: new RegExp(`^${t("editTextValue")}:`) }));
     await userEvent.keyboard("{Escape}");
     assert.equal(screen.queryByRole("combobox", { name: t("moveCategoryDestination") }), null);
     assert.equal((screen.getByRole("button", { name: new RegExp(`^${t("moveCategory")}:`) }) as HTMLButtonElement).disabled, true);
@@ -270,7 +271,7 @@ for (const language of ["en", "ru"] as const) {
       if (restriction === "unavailable") client.list = { ...client.list, state: "unavailable", projects: [{ ...client.list.projects[0], resolution: null }] };
       mount(client); await screen.findByText("  Exact 📝  ", { selector: "td span", normalizer: (value) => value });
       assert.equal(screen.queryByRole("button", { name: new RegExp(`^${t("moveCategory")}:`) }), null);
-      assert.ok(screen.getByRole("button", { name: new RegExp(`^${t("editTextValue")}:`) }));
+      assert.ok(await screen.findByRole("button", { name: new RegExp(`^${t("editTextValue")}:`) }));
       assert.equal(client.moves.length, 0);
     });
   }
@@ -494,7 +495,7 @@ for (const language of ["en", "ru"] as const) {
     await userEvent.click(screen.getByRole("button", { name: t("moveCategoryStatus") })); await screen.findByText(t("moveCategorySaved"));
     assert.deepEqual(client.statusCalls, [["sibling", client.moves[0].operationId], ["sibling", client.moves[0].operationId]]);
     assert.equal(client.moves[0].workspaceId, "workspace");
-    await waitFor(() => assert.equal(document.activeElement === screen.getByRole("heading", { name: t("tableViewTitle") }), true));
+    await waitFor(() => assert.equal(document.activeElement === screen.getByRole("heading", { name: "Table" }), true));
   });
   test(`${language}: switching away preserves unknown source operation and leaves an unrelated source usable`, async () => {
     const client = new Client(); client.handler = async () => { throw new Error("lost"); };

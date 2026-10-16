@@ -7,6 +7,7 @@ import { translate, type TranslationKey } from "../localization.js";
 import { StatusMessage } from "./bb-foundation.js";
 import { TextPropertiesTable } from "./TextPropertiesTable.js";
 interface Props {
+  layout?: "table" | "board";
   client: WorkspaceServiceClient; workspaceId: string; sourceId: string; projects: ProjectSummary[];
   language: Language; disabled: boolean; revision: number; invalidation: number;
   onCommitted(): void; onViewChange(archived: boolean): void; onBlockedChange?(blocked: boolean): void;
@@ -17,7 +18,7 @@ const problemKeys: Record<string, TranslationKey> = {
   busy: "archiveProblemBusy", owned_location: "archiveProblemOwned",
 };
 export function ProjectArchivePanel(props: Props) { return <ArchiveContent key={`${props.workspaceId}:${props.sourceId}`} {...props} />; }
-function ArchiveContent({ client, workspaceId, sourceId, projects, language, disabled, revision, invalidation, onCommitted, onViewChange, onBlockedChange }: Props) {
+function ArchiveContent({ layout = "table", client, workspaceId, sourceId, projects, language, disabled, revision, invalidation, onCommitted, onViewChange, onBlockedChange }: Props) {
   const projectSelectId = useId();
   const t = (key: TranslationKey) => translate(language, key);
   const [archived, setArchived] = useState(false), [snapshot, setSnapshot] = useState<ArchiveSnapshot | null>(null);
@@ -183,7 +184,7 @@ function ArchiveContent({ client, workspaceId, sourceId, projects, language, dis
       <button type="button" disabled={blocked} onClick={cancel} className="workspace-button workspace-button--secondary">{t("archiveCancel")}</button></div>}
     {archived && <>{snapshot?.projects.length ? <>
       <ul>{snapshot.projects.map(p => <li key={p.projectId}>{p.name} — {t("archiveOriginal")}: {p.originalRelativePath}{p.categoryName && <> — {t("archiveFrozenCategory")}: {p.categoryName}</>}</li>)}</ul>
-      <TextPropertiesTable client={client} workspaceId={workspaceId} sourceId={sourceId} language={language} disabled={disabled} projects={snapshot.projects} hideReveal />
+      <TextPropertiesTable layout={layout} client={client} workspaceId={workspaceId} sourceId={sourceId} language={language} disabled={disabled} projects={snapshot.projects} hideReveal />
     </> : <p>{t("archiveEmpty")}</p>}</>}
   </section>;
 }

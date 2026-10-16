@@ -352,15 +352,15 @@ test("migration 0012 preserves populated 0011 data, presentation and receipts ac
     migrate(drizzle(previous), { migrationsFolder: folder });
     snapshot = Object.fromEntries(tables.map(table => [table, current.prepare(`SELECT * FROM ${table} ORDER BY 1`).all()]));
     for (const table of tables) for (const row of snapshot[table]) {
-      const columns = Object.keys(row);
-      previous.prepare(`INSERT INTO ${table} (${columns.join(",")}) VALUES (${columns.map(() => "?").join(",")})`).run(...Object.values(row));
+      const columns = Object.keys(row).filter(key => table !== "views" || key !== "position");
+      previous.prepare(`INSERT INTO ${table} (${columns.join(",")}) VALUES (${columns.map(() => "?").join(",")})`).run(...columns.map(key => row[key]));
     }
   } finally { previous.close(); current.close(); }
   for (let i = 0; i < 2; i++) {
     const reopened = openSettingsService(oldPath, undefined, undefined, observer), sql = new Database(oldPath);
     try {
       for (const table of tables) assert.deepEqual(sql.prepare(`SELECT * FROM ${table} ORDER BY 1`).all(), snapshot[table], table);
-      assert.equal(sql.prepare("SELECT count(*) AS n FROM __drizzle_migrations").get().n, 18);
+      assert.equal(sql.prepare("SELECT count(*) AS n FROM __drizzle_migrations").get().n, 19);
       assert.deepEqual(sql.prepare("SELECT * FROM category_removal_operations").all(), []);
       assert.deepEqual(sql.prepare("SELECT * FROM category_removal_attempts").all(), []);
       assert.deepEqual(sql.pragma("foreign_key_check"), []);

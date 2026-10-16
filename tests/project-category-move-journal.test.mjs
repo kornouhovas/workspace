@@ -50,7 +50,7 @@ function fixture(run, legacy = false) {
       .run(sourceId, root, identity(root));
     sql.prepare("INSERT INTO workspaces (id, name, position, source_id) VALUES (?, 'Primary', 0, ?)").run(workspaceId, sourceId);
     const viewId = randomUUID();
-    sql.prepare("INSERT INTO views VALUES (?, ?, 'Table', 'table')").run(viewId, workspaceId);
+    sql.prepare("INSERT INTO views (id, workspace_id, name, kind) VALUES (?, ?, 'Table', 'table')").run(viewId, workspaceId);
     sql.prepare("INSERT INTO active_workspace VALUES ('active', ?, ?)").run(workspaceId, viewId);
     for (const [id, name] of [[categoryId, "Original category"], [destinationId, "Destination"]])
       sql.prepare("INSERT INTO categories (id, source_id, relative_path, native_identity, association_state) VALUES (?, ?, ?, ?, 'active')")
@@ -142,9 +142,9 @@ test("populated 0000–0009 upgrade and reopen retain creation/rename receipts, 
   for (let i = 0; i < 2; i++) {
     migrate(drizzle(f.sql), { migrationsFolder }); f.reopen();
     const after = records(f.sql);
-    for (const [table, rows] of Object.entries(before)) if (table !== "__drizzle_migrations") assert.deepEqual(after[table], rows, table);
+    for (const [table, rows] of Object.entries(before)) if (table !== "__drizzle_migrations") assert.deepEqual(after[table], table === "views" ? rows.map(row => ({ ...row, position: 0 })) : rows, table);
     assert.deepEqual(after.__drizzle_migrations.slice(0, 10), before.__drizzle_migrations);
-    assert.equal(after.__drizzle_migrations.length, 18); assert.deepEqual(after.project_category_move_operations, []);
+    assert.equal(after.__drizzle_migrations.length, 19); assert.deepEqual(after.project_category_move_operations, []);
     assert.deepEqual(f.sql.pragma("foreign_key_check"), []);
     assert.deepEqual(fs.readFileSync(join(f.root, "Original category", "Original", "sentinel")), Buffer.from([0, 255, 42]));
   }
@@ -157,7 +157,7 @@ test("late migration failure rolls back schema and populated history; subsequent
   assert.throws(() => migrate(drizzle(f.sql), { migrationsFolder: broken }), /nonexistent_table/);
   assert.deepEqual(records(f.sql), before); assert.deepEqual(f.sql.prepare("SELECT * FROM sqlite_master ORDER BY name").all(), schema);
   migrate(drizzle(f.sql), { migrationsFolder }); f.reopen();
-  for (const [table, rows] of Object.entries(before)) if (table !== "__drizzle_migrations") assert.deepEqual(records(f.sql)[table], rows, table);
+  for (const [table, rows] of Object.entries(before)) if (table !== "__drizzle_migrations") assert.deepEqual(records(f.sql)[table], table === "views" ? rows.map(row => ({ ...row, position: 0 })) : rows, table);
 }, true));
 
 test("intent binds both active same-source categories, current project, policy and full evidence", () => fixture((f) => {

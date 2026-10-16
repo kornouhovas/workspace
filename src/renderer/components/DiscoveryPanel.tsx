@@ -1,3 +1,5 @@
+import { ViewsPanel } from "./ViewsPanel.js";
+import type { WorkspaceView } from "../../contracts/views.js";
 import { ProjectArchivePanel } from "./ProjectArchivePanel.js";
 import { CategoryOptionsPanel } from "./CategoryOptionsPanel.js";
 import { ProjectCategoryMovePanel } from "./ProjectCategoryMovePanel.js";
@@ -243,6 +245,7 @@ export function DiscoveryWorkspace({ client, workspaceId, sourceId, refreshVersi
   onSourceState?(workspaceId: string, state: ProjectList["state"]): void; language: Language; disabled: boolean;
   onRecoveryPending?(pending: boolean): void;
 }) {
+  const [view, setView] = useState<WorkspaceView | null>(null);
   const [showArchived, setShowArchived] = useState(false);
   const [archiveBlocked, setArchiveBlocked] = useState(false);
   const [projects, setProjects] = useState<ProjectList | null>(null);
@@ -447,15 +450,17 @@ export function DiscoveryWorkspace({ client, workspaceId, sourceId, refreshVersi
         if (updated.categoryPropertyRevision < minimumCategoryPropertyRevision.current) void load();
       }} />}
     {recoverySaved && <StatusMessage kind="info" title={t("recoverySaved")} />}
-    <ProjectArchivePanel client={client} workspaceId={workspaceId} sourceId={sourceId} projects={projects?.projects ?? []}
+    <ProjectArchivePanel layout={view?.kind} client={client} workspaceId={workspaceId} sourceId={sourceId} projects={projects?.projects ?? []}
       language={language} revision={projects?.revision ?? 0} invalidation={invalidation} onViewChange={setShowArchived}
       onBlockedChange={setArchiveBlocked} onCommitted={() => void load()}
       disabled={disabled || categoryOptionsBlocked || creationBlocked || discoveryPending || recoveryProject !== null || renameProject !== null || renameBlocked || categoryMoveProject !== null || categoryMoveBlocked} />
+    <ViewsPanel client={client} workspaceId={workspaceId} language={language} onChange={setView}
+      disabled={disabled || categoryOptionsBlocked || creationBlocked || discoveryPending || recoveryProject !== null || renameProject !== null || renameBlocked || categoryMoveProject !== null || categoryMoveBlocked || archiveBlocked} />
     <section hidden={showArchived} className="table-view" aria-labelledby="table-title" aria-busy={loading}>
       <div className="table-view__heading"><div>
-        <h3 id="table-title" ref={tableHeading} tabIndex={-1}>{t("tableViewTitle")}</h3>
+        <h3 id="table-title" ref={tableHeading} tabIndex={-1}>{view?.name ?? t("tableViewTitle")}</h3>
         <p>{t(projects?.configured ? "projectsApplied" : "emptyTableDescription")}</p>
-      </div><span className="view-badge">{t("tableViewLabel")}</span></div>
+      </div><span className="view-badge">{t(view?.kind === "board" ? "boardViewLabel" : "tableViewLabel")}</span></div>
       {loading && <StatusMessage kind="info" title={t("projectsLoading")} />}
       {error && <><StatusMessage kind="error" title={t("projectsError")} />
         <button type="button" className="workspace-button workspace-button--secondary" disabled={loading} onClick={() => void load()}>{t("projectsRetry")}</button></>}
@@ -471,7 +476,7 @@ export function DiscoveryWorkspace({ client, workspaceId, sourceId, refreshVersi
         {projects.categories.length > 0 ? <ul>{projects.categories.filter(c => showHiddenCategories || !c.presentation?.hidden).map((category) => <li key={category.categoryId}><span className="category-chip" data-color={category.presentation?.color ?? "default"}>{category.name}</span></li>)}</ul>
           : <p>{t("savedCategoriesEmpty")}</p>}
       </div>}
-      <TextPropertiesTable sourceLifetime={sourceLifetime} discoveryRevision={projects?.revision ?? 0} minimumDiscoveryRevision={minimumRevision} categoryPropertyRevision={projects?.categoryPropertyRevision ?? 0} minimumCategoryPropertyRevision={minimumCategoryPropertyRevision}
+      {view && <TextPropertiesTable layout={view.kind} sourceLifetime={sourceLifetime} discoveryRevision={projects?.revision ?? 0} minimumDiscoveryRevision={minimumRevision} categoryPropertyRevision={projects?.categoryPropertyRevision ?? 0} minimumCategoryPropertyRevision={minimumCategoryPropertyRevision}
         onCategoryPropertyCommitted={commitLabel} categoryProperty={projects?.categoryProperty ?? null} categories={projects?.categories ?? []} client={client} workspaceId={workspaceId} sourceId={sourceId}
         renameDisabled={categoryOptionsBlocked || creationBlocked || discoveryPending || loading || error || renameBlocked || renameProject !== null || recoveryProject !== null || categoryMoveProject !== null || categoryMoveBlocked || !projects?.configured ||
           !["ready", "empty"].includes(projects?.state ?? "") || (projects?.revision ?? -1) < minimumRevision.current}
@@ -483,7 +488,7 @@ export function DiscoveryWorkspace({ client, workspaceId, sourceId, refreshVersi
         onLocate={projects?.configured ? (project, trigger) => {
           recoveryTrigger.current = trigger; setRecoverySaved(false); setRecoveryProject(project);
         } : undefined}
-        projects={projects?.projects ?? []} retainedProjects={projects?.retainedProjects ?? []} language={language} disabled={disabled} />
+        projects={projects?.projects ?? []} retainedProjects={projects?.retainedProjects ?? []} language={language} disabled={disabled} />}
     </section>
   </>;
 }

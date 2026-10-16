@@ -398,3 +398,18 @@ body {
 .multi-select-choice { display: flex; align-items: baseline; gap: 0.5rem; border-inline-start: 0.25rem solid var(--option-color, transparent); padding: 0.35rem; overflow-wrap: anywhere; }
 .multi-select-choice input { flex: none; }
 .multi-select-choice:focus-within { outline: 2px solid #526ed3; outline-offset: 1px; }
+
+.views-panel { margin-block: 1rem; padding: 1rem; border: 1px solid var(--border, #d5d5d5); border-radius: .5rem; }
+.view-controls, .view-form { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; }
+.view-form { margin-top: .75rem; }
+.views-panel label { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; min-width: 0; }
+.views-panel input, .views-panel select { max-width: 100%; min-width: 0; font: inherit; padding: .35rem; }
+.views-panel button { font: inherit; padding: .4rem .65rem; cursor: pointer; }
+.views-panel button:disabled { cursor: default; }
+.project-board { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 19rem), 1fr)); gap: 1rem; padding: 0; list-style: none; }
+.project-card { border: 1px solid var(--border, #d5d5d5); border-radius: .5rem; padding: 1rem; min-width: 0; overflow-wrap: anywhere; }
+.project-card > div { margin-block: .5rem; }
+.project-card > div::before { content: attr(data-label); display: block; font-size: .85rem; font-weight: 600; margin-bottom: .25rem; }
+.project-card .property-cell, .project-card textarea, .project-card input, .project-card select { max-width: 100%; min-width: 0; }
+.board-property-controls { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem; margin-block: .75rem; }
+.board-property-controls > .board-field-placeholder { display: none; }

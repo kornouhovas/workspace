@@ -1,3 +1,4 @@
+import { historicalWorkspace } from "./helpers/historical-workspace.mjs";
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync } from 'node:fs';
@@ -114,7 +115,7 @@ test('populated pre-Select migration preserves Text/Number/Date and identities w
   writeFileSync(join(migrations, 'meta/_journal.json'), JSON.stringify(journal));
   const path = join(directory, 'workspace.sqlite'); let service = openSettingsService(path, migrations);
   try {
-    const workspace = service.handleCommand({ type: 'workspace.create', rootPath: root, name: 'Before' }).value, workspaceId = workspace.workspaceId;
+    const workspace = historicalWorkspace(path, root), workspaceId = workspace.workspaceId;
     const preview = service.handleQuery({ type: 'workspace.previewDiscovery', workspaceId }).value;
     const projectId = service.handleCommand({ type: 'workspace.applyDiscovery', workspaceId, previewToken: preview.previewToken }).value.projects[0].projectId;
     for (const [propertyType, command, field, value] of [['text', 'setTextValue', 'value', '  exact\nТекст  '], ['number', 'setNumberValue', 'expression', '42'], ['date', 'setDateValue', 'value', '2024-02-29']]) {

@@ -28,7 +28,13 @@ export const workspaces = sqliteTable("workspaces", {
   sourceId: text("source_id").notNull().references(() => sources.id),
 });
 
+export const workspaceViewSelection = sqliteTable("workspace_view_selection", {
+  workspaceId: text("workspace_id").primaryKey().references(() => workspaces.id),
+  viewId: text("view_id").notNull().references(() => views.id),
+});
+
 export const views = sqliteTable("views", {
+  position: integer("position").notNull().default(0),
   id: text("id").primaryKey(),
   workspaceId: text("workspace_id").notNull().references(() => workspaces.id),
   name: text("name").notNull(),
