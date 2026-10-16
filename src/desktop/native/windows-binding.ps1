@@ -7,8 +7,6 @@ using System;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Management.Automation;
-using System.Diagnostics;
-using System.Threading;
 
 public static class WorkspaceReadyWindow {
     [DllImport("user32.dll", ExactSpelling=true)]
@@ -18,7 +16,8 @@ public static class WorkspaceReadyWindow {
 }
 
 // ExDisp.idl: IShellWindows derives from IDispatch; Count and Item are its
-// first two members. Preserve the four inherited IDispatch slots exactly.
+// first two members, followed by _NewEnum. Keep the unused Item slot and
+// the four inherited IDispatch slots to preserve the SDK vtable layout.
 // The opaque returned interface is the SDK's IDispatch**, not a discovered type.
 [ComImport, Guid("00020400-0000-0000-C000-000000000046"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
 internal interface WorkspaceReturnedDispatch { }
@@ -48,100 +47,6 @@ public sealed class WorkspaceReadyComReference {
 }
 
 public static class WorkspaceReadyCom {
-    // [DEBUG-issue26] Optional one-shot quiet-call observation. This timer never
-    // enters COM/PowerShell and never owns a permit or changes a command result.
-    private static bool ReadCheckpointEnabled() {
-        try { return Environment.GetEnvironmentVariable("WORKSPACE_REVEAL_DEFERRED_TRACE") == "1"; } catch { return false; }
-    }
-    private static readonly bool checkpointEnabled = ReadCheckpointEnabled();
-    private static readonly object checkpointGate = new object();
-    private static Timer checkpointTimer;
-    private static Stopwatch checkpointWatch;
-    private static string checkpointOperation = "none";
-    private static int checkpointSequence;
-    private static bool checkpointActive, checkpointReported, checkpointDisposed;
-    public static void StartDeferredTrace() {
-        if (!checkpointEnabled) return;
-        try {
-            lock (checkpointGate) {
-                if (checkpointWatch != null || checkpointDisposed) return;
-                checkpointWatch = Stopwatch.StartNew();
-                checkpointTimer = new Timer(EmitDeferredCheckpoint, null, 9000, Timeout.Infinite);
-            }
-        } catch { /* A missing checkpoint is unknown, never command authority. */ }
-    }
-    public static void StopDeferredTrace() {
-        if (!checkpointEnabled) return;
-        try {
-            Timer timer;
-            lock (checkpointGate) { checkpointDisposed = true; timer = checkpointTimer; checkpointTimer = null; }
-            if (timer != null) timer.Dispose(); // Do not wait for an in-flight callback.
-        } catch { }
-    }
-    private static void EmitDeferredCheckpoint(object unused) {
-        try {
-            string line;
-            lock (checkpointGate) {
-                if (!checkpointEnabled || checkpointDisposed || checkpointReported || checkpointWatch == null) return;
-                long elapsed = checkpointWatch.ElapsedMilliseconds;
-                if (elapsed > 12000) return;
-                checkpointReported = true;
-                line = "CHECKPOINT:" + checkpointOperation + ":" + (checkpointActive ? "active" : "complete") + ":" +
-                    checkpointSequence.ToString(System.Globalization.CultureInfo.InvariantCulture) + ":" +
-                    elapsed.ToString(System.Globalization.CultureInfo.InvariantCulture);
-            }
-            // Snapshot precedes output. Disposal may race this already captured
-            // line; output is atomic, bounded and cannot advance the protocol.
-            Console.Out.WriteLine(line);
-            Console.Out.Flush();
-        } catch { /* Observation/console faults never replace a COM result. */ }
-    }
-    private static int EnterCheckpoint(string operation) {
-        if (!checkpointEnabled) return 0;
-        try {
-            lock (checkpointGate) {
-                if (checkpointDisposed) return 0;
-                checkpointSequence = Math.Min(100000, checkpointSequence + 1);
-                checkpointOperation = operation; checkpointActive = true;
-                return checkpointSequence;
-            }
-        } catch { return 0; }
-    }
-    private static void LeaveCheckpoint(int sequence) {
-        if (sequence == 0) return;
-        try { lock (checkpointGate) { if (checkpointSequence == sequence) checkpointActive = false; } } catch { }
-    }
-    public static int BeginOwnerCheckpoint(string operation) {
-        if (!checkpointEnabled) return 0;
-        switch (operation) {
-            case "owner_validation": case "uia_root": case "uia_properties": case "uia_tabs": case "uia_owner":
-                return EnterCheckpoint(operation);
-            default: return 0;
-        }
-    }
-    public static void EndOwnerCheckpoint(int sequence) { LeaveCheckpoint(sequence); }
-    private static string CheckpointName(string name, bool read) {
-        if (read) {
-            switch (name) {
-                case "Count": return "read_count";
-                case "Document": return "read_document";
-                case "Folder": return "read_folder";
-                case "Self": return "read_self";
-                case "Path": return "read_path";
-                case "HWND": return "read_hwnd";
-                case "Busy": return "read_busy";
-                case "ReadyState": return "read_ready";
-                default: return "other_read";
-            }
-        }
-        switch (name) {
-            case "Windows": return "call_windows";
-            case "[DispID=0]": return "call_window_item";
-            case "ParseName": return "call_parse";
-            case "SelectItem": return "call_select";
-            default: return "other_call";
-        }
-    }
     private static object Unwrap(object value) {
         // PowerShell can retain PSObject wrappers in object[] arguments and
         // reflection construction. Unwrap those as well as our opaque holder.
@@ -187,32 +92,24 @@ public static class WorkspaceReadyCom {
         }
         throw new InvalidOperationException();
     }
-    // [DEBUG-issue26] Explicit counterfactual acquisition; all downstream guards
-    // remain common. A fresh enumeration is bounded, not an atomic membership proof.
+    // Enumerate a fresh bounded collection for each binding. Matching counts
+    // reject incomplete/change evidence; they do not prove atomic membership.
     public static WorkspaceReadyComReference[] WindowsByEnumerator(object value) {
-        int sequence = EnterCheckpoint("call_window_enum");
-        try {
-            var windows = (WorkspaceShellWindows)Unwrap(value);
-            int before = ReadWindowCount(windows);
-            object rawEnumerator;
-            if (windows.NewEnum(out rawEnumerator) != 0 || rawEnumerator == null || !Marshal.IsComObject(rawEnumerator))
-                throw new InvalidOperationException();
-            return CollectWindowEnumerator((System.Runtime.InteropServices.ComTypes.IEnumVARIANT)rawEnumerator,
-                before, delegate { return ReadWindowCount(windows); });
-            // Enumerator and window RCWs stay owned by this short-lived process.
-        } finally { LeaveCheckpoint(sequence); }
+        var windows = (WorkspaceShellWindows)Unwrap(value);
+        int before = ReadWindowCount(windows);
+        object rawEnumerator;
+        if (windows.NewEnum(out rawEnumerator) != 0 || rawEnumerator == null || !Marshal.IsComObject(rawEnumerator))
+            throw new InvalidOperationException();
+        return CollectWindowEnumerator((System.Runtime.InteropServices.ComTypes.IEnumVARIANT)rawEnumerator,
+            before, delegate { return ReadWindowCount(windows); });
+        // Enumerator and window RCWs stay owned by this short-lived process.
     }
     public static object Read(object value, string name) {
-        int sequence = checkpointEnabled ? EnterCheckpoint(CheckpointName(name, true)) : 0;
-        try {
         var raw = Unwrap(value);
         if (raw == null) throw new ArgumentNullException();
         return Wrap(raw.GetType().InvokeMember(name, BindingFlags.GetProperty, null, raw, null));
-        } finally { LeaveCheckpoint(sequence); }
     }
     public static object Call(object value, string name, object[] arguments) {
-        int sequence = checkpointEnabled ? EnterCheckpoint(CheckpointName(name, false)) : 0;
-        try {
         var raw = Unwrap(value);
         if (raw == null) throw new ArgumentNullException();
         var unwrapped = new object[arguments.Length];
@@ -226,11 +123,8 @@ public static class WorkspaceReadyCom {
             return Wrap(window);
         }
         return Wrap(raw.GetType().InvokeMember(name, BindingFlags.InvokeMethod, null, raw, unwrapped));
-        } finally { LeaveCheckpoint(sequence); }
     }
     public static bool SameIdentity(object left, object right) {
-        int sequence = EnterCheckpoint("identity");
-        try {
         left = Unwrap(left); right = Unwrap(right);
         if (left == null || right == null) return false;
         IntPtr a = IntPtr.Zero, b = IntPtr.Zero;
@@ -242,7 +136,6 @@ public static class WorkspaceReadyCom {
             if (b != IntPtr.Zero) Marshal.Release(b);
             if (a != IntPtr.Zero) Marshal.Release(a);
         }
-        } finally { LeaveCheckpoint(sequence); }
     }
 }
 '@ | Out-Null
@@ -281,23 +174,15 @@ function Test-WorkspaceReadyDocument($left, $right) {
 }
 
 function Read-WorkspaceReadyOwner($handle, $trace = $null) {
-    $checkpoint = 0
-    if ($env:WORKSPACE_REVEAL_DEFERRED_TRACE -ceq '1' -and ('WorkspaceReadyCom' -as [type])) { $checkpoint = [WorkspaceReadyCom]::BeginOwnerCheckpoint('owner_validation') }
-    try {
     [uint32]$owner = 0
     if ($handle -isnot [int] -and $handle -isnot [long]) { return $null }
     if ($handle -le 0 -or -not [WorkspaceReadyWindow]::IsWindow([IntPtr]$handle) -or
         [WorkspaceReadyWindow]::GetWindowThreadProcessId([IntPtr]$handle, [ref]$owner) -eq 0 -or
         $owner -eq 0 -or (Get-Process -Id $owner -ErrorAction Stop).ProcessName -ne 'explorer') { return $null }
-    } finally { if ($checkpoint -ne 0) { [WorkspaceReadyCom]::EndOwnerCheckpoint($checkpoint) } }
     # The existing exact-HWND guard rejects shared tabbed views. No desktop UIA.
     $binding = Read-WorkspaceUiaWindow $handle $trace
     if ($binding.stage -ne 'verified') { return $null }
-    $checkpoint = 0
-    if ($env:WORKSPACE_REVEAL_DEFERRED_TRACE -ceq '1' -and ('WorkspaceReadyCom' -as [type])) { $checkpoint = [WorkspaceReadyCom]::BeginOwnerCheckpoint('uia_owner') }
-    try {
-        if ($binding.root.Current.ProcessId -ne $owner) { return $null }
-    } finally { if ($checkpoint -ne 0) { [WorkspaceReadyCom]::EndOwnerCheckpoint($checkpoint) } }
+    if ($binding.root.Current.ProcessId -ne $owner) { return $null }
     return $owner
 }
 
@@ -305,22 +190,14 @@ function Read-WorkspaceReadyBinding($shell, $expected, $anchor, $trace = $null) 
     $parent = [IO.Path]::GetDirectoryName($expected)
     if ($null -ne $trace) { try { [void](& $trace 'enumeration') } catch { } }
     # Keep the collection RCW opaque too; a raw return would re-enter the
-    # PowerShell COM adapter before Count and typed Item guards can run.
+    # PowerShell COM adapter before the typed enumerator and binding guards can run.
     $windows = (Invoke-WorkspaceComMethod $shell 'Windows' @())
     if ($null -ne $trace) { try { [void](& $trace 'collection') } catch { } }
-    $useEnumerator = $env:WORKSPACE_REVEAL_ENUMERATOR -ceq '1'
-    $candidates = $null
-    if ($useEnumerator) { $candidates = Read-WorkspaceWindowEnumerator $windows }
-    elseif ($null -eq $windows -or (Get-WorkspaceComProperty $windows 'Count') -isnot [int] -or (Get-WorkspaceComProperty $windows 'Count') -lt 0 -or (Get-WorkspaceComProperty $windows 'Count') -gt 256) {
-        return @{ stage = 'property_unavailable' }
-    }
+    $candidates = Read-WorkspaceWindowEnumerator $windows
     $owned = [Collections.Generic.List[object]]::new()
-    for ($i = 0; $i -lt $(if ($useEnumerator) { $candidates.Length } else { Get-WorkspaceComProperty $windows 'Count' }); $i++) {
-        if ($null -ne $trace) { try { [void](& $trace 'window_item') } catch { } }
-        # IShellWindows::Item is DISPID 0 in the Windows SDK ExDisp.idl.
-        # Invoke that same member without a GetIDsOfNames lookup.
-        if ($useEnumerator) { $candidate = $candidates[$i] }
-        else { $candidate = (Invoke-WorkspaceComMethod $windows '[DispID=0]' @($i) $trace) }
+    for ($i = 0; $i -lt $candidates.Length; $i++) {
+        if ($null -ne $trace) { try { [void](& $trace 'window_candidate') } catch { } }
+        $candidate = $candidates[$i]
         if ($null -ne $trace) { try { [void](& $trace 'document') } catch { } }
         $document = (Get-WorkspaceComProperty $candidate 'Document')
         if ($null -ne $trace) { try { [void](& $trace 'parent') } catch { } }

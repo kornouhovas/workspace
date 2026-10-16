@@ -11,12 +11,8 @@ function Invoke-WorkspaceComMethod($value, [string]$name, [object[]]$arguments) 
 function Read-WorkspaceWindowEnumerator($windows) {
     $before = Get-WorkspaceComProperty $windows 'Count'
     if ($before -isnot [int] -or $before -lt 0 -or $before -gt 256) { throw 'invalid_count' }
-    $entries = [Collections.Generic.List[object]]::new()
-    for ($index = 0; $index -lt $before; $index++) {
-        $entry = Invoke-WorkspaceComMethod $windows '[DispID=0]' @($index)
-        if ($null -eq $entry) { throw 'invalid_entry' }
-        $entries.Add($entry)
-    }
-    if ((Get-WorkspaceComProperty $windows 'Count') -cne $before) { throw 'changed_count' }
-    return ,($entries.ToArray())
+    # Separate enumerator data from Item: the old acquisition must fail this fixture.
+    $entries = $windows.Entries
+    if ($entries -isnot [Array] -or $entries.Length -ne $before) { throw 'invalid_entries' }
+    return ,$entries
 }

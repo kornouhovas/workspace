@@ -43,8 +43,8 @@ test("production and diagnostic scripts share the exact binding guards without d
   assert.match(bridge, /return Invoke-WorkspaceProjectReveal \$shell \$env:WORKSPACE_PROJECT_REVEAL_TARGET \$watch/);
   assert.match(bridge, /\$completed = Invoke-WorkspaceProjectRevealFromEnvironment \$shell/);
   assert.doesNotMatch(bridge, /WORKSPACE_CONTROL_TARGET/);
-  // Every read in the COM binding uses direct IDispatch; PowerShell member
-  // discovery on a cold Explorer must not return to this path.
+  // Scalar reads use direct IDispatch; window acquisition uses the SDK
+  // enumerator. Neither returns raw COM values to PowerShell member discovery.
   assert.match(binding, /raw.GetType\(\).InvokeMember\(name, BindingFlags.GetProperty/);
   assert.match(binding, /raw.GetType\(\).InvokeMember\(name, BindingFlags.InvokeMethod/);
   assert.match(binding, /new WorkspaceReadyComReference\(value\)/);
@@ -55,7 +55,9 @@ test("production and diagnostic scripts share the exact binding guards without d
   assert.match(bridge, /Initialize-WorkspaceNativeBinding/);
   assert.match(readyDiagnostic, /Initialize-WorkspaceNativeBinding/);
   assert.doesNotMatch(binding, /\$windows\.Count|\$windows\.Item\(|\$candidate\.Document|\$document\.Folder|\$window\.(Document|HWND|Busy|ReadyState)|\$item\.Path/);
-  assert.match(binding, /Invoke-WorkspaceComMethod \$windows '\[DispID=0\]' @\(\$i\) \$trace/);
+  const consumer = binding.slice(binding.indexOf("function Read-WorkspaceReadyBinding"));
+  assert.match(consumer, /\$candidates = Read-WorkspaceWindowEnumerator \$windows/);
+  assert.doesNotMatch(consumer, /DispID=0|\$useEnumerator|WORKSPACE_REVEAL_ENUMERATOR/);
   assert.match(binding, /\$windows = \(Invoke-WorkspaceComMethod \$shell 'Windows' @\(\)\)/);
   assert.doesNotMatch(bridge + readyDiagnostic, /\$anchor.item.Path|\$anchor.document.SelectedItems\(|\$selected\.(Count|Item)/);
   assert.equal((bridge.match(/\.SelectItem\(/g) ?? []).length, 1);
@@ -162,7 +164,14 @@ foreach ($mode in ($env:WORKSPACE_CONTROL_MODES | ConvertFrom-Json)) {
     if ($script:mode -eq 'late_postcheck' -and $script:selects -eq 1) { $script:now = 10000 }
     if ($script:mode -eq 'delayed_ready' -and $script:now -ge 200) { $script:window.Busy = $false }
     $collection = [pscustomobject]@{ Count = $(if ($script:mode -eq 'absent') { 0 } elseif ($script:mode -eq 'duplicate_parent') { 2 } else { 1 }) }
-    $collection | Add-Member ScriptMethod Item { param($index) return $script:window }
+    $entries = [object[]]@()
+    if ($script:mode -ne 'absent') { $entries = [object[]]@($script:window) }
+    if ($script:mode -eq 'duplicate_parent') {
+      $otherWindow = [pscustomobject]@{ HWND = 124; Document = [pscustomobject]@{ Folder = $script:window.Document.Folder }; Busy = $false; ReadyState = 4 }
+      $entries = [object[]]@($script:window, $otherWindow)
+    }
+    $collection | Add-Member NoteProperty Entries $entries
+    $collection | Add-Member ScriptMethod Item { param($index) throw 'indexed_acquisition_forbidden' }
     return $collection
   }
   $inputValue = $(if ($mode -eq 'relative_input') { '.\relative' } elseif ($mode -eq 'empty_input') { '' } else { $expected })
@@ -174,17 +183,16 @@ foreach ($mode in ($env:WORKSPACE_CONTROL_MODES | ConvertFrom-Json)) {
 }
 `;
   const target = "C:\\ordinary source\\日本語, & $literal 'quote' %x% !^; `tick` (folder)";
-  for (const strategy of ['0', '1']) {
   const { stdout, stderr } = await promisify(execFile)(String.raw`C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe`,
     ["-STA", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-Command", script], {
       timeout: 30000, maxBuffer: 65536, windowsHide: true,
-      env: { ...process.env, WORKSPACE_PROJECT_REVEAL_TARGET: target, WORKSPACE_REVEAL_ENUMERATOR: strategy,
+      env: { ...process.env, WORKSPACE_PROJECT_REVEAL_TARGET: target,
         WORKSPACE_CONTROL_TARGET: "C:\\unrelated diagnostic target", WORKSPACE_CONTROL_MODES: JSON.stringify(modes) },
     });
   assert.equal(stderr, "");
   const reports = stdout.trim().split(/\r?\n/).map((line) => JSON.parse(line));
   assert.equal(reports.length, modes.length);
-  for (const report of reports) await t.test(`enumerator=${strategy}: ${report.mode}`, () => {
+  for (const report of reports) await t.test(report.mode, () => {
     const { mode, completed, opens, selects, permits, events, elapsed } = report;
     const succeeds = ["selected", "delayed_ready"].includes(mode);
     const invalidInput = ["relative_input", "empty_input"].includes(mode);
@@ -204,28 +212,6 @@ foreach ($mode in ($env:WORKSPACE_CONTROL_MODES | ConvertFrom-Json)) {
     if (expectedFailure) assert.equal(events.at(-1), expectedFailure);
     assert.doesNotMatch(JSON.stringify(report), /private|ordinary source|日本語/);
   });
-  }
-});
-
-for (const [mode, marker] of [
-  ['root_active', 'uia_root:active:1'], ['root_throw', 'uia_root:complete:1'],
-  ['properties_early', 'uia_properties:complete:2'], ['properties_active', 'uia_properties:active:2'],
-  ['tabs_active', 'uia_tabs:active:3'], ['owner_early', 'owner_validation:complete:1'],
-  ['invalid', 'none:complete:0'], ['helper_absent', null],
-]) test(`deferred owner checkpoint preserves actual PowerShell wrapper behavior: ${mode}`, { skip: process.platform !== 'win32' }, async () => {
-  const result = await promisify(execFile)('powershell.exe', ['-NoProfile', '-NonInteractive', '-STA', '-ExecutionPolicy', 'Bypass', '-File', 'tests/fixtures/windows-owner-checkpoint-control.ps1'], {
-    env: { ...process.env, WORKSPACE_CHECKPOINT_CONTROL: mode, WORKSPACE_REVEAL_DEFERRED_TRACE: '1', WORKSPACE_REVEAL_TRACE: '1' },
-    windowsHide: true, timeout: 10000, maxBuffer: 4096,
-  });
-  assert.equal(result.stderr, ''); const receipt = JSON.parse(result.stdout);
-  assert.equal(receipt.mode, mode);
-  if (marker === null) assert.deepEqual(receipt.lines, []);
-  else {
-    assert.equal(receipt.lines.length, 1);
-    assert.match(receipt.lines[0], new RegExp(`^CHECKPOINT:${marker}:[0-9]{1,5}$`));
-    assert.ok(Number(receipt.lines[0].split(':').at(-1)) <= 12000);
-  }
-  assert.doesNotMatch(result.stdout, /PRIVATE|TRACE:|GO|READY|SELECT/);
 });
 
 test("Windows direct COM reads preserve scalar, collection and error results without PowerShell member lookup", {
@@ -466,7 +452,7 @@ $ErrorActionPreference = 'Stop'
 . ./src/desktop/native/windows-project-reveal.ps1
 $events = [Collections.Generic.List[string]]::new()
 function Write-WorkspaceRevealEvent($event) { $script:events.Add($event) }
-foreach ($phase in @('assemblies','compile','shell','open','enumeration','collection','window_item','document','parent','owner','uia_root','uia_properties','uia_tabs','readiness','item','document_recheck','readiness_recheck','binding_returned','item_returned')) { Write-WorkspaceRevealTrace $phase }
+foreach ($phase in @('assemblies','compile','shell','open','enumeration','collection','window_candidate','document','parent','owner','uia_root','uia_properties','uia_tabs','readiness','item','document_recheck','readiness_recheck','binding_returned','item_returned')) { Write-WorkspaceRevealTrace $phase }
 Write-WorkspaceRevealTrace 'assemblies'
 Write-WorkspaceRevealTrace 'private path'
 if ($events.Count -ne 19 -or $events[0] -cne 'TRACE:assemblies' -or $events[18] -cne 'TRACE:item_returned') { throw 'trace_control' }
@@ -509,26 +495,9 @@ foreach ($firstReadThrows in @($true, $false)) {
   assert.equal(result.stdout.trim(), "TRACE_CONTROL"); assert.equal(result.stderr, "");
 });
 
-for (const mode of ['off', 'active', 'timer', 'complete', 'throw', 'disposed', 'fault', 'race', 'both'])
-  test(`deferred managed checkpoint is finite, single-shot and non-authorizing: ${mode}`, { skip: process.platform !== 'win32' }, async () => {
-    const result = await promisify(execFile)('powershell.exe', ['-NoProfile', '-NonInteractive', '-STA', '-ExecutionPolicy', 'Bypass', '-File', 'tests/fixtures/windows-deferred-checkpoint-control.ps1'], {
-      env: { ...process.env, WORKSPACE_CHECKPOINT_CONTROL: mode, WORKSPACE_REVEAL_DEFERRED_TRACE: mode === 'off' ? '0' : '1', WORKSPACE_REVEAL_TRACE: mode === 'both' ? '1' : '0' },
-      windowsHide: true, timeout: 10000, maxBuffer: 4096,
-    });
-    assert.equal(result.stderr, ''); const receipt = JSON.parse(result.stdout);
-    assert.equal(receipt.mode, mode);
-    if (['off', 'disposed', 'fault'].includes(mode)) assert.deepEqual(receipt.lines, []);
-    else {
-      assert.equal(receipt.lines.length, 1);
-      assert.match(receipt.lines[0], new RegExp(`^CHECKPOINT:other_call:${['active', 'timer'].includes(mode) ? 'active' : 'complete'}:1:[0-9]{1,5}$`));
-      assert.ok(Number(receipt.lines[0].split(':').at(-1)) <= 12000);
-    }
-    assert.doesNotMatch(result.stdout, /PRIVATE|TRACE:|GO|READY|SELECT/);
-  });
-
 test('bounded window enumerator rejects incomplete, duplicate, malformed and changed collections', { skip: process.platform !== 'win32' }, async () => {
   const result = await promisify(execFile)('powershell.exe', ['-NoProfile', '-NonInteractive', '-STA', '-ExecutionPolicy', 'Bypass', '-File', 'tests/fixtures/windows-enumerator-controls.ps1'], {
-    env: { ...process.env, WORKSPACE_ENUM_PORTABLE: '0', WORKSPACE_REVEAL_DEFERRED_TRACE: '0' },
+    env: { ...process.env, WORKSPACE_ENUM_PORTABLE: '0' },
     windowsHide: true, timeout: 15000, maxBuffer: 16384,
   });
   assert.equal(result.stderr, ''); const { controlled: reports, genuine } = JSON.parse(result.stdout);

@@ -92,7 +92,14 @@ foreach ($mode in ($env:WORKSPACE_CONTROL_MODES | ConvertFrom-Json)) {
       if ($script:mode.StartsWith('changed_target')) { $script:itemPath = 'C:\private\other' }
     }
     $collection = [pscustomobject]@{ Count = $(if ($script:mode -eq 'absent') { 0 } elseif ($script:mode -eq 'duplicate_parent') { 2 } else { 1 }) }
-    $collection | Add-Member ScriptMethod Item { param($index) return $script:window }
+    $entries = [object[]]@()
+    if ($script:mode -ne 'absent') { $entries = [object[]]@($script:window) }
+    if ($script:mode -eq 'duplicate_parent') {
+      $otherWindow = [pscustomobject]@{ HWND = 124; Document = [pscustomobject]@{ Folder = $script:window.Document.Folder }; Busy = $false; ReadyState = 4 }
+      $entries = [object[]]@($script:window, $otherWindow)
+    }
+    $collection | Add-Member NoteProperty Entries $entries
+    $collection | Add-Member ScriptMethod Item { param($index) throw 'indexed_acquisition_forbidden' }
     return $collection
   }
   $watch = [Diagnostics.Stopwatch]::new()

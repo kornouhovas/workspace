@@ -1558,3 +1558,52 @@ Local supportedNode22 protocol/COM/routing132tests/109passed/0failed/23Windows s
 lint/links/whitespace passed. Production build/type evidence is inherited unchanged
 from e2ca48fd. Both review axes approved the fixture ABI and early-log boundary;
 actual repaired-control and matched original evidence remain pending.
+
+### Repaired comparison accepted; clean bounded-enumerator candidate
+
+Both matched52effe33 runs completed successfully: Item38828850239 and
+NewEnum38828853495. Early control and complete original artifacts were downloaded
+and inspected. Each actual WindowsPowerShell5 host passed684category/native/
+occurrence controls plus85observer controls, including the enclosing17reducer
+cases and genuine typed MSXML0/1/2 positives with the former reflected-cast
+counterexample. Complete originals passed; Item native direct/grouped receipt
+latencies7783.8342/1314.3646ms, enum5398.0178/2012.4964ms. No9s checkpoints.
+Both retain46normalrename shutdowns/46owned backend exit proofs/zero pending,
+zero owned native targets, successful native/process/fixture cleanup and34normal
+shutdowns for each minimized/original category run. These timings establish
+neither improved reliability nor a unique historical OS blocking cause.
+
+The candidate now uses the bounded SDK NewEnum acquisition for every fresh binding,
+avoiding the indexed Item helper observed active in failed replicaA. There is no
+flag, fallback, warm-up, cached prefix, retry or deadline extension. Existing parent
+uniqueness, live Document identity, HWND/Explorer/UIA/no-shared-tabs, readiness,
+exact target, permit and immediate pre/post-selection checks remain unchanged.
+SDK Item stays in its required vtable position. Counts and identity checks are
+conservative rejection gates, not an atomic collection-membership guarantee.
+
+Removed all temporary DEBUG-issue26 timers/state, managed/owner leaf scopes,
+checkpoint protocol/capture, acquisition inputs/environment flags and associated
+probe fixtures/tests. Restored ordinary runtime-observation to both Windows
+variants. Existing finite opt-in tracing remains; window_candidate accurately
+names processing of an enumerated entry in both bridge and smoke consumers.
+Early completed-control artifacts remain independent of the original command.
+
+The shared controlled acquisition now reads an independent Entries array and
+makes Item throw. Duplicate-parent fixtures contain distinct window/Document
+objects. Before the production change, the actual shipped-controller replay's
+selected mode returnedfalse/zero selections with FAIL:readiness:exception; after
+it returnedtrue/one selection/one permit/three fresh enumerations. Empty remained
+zero-selection/deadline; distinct same-parent windows remainedzero-selection/
+binding rejection. All44shipped-controller mode receipts passed in portablePS7
+with only the separate genuine COM setup omitted and Unix path syntax adapted.
+This is route regression evidence, not WindowsCOM/UIA acceptance. Seven portable
+managed reducer controls also compile/pass. Windows actual-controller and genuine
+COM acceptance must be renewed on the cleaned candidate.
+
+SupportedNode22 affected protocol/COM/shared-controller/routing tests98total,
+91passed/0failed/7Windows skips. Lint, typecheck, local links and whitespace passed.
+Fresh npm test rebuilt the complete candidate:2880tests/2855passed/0failed/25platform
+skips in113.866s. Both final Standards and Spec review axes found no blockers.
+Ordinary both-Windows focused originals/artifacts and full exact-SHA CI remain
+required before integration or closure. Current CI/integration receipts belong to
+the linked GitHub checkpoint.

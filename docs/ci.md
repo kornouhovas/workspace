@@ -360,45 +360,16 @@ suppression, settling wait or deadline change is added to product or original
 runtime acceptance. Inspect original/comparison artifacts before choosing a repair
 or requesting full acceptance.
 
-For the still-unresolved quiet native failure, temporary `DEBUG-issue26` diagnostics
-support `runtime_native_checkpoint: true` with `checks: runtime-observation`.
-This defaults false and suppresses immediate tracing when enabled. One managed
-timer starts immediately after helper initialization, before Shell creation;
-its callback is scheduled for nine seconds later and captures fixed last-helper
-operation/in-flight/sequence and actual elapsed time. Adapter-receipt
-elapsed is retained separately. No per-call clocks/CPU/scriptblocks or console
-output are added; the single snapshot precedes its output. Active covers the whole
-helper, inactive means only its last completed operation, and a missing checkpoint
-is unknown. Timer/tracking may still perturb scheduling. Requested finite evidence
-never changes GO, protocol state, deadlines or acceptance; malformed/unrequested/
-duplicate output fails. Dispose does not wait for a captured callback, whose line
-may race DONE. Match a fresh default-off original against this quiet diagnostic;
-neither diagnostic success nor a missing line is a repair. Remove the temporary
-probe before final acceptance unless explicitly retained as diagnostics.
+Focused runtime-observation uploads completed control logs before the long
+original runtime, with exact SHA/run/attempt provenance. The original build-only
+prerequisite, strict exits and final always-upload remain unchanged.
 
-The quiet failed snapshot last completed HWND lookup, so the same temporary probe
-also brackets five non-nested existing owner/UIA blocks with fixed labels. These
-cover initial owner validation, whole UIA-root acquisition (including assembly/PS
-return), Current/process predicate, tab query/count guard and final UIA owner check.
-Direct opt-in Begin/End calls preserve all reads, short-circuiting and finally
-cleanup; standalone scripts never initialize the helper. Block labels cannot
-attribute an individual OS call. Actual-wrapper real-timer/throw/early-return/
-helper-absent controls are diagnostic gates, not acceptance or a native repair.
-After the matched2022 originals passed, the checkpoint opt-in now focuses only
-the remaining Windows latest failure. Default-off runtime-observation still runs
-both Windows variants; category-fixture/default/full scheduling stays unchanged.
-
-After the bounded fresh-host replica captured Item active, the temporary
-`runtime_native_enumerator: true` input selects an explicit acquisition
-counterfactual for the focused original. Defaultfalse retains indexed Item.
-The alternative uses SDK _NewEnum/IEnumVARIANT inside managed code, validated
-counts before/after, exact finite exhaustion, COM-valued unique identities and
-opaque return holders; no retry/fallback/prefix or membership-atomicity claim.
-All downstream guards and selection/deadline/cleanup gates remain common.
-Compare matched checkpoint-enabled latest originals with this flag off/on;
-diagnostic success supports a candidate strategy but establishes no repair or
-historical OS-call cause. Remove temporary experiments before final acceptance.
-Focused runtime-observation also uploads completed control logs before starting
-the long original runtime, so a control failure can be inspected while original
-evidence is still being collected. This has its own exact-SHA/run/attempt artifact;
-the original build-only prerequisite, strict exits and final always-upload remain.
+Windows Reveal obtains each fresh Shell.Windows candidate set through SDK-typed
+_NewEnum/IEnumVARIANT, avoiding indexed Item acquisition observed active during a
+failed quiet request. Bounded exhaustion, validated counts and unique COM identities
+precede the existing exact parent/target, Document, HWND/Explorer/UIA, readiness,
+permit and pre/post-selection checks. Count agreement is not atomic membership
+proof. There is no retry, indexed fallback, warm-up, cache or deadline extension.
+Temporary checkpoint timers and acquisition switches are removed before final
+ordinary focused/full acceptance. Immediate finite read tracing remains opt-in;
+window_candidate marks processing of an enumerated candidate.

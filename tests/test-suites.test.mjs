@@ -671,12 +671,10 @@ test('runtime-observation runs both exact Windows runtimes independently of focu
     assert.deepEqual(active, event === 'workflow_dispatch' ? ['focused-category-runtime'] : ['common']);
   }
   const job = workflow.jobs['focused-category-runtime'];
-  assert.equal(workflow.on.workflow_dispatch.inputs.runtime_native_checkpoint.default, false);
-  assert.equal(workflow.on.workflow_dispatch.inputs.runtime_native_enumerator.default, false);
   assert.equal(job['runs-on'], '${{ matrix.os }}'); assert.equal(job.strategy['fail-fast'], false);
-  for (const checks of ['runtime-observation', 'category-fixture']) for (const runtime_native_checkpoint of [undefined, false, true]) {
-    assert.deepEqual(Array.from(runInNewContext(job.strategy.matrix.os.slice(3, -2), { fromJSON: JSON.parse, inputs: { checks, runtime_native_checkpoint } })),
-      checks === 'runtime-observation' ? (runtime_native_checkpoint ? ['windows-latest'] : ['windows-latest', 'windows-2022']) : ['windows-2022']);
+  for (const checks of ['runtime-observation', 'category-fixture']) {
+    assert.deepEqual(Array.from(runInNewContext(job.strategy.matrix.os.slice(3, -2), { fromJSON: JSON.parse, inputs: { checks } })),
+      checks === 'runtime-observation' ? ['windows-latest', 'windows-2022'] : ['windows-2022']);
   }
   assert.ok(job.steps.every(step => step['continue-on-error'] === undefined));
   const build = job.steps.find(step => step.id === 'runtime_build');
@@ -701,10 +699,6 @@ test('runtime-observation runs both exact Windows runtimes independently of focu
   assert.equal(category.run, 'npm run smoke:runtime -- dev --category-move');
   assert.equal(category.env.WORKSPACE_SMOKE_EVIDENCE_DIR, 'work/ci-category-runtime/minimized-category');
   const original = job.steps.find(step => step.name === 'Original failed development runtime command');
-  for (const step of [original, category]) {
-    assert.equal(step.env.WORKSPACE_REVEAL_DEFERRED_TRACE, "${{ inputs.runtime_native_checkpoint == true && '1' || '0' }}");
-    assert.equal(step.env.WORKSPACE_REVEAL_ENUMERATOR, "${{ inputs.runtime_native_enumerator == true && '1' || '0' }}");
-  }
   assert.ok(original.run.includes('npm run smoke:runtime -- dev 2>&1 | tee'));
   assert.equal(original.if, "${{ !cancelled() && steps.runtime_build.outcome == 'success' }}");
   for (const outcome of ['success', 'failure']) {

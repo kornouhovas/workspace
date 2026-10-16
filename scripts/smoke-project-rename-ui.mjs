@@ -277,20 +277,16 @@ export async function runProjectRenameUi(mode = "dev") {
     try {
     await startup.current.electron.evaluate(({ shell }) => {
       globalThis.renameNativeCalls = []; globalThis.renameNativeOpens = [];
-      globalThis.renameNativeBridge = { started: 0, stopped: 0, active: 0, unknown: false, failure: null, trace: [], checkpoint: null };
+      globalThis.renameNativeBridge = { started: 0, stopped: 0, active: 0, unknown: false, failure: null, trace: [] };
       if (process.platform === "win32") {
-        process.on("workspace:native-reveal", ({ stage, path, phase, reason, elapsedMs, sequence, helperElapsedMs }) => {
+        process.on("workspace:native-reveal", ({ stage, path, phase, reason, elapsedMs }) => {
           const bridge = globalThis.renameNativeBridge;
           if (stage === "started") { bridge.started++; bridge.active++; }
           if (stage === "stopped") { bridge.stopped++; bridge.active--; }
           if (stage === "unknown") bridge.unknown = true;
-          if (stage === "checkpoint" && bridge.checkpoint === null && /^(none|read_count|read_document|read_folder|read_self|read_path|read_hwnd|read_busy|read_ready|call_windows|call_window_item|call_window_enum|call_parse|call_select|other_read|other_call|identity|owner_validation|uia_root|uia_properties|uia_tabs|uia_owner)$/.test(phase) &&
-              ["active", "complete"].includes(reason) && Number.isInteger(sequence) && sequence >= 0 && sequence <= 100000 && Number.isInteger(helperElapsedMs) && helperElapsedMs >= 0 && helperElapsedMs <= 12000 && Number.isFinite(elapsedMs) && elapsedMs >= 0 && elapsedMs <= 12000) {
-            bridge.checkpoint = { operation: phase, state: reason, sequence, helperElapsedMs, adapterElapsedMs: elapsedMs };
-          }
           if (stage === "failure" && /^(input|navigation|readiness|permit|precommand|selection|postcheck|initial|opened|authorizing|permitted|selected|done)$/.test(phase) &&
               /^(input|deadline|binding|unready|permit|exception|owner_deadline)$/.test(reason)) bridge.failure = { phase, reason };
-          if (stage === "trace" && /^(assemblies|compile|shell|open|enumeration|collection|window_item|document|parent|owner|uia_root|uia_properties|uia_tabs|readiness|item|document_recheck|readiness_recheck|binding_returned|item_returned)$/.test(phase) && Number.isFinite(elapsedMs) && elapsedMs >= 0 && elapsedMs <= 12000 && bridge.trace.length < 19) bridge.trace.push({ phase, elapsedMs });
+          if (stage === "trace" && /^(assemblies|compile|shell|open|enumeration|collection|window_candidate|document|parent|owner|uia_root|uia_properties|uia_tabs|readiness|item|document_recheck|readiness_recheck|binding_returned|item_returned)$/.test(phase) && Number.isFinite(elapsedMs) && elapsedMs >= 0 && elapsedMs <= 12000 && bridge.trace.length < 19) bridge.trace.push({ phase, elapsedMs });
           if (stage === "open") globalThis.renameNativeOpens.push(path);
           if (stage === "select") globalThis.renameNativeCalls.push({ path, returned: false });
           if (stage === "done") { const call = globalThis.renameNativeCalls.at(-1); if (call?.path === path) call.returned = true; }
@@ -316,7 +312,7 @@ export async function runProjectRenameUi(mode = "dev") {
         assert.deepEqual(await startup.current.electron.evaluate(() => globalThis.renameNativeOpens), [target]);
         const boundary = await startup.current.electron.evaluate(() => globalThis.renameNativeBridge);
         const bridge = nativeBridgeCleanupEvidence(boundary);
-        observations.push({ bridge, nativeReadTrace: boundary.trace, nativeCheckpoint: boundary.checkpoint }); nativeStopped &&= bridge.status === "passed"; assert.equal(nativeStopped, true);
+        observations.push({ bridge, nativeReadTrace: boundary.trace }); nativeStopped &&= bridge.status === "passed"; assert.equal(nativeStopped, true);
       }
       return { exactCommittedLocation: true, invocationCount: 1 };
     });

@@ -39,7 +39,7 @@ export function resolveWindowsPowerShell(options: ResolverOptions = {}): string 
   } catch { return undefined; }
 }
 
-type NativeEvent = { stage: "started" | "open" | "select" | "done" | "stopped" | "unknown" | "failure" | "trace" | "checkpoint"; path: string; phase?: string; reason?: string; elapsedMs?: number; sequence?: number; helperElapsedMs?: number };
+type NativeEvent = { stage: "started" | "open" | "select" | "done" | "stopped" | "unknown" | "failure" | "trace"; path: string; phase?: string; reason?: string; elapsedMs?: number };
 type BridgeOptions = {
   nativeDirectory: string;
   // Resolved once by trusted main; never accepted over renderer IPC or env.
@@ -81,11 +81,9 @@ export async function runWindowsProjectReveal(path: string, context: NativeRevea
     let state: "initial" | "opened" | "authorizing" | "permitted" | "selected" | "done" = "initial";
     let buffer = "", bytes = 0, closed = false, settled = false;
     const tracePhases = new Set<string>();
-    const checkpointEnabled = process.env.WORKSPACE_REVEAL_DEFERRED_TRACE === "1";
-    let checkpointSeen = false;
     let failure: RevealFailure | undefined;
     let killTimer: ReturnType<typeof setTimeout> | undefined;
-    const emit = (stage: NativeEvent["stage"], details: Pick<NativeEvent, "phase" | "reason" | "elapsedMs" | "sequence" | "helperElapsedMs"> = {}) => {
+    const emit = (stage: NativeEvent["stage"], details: Pick<NativeEvent, "phase" | "reason" | "elapsedMs"> = {}) => {
       const event = { stage, path, ...details };
       try {
         if (options.onEvent) options.onEvent(event);
@@ -152,21 +150,8 @@ export async function runWindowsProjectReveal(path: string, context: NativeRevea
     };
     const line = (value: string) => {
       if (!live()) return;
-      // [DEBUG-issue26] One optional managed-helper snapshot. It does not alter
-      // protocol state or deadlines; even a captured callback racing disposal
-      // can only report evidence before this owned child closes.
-      const checkpoint = /^CHECKPOINT:(none|read_count|read_document|read_folder|read_self|read_path|read_hwnd|read_busy|read_ready|call_windows|call_window_item|call_window_enum|call_parse|call_select|other_read|other_call|identity|owner_validation|uia_root|uia_properties|uia_tabs|uia_owner):(active|complete):([0-9]{1,6}):([0-9]{1,5})$/.exec(value);
-      if (checkpoint) {
-        const sequence = Number(checkpoint[3]), helperElapsedMs = Number(checkpoint[4]);
-        if (!checkpointEnabled || checkpointSeen || sequence > 100000 || helperElapsedMs > 12000 ||
-            (checkpoint[1] === "none" ? sequence !== 0 || checkpoint[2] !== "complete" : sequence === 0)) { fail("native_error"); return; }
-        checkpointSeen = true;
-        emit("checkpoint", { phase: checkpoint[1], reason: checkpoint[2], sequence, helperElapsedMs, elapsedMs: Math.max(0, performance.now() - started) });
-        return;
-      }
-      const trace = /^TRACE:(assemblies|compile|shell|open|enumeration|collection|window_item|document|parent|owner|uia_root|uia_properties|uia_tabs|readiness|item|document_recheck|readiness_recheck|binding_returned|item_returned)$/.exec(value);
+      const trace = /^TRACE:(assemblies|compile|shell|open|enumeration|collection|window_candidate|document|parent|owner|uia_root|uia_properties|uia_tabs|readiness|item|document_recheck|readiness_recheck|binding_returned|item_returned)$/.exec(value);
       if (trace) {
-        if (checkpointEnabled) { fail("native_error"); return; }
         if (tracePhases.has(trace[1]) || (state !== "initial" && state !== "opened")) { fail("native_error"); return; }
         tracePhases.add(trace[1]);
         emit("trace", { phase: trace[1], elapsedMs: Math.max(0, performance.now() - started) });
