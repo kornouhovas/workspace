@@ -525,7 +525,7 @@ try {
   }
   await captureLayouts(page, "en", authoredName);
   await captureLayouts(page, "ru", authoredName);
-  await page.getByRole("heading", { name: "Таблица", exact: true }).waitFor();
+  await page.getByRole("heading", { name: "Table", exact: true }).waitFor();
   const savedSettings = await page.evaluate(() => globalThis.window.workspace.settings({ type: "settings.load" }));
   assert.equal(savedSettings.ok && savedSettings.value.language, "ru");
 
@@ -1157,7 +1157,7 @@ try {
   assert.deepEqual(identity(reopened.activeWorkspace), identity(first));
   assert.deepEqual(reopened.workspaces, [other, first, sibling, grouped, groupedSibling].map(({ workspaceId, name }) => ({ workspaceId, name })));
   await page.getByText(canonicalProjectRoot, { exact: true }).waitFor();
-  await page.getByRole("heading", { name: "Таблица", exact: true }).waitFor();
+  await page.getByRole("heading", { name: "Table", exact: true }).waitFor();
   savedProjects = await projects(page, first.workspaceId);
   assertProjection(savedProjects, { ...directBeforeRestart, revision: directBeforeRestart.revision + 1,
     projects: directBeforeRestart.projects.map((entry) => entry.name === projectName

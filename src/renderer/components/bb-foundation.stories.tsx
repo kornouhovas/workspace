@@ -86,6 +86,7 @@ function WorkspacePreview({ language, state = "management" }: {
     const failure: ServiceResult<never> = { ok: false, error: { code: "storage", message: "Preview storage failure" } };
     const workspace = async (input: WorkspaceRequest): Promise<ServiceResult<WorkspaceResponse>> => {
       if (input.type === "workspace.load") return { ok: true, value: snapshot() };
+      if (input.type === "workspace.listViews") return storyViews(input.workspaceId, records.find(record => record.workspaceId === input.workspaceId)!.viewId);
       if (input.type === "workspace.listProjectCategoryMoves") return { ok: true, value: { workspaceId: input.workspaceId, sourceId: records[0].sourceId, operations: [] } };
       if (input.type === "workspace.listProjectRenames") return { ok: true, value: { workspaceId: input.workspaceId, sourceId: records[0].sourceId, operations: [] } };
       if (input.type === "workspace.listProjectCreations") return { ok: true, value: { workspaceId: input.workspaceId, sourceId: records[0].sourceId, operations: [] } };
@@ -210,6 +211,10 @@ export const AppliedEmptyRussian: Story = () => <WorkspacePreview language="ru" 
 // Text fixtures use the production Table/client and deterministic typed responses.
 // Pending requests intentionally remain unresolved; no filesystem is accessed.
 type TextStoryState = "no-definitions" | "no-projects" | "loading" | "editing" | "saving" | "validation" | "failure" | "sibling" | "saved";
+function storyViews(workspaceId: string, viewId = "00000000-0000-4000-8000-000000000020") {
+  return { ok: true as const, value: { workspaceId, activeViewId: viewId,
+    views: [{ viewId, name: "Table", kind: "table" as const }] } };
+}
 const textStoryIds = {
   workspaceId: "00000000-0000-4000-8000-000000000001", sourceId: "00000000-0000-4000-8000-000000000010",
   propertyId: "00000000-0000-4000-8000-000000000030", projectId: "00000000-0000-4000-8000-000000000040",
@@ -481,6 +486,7 @@ function SourceObservationPreview({ language, state }: { language: Language; sta
     override async listProjectCategoryMoves(workspaceId: string) { return { ok: true as const, value: { workspaceId, sourceId: textStoryIds.sourceId, operations: [] } }; }
     override async listProjectRenames(workspaceId: string) { return { ok: true as const, value: { workspaceId, sourceId: textStoryIds.sourceId, operations: [] } }; }
       override onWorkspaceChange(listener: (event: WorkspaceChangeEvent) => void) { listeners.add(listener); return () => { listeners.delete(listener); }; }
+      override async listViews(workspaceId: string) { return storyViews(workspaceId); }
       override async listProjects() { return { ok: true as const, value: list }; }
       override async listTextProperties() { return { ok: true as const, value: { workspaceId: textStoryIds.workspaceId, sourceId: textStoryIds.sourceId, revision: 7,
         definitions: [{ propertyId: textStoryIds.propertyId, sourceId: textStoryIds.sourceId, propertyType: "text" as const, name: "Notes" }],
@@ -781,6 +787,7 @@ function RenamePreview({ language, mode, state }: { language: Language; mode: Di
     const client = new class extends WorkspaceServiceClient {
       override onBackendStatus() { return () => {}; }
       override onWorkspaceChange(listener: (event: WorkspaceChangeEvent) => void) { events.add(listener); return () => { events.delete(listener); }; }
+      override async listViews(workspaceId: string) { return storyViews(workspaceId); }
       override async listProjects() { return { ok: true as const, value: projects }; }
       override async listProjectCreations() { return { ok: true as const, value: { ...textStoryIds, operations: [] } }; }
       override async listTextProperties() { return { ok: true as const, value: { ...textStoryIds, revision: 1,
@@ -1034,6 +1041,7 @@ function CategoryMovePreview({ language, state }: { language: Language; state: C
     const client = new class extends WorkspaceServiceClient {
       override onBackendStatus() { return () => {}; }
       override onWorkspaceChange(listener: (event: WorkspaceChangeEvent) => void) { events.add(listener); return () => { events.delete(listener); }; }
+      override async listViews(workspaceId: string) { return storyViews(workspaceId); }
       override async listProjects() { return { ok: true as const, value: projects }; }
       override async listProjectCreations() { return { ok: true as const, value: { ...textStoryIds, operations: [] } }; }
       override async listTextProperties() { return { ok: true as const, value: { ...textStoryIds, revision: 1,

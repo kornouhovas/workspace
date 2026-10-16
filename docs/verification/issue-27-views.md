@@ -64,3 +64,22 @@ Local macOS evidence alone does not establish Windows acceptance.
   for the enabled native button before its single Enter, observes the visible delete
   confirmation before Escape, and waits for app-owned focus before asserting it.
   No mutation is replayed, and no focus, timeout or cleanup assertion is bypassed.
+
+## Existing runtime and preview consumers
+
+A final fixture-only alignment makes old runtime selectors expect the saved default
+view name `Table` in either UI language. The App and DiscoveryWorkspace Ladle clients
+now supply the `listViews` projection. Both review axes found no issues in this delta;
+production application behavior and existing safety/focus assertions are unchanged.
+
+- Typecheck, lint and 30 focused runtime/layout/CI-inventory regressions passed.
+- `npm run build:ladle` and original Electron `smoke-discovery-layouts.mjs --creation`
+  and `--category-move` passed: 108 + 150 EN/RU screenshots, all selected states,
+  wrapping/no horizontal overflow and normal shutdown.
+- `npm run smoke:runtime -- dev` passed on frozen inputs, including the original
+  discovery/mode/property/identity/isolation/restart gates and graphical rename and
+  category-move interruption/recovery suites. Its input-stability assertion passed.
+- An earlier attempt correctly failed that input-stability assertion after a preview
+  fixture was edited during the run; it is not counted as acceptance. The full CI run
+  on `5db76f7` was cancelled as superseded before acceptance. The replacement exact-SHA
+  CI and integration results belong to the linked GitHub checkpoint.

@@ -265,7 +265,7 @@ app.on('window-all-closed', () => app.quit());`);
       const initialCalls = await moveCalls();
       let expectedCalls = { ...initialCalls };
       const focused = async (locator) => assert.equal(await locator.evaluate((node) => node === globalThis.document.activeElement), true);
-      const table = page.getByRole("heading", { name: moveText("Table", "Таблица"), exact: true });
+      const table = page.getByRole("heading", { name: "Table", exact: true });
       const status = movePanel.getByRole("button", { name: moveText("Check category move status", "Проверить статус перемещения в категорию"), exact: true });
       if (["editing", "collision", "stale", "unavailable", "rejected"].includes(categoryMoveState)) {
         await focused(moveSelect);
@@ -346,7 +346,7 @@ app.on('window-all-closed', () => app.quit());`);
       } else if (["pending", "unknown"].includes(renameState)) {
         await panel.locator("form").press("Escape"); await name.waitFor({ state: "detached" });
         assert.equal(await trigger.isDisabled(), true);
-        assert.equal(await page.getByRole("heading", { name: renameText("Table", "Таблица"), exact: true }).evaluate((node) => node === globalThis.document.activeElement), true);
+        assert.equal(await page.getByRole("heading", { name: "Table", exact: true }).evaluate((node) => node === globalThis.document.activeElement), true);
         if (renameState === "unknown") {
           await panel.getByRole("button", { name: renameText("Check rename status", "Проверить статус переименования"), exact: true }).press("Enter");
           await panel.getByText(renameText("Project folder renamed.", "Папка проекта переименована."), { exact: true }).waitFor();
@@ -372,7 +372,7 @@ app.on('window-all-closed', () => app.quit());`);
         }
         await review.press("Escape"); await review.waitFor({ state: "detached" });
         if (["recovery-pending", "recovery-unknown"].includes(renameState)) {
-          assert.equal(await page.getByRole("heading", { name: renameText("Table", "Таблица"), exact: true }).evaluate((node) => node === globalThis.document.activeElement), true);
+          assert.equal(await page.getByRole("heading", { name: "Table", exact: true }).evaluate((node) => node === globalThis.document.activeElement), true);
           if (renameState === "recovery-unknown") {
             await panel.getByRole("button", { name: renameText("Check rename status", "Проверить статус переименования"), exact: true }).press("Enter");
             await panel.getByText(renameText("Project folder renamed.", "Папка проекта переименована."), { exact: true }).waitFor();
