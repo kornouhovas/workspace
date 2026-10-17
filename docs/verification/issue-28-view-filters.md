@@ -68,3 +68,18 @@ isolation, all three runners, original capture/build ordering and exact-run
 provenance/artifact retention. The full original file then passed **33 tests**.
 No workflow or production behavior changed. The focused original-file CI result,
 remaining platform failure map and subsequent full acceptance are recorded in #28.
+
+
+The same run's Windows latest and Windows 2022 jobs also failed the original
+production-App creation/Reveal scenario: the service returned `missing`, while the
+UI retained `uncertain`. The exact local scenario passed once and in thirty further
+repetitions; no remote cause is established. A bounded path-free timeline in the
+original fixture records source events, project projection revisions/state and
+Reveal request/reply phases without changing any interaction, wait or assertion.
+The matching App focused route covers both affected Windows runners and retains
+separate exact-run logs. Its observed outcome and unresolved diagnosis belong to #28.
+
+The diagnostic candidate renewed local typecheck/lint/docs/diff checks, the entire
+original App file (**92 passed**) and routing file (**33 passed**). Both review
+axes found no outstanding material issue. These focused results do not replace
+remote original-command evidence or full acceptance.

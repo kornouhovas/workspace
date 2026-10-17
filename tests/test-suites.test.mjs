@@ -602,7 +602,7 @@ test('category checkpoint-only selector avoids unrelated historical Windows runt
 });
 
 
-test('App fixture scope matches only the original Windows 2022 file and preserves failures', () => {
+test('App fixture scope matches the original file on both affected Windows runners and preserves failures', () => {
   const workflow = load(readFileSync('.github/workflows/desktop-ci.yml', 'utf8'));
   for (const event of ['push', 'pull_request', 'workflow_dispatch']) {
     const context = { github: { event_name: event }, inputs: { checks: 'app-fixture' } };
@@ -610,10 +610,12 @@ test('App fixture scope matches only the original Windows 2022 file and preserve
     assert.deepEqual(active, event === 'workflow_dispatch' ? ['focused-app-fixture'] : ['common']);
   }
   const job = workflow.jobs['focused-app-fixture'];
-  assert.equal(job['runs-on'], 'windows-2022');
+  assert.equal(job['runs-on'], '${{ matrix.os }}');
+  assert.deepEqual(job.strategy.matrix.os, ['windows-latest', 'windows-2022']);
+  assert.equal(job.strategy['fail-fast'], false);
   assert.equal(job.steps.find(step => step.id === 'app-build').run, 'npm run build');
   assert.ok(job.steps.every(step => step['continue-on-error'] === undefined));
-  const original = job.steps.find(step => step.name === 'Original Windows 2022 App regression file');
+  const original = job.steps.find(step => step.name === 'Original Windows App regression file');
   assert.equal(original.if, "${{ !cancelled() && steps.app-build.outcome == 'success' }}");
   assert.equal(original.shell, 'bash'); assert.ok(original.run.includes('set -o pipefail'));
   assert.ok(original.run.includes('node --import tsx --test tests/renderer-app.test.tsx 2>&1 | tee work/ci-focused-app/tests.txt'));

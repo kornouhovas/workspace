@@ -384,3 +384,14 @@ It retains SHA/run/attempt/platform provenance, original readiness deadlines,
 screenshots, interactions and normal shutdown assertions. Inspect all affected
 original-step results and artifacts before dispatching full acceptance on the same
 repair SHA. The ordinary/full matrix remains unchanged.
+
+
+Issue #28 run 39038352303 additionally reproduced the original App Reveal-feedback
+failure on both Windows runners: a typed `missing` response accompanied by visible
+`uncertain` feedback. `checks: app-fixture` now maps the unchanged original file to
+both affected runners, with separate artifacts. A bounded, path-free test timeline
+retains projection state/revision, source event ordering and Reveal start/reply
+phases on success and failure. Thirty local repetitions passed; that result does
+not identify the remote race or waive its original assertion. The existing
+`checks: issue24-failures` route separately replays the original routing file on
+all three platforms after the `view-fixtures` inventory repair.

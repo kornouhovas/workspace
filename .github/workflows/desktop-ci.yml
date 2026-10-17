@@ -174,8 +174,12 @@ jobs:
 
   focused-app-fixture:
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.checks == 'app-fixture' }}
-    name: Focused Windows 2022 original App fixture
-    runs-on: windows-2022
+    name: Focused original App fixture (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, windows-2022]
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
@@ -188,7 +192,7 @@ jobs:
         id: app-build
       - name: Verify focused route guards
         run: node --import tsx --test tests/test-suites.test.mjs
-      - name: Original Windows 2022 App regression file
+      - name: Original Windows App regression file
         if: ${{ !cancelled() && steps.app-build.outcome == 'success' }}
         shell: bash
         run: |
@@ -199,7 +203,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: issue-26-app-${{ github.sha }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
+          name: issue-26-app-${{ matrix.os }}-${{ github.sha }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
           path: work/ci-focused-app/
           if-no-files-found: error
 

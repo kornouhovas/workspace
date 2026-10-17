@@ -3382,6 +3382,12 @@ test("EN/RU production App immediately Reveals creation through an active observ
     let finishNative!: () => void, projectionReads = 0, observationRevision = 0;
     let revealAttempts = 0, disabledAtMissingClick: boolean | null = null;
     const revealReceipts: { outcome: string; problem?: string }[] = [];
+    const timeline: Record<string, unknown>[] = [];
+    let phase = "creation";
+    const record = (entry: Record<string, unknown>) => {
+      if (timeline.length === 32) timeline.shift();
+      timeline.push({ phase, ...entry });
+    };
     const nativeCompletion = new Promise<void>((resolve) => { finishNative = resolve; });
     const targets: { canonicalRoot: string; relativePath: string; validation: string }[] = [];
     const creationRequests: WorkspaceRequest[] = [];
@@ -3396,16 +3402,24 @@ test("EN/RU production App immediately Reveals creation through an active observ
       const setup = () => {
         const query = async (input: WorkspaceRequest) => {
           if (input.type === "workspace.listProjects") projectionReads++;
-          return service.handleQuery(input) as ServiceResult<WorkspaceResponse>;
+          const response = service.handleQuery(input) as ServiceResult<WorkspaceResponse>;
+          if (input.type === "workspace.listProjects" && response.ok && "projects" in response.value && "state" in response.value && "retainedProjects" in response.value) {
+            record({ type: "projection", revision: response.value.revision, state: response.value.state,
+              projects: response.value.projects.length, retained: response.value.retainedProjects.length });
+          }
+          return response;
         };
         const api = mockApi({ language, onProjects: query, onProperties: query, onCreations: query,
           onWorkspace: async (input) => {
             if (input.type === "workspace.revealProject") {
               revealAttempts++;
+              record({ type: "revealStart", attempt: revealAttempts, observationRevision });
               const response = await service.revealProject(input, async (target, validate) => {
                 targets.push({ canonicalRoot: target.canonicalRoot, relativePath: target.relativePath, validation: validate().outcome });
                 dispatches++; await nativeCompletion; return { outcome: "dispatched" };
               });
+              record({ type: "revealReply", attempt: revealAttempts, observationRevision,
+                outcome: response.ok ? response.value.outcome : "transport_error" });
               if (revealReceipts.length < 4) revealReceipts.push(response.ok ? { outcome: response.value.outcome,
                 ...("problem" in response.value ? { problem: response.value.problem } : {}) }
                 : { outcome: "transport_error", problem: response.error.code });
@@ -3416,6 +3430,9 @@ test("EN/RU production App immediately Reveals creation through an active observ
           } });
         off = service.workspaces.subscribe((event) => {
           if (event.type === "workspace.sourceObserved") observationRevision = Math.max(observationRevision, event.observationRevision);
+          record({ type: event.type,
+            ...("revision" in event ? { revision: event.revision } : {}),
+            ...(event.type === "workspace.sourceObserved" ? { observationRevision: event.observationRevision, state: event.state } : {}) });
           api.emitChange(event);
         }); render(<App />);
         return api;
@@ -3454,18 +3471,22 @@ test("EN/RU production App immediately Reveals creation through an active observ
       assert.equal(request.name, "Authored folder");
       assert.equal(before.value.projects[0].name, request.name);
       assert.deepEqual(readdirSync(mode === "grouped" ? join(root, "Existing category") : root), [request.name]);
+      phase = "reopen";
       cleanup(); off?.(); service.close(); service = openSettingsService(database); setup();
       await screen.findByRole("cell", { name: "Authored folder" });
       const after = service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId }); assert.ok(after.ok); if (!after.ok) throw new Error("Fixture failed");
       assert.equal(after.value.projects[0].projectId, projectId);
+      phase = "remove";
       rmSync(join(root, ...(mode === "grouped" ? ["Existing category", "Authored folder"] : ["Authored folder"])), { recursive: true });
       const missingReveal = screen.getByRole("button", { name: `${t("revealProject")}: Authored folder` }) as HTMLButtonElement;
       disabledAtMissingClick = missingReveal.disabled;
+      phase = "missingClick"; record({ type: "click", disabled: missingReveal.disabled, observationRevision });
       await userEvent.click(missingReveal);
       await screen.findByText(t("revealMissing")); assert.equal(screen.queryByText(t("revealDispatched")), null); assert.equal(dispatches, 1);
+      console.log(`[creation-reveal-trace] ${JSON.stringify({ language, mode, timeline })}`);
     } catch (error) {
       if (error instanceof Error) error.message = `[creation-reveal] ${JSON.stringify({ language, mode,
-        revealAttempts, revealReceipts, disabledAtMissingClick, dispatches, projectionReads, observationRevision,
+        revealAttempts, revealReceipts, disabledAtMissingClick, dispatches, projectionReads, observationRevision, timeline,
         revealButtonCount: screen.queryAllByRole("button", { name: `${t("revealProject")}: Authored folder` }).length,
         messages: { missing: !!screen.queryByText(t("revealMissing")), uncertain: !!screen.queryByText(t("revealUncertain")),
           error: !!screen.queryByText(t("revealError")), dispatched: !!screen.queryByText(t("revealDispatched")) } })}\n${error.message}`;
