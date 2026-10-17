@@ -1018,6 +1018,21 @@ test('real running PID probe denial stays uncertain until the actual worker exit
     } catch (error) { failure ??= error; }
   }
   if (failure) throw failure;
+  if (exit.code !== 0) {
+    // Finite failure evidence only: never publish the fixture's paths or log.
+    const log = readFileSync(f.log, 'utf8');
+    let receipt;
+    for (const line of log.split('\n')) {
+      try { const value = JSON.parse(line); if (value?.version === 1) receipt = value; } catch { /* Native error lines are classified below. */ }
+    }
+    console.error('[observer-pid-worker]', JSON.stringify({ exitCode: exit.code, signal: exit.signal,
+      status: ['running', 'failed', 'awaiting_review'].includes(receipt?.status) ? receipt.status : null,
+      lastExit: Number.isInteger(receipt?.lastExit) ? receipt.lastExit : null,
+      hasPhaseError: typeof receipt?.lastError === 'string', executorFinished: log.includes('fixture executor finished'),
+      permissionError: /\b(?:EPERM|EACCES)\b/.test(log), renameError: /\brename\b/.test(log),
+      releaseTimeout: log.includes('Fixture release timed out'), ownershipLost: log.includes('Executor lock ownership lost'),
+      gitError: log.includes('Command failed: git'), receiptPresent: Boolean(receipt) }));
+  }
   assert.equal(exit.code, 0);
   const terminal = await observe({ ...f.options, budgetMs: 2000 });
   assert.equal(terminal.reason, 'completed');

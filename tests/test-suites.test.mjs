@@ -93,7 +93,7 @@ test('manual failed-check scope runs only the Windows observer and macOS rename 
   assert.equal(workflow.jobs['focused-windows-observer']['runs-on'], 'windows-latest');
   assert.equal(workflow.jobs['focused-macos-rename']['runs-on'], 'macos-latest');
   const commands = name => workflow.jobs[name].steps.filter(step => step.run).map(step => step.run);
-  assert.ok(commands('focused-windows-observer').includes('node --test tests/ralphex-observe.test.mjs tests/ralphex-run.test.mjs tests/windows-observer-diagnostics.test.mjs'));
+  assert.ok(commands('focused-windows-observer').some(command => command.includes('node --test tests/ralphex-observe.test.mjs tests/ralphex-run.test.mjs tests/windows-observer-diagnostics.test.mjs 2>&1 | tee')));
   assert.ok(commands('focused-macos-rename').includes('npm run smoke:runtime -- dev --rename'));
   for (const name of ['focused-windows-observer', 'focused-macos-rename']) {
     const upload = workflow.jobs[name].steps.find(step => step.uses === 'actions/upload-artifact@v4');
@@ -759,4 +759,20 @@ test('view fixture scope isolates all three original layout captures and retains
   assert.equal(upload.if, 'always()');
   assert.equal(upload.with['if-no-files-found'], 'error');
   for (const field of ['github.sha', 'github.run_id', 'github.run_attempt']) assert.ok(upload.with.name.includes(field));
+});
+
+
+test('observer-only selector preserves defaults and excludes unrelated macOS runtime', () => {
+  const workflow = load(readFileSync('.github/workflows/desktop-ci.yml', 'utf8'));
+  assert.equal(workflow.on.workflow_dispatch.inputs.observer_fixture_only.default, false);
+  for (const observer_fixture_only of [undefined, false, true]) {
+    const context = { github: { event_name: 'workflow_dispatch' }, inputs: { checks: 'failed', observer_fixture_only } };
+    const enabled = name => runInNewContext(workflow.jobs[name].if.slice(3, -2), context);
+    assert.equal(enabled('focused-windows-observer'), true);
+    assert.equal(enabled('focused-macos-rename'), observer_fixture_only !== true);
+  }
+  const steps = workflow.jobs['focused-windows-observer'].steps;
+  const original = steps.find(step => step.name === 'Original Windows observer regression files');
+  assert.ok(original.run.includes('set -o pipefail'));
+  assert.equal(steps.find(step => step.name === 'Retain original observer test output').if, 'always()');
 });

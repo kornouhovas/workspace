@@ -414,3 +414,13 @@ phases on success and failure. Thirty local repetitions passed; that result does
 not identify the remote race or waive its original assertion. The existing
 `checks: issue24-failures` route separately replays the original routing file on
 all three platforms after the `view-fixtures` inventory repair.
+
+For issue #31 full run 39064672849's Windows latest observer worker exit failure,
+select `checks: failed, observer_fixture_only: true`. This retains the original
+Windows observer/runner/diagnostic files and excludes only the unrelated macOS
+rename job for that explicit selector. The default false preserves historical
+routing and full coverage. Strict pipefail and an always-uploaded exact-SHA log
+retain original exits independently of collector validation. A failed real PID
+denial worker emits only finite status/exit/error-class markers, never paths or
+raw logs. A successful isolated run does not identify the historical worker cause;
+inspect the original file and evidence before renewed full acceptance.

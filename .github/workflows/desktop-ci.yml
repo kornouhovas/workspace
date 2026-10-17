@@ -62,6 +62,10 @@ on:
         description: Run isolated investigation and early-feedback jobs
         type: boolean
         default: false
+      observer_fixture_only:
+        description: With checks=failed, run only the original Windows observer files without the unrelated macOS rename runtime
+        type: boolean
+        default: false
       runtime_failures:
         description: With checks=failed, diagnose the Windows creation Reveal and external category rename failures
         type: boolean
@@ -796,7 +800,19 @@ jobs:
           node-version: 22.21.1
           cache: npm
       - run: npm ci
-      - run: node --test tests/ralphex-observe.test.mjs tests/ralphex-run.test.mjs tests/windows-observer-diagnostics.test.mjs
+      - name: Original Windows observer regression files
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p work/ci-focused-observer
+          node --test tests/ralphex-observe.test.mjs tests/ralphex-run.test.mjs tests/windows-observer-diagnostics.test.mjs 2>&1 | tee work/ci-focused-observer/tests.txt
+      - name: Retain original observer test output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-31-observer-tests-${{ github.sha }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
+          path: work/ci-focused-observer/tests.txt
+          if-no-files-found: error
       - name: Validate original focused observer evidence
         id: focused-observer-validation
         if: always()
@@ -810,7 +826,7 @@ jobs:
           retention-days: 7
 
   focused-macos-rename:
-    if: ${{ github.event_name == 'workflow_dispatch' && inputs.checks == 'failed' && inputs.runtime_failures != true && inputs.integration_failures != true }}
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.checks == 'failed' && inputs.runtime_failures != true && inputs.integration_failures != true && inputs.observer_fixture_only != true }}
     name: Focused macOS rename and Reveal
     runs-on: macos-latest
     timeout-minutes: 20

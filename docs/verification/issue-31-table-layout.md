@@ -145,3 +145,23 @@ including the unchanged empty-workspace count, rename/recovery, grouped category
 move/recovery, normal shutdown/backend exit and owned cleanup gates. Renewed
 `npm run smoke:views -- dev` also passes both languages with normal shutdown and
 fixture cleanup after the shared Reveal guard repair.
+
+## Third full-run Windows observer failure
+
+Full run 39064672849 on `a1bd983a` passed common/static. Windows latest's
+platform inventory passed the previously failed category/App/recovery scenarios
+but failed the existing real-running-PID probe-denial test: ownership-unknown
+assertions passed, then the actual worker exited 1 rather than 0. Its historical
+worker log was not retained, so native publication, executor launch and phase
+validation hypotheses remain unresolved. No product change, retry, assertion or
+deadline adjustment is justified by that receipt. The original test now retains
+failure-only finite exit/status/known-error markers without raw logs or paths.
+A default-off selector narrows the existing Windows observer route by excluding
+the unrelated macOS rename runtime; the original Windows files and full defaults
+remain. Exact-SHA focused/full outcomes belong in GitHub.
+
+Scoped diagnostics verification: the unchanged original three-file observer
+selection passes **161/161** locally, route/default guards **35/35**, lint,
+documentation links and diff checks pass. Independent Standards and Spec review
+axes each report zero findings. These results do not establish Windows acceptance
+or identify the original worker exit cause.
