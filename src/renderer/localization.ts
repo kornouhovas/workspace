@@ -1,6 +1,21 @@
 import type { Language } from "../contracts/settings.js";
 
 const english = {
+  tableTitle: "Table layout",
+  tableVisible: "Visible",
+  tableColumnEarlier: "Move column earlier",
+  tableColumnLater: "Move column later",
+  tableWidth: "Column width",
+  tableWrap: "Wrap Text",
+  tableRowEarlier: "Move row earlier",
+  tableRowLater: "Move row later",
+  tableDrag: "Drag to reorder row",
+  tableHint: "Saved for this view. Missing rows keep their positions; new rows append. Row controls change order only, including within groups and filters.",
+  tableLoading: "Loading Table layout...",
+  tableSaving: "Saving Table layout...",
+  tableError: "Table layout could not be loaded or saved. Retry, or explicitly reset the layout.",
+  tableReset: "Reset Table layout",
+
   groupTitle: "Grouping",
   groupProperty: "Group by",
   groupNone: "No grouping",
@@ -595,6 +610,21 @@ const english = {
 } as const;
 
 const russian: Record<keyof typeof english, string> = {
+  tableTitle: "Настройки таблицы",
+  tableVisible: "Показывать",
+  tableColumnEarlier: "Переместить столбец раньше",
+  tableColumnLater: "Переместить столбец позже",
+  tableWidth: "Ширина столбца",
+  tableWrap: "Переносить текст",
+  tableRowEarlier: "Переместить строку раньше",
+  tableRowLater: "Переместить строку позже",
+  tableDrag: "Перетащить строку для изменения порядка",
+  tableHint: "Сохраняется для этого представления. Отсутствующие строки сохраняют позиции, новые добавляются в конец. Порядок строк не меняет значения свойств, в том числе в группах и фильтрах.",
+  tableLoading: "Загрузка настроек таблицы...",
+  tableSaving: "Сохранение настроек таблицы...",
+  tableError: "Не удалось загрузить или сохранить настройки таблицы. Повторите попытку или явно сбросьте настройки.",
+  tableReset: "Сбросить настройки таблицы",
+
   groupTitle: "Группировка",
   groupProperty: "Группировать по",
   groupNone: "Без группировки",

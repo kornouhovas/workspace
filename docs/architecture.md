@@ -6,7 +6,7 @@ This branch contains a runnable local desktop application with settings, workspa
 
 Workspace names, order and active selection survive restart. Rename/reorder/remove validate IDs and commit snapshots transactionally. Removal deletes only the workspace and its owned views, retains the source even after its last reference, and never deletes external files. Active removal selects the first remaining configuration and its saved selected view; final removal clears selection.
 
-The desktop includes a native directory picker, EN/RU direct/grouped preview/exclusions/Apply and editable project names with source-owned Text/Number/Date columns and required grouped categories in the default Table. The service persists source-owned exclusions/configuration and logical project records. Property deletion/hiding/reordering, filtering/grouping/dragging, detailed view controls and further filesystem mutations remain future work. Source archive/restore is described below. SQLite with Drizzle is the selected persistence foundation.
+The desktop includes a native directory picker, EN/RU direct/grouped preview/exclusions/Apply and editable project names with source-owned Text/Number/Date columns and required grouped categories in the default Table. The service persists source-owned exclusions/configuration and logical project records. Source-wide property deletion/hiding/reordering and property-changing group dragging remain future work. Implemented filtering, grouping and per-view Table presentation controls are described below. Source archive/restore is described below. SQLite with Drizzle is the selected persistence foundation.
 
 The product uses selected bb architecture and UI foundations while retaining its own folder/project domain. Adopt useful modules deliberately, with provenance and boundary tests; do not assume a whole bb package is independent of its chat/session model.
 
@@ -516,3 +516,23 @@ and [verification report](verification/issue-30-option-grouping.md). The owner s
 a conditional No value recovery group for retained uncategorized records after a mode
 change; it preserves recovery controls and metadata without creating an active-project
 category or assignment destination. It disappears when no such lifecycle records remain.
+
+
+## Implemented Table layout and row order
+
+Issue #31 adds view-owned Table column visibility/order/widths and Text wrapping,
+plus a logical-project manual row order. Migration 0021 gives existing views empty
+layout settings without changing source data, filters or grouping. Typed
+`getTableLayout`/`setTableLayout` requests validate ownership, source property/project
+references, bounded widths, uniqueness and the visible Name recovery column.
+Duplication copies settings independently. Dormant category settings and missing or
+archived row identities retain their positions; new identities append to a saved
+manual order. Filters and groups select rows from the same order. Board ignores
+Table presentation settings and source values remain unchanged.
+
+EN/RU Table controls use native keyboard operations, a dedicated row drag payload,
+scoped save/load/retry/reset states and horizontal scrolling on narrow screens.
+Changing row order never assigns a group value or moves a folder. No new bb code
+or dependency was copied. See [scenarios](plans/issue-31-table-layout.md) and
+[verification](verification/issue-31-table-layout.md); GitHub #31 owns CI/integration
+acceptance.

@@ -20,6 +20,8 @@ import { isWorkspaceChangeEvent } from "../contracts/service-protocol.js";
 export class WorkspaceServiceClient {
   constructor(private readonly api: WorkspaceDesktopApi = window.workspace) {}
 
+  getTableLayout(workspaceId: string, viewId: string): Promise<ServiceResult<import("../contracts/table-layout.js").TableLayoutSnapshot>> { return this.api.workspace({ type: "workspace.getTableLayout", workspaceId, viewId }); }
+  setTableLayout(workspaceId: string, viewId: string, config: import("../contracts/table-layout.js").TableLayoutConfig): Promise<ServiceResult<import("../contracts/table-layout.js").TableLayoutSnapshot>> { return this.api.workspace({ type: "workspace.setTableLayout", workspaceId, viewId, config }); }
   getViewGrouping(workspaceId: string, viewId: string): Promise<ServiceResult<import("../contracts/view-grouping.js").ViewGroupingSnapshot>> { return this.api.workspace({ type: "workspace.getViewGrouping", workspaceId, viewId }); }
   setViewGrouping(workspaceId: string, viewId: string, config: import("../contracts/view-grouping.js").ViewGroupingConfig): Promise<ServiceResult<import("../contracts/view-grouping.js").ViewGroupingSnapshot>> { return this.api.workspace({ type: "workspace.setViewGrouping", workspaceId, viewId, config }); }
   getViewFilter(workspaceId: string, viewId: string): Promise<ServiceResult<ViewFilterSnapshot>> { return this.api.workspace({ type: "workspace.getViewFilter", workspaceId, viewId }); }

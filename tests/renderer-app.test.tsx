@@ -71,7 +71,7 @@ test("EN/RU discovery state controls require a reviewed token and respect pendin
       assert.equal(apply.disabled, state !== "ready" && state !== "empty");
       assert.equal(cancel.disabled, state === "applying");
       if (preview?.entries.length) {
-        const checkboxes = screen.getAllByRole("checkbox") as HTMLInputElement[];
+        const checkboxes = screen.getAllByRole("checkbox", { name: /^(Exclude|Исключить):/ }) as HTMLInputElement[];
         assert.equal(checkboxes[0].disabled, pending);
         assert.equal(checkboxes[1].checked, true);
         assert.equal(checkboxes[1].disabled, true);
@@ -138,7 +138,9 @@ function mockApi(options: MockOptions = {}) {
       return () => { changeListeners.delete(listener); };
     },
     settings: onSettings,
-    workspace: ((input: WorkspaceRequest) => input.type === "workspace.getViewGrouping"
+    workspace: ((input: WorkspaceRequest) => input.type === "workspace.getTableLayout"
+      ? Promise.resolve(ok({ workspaceId: input.workspaceId, viewId: input.viewId, config: { columns: [], rowOrder: [] } }))
+      : input.type === "workspace.getViewGrouping"
       ? Promise.resolve(ok({ workspaceId: input.workspaceId, viewId: input.viewId, config: { propertyId: null, settings: [] } }))
       : input.type === "workspace.getViewFilter"
       ? Promise.resolve(ok({ workspaceId: input.workspaceId, viewId: input.viewId, config: { search: "", rules: [] } }))
@@ -1111,7 +1113,7 @@ test("delayed grouped requests cannot revive cancelled, switched, removed or res
     if (transition === "cancel") {
       await userEvent.click(screen.getByRole("button", { name: "Cancel" }));
       await userEvent.click(screen.getByRole("button", { name: "Preview project folders" }));
-      await screen.findByRole("checkbox");
+      await screen.findByRole("checkbox", { name: /^(Exclude|Исключить):/ });
     } else if (transition === "restart") {
       await act(async () => { api.emitStatus("starting"); });
       await act(async () => { api.emitStatus("ready"); });
@@ -1240,9 +1242,9 @@ test("authoritative exclusion refresh keeps checkbox mounted, invalidates Apply 
   } });
   render(<App />);
   await userEvent.click(await screen.findByRole("button", { name: "Preview project folders" }));
-  const checkbox = await screen.findByRole("checkbox");
+  const checkbox = await screen.findByRole("checkbox", { name: /^(Exclude|Исключить):/ });
   checkbox.focus(); await userEvent.keyboard(" ");
-  assert.equal(screen.getByRole("checkbox"), checkbox);
+  assert.equal(screen.getByRole("checkbox", { name: /^(Exclude|Исключить):/ }), checkbox);
   assert.equal((screen.getByRole("button", { name: "Apply reviewed projects" }) as HTMLButtonElement).disabled, true);
   await act(async () => { finish?.(ok({ ...previewResult(active, "new", ["  Authored project  "]),
     entries: [{ kind: "project" as const, categoryPath: null, name: "  Authored project  ", relativePath: "  Authored project  ", reason: "manual" }] })); });
@@ -1364,13 +1366,13 @@ test("Cancel during authoritative draft recovery discards its delayed response a
     } });
   render(<App />);
   await userEvent.click(await screen.findByRole("button", { name: "Preview project folders" }));
-  await userEvent.click(await screen.findByRole("checkbox"));
+  await userEvent.click(await screen.findByRole("checkbox", { name: /^(Exclude|Исключить):/ }));
   await waitFor(() => assert.equal(baseCalls, 2));
   await userEvent.click(screen.getByRole("button", { name: "Cancel" }));
   await act(async () => { finish?.(ok(previewResult(active, "late-recovery"))); });
   assert.equal(draftCalls, 1);
   assert.equal(screen.queryByRole("heading", { name: "Direct project preview" }), null);
-  assert.equal(screen.queryByRole("checkbox"), null);
+  assert.equal(screen.queryByRole("checkbox", { name: /^(Exclude|Исключить):/ }), null);
   cleanup();
 });
 
@@ -1438,7 +1440,7 @@ test("EN/RU source notifications reject delayed rows/previews, preserve draft ex
     await act(async () => { api.emitChange(projectEvent(active, 2)); });
     assert.equal(document.activeElement, screen.getByRole("button", { name: translate(language, "discoveryRefresh") }));
     assert.ok(screen.getByRole("heading", { name: translate(language, "discoveryStale") }));
-    assert.equal(screen.queryByRole("checkbox"), null);
+    assert.equal(screen.queryByRole("checkbox", { name: /^(Exclude|Исключить):/ }), null);
     assert.equal((screen.getByRole("button", { name: translate(language, "discoveryApply") }) as HTMLButtonElement).disabled, true);
     await act(async () => { api.emitChange(projectEvent(active, 3)); });
     await screen.findByRole("cell", { name: "Current" });
@@ -1447,7 +1449,7 @@ test("EN/RU source notifications reject delayed rows/previews, preserve draft ex
       finishPreview?.(ok({ ...previewResult(active, "old-token"), revision: 1 }));
     });
     assert.equal(screen.queryByRole("cell", { name: "Delayed old rows" }), null);
-    assert.equal(screen.queryByRole("checkbox"), null);
+    assert.equal(screen.queryByRole("checkbox", { name: /^(Exclude|Исключить):/ }), null);
     await userEvent.click(screen.getByRole("button", { name: translate(language, "discoveryRefresh") }));
     await screen.findByRole("checkbox", { name: /Authored project/ });
     assert.deepEqual(drafts.at(-1), ["  Authored project  "]);
@@ -2760,7 +2762,7 @@ test("EN/RU observer-only changes reject delayed same-revision lists/previews an
       api.emitChange(event); api.emitChange({ ...event, observationRevision: 3 });
     });
     assert.equal(lists, 3); assert.equal(screen.queryByRole("cell", { name: "Delayed same revision" }), null);
-    assert.equal(screen.queryByRole("checkbox"), null);
+    assert.equal(screen.queryByRole("checkbox", { name: /^(Exclude|Исключить):/ }), null);
     assert.equal((screen.getByRole("button", { name: translate(language, "discoveryApply") }) as HTMLButtonElement).disabled, true);
     await userEvent.click(screen.getByRole("button", { name: translate(language, "discoveryRefresh") }));
     await screen.findByRole("checkbox", { name: /Authored project/ });
@@ -3318,7 +3320,7 @@ test("EN/RU configured mode selection discards delayed previews after cancellati
     assert.equal((mode as HTMLSelectElement).disabled, true);
     if (transition === "cancel") {
       await userEvent.click(screen.getByRole("button", { name: translate(language, "cancelRenameWorkspace") }));
-      assert.equal(document.activeElement, trigger); await userEvent.click(trigger); await screen.findByRole("checkbox");
+      assert.equal(document.activeElement, trigger); await userEvent.click(trigger); await screen.findByRole("checkbox", { name: /^(Exclude|Исключить):/ });
     } else if (transition === "restart") {
       await act(async () => api.emitStatus("starting")); await act(async () => api.emitStatus("ready"));
     } else if (transition === "sourceLoss") {

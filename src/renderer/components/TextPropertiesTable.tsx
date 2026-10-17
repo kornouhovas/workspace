@@ -1,3 +1,5 @@
+import { Children, cloneElement, type ReactElement, type ReactNode } from "react";
+import { useTableLayout, tableColumns, TableLayoutControls, moveTableRow, orderedProjectIds } from "./TableLayout.js";
 import { ViewGrouping } from "./ViewGrouping.js";
 import type { ViewGroup } from "../../contracts/view-grouping.js";
 import { ViewFilters } from "./ViewFilters.js";
@@ -107,6 +109,25 @@ function TextPropertiesContent({ viewId, layout = "table", hideReveal, client, w
     void load();
     return () => { listVersion.current++; lifetime.current++; unsubscribe(); };
   }, [client, workspaceId, sourceId]);
+  const tableState = useTableLayout(client, workspaceId, layout === "table" ? viewId : undefined);
+  const fields = [{propertyId: "name", name: t("projectName"), text: false}, ...(categoryProperty ? [{propertyId:categoryProperty.propertyId, name:categoryProperty.name ?? t("discoveryCategory"), text:false}] : []), ...(snapshot?.definitions.map(p => ({propertyId:p.propertyId, name:p.name, text:p.propertyType === "text"})) ?? [])];
+  const columns = tableColumns(tableState.config, fields);
+  const projectById = new Map([...projects, ...retainedProjects].map(p => [p.projectId,p]));
+  const rowIds = orderedProjectIds(tableState.config?.rowOrder ?? [], [...projectById.keys()]);
+  const rowBusy = disabled || tableState.pending || tableState.loading || !tableState.config;
+  const presentCells = (fragment: ReactElement<{children: ReactNode}>) => {
+    if (layout === "board" || !viewId) return fragment;
+    const children = Children.toArray(fragment.props.children) as ReactElement<Record<string, unknown>>[];
+    return <>{columns.filter(c => !c.hidden).map(c => {
+      const cell = children.find(child => child.props?.["data-column-id"] === c.propertyId);
+      return cell ? cloneElement(cell, {style:{width:c.width}, className:`${cell.props.className ?? ""} ${fields.find(f => f.propertyId === c.propertyId)?.text ? c.wrap ? "table-text-wrap" : "table-text-nowrap" : ""}`}) : null;
+    })}{children.filter(child => !child.props?.["data-column-id"])}</>;
+  };
+  const moveRow = (id: string, target: string) => {
+    if (rowBusy || !tableState.config) return;
+    void tableState.save(moveTableRow(tableState.config, rowIds, id, target));
+  };
+  const tableStyle = viewId ? {width:columns.filter(c=>!c.hidden).reduce((sum,c)=>sum+c.width, hideReveal ? 0 : 224), minWidth:"100%"} : {minWidth:`${fields.length * 14}rem`};
   const cancel = () => {
     if (saving.current || !draft) return;
     focusTarget.current = draft.propertyId;
@@ -149,8 +170,8 @@ function TextPropertiesContent({ viewId, layout = "table", hideReveal, client, w
   const Header = layout === "board" ? "div" : "th";
   const Row = layout === "board" ? "li" : "tr";
   const Cell = layout === "board" ? "div" : "td";
-  const headers = <><Header className="board-field-placeholder">{t("projectName")}</Header>
-        {categoryProperty && <Header key={categoryProperty.propertyId} aria-label={categoryProperty.name ?? t("discoveryCategory")}>
+  const headers = presentCells(<><Header data-column-id="name" className="board-field-placeholder">{t("projectName")}</Header>
+        {categoryProperty && <Header data-column-id={categoryProperty.propertyId} key={categoryProperty.propertyId} aria-label={categoryProperty.name ?? t("discoveryCategory")}>
           {onCategoryPropertyCommitted && minimumCategoryPropertyRevision ? <CategoryPropertyHeader client={client} workspaceId={workspaceId} sourceId={sourceId} property={categoryProperty}
             discoveryRevision={discoveryRevision} minimumDiscoveryRevision={minimumDiscoveryRevision} revision={categoryPropertyRevision} minimumRevision={minimumCategoryPropertyRevision}
             preservedDraft={categoryDrafts.current.get(categoryProperty.propertyId)} onDraftChange={(draft) => {
@@ -158,19 +179,34 @@ function TextPropertiesContent({ viewId, layout = "table", hideReveal, client, w
               else categoryDrafts.current.delete(categoryProperty.propertyId);
             }} onCommitted={onCategoryPropertyCommitted} language={language} disabled={disabled || (minimumDiscoveryRevision !== undefined && minimumDiscoveryRevision.current > discoveryRevision)} /> : <span className="property-authored">{categoryProperty.name ?? t("discoveryCategory")}</span>}
         </Header>}
-        {snapshot?.definitions.map((property) => <Header key={property.propertyId}>
+        {snapshot?.definitions.map((property) => <Header data-column-id={property.propertyId} key={property.propertyId}>
           <span className="property-authored">{property.name}</span>
           <button type="button" ref={(element) => { if (element) renameButtons.current.set(property.propertyId, element); else renameButtons.current.delete(property.propertyId); }}
             className="workspace-button workspace-button--secondary property-rename" aria-label={`${t("renameProperty")}: ${property.name}`}
             disabled={disabled || draft !== null} onClick={() => { setMessage(null); setDraft({ propertyId: property.propertyId, name: property.name, originalName: property.name, propertyType: property.propertyType }); }}>{t("renameProperty")}</button>
         </Header>)}
         {!hideReveal && <Header className="board-field-placeholder">{t("revealProject")}</Header>}
-      </>;
-  const rows = (ids?: string[]) => [...projects, ...retainedProjects].filter(project => !ids || ids.includes(project.projectId)).filter(project => !viewId || (filteredIds?.viewId === viewId && filteredIds.ids?.includes(project.projectId))).map((project) => {
+      </>);
+  const rows = (ids?: string[]) => (layout === "table" ? rowIds.map(id => projectById.get(id)!) : [...projects, ...retainedProjects]).filter(project => !ids || ids.includes(project.projectId)).filter(project => !viewId || (filteredIds?.viewId === viewId && filteredIds.ids?.includes(project.projectId))).map((project) => {
         const retained = retainedProjects.find((row) => row.projectId === project.projectId);
         const reason = retained?.associationState === "excluded" && retained.retentionReason !== "mode_change" ? "excluded" : retained?.resolution ?? retained?.associationState;
         const label = retained?.retentionReason === "mode_change" ? "projectModeRetained" : reason && reason !== "active" ? resolutionLabels[reason] : null;
-        return <Row key={project.projectId} className={layout === "board" ? "project-card" : undefined}><Cell data-label={t("projectName")} key="project-name" aria-label={retained ? undefined : project.name}><span className="property-authored">{project.name}</span>
+        const visibleIds = rowIds.filter(id => (!ids || ids.includes(id)) && (!viewId || filteredIds?.ids?.includes(id)));
+        const rowIndex = visibleIds.indexOf(project.projectId);
+        return <Row key={project.projectId} data-project-id={project.projectId} className={layout === "board" ? "project-card" : undefined}
+          onDragOver={event => {if (layout === "table" && !rowBusy && event.dataTransfer.types.includes("application/x-workspace-table-row")) event.preventDefault();}}
+          onDrop={event => {
+            if (layout !== "table" || rowBusy) return;
+            const raw = event.dataTransfer.getData("application/x-workspace-table-row");
+            if (!raw) return;
+            event.preventDefault(); event.stopPropagation();
+            try { const payload = JSON.parse(raw); if (payload.workspaceId === workspaceId && payload.viewId === viewId && visibleIds.includes(payload.projectId)) moveRow(payload.projectId, project.projectId); } catch { /* Ignore unrelated drags. */ }
+          }}>{presentCells(<><Cell data-column-id="name" data-label={t("projectName")} key="project-name" aria-label={retained ? undefined : project.name}><span className="property-authored">{project.name}</span>
+          {layout === "table" && viewId && <div className="table-row-controls">
+            <button type="button" draggable={!rowBusy} disabled={rowBusy} aria-label={`${t("tableDrag")}: ${project.name}`} onDragStart={event => {event.stopPropagation(); event.dataTransfer.effectAllowed="move"; event.dataTransfer.setData("application/x-workspace-table-row",JSON.stringify({workspaceId,viewId,projectId:project.projectId}));}}>↕</button>
+            <button type="button" disabled={rowBusy || rowIndex <= 0} aria-label={`${t("tableRowEarlier")}: ${project.name}`} onClick={() => moveRow(project.projectId, visibleIds[rowIndex-1])}>↑</button>
+            <button type="button" disabled={rowBusy || rowIndex < 0 || rowIndex >= visibleIds.length-1} aria-label={`${t("tableRowLater")}: ${project.name}`} onClick={() => moveRow(project.projectId, visibleIds[rowIndex+1])}>↓</button>
+          </div>}
           {"originalRelativePath" in project && typeof project.originalRelativePath === "string" && <span className="archive-row-details">{t("archiveOriginal")}: {project.originalRelativePath}{project.categoryName && <> — {t("archiveFrozenCategory")}: {project.categoryName}</>}</span>}
           {!retained && onRename && <button type="button" className="workspace-button workspace-button--secondary property-rename"
             aria-label={`${t("renameProject")}: ${project.name}`} disabled={disabled || renameDisabled || ("associationState" in project && (project.associationState !== "active" || ("resolution" in project && project.resolution !== "active")))}
@@ -182,13 +218,13 @@ function TextPropertiesContent({ viewId, layout = "table", hideReveal, client, w
             <button type="button" className="workspace-button workspace-button--secondary" disabled={disabled || locateDisabled}
               aria-label={`${t("recoveryLocate")}: ${project.name}`} onClick={(event) => onLocate(retained, event.currentTarget)}>{t("recoveryLocate")}</button>}
         </Cell>
-        {categoryProperty && <Cell data-label={categoryProperty.name ?? t("discoveryCategory")} key={categoryProperty.propertyId} className="category-cell" data-color={categories.find(category => category.categoryId === project.categoryId)?.presentation?.color ?? "default"}>{retained?.categoryName ?? categories.find((category) => category.categoryId === project.categoryId)?.name}
+        {categoryProperty && <Cell data-column-id={categoryProperty.propertyId} data-label={categoryProperty.name ?? t("discoveryCategory")} key={categoryProperty.propertyId} className="category-cell" data-color={categories.find(category => category.categoryId === project.categoryId)?.presentation?.color ?? "default"}>{retained?.categoryName ?? categories.find((category) => category.categoryId === project.categoryId)?.name}
           {!retained && onMoveCategory && project.categoryId && "associationState" in project && project.associationState === "active" &&
             "resolution" in project && project.resolution === "active" && <button type="button" className="workspace-button workspace-button--secondary property-rename"
               aria-label={`${t("moveCategory")}: ${project.name}`} disabled={disabled || categoryMoveDisabled}
               onClick={(event) => onMoveCategory(project, event.currentTarget)}>{t("moveCategory")}</button>}
         </Cell>}
-        {snapshot?.definitions.map((property) => <Cell key={property.propertyId} data-label={property.name}>
+        {snapshot?.definitions.map((property) => <Cell data-column-id={property.propertyId} key={property.propertyId} data-label={property.name}>
           {property.propertyType === "multi_select" ? <MultiSelectPropertyCell workspaceId={workspaceId} sourceId={sourceId} projectId={project.projectId} propertyId={property.propertyId}
             revision={snapshot.revision} minimumRevision={minimumRevision} projectName={project.name} propertyName={property.name} language={language} disabled={disabled || loadError || draft !== null}
             options={snapshot.selectOptions?.filter(option => option.propertyId === property.propertyId) ?? []}
@@ -206,13 +242,14 @@ function TextPropertiesContent({ viewId, layout = "table", hideReveal, client, w
         {!hideReveal && <Cell key="project-actions" data-label={t("revealProject")}><ProjectRevealButton client={client} workspaceId={workspaceId} projectId={project.projectId} name={project.name} language={language} disabled={disabled} minimumRevision={minimumDiscoveryRevision} sourceLifetime={sourceLifetime}
           targetKey={JSON.stringify([project.relativePath, project.categoryId, categories.find((category) => category.categoryId === project.categoryId)?.relativePath,
             retained?.associationState, retained?.resolution, retained?.retentionReason])} /></Cell>}
-      </Row>; });
+      </>)}</Row>; });
   return <div className="text-properties" aria-busy={pending || loading}>
     {viewId && <ViewFilters client={client} workspaceId={workspaceId} viewId={viewId} archived={!!hideReveal} language={language}
       snapshot={snapshot} categoryProperty={categoryProperty} categories={categories} disabled={disabled || loadError}
       refreshKey={JSON.stringify([snapshot?.revision, discoveryRevision, projects.map(p => [p.projectId, p.name, p.categoryId]), retainedProjects.map(p => [p.projectId, p.name, p.categoryId])])}
       onResults={ids => setFilteredIds({ viewId, ids })} onGroups={(groups,propertyId) => setGrouped({viewId,groups,propertyId})} />
     }
+    {viewId && layout === "table" && <TableLayoutControls state={tableState} fields={fields} language={language} disabled={disabled || loadError || loading}/> }
     {viewId && <ViewGrouping client={client} workspaceId={workspaceId} viewId={viewId} language={language} snapshot={snapshot} categoryProperty={categoryProperty} groups={grouped?.viewId===viewId ? grouped.groups : null} groupPropertyId={grouped?.viewId===viewId ? grouped.propertyId : null} disabled={disabled||loadError} />}
     {loading && <StatusMessage kind="info" title={t("propertiesLoading")} />}
     {loadError && <><StatusMessage kind="error" title={t("propertiesLoadError")} />
@@ -252,14 +289,14 @@ function TextPropertiesContent({ viewId, layout = "table", hideReveal, client, w
       {grouped.groups.filter(group=>!group.hidden).map(group=><section className="project-group" key={group.key} aria-label={group.value===null?t("groupNoValue"):(group.label ?? String(group.value))}>
         <h3 className="property-authored">{group.value===null?t("groupNoValue"):(group.label ?? String(group.value))} ({group.projectIds.length})</h3>
         {!group.collapsed && (group.empty ? <p>{t("groupEmpty")}</p> : layout === "board" ? <ul className="project-board" aria-label={t("boardProjects")}>{rows(group.projectIds)}</ul> :
-          <div className="project-table-scroll"><table className="project-table" style={{ minWidth: `${Math.max(1, (snapshot?.definitions.length ?? 0) + 2 + (categoryProperty ? 1 : 0)) * 14}rem` }}><thead><tr>{headers}</tr></thead><tbody>{rows(group.projectIds)}</tbody></table></div>)}
+          <div className="project-table-scroll"><table className="project-table" style={tableStyle}><thead><tr>{headers}</tr></thead><tbody>{rows(group.projectIds)}</tbody></table></div>)}
       </section>)}
       </div>
     </> : layout === "board" ? <>
       <div className="board-property-controls">{headers}</div>
       <ul className="project-board" aria-label={t("boardProjects")}>{rows()}</ul>
     </> : <div className="project-table-scroll">
-      <table className="project-table" style={{ minWidth: `${Math.max(1, (snapshot?.definitions.length ?? 0) + 2 + (categoryProperty ? 1 : 0)) * 14}rem` }}>
+      <table className="project-table" style={tableStyle}>
         <thead><tr>{headers}</tr></thead><tbody>{rows()}</tbody>
       </table>
     </div>}

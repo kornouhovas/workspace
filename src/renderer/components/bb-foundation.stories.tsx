@@ -86,6 +86,7 @@ function WorkspacePreview({ language, state = "management" }: {
     const failure: ServiceResult<never> = { ok: false, error: { code: "storage", message: "Preview storage failure" } };
     const workspace = async (input: WorkspaceRequest): Promise<ServiceResult<WorkspaceResponse>> => {
       if (input.type === "workspace.load") return { ok: true, value: snapshot() };
+      if (input.type === "workspace.getTableLayout" || input.type === "workspace.setTableLayout") return { ok: true, value: { workspaceId: input.workspaceId, viewId: input.viewId, config: input.type === "workspace.setTableLayout" ? input.config : { columns: [], rowOrder: [] } } };
       if (input.type === "workspace.getViewGrouping" || input.type === "workspace.setViewGrouping") return { ok: true, value: { workspaceId: input.workspaceId, viewId: input.viewId, config: input.type === "workspace.setViewGrouping" ? input.config : { propertyId: null, settings: [] } } };
       if (input.type === "workspace.getViewFilter" || input.type === "workspace.setViewFilter") return { ok: true, value: { workspaceId: input.workspaceId, viewId: input.viewId, config: input.type === "workspace.setViewFilter" ? input.config : { search: "", rules: [] } } };
       if (input.type === "workspace.queryView") return { ok: true, value: { workspaceId: input.workspaceId, viewId: input.viewId, archived: input.archived, projectIds: state.startsWith("applied") ? ["project-preview", "retained-missing", "retained-excluded"] : [] } };
@@ -490,6 +491,7 @@ function SourceObservationPreview({ language, state }: { language: Language; sta
     override async listProjectRenames(workspaceId: string) { return { ok: true as const, value: { workspaceId, sourceId: textStoryIds.sourceId, operations: [] } }; }
       override onWorkspaceChange(listener: (event: WorkspaceChangeEvent) => void) { listeners.add(listener); return () => { listeners.delete(listener); }; }
       override async listViews(workspaceId: string) { return storyViews(workspaceId); }
+      override async getTableLayout(workspaceId: string, viewId: string) { return { ok: true as const, value: { workspaceId, viewId, config: { columns: [], rowOrder: [] } } }; }
       override async getViewGrouping(workspaceId: string, viewId: string) { return { ok: true as const, value: { workspaceId, viewId, config: { propertyId: null, settings: [] } } }; }
       override async getViewFilter(workspaceId: string, viewId: string) { return { ok: true as const, value: { workspaceId, viewId, config: { search: "", rules: [] } } }; }
       override async queryView(workspaceId: string, viewId: string, archived: boolean) { return { ok: true as const, value: { workspaceId, viewId, archived, projectIds: [...list.projects, ...list.retainedProjects].map(p => p.projectId) } }; }
@@ -794,6 +796,7 @@ function RenamePreview({ language, mode, state }: { language: Language; mode: Di
       override onBackendStatus() { return () => {}; }
       override onWorkspaceChange(listener: (event: WorkspaceChangeEvent) => void) { events.add(listener); return () => { events.delete(listener); }; }
       override async listViews(workspaceId: string) { return storyViews(workspaceId); }
+      override async getTableLayout(workspaceId: string, viewId: string) { return { ok: true as const, value: { workspaceId, viewId, config: { columns: [], rowOrder: [] } } }; }
       override async getViewGrouping(workspaceId: string, viewId: string) { return { ok: true as const, value: { workspaceId, viewId, config: { propertyId: null, settings: [] } } }; }
       override async getViewFilter(workspaceId: string, viewId: string) { return { ok: true as const, value: { workspaceId, viewId, config: { search: "", rules: [] } } }; }
       override async queryView(workspaceId: string, viewId: string, archived: boolean) { return { ok: true as const, value: { workspaceId, viewId, archived, projectIds: [...projects.projects, ...projects.retainedProjects].map(p => p.projectId) } }; }
@@ -1051,6 +1054,7 @@ function CategoryMovePreview({ language, state }: { language: Language; state: C
       override onBackendStatus() { return () => {}; }
       override onWorkspaceChange(listener: (event: WorkspaceChangeEvent) => void) { events.add(listener); return () => { events.delete(listener); }; }
       override async listViews(workspaceId: string) { return storyViews(workspaceId); }
+      override async getTableLayout(workspaceId: string, viewId: string) { return { ok: true as const, value: { workspaceId, viewId, config: { columns: [], rowOrder: [] } } }; }
       override async getViewGrouping(workspaceId: string, viewId: string) { return { ok: true as const, value: { workspaceId, viewId, config: { propertyId: null, settings: [] } } }; }
       override async getViewFilter(workspaceId: string, viewId: string) { return { ok: true as const, value: { workspaceId, viewId, config: { search: "", rules: [] } } }; }
       override async queryView(workspaceId: string, viewId: string, archived: boolean) { return { ok: true as const, value: { workspaceId, viewId, archived, projectIds: [...projects.projects, ...projects.retainedProjects].map(p => p.projectId) } }; }

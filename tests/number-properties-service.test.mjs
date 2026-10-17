@@ -111,7 +111,7 @@ test('upgrade from pre-Number database preserves Text, identities, presentation 
     assert.equal(service.handleCommand({ type: 'workspace.setTextValue', workspaceId, projectId: projects.projects[0].projectId, propertyId, value: '  exact\nТекст  ' }).ok, true);
     const before = service.handleQuery({ type: 'workspace.listTextProperties', workspaceId });
     const tables = ['sources', 'workspaces', 'views', 'active_workspace', 'projects', 'property_definitions', 'text_property_values'];
-    const db = new Database(path); const rows = Object.fromEntries(tables.map(table => [table, db.prepare(`SELECT * FROM ${table}`).all().map(row => table === 'views' ? { ...row, position: 0, filter_config: '{"search":"","rules":[]}', grouping_config: '{"propertyId":null,"settings":[]}' } : row)])); db.close();
+    const db = new Database(path); const rows = Object.fromEntries(tables.map(table => [table, db.prepare(`SELECT * FROM ${table}`).all().map(row => table === 'views' ? { ...row, position: 0, filter_config: '{"search":"","rules":[]}', grouping_config: '{"propertyId":null,"settings":[]}', table_config: '{"columns":[],"rowOrder":[]}' } : row)])); db.close();
     service.close(); service = openSettingsService(path);
     assert.deepEqual(service.handleQuery({ type: 'workspace.listTextProperties', workspaceId }), before);
     const inspected = new Database(path); inspected.pragma('foreign_keys = ON');

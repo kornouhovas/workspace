@@ -439,3 +439,15 @@ body {
 .grouped-board .project-board { grid-template-columns: minmax(0, 1fr); }
 .project-group h3 { overflow-wrap: anywhere; white-space: pre-wrap; }
 .grouped-table { min-width: 0; }
+
+.table-layout-controls { margin-block: .75rem; min-width: 0; }
+.table-layout-controls summary { cursor: pointer; font-weight: 600; }
+.table-layout-controls fieldset { border: 0; padding: 0; min-width: 0; }
+.table-column-control { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; padding-block: .5rem; border-bottom: 1px solid #d7d9dc; }
+.table-column-control > span { flex: 1 1 8rem; min-width: 0; overflow-wrap: anywhere; }
+.table-column-control label { display: flex; align-items: center; flex-wrap: wrap; gap: .35rem; min-width: 0; }
+.table-column-control input[type=range] { width: 8rem; max-width: 100%; }
+.table-row-controls { display: flex; gap: .3rem; margin-block: .3rem; }
+.table-row-controls button { min-width: 1.75rem; min-height: 1.75rem; }
+.table-text-nowrap .text-value-button { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.table-text-wrap .text-value-button { white-space: pre-wrap; overflow-wrap: anywhere; }

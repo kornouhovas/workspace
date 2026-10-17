@@ -148,6 +148,13 @@
       "when": 1791504020000,
       "tag": "0020_view_grouping",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1791504021000,
+      "tag": "0021_table_layout",
+      "breakpoints": true
     }
   ]
 }

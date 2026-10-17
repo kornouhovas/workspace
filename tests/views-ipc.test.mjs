@@ -26,6 +26,11 @@ test('built IPC routes view lifecycle commands and validates payloads without pa
     assert.equal(request({ type: 'workspace.reorderViews', workspaceId, viewIds: [...copy.value.views.map(v => v.viewId)].reverse() }).ok, true);
     assert.equal(request({ type: 'workspace.activateView', workspaceId, viewId }).ok, true);
     assert.equal(request({ type: 'workspace.deleteView', workspaceId, viewId: copy.value.activeViewId }).ok, true);
+    const tableConfig = {columns:[{propertyId:'name',hidden:false,width:320,wrap:false}],rowOrder:[]};
+    assert.equal(request({type:'workspace.setTableLayout',workspaceId,viewId,config:tableConfig}).ok,true);
+    assert.deepEqual(request({type:'workspace.getTableLayout',workspaceId,viewId}).value.config,tableConfig);
+    assert.equal(request({type:'workspace.getTableLayout',workspaceId,viewId,extra:true}).error.code,'invalid_input');
+    assert.equal(request({type:'workspace.setTableLayout',workspaceId,viewId,config:{columns:[],rowOrder:[],extra:true}}).error.code,'invalid_input');
     const groupingConfig = {propertyId:'name',settings:[]};
     assert.equal(request({type:'workspace.setViewGrouping',workspaceId,viewId,config:groupingConfig}).ok,true);
     assert.deepEqual(request({type:'workspace.getViewGrouping',workspaceId,viewId}).value.config,groupingConfig);

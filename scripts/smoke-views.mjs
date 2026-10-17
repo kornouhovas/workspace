@@ -1,3 +1,4 @@
+import { exerciseTableLayout } from "./runtime-table-layout.mjs";
 /* global window, document, innerWidth */
 import { exerciseViewGrouping, exerciseSelectionGrouping, exerciseCategoryGrouping, exerciseRetainedCategoryGrouping } from "./runtime-view-grouping.mjs";
 import { exerciseViewFilters } from "./runtime-view-filters.mjs";
@@ -161,7 +162,10 @@ try {
     await mkdir(join(recoveryRoot, "Retained"), { recursive: true });
     const retainedGrouping = await exerciseRetainedCategoryGrouping({ page, query, rootPath: recoveryRoot, language, evidenceDirectory });
     assert.deepEqual(await readdir(recoveryRoot), ["Retained"]);
-    evidence.checks.push({ language, filters, grouping, categoryGrouping, retainedGrouping, keyboard: true, table: true, board: true, lifecycle: true, independentCopy: true, sourceSibling: true, activeArchived: true, restart: true, filesUnchanged: true, widths: [360, 1024, 1440] });
+    const tableRoot = join(fixture, `table-layout-${language}`);
+    await mkdir(join(tableRoot,"Alpha"), {recursive:true}); await mkdir(join(tableRoot,"Beta"));
+    const tableLayout = await exerciseTableLayout({page,query,rootPath:tableRoot,language,evidenceDirectory});
+    evidence.checks.push({ language, tableLayout, filters, grouping, categoryGrouping, retainedGrouping, keyboard: true, table: true, board: true, lifecycle: true, independentCopy: true, sourceSibling: true, activeArchived: true, restart: true, filesUnchanged: true, widths: [360, 1024, 1440] });
   }
   await close(); evidence.status = "passed";
 } catch (error) {

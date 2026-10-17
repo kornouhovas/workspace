@@ -1,3 +1,4 @@
+import type { TableLayoutSnapshot } from "./table-layout.js";
 import type { ViewGroupingSnapshot } from "./view-grouping.js";
 import type { ViewFilterQuery, ViewFilterCommand, ViewFilterPayload, ViewFilterSnapshot, ViewFilterResult } from "./view-filters.js";
 import type { ViewSnapshot, ViewQuery, ViewCommand } from "./views.js";
@@ -20,13 +21,14 @@ import type { CategoryPropertySnapshot, WorkspaceRenameCategoryPropertyCommand, 
 export type BackendStatus = { state: "starting" | "ready" | "unavailable"; message?: string; diagnostic?: import("./startup-diagnostic.js").StartupDiagnostic };
 export type SettingsRequest = SettingsQuery | SettingsCommand;
 export type WorkspaceRequest = WorkspaceQuery | WorkspaceCommand;
-export type WorkspaceResponse = ViewGroupingSnapshot | ViewFilterPayload | ViewSnapshot | ArchivePayload | CategoryRemovalPayload | CategoryOptionsPayload | ProjectCategoryMoveResult | ProjectCategoryMoveList | ProjectCategoryMoveRecoveryPreview | ProjectRenameResult | ProjectRenameList | ProjectRenameRecoveryPreview | ProjectRevealResult | ProjectCreationResult | ProjectCreationList | ProjectCreationRecoveryPreview | WorkspaceSourceObservationSnapshot | ProjectRecoveryPreview | CategoryPropertySnapshot | TextPropertySnapshot | TextPropertyMutation | ProjectList | DiscoveryPreview | WorkspaceLoad | WorkspaceCreated | ActiveWorkspace | WorkspaceSourceState;
+export type WorkspaceResponse = TableLayoutSnapshot | ViewGroupingSnapshot | ViewFilterPayload | ViewSnapshot | ArchivePayload | CategoryRemovalPayload | CategoryOptionsPayload | ProjectCategoryMoveResult | ProjectCategoryMoveList | ProjectCategoryMoveRecoveryPreview | ProjectRenameResult | ProjectRenameList | ProjectRenameRecoveryPreview | ProjectRevealResult | ProjectCreationResult | ProjectCreationList | ProjectCreationRecoveryPreview | WorkspaceSourceObservationSnapshot | ProjectRecoveryPreview | CategoryPropertySnapshot | TextPropertySnapshot | TextPropertyMutation | ProjectList | DiscoveryPreview | WorkspaceLoad | WorkspaceCreated | ActiveWorkspace | WorkspaceSourceState;
 export type RootPickerResult =
   | { outcome: "selected"; path: string }
   | { outcome: "cancelled" }
   | { outcome: "failed" };
 
 export interface WorkspaceDesktopApi {
+  workspace(input: import("./table-layout.js").TableLayoutQuery | import("./table-layout.js").TableLayoutCommand): Promise<ServiceResult<TableLayoutSnapshot>>;
   workspace(input: Extract<ArchiveQuery, { type: "workspace.previewProjectArchive" }>): Promise<ServiceResult<ProjectArchivePreview>>;
   workspace(input: Extract<ArchiveQuery, { type: "workspace.listProjectArchiveOperations" }>): Promise<ServiceResult<ProjectArchiveOperationList>>;
   workspace(input: Extract<ArchiveQuery, { type: "workspace.getProjectArchiveOperation" }> | Extract<ArchiveCommand, { type: "workspace.applyProjectArchive" | "workspace.recoverProjectArchive" }>): Promise<ServiceResult<ProjectArchiveResult>>;

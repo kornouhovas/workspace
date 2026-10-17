@@ -1,3 +1,4 @@
+import { isTableLayoutConfig, orderedProjectIds } from "../contracts/table-layout.js";
 import { readGrouping, projectGroups } from "./view-grouping.js";
 import { eq } from "drizzle-orm";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
@@ -53,11 +54,15 @@ export function createViewFilterService(db: Database, model: ReadModel) {
         if (!properties.ok) return properties;
         const projects = [...list.value.projects, ...("retainedProjects" in list.value ? list.value.retainedProjects : [])];
         const search = config.search.trim().toLowerCase();
-        const projectIds = projects.filter(project => project.name.toLowerCase().includes(search) && config.rules.every(rule =>
-          matches(rule, valueFor(project, rule.propertyId, types.get(rule.propertyId)!, properties.value)))).map(p => p.projectId);
+        const tableConfig: unknown = view.kind === "table" ? JSON.parse(view.tableConfig) : {columns:[],rowOrder:[]};
+        if (!isTableLayoutConfig(tableConfig)) return storage();
+        const projectById = new Map(projects.map(p => [p.projectId, p]));
+        const orderedIds = view.kind === "table" ? orderedProjectIds(tableConfig.rowOrder, projects.map(p => p.projectId)) : projects.map(p => p.projectId);
+        const projectIds = orderedIds.filter(id => { const project = projectById.get(id)!; return project.name.toLowerCase().includes(search) && config.rules.every(rule =>
+          matches(rule, valueFor(project, rule.propertyId, types.get(rule.propertyId)!, properties.value))); });
         const grouping = readGrouping(tx,workspace.id,view.id);
         if (!grouping.ok) return grouping;
-        const grouped = projectGroups(tx,source.id,grouping.value.config,projects,properties.value,projectIds);
+        const grouped = projectGroups(tx,source.id,grouping.value.config,orderedIds.map(id => projectById.get(id)!),properties.value,projectIds);
         if (!grouped.ok) return grouped;
         return { ok: true as const, value: { workspaceId: workspace.id, viewId: view.id, archived: input.archived, projectIds,
           ...(grouped.value ? { groups: grouped.value, groupPropertyId: grouping.value.config.propertyId } : {}) } };

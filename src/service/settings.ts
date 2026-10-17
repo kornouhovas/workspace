@@ -1,3 +1,4 @@
+import type { TableLayoutSnapshot } from "../contracts/table-layout.js";
 import type { ViewGroupingSnapshot } from "../contracts/view-grouping.js";
 import type { ViewFilterPayload } from "../contracts/view-filters.js";
 import { viewCommands, type ViewSnapshot } from "../contracts/views.js";
@@ -45,8 +46,8 @@ export interface SettingsService {
   previewProjectRenameRecovery(input: unknown): ServiceResult<ProjectRenameRecoveryPreview>;
   recoverProjectRename(input: unknown): ServiceResult<ProjectRenameResult>;
   revealProject(input: unknown, native?: NativeProjectReveal): Promise<ServiceResult<ProjectRevealResult>>;
-  handleQuery(input: unknown): ServiceResult<ViewGroupingSnapshot | ViewFilterPayload | ViewSnapshot | ArchivePayload | CategoryRemovalPayload | CategoryOptionsPayload | ProjectCategoryMoveResult | ProjectCategoryMoveList | ProjectCategoryMoveRecoveryPreview | ProjectRenameResult | ProjectRenameList | ProjectRenameRecoveryPreview | ProjectCreationResult | ProjectCreationList | ProjectCreationRecoveryPreview | WorkspaceSourceObservationSnapshot | ProjectRecoveryPreview | TextPropertySnapshot | Settings | WorkspaceLoad | DiscoveryPreview | ProjectList>;
-  handleCommand(input: unknown): ServiceResult<ViewGroupingSnapshot | ViewFilterPayload | ViewSnapshot | ArchivePayload | CategoryRemovalPayload | CategoryOptionsPayload | ProjectCategoryMoveResult | ProjectRenameResult | ProjectCreationResult | CategoryPropertySnapshot | TextPropertyMutation | Settings | WorkspaceCreated | ActiveWorkspace | WorkspaceLoad | WorkspaceSourceState | ProjectList>;
+  handleQuery(input: unknown): ServiceResult<TableLayoutSnapshot | ViewGroupingSnapshot | ViewFilterPayload | ViewSnapshot | ArchivePayload | CategoryRemovalPayload | CategoryOptionsPayload | ProjectCategoryMoveResult | ProjectCategoryMoveList | ProjectCategoryMoveRecoveryPreview | ProjectRenameResult | ProjectRenameList | ProjectRenameRecoveryPreview | ProjectCreationResult | ProjectCreationList | ProjectCreationRecoveryPreview | WorkspaceSourceObservationSnapshot | ProjectRecoveryPreview | TextPropertySnapshot | Settings | WorkspaceLoad | DiscoveryPreview | ProjectList>;
+  handleCommand(input: unknown): ServiceResult<TableLayoutSnapshot | ViewGroupingSnapshot | ViewFilterPayload | ViewSnapshot | ArchivePayload | CategoryRemovalPayload | CategoryOptionsPayload | ProjectCategoryMoveResult | ProjectRenameResult | ProjectCreationResult | CategoryPropertySnapshot | TextPropertyMutation | Settings | WorkspaceCreated | ActiveWorkspace | WorkspaceLoad | WorkspaceSourceState | ProjectList>;
   workspaces: WorkspaceService;
   close(): void;
 }
@@ -109,6 +110,7 @@ export function openSettingsService(
     recoverProjectRename: workspaces.recoverProjectRename,
     revealProject: workspaces.revealProject,
     handleQuery(input) {
+      if (isRecord(input) && input.type === "workspace.getTableLayout") return workspaces.tableLayoutRequest(input);
       if (isRecord(input) && input.type === "workspace.getViewGrouping") return workspaces.groupingRequest(input);
       if (isRecord(input) && ["workspace.getViewFilter", "workspace.queryView"].includes(String(input.type))) return workspaces.filterRequest(input);
       if (isRecord(input) && input.type === "workspace.listViews") return workspaces.viewRequest(input);
@@ -157,6 +159,7 @@ export function openSettingsService(
     },
 
     handleCommand(input) {
+      if (isRecord(input) && input.type === "workspace.setTableLayout") return workspaces.tableLayoutRequest(input);
       if (isRecord(input) && input.type === "workspace.setViewGrouping") return workspaces.groupingRequest(input);
       if (isRecord(input) && input.type === "workspace.setViewFilter") return workspaces.filterRequest(input);
       if (isRecord(input) && typeof input.type === "string" && viewCommands.includes(input.type)) return workspaces.viewRequest(input);
