@@ -3,7 +3,7 @@ export type FilterOperator = "equals" | "not_equals" | "contains" | "not_contain
 export interface FilterRule { propertyId: string; operator: FilterOperator; operand: string | number | (string | null)[] | null }
 export interface ViewFilterConfig { search: string; rules: FilterRule[] }
 export interface ViewFilterSnapshot { workspaceId: string; viewId: string; config: ViewFilterConfig }
-export interface ViewFilterResult { workspaceId: string; viewId: string; archived: boolean; projectIds: string[] }
+export interface ViewFilterResult { workspaceId: string; viewId: string; archived: boolean; projectIds: string[]; groups?: import("./view-grouping.js").ViewGroup[]; groupPropertyId?: string | null }
 export type ViewFilterQuery =
   | { type: "workspace.getViewFilter"; workspaceId: string; viewId: string }
   | { type: "workspace.queryView"; workspaceId: string; viewId: string; archived: boolean };

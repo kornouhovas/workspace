@@ -1,3 +1,5 @@
+import { createViewGroupingService } from "./view-grouping.js";
+import type { ViewGroupingSnapshot } from "../contracts/view-grouping.js";
 import { createViewFilterService } from "./view-filters.js";
 import type { ViewFilterPayload } from "../contracts/view-filters.js";
 import { createViewService, readViews } from "./views.js";
@@ -61,6 +63,7 @@ const nativeFilesystem: WorkspaceFilesystem = {
 };
 
 export interface WorkspaceService {
+  groupingRequest(input: unknown): ServiceResult<ViewGroupingSnapshot>;
   filterRequest(input: unknown): ServiceResult<ViewFilterPayload>;
   viewRequest(input: unknown): ServiceResult<ViewSnapshot>;
   previewProjectArchive(input: unknown): ServiceResult<ProjectArchivePreview>;
@@ -233,6 +236,7 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
   }, projectFilesystem);
   const reveal = createProjectRevealService(db, projectFilesystem);
   const service: WorkspaceService = {
+    groupingRequest: input => createViewGroupingService(db)(input),
     filterRequest: input => createViewFilterService(db, service)(input),
     viewRequest: createViewService(db),
     previewProjectArchive: archiveMutations.previewProjectArchive,
@@ -897,6 +901,7 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
   if (db.all<{ name: string }>(sql`PRAGMA table_info(projects)`).some((column) => column.name === "category_id")) syncObserverReferences();
   return {
     ...service,
+    groupingRequest: input => run(() => service.groupingRequest(input), isRecord(input) && input.type === "workspace.setViewGrouping" ? currentSnapshot : undefined),
     filterRequest: input => run(() => service.filterRequest(input), isRecord(input) && input.type === "workspace.setViewFilter" ? currentSnapshot : undefined),
     viewRequest: input => run(() => service.viewRequest(input), isRecord(input) && input.type === "workspace.listViews" ? undefined : currentSnapshot),
     create: (input) => run(() => service.create(input), currentSnapshot),

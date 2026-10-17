@@ -356,10 +356,10 @@ test("actual populated migrations 0000–0005 upgrade without changing settings,
       const inspected = new Database(databasePath);
       try {
         for (const table of tables) {
-          const expected = before[table].map((row) => table === "sources" ? { ...row, category_property_revision: 0 } : table === "projects" ? { ...row, category_id: null, mode_inactive: 0 } : table === "views" ? { ...row, position: 0, filter_config: '{"search":"","rules":[]}' } : row);
+          const expected = before[table].map((row) => table === "sources" ? { ...row, category_property_revision: 0 } : table === "projects" ? { ...row, category_id: null, mode_inactive: 0 } : table === "views" ? { ...row, position: 0, filter_config: '{"search":"","rules":[]}', grouping_config: '{"propertyId":null,"settings":[]}' } : row);
           assert.deepEqual(inspected.prepare(`SELECT * FROM ${table}`).all(), expected);
         }
-        assert.equal(inspected.prepare('SELECT COUNT(*) AS count FROM "__drizzle_migrations"').get().count, 20);
+        assert.equal(inspected.prepare('SELECT COUNT(*) AS count FROM "__drizzle_migrations"').get().count, 21);
         assert.deepEqual(inspected.prepare("SELECT * FROM categories").all(), []);
         assert.deepEqual(inspected.prepare("SELECT * FROM category_properties").all(), []);
         assert.deepEqual(inspected.prepare("SELECT * FROM project_rename_operations").all(), []);

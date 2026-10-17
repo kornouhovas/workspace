@@ -26,6 +26,12 @@ test('built IPC routes view lifecycle commands and validates payloads without pa
     assert.equal(request({ type: 'workspace.reorderViews', workspaceId, viewIds: [...copy.value.views.map(v => v.viewId)].reverse() }).ok, true);
     assert.equal(request({ type: 'workspace.activateView', workspaceId, viewId }).ok, true);
     assert.equal(request({ type: 'workspace.deleteView', workspaceId, viewId: copy.value.activeViewId }).ok, true);
+    const groupingConfig = {propertyId:'name',settings:[]};
+    assert.equal(request({type:'workspace.setViewGrouping',workspaceId,viewId,config:groupingConfig}).ok,true);
+    assert.deepEqual(request({type:'workspace.getViewGrouping',workspaceId,viewId}).value.config,groupingConfig);
+    assert.deepEqual(request({type:'workspace.queryView',workspaceId,viewId,archived:false}).value.groups,[]);
+    assert.equal(request({type:'workspace.setViewGrouping',workspaceId,viewId,config:{propertyId:null,settings:[],extra:true}}).error.code,'invalid_input');
+    assert.equal(request({type:'workspace.getViewGrouping',workspaceId,viewId,extra:true}).error.code,'invalid_input');
     const filterConfig = { search: 'Alpha', rules: [{ propertyId: 'name', operator: 'contains', operand: 'a' }] };
     assert.equal(request({ type: 'workspace.setViewFilter', workspaceId, viewId, config: filterConfig }).ok, true);
     assert.deepEqual(request({ type: 'workspace.getViewFilter', workspaceId, viewId }).value.config, filterConfig);

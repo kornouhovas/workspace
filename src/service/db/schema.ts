@@ -34,6 +34,7 @@ export const workspaceViewSelection = sqliteTable("workspace_view_selection", {
 });
 
 export const views = sqliteTable("views", {
+  groupingConfig: text("grouping_config").notNull().default('{"propertyId":null,"settings":[]}'),
   filterConfig: text("filter_config").notNull().default('{"search":"","rules":[]}'),
   position: integer("position").notNull().default(0),
   id: text("id").primaryKey(),

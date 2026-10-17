@@ -1,4 +1,5 @@
 /* global window, document, innerWidth */
+import { exerciseViewGrouping } from "./runtime-view-grouping.mjs";
 import { exerciseViewFilters } from "./runtime-view-filters.mjs";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
@@ -102,14 +103,16 @@ try {
     await pressEnabled(page, board().getByRole("button", { name: en ? "Save value" : "Сохранить значение", exact: true }));
     await board().getByText("Board keyboard edit", { exact: true }).waitFor();
     assert.equal((await query(page, { type: "workspace.listTextProperties", workspaceId: sibling.workspaceId })).values[0].value, "Board keyboard edit");
-    const filters = [];
+    const filters = [], grouping = [];
     filters.push(await exerciseViewFilters({ page, query, workspaceId, projectId: projects.projects[0].projectId, propertyId: property.propertyId, language, layout: "board", evidenceDirectory }));
+    grouping.push(await exerciseViewGrouping({ page, query, workspaceId, propertyId: property.propertyId, language, layout: "board", evidenceDirectory }));
     await pressEnabled(page, page.getByRole("button", { name: en ? "Duplicate view" : "Дублировать представление", exact: true }));
     await name().fill("Copy"); await name().press("Enter");
     await page.getByRole("heading", { name: "Copy", exact: true }).waitFor();
     await pressEnabled(page, edit()); await layout().selectOption("table"); await name().press("Enter");
     await page.getByRole("table").getByText("Board keyboard edit", { exact: true }).waitFor();
     filters.push(await exerciseViewFilters({ page, query, workspaceId, projectId: projects.projects[0].projectId, propertyId: property.propertyId, language, layout: "table", evidenceDirectory }));
+    grouping.push(await exerciseViewGrouping({ page, query, workspaceId, propertyId: property.propertyId, language, layout: "table", evidenceDirectory }));
     for (const width of [360, 1024, 1440]) {
       await page.setViewportSize({ width, height: width === 1440 ? 960 : 720 });
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
@@ -149,7 +152,7 @@ try {
     await current().selectOption(boardId); await board().getByText("Board keyboard edit", { exact: true }).waitFor();
     await page.screenshot({ path: join(evidenceDirectory, `${language}-archived-board.png`), fullPage: true });
     assert.equal(await readFile(join(source, "Archive", "Project", "keep"), "utf8"), "unchanged");
-    evidence.checks.push({ language, filters, keyboard: true, table: true, board: true, lifecycle: true, independentCopy: true, sourceSibling: true, activeArchived: true, restart: true, filesUnchanged: true, widths: [360, 1024, 1440] });
+    evidence.checks.push({ language, filters, grouping, keyboard: true, table: true, board: true, lifecycle: true, independentCopy: true, sourceSibling: true, activeArchived: true, restart: true, filesUnchanged: true, widths: [360, 1024, 1440] });
   }
   await close(); evidence.status = "passed";
 } catch (error) {

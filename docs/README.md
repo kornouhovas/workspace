@@ -28,6 +28,7 @@ Read development's scope, integration, tracker, executor-selection and verificat
 | Task | Relevant contracts |
 | --- | --- |
 | Service, storage or filesystem changes | Affected sections in [architecture](architecture.md), [ADRs](adr/) and typed contracts in `src/shared/`; inspect the active service wiring |
+| Exact scalar grouping | [Grouping contract/scenarios](plans/issue-29-scalar-grouping.md), typed grouping commands and [verification](verification/issue-29-scalar-grouping.md) |
 | Search and typed filters | [Filter contract/scenarios](plans/issue-28-view-filters.md), typed query/filter commands and [verification](verification/issue-28-view-filters.md) |
 | Table/Board views | [Lifecycle/scenarios](plans/issue-27-views.md), typed view commands and [verification](verification/issue-27-views.md) |
 | MultiSelect | [Set contract/scenarios](plans/issue-26-multiselect.md), typed property commands and [verification](verification/issue-26-multiselect.md) |

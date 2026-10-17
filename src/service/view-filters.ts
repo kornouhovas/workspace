@@ -1,3 +1,4 @@
+import { readGrouping, projectGroups } from "./view-grouping.js";
 import { eq } from "drizzle-orm";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import { filterOperators, isViewFilterConfig, isViewFilterRequest, type FilterType, type FilterRule, type ViewFilterPayload } from "../contracts/view-filters.js";
@@ -54,7 +55,12 @@ export function createViewFilterService(db: Database, model: ReadModel) {
         const search = config.search.trim().toLowerCase();
         const projectIds = projects.filter(project => project.name.toLowerCase().includes(search) && config.rules.every(rule =>
           matches(rule, valueFor(project, rule.propertyId, types.get(rule.propertyId)!, properties.value)))).map(p => p.projectId);
-        return { ok: true as const, value: { workspaceId: workspace.id, viewId: view.id, archived: input.archived, projectIds } };
+        const grouping = readGrouping(tx,workspace.id,view.id);
+        if (!grouping.ok) return grouping;
+        const grouped = projectGroups(tx,source.id,grouping.value.config,projects,properties.value,projectIds);
+        if (!grouped.ok) return grouped;
+        return { ok: true as const, value: { workspaceId: workspace.id, viewId: view.id, archived: input.archived, projectIds,
+          ...(grouped.value ? { groups: grouped.value, groupPropertyId: grouping.value.config.propertyId } : {}) } };
       });
     } catch { return storage(); }
   };

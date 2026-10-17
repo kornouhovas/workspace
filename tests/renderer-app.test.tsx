@@ -138,7 +138,9 @@ function mockApi(options: MockOptions = {}) {
       return () => { changeListeners.delete(listener); };
     },
     settings: onSettings,
-    workspace: ((input: WorkspaceRequest) => input.type === "workspace.getViewFilter"
+    workspace: ((input: WorkspaceRequest) => input.type === "workspace.getViewGrouping"
+      ? Promise.resolve(ok({ workspaceId: input.workspaceId, viewId: input.viewId, config: { propertyId: null, settings: [] } }))
+      : input.type === "workspace.getViewFilter"
       ? Promise.resolve(ok({ workspaceId: input.workspaceId, viewId: input.viewId, config: { search: "", rules: [] } }))
       : input.type === "workspace.queryView"
       ? Promise.resolve(ok({ workspaceId: input.workspaceId, viewId: input.viewId, archived: input.archived,

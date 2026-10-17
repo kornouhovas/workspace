@@ -123,7 +123,7 @@ for (const mode of ["direct", "grouped"]) {
     for (let i = 0; i < 2; i++) {
       migrate(drizzle(f.sql), { migrationsFolder }); f.reopen();
       const after = records(f.sql);
-      for (const [table, rows] of Object.entries(before)) if (table !== "__drizzle_migrations") assert.deepEqual(after[table], table === "views" ? rows.map(row => ({ ...row, position: 0, filter_config: '{"search":"","rules":[]}' })) : rows, table);
+      for (const [table, rows] of Object.entries(before)) if (table !== "__drizzle_migrations") assert.deepEqual(after[table], table === "views" ? rows.map(row => ({ ...row, position: 0, filter_config: '{"search":"","rules":[]}', grouping_config: '{"propertyId":null,"settings":[]}' })) : rows, table);
       assert.deepEqual(after.__drizzle_migrations.slice(0, 9), before.__drizzle_migrations);
       assert.equal(after.__drizzle_migrations.length, journal.entries.length);
       assert.deepEqual(after.project_rename_operations, []);
@@ -299,6 +299,6 @@ test("late migration 0009 failure rolls back schema and all populated prior hist
   assert.deepEqual(records(f.sql), before); assert.deepEqual(f.sql.prepare("SELECT * FROM sqlite_master ORDER BY name").all(), schema);
   migrate(drizzle(f.sql), { migrationsFolder }); f.reopen();
   const after = records(f.sql);
-  for (const [table, rows] of Object.entries(before)) if (table !== "__drizzle_migrations") assert.deepEqual(after[table], table === "views" ? rows.map(row => ({ ...row, position: 0, filter_config: '{"search":"","rules":[]}' })) : rows);
+  for (const [table, rows] of Object.entries(before)) if (table !== "__drizzle_migrations") assert.deepEqual(after[table], table === "views" ? rows.map(row => ({ ...row, position: 0, filter_config: '{"search":"","rules":[]}', grouping_config: '{"propertyId":null,"settings":[]}' })) : rows);
   assert.equal(after.__drizzle_migrations.length, journal.entries.length);
 }, true));

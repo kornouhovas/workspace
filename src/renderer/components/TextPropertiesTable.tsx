@@ -1,3 +1,5 @@
+import { ViewGrouping } from "./ViewGrouping.js";
+import type { ViewGroup } from "../../contracts/view-grouping.js";
 import { ViewFilters } from "./ViewFilters.js";
 import { useEffect, useRef, useState } from "react";
 import type { Language } from "../../contracts/settings.js";
@@ -46,6 +48,7 @@ export function TextPropertiesTable(props: Props) {
   return <TextPropertiesContent key={`${props.workspaceId}:${props.sourceId}`} {...props} />;
 }
 function TextPropertiesContent({ viewId, layout = "table", hideReveal, client, workspaceId, sourceId, projects, retainedProjects = [], onLocate, locateDisabled, onRename, renameDisabled, onMoveCategory, categoryMoveDisabled, categoryProperty, categories = [], categoryPropertyRevision = 0, discoveryRevision = 0, minimumDiscoveryRevision, sourceLifetime, minimumCategoryPropertyRevision, onCategoryPropertyCommitted, language, disabled }: Props) {
+  const [grouped, setGrouped] = useState<{viewId:string; groups:ViewGroup[]|null;propertyId:string|null}|null>(null);
   const [filteredIds, setFilteredIds] = useState<{ viewId: string; ids: string[] | null } | null>(null);
   const categoryDrafts = useRef(new Map<string, CategoryLabelDraft>());
   const t = (key: TranslationKey) => translate(language, key);
@@ -163,7 +166,7 @@ function TextPropertiesContent({ viewId, layout = "table", hideReveal, client, w
         </Header>)}
         {!hideReveal && <Header className="board-field-placeholder">{t("revealProject")}</Header>}
       </>;
-  const rows = [...projects, ...retainedProjects].filter(project => !viewId || (filteredIds?.viewId === viewId && filteredIds.ids?.includes(project.projectId))).map((project) => {
+  const rows = (ids?: string[]) => [...projects, ...retainedProjects].filter(project => !ids || ids.includes(project.projectId)).filter(project => !viewId || (filteredIds?.viewId === viewId && filteredIds.ids?.includes(project.projectId))).map((project) => {
         const retained = retainedProjects.find((row) => row.projectId === project.projectId);
         const reason = retained?.associationState === "excluded" && retained.retentionReason !== "mode_change" ? "excluded" : retained?.resolution ?? retained?.associationState;
         const label = retained?.retentionReason === "mode_change" ? "projectModeRetained" : reason && reason !== "active" ? resolutionLabels[reason] : null;
@@ -208,7 +211,9 @@ function TextPropertiesContent({ viewId, layout = "table", hideReveal, client, w
     {viewId && <ViewFilters client={client} workspaceId={workspaceId} viewId={viewId} archived={!!hideReveal} language={language}
       snapshot={snapshot} categoryProperty={categoryProperty} categories={categories} disabled={disabled || loadError}
       refreshKey={JSON.stringify([snapshot?.revision, discoveryRevision, projects.map(p => [p.projectId, p.name, p.categoryId]), retainedProjects.map(p => [p.projectId, p.name, p.categoryId])])}
-      onResults={ids => setFilteredIds({ viewId, ids })} />}
+      onResults={ids => setFilteredIds({ viewId, ids })} onGroups={(groups,propertyId) => setGrouped({viewId,groups,propertyId})} />
+    }
+    {viewId && <ViewGrouping client={client} workspaceId={workspaceId} viewId={viewId} language={language} snapshot={snapshot} groups={grouped?.viewId===viewId ? grouped.groups : null} groupPropertyId={grouped?.viewId===viewId ? grouped.propertyId : null} disabled={disabled||loadError} />}
     {loading && <StatusMessage kind="info" title={t("propertiesLoading")} />}
     {loadError && <><StatusMessage kind="error" title={t("propertiesLoadError")} />
       <button type="button" className="workspace-button workspace-button--secondary" disabled={disabled || loading} onClick={() => void load()}>{t("propertiesRetry")}</button></>}
@@ -239,12 +244,23 @@ function TextPropertiesContent({ viewId, layout = "table", hideReveal, client, w
       <StatusMessage kind="info" title={t("propertyExternalChange")} />}
     {message && <StatusMessage kind={message === "propertyValidation" || message === "propertySaveError" ? "error" : "info"} title={t(message)} />}
     {snapshot && snapshot.definitions.length === 0 && <p>{t("propertiesEmpty")}</p>}
-    {layout === "board" ? <>
+    {grouped?.viewId===viewId && grouped?.groups ? <>
+      {layout === "board" && <div className="board-property-controls">{headers}</div>}
+      {grouped.groups.length>0 && grouped.groups.every(group=>group.hidden) && <p role="status">{t("groupAllHidden")}</p>}
+      {grouped.groups.length===0 && <p role="status">{t("groupEmpty")}</p>}
+      <div className={layout === "board" ? "grouped-board" : "grouped-table"}>
+      {grouped.groups.filter(group=>!group.hidden).map(group=><section className="project-group" key={group.key} aria-label={group.value===null?t("groupNoValue"):String(group.value)}>
+        <h3 className="property-authored">{group.value===null?t("groupNoValue"):String(group.value)} ({group.projectIds.length})</h3>
+        {!group.collapsed && (group.empty ? <p>{t("groupEmpty")}</p> : layout === "board" ? <ul className="project-board" aria-label={t("boardProjects")}>{rows(group.projectIds)}</ul> :
+          <div className="project-table-scroll"><table className="project-table" style={{ minWidth: `${Math.max(1, (snapshot?.definitions.length ?? 0) + 2 + (categoryProperty ? 1 : 0)) * 14}rem` }}><thead><tr>{headers}</tr></thead><tbody>{rows(group.projectIds)}</tbody></table></div>)}
+      </section>)}
+      </div>
+    </> : layout === "board" ? <>
       <div className="board-property-controls">{headers}</div>
-      <ul className="project-board" aria-label={t("boardProjects")}>{rows}</ul>
+      <ul className="project-board" aria-label={t("boardProjects")}>{rows()}</ul>
     </> : <div className="project-table-scroll">
       <table className="project-table" style={{ minWidth: `${Math.max(1, (snapshot?.definitions.length ?? 0) + 2 + (categoryProperty ? 1 : 0)) * 14}rem` }}>
-        <thead><tr>{headers}</tr></thead><tbody>{rows}</tbody>
+        <thead><tr>{headers}</tr></thead><tbody>{rows()}</tbody>
       </table>
     </div>}
   </div>;

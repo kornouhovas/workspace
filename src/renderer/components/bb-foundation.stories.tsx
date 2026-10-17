@@ -86,6 +86,7 @@ function WorkspacePreview({ language, state = "management" }: {
     const failure: ServiceResult<never> = { ok: false, error: { code: "storage", message: "Preview storage failure" } };
     const workspace = async (input: WorkspaceRequest): Promise<ServiceResult<WorkspaceResponse>> => {
       if (input.type === "workspace.load") return { ok: true, value: snapshot() };
+      if (input.type === "workspace.getViewGrouping" || input.type === "workspace.setViewGrouping") return { ok: true, value: { workspaceId: input.workspaceId, viewId: input.viewId, config: input.type === "workspace.setViewGrouping" ? input.config : { propertyId: null, settings: [] } } };
       if (input.type === "workspace.getViewFilter" || input.type === "workspace.setViewFilter") return { ok: true, value: { workspaceId: input.workspaceId, viewId: input.viewId, config: input.type === "workspace.setViewFilter" ? input.config : { search: "", rules: [] } } };
       if (input.type === "workspace.queryView") return { ok: true, value: { workspaceId: input.workspaceId, viewId: input.viewId, archived: input.archived, projectIds: state.startsWith("applied") ? ["project-preview", "retained-missing", "retained-excluded"] : [] } };
       if (input.type === "workspace.listViews") return storyViews(input.workspaceId, records.find(record => record.workspaceId === input.workspaceId)!.viewId);

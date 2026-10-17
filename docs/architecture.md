@@ -484,3 +484,15 @@ invalidate results through the existing property/project events. Unavailable ref
 and malformed configuration produce explicit errors and require an explicit edit or
 clear; queries never silently normalize saved rules. See the [filter contract](plans/issue-28-view-filters.md)
 and [verification](verification/issue-28-view-filters.md).
+
+## Exact scalar view grouping (Issue 29)
+
+Migration 0020 adds view-owned grouping configuration alongside filters. Typed
+`getViewGrouping`/`setViewGrouping` requests validate scalar properties, exact group
+keys and ownership behind the service boundary. `queryView` first selects filter
+members, then returns groups from the unfiltered lifecycle projection with hidden,
+collapsed and empty state. Both layouts consume that same result. Switching grouping
+preserves independent property settings; duplication copies them into an independent
+view row. Settings never modify source values, project identities or folders.
+See the [contract and scenarios](plans/issue-29-scalar-grouping.md) and
+[verification report](verification/issue-29-scalar-grouping.md).

@@ -10,11 +10,11 @@ import { StatusMessage } from "./bb-foundation.js";
 interface Props {
   client: WorkspaceServiceClient; workspaceId: string; viewId: string; archived: boolean; language: Language;
   snapshot: PropertySnapshot | null; categoryProperty?: CategoryProperty | null; categories: CategorySummary[];
-  refreshKey: string; disabled: boolean; onResults(ids: string[] | null): void;
+  refreshKey: string; disabled: boolean; onResults(ids: string[] | null): void; onGroups?(groups: import("../../contracts/view-grouping.js").ViewGroup[] | null, propertyId: string | null): void;
 }
 const clearConfig = (): ViewFilterConfig => ({ search: "", rules: [] });
 export function ViewFilters(props: Props) { return <FilterContent key={`${props.workspaceId}:${props.viewId}:${props.archived}`} {...props} />; }
-function FilterContent({ client, workspaceId, viewId, archived, language, snapshot, categoryProperty, categories, refreshKey, disabled, onResults }: Props) {
+function FilterContent({ client, workspaceId, viewId, archived, language, snapshot, categoryProperty, categories, refreshKey, disabled, onResults, onGroups }: Props) {
   const t = (key: TranslationKey) => translate(language, key);
   const [draft, setDraft] = useState<ViewFilterConfig>(clearConfig);
   const [loading, setLoading] = useState(true), [saving, setSaving] = useState(false);
@@ -23,6 +23,7 @@ function FilterContent({ client, workspaceId, viewId, archived, language, snapsh
   const configRequestVersion = useRef(0), projectionReady = useRef(false);
   const queryRequestVersion = useRef(0), mountGeneration = useRef(0), saveInFlight = useRef(false), hasDraft = useRef(false);
   const results = useRef(onResults); results.current = onResults;
+  const groupResults = useRef(onGroups); groupResults.current = onGroups;
   const properties: { id: string; name: string; type: FilterType }[] = [
     { id: "name", name: t("projectName"), type: "name" },
     ...(categoryProperty ? [{ id: categoryProperty.propertyId, name: categoryProperty.name ?? t("discoveryCategory"), type: "category" as const }] : []),
@@ -35,10 +36,10 @@ function FilterContent({ client, workspaceId, viewId, archived, language, snapsh
       const result = await client.queryView(workspaceId, viewId, archived);
       if (request !== queryRequestVersion.current) return;
       if (result.ok && result.value.workspaceId === workspaceId && result.value.viewId === viewId && result.value.archived === archived) {
-        results.current(result.value.projectIds); setEmpty(!result.value.projectIds.length);
+        groupResults.current?.(result.value.groups ?? null, result.value.groupPropertyId ?? null); results.current(result.value.projectIds); setEmpty(!result.value.projectIds.length);
         setError(current => current === "filterQueryError" ? null : current);
-      } else { results.current(null); setError("filterQueryError"); }
-    } catch { if (request === queryRequestVersion.current) { results.current(null); setError("filterQueryError"); } }
+      } else { groupResults.current?.(null, null); results.current(null); setError("filterQueryError"); }
+    } catch { if (request === queryRequestVersion.current) { groupResults.current?.(null, null); results.current(null); setError("filterQueryError"); } }
     finally { if (request === queryRequestVersion.current) setLoading(false); }
   };
   const load = async () => {
@@ -48,11 +49,11 @@ function FilterContent({ client, workspaceId, viewId, archived, language, snapsh
     try {
       const result = await client.getViewFilter(workspaceId, viewId);
       if (started !== mountGeneration.current || request !== configRequestVersion.current) return;
-      if (!result.ok || result.value.workspaceId !== workspaceId || result.value.viewId !== viewId) { results.current(null); setError("filterLoadError"); setLoading(false); return; }
+      if (!result.ok || result.value.workspaceId !== workspaceId || result.value.viewId !== viewId) { groupResults.current?.(null, null); results.current(null); setError("filterLoadError"); setLoading(false); return; }
       projectionReady.current = true;
       if (!hasDraft.current) setDraft(result.value.config);
       await query();
-    } catch { if (started === mountGeneration.current && request === configRequestVersion.current) { results.current(null); setError("filterLoadError"); setLoading(false); } }
+    } catch { if (started === mountGeneration.current && request === configRequestVersion.current) { groupResults.current?.(null, null); results.current(null); setError("filterLoadError"); setLoading(false); } }
   };
   useEffect(() => {
     void load();
