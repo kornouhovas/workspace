@@ -1,5 +1,5 @@
 /* global window, document, innerWidth */
-import { exerciseViewGrouping, exerciseSelectionGrouping, exerciseCategoryGrouping } from "./runtime-view-grouping.mjs";
+import { exerciseViewGrouping, exerciseSelectionGrouping, exerciseCategoryGrouping, exerciseRetainedCategoryGrouping } from "./runtime-view-grouping.mjs";
 import { exerciseViewFilters } from "./runtime-view-filters.mjs";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
@@ -157,7 +157,11 @@ try {
     const categoryRoot = join(fixture, `categories-${language}`);
     await mkdir(join(categoryRoot, "Category", "Project"), { recursive: true }); await mkdir(join(categoryRoot, "Empty"));
     const categoryGrouping = await exerciseCategoryGrouping({ page, query, rootPath: categoryRoot, language, evidenceDirectory });
-    evidence.checks.push({ language, filters, grouping, categoryGrouping, keyboard: true, table: true, board: true, lifecycle: true, independentCopy: true, sourceSibling: true, activeArchived: true, restart: true, filesUnchanged: true, widths: [360, 1024, 1440] });
+    const recoveryRoot = join(fixture, `recovery-${language}`);
+    await mkdir(join(recoveryRoot, "Retained"), { recursive: true });
+    const retainedGrouping = await exerciseRetainedCategoryGrouping({ page, query, rootPath: recoveryRoot, language, evidenceDirectory });
+    assert.deepEqual(await readdir(recoveryRoot), ["Retained"]);
+    evidence.checks.push({ language, filters, grouping, categoryGrouping, retainedGrouping, keyboard: true, table: true, board: true, lifecycle: true, independentCopy: true, sourceSibling: true, activeArchived: true, restart: true, filesUnchanged: true, widths: [360, 1024, 1440] });
   }
   await close(); evidence.status = "passed";
 } catch (error) {

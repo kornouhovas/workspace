@@ -512,5 +512,7 @@ Grouped sources expose their folder-backed property as a grouping choice. Active
 categories and lifecycle-referenced historical categories supply stable category keys
 and current folder labels; grouping itself changes no filesystem state. Direct mode
 keeps this property unavailable. See the [contract/scenarios](plans/issue-30-option-grouping.md)
-and [verification report](verification/issue-30-option-grouping.md); unresolved retained
-uncategorized presentation is tracked in the issue checkpoint before final acceptance.
+and [verification report](verification/issue-30-option-grouping.md). The owner selected
+a conditional No value recovery group for retained uncategorized records after a mode
+change; it preserves recovery controls and metadata without creating an active-project
+category or assignment destination. It disappears when no such lifecycle records remain.

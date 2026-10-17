@@ -105,3 +105,39 @@ export async function exerciseCategoryGrouping({ page, query, rootPath, language
   }
   return { categoryIdentity: true, noEmptyDestination: true, layouts: ["table", "board"], widths: [360, 1440] };
 }
+
+export async function exerciseRetainedCategoryGrouping({ page, query, rootPath, language, evidenceDirectory }) {
+  const en = language === "en";
+  const { workspaceId, viewId } = await query(page, { type: "workspace.create", rootPath, name: `Recovery groups ${language}` });
+  const call = (type, fields = {}) => query(page, { type: `workspace.${type}`, workspaceId, ...fields });
+  const direct = await call("previewDiscovery", { mode: "direct" });
+  const projectId = (await call("applyDiscovery", { previewToken: direct.previewToken })).projects[0].projectId;
+  const propertyId = (await call("createProperty", { name: "Notes", propertyType: "text" })).propertyId;
+  await call("setTextValue", { projectId, propertyId, value: "Preserved" });
+  const grouped = await call("previewDiscovery", { mode: "grouped" });
+  const list = await call("applyDiscovery", { previewToken: grouped.previewToken });
+  assert.equal(list.retainedProjects[0].projectId, projectId);
+  await call("activate"); await page.reload();
+  const grouping = page.getByRole("region", { name: en ? "Grouping" : "Группировка", exact: true })
+    .getByLabel(en ? "Group by" : "Группировать по", { exact: true });
+  await grouping.and(page.locator(":enabled")).selectOption(list.categoryProperty.propertyId);
+  for (const layout of ["table", "board"]) {
+    await call("updateView", { viewId, name: "Recovery", kind: layout });
+    const group = page.getByRole("region", { name: en ? "No value" : "Без значения", exact: true });
+    await group.getByRole("heading", { name: en ? "No value (1)" : "Без значения (1)", exact: true }).waitFor();
+    const locate = group.getByRole("button", { name: `${en ? "Locate folder" : "Найти папку"}: Retained`, exact: true });
+    await locate.waitFor(); assert.equal(await locate.isEnabled(), true);
+    const value = group.getByRole("button", { name: `${en ? "Edit Text value" : "Редактировать Text-значение"}: Retained / Notes`, exact: true });
+    await value.and(page.locator(":enabled")).focus(); await value.press("Enter");
+    await group.getByRole("textbox").fill(`Recovered ${layout}`);
+    const save = group.getByRole("button", { name: en ? "Save value" : "Сохранить значение", exact: true });
+    await save.focus(); await save.press("Enter"); await value.waitFor();
+    assert.equal((await call("listTextProperties")).values[0].value, `Recovered ${layout}`);
+    for (const width of [360, 1440]) {
+      await page.setViewportSize({ width, height: 720 });
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), true);
+      await page.screenshot({ path: join(evidenceDirectory, `${language}-${width}-${layout}-retained-grouping.png`), fullPage: true });
+    }
+  }
+  return { retainedLogicalId: true, conditionalNoValue: true, recoveryControl: true, keyboardMetadataEdit: true };
+}

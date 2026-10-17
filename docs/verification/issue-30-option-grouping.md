@@ -17,13 +17,27 @@ Environment: macOS arm64, Node 22.21.1; disposable filesystem and real SQLite fi
   independent duplicates, source siblings, restart, category rename/move/archive,
   and ordinary selection edits preserving physical placement.
 - Typecheck, lint, documentation links and diff whitespace checks passed for the
-  initial candidate. Final post-review checks are recorded below when available.
+  initial candidate; these checks were renewed after review changes.
 - Existing real Electron development views route passed EN/RU Table/Board selection
   grouping, keyboard edit from the B occurrence, typed readback of repeated logical
   IDs, width 360/1024/1440 screenshots, existing view/filter/restart/archive routes,
   normal quit/backend exit and fixture cleanup. Screenshots inspected for narrow
   Board and wide Russian Table; table scrolling stays contained. Category runtime
-  visual coverage is being renewed in that same route.
+  coverage also passed EN/RU Table/Board at widths 360/1440, including empty categories
+  and absence of an ordinary empty active category.
 
-Retained uncategorized presentation, independent review, full local inventory and
-exact-SHA remote acceptance remain open. No final acceptance is claimed here.
+## Review and retained recovery
+
+Standards review found zero hard violations and one optional duplicated-supported-type
+list; a shared constant now removes the duplication. Source-owned key validation and
+option ordering also use preloaded inventories rather than per-key SQL or repeated
+sort-time option searches. Existing validation assertions remain intact.
+
+Spec review independently reproduced the known retained-null-category omission. The
+owner selected a conditional No value recovery group, never an active-project category
+or assignment destination. A typed-service regression failed before this repair, then
+passed with exact retained IDs, manual/collapse settings and restart. EN/RU Table/Board
+UI cases verify recovery-button keyboard activation and editable preserved metadata.
+All 32 grouping service/UI tests pass after the repair. Final follow-up review,
+complete local inventory and exact-SHA remote acceptance are recorded when available.
+No final acceptance is claimed yet.

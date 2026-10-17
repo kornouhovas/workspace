@@ -6,25 +6,28 @@ import type { ServiceResult } from "../contracts/settings.js";
 import type { PropertySnapshot } from "../contracts/text-properties.js";
 import * as schema from "./db/schema.js";
 type Database = BetterSQLite3Database<typeof schema>;
+const supportedGroupTypes = ["name", "text", "number", "date", "single_select", "multi_select", "category"];
 function validate(db: Database, sourceId: string, config: ViewGroupingConfig): boolean {
     const definitions = db.select().from(schema.propertyDefinitions).where(eq(schema.propertyDefinitions.sourceId, sourceId)).all();
     const source = db.select().from(schema.sources).where(eq(schema.sources.id, sourceId)).get();
     const categoryProperty = source?.discoveryMode === "grouped" ? db.select().from(schema.categoryProperties).where(eq(schema.categoryProperties.sourceId, sourceId)).get() : undefined;
+    const optionProperties = new Map(db.select().from(schema.selectOptions).where(eq(schema.selectOptions.sourceId, sourceId)).all().map(option => [option.id, option.propertyId]));
+    const categoryIds = new Set(db.select().from(schema.categories).where(eq(schema.categories.sourceId, sourceId)).all().map(category => category.id));
     const typeFor = (id: string) => id === "name" ? "name" : id === categoryProperty?.id ? "category" : definitions.find(d => d.id === id)?.propertyType;
-    if (config.propertyId !== null && !["name", "text", "number", "date", "single_select", "multi_select", "category"].includes(typeFor(config.propertyId) ?? ""))
+    if (config.propertyId !== null && !supportedGroupTypes.includes(typeFor(config.propertyId) ?? ""))
         return false;
     return config.settings.every(setting => {
         const type = typeFor(setting.propertyId);
-        if (!type || !["name", "text", "number", "date", "single_select", "multi_select", "category"].includes(type))
+        if (!type || !supportedGroupTypes.includes(type))
             return false;
         return [...setting.manualOrder, ...setting.hidden, ...setting.collapsed].every(key => {
             const value: unknown = JSON.parse(key);
             if (value === null)
-                return type !== "name" && type !== "category";
+                return type !== "name";
             if (type === "category")
-                return typeof value === "string" && db.select().from(schema.categories).where(eq(schema.categories.id, value)).get()?.sourceId === sourceId;
+                return typeof value === "string" && categoryIds.has(value);
             if (type === "single_select" || type === "multi_select")
-                return typeof value === "string" && db.select().from(schema.selectOptions).where(eq(schema.selectOptions.id, value)).get()?.propertyId === setting.propertyId;
+                return typeof value === "string" && optionProperties.get(value) === setting.propertyId;
             if (type === "number")
                 return typeof value === "number" && Number.isFinite(value) && Math.abs(value) <= Number.MAX_SAFE_INTEGER;
             if (type === "date")
@@ -85,6 +88,7 @@ export function projectGroups(db: Database, sourceId: string, config: ViewGroupi
         .map(c => ({ optionId: c.id, name: c.relativePath, position: 0 })).sort((a, b) => a.name < b.name ? -1 : a.name > b.name ? 1 : a.optionId < b.optionId ? -1 : 1);
     const selection = type === "single_select" || type === "multi_select";
     const options = selection ? (values.selectOptions ?? []).filter(o => o.propertyId === id).sort((a, b) => a.position - b.position || (a.optionId < b.optionId ? -1 : 1)) : categoryOptions;
+    const optionOrder = new Map(options.map((option, index) => [option.optionId, index]));
     const selectionsByProject = new Map<string, string[]>();
     if (selection) for (const row of (type === "multi_select" ? values.multiSelectValues : values.selectValues) ?? []) {
         if (row.propertyId !== id) continue;
@@ -107,10 +111,10 @@ export function projectGroups(db: Database, sourceId: string, config: ViewGroupi
     const visible = new Set(filteredIds);
     for (const project of projects) {
         if (type === "category") {
-            if (project.categoryId) {
-                const group = add(project.categoryId);
-                if (visible.has(project.projectId)) group.projectIds.push(project.projectId);
-            }
+            // Only retained records can lack a category in a grouped source. This
+            // conditional recovery group is never an active-project destination.
+            const group = add(project.categoryId ?? null);
+            if (visible.has(project.projectId)) group.projectIds.push(project.projectId);
             continue;
         }
         if (selection) {
@@ -131,7 +135,7 @@ export function projectGroups(db: Database, sourceId: string, config: ViewGroupi
         if (a.value === null || b.value === null)
             return a.value === b.value ? 0 : a.value === null ? 1 : -1;
         if ((selection || type === "category") && (setting.order === "default" || setting.order === "manual"))
-            return options.findIndex(o => o.optionId === a.value) - options.findIndex(o => o.optionId === b.value);
+            return (optionOrder.get(String(a.value)) ?? -1) - (optionOrder.get(String(b.value)) ?? -1);
         const left = a.label ?? a.value, right = b.label ?? b.value;
         const result = typeof a.value === "number" && typeof b.value === "number" ? a.value - b.value : left < right ? -1 : left > right ? 1 : a.key < b.key ? -1 : a.key > b.key ? 1 : 0;
         return setting.order === "descending" ? -result : result;

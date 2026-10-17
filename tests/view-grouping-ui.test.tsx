@@ -181,3 +181,35 @@ for(const language of ['en','ru'] as const) test(`${language} ordinary Single Se
     await screen.findByRole('heading',{name:'Renamed (1)'});
   }finally{cleanup();service.close();rmSync(directory,{recursive:true,force:true});}
 });
+
+for(const language of ['en','ru'] as const) for(const layout of ['table','board'] as const) test(`${language} ${layout} category grouping retains uncategorized recovery and editable metadata`,async()=>{
+  const directory=mkdtempSync(join(tmpdir(),'retained-groups-ui-')),root=join(directory,'root');mkdirSync(root);mkdirSync(join(root,'Project'));
+  const service=openSettingsService(join(directory,'app.sqlite'));
+  const {workspaceId,sourceId,viewId}=service.handleCommand({type:'workspace.create',rootPath:root,name:'One'}).value;
+  const command=(type:string,fields:object={})=>service.handleCommand({type:`workspace.${type}`,workspaceId,...fields});
+  const query=(type:string,fields:object={})=>service.handleQuery({type:`workspace.${type}`,workspaceId,...fields});
+  const original=command('applyDiscovery',{previewToken:query('previewDiscovery').value.previewToken}).value.projects[0];
+  const propertyId=command('createProperty',{name:'Notes',propertyType:'text'}).value.propertyId;
+  command('setTextValue',{projectId:original.projectId,propertyId,value:'Preserved'});
+  command('applyDiscovery',{previewToken:query('previewDiscovery',{mode:'grouped'}).value.previewToken});
+  const list=query('listProjects').value;
+  const api={getBackendStatus:async()=>({state:'ready'}),onBackendStatus:()=>()=>{},workspace:async(input:{type:string})=>/workspace\.(list|get|query)/.test(input.type)?service.handleQuery(input):service.handleCommand(input),onWorkspaceChange:service.workspaces.subscribe} as unknown as WorkspaceDesktopApi;
+  const user=userEvent.setup({document}),t=(key:Parameters<typeof translate>[1])=>translate(language,key);
+  let located:string|null=null;
+  try{
+    render(<TextPropertiesTable client={new WorkspaceServiceClient(api)} workspaceId={workspaceId} sourceId={sourceId} viewId={viewId} layout={layout}
+      projects={list.projects} retainedProjects={list.retainedProjects} categoryProperty={list.categoryProperty} categories={list.categories} language={language} disabled={false} onLocate={project=>{located=project.projectId;}}/>);
+    const select=await screen.findByLabelText(t('groupProperty'));await waitFor(()=>assert.equal((select as HTMLSelectElement).disabled,false));
+    await user.selectOptions(select,list.categoryProperty.propertyId);
+    await screen.findByRole('heading',{name:`${t('groupNoValue')} (1)`});
+    const group=screen.getByRole('region',{name:t('groupNoValue')});
+    await within(group).findByText(t('projectModeRetained'));
+    const locate=within(group).getByRole('button',{name:`${t('recoveryLocate')}: Project`});locate.focus();await user.keyboard('{Enter}');
+    assert.equal(located,original.projectId);
+    await user.click(within(group).getByRole('button',{name:`${t('editTextValue')}: Project / Notes`}));
+    const text=within(group).getByRole('textbox');await user.clear(text);await user.type(text,'Updated');
+    await user.click(within(group).getByRole('button',{name:t('saveTextValue')}));
+    await within(group).findByRole('button',{name:`${t('editTextValue')}: Project / Notes`});
+    await waitFor(()=>assert.equal(query('listTextProperties').value.values[0].value,'Updated'));
+  }finally{cleanup();service.close();rmSync(directory,{recursive:true,force:true});}
+});

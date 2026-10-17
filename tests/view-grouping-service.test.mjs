@@ -239,7 +239,7 @@ test('folder-backed grouping follows physical categories without an empty destin
     assert.deepEqual(groups().find(g=>g.value===category.categoryId).projectIds,list.projects.filter(p=>p.categoryId===category.categoryId).map(p=>p.projectId));
   }
   assert.equal(groups().find(g=>g.label==='Gamma').empty,true);
-  const setting={propertyId,order:'default',manualOrder:[],hidden:['null'],collapsed:[],hideEmpty:false};
+  const setting={propertyId,order:'default',manualOrder:[],hidden:['"not-a-category-id"'],collapsed:[],hideEmpty:false};
   assert.equal(f.command('setViewGrouping',{viewId,config:{propertyId,settings:[setting]}}).error.code,'invalid_input');
   f.reopen();assert.deepEqual(groups().map(g=>g.label),['Alpha','Beta','Gamma']);
 },'grouped'));
@@ -277,7 +277,7 @@ test('option order, filtered empties and view-owned presentation stay independen
   const other=f.command('createProperty',{name:'Other',propertyType:'single_select'}).value.propertyId;
   for(const key of [JSON.stringify('Alpha'),JSON.stringify(42),JSON.stringify(a)]) {
     const target=key===JSON.stringify(a)?other:propertyId;
-    assert.equal(f.command('setViewGrouping',{viewId,config:{propertyId:target,settings:[{...setting,propertyId:target,hidden:[key]}]}}).error.code,'invalid_input');
+    assert.equal(f.command('setViewGrouping',{viewId,config:{propertyId:target,settings:[{...setting,propertyId:target,manualOrder:[],collapsed:[],hidden:[key]}]}}).error.code,'invalid_input');
   }
 }));
 
@@ -318,3 +318,20 @@ test('category renames and moves retain keys and archive grouping preserves orig
     assert.equal(groups(false).some(g=>g.value===b),true);
   },'grouped');
 });
+
+test('category grouping preserves uncategorized retained records in a conditional No value recovery group',()=>fixture(f=>{
+  const original=f.query('listProjects').value.projects.map(p=>p.projectId).sort();
+  const preview=f.query('previewDiscovery',{mode:'grouped'}).value;
+  assert.equal(f.command('applyDiscovery',{previewToken:preview.previewToken}).ok,true);
+  const list=f.query('listProjects').value,propertyId=list.categoryProperty.propertyId,{viewId}=f.workspace;
+  assert.equal(list.projects.length,0);assert.equal(list.retainedProjects.length,3);
+  assert.equal(f.command('setViewGrouping',{viewId,config:config(propertyId)}).ok,true);
+  const result=()=>f.query('queryView',{viewId,archived:false}).value;
+  const noValue=result().groups.find(g=>g.value===null);
+  assert.ok(noValue);assert.deepEqual(noValue.projectIds.toSorted(),original);
+  assert.deepEqual(result().projectIds.toSorted(),original);
+  const setting={propertyId,order:'manual',manualOrder:['null'],hidden:[],collapsed:['null'],hideEmpty:false};
+  assert.equal(f.command('setViewGrouping',{viewId,config:{propertyId,settings:[setting]}}).ok,true);
+  f.reopen();assert.equal(result().groups[0].value,null);assert.equal(result().groups[0].collapsed,true);
+  assert.deepEqual(result().groups[0].projectIds.toSorted(),original);
+}));
