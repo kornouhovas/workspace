@@ -27,6 +27,12 @@ export async function exerciseTableLayout({page,query,rootPath,language,evidence
   await page.waitForFunction(()=>document.querySelector('th[data-column-id]')?.style.width==="799px");
   await page.waitForFunction(label=>document.activeElement?.getAttribute("aria-label")===label,`${en?"Column width":"Ширина столбца"}: Notes`);
   const wrap=controls.getByLabel(`${en?"Wrap Text":"Переносить текст"}: Notes`,{exact:true});
+  assert.equal(await wrap.isChecked(),true,"Existing Text presentation wraps by default");
+  await wrap.and(page.locator(":enabled")).press("Space");
+  await page.waitForFunction(()=>{
+    const cell=document.querySelector("td.table-text-nowrap .text-value-button");
+    return cell && getComputedStyle(cell).whiteSpace==="nowrap" && getComputedStyle(cell).overflowX==="hidden" && getComputedStyle(cell).textOverflow==="ellipsis";
+  });
   await wrap.and(page.locator(":enabled")).press("Space");
   await page.waitForFunction(()=>document.querySelector("td.table-text-wrap .text-value-button") && getComputedStyle(document.querySelector("td.table-text-wrap .text-value-button")).whiteSpace==="pre-wrap");
   const later=page.getByRole("button",{name:`${en?"Move row later":"Переместить строку позже"}: Alpha`,exact:true});

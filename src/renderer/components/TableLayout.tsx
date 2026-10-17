@@ -52,7 +52,7 @@ export function useTableLayout(client: WorkspaceServiceClient, workspaceId: stri
 export function tableColumns(config: TableLayoutConfig | null, fields: TableField[]): TableColumn[] {
   const available = new Set(fields.map(f => f.propertyId));
   const saved = new Set(config?.columns.map(c => c.propertyId));
-  return [...(config?.columns.filter(c => available.has(c.propertyId)) ?? []), ...fields.filter(f => !saved.has(f.propertyId)).map(f => ({propertyId: f.propertyId, hidden: false, width: 224, wrap: false}))];
+  return [...(config?.columns.filter(c => available.has(c.propertyId)) ?? []), ...fields.filter(f => !saved.has(f.propertyId)).map(f => ({propertyId: f.propertyId, hidden: false, width: 224, wrap: f.text}))];
 }
 interface Props {
   state: ReturnType<typeof useTableLayout>; fields: TableField[]; language: Language; disabled: boolean;

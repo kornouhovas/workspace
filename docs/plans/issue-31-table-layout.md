@@ -4,7 +4,7 @@ Base: `75c8aa07` (`new-workspace`). Tracker: [GitHub #31](https://github.com/kor
 
 ## Contract
 
-A Table view owns its column order, hidden columns, widths (120–800 CSS pixels), Text wrapping and manual logical-project order. Name remains visible to preserve identity and recovery actions. Reveal remains a separate action column. Unconfigured/new properties append in source definition order. Dormant category settings are retained across discovery-mode changes. No definition, value or filesystem mutation is introduced.
+A Table view owns its column order, hidden columns, widths (120–800 CSS pixels), Text wrapping and manual logical-project order. Name remains visible to preserve identity and recovery actions. Reveal remains a separate action column. Unconfigured/new properties append in source definition order. Text wraps by default, preserving the existing presentation; explicitly turning wrapping off uses clipped ellipsis. Dormant category settings are retained across discovery-mode changes. No definition, value or filesystem mutation is introduced.
 
 Rows use one logical-project order across active/archived and grouped/filtered projections. Saved IDs retain their positions when missing or filtered out; new identities append in the existing discovery order. Moving a displayed row relative to another changes only those positions in the complete order and retains undisplayed IDs. Group membership and filters do not change. Row dragging has a dedicated handle and payload; it never assigns a property value. Keyboard earlier/later controls perform the same operation. Duplicates copy settings and diverge; sibling workspaces stay independent.
 

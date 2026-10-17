@@ -47,6 +47,9 @@ for (const language of ["en", "ru"] as const) {
       const earlier=within(controls).getByRole("button",{name:`${t("tableColumnEarlier")}: Notes`});
       earlier.focus();await user.keyboard("{Enter}");
       await waitFor(()=>assert.ok(screen.getAllByRole("columnheader")[0].textContent?.includes("Notes")));
+      assert.equal((within(controls).getByLabelText(`${t("tableWrap")}: Notes`) as HTMLInputElement).checked,true);
+      await user.click(within(controls).getByLabelText(`${t("tableWrap")}: Notes`));
+      await waitFor(()=>assert.equal(query("getTableLayout",{viewId}).value.config.columns.find((c:{propertyId:string})=>c.propertyId===propertyId).wrap,false));
       await user.click(within(controls).getByLabelText(`${t("tableWrap")}: Notes`));
       await waitFor(()=>assert.equal(query("getTableLayout",{viewId}).value.config.columns.find((c:{propertyId:string})=>c.propertyId===propertyId).wrap,true));
       const later=screen.getByRole("button",{name:`${t("tableRowLater")}: Alpha`});

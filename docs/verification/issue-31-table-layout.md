@@ -48,7 +48,7 @@ verification does not establish Windows or packaged acceptance.
   EN/RU Exclude controls. A Ladle 403 came from a dependency symlink outside Vite's
   served root; replacing that local setup with actual local dependencies repaired
   its original test without changing product serving policy.
-- Final full local inventory: **2923 passed, 4 failed, 25 conditional skips**.
+- Full local inventory for initial software candidate `3109b1ca`: **2923 passed, 4 failed, 25 conditional skips**.
   All four failures concern the unchanged real-Electron normal-shutdown boundary:
   three property-editor driver cases and the deferred normal-quit control. Product
   assertions complete, then the strict 10s normal close deadline fails. These
@@ -68,3 +68,32 @@ packaged `smoke:views` steps include `runtime-table-layout.mjs` and retain uploa
 screenshots, exact candidate metadata, normal shutdown and fixture cleanup evidence.
 No additional CI route is needed for the feature. CI result, artifact inspection,
 accepted candidate and delivered SHA belong in the linked GitHub checkpoint.
+
+
+## CI repair: retain default Text wrapping
+
+Full CI on `3109b1ca` passed common/static and both reached platform inventories
+(macOS and Windows 2022), then its original category Ladle layout captures rejected
+long Text overflow. The exact command reproduced locally:
+`node scripts/smoke-discovery-layouts.mjs --category-move` reported
+`text-value-button` element overflow. Defaulting previously unconfigured Text to
+nowrap had changed the existing presentation. Restoring default wrapping preserves
+that behavior while leaving explicit saved choices intact. Non-Text defaults are
+unchanged. No overflow assertion, readiness deadline or fixture gate was relaxed.
+
+Both review axes accepted the scoped repair. Nine focused service/UI checks pass,
+including default-on and persisted off/on EN/RU toggles. The runtime helper verifies
+both pre-wrap and explicit clipped nowrap/ellipsis. Fresh application/Ladle builds,
+typecheck and lint pass. The original category capture now passes **150 EN/RU
+screenshots**, with its existing wrapping and no-overflow checks. The repaired
+macOS development `smoke:views` also passes both languages and both Text states,
+including strict normal shutdown/backend exit and fixture cleanup.
+
+Separately, the original Windows latest early native Reveal command reached exact
+parent Open but timed out before SelectItem. Its bounded trace and ordinary
+non-trace focused controls both passed on `3109b1ca`, including native returned
+completion, renderer acknowledgment, normal shutdown/restart and cleanup. This is
+not a claim of an identified native cause or repair. The original failure is
+retained in GitHub alongside both controlled runs. The repaired candidate must pass
+its affected focused routes before full CI/integration; those volatile gates and
+artifact results remain in the issue checkpoint.
