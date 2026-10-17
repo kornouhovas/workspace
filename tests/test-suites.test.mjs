@@ -145,7 +145,7 @@ test('integration failures select only original macOS layout and Windows 2022 cr
     ['focused-integration-layout', 'macos-latest', 'node scripts/smoke-discovery-layouts.mjs --category-move'],
     ['focused-integration-reveal', 'windows-2022', 'npm run smoke:runtime -- dev --creation --discovery-mode=direct --checkpoint=after_evidence'],
   ]) {
-    const job = workflow.jobs[name]; assert.equal(job['runs-on'], os);
+    const job = workflow.jobs[name]; assert.equal(job['runs-on'], name === 'focused-integration-layout' ? '${{ matrix.os }}' : os);
     assert.ok(job.steps.some(step => step.run === command));
     const upload = job.steps.find(step => step.uses === 'actions/upload-artifact@v4');
     assert.equal(upload.if, 'always()'); assert.equal(upload.with['if-no-files-found'], 'error');
@@ -153,6 +153,20 @@ test('integration failures select only original macOS layout and Windows 2022 cr
   }
 });
 
+
+test('category layout diagnosis selects only the original failed layouts on all affected platforms', () => {
+  const workflow = load(readFileSync('.github/workflows/desktop-ci.yml', 'utf8'));
+  assert.equal(workflow.on.workflow_dispatch.inputs.category_layout_only.default, false);
+  const selection=workflow.jobs['focused-integration-layout'].strategy.matrix.os;
+  for(const [flag,expected] of [[false,['macos-latest']],[true,['macos-latest','windows-latest','windows-2022']]]) {
+    assert.deepEqual(Array.from(runInNewContext(selection.slice(3,-2),{inputs:{category_layout_only:flag},fromJSON:JSON.parse})),expected);
+  }
+  for (const category_layout_only of [false,true]) {
+    const context={github:{event_name:'workflow_dispatch'},inputs:{checks:'failed',integration_failures:true,category_layout_only}};
+    const active=Object.entries(workflow.jobs).filter(([,job])=>job.if&&runInNewContext(job.if.slice(3,-2),context)).map(([name])=>name).sort();
+    assert.deepEqual(active,category_layout_only?['focused-integration-layout']:['focused-integration-layout','focused-integration-reveal']);
+  }
+});
 
 test('readiness failure scope runs only the original macOS Electron suite', () => {
   const workflow = load(readFileSync('.github/workflows/desktop-ci.yml', 'utf8'));

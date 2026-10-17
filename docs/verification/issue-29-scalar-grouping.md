@@ -81,3 +81,30 @@ Local macOS evidence does not establish Windows or packaged acceptance. The link
 issue checkpoint owns actual run/attempt, tested/delivered SHA, required artifacts,
 remaining acceptance gates and integration result. No release or main merge is
 part of this issue.
+
+## Full-CI layout failure and repair
+
+Run 39046252728 attempt 1 on `1363d3f` passed common checks and all three
+platform suites, then each platform failed the original category-move Ladle
+capture at collision-English / 1024px document overflow. Later runtime/package
+steps were unreached. Downloaded artifacts 12105803881 (macOS), 12106182850
+(Windows latest) and 12105839267 (Windows 2022) all retain the same failure and
+successful shutdown. The original command reproduced locally.
+
+A one-story probe measured the new grouping grid item at 1384.5px with computed
+`min-width:auto`. Changing only that item's minimum to zero reduced the document
+to 1024px. Select-only sizing or hiding the old table did not remove overflow.
+The production repair is `min-width:0` on `.view-grouping`. Three custom Ladle
+clients also return the valid default grouping read, matching their existing
+filter snapshots. The final rebuilt original route passed all 150 EN/RU screenshots
+and shutdown; rebuilt development views/grouping runtime passed both languages,
+layouts, widths and owned cleanup. All 272 affected route/runtime/UI/Ladle checks
+and static checks pass. Both review axes report no blocker.
+
+The default-false `category_layout_only` flag narrows the existing integration
+failure route to the original layout command on all three affected platforms.
+The legacy combined route and ordinary/full acceptance retain their previous
+checks. Regression covers job and matrix selection; OS-qualified artifacts retain
+exact SHA/run/attempt evidence. Repair pushes suppress ordinary CI until this
+focused gate passes. The linked issue records focused and renewed full acceptance;
+this report does not treat the failed or superseded runs as accepted.

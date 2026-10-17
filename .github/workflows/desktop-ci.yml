@@ -66,6 +66,10 @@ on:
         description: With checks=failed, run category layouts on macOS and direct creation Reveal on Windows 2022
         type: boolean
         default: false
+      category_layout_only:
+        description: With checks=failed and integration_failures, run only the original failed category layouts on all three platforms
+        type: boolean
+        default: false
       legacy_windows_diagnostics:
         description: Run historical unused Windows API and CLI comparisons (known negative outcomes)
         type: boolean
@@ -824,8 +828,12 @@ jobs:
 
   focused-integration-layout:
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.checks == 'failed' && inputs.integration_failures == true }}
-    name: Focused macOS category layouts
-    runs-on: macos-latest
+    name: Focused original category layouts (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ${{ inputs.category_layout_only == true && fromJSON('["macos-latest","windows-latest","windows-2022"]') || fromJSON('["macos-latest"]') }}
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
@@ -842,13 +850,13 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: issue-19-focused-integration-layout-${{ github.sha }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
+          name: issue-19-focused-integration-layout-${{ matrix.os }}-${{ github.sha }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
           path: work/ci-focused-integration-layout/
           if-no-files-found: error
           retention-days: 7
 
   focused-integration-reveal:
-    if: ${{ github.event_name == 'workflow_dispatch' && inputs.checks == 'failed' && inputs.integration_failures == true }}
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.checks == 'failed' && inputs.integration_failures == true && inputs.category_layout_only != true }}
     name: Focused Windows 2022 direct creation Reveal
     runs-on: windows-2022
     timeout-minutes: 15

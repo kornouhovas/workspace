@@ -426,7 +426,7 @@ body {
 .view-filters input:focus-visible, .view-filters select:focus-visible { outline: 2px solid #4966cf; outline-offset: 2px; }
 .archive-row-details { display: block; font-size: .875rem; overflow-wrap: anywhere; }
 
-.view-grouping { border: 1px solid var(--border, #d5d5d5); border-radius: .5rem; padding: .75rem; margin-block: .75rem; }
+.view-grouping { min-width: 0; border: 1px solid var(--border, #d5d5d5); border-radius: .5rem; padding: .75rem; margin-block: .75rem; }
 .view-grouping fieldset { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem; border: 0; padding: 0; min-width: 0; }
 .view-grouping label { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; min-width: 0; }
 .view-grouping select { max-width: 100%; }
