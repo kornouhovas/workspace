@@ -6,6 +6,9 @@ User-facing changes are maintained in English. The first target release is 0.1.0
 
 ### Added
 
+- Single Select, MultiSelect and folder-category grouping in Board and Table, with saved group ordering/visibility and consistent edits across every occurrence of a project.
+- Uncategorized retained projects remain accessible in a No value recovery group after a discovery-mode change.
+
 - Source-owned calendar Date properties with English/Russian keyboard editing, validation and clearing; intended days survive restart, language and timezone changes, including years 0001–9999.
 
 - A launchable local desktop settings screen with English and Russian interface languages.
@@ -71,7 +74,7 @@ User-facing changes are maintained in English. The first target release is 0.1.0
 
 ### Planned
 
-- Other property types and definition deletion/hiding/reordering; filtering/grouping/dragging and Board/general view management.
+- Remaining property and view-layout controls, including definition deletion/hiding/reordering and group-to-group dragging.
 - Physical category editing, archive and restore.
 - The full 0.1.0 local desktop release and its remaining capabilities.
 
