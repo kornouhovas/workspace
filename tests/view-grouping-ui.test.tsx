@@ -85,3 +85,99 @@ test('a delayed projection cannot apply old-property group keys to a new groupin
     assert.equal(screen.queryByRole('button',{name:'Hide group: Alpha'})===null,true);
   }finally{cleanup();}
 });
+
+for (const language of ['en','ru'] as const) for (const layout of ['table','board'] as const) {
+  test(`${language} ${layout} edits from either MultiSelect occurrence update shared metadata`,async()=>{
+    const directory=mkdtempSync(join(tmpdir(),'selection-groups-ui-')),root=join(directory,'root');mkdirSync(root);mkdirSync(join(root,'Project'));
+    const service=openSettingsService(join(directory,'app.sqlite'));
+    const workspace=service.handleCommand({type:'workspace.create',rootPath:root,name:'One'}).value;
+    const {workspaceId,sourceId,viewId}=workspace;
+    const command=(type:string,fields:object={})=>service.handleCommand({type:`workspace.${type}`,workspaceId,...fields});
+    const query=(type:string,fields:object={})=>service.handleQuery({type:`workspace.${type}`,workspaceId,...fields});
+    command('applyDiscovery',{previewToken:query('previewDiscovery').value.previewToken});
+    const projects=query('listProjects').value.projects,projectId=projects[0].projectId;
+    const propertyId=command('createProperty',{name:'Tags',propertyType:'multi_select'}).value.propertyId;
+    const textId=command('createProperty',{name:'Notes',propertyType:'text'}).value.propertyId;
+    const option=(name:string)=>command('createSelectOption',{propertyId,name,color:'default'}).value.snapshot.selectOptions.find((o:{name:string})=>o.name===name).optionId;
+    const a=option('A'),b=option('B');option('Unused');
+    command('setMultiSelectValue',{propertyId,projectId,optionIds:[a,b]});
+    const api={getBackendStatus:async()=>({state:"ready"}),onBackendStatus:()=>()=>{},workspace:async(input:{type:string})=>/workspace\.(list|get|query)/.test(input.type)?service.handleQuery(input):service.handleCommand(input),onWorkspaceChange:service.workspaces.subscribe} as unknown as WorkspaceDesktopApi;
+    const user=userEvent.setup({document}),t=(key:Parameters<typeof translate>[1])=>translate(language,key);
+    const props={client:new WorkspaceServiceClient(api),workspaceId,sourceId,viewId,projects,language,disabled:false};
+    try {
+      const rendered=render(<TextPropertiesTable {...props} layout={layout}/>);
+      const select=await screen.findByLabelText(t('groupProperty'));
+      await waitFor(()=>assert.equal((select as HTMLSelectElement).disabled,false));
+      await user.selectOptions(select,propertyId);
+      await screen.findByRole('heading',{name:'A (1)'});await screen.findByRole('heading',{name:'B (1)'});
+      await screen.findByRole('heading',{name:'Unused (0)'});await screen.findByRole('heading',{name:`${t('groupNoValue')} (0)`});
+      const groupB=screen.getByRole('region',{name:'B'});
+      const textButton=within(groupB).getByRole('button',{name:`${t('editTextValue')}: Project / Notes`});
+      textButton.focus();await user.keyboard('{Enter}');
+      await user.type(within(groupB).getByRole('textbox',{name:`${t('editTextValue')}: Project / Notes`}), 'Shared');
+      await user.click(within(groupB).getByRole('button',{name:t('saveTextValue')}));
+      await waitFor(()=>assert.equal(screen.getAllByRole('button',{name:`${t('editTextValue')}: Project / Notes`}).every(b=>b.textContent==='Shared'),true));
+      await user.click(within(screen.getByRole('region',{name:'A'})).getByRole('button',{name:`${t('editMultiSelectValue')}: Project / Tags`}));
+      const groupA=screen.getByRole('region',{name:'A'});
+      await user.click(within(groupA).getByRole('checkbox',{name:'A'}));
+      await user.click(within(groupA).getByRole('button',{name:t('saveTextValue')}));
+      await screen.findByRole('heading',{name:'A (0)'});await screen.findByRole('heading',{name:'B (1)'});
+      assert.deepEqual(query('listTextProperties').value.values,[{projectId,propertyId:textId,value:'Shared'}]);
+      command('updateSelectOption',{propertyId,optionId:b,name:'Renamed',color:'blue'});
+      await screen.findByRole('heading',{name:'Renamed (1)'});
+      rendered.rerender(<TextPropertiesTable {...props} layout={layout==='table'?'board':'table'}/>);
+      await screen.findByRole('heading',{name:'Renamed (1)'});
+      assert.equal(screen.getAllByRole('button',{name:`${t('editTextValue')}: Project / Notes`})[0].textContent,'Shared');
+    } finally {cleanup();service.close();rmSync(directory,{recursive:true,force:true});}
+  });
+}
+
+for(const language of ['en','ru'] as const) test(`${language} folder category grouping is selectable in Table and Board`,async()=>{
+  const directory=mkdtempSync(join(tmpdir(),'category-groups-ui-')),root=join(directory,'root');mkdirSync(root);mkdirSync(join(root,'Category','Project'),{recursive:true});mkdirSync(join(root,'Empty'));
+  const service=openSettingsService(join(directory,'app.sqlite'));
+  const {workspaceId,sourceId,viewId}=service.handleCommand({type:'workspace.create',rootPath:root,name:'Grouped'}).value;
+  const preview=service.handleQuery({type:'workspace.previewDiscovery',workspaceId,mode:'grouped'}).value;
+  const list=service.handleCommand({type:'workspace.applyDiscovery',workspaceId,previewToken:preview.previewToken}).value;
+  const api={getBackendStatus:async()=>({state:'ready'}),onBackendStatus:()=>()=>{},workspace:async(input:{type:string})=>/workspace\.(list|get|query)/.test(input.type)?service.handleQuery(input):service.handleCommand(input),onWorkspaceChange:service.workspaces.subscribe} as unknown as WorkspaceDesktopApi;
+  const props={client:new WorkspaceServiceClient(api),workspaceId,sourceId,viewId,projects:list.projects,categoryProperty:list.categoryProperty,categories:list.categories,language,disabled:false};
+  const user=userEvent.setup({document}),t=(key:Parameters<typeof translate>[1])=>translate(language,key);
+  try {
+    const rendered=render(<TextPropertiesTable {...props} layout="table"/>);
+    const select=await screen.findByLabelText(t('groupProperty'));
+    await waitFor(()=>assert.equal((select as HTMLSelectElement).disabled,false));
+    await user.selectOptions(select,list.categoryProperty.propertyId);
+    await screen.findByRole('heading',{name:'Category (1)'});await screen.findByRole('heading',{name:'Empty (0)'});
+    assert.equal(screen.queryByRole('heading',{name:`${t('groupNoValue')} (0)`}),null);
+    rendered.rerender(<TextPropertiesTable {...props} layout="board"/>);
+    await screen.findByRole('heading',{name:'Category (1)'});assert.equal(document.querySelectorAll('.project-card').length,1);
+  }finally{cleanup();service.close();rmSync(directory,{recursive:true,force:true});}
+});
+
+for(const language of ['en','ru'] as const) test(`${language} ordinary Single Select labels and empty grouping work across layouts`,async()=>{
+  const directory=mkdtempSync(join(tmpdir(),'single-groups-ui-')),root=join(directory,'root');mkdirSync(root);mkdirSync(join(root,'Project'));
+  const service=openSettingsService(join(directory,'app.sqlite'));
+  const {workspaceId,sourceId,viewId}=service.handleCommand({type:'workspace.create',rootPath:root,name:'One'}).value;
+  const command=(type:string,fields:object={})=>service.handleCommand({type:`workspace.${type}`,workspaceId,...fields});
+  const query=(type:string,fields:object={})=>service.handleQuery({type:`workspace.${type}`,workspaceId,...fields});
+  const projects=command('applyDiscovery',{previewToken:query('previewDiscovery').value.previewToken}).value.projects;
+  const propertyId=command('createProperty',{name:'Choice',propertyType:'single_select'}).value.propertyId;
+  const optionId=command('createSelectOption',{propertyId,name:'Option',color:'default'}).value.snapshot.selectOptions[0].optionId;
+  const api={getBackendStatus:async()=>({state:'ready'}),onBackendStatus:()=>()=>{},workspace:async(input:{type:string})=>/workspace\.(list|get|query)/.test(input.type)?service.handleQuery(input):service.handleCommand(input),onWorkspaceChange:service.workspaces.subscribe} as unknown as WorkspaceDesktopApi;
+  const props={client:new WorkspaceServiceClient(api),workspaceId,sourceId,viewId,projects,language,disabled:false};
+  const user=userEvent.setup({document}),t=(key:Parameters<typeof translate>[1])=>translate(language,key);
+  try{
+    const rendered=render(<TextPropertiesTable {...props} layout="table"/>);
+    const select=await screen.findByLabelText(t('groupProperty'));await waitFor(()=>assert.equal((select as HTMLSelectElement).disabled,false));
+    await user.selectOptions(select,propertyId);
+    await screen.findByRole('heading',{name:`${t('groupNoValue')} (1)`});await screen.findByRole('heading',{name:'Option (0)'});
+    const empty=screen.getByRole('region',{name:t('groupNoValue')});
+    await user.click(within(empty).getByRole('button',{name:`${t('editSelectValue')}: Project / Choice`}));
+    await user.selectOptions(within(empty).getByRole('combobox'),optionId);
+    await user.click(within(empty).getByRole('button',{name:t('saveTextValue')}));
+    await screen.findByRole('heading',{name:'Option (1)'});await screen.findByRole('heading',{name:`${t('groupNoValue')} (0)`});
+    rendered.rerender(<TextPropertiesTable {...props} layout="board"/>);
+    await screen.findByRole('heading',{name:'Option (1)'});
+    command('updateSelectOption',{propertyId,optionId,name:'Renamed',color:'green'});
+    await screen.findByRole('heading',{name:'Renamed (1)'});
+  }finally{cleanup();service.close();rmSync(directory,{recursive:true,force:true});}
+});

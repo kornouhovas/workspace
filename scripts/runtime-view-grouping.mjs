@@ -34,3 +34,74 @@ export async function exerciseViewGrouping({ page, query, workspaceId, propertyI
   await group().waitFor({ state: "hidden" }); await rows.first().waitFor();
   return { layout, exactScalar: true, serviceProjection: true, hideShow: true, collapseExpand: true, keyboard: true, widths: [360, 1024, 1440] };
 }
+
+// Reuse the owned views runtime for real preload/IPC and visual coverage.
+export async function exerciseSelectionGrouping({ page, query, workspaceId, language, layout, evidenceDirectory }) {
+  const en = language === "en";
+  const panel = page.getByRole("region", { name: en ? "Grouping" : "Группировка", exact: true });
+  const grouping = panel.getByLabel(en ? "Group by" : "Группировать по", { exact: true });
+  const call = (type, fields = {}) => query(page, { type: `workspace.${type}`, workspaceId, ...fields });
+  const projectId = (await call("listProjects")).projects[0].projectId;
+  const snapshot = await call("listTextProperties");
+  const propertyId = snapshot.definitions.find(p => p.name === "Grouping tags")?.propertyId ??
+    (await call("createProperty", { name: "Grouping tags", propertyType: "multi_select" })).propertyId;
+  let options = (await call("listTextProperties")).selectOptions.filter(o => o.propertyId === propertyId);
+  if (!options.length) for (const name of ["A", "B", "Unused"]) {
+    options = (await call("createSelectOption", { propertyId, name, color: "default" })).snapshot.selectOptions.filter(o => o.propertyId === propertyId);
+  }
+  const [a, b] = options;
+  await call("setMultiSelectValue", { projectId, propertyId, optionIds: [a.optionId, b.optionId] });
+  await grouping.and(page.locator(":enabled")).selectOption(propertyId);
+  await page.getByRole("heading", { name: "A (1)", exact: true }).waitFor();
+  await page.getByRole("heading", { name: "B (1)", exact: true }).waitFor();
+  await page.getByRole("heading", { name: "Unused (0)", exact: true }).waitFor();
+  const viewId = (await call("listViews")).activeViewId;
+  const groups = (await call("queryView", { viewId, archived: false })).groups;
+  assert.deepEqual(groups.slice(0, 2).map(g => g.projectIds), [[projectId], [projectId]]);
+  const value = page.getByRole("region", { name: "B", exact: true }).getByRole("button", {
+    name: `${en ? "Edit MultiSelect value" : "Редактировать MultiSelect-значение"}: Project / Grouping tags`, exact: true });
+  await value.and(page.locator(":enabled")).focus(); await value.press("Enter");
+  const editor = page.getByRole("region", { name: "B", exact: true });
+  await editor.getByRole("checkbox", { name: "A", exact: true }).uncheck();
+  const save = editor.getByRole("button", { name: en ? "Save value" : "Сохранить значение", exact: true });
+  await save.focus(); await save.press("Enter");
+  await page.getByRole("heading", { name: "A (0)", exact: true }).waitFor();
+  await page.getByRole("heading", { name: "B (1)", exact: true }).waitFor();
+  await call("setMultiSelectValue", { projectId, propertyId, optionIds: [a.optionId, b.optionId] });
+  await page.getByRole("heading", { name: "A (1)", exact: true }).waitFor();
+  for (const width of [360, 1024, 1440]) {
+    await page.setViewportSize({ width, height: width === 1440 ? 960 : 720 });
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), true);
+    await page.screenshot({ path: join(evidenceDirectory, `${language}-${width}-${layout}-selection-grouping.png`), fullPage: true });
+  }
+  await grouping.and(page.locator(":enabled")).selectOption("");
+  await page.getByRole("heading", { name: "A (1)", exact: true }).waitFor({ state: "hidden" });
+  return { layout, stableOptionIds: true, repeatedLogicalId: true, keyboardEditFromOccurrence: true, widths: [360, 1024, 1440] };
+}
+
+export async function exerciseCategoryGrouping({ page, query, rootPath, language, evidenceDirectory }) {
+  const en = language === "en";
+  const workspace = await query(page, { type: "workspace.create", rootPath, name: `Category groups ${language}` });
+  const { workspaceId, viewId } = workspace;
+  const call = (type, fields = {}) => query(page, { type: `workspace.${type}`, workspaceId, ...fields });
+  const preview = await call("previewDiscovery", { mode: "grouped" });
+  const list = await call("applyDiscovery", { previewToken: preview.previewToken });
+  await call("activate"); await page.reload();
+  const grouping = page.getByRole("region", { name: en ? "Grouping" : "Группировка", exact: true })
+    .getByLabel(en ? "Group by" : "Группировать по", { exact: true });
+  await grouping.and(page.locator(":enabled")).selectOption(list.categoryProperty.propertyId);
+  for (const layout of ["table", "board"]) {
+    await call("updateView", { viewId, name: "Categories", kind: layout });
+    await page.getByRole("heading", { name: "Category (1)", exact: true }).waitFor();
+    await page.getByRole("heading", { name: "Empty (0)", exact: true }).waitFor();
+    assert.equal(await page.getByRole("heading", { name: en ? "No value (0)" : "Без значения (0)", exact: true }).count(), 0);
+    const groups = (await call("queryView", { viewId, archived: false })).groups;
+    assert.deepEqual(groups.map(g => g.value), list.categories.map(c => c.categoryId));
+    for (const width of [360, 1440]) {
+      await page.setViewportSize({ width, height: 720 });
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), true);
+      await page.screenshot({ path: join(evidenceDirectory, `${language}-${width}-${layout}-category-grouping.png`), fullPage: true });
+    }
+  }
+  return { categoryIdentity: true, noEmptyDestination: true, layouts: ["table", "board"], widths: [360, 1440] };
+}

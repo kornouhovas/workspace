@@ -20,6 +20,8 @@ export interface ViewGroupingSnapshot {
 export interface ViewGroup {
     key: string;
     value: ScalarGroupValue;
+    // Option/category identity stays in value/key; labels may change independently.
+    label?: string;
     projectIds: string[];
     hidden: boolean;
     collapsed: boolean;

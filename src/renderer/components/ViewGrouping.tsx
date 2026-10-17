@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { defaultGroupSettings, type GroupSettings, type ViewGroup, type ViewGroupingConfig } from "../../contracts/view-grouping.js";
+import type { CategoryProperty } from "../../contracts/workspaces.js";
 import type { Language } from "../../contracts/settings.js";
 import type { PropertySnapshot } from "../../contracts/text-properties.js";
 import { WorkspaceServiceClient } from "../workspace-service-client.js";
@@ -11,16 +12,17 @@ interface Props {
     viewId: string;
     language: Language;
     snapshot: PropertySnapshot | null;
+    categoryProperty?: CategoryProperty | null;
     groups: ViewGroup[] | null;
     groupPropertyId?: string | null;
     disabled: boolean;
 }
 export function ViewGrouping(props: Props) { return <GroupingContent key={`${props.workspaceId}:${props.viewId}`} {...props}/>; }
-function GroupingContent({ client, workspaceId, viewId, language, snapshot, groups, groupPropertyId, disabled }: Props) {
+function GroupingContent({ client, workspaceId, viewId, language, snapshot, categoryProperty, groups, groupPropertyId, disabled }: Props) {
     const t = (key: TranslationKey) => translate(language, key);
     const [config, setConfig] = useState<ViewGroupingConfig | null>(null), [pending, setPending] = useState(false), [loading, setLoading] = useState(true), [error, setError] = useState(false);
     const version = useRef(0), saving = useRef(false);
-    const properties = [{ id: "name", name: t("projectName") }, ...(snapshot?.definitions.filter(p => ["text", "number", "date"].includes(p.propertyType)).map(p => ({ id: p.propertyId, name: p.name })) ?? [])];
+    const properties = [{ id: "name", name: t("projectName") }, ...(snapshot?.definitions.map(p => ({ id: p.propertyId, name: p.name })) ?? []), ...(categoryProperty ? [{ id: categoryProperty.propertyId, name: categoryProperty.name ?? t("discoveryCategory") }] : [])];
     const load = async () => {
         const request = ++version.current;
         setLoading(true);
@@ -104,7 +106,7 @@ function GroupingContent({ client, workspaceId, viewId, language, snapshot, grou
         {(["default", "ascending", "descending", "manual"] as const).map(order => <option key={order} value={order}>{t(`groupOrder_${order}`)}</option>)}
       </select></label><label><input type="checkbox" checked={setting.hideEmpty} onChange={event => change({ ...setting, hideEmpty: event.currentTarget.checked })}/>{t("groupHideEmpty")}</label>
       <ul className="group-settings">{projectedGroups?.map((group, index) => {
-                const label = group.value === null ? t("groupNoValue") : String(group.value), hidden = setting.hidden.includes(group.key), collapsed = setting.collapsed.includes(group.key);
+                const label = group.value === null ? t("groupNoValue") : (group.label ?? String(group.value)), hidden = setting.hidden.includes(group.key), collapsed = setting.collapsed.includes(group.key);
                 return <li key={group.key}><span className="property-authored">{label} ({group.projectIds.length})</span>
           <button type="button" className="workspace-button workspace-button--secondary" aria-label={`${t(hidden ? "groupShow" : "groupHide")}: ${label}`} onClick={() => toggle("hidden", group.key)}>{t(hidden ? "groupShow" : "groupHide")}</button>
           <button type="button" className="workspace-button workspace-button--secondary" aria-label={`${t(collapsed ? "groupExpand" : "groupCollapse")}: ${label}`} aria-expanded={!collapsed} onClick={() => toggle("collapsed", group.key)}>{t(collapsed ? "groupExpand" : "groupCollapse")}</button>

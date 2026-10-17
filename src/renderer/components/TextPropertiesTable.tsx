@@ -213,7 +213,7 @@ function TextPropertiesContent({ viewId, layout = "table", hideReveal, client, w
       refreshKey={JSON.stringify([snapshot?.revision, discoveryRevision, projects.map(p => [p.projectId, p.name, p.categoryId]), retainedProjects.map(p => [p.projectId, p.name, p.categoryId])])}
       onResults={ids => setFilteredIds({ viewId, ids })} onGroups={(groups,propertyId) => setGrouped({viewId,groups,propertyId})} />
     }
-    {viewId && <ViewGrouping client={client} workspaceId={workspaceId} viewId={viewId} language={language} snapshot={snapshot} groups={grouped?.viewId===viewId ? grouped.groups : null} groupPropertyId={grouped?.viewId===viewId ? grouped.propertyId : null} disabled={disabled||loadError} />}
+    {viewId && <ViewGrouping client={client} workspaceId={workspaceId} viewId={viewId} language={language} snapshot={snapshot} categoryProperty={categoryProperty} groups={grouped?.viewId===viewId ? grouped.groups : null} groupPropertyId={grouped?.viewId===viewId ? grouped.propertyId : null} disabled={disabled||loadError} />}
     {loading && <StatusMessage kind="info" title={t("propertiesLoading")} />}
     {loadError && <><StatusMessage kind="error" title={t("propertiesLoadError")} />
       <button type="button" className="workspace-button workspace-button--secondary" disabled={disabled || loading} onClick={() => void load()}>{t("propertiesRetry")}</button></>}
@@ -249,8 +249,8 @@ function TextPropertiesContent({ viewId, layout = "table", hideReveal, client, w
       {grouped.groups.length>0 && grouped.groups.every(group=>group.hidden) && <p role="status">{t("groupAllHidden")}</p>}
       {grouped.groups.length===0 && <p role="status">{t("groupEmpty")}</p>}
       <div className={layout === "board" ? "grouped-board" : "grouped-table"}>
-      {grouped.groups.filter(group=>!group.hidden).map(group=><section className="project-group" key={group.key} aria-label={group.value===null?t("groupNoValue"):String(group.value)}>
-        <h3 className="property-authored">{group.value===null?t("groupNoValue"):String(group.value)} ({group.projectIds.length})</h3>
+      {grouped.groups.filter(group=>!group.hidden).map(group=><section className="project-group" key={group.key} aria-label={group.value===null?t("groupNoValue"):(group.label ?? String(group.value))}>
+        <h3 className="property-authored">{group.value===null?t("groupNoValue"):(group.label ?? String(group.value))} ({group.projectIds.length})</h3>
         {!group.collapsed && (group.empty ? <p>{t("groupEmpty")}</p> : layout === "board" ? <ul className="project-board" aria-label={t("boardProjects")}>{rows(group.projectIds)}</ul> :
           <div className="project-table-scroll"><table className="project-table" style={{ minWidth: `${Math.max(1, (snapshot?.definitions.length ?? 0) + 2 + (categoryProperty ? 1 : 0)) * 14}rem` }}><thead><tr>{headers}</tr></thead><tbody>{rows(group.projectIds)}</tbody></table></div>)}
       </section>)}

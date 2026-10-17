@@ -496,3 +496,21 @@ preserves independent property settings; duplication copies them into an indepen
 view row. Settings never modify source values, project identities or folders.
 See the [contract and scenarios](plans/issue-29-scalar-grouping.md) and
 [verification report](verification/issue-29-scalar-grouping.md).
+
+
+## Implemented Select and category grouping
+
+Issue #30 extends the existing workspace-owned grouping JSON without a migration.
+Ordinary Single Select and MultiSelect groups carry stable option IDs as values/keys
+and current labels separately. Every ordinary option is a candidate, including unused
+and source-hidden options, with an ordinary No value group. Source option order is
+the default; explicit label sorting and view-owned manual order, hidden/collapsed and
+hide-empty settings remain independent. MultiSelect projects appear in every selected
+group with one logical project ID and shared property metadata.
+
+Grouped sources expose their folder-backed property as a grouping choice. Active
+categories and lifecycle-referenced historical categories supply stable category keys
+and current folder labels; grouping itself changes no filesystem state. Direct mode
+keeps this property unavailable. See the [contract/scenarios](plans/issue-30-option-grouping.md)
+and [verification report](verification/issue-30-option-grouping.md); unresolved retained
+uncategorized presentation is tracked in the issue checkpoint before final acceptance.

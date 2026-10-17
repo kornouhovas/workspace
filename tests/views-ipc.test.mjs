@@ -53,3 +53,28 @@ test('built IPC routes view lifecycle commands and validates payloads without pa
     const events = sent.filter(m => m.type === 'workspace.change'); assert.ok(events.length > 0); assert.ok(events.every(isServiceEvent));
   } finally { parent.emit('message', { data: { type: 'shutdown' }, ports: [] }); rmSync(directory, { recursive: true, force: true }); }
 });
+
+test('built IPC preserves option labels and repeated logical IDs in selection groups',()=>{
+  const directory=mkdtempSync(join(tmpdir(),'selection-groups-ipc-')),root=join(directory,'root');mkdirSync(root);mkdirSync(join(root,'Project'));
+  const parent=new EventEmitter(),port=new EventEmitter(),sent=[];
+  parent.postMessage=()=>{};port.postMessage=message=>sent.push(message);port.close=()=>{};
+  startServiceProcess(parent);let id=0;
+  const request=input=>{port.emit('message',{data:{id:++id,input}});const result=sent.at(-1).result;assert.equal(result.ok,true,JSON.stringify(result));return result.value;};
+  try {
+    parent.emit('message',{data:{type:'connect',databasePath:join(directory,'app.sqlite')},ports:[port]});
+    const {workspaceId,viewId}=request({type:'workspace.create',rootPath:root,name:'One'});
+    const call=(type,fields={})=>request({type:`workspace.${type}`,workspaceId,...fields});
+    const projectId=call('applyDiscovery',{previewToken:call('previewDiscovery').previewToken}).projects[0].projectId;
+    const propertyId=call('createProperty',{name:'Tags',propertyType:'multi_select'}).propertyId;
+    const a=call('createSelectOption',{propertyId,name:'A',color:'default'}).snapshot.selectOptions[0].optionId;
+    const b=call('createSelectOption',{propertyId,name:'B',color:'default'}).snapshot.selectOptions[1].optionId;
+    call('setMultiSelectValue',{projectId,propertyId,optionIds:[a,b]});
+    call('setViewGrouping',{viewId,config:{propertyId,settings:[]}});
+    const projection=call('queryView',{viewId,archived:false});
+    assert.deepEqual(projection.projectIds,[projectId]);
+    assert.deepEqual(projection.groups.map(g=>[g.value,g.label,g.projectIds]),[[a,'A',[projectId]],[b,'B',[projectId]],[null,undefined,[]]]);
+    call('updateSelectOption',{propertyId,optionId:b,name:'Renamed',color:'blue'});
+    assert.equal(call('queryView',{viewId,archived:false}).groups[1].label,'Renamed');
+    assert.ok(sent.filter(m=>m.type==='workspace.change').every(isServiceEvent));
+  }finally{parent.emit('message',{data:{type:'shutdown'},ports:[]});rmSync(directory,{recursive:true,force:true});}
+});

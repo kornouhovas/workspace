@@ -22,7 +22,7 @@ const english = {
   groupReset: "Reset grouping",
   groupEmpty: "This group has no matching projects.",
   groupAllHidden: "All groups are hidden. Show groups or turn off Hide empty groups.",
-  groupHint: "Saved per view. Exact values define groups; group visibility does not change project filters.",
+  groupHint: "Saved per view. Values and selection options define groups; group visibility does not change project filters.",
 
   filtersTitle: "Search and filters",
   filterSemantics: "Saved per view. Search and all conditions must match. Selection lists match any chosen value; All requires every chosen value.",
@@ -616,7 +616,7 @@ const russian: Record<keyof typeof english, string> = {
   groupReset: "Сбросить группировку",
   groupEmpty: "В этой группе нет подходящих проектов.",
   groupAllHidden: "Все группы скрыты. Покажите группы или отключите скрытие пустых групп.",
-  groupHint: "Настройки сохраняются для представления. Группы объединяют точные значения; их видимость не меняет фильтры проектов.",
+  groupHint: "Настройки сохраняются для представления. Группы объединяют значения и варианты выбора; их видимость не меняет фильтры проектов.",
 
   filtersTitle: "Поиск и фильтры",
   filterSemantics: "Сохраняется в представлении. Поиск и все условия должны совпасть. Список соответствует любому выбранному значению; «Все» требует каждого значения.",

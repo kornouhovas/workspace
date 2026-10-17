@@ -4,14 +4,14 @@ import { mkdtempSync, mkdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { openSettingsService } from '../dist/service/settings.mjs';
-function fixture(run) {
+function fixture(run, mode = 'direct') {
   const directory = mkdtempSync(join(tmpdir(), 'grouping-')), root = join(directory, 'root'); mkdirSync(root);
-  for (const name of ['Alpha','Beta','Gamma']) mkdirSync(join(root,name));
+  for (const name of ['Alpha','Beta','Gamma']) { mkdirSync(join(root,name)); if(mode==='grouped' && name!=='Gamma') mkdirSync(join(root,name,'Project')); }
   const path = join(directory,'app.sqlite'); let service = openSettingsService(path);
   const workspace = service.handleCommand({type:'workspace.create',rootPath:root,name:'One'}).value;
   const command = (type,fields={}) => service.handleCommand({type:`workspace.${type}`,workspaceId:workspace.workspaceId,...fields});
   const query = (type,fields={}) => service.handleQuery({type:`workspace.${type}`,workspaceId:workspace.workspaceId,...fields});
-  command('applyDiscovery',{previewToken:query('previewDiscovery').value.previewToken});
+  command('applyDiscovery',{previewToken:query('previewDiscovery',{mode}).value.previewToken});
   try { run({workspace,command,query,root,path,reopen(){service.close();service=openSettingsService(path);}}); }
   finally { service.close();rmSync(directory,{recursive:true,force:true}); }
 }
@@ -93,8 +93,8 @@ test('invalid ownership/type/key payloads and failed saves preserve configuratio
     const {viewId}=f.workspace;
     f.command('setViewGrouping',{viewId,config:config('name')});
     const before=f.query('getViewGrouping',{viewId});
-    const select=f.command('createProperty',{name:'Select',propertyType:'single_select'}).value.propertyId;
-    for(const bad of [config(select),{propertyId:'name',settings:[{propertyId:'name',order:'manual',manualOrder:['null'],hidden:[],collapsed:[],hideEmpty:false}]},{propertyId:'name',settings:[],extra:true}]) {
+    const unavailable='11111111-1111-4111-8111-111111111111';
+    for(const bad of [config(unavailable),{propertyId:'name',settings:[{propertyId:'name',order:'manual',manualOrder:['null'],hidden:[],collapsed:[],hideEmpty:false}]},{propertyId:'name',settings:[],extra:true}]) {
       assert.equal(f.command('setViewGrouping',{viewId,config:bad}).error.code,'invalid_input');
       assert.deepEqual(f.query('getViewGrouping',{viewId}),before);
     }
@@ -186,3 +186,135 @@ test('valid long and JSON-escaped Text values remain independently hideable and 
     f.reopen();assert.equal(f.query('getViewGrouping',{viewId}).value.config.settings[0].manualOrder[0],key);
   }
 }));
+
+test('selection grouping uses stable IDs, all options and MultiSelect memberships across restart',()=>fixture(f=>{
+  const {viewId}=f.workspace;
+  const alpha=f.query('listProjects').value.projects.find(p=>p.name==='Alpha').projectId;
+  for(const propertyType of ['single_select','multi_select']) {
+    const propertyId=f.command('createProperty',{name:propertyType,propertyType}).value.propertyId;
+    const option=name=>{
+      const result=f.command('createSelectOption',{propertyId,name,color:'default'});
+      assert.equal(result.ok,true);
+      return result.value.snapshot.selectOptions.find(o=>o.propertyId===propertyId&&o.name===name).optionId;
+    };
+    const a=option('Zulu'),b=option('Alpha'),c=option('Unused');
+    f.command('setSelectOptionHidden',{propertyId,optionId:b,hidden:true});
+    const set=optionIds=>f.command(propertyType==='multi_select'?'setMultiSelectValue':'setSelectValue',{propertyId,projectId:alpha,...(propertyType==='multi_select'?{optionIds}:{optionId:optionIds[0]??null})});
+    assert.equal(set([a,b]).ok,true);
+    assert.equal(f.command('setViewGrouping',{viewId,config:config(propertyId)}).ok,true);
+    const groups=()=>f.query('queryView',{viewId,archived:false}).value.groups;
+    assert.deepEqual(groups().map(g=>g.value),[a,b,c,null]);
+    assert.deepEqual(groups().map(g=>g.label),['Zulu','Alpha','Unused',undefined]);
+    assert.deepEqual(groups()[0].projectIds,[alpha]);
+    assert.deepEqual(groups()[1].projectIds,propertyType==='multi_select'?[alpha]:[]);
+    assert.equal(groups()[1].hidden,false);
+    const setting={propertyId,order:'manual',manualOrder:[JSON.stringify(b),JSON.stringify(a)],hidden:[JSON.stringify(c)],collapsed:[JSON.stringify(a)],hideEmpty:false};
+    assert.equal(f.command('setViewGrouping',{viewId,config:{propertyId,settings:[setting]}}).ok,true);
+    f.command('updateSelectOption',{propertyId,optionId:a,name:'Renamed',color:'blue'});
+    assert.equal(groups().find(g=>g.value===a).collapsed,true);
+    assert.equal(groups().find(g=>g.value===a).label,'Renamed');
+    const copy=f.command('duplicateView',{viewId,name:'Copy'}).value.activeViewId;
+    f.command('setViewGrouping',{viewId:copy,config:config(null)});
+    f.reopen();
+    assert.deepEqual(groups().map(g=>g.value),[b,a,c,null]);
+    assert.equal(groups().find(g=>g.value===c).hidden,true);
+    assert.equal(set([b]).ok,true);
+    assert.deepEqual(groups().find(g=>g.value===a).projectIds,[]);
+    assert.deepEqual(groups().find(g=>g.value===b).projectIds,[alpha]);
+    assert.equal(f.query('queryView',{viewId,archived:false}).value.projectIds.length,3);
+    assert.equal(f.query('queryView',{viewId:copy,archived:false}).value.groups,undefined);
+  }
+}));
+
+
+test('folder-backed grouping follows physical categories without an empty destination',()=>fixture(f=>{
+  const {viewId}=f.workspace;
+  const list=f.query('listProjects').value;
+  const propertyId=list.categoryProperty.propertyId;
+  assert.equal(f.command('setViewGrouping',{viewId,config:config(propertyId)}).ok,true);
+  const groups=()=>f.query('queryView',{viewId,archived:false}).value.groups;
+  assert.deepEqual(groups().map(g=>g.label),['Alpha','Beta','Gamma']);
+  assert.equal(groups().some(g=>g.value===null),false);
+  for(const category of list.categories) {
+    assert.deepEqual(groups().find(g=>g.value===category.categoryId).projectIds,list.projects.filter(p=>p.categoryId===category.categoryId).map(p=>p.projectId));
+  }
+  assert.equal(groups().find(g=>g.label==='Gamma').empty,true);
+  const setting={propertyId,order:'default',manualOrder:[],hidden:['null'],collapsed:[],hideEmpty:false};
+  assert.equal(f.command('setViewGrouping',{viewId,config:{propertyId,settings:[setting]}}).error.code,'invalid_input');
+  f.reopen();assert.deepEqual(groups().map(g=>g.label),['Alpha','Beta','Gamma']);
+},'grouped'));
+
+test('option order, filtered empties and view-owned presentation stay independent of source metadata',()=>fixture(f=>{
+  const {viewId}=f.workspace;
+  const propertyId=f.command('createProperty',{name:'Tags',propertyType:'multi_select'}).value.propertyId;
+  const option=name=>f.command('createSelectOption',{propertyId,name,color:'default'}).value.snapshot.selectOptions.find(o=>o.name===name).optionId;
+  const a=option('Zulu'),b=option('Alpha'),c=option('Middle');
+  const projectId=f.query('listProjects').value.projects.find(p=>p.name==='Alpha').projectId;
+  f.command('setMultiSelectValue',{propertyId,projectId,optionIds:[a,b]});
+  const groups=()=>f.query('queryView',{viewId,archived:false}).value.groups;
+  const setting={propertyId,order:'default',manualOrder:[],hidden:[],collapsed:[],hideEmpty:false};
+  const save=()=>f.command('setViewGrouping',{viewId,config:{propertyId,settings:[setting]}});
+  assert.equal(save().ok,true);
+  f.command('reorderSelectOptions',{propertyId,optionIds:[c,b,a]});
+  assert.deepEqual(groups().map(g=>g.value),[c,b,a,null]);
+  setting.order='ascending';save();assert.deepEqual(groups().map(g=>g.value),[b,c,a,null]);
+  setting.order='descending';save();assert.deepEqual(groups().map(g=>g.value),[a,c,b,null]);
+  setting.order='manual';setting.manualOrder=[JSON.stringify(b)];setting.collapsed=[JSON.stringify(a)];setting.hidden=[JSON.stringify(c)];save();
+  assert.deepEqual(groups().map(g=>g.value),[b,c,a,null]);
+  const sibling=f.command('create',{rootPath:f.root,name:'Sibling'}).value;
+  f.command('setViewGrouping',{workspaceId:sibling.workspaceId,viewId:sibling.viewId,config:config(propertyId)});
+  f.command('updateSelectOption',{workspaceId:sibling.workspaceId,propertyId,optionId:a,name:'Updated',color:'red'});
+  assert.equal(groups().find(g=>g.value===a).label,'Updated');
+  assert.equal(groups().find(g=>g.value===a).collapsed,true);
+  assert.equal(f.query('queryView',{workspaceId:sibling.workspaceId,viewId:sibling.viewId,archived:false}).value.groups.find(g=>g.value===a).collapsed,false);
+  f.command('setViewFilter',{viewId,config:{search:'Beta',rules:[]}});
+  assert.deepEqual(groups().map(g=>g.empty),[true,true,true,false]);
+  setting.hideEmpty=true;save();assert.deepEqual(groups().map(g=>g.hidden),[true,true,true,false]);
+  const copy=f.command('duplicateView',{viewId,name:'Copy'}).value.activeViewId;
+  f.command('setViewGrouping',{viewId:copy,config:config(propertyId)});
+  assert.equal(f.query('queryView',{viewId:copy,archived:false}).value.groups.find(g=>g.value===a).hidden,false);
+  f.reopen();assert.deepEqual(groups().map(g=>g.hidden),[true,true,true,false]);
+  const other=f.command('createProperty',{name:'Other',propertyType:'single_select'}).value.propertyId;
+  for(const key of [JSON.stringify('Alpha'),JSON.stringify(42),JSON.stringify(a)]) {
+    const target=key===JSON.stringify(a)?other:propertyId;
+    assert.equal(f.command('setViewGrouping',{viewId,config:{propertyId:target,settings:[{...setting,propertyId:target,hidden:[key]}]}}).error.code,'invalid_input');
+  }
+}));
+
+test('category renames and moves retain keys and archive grouping preserves original category',async()=>{
+  const {randomUUID}=await import('node:crypto');
+  const {existsSync}=await import('node:fs');
+  fixture(f=>{
+    const {viewId}=f.workspace,list=f.query('listProjects').value;
+    const propertyId=list.categoryProperty.propertyId,a=list.categories.find(c=>c.name==='Alpha').categoryId,b=list.categories.find(c=>c.name==='Beta').categoryId;
+    const projectId=list.projects.find(p=>p.categoryId===a).projectId;
+    const setting={propertyId,order:'manual',manualOrder:[JSON.stringify(a)],hidden:[],collapsed:[JSON.stringify(a)],hideEmpty:false};
+    f.command('setViewGrouping',{viewId,config:{propertyId,settings:[setting]}});
+    const rename=f.query('previewCategoryFolder',{action:'rename',categoryId:a,name:'Renamed'});
+    assert.equal(rename.ok,true);
+    assert.equal(f.command('applyCategoryFolder',{operationId:randomUUID(),previewToken:rename.value.previewToken}).value.outcome,'completed');
+    const groups=archived=>f.query('queryView',{viewId,archived}).value.groups;
+    assert.equal(groups(false)[0].value,a);assert.equal(groups(false)[0].label,'Renamed');assert.equal(groups(false)[0].collapsed,true);
+    // Avoid an occupied destination by moving the Alpha project to the empty category.
+    const destination=list.categories.find(c=>c.name==='Gamma').categoryId;
+    const before=f.query('listProjects').value;
+    const move=f.command('moveProjectCategory',{operationId:randomUUID(),projectId,destinationCategoryId:destination,expectedRevision:before.revision});
+    assert.equal(move.value.outcome,'completed');
+    assert.deepEqual(groups(false).find(g=>g.value===destination).projectIds,[projectId]);
+    assert.deepEqual(groups(false).find(g=>g.value===a).projectIds,[]);
+    assert.equal(existsSync(join(f.root,'Gamma','Project')),true);
+    const ordinary=f.command('createProperty',{name:'Ordinary',propertyType:'single_select'}).value.propertyId;
+    const option=f.command('createSelectOption',{propertyId:ordinary,name:'Beta',color:'default'}).value.snapshot.selectOptions.find(o=>o.propertyId===ordinary).optionId;
+    assert.equal(f.command('setSelectValue',{propertyId:ordinary,projectId,optionId:option}).ok,true);
+    assert.equal(f.query('listProjects').value.projects.find(p=>p.projectId===projectId).categoryId,destination);
+    assert.equal(existsSync(join(f.root,'Gamma','Project')),true);
+    const location=f.query('previewArchiveLocation',{relativePath:'Archive'}).value;
+    f.command('applyArchiveLocation',{operationId:randomUUID(),previewToken:location.previewToken});
+    const preview=f.query('previewProjectArchive',{projectId,action:'archive',name:null,createParent:false}).value;
+    assert.equal(f.command('applyProjectArchive',{operationId:randomUUID(),previewToken:preview.previewToken}).value.operation.stage,'completed');
+    assert.deepEqual(groups(true).find(g=>g.value===destination).projectIds,[projectId]);
+    assert.equal(groups(true).some(g=>g.value===null),false);
+    f.reopen();assert.deepEqual(groups(true).find(g=>g.value===destination).projectIds,[projectId]);
+    assert.equal(groups(false).some(g=>g.value===b),true);
+  },'grouped');
+});
