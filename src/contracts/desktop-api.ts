@@ -1,3 +1,4 @@
+import type { ViewFilterQuery, ViewFilterCommand, ViewFilterPayload, ViewFilterSnapshot, ViewFilterResult } from "./view-filters.js";
 import type { ViewSnapshot, ViewQuery, ViewCommand } from "./views.js";
 import type { SelectCommand } from "./text-properties.js";
 import type { ProjectArchivePreview, ProjectArchiveResult, ProjectArchiveOperationList, ProjectArchiveRecoveryPreview } from "./project-archive.js";
@@ -18,7 +19,7 @@ import type { CategoryPropertySnapshot, WorkspaceRenameCategoryPropertyCommand, 
 export type BackendStatus = { state: "starting" | "ready" | "unavailable"; message?: string; diagnostic?: import("./startup-diagnostic.js").StartupDiagnostic };
 export type SettingsRequest = SettingsQuery | SettingsCommand;
 export type WorkspaceRequest = WorkspaceQuery | WorkspaceCommand;
-export type WorkspaceResponse = ViewSnapshot | ArchivePayload | CategoryRemovalPayload | CategoryOptionsPayload | ProjectCategoryMoveResult | ProjectCategoryMoveList | ProjectCategoryMoveRecoveryPreview | ProjectRenameResult | ProjectRenameList | ProjectRenameRecoveryPreview | ProjectRevealResult | ProjectCreationResult | ProjectCreationList | ProjectCreationRecoveryPreview | WorkspaceSourceObservationSnapshot | ProjectRecoveryPreview | CategoryPropertySnapshot | TextPropertySnapshot | TextPropertyMutation | ProjectList | DiscoveryPreview | WorkspaceLoad | WorkspaceCreated | ActiveWorkspace | WorkspaceSourceState;
+export type WorkspaceResponse = ViewFilterPayload | ViewSnapshot | ArchivePayload | CategoryRemovalPayload | CategoryOptionsPayload | ProjectCategoryMoveResult | ProjectCategoryMoveList | ProjectCategoryMoveRecoveryPreview | ProjectRenameResult | ProjectRenameList | ProjectRenameRecoveryPreview | ProjectRevealResult | ProjectCreationResult | ProjectCreationList | ProjectCreationRecoveryPreview | WorkspaceSourceObservationSnapshot | ProjectRecoveryPreview | CategoryPropertySnapshot | TextPropertySnapshot | TextPropertyMutation | ProjectList | DiscoveryPreview | WorkspaceLoad | WorkspaceCreated | ActiveWorkspace | WorkspaceSourceState;
 export type RootPickerResult =
   | { outcome: "selected"; path: string }
   | { outcome: "cancelled" }
@@ -70,6 +71,8 @@ export interface WorkspaceDesktopApi {
   workspace(input: WorkspaceRenameCategoryPropertyCommand): Promise<ServiceResult<CategoryPropertySnapshot>>;
   workspace(input: WorkspaceListTextPropertiesQuery): Promise<ServiceResult<TextPropertySnapshot>>;
   workspace(input: WorkspaceCreatePropertyCommand): Promise<ServiceResult<TextPropertyMutation>>;
+  workspace(input: Extract<ViewFilterQuery, { type: "workspace.getViewFilter" }> | ViewFilterCommand): Promise<ServiceResult<ViewFilterSnapshot>>;
+  workspace(input: Extract<ViewFilterQuery, { type: "workspace.queryView" }>): Promise<ServiceResult<ViewFilterResult>>;
   workspace(input: ViewQuery | ViewCommand): Promise<ServiceResult<ViewSnapshot>>;
   workspace(input: SelectCommand): Promise<ServiceResult<TextPropertyMutation>>;
   workspace(input: WorkspaceSetDateValueCommand): Promise<ServiceResult<TextPropertyMutation>>;

@@ -1,12 +1,14 @@
 import { useEffect, useId, useRef, useState } from "react";
 import type { Language } from "../../contracts/settings.js";
-import type { ProjectSummary } from "../../contracts/workspaces.js";
+import type { CategoryProperty, CategorySummary, ProjectSummary } from "../../contracts/workspaces.js";
 import type { ArchiveSnapshot, ArchiveLocationPreview, ProjectArchivePreview, ProjectArchiveOperation, ProjectArchiveRecoveryPreview } from "../../contracts/project-archive.js";
 import { WorkspaceServiceClient } from "../workspace-service-client.js";
 import { translate, type TranslationKey } from "../localization.js";
 import { StatusMessage } from "./bb-foundation.js";
 import { TextPropertiesTable } from "./TextPropertiesTable.js";
 interface Props {
+  viewId?: string;
+  categoryProperty?: CategoryProperty | null; categories?: CategorySummary[];
   layout?: "table" | "board";
   client: WorkspaceServiceClient; workspaceId: string; sourceId: string; projects: ProjectSummary[];
   language: Language; disabled: boolean; revision: number; invalidation: number;
@@ -18,7 +20,7 @@ const problemKeys: Record<string, TranslationKey> = {
   busy: "archiveProblemBusy", owned_location: "archiveProblemOwned",
 };
 export function ProjectArchivePanel(props: Props) { return <ArchiveContent key={`${props.workspaceId}:${props.sourceId}`} {...props} />; }
-function ArchiveContent({ layout = "table", client, workspaceId, sourceId, projects, language, disabled, revision, invalidation, onCommitted, onViewChange, onBlockedChange }: Props) {
+function ArchiveContent({ viewId, categoryProperty, categories, layout = "table", client, workspaceId, sourceId, projects, language, disabled, revision, invalidation, onCommitted, onViewChange, onBlockedChange }: Props) {
   const projectSelectId = useId();
   const t = (key: TranslationKey) => translate(language, key);
   const [archived, setArchived] = useState(false), [snapshot, setSnapshot] = useState<ArchiveSnapshot | null>(null);
@@ -183,8 +185,7 @@ function ArchiveContent({ layout = "table", client, workspaceId, sourceId, proje
     {recovery && <div>{recovery.problem && problems([recovery.problem])}{recovery.actions.map(action => <button type="button" key={action} disabled={controlsDisabled} className="workspace-button workspace-button--secondary" onClick={() => void recover(action)}>{t(action === "retry_original" ? "archiveRetryOriginal" : action === "complete_destination" ? "archiveCompleteDestination" : "archiveKeepOriginal")}</button>)}
       <button type="button" disabled={blocked} onClick={cancel} className="workspace-button workspace-button--secondary">{t("archiveCancel")}</button></div>}
     {archived && <>{snapshot?.projects.length ? <>
-      <ul>{snapshot.projects.map(p => <li key={p.projectId}>{p.name} — {t("archiveOriginal")}: {p.originalRelativePath}{p.categoryName && <> — {t("archiveFrozenCategory")}: {p.categoryName}</>}</li>)}</ul>
-      <TextPropertiesTable layout={layout} client={client} workspaceId={workspaceId} sourceId={sourceId} language={language} disabled={disabled} projects={snapshot.projects} hideReveal />
+      {viewId && <TextPropertiesTable categoryProperty={categoryProperty} categories={categories} viewId={viewId} layout={layout} client={client} workspaceId={workspaceId} sourceId={sourceId} language={language} disabled={disabled} projects={snapshot.projects} hideReveal />}
     </> : <p>{t("archiveEmpty")}</p>}</>}
   </section>;
 }

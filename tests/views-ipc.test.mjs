@@ -26,8 +26,15 @@ test('built IPC routes view lifecycle commands and validates payloads without pa
     assert.equal(request({ type: 'workspace.reorderViews', workspaceId, viewIds: [...copy.value.views.map(v => v.viewId)].reverse() }).ok, true);
     assert.equal(request({ type: 'workspace.activateView', workspaceId, viewId }).ok, true);
     assert.equal(request({ type: 'workspace.deleteView', workspaceId, viewId: copy.value.activeViewId }).ok, true);
+    const filterConfig = { search: 'Alpha', rules: [{ propertyId: 'name', operator: 'contains', operand: 'a' }] };
+    assert.equal(request({ type: 'workspace.setViewFilter', workspaceId, viewId, config: filterConfig }).ok, true);
+    assert.deepEqual(request({ type: 'workspace.getViewFilter', workspaceId, viewId }).value.config, filterConfig);
+    assert.deepEqual(request({ type: 'workspace.queryView', workspaceId, viewId, archived: false }).value.projectIds, []);
     const before = request({ type: 'workspace.listViews', workspaceId }), count = sent.length;
     for (const input of [
+      { type: 'workspace.setViewFilter', workspaceId, viewId, config: { search: '', rules: [{ propertyId: 'name', operator: 'gt', operand: 0 }] } },
+      { type: 'workspace.queryView', workspaceId, viewId, archived: 'false' },
+      { type: 'workspace.getViewFilter', workspaceId, viewId, extra: true },
       { type: 'workspace.createView', workspaceId, name: 'Bad', kind: 'grid' },
       { type: 'workspace.duplicateView', workspaceId, viewId, name: 'Bad', extra: true },
       { type: 'workspace.updateView', workspaceId, viewId, name: '', kind: 'board' },

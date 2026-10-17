@@ -25,7 +25,7 @@ for (const language of ["en", "ru"] as const) {
     const service = openSettingsService(join(directory, "workspace.sqlite"));
     const workspace = service.handleCommand({ type: "workspace.create", rootPath: root, name: "One" }).value;
     const workspaceId = workspace.workspaceId;
-    const api = { workspace: async (input: { type: string }) => input.type === "workspace.listViews" ? service.handleQuery(input) : service.handleCommand(input),
+    const api = { workspace: async (input: { type: string }) => /workspace\.(list|get|query)/.test(input.type) ? service.handleQuery(input) : service.handleCommand(input),
       onWorkspaceChange: service.workspaces.subscribe } as unknown as WorkspaceDesktopApi;
     const client = new WorkspaceServiceClient(api), user = userEvent.setup({ document }), t = (key: Parameters<typeof translate>[1]) => translate(language, key);
     try {
@@ -107,7 +107,7 @@ test('view load retry and rejected duplication retain the authored draft without
   const api = { workspace: async (input: {type:string}) => {
     if (input.type === "workspace.listViews" && failLoad) { failLoad = false; throw new Error("Read unavailable"); }
     if (input.type === "workspace.duplicateView" && failCopy) { failCopy = false; return { ok: false, error: { code: "storage", message: "Unavailable" } }; }
-    return input.type === "workspace.listViews" ? service.handleQuery(input) : service.handleCommand(input);
+    return /workspace\.(list|get|query)/.test(input.type) ? service.handleQuery(input) : service.handleCommand(input);
   }, onWorkspaceChange: service.workspaces.subscribe } as unknown as WorkspaceDesktopApi;
   const client = new WorkspaceServiceClient(api), user = userEvent.setup({ document });
   try {
@@ -128,7 +128,7 @@ for (const language of ["en", "ru"] as const) test(`${language} selected layout 
   const directory = mkdtempSync(join(tmpdir(), "views-archived-")), root = join(directory, "root"); mkdirSync(root); mkdirSync(join(root, "Archived project")); mkdirSync(join(root, "Active project"));
   const service = openSettingsService(join(directory, "workspace.sqlite"));
   const workspace = service.handleCommand({ type: "workspace.create", rootPath: root, name: "One" }).value, workspaceId = workspace.workspaceId;
-  const request = (type: string, rest: object = {}) => /workspace\.(list|get|preview)/.test(type) ? service.handleQuery({ type, workspaceId, ...rest }) : service.handleCommand({ type, workspaceId, ...rest });
+  const request = (type: string, rest: object = {}) => /workspace\.(list|get|preview|query)/.test(type) ? service.handleQuery({ type, workspaceId, ...rest }) : service.handleCommand({ type, workspaceId, ...rest });
   const preview = request("workspace.previewDiscovery").value;
   const projectId = request("workspace.applyDiscovery", { previewToken: preview.previewToken }).value.projects.find((p: {name:string}) => p.name === "Archived project").projectId;
   const location = request("workspace.previewArchiveLocation", { relativePath: "Archive" }).value;
@@ -136,10 +136,25 @@ for (const language of ["en", "ru"] as const) test(`${language} selected layout 
   const archive = request("workspace.previewProjectArchive", { projectId, action: "archive", name: null, createParent: false }).value;
   assert.equal(request("workspace.applyProjectArchive", { operationId: randomUUID(), previewToken: archive.previewToken }).value.operation.stage, "completed");
   const boardId = request("workspace.createView", { name: "Board", kind: "board" }).value.activeViewId;
-  const api = { getBackendStatus: async () => ({ state: "ready" }), onBackendStatus: () => () => {}, workspace: async (input: {type:string}) => /workspace\.(list|get|preview)/.test(input.type) ? service.handleQuery(input) : service.handleCommand(input), onWorkspaceChange: service.workspaces.subscribe } as unknown as WorkspaceDesktopApi;
+  request("workspace.setViewFilter", { viewId: boardId, config: { search: "missing", rules: [] } });
+  let failViews = true;
+  const api = { getBackendStatus: async () => ({ state: "ready" }), onBackendStatus: () => () => {}, workspace: async (input: {type:string}) => failViews && input.type === "workspace.listViews" ? { ok: false, error: { code: "storage", message: "unavailable" } } : /workspace\.(list|get|preview|query)/.test(input.type) ? service.handleQuery(input) : service.handleCommand(input), onWorkspaceChange: service.workspaces.subscribe } as unknown as WorkspaceDesktopApi;
   const client = new WorkspaceServiceClient(api), user = userEvent.setup({ document }), t = (key: Parameters<typeof translate>[1]) => translate(language, key);
   try {
     render(<DiscoveryWorkspace client={client} workspaceId={workspaceId} sourceId={workspace.sourceId} language={language} disabled={false} />);
+    await screen.findByText(t("viewsError"));
+    await user.click(screen.getByRole("button", { name: t("archiveArchived") }));
+    const archiveRegion = screen.getByRole("region", { name: t("archiveTitle") });
+    // Without a selected view, Archived must not bypass its saved filters.
+    await waitFor(() => assert.equal((within(archiveRegion).getByLabelText(t("archiveRestoreProject")) as HTMLSelectElement).disabled, false));
+    assert.equal(within(archiveRegion).queryByRole("table") === null, true);
+    assert.equal(within(archiveRegion).queryByText(new RegExp(t("archiveOriginal"))) === null, true);
+    failViews = false; await user.click(screen.getByRole("button", { name: t("viewsRetry") }));
+    await within(archiveRegion).findByText(t("filterEmpty"));
+    assert.equal(within(archiveRegion).queryByText("Archived project") === null, true);
+    await user.click(within(archiveRegion).getByRole("button", { name: t("filterClear") }));
+    await within(screen.getByRole("list", { name: t("boardProjects") })).findByText("Archived project");
+    await user.click(screen.getByRole("button", { name: t("archiveActive") }));
     await within(await screen.findByRole("list", { name: t("boardProjects") })).findByText("Active project");
     await user.click(screen.getByRole("button", { name: t("archiveArchived") }));
     await within(await screen.findByRole("list", { name: t("boardProjects") })).findByText("Archived project");
@@ -147,6 +162,13 @@ for (const language of ["en", "ru"] as const) test(`${language} selected layout 
     await within(await screen.findByRole("table")).findByText("Archived project");
     await user.selectOptions(screen.getByLabelText(t("viewCurrent")), boardId);
     await within(await screen.findByRole("list", { name: t("boardProjects") })).findByText("Archived project");
+    const archivedRegion = screen.getByRole("region", { name: t("archiveTitle") });
+    await user.type(within(archivedRegion).getByLabelText(t("filterSearch")), "missing{Enter}");
+    await within(archivedRegion).findByText(t("filterEmpty"));
+    assert.equal(within(archivedRegion).queryByText("Archived project") === null, true);
+    assert.equal(within(archivedRegion).queryByText(new RegExp(t("archiveOriginal"))) === null, true);
+    await user.click(within(archivedRegion).getByRole("button", { name: t("filterClear") }));
+    await within(screen.getByRole("list", { name: t("boardProjects") })).findByText("Archived project");
     await user.click(screen.getByRole("button", { name: t("archiveActive") }));
     await within(await screen.findByRole("list", { name: t("boardProjects") })).findByText("Active project");
   } finally { cleanup(); service.close(); rmSync(directory, { recursive: true, force: true }); }

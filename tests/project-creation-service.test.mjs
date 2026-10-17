@@ -123,7 +123,7 @@ for (const mode of ["direct", "grouped"]) {
     for (let attempt = 0; attempt < 2; attempt++) {
       const service = f.open();
       const after = records(f.sql);
-      for (const [table, rows] of Object.entries(before)) if (table !== "__drizzle_migrations") assert.deepEqual(after[table], table === "views" ? rows.map(row => ({ ...row, position: 0 })) : rows, table);
+      for (const [table, rows] of Object.entries(before)) if (table !== "__drizzle_migrations") assert.deepEqual(after[table], table === "views" ? rows.map(row => ({ ...row, position: 0, filter_config: '{"search":"","rules":[]}' })) : rows, table);
       assert.deepEqual(after.project_creation_operations, []);
       assert.deepEqual(after.__drizzle_migrations.slice(0, 8), before.__drizzle_migrations);
       assert.equal(after.__drizzle_migrations.length, journal.entries.length);
@@ -742,7 +742,7 @@ test("late migration failure rolls back journal/schema changes and every populat
   assert.deepEqual(inventory(f.root), files);
   f.open(); f.close(); f.open();
   const after = records(f.sql);
-  for (const [table, rows] of Object.entries(before)) if (table !== "__drizzle_migrations") assert.deepEqual(after[table], table === "views" ? rows.map(row => ({ ...row, position: 0 })) : rows);
+  for (const [table, rows] of Object.entries(before)) if (table !== "__drizzle_migrations") assert.deepEqual(after[table], table === "views" ? rows.map(row => ({ ...row, position: 0, filter_config: '{"search":"","rules":[]}' })) : rows);
   assert.equal(after.__drizzle_migrations.length, journal.entries.length); assert.deepEqual(after.project_creation_operations, []);
   assert.deepEqual(inventory(f.root), files);
 }, true));

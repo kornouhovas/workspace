@@ -1,3 +1,5 @@
+import { createViewFilterService } from "./view-filters.js";
+import type { ViewFilterPayload } from "../contracts/view-filters.js";
 import { createViewService, readViews } from "./views.js";
 import type { ViewSnapshot } from "../contracts/views.js";
 import { createProjectArchiveMutations } from "./project-archive-mutations.js";
@@ -59,6 +61,7 @@ const nativeFilesystem: WorkspaceFilesystem = {
 };
 
 export interface WorkspaceService {
+  filterRequest(input: unknown): ServiceResult<ViewFilterPayload>;
   viewRequest(input: unknown): ServiceResult<ViewSnapshot>;
   previewProjectArchive(input: unknown): ServiceResult<ProjectArchivePreview>;
   applyProjectArchive(input: unknown): ServiceResult<ProjectArchiveResult>;
@@ -230,6 +233,7 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
   }, projectFilesystem);
   const reveal = createProjectRevealService(db, projectFilesystem);
   const service: WorkspaceService = {
+    filterRequest: input => createViewFilterService(db, service)(input),
     viewRequest: createViewService(db),
     previewProjectArchive: archiveMutations.previewProjectArchive,
     applyProjectArchive: archiveMutations.applyProjectArchive,
@@ -893,6 +897,7 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
   if (db.all<{ name: string }>(sql`PRAGMA table_info(projects)`).some((column) => column.name === "category_id")) syncObserverReferences();
   return {
     ...service,
+    filterRequest: input => run(() => service.filterRequest(input), isRecord(input) && input.type === "workspace.setViewFilter" ? currentSnapshot : undefined),
     viewRequest: input => run(() => service.viewRequest(input), isRecord(input) && input.type === "workspace.listViews" ? undefined : currentSnapshot),
     create: (input) => run(() => service.create(input), currentSnapshot),
     rename: (input) => run(() => service.rename(input), returnedSnapshot),

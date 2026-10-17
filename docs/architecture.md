@@ -471,3 +471,16 @@ for category, Text, Number, Date, Single Select and MultiSelect. Property change
 to fan out to source siblings without sharing view collections/layouts. No new bb module
 or dependency was copied. See [view scenarios](plans/issue-27-views.md) and
 [verification](verification/issue-27-views.md); GitHub #27 owns CI/integration acceptance.
+
+## Implemented view search and typed filters
+
+Issue #28 adds service-owned validation and result projection through `getViewFilter`,
+`setViewFilter` and `queryView`. Migration 0019 extends each workspace-owned view with
+its saved search/conditions; duplication copies that configuration independently.
+The renderer submits filters and renders returned project identities, retaining all
+filesystem, source ownership and SQLite access behind the typed preload boundary.
+The same controls support Table, Board and their Archived projections. Source edits
+invalidate results through the existing property/project events. Unavailable references
+and malformed configuration produce explicit errors and require an explicit edit or
+clear; queries never silently normalize saved rules. See the [filter contract](plans/issue-28-view-filters.md)
+and [verification](verification/issue-28-view-filters.md).

@@ -37,7 +37,7 @@ test("0012 upgrade preserves populated project identity, exact Text, source/work
       old.pragma("foreign_keys=OFF");
       for (const table of ["settings", "sources", "workspaces", "views", "active_workspace", "categories", "category_properties", "projects", "property_definitions", "text_property_values", "project_creation_operations", "project_rename_operations", "project_category_move_operations", "category_folder_operations", "category_presentation", "category_removal_operations", "category_removal_attempts"]) {
         for (const row of snapshot[table]) {
-          const keys = Object.keys(row).filter(key => table !== "views" || key !== "position");
+          const keys = Object.keys(row).filter(key => table !== "views" || !["position", "filter_config"].includes(key));
           old.prepare(`INSERT INTO ${table} (${keys.join(",")}) VALUES (${keys.map(() => "?").join(",")})`).run(...keys.map(key => row[key]));
         }
       }
@@ -52,7 +52,7 @@ test("0012 upgrade preserves populated project identity, exact Text, source/work
       const inspected = new Database(oldPath);
       try {
         for (const [table, rows] of Object.entries(snapshot)) assert.deepEqual(inspected.prepare(`SELECT * FROM ${table} ORDER BY 1`).all(), rows, table);
-        assert.equal(inspected.prepare("SELECT count(*) AS count FROM __drizzle_migrations").get().count, 19);
+        assert.equal(inspected.prepare("SELECT count(*) AS count FROM __drizzle_migrations").get().count, 20);
         assert.deepEqual(inspected.pragma("foreign_key_check"), []);
       } finally { inspected.close(); }
     }

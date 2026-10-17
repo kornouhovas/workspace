@@ -27,6 +27,10 @@ const initial: ProjectList = {
   categoryProperty: { propertyId: "category-label", sourceId: "source", name: "Client" }, categoryPropertyRevision: 0,
 };
 class Client extends WorkspaceServiceClient {
+  // Non-filter workflow fixtures expose the new empty-filter projection without
+  // calling listProjects again (some tests intentionally control that read).
+  override async getViewFilter(workspaceId: string, viewId: string) { return { ok: true as const, value: { workspaceId, viewId, config: { search: "", rules: [] } } }; }
+  override async queryView(workspaceId: string, viewId: string, archived: boolean) { return { ok: true as const, value: { workspaceId, viewId, archived, projectIds: [...this.list.projects, ...this.list.retainedProjects].map(p => p.projectId) } }; }
   override async listViews(workspaceId: string) { return { ok: true as const, value: { workspaceId, activeViewId: "view", views: [{ viewId: "view", name: "Table", kind: "table" as const }] } }; }
   list = structuredClone(initial);
   lists = 0;

@@ -1,3 +1,4 @@
+import { ViewFilters } from "./ViewFilters.js";
 import { useEffect, useRef, useState } from "react";
 import type { Language } from "../../contracts/settings.js";
 import type { ProjectSummary, ProjectAssociationSummary, CategoryProperty, CategoryPropertySnapshot, CategorySummary } from "../../contracts/workspaces.js";
@@ -16,11 +17,12 @@ const resolutionLabels = {
 } as const;
 
 interface Props {
+  viewId?: string;
   layout?: "table" | "board";
   client: WorkspaceServiceClient;
   workspaceId: string;
   sourceId: string;
-  projects: ProjectSummary[];
+  projects: (ProjectSummary & { originalRelativePath?: string; categoryName?: string | null })[];
   retainedProjects?: ProjectAssociationSummary[];
   hideReveal?: boolean;
   locateDisabled?: boolean;
@@ -43,7 +45,8 @@ interface Props {
 export function TextPropertiesTable(props: Props) {
   return <TextPropertiesContent key={`${props.workspaceId}:${props.sourceId}`} {...props} />;
 }
-function TextPropertiesContent({ layout = "table", hideReveal, client, workspaceId, sourceId, projects, retainedProjects = [], onLocate, locateDisabled, onRename, renameDisabled, onMoveCategory, categoryMoveDisabled, categoryProperty, categories = [], categoryPropertyRevision = 0, discoveryRevision = 0, minimumDiscoveryRevision, sourceLifetime, minimumCategoryPropertyRevision, onCategoryPropertyCommitted, language, disabled }: Props) {
+function TextPropertiesContent({ viewId, layout = "table", hideReveal, client, workspaceId, sourceId, projects, retainedProjects = [], onLocate, locateDisabled, onRename, renameDisabled, onMoveCategory, categoryMoveDisabled, categoryProperty, categories = [], categoryPropertyRevision = 0, discoveryRevision = 0, minimumDiscoveryRevision, sourceLifetime, minimumCategoryPropertyRevision, onCategoryPropertyCommitted, language, disabled }: Props) {
+  const [filteredIds, setFilteredIds] = useState<{ viewId: string; ids: string[] | null } | null>(null);
   const categoryDrafts = useRef(new Map<string, CategoryLabelDraft>());
   const t = (key: TranslationKey) => translate(language, key);
   const [snapshot, setSnapshot] = useState<TextPropertySnapshot | null>(null);
@@ -160,11 +163,12 @@ function TextPropertiesContent({ layout = "table", hideReveal, client, workspace
         </Header>)}
         {!hideReveal && <Header className="board-field-placeholder">{t("revealProject")}</Header>}
       </>;
-  const rows = [...projects, ...retainedProjects].map((project) => {
+  const rows = [...projects, ...retainedProjects].filter(project => !viewId || (filteredIds?.viewId === viewId && filteredIds.ids?.includes(project.projectId))).map((project) => {
         const retained = retainedProjects.find((row) => row.projectId === project.projectId);
         const reason = retained?.associationState === "excluded" && retained.retentionReason !== "mode_change" ? "excluded" : retained?.resolution ?? retained?.associationState;
         const label = retained?.retentionReason === "mode_change" ? "projectModeRetained" : reason && reason !== "active" ? resolutionLabels[reason] : null;
         return <Row key={project.projectId} className={layout === "board" ? "project-card" : undefined}><Cell data-label={t("projectName")} key="project-name" aria-label={retained ? undefined : project.name}><span className="property-authored">{project.name}</span>
+          {"originalRelativePath" in project && typeof project.originalRelativePath === "string" && <span className="archive-row-details">{t("archiveOriginal")}: {project.originalRelativePath}{project.categoryName && <> — {t("archiveFrozenCategory")}: {project.categoryName}</>}</span>}
           {!retained && onRename && <button type="button" className="workspace-button workspace-button--secondary property-rename"
             aria-label={`${t("renameProject")}: ${project.name}`} disabled={disabled || renameDisabled || ("associationState" in project && (project.associationState !== "active" || ("resolution" in project && project.resolution !== "active")))}
             onClick={(event) => onRename(project, event.currentTarget)}>{t("renameProject")}</button>}
@@ -201,6 +205,10 @@ function TextPropertiesContent({ layout = "table", hideReveal, client, workspace
             retained?.associationState, retained?.resolution, retained?.retentionReason])} /></Cell>}
       </Row>; });
   return <div className="text-properties" aria-busy={pending || loading}>
+    {viewId && <ViewFilters client={client} workspaceId={workspaceId} viewId={viewId} archived={!!hideReveal} language={language}
+      snapshot={snapshot} categoryProperty={categoryProperty} categories={categories} disabled={disabled || loadError}
+      refreshKey={JSON.stringify([snapshot?.revision, discoveryRevision, projects.map(p => [p.projectId, p.name, p.categoryId]), retainedProjects.map(p => [p.projectId, p.name, p.categoryId])])}
+      onResults={ids => setFilteredIds({ viewId, ids })} />}
     {loading && <StatusMessage kind="info" title={t("propertiesLoading")} />}
     {loadError && <><StatusMessage kind="error" title={t("propertiesLoadError")} />
       <button type="button" className="workspace-button workspace-button--secondary" disabled={disabled || loading} onClick={() => void load()}>{t("propertiesRetry")}</button></>}

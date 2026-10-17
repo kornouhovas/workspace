@@ -26,8 +26,9 @@ export function createViewService(db: Database) {
           case "workspace.createView":
           case "workspace.duplicateView": {
             const id = randomUUID();
+            const original = owned ? tx.select().from(schema.views).where(eq(schema.views.id, owned.viewId)).get() : undefined;
             tx.insert(schema.views).values({ id, workspaceId: input.workspaceId, name: input.name,
-              kind: input.type === "workspace.createView" ? input.kind : owned!.kind, position: before.views.length }).run();
+              kind: input.type === "workspace.createView" ? input.kind : owned!.kind, position: before.views.length, ...(original ? { filterConfig: original.filterConfig } : {}) }).run();
             selectView(tx, input.workspaceId, id);
             break;
           }

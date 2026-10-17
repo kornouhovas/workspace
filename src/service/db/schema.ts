@@ -34,6 +34,7 @@ export const workspaceViewSelection = sqliteTable("workspace_view_selection", {
 });
 
 export const views = sqliteTable("views", {
+  filterConfig: text("filter_config").notNull().default('{"search":"","rules":[]}'),
   position: integer("position").notNull().default(0),
   id: text("id").primaryKey(),
   workspaceId: text("workspace_id").notNull().references(() => workspaces.id),

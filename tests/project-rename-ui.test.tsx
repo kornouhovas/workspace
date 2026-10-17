@@ -18,6 +18,10 @@ test.afterEach(cleanup);
 function deferred<T>() { let resolve!: (value: T) => void; const promise = new Promise<T>((done) => { resolve = done; }); return { promise, resolve }; }
 const initial: ProjectList = { workspaceId: "workspace", sourceId: "source", revision: 1, configured: true, mode: "direct", state: "ready", projects: [{ projectId: "project", name: "Original", relativePath: "Original", categoryId: null, associationState: "active", resolution: "active", categoryName: null }], retainedProjects: [], retainedCount: 0, categories: [], categoryProperty: null, categoryPropertyRevision: 0 };
 class Client extends WorkspaceServiceClient {
+  // Non-filter workflow fixtures expose the new empty-filter projection without
+  // calling listProjects again (some tests intentionally control that read).
+  override async getViewFilter(workspaceId: string, viewId: string) { return { ok: true as const, value: { workspaceId, viewId, config: { search: "", rules: [] } } }; }
+  override async queryView(workspaceId: string, viewId: string, archived: boolean) { return { ok: true as const, value: { workspaceId, viewId, archived, projectIds: [...this.list.projects, ...this.list.retainedProjects].map(p => p.projectId) } }; }
   override async listViews(workspaceId: string) { return { ok: true as const, value: { workspaceId, activeViewId: "view", views: [{ viewId: "view", name: "Table", kind: "table" as const }] } }; }
   statuses = new Set<(status: BackendStatus) => void>(); events = new Set<(event: WorkspaceChangeEvent) => void>();
   list = structuredClone(initial); renames: Parameters<WorkspaceServiceClient["renameProject"]>[0][] = []; statusCalls: string[][] = [];

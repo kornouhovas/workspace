@@ -111,6 +111,22 @@ function mockApi(options: MockOptions = {}) {
   const onWorkspace = options.onWorkspace ?? (async (input) => input.type === "workspace.load"
     ? options.load ?? ok(emptyLoad())
     : fail("invalid_input"));
+  // These non-filter scenarios have an empty saved configuration. Admit every
+  // fixture identity observed through either a list or an Apply receipt; the
+  // component's existing ownership/revision checks still choose actual rows.
+  const projectIds = new Map<string, Set<string>>();
+  const recordProjects = (result: ServiceResult<WorkspaceResponse>) => {
+    if (result.ok && "projects" in result.value && "retainedProjects" in result.value) {
+      const ids = projectIds.get(result.value.workspaceId) ?? new Set<string>();
+      for (const project of [...result.value.projects, ...result.value.retainedProjects]) ids.add(project.projectId);
+      projectIds.set(result.value.workspaceId, ids);
+    }
+    return result;
+  };
+  const readProjects = async (input: Extract<WorkspaceRequest, { type: "workspace.listProjects" }>) => recordProjects(await (options.onProjects?.(input) ?? Promise.resolve(ok({ workspaceId: input.workspaceId,
+    sourceId: `source-${input.workspaceId}`, revision: 0, mode: null, categories: [], categoryProperty: null, categoryPropertyRevision: 0, configured: false, state: "empty" as const,
+    projects: [], retainedProjects: [], retainedCount: 0 }))));
+  const workspaceRequest = async (input: WorkspaceRequest) => recordProjects(await onWorkspace(input));
   window.workspace = {
     getBackendStatus: async () => ({ state: options.backend ?? "ready" }),
     onBackendStatus: (listener) => {
@@ -122,7 +138,12 @@ function mockApi(options: MockOptions = {}) {
       return () => { changeListeners.delete(listener); };
     },
     settings: onSettings,
-    workspace: ((input: WorkspaceRequest) => input.type === "workspace.listViews"
+    workspace: ((input: WorkspaceRequest) => input.type === "workspace.getViewFilter"
+      ? Promise.resolve(ok({ workspaceId: input.workspaceId, viewId: input.viewId, config: { search: "", rules: [] } }))
+      : input.type === "workspace.queryView"
+      ? Promise.resolve(ok({ workspaceId: input.workspaceId, viewId: input.viewId, archived: input.archived,
+        projectIds: [...(projectIds.get(input.workspaceId) ?? [])] }))
+      : input.type === "workspace.listViews"
       ? Promise.resolve(ok({ workspaceId: input.workspaceId, activeViewId: `view-${input.workspaceId}`, views: [{ viewId: `view-${input.workspaceId}`, name: translate(options.language ?? "en", "tableViewTitle"), kind: "table" as const }] }))
       : input.type === "workspace.listArchivedProjects"
       ? Promise.resolve(ok({ workspaceId: input.workspaceId, sourceId: (options.load?.ok ? options.load.value.activeWorkspace?.sourceId : null) ?? `source-${input.workspaceId}`, revision: 0, relativePath: null, projects: [] }))
@@ -139,9 +160,7 @@ function mockApi(options: MockOptions = {}) {
       : input.type === "workspace.listTextProperties"
       ? options.onProperties?.(input) ?? Promise.resolve(ok({ workspaceId: input.workspaceId, sourceId: `source-${input.workspaceId}`, revision: 0, definitions: [], values: [] }))
       : input.type === "workspace.listProjects"
-      ? options.onProjects?.(input) ?? Promise.resolve(ok({ workspaceId: input.workspaceId,
-        sourceId: `source-${input.workspaceId}`, revision: 0, mode: null, categories: [], categoryProperty: null, categoryPropertyRevision: 0, configured: false, state: "empty" as const,
-        projects: [], retainedProjects: [], retainedCount: 0 })) : onWorkspace(input)) as WorkspaceDesktopApi["workspace"],
+      ? readProjects(input) : workspaceRequest(input)) as WorkspaceDesktopApi["workspace"],
     pickRoot: options.picker ?? (async () => ({ outcome: "cancelled" })),
   };
   return { changeListenerCount: () => changeListeners.size, emitChange: (event: WorkspaceChangeEvent) => changeListeners.forEach((listener) => listener(event)), emitStatus: (nextState: BackendStatus["state"]) => statusListeners.forEach((listener) => listener({ state: nextState })) };
@@ -612,7 +631,7 @@ test("reorder disables conflicting controls while pending and failures preserve 
       assert.equal((screen.getByRole("button", { name: translate(language, "renameWorkspaceAction") }) as HTMLButtonElement).disabled, true);
       assert.equal((screen.getByRole("button", { name: translate(language, "addWorkspaceAction") }) as HTMLButtonElement).disabled, true);
       assert.equal((screen.getByRole("combobox", { name: translate(language, "workspaceSelectLabel") }) as HTMLSelectElement).disabled, true);
-      assert.ok(screen.getByRole("status"));
+      assert.ok(screen.getByText(translate(language, "savingWorkspaceOrder")));
       await act(async () => { finish?.(fail(failure === "throw" ? "storage" : failure)); await pending; });
       assert.ok(await screen.findByRole("heading", { name: translate(language, "reorderErrorTitle") }));
       assert.equal(screen.queryByText("private service detail"), null);
@@ -3203,7 +3222,7 @@ test("EN/RU configured mode validation and storage failures retain a review; sta
       }
       return fail("invalid_input");
     } });
-    render(<App />); await userEvent.click(await screen.findByRole("button", { name: translate(language, "discoveryAction") }));
+    render(<App />); await screen.findByRole("cell", { name: "Category" }); await userEvent.click(await screen.findByRole("button", { name: translate(language, "discoveryAction") }));
     await userEvent.selectOptions(await screen.findByRole("combobox", { name: translate(language, "discoveryMode") }), "grouped");
     const apply = screen.getByRole("button", { name: translate(language, "discoveryApply") }) as HTMLButtonElement;
     await userEvent.click(apply);

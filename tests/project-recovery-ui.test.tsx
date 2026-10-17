@@ -28,6 +28,10 @@ const initial: ProjectList = { workspaceId: "workspace", sourceId: "source", rev
 const committed: ProjectList = { ...initial, revision: 2, projects: [{ ...retained, relativePath: preview.entries[0].relativePath, name: preview.entries[0].name, associationState: "active", resolution: "active" }],
   retainedProjects: [initial.retainedProjects[1]], retainedCount: 1 };
 class RecoveryClient extends WorkspaceServiceClient {
+  // Non-filter workflow fixtures expose the new empty-filter projection without
+  // calling listProjects again (some tests intentionally control that read).
+  override async getViewFilter(workspaceId: string, viewId: string) { return { ok: true as const, value: { workspaceId, viewId, config: { search: "", rules: [] } } }; }
+  override async queryView(workspaceId: string, viewId: string, archived: boolean) { return { ok: true as const, value: { workspaceId, viewId, archived, projectIds: [...this.projects.projects, ...this.projects.retainedProjects].map(p => p.projectId) } }; }
   override async listViews(workspaceId: string) { return { ok: true as const, value: { workspaceId, activeViewId: "view", views: [{ viewId: "view", name: "Table", kind: "table" as const }] } }; }
   override async listProjectCategoryMoves(workspaceId: string) { return { ok: true as const, value: { workspaceId, sourceId: "source", operations: [] } }; }
   override onBackendStatus() { return () => {}; }

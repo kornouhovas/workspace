@@ -134,6 +134,13 @@
       "when": 1791504018000,
       "tag": "0018_workspace_views",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1791504019000,
+      "tag": "0019_view_filters",
+      "breakpoints": true
     }
   ]
 }

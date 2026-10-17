@@ -413,3 +413,15 @@ body {
 .project-card .property-cell, .project-card textarea, .project-card input, .project-card select { max-width: 100%; min-width: 0; }
 .board-property-controls { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem; margin-block: .75rem; }
 .board-property-controls > .board-field-placeholder { display: none; }
+
+.view-filters { border: 1px solid var(--border, #d5d5d5); border-radius: .5rem; padding: .75rem; margin-block: .75rem; }
+.view-filters form { display: grid; gap: .75rem; }
+.filter-rule { display: flex; flex-wrap: wrap; align-items: start; gap: .75rem; min-width: 0; border: 1px solid var(--border, #d5d5d5); }
+.view-filters label { display: grid; gap: .3rem; min-width: 0; max-width: 100%; }
+.view-filters .workspace-input { max-width: 100%; min-width: 0; }
+.filter-rule label { flex: 1 1 10rem; }
+.view-filters .workspace-form-actions { flex-wrap: wrap; }
+
+.view-filters input, .view-filters select { font: inherit; padding: .35rem; }
+.view-filters input:focus-visible, .view-filters select:focus-visible { outline: 2px solid #4966cf; outline-offset: 2px; }
+.archive-row-details { display: block; font-size: .875rem; overflow-wrap: anywhere; }

@@ -450,7 +450,7 @@ export function DiscoveryWorkspace({ client, workspaceId, sourceId, refreshVersi
         if (updated.categoryPropertyRevision < minimumCategoryPropertyRevision.current) void load();
       }} />}
     {recoverySaved && <StatusMessage kind="info" title={t("recoverySaved")} />}
-    <ProjectArchivePanel layout={view?.kind} client={client} workspaceId={workspaceId} sourceId={sourceId} projects={projects?.projects ?? []}
+    <ProjectArchivePanel categoryProperty={projects?.categoryProperty} categories={projects?.categories} viewId={view?.viewId} layout={view?.kind} client={client} workspaceId={workspaceId} sourceId={sourceId} projects={projects?.projects ?? []}
       language={language} revision={projects?.revision ?? 0} invalidation={invalidation} onViewChange={setShowArchived}
       onBlockedChange={setArchiveBlocked} onCommitted={() => void load()}
       disabled={disabled || categoryOptionsBlocked || creationBlocked || discoveryPending || recoveryProject !== null || renameProject !== null || renameBlocked || categoryMoveProject !== null || categoryMoveBlocked} />
@@ -476,7 +476,7 @@ export function DiscoveryWorkspace({ client, workspaceId, sourceId, refreshVersi
         {projects.categories.length > 0 ? <ul>{projects.categories.filter(c => showHiddenCategories || !c.presentation?.hidden).map((category) => <li key={category.categoryId}><span className="category-chip" data-color={category.presentation?.color ?? "default"}>{category.name}</span></li>)}</ul>
           : <p>{t("savedCategoriesEmpty")}</p>}
       </div>}
-      {view && <TextPropertiesTable layout={view.kind} sourceLifetime={sourceLifetime} discoveryRevision={projects?.revision ?? 0} minimumDiscoveryRevision={minimumRevision} categoryPropertyRevision={projects?.categoryPropertyRevision ?? 0} minimumCategoryPropertyRevision={minimumCategoryPropertyRevision}
+      {view && <TextPropertiesTable viewId={view.viewId} layout={view.kind} sourceLifetime={sourceLifetime} discoveryRevision={projects?.revision ?? 0} minimumDiscoveryRevision={minimumRevision} categoryPropertyRevision={projects?.categoryPropertyRevision ?? 0} minimumCategoryPropertyRevision={minimumCategoryPropertyRevision}
         onCategoryPropertyCommitted={commitLabel} categoryProperty={projects?.categoryProperty ?? null} categories={projects?.categories ?? []} client={client} workspaceId={workspaceId} sourceId={sourceId}
         renameDisabled={categoryOptionsBlocked || creationBlocked || discoveryPending || loading || error || renameBlocked || renameProject !== null || recoveryProject !== null || categoryMoveProject !== null || categoryMoveBlocked || !projects?.configured ||
           !["ready", "empty"].includes(projects?.state ?? "") || (projects?.revision ?? -1) < minimumRevision.current}
