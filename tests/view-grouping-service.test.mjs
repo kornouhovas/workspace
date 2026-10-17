@@ -169,3 +169,20 @@ test('manual fallback orders new values stably, and Active/Archived share settin
     f.reopen();assert.deepEqual(groups(true).map(g=>g.value),[10,null]);
   });
 });
+
+test('valid long and JSON-escaped Text values remain independently hideable and manually orderable',()=>fixture(f=>{
+  const {viewId}=f.workspace;
+  const propertyId=f.command('createProperty',{name:'Exact text',propertyType:'text'}).value.propertyId;
+  const projectId=f.query('listProjects').value.projects[0].projectId;
+  for(const value of ['x'.repeat(10001),'\\'.repeat(6000),'\n'.repeat(6000)]) {
+    assert.equal(f.command('setTextValue',{projectId,propertyId,value}).ok,true);
+    assert.equal(f.command('setViewGrouping',{viewId,config:config(propertyId)}).ok,true);
+    const key=JSON.stringify(value);
+    const setting={propertyId,order:'manual',manualOrder:[key,'null'],hidden:[key],collapsed:[],hideEmpty:false};
+    assert.equal(f.command('setViewGrouping',{viewId,config:{propertyId,settings:[setting]}}).ok,true);
+    const groups=f.query('queryView',{viewId,archived:false}).value.groups;
+    assert.equal(groups[0].value,value);assert.equal(groups[0].hidden,true);
+    assert.deepEqual(groups[0].projectIds,[projectId]);
+    f.reopen();assert.equal(f.query('getViewGrouping',{viewId}).value.config.settings[0].manualOrder[0],key);
+  }
+}));

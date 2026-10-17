@@ -43,7 +43,7 @@ const exact = (v: Record<string, unknown>, keys: string[]) => Object.keys(v).len
 const uuid = (v: unknown): v is string => typeof v === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v);
 const property = (v: unknown): v is string => v === "name" || uuid(v);
 const keys = (v: unknown): v is string[] => Array.isArray(v) && v.length <= 10000 && new Set(v).size === v.length && Array.from(v).every(key => {
-    if (typeof key !== "string" || key.length > 10002)
+    if (typeof key !== "string")
         return false;
     try {
         const value: unknown = JSON.parse(key);

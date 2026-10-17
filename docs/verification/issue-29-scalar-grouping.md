@@ -51,9 +51,22 @@ passed all four tests. These synthetic fixtures do not load grouping code. The
 same two files have retained parallel-run shutdown failures in issue 28. This
 establishes a launch-condition difference, not a proven blocking actor or root
 cause. No timeout, shutdown assertion, cleanup condition or product code was
-relaxed. The complete sequential inventory passed: **2898 passed, 25 conditional platform
+relaxed. On candidate `0fb15b5`, the complete sequential inventory passed: **2898 passed, 25 conditional platform
 skips, zero failures**, 2923 tests across 95 files. Every file selected by
 `selectTestFiles(..., 'all')` ran with `--test-concurrency=1`; nothing was excluded.
+
+## Long Text compatibility follow-up
+
+While the first candidate's CI was running, inspection found an independent
+10002-character group-key limit incompatible with valid long Text and JSON escape
+expansion. The typed-service regression failed before removing that limit. It
+now covers long Text, backslashes/newlines, exact membership, hiding, manual order
+and reopen. Canonical JSON/type/ownership/uniqueness and collection bounds remain.
+Both review axes confirmed the bounded repair. Rebuilt service/backend, all 30
+affected grouping/filter service/UI/IPC checks, typecheck, lint and docs pass.
+The first remote run was explicitly cancelled as superseded, not counted as
+acceptance. The linked checkpoint records renewed complete local and exact-SHA
+remote acceptance for this repair.
 
 ## CI coverage and limits
 
