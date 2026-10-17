@@ -54,3 +54,17 @@ screenshots and failures. Its results and the subsequent full exact-SHA acceptan
 belong to the linked issue checkpoint. Local full-suite evidence above is inherited
 for unchanged product code; affected fixture/UI/static checks are renewed for this
 follow-up.
+
+
+## CI routing inventory follow-up
+
+Full run [39038352303](https://github.com/kornouhovas/workspace/actions/runs/39038352303)
+on candidate `245ca718aee6bc07adf9bc6eccf5a443a351eb43` exposed two stale
+expectations in `test-suites.test.mjs`: the exact common-job exclusion and manual
+selector inventory omitted the newly added `view-fixtures` route. The original
+file reproduced both failures locally in under one second. Updating those two
+inventories preserves the existing assertions; a new regression checks manual-only
+isolation, all three runners, original capture/build ordering and exact-run
+provenance/artifact retention. The full original file then passed **33 tests**.
+No workflow or production behavior changed. The focused original-file CI result,
+remaining platform failure map and subsequent full acceptance are recorded in #28.
