@@ -373,3 +373,14 @@ proof. There is no retry, indexed fallback, warm-up, cache or deadline extension
 Temporary checkpoint timers and acquisition switches are removed before final
 ordinary focused/full acceptance. Immediate finite read tracing remains opt-in;
 window_candidate marks processing of an enumerated candidate.
+
+### View-backed Ladle fixture failure
+
+For issue #28's missing filter-query mock in the original category layout capture,
+select `checks: view-fixtures`. The focused matrix runs macOS, Windows latest and
+Windows 2022: existing category/rename/recovery UI regressions, the Ladle build and
+the exact original `node scripts/smoke-discovery-layouts.mjs --category-move` command.
+It retains SHA/run/attempt/platform provenance, original readiness deadlines,
+screenshots, interactions and normal shutdown assertions. Inspect all affected
+original-step results and artifacts before dispatching full acceptance on the same
+repair SHA. The ordinary/full matrix remains unchanged.

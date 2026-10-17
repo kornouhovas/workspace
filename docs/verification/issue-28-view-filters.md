@@ -28,3 +28,29 @@ Those focused checks also reproduced editor focus loss from eagerly clearing res
 The final ordinary parallel `npm run test:all` run retained two original Electron shutdown timeouts in `property-editor-driver.test.mjs` and `runtime-electron-quit.test.mjs` (2881 passed, 2 failed, 25 skipped). The unchanged two-file focused run passed all four tests, and the full sequential inventory above passed. This demonstrates a launch-condition difference, not the historical blocking actor or root cause; no timeout, shutdown assertion or product code was relaxed. Exact-SHA remote platform coverage remains separately recorded in GitHub.
 
 No copied bb module or new runtime dependency. No live user folders were used as fixtures.
+
+## CI Ladle fixture follow-up
+
+Initial candidate `46cb015737af774cd56d015c036d9497ad1a44b0`, full run
+[39036817998](https://github.com/kornouhovas/workspace/actions/runs/39036817998),
+failed the original category-move layout capture on macOS and Windows 2022 after
+their platform suites passed. Its first collision story never reached the existing
+`data-fixture-ready=true` gate; the retained artifact records feature failure and
+successful normal shutdown. The exact local original command reproduced the same
+15-second readiness failure.
+
+The view-backed Source Observation, Rename and Category Move Ladle clients omitted
+`getViewFilter`/`queryView`. Production components therefore could not obtain project
+membership, so fixture preparation could not open the category editor. Supplying the
+empty-filter read contract from each fixture's current project list repairs that
+boundary. The unchanged original local capture then passed **150 screenshots**,
+feature assertions and normal shutdown. No production filter logic, readiness gate,
+selector or deadline changed. Both review axes inspected this repair without
+outstanding findings.
+
+The focused `view-fixtures` route described in [CI](../ci.md#view-backed-ladle-fixture-failure)
+replays the original command on all three target runners and preserves provenance,
+screenshots and failures. Its results and the subsequent full exact-SHA acceptance
+belong to the linked issue checkpoint. Local full-suite evidence above is inherited
+for unchanged product code; affected fixture/UI/static checks are renewed for this
+follow-up.

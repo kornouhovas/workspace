@@ -489,6 +489,8 @@ function SourceObservationPreview({ language, state }: { language: Language; sta
     override async listProjectRenames(workspaceId: string) { return { ok: true as const, value: { workspaceId, sourceId: textStoryIds.sourceId, operations: [] } }; }
       override onWorkspaceChange(listener: (event: WorkspaceChangeEvent) => void) { listeners.add(listener); return () => { listeners.delete(listener); }; }
       override async listViews(workspaceId: string) { return storyViews(workspaceId); }
+      override async getViewFilter(workspaceId: string, viewId: string) { return { ok: true as const, value: { workspaceId, viewId, config: { search: "", rules: [] } } }; }
+      override async queryView(workspaceId: string, viewId: string, archived: boolean) { return { ok: true as const, value: { workspaceId, viewId, archived, projectIds: [...list.projects, ...list.retainedProjects].map(p => p.projectId) } }; }
       override async listProjects() { return { ok: true as const, value: list }; }
       override async listTextProperties() { return { ok: true as const, value: { workspaceId: textStoryIds.workspaceId, sourceId: textStoryIds.sourceId, revision: 7,
         definitions: [{ propertyId: textStoryIds.propertyId, sourceId: textStoryIds.sourceId, propertyType: "text" as const, name: "Notes" }],
@@ -790,6 +792,8 @@ function RenamePreview({ language, mode, state }: { language: Language; mode: Di
       override onBackendStatus() { return () => {}; }
       override onWorkspaceChange(listener: (event: WorkspaceChangeEvent) => void) { events.add(listener); return () => { events.delete(listener); }; }
       override async listViews(workspaceId: string) { return storyViews(workspaceId); }
+      override async getViewFilter(workspaceId: string, viewId: string) { return { ok: true as const, value: { workspaceId, viewId, config: { search: "", rules: [] } } }; }
+      override async queryView(workspaceId: string, viewId: string, archived: boolean) { return { ok: true as const, value: { workspaceId, viewId, archived, projectIds: [...projects.projects, ...projects.retainedProjects].map(p => p.projectId) } }; }
       override async listProjects() { return { ok: true as const, value: projects }; }
       override async listProjectCreations() { return { ok: true as const, value: { ...textStoryIds, operations: [] } }; }
       override async listTextProperties() { return { ok: true as const, value: { ...textStoryIds, revision: 1,
@@ -1044,6 +1048,8 @@ function CategoryMovePreview({ language, state }: { language: Language; state: C
       override onBackendStatus() { return () => {}; }
       override onWorkspaceChange(listener: (event: WorkspaceChangeEvent) => void) { events.add(listener); return () => { events.delete(listener); }; }
       override async listViews(workspaceId: string) { return storyViews(workspaceId); }
+      override async getViewFilter(workspaceId: string, viewId: string) { return { ok: true as const, value: { workspaceId, viewId, config: { search: "", rules: [] } } }; }
+      override async queryView(workspaceId: string, viewId: string, archived: boolean) { return { ok: true as const, value: { workspaceId, viewId, archived, projectIds: [...projects.projects, ...projects.retainedProjects].map(p => p.projectId) } }; }
       override async listProjects() { return { ok: true as const, value: projects }; }
       override async listProjectCreations() { return { ok: true as const, value: { ...textStoryIds, operations: [] } }; }
       override async listTextProperties() { return { ok: true as const, value: { ...textStoryIds, revision: 1,

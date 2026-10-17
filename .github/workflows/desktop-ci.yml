@@ -8,7 +8,7 @@ on:
       checks:
         description: Full acceptance or a selected focused failure route
         type: choice
-        options: [full, failed, readiness, windows-release, issue22-failures, creation-shutdown, raw-rename, issue24-failures, category-fixture, issue24-startup, multiselect, etw-controls, app-fixture, property-fixture, runtime-observation]
+        options: [full, failed, readiness, windows-release, issue22-failures, creation-shutdown, raw-rename, issue24-failures, category-fixture, issue24-startup, multiselect, etw-controls, app-fixture, property-fixture, runtime-observation, view-fixtures]
         default: full
       readiness_windows:
         description: With checks=readiness, reproduce original Windows latest and 2022 editor failures
@@ -77,7 +77,7 @@ concurrency:
 
 jobs:
   common:
-    if: ${{ github.event_name != 'workflow_dispatch' || (inputs.checks != 'failed' && inputs.checks != 'readiness' && inputs.checks != 'windows-release' && inputs.checks != 'issue22-failures' && inputs.checks != 'creation-shutdown' && inputs.checks != 'raw-rename' && inputs.checks != 'issue24-failures' && inputs.checks != 'category-fixture' && inputs.checks != 'issue24-startup' && inputs.checks != 'multiselect' && inputs.checks != 'etw-controls' && inputs.checks != 'app-fixture' && inputs.checks != 'property-fixture' && inputs.checks != 'runtime-observation') }}
+    if: ${{ github.event_name != 'workflow_dispatch' || (inputs.checks != 'failed' && inputs.checks != 'readiness' && inputs.checks != 'windows-release' && inputs.checks != 'issue22-failures' && inputs.checks != 'creation-shutdown' && inputs.checks != 'raw-rename' && inputs.checks != 'issue24-failures' && inputs.checks != 'category-fixture' && inputs.checks != 'issue24-startup' && inputs.checks != 'multiselect' && inputs.checks != 'etw-controls' && inputs.checks != 'app-fixture' && inputs.checks != 'property-fixture' && inputs.checks != 'runtime-observation' && inputs.checks != 'view-fixtures') }}
     name: Common tests and static checks
     runs-on: macos-latest
     steps:
@@ -91,6 +91,38 @@ jobs:
       - run: npm run typecheck
       - run: npm run check:docs
       - run: npm run test:common
+
+  focused-view-fixtures:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.checks == 'view-fixtures' }}
+    name: Focused view-backed Ladle fixtures (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest, windows-2022]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.21.1
+          cache: npm
+      - name: Record focused provenance
+        run: node -e "require('node:fs').mkdirSync('work/ci-focused-view-fixtures', {recursive:true}); require('node:fs').writeFileSync('work/ci-focused-view-fixtures/provenance.json', JSON.stringify({sha:process.env.GITHUB_SHA,runId:process.env.GITHUB_RUN_ID,attempt:process.env.GITHUB_RUN_ATTEMPT,platform:process.platform}))"
+      - run: npm ci
+      - run: node --import tsx --test tests/project-category-move-ui.test.tsx tests/project-rename-ui.test.tsx tests/project-recovery-ui.test.tsx
+      - run: npm run build:ladle
+      - name: Original category move/status/recovery layouts
+        run: node scripts/smoke-discovery-layouts.mjs --category-move
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-focused-view-fixtures/category-move
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: issue-28-view-fixtures-${{ matrix.os }}-${{ github.sha }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
+          path: work/ci-focused-view-fixtures/
+          if-no-files-found: error
+          retention-days: 7
 
   focused-multiselect:
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.checks == 'multiselect' }}
