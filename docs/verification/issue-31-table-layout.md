@@ -97,3 +97,51 @@ not a claim of an identified native cause or repair. The original failure is
 retained in GitHub alongside both controlled runs. The repaired candidate must pass
 its affected focused routes before full CI/integration; those volatile gates and
 artifact results remain in the issue checkpoint.
+
+## Second full-run failure map and scoped repairs
+
+Full run 39061333529 on `ef0beabe` passed common/static but failed four
+original checks. macOS development runtime detected the built-in Name label
+using the authored-property class in an empty workspace. The label now applies
+that class only to actual authored properties; the original runtime assertion
+is unchanged and a UI regression covers the empty configuration.
+
+Windows latest App tests received a typed missing Reveal rejection while the
+same logical locator's observed association changed. The renderer's full-target
+guard replaced that rejection with uncertain feedback. New EN/RU real-service
+tests reproduce the exact missing-to-uncertain symptom before the repair. The
+button now distinguishes monotonic locator changes from status-only changes:
+authoritative rejections survive only the latter, while dispatched replies and
+source/revision/lifetime/retarget guards retain their stricter validation. The
+existing adversarial stale-dispatch tests remain green.
+
+Windows 2022's direct recovery IPC fixture failed its preview. A disposable
+public-service probe demonstrates that an automatic observation can reconcile
+the uniquely identifiable moved folder before manual recovery: preview is valid
+before observation and invalid after refresh, with the same ID already at the
+target. The historical receipt does not uniquely establish that cause. The
+explicit-recovery fixture now owns observer scheduling through the real service
+factory; production ports, controller, client and all identity/data/event checks
+remain. Failure-only finite diagnostics distinguish future preview failures.
+
+Windows latest's malformed category diagnostic control failed earlier at the
+original one-second utility-exit gate, so it never reached its intended injected
+stage. No source, deadline or assertion was changed for this failure; historical
+OS exit/notification causation remains unknown. The original file requires
+focused Windows acceptance before another full run.
+
+Both independent review axes report zero findings on these repairs. The combined
+App/creation/Table UI, backend-lifecycle and route-guard selection passes **280
+tests**, including both new missing-response regressions and old retarget guards.
+Fresh build, typecheck, lint and documentation links pass. Focused CI now maps
+macOS original runtime plus Windows 2022 recovery through the optional
+`recovery_windows_2022` selector (default false), and adds the new real-service
+regression before the unchanged original App file on both Windows runners.
+Original default/full coverage, deadlines and cleanup assertions are preserved.
+Focused and full exact-SHA results remain in the GitHub checkpoint.
+
+The original local macOS `npm run smoke:runtime -- dev` now passes completely,
+including the unchanged empty-workspace count, rename/recovery, grouped category
+move/recovery, normal shutdown/backend exit and owned cleanup gates. Renewed
+`npm run smoke:views -- dev` also passes both languages with normal shutdown and
+fixture cleanup after the shared Reveal guard repair.

@@ -52,6 +52,18 @@ For the issue-22 Windows latest final packaged-runtime cleanup failure, select `
 
 For the subsequent issue-22 recovery-fanout and grouped rename failures, select `checks: issue22-failures`. Only Windows latest and macOS run: build/capture/route prerequisites, the Windows `backend-lifecycle.test.mjs` file and original macOS `npm run smoke:runtime -- dev`. Commit/observer event contracts remain distinct, original runtime assertions/deadlines stay intact, and finite submission receipts contain no names or paths. Both focused scenarios and retained artifacts must pass before full CI.
 
+For issue #31's direct-recovery fixture failure on Windows 2022 and original
+macOS development runtime, use `checks: issue22-failures` with
+`recovery_windows_2022: true`. This selects the exact backend lifecycle file on
+Windows 2022 and unchanged `npm run smoke:runtime -- dev` on macOS. The selector
+default remains false, retaining the earlier Windows latest route and ordinary
+full coverage. The manual-recovery fixture holds unrelated notification scans;
+automatic reconciliation has separate coverage. Failure-only receipts distinguish
+review error code and whether the same logical project already occupies the target,
+without paths or service exception text. Inspect both original commands and their
+artifacts before full acceptance on the repair SHA.
+
+
 For the issue-23 Windows latest development creation crash/recovery shutdown failure,
 select `checks: creation-shutdown`. This runs only Windows latest: the existing build,
 quit-evidence/lifecycle/route regressions, and the original

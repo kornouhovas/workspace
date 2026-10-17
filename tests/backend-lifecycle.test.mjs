@@ -1081,7 +1081,15 @@ test("direct recovery traverses production service ports/controller/client and r
   desktopPort.postMessage = (message) => { desktopPort.sent.push(message); servicePort.receive(message); };
   parent.postMessage = (message) => child.send(message);
   child.postMessage = (data) => parent.emit("message", { data, ports: [servicePort] });
-  startServiceProcess(parent, undefined, () => child.exit());
+  const { openSettingsService } = await import("../dist/service/settings.mjs");
+  const { nativeObserverDependencies } = await import("../src/service/source-observer.ts");
+  // This fixture owns the explicit recovery route. Hold unrelated notification
+  // scans so a uniquely identifiable move cannot reconcile before the review.
+  // Automatic reconciliation is exercised separately with controlled observers.
+  const heldObservation = { ...nativeObserverDependencies,
+    schedule() { return { cancel() {} }; }, watch() { return { close() {} }; },
+  };
+  startServiceProcess(parent, (path, migrations) => openSettingsService(path, migrations, undefined, heldObservation), () => child.exit());
   const controller = new BackendController();
   const client = new WorkspaceServiceClient({ workspace: (input) => controller.request(input), onWorkspaceChange: (listener) => controller.onWorkspaceChange(listener) });
   try {
@@ -1098,6 +1106,12 @@ test("direct recovery traverses production service ports/controller/client and r
       { type: "workspace.reassociateProject", workspaceId: workspace.workspaceId, projectId: project.projectId, previewToken: "bad", relativePath: 42 },
     ]) assert.equal((await controller.request(input)).error.code, "invalid_input");
     const review = await client.previewProjectRecovery(workspace.workspaceId, project.projectId);
+    if (!review.ok) {
+      const current = await client.listProjects(workspace.workspaceId);
+      const observed = current.ok ? [...current.value.projects, ...current.value.retainedProjects].find(row => row.projectId === project.projectId) : null;
+      console.error("[recovery-ipc]", JSON.stringify({ code: review.error.code, projectionOk: current.ok,
+        sameProjectAtTarget: observed?.relativePath === "Target", association: observed?.associationState ?? null, resolution: observed?.resolution ?? null }));
+    }
     assert.equal(review.ok, true); assert.equal(review.value.entries[0].relativePath, "Target");
     const messagesBefore = servicePort.sent.length;
     const result = await client.reassociateProject(workspace.workspaceId, project.projectId, review.value.previewToken, "Target");

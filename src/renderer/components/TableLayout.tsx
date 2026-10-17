@@ -77,7 +77,7 @@ export function TableLayoutControls({state, fields, language, disabled}: Props) 
         const field = fields.find(f => f.propertyId === column.propertyId)!;
         const update = (patch: Partial<TableColumn>) => change(columns.map(c => c.propertyId === column.propertyId ? {...c, ...patch} : c));
         return <div className="table-column-control" key={column.propertyId}>
-          <span className="property-authored">{field.name}</span>
+          <span className={field.propertyId === "name" ? undefined : "property-authored"}>{field.name}</span>
           <label><input type="checkbox" aria-label={`${t("tableVisible")}: ${field.name}`} checked={!column.hidden} disabled={column.propertyId === "name"} onChange={event => update({hidden: !event.currentTarget.checked})}/>{t("tableVisible")}</label>
           <button type="button" disabled={index === 0} aria-label={`${t("tableColumnEarlier")}: ${field.name}`} onClick={() => move(index, -1)}>{t("tableColumnEarlier")}</button>
           <button type="button" disabled={index === columns.length - 1} aria-label={`${t("tableColumnLater")}: ${field.name}`} onClick={() => move(index, 1)}>{t("tableColumnLater")}</button>

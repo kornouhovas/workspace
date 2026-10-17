@@ -32,6 +32,7 @@ function deferred<T>() { let resolve!: (value: T) => void; const promise = new P
 class Client extends WorkspaceServiceClient {
   // Non-filter workflow fixtures expose the new empty-filter projection without
   // calling listProjects again (some tests intentionally control that read).
+  override async getTableLayout(workspaceId: string, viewId: string) { return { ok: true as const, value: { workspaceId, viewId, config: { columns: [], rowOrder: [] } } }; }
   override async getViewFilter(workspaceId: string, viewId: string) { return { ok: true as const, value: { workspaceId, viewId, config: { search: "", rules: [] } } }; }
   override async queryView(workspaceId: string, viewId: string, archived: boolean) { return { ok: true as const, value: { workspaceId, viewId, archived, projectIds: [...this.list.projects, ...this.list.retainedProjects].map(p => p.projectId) } }; }
   override async listViews(workspaceId: string) { return { ok: true as const, value: { workspaceId, activeViewId: "view", views: [{ viewId: "view", name: "Table", kind: "table" as const }] } }; }
@@ -630,3 +631,33 @@ for (const language of ["en", "ru"] as const) {
     assert.equal(screen.queryByRole("button", { name: t("creationRetryRequest") }), null);
   });
 }
+
+for (const language of ["en","ru"] as const) test(`${language}: same-path missing observation preserves the authoritative Reveal rejection`,async()=>{
+  const directory=fs.realpathSync.native(fs.mkdtempSync(join(tmpdir(),"reveal-missing-state-"))),root=join(directory,"root");fs.mkdirSync(join(root,"Folder"),{recursive:true});
+  const observer=controlledRevealObserver(),service=openSettingsService(join(directory,"app.sqlite"),"src/service/db/migrations",undefined,observer.dependencies);
+  const client=new Client(),response=deferred<void>();let off:(()=>void)|undefined,receipt:ServiceResult<ProjectRevealResult>|undefined;
+  const t=(key:Parameters<typeof translate>[1])=>translate(language,key);
+  try {
+    const {workspaceId,sourceId}=value(service.workspaces.create({type:"workspace.create",rootPath:root,name:"Reveal"}));
+    const preview=value(service.workspaces.previewDiscovery({type:"workspace.previewDiscovery",workspaceId}));
+    client.list=value(service.workspaces.applyDiscovery({type:"workspace.applyDiscovery",workspaceId,previewToken:preview.previewToken}));observer.flush();
+    const projectId=client.list.projects[0].projectId;
+    client.listProjects=async()=>service.workspaces.listProjects({type:"workspace.listProjects",workspaceId});
+    client.listTextProperties=async()=>service.workspaces.listTextProperties({type:"workspace.listTextProperties",workspaceId});
+    client.revealProject=async()=>{
+      fs.rmSync(join(root,"Folder"),{recursive:true});observer.observe(root);
+      await response.promise;
+      receipt=await service.revealProject({type:"workspace.revealProject",workspaceId,projectId},async()=>{throw new Error("Missing folders must not dispatch native Reveal");});return receipt;
+    };
+    off=service.workspaces.subscribe(event=>client.events.forEach(listener=>listener(event)));
+    render(<DiscoveryWorkspace client={client} workspaceId={workspaceId} sourceId={sourceId} language={language} disabled={false}/>);
+    await userEvent.click(await screen.findByRole("button",{name:`${t("revealProject")}: Folder`}));
+    await screen.findByText(t("projectMissing"));
+    await act(async()=>response.resolve());
+    await screen.findByText(t("revealMissing"));
+    assert.ok(receipt?.ok);assert.equal(receipt.value.outcome,"rejected");
+    assert.equal(screen.queryByText(t("revealUncertain")),null);assert.equal(screen.queryByText(t("revealDispatched")),null);
+    const retained=value(service.workspaces.listProjects({type:"workspace.listProjects",workspaceId})).retainedProjects;
+    assert.equal(retained[0].projectId,projectId);assert.equal(retained[0].relativePath,"Folder");
+  }finally{cleanup();off?.();service.close();fs.rmSync(directory,{recursive:true,force:true});}
+});

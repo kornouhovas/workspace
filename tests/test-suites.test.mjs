@@ -226,11 +226,15 @@ test('issue 22 failure scope selects only the affected Windows suite and origina
     else assert.equal(active.includes('focused-issue22-failures'), false);
   }
   const job = workflow.jobs['focused-issue22-failures'];
-  assert.deepEqual(job.strategy.matrix.os, ['macos-latest', 'windows-latest']);
+  const matrixOs = flag => runInNewContext(job.strategy.matrix.os.slice(3, -2), { inputs: { recovery_windows_2022: flag }, fromJSON: JSON.parse });
+  for (const flag of [undefined, false]) assert.deepEqual(matrixOs(flag), ['macos-latest', 'windows-latest']);
+  assert.deepEqual(matrixOs(true), ['macos-latest', 'windows-2022']);
+  assert.equal(workflow.on.workflow_dispatch.inputs.recovery_windows_2022.default, false);
   assert.equal(job.strategy['fail-fast'], false);
   const commands = job.steps.filter(step => step.run);
   assert.deepEqual(commands.slice(0, 3).map(step => step.run), ['npm ci', 'npm run build', 'node --import tsx --test tests/rename-submission-receipt.test.mjs tests/test-suites.test.mjs']);
-  assert.equal(commands[3].if, "matrix.os == 'windows-latest'");
+  for (const os of ['windows-latest', 'windows-2022', 'macos-latest'])
+    assert.equal(runInNewContext(commands[3].if, { matrix: { os } }), os !== 'macos-latest');
   assert.ok(commands[3].run.includes('set -o pipefail'));
   assert.ok(commands[3].run.includes('node --import tsx --test tests/backend-lifecycle.test.mjs 2>&1 | tee'));
   assert.equal(commands[4].if, "matrix.os == 'macos-latest'");
@@ -629,6 +633,8 @@ test('App fixture scope matches the original file on both affected Windows runne
   assert.equal(job.strategy['fail-fast'], false);
   assert.equal(job.steps.find(step => step.id === 'app-build').run, 'npm run build');
   assert.ok(job.steps.every(step => step['continue-on-error'] === undefined));
+  const regression = job.steps.find(step => step.name === 'Same-path rejected Reveal feedback regression');
+  assert.equal(regression.run, 'node --import tsx --test tests/project-creation-ui.test.tsx');
   const original = job.steps.find(step => step.name === 'Original Windows App regression file');
   assert.equal(original.if, "${{ !cancelled() && steps.app-build.outcome == 'success' }}");
   assert.equal(original.shell, 'bash'); assert.ok(original.run.includes('set -o pipefail'));

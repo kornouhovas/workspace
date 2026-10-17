@@ -10,6 +10,10 @@ on:
         type: choice
         options: [full, failed, readiness, windows-release, issue22-failures, creation-shutdown, raw-rename, issue24-failures, category-fixture, issue24-startup, multiselect, etw-controls, app-fixture, property-fixture, runtime-observation, view-fixtures]
         default: full
+      recovery_windows_2022:
+        description: With checks=issue22-failures, replay the backend recovery file on Windows 2022 and the original macOS runtime
+        type: boolean
+        default: false
       readiness_windows:
         description: With checks=readiness, reproduce original Windows latest and 2022 editor failures
         type: boolean
@@ -196,6 +200,9 @@ jobs:
         id: app-build
       - name: Verify focused route guards
         run: node --import tsx --test tests/test-suites.test.mjs
+      - name: Same-path rejected Reveal feedback regression
+        if: ${{ !cancelled() && steps.app-build.outcome == 'success' }}
+        run: node --import tsx --test tests/project-creation-ui.test.tsx
       - name: Original Windows App regression file
         if: ${{ !cancelled() && steps.app-build.outcome == 'success' }}
         shell: bash
@@ -531,7 +538,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-latest, windows-latest]
+        os: ${{ inputs.recovery_windows_2022 && fromJSON('["macos-latest","windows-2022"]') || fromJSON('["macos-latest","windows-latest"]') }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 20
     steps:
@@ -545,7 +552,7 @@ jobs:
       - name: Verify submission diagnostics and failure-route guards
         run: node --import tsx --test tests/rename-submission-receipt.test.mjs tests/test-suites.test.mjs
       - name: Original Windows recovery fanout suite
-        if: matrix.os == 'windows-latest'
+        if: matrix.os != 'macos-latest'
         shell: bash
         run: |
           set -o pipefail

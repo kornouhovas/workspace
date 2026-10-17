@@ -79,6 +79,7 @@ test('Table settings expose load retry and save failure without replacing commit
     failRead=false;await user.click(screen.getByRole('button',{name:translate('en','viewsRetry')}));
     await waitFor(()=>assert.equal(screen.queryByRole('alert'),null));
     await user.click(screen.getByText('Table layout'));
+    assert.equal(screen.getByText('Name').classList.contains('property-authored'),false, 'Built-in Name is not an authored property');
     const width=screen.getByRole('slider') as HTMLInputElement;
     fireEvent.change(width,{target:{value:'350'}});fireEvent.keyUp(width,{key:'ArrowRight'});
     await screen.findByText('Saving Table layout...');

@@ -193,6 +193,7 @@ function TextPropertiesContent({ viewId, layout = "table", hideReveal, client, w
         const label = retained?.retentionReason === "mode_change" ? "projectModeRetained" : reason && reason !== "active" ? resolutionLabels[reason] : null;
         const visibleIds = rowIds.filter(id => (!ids || ids.includes(id)) && (!viewId || filteredIds?.ids?.includes(id)));
         const rowIndex = visibleIds.indexOf(project.projectId);
+        const revealLocator = JSON.stringify([project.relativePath, project.categoryId, categories.find(category => category.categoryId === project.categoryId)?.relativePath, retained?.retentionReason]);
         return <Row key={project.projectId} data-project-id={project.projectId} className={layout === "board" ? "project-card" : undefined}
           onDragOver={event => {if (layout === "table" && !rowBusy && event.dataTransfer.types.includes("application/x-workspace-table-row")) event.preventDefault();}}
           onDrop={event => {
@@ -240,8 +241,7 @@ function TextPropertiesContent({ viewId, layout = "table", hideReveal, client, w
             onSave={(value) => saveValue(project.projectId, property.propertyId, value, property.propertyType)} />}
         </Cell>)}
         {!hideReveal && <Cell key="project-actions" data-label={t("revealProject")}><ProjectRevealButton client={client} workspaceId={workspaceId} projectId={project.projectId} name={project.name} language={language} disabled={disabled} minimumRevision={minimumDiscoveryRevision} sourceLifetime={sourceLifetime}
-          targetKey={JSON.stringify([project.relativePath, project.categoryId, categories.find((category) => category.categoryId === project.categoryId)?.relativePath,
-            retained?.associationState, retained?.resolution, retained?.retentionReason])} /></Cell>}
+          locatorKey={revealLocator} targetKey={JSON.stringify([revealLocator, retained?.associationState, retained?.resolution])} /></Cell>}
       </>)}</Row>; });
   return <div className="text-properties" aria-busy={pending || loading}>
     {viewId && <ViewFilters client={client} workspaceId={workspaceId} viewId={viewId} archived={!!hideReveal} language={language}
