@@ -371,7 +371,7 @@ for (const language of ["en", "ru"] as const) {
     assert.deepEqual(client.textSaves, [["workspace", "project", "notes", "  Independent\nТекст  "]]);
     await userEvent.click(submit()); await screen.findByText(t("moveCategorySaved"));
     assert.equal(client.moves[0].expectedRevision, 1);
-    assert.ok(screen.getByText("Portfolio")); assert.equal(client.text, "  Independent\nТекст  ");
+    assert.ok(screen.getByRole("columnheader", { name: "Portfolio" })); assert.equal(client.text, "  Independent\nТекст  ");
   });
 }
 
