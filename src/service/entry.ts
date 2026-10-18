@@ -1,3 +1,4 @@
+import { isDataRecoveryRequest } from "../contracts/data-recovery.js";
 import { isMetadataRemovalRequest, metadataRemovalRequests } from "../contracts/metadata-removal.js";
 import { isAssignProjectGroupCommand } from "../contracts/group-assignment.js";
 import { isBoardLayoutRequest } from "../contracts/board-layout.js";
@@ -113,11 +114,22 @@ export function startServiceProcess(
           }).finally(() => { activeRequests.delete(request.id); });
           return;
         }
+        const restoring = isDataRecoveryRequest(request.input) && request.input.type === "data.restore";
+        if (restoring && activeRequests.size) {
+          requestPort?.postMessage({ id: request.id, result: { ok: false, error: { code: "storage", message: "Wait for pending operations before restoring." } } });
+          return;
+        }
         const result = isMalformedWorkspaceRequest(request.input)
           ? { ok: false, error: { code: "invalid_input", message: "The workspace request is invalid." } }
           : isLoadQuery(request.input)
             ? service.handleQuery(request.input)
             : service.handleCommand(request.input);
+        if (restoring && result.ok) {
+          unsubscribe?.();
+          unsubscribe = service.workspaces.subscribe((change) => {
+            if (!stopping) requestPort?.postMessage({ type: "workspace.change", change });
+          });
+        }
         requestPort?.postMessage({ id: request.id, result });
       });
       startupStage = "service_start";
@@ -132,7 +144,7 @@ export function startServiceProcess(
 }
 
 function isLoadQuery(input: unknown): boolean {
-  return isRecord(input) && ((typeof input.type === "string" && [...archiveQueries, ...categoryOptionsQueries, ...categoryRemovalQueries].includes(input.type)) || input.type === "workspace.listProjectCategoryMoves" || input.type === "workspace.getProjectCategoryMove" || input.type === "workspace.previewProjectCategoryMoveRecovery" || input.type === "workspace.listProjectRenames" || input.type === "workspace.getProjectRename" || input.type === "workspace.previewProjectRenameRecovery" || input.type === "workspace.getBoardLayout" || input.type === "workspace.getTableLayout" || input.type === "workspace.getViewGrouping" || input.type === "workspace.getViewFilter" || input.type === "workspace.queryView" || input.type === "workspace.listViews" || input.type === "workspace.previewMetadataRemoval" || input.type === "settings.load" || input.type === "workspace.load" || input.type === "workspace.previewDiscovery" || input.type === "workspace.getSourceObservation" || input.type === "workspace.listProjects" || input.type === "workspace.listTextProperties" || input.type === "workspace.previewProjectRecovery" || input.type === "workspace.listProjectCreations" || input.type === "workspace.getProjectCreation" || input.type === "workspace.previewProjectCreationRecovery");
+  return isRecord(input) && ((typeof input.type === "string" && [...archiveQueries, ...categoryOptionsQueries, ...categoryRemovalQueries].includes(input.type)) || input.type === "workspace.listProjectCategoryMoves" || input.type === "workspace.getProjectCategoryMove" || input.type === "workspace.previewProjectCategoryMoveRecovery" || input.type === "workspace.listProjectRenames" || input.type === "workspace.getProjectRename" || input.type === "workspace.previewProjectRenameRecovery" || input.type === "workspace.getBoardLayout" || input.type === "workspace.getTableLayout" || input.type === "workspace.getViewGrouping" || input.type === "workspace.getViewFilter" || input.type === "workspace.queryView" || input.type === "workspace.listViews" || input.type === "workspace.previewMetadataRemoval" || input.type === "data.export" || input.type === "settings.load" || input.type === "workspace.load" || input.type === "workspace.previewDiscovery" || input.type === "workspace.getSourceObservation" || input.type === "workspace.listProjects" || input.type === "workspace.listTextProperties" || input.type === "workspace.previewProjectRecovery" || input.type === "workspace.listProjectCreations" || input.type === "workspace.getProjectCreation" || input.type === "workspace.previewProjectCreationRecovery");
 }
 
 function isMalformedWorkspaceRequest(input: unknown): boolean {

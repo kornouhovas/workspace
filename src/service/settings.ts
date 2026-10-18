@@ -1,3 +1,5 @@
+import { dataRecovery } from "./data-recovery.js";
+import type { DataRecoveryPayload } from "../contracts/data-recovery.js";
 import type { MetadataRemovalPreview, MetadataRemovalResult } from "../contracts/metadata-removal.js";
 import type { BoardLayoutSnapshot } from "../contracts/board-layout.js";
 import type { TableLayoutSnapshot } from "../contracts/table-layout.js";
@@ -48,8 +50,8 @@ export interface SettingsService {
   previewProjectRenameRecovery(input: unknown): ServiceResult<ProjectRenameRecoveryPreview>;
   recoverProjectRename(input: unknown): ServiceResult<ProjectRenameResult>;
   revealProject(input: unknown, native?: NativeProjectReveal): Promise<ServiceResult<ProjectRevealResult>>;
-  handleQuery(input: unknown): ServiceResult<MetadataRemovalPreview | MetadataRemovalResult | BoardLayoutSnapshot | TableLayoutSnapshot | ViewGroupingSnapshot | ViewFilterPayload | ViewSnapshot | ArchivePayload | CategoryRemovalPayload | CategoryOptionsPayload | ProjectCategoryMoveResult | ProjectCategoryMoveList | ProjectCategoryMoveRecoveryPreview | ProjectRenameResult | ProjectRenameList | ProjectRenameRecoveryPreview | ProjectCreationResult | ProjectCreationList | ProjectCreationRecoveryPreview | WorkspaceSourceObservationSnapshot | ProjectRecoveryPreview | TextPropertySnapshot | Settings | WorkspaceLoad | DiscoveryPreview | ProjectList>;
-  handleCommand(input: unknown): ServiceResult<MetadataRemovalPreview | MetadataRemovalResult | BoardLayoutSnapshot | TableLayoutSnapshot | ViewGroupingSnapshot | ViewFilterPayload | ViewSnapshot | ArchivePayload | CategoryRemovalPayload | CategoryOptionsPayload | ProjectCategoryMoveResult | ProjectRenameResult | ProjectCreationResult | CategoryPropertySnapshot | TextPropertyMutation | Settings | WorkspaceCreated | ActiveWorkspace | WorkspaceLoad | WorkspaceSourceState | ProjectList>;
+  handleQuery(input: unknown): ServiceResult<DataRecoveryPayload | MetadataRemovalPreview | MetadataRemovalResult | BoardLayoutSnapshot | TableLayoutSnapshot | ViewGroupingSnapshot | ViewFilterPayload | ViewSnapshot | ArchivePayload | CategoryRemovalPayload | CategoryOptionsPayload | ProjectCategoryMoveResult | ProjectCategoryMoveList | ProjectCategoryMoveRecoveryPreview | ProjectRenameResult | ProjectRenameList | ProjectRenameRecoveryPreview | ProjectCreationResult | ProjectCreationList | ProjectCreationRecoveryPreview | WorkspaceSourceObservationSnapshot | ProjectRecoveryPreview | TextPropertySnapshot | Settings | WorkspaceLoad | DiscoveryPreview | ProjectList>;
+  handleCommand(input: unknown): ServiceResult<DataRecoveryPayload | MetadataRemovalPreview | MetadataRemovalResult | BoardLayoutSnapshot | TableLayoutSnapshot | ViewGroupingSnapshot | ViewFilterPayload | ViewSnapshot | ArchivePayload | CategoryRemovalPayload | CategoryOptionsPayload | ProjectCategoryMoveResult | ProjectRenameResult | ProjectCreationResult | CategoryPropertySnapshot | TextPropertyMutation | Settings | WorkspaceCreated | ActiveWorkspace | WorkspaceLoad | WorkspaceSourceState | ProjectList>;
   workspaces: WorkspaceService;
   close(): void;
 }
@@ -97,21 +99,22 @@ export function openSettingsService(
     }
   })();
 
-  const workspaces = createWorkspaceService(db, workspaceFilesystem, observerDependencies, projectFilesystem, projectRenameNative);
+  let workspaces = createWorkspaceService(db, workspaceFilesystem, observerDependencies, projectFilesystem, projectRenameNative);
   return {
-    workspaces,
-    moveProjectCategory: workspaces.moveProjectCategory,
-    listProjectCategoryMoves: workspaces.listProjectCategoryMoves,
-    getProjectCategoryMove: workspaces.getProjectCategoryMove,
-    previewProjectCategoryMoveRecovery: workspaces.previewProjectCategoryMoveRecovery,
-    recoverProjectCategoryMove: workspaces.recoverProjectCategoryMove,
-    renameProject: workspaces.renameProject,
-    listProjectRenames: workspaces.listProjectRenames,
-    getProjectRename: workspaces.getProjectRename,
-    previewProjectRenameRecovery: workspaces.previewProjectRenameRecovery,
-    recoverProjectRename: workspaces.recoverProjectRename,
-    revealProject: workspaces.revealProject,
+    get workspaces() { return workspaces; },
+    moveProjectCategory: (...args) => workspaces.moveProjectCategory(...args),
+    listProjectCategoryMoves: (...args) => workspaces.listProjectCategoryMoves(...args),
+    getProjectCategoryMove: (...args) => workspaces.getProjectCategoryMove(...args),
+    previewProjectCategoryMoveRecovery: (...args) => workspaces.previewProjectCategoryMoveRecovery(...args),
+    recoverProjectCategoryMove: (...args) => workspaces.recoverProjectCategoryMove(...args),
+    renameProject: (...args) => workspaces.renameProject(...args),
+    listProjectRenames: (...args) => workspaces.listProjectRenames(...args),
+    getProjectRename: (...args) => workspaces.getProjectRename(...args),
+    previewProjectRenameRecovery: (...args) => workspaces.previewProjectRenameRecovery(...args),
+    recoverProjectRename: (...args) => workspaces.recoverProjectRename(...args),
+    revealProject: (...args) => workspaces.revealProject(...args),
     handleQuery(input) {
+      if (isRecord(input) && input.type === "data.export") return dataRecovery(sqlite, input);
       if (isRecord(input) && input.type === "workspace.previewMetadataRemoval") return workspaces.metadataRemovalRequest(input);
       if (isRecord(input) && input.type === "workspace.getBoardLayout") return workspaces.boardLayoutRequest(input);
       if (isRecord(input) && input.type === "workspace.getTableLayout") return workspaces.tableLayoutRequest(input);
@@ -163,6 +166,14 @@ export function openSettingsService(
     },
 
     handleCommand(input) {
+      if (isRecord(input) && input.type === "data.restore") {
+        const result = dataRecovery(sqlite, input);
+        if (result.ok) {
+          workspaces.close();
+          workspaces = createWorkspaceService(db, workspaceFilesystem, observerDependencies, projectFilesystem, projectRenameNative);
+        }
+        return result;
+      }
       if (isRecord(input) && input.type === "workspace.applyMetadataRemoval") return workspaces.metadataRemovalRequest(input);
       if (isRecord(input) && input.type === "workspace.assignProjectGroup") return workspaces.assignProjectGroup(input);
       if (isRecord(input) && input.type === "workspace.setBoardLayout") return workspaces.boardLayoutRequest(input);

@@ -14,6 +14,7 @@ These documents are written for the new implementation. The previous documentati
 | [Development](development.md) | GitHub-only workflow, executor selection, integration and verification |
 | [CI](ci.md) | Conditional CI routes and scheduling |
 | [Runtime checkpoints](verification/development-checkpoints.md) | Conditional operation details and retained verification evidence |
+| [Recovery](recovery.md) | Manual application-data export/restore and project-file boundary |
 | [Releases](releases.md) | Versions, changelog and future distribution |
 | [Reuse](reuse.md) | bb reference, attribution and adaptation rules |
 | [ADRs](adr/) | Significant accepted tradeoffs |

@@ -1398,6 +1398,10 @@ jobs:
         run: npm run smoke:archive -- dev
         env:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-archive-dev
+      - name: Development application-data export and restore EN/RU
+        run: npm run smoke:data-recovery -- dev
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-data-recovery-dev
       - name: Development category options UI and persistence
         run: npm run smoke:category-options -- dev
         env:
@@ -1428,6 +1432,10 @@ jobs:
         run: npm run smoke:archive -- release
         env:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-archive-release
+      - name: Packaged application-data export and restore EN/RU
+        run: npm run smoke:data-recovery -- release
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-data-recovery-release
       - name: Packaged category options UI and persistence
         run: npm run smoke:category-options -- release
         env:
@@ -1463,6 +1471,7 @@ jobs:
             work/ci-select-*/
             work/ci-multiselect-*/
             work/ci-views-*/
+            work/ci-data-recovery-*/
           if-no-files-found: warn
       - uses: actions/upload-artifact@v4
         with:

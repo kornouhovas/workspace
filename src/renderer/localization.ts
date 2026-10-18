@@ -1,6 +1,20 @@
 import type { Language } from "../contracts/settings.js";
 
 const english = {
+  dataTitle: "Application data",
+  dataScope: "Export properties, views, workspaces and device settings. Project files are separate: back them up yourself. Missing folders require Locate folder after restore.",
+  dataExport: "Export application data",
+  dataFile: "Choose application-data export (JSON, up to 64 MiB)",
+  dataConfirmTitle: "Replace all application data?",
+  dataReplace: "This replaces every workspace, property, view and setting with the selected snapshot. Export current data first if you need to keep it. Project files are not restored or changed.",
+  dataConfirm: "Replace application data",
+  dataCancel: "Cancel restore",
+  dataBusy: "Processing application data…",
+  dataError: "Could not export or restore application data. Use a valid supported export up to 64 MiB; current data is preserved if restore fails.",
+  dataExported: "Export download requested. Keep the file in a safe location.",
+  dataUnknown: "The restore result is unknown. Reload to inspect current data before choosing another file. Restore will not be retried automatically.",
+  dataReload: "Reload application",
+
   metadataDeleteProperty: "Delete property",
   metadataDeleteOption: "Delete option",
   metadataTitle: "Review metadata deletion",
@@ -656,6 +670,19 @@ const english = {
 } as const;
 
 const russian: Record<keyof typeof english, string> = {
+  dataTitle: "Данные приложения",
+  dataScope: "Экспорт свойств, представлений, рабочих пространств и настроек устройства. Файлы проектов копируйте отдельно. Для отсутствующих папок после восстановления используйте «Найти папку».",
+  dataExport: "Экспортировать данные приложения",
+  dataFile: "Выбрать экспорт данных (JSON, до 64 МиБ)",
+  dataConfirmTitle: "Заменить все данные приложения?",
+  dataReplace: "Все рабочие пространства, свойства, представления и настройки будут заменены выбранным снимком. При необходимости сначала экспортируйте текущие данные. Файлы проектов не восстанавливаются и не изменяются.",
+  dataConfirm: "Заменить данные приложения",
+  dataCancel: "Отменить восстановление",
+  dataBusy: "Обработка данных приложения…",
+  dataError: "Не удалось экспортировать или восстановить данные. Используйте корректный поддерживаемый экспорт до 64 МиБ; ошибка восстановления сохраняет текущие данные.",
+  dataExported: "Скачивание экспорта запрошено. Сохраните файл в надёжном месте.",
+  dataUnknown: "Результат восстановления неизвестен. Перезагрузите приложение и проверьте данные перед выбором другого файла. Автоматического повтора не будет.",
+  dataReload: "Перезагрузить приложение",
   metadataDeleteProperty: "Удалить свойство",
   metadataDeleteOption: "Удалить вариант",
   metadataTitle: "Проверка удаления метаданных",

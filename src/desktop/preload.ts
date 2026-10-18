@@ -5,6 +5,7 @@ import { isWorkspaceChangeEvent } from "../contracts/service-protocol.js";
 
 const api: WorkspaceDesktopApi = {
   getBackendStatus: () => ipcRenderer.invoke("workspace:backend-status"),
+  recovery: (input) => ipcRenderer.invoke("workspace:command", input),
   settings: (input) => ipcRenderer.invoke("workspace:settings", input),
   workspace: (input) => ipcRenderer.invoke("workspace:command", input),
   pickRoot: () => ipcRenderer.invoke("workspace:pick-root"),

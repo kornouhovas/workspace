@@ -1,3 +1,4 @@
+import { DataRecoveryPanel } from "./components/DataRecoveryPanel.js";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { BackendStatus } from "../contracts/desktop-api.js";
 import type { ServiceErrorCode } from "../contracts/settings.js";
@@ -20,6 +21,7 @@ function errorMessage(code: ServiceErrorCode): FormMessage {
 }
 
 export function App() {
+  const [dataLocked, setDataLocked] = useState(false);
   const [client] = useState(() => new WorkspaceServiceClient());
   const [backend, setBackend] = useState<BackendStatus>({ state: "starting" });
   const backendState = useRef<BackendStatus["state"]>("starting");
@@ -453,6 +455,7 @@ export function App() {
       )}
       {viewState === "ready" && (
         <>
+          <fieldset disabled={dataLocked} hidden={dataLocked} className="workspace-controls">
           <section className="workspace-settings" aria-labelledby="settings-title">
             <h2 id="settings-title">{t("settingsTitle")}</h2>
             <LanguageSelect
@@ -686,6 +689,8 @@ export function App() {
               )}
             </section>
           )}
+          </fieldset>
+          <DataRecoveryPanel client={client} language={language} onRestored={() => window.location.reload()} onLock={setDataLocked} />
         </>
       )}
     </main>

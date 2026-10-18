@@ -613,3 +613,18 @@ loading/empty/error states and observation after unknown transport outcomes with
 Existing bb primitives are reused; no new upstream module or dependency was copied.
 See [contract/scenarios](plans/issue-36-metadata-removal.md) and
 [verification](verification/issue-36-metadata-removal.md); GitHub #36 owns CI/delivery status.
+
+## Implemented application-data export and restore
+
+[Issue #37](plans/issue-37-data-recovery.md) adds a versioned/checksummed SQLite
+serialized snapshot and validated transactional replacement on the existing service
+connection. The typed preload API exposes content, with no renderer filesystem or
+SQLite access. Every table is included, including settings, views and operation
+receipts. Restore validates the canonical schema, migration ledger, integrity,
+foreign keys and supported configurations before replacing rows. Immutable triggers
+are dropped/recreated inside the same transaction; rollback restores rows and DDL.
+After commit all workspace services/reviews/observers are recreated, the backend
+rebinds events and the renderer reloads without mutation replay. Project folders
+remain separate and missing associations use existing recovery. See [recovery](recovery.md)
+for the format, size limit, supported-schema constraint and user instructions.
+Automatic/pre-migration backup remains issue #38.

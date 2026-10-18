@@ -21,6 +21,9 @@ export class WorkspaceServiceClient {
   assignProjectGroup(input: import("../contracts/group-assignment.js").AssignProjectGroupCommand): Promise<ServiceResult<import("../contracts/group-assignment.js").GroupAssignmentResult>> { return this.api.workspace(input); }
   constructor(private readonly api: WorkspaceDesktopApi = window.workspace) {}
 
+  exportData() { return this.api.recovery({ type: "data.export" }); }
+  restoreData(content: string) { return this.api.recovery({ type: "data.restore", content }); }
+
   getBoardLayout(workspaceId: string, viewId: string): Promise<ServiceResult<import("../contracts/board-layout.js").BoardLayoutSnapshot>> { return this.api.workspace({ type: "workspace.getBoardLayout", workspaceId, viewId }); }
   setBoardLayout(workspaceId: string, viewId: string, config: import("../contracts/board-layout.js").BoardLayoutConfig): Promise<ServiceResult<import("../contracts/board-layout.js").BoardLayoutSnapshot>> { return this.api.workspace({ type: "workspace.setBoardLayout", workspaceId, viewId, config }); }
   getTableLayout(workspaceId: string, viewId: string): Promise<ServiceResult<import("../contracts/table-layout.js").TableLayoutSnapshot>> { return this.api.workspace({ type: "workspace.getTableLayout", workspaceId, viewId }); }

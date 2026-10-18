@@ -124,6 +124,7 @@ function WorkspacePreview({ language, state = "management" }: {
       return { ok: true, value };
     };
     window.workspace = {
+      recovery: async () => ({ ok: false, error: { code: "service_unavailable", message: "Recovery is unavailable in this fixture." } }),
       getBackendStatus: async () => ({ state: state === "loading" ? "starting" : "ready" }),
       onBackendStatus: () => () => {},
       settings: async (input) => {
@@ -252,6 +253,7 @@ function TextPreview({ language, state }: { language: Language; state: TextStory
     };
     const api: WorkspaceDesktopApi = {
       workspace: workspace as WorkspaceDesktopApi["workspace"],
+      recovery: async () => ({ ok: false, error: { code: "service_unavailable", message: "Recovery is unavailable in this fixture." } }),
       getBackendStatus: async () => ({ state: "ready" }), onBackendStatus: () => () => {},
       settings: async () => ({ ok: true, value: { language } }), pickRoot: async () => ({ outcome: "cancelled" }),
       onWorkspaceChange: (listener) => { listeners.add(listener); return () => { listeners.delete(listener); }; },
@@ -336,6 +338,7 @@ function CategoryPreview({ language, state }: { language: Language; state: Categ
     };
     const api: WorkspaceDesktopApi = {
       workspace: workspace as WorkspaceDesktopApi["workspace"],
+      recovery: async () => ({ ok: false, error: { code: "service_unavailable", message: "Recovery is unavailable in this fixture." } }),
       getBackendStatus: async () => ({ state: "ready" }), onBackendStatus: () => () => {},
       settings: async () => ({ ok: true, value: { language } }), pickRoot: async () => ({ outcome: "cancelled" }), onWorkspaceChange: () => () => {},
     };

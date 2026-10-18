@@ -44,6 +44,7 @@
     "test:common": "node scripts/test-suites.mjs common",
     "test:platform": "node scripts/test-suites.mjs platform",
     "package:built": "electron-builder --dir",
+    "smoke:data-recovery": "node scripts/smoke-data-recovery.mjs",
     "smoke:views": "node scripts/smoke-views.mjs",
     "smoke:multiselect": "node scripts/smoke-multi-select.mjs",
     "smoke:select": "node scripts/smoke-single-select.mjs",

@@ -128,6 +128,7 @@ function mockApi(options: MockOptions = {}) {
     projects: [], retainedProjects: [], retainedCount: 0 }))));
   const workspaceRequest = async (input: WorkspaceRequest) => recordProjects(await onWorkspace(input));
   window.workspace = {
+    recovery: async () => ({ ok: false, error: { code: "service_unavailable", message: "Recovery is unavailable in this fixture." } }),
     getBackendStatus: async () => ({ state: options.backend ?? "ready" }),
     onBackendStatus: (listener) => {
       statusListeners.add(listener);

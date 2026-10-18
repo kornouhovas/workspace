@@ -472,3 +472,11 @@ body {
 .metadata-removal { border: 1px solid var(--border, #888); border-radius: 8px; padding: 16px; margin-block: 12px; max-width: 100%; overflow-wrap: anywhere; }
 .metadata-removal ul { padding-inline-start: 20px; }
 .metadata-removal .workspace-form-actions { flex-wrap: wrap; }
+
+.workspace-controls { display: grid; gap: 1.5rem; border: 0; padding: 0; margin: 0; min-width: 0; }
+.workspace-controls[hidden] { display: none; }
+.data-recovery { min-width: 0; }
+.data-recovery summary { cursor: pointer; font-weight: 600; }
+.data-recovery > div { margin-block-start: 1rem; }
+.data-recovery input { max-width: 100%; min-width: 0; }
+.data-recovery button { white-space: normal; }
