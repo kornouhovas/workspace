@@ -451,3 +451,15 @@ body {
 .table-row-controls button { min-width: 1.75rem; min-height: 1.75rem; }
 .table-text-nowrap .text-value-button { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
 .table-text-wrap .text-value-button { white-space: pre-wrap; overflow-wrap: anywhere; }
+
+.board-layout-controls { margin-block: 1rem; min-width: 0; }
+.board-layout-controls fieldset { display: flex; flex-direction: column; gap: .75rem; min-width: 0; }
+.board-property-control, .board-column-control { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; }
+.board-column-control input[type="range"] { max-width: 100%; }
+.grouped-board > .project-group { min-width: 0; }
+.project-card > [data-column-id] { min-width: 0; }
+.board-content-wrap .property-authored, .board-content-wrap .text-value-button { white-space: pre-wrap; overflow-wrap: anywhere; }
+.board-content-nowrap .property-authored, .board-content-nowrap .text-value-button, .board-content-nowrap .board-category-value { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+.board-content-nowrap .property-authored, .board-content-nowrap .board-category-value { display: block; }
+.board-content-nowrap .multi-select-values { flex-wrap: nowrap; overflow: hidden; }
+.board-content-nowrap .multi-select-option { flex-shrink: 0; }

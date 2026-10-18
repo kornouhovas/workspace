@@ -536,3 +536,23 @@ Changing row order never assigns a group value or moves a folder. No new bb code
 or dependency was copied. See [scenarios](plans/issue-31-table-layout.md) and
 [verification](verification/issue-31-table-layout.md); GitHub #31 owns CI/integration
 acceptance.
+
+## Implemented Board column and card presentation
+
+Issue #32 adds view-owned Board widths keyed by grouping property and canonical
+stable group key, plus independent card-property visibility and content wrapping.
+Migration 0022 preserves existing views with visible fields, wrapping enabled and
+384px default columns. `getBoardLayout`/`setBoardLayout` validate ownership, exact
+payloads, grouping-key types and 180–800px integer widths behind the typed service.
+Existing grouping controls own order/hide/collapse/hide-empty; newly appearing
+groups retain their defined append/default behavior. Option/category rename keeps
+identity and width; dormant category presentation survives discovery-mode changes.
+
+Card Name remains visible for recovery; hiding card fields changes no source
+property definitions or values. Definition controls remain independently available.
+Duplication copies Board settings into an independent row, Table ignores them and
+sibling workspaces have independent views. Native keyboard sliders and EN/RU
+controls share scoped save/load/focus/retry/reset behavior with Table; narrow Board
+layouts scroll horizontally. No new bb code or dependency was copied. See the
+[contract/scenarios](plans/issue-32-board-layout.md) and
+[verification](verification/issue-32-board-layout.md); GitHub #32 owns CI/integration acceptance.

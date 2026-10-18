@@ -728,7 +728,7 @@ test("upgrades populated two-migration databases in insertion order without chan
         assert.deepEqual(after, { ...before,
           sources: before.sources.map((row) => ({ ...row, ...unconfiguredDiscovery })),
           workspaces: before.workspaces.map((row, position) => ({ ...row, position })),
-          views: before.views.map(row => ({ ...row, position: 0, filter_config: '{"search":"","rules":[]}', grouping_config: '{"propertyId":null,"settings":[]}', table_config: '{"columns":[],"rowOrder":[]}' })) });
+          views: before.views.map(row => ({ ...row, position: 0, filter_config: '{"search":"","rules":[]}', grouping_config: '{"propertyId":null,"settings":[]}', board_config: '{"widths":[],"properties":[],"wrap":true}', table_config: '{"columns":[],"rowOrder":[]}' })) });
         const preview = discoveryPreview(service, ids[1]);
         assert.equal(preview.ok, true);
         assert.equal(preview.value.state, "empty");
@@ -1563,7 +1563,7 @@ test("populated discovery configuration upgrades to projects, applies and reopen
     let service = openSettingsService(databasePath);
     let projects;
     try {
-      assert.deepEqual(records(databasePath), { ...before, sources: before.sources.map((row) => ({ ...row, property_revision: 0, category_property_revision: 0 })), views: before.views.map(row => ({ ...row, position: 0, filter_config: '{"search":"","rules":[]}', grouping_config: '{"propertyId":null,"settings":[]}', table_config: '{"columns":[],"rowOrder":[]}' })) });
+      assert.deepEqual(records(databasePath), { ...before, sources: before.sources.map((row) => ({ ...row, property_revision: 0, category_property_revision: 0 })), views: before.views.map(row => ({ ...row, position: 0, filter_config: '{"search":"","rules":[]}', grouping_config: '{"propertyId":null,"settings":[]}', board_config: '{"widths":[],"properties":[],"wrap":true}', table_config: '{"columns":[],"rowOrder":[]}' })) });
       assert.deepEqual(projectRecords(databasePath), []);
       projects = applyDiscovery(service, workspace.workspaceId).value;
       assert.deepEqual(projects.projects.map((p) => p.name), ["Kept"]);
@@ -1575,7 +1575,7 @@ test("populated discovery configuration upgrades to projects, applies and reopen
       assert.equal(service.workspaces.load().value.activeWorkspace.viewId, workspace.viewId);
       assert.equal(service.handleQuery({ type: "settings.load" }).value.language, "ru");
       assert.deepEqual(records(databasePath).workspaces, before.workspaces);
-      assert.deepEqual(records(databasePath).views, before.views.map(row => ({ ...row, position: 0, filter_config: '{"search":"","rules":[]}', grouping_config: '{"propertyId":null,"settings":[]}', table_config: '{"columns":[],"rowOrder":[]}' })));
+      assert.deepEqual(records(databasePath).views, before.views.map(row => ({ ...row, position: 0, filter_config: '{"search":"","rules":[]}', grouping_config: '{"propertyId":null,"settings":[]}', board_config: '{"widths":[],"properties":[],"wrap":true}', table_config: '{"columns":[],"rowOrder":[]}' })));
     } finally { service.close(); }
   });
 });

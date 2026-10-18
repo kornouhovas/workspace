@@ -34,6 +34,7 @@ export const workspaceViewSelection = sqliteTable("workspace_view_selection", {
 });
 
 export const views = sqliteTable("views", {
+  boardConfig: text("board_config").notNull().default('{"widths":[],"properties":[],"wrap":true}'),
   tableConfig: text("table_config").notNull().default('{"columns":[],"rowOrder":[]}'),
   groupingConfig: text("grouping_config").notNull().default('{"propertyId":null,"settings":[]}'),
   filterConfig: text("filter_config").notNull().default('{"search":"","rules":[]}'),

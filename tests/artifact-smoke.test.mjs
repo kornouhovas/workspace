@@ -38,6 +38,7 @@ const packagedFiles = [
     "dist/service/db/migrations/0019_view_filters.sql",
     "dist/service/db/migrations/0020_view_grouping.sql",
     "dist/service/db/migrations/0021_table_layout.sql",
+    "dist/service/db/migrations/0022_board_layout.sql",
   "dist/service/db/migrations/meta/_journal.json",
 ];
 

@@ -125,7 +125,7 @@ test("upgrade from populated baseline 0000–0004 preserves settings, sources, p
           const actual = inspected.prepare(`SELECT * FROM ${table}`).all();
           if (table === "sources") actual.forEach((row) => { delete row.property_revision; delete row.category_property_revision; });
           if (table === "projects") actual.forEach((row) => { delete row.category_id; delete row.mode_inactive; });
-          if (table === "views") actual.forEach(row => { assert.equal(row.position, 0); assert.equal(row.filter_config, '{"search":"","rules":[]}'); assert.equal(row.grouping_config, '{"propertyId":null,"settings":[]}'); assert.equal(row.table_config, '{"columns":[],"rowOrder":[]}'); delete row.table_config; delete row.grouping_config; delete row.position; delete row.filter_config; });
+          if (table === "views") actual.forEach(row => { assert.equal(row.position, 0); assert.equal(row.filter_config, '{"search":"","rules":[]}'); assert.equal(row.grouping_config, '{"propertyId":null,"settings":[]}'); assert.equal(row.board_config, '{"widths":[],"properties":[],"wrap":true}'); assert.equal(row.table_config, '{"columns":[],"rowOrder":[]}'); delete row.board_config; delete row.table_config; delete row.grouping_config; delete row.position; delete row.filter_config; });
           assert.deepEqual(actual, before[table]);
         }
       } finally { inspected.close(); }

@@ -28,7 +28,7 @@ export function createViewService(db: Database) {
             const id = randomUUID();
             const original = owned ? tx.select().from(schema.views).where(eq(schema.views.id, owned.viewId)).get() : undefined;
             tx.insert(schema.views).values({ id, workspaceId: input.workspaceId, name: input.name,
-              kind: input.type === "workspace.createView" ? input.kind : owned!.kind, position: before.views.length, ...(original ? { tableConfig: original.tableConfig, filterConfig: original.filterConfig, groupingConfig: original.groupingConfig } : {}) }).run();
+              kind: input.type === "workspace.createView" ? input.kind : owned!.kind, position: before.views.length, ...(original ? { boardConfig: original.boardConfig, tableConfig: original.tableConfig, filterConfig: original.filterConfig, groupingConfig: original.groupingConfig } : {}) }).run();
             selectView(tx, input.workspaceId, id);
             break;
           }

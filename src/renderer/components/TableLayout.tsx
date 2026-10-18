@@ -1,53 +1,17 @@
-import { useEffect, useRef, useState } from "react";
+import { useViewPresentation } from "./useViewPresentation.js";
+import { ColumnWidth } from "./ColumnWidth.js";
 import { defaultTableLayout, orderedProjectIds, type TableColumn, type TableLayoutConfig } from "../../contracts/table-layout.js";
 import type { WorkspaceServiceClient } from "../workspace-service-client.js";
 import type { Language } from "../../contracts/settings.js";
 import { translate, type TranslationKey } from "../localization.js";
 import { StatusMessage } from "./bb-foundation.js";
 export interface TableField { propertyId: string; name: string; text: boolean }
+const tableAdapter = {
+  load: (client: WorkspaceServiceClient, workspaceId: string, viewId: string) => client.getTableLayout(workspaceId, viewId),
+  save: (client: WorkspaceServiceClient, workspaceId: string, viewId: string, config: TableLayoutConfig) => client.setTableLayout(workspaceId, viewId, config),
+};
 export function useTableLayout(client: WorkspaceServiceClient, workspaceId: string, viewId: string | undefined) {
-  const [state, setState] = useState<{viewId: string; config: TableLayoutConfig} | null>(null);
-  const [pending, setPending] = useState(false), [error, setError] = useState(false), [loading, setLoading] = useState(false);
-  const version = useRef(0), saving = useRef(false);
-  const savedFocus = useRef<HTMLElement | null>(null);
-  useEffect(() => {
-    if (pending || !savedFocus.current) return;
-    const element = savedFocus.current; savedFocus.current = null;
-    if (element.isConnected && (document.activeElement === document.body || document.activeElement === element)) element.focus();
-  }, [pending]);
-  const load = async () => {
-    if (!viewId) return;
-    const request = ++version.current;
-    setLoading(true); setError(false);
-    try {
-      const result = await client.getTableLayout(workspaceId, viewId);
-      if (request !== version.current) return;
-      if (result.ok && result.value.workspaceId === workspaceId && result.value.viewId === viewId) setState({viewId, config: result.value.config});
-      else setError(true);
-    } catch { if (request === version.current) setError(true); }
-    finally { if (request === version.current) setLoading(false); }
-  };
-  useEffect(() => {
-    setState(null); setPending(false); saving.current = false; savedFocus.current = null;
-    if (!viewId) return;
-    void load();
-    const stop = client.onWorkspaceChange(event => { if (event.type === "workspace.listChanged" && !saving.current) void load(); });
-    return () => { version.current++; stop(); };
-  }, [client, workspaceId, viewId]);
-  const save = async (config: TableLayoutConfig) => {
-    if (!viewId || saving.current) return;
-    savedFocus.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    saving.current = true; setPending(true); setError(false); setLoading(false);
-    const request = ++version.current;
-    try {
-      const result = await client.setTableLayout(workspaceId, viewId, config);
-      if (request !== version.current) return;
-      if (result.ok && result.value.workspaceId === workspaceId && result.value.viewId === viewId) setState({viewId, config: result.value.config});
-      else setError(true);
-    } catch { if (request === version.current) setError(true); }
-    finally { if (request === version.current) { saving.current = false; setPending(false); } }
-  };
-  return {config: state && state.viewId === viewId ? state.config : null, pending, error, loading, load, save};
+  return useViewPresentation(client, workspaceId, viewId, tableAdapter);
 }
 export function tableColumns(config: TableLayoutConfig | null, fields: TableField[]): TableColumn[] {
   const available = new Set(fields.map(f => f.propertyId));
@@ -101,11 +65,3 @@ export function moveTableRow(config: TableLayoutConfig, current: string[], proje
 }
 export { orderedProjectIds };
 
-function ColumnWidth({width, pending, label, onCommit}: {width: number; pending: boolean; label: string; onCommit(width: number): void}) {
-  const [draft, setDraft] = useState(width);
-  useEffect(() => { if (!pending) setDraft(width); }, [width, pending]);
-  const commit = (value: string) => {const next = Number(value); if (next !== width) onCommit(next);};
-  return <input type="range" min="120" max="800" step="1" aria-label={label} value={draft}
-    onChange={event => setDraft(Number(event.currentTarget.value))}
-    onPointerUp={event => commit(event.currentTarget.value)} onKeyUp={event => commit(event.currentTarget.value)}/>;
-}

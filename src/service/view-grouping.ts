@@ -7,10 +7,10 @@ import type { PropertySnapshot } from "../contracts/text-properties.js";
 import * as schema from "./db/schema.js";
 type Database = BetterSQLite3Database<typeof schema>;
 const supportedGroupTypes = ["name", "text", "number", "date", "single_select", "multi_select", "category"];
-function validate(db: Database, sourceId: string, config: ViewGroupingConfig): boolean {
+export function validateGrouping(db: Database, sourceId: string, config: ViewGroupingConfig, includeDormantCategory = false): boolean {
     const definitions = db.select().from(schema.propertyDefinitions).where(eq(schema.propertyDefinitions.sourceId, sourceId)).all();
     const source = db.select().from(schema.sources).where(eq(schema.sources.id, sourceId)).get();
-    const categoryProperty = source?.discoveryMode === "grouped" ? db.select().from(schema.categoryProperties).where(eq(schema.categoryProperties.sourceId, sourceId)).get() : undefined;
+    const categoryProperty = (source?.discoveryMode === "grouped" || includeDormantCategory) ? db.select().from(schema.categoryProperties).where(eq(schema.categoryProperties.sourceId, sourceId)).get() : undefined;
     const optionProperties = new Map(db.select().from(schema.selectOptions).where(eq(schema.selectOptions.sourceId, sourceId)).all().map(option => [option.id, option.propertyId]));
     const categoryIds = new Set(db.select().from(schema.categories).where(eq(schema.categories.sourceId, sourceId)).all().map(category => category.id));
     const typeFor = (id: string) => id === "name" ? "name" : id === categoryProperty?.id ? "category" : definitions.find(d => d.id === id)?.propertyType;
@@ -44,7 +44,7 @@ export function readGrouping(db: Database, workspaceId: string, viewId: string):
     if (!isViewGroupingConfig(config))
         return storage();
     const workspace = db.select().from(schema.workspaces).where(eq(schema.workspaces.id, workspaceId)).get();
-    if (!workspace || !validate(db, workspace.sourceId, config))
+    if (!workspace || !validateGrouping(db, workspace.sourceId, config))
         return invalid();
     return { ok: true, value: { workspaceId, viewId, config } };
 }
@@ -59,7 +59,7 @@ export function createViewGroupingService(db: Database) {
                 if (!workspace || !view || view.workspaceId !== workspace.id)
                     return invalid();
                 if (input.type === "workspace.setViewGrouping") {
-                    if (!validate(tx, workspace.sourceId, input.config))
+                    if (!validateGrouping(tx, workspace.sourceId, input.config))
                         return invalid();
                     tx.update(schema.views).set({ groupingConfig: JSON.stringify(input.config) }).where(eq(schema.views.id, view.id)).run();
                 }
@@ -76,7 +76,7 @@ export function projectGroups(db: Database, sourceId: string, config: ViewGroupi
     name: string;
     categoryId?: string | null;
 }[], values: PropertySnapshot, filteredIds: string[]): ServiceResult<ViewGroup[] | null> {
-    if (!validate(db, sourceId, config))
+    if (!validateGrouping(db, sourceId, config))
         return invalid();
     if (config.propertyId === null)
         return { ok: true, value: null };

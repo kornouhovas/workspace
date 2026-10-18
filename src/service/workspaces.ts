@@ -1,3 +1,5 @@
+import { createBoardLayoutService } from "./board-layout.js";
+import type { BoardLayoutSnapshot } from "../contracts/board-layout.js";
 import { createTableLayoutService } from "./table-layout.js";
 import type { TableLayoutSnapshot } from "../contracts/table-layout.js";
 import { createViewGroupingService } from "./view-grouping.js";
@@ -65,6 +67,7 @@ const nativeFilesystem: WorkspaceFilesystem = {
 };
 
 export interface WorkspaceService {
+  boardLayoutRequest(input: unknown): ServiceResult<BoardLayoutSnapshot>;
   tableLayoutRequest(input: unknown): ServiceResult<TableLayoutSnapshot>;
   groupingRequest(input: unknown): ServiceResult<ViewGroupingSnapshot>;
   filterRequest(input: unknown): ServiceResult<ViewFilterPayload>;
@@ -239,6 +242,7 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
   }, projectFilesystem);
   const reveal = createProjectRevealService(db, projectFilesystem);
   const service: WorkspaceService = {
+    boardLayoutRequest: createBoardLayoutService(db),
     tableLayoutRequest: createTableLayoutService(db),
     groupingRequest: input => createViewGroupingService(db)(input),
     filterRequest: input => createViewFilterService(db, service)(input),
@@ -905,6 +909,7 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
   if (db.all<{ name: string }>(sql`PRAGMA table_info(projects)`).some((column) => column.name === "category_id")) syncObserverReferences();
   return {
     ...service,
+    boardLayoutRequest: input => run(() => service.boardLayoutRequest(input), isRecord(input) && input.type === "workspace.setBoardLayout" ? currentSnapshot : undefined),
     tableLayoutRequest: input => run(() => service.tableLayoutRequest(input), isRecord(input) && input.type === "workspace.setTableLayout" ? currentSnapshot : undefined),
     groupingRequest: input => run(() => service.groupingRequest(input), isRecord(input) && input.type === "workspace.setViewGrouping" ? currentSnapshot : undefined),
     filterRequest: input => run(() => service.filterRequest(input), isRecord(input) && input.type === "workspace.setViewFilter" ? currentSnapshot : undefined),

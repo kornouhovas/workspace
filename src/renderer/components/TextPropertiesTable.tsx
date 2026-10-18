@@ -1,3 +1,4 @@
+import { BoardLayoutControls, useBoardLayout, boardColumnWidth } from "./BoardLayout.js";
 import { Children, cloneElement, type ReactElement, type ReactNode } from "react";
 import { useTableLayout, tableColumns, TableLayoutControls, moveTableRow, orderedProjectIds } from "./TableLayout.js";
 import { ViewGrouping } from "./ViewGrouping.js";
@@ -109,14 +110,20 @@ function TextPropertiesContent({ viewId, layout = "table", hideReveal, client, w
     void load();
     return () => { listVersion.current++; lifetime.current++; unsubscribe(); };
   }, [client, workspaceId, sourceId]);
+  const boardState = useBoardLayout(client, workspaceId, layout === "board" ? viewId : undefined);
   const tableState = useTableLayout(client, workspaceId, layout === "table" ? viewId : undefined);
   const fields = [{propertyId: "name", name: t("projectName"), text: false}, ...(categoryProperty ? [{propertyId:categoryProperty.propertyId, name:categoryProperty.name ?? t("discoveryCategory"), text:false}] : []), ...(snapshot?.definitions.map(p => ({propertyId:p.propertyId, name:p.name, text:p.propertyType === "text"})) ?? [])];
   const columns = tableColumns(tableState.config, fields);
   const projectById = new Map([...projects, ...retainedProjects].map(p => [p.projectId,p]));
   const rowIds = orderedProjectIds(tableState.config?.rowOrder ?? [], [...projectById.keys()]);
   const rowBusy = disabled || tableState.pending || tableState.loading || !tableState.config;
-  const presentCells = (fragment: ReactElement<{children: ReactNode}>) => {
-    if (layout === "board" || !viewId) return fragment;
+  const presentCells = (fragment: ReactElement<{children: ReactNode}>, card = false) => {
+    if (layout === "board") {
+      if (!card) return fragment;
+      const hidden = new Set(boardState.config?.properties.filter(p => p.hidden).map(p => p.propertyId));
+      return <>{(Children.toArray(fragment.props.children) as ReactElement<Record<string, unknown>>[]).filter(child => !hidden.has(child.props?.["data-column-id"] as string))}</>;
+    }
+    if (!viewId) return fragment;
     const children = Children.toArray(fragment.props.children) as ReactElement<Record<string, unknown>>[];
     return <>{columns.filter(c => !c.hidden).map(c => {
       const cell = children.find(child => child.props?.["data-column-id"] === c.propertyId);
@@ -194,7 +201,7 @@ function TextPropertiesContent({ viewId, layout = "table", hideReveal, client, w
         const visibleIds = rowIds.filter(id => (!ids || ids.includes(id)) && (!viewId || filteredIds?.ids?.includes(id)));
         const rowIndex = visibleIds.indexOf(project.projectId);
         const revealLocator = JSON.stringify([project.relativePath, project.categoryId, categories.find(category => category.categoryId === project.categoryId)?.relativePath, retained?.retentionReason]);
-        return <Row key={project.projectId} data-project-id={project.projectId} className={layout === "board" ? "project-card" : undefined}
+        return <Row key={project.projectId} data-project-id={project.projectId} className={layout === "board" ? `project-card ${boardState.config?.wrap === false ? "board-content-nowrap" : "board-content-wrap"}` : undefined}
           onDragOver={event => {if (layout === "table" && !rowBusy && event.dataTransfer.types.includes("application/x-workspace-table-row")) event.preventDefault();}}
           onDrop={event => {
             if (layout !== "table" || rowBusy) return;
@@ -219,7 +226,7 @@ function TextPropertiesContent({ viewId, layout = "table", hideReveal, client, w
             <button type="button" className="workspace-button workspace-button--secondary" disabled={disabled || locateDisabled}
               aria-label={`${t("recoveryLocate")}: ${project.name}`} onClick={(event) => onLocate(retained, event.currentTarget)}>{t("recoveryLocate")}</button>}
         </Cell>
-        {categoryProperty && <Cell data-column-id={categoryProperty.propertyId} data-label={categoryProperty.name ?? t("discoveryCategory")} key={categoryProperty.propertyId} className="category-cell" data-color={categories.find(category => category.categoryId === project.categoryId)?.presentation?.color ?? "default"}>{retained?.categoryName ?? categories.find((category) => category.categoryId === project.categoryId)?.name}
+        {categoryProperty && <Cell data-column-id={categoryProperty.propertyId} data-label={categoryProperty.name ?? t("discoveryCategory")} key={categoryProperty.propertyId} className="category-cell" data-color={categories.find(category => category.categoryId === project.categoryId)?.presentation?.color ?? "default"}>{layout === "board" ? <span className="board-category-value">{retained?.categoryName ?? categories.find((category) => category.categoryId === project.categoryId)?.name}</span> : retained?.categoryName ?? categories.find((category) => category.categoryId === project.categoryId)?.name}
           {!retained && onMoveCategory && project.categoryId && "associationState" in project && project.associationState === "active" &&
             "resolution" in project && project.resolution === "active" && <button type="button" className="workspace-button workspace-button--secondary property-rename"
               aria-label={`${t("moveCategory")}: ${project.name}`} disabled={disabled || categoryMoveDisabled}
@@ -242,13 +249,14 @@ function TextPropertiesContent({ viewId, layout = "table", hideReveal, client, w
         </Cell>)}
         {!hideReveal && <Cell key="project-actions" data-label={t("revealProject")}><ProjectRevealButton client={client} workspaceId={workspaceId} projectId={project.projectId} name={project.name} language={language} disabled={disabled} minimumRevision={minimumDiscoveryRevision} sourceLifetime={sourceLifetime}
           locatorKey={revealLocator} targetKey={JSON.stringify([revealLocator, retained?.associationState, retained?.resolution])} /></Cell>}
-      </>)}</Row>; });
+      </>, true)}</Row>; });
   return <div className="text-properties" aria-busy={pending || loading}>
     {viewId && <ViewFilters client={client} workspaceId={workspaceId} viewId={viewId} archived={!!hideReveal} language={language}
       snapshot={snapshot} categoryProperty={categoryProperty} categories={categories} disabled={disabled || loadError}
       refreshKey={JSON.stringify([snapshot?.revision, discoveryRevision, projects.map(p => [p.projectId, p.name, p.categoryId]), retainedProjects.map(p => [p.projectId, p.name, p.categoryId])])}
       onResults={ids => setFilteredIds({ viewId, ids })} onGroups={(groups,propertyId) => setGrouped({viewId,groups,propertyId})} />
     }
+    {viewId && layout === "board" && <BoardLayoutControls state={boardState} fields={fields} groups={grouped?.viewId === viewId ? grouped.groups : null} groupPropertyId={grouped?.viewId === viewId ? grouped.propertyId : null} language={language} disabled={disabled || loadError || loading}/>}
     {viewId && layout === "table" && <TableLayoutControls state={tableState} fields={fields} language={language} disabled={disabled || loadError || loading}/> }
     {viewId && <ViewGrouping client={client} workspaceId={workspaceId} viewId={viewId} language={language} snapshot={snapshot} categoryProperty={categoryProperty} groups={grouped?.viewId===viewId ? grouped.groups : null} groupPropertyId={grouped?.viewId===viewId ? grouped.propertyId : null} disabled={disabled||loadError} />}
     {loading && <StatusMessage kind="info" title={t("propertiesLoading")} />}
@@ -286,7 +294,7 @@ function TextPropertiesContent({ viewId, layout = "table", hideReveal, client, w
       {grouped.groups.length>0 && grouped.groups.every(group=>group.hidden) && <p role="status">{t("groupAllHidden")}</p>}
       {grouped.groups.length===0 && <p role="status">{t("groupEmpty")}</p>}
       <div className={layout === "board" ? "grouped-board" : "grouped-table"}>
-      {grouped.groups.filter(group=>!group.hidden).map(group=><section className="project-group" key={group.key} aria-label={group.value===null?t("groupNoValue"):(group.label ?? String(group.value))}>
+      {grouped.groups.filter(group=>!group.hidden).map(group=><section className="project-group" style={layout === "board" ? {flexBasis:boardColumnWidth(boardState.config, grouped.propertyId, group.key)} : undefined} key={group.key} aria-label={group.value===null?t("groupNoValue"):(group.label ?? String(group.value))}>
         <h3 className="property-authored">{group.value===null?t("groupNoValue"):(group.label ?? String(group.value))} ({group.projectIds.length})</h3>
         {!group.collapsed && (group.empty ? <p>{t("groupEmpty")}</p> : layout === "board" ? <ul className="project-board" aria-label={t("boardProjects")}>{rows(group.projectIds)}</ul> :
           <div className="project-table-scroll"><table className="project-table" style={tableStyle}><thead><tr>{headers}</tr></thead><tbody>{rows(group.projectIds)}</tbody></table></div>)}

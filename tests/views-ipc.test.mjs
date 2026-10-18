@@ -26,6 +26,11 @@ test('built IPC routes view lifecycle commands and validates payloads without pa
     assert.equal(request({ type: 'workspace.reorderViews', workspaceId, viewIds: [...copy.value.views.map(v => v.viewId)].reverse() }).ok, true);
     assert.equal(request({ type: 'workspace.activateView', workspaceId, viewId }).ok, true);
     assert.equal(request({ type: 'workspace.deleteView', workspaceId, viewId: copy.value.activeViewId }).ok, true);
+    const boardConfig={widths:[{propertyId:'name',key:'"Future"',width:280}],properties:[{propertyId:'name',hidden:false}],wrap:false};
+    assert.equal(request({type:'workspace.setBoardLayout',workspaceId,viewId,config:boardConfig}).ok,true);
+    assert.deepEqual(request({type:'workspace.getBoardLayout',workspaceId,viewId}).value.config,boardConfig);
+    assert.equal(request({type:'workspace.getBoardLayout',workspaceId,viewId,extra:true}).error.code,'invalid_input');
+    assert.equal(request({type:'workspace.setBoardLayout',workspaceId,viewId,config:{...boardConfig,wrap:0}}).error.code,'invalid_input');
     const tableConfig = {columns:[{propertyId:'name',hidden:false,width:320,wrap:false}],rowOrder:[]};
     assert.equal(request({type:'workspace.setTableLayout',workspaceId,viewId,config:tableConfig}).ok,true);
     assert.deepEqual(request({type:'workspace.getTableLayout',workspaceId,viewId}).value.config,tableConfig);

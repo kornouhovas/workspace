@@ -93,7 +93,7 @@ test('layout migration retains populated views, values, filters and grouping; st
     f.command('setViewGrouping',{viewId,config:{propertyId,settings:[]}});
     const properties=f.query('listTextProperties'),views=f.query('listViews'),projection=f.query('queryView',{viewId,archived:false});
     const db=new Database(f.path);
-    try {db.exec('ALTER TABLE views DROP COLUMN table_config; DELETE FROM __drizzle_migrations WHERE created_at=1791504021000');}finally{db.close();}
+    try {db.exec('ALTER TABLE views DROP COLUMN board_config; ALTER TABLE views DROP COLUMN table_config; DELETE FROM __drizzle_migrations WHERE created_at>=1791504021000');}finally{db.close();}
     f.reopen();
     assert.deepEqual(f.query('listTextProperties'),properties);assert.deepEqual(f.query('listViews'),views);assert.deepEqual(f.query('queryView',{viewId,archived:false}),projection);
     assert.deepEqual(f.query('getTableLayout',{viewId}).value.config,{columns:[],rowOrder:[]});
