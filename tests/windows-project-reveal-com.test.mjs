@@ -515,6 +515,10 @@ test('bounded window enumerator rejects incomplete, duplicate, malformed and cha
     if (['negative', 'oversize'].includes(r.mode)) assert.equal(r.nextCalls, 0);
     if (r.mode === 'overrun') assert.equal(r.nextCalls, 257);
     if (['changed_count', 'after_throw'].includes(r.mode)) assert.equal(r.afterCalls, 1);
+    const guard = {short:'collection_terminal_count',extra:'collection_extra_entry',duplicate:'collection_duplicate_identity',
+      null:'collection_null_entry',non_com:'collection_non_com_entry',bad_status:'collection_enum_status',
+      false_value:'collection_terminal_value',changed_count:'collection_changed_count',overrun:'collection_extra_entry'}[r.mode];
+    assert.equal(r.failure,guard??null,JSON.stringify(r));
   }
   assert.deepEqual(genuine, [
     { mode: 'empty', count: 0, opaque: true, exactNames: true, formerCastRejected: true },

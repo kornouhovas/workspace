@@ -337,3 +337,16 @@ for(const token of ['FAIL:readiness:exception:PRIVATE:invalid_operation','FAIL:r
   await assert.rejects(pending,problem('native_error'));
   assert.equal(f.events.some(event=>event.stage==='failure'),false);assert.deepEqual(f.writes,[]);
 });
+
+for (const kind of ['collection_count_result','collection_count_range','collection_enum_result','collection_terminal_value',
+  'collection_terminal_count','collection_changed_count','collection_enum_status','collection_extra_entry',
+  'collection_limit','collection_null_entry','collection_non_com_entry','collection_duplicate_identity']) {
+  test(`collection guard ${kind} remains failure-only and cannot grant a permit`, async()=>{
+    const f=fixture();const rejected=assert.rejects(f.start(),problem("native_error"));
+    f.output(`OPEN\nFAIL:readiness:exception:collection:${kind}\n`);
+    await tick();f.close(1);
+    await rejected;
+    assert.equal(f.writes.length,0);
+    assert.deepEqual(f.events.filter(event=>event.stage==='failure'),[{stage:'failure',path:target,phase:'readiness',reason:'exception',boundary:'collection',exceptionKind:kind}]);
+  });
+}

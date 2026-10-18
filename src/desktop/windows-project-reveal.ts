@@ -163,7 +163,7 @@ export async function runWindowsProjectReveal(path: string, context: NativeRevea
       else if (value === "DONE" && state === "selected") { state = "done"; }
       else {
         const diagnostic = /^FAIL:(input|navigation|readiness|permit|precommand|selection|postcheck):(input|deadline|binding|unready|permit|exception)$/.exec(value);
-        const context = /^FAIL:(readiness|precommand|postcheck):exception:(enumeration|collection|window_candidate|document|parent|owner|uia_root|uia_properties|uia_tabs|readiness|item|document_recheck|readiness_recheck|item_returned):(null_argument|invalid_operation|invalid_cast|com|element_unavailable|other)$/.exec(value);
+        const context = /^FAIL:(readiness|precommand|postcheck):exception:(enumeration|collection|window_candidate|document|parent|owner|uia_root|uia_properties|uia_tabs|readiness|item|document_recheck|readiness_recheck|item_returned):(null_argument|invalid_operation|invalid_cast|com|element_unavailable|other|collection_count_result|collection_count_range|collection_enum_result|collection_terminal_value|collection_terminal_count|collection_changed_count|collection_enum_status|collection_extra_entry|collection_limit|collection_null_entry|collection_non_com_entry|collection_duplicate_identity)$/.exec(value);
         if (context) emit("failure", { phase: context[1], reason: "exception", boundary: context[2], exceptionKind: context[3] });
         else if (diagnostic) emit("failure", { phase: diagnostic[1], reason: diagnostic[2] });
         fail("native_error");

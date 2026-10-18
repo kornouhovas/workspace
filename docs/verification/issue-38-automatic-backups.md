@@ -69,3 +69,22 @@ The existing full CI already runs the extended recovery script in development an
 packaged builds on macOS latest, Windows latest and Windows 2022. The new real-database
 suite defaults to platform coverage; migration selection now includes backup/recovery
 fixtures. No inherited CI gate was removed or weakened.
+
+## First CI failure and diagnosis continuation
+
+Full CI39165311194, attempt1, candidate `53a58c3`, failed Windows latest's early
+original creation/native command: selection count0 instead of1. Artifact12150238888
+retains a verified service binding followed by rejection at
+`readiness / collection / invalid_operation`, plus confirmed bridge/fixture cleanup.
+Creation completion, acknowledgement and restart were unreached. The collector
+validation failure follows the unreached platform suite, not evidence of a separate
+observer defect. macOS/Windows2022 results are retained in the same run.
+
+Existing coarse evidence cannot distinguish changing/incomplete collection membership
+from invalid/duplicate entries or enumerator acquisition. The scoped continuation adds
+only fixed guard labels to the existing rejection conditions and finite allowlists;
+no guard, deadline, permit, retry or acceptance assertion changes. The mocked adapter
+regressions fail12/12 without those labels and pass with them. Focused local native /
+COM files:77passed,8Windows-only skips. Managed genuine/negative enumeration controls
+still require the focused Windows route in [CI](../ci.md#issue-38-early-windows-collection-failure).
+The historical failure's cause remains unestablished; platform acceptance is pending.

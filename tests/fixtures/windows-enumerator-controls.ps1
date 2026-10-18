@@ -45,6 +45,7 @@ public sealed class WindowEnumeratorControl : IEnumVARIANT {
 }
 public sealed class WindowEnumeratorReceipt {
     public string mode;
+    public string failure;
     public bool accepted, opaque, exactIdentity;
     public int nextCalls, afterCalls, length;
 }
@@ -94,7 +95,10 @@ public static class WindowEnumeratorControls {
                     try { b = Marshal.GetIUnknownForObject(values[i]); receipt.exactIdentity &= a == b; }
                     finally { if (b != IntPtr.Zero) Marshal.Release(b); Marshal.Release(a); }
                 }
-            } catch (TargetInvocationException) { }
+            } catch (TargetInvocationException error) {
+                var message = error.InnerException == null ? "" : error.InnerException.Message;
+                if (new HashSet<string> { "collection_count_result", "collection_count_range", "collection_enum_result", "collection_terminal_value", "collection_terminal_count", "collection_changed_count", "collection_enum_status", "collection_extra_entry", "collection_limit", "collection_null_entry", "collection_non_com_entry", "collection_duplicate_identity" }.Contains(message)) receipt.failure = message;
+            }
             receipt.nextCalls = sequence.Calls;
             reports.Add(receipt);
         }

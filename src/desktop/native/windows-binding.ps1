@@ -66,7 +66,8 @@ public static class WorkspaceReadyCom {
     }
     private static int ReadWindowCount(WorkspaceShellWindows windows) {
         int count;
-        if (windows.GetCount(out count) != 0 || count < 0 || count > 256) throw new InvalidOperationException();
+        if (windows.GetCount(out count) != 0) throw new InvalidOperationException("collection_count_result");
+        if (count < 0 || count > 256) throw new InvalidOperationException("collection_count_range");
         return count;
     }
     private static WorkspaceReadyComReference[] CollectWindowEnumerator(
@@ -79,18 +80,23 @@ public static class WorkspaceReadyCom {
             var value = new object[1];
             int status = enumerator.Next(1, value, IntPtr.Zero);
             if (status == 1) {
-                if (value[0] != null || entries.Count != before || readAfter() != before) throw new InvalidOperationException();
+                if (value[0] != null) throw new InvalidOperationException("collection_terminal_value");
+                if (entries.Count != before) throw new InvalidOperationException("collection_terminal_count");
+                if (readAfter() != before) throw new InvalidOperationException("collection_changed_count");
                 return entries.ToArray();
             }
             if (status < 0) Marshal.ThrowExceptionForHR(status);
-            if (status != 0 || entries.Count >= before || index == 256 || value[0] == null || !Marshal.IsComObject(value[0]))
-                throw new InvalidOperationException();
+            if (status != 0) throw new InvalidOperationException("collection_enum_status");
+            if (entries.Count >= before) throw new InvalidOperationException("collection_extra_entry");
+            if (index == 256) throw new InvalidOperationException("collection_limit");
+            if (value[0] == null) throw new InvalidOperationException("collection_null_entry");
+            if (!Marshal.IsComObject(value[0])) throw new InvalidOperationException("collection_non_com_entry");
             IntPtr identity = Marshal.GetIUnknownForObject(value[0]);
-            try { if (identity == IntPtr.Zero || !identities.Add(identity)) throw new InvalidOperationException(); }
+            try { if (identity == IntPtr.Zero || !identities.Add(identity)) throw new InvalidOperationException("collection_duplicate_identity"); }
             finally { Marshal.Release(identity); }
             entries.Add(new WorkspaceReadyComReference(value[0]));
         }
-        throw new InvalidOperationException();
+        throw new InvalidOperationException("collection_limit");
     }
     // Enumerate a fresh bounded collection for each binding. Matching counts
     // reject incomplete/change evidence; they do not prove atomic membership.
@@ -99,7 +105,7 @@ public static class WorkspaceReadyCom {
         int before = ReadWindowCount(windows);
         object rawEnumerator;
         if (windows.NewEnum(out rawEnumerator) != 0 || rawEnumerator == null || !Marshal.IsComObject(rawEnumerator))
-            throw new InvalidOperationException();
+            throw new InvalidOperationException("collection_enum_result");
         return CollectWindowEnumerator((System.Runtime.InteropServices.ComTypes.IEnumVARIANT)rawEnumerator,
             before, delegate { return ReadWindowCount(windows); });
         // Enumerator and window RCWs stay owned by this short-lived process.

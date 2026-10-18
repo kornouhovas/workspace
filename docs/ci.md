@@ -509,3 +509,27 @@ already validated private-safe finite diagnostic/scenario/utility event packet
 on failure. Handshake, normal exit, scenario, utility, privacy, cleanup and
 occupied-file preservation assertions remain. No underlying cause is inferred
 from exit1 alone; inspect the original focused result before renewed full CI.
+
+## Issue 38 early Windows collection failure
+
+Full run39165311194 at `53a58c3` failed its early Windows latest original direct
+creation/Reveal command before selection. The retained finite receipt is
+`readiness / collection / invalid_operation`; native selection was zero, service
+reply was a rejected `native_error`, and owned cleanup passed. The subsequent
+collector-document validation failed because the platform suite was unreached;
+that absence does not pass or independently identify the native cause.
+
+The managed collection guards retain fixed failure-only labels for count-result /
+range, enumerator acquisition, terminal value/count, changed count, status, extra /
+limited entries, null/non-COM entries and duplicate identity. The existing checks,
+bounds, call order, one-navigation/selection authority and deadlines are unchanged.
+No message, path or numeric HRESULT is emitted. These labels distinguish hypotheses;
+they do not establish the original historical cause or authorize a retry.
+
+Use the existing focused route with `checks: readiness`,
+`readiness_reveal_windows: true`, `readiness_native_windows: true`, and
+`readiness_native_early: true`; leave prefix and optional trace disabled to retain
+its cold original order. Both Windows runners execute the bridge/service regressions,
+and Windows latest first runs the exact failed native command. Inspect that original
+result plus managed guard controls and owned cleanup before renewed full acceptance
+on the same reviewed SHA. Preserve the failed full run and artifact12150238888.

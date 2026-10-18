@@ -26,6 +26,8 @@ function Get-WorkspaceRevealExceptionKind($errorRecord) {
     $exception = $errorRecord.Exception
     for ($depth = 0; $depth -lt 8 -and $null -ne $exception.InnerException; $depth++) { $exception = $exception.InnerException }
     if ($exception -is [ArgumentNullException]) { return 'null_argument' }
+    # Only fixed guard labels from our managed collector may refine this diagnostic.
+    if ($exception -is [InvalidOperationException] -and $exception.Message -cin @('collection_count_result','collection_count_range','collection_enum_result','collection_terminal_value','collection_terminal_count','collection_changed_count','collection_enum_status','collection_extra_entry','collection_limit','collection_null_entry','collection_non_com_entry','collection_duplicate_identity')) { return $exception.Message }
     if ($exception -is [InvalidOperationException]) { return 'invalid_operation' }
     if ($exception -is [InvalidCastException]) { return 'invalid_cast' }
     if ($exception -is [Runtime.InteropServices.COMException]) { return 'com' }
