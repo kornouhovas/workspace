@@ -309,3 +309,28 @@ test('archived Name/category drops cannot rename or move retained placement',()=
   }
   f.reopen();assert.deepEqual(f.query('listArchivedProjects').value.projects,before);
 },'grouped'));
+
+for(const layout of ['table','board']) for(const grouping of ['name','category']) test(`${layout} filtered and manually ordered ${grouping} assignment follows real placement`,()=>fixture(f=>{
+  const {viewId}=f.workspace,list=f.query('listProjects').value,[a,b]=list.projects;
+  const propertyId=grouping==='name'?'name':list.categoryProperty.propertyId;
+  const from=grouping==='name'?a.name:a.categoryId,to=grouping==='name'?b.name:list.categories.find(c=>c.name==='Gamma').categoryId;
+  const setting={propertyId,order:'manual',manualOrder:[JSON.stringify(to),JSON.stringify(from)],hidden:[],collapsed:[],hideEmpty:false};
+  f.command('setViewLayout',{viewId,kind:layout});
+  assert.equal(f.command('setViewGrouping',{viewId,config:{propertyId,settings:[setting]}}).ok,true);
+  const rowOrder=[b.projectId,a.projectId];
+  f.command('setTableLayout',{viewId,config:{columns:[],rowOrder}});
+  const filter=grouping==='name'?{search:'Project',rules:[]}:{search:'',rules:[{propertyId,operator:'any',operand:[from]}]};
+  assert.equal(f.command('setViewFilter',{viewId,config:filter}).ok,true);
+  assert.deepEqual(f.query('queryView',{viewId,archived:false}).value.projectIds,[a.projectId]);
+  const drop={viewId,propertyId,projectId:a.projectId,fromKey:JSON.stringify(from),toKey:JSON.stringify(to),archived:false};
+  for(const key of ['null','""','"../escape"'])assert.equal(f.command('assignProjectGroup',{...drop,toKey:key}).ok,false);
+  assert.deepEqual(f.query('queryView',{viewId,archived:false}).value.projectIds,[a.projectId]);
+  assert.equal(f.command('assignProjectGroup',drop).value.filesystem.outcome,'completed');
+  assert.deepEqual(f.query('queryView',{viewId,archived:false}).value.projectIds,[]);
+  f.reopen();
+  assert.deepEqual(f.query('queryView',{viewId,archived:false}).value.projectIds,[]);
+  assert.deepEqual(f.query('getViewGrouping',{viewId}).value.config.settings,[setting]);
+  assert.deepEqual(f.query('getTableLayout',{viewId}).value.config.rowOrder,rowOrder);
+  const project=f.query('listProjects').value.projects.find(p=>p.projectId===a.projectId);
+  assert.equal(project.relativePath,grouping==='name'?'Alpha/Target':'Gamma/Project');
+},'grouped',undefined,root=>renameSync(join(root,'Beta','Project'),join(root,'Beta','Target'))));

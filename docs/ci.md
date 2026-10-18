@@ -482,3 +482,12 @@ never includes exception text, paths or HRESULTs. It does not change selection
 permission or readiness. Validate protocol and actual PowerShell controls plus
 the untraced cold original before renewed full CI; a traced success alone does
 not establish the historical cause or satisfy full acceptance.
+
+For integration run39136222601's Windows2022 premature-main-exit rename
+fixture failure, select `checks: rename-fixture`. The Windows2022-only job
+builds and runs the original `tests/project-rename-fixture.test.mjs`, retaining
+strict exits, exact-SHA/run/attempt provenance and each control's bounded
+checkpoint evidence. The failed original observed one utility instead of five;
+this does not identify the cause of the earlier worker exit. The focused route
+adds no retries, deadline extension, reduced worker count or product assertion
+changes. Inspect its original result and checkpoints before renewed full CI.

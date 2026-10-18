@@ -175,11 +175,11 @@ for (const language of ["en", "ru"] as const) for (const layout of ["table", "bo
   });
 }
 
-for (const language of ['en','ru'] as const) for (const layout of ['table','board'] as const) for(const grouping of ['name','category'] as const) {
-  test(`${language} ${layout} ${grouping} folder drag, cancel, rejection, lost reply and keyboard reflect real state`,async()=>{
+for (const language of ['en','ru'] as const) for (const layout of ['table','board'] as const) for(const grouping of ['name','category'] as const) for(const recoverable of [false,true]) {
+  test(`${language} ${layout} ${grouping} ${recoverable?'interrupted':'normal'} folder drag, cancel, rejection, lost reply and keyboard reflect real state`,async()=>{
     const directory=mkdtempSync(join(tmpdir(),'folder-drag-ui-')),root=join(directory,'root');mkdirSync(root);
-    for(const name of ['A','B','C']){mkdirSync(join(root,name));mkdirSync(join(root,name,grouping==='category'||name==='A'?'Alpha':'Target'));}
-    const service=openSettingsService(join(directory,'app.sqlite'));
+    for(const name of ['A','B','C']){mkdirSync(join(root,name));mkdirSync(join(root,name,grouping==='category'&&(!recoverable||name==='A')||name==='A'?'Alpha':'Target'));}
+    const service=openSettingsService(join(directory,'app.sqlite'),undefined,undefined,undefined,undefined,recoverable?()=>{throw new Error('interrupted native reply');}:undefined);
     const {workspaceId,viewId,sourceId}=service.handleCommand({type:'workspace.create',rootPath:root,name:'One'}).value;
     const command=(type:string,fields={})=>service.handleCommand({type:`workspace.${type}`,workspaceId,...fields});
     const query=(type:string,fields={})=>service.handleQuery({type:`workspace.${type}`,workspaceId,...fields});
@@ -187,6 +187,7 @@ for (const language of ['en','ru'] as const) for (const layout of ['table','boar
     const list=query('listProjects').value, project=list.projects.find((p:{name:string})=>p.name==='Alpha');
     const propertyId=grouping==='name'?'name':list.categoryProperty.propertyId;
     command('setViewGrouping',{viewId,config:{propertyId,settings:[]}});
+    if(grouping==='name'&&!recoverable) command('setViewFilter',{viewId,config:{search:'Alpha',rules:[]}});
     let count=0,observed=0,lost=false;
     const api={getBackendStatus:async()=>({state:'ready'}),onBackendStatus:()=>()=>{},workspace:async(input:{type:string})=>{
       const result=/workspace\.(list|get|query)/.test(input.type)?service.handleQuery(input):service.handleCommand(input);
@@ -205,10 +206,19 @@ for (const language of ['en','ru'] as const) for (const layout of ['table','boar
       assert.equal(screen.queryByRole('button',{name:`${en?'Clear grouping value':'Очистить значение группировки'}: Alpha`}),null);
       const destination=screen.getByRole('region',{name:grouping==='name'?'Target':'B'});
       fireEvent.dragStart(handle,{dataTransfer});fireEvent.drop(destination,{dataTransfer});
+      if(recoverable) {
+        await screen.findByText(translate(language,'groupAssignmentRecovery'));
+        assert.equal(screen.queryByText(translate(language,'groupAssignmentSaved')),null);
+        await waitFor(()=>assert.equal(observed,1));assert.equal(count,1);
+        assert.equal(query(grouping==='name'?'listProjectRenames':'listProjectCategoryMoves').value.operations.length,1);
+        return;
+      }
       if(grouping==='name') {
         await waitFor(()=>assert.equal(count,1));
         await screen.findByText(translate(language,"groupAssignmentSaved"));
         assert.equal(query('listProjects').value.projects.find((p:{projectId:string})=>p.projectId===project.projectId).relativePath,'A/Target');
+        await waitFor(()=>assert.equal(screen.queryByLabelText(changeLabel)===null,true));
+        await waitFor(()=>assert.equal(document.activeElement?.getAttribute('aria-label'),en?'Change group':translate(language,'groupAssignmentChoose')));
       } else {
         await screen.findByText(translate(language,"renameCollision"));
       }
