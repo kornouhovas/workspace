@@ -28,6 +28,7 @@ Read development's scope, integration, tracker, executor-selection and verificat
 | Task | Relevant contracts |
 | --- | --- |
 | Service, storage or filesystem changes | Affected sections in [architecture](architecture.md), [ADRs](adr/) and typed contracts in `src/shared/`; inspect the active service wiring |
+| Scalar and Single Select group assignment | [Contract/scenarios](plans/issue-33-group-drag.md), typed group-assignment command and [verification](verification/issue-33-group-drag.md) |
 | Board columns and card presentation | [Contract/scenarios](plans/issue-32-board-layout.md), typed Board layout commands and [verification](verification/issue-32-board-layout.md) |
 | Table columns and manual rows | [Contract/scenarios](plans/issue-31-table-layout.md), typed Table layout commands and [verification](verification/issue-31-table-layout.md) |
 | Select/category grouping | [Contract/scenarios](plans/issue-30-option-grouping.md), typed grouping commands and [verification](verification/issue-30-option-grouping.md) |

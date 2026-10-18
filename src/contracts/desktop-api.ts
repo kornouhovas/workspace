@@ -29,6 +29,7 @@ export type RootPickerResult =
   | { outcome: "failed" };
 
 export interface WorkspaceDesktopApi {
+  workspace(input: import("./group-assignment.js").AssignProjectGroupCommand): Promise<ServiceResult<TextPropertyMutation>>;
   workspace(input: import("./board-layout.js").BoardLayoutQuery | import("./board-layout.js").BoardLayoutCommand): Promise<ServiceResult<BoardLayoutSnapshot>>;
   workspace(input: import("./table-layout.js").TableLayoutQuery | import("./table-layout.js").TableLayoutCommand): Promise<ServiceResult<TableLayoutSnapshot>>;
   workspace(input: Extract<ArchiveQuery, { type: "workspace.previewProjectArchive" }>): Promise<ServiceResult<ProjectArchivePreview>>;

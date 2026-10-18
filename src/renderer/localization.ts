@@ -1,6 +1,15 @@
 import type { Language } from "../contracts/settings.js";
 
 const english = {
+  groupAssignmentClear: "Clear grouping value",
+  groupAssignmentDrag: "Drag to change group",
+  groupAssignmentChoose: "Change group",
+  groupAssignmentHint: "Changing group edits the property value. Empty clears it. Row and group ordering use separate controls.",
+  groupAssignmentSaving: "Saving group value…",
+  groupAssignmentSaved: "Group value saved. Filters may hide the project from this view.",
+  groupAssignmentInvalid: "The project, grouping or destination changed. Refresh and choose an available group.",
+  groupAssignmentError: "Could not confirm the group change. Refresh actual values before retrying.",
+
   tableTitle: "Table layout",
   tableVisible: "Visible",
   tableColumnEarlier: "Move column earlier",
@@ -619,6 +628,15 @@ const english = {
 } as const;
 
 const russian: Record<keyof typeof english, string> = {
+  groupAssignmentClear: "Очистить значение группировки",
+  groupAssignmentDrag: "Перетащить для изменения группы",
+  groupAssignmentChoose: "Изменить группу",
+  groupAssignmentHint: "Смена группы изменяет значение свойства. Пустая группа очищает его. Порядок строк и групп меняется отдельными кнопками.",
+  groupAssignmentSaving: "Сохранение значения группы…",
+  groupAssignmentSaved: "Значение группы сохранено. Фильтры могут скрыть проект в этом представлении.",
+  groupAssignmentInvalid: "Проект, группировка или назначение изменились. Обновите данные и выберите доступную группу.",
+  groupAssignmentError: "Не удалось подтвердить смену группы. Обновите значения перед повторной попыткой.",
+
   tableTitle: "Настройки таблицы",
   tableVisible: "Показывать",
   tableColumnEarlier: "Переместить столбец раньше",

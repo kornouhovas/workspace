@@ -463,3 +463,8 @@ body {
 .board-content-nowrap .property-authored, .board-content-nowrap .board-category-value { display: block; }
 .board-content-nowrap .multi-select-values { flex-wrap: nowrap; overflow: hidden; }
 .board-content-nowrap .multi-select-option { flex-shrink: 0; }
+
+.group-assignment-controls { display: flex; flex-wrap: wrap; gap: .35rem; margin-block: .4rem; min-width: 0; }
+.group-assignment-controls label { min-width: 0; max-width: 100%; }
+.group-assignment-controls select { max-width: 100%; }
+.group-assignment-controls button { white-space: normal; }

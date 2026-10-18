@@ -172,7 +172,7 @@ for(const language of ['en','ru'] as const) test(`${language} ordinary Single Se
     await screen.findByRole('heading',{name:`${t('groupNoValue')} (1)`});await screen.findByRole('heading',{name:'Option (0)'});
     const empty=screen.getByRole('region',{name:t('groupNoValue')});
     await user.click(within(empty).getByRole('button',{name:`${t('editSelectValue')}: Project / Choice`}));
-    await user.selectOptions(within(empty).getByRole('combobox'),optionId);
+    await user.selectOptions(within(empty).getByRole('combobox',{name:`${t('editSelectValue')}: Project / Choice`}),optionId);
     await user.click(within(empty).getByRole('button',{name:t('saveTextValue')}));
     await screen.findByRole('heading',{name:'Option (1)'});await screen.findByRole('heading',{name:`${t('groupNoValue')} (0)`});
     rendered.rerender(<TextPropertiesTable {...props} layout="board"/>);

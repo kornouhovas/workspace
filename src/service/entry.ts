@@ -1,3 +1,4 @@
+import { isAssignProjectGroupCommand } from "../contracts/group-assignment.js";
 import { isBoardLayoutRequest } from "../contracts/board-layout.js";
 import { isTableLayoutRequest } from "../contracts/table-layout.js";
 import { isViewGroupingRequest } from "../contracts/view-grouping.js";
@@ -146,6 +147,7 @@ function isMalformedWorkspaceRequest(input: unknown): boolean {
     const keys = ["type", "workspaceId", "projectId", ...(input.type === "workspace.reassociateProject" ? ["previewToken", "relativePath"] : [])];
     return !hasExactKeys(input, keys) || keys.some((key) => typeof input[key] !== "string");
   }
+  if (input.type === "workspace.assignProjectGroup") return !isAssignProjectGroupCommand(input);
   if (["workspace.getBoardLayout", "workspace.setBoardLayout"].includes(input.type)) return !isBoardLayoutRequest(input);
   if (["workspace.getTableLayout", "workspace.setTableLayout"].includes(input.type)) return !isTableLayoutRequest(input);
   if (["workspace.getViewGrouping", "workspace.setViewGrouping"].includes(input.type)) return !isViewGroupingRequest(input);

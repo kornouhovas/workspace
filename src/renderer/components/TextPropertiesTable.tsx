@@ -1,3 +1,5 @@
+import { GroupAssignment, groupAssignmentMime, readGroupDrop } from "./GroupAssignment.js";
+import type { AssignProjectGroupCommand } from "../../contracts/group-assignment.js";
 import { BoardLayoutControls, useBoardLayout, boardColumnWidth } from "./BoardLayout.js";
 import { Children, cloneElement, type ReactElement, type ReactNode } from "react";
 import { useTableLayout, tableColumns, TableLayoutControls, moveTableRow, orderedProjectIds } from "./TableLayout.js";
@@ -51,13 +53,32 @@ export function TextPropertiesTable(props: Props) {
   return <TextPropertiesContent key={`${props.workspaceId}:${props.sourceId}`} {...props} />;
 }
 function TextPropertiesContent({ viewId, layout = "table", hideReveal, client, workspaceId, sourceId, projects, retainedProjects = [], onLocate, locateDisabled, onRename, renameDisabled, onMoveCategory, categoryMoveDisabled, categoryProperty, categories = [], categoryPropertyRevision = 0, discoveryRevision = 0, minimumDiscoveryRevision, sourceLifetime, minimumCategoryPropertyRevision, onCategoryPropertyCommitted, language, disabled }: Props) {
-  const [grouped, setGrouped] = useState<{viewId:string; groups:ViewGroup[]|null;propertyId:string|null}|null>(null);
+  const [grouped, setGrouped] = useState<{viewId:string; groups:ViewGroup[]|null;propertyId:string|null;refreshToken:number}|null>(null);
   const [filteredIds, setFilteredIds] = useState<{ viewId: string; ids: string[] | null } | null>(null);
+  const [assignmentPending, setAssignmentPending] = useState(false);
+  const [assignmentMessage, setAssignmentMessage] = useState<"groupAssignmentSaved" | "groupAssignmentInvalid" | "groupAssignmentError" | null>(null);
+  const [assignmentRefresh, setAssignmentRefresh] = useState(0);
+  const assigning = useRef(false);
+  const assignmentSequence = useRef(0);
+  const assignmentFocus = useRef<{token:number; projectId:string; owner:string} | null>(null);
+  const assignmentControls = useRef(new Map<string, HTMLSelectElement>());
+  const assignmentStatus = useRef<HTMLDivElement>(null);
+  const assignmentOwner = `${viewId}:${layout}:${!!hideReveal}`;
+  const currentAssignmentOwner = useRef(assignmentOwner); currentAssignmentOwner.current = assignmentOwner;
+  useEffect(() => { setAssignmentMessage(null); assignmentFocus.current = null; }, [assignmentOwner]);
   const categoryDrafts = useRef(new Map<string, CategoryLabelDraft>());
   const t = (key: TranslationKey) => translate(language, key);
   const [snapshot, setSnapshot] = useState<TextPropertySnapshot | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
+  useEffect(() => {
+    const request = assignmentFocus.current;
+    if (!request || assignmentPending || loading || grouped?.refreshToken !== request.token || request.owner !== assignmentOwner) return;
+    const visible = grouped.groups?.some(group => !group.hidden && !group.collapsed && group.projectIds.includes(request.projectId));
+    const control = visible ? assignmentControls.current.get(request.projectId) : null;
+    const target = control && !control.disabled ? control : assignmentStatus.current;
+    if (target) { target.focus({preventScroll:true}); assignmentFocus.current = null; }
+  }, [grouped, assignmentPending, assignmentOwner, loading]);
   const [draft, setDraft] = useState<{ propertyId: string | null; name: string; originalName: string; propertyType: "text" | "number" | "date" | "single_select" | "multi_select" } | null>(null);
   const [pending, setPending] = useState(false);
   const [message, setMessage] = useState<"propertyValidation" | "propertySaveError" | "propertySaved" | "propertyNewerChange" | null>(null);
@@ -174,6 +195,35 @@ function TextPropertiesContent({ viewId, layout = "table", hideReveal, client, w
     }
     return result;
   };
+  const assignmentProperty = grouped?.viewId === viewId ? snapshot?.definitions.find(p => p.propertyId === grouped?.propertyId && ["text", "number", "date", "single_select"].includes(p.propertyType)) : undefined;
+  const assignmentBusy = disabled || loading || loadError || assignmentPending;
+  const assign = async (command: AssignProjectGroupCommand) => {
+    if (assignmentBusy || assigning.current) return;
+    const owner = assignmentOwner, generation = lifetime.current;
+    assigning.current = true; setAssignmentPending(true); setAssignmentMessage(null);
+    try {
+      const result = await client.assignProjectGroup(command);
+      if (generation !== lifetime.current || owner !== currentAssignmentOwner.current) return;
+      if (result.ok && result.value.projectId === command.projectId && result.value.propertyId === command.propertyId && result.value.snapshot.workspaceId === workspaceId && result.value.snapshot.sourceId === sourceId) {
+        if (accepts(result.value.snapshot)) {
+          listVersion.current++; minimumRevision.current = result.value.snapshot.revision; setSnapshot(result.value.snapshot); setLoading(false); setLoadError(false);
+        }
+        setAssignmentMessage("groupAssignmentSaved");
+      } else setAssignmentMessage(!result.ok && result.error.code === "invalid_input" ? "groupAssignmentInvalid" : "groupAssignmentError");
+    } catch {
+      if (generation === lifetime.current && owner === currentAssignmentOwner.current) setAssignmentMessage("groupAssignmentError");
+    } finally {
+      assigning.current = false;
+      if (generation === lifetime.current) {
+        setAssignmentPending(false);
+        // Observe actual state even when the mutation reply was lost. Never replay.
+        void load();
+        const token = ++assignmentSequence.current;
+        if (owner === currentAssignmentOwner.current) assignmentFocus.current = {token,projectId:command.projectId,owner};
+        setAssignmentRefresh(token);
+      }
+    }
+  };
   const Header = layout === "board" ? "div" : "th";
   const Row = layout === "board" ? "li" : "tr";
   const Cell = layout === "board" ? "div" : "td";
@@ -210,6 +260,14 @@ function TextPropertiesContent({ viewId, layout = "table", hideReveal, client, w
             event.preventDefault(); event.stopPropagation();
             try { const payload = JSON.parse(raw); if (payload.workspaceId === workspaceId && payload.viewId === viewId && visibleIds.includes(payload.projectId)) moveRow(payload.projectId, project.projectId); } catch { /* Ignore unrelated drags. */ }
           }}>{presentCells(<><Cell data-column-id="name" data-label={t("projectName")} key="project-name" aria-label={retained ? undefined : project.name}><span className="property-authored">{project.name}</span>
+          {viewId && assignmentProperty && grouped?.groups && (() => {
+            const origin = grouped.groups.find(group => group.projectIds.includes(project.projectId));
+            return origin ? <GroupAssignment command={{type:"workspace.assignProjectGroup",workspaceId,viewId,propertyId:assignmentProperty.propertyId,projectId:project.projectId,fromKey:origin.key,toKey:origin.key,archived:!!hideReveal}}
+              groups={grouped.groups} projectName={project.name} language={language} disabled={assignmentBusy} controlRef={element => {
+                if (element) assignmentControls.current.set(project.projectId, element);
+                else assignmentControls.current.delete(project.projectId);
+              }} onAssign={command => void assign(command)}/> : null;
+          })()}
           {layout === "table" && viewId && <div className="table-row-controls">
             <button type="button" draggable={!rowBusy} disabled={rowBusy} aria-label={`${t("tableDrag")}: ${project.name}`} onDragStart={event => {event.stopPropagation(); event.dataTransfer.effectAllowed="move"; event.dataTransfer.setData("application/x-workspace-table-row",JSON.stringify({workspaceId,viewId,projectId:project.projectId}));}}>↕</button>
             <button type="button" disabled={rowBusy || rowIndex <= 0} aria-label={`${t("tableRowEarlier")}: ${project.name}`} onClick={() => moveRow(project.projectId, visibleIds[rowIndex-1])}>↑</button>
@@ -253,8 +311,8 @@ function TextPropertiesContent({ viewId, layout = "table", hideReveal, client, w
   return <div className="text-properties" aria-busy={pending || loading}>
     {viewId && <ViewFilters client={client} workspaceId={workspaceId} viewId={viewId} archived={!!hideReveal} language={language}
       snapshot={snapshot} categoryProperty={categoryProperty} categories={categories} disabled={disabled || loadError}
-      refreshKey={JSON.stringify([snapshot?.revision, discoveryRevision, projects.map(p => [p.projectId, p.name, p.categoryId]), retainedProjects.map(p => [p.projectId, p.name, p.categoryId])])}
-      onResults={ids => setFilteredIds({ viewId, ids })} onGroups={(groups,propertyId) => setGrouped({viewId,groups,propertyId})} />
+      refreshToken={assignmentRefresh} refreshKey={JSON.stringify([assignmentRefresh, snapshot?.revision, discoveryRevision, projects.map(p => [p.projectId, p.name, p.categoryId]), retainedProjects.map(p => [p.projectId, p.name, p.categoryId])])}
+      onResults={ids => setFilteredIds({ viewId, ids })} onGroups={(groups,propertyId,refreshToken) => setGrouped({viewId,groups,propertyId,refreshToken})} />
     }
     {viewId && layout === "board" && <BoardLayoutControls state={boardState} fields={fields} groups={grouped?.viewId === viewId ? grouped.groups : null} groupPropertyId={grouped?.viewId === viewId ? grouped.propertyId : null} language={language} disabled={disabled || loadError || loading}/>}
     {viewId && layout === "table" && <TableLayoutControls state={tableState} fields={fields} language={language} disabled={disabled || loadError || loading}/> }
@@ -287,6 +345,11 @@ function TextPropertiesContent({ viewId, layout = "table", hideReveal, client, w
     </form>}
     {draft?.propertyId && !pending && snapshot?.definitions.find((property) => property.propertyId === draft.propertyId)?.name !== draft.originalName &&
       <StatusMessage kind="info" title={t("propertyExternalChange")} />}
+    {assignmentProperty && <p>{t("groupAssignmentHint")}</p>}
+    <div ref={assignmentStatus} tabIndex={-1} aria-label={t("groupAssignmentChoose")}>
+    {assignmentPending && <StatusMessage kind="info" title={t("groupAssignmentSaving")}/>}
+    {assignmentMessage && <StatusMessage kind={assignmentMessage === "groupAssignmentSaved" ? "info" : "error"} title={t(assignmentMessage)}/>}
+    </div>
     {message && <StatusMessage kind={message === "propertyValidation" || message === "propertySaveError" ? "error" : "info"} title={t(message)} />}
     {snapshot && snapshot.definitions.length === 0 && <p>{t("propertiesEmpty")}</p>}
     {grouped?.viewId===viewId && grouped?.groups ? <>
@@ -294,7 +357,16 @@ function TextPropertiesContent({ viewId, layout = "table", hideReveal, client, w
       {grouped.groups.length>0 && grouped.groups.every(group=>group.hidden) && <p role="status">{t("groupAllHidden")}</p>}
       {grouped.groups.length===0 && <p role="status">{t("groupEmpty")}</p>}
       <div className={layout === "board" ? "grouped-board" : "grouped-table"}>
-      {grouped.groups.filter(group=>!group.hidden).map(group=><section className="project-group" style={layout === "board" ? {flexBasis:boardColumnWidth(boardState.config, grouped.propertyId, group.key)} : undefined} key={group.key} aria-label={group.value===null?t("groupNoValue"):(group.label ?? String(group.value))}>
+      {grouped.groups.filter(group=>!group.hidden).map(group=><section className="project-group" onDragOver={event => {
+          if (assignmentProperty && !assignmentBusy && event.dataTransfer.types.includes(groupAssignmentMime)) event.preventDefault();
+        }} onDrop={event => {
+          if (!viewId || !assignmentProperty || assignmentBusy) return;
+          const raw = event.dataTransfer.getData(groupAssignmentMime);
+          if (!raw) return;
+          event.preventDefault(); event.stopPropagation();
+          const command = readGroupDrop(raw, {workspaceId,viewId,propertyId:assignmentProperty.propertyId,archived:!!hideReveal}, group.key);
+          if (command) void assign(command);
+        }} style={layout === "board" ? {flexBasis:boardColumnWidth(boardState.config, grouped.propertyId, group.key)} : undefined} key={group.key} aria-label={group.value===null?t("groupNoValue"):(group.label ?? String(group.value))}>
         <h3 className="property-authored">{group.value===null?t("groupNoValue"):(group.label ?? String(group.value))} ({group.projectIds.length})</h3>
         {!group.collapsed && (group.empty ? <p>{t("groupEmpty")}</p> : layout === "board" ? <ul className="project-board" aria-label={t("boardProjects")}>{rows(group.projectIds)}</ul> :
           <div className="project-table-scroll"><table className="project-table" style={tableStyle}><thead><tr>{headers}</tr></thead><tbody>{rows(group.projectIds)}</tbody></table></div>)}

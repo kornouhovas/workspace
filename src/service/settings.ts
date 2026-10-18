@@ -161,6 +161,7 @@ export function openSettingsService(
     },
 
     handleCommand(input) {
+      if (isRecord(input) && input.type === "workspace.assignProjectGroup") return workspaces.assignProjectGroup(input);
       if (isRecord(input) && input.type === "workspace.setBoardLayout") return workspaces.boardLayoutRequest(input);
       if (isRecord(input) && input.type === "workspace.setTableLayout") return workspaces.tableLayoutRequest(input);
       if (isRecord(input) && input.type === "workspace.setViewGrouping") return workspaces.groupingRequest(input);

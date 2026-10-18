@@ -1,3 +1,4 @@
+import { assignProjectGroup } from "./group-assignment.js";
 import { createBoardLayoutService } from "./board-layout.js";
 import type { BoardLayoutSnapshot } from "../contracts/board-layout.js";
 import { createTableLayoutService } from "./table-layout.js";
@@ -69,6 +70,7 @@ const nativeFilesystem: WorkspaceFilesystem = {
 export interface WorkspaceService {
   boardLayoutRequest(input: unknown): ServiceResult<BoardLayoutSnapshot>;
   tableLayoutRequest(input: unknown): ServiceResult<TableLayoutSnapshot>;
+  assignProjectGroup(input: unknown): ServiceResult<TextPropertyMutation>;
   groupingRequest(input: unknown): ServiceResult<ViewGroupingSnapshot>;
   filterRequest(input: unknown): ServiceResult<ViewFilterPayload>;
   viewRequest(input: unknown): ServiceResult<ViewSnapshot>;
@@ -244,6 +246,7 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
   const service: WorkspaceService = {
     boardLayoutRequest: createBoardLayoutService(db),
     tableLayoutRequest: createTableLayoutService(db),
+    assignProjectGroup: input => assignProjectGroup(service, input),
     groupingRequest: input => createViewGroupingService(db)(input),
     filterRequest: input => createViewFilterService(db, service)(input),
     viewRequest: createViewService(db),
