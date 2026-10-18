@@ -97,6 +97,17 @@ try {
     }), exportPath);
     await pressEnabled(page, exportButton);
     assert.equal(await download, "completed");
+    const beforeBackup = await query(page, { type: "data.backups" });
+    assert.equal(beforeBackup.backups.state, "ready");
+    const createBackup = page.getByRole("button", { name: en ? "Create backup / retry" : "Создать копию / повторить", exact: true });
+    await pressEnabled(page, createBackup);
+    await page.waitForFunction(() => !Array.from(document.querySelectorAll(".data-recovery button")).find(b => b.textContent === "Create backup / retry" || b.textContent === "Создать копию / повторить")?.disabled);
+    const afterBackup = await query(page, { type: "data.backups" });
+    assert.equal(afterBackup.backups.state, "ready");
+    assert.equal(afterBackup.backups.snapshots.length, beforeBackup.backups.snapshots.length + 1);
+    const selectedBackup = afterBackup.backups.snapshots[0].id;
+    await page.locator("#backup-selection").selectOption(selectedBackup);
+    const reviewBackup = page.getByRole("button", { name: en ? "Review restore from backup" : "Проверить восстановление из копии", exact: true });
     const envelope = JSON.parse(await readFile(exportPath, "utf8"));
     assert.equal(envelope.format, "workspace-application-data"); assert.equal(envelope.version, 1);
     await query(page, { type: "workspace.setTextValue", workspaceId, projectId, propertyId, value: "Changed since snapshot" });
@@ -110,7 +121,7 @@ try {
     await pressEnabled(page, confirm()); await page.locator(".data-recovery [role='alert']").waitFor();
     await pressEnabled(page, cancel());
     assert.equal((await query(page, { type: "workspace.listTextProperties", workspaceId })).values[0].value, "Changed since snapshot");
-    await input().setInputFiles(exportPath); await confirm().waitFor({ state: "visible" });
+    await pressEnabled(page, reviewBackup); await confirm().waitFor({ state: "visible" });
     for (const width of [360, 1024, 1440]) {
       await page.setViewportSize({ width, height: 900 });
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
@@ -123,7 +134,7 @@ try {
     assert.equal(await readFile(join(source, "Project", "keep"), "utf8"), "separate project bytes");
     await close(); ({ app, page } = await launch());
     assert.equal((await query(page, { type: "workspace.listTextProperties", workspaceId })).values[0].value, "Restored exact notes");
-    evidence.checks.push({ language, actualDownload: true, keyboardCancel: true, invalidPreserves: true, restore: true, restart: true, projectFilesSeparate: true, widths: [360, 1024, 1440] });
+    evidence.checks.push({ language, actualDownload: true, backupStatus: true, backupCreate: true, backupSelectionRestore: true, keyboardCancel: true, invalidPreserves: true, restore: true, restart: true, projectFilesSeparate: true, widths: [360, 1024, 1440] });
   }
   await close(); evidence.status = "passed";
 

@@ -445,7 +445,7 @@ export function App() {
       {viewState === "loading" && <StatusMessage kind="info" title={t("loading")} />}
       {viewState === "unavailable" && (
         <StatusMessage kind="error" title={t("unavailableTitle")}>
-          {t("unavailableDescription")}
+          {t(backend.diagnostic?.code === "BACKUP_FAILED" ? "backupStartupFailed" : backend.diagnostic?.code === "MIGRATION_FAILED" ? "backupMigrationFailed" : "unavailableDescription")}
         </StatusMessage>
       )}
       {viewState === "load-error" && (

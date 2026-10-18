@@ -480,3 +480,6 @@ body {
 .data-recovery > div { margin-block-start: 1rem; }
 .data-recovery input { max-width: 100%; min-width: 0; }
 .data-recovery button { white-space: normal; }
+
+.backup-destination { overflow-wrap: anywhere; }
+.data-recovery select { max-width: 100%; }

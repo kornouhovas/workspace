@@ -21,6 +21,9 @@ export class WorkspaceServiceClient {
   assignProjectGroup(input: import("../contracts/group-assignment.js").AssignProjectGroupCommand): Promise<ServiceResult<import("../contracts/group-assignment.js").GroupAssignmentResult>> { return this.api.workspace(input); }
   constructor(private readonly api: WorkspaceDesktopApi = window.workspace) {}
 
+  backups() { return this.api.recovery({ type: "data.backups" }); }
+  backupNow() { return this.api.recovery({ type: "data.backupNow" }); }
+  exportBackup(backupId: string) { return this.api.recovery({ type: "data.backupExport", backupId }); }
   exportData() { return this.api.recovery({ type: "data.export" }); }
   restoreData(content: string) { return this.api.recovery({ type: "data.restore", content }); }
 

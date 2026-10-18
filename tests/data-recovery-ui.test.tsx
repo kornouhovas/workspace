@@ -11,7 +11,7 @@ const {render,screen,cleanup,waitFor}=await import("@testing-library/react");
 const {default:userEvent}=await import("@testing-library/user-event");
 for(const language of ["en","ru"] as const) test(`${language} file confirmation, keyboard cancel, pending and failure preserve state`,{timeout:10000},async()=>{
  let restores=0,reloaded=0,locked=false;
- const client={restoreData:async()=>{restores++;return{ok:false,error:{code:"invalid_input"}};}} as unknown as WorkspaceServiceClient;
+ const client={backups:async()=>({ok:true,value:{backups:{state:"ready",destination:"/temporary/backups",snapshots:[]}}}),restoreData:async()=>{restores++;return{ok:false,error:{code:"invalid_input"}};}} as unknown as WorkspaceServiceClient;
  const t=(key:Parameters<typeof translate>[1])=>translate(language,key),user=userEvent.setup({document});
  try{
   render(<DataRecoveryPanel client={client} language={language} onRestored={()=>{reloaded++;}} onLock={v=>{locked=v;}}/>);
@@ -29,7 +29,7 @@ for(const language of ["en","ru"] as const) test(`${language} file confirmation,
 
 test('unknown transport outcome disables replay and offers reload',{timeout:10000},async()=>{
  let restores=0,reloaded=0;
- const client={restoreData:async()=>{restores++;throw new Error('Lost response');}} as unknown as WorkspaceServiceClient;
+ const client={backups:async()=>({ok:true,value:{backups:{state:"ready",destination:"/temporary/backups",snapshots:[]}}}),restoreData:async()=>{restores++;throw new Error('Lost response');}} as unknown as WorkspaceServiceClient;
  const user=userEvent.setup({document});
  try{
   render(<DataRecoveryPanel client={client} language="en" onRestored={()=>{reloaded++;}} onLock={()=>{}}/>);
@@ -44,7 +44,7 @@ test('unknown transport outcome disables replay and offers reload',{timeout:1000
 
 test('pending restore disables actions and a late success after unmount cannot reload another screen', {timeout:10000}, async()=>{
  let resolve!: (value:unknown)=>void, reloads=0, locked=false;
- const client={restoreData:()=>new Promise(r=>{resolve=r;})} as unknown as WorkspaceServiceClient;
+ const client={backups:async()=>({ok:true,value:{backups:{state:"ready",destination:"/temporary/backups",snapshots:[]}}}),restoreData:()=>new Promise(r=>{resolve=r;})} as unknown as WorkspaceServiceClient;
  const user=userEvent.setup({document});
  try{
   const view=render(<DataRecoveryPanel client={client} language="en" onRestored={()=>{reloads++;}} onLock={v=>{locked=v;}}/>);
@@ -55,4 +55,55 @@ test('pending restore disables actions and a late success after unmount cannot r
   assert.equal((screen.getByRole('button',{name:translate('en','dataCancel')}) as HTMLButtonElement).disabled,true);
   view.unmount();assert.equal(locked,false);resolve({ok:true,value:{restored:true}});await Promise.resolve();assert.equal(reloads,0);
  }finally{cleanup();}
+});
+
+for (const language of ["en", "ru"] as const) test(`${language} verified backup status, retry and keyboard restore use the existing confirmation`, {timeout:10000}, async()=>{
+  let restores=0, creates=0, exports=0, locked=false;
+  const id="automatic-1792300000000-00000000-0000-4000-8000-000000000000.json";
+  const status={state:"ready",destination:"/temporary/backups",snapshots:[{id,createdAt:1792300000000,kind:"automatic"}]};
+  const client={
+    backups:async()=>({ok:true,value:{backups:status}}),
+    backupNow:async()=>{creates++;return {ok:true,value:{backups:{...status,state:creates===1?"failed":"ready"}}};},
+    exportBackup:async(selected:string)=>{assert.equal(selected,id);exports++;return {ok:true,value:{content:"saved backup"}};},
+    restoreData:async(content:string)=>{assert.equal(content,"saved backup");restores++;return {ok:true,value:{restored:true}};}
+  } as unknown as WorkspaceServiceClient;
+  const t=(key:Parameters<typeof translate>[1])=>translate(language,key),user=userEvent.setup({document});
+  try {
+    render(<DataRecoveryPanel client={client} language={language} onRestored={()=>{}} onLock={v=>{locked=v;}}/>);
+    await user.click(screen.getByText(t("dataTitle")));
+    await screen.findByText(`${t("backupDestination")}: /temporary/backups`);
+    assert.ok(screen.getByText(t("backupPolicy")));
+    await user.click(screen.getByRole('button',{name:t("backupNow")}));
+    await screen.findByText(t("backupFailed"));
+    await user.click(screen.getByRole('button',{name:t("backupNow")}));
+    await waitFor(()=>assert.equal(screen.queryByText(t("backupFailed")),null));
+    await user.selectOptions(screen.getByLabelText(t("backupSelect")),id);
+    const review=screen.getByRole('button',{name:t("backupReview")});review.focus();await user.keyboard('{Enter}');
+    await screen.findByText(t("dataReplace"));assert.equal(locked,true);assert.equal(exports,1);assert.equal(restores,0);
+    await user.keyboard('{Escape}');await waitFor(()=>assert.equal(locked,false));
+    await user.click(screen.getByRole('button',{name:t("backupReview")}));
+    await user.click(await screen.findByRole('button',{name:t("dataConfirm")}));
+    assert.equal(restores,1);assert.equal(creates,2);
+  } finally {cleanup();}
+});
+
+test('backup loading, empty, unavailable status and late selection cannot lock a replaced screen', {timeout:10000},async()=>{
+  let resolveStatus!:(v:unknown)=>void,resolveExport!:(v:unknown)=>void,selected=0;
+  const client={backups:()=>new Promise(r=>{resolveStatus=r;}),exportBackup:()=>new Promise(r=>{resolveExport=r;})} as unknown as WorkspaceServiceClient;
+  const user=userEvent.setup({document});
+  const {BackupPanel}=await import('../src/renderer/components/BackupPanel.js');
+  try {
+    let view=render(<BackupPanel client={client} language="en" disabled={false} onSelect={()=>{selected++;}}/>);
+    assert.ok(screen.getByText(translate('en','backupLoading')));
+    resolveStatus({ok:true,value:{backups:{state:'failed',destination:'/tmp/backups',snapshots:[]}}});
+    await screen.findByText(translate('en','backupEmpty'));
+    assert.ok(screen.getByText(translate('en','backupFailed')));view.unmount();
+    view=render(<BackupPanel client={client} language="en" disabled={false} onSelect={()=>{selected++;}}/>);
+    const id='automatic-1792300000000-00000000-0000-4000-8000-000000000000.json';
+    resolveStatus({ok:true,value:{backups:{state:'ready',destination:'/tmp/backups',snapshots:[{id,kind:'automatic',createdAt:1792300000000}]}}});
+    await waitFor(()=>assert.equal((screen.getByLabelText(translate('en','backupSelect')) as HTMLSelectElement).disabled,false));
+    await user.selectOptions(screen.getByLabelText(translate('en','backupSelect')),id);
+    await user.click(screen.getByRole('button',{name:translate('en','backupReview')}));view.unmount();
+    resolveExport({ok:true,value:{content:'snapshot'}});await Promise.resolve();assert.equal(selected,0);
+  } finally {cleanup();}
 });

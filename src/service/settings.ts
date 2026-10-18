@@ -1,3 +1,5 @@
+import { protectMigration } from "./migration-backup.js";
+import { createAutomaticBackups } from "./automatic-backups.js";
 import { dataRecovery } from "./data-recovery.js";
 import type { DataRecoveryPayload } from "../contracts/data-recovery.js";
 import type { MetadataRemovalPreview, MetadataRemovalResult } from "../contracts/metadata-removal.js";
@@ -87,7 +89,7 @@ export function openSettingsService(
       sqlite.pragma("journal_mode = WAL");
       sqlite.pragma("foreign_keys = ON");
       const database = drizzle(sqlite, { schema });
-      migrate(database, { migrationsFolder: migrationFolder });
+      protectMigration(sqlite, databasePath, migrationFolder, () => migrate(database, { migrationsFolder: migrationFolder }));
       const existing = database.select().from(settings).where(eq(settings.key, "language")).get();
       if (!existing) {
         database.insert(settings).values({ key: "language", value: "en" }).run();
@@ -99,6 +101,7 @@ export function openSettingsService(
     }
   })();
 
+  const backups = createAutomaticBackups(sqlite, databasePath);
   let workspaces = createWorkspaceService(db, workspaceFilesystem, observerDependencies, projectFilesystem, projectRenameNative);
   return {
     get workspaces() { return workspaces; },
@@ -114,6 +117,7 @@ export function openSettingsService(
     recoverProjectRename: (...args) => workspaces.recoverProjectRename(...args),
     revealProject: (...args) => workspaces.revealProject(...args),
     handleQuery(input) {
+      if (isRecord(input) && ["data.backups", "data.backupExport"].includes(String(input.type))) return backups.request(input);
       if (isRecord(input) && input.type === "data.export") return dataRecovery(sqlite, input);
       if (isRecord(input) && input.type === "workspace.previewMetadataRemoval") return workspaces.metadataRemovalRequest(input);
       if (isRecord(input) && input.type === "workspace.getBoardLayout") return workspaces.boardLayoutRequest(input);
@@ -166,6 +170,7 @@ export function openSettingsService(
     },
 
     handleCommand(input) {
+      if (isRecord(input) && input.type === "data.backupNow") return backups.request(input);
       if (isRecord(input) && input.type === "data.restore") {
         const result = dataRecovery(sqlite, input);
         if (result.ok) {
@@ -227,6 +232,7 @@ export function openSettingsService(
     },
 
     close() {
+      backups.close();
       workspaces.close();
       sqlite.close();
     },

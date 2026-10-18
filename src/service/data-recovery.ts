@@ -1,8 +1,8 @@
 import { validateSnapshotRelations } from "./data-recovery-invariants.js";
 import { validExclusions, validArchive } from "./discovery.js";
 import Database from "better-sqlite3";
-import { createHash } from "node:crypto";
-import { isDataRecoveryRequest, maxExportBytes, type DataRecoveryPayload } from "../contracts/data-recovery.js";
+import { encodeSnapshot, openSnapshot } from "./snapshot.js";
+import { isDataRecoveryRequest, type DataRecoveryPayload } from "../contracts/data-recovery.js";
 import type { ServiceResult } from "../contracts/settings.js";
 import { isBoardLayoutConfig } from "../contracts/board-layout.js";
 import { isTableLayoutConfig } from "../contracts/table-layout.js";
@@ -10,8 +10,6 @@ import { isViewGroupingConfig } from "../contracts/view-grouping.js";
 import { isViewFilterConfig } from "../contracts/view-filters.js";
 
 type SchemaEntry = { type: string; name: string; sql: string };
-const format = "workspace-application-data";
-const digest = (image: Buffer) => createHash("sha256").update(image).digest("hex");
 const quote = (name: string) => `"${name.replaceAll('"', '""')}"`;
 function schema(db: Database.Database): SchemaEntry[] {
   return db.prepare("SELECT type, name, sql FROM sqlite_schema WHERE name NOT LIKE 'sqlite_%' AND sql IS NOT NULL ORDER BY type, name").all() as SchemaEntry[];
@@ -47,32 +45,17 @@ function validate(db: Database.Database) {
 
 /** No SQL from an export is executed. Rebuild only the current trusted schema. */
 export function dataRecovery(sqlite: Database.Database, input: unknown): ServiceResult<DataRecoveryPayload> {
-  if (!isDataRecoveryRequest(input)) return { ok: false, error: { code: "invalid_input", message: "Invalid application-data request." } };
+  if (!isDataRecoveryRequest(input) || (input.type !== "data.export" && input.type !== "data.restore")) return { ok: false, error: { code: "invalid_input", message: "Invalid application-data request." } };
   if (input.type === "data.export") {
     try {
-      const image = sqlite.serialize();
-      const content = JSON.stringify({ format, version: 1, checksum: digest(image), database: image.toString("base64") });
-      if (Buffer.byteLength(content) > maxExportBytes) throw new Error("Export exceeds size limit");
+      const content = encodeSnapshot(sqlite);
       return { ok: true, value: { content } };
     } catch { return { ok: false, error: { code: "storage", message: "Application data could not be exported." } }; }
   }
   let candidate: Database.Database | undefined;
   let currentSchema: SchemaEntry[];
   try {
-    if (Buffer.byteLength(input.content) > maxExportBytes) throw new Error("Export exceeds size limit");
-    const envelope = JSON.parse(input.content);
-    if (!envelope || Array.isArray(envelope) || Object.keys(envelope).sort().join() !== "checksum,database,format,version" ||
-      envelope.format !== format || envelope.version !== 1 || typeof envelope.database !== "string" ) throw new Error("Invalid format");
-    const image = Buffer.from(envelope.database, "base64");
-    if (image.toString("base64") !== envelope.database || digest(image) !== envelope.checksum) throw new Error("Invalid checksum");
-    if (image.length < 100 || image.subarray(0, 16).toString("binary") !== "SQLite format 3\0" ||
-      ![1, 2].includes(image[18]) || ![1, 2].includes(image[19])) throw new Error("Invalid SQLite header");
-    // sqlite3_serialize includes committed WAL pages, but preserves WAL header
-    // flags. A deserialized in-memory database cannot open sidecars. Mark this
-    // private copy as a self-contained rollback-journal image before opening it.
-    image[18] = 1; image[19] = 1;
-    candidate = new Database(image, { readonly: true });
-    candidate.pragma("query_only = ON");
+    candidate = openSnapshot(input.content);
     currentSchema = schema(sqlite);
     if (JSON.stringify(schema(candidate)) !== JSON.stringify(currentSchema) ||
       JSON.stringify(candidate.prepare("SELECT * FROM __drizzle_migrations ORDER BY id").all()) !==

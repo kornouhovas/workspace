@@ -42,6 +42,44 @@ The checksum detects corruption; it is not an authenticity signature or encrypti
 The working database stays in the desktop's local application-data directory,
 outside synchronized project sources. Do not manually replace a running SQLite
 file or copy only its main file while ignoring WAL/SHM sidecars. Keep the original
-export if validation fails. Automatic schedules, retention and pre-migration backups
-belong to [issue #38](https://github.com/kornouhovas/workspace/issues/38); this manual
-workflow does not claim those capabilities.
+export if validation fails.
+
+## Automatic backups and updates
+
+The desktop checks for a due automatic backup at service startup, then every 24 hours
+while running. A successful automatic snapshot less than 24 hours old suppresses the
+startup copy. Closing the application stops the timer; it does not run in the background.
+The seven newest verified automatic copies are retained in `backups` beside the local
+working database (including the separate development data directory). This destination
+is local, outside selected project sources. These copies protect metadata against
+application failures; use a separate disk backup against device loss. Files contain
+private local paths and metadata and are neither encrypted nor signed.
+
+Open **Application data → Automatic backups** to see the destination and the latest
+verified snapshot, create a copy or retry, and select a saved copy. **Review restore
+from backup** opens the same replacement confirmation as a manual export. Cancel or
+Escape preserves current data. A damaged snapshot is excluded from selection and an
+error remains visible; other verified copies remain available. If creation, verification
+or retention fails, check free space, directory permissions and damaged files before
+retrying. A partial write never displaces a good recovery point. Automatic retention
+only removes older verified automatic files after publishing a new verified copy.
+
+Before changing an existing schema, the service saves and reads back a separate
+`pre-migration-*.json` snapshot. It uses the same consistent SQLite image/envelope,
+including committed WAL data. Checksum, integrity and foreign keys are checked before
+publication; migration cannot start if this protection fails. Pre-migration copies
+are retained separately and are never deleted by automatic retention, including after
+successful updates. Remove them manually only when you no longer need that version's
+recovery point. Backup status is refreshed on screen every minute.
+
+If an update fails, the startup screen reports recovery instructions. Drizzle rolls
+back its migration transaction; the last pre-migration snapshot remains untouched.
+Do not delete the database or WAL/SHM files. Correct a reported disk/permission failure
+before restarting. For a migration failure, close the failed version and reopen with
+the previous application version. If restoration is necessary, choose the corresponding
+`pre-migration-*.json` in **Application data** and confirm replacement there. Reopening
+and restoring with a matching older schema are tested with disposable real databases.
+A snapshot from an older schema is deliberately rejected by the newer version's import;
+there is no implicit downgrade or execution of SQL supplied by the snapshot.
+
+Project-file contents remain outside every backup and restoration route.

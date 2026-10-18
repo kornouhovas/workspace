@@ -627,4 +627,16 @@ After commit all workspace services/reviews/observers are recreated, the backend
 rebinds events and the renderer reloads without mutation replay. Project folders
 remain separate and missing associations use existing recovery. See [recovery](recovery.md)
 for the format, size limit, supported-schema constraint and user instructions.
-Automatic/pre-migration backup remains issue #38.
+Issue #38 extends this boundary with local automatic and pre-migration snapshots;
+see [the backup contract](plans/issue-38-automatic-backups.md) and [recovery](recovery.md#automatic-backups-and-updates).
+The service checks a 24-hour schedule on startup and with an owned timer, retains seven
+verified automatic files, and exposes typed status/create/export commands through the
+existing preload recovery API. Snapshots are flushed, read back and verified before
+atomic publication and retention. Corrupt files report failure without hiding valid
+recovery points. A failed automatic backup leaves service use available.
+Before pending migrations of existing data, a separate verified snapshot is mandatory;
+protection failure blocks migration. Divergent/future migration ledgers are rejected.
+Drizzle retains its transaction rollback boundary, and failed migrations expose finite
+startup diagnostics with EN/RU recovery instructions. Pre-migration copies are never
+subject to automatic retention. Matching-version restore remains explicit; schema
+migration does not execute snapshot-provided SQL or replay filesystem operations.

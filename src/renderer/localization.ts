@@ -1,6 +1,21 @@
 import type { Language } from "../contracts/settings.js";
 
 const english = {
+  backupTitle: "Automatic backups",
+  backupPolicy: "At startup if due, then every 24 hours while running. The seven latest automatic copies are kept locally; pre-migration copies are kept separately. Project files are excluded.",
+  backupDestination: "Backup folder",
+  backupFailed: "A backup could not be created or verified, or cleanup failed. Check free space, folder permissions and damaged backup files, then create a new backup. Keep existing recovery copies.",
+  backupLoading: "Loading backup status…",
+  backupLatest: "Latest verified snapshot",
+  backupEmpty: "No verified backups yet.",
+  backupNow: "Create backup / retry",
+  backupSelect: "Choose a backup",
+  backupAutomatic: "Automatic",
+  backupMigration: "Before migration",
+  backupOlder: "A snapshot from an older schema must be restored with its matching application version. An incompatible snapshot will be rejected before replacement.",
+  backupReview: "Review restore from backup",
+  backupStartupFailed: "Update blocked because a verified backup could not be saved. Check free space and permissions in the backups folder inside the local application-data directory, then restart. Your current data has not been migrated.",
+  backupMigrationFailed: "Update failed. Keep the pre-migration snapshot in the local application-data backups folder. Reopen with the previous application version; use Application data to restore that snapshot if needed. Do not delete the working database or its WAL files.",
   dataTitle: "Application data",
   dataScope: "Export properties, views, workspaces and device settings. Project files are separate: back them up yourself. Missing folders require Locate folder after restore.",
   dataExport: "Export application data",
@@ -670,6 +685,21 @@ const english = {
 } as const;
 
 const russian: Record<keyof typeof english, string> = {
+  backupTitle: "Автоматические резервные копии",
+  backupPolicy: "При запуске, если прошло 24 часа, затем каждые 24 часа работы. Локально хранятся семь последних автоматических копий; копии перед миграцией сохраняются отдельно. Файлы проектов не включены.",
+  backupDestination: "Папка резервных копий",
+  backupFailed: "Не удалось создать или проверить копию либо выполнить очистку. Проверьте свободное место, права на папку и повреждённые копии, затем создайте новую копию. Сохраните существующие точки восстановления.",
+  backupLoading: "Загрузка состояния копий…",
+  backupLatest: "Последний проверенный снимок",
+  backupEmpty: "Проверенных резервных копий пока нет.",
+  backupNow: "Создать копию / повторить",
+  backupSelect: "Выберите резервную копию",
+  backupAutomatic: "Автоматическая",
+  backupMigration: "Перед миграцией",
+  backupOlder: "Снимок старой схемы восстанавливайте в соответствующей версии приложения. Несовместимый снимок будет отклонён до замены данных.",
+  backupReview: "Проверить восстановление из копии",
+  backupStartupFailed: "Обновление остановлено: не удалось сохранить проверенную копию. Проверьте свободное место и права на папку backups в локальном каталоге данных приложения, затем перезапустите его. Миграция текущих данных не выполнялась.",
+  backupMigrationFailed: "Обновление завершилось ошибкой. Сохраните снимок перед миграцией в папке backups локального каталога данных приложения. Откройте предыдущую версию; при необходимости восстановите снимок через «Данные приложения». Не удаляйте рабочую БД и файлы WAL.",
   dataTitle: "Данные приложения",
   dataScope: "Экспорт свойств, представлений, рабочих пространств и настроек устройства. Файлы проектов копируйте отдельно. Для отсутствующих папок после восстановления используйте «Найти папку».",
   dataExport: "Экспортировать данные приложения",

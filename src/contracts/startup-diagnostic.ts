@@ -1,5 +1,5 @@
 const stages = ["service_open", "service_port", "service_subscribe", "service_start", "process_start", "process_error", "process_exit", "readiness_timeout"] as const;
-const codes = ["SQLITE_BUSY", "SQLITE_LOCKED", "SQLITE_CORRUPT", "SQLITE_NOTADB", "SQLITE_CANTOPEN", "SQLITE_IOERR", "SQLITE_ERROR", "SQLITE_CONSTRAINT", "EACCES", "EPERM", "ENOENT", "EIO", "ENOSPC", "unknown"] as const;
+const codes = ["BACKUP_FAILED", "MIGRATION_FAILED", "SQLITE_BUSY", "SQLITE_LOCKED", "SQLITE_CORRUPT", "SQLITE_NOTADB", "SQLITE_CANTOPEN", "SQLITE_IOERR", "SQLITE_ERROR", "SQLITE_CONSTRAINT", "EACCES", "EPERM", "ENOENT", "EIO", "ENOSPC", "unknown"] as const;
 export type StartupDiagnostic = { stage: typeof stages[number]; code: typeof codes[number]; exitCode?: number };
 
 // Error messages, SQL, paths, stacks and native process reports are deliberately

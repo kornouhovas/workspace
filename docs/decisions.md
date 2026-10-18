@@ -106,3 +106,12 @@ Only unfinished operations add destination reservations; completed history and o
 ## Implemented T15 archive contract
 
 For issue #22, the owner confirmed explicit default `Archive` designation, safe source-contained alternatives, and empty-only designation changes without bulk relocation. Restore retains its original path and mode: collisions require removing the conflict or explicitly selecting another basename under the original parent; a missing parent requires explicit creation; an incompatible discovery mode requires returning to the original mode. These choices refine D19/D24 and the archive-selection portion of O05. See [architecture](architecture.md#implemented-source-archive-and-restore) and [verification](verification/issue-22-archive-restore.md) for implementation boundaries and pending platform acceptance.
+
+## Issue 38 backup policy
+
+The owner approved a startup due check plus a 24-hour running timer, retaining the
+seven latest verified automatic snapshots beside local application data. Separate
+verified pre-migration snapshots are protected from automatic cleanup (including after
+success). Older-schema recovery uses the matching app version and existing explicit
+restore; see [recovery](recovery.md#automatic-backups-and-updates). For this issue the
+owner explicitly authorized normal publication to the currently public repository.
