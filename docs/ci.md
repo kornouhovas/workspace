@@ -491,3 +491,12 @@ checkpoint evidence. The failed original observed one utility instead of five;
 this does not identify the cause of the earlier worker exit. The focused route
 adds no retries, deadline extension, reduced worker count or product assertion
 changes. Inspect its original result and checkpoints before renewed full CI.
+
+For issue35 full39140454210's Windows latest delayed-focus property fixture
+normal-close failure, use the existing `checks: windows-property-fixture` route.
+The unchanged ten-second normal-close gate observed main quit/Node exit, with
+parent exit only at forced cleanup. Failure-only finite page/context/application
+close receipts now distinguish window/protocol lifetime from parent lifetime.
+They observe public events and issue no quit, focus, retry or cleanup commands.
+The historical native cause remains unproven. Inspect the exact-SHA original
+file and retained timeline before renewed full acceptance.

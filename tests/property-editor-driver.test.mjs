@@ -30,6 +30,10 @@ async function withPage(run) {
     for (const event of ["before-quit", "will-quit", "quit", "node-before-exit", "node-exit"])
       if (text.includes(`[property-fixture]${event}`) && !quitEvents.includes(event)) { quitEvents.push(event); record(event); }
   });
+  // Finite event receipts distinguish page/context shutdown from a native parent
+  // that remains after JavaScript quit. They never request another close.
+  app.once("close", () => record("application-close"));
+  app.context().once("close", () => record("context-close"));
   let primary;
   try {
     await app.evaluate(({ app }) => {
@@ -40,6 +44,7 @@ async function withPage(run) {
     });
     const deadline = Date.now() + 30000;
     const page = await app.firstWindow({ timeout: 30000 });
+    page.once("close", () => record("page-close"));
     const url = await withDeadline(app.evaluate(() => globalThis.renameEditorInitialLoad), Math.max(1, deadline - Date.now()), "Property fixture navigation");
     await page.waitForURL(url, { waitUntil: "load", timeout: Math.max(1, deadline - Date.now()) });
     await run(page);
