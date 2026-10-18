@@ -42,7 +42,7 @@ test('suite CLI lists the selected real files and rejects unknown invocations', 
 test('ordinary CI runs common checks once and retains all three platform acceptance routes', () => {
   const workflow = load(readFileSync('.github/workflows/desktop-ci.yml', 'utf8'));
   const { common, verify } = workflow.jobs;
-  assert.equal(common.if, "${{ github.event_name != 'workflow_dispatch' || (inputs.checks != 'failed' && inputs.checks != 'readiness' && inputs.checks != 'windows-release' && inputs.checks != 'issue22-failures' && inputs.checks != 'creation-shutdown' && inputs.checks != 'raw-rename' && inputs.checks != 'issue24-failures' && inputs.checks != 'category-fixture' && inputs.checks != 'issue24-startup' && inputs.checks != 'multiselect' && inputs.checks != 'etw-controls' && inputs.checks != 'app-fixture' && inputs.checks != 'property-fixture' && inputs.checks != 'runtime-observation' && inputs.checks != 'view-fixtures') }}");
+  assert.equal(common.if, "${{ github.event_name != 'workflow_dispatch' || (inputs.checks != 'failed' && inputs.checks != 'readiness' && inputs.checks != 'windows-release' && inputs.checks != 'issue22-failures' && inputs.checks != 'creation-shutdown' && inputs.checks != 'raw-rename' && inputs.checks != 'issue24-failures' && inputs.checks != 'category-fixture' && inputs.checks != 'issue24-startup' && inputs.checks != 'multiselect' && inputs.checks != 'etw-controls' && inputs.checks != 'app-fixture' && inputs.checks != 'property-fixture' && inputs.checks != 'runtime-observation' && inputs.checks != 'view-fixtures' && inputs.checks != 'number') }}");
   assert.equal(common.strategy, undefined);
   assert.deepEqual(common.steps.filter(step => step.run).map(step => step.run), [
     'npm ci', 'npm run lint', 'npm run typecheck', 'npm run check:docs', 'npm run test:common',
@@ -83,7 +83,7 @@ test('investigation jobs run only with explicit manual diagnostic inputs', () =>
 test('manual failed-check scope runs only the Windows observer and macOS rename routes', () => {
   const workflow = load(readFileSync('.github/workflows/desktop-ci.yml', 'utf8'));
   assert.equal(workflow.on.workflow_dispatch.inputs.checks.default, 'full');
-  assert.deepEqual(workflow.on.workflow_dispatch.inputs.checks.options, ['full', 'failed', 'readiness', 'windows-release', 'issue22-failures', 'creation-shutdown', 'raw-rename', 'issue24-failures', 'category-fixture', 'issue24-startup', 'multiselect', 'etw-controls', 'app-fixture', 'property-fixture', 'runtime-observation', 'view-fixtures']);
+  assert.deepEqual(workflow.on.workflow_dispatch.inputs.checks.options, ['full', 'failed', 'readiness', 'windows-release', 'issue22-failures', 'creation-shutdown', 'raw-rename', 'issue24-failures', 'category-fixture', 'issue24-startup', 'multiselect', 'etw-controls', 'app-fixture', 'property-fixture', 'runtime-observation', 'view-fixtures', 'number']);
   const enabled = (job, event, checks) => runInNewContext(job.if.slice(3, -2), { github: { event_name: event }, inputs: { checks } });
   for (const event of ['push', 'pull_request', 'workflow_dispatch']) for (const checks of [undefined, 'full', 'failed']) {
     const focused = event === 'workflow_dispatch' && checks === 'failed';
@@ -775,4 +775,27 @@ test('observer-only selector preserves defaults and excludes unrelated macOS run
   const original = steps.find(step => step.name === 'Original Windows observer regression files');
   assert.ok(original.run.includes('set -o pipefail'));
   assert.equal(steps.find(step => step.name === 'Retain original observer test output').if, 'always()');
+});
+
+test('Number failure selector isolates Windows latest packaged original and preserves independent evidence', () => {
+  const workflow = load(readFileSync('.github/workflows/desktop-ci.yml', 'utf8'));
+  const job = workflow.jobs['focused-number'];
+  assert.ok(job, 'The original packaged Number failure needs a focused Windows route');
+  for (const event of ['push', 'pull_request', 'workflow_dispatch']) {
+    const context = { github: { event_name: event }, inputs: { checks: 'number' } };
+    const active = Object.entries(workflow.jobs).filter(([, job]) => job.if && runInNewContext(job.if.slice(3, -2), context)).map(([name]) => name);
+    assert.deepEqual(active, event === 'workflow_dispatch' ? ['focused-number'] : ['common']);
+  }
+  assert.equal(job['runs-on'], 'windows-latest');
+  assert.ok(job.steps.every(step => step['continue-on-error'] === undefined));
+  const build = job.steps.find(step => step.id === 'build');
+  assert.ok(build.run.includes('set -o pipefail'));
+  const controls = job.steps.find(step => step.name === 'Number creator and route regressions');
+  assert.ok(controls.run.includes('tests/property-editor-driver.test.mjs'));
+  const original = job.steps.find(step => step.name === 'Original Windows packaged Number command');
+  assert.ok(original.run.includes('npm run smoke:number -- release'));
+  for(const outcome of ['success','failure']) assert.equal(runInNewContext(original.if.slice(3,-2),{always:()=>true,steps:{artifact:{outcome}}}),outcome==='success');
+  const upload=job.steps.find(step=>step.uses==='actions/upload-artifact@v4');
+  assert.equal(upload.if,'always()');assert.equal(upload.with['if-no-files-found'],'error');
+  for(const field of ['github.sha','github.run_id','github.run_attempt'])assert.ok(upload.with.name.includes(field));
 });

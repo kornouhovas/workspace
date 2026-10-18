@@ -25,3 +25,22 @@ Node 22.21.1 on macOS; real temporary SQLite and filesystem fixtures. No live us
 - Independent two-axis review: Standards 0 findings; Spec 0 remaining findings after the saved-reference repair and MultiSelect follow-up.
 
 Full local inventory and cross-platform CI are acceptance gates tracked in GitHub, not implied by the focused results above. The ordinary CI platform suite discovers the new service/UI files automatically, and the existing dev/packaged `smoke:views` route now includes Board presentation scenarios on all three runners. No required platform, native assertion or deadline was removed. No new bb code, dependency or workflow selector was introduced.
+
+## First remote candidate and scoped follow-up
+
+Full run39113135361 on `058046b` passed common/static and all three platform test
+suites. Windows latest then failed only the existing packaged Number runtime:
+RU property-name input never appeared after raw focus/Enter on its creator.
+Both dev/release Board JSON files retain successful EN/RU checks and cleanup.
+The original failure is retained in GitHub; remaining first-run results and final
+acceptance are tracked there.
+
+A controlled delayed-disabled native Number creator reproduces that exact
+missing-form pattern using the old direct focus/Enter, in both Number labels.
+Restoring the existing enabled creator helper passes the same controls. Number
+smoke now uses that helper; its 15-second caller deadline, keyboard entry,
+assertions, data preservation, restart and normal closure are unchanged. No
+product Number policy is modified. The historical artifact lacks a focus/readiness
+timeline, so this is a reproduced failure pattern rather than unique-cause proof.
+The focused Windows route is documented in [CI](../ci.md); focused original and
+artifact acceptance precede any renewed full run on the same reviewed SHA.

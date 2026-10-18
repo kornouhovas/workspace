@@ -8,7 +8,7 @@ on:
       checks:
         description: Full acceptance or a selected focused failure route
         type: choice
-        options: [full, failed, readiness, windows-release, issue22-failures, creation-shutdown, raw-rename, issue24-failures, category-fixture, issue24-startup, multiselect, etw-controls, app-fixture, property-fixture, runtime-observation, view-fixtures]
+        options: [full, failed, readiness, windows-release, issue22-failures, creation-shutdown, raw-rename, issue24-failures, category-fixture, issue24-startup, multiselect, etw-controls, app-fixture, property-fixture, runtime-observation, view-fixtures, number]
         default: full
       recovery_windows_2022:
         description: With checks=issue22-failures, replay the backend recovery file on Windows 2022 and the original macOS runtime
@@ -89,7 +89,7 @@ concurrency:
 
 jobs:
   common:
-    if: ${{ github.event_name != 'workflow_dispatch' || (inputs.checks != 'failed' && inputs.checks != 'readiness' && inputs.checks != 'windows-release' && inputs.checks != 'issue22-failures' && inputs.checks != 'creation-shutdown' && inputs.checks != 'raw-rename' && inputs.checks != 'issue24-failures' && inputs.checks != 'category-fixture' && inputs.checks != 'issue24-startup' && inputs.checks != 'multiselect' && inputs.checks != 'etw-controls' && inputs.checks != 'app-fixture' && inputs.checks != 'property-fixture' && inputs.checks != 'runtime-observation' && inputs.checks != 'view-fixtures') }}
+    if: ${{ github.event_name != 'workflow_dispatch' || (inputs.checks != 'failed' && inputs.checks != 'readiness' && inputs.checks != 'windows-release' && inputs.checks != 'issue22-failures' && inputs.checks != 'creation-shutdown' && inputs.checks != 'raw-rename' && inputs.checks != 'issue24-failures' && inputs.checks != 'category-fixture' && inputs.checks != 'issue24-startup' && inputs.checks != 'multiselect' && inputs.checks != 'etw-controls' && inputs.checks != 'app-fixture' && inputs.checks != 'property-fixture' && inputs.checks != 'runtime-observation' && inputs.checks != 'view-fixtures' && inputs.checks != 'number') }}
     name: Common tests and static checks
     runs-on: macos-latest
     steps:
@@ -103,6 +103,56 @@ jobs:
       - run: npm run typecheck
       - run: npm run check:docs
       - run: npm run test:common
+
+  focused-number:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.checks == 'number' }}
+    name: Focused Windows packaged Number
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.21.1
+          cache: npm
+      - run: npm ci
+      - name: Build and retain exact-run provenance
+        id: build
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p work/ci-focused-number
+          node --input-type=module -e 'import { writeFileSync } from "node:fs"; writeFileSync("work/ci-focused-number/provenance.json", JSON.stringify({sha:process.env.GITHUB_SHA,run:process.env.GITHUB_RUN_ID,attempt:process.env.GITHUB_RUN_ATTEMPT,platform:process.platform}) + "\n")'
+          npm run build 2>&1 | tee work/ci-focused-number/build.log
+      - name: Number creator and route regressions
+        shell: bash
+        run: |
+          set -o pipefail
+          node --import tsx --test tests/property-editor-driver.test.mjs tests/number-properties-service.test.mjs tests/number-properties-ui.test.tsx tests/test-suites.test.mjs 2>&1 | tee work/ci-focused-number/regressions.log
+      - name: Package original application
+        if: ${{ always() && steps.build.outcome == 'success' }}
+        id: package
+        run: npm run package:built
+      - name: Validate original packaged resources
+        if: ${{ always() && steps.package.outcome == 'success' }}
+        id: artifact
+        run: npm run check:artifact -- release
+      - name: Original Windows packaged Number command
+        if: ${{ always() && steps.artifact.outcome == 'success' }}
+        shell: bash
+        run: |
+          set -o pipefail
+          npm run smoke:number -- release 2>&1 | tee work/ci-focused-number/original.log
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-focused-number/runtime
+      - name: Retain original result and exact-run evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-32-focused-number-${{ github.sha }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
+          path: work/ci-focused-number/
+          if-no-files-found: error
+          retention-days: 7
 
   focused-view-fixtures:
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.checks == 'view-fixtures' }}

@@ -1,3 +1,4 @@
+import { openPropertyCreator } from "./property-editor-driver.mjs";
 /* global window, document, innerWidth */
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";
@@ -59,9 +60,10 @@ try {
     const projects = await query(page, { type: "workspace.applyDiscovery", workspaceId, previewToken: preview.previewToken });
     await query(page, { type: "workspace.activate", workspaceId });
     await page.reload();
-    const create = page.getByRole("button", { name: language === "en" ? "Create Number property" : "Создать Number-свойство", exact: true });
-    await create.focus(); await create.press("Enter");
-    const name = page.getByLabel(language === "en" ? "Property name" : "Название свойства", { exact: true });
+    const name = await openPropertyCreator(page, {
+      createLabel: language === "en" ? "Create Number property" : "Создать Number-свойство",
+      propertyNameLabel: language === "en" ? "Property name" : "Название свойства",
+    });
     await name.fill("Budget"); await name.press("Enter");
     const label = `${language === "en" ? "Edit Number value" : "Редактировать Number-значение"}: Project / Budget`;
     const button = page.getByRole("button", { name: label, exact: true });

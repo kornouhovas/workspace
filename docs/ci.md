@@ -424,3 +424,17 @@ retain original exits independently of collector validation. A failed real PID
 denial worker emits only finite status/exit/error-class markers, never paths or
 raw logs. A successful isolated run does not identify the historical worker cause;
 inspect the original file and evidence before renewed full acceptance.
+
+For issue #32 run39113135361's sole Windows latest packaged Number creator
+failure, select `checks: number`. The Windows latest-only job retains build,
+real-Electron delayed/enabled creator controls, Number service/UI regressions,
+packaging/resource checks and the original `npm run smoke:number -- release`.
+The original runs independently after regression failure when packaging succeeds;
+strict output capture, failed exits and exact-SHA/run/attempt artifacts remain.
+A deterministic delayed-disabled control reproduces the old direct focus/Enter
+missing-form pattern. The Number runtime now uses the existing enabled creator
+helper without changing keyboard entry, deadlines or product assertions. The
+original failure lacks a focus/enablement timeline, so its unique historical
+cause is not established. Inspect original EN/RU/restart/shutdown/cleanup evidence
+before renewed full acceptance on the same reviewed SHA. Ordinary push/full and
+all three platform routes remain unchanged.

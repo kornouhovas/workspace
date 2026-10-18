@@ -60,10 +60,11 @@ async function withPage(run) {
 
 // This is the runtime driver's native disabled-button/keyboard seam. The app
 // owns enablement and form creation; the driver must send one deliberate Enter.
-test("property creation waits for initial loading before keyboard activation in real Electron", async () => {
+for (const createLabel of ["Create MultiSelect property", "Create Number property", "Создать Number-свойство"]) {
+test(`property creation waits for initial loading before keyboard activation in real Electron: ${createLabel}`, async () => {
   await withPage(async page => {
     page.setDefaultTimeout(5000);
-    await page.setContent('<button id="create" disabled>Create MultiSelect property</button><div id="editor"></div>');
+    await page.setContent(`<button id="create" disabled>${createLabel}</button><div id="editor"></div>`);
     await page.evaluate(() => {
       globalThis.fixturePropertyActivations = 0;
       const button = globalThis.document.querySelector("#create");
@@ -74,12 +75,13 @@ test("property creation waits for initial loading before keyboard activation in 
       });
       globalThis.setTimeout(() => { button.disabled = false; }, 500);
     });
-    const input = await openPropertyCreator(page, { createLabel: "Create MultiSelect property", propertyNameLabel: "Property name" });
+    const input = await openPropertyCreator(page, { createLabel, propertyNameLabel: "Property name" });
     await input.fill("Tags");
     assert.equal(await input.inputValue(), "Tags");
     assert.equal(await page.evaluate(() => globalThis.fixturePropertyActivations), 1);
   });
 });
+}
 
 test("property creation keeps the caller deadline and never activates a still-loading control", async () => {
   await withPage(async page => {
