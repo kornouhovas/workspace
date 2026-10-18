@@ -93,7 +93,7 @@ test('stale groups, foreign ownership, unsupported types and malformed drops pre
   assert.equal(f.command('assignProjectGroup',drop).ok,false);
   const multi=f.command('createProperty',{name:'Multi',propertyType:'multi_select'}).value.propertyId;
   f.command('setViewGrouping',{viewId,config:{propertyId:multi,settings:[]}});
-  assert.equal(f.command('assignProjectGroup',{...drop,propertyId:multi,toKey:'null'}).ok,false);
+  assert.equal(f.command('assignProjectGroup',{...drop,propertyId:multi,fromKey:'invalid',toKey:'null'}).ok,false);
 }));
 
 test('failed SQLite assignment retains values and emits no success event',async()=>{
@@ -141,3 +141,69 @@ test('a same-group drop preserves authored empty Text without revising source da
   assert.equal(f.command('assignProjectGroup',{viewId,propertyId,projectId,fromKey:'null',toKey:'null',archived:false}).ok,true);
   assert.deepEqual(f.query('listTextProperties'),before);
 }));
+
+for (const layout of ['table','board']) test(`${layout} MultiSelect replaces the captured membership and persists the complete set`,()=>fixture(f=>{
+  const {viewId}=f.workspace, [project]=f.query('listProjects').value.projects;
+  f.command('setViewLayout',{viewId,kind:layout});
+  const propertyId=f.command('createProperty',{name:'Tags',propertyType:'multi_select'}).value.propertyId;
+  const options={};
+  for(const name of ['A','B','C']) options[name]=f.command('createSelectOption',{propertyId,name,color:'green'}).value.snapshot.selectOptions.find(o=>o.name===name).optionId;
+  const set=names=>f.command('setMultiSelectValue',{propertyId,projectId:project.projectId,optionIds:names.map(n=>options[n])});
+  const saved=()=>f.query('listTextProperties').value.multiSelectValues.filter(v=>v.propertyId===propertyId&&v.projectId===project.projectId).map(v=>v.optionId).sort();
+  const key=name=>name===null?'null':JSON.stringify(options[name]);
+  f.command('setViewGrouping',{viewId,config:{propertyId,settings:[]}});
+  const drop=(from,to)=>f.command('assignProjectGroup',{viewId,propertyId,projectId:project.projectId,fromKey:key(from),toKey:key(to),archived:false});
+  for(const [initial,from,to,expected] of [[['A','B'],'A','C',['B','C']],[['A','B'],'A','B',['B']],[['A','B'],'B','C',['A','C']],[['A','B'],'A',null,[]],[[],null,'C',['C']],[['A','B'],'B','B',['A','B']]]) {
+    assert.equal(set(initial).ok,true);
+    assert.equal(drop(from,to).ok,true);
+    f.reopen();assert.deepEqual(saved(),expected.map(n=>options[n]).sort());
+    const projection=f.query('queryView',{viewId,archived:false}).value;
+    for(const name of ['A','B','C',null]) assert.equal(projection.groups.find(g=>g.key===key(name)).projectIds.includes(project.projectId),expected.length?expected.includes(name):name===null);
+  }
+}));
+
+test('MultiSelect validates stale membership and destinations without losing unrelated current values',()=>fixture(f=>{
+  const {viewId}=f.workspace, projectId=f.query('listProjects').value.projects[0].projectId;
+  const propertyId=f.command('createProperty',{name:'Tags',propertyType:'multi_select'}).value.propertyId;
+  const ids=[];
+  for(const name of ['A','B','C','D']) ids.push(f.command('createSelectOption',{propertyId,name,color:'green'}).value.snapshot.selectOptions.find(o=>o.name===name).optionId);
+  const [a,b,c,d]=ids;
+  const set=optionIds=>f.command('setMultiSelectValue',{projectId,propertyId,optionIds});
+  set([a,b]);f.command('setViewGrouping',{viewId,config:{propertyId,settings:[]}});
+  const sibling=f.command('create',{name:'Sibling',rootPath:f.root}).value;
+  const drop={viewId,propertyId,projectId,fromKey:JSON.stringify(a),toKey:JSON.stringify(c),archived:false};
+  set([a,b,d]); // An unrelated membership was added after drag start.
+  assert.equal(f.command('assignProjectGroup',drop).ok,true);
+  const values=workspaceId=>f.query('listTextProperties',{workspaceId}).value.multiSelectValues.filter(v=>v.projectId===projectId).map(v=>v.optionId).sort();
+  assert.deepEqual(values(sibling.workspaceId),[b,c,d].sort());
+  const before=f.query('listTextProperties'),events=[];f.subscribe(e=>events.push(e));
+  for(const change of [{},{fromKey:'null'},{fromKey:JSON.stringify(b),toKey:JSON.stringify(viewId)},{fromKey:JSON.stringify(b),toKey:'"deleted-option"'},{fromKey:JSON.stringify(b),propertyId:viewId},{fromKey:JSON.stringify(b),viewId:propertyId},{fromKey:JSON.stringify(b),archived:true}]) {
+    assert.equal(f.command('assignProjectGroup',{...drop,...change}).ok,false);
+    assert.deepEqual(f.query('listTextProperties'),before);
+  }
+  assert.equal(events.some(e=>e.type==='workspace.propertiesChanged'),false);
+  f.command('setViewGrouping',{viewId,config:{propertyId,settings:[{propertyId,order:'manual',manualOrder:[JSON.stringify(c),JSON.stringify(b)],hidden:[JSON.stringify(a)],collapsed:[],hideEmpty:false}]}});
+  assert.equal(f.command('assignProjectGroup',{...drop,fromKey:JSON.stringify(b),toKey:JSON.stringify(a)}).ok,false);
+  f.command('setViewFilter',{viewId,config:{search:'',rules:[{propertyId,operator:'any',operand:[b]}]}});
+  assert.equal(f.command('assignProjectGroup',{...drop,fromKey:JSON.stringify(b)}).ok,true);
+  assert.deepEqual(f.query('queryView',{viewId,archived:false}).value.projectIds,[]);
+  assert.deepEqual(values(sibling.workspaceId),[c,d].sort());
+  f.reopen();assert.deepEqual(values(sibling.workspaceId),[c,d].sort());
+}));
+test('failed MultiSelect replacement rolls back the entire set and emits no success',async()=>{
+  const {default:Database}=await import('better-sqlite3');
+  fixture(f=>{
+    const {viewId}=f.workspace,projectId=f.query('listProjects').value.projects[0].projectId;
+    const propertyId=f.command('createProperty',{name:'Tags',propertyType:'multi_select'}).value.propertyId;
+    for(const name of ['A','B','C'])f.command('createSelectOption',{propertyId,name,color:'green'});
+    const [a,b,c]=f.query('listTextProperties').value.selectOptions.map(o=>o.optionId);
+    f.command('setMultiSelectValue',{projectId,propertyId,optionIds:[a,b]});
+    f.command('setViewGrouping',{viewId,config:{propertyId,settings:[]}});
+    const before=f.query('listTextProperties'),events=[];f.subscribe(e=>events.push(e));
+    const db=new Database(f.path);db.exec("CREATE TRIGGER reject_multi_drop BEFORE INSERT ON multi_select_property_values BEGIN SELECT RAISE(ABORT, 'injected'); END");db.close();
+    assert.equal(f.command('assignProjectGroup',{viewId,propertyId,projectId,fromKey:JSON.stringify(a),toKey:JSON.stringify(c),archived:false}).error.code,'storage');
+    assert.deepEqual(f.query('listTextProperties'),before);
+    assert.equal(events.some(e=>e.type==='workspace.propertiesChanged'),false);
+    f.reopen();assert.deepEqual(f.query('listTextProperties'),before);
+  });
+});

@@ -6,7 +6,7 @@ This branch contains a runnable local desktop application with settings, workspa
 
 Workspace names, order and active selection survive restart. Rename/reorder/remove validate IDs and commit snapshots transactionally. Removal deletes only the workspace and its owned views, retains the source even after its last reference, and never deletes external files. Active removal selects the first remaining configuration and its saved selected view; final removal clears selection.
 
-The desktop includes a native directory picker, EN/RU direct/grouped preview/exclusions/Apply and editable project names with source-owned Text/Number/Date columns and required grouped categories in the default Table. The service persists source-owned exclusions/configuration and logical project records. Source-wide property deletion/hiding/reordering and Name/category/MultiSelect group assignment remain future work. Implemented filtering, grouping and per-view Table presentation controls are described below. Source archive/restore is described below. SQLite with Drizzle is the selected persistence foundation.
+The desktop includes a native directory picker, EN/RU direct/grouped preview/exclusions/Apply and editable project names with source-owned Text/Number/Date columns and required grouped categories in the default Table. The service persists source-owned exclusions/configuration and logical project records. Source-wide property deletion/hiding/reordering and Name/category group assignment remain future work. Implemented filtering, grouping and per-view Table presentation controls are described below. Source archive/restore is described below. SQLite with Drizzle is the selected persistence foundation.
 
 The product uses selected bb architecture and UI foundations while retaining its own folder/project domain. Adopt useful modules deliberately, with provenance and boundary tests; do not assume a whole bb package is independent of its chat/session model.
 
@@ -567,7 +567,7 @@ synchronously calls the existing source-owned transactional property mutation.
 Text preserves authored whitespace, Number assigns the numeric result, Date assigns
 the canonical date and Single Select assigns option identity. The owner confirmed
 that the ordinary empty destination clears all four types. No schema migration or
-filesystem mutation is added; Name, category and MultiSelect assignment are separate.
+filesystem mutation is added; Name and category assignment are separate; MultiSelect is implemented in Issue 34 below.
 
 Table and Board expose an explicit assignment drag handle and a native keyboard
 select independently of row/group ordering. Actual values and filtered/ordered
@@ -575,3 +575,10 @@ membership are reread after success or failure, including a lost reply; commands
 are never automatically replayed. Source sibling events and all other representations
 use the existing property revision boundary. See the [contract and scenarios](plans/issue-33-group-drag.md)
 and [verification report](verification/issue-33-group-drag.md).
+
+
+## MultiSelect group assignment (Issue 34)
+
+The same typed `workspace.assignProjectGroup` command now accepts ordinary MultiSelect grouping. Each rendered Board/Table occurrence supplies its own source-group key. Fresh projection validation rejects stale membership, invalid/absent destinations and mismatched ownership or lifecycle. The backend reads the current option set and replaces only the captured source membership, deduplicates an already selected destination, clears all options for empty, and assigns one option from empty. Same-group drops preserve the current snapshot without writes. Existing transactional MultiSelect persistence owns source revisions/events and rollback; unrelated current memberships survive. No filesystem operation or ordering change is introduced.
+
+The renderer observes actual filtered projections after success, rejection and unknown transport outcomes, refreshing all duplicates without replaying commands. Occurrence-specific controls restore keyboard focus to the destination or a surviving occurrence, falling back to the stable result message for disappearance. See [contract and scenarios](plans/issue-34-multiselect-drag.md) and [verification](verification/issue-34-multiselect-drag.md).

@@ -25,5 +25,16 @@ test('built backend routes group assignment and rejects malformed and stale drop
     for(const extra of [{},{extra:true},{toKey:42},{archived:'false'}])assert.equal(command('assignProjectGroup',{...drop,...extra}).ok,false);
     assert.deepEqual(command('listTextProperties'),before);
     assert.equal(sent.filter(m=>m.type==='workspace.change').length,count);
+    const multi=command('createProperty',{name:'Tags',propertyType:'multi_select'}).value.propertyId;
+    for(const name of ['A','B','C']) command('createSelectOption',{propertyId:multi,name,color:'green'});
+    const options=command('listTextProperties').value.selectOptions.filter(o=>o.propertyId===multi).map(o=>o.optionId);
+    command('setMultiSelectValue',{propertyId:multi,projectId:a.projectId,optionIds:options.slice(0,2)});
+    command('setViewGrouping',{viewId,config:{propertyId:multi,settings:[]}});
+    const multiDrop={...drop,propertyId:multi,fromKey:JSON.stringify(options[1]),toKey:JSON.stringify(options[2])};
+    assert.equal(command('assignProjectGroup',multiDrop).ok,true);
+    assert.deepEqual(command('listTextProperties').value.multiSelectValues.map(v=>v.optionId).sort(),[options[0],options[2]].sort());
+    const actual=command('listTextProperties');
+    assert.equal(command('assignProjectGroup',multiDrop).ok,false);
+    assert.deepEqual(command('listTextProperties'),actual);
   } finally {parent.emit('message',{data:{type:'shutdown'},ports:[]});rmSync(directory,{recursive:true,force:true});}
 });

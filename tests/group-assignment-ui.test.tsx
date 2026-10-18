@@ -11,7 +11,7 @@ import { TextPropertiesTable } from "../src/renderer/components/TextPropertiesTa
 const browser = new Window();
 Object.assign(globalThis, { window: browser, document: browser.document, HTMLElement: browser.HTMLElement, Node: browser.Node, MutationObserver: browser.MutationObserver });
 Object.defineProperty(globalThis, "navigator", { configurable: true, value: browser.navigator });
-const { cleanup, render, screen, waitFor, fireEvent } = await import("@testing-library/react");
+const { cleanup, render, screen, waitFor, fireEvent, within } = await import("@testing-library/react");
 const { default: userEvent } = await import("@testing-library/user-event");
 // @ts-expect-error Built service module intentionally has no declarations.
 const { openSettingsService } = await import("../dist/service/settings.mjs");
@@ -93,6 +93,83 @@ for (const language of ["en", "ru"] as const) for (const layout of ["table", "bo
         await waitFor(()=>assert.equal(screen.queryByLabelText(`${changeLabel}: Alpha`),null));
         await waitFor(()=>assert.equal(document.activeElement?.getAttribute('aria-label'),changeLabel));
       }
+    } finally {cleanup();service.close();rmSync(directory,{recursive:true,force:true});}
+  });
+}
+
+for (const language of ["en", "ru"] as const) for (const layout of ["table", "board"] as const) {
+  test(`${language} ${layout} MultiSelect uses each occurrence's source and refreshes duplicates`, async () => {
+    const directory = mkdtempSync(join(tmpdir(), "multi-drop-ui-")), root = join(directory, "root");
+    mkdirSync(root); mkdirSync(join(root, "Alpha"));
+    const service = openSettingsService(join(directory, "app.sqlite"));
+    const {workspaceId, viewId, sourceId} = service.handleCommand({type:"workspace.create", rootPath:root, name:"Multi"}).value;
+    const command = (type:string, fields={}) => service.handleCommand({type:`workspace.${type}`,workspaceId,...fields});
+    const query = (type:string, fields={}) => service.handleQuery({type:`workspace.${type}`,workspaceId,...fields});
+    const projects = command("applyDiscovery", {previewToken:query("previewDiscovery").value.previewToken}).value.projects;
+    const projectId = projects[0].projectId;
+    const propertyId = command("createProperty", {name:"Tags",propertyType:"multi_select"}).value.propertyId;
+    const options: Record<string,string> = {};
+    for (const name of ["A","B","C"]) options[name] = command("createSelectOption", {propertyId,name,color:"green"}).value.snapshot.selectOptions.find((o:{name:string}) => o.name===name).optionId;
+    command("setMultiSelectValue", {projectId,propertyId,optionIds:[options.A,options.B]});
+    command("setViewGrouping", {viewId,config:{propertyId,settings:[]}});
+    let outcome: "ok" | "reject" | "lost" = "ok";
+    const requests: {fromKey:string;toKey:string}[] = [];
+    const api = {getBackendStatus:async()=>({state:"ready"}),onBackendStatus:()=>()=>{},onWorkspaceChange:service.workspaces.subscribe, workspace:async(input:{type:string;fromKey:string;toKey:string}) => {
+      if (input.type==='workspace.assignProjectGroup') {
+        requests.push(input);
+        if (outcome==='reject') return {ok:false,error:{code:'invalid_input',message:'stale'}};
+        const result=service.handleCommand(input);
+        if (outcome==='lost') throw new Error('Lost reply');
+        return result;
+      }
+      return /workspace\.(list|get|query)/.test(input.type)?service.handleQuery(input):service.handleCommand(input);
+    }} as unknown as WorkspaceDesktopApi;
+    const user = userEvent.setup({document});
+    const changeLabel = `${language==='en'?'Change group':'Изменить группу'}: Alpha`;
+    const dragLabel = `${language==='en'?'Drag to change group':'Перетащить для изменения группы'}: Alpha`;
+    const region = (name:string) => screen.getByRole('region',{name});
+    const members = () => query('listTextProperties').value.multiSelectValues.map((v:{optionId:string})=>v.optionId).sort();
+    const expectGroups = async(names:string[]) => {
+      await waitFor(() => {
+        assert.equal(screen.getAllByLabelText(changeLabel).length,names.length);
+        for (const name of names) assert.equal((within(region(name)).getByLabelText(changeLabel) as HTMLSelectElement).value, name==='No value'||name==='Без значения'?'null':JSON.stringify(options[name]));
+      });
+      await waitFor(() => {for(const control of screen.getAllByLabelText(changeLabel)) assert.equal((control as HTMLSelectElement).disabled,false);});
+    };
+    const drag = (from:string,to:string) => {
+      const data = new Map<string,string>();
+      const dataTransfer = {types:['application/x-workspace-group-assignment'],setData:(type:string,value:string)=>data.set(type,value),getData:(type:string)=>data.get(type)??'',effectAllowed:'move'};
+      fireEvent.dragStart(within(region(from)).getByRole('button',{name:dragLabel}),{dataTransfer});
+      fireEvent.drop(region(to),{dataTransfer});
+    };
+    const empty=language==='en'?'No value':'Без значения';
+    try {
+      render(<TextPropertiesTable viewId={viewId} layout={layout} client={new WorkspaceServiceClient(api)} workspaceId={workspaceId} sourceId={sourceId} projects={projects} language={language} disabled={false}/>);
+      await expectGroups(['A','B']);
+      drag('B','C'); await expectGroups(['A','C']);
+      assert.equal(requests[0].fromKey,JSON.stringify(options.B));
+      assert.deepEqual(members(),[options.A,options.C].sort());
+      await waitFor(()=>assert.equal(document.activeElement,within(region('C')).getByLabelText(changeLabel)));
+      drag('A',empty); await expectGroups([empty]); assert.deepEqual(members(),[]);
+      command('setMultiSelectValue',{projectId,propertyId,optionIds:[options.A,options.C]});
+      await expectGroups(['A','C']);
+      await user.selectOptions(within(region('A')).getByLabelText(changeLabel),JSON.stringify(options.C));
+      await expectGroups(['C']); assert.deepEqual(members(),[options.C]);
+      drag('C',empty); await expectGroups([empty]); assert.deepEqual(members(),[]);
+      await user.selectOptions(within(region(empty)).getByLabelText(changeLabel),JSON.stringify(options.A));
+      await expectGroups(['A']); assert.deepEqual(members(),[options.A]);
+      outcome='reject'; drag('A','B');
+      await screen.findByText(language==='en'?'The project, grouping or destination changed. Refresh and choose an available group.':'Проект, группировка или назначение изменились. Обновите данные и выберите доступную группу.');
+      await expectGroups(['A']); assert.deepEqual(members(),[options.A]);
+      outcome='lost'; drag('A','B');
+      await screen.findByText(language==='en'?'Could not confirm the group change. Refresh actual values before retrying.':'Не удалось подтвердить смену группы. Обновите значения перед повторной попыткой.');
+      await expectGroups(['B']); assert.deepEqual(members(),[options.B]); assert.equal(requests.length,7);
+      outcome='ok';
+      assert.equal(command('setViewFilter',{viewId,config:{search:'',rules:[{propertyId,operator:'any',operand:[options.B]}]}}).ok,true);
+      await waitFor(()=>assert.equal((within(region('B')).getByLabelText(changeLabel) as HTMLSelectElement).disabled,false));
+      drag('B','C');
+      await waitFor(()=>assert.equal(screen.queryAllByLabelText(changeLabel).length,0));
+      assert.deepEqual(members(),[options.C]);
     } finally {cleanup();service.close();rmSync(directory,{recursive:true,force:true});}
   });
 }

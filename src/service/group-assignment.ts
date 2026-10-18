@@ -17,7 +17,7 @@ export function assignProjectGroup(model: WorkspaceService, input: unknown): Ser
   const properties = model.listTextProperties({ type: "workspace.listTextProperties", workspaceId: input.workspaceId });
   if (!properties.ok) return properties;
   const property = properties.value.definitions.find(p => p.propertyId === input.propertyId);
-  if (input.fromKey === input.toKey && property && ["text", "number", "date", "single_select"].includes(property.propertyType)) {
+  if (input.fromKey === input.toKey && property && ["text", "number", "date", "single_select", "multi_select"].includes(property.propertyType)) {
     return { ok: true, value: { snapshot: properties.value, propertyId: input.propertyId, projectId: input.projectId } };
   }
   const base = { workspaceId: input.workspaceId, propertyId: input.propertyId, projectId: input.projectId };
@@ -26,6 +26,14 @@ export function assignProjectGroup(model: WorkspaceService, input: unknown): Ser
     case "number": return model.setNumberValue({ ...base, type: "workspace.setNumberValue", expression: destination.value === null ? null : String(destination.value) });
     case "date": return model.setDateValue({ ...base, type: "workspace.setDateValue", value: destination.value });
     case "single_select": return model.selectCommand({ ...base, type: "workspace.setSelectValue", optionId: destination.value });
+    case "multi_select": {
+      const current = (properties.value.multiSelectValues ?? [])
+        .filter(value => value.propertyId === input.propertyId && value.projectId === input.projectId)
+        .map(value => value.optionId);
+      const remaining = current.filter(optionId => optionId !== origin.value);
+      const optionIds = destination.value === null ? [] : [...new Set([...remaining, String(destination.value)])];
+      return model.selectCommand({ ...base, type: "workspace.setMultiSelectValue", optionIds });
+    }
     default: return invalid();
   }
 }

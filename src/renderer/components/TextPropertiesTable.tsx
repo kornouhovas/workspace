@@ -60,7 +60,7 @@ function TextPropertiesContent({ viewId, layout = "table", hideReveal, client, w
   const [assignmentRefresh, setAssignmentRefresh] = useState(0);
   const assigning = useRef(false);
   const assignmentSequence = useRef(0);
-  const assignmentFocus = useRef<{token:number; projectId:string; owner:string} | null>(null);
+  const assignmentFocus = useRef<{token:number; projectId:string; toKey:string; owner:string} | null>(null);
   const assignmentControls = useRef(new Map<string, HTMLSelectElement>());
   const assignmentStatus = useRef<HTMLDivElement>(null);
   const assignmentOwner = `${viewId}:${layout}:${!!hideReveal}`;
@@ -75,7 +75,8 @@ function TextPropertiesContent({ viewId, layout = "table", hideReveal, client, w
     const request = assignmentFocus.current;
     if (!request || assignmentPending || loading || grouped?.refreshToken !== request.token || request.owner !== assignmentOwner) return;
     const visible = grouped.groups?.some(group => !group.hidden && !group.collapsed && group.projectIds.includes(request.projectId));
-    const control = visible ? assignmentControls.current.get(request.projectId) : null;
+    const control = visible ? assignmentControls.current.get(`${request.toKey}:${request.projectId}`)
+      ?? [...assignmentControls.current.entries()].find(([key]) => key.endsWith(`:${request.projectId}`))?.[1] : null;
     const target = control && !control.disabled ? control : assignmentStatus.current;
     if (target) { target.focus({preventScroll:true}); assignmentFocus.current = null; }
   }, [grouped, assignmentPending, assignmentOwner, loading]);
@@ -195,7 +196,7 @@ function TextPropertiesContent({ viewId, layout = "table", hideReveal, client, w
     }
     return result;
   };
-  const assignmentProperty = grouped?.viewId === viewId ? snapshot?.definitions.find(p => p.propertyId === grouped?.propertyId && ["text", "number", "date", "single_select"].includes(p.propertyType)) : undefined;
+  const assignmentProperty = grouped?.viewId === viewId ? snapshot?.definitions.find(p => p.propertyId === grouped?.propertyId && ["text", "number", "date", "single_select", "multi_select"].includes(p.propertyType)) : undefined;
   const assignmentBusy = disabled || loading || loadError || assignmentPending;
   const assign = async (command: AssignProjectGroupCommand) => {
     if (assignmentBusy || assigning.current) return;
@@ -219,7 +220,7 @@ function TextPropertiesContent({ viewId, layout = "table", hideReveal, client, w
         // Observe actual state even when the mutation reply was lost. Never replay.
         void load();
         const token = ++assignmentSequence.current;
-        if (owner === currentAssignmentOwner.current) assignmentFocus.current = {token,projectId:command.projectId,owner};
+        if (owner === currentAssignmentOwner.current) assignmentFocus.current = {token,projectId:command.projectId,toKey:command.toKey,owner};
         setAssignmentRefresh(token);
       }
     }
@@ -244,7 +245,7 @@ function TextPropertiesContent({ viewId, layout = "table", hideReveal, client, w
         </Header>)}
         {!hideReveal && <Header className="board-field-placeholder">{t("revealProject")}</Header>}
       </>);
-  const rows = (ids?: string[]) => (layout === "table" ? rowIds.map(id => projectById.get(id)!) : [...projects, ...retainedProjects]).filter(project => !ids || ids.includes(project.projectId)).filter(project => !viewId || (filteredIds?.viewId === viewId && filteredIds.ids?.includes(project.projectId))).map((project) => {
+  const rows = (ids?: string[], groupKey?: string) => (layout === "table" ? rowIds.map(id => projectById.get(id)!) : [...projects, ...retainedProjects]).filter(project => !ids || ids.includes(project.projectId)).filter(project => !viewId || (filteredIds?.viewId === viewId && filteredIds.ids?.includes(project.projectId))).map((project) => {
         const retained = retainedProjects.find((row) => row.projectId === project.projectId);
         const reason = retained?.associationState === "excluded" && retained.retentionReason !== "mode_change" ? "excluded" : retained?.resolution ?? retained?.associationState;
         const label = retained?.retentionReason === "mode_change" ? "projectModeRetained" : reason && reason !== "active" ? resolutionLabels[reason] : null;
@@ -261,11 +262,11 @@ function TextPropertiesContent({ viewId, layout = "table", hideReveal, client, w
             try { const payload = JSON.parse(raw); if (payload.workspaceId === workspaceId && payload.viewId === viewId && visibleIds.includes(payload.projectId)) moveRow(payload.projectId, project.projectId); } catch { /* Ignore unrelated drags. */ }
           }}>{presentCells(<><Cell data-column-id="name" data-label={t("projectName")} key="project-name" aria-label={retained ? undefined : project.name}><span className="property-authored">{project.name}</span>
           {viewId && assignmentProperty && grouped?.groups && (() => {
-            const origin = grouped.groups.find(group => group.projectIds.includes(project.projectId));
+            const origin = grouped.groups.find(group => group.key === groupKey && group.projectIds.includes(project.projectId));
             return origin ? <GroupAssignment command={{type:"workspace.assignProjectGroup",workspaceId,viewId,propertyId:assignmentProperty.propertyId,projectId:project.projectId,fromKey:origin.key,toKey:origin.key,archived:!!hideReveal}}
               groups={grouped.groups} projectName={project.name} language={language} disabled={assignmentBusy} controlRef={element => {
-                if (element) assignmentControls.current.set(project.projectId, element);
-                else assignmentControls.current.delete(project.projectId);
+                if (element) assignmentControls.current.set(`${origin.key}:${project.projectId}`, element);
+                else assignmentControls.current.delete(`${origin.key}:${project.projectId}`);
               }} onAssign={command => void assign(command)}/> : null;
           })()}
           {layout === "table" && viewId && <div className="table-row-controls">
@@ -368,8 +369,8 @@ function TextPropertiesContent({ viewId, layout = "table", hideReveal, client, w
           if (command) void assign(command);
         }} style={layout === "board" ? {flexBasis:boardColumnWidth(boardState.config, grouped.propertyId, group.key)} : undefined} key={group.key} aria-label={group.value===null?t("groupNoValue"):(group.label ?? String(group.value))}>
         <h3 className="property-authored">{group.value===null?t("groupNoValue"):(group.label ?? String(group.value))} ({group.projectIds.length})</h3>
-        {!group.collapsed && (group.empty ? <p>{t("groupEmpty")}</p> : layout === "board" ? <ul className="project-board" aria-label={t("boardProjects")}>{rows(group.projectIds)}</ul> :
-          <div className="project-table-scroll"><table className="project-table" style={tableStyle}><thead><tr>{headers}</tr></thead><tbody>{rows(group.projectIds)}</tbody></table></div>)}
+        {!group.collapsed && (group.empty ? <p>{t("groupEmpty")}</p> : layout === "board" ? <ul className="project-board" aria-label={t("boardProjects")}>{rows(group.projectIds, group.key)}</ul> :
+          <div className="project-table-scroll"><table className="project-table" style={tableStyle}><thead><tr>{headers}</tr></thead><tbody>{rows(group.projectIds, group.key)}</tbody></table></div>)}
       </section>)}
       </div>
     </> : layout === "board" ? <>
