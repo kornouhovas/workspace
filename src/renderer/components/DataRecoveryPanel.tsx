@@ -16,7 +16,10 @@ export function DataRecoveryPanel({ client, language, onRestored, onLock }: {
   const confirm = useRef<HTMLButtonElement>(null);
   const mounted = useRef(true);
   const returnFocus = useRef(false);
-  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
+  useEffect(() => {
+    mounted.current = true;
+    return () => { mounted.current = false; onLock(false); };
+  }, [onLock]);
   useEffect(() => {
     if (content !== null) confirm.current?.focus();
     else if (returnFocus.current) { returnFocus.current = false; input.current?.focus(); }

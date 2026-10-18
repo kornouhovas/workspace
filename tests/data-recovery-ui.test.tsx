@@ -43,16 +43,16 @@ test('unknown transport outcome disables replay and offers reload',{timeout:1000
 });
 
 test('pending restore disables actions and a late success after unmount cannot reload another screen', {timeout:10000}, async()=>{
- let resolve!: (value:unknown)=>void, reloads=0;
+ let resolve!: (value:unknown)=>void, reloads=0, locked=false;
  const client={restoreData:()=>new Promise(r=>{resolve=r;})} as unknown as WorkspaceServiceClient;
  const user=userEvent.setup({document});
  try{
-  const view=render(<DataRecoveryPanel client={client} language="en" onRestored={()=>{reloads++;}} onLock={()=>{}}/>);
+  const view=render(<DataRecoveryPanel client={client} language="en" onRestored={()=>{reloads++;}} onLock={v=>{locked=v;}}/>);
   await user.click(screen.getByText(translate('en','dataTitle')));
   await user.upload(screen.getByLabelText(translate('en','dataFile')),new File(['data'],'export.json',{type:'application/json'}));
   await user.click(await screen.findByRole('button',{name:translate('en','dataConfirm')}));
   assert.ok(screen.getByText(translate('en','dataBusy')));
   assert.equal((screen.getByRole('button',{name:translate('en','dataCancel')}) as HTMLButtonElement).disabled,true);
-  view.unmount();resolve({ok:true,value:{restored:true}});await Promise.resolve();assert.equal(reloads,0);
+  view.unmount();assert.equal(locked,false);resolve({ok:true,value:{restored:true}});await Promise.resolve();assert.equal(reloads,0);
  }finally{cleanup();}
 });

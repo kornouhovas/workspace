@@ -690,7 +690,7 @@ export function App() {
             </section>
           )}
           </fieldset>
-          <DataRecoveryPanel client={client} language={language} onRestored={() => window.location.reload()} onLock={setDataLocked} />
+          <DataRecoveryPanel key={backendGeneration} client={client} language={language} onRestored={() => window.location.reload()} onLock={setDataLocked} />
         </>
       )}
     </main>
