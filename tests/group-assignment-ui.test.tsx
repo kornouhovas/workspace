@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import React from "react";
+import { translate } from "../src/renderer/localization.js";
 import { Window } from "happy-dom";
 import { mkdtempSync, mkdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -170,6 +171,61 @@ for (const language of ["en", "ru"] as const) for (const layout of ["table", "bo
       drag('B','C');
       await waitFor(()=>assert.equal(screen.queryAllByLabelText(changeLabel).length,0));
       assert.deepEqual(members(),[options.C]);
+    } finally {cleanup();service.close();rmSync(directory,{recursive:true,force:true});}
+  });
+}
+
+for (const language of ['en','ru'] as const) for (const layout of ['table','board'] as const) for(const grouping of ['name','category'] as const) {
+  test(`${language} ${layout} ${grouping} folder drag, cancel, rejection, lost reply and keyboard reflect real state`,async()=>{
+    const directory=mkdtempSync(join(tmpdir(),'folder-drag-ui-')),root=join(directory,'root');mkdirSync(root);
+    for(const name of ['A','B','C']){mkdirSync(join(root,name));mkdirSync(join(root,name,grouping==='category'||name==='A'?'Alpha':'Target'));}
+    const service=openSettingsService(join(directory,'app.sqlite'));
+    const {workspaceId,viewId,sourceId}=service.handleCommand({type:'workspace.create',rootPath:root,name:'One'}).value;
+    const command=(type:string,fields={})=>service.handleCommand({type:`workspace.${type}`,workspaceId,...fields});
+    const query=(type:string,fields={})=>service.handleQuery({type:`workspace.${type}`,workspaceId,...fields});
+    const preview=query('previewDiscovery',{mode:'grouped'}).value;command('applyDiscovery',{previewToken:preview.previewToken});
+    const list=query('listProjects').value, project=list.projects.find((p:{name:string})=>p.name==='Alpha');
+    const propertyId=grouping==='name'?'name':list.categoryProperty.propertyId;
+    command('setViewGrouping',{viewId,config:{propertyId,settings:[]}});
+    let count=0,observed=0,lost=false;
+    const api={getBackendStatus:async()=>({state:'ready'}),onBackendStatus:()=>()=>{},workspace:async(input:{type:string})=>{
+      const result=/workspace\.(list|get|query)/.test(input.type)?service.handleQuery(input):service.handleCommand(input);
+      if(input.type==='workspace.assignProjectGroup'){count++;if(lost)throw new Error('lost reply');}
+      return result;
+    },onWorkspaceChange:service.workspaces.subscribe} as unknown as WorkspaceDesktopApi;
+    const en=language==='en',changeLabel=`${en?'Change group':'Изменить группу'}: Alpha`;
+    try {
+      render(<TextPropertiesTable viewId={viewId} layout={layout} client={new WorkspaceServiceClient(api)} workspaceId={workspaceId} sourceId={sourceId}
+        projects={list.projects} categoryProperty={list.categoryProperty} categories={list.categories} language={language} disabled={false} onFilesystemAssignmentObserved={()=>observed++}/>);
+      const origin=await screen.findByRole('region',{name:grouping==='name'?'Alpha':'A'});
+      const handle=await within(origin).findByRole('button',{name:`${en?'Drag to change group':'Перетащить для изменения группы'}: Alpha`});
+      await waitFor(()=>assert.equal((handle as HTMLButtonElement).disabled,false));
+      const data=new Map<string,string>(),dataTransfer={types:['application/x-workspace-group-assignment'],setData:(t:string,v:string)=>data.set(t,v),getData:(t:string)=>data.get(t)??'',effectAllowed:'move'};
+      fireEvent.dragStart(handle,{dataTransfer});fireEvent.dragEnd(handle,{dataTransfer});assert.equal(count,0,'Cancelling a gesture sends no filesystem command');
+      assert.equal(screen.queryByRole('button',{name:`${en?'Clear grouping value':'Очистить значение группировки'}: Alpha`}),null);
+      const destination=screen.getByRole('region',{name:grouping==='name'?'Target':'B'});
+      fireEvent.dragStart(handle,{dataTransfer});fireEvent.drop(destination,{dataTransfer});
+      if(grouping==='name') {
+        await waitFor(()=>assert.equal(count,1));
+        await screen.findByText(translate(language,"groupAssignmentSaved"));
+        assert.equal(query('listProjects').value.projects.find((p:{projectId:string})=>p.projectId===project.projectId).relativePath,'A/Target');
+      } else {
+        await screen.findByText(translate(language,"renameCollision"));
+      }
+      await waitFor(()=>assert.ok(observed>=1));
+      if(grouping==='category') {
+        lost=true;
+        const select=within(origin).getByLabelText(changeLabel);
+        await waitFor(()=>assert.equal((select as HTMLSelectElement).disabled,false));
+        // C is occupied too, so free a same-source destination with a safe rename.
+        const c=query('listProjects').value.projects.find((p:{relativePath:string})=>p.relativePath==='C/Alpha');
+        command('renameProject',{projectId:c.projectId,operationId:crypto.randomUUID(),name:'Other',expectedRevision:query('listProjects').value.revision});
+        const user=userEvent.setup({document});
+        await user.selectOptions(select,JSON.stringify(list.categories.find((c:{name:string})=>c.name==='C').categoryId));
+        await screen.findByText(en?'Could not confirm the group change. Refresh actual values before retrying.':'Не удалось подтвердить смену группы. Обновите значения перед повторной попыткой.');
+        await waitFor(()=>assert.equal(query('listProjects').value.projects.find((p:{projectId:string})=>p.projectId===project.projectId).relativePath,'C/Alpha'));
+        assert.equal(count,2);
+      }
     } finally {cleanup();service.close();rmSync(directory,{recursive:true,force:true});}
   });
 }

@@ -36,5 +36,12 @@ test('built backend routes group assignment and rejects malformed and stale drop
     const actual=command('listTextProperties');
     assert.equal(command('assignProjectGroup',multiDrop).ok,false);
     assert.deepEqual(command('listTextProperties'),actual);
+    command('setViewGrouping',{viewId,config:{propertyId:'name',settings:[]}});
+    const collision=command('assignProjectGroup',{...drop,propertyId:'name',fromKey:JSON.stringify(a.name),toKey:JSON.stringify(b.name)});
+    assert.equal(collision.ok,true);
+    assert.equal(collision.value.filesystem.outcome,'rejected');
+    assert.equal(collision.value.filesystem.problem,'reserved_destination');
+    assert.equal(command('assignProjectGroup',{...drop,propertyId:'name',fromKey:JSON.stringify(a.name),toKey:'null'}).ok,false);
+
   } finally {parent.emit('message',{data:{type:'shutdown'},ports:[]});rmSync(directory,{recursive:true,force:true});}
 });

@@ -70,7 +70,7 @@ const nativeFilesystem: WorkspaceFilesystem = {
 export interface WorkspaceService {
   boardLayoutRequest(input: unknown): ServiceResult<BoardLayoutSnapshot>;
   tableLayoutRequest(input: unknown): ServiceResult<TableLayoutSnapshot>;
-  assignProjectGroup(input: unknown): ServiceResult<TextPropertyMutation>;
+  assignProjectGroup(input: unknown): ServiceResult<import("../contracts/group-assignment.js").GroupAssignmentResult>;
   groupingRequest(input: unknown): ServiceResult<ViewGroupingSnapshot>;
   filterRequest(input: unknown): ServiceResult<ViewFilterPayload>;
   viewRequest(input: unknown): ServiceResult<ViewSnapshot>;

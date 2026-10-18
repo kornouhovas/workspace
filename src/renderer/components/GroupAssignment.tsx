@@ -30,7 +30,7 @@ export function GroupAssignment({command, groups, projectName, language, disable
       onChange={event => onAssign({...command, toKey: event.currentTarget.value})}>
       {groups.filter(group => !group.hidden || group.key === command.fromKey).map(group => <option key={group.key} value={group.key}>{group.value === null ? t("groupNoValue") : group.label ?? String(group.value)}</option>)}
     </select></label>
-    <button type="button" aria-label={`${t("groupAssignmentClear")}: ${projectName}`} disabled={disabled || command.fromKey === "null" || !groups.some(group => group.key === "null" && !group.hidden)}
-      onClick={() => onAssign({...command,toKey:"null"})}>{t("groupAssignmentClear")}</button>
+    {groups.some(group => group.key === "null") && <button type="button" aria-label={`${t("groupAssignmentClear")}: ${projectName}`} disabled={disabled || command.fromKey === "null" || !groups.some(group => group.key === "null" && !group.hidden)}
+      onClick={() => onAssign({...command,toKey:"null"})}>{t("groupAssignmentClear")}</button>}
   </div>;
 }

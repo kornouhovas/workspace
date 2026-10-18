@@ -1,18 +1,20 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, rmSync, readdirSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, rmSync, readdirSync, renameSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { randomUUID } from 'node:crypto';
 import { openSettingsService } from '../dist/service/settings.mjs';
-function fixture(run, mode = 'direct') {
+function fixture(run, mode = 'direct', native, prepare) {
   const directory = mkdtempSync(join(tmpdir(), 'grouping-')), root = join(directory, 'root'); mkdirSync(root);
   for (const name of ['Alpha','Beta','Gamma']) { mkdirSync(join(root,name)); if(mode==='grouped' && name!=='Gamma') mkdirSync(join(root,name,'Project')); }
-  const path = join(directory,'app.sqlite'); let service = openSettingsService(path);
+  prepare?.(root);
+  const path = join(directory,'app.sqlite'); let service = openSettingsService(path,undefined,undefined,undefined,undefined,native);
   const workspace = service.handleCommand({type:'workspace.create',rootPath:root,name:'One'}).value;
   const command = (type,fields={}) => service.handleCommand({type:`workspace.${type}`,workspaceId:workspace.workspaceId,...fields});
   const query = (type,fields={}) => service.handleQuery({type:`workspace.${type}`,workspaceId:workspace.workspaceId,...fields});
   command('applyDiscovery',{previewToken:query('previewDiscovery',{mode}).value.previewToken});
-  try { run({workspace,command,query,root,path,subscribe:listener=>service.workspaces.subscribe(listener),reopen(){service.close();service=openSettingsService(path);}}); }
+  try { run({workspace,command,query,root,path,subscribe:listener=>service.workspaces.subscribe(listener),reopen(){service.close();service=openSettingsService(path,undefined,undefined,undefined,undefined,native);}}); }
   finally { service.close();rmSync(directory,{recursive:true,force:true}); }
 }
 test('group assignment saves exact Text and clears it through the typed service',()=>fixture(f=>{
@@ -207,3 +209,103 @@ test('failed MultiSelect replacement rolls back the entire set and emits no succ
     f.reopen();assert.deepEqual(f.query('listTextProperties'),before);
   });
 });
+
+for(const layout of ['table','board']) test(`${layout} Name drop explains a real same-parent collision`,()=>fixture(f=>{
+  const {viewId}=f.workspace,[a,b]=f.query('listProjects').value.projects;
+  f.command('setViewLayout',{viewId,kind:layout});
+  const propertyId=f.command('createProperty',{name:'Notes',propertyType:'text'}).value.propertyId;
+  f.command('setTextValue',{propertyId,projectId:a.projectId,value:'Keep me'});
+  // Direct siblings collide; a grouped source allows the same name in different parents.
+  const drop={viewId,propertyId:'name',projectId:a.projectId,fromKey:JSON.stringify(a.name),toKey:JSON.stringify(b.name),archived:false};
+  f.command('setViewGrouping',{viewId,config:{propertyId:'name',settings:[]}});
+  const result=f.command('assignProjectGroup',drop);
+  assert.equal(result.ok,true);
+  assert.equal(result.value.filesystem.outcome,'rejected');
+  assert.equal(result.value.filesystem.problem,'reserved_destination');
+  assert.deepEqual(readdirSync(f.root).sort(),['Alpha','Beta','Gamma']);
+}));
+
+for(const layout of ['table','board']) test(`${layout} real Name and category drops preserve source identity, metadata, siblings and restart`,()=>fixture(f=>{
+  const {viewId}=f.workspace,[a,b]=f.query('listProjects').value.projects;
+  const sibling=f.command('create',{name:'Sibling',rootPath:f.root}).value;
+  const propertyId=f.command('createProperty',{name:'Notes',propertyType:'text'}).value.propertyId;
+  f.command('setTextValue',{propertyId,projectId:a.projectId,value:'Keep me'});
+  assert.equal(f.command('renameProject',{projectId:b.projectId,operationId:randomUUID(),name:'Target',expectedRevision:f.query('listProjects').value.revision}).value.outcome,'completed');
+  f.command('setViewLayout',{viewId,kind:layout});
+  f.command('setViewGrouping',{viewId,config:{propertyId:'name',settings:[]}});
+  const drop={viewId,propertyId:'name',projectId:a.projectId,fromKey:JSON.stringify(a.name),toKey:'"Target"',archived:false};
+  const events=[];f.subscribe(e=>events.push(e));
+  const renamed=f.command('assignProjectGroup',drop);
+  assert.equal(renamed.ok,true);assert.equal(renamed.value.filesystem.outcome,'completed');
+  const parent=a.relativePath.split('/')[0];
+  assert.deepEqual(readdirSync(join(f.root,parent)),['Target']);
+  f.reopen();
+  let list=f.query('listProjects').value;
+  assert.equal(list.projects.find(p=>p.projectId===a.projectId).relativePath,`${parent}/Target`);
+  const categoryId=list.categories.find(c=>c.name==='Gamma').categoryId;
+  const categoryPropertyId=list.categoryProperty.propertyId;
+  f.command('setViewGrouping',{viewId,config:{propertyId:categoryPropertyId,settings:[]}});
+  const move={...drop,propertyId:categoryPropertyId,fromKey:JSON.stringify(a.categoryId),toKey:JSON.stringify(categoryId)};
+  assert.equal(f.command('assignProjectGroup',move).value.filesystem.outcome,'completed');
+  assert.deepEqual(readdirSync(join(f.root,'Gamma')),['Target']);
+  assert.deepEqual(readdirSync(join(f.root,parent)),[]);
+  f.reopen();list=f.query('listProjects').value;
+  assert.equal(list.projects.find(p=>p.projectId===a.projectId).relativePath,'Gamma/Target');
+  assert.equal(f.query('listTextProperties',{workspaceId:sibling.workspaceId}).value.values.find(v=>v.projectId===a.projectId).value,'Keep me');
+  assert.equal(f.query('listProjects',{workspaceId:sibling.workspaceId}).value.projects.find(p=>p.projectId===a.projectId).categoryId,categoryId);
+  assert.ok(events.some(e=>e.type==='workspace.projectsChanged'&&e.workspaceIds.includes(sibling.workspaceId)));
+  for(const extra of [{},{fromKey:JSON.stringify(categoryId),toKey:'null'},{fromKey:JSON.stringify(categoryId),toKey:'"../escape"'},{fromKey:JSON.stringify(categoryId),archived:true},{fromKey:JSON.stringify(categoryId),workspaceId:viewId}])
+    assert.equal(f.command('assignProjectGroup',{...move,...extra}).ok,false);
+  assert.deepEqual(f.query('listProjects').value.projects,list.projects);
+},'grouped'));
+
+for(const grouping of ['name','category']) for(const outcome of ['permission_denied','interrupted']) test(`${grouping} drag retains existing ${outcome} filesystem receipt and restart recovery without replay`,()=>{
+  let calls=0;
+  fixture(f=>{
+    const {viewId}=f.workspace,list=f.query('listProjects').value,a=list.projects[0];
+    const propertyId=grouping==='name'?'name':list.categoryProperty.propertyId;
+    // A Name destination must be a real projected group in a different parent.
+    const b=list.projects[1];
+    const toKey=grouping==='name'?JSON.stringify(b.name):JSON.stringify(list.categories.find(c=>c.name==='Gamma').categoryId);
+    f.command('setViewGrouping',{viewId,config:{propertyId,settings:[]}});
+    const drop={viewId,propertyId,projectId:a.projectId,fromKey:JSON.stringify(grouping==='name'?a.name:a.categoryId),toKey,archived:false};
+    const before=f.query('listProjects').value.projects;
+    const result=f.command('assignProjectGroup',drop);
+    assert.equal(result.ok,true);
+    assert.equal(result.value.filesystem.outcome,outcome==='interrupted'?'recoverable':'rejected');
+    assert.equal(calls,1);
+    f.reopen();assert.equal(calls,1);
+    if(outcome==='permission_denied') assert.deepEqual(f.query('listProjects').value.projects,before);
+    else {
+      const retained=f.query('listProjects').value.retainedProjects.find(p=>p.projectId===a.projectId);
+      assert.equal(retained.relativePath,a.relativePath);
+      assert.equal(retained.resolution,'unresolved');
+    }
+    if(outcome==='interrupted') {
+      const operations=f.query(grouping==='name'?'listProjectRenames':'listProjectCategoryMoves').value.operations;
+      assert.equal(operations.length,1);
+      assert.equal(operations[0].operationId,result.value.filesystem.operation.operationId);
+      const preview=f.query(grouping==='name'?'previewProjectRenameRecovery':'previewProjectCategoryMoveRecovery',{operationId:operations[0].operationId}).value;
+      assert.ok(preview.actions.includes('keep_original'));
+      assert.equal(f.command(grouping==='name'?'recoverProjectRename':'recoverProjectCategoryMove',{operationId:operations[0].operationId,previewToken:preview.previewToken,action:'keep_original'}).value.problem,'kept_original');
+      assert.equal(calls,1);
+      assert.deepEqual(f.query('listProjects').value.projects,before);
+    }
+  },'grouped',()=>{calls++;if(outcome==='interrupted')throw new Error('interrupted');return outcome;},root=>renameSync(join(root,'Beta','Project'),join(root,'Beta','Target')));
+});
+
+test('archived Name/category drops cannot rename or move retained placement',()=>fixture(f=>{
+  const {viewId}=f.workspace,list=f.query('listProjects').value;
+  const designation=f.query('previewArchiveLocation',{relativePath:'Archive'}).value;
+  f.command('applyArchiveLocation',{operationId:randomUUID(),previewToken:designation.previewToken});
+  for(const p of list.projects){const preview=f.query('previewProjectArchive',{projectId:p.projectId,action:'archive',name:null,createParent:false}).value;assert.equal(f.command('applyProjectArchive',{operationId:randomUUID(),previewToken:preview.previewToken}).ok,true);}
+  const before=f.query('listArchivedProjects').value.projects,a=before[0];
+  for(const propertyId of ['name',list.categoryProperty.propertyId]) {
+    f.command('setViewGrouping',{viewId,config:{propertyId,settings:[]}});
+    const groups=f.query('queryView',{viewId,archived:true}).value.groups;
+    assert.equal(groups.some(g=>g.key==='null'),false);
+    const origin=groups.find(g=>g.projectIds.includes(a.projectId)),destination=groups.find(g=>g.key!==origin.key);
+    if(destination)assert.equal(f.command('assignProjectGroup',{viewId,propertyId,projectId:a.projectId,fromKey:origin.key,toKey:destination.key,archived:true}).ok,false);
+  }
+  f.reopen();assert.deepEqual(f.query('listArchivedProjects').value.projects,before);
+},'grouped'));

@@ -1,9 +1,9 @@
 import { isAssignProjectGroupCommand } from "../contracts/group-assignment.js";
 import type { ServiceResult } from "../contracts/settings.js";
-import type { TextPropertyMutation } from "../contracts/text-properties.js";
+import { randomUUID } from "node:crypto";
 import type { WorkspaceService } from "./workspaces.js";
 
-export function assignProjectGroup(model: WorkspaceService, input: unknown): ServiceResult<TextPropertyMutation> {
+export function assignProjectGroup(model: WorkspaceService, input: unknown): ServiceResult<import("../contracts/group-assignment.js").GroupAssignmentResult> {
   if (!isAssignProjectGroupCommand(input)) return invalid();
   // All validation and the existing transactional value command run synchronously
   // in the owning backend; no renderer-supplied destination value is trusted.
@@ -17,6 +17,20 @@ export function assignProjectGroup(model: WorkspaceService, input: unknown): Ser
   const properties = model.listTextProperties({ type: "workspace.listTextProperties", workspaceId: input.workspaceId });
   if (!properties.ok) return properties;
   const property = properties.value.definitions.find(p => p.propertyId === input.propertyId);
+  if (input.propertyId === "name" || !property) {
+    // Read current source ownership/revision; a drop never supplies paths or a revision.
+    const projects = model.listProjects({type:"workspace.listProjects",workspaceId:input.workspaceId});
+    if (!projects.ok) return projects;
+    const category = projects.value.categoryProperty?.propertyId === input.propertyId;
+    if (input.archived || (input.propertyId !== "name" && !category) || typeof destination.value !== "string" || !destination.value) return invalid();
+    const command = {workspaceId:input.workspaceId,projectId:input.projectId,operationId:randomUUID(),expectedRevision:projects.value.revision};
+    const result = input.propertyId === "name"
+      ? model.renameProject({...command,type:"workspace.renameProject",name:destination.value})
+      : model.moveProjectCategory({...command,type:"workspace.moveProjectCategory",destinationCategoryId:destination.value});
+    if (!result.ok) return result;
+    return {ok:true,value:{snapshot:properties.value,propertyId:input.propertyId,projectId:input.projectId,filesystem:result.value}};
+  }
+
   if (input.fromKey === input.toKey && property && ["text", "number", "date", "single_select", "multi_select"].includes(property.propertyType)) {
     return { ok: true, value: { snapshot: properties.value, propertyId: input.propertyId, projectId: input.projectId } };
   }

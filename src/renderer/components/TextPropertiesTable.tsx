@@ -35,6 +35,7 @@ interface Props {
   locateDisabled?: boolean;
   renameDisabled?: boolean;
   categoryMoveDisabled?: boolean;
+  onFilesystemAssignmentObserved?(): void;
   onMoveCategory?(project: ProjectSummary, trigger: HTMLButtonElement): void;
   onRename?(project: ProjectSummary, trigger: HTMLButtonElement): void;
   onLocate?(project: ProjectAssociationSummary, trigger: HTMLButtonElement): void;
@@ -52,11 +53,11 @@ interface Props {
 export function TextPropertiesTable(props: Props) {
   return <TextPropertiesContent key={`${props.workspaceId}:${props.sourceId}`} {...props} />;
 }
-function TextPropertiesContent({ viewId, layout = "table", hideReveal, client, workspaceId, sourceId, projects, retainedProjects = [], onLocate, locateDisabled, onRename, renameDisabled, onMoveCategory, categoryMoveDisabled, categoryProperty, categories = [], categoryPropertyRevision = 0, discoveryRevision = 0, minimumDiscoveryRevision, sourceLifetime, minimumCategoryPropertyRevision, onCategoryPropertyCommitted, language, disabled }: Props) {
+function TextPropertiesContent({ viewId, layout = "table", hideReveal, client, workspaceId, sourceId, projects, retainedProjects = [], onLocate, locateDisabled, onRename, renameDisabled, onMoveCategory, onFilesystemAssignmentObserved, categoryMoveDisabled, categoryProperty, categories = [], categoryPropertyRevision = 0, discoveryRevision = 0, minimumDiscoveryRevision, sourceLifetime, minimumCategoryPropertyRevision, onCategoryPropertyCommitted, language, disabled }: Props) {
   const [grouped, setGrouped] = useState<{viewId:string; groups:ViewGroup[]|null;propertyId:string|null;refreshToken:number}|null>(null);
   const [filteredIds, setFilteredIds] = useState<{ viewId: string; ids: string[] | null } | null>(null);
   const [assignmentPending, setAssignmentPending] = useState(false);
-  const [assignmentMessage, setAssignmentMessage] = useState<"groupAssignmentSaved" | "groupAssignmentInvalid" | "groupAssignmentError" | null>(null);
+  const [assignmentMessage, setAssignmentMessage] = useState<TranslationKey | null>(null);
   const [assignmentRefresh, setAssignmentRefresh] = useState(0);
   const assigning = useRef(false);
   const assignmentSequence = useRef(0);
@@ -196,8 +197,12 @@ function TextPropertiesContent({ viewId, layout = "table", hideReveal, client, w
     }
     return result;
   };
-  const assignmentProperty = grouped?.viewId === viewId ? snapshot?.definitions.find(p => p.propertyId === grouped?.propertyId && ["text", "number", "date", "single_select", "multi_select"].includes(p.propertyType)) : undefined;
-  const assignmentBusy = disabled || loading || loadError || assignmentPending;
+  const assignmentProperty = grouped?.viewId !== viewId ? undefined
+    : grouped?.propertyId === "name" ? {propertyId:"name"}
+    : categoryProperty && grouped?.propertyId === categoryProperty.propertyId ? categoryProperty
+    : snapshot?.definitions.find(p => p.propertyId === grouped?.propertyId);
+  const filesystemAssignment = assignmentProperty?.propertyId === "name" || !!categoryProperty && assignmentProperty?.propertyId === categoryProperty.propertyId;
+  const assignmentBusy = disabled || loading || loadError || assignmentPending || filesystemAssignment && (!!hideReveal || !!renameDisabled || !!categoryMoveDisabled);
   const assign = async (command: AssignProjectGroupCommand) => {
     if (assignmentBusy || assigning.current) return;
     const owner = assignmentOwner, generation = lifetime.current;
@@ -209,7 +214,11 @@ function TextPropertiesContent({ viewId, layout = "table", hideReveal, client, w
         if (accepts(result.value.snapshot)) {
           listVersion.current++; minimumRevision.current = result.value.snapshot.revision; setSnapshot(result.value.snapshot); setLoading(false); setLoadError(false);
         }
-        setAssignmentMessage("groupAssignmentSaved");
+        const effect = result.value.filesystem;
+        if (!effect || effect.outcome === "completed" || effect.outcome === "unchanged") setAssignmentMessage("groupAssignmentSaved");
+        else if (effect.outcome === "recoverable") setAssignmentMessage("groupAssignmentRecovery");
+        else if (effect.outcome === "rejected") setAssignmentMessage(effect.problem === "invalid_name" ? "renameInvalid"
+          : ["occupied", "reserved_destination", "native_conflict"].includes(effect.problem) ? "renameCollision" : "groupAssignmentError");
       } else setAssignmentMessage(!result.ok && result.error.code === "invalid_input" ? "groupAssignmentInvalid" : "groupAssignmentError");
     } catch {
       if (generation === lifetime.current && owner === currentAssignmentOwner.current) setAssignmentMessage("groupAssignmentError");
@@ -219,6 +228,7 @@ function TextPropertiesContent({ viewId, layout = "table", hideReveal, client, w
         setAssignmentPending(false);
         // Observe actual state even when the mutation reply was lost. Never replay.
         void load();
+        if (filesystemAssignment && owner === currentAssignmentOwner.current) onFilesystemAssignmentObserved?.();
         const token = ++assignmentSequence.current;
         if (owner === currentAssignmentOwner.current) assignmentFocus.current = {token,projectId:command.projectId,toKey:command.toKey,owner};
         setAssignmentRefresh(token);
@@ -346,7 +356,7 @@ function TextPropertiesContent({ viewId, layout = "table", hideReveal, client, w
     </form>}
     {draft?.propertyId && !pending && snapshot?.definitions.find((property) => property.propertyId === draft.propertyId)?.name !== draft.originalName &&
       <StatusMessage kind="info" title={t("propertyExternalChange")} />}
-    {assignmentProperty && <p>{t("groupAssignmentHint")}</p>}
+    {assignmentProperty && <p>{t(filesystemAssignment ? "groupAssignmentFilesystemHint" : "groupAssignmentHint")}</p>}
     <div ref={assignmentStatus} tabIndex={-1} aria-label={t("groupAssignmentChoose")}>
     {assignmentPending && <StatusMessage kind="info" title={t("groupAssignmentSaving")}/>}
     {assignmentMessage && <StatusMessage kind={assignmentMessage === "groupAssignmentSaved" ? "info" : "error"} title={t(assignmentMessage)}/>}
