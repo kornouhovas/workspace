@@ -55,3 +55,23 @@ failure-only receipt timings support diagnosis without identifying an OS or
 Playwright historical cause from absent evidence. See [CI](../ci.md) for the
 Windows-only focused property-fixture route; its original acceptance remains a
 prerequisite to renewed full verification.
+
+## Final platform acceptance
+
+Full [run 39117683388, attempt 1](https://github.com/kornouhovas/workspace/actions/runs/39117683388) passed common/static, macOS latest, Windows 2022 and Windows latest on code SHA `8163361351a8a6d16855f3409e7e1651b63fd1cf`.
+The original focused Windows property fixture also passed all five controls on that SHA in [run 39117223642](https://github.com/kornouhovas/workspace/actions/runs/39117223642).
+
+Downloaded and inspected the exact full-run artifacts for all three platforms.
+All six dev/packaged Views evidence files passed EN/RU Board persistence, keyboard,
+rename, duplicate independence, visibility and wrapping checks at 360/1024/1440px.
+They include 36 Board screenshots and 18 normal application/backend shutdowns,
+with successful owned-fixture cleanup. Representative packaged screenshots were
+visually inspected on each platform. All artifact `evidence.json` files report
+success; SHA-bearing receipts match the tested code. Native deadlines and normal
+closure assertions remain unchanged. Successful reruns do not establish a unique
+cause for the historical native failures described above.
+
+The subsequent changelog and this acceptance receipt are documentation-only;
+their commit has separate documentation/diff checks and is not described as
+platform-tested. The GitHub checkpoint records the delivered integration SHA and
+local integrated verification after that documentation follow-up.

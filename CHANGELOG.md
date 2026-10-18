@@ -6,6 +6,8 @@ User-facing changes are maintained in English. The first target release is 0.1.0
 
 ### Added
 
+- Per-view Board column widths, card property visibility and content wrapping, with keyboard controls and independent duplicate settings.
+
 - Per-view Table column visibility/order/widths, Text wrapping and manual project row order, with keyboard controls and dedicated row dragging.
 
 - Single Select, MultiSelect and folder-category grouping in Board and Table, with saved group ordering/visibility and consistent edits across every occurrence of a project.
