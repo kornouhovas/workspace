@@ -456,3 +456,19 @@ receipt timestamps distinguish close request/result, app quit receipts, parent
 exit and stdio close without logging paths or PIDs. The ten-second normal-close,
 negative caller deadline, single activation and cleanup assertions remain intact.
 Inspect the original focused result before renewed full acceptance.
+
+
+For issue #33 full run39124807104's Windows latest development rename authoring
+failure, select `checks: rename-authoring`. Only Windows latest runs the real-Electron
+authoring/readiness controls and original `npm run smoke:runtime -- dev` command.
+The original command runs after a control failure when its build succeeded; strict
+pipefail and exact SHA/run/attempt artifacts preserve both outcomes. Ordinary/full
+routes remain unchanged. Inspect the original rename receipt, full runtime outcome,
+normal shutdown and cleanup before a renewed full run on the same candidate.
+
+The lost/deferred keyboard-delete control reproduces the original failure pattern
+without submitting a filesystem command. Nonempty draft preparation now uses one
+standard locator replacement and retains exact authored-value verification before
+Enter; empty drafts still require an exact empty result. This removes a redundant
+separate Delete dependency, without proving the historical Windows event-loss cause,
+relaxing product assertions or replaying rename commands.

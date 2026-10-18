@@ -67,3 +67,43 @@ candidate control above; the source and fixture remain unchanged. Final task che
 typecheck, lint, docs and diff validation pass. This local native limitation is
 retained explicitly; exact-SHA platform/packaged acceptance remains in GitHub.
 The final narrow EN Board and wide RU Table screenshots were visually inspected.
+
+## First remote candidate and scoped authoring follow-up
+
+Full run39124807104 attempt1 on `d09edcd` passed common/static and all three
+platform test suites. Windows latest's original development runtime then failed
+in grouped RU rename rejection preparation: `locator.fill("")` retained the old
+Unicode name. The editor readiness proof passed, the rename receipt recorded zero
+requests and owned-process/native cleanup passed. The original job/artifact is
+retained in the GitHub checkpoint; no filesystem command was submitted by that
+failed case.
+
+A real-Electron control intercepts native deletion while leaving standard locator
+replacement available. The old two-fill helper reproduces the exact original
+clear assertion. One `fill(draft)` authors the complete nonempty text through the existing
+standard UI replacement and retains exact draft verification before Enter; empty draft verification
+is unchanged. The control and readiness suite pass **31/31**, with zero submissions;
+CI-route controls pass **39/39**. The installed Playwright 1.64.0 implementation confirms that empty fill uses
+keyboard Delete while nonempty fill uses insertText. This removes the separate
+keyboard-Delete preparation dependency; the historical event-loss cause remains unknown.
+
+The focused `rename-authoring` selector runs only Windows latest's controls and
+original development runtime, retaining exact SHA/run/attempt, both outcomes and
+cleanup. Focused original-step/artifact success is required before a renewed full
+run on its reviewed candidate. No rename service, product validation, deadline,
+normal-quit or filesystem assertion is relaxed.
+
+The completed first run passed macOS and Windows 2022 in full, including both dev
+and packaged views artifacts. Its only failed job was Windows latest's original
+development runtime authoring assertion above. Unreached Windows latest stages
+remain unverified; successful other-platform evidence does not close that gate.
+
+The reviewed authoring follow-up passes local original `smoke:runtime -- dev`
+completely, including rename/rejections/restart/interruption recovery, category
+moves and normal cleanup. Its renewed full inventory passed **2974**, failed **1**,
+and skipped **25**. The sole failure is the unchanged deferred native Electron
+quit control, already reproduced on pristine base in the earlier comparison;
+all authoring/readiness and CI-route tests pass. No native lifecycle assertion
+was changed. Both independent follow-up reviews report zero findings. Static
+and documentation checks pass; the repair is published with `[skip ci]` so the
+focused Windows original-command gate precedes renewed full CI.

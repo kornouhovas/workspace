@@ -418,3 +418,29 @@ test("fixture main load receipt cannot authorize mounting before Page navigation
   await page.setContent("<input>");
   assert.deepEqual(calls, ["main_loaded", "page_loaded", "mounted"]);
 });
+
+test("exact nonempty rename authoring does not depend on a separate native Delete action", async () => {
+  await withPage(async page => {
+    await mount(page, "ready");
+    const input = page.locator("#project-rename-name");
+    await input.fill("  Renamed 日本語");
+    await page.evaluate(() => {
+      globalThis.authoringControl = { deletes: 0, submissions: 0 };
+      const node = globalThis.document.querySelector("input");
+      // Controlled lost/deferred keyboard-deletion pattern. Replacement text
+      // remains a real locator action; no authored DOM values are injected.
+      node.addEventListener("beforeinput", event => {
+        if (event.inputType.startsWith("delete")) {
+          globalThis.authoringControl.deletes++;
+          event.preventDefault();
+        }
+      });
+      node.addEventListener("keydown", event => {
+        if (event.key === "Enter") globalThis.authoringControl.submissions++;
+      });
+    });
+    assert.equal(await fillExactRenameDraft(input, "  Exact 日本語  "), true);
+    assert.equal(await input.inputValue(), "  Exact 日本語  ");
+    assert.deepEqual(await page.evaluate(() => globalThis.authoringControl), { deletes: 0, submissions: 0 });
+  });
+});

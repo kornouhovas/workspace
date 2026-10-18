@@ -21,10 +21,8 @@ import { installNativeRevealReceipt, retainNativeRevealReceipt } from "./native-
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const unwrap = result => { assert.equal(result.ok, true, JSON.stringify(result)); return result.value; };
 export async function fillExactRenameDraft(input, draft) {
-  // One standard locator fill owns clearing and its input event; a later
-  // keyboard action cannot collapse a selection before clearing it.
-  await input.fill("");
-  assert.equal(await input.inputValue(), "", "Rename driver must clear the old name before authoring");
+  // One standard replacement action owns the complete authored draft. A
+  // separate empty fill relies on keyboard Delete delivery before replacement.
   await input.fill(draft);
   assert.equal(await input.inputValue() === draft, true, "Rename driver must author the exact draft before submitting");
   return true;
