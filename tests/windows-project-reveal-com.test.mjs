@@ -199,7 +199,7 @@ foreach ($mode in ($env:WORKSPACE_CONTROL_MODES | ConvertFrom-Json)) {
     const selectsOnce = succeeds || mode.endsWith("_after") || ["selection_throw", "late_selection", "late_postcheck"].includes(mode);
     assert.equal(completed, succeeds); assert.equal(opens, invalidInput ? 0 : 1); assert.equal(selects, selectsOnce ? 1 : 0);
     assert.ok(permits === 0 || permits === 1); assert.equal(events.filter((event) => event === "READY").length, permits);
-    assert.equal(events[0], invalidInput ? "FAIL:input:input" : "OPEN"); assert.match(events.at(-1), succeeds ? /^DONE$/ : /^FAIL:(input|navigation|readiness|permit|precommand|selection|postcheck):(input|deadline|binding|unready|permit|exception)$/);
+    assert.equal(events[0], invalidInput ? "FAIL:input:input" : "OPEN"); assert.match(events.at(-1), mode === "read_throw" ? /^FAIL:readiness:exception:enumeration:other$/ : succeeds ? /^DONE$/ : /^FAIL:(input|navigation|readiness|permit|precommand|selection|postcheck):(input|deadline|binding|unready|permit|exception)$/);
     assert.equal(events.filter((event) => event === "SELECT").length, selectsOnce || mode === "late_event" ? 1 : 0);
     assert.equal(events.filter((event) => event.startsWith("FAIL:")).length, succeeds ? 0 : 1);
     if (succeeds) assert.ok(elapsed < 10000);
@@ -208,7 +208,7 @@ foreach ($mode in ($env:WORKSPACE_CONTROL_MODES | ConvertFrom-Json)) {
     if (mode === "delayed_ready") assert.equal(elapsed, 200);
     const expectedFailure = { late_permit: "FAIL:permit:deadline", late_precommand: "FAIL:precommand:deadline",
       late_postcheck: "FAIL:postcheck:deadline", document_permit: "FAIL:precommand:binding",
-      selection_throw: "FAIL:selection:exception", read_throw: "FAIL:readiness:exception" }[mode];
+      selection_throw: "FAIL:selection:exception", read_throw: "FAIL:readiness:exception:enumeration:other" }[mode];
     if (expectedFailure) assert.equal(events.at(-1), expectedFailure);
     assert.doesNotMatch(JSON.stringify(report), /private|ordinary source|日本語/);
   });
@@ -522,4 +522,36 @@ test('bounded window enumerator rejects incomplete, duplicate, malformed and cha
     { mode: 'multiple', count: 2, opaque: true, exactNames: true, formerCastRejected: true },
   ]);
   assert.doesNotMatch(result.stdout, /PRIVATE|C:\\|HRESULT|Exception/);
+});
+
+test('failure-only read context is finite, fresh per query and never permits selection', {skip:process.platform!=='win32'}, async()=>{
+  const script=String.raw`
+$ErrorActionPreference='Stop'
+. ./src/desktop/native/windows-project-reveal.ps1
+$env:WORKSPACE_REVEAL_TRACE='0'
+$events=[Collections.Generic.List[string]]::new()
+function Write-WorkspaceRevealEvent($event) { $script:events.Add($event) }
+function Wait-WorkspaceRevealPoll($milliseconds) { }
+function Read-WorkspaceReadyBinding($shell,$expected,$anchor,$trace) {
+    $script:reads++
+    if ($script:mode -ceq 'stale' -and $script:reads -eq 1) {
+        if ($null -ne $trace) { [void](& $trace 'collection') }
+        return @{stage='parent_absent'}
+    }
+    if ($script:mode -cne 'stale' -and $null -ne $trace) { [void](& $trace $script:mode) }
+    throw [InvalidOperationException]::new('PRIVATE_EXCEPTION_PATH')
+}
+$shell=[pscustomobject]@{}
+$shell | Add-Member ScriptMethod Open { param($parent) $script:opens++ }
+foreach ($mode in @('collection','document','uia_properties','PRIVATE_PATH','stale')) {
+    $script:mode=$mode;$script:reads=0;$script:opens=0;$events.Clear()
+    $completed=Invoke-WorkspaceProjectReveal $shell 'C:\owned\Project' ([Diagnostics.Stopwatch]::new())
+    $expected=if ($mode -cin @('PRIVATE_PATH','stale')) { 'FAIL:readiness:exception' } else { 'FAIL:readiness:exception:'+$mode+':invalid_operation' }
+    if ($completed -or $opens -ne 1 -or $events.Count -ne 2 -or $events[0] -cne 'OPEN' -or $events[1] -cne $expected) { throw 'failure_context' }
+    if ($events.Contains('READY') -or $events.Contains('SELECT') -or $events.Contains('DONE')) { throw 'authority' }
+}
+[Console]::Out.WriteLine('FAILURE_CONTEXT')
+`;
+  const result=await promisify(execFile)('powershell.exe',['-NoProfile','-NonInteractive','-STA','-ExecutionPolicy','Bypass','-Command',script],{windowsHide:true,timeout:10000});
+  assert.equal(result.stdout.trim(),'FAILURE_CONTEXT');assert.equal(result.stderr,'');
 });

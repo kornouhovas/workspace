@@ -323,3 +323,17 @@ for (const output of ['TRACE:private path\n', 'TRACE:uia_tabs:extra\n', 'TRACE:u
     assert.equal(JSON.stringify(f.events).includes('private path'), false);
   });
 }
+
+for (const boundary of ['collection', 'document', 'uia_properties']) test(`failure-only read context retains ${boundary} without a permit or selection`, async () => {
+  const f=fixture(),pending=f.start();
+  f.output(`OPEN\nFAIL:readiness:exception:${boundary}:invalid_operation\n`);
+  await assert.rejects(pending,problem('native_error'));
+  assert.deepEqual(f.events.filter(event=>event.stage==='failure'),[{stage:'failure',path:target,phase:'readiness',reason:'exception',boundary,exceptionKind:'invalid_operation'}]);
+  assert.deepEqual(f.writes,[]);
+  assert.equal(f.events.some(event=>event.stage==='select'||event.stage==='done'),false);
+});
+for(const token of ['FAIL:readiness:exception:PRIVATE:invalid_operation','FAIL:readiness:exception:collection:PRIVATE','FAIL:permit:deadline:collection:invalid_operation']) test(`invalid failure-only read context stays private: ${token}`,async()=>{
+  const f=fixture(),pending=f.start();f.output(`OPEN\n${token}\n`);
+  await assert.rejects(pending,problem('native_error'));
+  assert.equal(f.events.some(event=>event.stage==='failure'),false);assert.deepEqual(f.writes,[]);
+});

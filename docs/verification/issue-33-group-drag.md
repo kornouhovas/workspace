@@ -107,3 +107,33 @@ all authoring/readiness and CI-route tests pass. No native lifecycle assertion
 was changed. Both independent follow-up reviews report zero findings. Static
 and documentation checks pass; the repair is published with `[skip ci]` so the
 focused Windows original-command gate precedes renewed full CI.
+
+## Cold Windows Reveal failure and bounded diagnostic follow-up
+
+Focused run39127179178 attempt1 on `2627c136` passed the authoring controls and
+original runtime, including exact drafts and owned-process/native cleanup. The
+renewed full run39127698398 attempt1 then failed Windows latest's earlier cold
+creation Reveal command (`--creation --discovery-mode=direct
+--checkpoint=after_evidence`): one navigation, zero selections and a typed
+`native_error`, with `FAIL:readiness:exception` after roughly 3.1 seconds. Cleanup
+passed. Its missing full-suite collector document is a consequence of the
+unreached platform suite, not a waived gate.
+
+Diagnostic run39128278644 on the same SHA passed both Windows runners, including
+the cold original with finite trace enabled. This does not identify the original
+exception or prove it repaired. No native behavior, authority, retry or deadline
+is changed. Failure-only instrumentation now retains the last allowlisted read
+boundary and a coarse allowlisted exception class. It clears the boundary on
+every query, retains legacy failures when context is unavailable, and emits no
+exception messages, paths or HRESULTs. Malformed context still rejects privately.
+
+The protocol controls were observed red before implementation and now pass.
+Windows-only PowerShell controls also cover finite output, unknown boundaries,
+stale-query context and zero selection/permit after failure; their actual Windows
+execution and an untraced cold original remain required before renewed full CI.
+
+The diagnostic candidate passes typecheck, lint, documentation/diff validation,
+and focused native/service checks (**195 passed, 8 conditional skips**). Both
+independent review axes report zero findings. Its renewed complete local inventory
+passes **2981, 0 failed, 26 conditional skips**; earlier native lifecycle failures
+remain in the history above rather than being reclassified as repaired.

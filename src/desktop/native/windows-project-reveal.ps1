@@ -21,6 +21,27 @@ function Write-WorkspaceRevealTrace($phase) {
     if ($script:workspaceRevealTraceSeen.Add($phase)) { Write-WorkspaceRevealEvent ('TRACE:' + $phase) }
 }
 
+# Coarse failure-only context. Never return messages, paths or numeric HRESULTs.
+function Get-WorkspaceRevealExceptionKind($errorRecord) {
+    $exception = $errorRecord.Exception
+    for ($depth = 0; $depth -lt 8 -and $null -ne $exception.InnerException; $depth++) { $exception = $exception.InnerException }
+    if ($exception -is [ArgumentNullException]) { return 'null_argument' }
+    if ($exception -is [InvalidOperationException]) { return 'invalid_operation' }
+    if ($exception -is [InvalidCastException]) { return 'invalid_cast' }
+    if ($exception -is [Runtime.InteropServices.COMException]) { return 'com' }
+    if ($exception.GetType().FullName -ceq 'System.Windows.Automation.ElementNotAvailableException') { return 'element_unavailable' }
+    return 'other'
+}
+function Read-WorkspaceRevealBinding($shell, $expected, $anchor) {
+    $script:workspaceRevealReadBoundary = $null
+    $observe = {
+        param($boundary)
+        if ($boundary -cin @('enumeration','collection','window_candidate','document','parent','owner','uia_root','uia_properties','uia_tabs','readiness','item','document_recheck','readiness_recheck','item_returned')) { $script:workspaceRevealReadBoundary = $boundary }
+        Write-WorkspaceRevealTrace $boundary
+    }
+    return (Read-WorkspaceReadyBinding $shell $expected $anchor $observe)
+}
+
 function Read-WorkspaceRevealPermit {
     # Exactly one ASCII GO line followed by EOF; read at most four characters.
     # The owner closes stdin after its permit. Waiting for EOF stays within the
@@ -35,8 +56,7 @@ function Wait-WorkspaceRevealPoll($milliseconds) { Start-Sleep -Milliseconds $mi
 
 function Invoke-WorkspaceProjectReveal($shell, $expected, $watch) {
     $phase = 'input'
-    $trace = $null
-    if ($env:WORKSPACE_REVEAL_TRACE -ceq '1') { $trace = { param($boundary) Write-WorkspaceRevealTrace $boundary } }
+    $script:workspaceRevealReadBoundary = $null
     try {
         if ($expected -isnot [string] -or -not [IO.Path]::IsPathRooted($expected) -or
             $expected.Contains([char]0) -or [IO.Path]::GetFullPath($expected) -cne $expected) { throw 'input' }
@@ -51,7 +71,7 @@ function Invoke-WorkspaceProjectReveal($shell, $expected, $watch) {
         $anchor = $null
         for ($iteration = 0; $iteration -lt 128; $iteration++) {
             if ((Get-WorkspaceRevealMilliseconds $watch) -ge 10000) { throw 'deadline' }
-            $binding = Read-WorkspaceReadyBinding $shell $expected $anchor $trace
+            $binding = Read-WorkspaceRevealBinding $shell $expected $anchor
             Write-WorkspaceRevealTrace 'binding_returned'
             $elapsed = Get-WorkspaceRevealMilliseconds $watch
             if ($elapsed -ge 10000) { throw 'deadline' }
@@ -68,7 +88,7 @@ function Invoke-WorkspaceProjectReveal($shell, $expected, $watch) {
         if ((Read-WorkspaceRevealPermit) -cne 'GO') { throw 'permit' }
         if ((Get-WorkspaceRevealMilliseconds $watch) -ge 10000) { throw 'deadline' }
         $phase = 'precommand'
-        $before = Read-WorkspaceReadyBinding $shell $expected $anchor $trace
+        $before = Read-WorkspaceRevealBinding $shell $expected $anchor
         if ((Get-WorkspaceRevealMilliseconds $watch) -ge 10000) { throw 'deadline' }
         if ($before.stage -ne 'ready' -or -not (Test-WorkspaceReadyPath (Get-WorkspaceComProperty $anchor.item 'Path') $expected)) { throw 'binding' }
         Write-WorkspaceRevealEvent 'SELECT'
@@ -79,7 +99,7 @@ function Invoke-WorkspaceProjectReveal($shell, $expected, $watch) {
         [void]$anchor.document.SelectItem($anchor.item, 5)
         if ((Get-WorkspaceRevealMilliseconds $watch) -ge 10000) { throw 'deadline' }
         $phase = 'postcheck'
-        $after = Read-WorkspaceReadyBinding $shell $expected $anchor $trace
+        $after = Read-WorkspaceRevealBinding $shell $expected $anchor
         if ((Get-WorkspaceRevealMilliseconds $watch) -ge 10000) { throw 'deadline' }
         if ($after.stage -ne 'ready') { throw 'binding' }
         Write-WorkspaceRevealEvent 'DONE'
@@ -88,7 +108,11 @@ function Invoke-WorkspaceProjectReveal($shell, $expected, $watch) {
         # Finite private protocol only: never emit exception text or paths.
         $reason = 'exception'
         if ($_.Exception.Message -cin @('input','deadline','binding','unready','permit')) { $reason = $_.Exception.Message }
-        Write-WorkspaceRevealEvent ('FAIL:{0}:{1}' -f $phase,$reason)
+        $context = ''
+        if ($reason -ceq 'exception' -and $phase -cin @('readiness','precommand','postcheck') -and $null -ne $script:workspaceRevealReadBoundary) {
+            try { $context = ':{0}:{1}' -f $script:workspaceRevealReadBoundary,(Get-WorkspaceRevealExceptionKind $_) } catch { $context = '' }
+        }
+        Write-WorkspaceRevealEvent (('FAIL:{0}:{1}' -f $phase,$reason) + $context)
         return $false
     }
 }

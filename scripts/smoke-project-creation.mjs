@@ -274,13 +274,16 @@ try {
           if (process.platform === "win32") {
             // Main-only instrumentation of actual production bridge messages.
             // No dispatch replacement, path setter or selection manipulation.
-            process.on("workspace:native-reveal", ({ stage, path, phase, reason, elapsedMs }) => {
+            process.on("workspace:native-reveal", ({ stage, path, phase, reason, elapsedMs, boundary, exceptionKind }) => {
               const bridge = globalThis.creationNativeBridge;
               if (stage === "started") { bridge.started++; bridge.active++; }
               if (stage === "stopped") { bridge.stopped++; bridge.active--; }
               if (stage === "unknown") bridge.unknown = true;
               if (stage === "failure" && /^(input|navigation|readiness|permit|precommand|selection|postcheck|initial|opened|authorizing|permitted|selected|done)$/.test(phase) &&
-                  /^(input|deadline|binding|unready|permit|exception|owner_deadline)$/.test(reason)) bridge.failure = { phase, reason };
+                  /^(input|deadline|binding|unready|permit|exception|owner_deadline)$/.test(reason)) {
+                bridge.failure = { phase, reason };
+                if (/^(enumeration|collection|window_candidate|document|parent|owner|uia_root|uia_properties|uia_tabs|readiness|item|document_recheck|readiness_recheck|item_returned)$/.test(boundary) && /^(null_argument|invalid_operation|invalid_cast|com|element_unavailable|other)$/.test(exceptionKind)) Object.assign(bridge.failure, { boundary, exceptionKind });
+              }
               if (stage === "trace" && /^(assemblies|compile|shell|open|enumeration|collection|window_candidate|document|parent|owner|uia_root|uia_properties|uia_tabs|readiness|item|document_recheck|readiness_recheck|binding_returned|item_returned)$/.test(phase) && Number.isFinite(elapsedMs) && elapsedMs >= 0 && elapsedMs <= 12000 && bridge.trace.length < 19) bridge.trace.push({ phase, elapsedMs });
               if (stage === "open") globalThis.creationNativeOpens.push(path);
               if (stage === "select") globalThis.creationNativeCalls.push({ path, returned: false });

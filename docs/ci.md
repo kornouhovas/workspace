@@ -472,3 +472,13 @@ standard locator replacement and retains exact authored-value verification befor
 Enter; empty drafts still require an exact empty result. This removes a redundant
 separate Delete dependency, without proving the historical Windows event-loss cause,
 relaxing product assertions or replaying rename commands.
+
+For issue #33 run39127698398's cold Windows latest creation Reveal exception,
+the readiness native route above retains its original command and ordering.
+Failure packets may additionally carry the last allowlisted read boundary and
+coarse exception class, only for readiness/precommand/postcheck exceptions.
+This failure-only context is independent of opt-in trace, resets each read and
+never includes exception text, paths or HRESULTs. It does not change selection
+permission or readiness. Validate protocol and actual PowerShell controls plus
+the untraced cold original before renewed full CI; a traced success alone does
+not establish the historical cause or satisfy full acceptance.

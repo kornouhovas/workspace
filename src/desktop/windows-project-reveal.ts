@@ -39,7 +39,7 @@ export function resolveWindowsPowerShell(options: ResolverOptions = {}): string 
   } catch { return undefined; }
 }
 
-type NativeEvent = { stage: "started" | "open" | "select" | "done" | "stopped" | "unknown" | "failure" | "trace"; path: string; phase?: string; reason?: string; elapsedMs?: number };
+type NativeEvent = { stage: "started" | "open" | "select" | "done" | "stopped" | "unknown" | "failure" | "trace"; path: string; phase?: string; reason?: string; boundary?: string; exceptionKind?: string; elapsedMs?: number };
 type BridgeOptions = {
   nativeDirectory: string;
   // Resolved once by trusted main; never accepted over renderer IPC or env.
@@ -83,7 +83,7 @@ export async function runWindowsProjectReveal(path: string, context: NativeRevea
     const tracePhases = new Set<string>();
     let failure: RevealFailure | undefined;
     let killTimer: ReturnType<typeof setTimeout> | undefined;
-    const emit = (stage: NativeEvent["stage"], details: Pick<NativeEvent, "phase" | "reason" | "elapsedMs"> = {}) => {
+    const emit = (stage: NativeEvent["stage"], details: Pick<NativeEvent, "phase" | "reason" | "elapsedMs" | "boundary" | "exceptionKind"> = {}) => {
       const event = { stage, path, ...details };
       try {
         if (options.onEvent) options.onEvent(event);
@@ -163,7 +163,9 @@ export async function runWindowsProjectReveal(path: string, context: NativeRevea
       else if (value === "DONE" && state === "selected") { state = "done"; }
       else {
         const diagnostic = /^FAIL:(input|navigation|readiness|permit|precommand|selection|postcheck):(input|deadline|binding|unready|permit|exception)$/.exec(value);
-        if (diagnostic) emit("failure", { phase: diagnostic[1], reason: diagnostic[2] });
+        const context = /^FAIL:(readiness|precommand|postcheck):exception:(enumeration|collection|window_candidate|document|parent|owner|uia_root|uia_properties|uia_tabs|readiness|item|document_recheck|readiness_recheck|item_returned):(null_argument|invalid_operation|invalid_cast|com|element_unavailable|other)$/.exec(value);
+        if (context) emit("failure", { phase: context[1], reason: "exception", boundary: context[2], exceptionKind: context[3] });
+        else if (diagnostic) emit("failure", { phase: diagnostic[1], reason: diagnostic[2] });
         fail("native_error");
       }
     };
