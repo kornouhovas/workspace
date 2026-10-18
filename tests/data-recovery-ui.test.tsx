@@ -93,17 +93,36 @@ test('backup loading, empty, unavailable status and late selection cannot lock a
   const user=userEvent.setup({document});
   const {BackupPanel}=await import('../src/renderer/components/BackupPanel.js');
   try {
-    let view=render(<BackupPanel client={client} language="en" disabled={false} onSelect={()=>{selected++;}}/>);
+    let view=render(<BackupPanel onSelecting={()=>{}} client={client} language="en" disabled={false} onSelect={()=>{selected++;}}/>);
     assert.ok(screen.getByText(translate('en','backupLoading')));
     resolveStatus({ok:true,value:{backups:{state:'failed',destination:'/tmp/backups',snapshots:[]}}});
     await screen.findByText(translate('en','backupEmpty'));
     assert.ok(screen.getByText(translate('en','backupFailed')));view.unmount();
-    view=render(<BackupPanel client={client} language="en" disabled={false} onSelect={()=>{selected++;}}/>);
+    view=render(<BackupPanel onSelecting={()=>{}} client={client} language="en" disabled={false} onSelect={()=>{selected++;}}/>);
     const id='automatic-1792300000000-00000000-0000-4000-8000-000000000000.json';
     resolveStatus({ok:true,value:{backups:{state:'ready',destination:'/tmp/backups',snapshots:[{id,kind:'automatic',createdAt:1792300000000}]}}});
     await waitFor(()=>assert.equal((screen.getByLabelText(translate('en','backupSelect')) as HTMLSelectElement).disabled,false));
     await user.selectOptions(screen.getByLabelText(translate('en','backupSelect')),id);
     await user.click(screen.getByRole('button',{name:translate('en','backupReview')}));view.unmount();
     resolveExport({ok:true,value:{content:'snapshot'}});await Promise.resolve();assert.equal(selected,0);
+  } finally {cleanup();}
+});
+
+test('reading a backup locks external file selection until the confirmed candidate is ready', {timeout:10000}, async()=>{
+  let resolve!:(v:unknown)=>void,locked=false;
+  const id='automatic-1792300000000-00000000-0000-4000-8000-000000000000.json';
+  const client={backups:async()=>({ok:true,value:{backups:{state:'ready',destination:'/tmp/backups',snapshots:[{id,kind:'automatic',createdAt:1792300000000}]}}}),exportBackup:()=>new Promise(r=>{resolve=r;})} as unknown as WorkspaceServiceClient;
+  const user=userEvent.setup({document});
+  try {
+    render(<DataRecoveryPanel client={client} language="en" onRestored={()=>{}} onLock={value=>{locked=value;}}/>);
+    await user.click(screen.getByText(translate('en','dataTitle')));
+    await waitFor(()=>assert.equal((screen.getByLabelText(translate('en','backupSelect')) as HTMLSelectElement).disabled,false));
+    await user.selectOptions(screen.getByLabelText(translate('en','backupSelect')),id);
+    await user.click(screen.getByRole('button',{name:translate('en','backupReview')}));
+    assert.equal((screen.getByLabelText(translate('en','dataFile')) as HTMLInputElement).disabled,true);
+    assert.equal(locked,true);
+    resolve({ok:true,value:{content:'selected saved backup'}});
+    await screen.findByText(translate('en','dataReplace'));assert.equal(locked,true);
+    await user.keyboard('{Escape}');await waitFor(()=>assert.equal(locked,false));
   } finally {cleanup();}
 });

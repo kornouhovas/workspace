@@ -43,6 +43,19 @@ function validate(db: Database.Database) {
     UNION ALL SELECT 1 FROM active_workspace a JOIN views v ON v.id=a.view_id WHERE a.workspace_id!=v.workspace_id LIMIT 1`).get()) throw new Error("Invalid view ownership");
 }
 
+/** Backup verification follows the matching restore schema, including known data
+ * invariants. Historical schemas retain their exact ledger/schema and settings;
+ * full current invariants apply once the Board-layout migration is present. */
+export function verifyBackupSnapshot(source: Database.Database, candidate: Database.Database): void {
+  if (JSON.stringify(schema(candidate)) !== JSON.stringify(schema(source)) ||
+    JSON.stringify(candidate.prepare("SELECT * FROM __drizzle_migrations ORDER BY id").all()) !==
+    JSON.stringify(source.prepare("SELECT * FROM __drizzle_migrations ORDER BY id").all())) throw new Error("Snapshot schema or ledger changed");
+  const language = candidate.prepare("SELECT value FROM settings WHERE key='language'").get() as { value: string } | undefined;
+  if (!language || !["en", "ru"].includes(language.value)) throw new Error("Invalid language");
+  const columns = candidate.prepare("PRAGMA table_info(views)").all() as { name: string }[];
+  if (columns.some(column => column.name === "board_config")) validate(candidate);
+}
+
 /** No SQL from an export is executed. Rebuild only the current trusted schema. */
 export function dataRecovery(sqlite: Database.Database, input: unknown): ServiceResult<DataRecoveryPayload> {
   if (!isDataRecoveryRequest(input) || (input.type !== "data.export" && input.type !== "data.restore")) return { ok: false, error: { code: "invalid_input", message: "Invalid application-data request." } };

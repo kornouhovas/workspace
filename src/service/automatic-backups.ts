@@ -1,19 +1,20 @@
+import { verifyBackupSnapshot } from "./data-recovery.js";
 import type Database from "better-sqlite3";
 import { randomUUID } from "node:crypto";
 import { closeSync, fsyncSync, lstatSync, mkdirSync, openSync, readFileSync, readdirSync, renameSync, unlinkSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { isDataRecoveryRequest, maxExportBytes, type BackupStatus, type DataRecoveryPayload } from "../contracts/data-recovery.js";
+import { isDataRecoveryRequest, maxExportBytes, parseBackupId, type BackupStatus, type DataRecoveryPayload } from "../contracts/data-recovery.js";
 import type { ServiceResult } from "../contracts/settings.js";
 import { encodeSnapshot, openSnapshot } from "./snapshot.js";
 const interval = 24 * 60 * 60 * 1000;
-const filename = /^(automatic|pre-migration)-([0-9]{13})-[0-9a-f-]{36}\.json$/;
 
 function read(directory: string, id: string): string {
-  if (!filename.test(id)) throw new Error("Invalid backup ID");
+  if (!parseBackupId(id)) throw new Error("Invalid backup ID");
   const path = join(directory, id), info = lstatSync(path);
   if (!info.isFile() || info.size > maxExportBytes) throw new Error("Invalid backup file");
   const content = readFileSync(path, "utf8");
-  const snapshot = openSnapshot(content); snapshot.close();
+  const snapshot = openSnapshot(content);
+  try { verifyBackupSnapshot(snapshot, snapshot); } finally { snapshot.close(); }
   return content;
 }
 function ensureDirectory(directory: string) {
@@ -23,10 +24,10 @@ function ensureDirectory(directory: string) {
 function list(directory: string, onInvalid: () => void = () => undefined): BackupStatus["snapshots"] {
   ensureDirectory(directory);
   return readdirSync(directory).flatMap(id => {
-    const match = filename.exec(id);
-    if (!match) return [];
+    const parsed = parseBackupId(id);
+    if (!parsed) return [];
     try { read(directory, id); } catch { onInvalid(); return []; }
-    return [{ id, kind: match[1] as "automatic" | "pre-migration", createdAt: Number(match[2]) }];
+    return [{ id, ...parsed }];
   }).sort((a, b) => b.createdAt - a.createdAt || b.id.localeCompare(a.id));
 }
 
@@ -40,7 +41,8 @@ export function saveBackup(sqlite: Database.Database, directory: string, kind: "
     try { writeFileSync(fd, content); fsyncSync(fd); } finally { closeSync(fd); }
     const copied = readFileSync(temporary, "utf8");
     if (copied !== content) throw new Error("Backup read-back mismatch");
-    const verified = openSnapshot(copied); verified.close();
+    const verified = openSnapshot(copied);
+    try { verifyBackupSnapshot(sqlite, verified); } finally { verified.close(); }
     renameSync(temporary, join(directory, id));
     // Windows does not support opening directories for fsync through Node.
     if (process.platform !== "win32") {

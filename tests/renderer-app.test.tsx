@@ -3,7 +3,7 @@ import { readFile, writeFile } from "node:fs/promises";
 import { mkdtempSync, mkdirSync, readdirSync, renameSync, realpathSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import test from "node:test";
+import test, { afterEach } from "node:test";
 import React from "react";
 import { Window } from "happy-dom";
 import type { BackendStatus, WorkspaceDesktopApi, WorkspaceRequest, WorkspaceResponse } from "../src/contracts/desktop-api.js";
@@ -32,6 +32,7 @@ Object.defineProperty(globalThis, "navigator", { configurable: true, value: brow
 
 const { act, cleanup, render, screen, waitFor, within, fireEvent } = await import("@testing-library/react");
 const { default: userEvent } = await import("@testing-library/user-event");
+afterEach(() => cleanup());
 
 const ok = <T,>(value: T): ServiceResult<T> => ({ ok: true, value });
 const fail = <T,>(code: "invalid_input" | "filesystem" | "storage" | "service_unavailable" | "stale_preview"): ServiceResult<T> => ({
@@ -128,7 +129,9 @@ function mockApi(options: MockOptions = {}) {
     projects: [], retainedProjects: [], retainedCount: 0 }))));
   const workspaceRequest = async (input: WorkspaceRequest) => recordProjects(await onWorkspace(input));
   window.workspace = {
-    recovery: async () => ({ ok: false, error: { code: "service_unavailable", message: "Recovery is unavailable in this fixture." } }),
+    recovery: async (input) => input.type === "data.backups"
+      ? ok({ backups: { state: "ready" as const, destination: "/temporary/backups", snapshots: [] } })
+      : ({ ok: false, error: { code: "service_unavailable", message: "Recovery is unavailable in this fixture." } }),
     getBackendStatus: async () => ({ state: options.backend ?? "ready" }),
     onBackendStatus: (listener) => {
       statusListeners.add(listener);
@@ -997,7 +1000,7 @@ test("preview handles pending cancellation and discards delayed responses", asyn
   await userEvent.click(screen.getByRole("button", { name: "Cancel" }));
   await act(async () => { finish?.(fail("storage")); });
   assert.equal(screen.queryByRole("heading", { name: "Direct project preview" }), null);
-  assert.equal(screen.queryByRole("alert"), null);
+  assert.equal(screen.queryAllByRole("alert").length, 0);
   cleanup();
 });
 

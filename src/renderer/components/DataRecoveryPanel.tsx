@@ -74,7 +74,7 @@ export function DataRecoveryPanel({ client, language, onRestored, onLock }: {
     <summary id="data-title">{t("dataTitle")}</summary>
     <div className="workspace-settings">
     <p>{t("dataScope")}</p>
-    <BackupPanel client={client} language={language} disabled={busy || content !== null} onSelect={value => { setMessage(null); setContent(value); onLock(true); }} />
+    <BackupPanel client={client} language={language} disabled={busy || content !== null} onSelecting={pending => { setBusy(pending); onLock(pending); }} onSelect={value => { setMessage(null); setContent(value); onLock(true); }} />
     <button type="button" disabled={busy || content !== null} onClick={() => void download()}>{t("dataExport")}</button>
     <label className="bb-label" htmlFor="data-file">{t("dataFile")}</label>
     <input ref={input} id="data-file" type="file" accept=".json,application/json" disabled={busy || content !== null} onChange={event => void select(event.currentTarget.files?.[0])} />

@@ -736,7 +736,7 @@ test("late migration failure rolls back journal/schema changes and every populat
   const broken = join(f.directory, "broken"); copyMigrations(broken);
   fs.appendFileSync(join(broken, "0008_project_creation.sql"), "\n--> statement-breakpoint\nINSERT INTO nonexistent_table VALUES ('injected migration failure');\n");
   const before = records(f.sql), schema = f.sql.prepare("SELECT * FROM sqlite_master ORDER BY name").all(), files = inventory(f.root);
-  assert.throws(() => f.open(broken), /nonexistent_table/);
+  assert.throws(() => f.open(broken), error => error.code === "MIGRATION_FAILED" && /nonexistent_table/.test(String(error.cause)));
   assert.deepEqual(records(f.sql), before);
   assert.deepEqual(f.sql.prepare("SELECT * FROM sqlite_master ORDER BY name").all(), schema);
   assert.deepEqual(inventory(f.root), files);

@@ -4,8 +4,8 @@ import type { Language } from "../../contracts/settings.js";
 import type { WorkspaceServiceClient } from "../workspace-service-client.js";
 import { translate } from "../localization.js";
 
-export function BackupPanel({ client, language, disabled, onSelect }: {
-  client: WorkspaceServiceClient; language: Language; disabled: boolean; onSelect(content: string): void;
+export function BackupPanel({ client, language, disabled, onSelect, onSelecting }: {
+  client: WorkspaceServiceClient; language: Language; disabled: boolean; onSelect(content: string): void; onSelecting(pending: boolean): void;
 }) {
   const t = (key: Parameters<typeof translate>[1]) => translate(language, key);
   const [status, setStatus] = useState<BackupStatus | null>(null);
@@ -43,16 +43,18 @@ export function BackupPanel({ client, language, disabled, onSelect }: {
   }
   async function choose() {
     if (!selected) return;
+    onSelecting(true);
     generation.current++; setBusy(true); setError(false);
     try {
       const result = await client.exportBackup(selected);
       if (!mounted.current) return;
+      onSelecting(false);
       if (!result.ok || !("content" in result.value)) setError(true);
       else onSelect(result.value.content);
-    } catch { if (mounted.current) setError(true); }
+    } catch { if (mounted.current) { onSelecting(false); setError(true); } }
     finally { if (mounted.current) setBusy(false); }
   }
-  return <section aria-label={t("backupTitle")}>
+  return <section className="workspace-settings" aria-label={t("backupTitle")}>
     <h3>{t("backupTitle")}</h3>
     <p>{t("backupPolicy")}</p>
     {status && <p className="backup-destination">{t("backupDestination")}: {status.destination}</p>}

@@ -149,3 +149,18 @@ test('read-back verification failure preserves good backups; damaged copies cann
     assert.equal(unwrap(service.handleQuery({type:'settings.load'})).language,'en');
   } finally { service.close();rmSync(dir,{recursive:true,force:true}); }
 });
+
+test('a snapshot rejected by recovery cannot report success or prune existing usable backups', () => {
+  const dir=mkdtempSync(join(tmpdir(),'backup-usability-')),path=join(dir,'app.sqlite');
+  const service=openSettingsService(path);
+  try {
+    const before=unwrap(service.handleQuery({type:'data.backups'})).backups.snapshots;
+    const db=new Database(path);
+    try { db.exec("UPDATE settings SET value='xx' WHERE key='language'"); } finally {db.close();}
+    const after=unwrap(service.handleCommand({type:'data.backupNow'})).backups;
+    assert.equal(after.state,'failed');
+    assert.deepEqual(after.snapshots,before);
+    const folder=upgradeFixture(dir,'CREATE TABLE upgrade_probe (id TEXT);');
+    assert.throws(()=>openSettingsService(path,folder),error=>error.code==='BACKUP_FAILED');
+  } finally {service.close();rmSync(dir,{recursive:true,force:true});}
+});

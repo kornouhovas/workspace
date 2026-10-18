@@ -117,7 +117,7 @@ export function openSettingsService(
     recoverProjectRename: (...args) => workspaces.recoverProjectRename(...args),
     revealProject: (...args) => workspaces.revealProject(...args),
     handleQuery(input) {
-      if (isRecord(input) && ["data.backups", "data.backupExport"].includes(String(input.type))) return backups.request(input);
+      if (isRecord(input) && typeof input.type === "string" && ["data.backups", "data.backupExport"].includes(input.type)) return backups.request(input);
       if (isRecord(input) && input.type === "data.export") return dataRecovery(sqlite, input);
       if (isRecord(input) && input.type === "workspace.previewMetadataRemoval") return workspaces.metadataRemovalRequest(input);
       if (isRecord(input) && input.type === "workspace.getBoardLayout") return workspaces.boardLayoutRequest(input);
