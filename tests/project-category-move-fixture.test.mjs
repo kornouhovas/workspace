@@ -377,14 +377,20 @@ test("evidence write failures cannot prevent confirmed shutdown and cleanup or o
     assert.equal(unavailable.cleanup, "removed");
     assert.equal(unavailable.shutdownConfirmed, true);
     assertStages(unavailable, handshake);
-    assert.equal(unavailable.exitCode, 0);
+    // The evidence destination is deliberately unwritable. Retain only the
+    // already validated finite failure packet in this assertion's output.
+    assertPrivate(unavailable);
+    const failureEvidence = JSON.stringify({ diagnostic: unavailable.diagnostic ?? null,
+      scenarios: unavailable.scenarios, events: unavailable.events,
+      utilityCount: unavailable.utilityCount, utilityExitCount: unavailable.utilityExitCount,
+      utilityExitFailure: unavailable.utilityExitFailure });
+    assert.equal(unavailable.exitCode, 0, failureEvidence);
     assertScenarios(unavailable);
     assertUtilities(unavailable);
     assert.equal(unavailable.signaled, false);
     assert.equal(unavailable.timedOut ?? false, false);
     assert.equal(unavailable.controlError ?? false, false);
     assertProtocol(unavailable);
-    assertPrivate(unavailable);
     assert.equal(await readFile(file, "utf8"), "Keep");
   } finally { await rm(directory, { recursive: true, force: true }); }
 });

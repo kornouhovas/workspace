@@ -500,3 +500,12 @@ close receipts now distinguish window/protocol lifetime from parent lifetime.
 They observe public events and issue no quit, focus, retry or cleanup commands.
 The historical native cause remains unproven. Inspect the exact-SHA original
 file and retained timeline before renewed full acceptance.
+
+For issue35 full39142202230's Windows latest category fixture evidence-write
+control exit1 (expected0), select `checks: category-fixture`,
+`category_fixture_only: true`. The intentional occupied evidence destination
+prevents writing its checkpoint; the original exit assertion now retains the
+already validated private-safe finite diagnostic/scenario/utility event packet
+on failure. Handshake, normal exit, scenario, utility, privacy, cleanup and
+occupied-file preservation assertions remain. No underlying cause is inferred
+from exit1 alone; inspect the original focused result before renewed full CI.
