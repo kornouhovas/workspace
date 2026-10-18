@@ -44,7 +44,27 @@ test('a live WAL export restores multiple workspaces, exact Text, independent vi
     const before = query('listTextProperties'), views = query('listViews');
     const { content } = unwrap(service.handleQuery({ type: 'data.export' }));
     cmd('setTextValue', { projectId, propertyId, value: 'changed' });
+    const changeType = (db, type, replacement) => {
+      const trigger=db.prepare("SELECT sql FROM sqlite_schema WHERE name='property_type_immutable'").get().sql;
+      db.exec('DROP TRIGGER property_type_immutable');
+      db.prepare('UPDATE property_definitions SET property_type=? WHERE property_type=?').run(replacement,type);
+      db.exec(trigger);
+    };
     for (const corrupt of [
+      ...['text','number','date','single_select','multi_select'].map(type => db => changeType(db,type,type==='text'?'number':'text')),
+      db => {
+        const trigger=db.prepare("SELECT sql FROM sqlite_schema WHERE name='select_visibility_owner_insert'").get().sql;
+        db.exec('DROP TRIGGER select_visibility_owner_insert');
+        const optionId=db.prepare('SELECT id FROM select_options LIMIT 1').get().id;
+        db.prepare('INSERT INTO select_option_visibility(workspace_id,option_id,hidden) VALUES(?,?,1)').run(c.workspaceId,optionId);
+        db.exec(trigger);
+      },
+      db => {
+        const trigger=db.prepare("SELECT sql FROM sqlite_schema WHERE name='grouped_project_update'").get().sql;
+        db.exec('DROP TRIGGER grouped_project_update');
+        db.prepare('UPDATE projects SET relative_path=? WHERE id=?').run('Nested/Project',projectId);
+        db.exec(trigger);
+      },
       db => db.exec("UPDATE views SET board_config='[]'"),
       db => db.exec("UPDATE sources SET excluded_relative_paths='null'"),
       db => db.prepare("UPDATE workspace_view_selection SET view_id=? WHERE workspace_id=?").run(a.viewId,b.workspaceId),
@@ -162,5 +182,47 @@ test('restored missing folders retain logical IDs and values and use explicit re
     service.close();service=openSettingsService(path);
     assert.equal(call('workspace.listProjects',{workspaceId}).projects[0].projectId,projectId);
     assert.equal(call('workspace.listTextProperties',{workspaceId}).values[0].value,'retained');
+  }finally{service.close();rmSync(dir,{recursive:true,force:true});}
+});
+
+test('restore preserves completed removal children, archive receipts, dormant category metadata and removed initiating workspaces',()=>{
+  const dir=mkdtempSync(join(tmpdir(),'restore-history-')),root=join(dir,'root'),path=join(dir,'app.sqlite');
+  mkdirSync(join(root,'Original','Project'),{recursive:true});writeFileSync(join(root,'Original','Project','keep'),'separate files');
+  let service=openSettingsService(path),workspaceId;
+  const cmd=(type,fields={})=>unwrap(service.handleCommand({type:`workspace.${type}`,workspaceId,...fields}));
+  const query=(type,fields={})=>unwrap(service.handleQuery({type:`workspace.${type}`,workspaceId,...fields}));
+  try{
+    workspaceId=unwrap(service.handleCommand({type:'workspace.create',name:'Original owner',rootPath:root})).workspaceId;
+    const sibling=unwrap(service.handleCommand({type:'workspace.create',name:'Retained owner',rootPath:root}));
+    const initial=cmd('applyDiscovery',{previewToken:query('previewDiscovery',{mode:'grouped'}).previewToken});
+    const {projectId,categoryId}=initial.projects[0];
+    const folder=cmd('applyCategoryFolder',{operationId:randomUUID(),previewToken:query('previewCategoryFolder',{action:'create',name:'Destination',categoryId:null}).previewToken});
+    const removal=cmd('applyCategoryRemoval',{operationId:randomUUID(),previewToken:query('previewCategoryRemoval',{categoryId,destinationCategoryId:folder.operation.categoryId}).previewToken});
+    assert.equal(removal.operation.stage,'completed');
+    cmd('applyArchiveLocation',{operationId:randomUUID(),previewToken:query('previewArchiveLocation',{relativePath:'Archive'}).previewToken});
+    const archived=cmd('applyProjectArchive',{operationId:randomUUID(),previewToken:query('previewProjectArchive',{projectId,action:'archive',name:null,createParent:false}).previewToken});
+    assert.equal(archived.operation.stage,'completed');
+    cmd('applyDiscovery',{previewToken:query('previewDiscovery',{mode:'direct'}).previewToken});
+    cmd('remove'); workspaceId=sibling.workspaceId;
+    const before=query('listArchivedProjects');
+    const content=unwrap(service.handleQuery({type:'data.export'})).content;
+    for (const [triggerName, mutation] of [
+      ['project_archive_update', "UPDATE project_archives SET original_relative_path='Invalid/Original'"],
+      ['project_archive_operation_binding', `UPDATE project_archive_operations SET operation_id='${folder.operation.operationId}'`],
+      ['category_update', 'UPDATE categories SET mode_inactive=0'],
+    ]) {
+      const corrupt=altered(content,db=>{
+        const trigger=db.prepare('SELECT sql FROM sqlite_schema WHERE name=?').get(triggerName).sql;
+        db.exec(`DROP TRIGGER ${triggerName}`);db.exec(mutation);db.exec(trigger);
+      });
+      assert.equal(service.handleCommand({type:'data.restore',content:corrupt}).error.code,'invalid_input');
+      assert.deepEqual(query('listArchivedProjects'),before);
+    }
+    unwrap(service.handleCommand({type:'data.restore',content}));
+    service.close();service=openSettingsService(path);
+    assert.deepEqual(query('listArchivedProjects'),before);
+    assert.deepEqual(query('getCategoryRemoval',{operationId:removal.operation.operationId}).operation,removal.operation);
+    assert.equal(existsSync(join(root,'Original')),false);
+    assert.equal(existsSync(join(root,'Archive','Destination','Project','keep')),true);
   }finally{service.close();rmSync(dir,{recursive:true,force:true});}
 });

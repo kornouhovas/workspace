@@ -34,6 +34,21 @@ no document overflow; confirmation screenshots were inspected. Normal shutdown,
 backend exit and fixture cleanup pass. Evidence is generated under
 `work/issue-37-data-runtime/`; fixtures and actual exports are disposable.
 
+## Review repair
+
+Independent Standards and Spec review each found the same missing invariant:
+a checksum-valid snapshot could hold a Text row under a Number definition because
+integrity/FK checks do not replay type triggers. The added service regression failed
+against the original candidate. Static final-state checks now cover every value type,
+option/category presentation ownership, source interpretation, archive correspondence,
+journal ID exclusion, unfinished path reservations and removal-child assignments.
+They run both before replacement and before commit. These checks intentionally
+exclude historical command preconditions (initial stage, current revision, current
+initiating workspace, immutable transition rules). A positive real round trip retains
+completed removal children, archive history, dormant category metadata after switching
+to direct mode and a removed initiating workspace. Malformed typed/source/layout,
+archive/history/mode snapshots preserve the current state.
+
 ## Candidate checks and delivery
 
 Typecheck, lint, documentation links and diff checks pass on the implementation.

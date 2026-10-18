@@ -13,7 +13,7 @@ all tables, including settings, source/workspace/project metadata, property type
 views and operation history. Never include project-file contents.
 
 Validate exact envelope/version, checksum, SQLite integrity, foreign keys, migration
-ledger, canonical schema and supported view/settings shapes before replacement.
+ledger, canonical schema, static typed/ownership/journal invariants and supported view/settings shapes before replacement.
 Require an exact supported schema; future upgrades need an explicit format adapter.
 Restore copies validated rows into the live database in one SQLite transaction,
 using only its trusted schema. Temporarily drop/recreate immutable-history triggers

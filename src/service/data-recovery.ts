@@ -1,3 +1,4 @@
+import { validateSnapshotRelations } from "./data-recovery-invariants.js";
 import { validExclusions, validArchive } from "./discovery.js";
 import Database from "better-sqlite3";
 import { createHash } from "node:crypto";
@@ -17,6 +18,7 @@ function schema(db: Database.Database): SchemaEntry[] {
 }
 function validate(db: Database.Database) {
   if (db.pragma("integrity_check", { simple: true }) !== "ok" || (db.pragma("foreign_key_check") as unknown[]).length) throw new Error("Invalid SQLite data");
+  validateSnapshotRelations(db);
   const language = db.prepare("SELECT value FROM settings WHERE key = 'language'").get() as { value: string } | undefined;
   if (!language || !["en", "ru"].includes(language.value)) throw new Error("Invalid language");
   for (const view of db.prepare("SELECT kind, board_config, table_config, grouping_config, filter_config FROM views").all() as Record<string, string>[]) {
