@@ -20,7 +20,7 @@ function FilterContent({ client, workspaceId, viewId, archived, language, snapsh
   const [loading, setLoading] = useState(true), [saving, setSaving] = useState(false);
   const [error, setError] = useState<"filterLoadError" | "filterSaveError" | "filterQueryError" | null>(null);
   const [empty, setEmpty] = useState(false);
-  const configRequestVersion = useRef(0), projectionReady = useRef(false);
+  const configRequestVersion = useRef(0), projectionReady = useRef(false), reloadAfterSave = useRef(false);
   const queryRequestVersion = useRef(0), mountGeneration = useRef(0), saveInFlight = useRef(false), hasDraft = useRef(false);
   const results = useRef(onResults); results.current = onResults;
   const groupResults = useRef(onGroups); groupResults.current = onGroups;
@@ -59,7 +59,10 @@ function FilterContent({ client, workspaceId, viewId, archived, language, snapsh
   };
   useEffect(() => {
     void load();
-    const stop = client.onWorkspaceChange(event => { if (event.type === "workspace.listChanged" && !saveInFlight.current) void load(); });
+    const stop = client.onWorkspaceChange(event => {
+      if (event.type !== "workspace.listChanged" && !(event.type === "workspace.propertiesChanged" && event.workspaceIds.includes(workspaceId))) return;
+      if (saveInFlight.current) { if (event.type === "workspace.propertiesChanged") reloadAfterSave.current = true; } else void load();
+    });
     return () => { mountGeneration.current++; queryRequestVersion.current++; configRequestVersion.current++; stop(); };
   }, [client, workspaceId, viewId, archived]);
   useEffect(() => { if (projectionReady.current) void query(); }, [refreshKey]);
@@ -76,7 +79,7 @@ function FilterContent({ client, workspaceId, viewId, archived, language, snapsh
         projectionReady.current = true; hasDraft.current = false; setDraft(result.value.config); await query();
       } else setError("filterSaveError");
     } catch { if (started === mountGeneration.current) setError("filterSaveError"); }
-    finally { if (started === mountGeneration.current) { saveInFlight.current = false; setSaving(false); } }
+    finally { if (started === mountGeneration.current) { saveInFlight.current = false; setSaving(false); if (reloadAfterSave.current) { reloadAfterSave.current = false; void load(); } } }
   };
   const ruleChange = (index: number, rule: FilterRule) => change({ ...draft, rules: draft.rules.map((current, i) => i === index ? rule : current) });
   return <section className="view-filters" aria-label={t("filtersTitle")} aria-busy={loading || saving}>

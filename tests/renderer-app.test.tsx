@@ -1645,7 +1645,7 @@ test("EN/RU Text definition creation and rename preserve failed drafts, keyboard
     assert.ok(await screen.findByText(translate(language, "propertySaved")));
     assert.equal(document.activeElement, create);
     const renameButton = screen.getByRole("button", { name: `${translate(language, "renameProperty")}: ${snapshot.definitions[0].name.trim()}` });
-    assert.equal(screen.getByText("Заметка 📝").textContent, "  Заметка 📝  ");
+    assert.equal(within(screen.getByRole("columnheader", {name: /Заметка 📝/})).getByText("Заметка 📝").textContent, "  Заметка 📝  ");
     renameButton.focus(); await userEvent.keyboard("{Enter}");
     name = screen.getByRole("textbox", { name: translate(language, "propertyName") });
     await userEvent.clear(name); await userEvent.type(name, "Cancelled"); await userEvent.keyboard("{Escape}");
@@ -1657,7 +1657,7 @@ test("EN/RU Text definition creation and rename preserve failed drafts, keyboard
     name.focus(); await userEvent.keyboard("{Enter}");
     snapshot = { ...snapshot, revision: 2, definitions: [{ ...snapshot.definitions[0], name: "  新しい имя  " }] };
     await act(async () => { finish?.(ok({ snapshot, propertyId, projectId: null })); });
-    assert.equal(screen.getByText("新しい имя").textContent, "  新しい имя  ");
+    assert.equal(within(screen.getByRole("columnheader", {name: /新しい имя/})).getByText("新しい имя").textContent, "  新しい имя  ");
     assert.equal(document.activeElement, screen.getByRole("button", { name: `${translate(language, "renameProperty")}: ${snapshot.definitions[0].name.trim()}` }));
     cleanup(); assert.equal(api.changeListenerCount(), 0);
   }
@@ -1690,7 +1690,7 @@ test("Text property lists and saves reject older revisions and responses after w
   rendered.rerender(<TextPropertiesTable {...next} />);
   await act(async () => { finishSave?.(ok({ snapshot: snapshot(4, "Old workspace"), propertyId, projectId: null })); lists[3](ok({ ...snapshot(0, "New workspace"), workspaceId: next.workspaceId, sourceId: next.sourceId })); });
   assert.equal(screen.queryByText("Old workspace"), null);
-  assert.ok(screen.getByText("New workspace"));
+  assert.ok(screen.getByRole("button", {name: "Rename property: New workspace"}));
   cleanup(); assert.equal(api.changeListenerCount(), 0);
 });
 

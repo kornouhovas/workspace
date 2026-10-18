@@ -6,10 +6,11 @@ import { translate, type TranslationKey } from "../localization.js";
 import { StatusMessage } from "./bb-foundation.js";
 
 interface Props {
+  onRemove?(optionId: string, trigger: HTMLButtonElement): void; removalOpen?: boolean;
   client: WorkspaceServiceClient; workspaceId: string; property: PropertyDefinition; snapshot: PropertySnapshot;
   language: Language; disabled: boolean; onCommitted(snapshot: PropertySnapshot): void;
 }
-export function SelectOptionsEditor({ client, workspaceId, property, snapshot, language, disabled, onCommitted }: Props) {
+export function SelectOptionsEditor({ onRemove, removalOpen, client, workspaceId, property, snapshot, language, disabled, onCommitted }: Props) {
   const t = (key: TranslationKey) => translate(language, key);
   const id = useId();
   const options = snapshot.selectOptions?.filter(option => option.propertyId === property.propertyId) ?? [];
@@ -54,6 +55,8 @@ export function SelectOptionsEditor({ client, workspaceId, property, snapshot, l
       <button className="workspace-button workspace-button--secondary" type="button" disabled={disabled || pending || draft !== null || index === options.length - 1} aria-label={`${t("selectMoveDown")}: ${option.name}`} onClick={() => move(index, 1)}>{t("selectMoveDown")}</button>
       <button className="workspace-button workspace-button--secondary" type="button" disabled={disabled || pending || draft !== null} aria-label={`${t(option.hidden ? "selectShow" : "selectHide")}: ${option.name}`}
         onClick={() => void commit({ type: "workspace.setSelectOptionHidden", workspaceId, propertyId: property.propertyId, optionId: option.optionId, hidden: !option.hidden })}>{t(option.hidden ? "selectShow" : "selectHide")}</button>
+      {onRemove && <button type="button" className="workspace-button workspace-button--secondary" disabled={disabled || pending || draft !== null || removalOpen}
+        aria-label={`${t("metadataDeleteOption")}: ${option.name}`} onClick={event => onRemove(option.optionId, event.currentTarget)}>{t("metadataDeleteOption")}</button>}
     </li>)}</ul>
     <button className="workspace-button workspace-button--secondary" ref={add} type="button" disabled={disabled || pending || draft !== null} onClick={() => { returnFocus.current = add.current; setError(false); setDraft({ optionId: null, name: "", color: "default", originalName: "", originalColor: "default" }); }}>{t("selectAddOption")}</button>
     {draft && <form aria-busy={pending} onKeyDown={event => { if (event.key === "Escape") { event.preventDefault(); cancel(); } }} onSubmit={event => {

@@ -21,7 +21,7 @@ export function ViewGrouping(props: Props) { return <GroupingContent key={`${pro
 function GroupingContent({ client, workspaceId, viewId, language, snapshot, categoryProperty, groups, groupPropertyId, disabled }: Props) {
     const t = (key: TranslationKey) => translate(language, key);
     const [config, setConfig] = useState<ViewGroupingConfig | null>(null), [pending, setPending] = useState(false), [loading, setLoading] = useState(true), [error, setError] = useState(false);
-    const version = useRef(0), saving = useRef(false);
+    const version = useRef(0), saving = useRef(false), reloadAfterSave = useRef(false);
     const properties = [{ id: "name", name: t("projectName") }, ...(snapshot?.definitions.map(p => ({ id: p.propertyId, name: p.name })) ?? []), ...(categoryProperty ? [{ id: categoryProperty.propertyId, name: categoryProperty.name ?? t("discoveryCategory") }] : [])];
     const load = async () => {
         const request = ++version.current;
@@ -45,8 +45,9 @@ function GroupingContent({ client, workspaceId, viewId, language, snapshot, cate
                 setLoading(false);
         }
     };
-    useEffect(() => { void load(); const stop = client.onWorkspaceChange(event => { if (event.type === "workspace.listChanged" && !saving.current)
-        void load(); }); return () => { version.current++; stop(); }; }, [client, workspaceId, viewId]);
+    useEffect(() => { void load(); const stop = client.onWorkspaceChange(event => { if (event.type === "workspace.listChanged" || (event.type === "workspace.propertiesChanged" && event.workspaceIds.includes(workspaceId))) {
+        if (saving.current) { if (event.type === "workspace.propertiesChanged") reloadAfterSave.current = true; } else void load();
+    } }); return () => { version.current++; stop(); }; }, [client, workspaceId, viewId]);
     const save = async (next: ViewGroupingConfig) => {
         if (saving.current || disabled)
             return;
@@ -72,6 +73,7 @@ function GroupingContent({ client, workspaceId, viewId, language, snapshot, cate
             if (request === version.current) {
                 saving.current = false;
                 setPending(false);
+                if (reloadAfterSave.current) { reloadAfterSave.current = false; void load(); }
             }
         }
     };

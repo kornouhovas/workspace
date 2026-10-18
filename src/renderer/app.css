@@ -468,3 +468,7 @@ body {
 .group-assignment-controls label { min-width: 0; max-width: 100%; }
 .group-assignment-controls select { max-width: 100%; }
 .group-assignment-controls button { white-space: normal; }
+
+.metadata-removal { border: 1px solid var(--border, #888); border-radius: 8px; padding: 16px; margin-block: 12px; max-width: 100%; overflow-wrap: anywhere; }
+.metadata-removal ul { padding-inline-start: 20px; }
+.metadata-removal .workspace-form-actions { flex-wrap: wrap; }

@@ -1,3 +1,4 @@
+import { MetadataRemovalPanel } from "./MetadataRemovalPanel.js";
 import { GroupAssignment, groupAssignmentMime, readGroupDrop } from "./GroupAssignment.js";
 import type { AssignProjectGroupCommand } from "../../contracts/group-assignment.js";
 import { BoardLayoutControls, useBoardLayout, boardColumnWidth } from "./BoardLayout.js";
@@ -69,6 +70,10 @@ function TextPropertiesContent({ viewId, layout = "table", hideReveal, client, w
   useEffect(() => { setAssignmentMessage(null); assignmentFocus.current = null; }, [assignmentOwner]);
   const categoryDrafts = useRef(new Map<string, CategoryLabelDraft>());
   const t = (key: TranslationKey) => translate(language, key);
+  const [removal, setRemoval] = useState<{property: import("../../contracts/text-properties.js").PropertyDefinition; optionId: string | null} | null>(null);
+  const removalTrigger = useRef<HTMLElement | null>(null);
+  const removalStatus = useRef<HTMLDivElement>(null);
+  const finishRemoval = () => { setRemoval(null); window.requestAnimationFrame(() => (removalTrigger.current?.isConnected ? removalTrigger.current : removalStatus.current)?.focus()); };
   const [snapshot, setSnapshot] = useState<TextPropertySnapshot | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
@@ -341,7 +346,18 @@ function TextPropertiesContent({ viewId, layout = "table", hideReveal, client, w
       onClick={() => { setMessage(null); creationType.current = "single_select"; setDraft({ propertyId: null, name: "", originalName: "", propertyType: "single_select" }); }}>{t("createSelectProperty")}</button>
     <button ref={multiSelectTrigger} type="button" className="workspace-button workspace-button--secondary" disabled={disabled || loading || loadError || draft !== null}
       onClick={() => { setMessage(null); creationType.current = "multi_select"; setDraft({ propertyId: null, name: "", originalName: "", propertyType: "multi_select" }); }}>{t("createMultiSelectProperty")}</button>
-    {snapshot?.definitions.filter(property => property.propertyType === "single_select" || property.propertyType === "multi_select").map(property => <SelectOptionsEditor key={property.propertyId}
+    <div ref={removalStatus} tabIndex={-1}>
+      <details><summary>{t("metadataManagement")}</summary>
+        <ul>{snapshot?.definitions.map(property => <li key={property.propertyId}><span className="property-authored">{property.name}</span>
+          <button type="button" className="workspace-button workspace-button--secondary" disabled={disabled || loading || pending || removal !== null}
+            aria-label={`${t("metadataDeleteProperty")}: ${property.name}`} onClick={event => { removalTrigger.current = event.currentTarget; setRemoval({property, optionId:null}); }}>{t("metadataDeleteProperty")}</button>
+        </li>)}</ul>
+      </details>
+    </div>
+    {removal && <MetadataRemovalPanel key={`${removal.property.propertyId}:${removal.optionId}`} client={client} workspaceId={workspaceId} sourceId={sourceId}
+      property={removal.property} optionId={removal.optionId} options={snapshot?.selectOptions ?? []} language={language} disabled={disabled}
+      onCancel={finishRemoval} onCommitted={finishRemoval} onObserved={load} />}
+    {snapshot?.definitions.filter(property => property.propertyType === "single_select" || property.propertyType === "multi_select").map(property => <SelectOptionsEditor onRemove={(optionId, element) => { removalTrigger.current = element; setRemoval({property, optionId}); }} removalOpen={removal !== null} key={property.propertyId}
       client={client} workspaceId={workspaceId} property={property} snapshot={snapshot} language={language} disabled={disabled || loadError || draft !== null}
       onCommitted={value => { if (accepts(value)) { listVersion.current++; minimumRevision.current = value.revision; setSnapshot(value); setLoading(false); setLoadError(false); } }} />)}
     {draft && <form className="property-form" onSubmit={(event) => { event.preventDefault(); void save(); }}

@@ -28,6 +28,7 @@ Read development's scope, integration, tracker, executor-selection and verificat
 | Task | Relevant contracts |
 | --- | --- |
 | Service, storage or filesystem changes | Affected sections in [architecture](architecture.md), [ADRs](adr/) and typed contracts in `src/shared/`; inspect the active service wiring |
+| Custom property/ordinary option deletion | [Contract/scenarios](plans/issue-36-metadata-removal.md), typed reviewed metadata commands and [verification](verification/issue-36-metadata-removal.md) |
 | Name/category group assignment | [Contract/scenarios](plans/issue-35-folder-drag.md), existing safe filesystem commands and [verification](verification/issue-35-folder-drag.md) |
 | MultiSelect group assignment | [Contract/scenarios](plans/issue-34-multiselect-drag.md), typed group-assignment command and [verification](verification/issue-34-multiselect-drag.md) |
 | Scalar and Single Select group assignment | [Contract/scenarios](plans/issue-33-group-drag.md), typed group-assignment command and [verification](verification/issue-33-group-drag.md) |

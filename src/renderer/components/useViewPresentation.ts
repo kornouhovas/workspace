@@ -8,13 +8,13 @@ interface PresentationAdapter<T> {
 export function useViewPresentation<T>(client: WorkspaceServiceClient, workspaceId: string, viewId: string | undefined, adapter: PresentationAdapter<T>) {
   const [state, setState] = useState<{viewId: string; config: T} | null>(null);
   const [pending, setPending] = useState(false), [error, setError] = useState(false), [loading, setLoading] = useState(false);
-  const version = useRef(0), saving = useRef(false);
+  const version = useRef(0), saving = useRef(false), reloadAfterSave = useRef(false);
   const savedFocus = useRef<HTMLElement | null>(null);
   useEffect(() => {
-    if (pending || !savedFocus.current) return;
+    if (pending || loading || !savedFocus.current || savedFocus.current.matches(":disabled")) return;
     const element = savedFocus.current; savedFocus.current = null;
     if (element.isConnected && (document.activeElement === document.body || document.activeElement === element)) element.focus();
-  }, [pending]);
+  }, [pending, loading]);
   const load = async () => {
     if (!viewId) return;
     const request = ++version.current;
@@ -28,10 +28,13 @@ export function useViewPresentation<T>(client: WorkspaceServiceClient, workspace
     finally { if (request === version.current) setLoading(false); }
   };
   useEffect(() => {
-    setState(null); setPending(false); saving.current = false; savedFocus.current = null;
+    setState(null); setPending(false); saving.current = false; reloadAfterSave.current = false; savedFocus.current = null;
     if (!viewId) return;
     void load();
-    const stop = client.onWorkspaceChange(event => { if (event.type === "workspace.listChanged" && !saving.current) void load(); });
+    const stop = client.onWorkspaceChange(event => {
+      if (event.type !== "workspace.listChanged" && !(event.type === "workspace.propertiesChanged" && event.workspaceIds.includes(workspaceId))) return;
+      if (saving.current) { if (event.type === "workspace.propertiesChanged") reloadAfterSave.current = true; } else void load();
+    });
     return () => { version.current++; stop(); };
   }, [client, workspaceId, viewId, adapter]);
   const save = async (config: T) => {
@@ -45,7 +48,7 @@ export function useViewPresentation<T>(client: WorkspaceServiceClient, workspace
       if (result.ok && result.value.workspaceId === workspaceId && result.value.viewId === viewId) setState({viewId, config: result.value.config});
       else setError(true);
     } catch { if (request === version.current) setError(true); }
-    finally { if (request === version.current) { saving.current = false; setPending(false); } }
+    finally { if (request === version.current) { saving.current = false; setPending(false); if (reloadAfterSave.current) { reloadAfterSave.current = false; void load(); } } }
   };
   return {config: state && state.viewId === viewId ? state.config : null, pending, error, loading, load, save};
 }

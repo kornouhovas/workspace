@@ -6,7 +6,7 @@ This branch contains a runnable local desktop application with settings, workspa
 
 Workspace names, order and active selection survive restart. Rename/reorder/remove validate IDs and commit snapshots transactionally. Removal deletes only the workspace and its owned views, retains the source even after its last reference, and never deletes external files. Active removal selects the first remaining configuration and its saved selected view; final removal clears selection.
 
-The desktop includes a native directory picker, EN/RU direct/grouped preview/exclusions/Apply and editable project names with source-owned Text/Number/Date columns and required grouped categories in the default Table. The service persists source-owned exclusions/configuration and logical project records. Source-wide property deletion/hiding/reordering remain future work. Name/category group assignment invokes the existing filesystem commands as described below. Implemented filtering, grouping and per-view Table presentation controls are described below. Source archive/restore is described below. SQLite with Drizzle is the selected persistence foundation.
+The desktop includes a native directory picker, EN/RU direct/grouped preview/exclusions/Apply and editable project names with source-owned Text/Number/Date columns and required grouped categories in the default Table. The service persists source-owned exclusions/configuration and logical project records. Reviewed source-wide custom property and ordinary option deletion is implemented below; general source-wide property hiding/reordering remain future work. Name/category group assignment invokes the existing filesystem commands as described below. Implemented filtering, grouping and per-view Table presentation controls are described below. Source archive/restore is described below. SQLite with Drizzle is the selected persistence foundation.
 
 The product uses selected bb architecture and UI foundations while retaining its own folder/project domain. Adopt useful modules deliberately, with provenance and boundary tests; do not assume a whole bb package is independent of its chat/session model.
 
@@ -588,3 +588,28 @@ The renderer observes actual filtered projections after success, rejection and u
 Name and folder-backed category drops resolve destinations from the fresh owned view projection, then call the existing safe rename/category move with a backend-generated operation ID and current source revision. The payload supplies no path or destination value. Archived assignments and empty destinations are rejected; the underlying commands retain containment, identity, native no-replace and journal/recovery checks.
 
 Board/Table pointer and native selector controls share the typed assignment route. Filesystem receipts distinguish completed/unchanged, rejected and recoverable outcomes. After every submitted filesystem assignment, including a lost reply, the renderer observes current projects and invalidates existing rename/category recovery lists without replay. Source events refresh siblings and filtered/ordered projections. See [scenarios](plans/issue-35-folder-drag.md) and [verification](verification/issue-35-folder-drag.md).
+
+
+## Reviewed metadata deletion (Issue 36)
+
+`previewMetadataRemoval` reviews every stored value and affected view across all
+workspaces sharing the source, including archived and retained projects. The owner
+approved clear/reassign/cancel handling: option replacement preserves other MultiSelect
+memberships and deduplicates; filter operands and group keys are cleaned or transferred,
+with existing destination widths retained. A filter with no surviving operand is removed.
+Custom property deletion removes its values/options/visibility, filter rules and active or
+dormant Table/Board/grouping references; active grouping resets to no grouping. Name and
+folder-backed structural fields are excluded from this ordinary metadata operation.
+
+`applyMetadataRemoval` accepts only an opaque workspace-bound review token. A fresh
+source-wide fingerprint, including sibling views and source revisions, is compared inside
+the SQLite mutation transaction. Stale reviews, restarted services, foreign workspaces,
+consumed tokens and changed usages require another preview. Cleanup and property revision
+are atomic; failed writes publish nothing. Committed property events refresh sibling
+values and view settings, including a queued reread after an in-flight settings response.
+No migration or filesystem command is introduced; all project folders and identities remain.
+The EN/RU review supports keyboard operation, Escape/cancel, explicit confirmation,
+loading/empty/error states and observation after unknown transport outcomes without replay.
+Existing bb primitives are reused; no new upstream module or dependency was copied.
+See [contract/scenarios](plans/issue-36-metadata-removal.md) and
+[verification](verification/issue-36-metadata-removal.md); GitHub #36 owns CI/delivery status.

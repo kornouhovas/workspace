@@ -1,3 +1,4 @@
+import { exerciseMetadataRemoval } from "./runtime-metadata-removal.mjs";
 import { exerciseFolderGroupAssignment } from "./runtime-folder-group-assignment.mjs";
 import { exerciseGroupAssignment } from "./runtime-group-assignment.mjs";
 import { exerciseBoardLayout } from "./runtime-board-layout.mjs";
@@ -176,6 +177,8 @@ try {
     const groupAssignment = await exerciseGroupAssignment({page,query,rootPath:assignmentRoot,language,evidenceDirectory});
     const folderAssignment = await exerciseFolderGroupAssignment({page,query,rootPath:join(fixture,`${language}-folder-assignment`),language,evidenceDirectory});
     evidence.checks.push({language,folderAssignment});
+    const metadataRemoval = await exerciseMetadataRemoval({page,query,rootPath:join(fixture,`${language}-metadata-removal`),language,evidenceDirectory});
+    evidence.checks.push({language,metadataRemoval});
     evidence.checks.push({ language, groupAssignment, boardLayout, tableLayout, filters, grouping, categoryGrouping, retainedGrouping, keyboard: true, table: true, board: true, lifecycle: true, independentCopy: true, sourceSibling: true, activeArchived: true, restart: true, filesUnchanged: true, widths: [360, 1024, 1440] });
   }
   await close(); evidence.status = "passed";

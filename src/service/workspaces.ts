@@ -1,3 +1,4 @@
+import { createMetadataRemovalService } from "./metadata-removal.js";
 import { assignProjectGroup } from "./group-assignment.js";
 import { createBoardLayoutService } from "./board-layout.js";
 import type { BoardLayoutSnapshot } from "../contracts/board-layout.js";
@@ -68,6 +69,7 @@ const nativeFilesystem: WorkspaceFilesystem = {
 };
 
 export interface WorkspaceService {
+  metadataRemovalRequest(input: unknown): ServiceResult<import("../contracts/metadata-removal.js").MetadataRemovalPreview | import("../contracts/metadata-removal.js").MetadataRemovalResult>;
   boardLayoutRequest(input: unknown): ServiceResult<BoardLayoutSnapshot>;
   tableLayoutRequest(input: unknown): ServiceResult<TableLayoutSnapshot>;
   assignProjectGroup(input: unknown): ServiceResult<import("../contracts/group-assignment.js").GroupAssignmentResult>;
@@ -303,6 +305,7 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
     },
     previewProjectRecovery: recovery.previewProjectRecovery,
     reassociateProject: recovery.reassociateProject,
+    metadataRemovalRequest: createMetadataRemovalService(db, publish),
     ...createTextPropertyService(db, publish),
     ...createCategoryPropertyService(db, publish),
     subscribe(listener) {

@@ -1,3 +1,4 @@
+import { isMetadataRemovalRequest, metadataRemovalRequests } from "../contracts/metadata-removal.js";
 import { isAssignProjectGroupCommand } from "../contracts/group-assignment.js";
 import { isBoardLayoutRequest } from "../contracts/board-layout.js";
 import { isTableLayoutRequest } from "../contracts/table-layout.js";
@@ -131,7 +132,7 @@ export function startServiceProcess(
 }
 
 function isLoadQuery(input: unknown): boolean {
-  return isRecord(input) && ((typeof input.type === "string" && [...archiveQueries, ...categoryOptionsQueries, ...categoryRemovalQueries].includes(input.type)) || input.type === "workspace.listProjectCategoryMoves" || input.type === "workspace.getProjectCategoryMove" || input.type === "workspace.previewProjectCategoryMoveRecovery" || input.type === "workspace.listProjectRenames" || input.type === "workspace.getProjectRename" || input.type === "workspace.previewProjectRenameRecovery" || input.type === "workspace.getBoardLayout" || input.type === "workspace.getTableLayout" || input.type === "workspace.getViewGrouping" || input.type === "workspace.getViewFilter" || input.type === "workspace.queryView" || input.type === "workspace.listViews" || input.type === "settings.load" || input.type === "workspace.load" || input.type === "workspace.previewDiscovery" || input.type === "workspace.getSourceObservation" || input.type === "workspace.listProjects" || input.type === "workspace.listTextProperties" || input.type === "workspace.previewProjectRecovery" || input.type === "workspace.listProjectCreations" || input.type === "workspace.getProjectCreation" || input.type === "workspace.previewProjectCreationRecovery");
+  return isRecord(input) && ((typeof input.type === "string" && [...archiveQueries, ...categoryOptionsQueries, ...categoryRemovalQueries].includes(input.type)) || input.type === "workspace.listProjectCategoryMoves" || input.type === "workspace.getProjectCategoryMove" || input.type === "workspace.previewProjectCategoryMoveRecovery" || input.type === "workspace.listProjectRenames" || input.type === "workspace.getProjectRename" || input.type === "workspace.previewProjectRenameRecovery" || input.type === "workspace.getBoardLayout" || input.type === "workspace.getTableLayout" || input.type === "workspace.getViewGrouping" || input.type === "workspace.getViewFilter" || input.type === "workspace.queryView" || input.type === "workspace.listViews" || input.type === "workspace.previewMetadataRemoval" || input.type === "settings.load" || input.type === "workspace.load" || input.type === "workspace.previewDiscovery" || input.type === "workspace.getSourceObservation" || input.type === "workspace.listProjects" || input.type === "workspace.listTextProperties" || input.type === "workspace.previewProjectRecovery" || input.type === "workspace.listProjectCreations" || input.type === "workspace.getProjectCreation" || input.type === "workspace.previewProjectCreationRecovery");
 }
 
 function isMalformedWorkspaceRequest(input: unknown): boolean {
@@ -153,6 +154,7 @@ function isMalformedWorkspaceRequest(input: unknown): boolean {
   if (["workspace.getViewGrouping", "workspace.setViewGrouping"].includes(input.type)) return !isViewGroupingRequest(input);
   if (viewFilterRequests.includes(input.type)) return !isViewFilterRequest(input);
   if (["workspace.listViews", ...viewCommands].includes(input.type)) return !isViewRequest(input);
+  if (metadataRemovalRequests.includes(input.type)) return !isMetadataRemovalRequest(input);
   if (selectCommands.includes(input.type)) return !isSelectCommand(input);
   if (input.type === "workspace.createProperty") {
     return !hasExactKeys(input, ["type", "workspaceId", "name", "propertyType"]) ||

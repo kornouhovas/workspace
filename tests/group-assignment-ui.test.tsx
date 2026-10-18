@@ -150,7 +150,7 @@ for (const language of ["en", "ru"] as const) for (const layout of ["table", "bo
       drag('B','C'); await expectGroups(['A','C']);
       assert.equal(requests[0].fromKey,JSON.stringify(options.B));
       assert.deepEqual(members(),[options.A,options.C].sort());
-      await waitFor(()=>assert.equal(document.activeElement,within(region('C')).getByLabelText(changeLabel)));
+      await waitFor(()=>assert.equal(document.activeElement===within(region('C')).getByLabelText(changeLabel),true));
       drag('A',empty); await expectGroups([empty]); assert.deepEqual(members(),[]);
       command('setMultiSelectValue',{projectId,propertyId,optionIds:[options.A,options.C]});
       await expectGroups(['A','C']);

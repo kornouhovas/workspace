@@ -92,3 +92,28 @@ test('Table settings expose load retry and save failure without replacing commit
     await waitFor(()=>assert.equal(screen.queryByRole('alert'),null));
   }finally{cleanup();}
 });
+
+test('a source metadata change arriving during a pending layout reply refreshes committed columns after the reply', async () => {
+  const { TableLayoutControls, useTableLayout } = await import('../src/renderer/components/TableLayout.js');
+  const workspaceId = '11111111-1111-4111-8111-111111111111', viewId = '22222222-2222-4222-8222-222222222222';
+  let config = { columns: [{ propertyId: 'name', hidden: false, width: 224, wrap: false }], rowOrder: [] };
+  let finish: ((value: unknown) => void) | undefined;
+  let listener: ((event: import('../src/contracts/workspaces.js').WorkspaceChangeEvent) => void) | undefined;
+  const client = new WorkspaceServiceClient({ onWorkspaceChange: (callback: typeof listener) => { listener = callback; return () => {}; }, workspace: async (input: {type: string}) => {
+    if (input.type === 'workspace.getTableLayout') return {ok:true,value:{workspaceId,viewId,config}};
+    return new Promise(resolve => { finish = resolve; });
+  } } as unknown as WorkspaceDesktopApi);
+  function Harness() { const state = useTableLayout(client, workspaceId, viewId); return <TableLayoutControls state={state} fields={[{propertyId:'name',name:'Name',text:false}]} language="en" disabled={false}/>; }
+  const user = userEvent.setup({document});
+  try {
+    render(<Harness/>); await waitFor(() => assert.ok(screen.queryByText('Loading Table layout...') === null));
+    await user.click(screen.getByText('Table layout'));
+    const width = screen.getByRole('slider') as HTMLInputElement;
+    fireEvent.change(width, {target:{value:'350'}}); fireEvent.keyUp(width,{key:'ArrowRight'});
+    await screen.findByText('Saving Table layout...');
+    config = {columns:[],rowOrder:[]}; listener!({type:'workspace.propertiesChanged',sourceId:'33333333-3333-4333-8333-333333333333',workspaceIds:[workspaceId],revision:5});
+    finish!({ok:true,value:{workspaceId,viewId,config:{columns:[{propertyId:'name',hidden:false,width:350,wrap:false}],rowOrder:[]}}});
+    await waitFor(() => assert.equal(width.value, '224'));
+    await waitFor(() => assert.ok(screen.queryByText('Saving Table layout...') === null));
+  } finally { cleanup(); }
+});

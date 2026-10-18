@@ -161,6 +161,12 @@ export class WorkspaceServiceClient {
     return this.api.workspace({ type: "workspace.revealProject", workspaceId, projectId });
   }
 
+  previewMetadataRemoval(input: Omit<import("../contracts/metadata-removal.js").PreviewMetadataRemoval, "type">) {
+    return this.api.workspace({ type: "workspace.previewMetadataRemoval", ...input });
+  }
+  applyMetadataRemoval(workspaceId: string, previewToken: string) {
+    return this.api.workspace({ type: "workspace.applyMetadataRemoval", workspaceId, previewToken });
+  }
   listTextProperties(workspaceId: string): Promise<ServiceResult<TextPropertySnapshot>> {
     return this.api.workspace({ type: "workspace.listTextProperties", workspaceId });
   }
