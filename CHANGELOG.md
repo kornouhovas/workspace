@@ -6,6 +6,8 @@ User-facing changes are maintained in English. The first target release is 0.1.0
 
 ### Added
 
+- Rename project folders by dragging between Name groups, or move them between folder-backed category groups in Board and Table, preserving identity and metadata with safe conflict handling and existing recovery.
+
 - Per-view Board column widths, card property visibility and content wrapping, with keyboard controls and independent duplicate settings.
 
 - Per-view Table column visibility/order/widths, Text wrapping and manual project row order, with keyboard controls and dedicated row dragging.
@@ -78,8 +80,7 @@ User-facing changes are maintained in English. The first target release is 0.1.0
 
 ### Planned
 
-- Remaining property and view-layout controls, including definition deletion/hiding/reordering and group-to-group dragging.
-- Physical category editing, archive and restore.
+- Remaining property and view-layout controls, including definition deletion/hiding/reordering.
 - The full 0.1.0 local desktop release and its remaining capabilities.
 
 The Unreleased entries describe verified source changes, not a published release. Planned items are not shipped functionality. Move verified changes into a dated version entry only when preparing an authorized release, following [the release policy](docs/releases.md).
