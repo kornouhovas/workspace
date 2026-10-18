@@ -49,6 +49,26 @@ completed removal children, archive history, dormant category metadata after swi
 to direct mode and a removed initiating workspace. Malformed typed/source/layout,
 archive/history/mode snapshots preserve the current state.
 
+## Final local inventory
+
+The final fresh `npm test` on reviewed source `e640e00` plus the reviewed CI
+inventory fixture delta completed **3050 passed, 0 failed, 26 conditional skips**
+(3076 tests). Typecheck, lint, docs links and diff checks pass. The final source
+also passes development and packaged macOS export/restore runtime and artifact
+resource verification.
+
+The earlier full attempt retained 3044 passes, six failures and 26 skips. Its
+Ladle 403 came from this task checkout's dependency symlink leaving Vite's allowed
+root; a local dependency copy resolved the focused bootstrap test. The exact CI
+command/artifact inventory fixture was extended with the two new recovery routes
+and evidence path; its 21 checks pass with all inherited assertions intact. Four
+standalone native-close failures matched the documented local baseline; all four
+passed in the final full run without changing their code, deadlines or assertions.
+Their historical cause remains unproven; this issue makes no claim to resolve #44.
+
+Independent final Standards and Spec reviews each report **zero remaining findings**,
+including the backend-generation cleanup and exact CI inventory delta.
+
 ## Candidate checks and delivery
 
 Typecheck, lint, documentation links and diff checks pass on the implementation.
