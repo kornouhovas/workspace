@@ -16,16 +16,19 @@ async function withPage(run) {
   const app = await _electron.launch({ executablePath: createRequire(import.meta.url)("electron"), args: [fixture],
     env: { ...process.env, WORKSPACE_RENAME_EDITOR_PROFILE: profile }, timeout: 10000 });
   const child = app.process();
-  const quitEvents = [];
+  const quitEvents = [], timeline = [];
+  const started = performance.now();
+  const record = event => { if (timeline.length < 16) timeline.push({ event, elapsedMs: Math.round(performance.now() - started) }); };
   let debuggerWaiting = false;
   let stderrTail = "";
-  child.once("exit", () => quitEvents.push("parent-exit"));
+  child.once("exit", () => { quitEvents.push("parent-exit"); record("parent-exit"); });
+  child.once("close", () => record("stdio-close"));
   child.stderr.on("data", data => {
     const text = stderrTail + data.toString();
     stderrTail = text.slice(-128);
     debuggerWaiting ||= text.includes("Waiting for the debugger to disconnect...");
     for (const event of ["before-quit", "will-quit", "quit", "node-before-exit", "node-exit"])
-      if (text.includes(`[property-fixture]${event}`) && !quitEvents.includes(event)) quitEvents.push(event);
+      if (text.includes(`[property-fixture]${event}`) && !quitEvents.includes(event)) { quitEvents.push(event); record(event); }
   });
   let primary;
   try {
@@ -46,11 +49,14 @@ async function withPage(run) {
     // deadline and finite forced cleanup that preserves the original failure.
     // A second close() on a closing Playwright handle can resolve immediately
     // without stopping its native process, so do not use it as forced cleanup.
+    record("close-request");
     await closeElectron(app);
+    record("close-resolved");
     assert.ok(child.exitCode !== null || child.signalCode !== null);
     await rm(profile, { recursive: true, force: true });
   } catch (error) {
-    error.message = `[property-fixture] ${JSON.stringify({ quitEvents, debuggerWaiting, parentExited: child.exitCode !== null || child.signalCode !== null,
+    record("close-rejected");
+    error.message = `[property-fixture] ${JSON.stringify({ quitEvents, timeline, debuggerWaiting, parentExited: child.exitCode !== null || child.signalCode !== null,
       forcedCleanup: error.forcedCleanup ?? null })}\n${error.message}`;
     if (primary) console.error("Additional property fixture cleanup failure:", error);
     else primary = error;

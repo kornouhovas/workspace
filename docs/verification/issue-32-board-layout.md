@@ -44,3 +44,14 @@ product Number policy is modified. The historical artifact lacks a focus/readine
 timeline, so this is a reproduced failure pattern rather than unique-cause proof.
 The focused Windows route is documented in [CI](../ci.md); focused original and
 artifact acceptance precede any renewed full run on the same reviewed SHA.
+
+The later full/focused CI history, including cold native Reveal and property
+fixture close failures, is retained in the GitHub checkpoints. After a Windows
+latest negative creator test passed its product assertions but exceeded the
+unchanged ten-second normal-close boundary, Windows suite scheduling isolates
+that original fixture from the other native workers. Coverage and failures are
+retained exactly once; other OS/common schedules are unchanged. Bounded
+failure-only receipt timings support diagnosis without identifying an OS or
+Playwright historical cause from absent evidence. See [CI](../ci.md) for the
+Windows-only focused property-fixture route; its original acceptance remains a
+prerequisite to renewed full verification.

@@ -8,7 +8,7 @@ on:
       checks:
         description: Full acceptance or a selected focused failure route
         type: choice
-        options: [full, failed, readiness, windows-release, issue22-failures, creation-shutdown, raw-rename, issue24-failures, category-fixture, issue24-startup, multiselect, etw-controls, app-fixture, property-fixture, runtime-observation, view-fixtures, number]
+        options: [full, failed, readiness, windows-release, issue22-failures, creation-shutdown, raw-rename, issue24-failures, category-fixture, issue24-startup, multiselect, etw-controls, app-fixture, property-fixture, runtime-observation, view-fixtures, number, windows-property-fixture]
         default: full
       recovery_windows_2022:
         description: With checks=issue22-failures, replay the backend recovery file on Windows 2022 and the original macOS runtime
@@ -89,7 +89,7 @@ concurrency:
 
 jobs:
   common:
-    if: ${{ github.event_name != 'workflow_dispatch' || (inputs.checks != 'failed' && inputs.checks != 'readiness' && inputs.checks != 'windows-release' && inputs.checks != 'issue22-failures' && inputs.checks != 'creation-shutdown' && inputs.checks != 'raw-rename' && inputs.checks != 'issue24-failures' && inputs.checks != 'category-fixture' && inputs.checks != 'issue24-startup' && inputs.checks != 'multiselect' && inputs.checks != 'etw-controls' && inputs.checks != 'app-fixture' && inputs.checks != 'property-fixture' && inputs.checks != 'runtime-observation' && inputs.checks != 'view-fixtures' && inputs.checks != 'number') }}
+    if: ${{ github.event_name != 'workflow_dispatch' || (inputs.checks != 'failed' && inputs.checks != 'readiness' && inputs.checks != 'windows-release' && inputs.checks != 'issue22-failures' && inputs.checks != 'creation-shutdown' && inputs.checks != 'raw-rename' && inputs.checks != 'issue24-failures' && inputs.checks != 'category-fixture' && inputs.checks != 'issue24-startup' && inputs.checks != 'multiselect' && inputs.checks != 'etw-controls' && inputs.checks != 'app-fixture' && inputs.checks != 'property-fixture' && inputs.checks != 'runtime-observation' && inputs.checks != 'view-fixtures' && inputs.checks != 'number' && inputs.checks != 'windows-property-fixture') }}
     name: Common tests and static checks
     runs-on: macos-latest
     steps:
@@ -625,9 +625,9 @@ jobs:
           if-no-files-found: error
 
   focused-property-fixture:
-    if: ${{ github.event_name == 'workflow_dispatch' && (inputs.checks == 'etw-controls' || inputs.checks == 'property-fixture') }}
-    name: Focused macOS original property fixture
-    runs-on: macos-latest
+    if: ${{ github.event_name == 'workflow_dispatch' && (inputs.checks == 'etw-controls' || inputs.checks == 'property-fixture' || inputs.checks == 'windows-property-fixture') }}
+    name: Focused original property fixture
+    runs-on: ${{ inputs.checks == 'windows-property-fixture' && 'windows-latest' || 'macos-latest' }}
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
@@ -635,8 +635,17 @@ jobs:
         with:
           node-version: 22.21.1
           cache: npm
-      - run: npm ci
-      - name: Original macOS property driver regression file
+      - id: install
+        run: npm ci
+      - name: Record exact-run property fixture provenance
+        shell: bash
+        run: |
+          mkdir -p work/ci-focused-property-fixture
+          node --input-type=module -e 'import { writeFileSync } from "node:fs"; writeFileSync("work/ci-focused-property-fixture/provenance.json", JSON.stringify({sha:process.env.GITHUB_SHA,run:process.env.GITHUB_RUN_ID,attempt:process.env.GITHUB_RUN_ATTEMPT,platform:process.platform}) + "\n")'
+      - name: Verify property fixture routing and batch guards
+        run: node --test tests/test-suites.test.mjs
+      - name: Original property driver regression file
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         shell: bash
         run: |
           set -o pipefail

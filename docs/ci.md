@@ -438,3 +438,21 @@ original failure lacks a focus/enablement timeline, so its unique historical
 cause is not established. Inspect original EN/RU/restart/shutdown/cleanup evidence
 before renewed full acceptance on the same reviewed SHA. Ordinary push/full and
 all three platform routes remain unchanged.
+
+For issue #32 run39116052433's Windows latest property-driver normal-close
+failure, select `checks: windows-property-fixture`. It reuses the existing
+property fixture job on Windows latest only; the historical macOS and ETW
+selectors keep their OS. Route/batch guards precede the unchanged original
+`tests/property-editor-driver.test.mjs`, which still runs independently after a
+guard failure when dependency installation succeeded. Exact-run provenance and
+strict original output are uploaded even on failure.
+
+Windows all/platform execution now gives this native fixture its own batch after
+the existing category utility-exit batch, before all remaining files. Every file
+still runs once, and any failed/signaled batch keeps the suite failed. Other OS
+and common execution are unchanged. This tests native cross-file load isolation;
+it does not establish historical shutdown causation. Failure-only finite event
+receipt timestamps distinguish close request/result, app quit receipts, parent
+exit and stdio close without logging paths or PIDs. The ten-second normal-close,
+negative caller deadline, single activation and cleanup assertions remain intact.
+Inspect the original focused result before renewed full acceptance.

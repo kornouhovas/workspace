@@ -42,7 +42,7 @@ test('suite CLI lists the selected real files and rejects unknown invocations', 
 test('ordinary CI runs common checks once and retains all three platform acceptance routes', () => {
   const workflow = load(readFileSync('.github/workflows/desktop-ci.yml', 'utf8'));
   const { common, verify } = workflow.jobs;
-  assert.equal(common.if, "${{ github.event_name != 'workflow_dispatch' || (inputs.checks != 'failed' && inputs.checks != 'readiness' && inputs.checks != 'windows-release' && inputs.checks != 'issue22-failures' && inputs.checks != 'creation-shutdown' && inputs.checks != 'raw-rename' && inputs.checks != 'issue24-failures' && inputs.checks != 'category-fixture' && inputs.checks != 'issue24-startup' && inputs.checks != 'multiselect' && inputs.checks != 'etw-controls' && inputs.checks != 'app-fixture' && inputs.checks != 'property-fixture' && inputs.checks != 'runtime-observation' && inputs.checks != 'view-fixtures' && inputs.checks != 'number') }}");
+  assert.equal(common.if, "${{ github.event_name != 'workflow_dispatch' || (inputs.checks != 'failed' && inputs.checks != 'readiness' && inputs.checks != 'windows-release' && inputs.checks != 'issue22-failures' && inputs.checks != 'creation-shutdown' && inputs.checks != 'raw-rename' && inputs.checks != 'issue24-failures' && inputs.checks != 'category-fixture' && inputs.checks != 'issue24-startup' && inputs.checks != 'multiselect' && inputs.checks != 'etw-controls' && inputs.checks != 'app-fixture' && inputs.checks != 'property-fixture' && inputs.checks != 'runtime-observation' && inputs.checks != 'view-fixtures' && inputs.checks != 'number' && inputs.checks != 'windows-property-fixture') }}");
   assert.equal(common.strategy, undefined);
   assert.deepEqual(common.steps.filter(step => step.run).map(step => step.run), [
     'npm ci', 'npm run lint', 'npm run typecheck', 'npm run check:docs', 'npm run test:common',
@@ -83,7 +83,7 @@ test('investigation jobs run only with explicit manual diagnostic inputs', () =>
 test('manual failed-check scope runs only the Windows observer and macOS rename routes', () => {
   const workflow = load(readFileSync('.github/workflows/desktop-ci.yml', 'utf8'));
   assert.equal(workflow.on.workflow_dispatch.inputs.checks.default, 'full');
-  assert.deepEqual(workflow.on.workflow_dispatch.inputs.checks.options, ['full', 'failed', 'readiness', 'windows-release', 'issue22-failures', 'creation-shutdown', 'raw-rename', 'issue24-failures', 'category-fixture', 'issue24-startup', 'multiselect', 'etw-controls', 'app-fixture', 'property-fixture', 'runtime-observation', 'view-fixtures', 'number']);
+  assert.deepEqual(workflow.on.workflow_dispatch.inputs.checks.options, ['full', 'failed', 'readiness', 'windows-release', 'issue22-failures', 'creation-shutdown', 'raw-rename', 'issue24-failures', 'category-fixture', 'issue24-startup', 'multiselect', 'etw-controls', 'app-fixture', 'property-fixture', 'runtime-observation', 'view-fixtures', 'number', 'windows-property-fixture']);
   const enabled = (job, event, checks) => runInNewContext(job.if.slice(3, -2), { github: { event_name: event }, inputs: { checks } });
   for (const event of ['push', 'pull_request', 'workflow_dispatch']) for (const checks of [undefined, 'full', 'failed']) {
     const focused = event === 'workflow_dispatch' && checks === 'failed';
@@ -557,9 +557,10 @@ test('ETW and property fixture route retains the exact failed files on their ori
     assert.deepEqual(active, event === 'workflow_dispatch' ? ['focused-property-fixture'] : ['common']);
   }
   const native = workflow.jobs['focused-property-fixture'];
-  assert.equal(native['runs-on'], 'macos-latest'); assert.equal(native.needs, undefined);
+  for(const checks of ['property-fixture','etw-controls'])assert.equal(runInNewContext(native['runs-on'].slice(3,-2),{inputs:{checks}}),'macos-latest');
+  assert.equal(native.needs, undefined);
   assert.ok(native.steps.every(step => step['continue-on-error'] === undefined));
-  const nativeOriginal = native.steps.find(step => step.name === 'Original macOS property driver regression file');
+  const nativeOriginal = native.steps.find(step => step.name === 'Original property driver regression file');
   assert.equal(nativeOriginal.shell, 'bash'); assert.ok(nativeOriginal.run.includes('set -o pipefail'));
   assert.ok(nativeOriginal.run.includes('node --import tsx --test tests/property-editor-driver.test.mjs 2>&1 | tee work/ci-focused-property-fixture/tests.txt'));
   const nativeUpload = native.steps.find(step => step.uses === 'actions/upload-artifact@v4');
@@ -798,4 +799,25 @@ test('Number failure selector isolates Windows latest packaged original and pres
   const upload=job.steps.find(step=>step.uses==='actions/upload-artifact@v4');
   assert.equal(upload.if,'always()');assert.equal(upload.with['if-no-files-found'],'error');
   for(const field of ['github.sha','github.run_id','github.run_attempt'])assert.ok(upload.with.name.includes(field));
+});
+
+test('Windows property creator fixtures run alone before remaining files without changing other platforms', () => {
+  const creator='tests/property-editor-driver.test.mjs', other='tests/number-properties-service.test.mjs', category='tests/project-category-move-fixture.test.mjs';
+  assert.deepEqual(selectTestBatches([other,creator], 'win32'), [[creator],[other]]);
+  assert.deepEqual(selectTestBatches([other,creator,category], 'win32'), [[category],[creator],[other]]);
+  for(const platform of ['darwin','linux'])assert.deepEqual(selectTestBatches([other,creator],platform),[[other,creator]]);
+});
+
+test('Windows property fixture selector runs only the failed original on Windows latest', () => {
+  const workflow=load(readFileSync('.github/workflows/desktop-ci.yml','utf8'));
+  for(const event of ['push','pull_request','workflow_dispatch']){
+    const context={github:{event_name:event},inputs:{checks:'windows-property-fixture'}};
+    const active=Object.entries(workflow.jobs).filter(([,job])=>job.if&&runInNewContext(job.if.slice(3,-2),context)).map(([name])=>name);
+    assert.deepEqual(active,event==='workflow_dispatch'?['focused-property-fixture']:['common']);
+  }
+  const job=workflow.jobs['focused-property-fixture'];
+  assert.equal(runInNewContext(job['runs-on'].slice(3,-2),{inputs:{checks:'windows-property-fixture'}}),'windows-latest');
+  const original=job.steps.find(step=>step.name==='Original property driver regression file');
+  for(const outcome of ['success','failure']) for(const isCancelled of [false,true])
+    assert.equal(runInNewContext(original.if.slice(3,-2),{cancelled:()=>isCancelled,steps:{install:{outcome}}}),!isCancelled&&outcome==='success');
 });

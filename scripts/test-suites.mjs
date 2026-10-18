@@ -28,11 +28,11 @@ export function selectTestFiles(files, suite) {
 }
 
 export function selectTestBatches(files, platform) {
-  const control = 'tests/project-category-move-fixture.test.mjs';
-  if (platform !== 'win32' || !files.includes(control)) return [files];
-  // Exercise the existing 1s utility-exit controls without other native workers
-  // competing for process/event delivery; retain every selected file once.
-  return [[control], files.filter(file => file !== control)].filter(batch => batch.length);
+  if (platform !== 'win32') return [files];
+  // Native utility-exit and creator-close controls retain their original bounds
+  // without competing with the rest of the real-Electron platform workers.
+  const isolated = ['tests/project-category-move-fixture.test.mjs', 'tests/property-editor-driver.test.mjs'].filter(file => files.includes(file));
+  return [...isolated.map(file => [file]), files.filter(file => !isolated.includes(file))].filter(batch => batch.length);
 }
 
 export function runTestBatches(batches, run) {
