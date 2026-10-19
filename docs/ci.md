@@ -19,6 +19,10 @@ unprofiled strict command still runs independently after its package prerequisit
 Baseline failure evidence remains retained, and ordinary push/full dispatch
 defaults still measure both baseline and candidate on both platforms. A focused
 success does not replace the full acceptance run on the repaired SHA.
+`profile_service: true` separately profiles real public-service open, source
+lists, displayed-view reads, refresh and the native observer interval using the
+same disposable scale. These Node profiles diagnose backend work; they do not
+substitute for the original packaged Electron command that still follows them.
 The same workflow adds Windows x64 NSIS installation/reopen/reinstall acceptance
 on ordinary push/PR, or independently with `checks: windows-install` on dispatch.
 This runs on `windows-latest` and records its actual Windows Server version; it

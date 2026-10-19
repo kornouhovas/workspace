@@ -18,6 +18,10 @@ on:
         description: Run a separate diagnostic profile before strict unprofiled acceptance
         type: boolean
         default: false
+      profile_service:
+        description: Profile real public-service scans and native observation separately from acceptance
+        type: boolean
+        default: false
 
 concurrency:
   group: performance-${{ github.ref }}${{ inputs.candidate_only && format('-candidate-{0}', inputs.platform) || '' }}
@@ -69,6 +73,15 @@ jobs:
         shell: bash
         run: |
           if [[ "$RUNNER_OS" == "macOS" ]]; then npm run package:dev:mac; else npm run package:dev:win; fi
+      - name: Diagnose public-service scans and native observation
+        if: ${{ !cancelled() && inputs.profile_service && steps.candidate-package.outcome == 'success' }}
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p work/ci-performance/service-profile
+          node scripts/profile-performance-service.mjs 2>&1 | tee work/ci-performance/service-profile/runtime.log
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-performance/service-profile
       - name: Diagnose the full-view Board filter transition
         if: ${{ !cancelled() && inputs.profile_filters && steps.candidate-package.outcome == 'success' }}
         shell: bash
