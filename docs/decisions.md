@@ -56,14 +56,15 @@ Accepted after D41:
 
 | ID | Decision |
 | --- | --- |
-| D42 | Restore main's complete desktop working cycle on new-workspace: navigation, saved-view/project tabs, project preview, split panels, file tree, session restoration and appearance choice. Detailed behavior is resolved in the [desktop UX spec](specs/workspace-desktop-ux.md). |
+| D42 | Restore main's desktop working cycle on new-workspace: navigation, saved-view/project tabs, project preview, file tree, session restoration and appearance choice. D50 explicitly replaces main's split panels. Detailed behavior is resolved in the [desktop UX spec](specs/workspace-desktop-ux.md). |
 | D43 | Main supplies working scenarios and principal layout; Radix UI and Tailwind CSS with bb's visual language supply the component foundation. Preserve new-workspace's domain and safety contracts. See [ADR 0008](adr/0008-desktop-experience-reference-authority.md). |
 | D44 | Desktop UX acceptance is required for the first local 0.1.0 release. Keep a separate linked spec and implementation slices; final integration acceptance must include the new UI. Performance issue 41 may proceed independently, with renewed measurements on the finished UI. |
 | D45 | Use bb's settings organization as the reference. Q4 accepts General, Appearance, Workspaces, Sources, Backup and recovery, and About; sidebar/contextual entry and return to the prior work area; per-preference saving and explicit review/application for consequential operations. Everyday Archive/Restore remains in the work area. |
 | D46 | Show a real project file tree; external default-app opening works on macOS and Windows and is distinct from Reveal. Embedded content viewers/editors are outside the desktop UX spec. |
 | D47 | Retain the workspace session per device/workspace and include it in application-data backups. Reload current project data and verify availability when resuming or restoring. |
 | D48 | Preserve open project tabs across verified moves, archive, exclusion, missing projects and unavailable sources; display actual state and applicable recovery/editing actions. |
-| D49 | Provide keyboard/menu alternatives for tab ordering, panel placement/resizing and returning from maximized mode, with explicit focus and acceptance coverage. |
+| D49 | Provide keyboard/menu alternatives for tab ordering, opening the project area, resizing allowed boundaries and returning from expanded mode, with explicit focus and acceptance coverage. D50 excludes arbitrary panel placement and splitting. |
+| D50 | Display only one project in the right-hand project area, with an option to expand it into the work area. Exclude nested splits and any division inside the project. Session/layout commands must preserve this simpler model; remaining tab and Close/return semantics are still open. |
 
 ## Open design branches
 

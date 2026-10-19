@@ -10,3 +10,8 @@ This separates behavioral preservation from visual reuse: copying bb's whole
 application would replace Workspace's workflows, while copying main's whole
 implementation would reintroduce superseded architecture. Resolve concrete
 behavior conflicts explicitly in the [desktop UX specification](../specs/workspace-desktop-ux.md).
+
+The owner explicitly chose a simpler project presentation than main's nested
+split layout: one right-hand project area that can expand into the work area,
+without division inside the project. Preserve this deliberate exception when
+adapting main's session behavior; split-tree restoration is not a parity target.

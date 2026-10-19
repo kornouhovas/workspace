@@ -38,6 +38,10 @@ _Avoid_: File preview
 A retained open presentation of a project within a workspace.
 _Avoid_: View, project record
 
+**Project area**:
+The working area that displays one project's properties and file tree, either beside the current view or expanded into the work area.
+_Avoid_: Split tree, file viewer
+
 **Workspace session**:
 The open content and arrangement of working areas used to resume work in a workspace on a particular device.
 _Avoid_: Saved view, project source

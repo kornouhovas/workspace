@@ -22,9 +22,10 @@ or the published release specification have already been updated.
 
 The owner accepted the following in interview round 1:
 
-1. Restore the complete working cycle: sidebar navigation, saved-view and project
-   tabs, project preview, split panels, project file tree, workspace session
-   restoration and Light/Dark/System appearance.
+1. Restore the working cycle: sidebar navigation, saved-view and project tabs,
+   project preview, project file tree, workspace session restoration and
+   Light/Dark/System appearance. The later Q5 refinement deliberately replaces
+   main's split tree with a single project area, as specified below.
 2. `main` supplies working scenarios and the organization of the principal areas;
    bb supplies visual language, density, typography, colors, borders, icons and
    shared control presentation. Specific behavior conflicts require explicit
@@ -38,12 +39,12 @@ The requested implementation foundation is Radix UI plus Tailwind CSS. The
 inspected bb reference uses Radix Primitives, Tailwind 4 and local shadcn-style
 components (`radix-mira`), rather than Radix Themes. Board/Table, document tabs
 and the project file tree remain Workspace components composed from this
-foundation. Radix alone does not provide their domain behavior or split layout.
+foundation. Radix alone does not provide their domain behavior or application layout.
 
 ### Round 2 decisions
 
-The owner accepted Q4 and Q6–Q9. Q5 was a clarification request about nested
-splits; its proposed interaction package is not yet accepted.
+The owner accepted Q4 and Q6–Q9, then refined Q5 to remove nested splits.
+This refinement takes precedence over earlier references to multiple panels.
 
 - **Settings (Q4):** separate settings mode with General (language), Appearance
   (Light/Dark/System), Workspaces (list and details), Sources (list and discovery,
@@ -57,8 +58,8 @@ splits; its proposed interaction package is not yet accepted.
   operating system's default external application on macOS and Windows. Open and
   Reveal in Finder/Explorer are distinct actions. Embedded file viewers and
   content editing are outside this specification.
-- **Session (Q7):** retain open tabs, active view, project preview and panel layout
-  and sizes per workspace on this device. Include the session in application-data
+- **Session (Q7):** retain open tabs, active view, project preview, expanded state
+  and the allowed area sizes per workspace on this device. Include the session in application-data
   backups. On restart or restore, reload current properties/file trees and check
   project availability rather than treating cached content as current state.
 - **Changed availability (Q8):** keep open project tabs when a project becomes
@@ -66,10 +67,23 @@ splits; its proposed interaction package is not yet accepted.
   updates the locator while preserving identity. Show the actual state and
   applicable recovery actions; archived projects retain permitted property
   editing. Do not silently close the tab or imply stale data is current.
-- **Keyboard (Q9):** provide menu/keyboard alternatives for tab reordering,
-  placement in another panel, panel resizing and returning from maximized mode.
+- **Keyboard (Q9, narrowed by Q5):** provide menu/keyboard alternatives for tab
+  reordering, opening the project area, resizing allowed boundaries and returning
+  from expanded mode. Arbitrary panel-placement commands are excluded with splits.
   Include these actions and focus behavior in acceptance rather than assuming
   Radix primitives alone implement them.
+
+### Single project area (Q5 refinement)
+
+The owner explicitly removed nested splitting. The right-hand area can display
+only one project at a time. That project can expand into the work area; the
+project itself cannot be divided into additional panels. Multiple simultaneous
+project panes, split trees and drag-to-split targets are outside this spec.
+
+This is an intentional simplification of main, not an implementation omission.
+Session restoration and keyboard commands must use the same simpler model and
+must not reintroduce splits through persistence or shortcuts. Exact tab reuse,
+Close/return transitions and supported resize boundaries remain to be resolved.
 
 ## Sources and authority
 
@@ -99,7 +113,7 @@ interaction details and improvements remain interview questions until settled.
 | Project preview | Project properties and a real file tree in the right area | [Open preview](https://github.com/kornouhovas/workspace/blob/080b416c/src/App.tsx#L2418) |
 | Project tabs | Expand, duplicate, reorder, close, close others/right and reopen closed | [Project tabs](https://github.com/kornouhovas/workspace/blob/080b416c/src/components/workspace/project-tabs.tsx#L74) |
 | Close and return to preview | Distinct actions; active-tab close returns to the saved view | [Latest main ADR](https://github.com/kornouhovas/workspace/blob/080b416c/docs/adr/012-project-close-and-preview-only-right-host.md) |
-| Split panels | Nested horizontal/vertical splits, resize, focus, maximize and restore | [Session commands](https://github.com/kornouhovas/workspace/blob/080b416c/src/workspaceSession.js#L133) |
+| Split panels (intentionally excluded) | Main has nested splits; Q5 replaces them with one right-hand project area and expanded mode | [Session commands](https://github.com/kornouhovas/workspace/blob/080b416c/src/workspaceSession.js#L133) |
 | Session restoration | Tabs, selected content, per-view preview and panel layout restored; file tree reloaded | [Session lifecycle](https://github.com/kornouhovas/workspace/blob/080b416c/src/workspaceSessionLifecycle.js) |
 | Files | Real recursive tree; files open through the operating system | [Wired file action](https://github.com/kornouhovas/workspace/blob/080b416c/src/App.tsx#L2592) |
 | Appearance | Persisted Light/Dark/System choice; System follows the operating system | [Theme](https://github.com/kornouhovas/workspace/blob/080b416c/src/App.tsx#L580) |
@@ -125,10 +139,11 @@ Sources: [Settings sidebar](https://github.com/get-bb/bb/blob/f135a001e72942cee9
 Settings mapping, external file opening, device/workspace session backup scope,
 retained unavailable tabs and keyboard alternatives are accepted in round 2.
 
-Q5 remains open: explain nested splitting (splitting an existing panel again),
-then settle whether to preserve that main behavior. The rest of Q5's package
-also awaits confirmation: preview to retained tab transitions, duplicate tabs,
-Close versus return to preview and empty-panel behavior.
+Q5 now excludes splitting and allows a single right-hand project area with
+expanded mode. Resolve the remaining transitions: preview to retained tab,
+duplicate/reused tabs, Close versus return to preview, empty-area behavior,
+resize boundaries and navigation with unsaved edits. Do not infer acceptance of
+main's complete tab command set from the accepted single-area refinement.
 
 Subsequent branches include context placement of new operations, property editors,
 Board/Table controls, save/cancel behavior, layout limits, measurable acceptance
