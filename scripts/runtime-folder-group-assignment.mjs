@@ -1,5 +1,6 @@
 /* global document, innerWidth, window */
 import assert from 'node:assert/strict';
+import { showRuntimeProject } from './runtime-project-visibility.mjs';
 import { mkdir, readdir, writeFile, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
@@ -44,16 +45,20 @@ export async function exerciseFolderGroupAssignment({page,query,rootPath,languag
     await call('renameProject',{projectId:other.projectId,operationId:randomUUID(),name:'Other',expectedRevision:(await call('listProjects')).revision});
     const selector=region('A').getByLabel(change('Target'),{exact:true}).and(page.locator(':enabled'));
     await selector.selectOption(JSON.stringify(list.categories.find(c=>c.name==='C').categoryId));
+    await page.waitForFunction(({projectId,workspaceId})=>window.workspace.workspace({type:'workspace.listProjects',workspaceId}).then(r=>r.ok&&r.value.projects.some(p=>p.projectId===projectId&&p.relativePath==='C/Target')),{projectId:project.projectId,workspaceId});
+    await showRuntimeProject(page, 'Target', project.projectId);
     await region('C').getByLabel(change('Target'),{exact:true}).and(page.locator(':enabled')).waitFor();
     assert.equal(await readFile(join(source,'C','Target','keep'),'utf8'),'A');
     assert.deepEqual(await readdir(join(source,'A')),[]);
     for(const width of [360,1440]) {
       await page.setViewportSize({width,height:width===1440?960:720});
+      await showRuntimeProject(page, 'Target', project.projectId);
       await region('C').getByLabel(change('Target'),{exact:true}).scrollIntoViewIfNeeded();
       assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
       await page.screenshot({path:join(evidenceDirectory,`${language}-${layout}-${width}-folder-drag.png`)});
     }
     await page.reload();
+    await showRuntimeProject(page, 'Target', project.projectId);
     await region('C').getByLabel(change('Target'),{exact:true}).waitFor();
     assert.equal((await call('listTextProperties')).values.find(v=>v.projectId===project.projectId).value,'saved');
     checks.push({layout,language,namePointer:true,categoryKeyboard:true,collision:true,identity:true,metadata:true,reload:true,widths:[360,1440]});

@@ -918,6 +918,11 @@ test('desktop shell failure route retains the original journey on all affected O
   assert.ok(original.run.includes('set -o pipefail'));
   assert.ok(original.run.includes('npm run smoke:shell'));
   assert.equal(runInNewContext(original.if.slice(3, -2), { cancelled: () => false, steps: { build: { outcome: 'success' } } }), true);
+  const views = job.steps.find(step => step.name === 'Original Table and Board development lifecycle');
+  assert.ok(views.run.includes('npm run smoke:views -- dev'));
+  assert.ok(views.run.includes('set -o pipefail'));
+  assert.equal(runInNewContext(views.if.slice(3, -2), { cancelled: () => false, steps: { build: { outcome: 'success' } } }), true);
+  assert.equal(runInNewContext(views.if.slice(3, -2), { cancelled: () => false, steps: { build: { outcome: 'failure' } } }), false);
   const layouts = job.steps.find(step => step.name === 'Original Windows creation and recovery layouts');
   assert.ok(layouts.run.includes('npm run build:ladle'));
   assert.ok(layouts.run.includes('node scripts/smoke-discovery-layouts.mjs --creation'));

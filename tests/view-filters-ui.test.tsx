@@ -134,3 +134,63 @@ test('a failed configuration reload rejects results from an older pending query'
     assert.equal(latest === null, true);
   } finally { resolveQuery({ ok: false }); cleanup(); }
 });
+
+for (const language of ['en', 'ru'] as const) test(`${language} committed metadata removal refreshes saved filters without reloading configuration for value edits`, async () => {
+  const { ViewFilters } = await import('../src/renderer/components/ViewFilters.js');
+  const directory = mkdtempSync(join(tmpdir(), 'filter-removal-ui-')), root = join(directory, 'root'); mkdirSync(root);
+  const service = openSettingsService(join(directory, 'app.sqlite'));
+  const { workspaceId, viewId } = service.handleCommand({ type: 'workspace.create', rootPath: root, name: 'One' }).value;
+  const command = (type: string, fields = {}) => {
+    const result = service.handleCommand({ type: `workspace.${type}`, workspaceId, ...fields });
+    assert.equal(result.ok, true); return result.value;
+  };
+  const query = (type: string, fields = {}) => {
+    const result = service.handleQuery({ type: `workspace.${type}`, workspaceId, ...fields });
+    assert.equal(result.ok, true); return result.value;
+  };
+  const propertyId = command('createProperty', { name: 'Status', propertyType: 'single_select' }).propertyId;
+  for (const name of ['Old', 'Next']) command('createSelectOption', { propertyId, name, color: 'blue' });
+  const options = query('listTextProperties').selectOptions;
+  const old = options.find((o: {name:string}) => o.name === 'Old').optionId;
+  const next = options.find((o: {name:string}) => o.name === 'Next').optionId;
+  command('setViewFilter', { viewId, config: { search: '', rules: [{ propertyId, operator: 'any', operand: [old] }] } });
+  let reads = 0, queries = 0;
+  const client = new WorkspaceServiceClient({ workspace: async (input: {type:string}) => {
+    if (input.type === 'workspace.getViewFilter') reads++;
+    if (input.type === 'workspace.queryView') queries++;
+    return service.handleQuery(input);
+  }, onWorkspaceChange: service.workspaces.subscribe } as unknown as WorkspaceDesktopApi);
+  const props = { client, workspaceId, viewId, archived: false, language, categories: [], disabled: false, onResults: () => {} };
+  const user = userEvent.setup({ document });
+  try {
+    const snapshot = query('listTextProperties');
+    const view = render(<ViewFilters {...props} snapshot={snapshot} refreshKey={String(snapshot.revision)} />);
+    const operand = () => screen.getByLabelText(translate(language, 'filterOperand')) as HTMLSelectElement;
+    await waitFor(() => assert.deepEqual(Array.from(operand().selectedOptions, o => o.value), [old]));
+    const preview = query('previewMetadataRemoval', { propertyId, optionId: old, replacementOptionId: next });
+    command('applyMetadataRemoval', { previewToken: preview.previewToken });
+    const remaining = query('listTextProperties');
+    assert.deepEqual(query('getViewFilter', { viewId }).config.rules[0].operand, [next]);
+    view.rerender(<ViewFilters {...props} snapshot={remaining} refreshKey={String(remaining.revision)} />);
+    await waitFor(() => assert.deepEqual(Array.from(operand().selectedOptions, o => o.value), [next]));
+    assert.equal(reads, 2);
+    const queryCount = queries;
+    view.rerender(<ViewFilters {...props} snapshot={{ ...remaining, revision: remaining.revision + 1 }} refreshKey="value-edit" />);
+    await waitFor(() => assert.equal(queries, queryCount + 1));
+    assert.equal(reads, 2, 'ordinary value revisions retain the query-only refresh path');
+    const removal = query('previewMetadataRemoval', { propertyId, optionId: null, replacementOptionId: null });
+    command('applyMetadataRemoval', { previewToken: removal.previewToken });
+    const deleted = query('listTextProperties');
+    view.rerender(<ViewFilters {...props} snapshot={deleted} refreshKey="property-deleted" />);
+    await waitFor(() => assert.equal(screen.queryByLabelText(translate(language, 'filterProperty')) === null, true));
+    assert.equal(reads, 3);
+    await user.type(screen.getByLabelText(translate(language, 'filterSearch')), 'authored draft');
+    const other = command('createProperty', { name: 'Other', propertyType: 'text' }).propertyId;
+    const added = query('listTextProperties');
+    view.rerender(<ViewFilters {...props} snapshot={added} refreshKey="property-added" />);
+    command('applyMetadataRemoval', { previewToken: query('previewMetadataRemoval', { propertyId: other, optionId: null, replacementOptionId: null }).previewToken });
+    view.rerender(<ViewFilters {...props} snapshot={query('listTextProperties')} refreshKey="other-deleted" />);
+    await waitFor(() => assert.equal(reads, 4));
+    assert.equal((screen.getByLabelText(translate(language, 'filterSearch')) as HTMLInputElement).value, 'authored draft');
+  } finally { cleanup(); service.close(); rmSync(directory, { recursive: true, force: true }); }
+});

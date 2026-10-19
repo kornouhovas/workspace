@@ -31,6 +31,7 @@ function FilterContent({ client, workspaceId, viewId, archived, language, snapsh
     ...(snapshot?.definitions.map(p => ({ id: p.propertyId, name: p.name, type: p.propertyType })) ?? []),
   ];
   const latestProjection = useRef(projection); latestProjection.current = projection;
+  const previousSnapshot = useRef(snapshot);
   const latestRefreshToken = useRef(refreshToken); latestRefreshToken.current = refreshToken;
   const query = async () => {
     const projectionToken = latestRefreshToken.current;
@@ -70,7 +71,21 @@ function FilterContent({ client, workspaceId, viewId, archived, language, snapsh
     });
     return () => { mountGeneration.current++; queryRequestVersion.current++; configRequestVersion.current++; stop(); };
   }, [client, workspaceId, viewId, archived]);
-  useEffect(() => { if (projectionReady.current) void query(); }, [refreshKey]);
+  useEffect(() => {
+    const previous = previousSnapshot.current;
+    if (snapshot) previousSnapshot.current = snapshot;
+    // Metadata removal rewrites saved filters in the service. Reload that
+    // configuration when references disappear; ordinary value edits only need
+    // a result query, and load() still preserves an authored draft.
+    const properties = new Set(snapshot?.definitions.map(property => property.propertyId));
+    const options = new Set(snapshot?.selectOptions?.map(option => option.optionId));
+    const removed = snapshot && previous && (
+      previous.definitions.some(property => !properties.has(property.propertyId)) ||
+      previous.selectOptions?.some(option => !options.has(option.optionId))
+    );
+    if (removed) void load();
+    else if (projectionReady.current) void query();
+  }, [refreshKey]);
   const change = (config: ViewFilterConfig) => { hasDraft.current = true; setDraft(config); };
   const save = async (config = draft) => {
     if (saveInFlight.current || disabled) return;

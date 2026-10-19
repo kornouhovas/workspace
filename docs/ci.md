@@ -29,7 +29,9 @@ This runs on `windows-latest` and records its actual Windows Server version; it
 does not stand in for Windows 11 desktop acceptance. Installer downloads are not
 uploaded. See [Windows installation](windows-install.md).
 
-The issue #48 `desktop-shell` focused route also replays the original Windows
+The issue #48 `desktop-shell` focused route also replays the original development
+Table/Board lifecycle after the folder-group visibility and saved-filter failures,
+including their filter/removal and viewport regressions, and Windows
 creation/recovery Ladle layouts after the corresponding full-run failure.
 Its original assertions and exact-SHA artifact remain required; the broader
 ordinary platform matrix is unchanged.

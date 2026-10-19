@@ -240,3 +240,47 @@ All 96 renderer tests passed locally after the controlled-clock repair. Typechec
 lint, documentation links and diff checks passed. The repair contains only that
 test and this report; production source is still identical to installer-tested
 `41623b2`.
+
+## Original views lifecycle: visibility and saved-filter repair
+
+Focused run `39311071301` passed all three OSes on `215f2f6`; downloaded
+provenance, renderer results, original shell journeys and native cleanup were
+inspected. Full run `39308952674` subsequently completed with both Windows
+platform suites passing, then the original development Table/Board lifecycle
+failed in `runtime-folder-group-assignment.mjs`: a lazy field detached after
+viewport resizing. The retained Windows 2022 evidence and both failed job logs
+identify the same driver boundary.
+
+A narrow original-helper reproduction starting at 360 pixels reproduced the
+missing lazy field. The driver now waits for the committed C/Target identity and
+uses the existing owned-project visibility helper after movement, resize and
+reload, before interacting with its lazily mounted field. It never retries a
+mutation. The narrow EN/RU Table/Board probe passed all four cases, shutdown and
+cleanup; original identity, filesystem, metadata and containment assertions remain.
+
+Replaying the full original views consumer then exposed a product defect in
+metadata removal: the service had rewritten saved filter operands from Old to
+Next, while ViewFilters retained Old and displayed an unavailable reference.
+The query-only refresh optimization inherited from #41 refreshed result membership
+without rereading the rewritten saved configuration. A real-SQLite EN/RU renderer
+regression reproduced both failures before the fix. ViewFilters now rereads its
+saved configuration when accepted property/option identities disappear, using its
+existing request-version guards and draft protection. Ordinary value revisions
+retain the query-only path. The regression covers option replacement, property
+removal, configuration-read counts and preservation of authored drafts.
+
+Both review axes accepted these repairs. All 27 filter/removal tests and 83
+folder-assignment/viewport/CI-route tests passed locally; build, typecheck, lint,
+documentation links and diff checks passed. The focused desktop-shell route now
+also runs the original views consumer on all three OSes and the affected filter,
+metadata-removal, viewport and assignment interaction tests. Ordinary coverage,
+product timeouts and original assertions remain intact. The production filter
+change supersedes the earlier reuse of `41623b2` installer evidence: installers
+and full desktop acceptance must be renewed for the repaired candidate. Current
+native replay and remote gate results remain in the linked GitHub checkpoint.
+
+The complete local original `smoke:views -- dev` replay then passed all six
+EN/RU report entries, including four folder assignments, eight metadata-removal
+combinations, layout/filter/grouping lifecycle, restart, unchanged fixture files,
+normal shutdown and cleanup. Its retained report is
+`work/issue-48-ci/views-filter-repair/evidence.json` (local, no remote SHA claim).
