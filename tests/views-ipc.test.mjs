@@ -82,6 +82,8 @@ test('built IPC preserves option labels and repeated logical IDs in selection gr
     call('setViewGrouping',{viewId,config:{propertyId,settings:[]}});
     const projection=call('queryView',{viewId,archived:false});
     assert.deepEqual(projection.projectIds,[projectId]);
+    const source = call('listProjects');
+    assert.deepEqual(call('queryView',{viewId,archived:false,projection:{revision:source.revision,projectIds:[projectId]}}),projection);
     assert.deepEqual(projection.groups.map(g=>[g.value,g.label,g.projectIds]),[[a,'A',[projectId]],[b,'B',[projectId]],[null,undefined,[]]]);
     call('updateSelectOption',{propertyId,optionId:b,name:'Renamed',color:'blue'});
     assert.equal(call('queryView',{viewId,archived:false}).groups[1].label,'Renamed');

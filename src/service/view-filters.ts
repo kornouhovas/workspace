@@ -1,3 +1,4 @@
+import { validArchive, validExclusions } from "./discovery.js";
 import { isTableLayoutConfig, orderedProjectIds } from "../contracts/table-layout.js";
 import { readGrouping, projectGroups } from "./view-grouping.js";
 import { eq } from "drizzle-orm";
@@ -5,19 +6,20 @@ import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import { filterOperators, isViewFilterConfig, isViewFilterRequest, type FilterType, type FilterRule, type ViewFilterPayload } from "../contracts/view-filters.js";
 import { isCalendarDate } from "../contracts/date-value.js";
 import type { ServiceResult } from "../contracts/settings.js";
-import type { ProjectList, ProjectSummary, ProjectAssociationSummary } from "../contracts/workspaces.js";
+import type { ProjectList, ProjectSummary } from "../contracts/workspaces.js";
 import type { ArchiveSnapshot } from "../contracts/project-archive.js";
 import type { PropertySnapshot } from "../contracts/text-properties.js";
 import * as schema from "./db/schema.js";
 
 type Database = BetterSQLite3Database<typeof schema>;
+type ViewProject = Pick<ProjectSummary, "projectId" | "name" | "categoryId">;
 interface ReadModel {
   listProjects(input: unknown): ServiceResult<ProjectList>;
   listArchivedProjects(input: unknown): ServiceResult<ArchiveSnapshot>;
   listTextProperties(input: unknown): ServiceResult<PropertySnapshot>;
 }
 export function createViewFilterService(db: Database, model: ReadModel) {
-  return (input: unknown): ServiceResult<ViewFilterPayload> => {
+  return (input: unknown, membership?: "stored"): ServiceResult<ViewFilterPayload> => {
     if (!isViewFilterRequest(input)) return invalid();
     try {
       return db.transaction(tx => {
@@ -48,11 +50,35 @@ export function createViewFilterService(db: Database, model: ReadModel) {
           tx.update(schema.views).set({ filterConfig: JSON.stringify(config) }).where(eq(schema.views.id, view.id)).run();
           return { ok: true as const, value: { workspaceId: workspace.id, viewId: view.id, config } };
         }
-        const list = input.archived ? model.listArchivedProjects({ type: "workspace.listArchivedProjects", workspaceId: workspace.id }) : model.listProjects({ type: "workspace.listProjects", workspaceId: workspace.id });
-        if (!list.ok) return list;
+        let projects: ViewProject[];
+        if (input.projection || membership === "stored" && !input.archived) {
+          // This is an explicitly requested read of the displayed source, never
+          // a filesystem command's authorization. All IDs must still be the
+          // complete current non-archived membership of this source.
+          if (input.projection && input.projection.revision !== source.discoveryRevision) return invalid();
+          if (!validExclusions(JSON.parse(source.excludedRelativePaths), "grouped") || !validArchive(source.archiveRelativePath) ||
+            !Number.isSafeInteger(source.categoryPropertyRevision) || source.categoryPropertyRevision < 0 ||
+            ![null, "direct", "grouped"].includes(source.discoveryMode) || source.discoveryMode === "grouped" && !category) return storage();
+          if (source.appliedRootIdentity !== null) JSON.parse(source.appliedRootIdentity);
+          const archivedIds = new Set(tx.select().from(schema.projectArchives).where(eq(schema.projectArchives.sourceId, source.id)).all().map(row => row.projectId));
+          const records = tx.select().from(schema.projects).where(eq(schema.projects.sourceId, source.id)).all().filter(row => !archivedIds.has(row.id));
+          const byId = new Map(records.map(row => [row.id, row]));
+          const ids = input.projection?.projectIds ?? records.map(row => row.id);
+          if (ids.length !== records.length || ids.some(id => !byId.has(id))) return invalid();
+          projects = ids.map(id => {
+            const row = byId.get(id)!;
+            const parent = categories.find(c => c.id === row.categoryId && !c.modeInactive && c.associationState === "active");
+            if (!row.modeInactive && row.associationState === "active" && (source.discoveryMode === "grouped"
+              ? !parent || row.relativePath.split("/").length !== 2 || row.relativePath.split("/")[0] !== parent.relativePath : row.categoryId !== null)) throw new Error("Invalid required category");
+            return { projectId: row.id, name: row.relativePath.split("/").at(-1)!, categoryId: row.categoryId };
+          });
+        } else {
+          const list = input.archived ? model.listArchivedProjects({ type: "workspace.listArchivedProjects", workspaceId: workspace.id }) : model.listProjects({ type: "workspace.listProjects", workspaceId: workspace.id });
+          if (!list.ok) return list;
+          projects = [...list.value.projects, ...("retainedProjects" in list.value ? list.value.retainedProjects : [])];
+        }
         const properties = model.listTextProperties({ type: "workspace.listTextProperties", workspaceId: workspace.id });
         if (!properties.ok) return properties;
-        const projects = [...list.value.projects, ...("retainedProjects" in list.value ? list.value.retainedProjects : [])];
         const search = config.search.trim().toLowerCase();
         const tableConfig: unknown = view.kind === "table" ? JSON.parse(view.tableConfig) : {columns:[],rowOrder:[]};
         if (!isTableLayoutConfig(tableConfig)) return storage();
@@ -70,7 +96,7 @@ export function createViewFilterService(db: Database, model: ReadModel) {
     } catch { return storage(); }
   };
 }
-function valueFor(project: ProjectSummary | ProjectAssociationSummary, propertyId: string, type: FilterType, values: PropertySnapshot): string | number | string[] | null {
+function valueFor(project: ViewProject, propertyId: string, type: FilterType, values: PropertySnapshot): string | number | string[] | null {
   if (type === "name") return project.name;
   if (type === "category") return project.categoryId ?? null;
   const owned = (row: { projectId: string; propertyId: string }) => row.projectId === project.projectId && row.propertyId === propertyId;

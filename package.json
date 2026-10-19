@@ -56,7 +56,8 @@
     "smoke:install:mac": "node scripts/smoke-macos-install.mjs",
     "package:win": "npm run build && npm run package:win:built",
     "package:win:built": "electron-builder --win nsis --x64 --publish never && npm run check:artifact -- release/win-unpacked",
-    "smoke:install:win": "node scripts/smoke-windows-install.mjs"
+    "smoke:install:win": "node scripts/smoke-windows-install.mjs",
+    "smoke:performance": "node scripts/smoke-performance.mjs"
   },
   "dependencies": {
     "better-sqlite3": "13.0.3",

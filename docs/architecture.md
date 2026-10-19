@@ -485,6 +485,28 @@ and malformed configuration produce explicit errors and require an explicit edit
 clear; queries never silently normalize saved rules. See the [filter contract](plans/issue-28-view-filters.md)
 and [verification](verification/issue-28-view-filters.md).
 
+Issue #41 adds an explicit read-only `queryView.projection` for the complete
+source snapshot already displayed by the active Table/Board. Its discovery
+revision and unique IDs must match the complete current non-archived membership
+of the workspace's source. The supplied order preserves that snapshot's active/
+retained partition; saved manual row order still applies. Filters, properties,
+options and grouping are read afresh in the SQLite transaction. This read does
+not rescan disk; external observations/Refresh replace the displayed snapshot.
+Stale or foreign membership produces the existing query error/retry state.
+Requests without this hint and Archived queries retain fresh filesystem reads.
+Ordinary property group assignments derive current source membership on the
+server and evaluate current filters/values without scanning disk, like existing
+metadata edits of retained projects. Name/category assignments, other filesystem
+commands and their authorization still use fresh disk evidence. No caller can
+select the internal metadata membership route through IPC.
+
+Large views retain all ordered row/card identities but mount fields near the
+viewport. Focus, open drafts and pending operations pin their fields until they
+finish. A localized keyboard focus gate loads offscreen fields; backward Tab
+enters the last control. Ordinary idle cells mount their editor state on first
+use. See [scale scenarios](plans/issue-41-performance.md) and
+[measurement boundaries](verification/issue-41-performance.md).
+
 ## Exact scalar view grouping (Issue 29)
 
 Migration 0020 adds view-owned grouping configuration alongside filters. Typed

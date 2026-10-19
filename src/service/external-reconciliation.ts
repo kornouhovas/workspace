@@ -20,18 +20,30 @@ function storedIdentity(row: Association): NativeIdentity {
 }
 const nativeAlias = (a: NativeIdentity, b: NativeIdentity) => a.dev === b.dev && a.ino === b.ino;
 
+function indexCandidates(scan: DiscoveryScan, directories: DirectoryObservation[]) {
+  const eligible = new Set(scan.entries.filter(entry => entry.reason === null).map(entry => entry.relativePath));
+  const key = (identity: NativeIdentity) => JSON.stringify([identity.dev, identity.ino, identity.birthtimeNs]);
+  const byIdentity = new Map<string, DirectoryObservation[]>();
+  for (const child of directories) {
+    if (!eligible.has(child.relativePath) || !reliableIdentity(child.identity)) continue;
+    const id = key(child.identity), matches = byIdentity.get(id) ?? [];
+    matches.push(child); byIdentity.set(id, matches);
+  }
+  return { eligible: (path: string) => eligible.has(path), matches: (identity: NativeIdentity) => byIdentity.get(key(identity)) ?? [] };
+}
+
 // Compute the complete identity mapping before judging old-path occupants. Paths
 // reserve placement, while sufficient unchanged native evidence identifies a move.
 function directMappings(scan: DiscoveryScan, records: Project[], exclusions: string[], archive: string | null) {
   const directories = scan.snapshot!.children.filter((child): child is DirectoryObservation => child.kind === "directory");
   const identities = records.map(storedIdentity);
+  const candidatesByIdentity = indexCandidates(scan, directories);
   const mappings = new Map<string, string>();
   for (const [index, row] of records.entries()) {
     const stored = identities[index];
     if (row.modeInactive || row.associationState !== "active" || !reliableIdentity(stored) || exclusions.includes(row.relativePath) ||
       row.relativePath === archive?.split("/")[0]) continue;
-    const candidates = directories.filter((child) => reliableIdentity(child.identity) && sameIdentity(stored, child.identity) &&
-      scan.entries.some((entry) => entry.relativePath === child.relativePath && entry.reason === null));
+    const candidates = candidatesByIdentity.matches(stored);
     if (candidates.length !== 1) continue;
     const target = candidates[0];
     // Continuously matching same-path associations need no write. In particular,
@@ -59,7 +71,9 @@ interface Placement { relativePath: string; categoryId: string | null }
 function groupedMappings(scan: DiscoveryScan, projects: Project[], categories: Category[], exclusions: string[], archive: string | null) {
   const directories = scan.snapshot!.children.filter((child): child is DirectoryObservation => child.kind === "directory");
   const evidence = [...categories, ...projects].map((row) => ({ row, identity: storedIdentity(row) }));
-  const eligible = (path: string) => scan.entries.some((entry) => entry.relativePath === path && entry.reason === null);
+  // Index exact, reliable candidate identities once. Keep every alias and all
+  // reservation checks below; the index must never choose an ambiguous match.
+  const { eligible, matches: candidatesByIdentity } = indexCandidates(scan, directories);
   const suppressed = (path: string) => exclusions.some((excluded) => path === excluded || path.startsWith(`${excluded}/`)) ||
     !!archive && archive.split("/").slice(0, 2).join("/") === path;
   // Reviewed mode changes can retain a direct project over the same physical
@@ -82,7 +96,7 @@ function groupedMappings(scan: DiscoveryScan, projects: Project[], categories: C
     if (row.modeInactive || row.associationState !== "active" || suppressed(row.relativePath)) return null;
     const identity = storedIdentity(row);
     if (!reliableIdentity(identity)) return null;
-    const matches = directories.filter((child) => eligible(child.relativePath) && reliableIdentity(child.identity) && sameIdentity(child.identity, identity));
+    const matches = candidatesByIdentity(identity);
     if (matches.length !== 1) return null;
     const child = matches[0];
     return conflict(child, row, child.relativePath === row.relativePath) ? null : child;

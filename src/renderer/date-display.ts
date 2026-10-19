@@ -1,6 +1,11 @@
 import { isCalendarDate } from "../contracts/date-value.js";
 import type { Language } from "../contracts/settings.js";
 
+const formatters = {
+  en: new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeZone: "UTC", calendar: "gregory", numberingSystem: "latn" }),
+  ru: new Intl.DateTimeFormat("ru-RU", { dateStyle: "medium", timeZone: "UTC", calendar: "gregory", numberingSystem: "latn" }),
+};
+
 export function formatCalendarDate(value: string, language: Language): string {
   if (!isCalendarDate(value)) return "";
   const [year, month, day] = value.split("-").map(Number);
@@ -8,7 +13,5 @@ export function formatCalendarDate(value: string, language: Language): string {
   // setUTCFullYear also avoids Date's special handling of years 00–99.
   const date = new Date(0);
   date.setUTCFullYear(year, month - 1, day);
-  return new Intl.DateTimeFormat(language === "ru" ? "ru-RU" : "en-US", {
-    dateStyle: "medium", timeZone: "UTC", calendar: "gregory", numberingSystem: "latn",
-  }).format(date);
+  return formatters[language].format(date);
 }

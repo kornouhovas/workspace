@@ -1,3 +1,4 @@
+import { ViewportProjectRow } from "./ViewportProjectRow.js";
 import { MetadataRemovalPanel } from "./MetadataRemovalPanel.js";
 import { GroupAssignment, groupAssignmentMime, readGroupDrop } from "./GroupAssignment.js";
 import type { AssignProjectGroupCommand } from "../../contracts/group-assignment.js";
@@ -7,7 +8,7 @@ import { useTableLayout, tableColumns, TableLayoutControls, moveTableRow, ordere
 import { ViewGrouping } from "./ViewGrouping.js";
 import type { ViewGroup } from "../../contracts/view-grouping.js";
 import { ViewFilters } from "./ViewFilters.js";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { Language } from "../../contracts/settings.js";
 import type { ProjectSummary, ProjectAssociationSummary, CategoryProperty, CategoryPropertySnapshot, CategorySummary } from "../../contracts/workspaces.js";
 import type { TextPropertySnapshot } from "../../contracts/text-properties.js";
@@ -68,6 +69,7 @@ function TextPropertiesContent({ viewId, layout = "table", hideReveal, client, w
   const assignmentOwner = `${viewId}:${layout}:${!!hideReveal}`;
   const currentAssignmentOwner = useRef(assignmentOwner); currentAssignmentOwner.current = assignmentOwner;
   useEffect(() => { setAssignmentMessage(null); assignmentFocus.current = null; }, [assignmentOwner]);
+  const backwards = useRef(false);
   const categoryDrafts = useRef(new Map<string, CategoryLabelDraft>());
   const t = (key: TranslationKey) => translate(language, key);
   const [removal, setRemoval] = useState<{property: import("../../contracts/text-properties.js").PropertyDefinition; optionId: string | null} | null>(null);
@@ -143,6 +145,25 @@ function TextPropertiesContent({ viewId, layout = "table", hideReveal, client, w
   const fields = [{propertyId: "name", name: t("projectName"), text: false}, ...(categoryProperty ? [{propertyId:categoryProperty.propertyId, name:categoryProperty.name ?? t("discoveryCategory"), text:false}] : []), ...(snapshot?.definitions.map(p => ({propertyId:p.propertyId, name:p.name, text:p.propertyType === "text"})) ?? [])];
   const columns = tableColumns(tableState.config, fields);
   const projectById = new Map([...projects, ...retainedProjects].map(p => [p.projectId,p]));
+  const retainedById = new Map(retainedProjects.map(p => [p.projectId, p]));
+  const filteredSet = new Set(filteredIds?.viewId === viewId ? filteredIds?.ids ?? [] : []);
+  // Index the committed snapshot once, rather than scanning every source value
+  // for every visible cell. Snapshot replacement preserves revision guards.
+  const propertyValues = useMemo(() => {
+    const key = (row: {projectId:string; propertyId:string}) => `${row.projectId}:${row.propertyId}`;
+    const multi = new Map<string, string[]>();
+    for (const row of snapshot?.multiSelectValues ?? []) {
+      const id = key(row), values = multi.get(id) ?? [];
+      values.push(row.optionId); multi.set(id, values);
+    }
+    return {
+      text: new Map(snapshot?.values.map(row => [key(row), row.value])),
+      number: new Map(snapshot?.numberValues?.map(row => [key(row), row.value])),
+      date: new Map(snapshot?.dateValues?.map(row => [key(row), row.value])),
+      select: new Map(snapshot?.selectValues?.map(row => [key(row), row.optionId])), multi,
+      options: new Map(snapshot?.definitions.map(property => [property.propertyId, snapshot.selectOptions?.filter(option => option.propertyId === property.propertyId) ?? []])),
+    };
+  }, [snapshot]);
   const rowIds = orderedProjectIds(tableState.config?.rowOrder ?? [], [...projectById.keys()]);
   const rowBusy = disabled || tableState.pending || tableState.loading || !tableState.config;
   const presentCells = (fragment: ReactElement<{children: ReactNode}>, card = false) => {
@@ -241,7 +262,6 @@ function TextPropertiesContent({ viewId, layout = "table", hideReveal, client, w
     }
   };
   const Header = layout === "board" ? "div" : "th";
-  const Row = layout === "board" ? "li" : "tr";
   const Cell = layout === "board" ? "div" : "td";
   const headers = presentCells(<><Header data-column-id="name" className="board-field-placeholder">{t("projectName")}</Header>
         {categoryProperty && <Header data-column-id={categoryProperty.propertyId} key={categoryProperty.propertyId} aria-label={categoryProperty.name ?? t("discoveryCategory")}>
@@ -260,14 +280,20 @@ function TextPropertiesContent({ viewId, layout = "table", hideReveal, client, w
         </Header>)}
         {!hideReveal && <Header className="board-field-placeholder">{t("revealProject")}</Header>}
       </>);
-  const rows = (ids?: string[], groupKey?: string) => (layout === "table" ? rowIds.map(id => projectById.get(id)!) : [...projects, ...retainedProjects]).filter(project => !ids || ids.includes(project.projectId)).filter(project => !viewId || (filteredIds?.viewId === viewId && filteredIds.ids?.includes(project.projectId))).map((project) => {
-        const retained = retainedProjects.find((row) => row.projectId === project.projectId);
+  const rows = (ids?: string[], groupKey?: string) => {
+    const groupIds = ids ? new Set(ids) : null;
+    const visibleIds = rowIds.filter(id => (!groupIds || groupIds.has(id)) && (!viewId || filteredSet.has(id)));
+    const rowPositions = new Map(visibleIds.map((id, index) => [id, index]));
+    return (layout === "table" ? rowIds.map(id => projectById.get(id)!) : [...projects, ...retainedProjects])
+      .filter(project => (!groupIds || groupIds.has(project.projectId)) && (!viewId || filteredSet.has(project.projectId))).map((project) => {
+        const retained = retainedById.get(project.projectId);
         const reason = retained?.associationState === "excluded" && retained.retentionReason !== "mode_change" ? "excluded" : retained?.resolution ?? retained?.associationState;
         const label = retained?.retentionReason === "mode_change" ? "projectModeRetained" : reason && reason !== "active" ? resolutionLabels[reason] : null;
-        const visibleIds = rowIds.filter(id => (!ids || ids.includes(id)) && (!viewId || filteredIds?.ids?.includes(id)));
-        const rowIndex = visibleIds.indexOf(project.projectId);
+        const rowIndex = rowPositions.get(project.projectId) ?? -1;
         const revealLocator = JSON.stringify([project.relativePath, project.categoryId, categories.find(category => category.categoryId === project.categoryId)?.relativePath, retained?.retentionReason]);
-        return <Row key={project.projectId} data-project-id={project.projectId} className={layout === "board" ? `project-card ${boardState.config?.wrap === false ? "board-content-nowrap" : "board-content-wrap"}` : undefined}
+        return <ViewportProjectRow as={layout === "board" ? "li" : "tr"} key={project.projectId} projectId={project.projectId} projectName={project.name} language={language}
+          columnCount={(viewId && layout === "table" ? columns.filter(column => !column.hidden).length : fields.length) + (hideReveal ? 0 : 1)}
+          alwaysVisible={project.projectId === rowIds[0]} backwards={backwards} busy={disabled || !!renameDisabled || !!categoryMoveDisabled || !!locateDisabled || assignmentPending} className={layout === "board" ? `project-card ${boardState.config?.wrap === false ? "board-content-nowrap" : "board-content-wrap"}` : undefined}
           onDragOver={event => {if (layout === "table" && !rowBusy && event.dataTransfer.types.includes("application/x-workspace-table-row")) event.preventDefault();}}
           onDrop={event => {
             if (layout !== "table" || rowBusy) return;
@@ -275,7 +301,7 @@ function TextPropertiesContent({ viewId, layout = "table", hideReveal, client, w
             if (!raw) return;
             event.preventDefault(); event.stopPropagation();
             try { const payload = JSON.parse(raw); if (payload.workspaceId === workspaceId && payload.viewId === viewId && visibleIds.includes(payload.projectId)) moveRow(payload.projectId, project.projectId); } catch { /* Ignore unrelated drags. */ }
-          }}>{presentCells(<><Cell data-column-id="name" data-label={t("projectName")} key="project-name" aria-label={retained ? undefined : project.name}><span className="property-authored">{project.name}</span>
+          }}>{() => presentCells(<><Cell data-column-id="name" data-label={t("projectName")} key="project-name" aria-label={retained ? undefined : project.name}><span className="property-authored">{project.name}</span>
           {viewId && assignmentProperty && grouped?.groups && (() => {
             const origin = grouped.groups.find(group => group.key === groupKey && group.projectIds.includes(project.projectId));
             return origin ? <GroupAssignment command={{type:"workspace.assignProjectGroup",workspaceId,viewId,propertyId:assignmentProperty.propertyId,projectId:project.projectId,fromKey:origin.key,toKey:origin.key,archived:!!hideReveal}}
@@ -309,24 +335,26 @@ function TextPropertiesContent({ viewId, layout = "table", hideReveal, client, w
         {snapshot?.definitions.map((property) => <Cell data-column-id={property.propertyId} key={property.propertyId} data-label={property.name}>
           {property.propertyType === "multi_select" ? <MultiSelectPropertyCell workspaceId={workspaceId} sourceId={sourceId} projectId={project.projectId} propertyId={property.propertyId}
             revision={snapshot.revision} minimumRevision={minimumRevision} projectName={project.name} propertyName={property.name} language={language} disabled={disabled || loadError || draft !== null}
-            options={snapshot.selectOptions?.filter(option => option.propertyId === property.propertyId) ?? []}
-            value={snapshot.multiSelectValues?.filter(entry => entry.projectId === project.projectId && entry.propertyId === property.propertyId).map(entry => entry.optionId) ?? []}
+            options={propertyValues.options.get(property.propertyId) ?? []}
+            value={propertyValues.multi.get(`${project.projectId}:${property.propertyId}`) ?? []}
             onSave={value => saveValue(project.projectId, property.propertyId, value, property.propertyType)} /> : <TextPropertyCell workspaceId={workspaceId} sourceId={sourceId} projectId={project.projectId} propertyId={property.propertyId}
             revision={snapshot.revision} minimumRevision={minimumRevision}
             projectName={project.name} propertyName={property.name} language={language} disabled={disabled || loadError || draft !== null}
-            propertyType={property.propertyType} options={snapshot.selectOptions?.filter(option => option.propertyId === property.propertyId)}
-            value={property.propertyType === "single_select" ? snapshot.selectValues?.find(entry => entry.projectId === project.projectId && entry.propertyId === property.propertyId)?.optionId ?? null : property.propertyType === "number" ? (() => {
-              const numeric = snapshot.numberValues?.find(entry => entry.projectId === project.projectId && entry.propertyId === property.propertyId)?.value;
+            propertyType={property.propertyType} options={propertyValues.options.get(property.propertyId)}
+            value={property.propertyType === "single_select" ? propertyValues.select.get(`${project.projectId}:${property.propertyId}`) ?? null : property.propertyType === "number" ? (() => {
+              const numeric = propertyValues.number.get(`${project.projectId}:${property.propertyId}`);
               return numeric === undefined ? null : String(numeric);
-            })() : property.propertyType === "date" ? snapshot.dateValues?.find(entry => entry.projectId === project.projectId && entry.propertyId === property.propertyId)?.value ?? null : snapshot.values.find((entry) => entry.projectId === project.projectId && entry.propertyId === property.propertyId)?.value ?? null}
+            })() : property.propertyType === "date" ? propertyValues.date.get(`${project.projectId}:${property.propertyId}`) ?? null : propertyValues.text.get(`${project.projectId}:${property.propertyId}`) ?? null}
             onSave={(value) => saveValue(project.projectId, property.propertyId, value, property.propertyType)} />}
         </Cell>)}
         {!hideReveal && <Cell key="project-actions" data-label={t("revealProject")}><ProjectRevealButton client={client} workspaceId={workspaceId} projectId={project.projectId} name={project.name} language={language} disabled={disabled} minimumRevision={minimumDiscoveryRevision} sourceLifetime={sourceLifetime}
           locatorKey={revealLocator} targetKey={JSON.stringify([revealLocator, retained?.associationState, retained?.resolution])} /></Cell>}
-      </>, true)}</Row>; });
-  return <div className="text-properties" aria-busy={pending || loading}>
+      </>, true)}</ViewportProjectRow>; });
+  };
+  return <div className="text-properties" aria-busy={pending || loading} onKeyDownCapture={event => { if (event.key === "Tab") backwards.current = event.shiftKey; }}>
     {viewId && <ViewFilters client={client} workspaceId={workspaceId} viewId={viewId} archived={!!hideReveal} language={language}
       snapshot={snapshot} categoryProperty={categoryProperty} categories={categories} disabled={disabled || loadError}
+      projection={discoveryRevision > 0 && !hideReveal ? {revision:discoveryRevision,projectIds:[...projectById.keys()]} : undefined}
       refreshToken={assignmentRefresh} refreshKey={JSON.stringify([assignmentRefresh, snapshot?.revision, discoveryRevision, projects.map(p => [p.projectId, p.name, p.categoryId]), retainedProjects.map(p => [p.projectId, p.name, p.categoryId])])}
       onResults={ids => setFilteredIds({ viewId, ids })} onGroups={(groups,propertyId,refreshToken) => setGrouped({viewId,groups,propertyId,refreshToken})} />
     }

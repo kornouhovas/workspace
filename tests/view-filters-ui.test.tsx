@@ -35,7 +35,7 @@ for (const language of ["en", "ru"] as const) for (const layout of ["table", "bo
     const api = { getBackendStatus: async () => ({ state: "ready" }), onBackendStatus: () => () => {}, workspace: async (input: {type:string}) => failQuery && input.type === "workspace.queryView" ? { ok: false, error: { code: "storage", message: "failure" } } : /workspace\.(list|get|query)/.test(input.type) ? service.handleQuery(input) : service.handleCommand(input), onWorkspaceChange: service.workspaces.subscribe } as unknown as WorkspaceDesktopApi;
     const client = new WorkspaceServiceClient(api), user = userEvent.setup({ document }), t = (key: Parameters<typeof translate>[1]) => translate(language, key);
     try {
-      render(<TextPropertiesTable viewId={viewId} layout={layout} client={client} workspaceId={workspaceId} sourceId={sourceId} projects={projects} language={language} disabled={false} />);
+      render(<TextPropertiesTable viewId={viewId} layout={layout} client={client} workspaceId={workspaceId} sourceId={sourceId} projects={projects} discoveryRevision={query("listProjects").value.revision} language={language} disabled={false} />);
       const rowCount = () => layout === "table" ? screen.getByRole("table").querySelectorAll("tbody tr").length : within(screen.getByRole("list", { name: t("boardProjects") })).queryAllByRole("listitem").length;
       await waitFor(() => assert.equal(rowCount(), 2));
       await user.click(screen.getByRole("button", { name: `${t("editTextValue")}: Alpha / Notes` }));

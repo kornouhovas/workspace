@@ -4,6 +4,13 @@ Read when selecting or diagnosing a CI route, changing CI scheduling, or checkin
 [macos-install.yml](../.github/workflows/macos-install.yml) adds macOS 14 arm64 DMG
 build/install/reopen/replacement acceptance on push, pull requests and manual dispatch.
 It retains exact-SHA reports/screenshots without publishing the DMG.
+The issue-scoped [performance workflow](../.github/workflows/performance.yml)
+packages immutable baseline `d925f8b7` and the candidate on macOS 14 and Windows
+latest, then applies the same disposable 1,000-project harness. Baseline target
+misses are retained; scenario, shutdown and cleanup failures remain failures.
+The candidate must pass correctness and all approved limits. Artifacts contain
+raw reports/screens with SHA/run/attempt provenance, without application binaries.
+See [measurement boundaries](verification/issue-41-performance.md).
 The same workflow adds Windows x64 NSIS installation/reopen/reinstall acceptance
 on ordinary push/PR, or independently with `checks: windows-install` on dispatch.
 This runs on `windows-latest` and records its actual Windows Server version; it

@@ -10,17 +10,18 @@ import { StatusMessage } from "./bb-foundation.js";
 interface Props {
   client: WorkspaceServiceClient; workspaceId: string; viewId: string; archived: boolean; language: Language;
   snapshot: PropertySnapshot | null; categoryProperty?: CategoryProperty | null; categories: CategorySummary[];
+  projection?: import("../../contracts/view-filters.js").ViewProjectProjection;
   refreshKey: string; refreshToken?: number; disabled: boolean; onResults(ids: string[] | null): void; onGroups?(groups: import("../../contracts/view-grouping.js").ViewGroup[] | null, propertyId: string | null, refreshToken: number): void;
 }
 const clearConfig = (): ViewFilterConfig => ({ search: "", rules: [] });
 export function ViewFilters(props: Props) { return <FilterContent key={`${props.workspaceId}:${props.viewId}:${props.archived}`} {...props} />; }
-function FilterContent({ client, workspaceId, viewId, archived, language, snapshot, categoryProperty, categories, refreshKey, refreshToken = 0, disabled, onResults, onGroups }: Props) {
+function FilterContent({ client, workspaceId, viewId, archived, language, snapshot, categoryProperty, categories, projection, refreshKey, refreshToken = 0, disabled, onResults, onGroups }: Props) {
   const t = (key: TranslationKey) => translate(language, key);
   const [draft, setDraft] = useState<ViewFilterConfig>(clearConfig);
   const [loading, setLoading] = useState(true), [saving, setSaving] = useState(false);
   const [error, setError] = useState<"filterLoadError" | "filterSaveError" | "filterQueryError" | null>(null);
   const [empty, setEmpty] = useState(false);
-  const configRequestVersion = useRef(0), projectionReady = useRef(false), reloadAfterSave = useRef(false);
+  const configRequestVersion = useRef(0), projectionReady = useRef(false);
   const queryRequestVersion = useRef(0), mountGeneration = useRef(0), saveInFlight = useRef(false), hasDraft = useRef(false);
   const results = useRef(onResults); results.current = onResults;
   const groupResults = useRef(onGroups); groupResults.current = onGroups;
@@ -29,13 +30,14 @@ function FilterContent({ client, workspaceId, viewId, archived, language, snapsh
     ...(categoryProperty ? [{ id: categoryProperty.propertyId, name: categoryProperty.name ?? t("discoveryCategory"), type: "category" as const }] : []),
     ...(snapshot?.definitions.map(p => ({ id: p.propertyId, name: p.name, type: p.propertyType })) ?? []),
   ];
+  const latestProjection = useRef(projection); latestProjection.current = projection;
   const latestRefreshToken = useRef(refreshToken); latestRefreshToken.current = refreshToken;
   const query = async () => {
     const projectionToken = latestRefreshToken.current;
     const request = ++queryRequestVersion.current;
     setLoading(true); setEmpty(false);
     try {
-      const result = await client.queryView(workspaceId, viewId, archived);
+      const result = await client.queryView(workspaceId, viewId, archived, latestProjection.current);
       if (request !== queryRequestVersion.current) return;
       if (result.ok && result.value.workspaceId === workspaceId && result.value.viewId === viewId && result.value.archived === archived) {
         groupResults.current?.(result.value.groups ?? null, result.value.groupPropertyId ?? null, projectionToken); results.current(result.value.projectIds); setEmpty(!result.value.projectIds.length);
@@ -60,8 +62,11 @@ function FilterContent({ client, workspaceId, viewId, archived, language, snapsh
   useEffect(() => {
     void load();
     const stop = client.onWorkspaceChange(event => {
-      if (event.type !== "workspace.listChanged" && !(event.type === "workspace.propertiesChanged" && event.workspaceIds.includes(workspaceId))) return;
-      if (saveInFlight.current) { if (event.type === "workspace.propertiesChanged") reloadAfterSave.current = true; } else void load();
+      // Source property events are owned by TextPropertiesContent. Its accepted
+      // snapshot revision arrives through refreshKey; a second subscription here
+      // was issuing duplicate full-source queries for the same committed edit.
+      if (event.type !== "workspace.listChanged") return;
+      if (!saveInFlight.current) void load();
     });
     return () => { mountGeneration.current++; queryRequestVersion.current++; configRequestVersion.current++; stop(); };
   }, [client, workspaceId, viewId, archived]);
@@ -79,7 +84,7 @@ function FilterContent({ client, workspaceId, viewId, archived, language, snapsh
         projectionReady.current = true; hasDraft.current = false; setDraft(result.value.config); await query();
       } else setError("filterSaveError");
     } catch { if (started === mountGeneration.current) setError("filterSaveError"); }
-    finally { if (started === mountGeneration.current) { saveInFlight.current = false; setSaving(false); if (reloadAfterSave.current) { reloadAfterSave.current = false; void load(); } } }
+    finally { if (started === mountGeneration.current) { saveInFlight.current = false; setSaving(false);  } }
   };
   const ruleChange = (index: number, rule: FilterRule) => change({ ...draft, rules: draft.rules.map((current, i) => i === index ? rule : current) });
   return <section className="view-filters" aria-label={t("filtersTitle")} aria-busy={loading || saving}>
