@@ -64,7 +64,9 @@ Other packaged npm dependency licenses remain in
 ## Updates and data locations
 
 The installed app uses `~/Library/Application Support/workspace/` for
-`workspace.sqlite`, recovery exports/backups and session data. An app replacement
+`workspace.sqlite`, automatic/pre-migration backups and session data. Manual
+exports are downloaded as `workspace-application-data.json`; keep those recovery
+copies in a safe location separately. An app replacement
 must keep the same product identity and data location. Moving/replacing `.app`
 does not migrate, import or delete project folders. Removing `.app` does not
 remove these user data. Development uses the distinct `development` subdirectory;
