@@ -30,6 +30,18 @@ A view intended for its owner's use.
 A view available to the participants of a shared project source.
 _Avoid_: Public link, public website
 
+**Project preview**:
+A temporary presentation of a project's properties and file tree alongside the current work area.
+_Avoid_: File preview
+
+**Project tab**:
+A retained open presentation of a project within a workspace.
+_Avoid_: View, project record
+
+**Workspace session**:
+The open content and arrangement of working areas used to resume work in a workspace.
+_Avoid_: Saved view, project source
+
 **Folder-backed Select**:
 A selection property whose values correspond to project-containing folders. Its display name can differ from the folder names.
 _Avoid_: Status when the property represents another category

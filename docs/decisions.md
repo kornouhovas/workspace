@@ -50,6 +50,17 @@ Design tracking: [GitHub #6](https://github.com/kornouhovas/workspace/issues/6).
 | D40 | Remote operation requires a connected host. When disconnected, show connection loss and do not accumulate changes or commands for automatic replay. Reconnect and reload current state when the host returns. |
 | D41 | The user explicitly deferred Q46's parallel-agent working-file policy until AI implementation design. Shared directories, Git worktrees and non-Git copies remain alternatives; none is the selected default. Resolve this before implementing concurrent editing, without blocking the earlier local release. |
 
+## Desktop UX interview decisions
+
+Accepted after D41:
+
+| ID | Decision |
+| --- | --- |
+| D42 | Restore main's complete desktop working cycle on new-workspace: navigation, saved-view/project tabs, project preview, split panels, file tree, session restoration and appearance choice. Detailed behavior is resolved in the [desktop UX spec](specs/workspace-desktop-ux.md). |
+| D43 | Main supplies working scenarios and principal layout; Radix UI and Tailwind CSS with bb's visual language supply the component foundation. Preserve new-workspace's domain and safety contracts. See [ADR 0008](adr/0008-desktop-experience-reference-authority.md). |
+| D44 | Desktop UX acceptance is required for the first local 0.1.0 release. Keep a separate linked spec and implementation slices; final integration acceptance must include the new UI. Performance issue 41 may proceed independently, with renewed measurements on the finished UI. |
+| D45 | Use bb's settings organization as the reference. Exact sections, entry points and scope mapping remain interview decisions. |
+
 ## Open design branches
 
 | ID | Question and prerequisite |

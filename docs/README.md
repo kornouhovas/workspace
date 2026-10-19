@@ -10,6 +10,7 @@ These documents are written for the new implementation. The previous documentati
 | [Architecture](architecture.md) | Boundaries, stack and implementation status |
 | [Roadmap](roadmap.md) | Outcomes, dependencies and completion criteria |
 | [Workspace 0.1.0 specification](specs/workspace-0.1.0.md) | Local-release requirements and acceptance for M1–M4 |
+| [Desktop experience specification](specs/workspace-desktop-ux.md) | Interview draft: main workflow preservation, Radix/Tailwind and bb visual/settings organization |
 | [Workspace 0.1.0 implementation tickets](specs/workspace-0.1.0-tickets/README.md) | Published vertical slices, historical IDs and blocking edges |
 | [Development](development.md) | GitHub-only workflow, executor selection, integration and verification |
 | [CI](ci.md) | Conditional CI routes and scheduling |
