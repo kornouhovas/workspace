@@ -242,6 +242,8 @@ jobs:
           set -o pipefail
           mkdir -p work/ci-views-readiness
           node --input-type=module -e 'import { writeFileSync } from "node:fs"; writeFileSync("work/ci-views-readiness/provenance.json", JSON.stringify({sha:process.env.GITHUB_SHA,run:process.env.GITHUB_RUN_ID,attempt:process.env.GITHUB_RUN_ATTEMPT,platform:process.platform}) + "\n")'
+          # Match the ordinary suite runner's serial lazy-install prerequisite.
+          node -e "require('electron')"
           npm run build 2>&1 | tee work/ci-views-readiness/build.log
       - name: Async path and group assignment regressions
         shell: bash

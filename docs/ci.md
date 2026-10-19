@@ -54,6 +54,8 @@ strict failures and exact-SHA evidence; full acceptance follows only after the
 original commands pass. Native drag endpoints are scrolled into view before
 mouse-down; automatic scrolling during the gesture is disabled, without replaying
 a mutation or replacing its result assertions.
+As in the ordinary suite runner, its build prerequisite completes Electron's
+lazy installation serially before parallel native regression workers start.
 
 ## Candidate and handoff
 

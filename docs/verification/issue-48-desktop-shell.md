@@ -558,3 +558,23 @@ zero native drag events. This expands the actual failed-host map to Windows 2022
 the focused matrix includes it as well. The repair code is unchanged. Prior
 macOS/Windows latest focused work on `a00102df` is retained, while renewed
 same-candidate focused acceptance will cover all three observed failing hosts.
+
+Expanded run `39334011825` on `a45616e5` passed all three independent original
+views journeys on each of the three hosts: 54 report blocks, 27 ordinary quits/
+backend exits, nine cleanup gates and 72 recorded gestures with accepted drops.
+All original reports and exact-SHA artifacts were downloaded and inspected.
+Overall acceptance still failed because both Windows regression blocks stopped
+in the new native test's Electron launch, before any gesture assertion. Their
+logs show both parallel native workers beginning lazy Electron installation;
+the later path-readiness worker launched successfully. The ordinary suite
+runner already completes the shared lazy installation before spawning workers,
+while the focused direct test command omitted that prerequisite. Installed
+Electron package code confirms that first require can extract the shared binary;
+the logs do not establish the precise Windows extraction interleaving.
+
+The focused build prerequisite now performs the same serial require before
+parallel native tests. Failed installation remains a failed build and prevents
+dependent original journeys. No application, helper, deadline or acceptance
+assertion changed. Both review axes accepted this setup repair; all 87 local
+affected tests passed with the prerequisite. Lint/docs/diff checks passed.
+Renewed exact-SHA focused acceptance remains required before full CI.

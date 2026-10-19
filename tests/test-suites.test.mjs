@@ -968,6 +968,7 @@ test('views readiness isolates the original failed macOS and Windows lifecycles'
     assert.deepEqual(active, event === 'workflow_dispatch' ? ['focused-views-readiness'] : ['common']);
   }
   const job = workflow.jobs['focused-views-readiness'];
+  assert.ok(job.steps.find(step => step.id === 'build').run.includes('node -e "require(\'electron\')"'));
   assert.equal(job['runs-on'], '${{ matrix.os }}');
   assert.deepEqual(job.strategy.matrix.os, ['macos-latest', 'windows-latest', 'windows-2022']);
   assert.equal(job.strategy['fail-fast'], false);
