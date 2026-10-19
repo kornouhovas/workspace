@@ -117,6 +117,39 @@ The owner accepted all three recommendations:
 | Restart or restore a backup | Restore the allowed session layout, then reload current data and availability |
 | Keyboard user changes sizes or presentation | Same state transitions as pointer controls, with visible usable focus |
 
+### Editing and navigation (Q13–Q15)
+
+The owner accepted one compact ordinary-property editor contract across Table,
+Board cards and the project area:
+
+| Input | Commit | Cancel or dismissal |
+| --- | --- | --- |
+| Text | Cmd/Ctrl+Enter or leaving the field; Enter inserts a newline | Escape cancels the uncommitted draft |
+| Number or manually entered Date | Enter or leaving the field | Escape cancels the uncommitted draft |
+| Calendar Date or Single Select | Selecting a value commits immediately | Dismissing the picker does not undo a committed choice |
+| MultiSelect | Each membership change commits; the menu stays open | Dismissing the menu does not undo committed changes |
+
+An invalid value or failed save retains the draft and explains the error.
+Navigating to another project/workspace or closing the project area first commits
+valid uncommitted input. An invalid draft or failed save prevents that transition
+until the user corrects or explicitly cancels it. Pending submissions must not
+duplicate a command. Existing ownership, revision and stale-response checks
+continue to apply. These ordinary-property triggers do not implicitly authorize
+filesystem operations or bypass their existing review and recovery contracts.
+
+Number entry continues to accept arithmetic but stores only its result: entering
+`10 + 5` stores `15`, and reopening the editor displays `15`. Expression
+persistence is outside this UX specification.
+
+### Desktop size and visual acceptance (Q16)
+
+The minimum supported desktop window is 1024 by 720. The second required visual
+acceptance size is 1440 by 960. Inspect Board, Table, the right-hand project area,
+expanded project and settings in English/Russian and light/dark appearance at
+both sizes. Individual work areas own their scrolling; the application shell
+must not become one long scrolling page. System appearance remains supported
+and must follow operating-system changes under the accepted appearance contract.
+
 ## Sources and authority
 
 - Main UX baseline: commit `59afdbc8`; application sources match remote main
@@ -168,12 +201,14 @@ Main Text saves on blur, including Escape-triggered blur. Number saves on
 Enter/blur, with inconsistent Escape handling across surfaces. Calendar choices
 and Single Select choices save immediately; MultiSelect saves each toggle while
 keeping its menu open. In contrast, current new-workspace editors use drafts and
-explicit Save/Cancel, preserve invalid input and cancel on Escape. This mismatch
-requires a deliberate unified UX decision.
+explicit Save/Cancel, preserve invalid input and cancel on Escape. Q13–Q14
+deliberately resolve this mismatch with compact commits, Escape cancellation and
+navigation guards for failed or invalid saves.
 
 Main can retain an arithmetic expression alongside its evaluated Number value.
 New-workspace accepts expressions but persists only the resulting number. A
-visual refactor must not silently introduce expression persistence.
+visual refactor must not silently introduce expression persistence; Q15 explicitly
+retains result-only storage.
 
 Evidence: main [Table editors](https://github.com/kornouhovas/workspace/blob/080b416c/src/components/workspace/table-view.tsx#L465),
 [Board editors](https://github.com/kornouhovas/workspace/blob/080b416c/src/components/workspace/board-view.tsx#L227),
@@ -181,9 +216,8 @@ Evidence: main [Table editors](https://github.com/kornouhovas/workspace/blob/080
 [Select editor](https://github.com/kornouhovas/workspace/blob/080b416c/src/components/workspace/select-value-editor.tsx),
 and the new [Number contract](../plans/issue-23-number-properties.md).
 
-Pending decisions are compact editor commit/cancel triggers, navigating away
-from an invalid or unsaved draft, Number expression retention and minimum
-supported desktop layout. Existing mutation ownership/revision checks, retained
+Q13–Q16 settle editor commit/cancel triggers, guarded navigation, result-only
+Number storage and minimum supported desktop layout. Existing mutation ownership/revision checks, retained
 drafts on error, filesystem-operation status/recovery and fresh impact review
 for property/option deletion remain required by the accepted runtime contracts.
 
@@ -207,10 +241,11 @@ Q5 and Q10–Q12 now settle the single project area, unique project tabs,
 Close/return/expand behavior, empty-area removal and width controls. Nested
 splits and duplicate tabs are deliberate exceptions to main's baseline.
 
-Subsequent branches include context placement of new operations, property editors,
-Board/Table controls, save/cancel and navigation with unsaved edits, narrow-layout
-behavior, measurable acceptance and implementation slices. Resolve prerequisites
-before selecting these details.
+Remaining branches are exact preview/tab retention transitions, the workspace
+creation and source-configuration journey, and contextual placement of new
+filesystem/recovery operations. Preserve existing Table/Board capabilities and
+their contextual main-style controls within the accepted editing rules. Complete
+the scenario matrix and implementation slices after these decisions.
 
 ## Completion criteria for this document
 

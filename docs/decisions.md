@@ -68,6 +68,10 @@ Accepted after D41:
 | D51 | Retain multiple project tabs per workspace but show only the selected project, with at most one tab per project. Reopening reuses that tab; duplicate-project tabs are excluded. |
 | D52 | Open from Board/Table in the single right-hand area; another selection replaces its content. Expand replaces the view and retains sidebar navigation. Return-right restores the view beside the project; Close removes the project and returns from expanded mode to Board/Table. Preserve view filters, grouping and scroll; an empty right-hand area occupies no space. |
 | D53 | Support pointer/keyboard resizing and persistence of sidebar/project-area widths. Expanded mode uses the work area; return-right restores the prior project width. |
+| D54 | Use compact ordinary-property editors consistently in Table, Board and project details. Text commits on Cmd/Ctrl+Enter or blur, with Enter for newline; Number/manual Date commit on Enter or blur. Escape cancels uncommitted drafts. Calendar/Single Select choices and each MultiSelect toggle commit immediately; dismissing menus does not undo them. |
+| D55 | Before switching project/workspace or closing a project area, save valid uncommitted input. Invalid drafts or failed saves retain the editor and block the transition until correction or explicit cancellation. Preserve pending/revision/ownership protections. |
+| D56 | Keep Number expression input with result-only persistence. Reopening `10 + 5` after commit shows `15`; persisting the source expression is outside this UX spec. |
+| D57 | Minimum desktop window is 1024x720; also require visual acceptance at 1440x960 for Board, Table, project preview/expanded and settings in EN/RU and light/dark. Work areas scroll independently inside the viewport-bound shell. |
 
 ## Open design branches
 
