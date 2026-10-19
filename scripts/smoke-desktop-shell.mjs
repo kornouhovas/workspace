@@ -24,11 +24,19 @@ async function launch() {
     env: { ...process.env, WORKSPACE_USER_DATA_DIR: data }, timeout: 30000 });
   parents.add(app.process()); page = await app.firstWindow(); page.setDefaultTimeout(15000);
   await page.waitForFunction(async () => (await window.workspace.getBackendStatus()).state === "ready");
-  for (const pid of await app.evaluate(({ app }) => app.getAppMetrics().filter(m => m.type === "Utility" && m.serviceName?.includes("Node")).map(m => m.pid))) backends.add(pid);
-  const content = await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].getContentSize());
-  assert.ok(content[0] >= 1024 && content[1] >= 720, `Fresh launch content viewport ${content}`);
-  checks.push({ freshLaunchContentSize:content });
+  const pids = await app.evaluate(({ app }) => app.getAppMetrics().filter(m => m.type === "Utility" && m.serviceName?.includes("Node")).map(m => m.pid));
+  assert.ok(pids.length > 0, "Owned backend process is observed after readiness");
+  for (const pid of pids) backends.add(pid);
   launchUnverified = false;
+  const geometry = await app.evaluate(({ BrowserWindow, screen }) => {
+    const window = BrowserWindow.getAllWindows()[0];
+    const display = screen.getDisplayMatching(window.getBounds());
+    return { outer:window.getBounds(), content:window.getContentBounds(), minimum:window.getMinimumSize(),
+      display:display.bounds, workArea:display.workArea, scaleFactor:display.scaleFactor };
+  });
+  checks.push({ freshLaunchGeometry:geometry });
+  assert.ok(geometry.outer.width >= 1024 && geometry.outer.height >= 720,
+    `Fresh launch window below supported minimum: ${JSON.stringify(geometry)}`);
 }
 async function close() { if (app) { await closeElectron(app); app = undefined; } }
 try {

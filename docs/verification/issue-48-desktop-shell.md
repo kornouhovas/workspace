@@ -64,7 +64,7 @@ No product timeout, quit behavior or acceptance assertion was changed to pass it
 ## Reviewed candidate checks
 
 The fresh native shell journey passed again after review repairs, now asserting
-actual initial content size before any emulation. Both reviewers accepted the
+actual initial window size before any emulation. Both reviewers accepted the
 repair delta. Focused real-service IPC and CI routing tests passed 80/80 after
 updating two exact settings response fixtures and adding the new shell command to
 the retained three-platform command inventory. Safety and platform assertions
@@ -80,3 +80,23 @@ at the unchanged ten-second gate. A separate raw Electron diagnostic did exit
 normally; the underlying debugger/native teardown cause remains unproven.
 These failures are not counted as passing local acceptance. Renewed full-suite
 and exact-SHA CI results remain in the GitHub checkpoint until completed.
+
+## First exact-SHA CI and launch-contract correction
+
+The renewed local full suite on `719adbe` passed all 3118 applicable tests with
+26 platform skips (3144 total). Earlier native quit failures did not recur; their
+cause is still not claimed repaired. Exact-SHA Common/static CI and macOS14 DMG
+installation/update/reopen also passed; the latter report and screenshots were
+inspected.
+
+Full desktop run `39298961435` failed the new launch-geometry assertion on macOS
+latest and Windows2022 before ordinary platform tests. It demanded 1024x720 from
+content, while #47 specifies a minimum window. Recorded contents were 1024x645 and
+1008x689. The correction uses explicit default/minimum outer window dimensions,
+records actual window/content/display/work-area geometry before resizing, and
+keeps the two renderer-size journeys intact. Native ownership completion is now
+recorded before independent geometry validation, so a geometry failure still
+allows verified shutdown/cleanup. No off-screen-window override was added.
+
+Focused route `checks: desktop-shell` owns renewed evidence for this exact failure;
+full CI remains behind that gate. GitHub retains current results and delivered SHA.

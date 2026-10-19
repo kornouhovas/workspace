@@ -584,3 +584,27 @@ Strict command exits and exact-SHA/run/attempt evidence remain. The default
 is unchanged. Focused success precedes renewed full desktop acceptance on the
 same reviewed SHA. The reproduced disabled-button mechanism does not independently
 establish the historical activation timing, which the original failure did not record.
+
+## Issue 48 desktop shell launch geometry
+
+Full run `39298961435` at `719adbe` failed the new shell journey on macOS latest
+and Windows 2022 before its renderer-size scenarios. The original assertion
+incorrectly demanded a 1024x720 content viewport; #47 specifies a minimum window.
+Retain those result artifacts (content 1024x645 and 1008x689 respectively), the
+unreached ordinary platform suite and its secondary missing-collector failure.
+Neither unreached steps nor secondary validation count as passing acceptance.
+
+The repaired product uses default/minimum outer dimensions of 1024x720. The
+original native journey records outer/content bounds, minimum, display/work area
+and scale factor before asserting the initial outer window. An undersized native
+window still fails explicitly; the two 1024x720/1440x960 renderer journeys are
+unchanged. Geometry failure no longer masks already-established process ownership
+and safe cleanup.
+
+Dispatch `desktop-ci.yml` with `checks: desktop-shell` for this failure. It builds,
+runs affected settings/App/route regressions and the original `npm run smoke:shell`
+on macOS latest, Windows latest and Windows 2022. The original runs after a failed
+regression when its build succeeded; strict exits, exact SHA/run/attempt provenance
+and always-uploaded results remain. Inspect native geometry, original journey and
+cleanup before full CI on the same reviewed repair SHA. Ordinary/default coverage
+is unchanged.
