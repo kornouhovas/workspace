@@ -1,5 +1,6 @@
 /* global document, innerWidth */
 import assert from 'node:assert/strict';
+import { recordGroupDrag } from './runtime-group-assignment.mjs';
 import { showRuntimeProject, waitForRuntimeProjectPath } from './runtime-project-visibility.mjs';
 import { mkdir, readdir, writeFile, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
@@ -30,7 +31,7 @@ export async function exerciseFolderGroupAssignment({page,query,rootPath,languag
     const handle=region('Alpha').getByRole('button',{name:drag('Alpha'),exact:true}).and(page.locator(':enabled'));
     const heading=region('Target').getByRole('heading');
     await heading.evaluate(el=>el.scrollIntoView({block:'start',inline:'nearest'}));
-    await handle.dragTo(heading);
+    await recordGroupDrag(page, handle, heading, join(evidenceDirectory, `${language}-${layout}-folder-name-drag-receipt.json`));
     await waitForRuntimeProjectPath(page, workspaceId, project.projectId, 'A/Target');
     assert.deepEqual(await readdir(join(source,'A')),['Target']);
     assert.equal(await readFile(join(source,'A','Target','keep'),'utf8'),'A');

@@ -49,7 +49,7 @@ export async function exerciseGroupAssignment({page,query,rootPath,language,evid
 
 // Observe the original native gesture without dispatching DOM events, changing
 // focus, retrying a mutation or replacing its result assertions.
-async function recordGroupDrag(page, source, destination, receiptPath) {
+export async function recordGroupDrag(page, source, destination, receiptPath) {
   await page.evaluate(() => {
     const events = [], counts = {dragstart: 0, dragover: 0, drop: 0, dragend: 0}, terminal = {};
     const listener = event => {

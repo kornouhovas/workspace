@@ -475,3 +475,14 @@ payload in both layouts. These passing local diagnostics do not establish the
 historical hosted cause or a product repair. Lint/docs/diff checks passed. The
 matching Windows latest focused original command remains the feedback loop;
 full acceptance is not renewed until its actual failure is resolved.
+
+Focused run `39327008510` on `b4a1736` reached a later failure: the folder
+Alpha-to-Target move did not satisfy the real project-path deadline. All four
+EN/RU Table/Board MultiSelect receipts contained accepted C drops; this does not
+explain the preceding intermittent MultiSelect failure. The same observer now
+wraps the unchanged first folder gesture, retaining its path, filesystem,
+identity and metadata assertions. The reduced original local folder journey
+passed both languages and layouts, normal shutdown and cleanup; all four
+receipts contained accepted Target drops. Both review axes accepted the shared
+observer reuse. This is diagnostic evidence only, with the hosted cause still
+unproven and renewed original Windows focused acceptance pending.
