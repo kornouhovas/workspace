@@ -11,6 +11,14 @@ misses are retained; scenario, shutdown and cleanup failures remain failures.
 The candidate must pass correctness and all approved limits. Artifacts contain
 raw reports/screens with SHA/run/attempt provenance, without application binaries.
 See [measurement boundaries](verification/issue-41-performance.md).
+For a failed performance candidate step, dispatch that workflow with
+`candidate_only: true` and the actual failed `platform`. `profile_filters: true`
+adds a separate renderer CPU profile of the 100-to-1,000-row Board filter
+transition. Profiled runs are diagnostic and cannot use `--enforce`; the original
+unprofiled strict command still runs independently after its package prerequisite.
+Baseline failure evidence remains retained, and ordinary push/full dispatch
+defaults still measure both baseline and candidate on both platforms. A focused
+success does not replace the full acceptance run on the repaired SHA.
 The same workflow adds Windows x64 NSIS installation/reopen/reinstall acceptance
 on ordinary push/PR, or independently with `checks: windows-install` on dispatch.
 This runs on `windows-latest` and records its actual Windows Server version; it

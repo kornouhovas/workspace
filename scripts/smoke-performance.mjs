@@ -13,11 +13,13 @@ import { packagedExecutablePath } from "./runtime-executable.mjs";
 import { cleanupOwnedFixture, closeElectron, ownedProcessesStopped } from "./runtime-lifecycle.mjs";
 
 const root = resolve(process.env.WORKSPACE_PERFORMANCE_ROOT ?? join(dirname(fileURLToPath(import.meta.url)), ".."));
+const profileFilters = process.argv.includes("--profile-filters");
+assert.ok(!profileFilters || !process.argv.includes("--enforce"), "Profiled runs are diagnostic, never target acceptance");
 const evidence = resolve(process.env.WORKSPACE_SMOKE_EVIDENCE_DIR ?? "work/issue-41-performance/baseline");
 await mkdir(evidence, { recursive: true });
 const fixture = await realpath(await mkdtemp(join(tmpdir(), "workspace-performance-")));
 const sha = execFileSync("git", ["rev-parse", "HEAD"], { cwd: root, encoding: "utf8" }).trim();
-const report = { issue: 41, sha, run: process.env.GITHUB_RUN_ID, attempt: process.env.GITHUB_RUN_ATTEMPT,
+const report = { issue: 41, sha, run: process.env.GITHUB_RUN_ID, attempt: process.env.GITHUB_RUN_ATTEMPT, diagnostic: profileFilters,
   sourceDiffSha256: createHash("sha256").update(execFileSync("git", ["diff", "HEAD", "--binary"], {cwd:root})).digest("hex"),
   harnessSha256: createHash("sha256").update(await readFile(fileURLToPath(import.meta.url))).digest("hex"),
   platform: process.platform, arch: process.arch, kernel: release(), cpu: cpus()[0]?.model, hostMemoryBytes: totalmem(),
@@ -152,6 +154,8 @@ try {
       const expected = (await command("queryView", { viewId, archived: false })).projectIds;
       await ready(expected); activeIds = expected;
       for (let sample = 0; sample < 3; sample++) {
+        const profiler = profileFilters && kind === "board" && sample === 1 ? await page.context().newCDPSession(page) : undefined;
+        if (profiler) { await profiler.send("Profiler.enable"); await profiler.send("Profiler.start"); }
         const text = sample % 2 ? "Project 0" : "Project 00";
         const search = page.getByLabel("Search project names", { exact: true });
         await search.fill(text);
@@ -159,6 +163,11 @@ try {
         await startUiTiming(save, "keydown"); await save.press("Enter");
         const ids = expected.filter(id => source.projects.find(p => p.projectId === id).name.includes(text));
         await ready(ids); await recordUi(source.mode, `${kind} filter ${sample}`);
+        if (profiler) {
+          const { profile } = await profiler.send("Profiler.stop");
+          await writeFile(join(evidence, `${source.mode}-board-filter-1.cpuprofile`), JSON.stringify(profile));
+          await profiler.detach();
+        }
         assert.deepEqual((await command("queryView", { viewId, archived: false })).projectIds, ids);
       }
       // Ordinary Select grouping retains exact option identities and an empty group.
@@ -251,6 +260,7 @@ try {
   }
   if (report.scenarioFailures?.length) throw new Error("Source scenarios failed; inspect retained per-source failures");
   report.status = report.measurements.every(m => m.passed) && report.memory.every(m => m.passed) ? "passed" : "targets-missed";
+  if (profileFilters) report.status = "diagnostic";
   if (process.argv.includes("--enforce")) assert.equal(report.status, "passed", "Representative-scale targets missed; inspect raw report");
 } catch (error) {
   failure = error; report.status = "failed"; report.error = error.stack;
