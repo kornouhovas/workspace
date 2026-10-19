@@ -445,3 +445,33 @@ assignment/viewport/routing tests passed. The complete original local views repl
 passed all six report blocks, normal native shutdown and cleanup. Lint, docs and
 diff checks passed. Production source remains unchanged from installer-tested
 `f634ae6`; new original focused/full acceptance remains in the GitHub checkpoint.
+
+## Native MultiSelect drop phase evidence
+
+Full run `39322384619` later completed with macOS and Windows 2022 entirely
+passing, including packaged routes. Its remaining Windows latest development
+views failure is recorded above. Focused `39325896292` on `8518efc` stopped at an
+earlier, different views boundary: MultiSelect B-to-C assignment never exposed
+Alpha's C control. Original log/DOM/screenshot/provenance were downloaded and
+inspected; memberships remained A/B and C was empty. The repaired folder-path
+readiness stage was therefore unreached in that focused run.
+
+A reduced original group-assignment journey with native drag phase observation
+passed locally, so the hosted drop cause remains unproven. The next diagnostic
+candidate records the unchanged original B-to-C gesture: bounded first 32 event
+rows, per-type counts and separate final drop/dragend records; labels, pointer
+coordinates, data-transfer types and final cancellation flags only. Listeners
+observe without dispatching events or altering focus, targets, gestures or
+mutations. They are removed after the gesture, original failures remain primary,
+and JSON stays in the owned evidence directory. Event objects remain inside the
+fixture renderer and are omitted from serialization. Terminal events survive
+trace truncation; flags are read after dispatch rather than from a capture-phase
+microtask.
+
+Both review axes accepted this diagnostic-only delta. The reduced original local
+journey passed ten scalar/MultiSelect Table/Board cases, ordinary shutdown and
+cleanup; retained receipts show B dragstart, C dragover/drop and accepted native
+payload in both layouts. These passing local diagnostics do not establish the
+historical hosted cause or a product repair. Lint/docs/diff checks passed. The
+matching Windows latest focused original command remains the feedback loop;
+full acceptance is not renewed until its actual failure is resolved.

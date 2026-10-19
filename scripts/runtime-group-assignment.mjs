@@ -1,6 +1,7 @@
 /* global document, innerWidth */
 import assert from "node:assert/strict";
 import { join } from "node:path";
+import { writeFile } from "node:fs/promises";
 export async function exerciseGroupAssignment({page,query,rootPath,language,evidenceDirectory}) {
   const en=language==="en", workspace=await query(page,{type:"workspace.create",rootPath,name:`Assignment ${language}`});
   const {workspaceId,viewId}=workspace;
@@ -46,6 +47,40 @@ export async function exerciseGroupAssignment({page,query,rootPath,language,evid
   return {checks,filesUnchanged:true};
 }
 
+// Observe the original native gesture without dispatching DOM events, changing
+// focus, retrying a mutation or replacing its result assertions.
+async function recordGroupDrag(page, source, destination, receiptPath) {
+  await page.evaluate(() => {
+    const events = [], counts = {dragstart: 0, dragover: 0, drop: 0, dragend: 0}, terminal = {};
+    const listener = event => {
+      counts[event.type]++;
+      if (events.length >= 32 && !["drop", "dragend"].includes(event.type)) return;
+      const row = {type: event.type, group: event.target.closest?.(".project-group")?.getAttribute("aria-label") ?? null,
+        x: event.clientX, y: event.clientY, types: [...(event.dataTransfer?.types ?? [])], event};
+      if (events.length < 32) events.push(row);
+      if (["drop", "dragend"].includes(event.type)) terminal[event.type] = row;
+    };
+    globalThis.runtimeGroupDragReceipt = {events, counts, terminal, listener};
+    for (const type of ["dragstart", "dragover", "drop", "dragend"]) document.addEventListener(type, listener, true);
+  });
+  let primary;
+  try {await source.dragTo(destination);}
+  catch (error) {primary = error;}
+  try {
+    const receipt = await page.evaluate(() => {
+      const {events, counts, terminal, listener} = globalThis.runtimeGroupDragReceipt;
+      for (const type of ["dragstart", "dragover", "drop", "dragend"]) document.removeEventListener(type, listener, true);
+      delete globalThis.runtimeGroupDragReceipt;
+      // Read final cancellation flags after dispatch, rather than guessing when
+      // a capture-listener microtask runs relative to React's later handlers.
+      const snapshot = ({event, ...row}) => ({...row, prevented: event.defaultPrevented});
+      return {events: events.map(snapshot), counts, terminal: Object.fromEntries(Object.entries(terminal).map(([type,row]) => [type,snapshot(row)]))};
+    });
+    await writeFile(receiptPath, JSON.stringify(receipt, null, 2) + "\n");
+  } catch (error) {primary ??= error;}
+  if (primary) throw primary;
+}
+
 async function exerciseMultiSelectAssignment({page,call,viewId,project,language,evidenceDirectory}) {
   const en=language==='en', {projectId}=project;
   const propertyId=(await call('createProperty',{name:'Multi drag',propertyType:'multi_select'})).propertyId;
@@ -65,7 +100,7 @@ async function exerciseMultiSelectAssignment({page,call,viewId,project,language,
     await handle.waitFor();
     const destination=region('C').getByRole('heading');
     await destination.evaluate(el=>el.scrollIntoView({block:'start',inline:'nearest'}));
-    await handle.dragTo(destination);
+    await recordGroupDrag(page, handle, destination, join(evidenceDirectory, `${language}-${layout}-multi-membership-drag-receipt.json`));
     await region('C').getByLabel(changeLabel,{exact:true}).and(page.locator(':enabled')).waitFor();
     assert.equal(await page.getByLabel(changeLabel,{exact:true}).count(),2);
     const saved=(await call('listTextProperties')).multiSelectValues.filter(v=>v.projectId===projectId&&v.propertyId===propertyId).map(v=>v.optionId).sort();
