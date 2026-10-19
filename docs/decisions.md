@@ -64,7 +64,10 @@ Accepted after D41:
 | D47 | Retain the workspace session per device/workspace and include it in application-data backups. Reload current project data and verify availability when resuming or restoring. |
 | D48 | Preserve open project tabs across verified moves, archive, exclusion, missing projects and unavailable sources; display actual state and applicable recovery/editing actions. |
 | D49 | Provide keyboard/menu alternatives for tab ordering, opening the project area, resizing allowed boundaries and returning from expanded mode, with explicit focus and acceptance coverage. D50 excludes arbitrary panel placement and splitting. |
-| D50 | Display only one project in the right-hand project area, with an option to expand it into the work area. Exclude nested splits and any division inside the project. Session/layout commands must preserve this simpler model; remaining tab and Close/return semantics are still open. |
+| D50 | Display only one project in the right-hand project area, with an option to expand it into the work area. Exclude nested splits and any division inside the project. Session/layout commands must preserve this simpler model; D51–D53 settle its tabs and transitions. |
+| D51 | Retain multiple project tabs per workspace but show only the selected project, with at most one tab per project. Reopening reuses that tab; duplicate-project tabs are excluded. |
+| D52 | Open from Board/Table in the single right-hand area; another selection replaces its content. Expand replaces the view and retains sidebar navigation. Return-right restores the view beside the project; Close removes the project and returns from expanded mode to Board/Table. Preserve view filters, grouping and scroll; an empty right-hand area occupies no space. |
+| D53 | Support pointer/keyboard resizing and persistence of sidebar/project-area widths. Expanded mode uses the work area; return-right restores the prior project width. |
 
 ## Open design branches
 

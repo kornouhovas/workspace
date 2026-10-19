@@ -35,7 +35,7 @@ A temporary presentation of a project's properties and file tree alongside the c
 _Avoid_: File preview
 
 **Project tab**:
-A retained open presentation of a project within a workspace.
+A retained open presentation of a project within a workspace; each project has at most one tab in that workspace.
 _Avoid_: View, project record
 
 **Project area**:

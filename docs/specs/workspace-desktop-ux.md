@@ -82,8 +82,40 @@ project panes, split trees and drag-to-split targets are outside this spec.
 
 This is an intentional simplification of main, not an implementation omission.
 Session restoration and keyboard commands must use the same simpler model and
-must not reintroduce splits through persistence or shortcuts. Exact tab reuse,
-Close/return transitions and supported resize boundaries remain to be resolved.
+must not reintroduce splits through persistence or shortcuts. Q10–Q12 resolve
+the tab, transition and resize rules below.
+
+### Tabs, transitions and resizing (Q10–Q12)
+
+The owner accepted all three recommendations:
+
+- A workspace can retain several project tabs, displaying only the selected
+  project. A project has at most one tab in that workspace; reopening it reuses
+  the existing tab. Main's duplicate-project-tab command is intentionally omitted.
+- Selecting a project in Board/Table displays it in the right-hand project area;
+  selecting a different project replaces that area's content.
+- Expand displays the project in place of Board/Table while preserving sidebar
+  navigation. Return to the right restores Board/Table beside the project.
+- Close removes the displayed project; closing an expanded project returns to
+  Board/Table. An empty right-hand area occupies no space.
+- These transitions preserve the view's filters, grouping and scroll position.
+- Sidebar and right-hand project-area widths are adjustable with pointer and
+  keyboard and persist. Expanded mode occupies the available work area; returning
+  to the right restores the previous project-area width.
+
+#### Accepted session scenarios
+
+| Initial state and action | Required result |
+| --- | --- |
+| Table or Board; open project A, then B | Only B is displayed in the right-hand area |
+| A already has a tab; open A again | Reuse A's existing tab; no duplicate is created |
+| Right-hand project; Expand | Same project occupies the work area and sidebar remains available |
+| Expanded project; Return to the right | Restore the previous view and its scroll/filter/group state beside the project |
+| Expanded project; Close | Return to the previous Board/Table state |
+| Close the right-hand project | The view uses the released width; no empty project region remains |
+| Resize right-hand area, expand, return | Restore the selected width |
+| Restart or restore a backup | Restore the allowed session layout, then reload current data and availability |
+| Keyboard user changes sizes or presentation | Same state transitions as pointer controls, with visible usable focus |
 
 ## Sources and authority
 
@@ -111,7 +143,7 @@ interaction details and improvements remain interview questions until settled.
 | Desktop shell | Sidebar, central work area and project preview area | [App](https://github.com/kornouhovas/workspace/blob/080b416c/src/App.tsx#L2930) |
 | Navigation | Workspace management, search, settings and in-session Back/Forward | [Sidebar](https://github.com/kornouhovas/workspace/blob/080b416c/src/components/workspace/left-panel.tsx#L421) |
 | Project preview | Project properties and a real file tree in the right area | [Open preview](https://github.com/kornouhovas/workspace/blob/080b416c/src/App.tsx#L2418) |
-| Project tabs | Expand, duplicate, reorder, close, close others/right and reopen closed | [Project tabs](https://github.com/kornouhovas/workspace/blob/080b416c/src/components/workspace/project-tabs.tsx#L74) |
+| Project tabs | Main has expand, duplicate, reorder, close and reopen; Q10 explicitly removes duplicate tabs for the same project | [Project tabs](https://github.com/kornouhovas/workspace/blob/080b416c/src/components/workspace/project-tabs.tsx#L74) |
 | Close and return to preview | Distinct actions; active-tab close returns to the saved view | [Latest main ADR](https://github.com/kornouhovas/workspace/blob/080b416c/docs/adr/012-project-close-and-preview-only-right-host.md) |
 | Split panels (intentionally excluded) | Main has nested splits; Q5 replaces them with one right-hand project area and expanded mode | [Session commands](https://github.com/kornouhovas/workspace/blob/080b416c/src/workspaceSession.js#L133) |
 | Session restoration | Tabs, selected content, per-view preview and panel layout restored; file tree reloaded | [Session lifecycle](https://github.com/kornouhovas/workspace/blob/080b416c/src/workspaceSessionLifecycle.js) |
@@ -139,15 +171,14 @@ Sources: [Settings sidebar](https://github.com/get-bb/bb/blob/f135a001e72942cee9
 Settings mapping, external file opening, device/workspace session backup scope,
 retained unavailable tabs and keyboard alternatives are accepted in round 2.
 
-Q5 now excludes splitting and allows a single right-hand project area with
-expanded mode. Resolve the remaining transitions: preview to retained tab,
-duplicate/reused tabs, Close versus return to preview, empty-area behavior,
-resize boundaries and navigation with unsaved edits. Do not infer acceptance of
-main's complete tab command set from the accepted single-area refinement.
+Q5 and Q10–Q12 now settle the single project area, unique project tabs,
+Close/return/expand behavior, empty-area removal and width controls. Nested
+splits and duplicate tabs are deliberate exceptions to main's baseline.
 
 Subsequent branches include context placement of new operations, property editors,
-Board/Table controls, save/cancel behavior, layout limits, measurable acceptance
-and implementation slices. Resolve prerequisites before selecting these details.
+Board/Table controls, save/cancel and navigation with unsaved edits, narrow-layout
+behavior, measurable acceptance and implementation slices. Resolve prerequisites
+before selecting these details.
 
 ## Completion criteria for this document
 
