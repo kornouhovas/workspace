@@ -36,14 +36,14 @@ creation/recovery Ladle layouts after the corresponding full-run failure.
 Its original assertions and exact-SHA artifact remain required; the broader
 ordinary platform matrix is unchanged.
 
-For the subsequent #48 macOS unchanged-name authoring and Windows
-MultiSelect failures, `checks: shell-runtime` selects those original development
-commands on macOS and both affected Windows hosts. It retains native authoring,
-MultiSelect interaction and routing regressions, strict build gates and exact-SHA
-evidence. Category-recovery and observer regressions cover the subsequently
-reproduced keep-original observation-cache failure in that same original macOS
-runtime. This route does not replace full acceptance or establish the cause of
-an intermittent failure.
+For #48's remaining macOS final-workspace-removal navigation failure,
+`checks: shell-runtime` runs the original macOS development runtime with App
+removal, readiness, lifecycle and routing regressions, serial Electron setup,
+strict build gates and exact-SHA evidence. Earlier authoring, Windows MultiSelect
+and category-cache failure results remain in the issue's verification report;
+their ordinary/full tests and native commands remain registered. Their resolved
+Windows focused commands are not replayed for this macOS navigation failure.
+Focused success still precedes full acceptance.
 
 For #48's remaining Windows latest views startup failure, `checks: views-readiness`
 runs only its original development Table/Board command with startup/ownership,

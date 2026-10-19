@@ -669,6 +669,7 @@ test('Windows latest direct native acceptance runs once before other desktop wor
     assert.ok(index > steps.findIndex(step => step.run === 'npm run build'));
     assert.equal(index < steps.findIndex(step => step.run === 'npm run test:platform'), os === 'windows-latest');
     assert.equal(active[0].env.WORKSPACE_SMOKE_EVIDENCE_DIR, 'work/ci-creation-dev-direct');
+    assert.equal(active[0].env.WORKSPACE_REVEAL_TRACE, os === 'windows-latest' ? '1' : undefined);
   }
   for (const command of ['npm run test:platform', 'npm run build:ladle', 'node scripts/smoke-discovery-layouts.mjs --creation',
     'node scripts/smoke-discovery-layouts.mjs --category-move', 'npm run smoke:runtime -- dev --creation --skip-native']) {
@@ -949,13 +950,11 @@ test('shell runtime failure selector replays only the affected original commands
     assert.deepEqual(active, event === 'workflow_dispatch' ? ['focused-shell-runtime'] : ['common']);
   }
   const job = workflow.jobs['focused-shell-runtime'];
-  assert.deepEqual(job.strategy.matrix.os, ['macos-latest', 'windows-2022', 'windows-latest']);
+  assert.deepEqual(job.strategy.matrix.os, ['macos-latest']);
   assert.equal(job.strategy['fail-fast'], false);
   assert.ok(job.steps.every(step => step['continue-on-error'] === undefined));
   for (const [name, os, command] of [
     ['Original macOS development runtime', 'macos-latest', 'npm run smoke:runtime -- dev'],
-    ['Original Windows development MultiSelect', 'windows-2022', 'npm run smoke:multiselect -- dev'],
-    ['Original Windows development MultiSelect', 'windows-latest', 'npm run smoke:multiselect -- dev'],
   ]) {
     const step = job.steps.find(step => step.name === name);
     assert.ok(step.run.includes(command)); assert.ok(step.run.includes('set -o pipefail'));

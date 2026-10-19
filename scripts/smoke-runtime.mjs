@@ -255,7 +255,12 @@ async function remove(page, workspace) {
   await page.getByRole("button", { name: "Удалить конфигурацию", exact: true }).press("Enter");
   await page.locator(".workspace-removal").waitFor({ state: "detached" });
   await page.waitForFunction(() => !globalThis.document.querySelector("#workspace-switcher")?.disabled);
-  await returnToWorkspace(page);
+  if ((await load(page)).workspaces.length === 0) {
+    // Final removal closes settings itself. Do not race that transition with a
+    // Back click whose preceding visibility read can already be stale.
+    await page.getByRole("heading", { name: "Создать рабочее пространство", exact: true }).waitFor();
+    await page.getByRole("button", { name: /^(Back to workspace|Вернуться к работе)$/ }).waitFor({ state: "hidden" });
+  } else await returnToWorkspace(page);
   return load(page);
 }
 

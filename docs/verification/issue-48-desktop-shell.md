@@ -637,3 +637,41 @@ deadlines and cleanup assertions are unchanged. Both review axes accepted this
 diagnostic-only routing delta. Relevant route/receipt/Reveal checks passed 252,
 with eight platform skips on macOS; lint/docs/diff checks passed. Matching hosted
 phase evidence is required; there is no claimed native repair or acceptance yet.
+
+The bounded cold reproduction ended after three fresh Windows latest original
+journeys on unchanged `bf796ac2`: `39337682903`, `39338143225` and `39338401809`
+all passed. Downloaded original artifacts were inspected: one exact native
+navigation/selection/completion each, agreement with independent UI Automation
+selection, two ordinary quits/backend exits, restart and all bridge/file-manager/
+fixture cleanup gates per run. Native request/reply latencies were 6.16, 4.81 and
+5.49 seconds. The historical 12-second owner-deadline cause remains unproven;
+there is no claimed production native repair. Existing finite phase tracing is
+retained only for the ordinary Windows latest early command, so recurrence in
+full acceptance preserves its internal boundary without changing deadlines or
+native authority/selection assertions.
+
+## Final-removal automatic return
+
+The retained macOS job in full `39336713567` later failed the original development
+runtime's final workspace removal. The downloaded log shows `returnToWorkspace`
+waiting to click Back after its visibility probe; the failure screenshot instead
+shows the correct empty creation screen with the name field focused and no Back.
+The shell already automatically returns there after final removal. The generic
+driver's visible-then-click observation raced that intentional transition.
+
+The removal driver now reads the committed workspace list: an empty list waits
+for the creation heading and hidden Back; other removals retain Back navigation.
+The original final fresh service load and all identity, metadata, filesystem-byte
+and restart assertions remain. No application, timeout or mutation retry changed.
+Existing EN/RU App removal/focus, readiness, lifecycle and routing tests passed
+180/180. The complete original local development runtime passed its baseline
+and all stages, four primary shutdowns, 46 rename shutdowns and 34 category-move
+shutdowns. All owned exits and fixture cleanup were confirmed. This does not
+claim the independently reproduced historical local shutdown issue was repaired.
+
+Both review axes accepted this driver delta and the focused `shell-runtime`
+route's narrowing to the actual macOS failure, with those relevant regressions.
+Resolved Windows MultiSelect focused steps are retired from this route; ordinary
+full Windows tests and commands remain registered. Serial Electron setup, strict
+exits and exact-SHA evidence remain. All 45 route checks and lint/docs/diff passed.
+Matching original hosted macOS success is required before renewed full acceptance.

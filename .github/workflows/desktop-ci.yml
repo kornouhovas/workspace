@@ -172,7 +172,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-latest, windows-2022, windows-latest]
+        os: [macos-latest]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 25
     steps:
@@ -189,26 +189,19 @@ jobs:
           set -o pipefail
           mkdir -p work/ci-shell-runtime
           node --input-type=module -e 'import { writeFileSync } from "node:fs"; writeFileSync("work/ci-shell-runtime/provenance.json", JSON.stringify({sha:process.env.GITHUB_SHA,run:process.env.GITHUB_RUN_ID,attempt:process.env.GITHUB_RUN_ATTEMPT,platform:process.platform}) + "\n")'
+          node -e "require('electron')"
           npm run build 2>&1 | tee work/ci-shell-runtime/build.log
-      - name: Native authoring and route regressions
+      - name: Workspace removal and lifecycle regressions
         shell: bash
         run: |
           set -o pipefail
-          node --import tsx --test tests/rename-editor-readiness.test.mjs tests/project-rename-runtime.test.mjs tests/multi-select-ui.test.tsx tests/project-category-move-runtime.test.mjs tests/project-category-move-ui.test.tsx tests/project-category-move-service.test.mjs tests/source-observer.test.mjs tests/test-suites.test.mjs 2>&1 | tee work/ci-shell-runtime/regressions.log
+          node --import tsx --test tests/renderer-app.test.tsx tests/runtime-readiness.test.mjs tests/runtime-lifecycle.test.mjs tests/test-suites.test.mjs 2>&1 | tee work/ci-shell-runtime/regressions.log
       - name: Original macOS development runtime
         if: ${{ !cancelled() && steps.build.outcome == 'success' && matrix.os == 'macos-latest' }}
         shell: bash
         run: |
           set -o pipefail
           npm run smoke:runtime -- dev 2>&1 | tee work/ci-shell-runtime/original.log
-        env:
-          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-shell-runtime/runtime
-      - name: Original Windows development MultiSelect
-        if: ${{ !cancelled() && steps.build.outcome == 'success' && matrix.os != 'macos-latest' }}
-        shell: bash
-        run: |
-          set -o pipefail
-          npm run smoke:multiselect -- dev 2>&1 | tee work/ci-shell-runtime/original.log
         env:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-shell-runtime/runtime
       - name: Preserve original runtime result and provenance
@@ -1494,6 +1487,7 @@ jobs:
         run: npm run smoke:runtime -- dev --creation --discovery-mode=direct --checkpoint=after_evidence
         env:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-creation-dev-direct
+          WORKSPACE_REVEAL_TRACE: '1'
       - name: Desktop shell EN/RU themes, sidebar, settings and keyboard return
         run: npm run smoke:shell
         env:
