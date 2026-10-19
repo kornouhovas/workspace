@@ -397,3 +397,19 @@ route includes those category/observer regressions and retains each original
 native command. Because service/renderer production source changed, installers
 must be renewed after matching focused success; `51d076f` installation reports are
 historical for this candidate. Full CI and integration remain pending in GitHub.
+
+The next focused run `39320758063` passed Windows latest on `e5fe6ab`. Windows
+2022's original MultiSelect instead failed the immediate `editor.isVisible()`
+assertion after viewport resizing; its downloaded original log and DOM show that
+boundary and an open editor at failure capture. The earlier reduced local focus
+probe had also failed this exact visibility line before reaching its injected
+focus change. This demonstrates transient editor unavailability at the immediate
+check, without establishing its rendering cause.
+
+The driver now waits for that editor and scrolls it into view after each resize,
+then retains the original visibility, document-overflow and screenshot assertions.
+No mutation retry or deadline change was introduced. The complete original local
+MultiSelect command passed both languages, restart, normal shutdown and cleanup.
+Both review axes accepted this readiness-only delta. The preceding macOS original
+runtime was left running rather than canceled. Production source remains the
+category-cache repair `e5fe6ab`; remote focused/full and installer gates are pending.

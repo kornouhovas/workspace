@@ -122,6 +122,8 @@ try {
     assert.equal((await query(page, { type: "workspace.listTextProperties", workspaceId })).multiSelectValues.length, 2);
     for (const width of [1024, 1440]) {
       await page.setViewportSize({ width, height: width === 1024 ? 720 : 960 });
+      await editor.waitFor();
+      await editor.scrollIntoViewIfNeeded();
       assert.ok(await editor.isVisible());
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
       await page.screenshot({ path: join(evidenceDirectory, `${language}-${width}-select.png`), fullPage: true });
