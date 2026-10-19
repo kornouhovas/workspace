@@ -31,14 +31,45 @@ The owner accepted the following in interview round 1:
    decisions rather than silent substitution.
 3. Deliver this work through a separate linked specification and implementation
    slices, with completion required before final 0.1.0 release acceptance.
-4. Use bb's settings organization as the reference for Workspace settings. Exact
-   categories, entry points and scope mapping remain to be resolved.
+4. Use bb's settings organization as the reference for Workspace settings.
+   Round 2 resolves the categories and entry points below.
 
 The requested implementation foundation is Radix UI plus Tailwind CSS. The
 inspected bb reference uses Radix Primitives, Tailwind 4 and local shadcn-style
 components (`radix-mira`), rather than Radix Themes. Board/Table, document tabs
 and the project file tree remain Workspace components composed from this
 foundation. Radix alone does not provide their domain behavior or split layout.
+
+### Round 2 decisions
+
+The owner accepted Q4 and Q6–Q9. Q5 was a clarification request about nested
+splits; its proposed interaction package is not yet accepted.
+
+- **Settings (Q4):** separate settings mode with General (language), Appearance
+  (Light/Dark/System), Workspaces (list and details), Sources (list and discovery,
+  exclusions and archive-location details), Backup and recovery, and About
+  (version and licenses). Enter from the sidebar footer or a workspace context
+  action targeting its section. Return restores the prior work area. Identify
+  workspaces affected by source changes. Simple preferences apply immediately;
+  discovery changes and data restore retain explicit review/application actions.
+  Archive/Restore and Active/Archived switching remain in the work area.
+- **Files (Q6):** show the real project file tree and open a selected file in the
+  operating system's default external application on macOS and Windows. Open and
+  Reveal in Finder/Explorer are distinct actions. Embedded file viewers and
+  content editing are outside this specification.
+- **Session (Q7):** retain open tabs, active view, project preview and panel layout
+  and sizes per workspace on this device. Include the session in application-data
+  backups. On restart or restore, reload current properties/file trees and check
+  project availability rather than treating cached content as current state.
+- **Changed availability (Q8):** keep open project tabs when a project becomes
+  missing, excluded, archived or its source becomes unavailable. A verified move
+  updates the locator while preserving identity. Show the actual state and
+  applicable recovery actions; archived projects retain permitted property
+  editing. Do not silently close the tab or imply stale data is current.
+- **Keyboard (Q9):** provide menu/keyboard alternatives for tab reordering,
+  placement in another panel, panel resizing and returning from maximized mode.
+  Include these actions and focus behavior in acceptance rather than assuming
+  Radix primitives alone implement them.
 
 ## Sources and authority
 
@@ -75,7 +106,8 @@ interaction details and improvements remain interview questions until settled.
 
 Main's project preview is not an embedded file-content viewer. Its historical
 `previewFile` API does not establish a wired viewer/editor. Opening files in main
-is macOS-specific; cross-platform behavior needs an explicit new contract.
+is macOS-specific; Q6 accepts external opening on both target platforms. The new
+service/native command details still need to be specified.
 
 ## Design frontier
 
@@ -90,23 +122,13 @@ Sources: [Settings sidebar](https://github.com/get-bb/bb/blob/f135a001e72942cee9
 [route memory](https://github.com/get-bb/bb/blob/f135a001e72942cee9118d2693208ec0725e2f18/apps/app/src/hooks/useAppSettingsRouteMemory.ts),
 [settings sections](https://github.com/get-bb/bb/blob/f135a001e72942cee9118d2693208ec0725e2f18/apps/app/src/components/ui/settings-section.tsx).
 
-Proposed Workspace categories are General, Appearance, Workspaces, Sources,
-Backup and recovery, and About. A source detail page would identify every
-workspace affected by shared configuration changes. Everyday Archive/Restore
-actions would remain in the workspace; archive location belongs to source
-settings. These mappings are recommendations awaiting round 2, not accepted
-requirements.
+Settings mapping, external file opening, device/workspace session backup scope,
+retained unavailable tabs and keyboard alternatives are accepted in round 2.
 
-After round 1, the following decisions are ready for discussion:
-
-- How bb settings navigation maps to device, workspace and shared-source scopes.
-- Exact preview/tab/split transitions, including Close versus return to preview,
-  duplicate tabs and empty-panel behavior.
-- File opening on macOS and Windows, distinct from Reveal and embedded viewing.
-- Ownership, persistence and backup/export scope of the workspace session.
-- Retaining open projects when they become archived, missing, excluded or their
-  source becomes unavailable.
-- Keyboard alternatives for tab ordering and split placement.
+Q5 remains open: explain nested splitting (splitting an existing panel again),
+then settle whether to preserve that main behavior. The rest of Q5's package
+also awaits confirmation: preview to retained tab transitions, duplicate tabs,
+Close versus return to preview and empty-panel behavior.
 
 Subsequent branches include context placement of new operations, property editors,
 Board/Table controls, save/cancel behavior, layout limits, measurable acceptance

@@ -39,7 +39,7 @@ A retained open presentation of a project within a workspace.
 _Avoid_: View, project record
 
 **Workspace session**:
-The open content and arrangement of working areas used to resume work in a workspace.
+The open content and arrangement of working areas used to resume work in a workspace on a particular device.
 _Avoid_: Saved view, project source
 
 **Folder-backed Select**:
