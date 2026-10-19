@@ -53,7 +53,10 @@
     "smoke:archive": "node scripts/smoke-project-archive.mjs",
     "package:mac": "npm run build && npm run package:mac:built",
     "package:mac:built": "electron-builder --mac dmg --arm64 --publish never && npm run check:artifact -- release/mac-arm64/Workspace.app",
-    "smoke:install:mac": "node scripts/smoke-macos-install.mjs"
+    "smoke:install:mac": "node scripts/smoke-macos-install.mjs",
+    "package:win": "npm run build && npm run package:win:built",
+    "package:win:built": "electron-builder --win nsis --x64 --publish never && npm run check:artifact -- release/win-unpacked",
+    "smoke:install:win": "node scripts/smoke-windows-install.mjs"
   },
   "dependencies": {
     "better-sqlite3": "13.0.3",
@@ -142,6 +145,32 @@
     "dmg": {
       "sign": false,
       "writeUpdateInfo": false
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "requestedExecutionLevel": "asInvoker",
+      "signAndEditExecutable": true,
+      "forceCodeSigning": false,
+      "signExecutable": false
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowElevation": false,
+      "packElevateHelper": false,
+      "allowToChangeInstallationDirectory": true,
+      "deleteAppDataOnUninstall": false,
+      "runAfterFinish": false,
+      "createDesktopShortcut": false,
+      "createStartMenuShortcut": true,
+      "artifactName": "Workspace-${version}-windows-${arch}-setup.${ext}"
     }
   }
 }

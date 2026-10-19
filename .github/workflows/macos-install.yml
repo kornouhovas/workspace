@@ -6,9 +6,9 @@ on:
   workflow_dispatch:
     inputs:
       checks:
-        description: macOS installation acceptance or focused original Windows Date failure
+        description: Platform installation acceptance or focused original Windows Date failure
         type: choice
-        options: [macos, windows-date]
+        options: [macos, windows-date, windows-install]
         default: macos
 
 concurrency:
@@ -82,5 +82,45 @@ jobs:
         with:
           name: windows-date-${{ github.sha }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
           path: work/ci-windows-date/
+          if-no-files-found: error
+          retention-days: 7
+
+  windows-install:
+    if: ${{ github.event_name != 'workflow_dispatch' || inputs.checks == 'windows-install' }}
+    name: Windows x64 NSIS installation and reopen
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.21.1
+          cache: npm
+      - run: npm ci
+      - name: Build offline per-user installer
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p work/ci-windows-install
+          npm run package:win 2>&1 | tee work/ci-windows-install/package.log
+      - name: Distribution policy and installed-workspace driver regressions
+        shell: bash
+        run: |
+          set -o pipefail
+          node --test tests/windows-install.test.mjs tests/test-suites.test.mjs 2>&1 | tee work/ci-windows-install/regressions.log
+          node --test --test-name-pattern="installed workspace keyboard" tests/property-editor-driver.test.mjs 2>&1 | tee work/ci-windows-install/driver.log
+      - name: Actual NSIS install, bundled runtime, restart and data preservation
+        shell: bash
+        run: |
+          set -o pipefail
+          npm run smoke:install:win 2>&1 | tee work/ci-windows-install/install.log
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-windows-install
+      - name: Retain Windows installation evidence without publishing downloads
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-install-${{ github.sha }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
+          path: work/ci-windows-install/
           if-no-files-found: error
           retention-days: 7

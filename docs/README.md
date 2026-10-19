@@ -16,6 +16,7 @@ These documents are written for the new implementation. The previous documentati
 | [Runtime checkpoints](verification/development-checkpoints.md) | Conditional operation details and retained verification evidence |
 | [Recovery](recovery.md) | Manual application-data export/restore and project-file boundary |
 | [macOS installation](macos-install.md) | Local arm64 DMG build, install/update and troubleshooting |
+| [Windows installation](windows-install.md) | Local x64 NSIS build, install/update and troubleshooting |
 | [Releases](releases.md) | Versions, changelog and future distribution |
 | [Reuse](reuse.md) | bb reference, attribution and adaptation rules |
 | [ADRs](adr/) | Significant accepted tradeoffs |

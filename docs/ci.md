@@ -4,6 +4,11 @@ Read when selecting or diagnosing a CI route, changing CI scheduling, or checkin
 [macos-install.yml](../.github/workflows/macos-install.yml) adds macOS 14 arm64 DMG
 build/install/reopen/replacement acceptance on push, pull requests and manual dispatch.
 It retains exact-SHA reports/screenshots without publishing the DMG.
+The same workflow adds Windows x64 NSIS installation/reopen/reinstall acceptance
+on ordinary push/PR, or independently with `checks: windows-install` on dispatch.
+This runs on `windows-latest` and records its actual Windows Server version; it
+does not stand in for Windows 11 desktop acceptance. Installer downloads are not
+uploaded. See [Windows installation](windows-install.md).
 
 ## Candidate and handoff
 

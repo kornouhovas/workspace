@@ -34,3 +34,13 @@ or notarization, with manual app replacement. Use `npm run package:mac` and
 `npm run smoke:install:mac`; see [installation and troubleshooting](macos-install.md)
 and [observed verification](verification/issue-39-macos-install.md). No signing
 identity, download publication, release tag or automatic update is configured.
+
+## Windows local installation (Issue 40)
+
+The owner selected Windows 11 x64, unsigned offline NSIS for the current user
+without elevation, and manual updates. Use `npm run package:win`; see
+[installation and troubleshooting](windows-install.md) and
+[verification boundaries](verification/issue-40-windows-install.md).
+`npm run smoke:install:win` is restricted to disposable hosted Windows runners.
+Windows Server CI evidence does not establish Windows 11 desktop acceptance.
+No signing identity, public downloads, release tag or automatic updater is configured.

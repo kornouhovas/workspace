@@ -860,7 +860,7 @@ test('macOS installation workflow isolates the original Windows Date failure fro
   const workflow = load(readFileSync('.github/workflows/macos-install.yml', 'utf8'));
   const mac = workflow.jobs['macos-install'], date = workflow.jobs['windows-date'];
   for (const event of ['push', 'pull_request', 'workflow_dispatch']) {
-    for (const checks of ['macos', 'windows-date']) {
+    for (const checks of ['macos', 'windows-date', 'windows-install']) {
       const context = { github: { event_name: event }, inputs: { checks } };
       assert.equal(runInNewContext(mac.if.slice(3, -2), context), event !== 'workflow_dispatch' || checks === 'macos');
       assert.equal(runInNewContext(date.if.slice(3, -2), context), event === 'workflow_dispatch' && checks === 'windows-date');
@@ -875,4 +875,24 @@ test('macOS installation workflow isolates the original Windows Date failure fro
   assert.equal(date.steps.at(-1).if, 'always()');
   assert.ok(date.steps.at(-1).with.name.includes('${{ github.sha }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}'));
   assert.ok(!date.steps.some(step => step.run?.includes('npm test') || step.run?.includes('test:platform')));
+});
+
+
+test('Windows installer acceptance runs independently without publishing downloads', () => {
+  const workflow = load(readFileSync('.github/workflows/macos-install.yml', 'utf8'));
+  const job = workflow.jobs['windows-install'];
+  for (const event of ['push', 'pull_request', 'workflow_dispatch']) {
+    for (const checks of ['macos', 'windows-date', 'windows-install']) {
+      assert.equal(runInNewContext(job.if.slice(3, -2), { github: { event_name: event }, inputs: { checks } }),
+        event !== 'workflow_dispatch' || checks === 'windows-install');
+    }
+  }
+  assert.equal(job['runs-on'], 'windows-latest');
+  assert.ok(job.steps.every(step => step['continue-on-error'] === undefined));
+  assert.ok(job.steps.some(step => step.run?.includes('npm run package:win')));
+  assert.ok(job.steps.some(step => step.run?.includes('npm run smoke:install:win')));
+  const upload = job.steps.find(step => step.uses === 'actions/upload-artifact@v4');
+  assert.equal(upload.if, 'always()');
+  assert.equal(upload.with.path, 'work/ci-windows-install/');
+  assert.ok(upload.with.name.includes('${{ github.sha }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}'));
 });
