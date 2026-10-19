@@ -4,6 +4,12 @@ on:
   push:
   pull_request:
   workflow_dispatch:
+    inputs:
+      checks:
+        description: macOS installation acceptance or focused original Windows Date failure
+        type: choice
+        options: [macos, windows-date]
+        default: macos
 
 concurrency:
   group: macos-install-${{ github.event_name }}-${{ github.ref }}
@@ -11,6 +17,7 @@ concurrency:
 
 jobs:
   macos-install:
+    if: ${{ github.event_name != 'workflow_dispatch' || inputs.checks == 'macos' }}
     name: macOS 14 arm64 DMG installation and reopen
     runs-on: macos-14
     timeout-minutes: 20
@@ -36,3 +43,44 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
+  windows-date:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.checks == 'windows-date' }}
+    name: Focused original Windows latest Date runtime
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.21.1
+          cache: npm
+      - run: npm ci
+      - name: Build original application and retain provenance
+        id: build
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p work/ci-windows-date
+          node --input-type=module -e 'import { writeFileSync } from "node:fs"; writeFileSync("work/ci-windows-date/provenance.json", JSON.stringify({sha:process.env.GITHUB_SHA,run:process.env.GITHUB_RUN_ID,attempt:process.env.GITHUB_RUN_ATTEMPT,platform:process.platform}) + "\n")'
+          npm run build 2>&1 | tee work/ci-windows-date/build.log
+      - name: Date creator and route regressions
+        shell: bash
+        run: |
+          set -o pipefail
+          node --import tsx --test tests/property-editor-driver.test.mjs tests/date-properties-service.test.mjs tests/date-properties-ui.test.tsx tests/test-suites.test.mjs 2>&1 | tee work/ci-windows-date/regressions.log
+      - name: Original development Date runtime
+        if: ${{ always() && steps.build.outcome == 'success' }}
+        shell: bash
+        run: |
+          set -o pipefail
+          npm run smoke:date -- dev 2>&1 | tee work/ci-windows-date/original.log
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-windows-date/runtime
+      - name: Preserve original result and exact-run evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-date-${{ github.sha }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
+          path: work/ci-windows-date/
+          if-no-files-found: error
+          retention-days: 7

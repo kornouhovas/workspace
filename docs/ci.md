@@ -536,3 +536,17 @@ its cold original order. Both Windows runners execute the bridge/service regress
 and Windows latest first runs the exact failed native command. Inspect that original
 result plus managed guard controls and owned cleanup before renewed full acceptance
 on the same reviewed SHA. Preserve the failed full run and artifact12150238888.
+
+## Issue 39 Windows Date creator failure
+
+The installation workflow also provides a focused original-step replay for full
+run `39200366181`'s Windows latest development Date failure. Dispatch
+[macos-install.yml](../.github/workflows/macos-install.yml) with
+`checks: windows-date`. This builds on Windows latest, runs existing real-Electron
+creator and Date service/UI/route regressions, then the original
+`npm run smoke:date -- dev` even after a regression failure if the build passed.
+Strict command exits and exact-SHA/run/attempt evidence remain. The default
+`checks: macos` retains macOS 14 arm64 installation; ordinary/full desktop coverage
+is unchanged. Focused success precedes renewed full desktop acceptance on the
+same reviewed SHA. The reproduced disabled-button mechanism does not independently
+establish the historical activation timing, which the original failure did not record.

@@ -855,3 +855,24 @@ test('rename fixture selector isolates the failed Windows 2022 original and reta
     assert.equal(runInNewContext(original.if.slice(3,-2),{cancelled:()=>isCancelled,steps:{build:{outcome}}}),!isCancelled&&outcome==='success');
   assert.equal(job.steps.find(step=>step.uses==='actions/upload-artifact@v4').if,'always()');
 });
+
+test('macOS installation workflow isolates the original Windows Date failure from full acceptance', () => {
+  const workflow = load(readFileSync('.github/workflows/macos-install.yml', 'utf8'));
+  const mac = workflow.jobs['macos-install'], date = workflow.jobs['windows-date'];
+  for (const event of ['push', 'pull_request', 'workflow_dispatch']) {
+    for (const checks of ['macos', 'windows-date']) {
+      const context = { github: { event_name: event }, inputs: { checks } };
+      assert.equal(runInNewContext(mac.if.slice(3, -2), context), event !== 'workflow_dispatch' || checks === 'macos');
+      assert.equal(runInNewContext(date.if.slice(3, -2), context), event === 'workflow_dispatch' && checks === 'windows-date');
+    }
+  }
+  assert.equal(workflow.on.workflow_dispatch.inputs.checks.default, 'macos');
+  assert.equal(mac['runs-on'], 'macos-14'); assert.equal(date['runs-on'], 'windows-latest');
+  const original = date.steps.find(step => step.name === 'Original development Date runtime');
+  assert.ok(original.run.includes('set -o pipefail'));
+  assert.ok(original.run.includes('npm run smoke:date -- dev 2>&1 | tee'));
+  assert.equal(original.if, "${{ always() && steps.build.outcome == 'success' }}");
+  assert.equal(date.steps.at(-1).if, 'always()');
+  assert.ok(date.steps.at(-1).with.name.includes('${{ github.sha }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}'));
+  assert.ok(!date.steps.some(step => step.run?.includes('npm test') || step.run?.includes('test:platform')));
+});

@@ -71,7 +71,7 @@ async function withPage(run) {
 
 // This is the runtime driver's native disabled-button/keyboard seam. The app
 // owns enablement and form creation; the driver must send one deliberate Enter.
-for (const createLabel of ["Create MultiSelect property", "Create Number property", "Создать Number-свойство"]) {
+for (const createLabel of ["Create MultiSelect property", "Create Number property", "Создать Number-свойство", "Create Date property", "Создать Date-свойство"]) {
 test(`property creation waits for initial loading before keyboard activation in real Electron: ${createLabel}`, async () => {
   await withPage(async page => {
     page.setDefaultTimeout(5000);

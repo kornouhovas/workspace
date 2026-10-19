@@ -98,3 +98,39 @@ cleanup. The two new installed-workspace controls passed. This renewed full run
 also remains **not green** on local macOS 27; isolated original-file success was
 not treated as a substitute for the recorded full outcomes. Lint/typecheck,
 local installation, focused controls, documentation links and diff checks pass.
+
+## Subsequent Windows latest Date runtime failure
+
+Full desktop run `39200366181`, attempt 1, on `c3c1d030` passed common checks and
+complete macOS/Windows 2022 acceptance. Windows latest job `117892179206` failed
+only the development Date runtime (`npm run smoke:date -- dev`): the property-name
+input never appeared after creator focus/Enter within the unchanged 15000ms bound.
+Artifact `12164750256` retains the failed Date screenshot, body text and evidence.
+The app/backend started; normal quit, backend exit and fixture cleanup passed.
+Its screenshot shows the normal Date workspace with no creator/validation alert.
+Later Windows latest packaged stages were unreached and are not passes.
+
+The old Date callsite still focused/pressed a possibly disabled control directly
+after reload. A throwaway real-Electron control copied this exact sequence with
+200ms initial disablement and reproduced the same missing-name fill timeout. Date
+now reuses the established enabled-aware `openPropertyCreator` helper. Added
+Date EN/RU delayed-enabled controls pass, and the original local development Date
+runtime passes both languages. Timeout, one keyboard activation, focus, calendar,
+timezone, sibling, file-preservation, restart and cleanup assertions are unchanged.
+The original activation receipt was absent, so the reproduced mechanism is not
+presented as conclusive evidence of historical timing.
+
+Standards and Spec reviews found no blocker. The existing installation workflow's
+`checks: windows-date` selector supplies the matching focused Windows latest route;
+its default macOS installation and inherited full desktop matrix stay intact.
+The route's 41 selection/coverage controls pass locally. Renewed full local,
+focused Windows, exact-SHA full desktop and macOS installation receipts remain
+in GitHub, with integration gated on their required acceptance results.
+
+The renewed Date-repair full local run completed with **3083 passed, 1 failed,
+26 conditional skips** (3110 tests). The sole failure was the unchanged MultiSelect
+creator fixture's ordinary Electron shutdown timeout; the new Date EN/RU and
+installation-driver controls passed. This full run is also not green locally;
+its symptom remains an observation, not a repaired or established shared cause.
+Lint, typecheck, Markdown links/diff checks, 41 route controls, two Date creator
+controls and both original local Date runtime language scenarios passed.
