@@ -327,3 +327,28 @@ locally. Full acceptance remains behind both original focused commands. Producti
 source is unchanged from installer-tested `51d076f`; these changes affect native
 test authoring and CI routing only. Debug probes remain clearly marked under the
 ignored `work/issue-48-ci` evidence directory and do not establish full acceptance.
+
+The retained full run later completed with Windows latest failing at the same
+MultiSelect line/locator as Windows 2022; its failed log was inspected. Focused
+run `39318574129` on `9c8ebeb` reproduced that same original Windows 2022 failure,
+with an open editor in the downloaded DOM. This supplies a repeatable hosted
+feedback loop. A tighter actual-production Electron/SQLite probe seeds only the
+empty MultiSelect editor and moves focus to another real control before the
+original global Escape. The subsequent sibling assignment then reproduces the
+same invisible-button timeout. It establishes the unowned keyboard-recipient
+mechanism, not why focus moved in the historical hosted run.
+
+The original driver now waits for the real editor before asserting hidden-option
+absence, directs Escape to its visible Second checkbox, and asserts closure plus
+return focus before sibling mutations. The exact hidden-option, sibling value,
+restart, filesystem and persistence assertions remain; no mutation retry or
+product deadline changed. The same controlled native probe passed after this
+change, including normal shutdown and cleanup; it is deliberately a shortened
+probe, not full original acceptance. Both review axes accepted the driver change.
+The matching focused route now includes Windows latest, reflecting its observed
+full-run failure. Its macOS command and ordinary coverage remain unchanged.
+
+The complete original local `smoke:multiselect -- dev` then passed both EN/RU
+checks, restart and sibling/hidden-option assertions, normal shutdown and cleanup.
+All 55 affected MultiSelect/property-driver/route tests passed; lint, documentation
+links and diff checks passed. Remote original-step acceptance remains pending.

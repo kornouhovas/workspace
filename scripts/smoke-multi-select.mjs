@@ -136,8 +136,14 @@ try {
     await reopened.waitFor();
     assert.deepEqual((await query(page, { type: "workspace.listTextProperties", workspaceId })).multiSelectValues, []);
     await reopened.press("Enter");
-    assert.equal(await page.getByRole("group", { name: label, exact: true }).getByRole("checkbox", { name: en ? "Готово (Hidden)" : "Готово (Скрыта)", exact: true }).count(), 0);
-    await page.keyboard.press("Escape");
+    const clearingEditor = page.getByRole("group", { name: label, exact: true });
+    await clearingEditor.waitFor();
+    assert.equal(await clearingEditor.getByRole("checkbox", { name: en ? "Готово (Hidden)" : "Готово (Скрыта)", exact: true }).count(), 0);
+    // Scope keyboard cancellation to a real ready editor control. A global
+    // Escape can target another focused control while this editor is mounting.
+    await clearingEditor.getByRole("checkbox", { name: "Second", exact: true }).press("Escape");
+    await clearingEditor.waitFor({ state: "hidden" });
+    await page.waitForFunction(label => document.activeElement?.getAttribute("aria-label") === label, label);
     await query(page, { type: "workspace.updateSelectOption", workspaceId: sibling.workspaceId, propertyId, optionId, name: "Sibling rename", color: "red" });
     await page.locator("summary").filter({ hasText: en ? "Select options: Status" : "Опции Select: Status" }).click();
     await page.getByRole("button", { name: en ? "Show option: Sibling rename" : "Показать опцию: Sibling rename", exact: true }).waitFor();

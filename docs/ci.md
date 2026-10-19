@@ -36,9 +36,9 @@ creation/recovery Ladle layouts after the corresponding full-run failure.
 Its original assertions and exact-SHA artifact remain required; the broader
 ordinary platform matrix is unchanged.
 
-For the subsequent #48 macOS unchanged-name authoring and Windows 2022
-MultiSelect failures, `checks: shell-runtime` selects only those two original
-development commands on their affected OSes. It retains native authoring,
+For the subsequent #48 macOS unchanged-name authoring and Windows
+MultiSelect failures, `checks: shell-runtime` selects those original development
+commands on macOS and both affected Windows hosts. It retains native authoring,
 MultiSelect interaction and routing regressions, strict build gates and exact-SHA
 evidence. This route does not replace full acceptance or establish the cause of
 an intermittent failure.

@@ -936,24 +936,25 @@ test('desktop shell failure route retains the original journey on all affected O
 });
 
 
-test('shell runtime failure selector replays only the two affected original commands', () => {
+test('shell runtime failure selector replays only the affected original commands', () => {
   const workflow = load(readFileSync('.github/workflows/desktop-ci.yml', 'utf8'));
   for (const event of ['push', 'pull_request', 'workflow_dispatch']) {
     const active = Object.entries(workflow.jobs).filter(([, job]) => job.if && runInNewContext(job.if.slice(3, -2), { github: {event_name: event}, inputs: {checks: 'shell-runtime'} })).map(([name]) => name);
     assert.deepEqual(active, event === 'workflow_dispatch' ? ['focused-shell-runtime'] : ['common']);
   }
   const job = workflow.jobs['focused-shell-runtime'];
-  assert.deepEqual(job.strategy.matrix.os, ['macos-latest', 'windows-2022']);
+  assert.deepEqual(job.strategy.matrix.os, ['macos-latest', 'windows-2022', 'windows-latest']);
   assert.equal(job.strategy['fail-fast'], false);
   assert.ok(job.steps.every(step => step['continue-on-error'] === undefined));
   for (const [name, os, command] of [
     ['Original macOS development runtime', 'macos-latest', 'npm run smoke:runtime -- dev'],
-    ['Original Windows 2022 development MultiSelect', 'windows-2022', 'npm run smoke:multiselect -- dev'],
+    ['Original Windows development MultiSelect', 'windows-2022', 'npm run smoke:multiselect -- dev'],
+    ['Original Windows development MultiSelect', 'windows-latest', 'npm run smoke:multiselect -- dev'],
   ]) {
     const step = job.steps.find(step => step.name === name);
     assert.ok(step.run.includes(command)); assert.ok(step.run.includes('set -o pipefail'));
     for (const selected of job.strategy.matrix.os) for (const outcome of ['success', 'failure']) {
-      assert.equal(runInNewContext(step.if.slice(3, -2), {cancelled: () => false, steps: {build: {outcome}}, matrix: {os: selected}}), selected === os && outcome === 'success');
+      assert.equal(runInNewContext(step.if.slice(3, -2), {cancelled: () => false, steps: {build: {outcome}}, matrix: {os: selected}}), (os === 'macos-latest' ? selected === os : selected !== 'macos-latest') && outcome === 'success');
     }
   }
   assert.equal(job.steps.find(step => step.uses === 'actions/upload-artifact@v4').with['if-no-files-found'], 'error');

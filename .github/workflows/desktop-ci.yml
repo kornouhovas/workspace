@@ -172,7 +172,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-latest, windows-2022]
+        os: [macos-latest, windows-2022, windows-latest]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 25
     steps:
@@ -203,8 +203,8 @@ jobs:
           npm run smoke:runtime -- dev 2>&1 | tee work/ci-shell-runtime/original.log
         env:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-shell-runtime/runtime
-      - name: Original Windows 2022 development MultiSelect
-        if: ${{ !cancelled() && steps.build.outcome == 'success' && matrix.os == 'windows-2022' }}
+      - name: Original Windows development MultiSelect
+        if: ${{ !cancelled() && steps.build.outcome == 'success' && matrix.os != 'macos-latest' }}
         shell: bash
         run: |
           set -o pipefail
