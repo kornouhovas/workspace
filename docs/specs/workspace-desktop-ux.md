@@ -247,6 +247,24 @@ filesystem/recovery operations. Preserve existing Table/Board capabilities and
 their contextual main-style controls within the accepted editing rules. Complete
 the scenario matrix and implementation slices after these decisions.
 
+### Workspace creation facts and pending proposal
+
+The existing create command accepts a name and root path, then commits a
+workspace and default Table view. Discovery preview requires that saved
+workspace; applying the reviewed source configuration is a later operation.
+Creating another workspace over an existing canonical root reuses its source
+and preserves interpretation, projects and properties. Cancelling discovery
+after creation does not undo workspace creation.
+
+Evidence: [creation and source reuse](../../src/service/workspaces.ts),
+[workspace command contract](../../src/contracts/workspaces.ts).
+
+The pending Q18 recommendation follows these boundaries: create from name and
+folder; open a configured source immediately, or show a clearly unfinished
+discovery-setup state with mode, preview, exclusions and Apply. Deferring setup
+keeps the created workspace available. A one-step atomic creation wizard would
+require a new service contract and is not implied by visual redesign.
+
 ## Completion criteria for this document
 
 The finished specification must include the complete capability mapping,
