@@ -157,6 +157,38 @@ service/native command details still need to be specified.
 
 ## Design frontier
 
+### Editor baseline facts
+
+Main permits custom-property editing in Table cells, Board cards and project
+details; clicking an editor does not activate the surrounding project's preview.
+Its view toolbar, column menus and property-add controls provide contextual
+configuration rather than a persistent stack of configuration forms.
+
+Main Text saves on blur, including Escape-triggered blur. Number saves on
+Enter/blur, with inconsistent Escape handling across surfaces. Calendar choices
+and Single Select choices save immediately; MultiSelect saves each toggle while
+keeping its menu open. In contrast, current new-workspace editors use drafts and
+explicit Save/Cancel, preserve invalid input and cancel on Escape. This mismatch
+requires a deliberate unified UX decision.
+
+Main can retain an arithmetic expression alongside its evaluated Number value.
+New-workspace accepts expressions but persists only the resulting number. A
+visual refactor must not silently introduce expression persistence.
+
+Evidence: main [Table editors](https://github.com/kornouhovas/workspace/blob/080b416c/src/components/workspace/table-view.tsx#L465),
+[Board editors](https://github.com/kornouhovas/workspace/blob/080b416c/src/components/workspace/board-view.tsx#L227),
+[Date editor](https://github.com/kornouhovas/workspace/blob/080b416c/src/components/workspace/date-value-editor.tsx),
+[Select editor](https://github.com/kornouhovas/workspace/blob/080b416c/src/components/workspace/select-value-editor.tsx),
+and the new [Number contract](../plans/issue-23-number-properties.md).
+
+Pending decisions are compact editor commit/cancel triggers, navigating away
+from an invalid or unsaved draft, Number expression retention and minimum
+supported desktop layout. Existing mutation ownership/revision checks, retained
+drafts on error, filesystem-operation status/recovery and fresh impact review
+for property/option deletion remain required by the accepted runtime contracts.
+
+### Settings reference facts
+
 The pinned bb reference organizes settings as a separate application mode:
 the sidebar displays setting categories and Back to app, while the main area
 contains grouped controls. It remembers the previous app route and settings
