@@ -7,9 +7,10 @@ import { tmpdir, release } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { _electron } from "playwright-core";
+import { createInstalledWorkspace } from "./workspace-install-driver.mjs";
 import { checkArtifact } from "./check-artifact.mjs";
 import { checkMacosBundle } from "./check-macos-bundle.mjs";
-import { cleanupOwnedFixture, closeElectron, ownedProcessesStopped } from "./runtime-lifecycle.mjs";
+import { cleanupOwnedFixture, closeElectron, ownedProcessesStopped, withDeadline } from "./runtime-lifecycle.mjs";
 
 assert.equal(process.platform, "darwin", "Installation acceptance requires actual macOS");
 assert.equal(process.arch, "arm64", "This local distribution targets Apple Silicon");
@@ -27,7 +28,7 @@ const parents = new Set(), backends = new Set();
 const report = { version, platform: process.platform, arch: process.arch, kernel: release(),
   sha: process.env.GITHUB_SHA ?? (await exec("git", ["rev-parse", "HEAD"], { cwd: root })).stdout.trim(),
   run: process.env.GITHUB_RUN_ID, attempt: process.env.GITHUB_RUN_ATTEMPT, stages: [] };
-let mounted = false, electron, launchUnverified = false, failure;
+let mounted = false, electron, page, launchUnverified = false, failure;
 
 async function install() {
   await exec("/usr/bin/ditto", [join(mount, "Workspace.app"), installed], { timeout: 120000 });
@@ -94,11 +95,8 @@ try {
   mounted = true;
   assert.equal(await readlink(join(mount, "Applications")), "/Applications");
   await install(); report.stages.push("verified DMG installed outside build directory");
-  let page = await launch();
-  await page.getByRole("textbox", { name: "Workspace name", exact: true }).fill("Installed workspace");
-  await page.getByRole("button", { name: "Choose project folder", exact: true }).press("Enter");
-  await page.getByRole("button", { name: "Create workspace", exact: true }).press("Enter");
-  await page.getByRole("heading", { name: "Installed workspace", exact: true }).waitFor();
+  page = await launch();
+  await createInstalledWorkspace(page, { name: "Installed workspace", source });
   const saved = await load(page);
   assert.equal(saved.workspaces.length, 1);
   assert.equal(saved.activeWorkspace.name, "Installed workspace");
@@ -122,7 +120,18 @@ try {
   assert.equal(await page.locator("#interface-language").inputValue(), "ru");
   await stop(); report.stages.push("app replacement preserves application data");
   report.status = "passed";
-} catch (error) { failure = error; report.status = "failed"; report.error = error.message; }
+} catch (error) {
+  failure = error; report.status = "failed"; report.error = error.message;
+  if (page && !page.isClosed()) {
+    try {
+      report.failureUi = await withDeadline(page.evaluate(() => ({
+        buttons: [...globalThis.document.querySelectorAll("button")].map(button => ({ text: button.textContent, disabled: button.disabled })),
+        alerts: [...globalThis.document.querySelectorAll('[role="alert"]')].map(alert => alert.textContent),
+      })), 5000, "Installation failure UI receipt");
+      await withDeadline(page.screenshot({ path: join(evidence, "failed-install.png"), fullPage: true }), 5000, "Installation failure screenshot");
+    } catch { report.failureUiUnavailable = true; }
+  }
+}
 finally {
   if (electron) { try { await stop(); } catch (error) { failure ??= error; report.shutdownError = error.message; } }
   if (mounted) { try { await exec("/usr/bin/hdiutil", ["detach", mount], { timeout: 30000 }); } catch (error) { failure ??= error; report.detachError = error.message; } }

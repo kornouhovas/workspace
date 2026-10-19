@@ -127,3 +127,37 @@ test("creation input readiness observes delayed app-owned focus without taking i
     assert.equal(await page.locator("input").evaluate(node => node === globalThis.document.activeElement), false);
   });
 });
+
+test("installed workspace keyboard creation waits for the asynchronous folder selection", async () => {
+  const { createInstalledWorkspace } = await import("../scripts/workspace-install-driver.mjs");
+  await withPage(async page => {
+    page.setDefaultTimeout(1000);
+    await page.setContent('<label>Workspace name<input></label><button id="pick">Choose project folder</button><p id="root"></p><button id="create" disabled>Create workspace</button><div id="result"></div>');
+    await page.evaluate(() => {
+      const pick = globalThis.document.querySelector("#pick"), create = globalThis.document.querySelector("#create");
+      globalThis.installFixtureCreates = 0;
+      pick.addEventListener("click", () => {
+        globalThis.setTimeout(() => {
+          globalThis.document.querySelector("#root").textContent = "/selected-source";
+          create.disabled = false;
+        }, 200);
+      });
+      create.addEventListener("click", () => {
+        globalThis.installFixtureCreates++;
+        globalThis.document.querySelector("#result").innerHTML = '<h2>Installed workspace</h2>';
+      });
+    });
+    await createInstalledWorkspace(page, { name: "Installed workspace", source: "/selected-source" });
+    assert.equal(await page.evaluate(() => globalThis.installFixtureCreates), 1);
+  });
+});
+
+test("installed workspace keyboard driver retains its deadline when creation stays disabled", async () => {
+  const { createInstalledWorkspace } = await import("../scripts/workspace-install-driver.mjs");
+  await withPage(async page => {
+    await page.setContent('<label>Workspace name<input></label><button>Choose project folder</button><p>/selected-source</p><button disabled>Create workspace</button>');
+    page.setDefaultTimeout(100);
+    await assert.rejects(createInstalledWorkspace(page, { name: "Installed workspace", source: "/selected-source" }), /Timeout/);
+    assert.equal(await page.getByRole("heading", { name: "Installed workspace" }).count(), 0);
+  });
+});

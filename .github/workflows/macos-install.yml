@@ -23,6 +23,7 @@ jobs:
       - run: npm ci
       - run: npm run package:mac
       - run: node --test tests/macos-install.test.mjs
+      - run: node --test --test-name-pattern="installed workspace keyboard" tests/property-editor-driver.test.mjs
       - run: npm run smoke:install:mac
         env:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-macos-install

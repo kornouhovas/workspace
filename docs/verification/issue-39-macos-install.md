@@ -63,3 +63,38 @@ Signing, notarization, Intel, automatic updates, public downloads and release ta
 remain outside this issue. Replacement acceptance uses the same candidate; future
 schema changes retain issue 37/38's matching-version export/restore and pre-migration
 backup policy rather than claiming an untested upgrade or downgrade.
+
+## First macOS 14 Actions failure and keyboard-driver repair
+
+Run `39199593654`, attempt 1, SHA `295bf48c`, job `117889608354`, artifact
+`12163012451` preserves the original failure. The actual macOS 14.8.9 arm64
+installation passed resource/manifest checks and app/backend startup, then timed
+out waiting for the created workspace heading after the keyboard Create step.
+Shutdown and fixture cleanup passed. The original report had no failure UI
+snapshot; its absence limits historical causality claims.
+
+A real-Electron delayed folder-selection control reproduced the same heading
+timeout using the exact prior keyboard sequence. The driver sent Enter while
+creation was disabled during asynchronous picker completion. The repair waits
+for the selected source and enabled Create control, focuses it, then sends one
+Enter. The delayed-picker regression passes after repair; a second control keeps
+the caller's deadline and rejects creation that stays disabled. Both pass locally.
+The installed DMG create/quit/reopen/replacement route also passes after repair,
+with the unchanged verified application build. Future failures retain a bounded
+UI receipt and screenshot before ordinary shutdown; diagnostics never convert a
+failed scenario into success. No product guard, timeout or command retry changed.
+
+The old desktop full run was cancelled after this new acceptance failure reopened
+the candidate; completed stages remain evidence, unreached stages are not passes.
+The dedicated macOS installation workflow is the focused original-step replay;
+renew full desktop acceptance only after its repaired-SHA evidence passes.
+GitHub owns repaired-SHA run IDs/results and integration status.
+
+After the reviewed driver repair, the renewed full local run completed with
+**3079 passed, 2 failed, 26 conditional skips** (3107 tests). Both failures were
+unchanged property-fixture ordinary Electron-close timeouts (Russian Number
+creator and permanently disabled creator control), with confirmed forced process
+cleanup. The two new installed-workspace controls passed. This renewed full run
+also remains **not green** on local macOS 27; isolated original-file success was
+not treated as a substitute for the recorded full outcomes. Lint/typecheck,
+local installation, focused controls, documentation links and diff checks pass.
