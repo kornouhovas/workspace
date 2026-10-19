@@ -52,12 +52,15 @@ export async function exerciseGroupAssignment({page,query,rootPath,language,evid
 export async function recordGroupDrag(page, source, destination, receiptPath) {
   await page.evaluate(() => {
     const events = [], counts = {dragstart: 0, dragover: 0, drop: 0, dragend: 0}, terminal = {}, pointer = [];
+    let pressedButton;
     const pointerListener = event => {
       if (event.type === "mousemove" && !event.buttons || pointer.length >= 12) return;
       const button = event.target.closest?.("button");
+      if (event.type === "pointerdown") pressedButton = button;
       pointer.push({type: event.type, x: event.clientX, y: event.clientY, buttons: event.buttons,
         group: event.target.closest?.(".project-group")?.getAttribute("aria-label") ?? null,
-        button: button ? {disabled: button.disabled, draggable: button.draggable} : null});
+        button: button ? {disabled: button.disabled, draggable: button.draggable} : null,
+        source: pressedButton ? {connected: pressedButton.isConnected, disabled: pressedButton.disabled, draggable: pressedButton.draggable} : null});
     };
     const listener = event => {
       counts[event.type]++;
@@ -69,7 +72,7 @@ export async function recordGroupDrag(page, source, destination, receiptPath) {
     };
     globalThis.runtimeGroupDragReceipt = {events, counts, terminal, listener, pointer, pointerListener};
     for (const type of ["dragstart", "dragover", "drop", "dragend"]) document.addEventListener(type, listener, true);
-    for (const type of ["mousedown", "mousemove", "mouseup"]) document.addEventListener(type, pointerListener, true);
+    for (const type of ["pointerdown", "mousedown", "mousemove", "mouseup"]) document.addEventListener(type, pointerListener, true);
   });
   let primary;
   try {await source.dragTo(destination);}
@@ -78,7 +81,7 @@ export async function recordGroupDrag(page, source, destination, receiptPath) {
     const receipt = await page.evaluate(() => {
       const {events, counts, terminal, listener, pointer, pointerListener} = globalThis.runtimeGroupDragReceipt;
       for (const type of ["dragstart", "dragover", "drop", "dragend"]) document.removeEventListener(type, listener, true);
-      for (const type of ["mousedown", "mousemove", "mouseup"]) document.removeEventListener(type, pointerListener, true);
+      for (const type of ["pointerdown", "mousedown", "mousemove", "mouseup"]) document.removeEventListener(type, pointerListener, true);
       delete globalThis.runtimeGroupDragReceipt;
       // Read final cancellation flags after dispatch, rather than guessing when
       // a capture-listener microtask runs relative to React's later handlers.

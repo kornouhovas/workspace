@@ -248,10 +248,13 @@ jobs:
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         shell: bash
         run: |
+          set -eu
           set -o pipefail
-          npm run smoke:views -- dev 2>&1 | tee work/ci-views-readiness/original.log
-        env:
-          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-views-readiness/runtime
+          # Reproduce intermittent native delivery; stop at the first failure.
+          # Every invocation owns fresh fixtures and separate evidence.
+          for attempt in 1 2 3; do
+            WORKSPACE_SMOKE_EVIDENCE_DIR="work/ci-views-readiness/runtime-$attempt" npm run smoke:views -- dev 2>&1 | tee "work/ci-views-readiness/original-$attempt.log"
+          done
       - name: Retain original views and async control evidence
         if: always()
         uses: actions/upload-artifact@v4

@@ -501,3 +501,17 @@ assertions remain unchanged. Both review axes accepted this diagnostic delta;
 the original reduced folder replay passed EN/RU Table/Board with ordinary
 shutdown and cleanup. Lint/docs/diff checks passed. Hosted cause and acceptance
 remain unresolved.
+
+The original focused command passed on `ea49e2d5` in run `39328799434`: six
+report blocks, three ordinary quits/backend exits and owned-fixture cleanup.
+Downloaded provenance and all eight gesture receipts were inspected. Because
+this observer-only change supplies no demonstrated repair, that pass is not
+treated as proof that the intermittent failure is resolved. The focused route
+now repeats the original command at most three times, with independent fixtures
+and separate logs/evidence, stopping at the first failure through strict shell
+and pipeline exits. Ordinary/full coverage remains unchanged. Pointerdown and
+the initially pressed button's later connected/disabled/draggable state extend
+the bounded read-only receipt. Both review axes accepted this reproduction
+delta. All 45 route checks and the reduced original EN/RU folder replay passed,
+including ordinary shutdown/cleanup; lint/docs/diff checks passed. Repetition is
+intended to collect a failing trace, not to retry a failure until green.
