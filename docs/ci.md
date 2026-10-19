@@ -45,7 +45,7 @@ reproduced keep-original observation-cache failure in that same original macOS
 runtime. This route does not replace full acceptance or establish the cause of
 an intermittent failure.
 
-For #48's later Windows latest and macOS views failures, `checks: views-readiness`
+For #48's later Windows latest, Windows 2022 and macOS views failures, `checks: views-readiness`
 runs only their original development Table/Board command with native drag,
 async path-readiness, assignment and viewport regressions. Bounded reproduction
 uses three independent original journeys per host, distinct logs/evidence and

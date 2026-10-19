@@ -550,3 +550,11 @@ native fixture's renderer `document` global. The focused route now covers both
 observed failing hosts, macOS latest and Windows latest, with OS-specific artifacts
 and the same bounded stop-on-first-failure reproduction. Original focused and
 renewed full acceptance remain tracked in GitHub; application source is unchanged.
+
+The retained Windows 2022 job in that same full run later failed at the earlier
+English Table MultiSelect B-to-C gesture. Its downloaded original receipt has the
+same pattern: down at y936 on connected/enabled/draggable B, move/up at C y510,
+zero native drag events. This expands the actual failed-host map to Windows 2022;
+the focused matrix includes it as well. The repair code is unchanged. Prior
+macOS/Windows latest focused work on `a00102df` is retained, while renewed
+same-candidate focused acceptance will cover all three observed failing hosts.
