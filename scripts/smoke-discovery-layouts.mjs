@@ -224,8 +224,8 @@ app.on('window-all-closed', () => app.quit());`);
             return new Set(Array.from(range.getClientRects(), (rect) => Math.round(rect.top))).size > 1;
           }),
       }));
-      if (categoryMoveStory && !layout.wrapped) {
-        results.unwrapped = await page.locator(".property-authored, .text-value-button:not([hidden]), .project-table td, .saved-categories li, .project-category-move dd").evaluateAll((nodes) => nodes.filter((node) => {
+      if (!layout.wrapped) {
+        results.unwrapped = await page.locator(".discovery-name, .property-authored, .text-value-button:not([hidden]), .project-table td, .saved-categories li, .workspace-root, .recovery-review dd, .recovery-path, .project-rename dd, .project-rename p, .project-category-move dd").evaluateAll((nodes) => nodes.filter((node) => {
           const range = globalThis.document.createRange(); range.selectNodeContents(node);
           return node.textContent.length > 150 && new Set(Array.from(range.getClientRects(), (rect) => Math.round(rect.top))).size <= 1;
         }).map((node) => ({ tag: node.tagName, className: node.className, textLength: node.textContent.length, width: node.clientWidth, text: node.textContent })));

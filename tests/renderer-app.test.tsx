@@ -25,7 +25,7 @@ import type { ProjectRenameResult } from "../src/contracts/project-rename.js";
 
 const browser = new Window({ url: "http://localhost" });
 // Match the browser hidden rule when user-event computes keyboard tab order.
-browser.document.head.innerHTML = "<style>[hidden] { display: none !important; }</style>";
+browser.document.head.innerHTML = "<style>[hidden] { display: none !important; } .desktop-workspace[aria-hidden=true] { visibility: hidden; }</style>";
 Object.assign(globalThis, {
   window: browser,
   document: browser.document,
@@ -3701,6 +3701,7 @@ for (const language of ["en", "ru"] as const) test(`${language}: desktop setting
   settingsButton.focus(); await userEvent.keyboard("{Enter}");
   const appearance = await screen.findByRole("tab", { name: language === "en" ? "Appearance" : "Оформление" });
   await userEvent.click(appearance);
+  assert.equal(screen.queryByRole("cell", { name: "Real project" }), null);
   await screen.findByRole("radiogroup", { name: language === "en" ? "Color theme" : "Цветовая тема" });
   const back = screen.getByRole("button", { name: language === "en" ? "Back to workspace" : "Вернуться к работе" });
   back.focus(); await userEvent.keyboard("{Enter}");

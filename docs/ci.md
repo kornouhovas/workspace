@@ -29,6 +29,11 @@ This runs on `windows-latest` and records its actual Windows Server version; it
 does not stand in for Windows 11 desktop acceptance. Installer downloads are not
 uploaded. See [Windows installation](windows-install.md).
 
+The issue #48 `desktop-shell` focused route also replays the original Windows
+2022 creation/recovery Ladle layouts after the corresponding full-run failure.
+Its original assertions and exact-SHA artifact remain required; the broader
+ordinary platform matrix is unchanged.
+
 ## Candidate and handoff
 
 Use the [implementation sequence](development.md#implementation-sequence) before dispatching candidate acceptance. The candidate includes application changes, tests, fixtures, CI routes and relevant repository reports. Record observed local results before committing it; keep pending CI/integration status in the GitHub issue checkpoint linked from the plan.

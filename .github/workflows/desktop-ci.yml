@@ -141,6 +141,15 @@ jobs:
           npm run smoke:shell 2>&1 | tee work/ci-shell-focused/original.log
         env:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-shell-focused/runtime
+      - name: Original Windows 2022 creation and recovery layouts
+        if: ${{ !cancelled() && steps.build.outcome == 'success' && matrix.os == 'windows-2022' }}
+        shell: bash
+        run: |
+          set -o pipefail
+          npm run build:ladle 2>&1 | tee work/ci-shell-focused/ladle-build.log
+          node scripts/smoke-discovery-layouts.mjs --creation 2>&1 | tee work/ci-shell-focused/creation-layouts.log
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-shell-focused/creation-layouts
       - name: Preserve original shell result and provenance
         if: always()
         uses: actions/upload-artifact@v4

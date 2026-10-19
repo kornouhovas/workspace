@@ -118,3 +118,30 @@ focus, while hidden and after return, retaining the exact equality assertion. Th
 is evidence collection for the next focused run, not a product fix or a passing
 claim for the original failure. macOS installation run `39300868384` passed on the
 same source SHA; its report and Russian screenshot were inspected.
+
+
+Focused diagnostic run `39302080068` reproduced the same macOS 1629→1633 shift.
+Fonts were loaded and scroll height/row heights were identical before/after;
+focus alone did not move the workspace. Hiding with `display:none` collapsed its
+geometry and evicted viewport rows while settings was open. The shell now keeps
+that geometry beneath the settings grid layer, with `visibility:hidden`,
+`aria-hidden` and `inert` excluding visual, accessibility and keyboard interaction.
+The native scenario additionally asserts hidden-state geometry and inertness,
+while retaining exact return-position equality. Local native smoke and targeted
+EN/RU keyboard/focus/reorder tests passed. Both review axes accepted the delta;
+remote original-smoke verification remains required.
+
+Windows 2022's original platform suite passed, then its original creation/recovery
+Ladle route failed `creation-blocked-english` wrapping. Expanded existing failure
+receipts identify unwrapped nodes on every story, without changing that assertion.
+The focused shell route now also builds Ladle and replays the original Windows
+2022 creation-layout command after its build prerequisite, retaining its report.
+
+
+The strengthened local smoke completed its eight geometry/scroll/keyboard journeys
+but then hit the previously recorded native ten-second shutdown failure at its
+restart boundary. That run is retained as failed; it does not satisfy shutdown
+acceptance. Targeted keyboard tests passed 3/3 after the HappyDOM fixture applied
+the production visibility rule, and CI route tests passed 43/43. Typecheck, lint
+and documentation checks passed. Remote verification must still establish both
+original shell shutdown and the Windows creation-layout failure receipt.

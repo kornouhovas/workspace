@@ -535,8 +535,10 @@ p { margin-block: .5rem; }
 .sidebar-name { min-width: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
 .workspace-monogram { display: grid; place-items: center; flex: none; width: 23px; height: 23px; border: 1px solid var(--border); border-radius: 5px; font-size: .85rem; background: var(--background); }
 .sidebar-settings { flex: none; border-top: 1px solid var(--border); }
-.desktop-area { min-width: 0; min-height: 0; overflow: hidden; }
-.desktop-workspace, .desktop-settings { height: 100%; overflow: auto; overscroll-behavior: contain; }
+.desktop-area { min-width: 0; min-height: 0; overflow: hidden; display: grid; grid-template: minmax(0, 1fr) / minmax(0, 1fr); }
+.desktop-workspace, .desktop-settings { grid-area: 1 / 1; min-height: 0; height: 100%; overflow: auto; overscroll-behavior: contain; }
+/* Retain workspace geometry while settings covers it; display:none loses native scroll state. */
+.desktop-workspace[aria-hidden="true"] { visibility: hidden; }
 .workspace-screen { width: 100%; margin: 0; padding: 20px 24px; display: flex; flex-direction: column; gap: 16px; }
 .workspace-header { padding-bottom: 12px; border-bottom: 1px solid var(--border); }
 .workspace-controls { border: 0; padding: 0; min-width: 0; margin: 0; }

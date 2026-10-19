@@ -918,6 +918,12 @@ test('desktop shell failure route retains the original journey on all affected O
   assert.ok(original.run.includes('set -o pipefail'));
   assert.ok(original.run.includes('npm run smoke:shell'));
   assert.equal(runInNewContext(original.if.slice(3, -2), { cancelled: () => false, steps: { build: { outcome: 'success' } } }), true);
+  const layouts = job.steps.find(step => step.name === 'Original Windows 2022 creation and recovery layouts');
+  assert.ok(layouts.run.includes('npm run build:ladle'));
+  assert.ok(layouts.run.includes('node scripts/smoke-discovery-layouts.mjs --creation'));
+  for (const os of ['windows-2022', 'windows-latest', 'macos-latest']) {
+    assert.equal(runInNewContext(layouts.if.slice(3, -2), { cancelled: () => false, steps: { build: { outcome: 'success' } }, matrix: { os } }), os === 'windows-2022');
+  }
   const upload = job.steps.find(step => step.uses === 'actions/upload-artifact@v4');
   assert.equal(upload.if, 'always()');
   assert.equal(upload.with['if-no-files-found'], 'error');

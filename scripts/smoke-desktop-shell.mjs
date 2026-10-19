@@ -41,7 +41,7 @@ async function launch() {
 async function scrollState() {
   return page.locator(".desktop-workspace").evaluate(el => ({
     top: el.scrollTop, height: el.scrollHeight, viewport: el.clientHeight,
-    hidden: el.hidden, fonts: document.fonts.status,
+    hidden: el.getAttribute("aria-hidden") === "true", inert: el.inert, fonts: document.fonts.status,
     rows: [...el.querySelectorAll("tr[data-project-id]")].slice(0, 8).map(row => ({
       ready: row.dataset.fieldsReady, top: row.getBoundingClientRect().top, height: row.getBoundingClientRect().height,
     })),
@@ -86,6 +86,10 @@ try {
         const scrollFocused = await scrollState();
         await settings.press("Enter");
         const scrollHidden = await scrollState();
+        assert.equal(scrollHidden.hidden, true);
+        assert.equal(scrollHidden.inert, true);
+        assert.equal(scrollHidden.top, scrollBefore.top, "Settings preserves the workspace scroll container");
+        assert.equal(scrollHidden.height, scrollBefore.height, "Settings preserves workspace layout geometry");
         await page.getByRole("tab", { name: /^(General|Основные)$/ }).focus();
         await page.keyboard.press("Enter");
         await page.keyboard.press("ArrowDown");

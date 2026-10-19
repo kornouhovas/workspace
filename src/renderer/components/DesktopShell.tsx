@@ -80,7 +80,7 @@ export function DesktopShell({ language, data, busy, locked, onActivate, renderP
       <button ref={settingsButton} type="button" className="sidebar-item sidebar-settings" hidden={open} disabled={locked} onClick={enter}>{l.settings}</button>
     </aside>
     <div className="desktop-area">
-      <div className="desktop-workspace" hidden={open}>{children}</div>
+      <div className="desktop-workspace" aria-hidden={open} inert={open}>{children}</div>
       <div className="desktop-settings" hidden={!open}>
         {sections.map(item => <Tabs.Content key={item} value={item} forceMount hidden={!open || section !== item} className="settings-page" tabIndex={0}>
           <header className="settings-page-heading"><p>{l.settings}</p><h1>{l[item]}</h1></header>
