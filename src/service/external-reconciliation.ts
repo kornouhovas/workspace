@@ -162,7 +162,7 @@ function groupedMappings(scan: DiscoveryScan, projects: Project[], categories: C
 
 // Caller owns post-commit publication. Reconciliation never enrolls projects,
 // persists observed missing states, changes authored metadata or writes files.
-export function reconcileSource(db: Database, source: Source): { changed: boolean; scan: DiscoveryScan | null } {
+export function reconcileSource(db: Database, source: Source, observedScan?: DiscoveryScan): { changed: boolean; scan: DiscoveryScan | null } {
   if (source.discoveryMode !== "direct" && source.discoveryMode !== "grouped") return { changed: false, scan: null };
   const grouped = source.discoveryMode === "grouped";
   const exclusions: unknown = JSON.parse(source.excludedRelativePaths);
@@ -173,7 +173,7 @@ export function reconcileSource(db: Database, source: Source): { changed: boolea
   const reservations = readReservations();
   const scanSource = () => reserveProjectPlacements((grouped ? scanGroupedSource : scanDirectSource)(source.canonicalRoot,
     source.archiveRelativePath, projectExclusions(exclusions, grouped ? "grouped" : "direct").effective), reservations);
-  const scan = scanSource();
+  const scan = observedScan ? reserveProjectPlacements(observedScan, reservations) : scanSource();
   if (!scan.snapshot) return { changed: false, scan };
   if (!reliableIdentity(appliedRoot) || !reliableIdentity(scan.snapshot.root.identity) || !sameIdentity(appliedRoot, scan.snapshot.root.identity)) {
     return { changed: false, scan: { state: "root_identity_conflict", entries: [], snapshot: null } };

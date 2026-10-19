@@ -1,6 +1,8 @@
 import { accessSync, constants, lstatSync, opendirSync, realpathSync, watch } from "node:fs";
 import type { DiscoveryPreview } from "../contracts/workspaces.js";
 import type { NativeIdentity } from "./discovery.js";
+import type { DiscoveryScan } from "./discovery.js";
+import type { BackgroundScanRequest } from "./background-discovery.js";
 
 export interface WatchTarget {
   path: string;
@@ -11,8 +13,14 @@ export interface SourceObservation {
   state: DiscoveryPreview["state"];
   signature: string;
   targets: WatchTarget[];
+  // Internal read evidence, never a filesystem command's authorization.
+  scan?: DiscoveryScan;
+  sourceKey?: string;
 }
 export interface ObserverDependencies {
+  // Execution seam for deterministic host schedulers; production uses the
+  // service-owned read-only worker with the same complete native scanner.
+  scan?(request: BackgroundScanRequest): DiscoveryScan | Promise<DiscoveryScan>;
   // Windows nested directory watch handles can prevent moving their parent.
   // Keep root notifications and use bounded complete scans for category changes.
   pollCategories?: boolean;
@@ -47,6 +55,7 @@ export const nativeObserverDependencies: ObserverDependencies = {
 type Handle = { target: WatchTarget; active: boolean; close?: () => void };
 type Entry = {
   sourceId: string; root: string; active: boolean; running: boolean; again: boolean;
+  generation: number;
   handles: Map<string, Handle>; scheduled?: { cancel(): void }; health?: { cancel(): void };
   failedTargets: Map<string, string>;
   observation?: SourceObservation; published?: string; degraded: boolean;
@@ -55,7 +64,7 @@ type Entry = {
 // Owns scheduling and resources only. The service owns validated scans,
 // reconciliation transactions, reviews and actual workspace fanout.
 export function createSourceObserver(
-  pass: (sourceId: string) => SourceObservation,
+  pass: (sourceId: string) => SourceObservation | Promise<SourceObservation>,
   changed: (sourceId: string, observation: SourceObservation, revision: number,
     automaticUpdates: "active" | "degraded") => void,
   dependencies: ObserverDependencies = nativeObserverDependencies,
@@ -92,6 +101,7 @@ export function createSourceObserver(
   }
   function accept(entry: Entry, observation: SourceObservation) {
     if (!entry.active || closed) return;
+    entry.generation++;
     entry.observation = observation;
     const targets = new Map(observation.targets
       .filter((target) => !dependencies.pollCategories || target.path === entry.root)
@@ -136,15 +146,28 @@ export function createSourceObserver(
     if (!entry.active || closed) return;
     if (entry.running) { entry.again = true; return; }
     entry.running = true;
-    try { accept(entry, pass(entry.sourceId)); }
-    catch {
+    const generation = entry.generation;
+    const failed = () => {
+      if (!entry.active || closed || generation !== entry.generation) return;
       entry.degraded = true;
       if (!entry.observation) entry.observation = { state: "changed", signature: "failed", targets: [] };
       emit(entry);
-    } finally {
+    };
+    const complete = () => {
       entry.running = false;
       if (entry.again) { entry.again = false; hint(entry); }
-    }
+    };
+    const received = (observation: SourceObservation) => {
+      if (!entry.active || closed) return;
+      if (generation !== entry.generation) { entry.again = true; return; }
+      accept(entry, observation);
+    };
+    try {
+      const result = pass(entry.sourceId);
+      if (result instanceof Promise) { void result.then(received).catch(failed).finally(complete); return; }
+      received(result);
+    } catch { failed(); }
+    complete();
   }
   function health(entry: Entry) {
     entry.health = dependencies.schedule(() => {
@@ -173,7 +196,7 @@ export function createSourceObserver(
       const desired = new Map(sources.map((source) => [source.sourceId, source.root]));
       for (const [id, entry] of entries) if (desired.get(id) !== entry.root) { stop(entry); entries.delete(id); }
       for (const [sourceId, root] of desired) if (!entries.has(sourceId)) {
-        const entry: Entry = { sourceId, root, active: true, running: false, again: false, handles: new Map(), failedTargets: new Map(), degraded: false };
+        const entry: Entry = { sourceId, root, active: true, running: false, again: false, generation: 0, handles: new Map(), failedTargets: new Map(), degraded: false };
         entries.set(sourceId, entry);
         health(entry); run(entry);
       }

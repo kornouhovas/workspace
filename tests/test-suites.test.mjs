@@ -42,7 +42,7 @@ test('suite CLI lists the selected real files and rejects unknown invocations', 
 test('ordinary CI runs common checks once and retains all three platform acceptance routes', () => {
   const workflow = load(readFileSync('.github/workflows/desktop-ci.yml', 'utf8'));
   const { common, verify } = workflow.jobs;
-  assert.equal(common.if, "${{ github.event_name != 'workflow_dispatch' || (inputs.checks != 'failed' && inputs.checks != 'readiness' && inputs.checks != 'windows-release' && inputs.checks != 'issue22-failures' && inputs.checks != 'creation-shutdown' && inputs.checks != 'raw-rename' && inputs.checks != 'issue24-failures' && inputs.checks != 'category-fixture' && inputs.checks != 'issue24-startup' && inputs.checks != 'multiselect' && inputs.checks != 'etw-controls' && inputs.checks != 'app-fixture' && inputs.checks != 'property-fixture' && inputs.checks != 'runtime-observation' && inputs.checks != 'view-fixtures' && inputs.checks != 'number' && inputs.checks != 'windows-property-fixture' && inputs.checks != 'rename-authoring' && inputs.checks != 'rename-fixture') }}");
+  assert.equal(common.if, "${{ github.event_name != 'workflow_dispatch' || (inputs.checks != 'failed' && inputs.checks != 'readiness' && inputs.checks != 'windows-release' && inputs.checks != 'issue22-failures' && inputs.checks != 'creation-shutdown' && inputs.checks != 'raw-rename' && inputs.checks != 'issue24-failures' && inputs.checks != 'category-fixture' && inputs.checks != 'issue24-startup' && inputs.checks != 'multiselect' && inputs.checks != 'etw-controls' && inputs.checks != 'app-fixture' && inputs.checks != 'property-fixture' && inputs.checks != 'runtime-observation' && inputs.checks != 'view-fixtures' && inputs.checks != 'number' && inputs.checks != 'windows-property-fixture' && inputs.checks != 'rename-authoring' && inputs.checks != 'rename-fixture' && inputs.checks != 'viewport-runtime') }}");
   assert.equal(common.strategy, undefined);
   assert.deepEqual(common.steps.filter(step => step.run).map(step => step.run), [
     'npm ci', 'npm run lint', 'npm run typecheck', 'npm run check:docs', 'npm run test:common',
@@ -83,7 +83,7 @@ test('investigation jobs run only with explicit manual diagnostic inputs', () =>
 test('manual failed-check scope runs only the Windows observer and macOS rename routes', () => {
   const workflow = load(readFileSync('.github/workflows/desktop-ci.yml', 'utf8'));
   assert.equal(workflow.on.workflow_dispatch.inputs.checks.default, 'full');
-  assert.deepEqual(workflow.on.workflow_dispatch.inputs.checks.options, ['full', 'failed', 'readiness', 'windows-release', 'issue22-failures', 'creation-shutdown', 'raw-rename', 'issue24-failures', 'category-fixture', 'issue24-startup', 'multiselect', 'etw-controls', 'app-fixture', 'property-fixture', 'runtime-observation', 'view-fixtures', 'number', 'windows-property-fixture', 'rename-authoring', 'rename-fixture']);
+  assert.deepEqual(workflow.on.workflow_dispatch.inputs.checks.options, ['full', 'failed', 'readiness', 'windows-release', 'issue22-failures', 'creation-shutdown', 'raw-rename', 'issue24-failures', 'category-fixture', 'issue24-startup', 'multiselect', 'etw-controls', 'app-fixture', 'property-fixture', 'runtime-observation', 'view-fixtures', 'number', 'windows-property-fixture', 'rename-authoring', 'rename-fixture', 'viewport-runtime']);
   const enabled = (job, event, checks) => runInNewContext(job.if.slice(3, -2), { github: { event_name: event }, inputs: { checks } });
   for (const event of ['push', 'pull_request', 'workflow_dispatch']) for (const checks of [undefined, 'full', 'failed']) {
     const focused = event === 'workflow_dispatch' && checks === 'failed';
@@ -335,14 +335,20 @@ test('category-fixture also reproduces the original Windows 2022 development run
 test('raw-rename also retains the original macOS development runtime command and submission receipts', () => {
   const workflow = load(readFileSync('.github/workflows/desktop-ci.yml', 'utf8'));
   const job = workflow.jobs['focused-rename-runtime'];
-  assert.equal(job.if, "${{ github.event_name == 'workflow_dispatch' && inputs.checks == 'raw-rename' && !inputs.raw_windows_only }}");
-  assert.equal(job['runs-on'], 'macos-latest'); assert.equal(job['timeout-minutes'], 25);
-  const commands = job.steps.filter(step => step.run);
+  const enabled = (checks, raw_windows_only = false) => runInNewContext(job.if.slice(3, -2), { github: { event_name: 'workflow_dispatch' }, inputs: { checks, raw_windows_only } });
+  assert.equal(enabled('raw-rename'), true); assert.equal(enabled('raw-rename', true), false);
+  assert.equal(enabled('viewport-runtime'), true); assert.equal(enabled('full'), false);
+  for (const checks of ['raw-rename', 'viewport-runtime']) {
+    const platforms = runInNewContext(job.strategy.matrix.os.slice(3, -2), { inputs: { checks }, fromJSON: JSON.parse });
+    assert.deepEqual(Array.from(platforms), checks === 'raw-rename' ? ['macos-latest'] : ['macos-latest', 'windows-latest', 'windows-2022']);
+  }
+  assert.equal(job['runs-on'], '${{ matrix.os }}'); assert.equal(job['timeout-minutes'], 25);
+  const commands = job.steps.filter(step => step.run && step.name !== 'Viewport draft and keyboard regressions');
   assert.deepEqual(commands.slice(0, 2).map(step => step.run), ['npm ci', 'npm run build']);
   assert.equal(commands[2].shell, 'bash'); assert.ok(commands[2].run.includes('set -o pipefail'));
   assert.ok(commands[2].run.includes('npm run smoke:runtime -- dev 2>&1 | tee'));
   assert.equal(commands[2].env.WORKSPACE_SMOKE_EVIDENCE_DIR, 'work/ci-rename-runtime');
-  assert.equal(commands[3].if, "${{ !cancelled() && steps.dependencies.outcome == 'success' }}");
+  assert.equal(commands[3].if, "${{ !cancelled() && inputs.checks == 'raw-rename' && steps.dependencies.outcome == 'success' }}");
   assert.equal(commands[3].shell, 'bash'); assert.ok(commands[3].run.includes('set -o pipefail'));
   assert.ok(commands[3].run.includes("node --test --test-name-pattern='cancelling the actual observer CLI' tests/ralphex-observe.test.mjs"));
   assert.ok(job.steps.every(step => step['continue-on-error'] === undefined));

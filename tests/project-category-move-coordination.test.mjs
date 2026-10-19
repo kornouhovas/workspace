@@ -4,6 +4,7 @@ import { randomUUID } from "node:crypto";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
+import { scanDirectSource, scanGroupedSource } from "../src/service/discovery.ts";
 import Database from "better-sqlite3";
 import { nativeObserverDependencies } from "../src/service/source-observer.ts";
 import { openSettingsService } from "../dist/service/settings.mjs";
@@ -17,6 +18,9 @@ async function fixture(run, observerOptions = {}) {
   fs.writeFileSync(join(root, "Category", "Original", "sentinel"), "  Exact bytes 📝\n");
   const watches = [], timers = new Set();
   const dependencies = { ...nativeObserverDependencies, ...observerOptions,
+    // Clock-driven coordination tests use the complete real scanner synchronously.
+    // Native observation controls elsewhere retain the production worker.
+    scan: request => (request.mode === "grouped" ? scanGroupedSource : scanDirectSource)(request.canonicalRoot, request.archiveRelativePath, request.exclusions),
     watch(path, hint) { const handle = { path, hint, closed: false }; watches.push(handle); return { close() { handle.closed = true; } }; },
     schedule(callback, delay) { const timer = { callback, delay }; timers.add(timer); return { cancel() { timers.delete(timer); } }; },
   };

@@ -151,7 +151,7 @@ export type WorkspaceApplyDiscoveryCommand = {
   workspaceId: string;
   previewToken: string;
 };
-export type WorkspaceListProjectsQuery = { type: "workspace.listProjects"; workspaceId: string };
+export type WorkspaceListProjectsQuery = { type: "workspace.listProjects"; workspaceId: string; observed?: true };
 export interface CategorySummary {
   presentation?: import("./category-options.js").CategoryPresentation;
   categoryId: string;

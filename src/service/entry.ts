@@ -199,7 +199,8 @@ function isMalformedWorkspaceRequest(input: unknown): boolean {
     return !hasExactKeys(input, ["type", "workspaceId", "previewToken"]) ||
       typeof input.workspaceId !== "string" || typeof input.previewToken !== "string";
   }
-  if (input.type === "workspace.listProjects" || input.type === "workspace.getSourceObservation") return !hasExactKeys(input, ["type", "workspaceId"]) || typeof input.workspaceId !== "string";
+  if (input.type === "workspace.listProjects") return !hasExactKeys(input, Object.hasOwn(input, "observed") ? ["type", "workspaceId", "observed"] : ["type", "workspaceId"]) || typeof input.workspaceId !== "string" || Object.hasOwn(input, "observed") && input.observed !== true;
+  if (input.type === "workspace.getSourceObservation") return !hasExactKeys(input, ["type", "workspaceId"]) || typeof input.workspaceId !== "string";
   if (input.type === "workspace.load") return !hasExactKeys(input, ["type"]);
   if (input.type === "workspace.create") {
     return !hasExactKeys(input, ["type", "name", "rootPath"]) ||

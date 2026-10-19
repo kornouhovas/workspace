@@ -216,8 +216,8 @@ export class WorkspaceServiceClient {
     return this.api.workspace({ type: "workspace.reassociateProject", workspaceId, projectId, previewToken, relativePath });
   }
 
-  listProjects(workspaceId: string): Promise<ServiceResult<ProjectList>> {
-    return this.api.workspace({ type: "workspace.listProjects", workspaceId });
+  listProjects(workspaceId: string, observation?: { observed: true }): Promise<ServiceResult<ProjectList>> {
+    return this.api.workspace({ type: "workspace.listProjects", workspaceId, ...observation });
   }
 
   async getSourceObservation(workspaceId: string): Promise<ServiceResult<WorkspaceSourceObservationSnapshot>> {

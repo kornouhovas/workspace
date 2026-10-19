@@ -97,3 +97,56 @@ the task checkout. Earlier failures are not replaced by later successes. Final
 before/after comparison requires the same final harness on baseline and candidate
 on each measured platform. Required local full-suite, review, platform CI and
 integration evidence remain pending in the GitHub checkpoint.
+
+## Follow-up scan repair verification
+
+The original Windows failures remain retained. Diagnostic run `39284967766`
+measured complete grouped scans at 1.46–1.51 seconds and confirmed native
+filesystem work in the periodic observer. Its original strict performance step
+still failed. Runtime-driver repair run `39287168431` at `5e41765b` passed the
+original `smoke:runtime -- dev` command on macOS, Windows latest and Windows
+2022; its observation artifacts include rename/category/recovery/shutdown
+proofs. These results precede the worker repair and do not accept that repair.
+
+The follow-up implementation adds explicit observed UI reads and asynchronous
+filesystem-only observation. Focused real SQLite/filesystem, lifecycle, stale
+result, built IPC, build and artifact checks passed 93 tests before adding four
+worker-package rejection cases. Typecheck/build/lint passed. Initial focused
+failures exposed a host path fixture/canonicalization mismatch; those were
+corrected without weakening scanner or artifact assertions. Fresh review, full
+suite, packaged execution and exact-SHA platform performance remain required.
+
+## Owner-directed integration of stopped work
+
+The owner stopped implementation and closed #41 as `not_planned`, then explicitly
+requested integration into `new-workspace`. This integration preserves the
+current implementation; it does not assert that #41's performance criteria
+passed. Earlier negative measurements remain valid evidence. No renewed
+performance campaign or platform CI acceptance is inferred from this request.
+
+The first worker full-suite attempt was stopped after exposing fake-clock
+transport/coordination assumptions and UI test subclasses overriding the existing
+`listProjects` client seam. The final client keeps that seam with an explicit
+optional observed-read argument. Clock-driven fixtures inject the unchanged
+complete native scanner at the scheduling seam; native observation controls and
+worker tests still exercise the production worker. All 573 affected transport,
+coordination, category, rename and recovery UI tests passed. The final Standards
+and Spec delta reviews reported no blocking finding. Exact integrated SHA and
+remaining verification limits are recorded in the closed GitHub issue.
+
+Final integration verification on Node 22.21.1/macOS passed the fresh build,
+typecheck, lint, documentation links and full `test:all`: **3,113 passed, zero
+failed, 26 platform skips (3,139 total)**. The additional 226 focused creation,
+App and CI-route fixture tests passed after reconciling asynchronous scheduling
+and the existing `viewport-runtime` route. Final delta review found no blocking
+Standards or Spec finding.
+
+The preceding full attempt had 3,102 passes, 11 failures and 26 skips. Nine
+failures were fixture/CI-contract mismatches repaired above; two were 10-second
+native Electron fixture shutdown timeouts. The final run passed those controls
+with unchanged deadlines, but does not diagnose or claim a native shutdown
+repair. The earlier failure log remains `/tmp/issue41-integration-full.log` and
+the final report is `/tmp/issue41-integration-full-final.log` in the execution
+host. New packaged worker execution and exact-SHA platform/performance acceptance
+were not completed before this owner-directed integration. Earlier platform
+successes are attributed only to their recorded preceding SHAs.

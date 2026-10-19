@@ -12,6 +12,7 @@ const packagedFiles = [
   "dist/desktop/main.cjs",
   "dist/desktop/preload.cjs",
   "dist/service/entry.cjs",
+  "dist/service/discovery-worker.cjs",
   "dist/service/project-rename-filesystem.cjs",
   "dist/service/native/project-rename.node",
   "dist/renderer/index.html",
@@ -81,8 +82,9 @@ async function makeArtifact(root, buildVersion = "0.1.0", omittedFiles = [], omi
     await writeFile(join(resourcesDirectory, relative), relative === corruptFile ? Buffer.from("modified native script") : contents);
   }
   const asarPath = join(resourcesDirectory, "app.asar");
-  await createPackageWithOptions(appDirectory, asarPath, { unpack: omittedFiles.includes("packed-rename") ? undefined : "project-rename.node" });
+  await createPackageWithOptions(appDirectory, asarPath, { unpack: omittedFiles.includes("packed-rename") ? "discovery-worker.cjs" : omittedFiles.includes("packed-worker") ? "project-rename.node" : "{project-rename.node,discovery-worker.cjs}" });
   if (omittedFiles.includes("unpacked-rename")) await rm(join(`${asarPath}.unpacked`, "dist/service/native/project-rename.node"));
+  if (omittedFiles.includes("unpacked-worker")) await rm(join(`${asarPath}.unpacked`, "dist/service/discovery-worker.cjs"));
   const nativeModule = join(`${asarPath}.unpacked`, "node_modules/better-sqlite3/prebuilds/darwin-arm64.node");
   await mkdir(dirname(nativeModule), { recursive: true });
   await writeFile(nativeModule, "native module placeholder");
@@ -247,6 +249,10 @@ test("artifact check rejects a package whose journal cannot apply the discovery-
 });
 
 for (const scenario of [
+  { name: "missing discovery worker", omitted: ["dist/service/discovery-worker.cjs"], error: /missing.*discovery-worker/ },
+  { name: "packed discovery worker", omitted: ["packed-worker"], error: /Discovery worker must be unpacked/ },
+  { name: "missing unpacked discovery worker", omitted: ["unpacked-worker"], error: /worker is missing or linked/ },
+  { name: "corrupt discovery worker", corrupt: "dist/service/discovery-worker.cjs", error: /Discovery worker differs from current runtime build/ },
   { name: "missing rename wrapper", omitted: ["dist/service/project-rename-filesystem.cjs"], error: /missing.*project-rename-filesystem/ },
   { name: "missing rename adapter", omitted: ["dist/service/native/project-rename.node"], error: /missing.*project-rename.node/ },
   { name: "packed rename adapter", omitted: ["packed-rename"], error: /must be unpacked/ },

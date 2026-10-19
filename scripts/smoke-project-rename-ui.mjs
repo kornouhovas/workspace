@@ -122,7 +122,7 @@ export async function runProjectRenameUi(mode = "dev") {
   // Identify exercised build inputs; screenshots/results of separate invocations
   // must never be attributed to a different development/packaged artifact.
   const digest = createHash("sha256");
-  for (const path of ["package-lock.json", "scripts/smoke-project-rename-ui.mjs", "scripts/rename-editor-readiness.mjs", "scripts/rename-submission-receipt.mjs", "scripts/runtime-evidence.mjs", "scripts/rename-runtime-startup.mjs", "scripts/runtime-startup.mjs", "scripts/runtime-lifecycle.mjs", "tests/fixtures/project-rename-crash-worker.mjs", "dist/desktop/main.cjs", "dist/desktop/preload.cjs", "dist/service/entry.cjs", "dist/service/settings.mjs", "dist/service/native/project-rename.node"]) digest.update(path).update(await readFile(join(root, path)));
+  for (const path of ["package-lock.json", "scripts/smoke-project-rename-ui.mjs", "scripts/rename-editor-readiness.mjs", "scripts/rename-submission-receipt.mjs", "scripts/runtime-evidence.mjs", "scripts/runtime-project-visibility.mjs", "scripts/rename-runtime-startup.mjs", "scripts/runtime-startup.mjs", "scripts/runtime-lifecycle.mjs", "tests/fixtures/project-rename-crash-worker.mjs", "dist/desktop/main.cjs", "dist/desktop/preload.cjs", "dist/service/entry.cjs", "dist/service/discovery-worker.cjs", "dist/service/settings.mjs", "dist/service/native/project-rename.node"]) digest.update(path).update(await readFile(join(root, path)));
   if (mode === "release") {
     const resources = process.platform === "darwin" ? resolve(dirname(executablePath), "../Resources") : join(dirname(executablePath), "resources");
     digest.update(await readFile(join(resources, "app.asar")));

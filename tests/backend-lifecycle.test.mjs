@@ -5,6 +5,7 @@ import { mkdir, mkdtemp, readFile, rename, rm, writeFile } from "node:fs/promise
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
+import { scanDirectSource, scanGroupedSource } from "../src/service/discovery.ts";
 import { runInNewContext } from "node:vm";
 import { BackendController } from "../dist/desktop/backend-controller.mjs";
 import { WorkspaceServiceClient } from "../src/renderer/workspace-service-client.ts";
@@ -1131,6 +1132,9 @@ test("recovery fanout traverses production preload clients in commit order and c
   const { nativeObserverDependencies } = await import("../src/service/source-observer.ts");
   const timers = new Set(), watchers = [];
   const dependencies = { ...nativeObserverDependencies,
+    // This transport test drains a synchronous fake clock. Keep the real native
+    // scanner at that execution seam; worker scheduling is covered separately.
+    scan: request => (request.mode === "grouped" ? scanGroupedSource : scanDirectSource)(request.canonicalRoot, request.archiveRelativePath, request.exclusions),
     schedule(callback, delay) { const timer = { callback, delay }; timers.add(timer); return { cancel: () => timers.delete(timer) }; },
     watch(path, hint) { const watcher = { path, hint, closed: false }; watchers.push(watcher); return { close: () => { watcher.closed = true; } }; },
   };
@@ -1225,6 +1229,9 @@ test("source observation traverses production entry/controller/preload/clients b
   await mkdir(join(root, "Project"), { recursive: true }); await mkdir(otherRoot);
   const timers = new Set(), watchers = [];
   const dependencies = { ...nativeObserverDependencies,
+    // This transport test drains a synchronous fake clock. Keep the real native
+    // scanner at that execution seam; worker scheduling is covered separately.
+    scan: request => (request.mode === "grouped" ? scanGroupedSource : scanDirectSource)(request.canonicalRoot, request.archiveRelativePath, request.exclusions),
     schedule(callback, delay) { const timer = { callback, delay }; timers.add(timer); return { cancel: () => timers.delete(timer) }; },
     watch(path, hint, failed) { const watcher = { path, hint, failed, closed: false }; watchers.push(watcher); return { close: () => { watcher.closed = true; } }; },
   };

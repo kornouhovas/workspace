@@ -1,4 +1,5 @@
 import { createMetadataRemovalService } from "./metadata-removal.js";
+import { createBackgroundDiscovery, type BackgroundScanRequest } from "./background-discovery.js";
 import { assignProjectGroup } from "./group-assignment.js";
 import { createBoardLayoutService } from "./board-layout.js";
 import type { BoardLayoutSnapshot } from "../contracts/board-layout.js";
@@ -41,7 +42,8 @@ import type { CategoryPropertySnapshot, DiscoveryPreview, ProjectList } from "..
 import type { ServiceResult } from "../contracts/settings.js";
 import { randomUUID } from "node:crypto";
 import { accessSync, constants, opendirSync, realpathSync, statSync } from "node:fs";
-import { isAbsolute, join, relative, sep } from "node:path";
+import { dirname, isAbsolute, join, relative, sep } from "node:path";
+import { fileURLToPath } from "node:url";
 import { asc, eq, max, sql } from "drizzle-orm";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import * as schema from "./db/schema.js";
@@ -132,7 +134,7 @@ export interface WorkspaceService {
   previewDiscovery(input: unknown): ServiceResult<DiscoveryPreview>;
   subscribe(listener: (event: WorkspaceChangeEvent) => void): () => void;
   close(): void;
-  refreshSource(input: unknown):
+  refreshSource(input: unknown, observedScan?: DiscoveryScan):
     | { ok: true; value: WorkspaceSourceState }
     | { ok: false; error: { code: "invalid_input" | "storage"; message: string } };
   create(input: unknown):
@@ -170,6 +172,9 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
   const observed = new Map<string, { canonicalRoot: string; sourceAvailable: boolean }>();
   const observationCache = new Map<string, SourceObservation>();
   const observationVersions = new Map<string, number>();
+  const serviceDirectory = typeof __dirname === "string" ? __dirname : dirname(fileURLToPath(import.meta.url));
+  const backgroundDiscovery = createBackgroundDiscovery(join(serviceDirectory, "discovery-worker.cjs"));
+  let closed = false;
   type PendingObservation = { version: number; value: SourceObservation };
   let pendingObservations = new Map<string, PendingObservation>();
   let pendingProjectEvents: WorkspaceChangeEvent[] = [];
@@ -332,10 +337,14 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
       return () => { active = false; timer.cancel(); subscriptionTimers.delete(timer); listeners.delete(receive); };
     },
     close() {
+      closed = true;
       observer.close();
-      for (const timer of subscriptionTimers) timer.cancel();
-      subscriptionTimers.clear(); observationEvents.clear(); observationCache.clear(); observationVersions.clear();
-      listeners.clear(); observed.clear(); previewTokens.clear(); archive.close(); archiveMutations.close(); recovery.close(); creation.close(); rename.close(); categoryMove.close(); categoryOptions.close(); categoryRemoval.close(); reveal.close();
+      try { backgroundDiscovery.close(); }
+      finally {
+        for (const timer of subscriptionTimers) timer.cancel();
+        subscriptionTimers.clear(); observationEvents.clear(); observationCache.clear(); observationVersions.clear();
+        listeners.clear(); observed.clear(); previewTokens.clear(); archive.close(); archiveMutations.close(); recovery.close(); creation.close(); rename.close(); categoryMove.close(); categoryOptions.close(); categoryRemoval.close(); reveal.close();
+      }
     },
     previewDiscovery(input) {
       if (!isRecord(input) || input.type !== "workspace.previewDiscovery" || !isUuid(input.workspaceId) ||
@@ -395,11 +404,15 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
       } catch { return storageFailure(); }
     },
     listProjects(input) {
-      if (!workspacePayload(input, "workspace.listProjects", ["type", "workspaceId"])) return invalid("Choose a saved workspace.");
+      const keys = ["type", "workspaceId"];
+      if (isRecord(input) && Object.hasOwn(input, "observed")) keys.push("observed");
+      if (!workspacePayload(input, "workspace.listProjects", keys) || Object.hasOwn(input, "observed") && input.observed !== true) return invalid("Choose a saved workspace.");
       try {
         const source = workspaceSource(input.workspaceId as string);
         if (!source) return invalid("Choose a saved workspace.");
-        return { ok: true, value: projectList(input.workspaceId as string, source) };
+        const observation = input.observed === true ? observationCache.get(source.id) : undefined;
+        const scan = observation?.sourceKey === sourceObservationKey(source) ? observation.scan : undefined;
+        return { ok: true, value: projectList(input.workspaceId as string, source, scan) };
       } catch { return storageFailure(); }
     },
     applyDiscovery(input) {
@@ -528,7 +541,7 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
         return { ok: true, value: result };
       } catch (error) { return error instanceof StalePreview ? stale() : storageFailure(); }
     },
-    refreshSource(input) {
+    refreshSource(input, observedScan) {
       if (!isRecord(input) || input.type !== "workspace.refreshSource" ||
         Object.keys(input).length !== 2 || !Object.hasOwn(input, "workspaceId") || !isUuid(input.workspaceId)) {
         return invalid("Choose a saved workspace.");
@@ -541,7 +554,7 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
       observationVersions.set(source.sourceId, observationVersion);
       const state = normalizeSource(db, source.sourceId, source.canonicalRoot, filesystem, observe);
       const configured = workspaceSource(input.workspaceId)!;
-      const reconciled = state.sourceAvailable ? reconcileSource(db, configured) : { changed: false, scan: null };
+      const reconciled = state.sourceAvailable ? reconcileSource(db, configured, observedScan) : { changed: false, scan: null };
       if (!state.sourceAvailable || reconciled.scan && !reconciled.scan.snapshot) invalidateSourceReviews(source.sourceId);
       if (reconciled.changed) pendingProjectEvents.push({ type: "workspace.projectsChanged", sourceId: source.sourceId,
         revision: configured.discoveryRevision + 1, workspaceIds: sourceState(source.sourceId, state).workspaceIds });
@@ -792,6 +805,10 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
       state, projects: active, retainedProjects, retainedCount: retainedProjects.length };
   }
 
+  function sourceObservationKey(source: typeof schema.sources.$inferSelect) {
+    return JSON.stringify([source.canonicalRoot, source.discoveryMode, source.discoveryRevision,
+      source.excludedRelativePaths, source.archiveRelativePath, source.appliedRootIdentity]);
+  }
   function sourceObservation(current: typeof schema.sources.$inferSelect, scan: DiscoveryScan, projection: ProjectList): SourceObservation {
     const targets = scan.snapshot ? [scan.snapshot.root, ...scan.snapshot.children.filter((child) =>
       scan.snapshot!.mode === "grouped" && child.kind === "directory" && !child.relativePath.includes("/"))]
@@ -803,7 +820,7 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
     // Timestamp changes help validate scans, but have no semantic observation revision.
     const topology = scan.snapshot?.children.map((child) => child.kind === "excluded" ? child :
       { relativePath: child.relativePath, kind: child.kind, identity: child.identity });
-    return { state: projection.state, targets,
+    return { state: projection.state, targets, scan, sourceKey: sourceObservationKey(current),
       signature: JSON.stringify([topology, projection.projects, projection.retainedProjects, projection.categories]) };
   }
 
@@ -888,13 +905,40 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
     } catch { return storageFailure(); }
   }
 
-  const observer = createSourceObserver((sourceId) => {
+  const observer = createSourceObserver((sourceId): SourceObservation | Promise<SourceObservation> => {
     const workspaceId = sourceState(sourceId, { canonicalRoot: "", sourceAvailable: false }).workspaceIds[0];
     if (!workspaceId) throw new Error("Source no longer referenced");
-    const result = run(() => service.refreshSource({ type: "workspace.refreshSource", workspaceId }), undefined, false);
-    const observation = observationCache.get(sourceId);
-    if (!result.ok || !observation) throw new Error("Source observation failed");
-    return observation;
+    const current = db.select().from(schema.sources).where(eq(schema.sources.id, sourceId)).get();
+    if (!current || closed) throw new Error("Source no longer referenced");
+    const accept = (scan?: DiscoveryScan) => {
+      if (closed) throw new Error("Source observation closed");
+      const result = run(() => service.refreshSource({ type: "workspace.refreshSource", workspaceId }, scan), undefined, false);
+      const observation = observationCache.get(sourceId);
+      if (!result.ok || !observation) throw new Error("Source observation failed");
+      return observation;
+    };
+    // Preserve synchronous startup reconciliation before backend readiness.
+    if (!observationCache.has(sourceId)) return accept();
+    const exclusions: unknown = JSON.parse(current.excludedRelativePaths);
+    if ((current.discoveryMode !== "direct" && current.discoveryMode !== "grouped") ||
+      !validExclusions(exclusions, "grouped") || !validArchive(current.archiveRelativePath)) throw new Error("Invalid source configuration");
+    const key = sourceObservationKey(current), version = observationVersions.get(sourceId);
+    const receive = (scan: DiscoveryScan) => {
+      if (closed) throw new Error("Source observation closed");
+      const latest = db.select().from(schema.sources).where(eq(schema.sources.id, sourceId)).get();
+      const latestWorkspace = db.select().from(schema.workspaces).where(eq(schema.workspaces.id, workspaceId)).get();
+      if (!latest || latestWorkspace?.sourceId !== sourceId || sourceObservationKey(latest) !== key || observationVersions.get(sourceId) !== version) {
+        observer.request(sourceId);
+        const newer = observationCache.get(sourceId);
+        if (!newer) throw new Error("Source observation superseded");
+        return newer;
+      }
+      return accept(scan);
+    };
+    const request: BackgroundScanRequest = {mode:current.discoveryMode,canonicalRoot:current.canonicalRoot,
+      archiveRelativePath:current.archiveRelativePath,exclusions:projectExclusions(exclusions,current.discoveryMode).effective};
+    const result = observerDependencies?.scan ? observerDependencies.scan(request) : backgroundDiscovery.scan(request);
+    return result instanceof Promise ? result.then(receive) : receive(result);
   }, (sourceId, observation, observationRevision, automaticUpdates) => {
     const workspaceIds = sourceState(sourceId, { canonicalRoot: "", sourceAvailable: false }).workspaceIds;
     if (!workspaceIds.length) return;

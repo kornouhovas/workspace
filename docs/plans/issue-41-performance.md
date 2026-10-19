@@ -43,3 +43,38 @@ manual ordering, source/workspace ownership, filesystem safety and renderer
 isolation. No new storage architecture, release, signing or download publication.
 GitHub checkpoint owns current platform/integration acceptance; this plan is not
 an assertion that performance targets have passed.
+
+## Windows scan repair after measured CI failures
+
+Run `39284967766` measured complete grouped scans at 1.46–1.51 seconds; its
+five-second native observer pass spent about 1.1 seconds in `lstat`/`realpath`.
+Ordinary displayed-view reads took 28–36 ms. The original strict packaged run
+still showed 1.5-second interaction stalls and a 10-second refresh. Preserve
+those negatives; do not relax the polling interval, targets or native checks.
+
+First, add an explicit observed-project UI read. It reuses the last fully
+validated scan only while canonical root, mode, discovery revision, exclusions,
+archive policy and applied identity still match. Project/category metadata is
+projected afresh from SQLite; default service reads and filesystem commands
+remain fresh. Missing/stale evidence falls back to a complete scan. Verify this
+at the public typed service and built IPC with real folders/SQLite, including
+external rename, explicit refresh, stale config, ownership and reopen.
+
+Then move background filesystem scanning off the backend command thread while
+retaining the same complete scanner. SQLite stays solely in the owning service;
+scan results cannot authorize filesystem mutations. A source/config/version
+change or closed lifetime must discard an in-flight result. Reconciliation
+retains its fresh transactional recheck before locator writes. Shutdown must
+confirm scanning has stopped before releasing owned resources; no deadline or
+cleanup waiver. Startup still reconciles configured sources before readiness.
+Renew source-observer concurrency/lifecycle, identity/reconciliation and actual
+Windows performance evidence before full acceptance.
+
+## Owner stop and integration direction
+
+The owner closed #41 as `not_planned` before performance acceptance, then
+explicitly requested integrating the preserved work into `new-workspace`.
+This delivery does not certify the numerical targets or reopen performance
+implementation. The closed issue records the delivered SHA, actual local
+verification and unresolved packaged/platform performance evidence. Original
+negative measurements are retained in the verification report/checkpoints.

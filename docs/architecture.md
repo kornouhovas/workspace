@@ -113,6 +113,22 @@ One SQLite transaction temporarily releases affected project then category reser
 
 source-observer.ts owns one nonrecursive, nonpersistent fs.watch per referenced source root; macOS also watches eligible immediate category directories. Siblings share ownership. Windows uses root notifications plus a complete validated grouped-source scan on each five-second health tick when eligible categories exist, avoiding descendant watch handles that can obstruct external parent moves. This fallback does not depend on category timestamps as a change journal. Project contents, excluded targets and source parents are never watched or polled. All hints, including absent/hostile filenames, schedule a complete validated scan after 100 ms without extending its deadline. Hints during a pass request at most one following pass. One unreferenced five-second health timer per source probes root availability/evidence and retries degraded installation/observation; healthy macOS operation does not periodically enumerate projects. Obsolete watchers close before validated replacement; an installation-window rescan covers missed hints. Observing a new category does not enroll it. Final-reference removal and service close cancel timers/watchers and reject late callbacks; retained data remains reusable.
 
+Issue #41 moves subsequent complete observer scans into one service-owned Node
+worker thread. It runs the same read-only two-pass filesystem scanner; SQLite,
+source ownership and reconciliation remain in the backend service. Startup
+reconciliation still completes before readiness. Results are rejected after a
+source/configuration/version change or service close, and locator writes keep
+the fresh transactional native rescan. Cooperative cancellation closes scanner
+directory handles before acknowledging stop; an unverified stop fails shutdown
+within the existing deadline. The worker is shipped and checked outside ASAR.
+
+The DiscoveryPanel explicitly requests `workspace.listProjects` with
+`observed: true`: it projects current SQLite metadata over the last complete
+source observation while root, mode, discovery revision, exclusions, archive
+policy and applied identity match. Missing or expired evidence falls back to a
+fresh scan. Default reads, explicit Refresh and filesystem command authorization
+retain fresh filesystem validation. This UI read does not authorize a mutation.
+
 The Windows strategy follows the failed live grouped-root rename cases recorded in [T08 verification](verification/issue-15-external-reconciliation.md#ci-continuation). The pinned [libuv Windows watcher implementation](https://raw.githubusercontent.com/nodejs/node/v22.21.1/deps/uv/src/win/fs-event.c) already requests FILE_SHARE_DELETE; absence of that flag is not the diagnosed cause. Permanent native fixtures compare root-only/root-plus-category handles and require root disconnect/reconnect, category rename and same-category project rename with production observation running. Actual Windows acceptance requires the next exact-SHA CI run; local macOS diagnostics cannot establish the Windows mechanism or repair outcome.
 
 workspace.sourceObserved carries sourceId, actual workspaceIds, service-local observationRevision, scan state and active/degraded automaticUpdates. Meaningful topology, resolution, scan/status changes invalidate discovery/recovery reviews even without a locator commit; timestamp-only noise is ignored. A changed locator batch publishes workspace.projectsChanged after commit and before command responses. workspace.getSourceObservation is a validated read of current observation status, used by the production client/UI after mount/selection/backend readiness so startup feedback remains visible even when early events preceded the renderer subscription. It returns no mutation to replay and changes no persisted revisions.

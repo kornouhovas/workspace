@@ -1,4 +1,7 @@
 import assert from "node:assert/strict";
+import { scanDirectSource, scanGroupedSource } from "../src/service/discovery.js";
+import type { BackgroundScanRequest } from "../src/service/background-discovery.js";
+const scanOnFixtureClock = (request: BackgroundScanRequest) => (request.mode === "grouped" ? scanGroupedSource : scanDirectSource)(request.canonicalRoot, request.archiveRelativePath, request.exclusions);
 import { readFile, writeFile } from "node:fs/promises";
 import { mkdtempSync, mkdirSync, readdirSync, renameSync, realpathSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -2139,6 +2142,7 @@ test("EN/RU production grouped Apply normalizes child-then-parent exclusions and
     const timers = new Set<{ callback(): void; delay: number }>();
     const service = openSettingsService(join(directory, "data.sqlite"), undefined, undefined, {
       probe: nativeObserverDependencies.probe,
+      scan: scanOnFixtureClock,
       watch(path, hint) { hints.set(path, hint); return { close: () => { hints.delete(path); } }; },
       schedule(callback, delay) { const timer = { callback, delay }; timers.add(timer); return { cancel: () => { timers.delete(timer); } }; },
     });
@@ -2326,10 +2330,16 @@ test("EN/RU delayed grouped Apply respects newer discovery and independent categ
 });
 
 test("EN/RU category label keyboard editor retains drafts and changes only shared metadata through production client", async () => {
+  const { nativeObserverDependencies } = await import("../src/service/source-observer.js");
   for (const language of ["en", "ru"] as const) {
     const directory = mkdtempSync(join(tmpdir(), "category-label-ui-")), root = join(directory, "root");
     mkdirSync(join(root, "Category/Project"), { recursive: true });
-    const service = openSettingsService(join(directory, "data.sqlite")); let off: (() => void) | undefined;
+    // This metadata editor scenario controls explicit reads; native observation
+    // timing is exercised in the dedicated observer/worker scenarios.
+    const service = openSettingsService(join(directory, "data.sqlite"), undefined, undefined, {
+      probe: nativeObserverDependencies.probe,
+      watch() { return { close() {} }; }, schedule() { return { cancel() {} }; },
+    }); let off: (() => void) | undefined;
     try {
       const one = service.workspaces.create({ type: "workspace.create", name: "One", rootPath: root });
       const sibling = service.workspaces.create({ type: "workspace.create", name: "Sibling", rootPath: root });
@@ -2844,6 +2854,7 @@ test("EN/RU production Refresh and observer placement create only a needed categ
     const timers = new Set<{ delay: number; callback(): void }>();
     const service = openSettingsService(join(directory, "data.sqlite"), undefined, undefined, {
       probe: nativeObserverDependencies.probe,
+      scan: scanOnFixtureClock,
       watch: (path, hint) => {
         if (mechanism === "refresh") throw new Error("ENOSPC");
         hints.set(path, hint); return { close: () => { hints.delete(path); } };
@@ -2995,6 +3006,7 @@ test("EN/RU late App mount reads real startup degraded status after early delive
     const timers = new Set<{ callback(): void; delay: number }>();
     let failWatch = true;
     const dependencies = { ...nativeObserverDependencies,
+      scan: scanOnFixtureClock,
       schedule(callback: () => void, delay: number) { const timer = { callback, delay }; timers.add(timer); return { cancel: () => timers.delete(timer) }; },
       watch() { if (failWatch) throw new Error("Watch unavailable"); return { close() {} }; },
     };
