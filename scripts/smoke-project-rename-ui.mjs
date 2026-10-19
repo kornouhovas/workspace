@@ -1,5 +1,6 @@
 import { installRenameSubmissionReceipt } from "./rename-submission-receipt.mjs";
 import assert from "node:assert/strict";
+import { showRuntimeProject } from "./runtime-project-visibility.mjs";
 import { waitForRenameEditor } from "./rename-editor-readiness.mjs";
 import { execFileSync, fork } from "node:child_process";
 import { createHash, randomUUID } from "node:crypto";
@@ -231,6 +232,7 @@ export async function runProjectRenameUi(mode = "dev") {
     return list;
   }
   async function edit(page, name, draft, t, expectedMessage) {
+    await showRuntimeProject(page, name);
     const { electron } = startup.current;
     await electron.evaluate(installRenameSubmissionReceipt, { draft });
     const observation = { renameSubmission: { editorMatchesDraft: null, receipt: null } };
@@ -298,6 +300,7 @@ export async function runProjectRenameUi(mode = "dev") {
       }
     });
     await check(targetEvidence, "revealInvocation", async () => {
+      await showRuntimeProject(page, name, setup.project.projectId);
       await page.getByRole("button", { name: `${t.reveal}: ${name}`, exact: true }).press("Enter");
       await page.waitForFunction(() => globalThis.document.querySelector(".project-reveal .bb-status") !== null);
       const calls = await withDeadline((async () => {
@@ -362,6 +365,7 @@ export async function runProjectRenameUi(mode = "dev") {
       });
       const authoredName = "  Renamed 日本語";
       await check(targetEvidence, "submission", async () => {
+        await showRuntimeProject(page, "Original", setup.project.projectId);
         const trigger = page.getByRole("button", { name: `${t.rename}: Original`, exact: true });
         await trigger.press("Enter"); await page.locator("#project-rename-name").fill("Cancelled draft");
         await capture(page, discoveryMode, language, "editing");
@@ -405,6 +409,7 @@ export async function runProjectRenameUi(mode = "dev") {
       });
       await check(targetEvidence, "sibling", async () => {
         await select(page, setup.sibling, language);
+        await showRuntimeProject(page, committedName, setup.project.projectId);
         await page.getByRole("button", { name: `${t.rename}: ${committedName}`, exact: true }).waitFor();
         const sibling = await query(page, "listProjects", setup.sibling.workspaceId);
         assert.equal(sibling.projects.find(project => project.projectId === setup.project.projectId).name, committedName);
@@ -416,6 +421,7 @@ export async function runProjectRenameUi(mode = "dev") {
       page = await launch(setup.data); await select(page, setup.workspace, language);
       await check(targetEvidence, "restartPersistence", async () => {
         await preserved(page, setup, committedName, originalInventory);
+        await showRuntimeProject(page, committedName, setup.project.projectId);
         await page.getByRole("button", { name: `${t.rename}: ${committedName}`, exact: true }).waitFor();
       });
       await shutdown();

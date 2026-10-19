@@ -11,6 +11,7 @@ import { cleanupOwnedFixture, closeElectron, closeRuntimeSession, ownedProcesses
 import { assertRuntimeCategoryCell } from "./smoke-project-category-move-ui.mjs";
 import { measureDiscoveryLayout } from "./runtime-layout.mjs";
 import { createRuntimeSourceDisconnect, createRuntimeSourceMoveEvidence } from "./runtime-source-disconnect.mjs";
+import { showRuntimeProject as showProjectRow } from "./runtime-project-visibility.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const mode = process.argv[2] ?? "dev";
@@ -143,8 +144,13 @@ const propertyLabels = {
   ru: { create: "Создать Text-свойство", name: "Название свойства", rename: "Переименовать свойство", edit: "Редактировать Text-значение", save: "Сохранить значение", clear: "Очистить значение", saved: "Значение сохранено.", absent: "Нет значения", empty: "Пустой текст" },
 };
 const accessibleName = (name) => name.replace(/\s+/g, " ").trim();
+async function waitForProjectCell(page, name) {
+  await showProjectRow(page, name);
+  await page.getByRole("cell", { name, exact: true }).waitFor();
+}
 async function editValue(page, projectName, propertyName, value, language = "en") {
   const labels = propertyLabels[language];
+  await showProjectRow(page, projectName);
   const cell = page.getByRole("button", { name: accessibleName(`${labels.edit}: ${projectName} / ${propertyName}`), exact: true });
   await cell.press("Enter");
   const editor = page.getByRole("textbox", { name: accessibleName(`${labels.edit}: ${projectName} / ${propertyName}`), exact: true });
@@ -382,13 +388,13 @@ try {
   await excludeFolder(page, "Excluded", true);
   await captureDiscovery(page, "en", "preview");
   await applyFolders(page);
-  await page.getByRole("cell", { name: projectName, exact: true }).waitFor();
+  await waitForProjectCell(page, projectName);
   let savedProjects = await projects(page, first.workspaceId);
   assert.deepEqual(savedProjects.projects.map((row) => row.name).sort(), ["Archive", projectName].sort());
   const initialIds = savedProjects.projects;
   await select(page, sibling);
   assert.deepEqual((await projects(page, sibling.workspaceId)).projects, savedProjects.projects);
-  await page.getByRole("cell", { name: projectName, exact: true }).waitFor();
+  await waitForProjectCell(page, projectName);
   await select(page, other);
   await previewFolders(page);
   await captureDiscovery(page, "en", "empty-preview");
@@ -421,7 +427,7 @@ try {
   await applyFolders(page);
   savedProjects = await projects(page, first.workspaceId);
   assert.deepEqual(savedProjects.projects.filter((row) => row.name !== "Late project"), initialIds);
-  await page.getByRole("cell", { name: "Late project", exact: true }).waitFor();
+  await waitForProjectCell(page, "Late project");
   // Sibling Apply uses the production utilityProcess/preload route while our preview stays open.
   await previewFolders(page);
   const siblingApply = await page.evaluate(async (workspaceId) => {
@@ -431,7 +437,7 @@ try {
   }, sibling.workspaceId);
   assert.equal(siblingApply.ok, true);
   await page.getByRole("heading", { name: discoveryLabels.en.stale, exact: true }).waitFor();
-  await page.getByRole("cell", { name: "Excluded", exact: true }).waitFor();
+  await waitForProjectCell(page, "Excluded");
   assert.equal(await page.getByRole("button", { name: "Apply reviewed projects", exact: true }).isDisabled(), true);
   await settleSourceRefresh(page);
   await page.getByRole("button", { name: "Refresh preview", exact: true }).press("Enter");
@@ -490,6 +496,7 @@ try {
   assert.deepEqual(savedProperties.values.map((entry) => entry.value).sort(), [authoredValue, "", "  \n\t  "].sort());
   await select(page, sibling);
   assert.deepEqual(await properties(page, sibling.workspaceId), { ...savedProperties, workspaceId: sibling.workspaceId });
+  await showProjectRow(page, projectName);
   await page.getByRole("button", { name: accessibleName(`${propertyLabels.en.edit}: ${projectName} / ${propertyName}`), exact: true }).waitFor();
   await select(page, other);
   assert.deepEqual(await properties(page, other.workspaceId), otherProperties);
@@ -511,6 +518,7 @@ try {
     await page.waitForFunction((lang) => globalThis.document.documentElement.lang === lang && !globalThis.document.querySelector("#interface-language")?.disabled, language);
     await captureDiscovery(page, language, "applied-table");
     const valueLabel = `${propertyLabels[language].edit}: ${projectName} / ${propertyName}`;
+    await showProjectRow(page, projectName);
     await page.getByRole("button", { name: accessibleName(valueLabel), exact: true }).press("Enter");
     const textEditor = page.getByRole("textbox", { name: accessibleName(valueLabel), exact: true });
     assert.equal(await textEditor.inputValue(), authoredValue);
@@ -672,6 +680,7 @@ try {
   assert.deepEqual(groupedApplied.projects.map((entry) => entry.name).sort(), [groupedProjectName, "Immediate child"].sort());
   assert.equal(groupedApplied.categories.length, 4);
   assert.ok(groupedApplied.projects.every((entry) => groupedApplied.categories.some((category) => category.categoryId === entry.categoryId)));
+  await showProjectRow(page, groupedProjectName);
   await assertRuntimeCategoryCell(page, groupedProjectName, categoryName);
   const categoryPropertyId = groupedApplied.categoryProperty.propertyId;
   const groupedTextName = "Grouped Notes";
@@ -792,9 +801,18 @@ try {
   await page.locator(".table-view[aria-busy=false]").waitFor();
   assert.equal(await page.locator(".category-property-header").count(), 0);
   assert.equal(await page.locator(".project-table").getByRole("button", { name: /^Переместить проект в категорию:/ }).count(), 0, "Direct and retained rows cannot move categories");
+  for (const project of [...modeDirect.projects, ...modeDirect.retainedProjects]) {
+    const row = page.locator(`[data-project-id="${project.projectId}"]`);
+    await row.scrollIntoViewIfNeeded();
+    await row.locator('[data-column-id="name"]').waitFor();
+    assert.equal(await row.getByRole("button", {name:/^Переместить проект в категорию:/}).count(), 0, "Every visited direct/retained row has no category move action");
+  }
   assert.deepEqual(await properties(page, grouped.workspaceId), savedGroupedProperties);
   assert.ok(modeDirect.projects.every((row) => !savedGroupedProperties.values.some((value) => value.projectId === row.projectId)), "Fresh direct role identities must not inherit child Text");
-  for (const row of modeBefore.projects) await page.getByRole("button", { name: accessibleName(`${propertyLabels.ru.edit}: ${row.name} / ${groupedTextName}`), exact: true }).waitFor();
+  for (const row of modeBefore.projects) {
+    await showProjectRow(page, row.name);
+    await page.getByRole("button", { name: accessibleName(`${propertyLabels.ru.edit}: ${row.name} / ${groupedTextName}`), exact: true }).waitFor();
+  }
   const retainedValue = savedGroupedProperties.values.find((value) => value.projectId === modeBefore.projects.find((row) => row.name === groupedProjectName).projectId).value;
   await editValue(page, groupedProjectName, groupedTextName, retainedValue, "ru");
   assert.deepEqual(await properties(page, grouped.workspaceId), savedGroupedProperties, "Exact no-op retained save must preserve independent Text revision");
@@ -835,6 +853,7 @@ try {
   for (const row of modeBefore.projects) {
     await settleSourceRefresh(page);
     const locate = page.getByRole("button", { name: accessibleName(`Найти папку: ${row.name}`), exact: true });
+    await showProjectRow(page, row.name, row.projectId);
     await locate.press("Enter");
     const panel = page.locator(".recovery-panel");
     await panel.locator("input[type=radio]").first().waitFor();
@@ -895,7 +914,7 @@ try {
     projects: directBefore.projects.map((entry) => entry.projectId === directKnown.projectId
       ? { ...entry, name: directRenamed, relativePath: directRenamed } : entry) });
   projectName = directRenamed;
-  await page.getByRole("cell", { name: projectName, exact: true }).waitFor();
+  await waitForProjectCell(page, projectName);
   assert.deepEqual(await properties(page, first.workspaceId), savedProperties);
   assert.deepEqual(await folderBytes(projectRoot), directInventory);
   originalBytes = directInventory;
@@ -912,6 +931,7 @@ try {
     projects: categoryBefore.projects.map((entry) => entry.categoryId === groupedKnown.categoryId
       ? { ...entry, relativePath: `${renamedCategory}/${entry.name}`, categoryName: renamedCategory } : entry) });
   categoryName = renamedCategory;
+  await showProjectRow(page, groupedProjectName);
   await assertRuntimeCategoryCell(page, groupedProjectName, categoryName);
   assert.deepEqual(await folderBytes(groupedRoot), categoryInventory);
   const neededCategory = "Automatically needed category";
@@ -937,8 +957,9 @@ try {
   assert.deepEqual(savedGroupedProjects.categoryProperty, placementBefore.categoryProperty);
   assert.equal(savedGroupedProjects.categoryPropertyRevision, placementBefore.categoryPropertyRevision);
   assert.deepEqual(await properties(page, grouped.workspaceId), savedGroupedProperties);
+  await showProjectRow(page, groupedProjectName);
   await assertRuntimeCategoryCell(page, groupedProjectName, neededCategory);
-  await page.getByRole("cell", { name: groupedProjectName, exact: true }).waitFor();
+  await waitForProjectCell(page, groupedProjectName);
   for (const language of ["en", "ru"]) {
     await page.locator("#interface-language").selectOption(language);
     await page.waitForFunction((lang) => globalThis.document.documentElement.lang === lang &&
@@ -988,6 +1009,7 @@ try {
     const textBefore = await properties(page, workspace.workspaceId);
     const bytesBefore = await folderBytes(workspace.canonicalRoot);
     const locate = page.getByRole("button", { name: accessibleName(`${labels.locate}: ${row.name}`), exact: true });
+    await showProjectRow(page, row.name, row.projectId);
     await locate.press("Enter");
     const panel = page.locator(".recovery-panel");
     await panel.locator("input[type=radio]").first().waitFor();
@@ -1183,7 +1205,7 @@ try {
   stages.shutdownMissed = true;
   observations.push({ scenario: "shutdown-missed direct rename/new-category placement before Apply, repeated Refresh idempotence", savedProjects, savedGroupedProjects });
   await select(page, first);
-  await page.getByRole("cell", { name: projectName, exact: true }).waitFor();
+  await waitForProjectCell(page, projectName);
   await previewFolders(page, "ru");
   assert.equal(await page.getByRole("checkbox", { name: "Исключить: Excluded", exact: true }).isChecked(), true);
   await applyFolders(page, "ru");
@@ -1197,7 +1219,7 @@ try {
   await select(page, grouped);
   assert.deepEqual(await projects(page, grouped.workspaceId), savedGroupedProjects);
   assert.deepEqual(await properties(page, grouped.workspaceId), savedGroupedProperties);
-  await page.getByRole("cell", { name: groupedProjectName, exact: true }).waitFor();
+  await waitForProjectCell(page, groupedProjectName);
   await select(page, groupedSibling);
   assert.deepEqual(identity((await load(page)).activeWorkspace), identity(groupedSibling));
   assert.deepEqual(await projects(page, groupedSibling.workspaceId), { ...savedGroupedProjects, workspaceId: groupedSibling.workspaceId });
@@ -1230,7 +1252,7 @@ try {
   assert.notEqual(recreated.viewId, sibling.viewId);
   assert.equal(recreated.canonicalRoot, canonicalProjectRoot);
   assert.deepEqual(await projects(page, recreated.workspaceId), { ...savedProjects, workspaceId: recreated.workspaceId });
-  await page.getByRole("cell", { name: projectName, exact: true }).waitFor();
+  await waitForProjectCell(page, projectName);
   await previewFolders(page, "ru");
   assert.equal(await page.getByRole("checkbox", { name: "Исключить: Excluded", exact: true }).isChecked(), true);
   await applyFolders(page, "ru");
@@ -1245,7 +1267,7 @@ try {
   assert.notEqual(reusedGrouped.viewId, groupedSibling.viewId);
   assert.deepEqual(await projects(page, reusedGrouped.workspaceId), { ...savedGroupedProjects, workspaceId: reusedGrouped.workspaceId });
   assert.deepEqual(await properties(page, reusedGrouped.workspaceId), { ...savedGroupedProperties, workspaceId: reusedGrouped.workspaceId });
-  await page.getByRole("cell", { name: groupedProjectName, exact: true }).waitFor();
+  await waitForProjectCell(page, groupedProjectName);
   await previewFolders(page, "ru"); await applyFolders(page, "ru");
   const explicitlyDiscovered = await projects(page, reusedGrouped.workspaceId);
   assert.equal(explicitlyDiscovered.projects.find((entry) => entry.name === "Offline unregistered")?.categoryId,

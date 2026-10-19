@@ -37,6 +37,16 @@ After acceptance, record the run/attempt, tested SHA, actual checks/artifacts, d
 
 ## Failed Actions loop
 
+For issue #41's macOS/Windows development runtimes waiting for offscreen project cells,
+dispatch the desktop workflow with `checks: viewport-runtime`. It runs only
+the three affected platforms, the viewport/rename/category driver regressions and the original
+`npm run smoke:runtime -- dev` command with its existing deadlines, layout,
+data-preservation, native and shutdown assertions. The driver scrolls to the
+owned project identity before expecting its real fields. It never accepts a
+placeholder as a cell. Exact-SHA evidence is retained; unrelated raw-rename and
+observer CLI diagnostics are not selected. Full acceptance follows focused
+success on the repaired SHA.
+
 Apply this loop automatically when a GitHub Actions check fails during an authorized task, including continuation in a new window. The agent invokes `diagnosing-bugs` without requiring another user command. Executor selection remains governed by [development](development.md#executor-selection); CI failure does not select Ralphex. Continue within existing implementation/push/Actions authorization; request only genuinely missing access or consequential decisions.
 
 1. **Retain the failure.** Record the run/attempt, exact SHA, failed check, OS, original command and relevant logs/artifacts. Distinguish a failed check from a cancelled run, skipped stage or unavailable evidence.
