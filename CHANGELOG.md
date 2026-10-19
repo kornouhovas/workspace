@@ -4,6 +4,8 @@ User-facing changes are maintained in English. The first target release is 0.1.0
 
 ## Unreleased
 
+- Add a local macOS 14+ Apple Silicon DMG installation route, installed-app reopen/replacement checks and installation guidance. No release download is published.
+
 ### Added
 
 - Review and delete custom properties or clear/reassign ordinary Select options across source workspaces, with atomic cleanup of saved Table/Board filters, grouping and presentation references.

@@ -50,7 +50,10 @@
     "smoke:select": "node scripts/smoke-single-select.mjs",
     "smoke:date": "node scripts/smoke-date-properties.mjs",
     "smoke:number": "node scripts/smoke-number-properties.mjs",
-    "smoke:archive": "node scripts/smoke-project-archive.mjs"
+    "smoke:archive": "node scripts/smoke-project-archive.mjs",
+    "package:mac": "npm run build && npm run package:mac:built",
+    "package:mac:built": "electron-builder --mac dmg --arm64 --publish never && npm run check:artifact -- release/mac-arm64/Workspace.app",
+    "smoke:install:mac": "node scripts/smoke-macos-install.mjs"
   },
   "dependencies": {
     "better-sqlite3": "13.0.3",
@@ -109,11 +112,32 @@
       {
         "from": "src/renderer/components/bb/LICENSE",
         "to": "licenses/bb-MIT.txt"
+      },
+      {
+        "from": "THIRD_PARTY_NOTICES.txt",
+        "to": "licenses/THIRD_PARTY_NOTICES.txt"
       }
     ],
     "artifactName": "Workspace-${version}-${os}-${arch}.${ext}",
     "directories": {
       "output": "release"
+    },
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "arm64"
+          ]
+        }
+      ],
+      "minimumSystemVersion": "14.0",
+      "identity": null,
+      "notarize": false
+    },
+    "dmg": {
+      "sign": false,
+      "writeUpdateInfo": false
     }
   }
 }

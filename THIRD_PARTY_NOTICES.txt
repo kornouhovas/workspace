@@ -1,0 +1,12 @@
+Workspace third-party notices
+
+Selected UI controls and styles are adapted from bb (get-bb/bb), revision
+f135a001e72942cee9118d2693208ec0725e2f18, under the MIT License.
+Copyright (c) 2026 Michael Yong. The complete notice is included alongside this
+file as bb-MIT.txt. Source provenance is recorded in docs/reuse.md.
+
+Electron includes third-party software and Chromium. Its license and Chromium
+notices ship in the application bundle's Resources directory as LICENSE.electron.txt and
+LICENSES.chromium.html. Packaged npm dependencies retain their license files
+inside app.asar (including better-sqlite3, Drizzle ORM, React and React DOM).
+This file records provenance; it does not replace the accompanying license texts.

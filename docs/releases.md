@@ -26,3 +26,11 @@ The first implementation must keep version bumps and changelog edits reviewable 
 ## bb reference
 
 At the [inspected bb revision](reuse.md), a version script updates desktop/application manifests together, and CI checks consistency. The changelog is edited in Git and parsed for both the website and in-app display; it is not generated from commit messages in the inspected release path. Workspace adopts the shared-source principle, without inheriting bb-specific npm/desktop tag names or moving tags.
+
+## macOS local installation (Issue 39)
+
+The owner selected macOS 14+, Apple Silicon arm64 and a DMG without Developer ID
+or notarization, with manual app replacement. Use `npm run package:mac` and
+`npm run smoke:install:mac`; see [installation and troubleshooting](macos-install.md)
+and [observed verification](verification/issue-39-macos-install.md). No signing
+identity, download publication, release tag or automatic update is configured.

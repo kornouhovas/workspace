@@ -1,0 +1,37 @@
+name: macOS local installation
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: macos-install-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  macos-install:
+    name: macOS 14 arm64 DMG installation and reopen
+    runs-on: macos-14
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.21.1
+          cache: npm
+      - run: npm ci
+      - run: npm run package:mac
+      - run: node --test tests/macos-install.test.mjs
+      - run: npm run smoke:install:mac
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-macos-install
+      - name: Retain installation evidence without publishing downloads
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-install-${{ github.sha }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
+          path: work/ci-macos-install/
+          if-no-files-found: error
+          retention-days: 7
+
