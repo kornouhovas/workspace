@@ -221,8 +221,12 @@ jobs:
 
   focused-views-readiness:
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.checks == 'views-readiness' }}
-    name: Original Windows latest views readiness
-    runs-on: windows-latest
+    name: Original views readiness (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest]
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
@@ -243,8 +247,8 @@ jobs:
         shell: bash
         run: |
           set -o pipefail
-          node --import tsx --test tests/runtime-project-visibility.test.mjs tests/group-assignment-ui.test.tsx tests/viewport-projects-ui.test.tsx tests/test-suites.test.mjs 2>&1 | tee work/ci-views-readiness/regressions.log
-      - name: Original Windows latest development views
+          node --import tsx --test tests/runtime-group-drag.test.mjs tests/runtime-project-visibility.test.mjs tests/group-assignment-ui.test.tsx tests/viewport-projects-ui.test.tsx tests/test-suites.test.mjs 2>&1 | tee work/ci-views-readiness/regressions.log
+      - name: Original development views
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         shell: bash
         run: |
@@ -259,7 +263,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: issue-48-views-readiness-${{ github.sha }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
+          name: issue-48-views-readiness-${{ matrix.os }}-${{ github.sha }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
           path: work/ci-views-readiness/
           if-no-files-found: error
 

@@ -30,7 +30,6 @@ export async function exerciseFolderGroupAssignment({page,query,rootPath,languag
     const region=name=>page.getByRole('region',{name,exact:true});
     const handle=region('Alpha').getByRole('button',{name:drag('Alpha'),exact:true}).and(page.locator(':enabled'));
     const heading=region('Target').getByRole('heading');
-    await heading.evaluate(el=>el.scrollIntoView({block:'start',inline:'nearest'}));
     await recordGroupDrag(page, handle, heading, join(evidenceDirectory, `${language}-${layout}-folder-name-drag-receipt.json`));
     await waitForRuntimeProjectPath(page, workspaceId, project.projectId, 'A/Target');
     assert.deepEqual(await readdir(join(source,'A')),['Target']);

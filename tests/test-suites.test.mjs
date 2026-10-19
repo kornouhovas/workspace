@@ -961,16 +961,18 @@ test('shell runtime failure selector replays only the affected original commands
 });
 
 
-test('views readiness isolates the original failed Windows latest lifecycle', () => {
+test('views readiness isolates the original failed macOS and Windows latest lifecycles', () => {
   const workflow = load(readFileSync('.github/workflows/desktop-ci.yml', 'utf8'));
   for (const event of ['push', 'pull_request', 'workflow_dispatch']) {
     const active = Object.entries(workflow.jobs).filter(([,job]) => job.if && runInNewContext(job.if.slice(3,-2), {github:{event_name:event}, inputs:{checks:'views-readiness'}})).map(([name]) => name);
     assert.deepEqual(active, event === 'workflow_dispatch' ? ['focused-views-readiness'] : ['common']);
   }
   const job = workflow.jobs['focused-views-readiness'];
-  assert.equal(job['runs-on'], 'windows-latest');
+  assert.equal(job['runs-on'], '${{ matrix.os }}');
+  assert.deepEqual(job.strategy.matrix.os, ['macos-latest', 'windows-latest']);
+  assert.equal(job.strategy['fail-fast'], false);
   assert.ok(job.steps.every(step => step['continue-on-error'] === undefined));
-  const original = job.steps.find(step => step.name === 'Original Windows latest development views');
+  const original = job.steps.find(step => step.name === 'Original development views');
   assert.ok(original.run.includes('npm run smoke:views -- dev')); assert.ok(original.run.includes('set -o pipefail'));
   for (const outcome of ['success','failure']) for (const cancelled of [true,false]) {
     assert.equal(runInNewContext(original.if.slice(3,-2), {cancelled:()=>cancelled,steps:{build:{outcome}}}), !cancelled && outcome === 'success');

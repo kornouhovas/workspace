@@ -515,3 +515,38 @@ the bounded read-only receipt. Both review axes accepted this reproduction
 delta. All 45 route checks and the reduced original EN/RU folder replay passed,
 including ordinary shutdown/cleanup; lint/docs/diff checks passed. Repetition is
 intended to collect a failing trace, not to retry a failure until green.
+
+## Scrolling before native group mouse-down
+
+The three independent original Windows journeys in `39329569086` all passed on
+`f8339dea`, including 18 report blocks, nine ordinary quits/backend exits and
+three cleanup gates. All 24 recorded native gestures had accepted drops. Their
+downloaded exact-SHA artifacts were inspected before full run `39330579764` on
+that same reviewed candidate; no repair was inferred from those passes.
+
+That full run exposed the missing-dragstart failure on macOS in Russian folder
+Table. The downloaded receipt records Alpha pointerdown/mousedown at y927,
+then Target mousemove/mouseup at y479, with zero native drag events. The pressed
+button stayed connected, enabled and draggable in the recorded samples. Other
+platform jobs were retained rather than canceled.
+
+A native Electron scroll-container control, with Alpha near the lower viewport
+edge and Target below it, reproduced this same missing-dragstart pattern in all
+36 gestures across one, two and four movement steps. The new native regression
+failed at zero dragstarts with the original `dragTo`. Preparing both endpoints
+before mouse-down and disabling automatic scrolling during the single native
+gesture made it pass, including exact payload, one drop and unchanged scroll
+between down/drop. This proves the scroll-boundary mechanism matching the new
+hosted trace, without establishing every earlier intermittent failure's cause.
+
+The shared driver helper now prepares scalar, MultiSelect and folder drag
+endpoints this way. It performs one native gesture; inaccessible endpoints still
+fail instead of replaying a mutation. Existing deadlines, filesystem bytes,
+project identities, memberships, metadata, focus and viewport assertions remain.
+All 87 affected regressions passed. The complete original local views journey
+passed six report blocks, three ordinary quits/backend exits and cleanup. Both
+review axes accepted the repair. Lint/docs/diff checks passed after declaring the
+native fixture's renderer `document` global. The focused route now covers both
+observed failing hosts, macOS latest and Windows latest, with OS-specific artifacts
+and the same bounded stop-on-first-failure reproduction. Original focused and
+renewed full acceptance remain tracked in GitHub; application source is unchanged.

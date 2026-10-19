@@ -2,6 +2,7 @@
 import assert from "node:assert/strict";
 import { join } from "node:path";
 import { writeFile } from "node:fs/promises";
+import { dragRuntimeGroup } from './runtime-group-drag.mjs';
 export async function exerciseGroupAssignment({page,query,rootPath,language,evidenceDirectory}) {
   const en=language==="en", workspace=await query(page,{type:"workspace.create",rootPath,name:`Assignment ${language}`});
   const {workspaceId,viewId}=workspace;
@@ -20,10 +21,7 @@ export async function exerciseGroupAssignment({page,query,rootPath,language,evid
       const handle=page.getByRole("button",{name:`${en?"Drag to change group":"Перетащить для изменения группы"}: Alpha`,exact:true}).and(page.locator(":enabled"));
       const targetLabel=type==="single_select"?"Ready":String(target);
       const destination = page.locator(".project-group").getByRole("heading",{name:`${targetLabel.trim()} (1)`,exact:true});
-      // Place both endpoints in view before mouse-down; scrolling during the
-      // gesture can prevent Chromium from starting the native drag at all.
-      await destination.evaluate(element => element.scrollIntoView({block:"start",inline:"nearest"}));
-      await handle.dragTo(destination);
+      await dragRuntimeGroup(handle, destination);
       const label=`${en?"Change group":"Изменить группу"}: Alpha`;
       await page.waitForFunction(({label,value})=>document.querySelector(`select[aria-label="${label}"]`)?.value===value,{label,value:JSON.stringify(target)});
       const snapshot=await call("listTextProperties"),rows=type==="number"?snapshot.numberValues:type==="date"?snapshot.dateValues:type==="single_select"?snapshot.selectValues:snapshot.values;
@@ -75,7 +73,7 @@ export async function recordGroupDrag(page, source, destination, receiptPath) {
     for (const type of ["pointerdown", "mousedown", "mousemove", "mouseup"]) document.addEventListener(type, pointerListener, true);
   });
   let primary;
-  try {await source.dragTo(destination);}
+  try {await dragRuntimeGroup(source, destination);}
   catch (error) {primary = error;}
   try {
     const receipt = await page.evaluate(() => {
@@ -111,7 +109,6 @@ async function exerciseMultiSelectAssignment({page,call,viewId,project,language,
     await page.locator(layout==='board'?'.grouped-board':'.grouped-table').waitFor();
     await handle.waitFor();
     const destination=region('C').getByRole('heading');
-    await destination.evaluate(el=>el.scrollIntoView({block:'start',inline:'nearest'}));
     await recordGroupDrag(page, handle, destination, join(evidenceDirectory, `${language}-${layout}-multi-membership-drag-receipt.json`));
     await region('C').getByLabel(changeLabel,{exact:true}).and(page.locator(':enabled')).waitFor();
     assert.equal(await page.getByLabel(changeLabel,{exact:true}).count(),2);
@@ -126,10 +123,9 @@ async function exerciseMultiSelectAssignment({page,call,viewId,project,language,
     }
     // A pointer drop into empty clears both visible memberships.
     const emptyHeading=region(empty).getByRole('heading');
-    await emptyHeading.evaluate(el=>el.scrollIntoView({block:'start',inline:'nearest'}));
     // Use the adjacent C occurrence so both native drag endpoints fit the
     // viewport; scrolling between mouse-down and movement can cancel dragstart.
-    await region('C').getByRole('button',{name:dragLabel,exact:true}).and(page.locator(':enabled')).dragTo(emptyHeading);
+    await dragRuntimeGroup(region('C').getByRole('button',{name:dragLabel,exact:true}).and(page.locator(':enabled')), emptyHeading);
     await region(empty).getByLabel(changeLabel,{exact:true}).and(page.locator(':enabled')).waitFor();
     assert.equal(await page.getByLabel(changeLabel,{exact:true}).count(),1);
     assert.deepEqual((await call('listTextProperties')).multiSelectValues.filter(v=>v.projectId===projectId&&v.propertyId===propertyId),[]);
