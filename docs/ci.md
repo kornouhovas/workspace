@@ -59,6 +59,15 @@ a mutation or replacing its result assertions.
 As in the ordinary suite runner, its build prerequisite completes Electron's
 lazy installation serially before parallel native regression workers start.
 
+For #48's Windows latest early direct-creation Reveal failure, use the existing
+`checks: readiness` route with `readiness_reveal_windows`, `readiness_native_windows`
+and `readiness_native_early` enabled. That combination selects only Windows latest
+and the original cold direct-creation/native command before related Reveal controls.
+Enable `readiness_native_trace` to retain the existing finite bridge phases for
+the observed opened/owner-deadline rejection. Deadlines, native selection,
+binding/permit guards and cleanup assertions remain unchanged; trace evidence
+alone does not establish a repair or acceptance.
+
 ## Candidate and handoff
 
 Use the [implementation sequence](development.md#implementation-sequence) before dispatching candidate acceptance. The candidate includes application changes, tests, fixtures, CI routes and relevant repository reports. Record observed local results before committing it; keep pending CI/integration status in the GitHub issue checkpoint linked from the plan.

@@ -610,3 +610,30 @@ exits and cleanup. Both review axes accepted the repair and narrowing of the
 focused matrix to Windows latest, the only remaining failed original command.
 Other focused/default/full matrices remain unchanged. All 45 routing checks,
 lint/docs/diff passed. Final matching focused/full acceptance remains in GitHub.
+
+## Early Windows native Reveal phase diagnosis
+
+Focused `39336082988` passed on `dc2621fa`: 115 regressions and three original
+Windows latest views journeys, including nine ready startup receipts, ordinary
+quits/backend exits, all cleanup gates and 24 accepted recorded gestures. Its
+downloaded exact-SHA artifact was inspected before full `39336713567` on the same
+reviewed SHA. All coordinated pushes preceded that full dispatch.
+
+The new full run stopped Windows latest at its earlier direct development
+creation/native command, before shell/platform acceptance. The downloaded
+original evidence records successful creation recovery, one exact parent
+navigation, zero selection calls and a valid typed native-unavailable rejection.
+Native bridge failure is `opened` / `owner_deadline` at approximately 12.1 seconds;
+bridge termination, exact file-manager window cleanup and owned fixture cleanup
+passed. No cause is inferred beyond that boundary. Missing shell evidence and
+the unreached observer collector are secondary failures, not passing stages.
+The other full-run hosts remain running and were not canceled.
+
+The existing manual Reveal route already provides the exact original cold early
+command and finite phase tracing. Its explicit native-plus-early combination now
+selects Windows latest only, while default and other combinations retain both
+Windows hosts. Original commands, native selection count, binding/permit guards,
+deadlines and cleanup assertions are unchanged. Both review axes accepted this
+diagnostic-only routing delta. Relevant route/receipt/Reveal checks passed 252,
+with eight platform skips on macOS; lint/docs/diff checks passed. Matching hosted
+phase evidence is required; there is no claimed native repair or acceptance yet.

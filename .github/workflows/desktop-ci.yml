@@ -968,7 +968,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-latest, windows-2022]
+        os: ${{ fromJSON(inputs.readiness_native_windows == true && inputs.readiness_native_early == true && '["windows-latest"]' || '["windows-latest","windows-2022"]') }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 10
     steps:

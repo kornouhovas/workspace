@@ -435,7 +435,13 @@ test('remaining Reveal scope replaces unrelated readiness with the original file
       if (event === 'workflow_dispatch' && checks === 'readiness' && readiness_reveal_windows === true)
         assert.deepEqual(active.sort(), ['focused-macos-package-creation', 'focused-windows-reveal']);
     }
-  assert.deepEqual(job.strategy.matrix.os, ['windows-latest', 'windows-2022']); assert.equal(job.strategy['fail-fast'], false);
+  for (const native of [undefined, false, true]) for (const early of [undefined, false, true]) {
+    const selected = runInNewContext(job.strategy.matrix.os.slice(3, -2), {
+      inputs: {readiness_native_windows: native, readiness_native_early: early}, fromJSON: JSON.parse,
+    });
+    assert.deepEqual(selected, native === true && early === true ? ['windows-latest'] : ['windows-latest', 'windows-2022']);
+  }
+  assert.equal(job.strategy['fail-fast'], false);
   const commands = job.steps.filter(step => step.run && !step.name?.startsWith('Early original')).map(step => step.run);
   assert.match(commands[0], /set -o pipefail/);
   assert.match(commands[0], /npm ci --loglevel verbose 2>&1 \| tee work\/ci-focused-windows-reveal\/install.log/);
