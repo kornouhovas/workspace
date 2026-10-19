@@ -232,6 +232,14 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
   }, projectFilesystem, projectRenameNative);
   const categoryMove = createProjectCategoryMoveService(db, {
     invalidateSourceReviews,
+    settled(sourceId) {
+      // Keeping the original settles a journal reservation without advancing
+      // discovery revision. Neither cached ambiguity nor an in-flight scan from
+      // that reservation may replace the now-authoritative association.
+      observationCache.delete(sourceId);
+      observationVersions.set(sourceId, (observationVersions.get(sourceId) ?? 0) + 1);
+      observer.request(sourceId);
+    },
     committed(sourceId, revision, workspaceIds) {
       invalidateSourceReviews(sourceId);
       publish([{ type: "workspace.projectsChanged", sourceId, revision, workspaceIds }]);

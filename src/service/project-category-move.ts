@@ -40,6 +40,7 @@ function recordedResult(row: Operation): ProjectCategoryMoveResult {
 export function createProjectCategoryMoveService(db: Database, integration: {
   invalidateSourceReviews(sourceId: string): void;
   committed(sourceId: string, revision: number, workspaceIds: string[]): void;
+  settled(sourceId: string): void;
 }, filesystem: ProjectFilesystem = nativeProjectFilesystem,
   native: (from: string, to: string) => ProjectRenameFilesystemResult = renameNoReplace) {
   type Execution = { workspaceId: string; revision: number };
@@ -364,6 +365,7 @@ export function createProjectCategoryMoveService(db: Database, integration: {
           destinationFree(bound, execution);
           return operationFor(bound.operationId)!;
         }, { behavior: "immediate" });
+        integration.settled(row.sourceId);
         return { ok: true, value: recordedResult(row) };
       }
       if (request.action === "retry_original") {

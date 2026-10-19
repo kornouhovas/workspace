@@ -352,3 +352,48 @@ The complete original local `smoke:multiselect -- dev` then passed both EN/RU
 checks, restart and sibling/hidden-option assertions, normal shutdown and cleanup.
 All 55 affected MultiSelect/property-driver/route tests passed; lint, documentation
 links and diff checks passed. Remote original-step acceptance remains pending.
+
+## Category recovery observation-cache lifetime
+
+Focused run `39319323164` on `904a4c4` passed both original Windows MultiSelect
+commands; downloaded exact-SHA reports confirm both EN/RU checks, three ordinary
+shutdowns and cleanup per host. Both that run and the preceding `39318574129`
+passed the original rename journey, then the macOS runtime failed the same
+keep-original category recovery preservation check: Current's project action was
+absent. The completed failed logs and original macOS screenshot/observations from
+`39318574129` were inspected.
+
+A keep-original-only actual-production Electron/SQLite probe reproduced the same
+missing action without injection. At the failure boundary, fresh public
+`listProjects` reported the original project active; `observed: true` reported
+that identical ID retained/unresolved, and the DOM offered Locate instead of the
+category action. The observed scan remained cached across journal settlement,
+which intentionally does not advance discovery revision.
+
+The service now invalidates the source-wide observed scan after a successful
+keep-original journal transaction, advances the observation lifetime to reject
+pre-settlement asynchronous scans and requests a fresh observation. No discovery
+revision or public event is invented; journal/identity/filesystem checks remain.
+The renderer keeps ordinary observed reads. Category result acceptance no longer
+calls its completion callback in addition to `run()`'s existing `finally`; one
+callback refreshes each action rather than duplicating work.
+
+The existing real-SQLite public-service keep-original oracle was strengthened with
+observed projections for both source-sharing workspaces. It failed before the
+repair with the same retained/unresolved association and passed afterward. It now
+also holds a genuine pre-settlement async scan through controlled watcher clocks,
+settles recovery, releases the old scan before queued refresh, and verifies active
+projections plus healthy automatic updates after fresh observation. Actual scans,
+filesystem probes, durable journal and preservation oracle remain real. The race
+passed; no persistent stale projection or degradation was accepted.
+
+The native keep-original probe then passed preservation, restart and ordinary
+shutdown/cleanup. This is the explicit reduced English recovery probe, not full
+EN/RU runtime acceptance. Before the race extension, all 270 category-runtime/UI/
+observer tests and 136 category-service/viewport tests passed. Build, typecheck and
+lint passed. Both review axes accepted the source approach; the requested race
+coverage and final focused checks are renewed before dispatch. The `shell-runtime`
+route includes those category/observer regressions and retains each original
+native command. Because service/renderer production source changed, installers
+must be renewed after matching focused success; `51d076f` installation reports are
+historical for this candidate. Full CI and integration remain pending in GitHub.

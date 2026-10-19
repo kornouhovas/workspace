@@ -564,7 +564,7 @@ for (const language of ["en", "ru"]) for (const observation of [false, true]) te
 
 
 test("public-service keep_original reaches the exact driver oracle with independent active projection and no effects", async () => {
-  const { mkdtemp, rm } = await import("node:fs/promises");
+  const { mkdtemp, rm, realpath } = await import("node:fs/promises");
   const { tmpdir } = await import("node:os");
   const { join } = await import("node:path");
   const { randomUUID } = await import("node:crypto");
@@ -583,7 +583,36 @@ test("public-service keep_original reaches the exact driver oracle with independ
       operationId: randomUUID(), destinationCategoryId: setup.projection.categories.find(c => c.name === "Destination").categoryId,
       expectedRevision: setup.projection.revision };
     await interruptCategoryMoveFixture(setup, "intent", children);
-    service = openSettingsService(setup.database);
+    const canonicalSourceRoot = await realpath(setup.sourceRoot);
+    const {nativeObserverDependencies} = await import("../src/service/source-observer.ts");
+    const {scanGroupedSource, scanDirectSource} = await import("../src/service/discovery.ts");
+    const scheduled = new Set(), sourceEvents = [];
+    let resolveOldScan, oldScan, holding = true;
+    const dependencies = {
+      probe: nativeObserverDependencies.probe,
+      watch: () => ({close() {}}),
+      schedule(callback, delay) {
+        const timer = {callback, delay}; scheduled.add(timer);
+        return {cancel() {scheduled.delete(timer);}};
+      },
+      scan(request) {
+        const scan = (request.mode === "grouped" ? scanGroupedSource : scanDirectSource)(request.canonicalRoot, request.archiveRelativePath, request.exclusions);
+        if (holding && request.canonicalRoot === canonicalSourceRoot) {
+          holding = false; oldScan = scan;
+          return new Promise(resolve => {resolveOldScan = resolve;});
+        }
+        return scan;
+      },
+    };
+    const flushHints = () => {
+      for (const timer of [...scheduled].filter(timer => timer.delay === 100)) {
+        if (scheduled.delete(timer)) timer.callback();
+      }
+    };
+    service = openSettingsService(setup.database, undefined, undefined, dependencies);
+    service.workspaces.subscribe(event => {if (event.type === "workspace.sourceObserved" && event.sourceId === setup.workspace.sourceId) sourceEvents.push(event);});
+    flushHints();
+    assert.equal(typeof resolveOldScan, "function", "Hold a genuine pre-settlement background scan");
     globalThis.categoryMoveEvents = [];
     service.workspaces.subscribe(event => { if (event.type === "workspace.projectsChanged") globalThis.categoryMoveEvents.push(event); });
     globalThis.window.workspace = { workspace: async input => service.handleQuery(input), settings: async input => service.handleQuery(input) };
@@ -597,6 +626,21 @@ test("public-service keep_original reaches the exact driver oracle with independ
     const result = service.handleCommand({ type: "workspace.recoverProjectCategoryMove", workspaceId: setup.sibling.workspaceId,
       operationId: setup.request.operationId, previewToken: preview.value.previewToken, action: "keep_original" });
     assert.equal(result.ok, true); assert.equal(result.value.problem, "kept_original");
+    for (const workspaceId of [setup.workspace.workspaceId, setup.sibling.workspaceId]) {
+      const observed = service.handleQuery({type: "workspace.listProjects", workspaceId, observed: true});
+      assert.equal(observed.ok, true);
+      assert.deepEqual(observed.value, {...originalProjection, workspaceId}, "Settled recovery invalidates cached ambiguous eligibility for every source reference");
+    }
+    resolveOldScan(oldScan);
+    for (let turn = 0; turn < 6; turn++) await Promise.resolve();
+    // A rejected old pass queues a new one; neither its cache nor a degraded
+    // notification may permanently restore the pre-settlement association.
+    flushHints();
+    for (let turn = 0; turn < 6; turn++) await Promise.resolve();
+    for (const workspaceId of [setup.workspace.workspaceId, setup.sibling.workspaceId]) {
+      assert.deepEqual(service.handleQuery({type: "workspace.listProjects", workspaceId, observed: true}).value, {...originalProjection, workspaceId});
+    }
+    assert.equal(sourceEvents.at(-1)?.automaticUpdates, "active", "Queued fresh scan restores healthy observation after the stale pass");
     const after = await captureRuntimeCategoryState(page, setup, setup.sibling.workspaceId);
     const verify = (state = after, receipt = result, expectedRow = row, projection = originalProjection) =>
       assertRuntimeCategoryKeptOriginal(before, state, expectedRow, receipt, projection);

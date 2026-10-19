@@ -196,7 +196,7 @@ function CategoryMoveContent({ client, workspaceId, sourceId, language, project,
         result.project.name !== binding.current?.project.name || result.project.relativePath !== operation.requestedRelativePath || result.project.categoryId !== operation.destinationCategoryId) return false;
       setMessage(result.project.revision < minimumRevision.current ? "moveCategoryNewer" : result.outcome === "unchanged" ? "moveCategoryUnchanged" : "moveCategorySaved");
       resolvedOperations.current.add(authored.operationId); setOperations((current) => current.filter((item) => item.operationId !== authored.operationId));
-      requests.delete(sourceId); binding.current = null; submitted.current = null; setUnresolved(false); closeReview(document.activeElement === document.body || !!reviewRoot.current?.contains(document.activeElement)); void loadMoves(); onClose(document.activeElement === document.body || !!root.current?.contains(document.activeElement)); onCompleted();
+      requests.delete(sourceId); binding.current = null; submitted.current = null; setUnresolved(false); closeReview(document.activeElement === document.body || !!reviewRoot.current?.contains(document.activeElement)); void loadMoves(); onClose(document.activeElement === document.body || !!root.current?.contains(document.activeElement));
     } else if (result.outcome === "recoverable") {
       if (!operation || ["completed", "failed"].includes(operation.stage)) return false;
       if (binding.current) { binding.current.operation = { ...operation }; binding.current.uncertain = false; }
@@ -208,7 +208,7 @@ function CategoryMoveContent({ client, workspaceId, sourceId, language, project,
       resolvedOperations.current.add(authored.operationId); setOperations((current) => current.filter((item) => item.operationId !== authored.operationId));
       requests.delete(sourceId); binding.current = null; submitted.current = null; setUnresolved(false);
       if (result.problem === "kept_original") {
-        setMessage("moveCategoryKeptOriginal"); closeReview(document.activeElement === document.body || !!reviewRoot.current?.contains(document.activeElement)); void loadMoves(); onClose(document.activeElement === document.body || !!root.current?.contains(document.activeElement)); onCompleted(); return true;
+        setMessage("moveCategoryKeptOriginal"); closeReview(document.activeElement === document.body || !!reviewRoot.current?.contains(document.activeElement)); void loadMoves(); onClose(document.activeElement === document.body || !!root.current?.contains(document.activeElement)); return true;
       }
       setMessage(
         ["occupied", "reserved_destination", "native_conflict"].includes(result.problem) ? "moveCategoryCollision" :
