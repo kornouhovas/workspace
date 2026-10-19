@@ -4,6 +4,14 @@ Part of [product and architecture issue #6](https://github.com/kornouhovas/works
 
 Published specification: [GitHub #7](https://github.com/kornouhovas/workspace/issues/7), labeled `ready-for-agent`.
 
+Owner-approved release extension: the [desktop experience specification](workspace-desktop-ux.md)
+is an additional 0.1.0 acceptance requirement. It restores main's daily workflows
+using Radix Primitives/Tailwind and bb-style settings, with one project area,
+unique tabs, session recovery and the explicit simplifications recorded there.
+This local amendment and the new spec await synchronization with GitHub #7/#42
+under publication authorization; their preparation has not changed remote issue
+dependencies or started implementation.
+
 ## Problem Statement
 
 People organize real project folders on their computers but need richer ways to describe, find and review those projects than a directory tree provides. They need typed properties and saved Board/Table views without losing control of the underlying files. Different working contexts may need different views of the same projects, while their properties and folder interpretation remain consistent.
@@ -22,7 +30,7 @@ The release includes Board/Table views, all accepted property types, group-to-gr
 
 1. As a desktop user, I want to install and launch Workspace on macOS or Windows, so that I can manage projects on my own computer.
 2. As a user, I want core workspace operations to work locally without an account or network service, so that my local workflow remains available offline.
-3. As a user, I want to create a named workspace by selecting a project source, so that the application works with the folders I choose.
+3. As a user, I want to create a workspace automatically named Workspace by selecting a project source and rename it afterward, so that the application works with the folders I choose without requiring a name during creation.
 4. As a user, I want to select, rename and reorder workspaces, so that I can organize my working contexts.
 5. As a user, I want multiple workspaces over the same source, so that I can use different views without duplicating project properties.
 6. As a user, I want a property edit to appear in other workspaces over the same source, so that all presentations describe the same project.
@@ -218,6 +226,7 @@ Good tests assert observable returned state, errors, persisted state and filesys
 | Localization/accessibility | Switch EN/RU and restart; fallback works; authored text and paths unchanged; key workflows are keyboard operable; empty/loading/error states and narrow layouts remain usable |
 | Backup and migration | New-format reopen/upgrade; automatic and pre-migration backups; export/restore round trip; invalid or interrupted restore protects existing data; missing project files are not claimed to be restored |
 | Release | Real installations on supported macOS/Windows targets; package/version consistency; agreed scale/performance scenarios; notices/provenance and installation/recovery instructions verified |
+| Desktop experience extension | Complete the linked UX matrix: sidebar/views, unique project tabs, one preview/expanded project area, files, bb-style settings, editor/navigation rules and backed-up sessions; verify both sizes/languages/themes and renew scale checks on the integrated UI |
 
 ### Prior art and verification reporting
 

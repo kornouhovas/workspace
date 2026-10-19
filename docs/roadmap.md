@@ -58,13 +58,14 @@ Exit: each baseline capability has an observable acceptance scenario; source-sco
 Depends on M2 and M3.
 
 - Complete macOS and Windows installers and the selected signing/distribution path.
+- Complete the [desktop experience specification](specs/workspace-desktop-ux.md): main-derived working journeys with the accepted single-project-area model, Radix/Tailwind and bb-style settings; verify the complete daily workflow rather than isolated controls.
 - Exercise realistic folder counts, startup and view interactions against agreed performance targets.
 - Verify language switching, fallback and user-authored text preservation.
 - Verify migration, automatic and pre-migration backups, manual export/restore and upgrade behavior for new-format application data; do not claim project-file recovery from metadata backups.
 - Complete release notes, version consistency checks and license/provenance review.
 - Document installation, supported environments and recovery/support paths.
 
-Exit: both platforms pass the release acceptance matrix and the approved release process produces versioned artifacts. Creating a tag or publishing downloads requires release authorization. Legacy application-data import is excluded.
+Exit: both platforms pass the release and desktop UX acceptance matrices, including renewed performance and session-recovery checks on the integrated UI, and the approved release process produces versioned artifacts. Creating a tag or publishing downloads requires release authorization. Legacy application-data import is excluded.
 
 ## M5 — Shared-folder collaboration
 

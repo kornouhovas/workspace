@@ -10,7 +10,7 @@ These documents are written for the new implementation. The previous documentati
 | [Architecture](architecture.md) | Boundaries, stack and implementation status |
 | [Roadmap](roadmap.md) | Outcomes, dependencies and completion criteria |
 | [Workspace 0.1.0 specification](specs/workspace-0.1.0.md) | Local-release requirements and acceptance for M1–M4 |
-| [Desktop experience specification](specs/workspace-desktop-ux.md) | Interview draft: main workflow preservation, Radix/Tailwind and bb visual/settings organization |
+| [Desktop experience specification](specs/workspace-desktop-ux.md) | Owner-review draft: main workflows, single project area, Radix/Tailwind, bb settings and 0.1.0 UX acceptance |
 | [Workspace 0.1.0 implementation tickets](specs/workspace-0.1.0-tickets/README.md) | Published vertical slices, historical IDs and blocking edges |
 | [Development](development.md) | GitHub-only workflow, executor selection, integration and verification |
 | [CI](ci.md) | Conditional CI routes and scheduling |
@@ -50,6 +50,7 @@ Read development's scope, integration, tracker, executor-selection and verificat
 | Project rename | [No-replace rename ADR](adr/0007-no-replace-project-renames.md), Architecture's rename/recovery sections, [rename ticket](specs/workspace-0.1.0-tickets/11-rename-project-folders-without-losing-identity.md) and originating issue |
 | Category move | Architecture's category-move/recovery sections, [move ticket](specs/workspace-0.1.0-tickets/12-move-projects-by-editing-folder-backed-select.md) and originating issue |
 | UI implementation/review | [Reuse adaptation policy](reuse.md#adaptation-policy), affected product/architecture interaction, accessibility, EN/RU and failure/recovery constraints, and the issue's acceptance criteria |
+| Desktop UX restoration | [Desktop experience spec](specs/workspace-desktop-ux.md), [reference authority ADR](adr/0008-desktop-experience-reference-authority.md), accepted interview decisions and originating implementation issue; preparing the spec does not start implementation |
 | Issue operations or dependency graph | [Tracker](issue-tracker.md), including native and textual fallback relationships |
 
 For UI, identify the contract for each changed surface, shared primitive and service action; expand to related consumers when shared behavior changes. Imported bb references apply only to the relevant component/foundation; historical source/acceptance reports are consulted for provenance or a specific continuation, not loaded as general UI rules. Inspect actual component layout and scripts rather than copying a directory or command inventory into instructions.

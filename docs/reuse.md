@@ -31,6 +31,13 @@ Check nested notices too: bb's browser-automation plugin, for example, has a sep
 
 ## Adapted UI foundation
 
+The [desktop experience specification](specs/workspace-desktop-ux.md) selects a
+future Radix Primitives/Tailwind foundation and bb-style settings organization,
+with pinned reference links and acceptance. The adaptation inventory below
+describes the existing runtime; it does not establish that the new component
+foundation has already been installed. Extend provenance for actual copied code
+when implementing the selected slices.
+
 The initial settings screen uses these adapted controls and styles; the application has no general-purpose bb package dependency. The provenance and notice test in `tests/components.test.tsx` guards the local source record and full notice. The artifact check verifies that the notice is included in packaged resources.
 
 The language control and status/empty-state primitives in `src/renderer/components/bb-foundation.tsx` and `bb-foundation.css` are adapted from the following source patterns:

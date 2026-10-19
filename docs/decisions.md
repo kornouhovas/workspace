@@ -72,6 +72,9 @@ Accepted after D41:
 | D55 | Before switching project/workspace or closing a project area, save valid uncommitted input. Invalid drafts or failed saves retain the editor and block the transition until correction or explicit cancellation. Preserve pending/revision/ownership protections. |
 | D56 | Keep Number expression input with result-only persistence. Reopening `10 + 5` after commit shows `15`; persisting the source expression is outside this UX spec. |
 | D57 | Minimum desktop window is 1024x720; also require visual acceptance at 1440x960 for Board, Table, project preview/expanded and settings in EN/RU and light/dark. Work areas scroll independently inside the viewport-bound shell. |
+| D58 | A row/card click requests a right-hand preview. Expand creates or activates the unique project tab. Return-right removes that project's tab and leaves its preview; other tabs remain. Closing a preview does not close retained tabs. |
+| D59 | Automatically name a new workspace Workspace (owner-confirmed spelling), with rename after creation. Choose a folder first; reuse configured sources immediately, or offer discovery preview/exclusions/Apply and Set up later for an unconfigured source. Deferring setup preserves the already-created workspace. |
+| D60 | Place project creation in view actions and applicable rename/move/archive/restore/Reveal in contextual project menus. Use compact dialogs for required consequence review and contextual status with Details/Recover for interrupted operations or unavailable sources; display actual outcomes. |
 
 ## Open design branches
 

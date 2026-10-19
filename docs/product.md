@@ -8,7 +8,15 @@ The first target, 0.1.0, is a complete local desktop release for macOS and Windo
 
 ## Workspaces and folders
 
-- Users can create multiple saved workspaces, including different workspaces over the same selected root.
+The [desktop experience specification](specs/workspace-desktop-ux.md) defines an
+additional 0.1.0 requirement: main's working journeys with Radix/Tailwind and bb's
+visual language/settings organization. It specifies one project area with
+expanded mode, unique project tabs, session backup/restoration and consistent
+contextual editors. Nested splits and duplicate tabs for one project are
+explicitly excluded. This is accepted product direction, not a claim that the
+current runtime already implements the UI.
+
+- Users can create multiple saved workspaces, including different workspaces over the same selected root. The desktop UX creates each with the automatic name Workspace and permits renaming afterward.
 - Each workspace selects one root initially; multi-root aggregation follows later. Workspaces over the same root share projects, property definitions/values, discovery mode and archive location; their view sets and presentation settings are independent.
 - Initially, folder interpretation has two modes: `Root/Project` and `Root/Select value/Project`. Additional modes may be introduced later.
 - Users can change the source's discovery mode after reviewing which folders become or cease to be projects. The change does not move files; metadata for no-longer-discovered projects remains until explicit removal or reassociation.
@@ -30,6 +38,7 @@ The following is a feature checklist derived from the previous product, not a co
 | Area | Capabilities to preserve |
 | --- | --- |
 | Workspaces | Create, select, rename, reorder and remove a saved configuration without deleting project folders |
+| Working environment | Sidebar, saved-view/project tabs, one right-hand project area with expansion, real file tree/external opening, session restoration and Light/Dark/System; detailed behavior and intentional main exceptions follow the desktop UX spec |
 | Views | Board and Table; create, activate, rename, reorder, duplicate and delete; retain at least one view; independent settings on duplication |
 | Property types | Project name, the folder-derived categorization capability, Text, Number, Date, Single Select and MultiSelect |
 | Property definitions | Rename, hide/show, order and delete custom properties; preserve the existing restriction against changing a property's type after creation unless explicitly redesigned |
@@ -51,7 +60,7 @@ Full historical change tracking and transactional cascades were not guaranteed b
 
 ## Application-data recovery
 
-The local release includes automatic backups of application data, a backup before schema migrations, and manual export/restoration of the new data format. The scope includes properties, views and settings. Users back up project files separately; restoring metadata must not be presented as restoring missing project files. Backup frequency, retention, destination and restore validation remain implementation-design details.
+The local release includes automatic backups of application data, a backup before schema migrations, and manual export/restoration of the new data format. The scope includes properties, views, settings and the device/workspace session specified in the desktop UX spec. Session restoration reloads current project data and validates folder availability. Users back up project files separately; restoring metadata must not be presented as restoring missing project files. The implemented backup policy is recorded in [recovery](recovery.md#automatic-backups-and-updates); adding session coverage requires its own migration and recovery verification.
 
 ## Later collaboration and AI
 
