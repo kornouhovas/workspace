@@ -1,11 +1,10 @@
 # Workspace desktop experience
 
-Status: product decisions Q1–Q19 and the default-name spelling are incorporated;
-the owner requested publication and ticket preparation. The standalone issue body
-and [proposed implementation breakdown](workspace-desktop-ux-tickets/README.md)
-are ready for review. Publication awaits resolution of the repository visibility
-conflict recorded there. This document specifies future behavior; it does not
-report an implemented UI or authorize implementation.
+Status: accepted and published as [GitHub #47](https://github.com/kornouhovas/workspace/issues/47).
+The owner approved the product decisions, U01–U20 breakdown and public publication
+on 2026-10-19. The [implementation publication snapshot](workspace-desktop-ux-tickets/README.md)
+records real issue relationships. This document specifies future behavior; it
+does not report an implemented UI or authorize implementation.
 
 ## Outcome and release relationship
 
@@ -23,9 +22,9 @@ observable guarantees.
 [Performance #41](https://github.com/kornouhovas/workspace/issues/41) can finish
 independently. Repeat its agreed measurements against the completed UI before
 [release integration #42](https://github.com/kornouhovas/workspace/issues/42).
-The repository records this added requirement; publication of this spec, new
-implementation issues and updates to GitHub #7/#42 are still pending. No remote
-tracker relationships have been changed by preparing this document.
+The published desktop specification supplements #7 and blocks #42. Its approved
+implementation issues and their relationships are recorded in the publication
+snapshot. GitHub owns current acceptance and execution status.
 
 ## Authority and reference baselines
 
@@ -377,16 +376,38 @@ and isolated application data. Add behavioral checks for new session and file
 commands, not assertions that merely freeze component markup or document wording.
 Inspect UI evidence for complete journeys, not just isolated controls.
 
-## Proposed implementation breakdown
+### Regression inheritance and migration
 
-The [20 proposed vertical tickets](workspace-desktop-ux-tickets/README.md) replace
+Tests from completed new-workspace issues are already part of the integration
+branch. Preserve valid service, real-SQLite/migration, filesystem, recovery,
+IPC/security and native regressions. Do not clone a new test suite for each issue
+or import main's historical suite wholesale; use main to identify missing user
+scenarios and adapt them to the accepted runtime and deliberate UX differences.
+
+Each implementation slice inventories affected existing scenarios as retained,
+adapted, replaced or retired. UI interactions, fixtures, locators and smoke drivers
+must move with the new controls in that same slice. Tests of obsolete markup or
+superseded behavior may be replaced/removed with a documented reason and coverage
+replacement for still-required behavior. Disabling failures, weakening safety or
+performance assertions, or postponing broken old-UI tests until U20 is not acceptance.
+
+The scenario mapping includes current tests introduced by issues #8–#40 and
+accepted additions from #41. Reconcile suite/CI inventory, native/package fixtures
+and migration counts when they change. Run focused checks while developing and
+the required full suite on the completed candidate. Historical standalone
+investigations are not an automatic per-ticket checklist: select a focused route
+only for a matching failure while preserving ordinary regression/platform coverage.
+
+## Approved implementation breakdown
+
+The [20 approved vertical tickets](workspace-desktop-ux-tickets/README.md) replace
 the earlier six broad preparation areas. Each ticket has a complete observable
 journey, scoped acceptance and immediate blocking edges. U01 delivers a working
 workspace/settings journey while establishing the component foundation; subsequent
 tickets adapt existing services and preserve functional entry points throughout
 the migration. U20 verifies the composed UX01–UX20 matrix and renewed performance
-after #41. The graph is a proposal awaiting owner review, not published work or
-another live tracker. An attractive empty shell or isolated checks do not complete
+after #41. The owner approved the graph; its published GitHub issues own execution status.
+The local snapshot is not another live tracker. An attractive empty shell or isolated checks do not complete
 this specification.
 
 ## Primary reference map

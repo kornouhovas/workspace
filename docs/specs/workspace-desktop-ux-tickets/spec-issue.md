@@ -361,6 +361,28 @@ Assert observable state, errors, persistence and filesystem outcomes rather than
 private calls, markup or exact documentation text. Reuse these agreed seams;
 publication does not introduce a new test architecture.
 
+### Regression inheritance and migration
+
+Tests from completed new-workspace issues are already part of the integration
+branch. Preserve valid service, real-SQLite/migration, filesystem, recovery,
+IPC/security and native regressions. Do not clone a new test suite for each issue
+or import main's historical suite wholesale; use main to identify missing user
+scenarios and adapt them to the accepted runtime and deliberate UX differences.
+
+Each implementation slice inventories affected existing scenarios as retained,
+adapted, replaced or retired. UI interactions, fixtures, locators and smoke drivers
+must move with the new controls in that same slice. Tests of obsolete markup or
+superseded behavior may be replaced/removed with a documented reason and coverage
+replacement for still-required behavior. Disabling failures, weakening safety or
+performance assertions, or postponing broken old-UI tests until U20 is not acceptance.
+
+The scenario mapping includes current tests introduced by issues #8–#40 and
+accepted additions from #41. Reconcile suite/CI inventory, native/package fixtures
+and migration counts when they change. Run focused checks while developing and
+the required full suite on the completed candidate. Historical standalone
+investigations are not an automatic per-ticket checklist: select a focused route
+only for a matching failure while preserving ordinary regression/platform coverage.
+
 ### Accessibility, layout and performance acceptance
 - Supported minimum window: **1024x720**; second required size: **1440x960**.
   Inspect Board, Table, preview, expanded project and settings at both sizes in
@@ -430,6 +452,10 @@ implementation or authorize a release.
 
 ## Further Notes
 
+The owner confirmed kornouhovas/workspace is public on 2026-10-19 and authorized
+publication of this specification and its approved implementation tickets. Public
+visibility is expected; existing task, data and release boundaries still apply.
+
 Part of #7. Desktop UX acceptance is a mandatory prerequisite of release
 integration #42. Performance #41 remains independently owned and can proceed;
 repeat its agreed measurements against the completed UI before release acceptance.
@@ -437,8 +463,8 @@ Keep #7 and #42 open until their actual gates pass. A readiness label or publish
 document does not establish implementation completion.
 
 The owner approved the product decisions during the desktop UX interview,
-including the standard automatic name Workspace. Publish derived implementation
-tickets as sub-issues only after approval of the breakdown. GitHub Issues owns
+including the standard automatic name Workspace. The owner approved the 20-ticket implementation breakdown and public publication
+on 2026-10-19. Publish the tickets as sub-issues with the approved dependencies. GitHub Issues owns
 requirements, blockers and delivery checkpoints. Local documents are publication
 snapshots, not another live tracker.
 

@@ -2,19 +2,18 @@
 
 # U11: Manage custom properties and remove metadata with impact review
 
-Publication state: proposed; not a published issue or an execution checkpoint.
+Publication state: published as https://github.com/kornouhovas/workspace/issues/58 on 2026-10-19; consult GitHub for current execution status.
 
 ## Parent
 
-Workspace desktop experience specification (new GitHub issue pending publication),
-under release specification #7. Resolve the real parent identifier on publication.
+Part of #47: Workspace desktop experience, under release specification #7.
 
 ## What to build
 
 Create or rename properties from contextual controls and safely remove custom properties or ordinary options after reviewing affected data/views.
 
 Specification acceptance: UX11, UX12, UX15, UX18. Rows shared with other slices require
-this ticket's scoped behavior plus integrated verification in U20.
+this ticket's scoped behavior plus integrated verification in #67.
 
 ## Acceptance criteria
 
@@ -24,9 +23,11 @@ this ticket's scoped behavior plus integrated verification in U20.
 - [ ] Stale review, cancellation and failure leave actual data unchanged; success performs the established cleanup without broken filters/grouping/layout or silently deleting files.
 - [ ] Verify retained/archived projects and two source-sharing workspaces follow existing service deletion semantics and independent view configuration.
 
+- [ ] Reconcile affected inherited tests with this UI change: retain/adapt/replace/retire each affected scenario with a reason and coverage replacement; keep the changed slice and required regression checks passing without deferred broken old-UI tests.
+
 ## Blocked by
 
-- U10: Edit selections and ordinary option presentation consistently
+- #57: Edit selections and ordinary option presentation consistently
 
 ## Verification and boundaries
 
@@ -47,3 +48,21 @@ remote/mobile, nested splits and legacy import remain out of scope.
 Start from the latest verified new-workspace integration state, check current
 ownership/blockers, and incorporate accepted changes from #41 without reverting
 its work. A readiness label does not itself authorize execution.
+
+### Existing-test migration contract
+
+The tests already present on new-workspace are inherited with the branch; do not
+copy historical issue suites into a second tree. Before this slice's edits,
+inventory affected scenarios as retained, adapted, replaced or retired. Preserve
+valid service/SQLite/filesystem/recovery/IPC/native checks. Update affected UI
+locators, fixtures, smoke drivers and suite/CI registration alongside the new
+controls, retaining their behavioral assertions. Replace obsolete markup or
+explicitly superseded interactions with checks for the accepted contract; record
+the reason and coverage replacement. Do not disable failures, relax safety or
+performance assertions, or reduce required platform coverage to pass the rewrite.
+Use main's tests as scenario evidence only, not as a wholesale suite import.
+Run targeted checks during work and the required full suite once on the completed
+candidate. Historical focused diagnosis routes are selected only for matching
+failures; preserve current ordinary coverage unless a reviewed change replaces it.
+
+Inherited acceptance from #12, #23, #24, #25, #26, #36: property definitions, immutable types, ordinary option operations and reviewed metadata removal with view-reference cleanup.

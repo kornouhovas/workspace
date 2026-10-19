@@ -2,19 +2,18 @@
 
 # U02: Create and manage automatically named workspaces from the sidebar
 
-Publication state: proposed; not a published issue or an execution checkpoint.
+Publication state: published as https://github.com/kornouhovas/workspace/issues/49 on 2026-10-19; consult GitHub for current execution status.
 
 ## Parent
 
-Workspace desktop experience specification (new GitHub issue pending publication),
-under release specification #7. Resolve the real parent identifier on publication.
+Part of #47: Workspace desktop experience, under release specification #7.
 
 ## What to build
 
 Add a workspace from a folder picker, start or postpone source setup, and rename/reorder/remove it through sidebar menus or workspace settings.
 
 Specification acceptance: UX01, UX02, UX16. Rows shared with other slices require
-this ticket's scoped behavior plus integrated verification in U20.
+this ticket's scoped behavior plus integrated verification in #67.
 
 ## Acceptance criteria
 
@@ -24,9 +23,11 @@ this ticket's scoped behavior plus integrated verification in U20.
 - [ ] Provide rename, reorder and remove through sidebar/contextual Workspaces list/detail controls with persistence and keyboard alternatives. Removal preserves project files and retained source metadata, including last-reference behavior.
 - [ ] Route workspace-context Settings directly to the matching detail. Switching and removing active workspaces produce valid selections and do not leak independent view configuration.
 
+- [ ] Reconcile affected inherited tests with this UI change: retain/adapt/replace/retire each affected scenario with a reason and coverage replacement; keep the changed slice and required regression checks passing without deferred broken old-UI tests.
+
 ## Blocked by
 
-- U01: Open real workspaces in the Radix/Tailwind desktop shell
+- #48: Open real workspaces in the Radix/Tailwind desktop shell
 
 ## Verification and boundaries
 
@@ -47,3 +48,21 @@ remote/mobile, nested splits and legacy import remain out of scope.
 Start from the latest verified new-workspace integration state, check current
 ownership/blockers, and incorporate accepted changes from #41 without reverting
 its work. A readiness label does not itself authorize execution.
+
+### Existing-test migration contract
+
+The tests already present on new-workspace are inherited with the branch; do not
+copy historical issue suites into a second tree. Before this slice's edits,
+inventory affected scenarios as retained, adapted, replaced or retired. Preserve
+valid service/SQLite/filesystem/recovery/IPC/native checks. Update affected UI
+locators, fixtures, smoke drivers and suite/CI registration alongside the new
+controls, retaining their behavioral assertions. Replace obsolete markup or
+explicitly superseded interactions with checks for the accepted contract; record
+the reason and coverage replacement. Do not disable failures, relax safety or
+performance assertions, or reduce required platform coverage to pass the rewrite.
+Use main's tests as scenario evidence only, not as a wholesale suite import.
+Run targeted checks during work and the required full suite once on the completed
+candidate. Historical focused diagnosis routes are selected only for matching
+failures; preserve current ordinary coverage unless a reviewed change replaces it.
+
+Inherited acceptance from #9, #10, #11, #13: workspace creation/removal, configured-source reuse, discovery preview and source/workspace ownership.

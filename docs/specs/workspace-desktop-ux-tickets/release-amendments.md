@@ -1,9 +1,8 @@
-# Prepared release amendments
+# Published release amendments
 
-Status: publication preparation only. No remote body, comment or dependency has
-been changed. Replace `DESKTOP_SPEC_NUMBER` with the actual newly published issue
-number. Re-read current issue bodies immediately before applying these additive
-amendments; preserve concurrent changes and existing acceptance/dependencies.
+Published on 2026-10-19 as additive requirements in #7 and #42, using desktop
+specification #47. Existing bodies and blockers were preserved and read back.
+This file is the publication snapshot; GitHub owns current requirements/status.
 
 ## Addition to specification 7
 
@@ -12,7 +11,7 @@ amendments; preserve concurrent changes and existing acceptance/dependencies.
 ### Mandatory desktop experience acceptance
 
 The separately tracked **Workspace desktop experience** specification
-(`#DESKTOP_SPEC_NUMBER`) is a required part of the first local 0.1.0 release.
+(`#47`) is a required part of the first local 0.1.0 release.
 Restore main's daily workflows on the new runtime using Radix Primitives and
 Tailwind CSS, with bb's visual language and categorized settings. Its UX01–UX20
 acceptance matrix supplements this specification; it does not replace existing
@@ -35,7 +34,7 @@ Keep this release specification open until the combined acceptance passes.
 
 ### Desktop experience prerequisite
 
-Blocked by: #DESKTOP_SPEC_NUMBER (Workspace desktop experience), in addition to
+Blocked by: #47 (Workspace desktop experience), in addition to
 all existing native and textual blockers. Do not remove or weaken #41 or existing
 platform/recovery requirements.
 

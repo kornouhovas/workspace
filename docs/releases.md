@@ -6,7 +6,7 @@ Use SemVer with **0.1.0** as the first target release. Keep release history in G
 
 Record verified user-facing additions, fixes and breaking changes as work completes. Before release, turn the relevant Unreleased entries into a dated version section and check notes against accepted issues and artifacts. Planned work is explicitly labelled and is never presented as released functionality. English commit messages provide development history; they are not automatically the user-facing changelog.
 
-The future product site and application consume the same versioned changelog source. The website build/deploy must include changelog changes in its inputs/triggers. Source and site repositories remain private unless separately authorized.
+The future product site and application consume the same versioned changelog source. The website build/deploy must include changelog changes in its inputs/triggers. The application repository kornouhovas/workspace is public by the owner decision of 2026-10-19. A separate future site repository remains private unless explicitly authorized otherwise. Public source visibility does not authorize publishing release artifacts or creating release tags.
 
 ## Implementation stages
 

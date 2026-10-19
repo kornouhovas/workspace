@@ -65,6 +65,28 @@ Select actual commands from package.json and the affected tests. Verify observab
 
 Use temporary data for destructive and recovery checks. Never use live user project folders as test fixtures. Report completed checks, limitations and the actual commit at handoff; distinguish a written design from an implemented capability.
 
+## Regression continuity during UI replacement
+
+Start each UI slice by inventorying the affected current tests and public scenarios.
+Retain service, SQLite/migration, filesystem, recovery, IPC/security and native
+regressions whose contracts remain valid. Adapt UI interactions, smoke drivers and
+fixtures in the same slice as the replaced controls; do not leave old UI tests
+failing until final integration or add a duplicate suite per issue.
+
+Record each affected scenario as retained, adapted, replaced or retired, with a
+reason and a replacement check when its behavior remains required. Tests that
+only freeze obsolete markup or an explicitly superseded interaction may be
+replaced/removed after review; do not weaken safety assertions, skip failing
+scenarios or reduce platform coverage to make a rewrite pass. Historical main
+provides scenario evidence, not a test suite to copy wholesale. Historical
+focused diagnostic routes run only for a matching current failure; this does not
+remove their tests from the ordinary inventory without a scoped reviewed change.
+
+Run focused checks while developing, then the required full suite on the completed
+candidate under the implementation sequence above. Reconcile the suite inventory,
+CI routes and migration/package fixtures when tests or their dependencies change.
+Adding a new screen does not justify replaying every historical investigation.
+
 ## Conditional references
 
 - For CI selection, scheduling changes or exact-SHA failure diagnosis, read [CI checks and diagnostics](ci.md).

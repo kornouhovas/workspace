@@ -2,19 +2,18 @@
 
 # U17: Browse real project files and open them in native applications
 
-Publication state: proposed; not a published issue or an execution checkpoint.
+Publication state: published as https://github.com/kornouhovas/workspace/issues/64 on 2026-10-19; consult GitHub for current execution status.
 
 ## Parent
 
-Workspace desktop experience specification (new GitHub issue pending publication),
-under release specification #7. Resolve the real parent identifier on publication.
+Part of #47: Workspace desktop experience, under release specification #7.
 
 ## What to build
 
 Browse the displayed project tree, Open a file in its default external application and separately Reveal an item in Finder/Explorer.
 
 Specification acceptance: UX14, UX17, UX18. Rows shared with other slices require
-this ticket's scoped behavior plus integrated verification in U20.
+this ticket's scoped behavior plus integrated verification in #67.
 
 ## Acceptance criteria
 
@@ -24,9 +23,11 @@ this ticket's scoped behavior plus integrated verification in U20.
 - [ ] Handle disappearing files, unavailable sources, native failures and project moves using current authorized state; expose bounded actionable errors.
 - [ ] Verify contained real temporary filesystem queries and rejected access at the public boundary, actual platform Open/Reveal, long paths, tree keyboard behavior and focus at both sizes.
 
+- [ ] Reconcile affected inherited tests with this UI change: retain/adapt/replace/retire each affected scenario with a reason and coverage replacement; keep the changed slice and required regression checks passing without deferred broken old-UI tests.
+
 ## Blocked by
 
-- U07: Preview and expand one project with unique retained tabs
+- #54: Preview and expand one project with unique retained tabs
 
 ## Verification and boundaries
 
@@ -47,3 +48,21 @@ remote/mobile, nested splits and legacy import remain out of scope.
 Start from the latest verified new-workspace integration state, check current
 ownership/blockers, and incorporate accepted changes from #41 without reverting
 its work. A readiness label does not itself authorize execution.
+
+### Existing-test migration contract
+
+The tests already present on new-workspace are inherited with the branch; do not
+copy historical issue suites into a second tree. Before this slice's edits,
+inventory affected scenarios as retained, adapted, replaced or retired. Preserve
+valid service/SQLite/filesystem/recovery/IPC/native checks. Update affected UI
+locators, fixtures, smoke drivers and suite/CI registration alongside the new
+controls, retaining their behavioral assertions. Replace obsolete markup or
+explicitly superseded interactions with checks for the accepted contract; record
+the reason and coverage replacement. Do not disable failures, relax safety or
+performance assertions, or reduce required platform coverage to pass the rewrite.
+Use main's tests as scenario evidence only, not as a wholesale suite import.
+Run targeted checks during work and the required full suite once on the completed
+candidate. Historical focused diagnosis routes are selected only for matching
+failures; preserve current ordinary coverage unless a reviewed change replaces it.
+
+Inherited acceptance from #14, #15, #17, #18, #19: availability/identity reconciliation, native authorization, containment, IPC isolation and Open/Reveal separation; add tree/Open scenarios where no prior command exists.

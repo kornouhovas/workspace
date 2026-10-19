@@ -1,6 +1,6 @@
 # Issue tracker: GitHub
 
-Workspace uses Issues in [kornouhovas/workspace](https://github.com/kornouhovas/workspace) as its sole task tracker. GitHub owns specifications, acceptance criteria, issue dependencies, and completion status. Project policy requires private application and future marketing-site sources; a public website does not change that requirement. Use `gh` and verify `isPrivate` before the first write to a repository. If actual visibility conflicts with this policy, resolve it with the owner before publishing retained private material.
+Workspace uses Issues in [kornouhovas/workspace](https://github.com/kornouhovas/workspace) as its sole task tracker. GitHub owns specifications, acceptance criteria, issue dependencies, and completion status. On 2026-10-19 the owner confirmed that this application repository is public and authorized normal scoped publication to it. Verify the target repository before writes; its public visibility is expected and does not require repeated confirmation. Existing task authorization still governs issue writes, pushes, merges and releases. This decision does not change the visibility policy for a separate future marketing-site repository, or authorize publishing secrets, user data or raw recovery archives.
 
 ## Operations
 

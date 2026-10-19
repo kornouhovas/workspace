@@ -75,6 +75,7 @@ Accepted after D41:
 | D58 | A row/card click requests a right-hand preview. Expand creates or activates the unique project tab. Return-right removes that project's tab and leaves its preview; other tabs remain. Closing a preview does not close retained tabs. |
 | D59 | Automatically name a new workspace Workspace (owner-confirmed spelling), with rename after creation. Choose a folder first; reuse configured sources immediately, or offer discovery preview/exclusions/Apply and Set up later for an unconfigured source. Deferring setup preserves the already-created workspace. |
 | D60 | Place project creation in view actions and applicable rename/move/archive/restore/Reveal in contextual project menus. Use compact dialogs for required consequence review and contextual status with Details/Recover for interrupted operations or unavailable sources; display actual outcomes. |
+| D61 | On 2026-10-19 the owner confirmed kornouhovas/workspace is public, authorized publishing the desktop UX specification and approved U01–U20 breakdown, and replaced the application-repository private-only rule. Normal publication within an authorized task no longer requires a repeated visibility confirmation. Other repositories, private data and release permissions retain their existing boundaries. |
 
 ## Open design branches
 
@@ -94,7 +95,7 @@ Accepted after D41:
 | O12 | D33/D34/D36/D37 settle personal project chats, local Codex/API-key execution, two permission modes and parallel agents. Per D41, defer working-file isolation/result integration to M6 implementation design. Also define exact tool/network permissions, cancellation/recovery and credential lifecycle before their implementation. |
 | O13 | D35/D38-D40 settle owner-only remote access, initial browser features and connected-only operation without an offline mutation queue. Define device authentication, encryption, revocation and reconciliation of runs/commands already accepted before a disconnect. |
 | O14 | Before distribution: choose supported OS versions/architectures, signing, installer/update strategy, privacy/support policy and release automation. |
-| O15 | Before website: settle product name/domain, downloads, changelog rendering/localization and publication workflow. Repository visibility remains private unless explicitly changed. |
+| O15 | Before website: settle product name/domain, downloads, changelog rendering/localization and publication workflow. The application repository is public under D61; a separate future website repository remains private unless explicitly changed. |
 | O16 | For future roadmap milestones, decide when to publish scoped GitHub issues; reconcile archived tasks through [the retirement checkpoint](beads-retirement.md) without silently importing legacy scope. The local-release tickets are already published; Beads is retired. |
 
 ## Decision tree

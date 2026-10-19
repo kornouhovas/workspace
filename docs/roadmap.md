@@ -117,4 +117,4 @@ Release metadata foundations start in M0; the public site can be scheduled when 
 - Ensure changelog-only changes trigger the intended site publication workflow.
 - Add Linux and expanded folder interpretation as separately scoped roadmap work.
 
-Exit: published pages match released artifacts and notes. Source repository visibility stays private unless separately authorized; publication itself remains an explicit action.
+Exit: published pages match released artifacts and notes. The application repository is public under D61; a separate website source repository remains private unless separately authorized. Site/release publication itself remains an explicit action.
