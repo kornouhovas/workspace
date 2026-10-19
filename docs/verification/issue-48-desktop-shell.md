@@ -209,3 +209,34 @@ interaction and normal native shutdown. New remote evidence uses the existing
 related UI regressions. Windows jobs from the failed full run are retained rather
 than canceled. The unchanged production source retains `41623b2` installer
 acceptance; renewed full desktop acceptance remains pending after focused success.
+
+
+## Controlled recovery-preview fixture phases
+
+Focused category run `39308184550` passed all three OSes on `edf7d1a`; downloaded
+reports/provenance confirm all 150 original layouts, interactions and shutdown.
+Full run `39308952674` then found one macOS renderer fixture race in the existing
+Refresh/conflicting-category scenario: the expected disabled radio had disappeared
+because the preview correctly showed `recoveryStale`. A tight selected-test probe
+reproduced the same failure locally in under one second after allowing 250ms for
+native debounce. Finite events recorded `workspace.sourceObserved` revisions
+1, 2 and 3; the last state invalidated the open preview. Debug output and the
+diagnostic delay were removed.
+
+The fixture now owns observer callbacks/scheduling with actual filesystem probes,
+real source scans, SQLite and service reconciliation. It first asserts the original
+identity/revision/metadata and disabled candidate/confirmation; it then delivers a
+later watcher failure explicitly and asserts that its observation invalidates the
+preview, removes the candidate and keeps confirmation disabled. Escape and exact
+authored Text assertions remain. Both review axes accepted this controlled-observer
+integration seam. It does not establish native watcher timing or background-worker
+transport acceptance; their separate original checks remain unchanged. No product
+code, production shutdown, timeout or safety assertion changes in this repair.
+The selected EN/RU test passed; renewed renderer-file and exact-SHA focused/full
+CI evidence remains in GitHub.
+
+
+All 96 renderer tests passed locally after the controlled-clock repair. Typecheck,
+lint, documentation links and diff checks passed. The repair contains only that
+test and this report; production source is still identical to installer-tested
+`41623b2`.

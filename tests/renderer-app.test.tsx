@@ -2960,11 +2960,26 @@ test("EN/RU production Refresh and observer placement create only a needed categ
 });
 
 test("EN/RU production Refresh retains metadata and recovery when an existing destination category is conflicting", async () => {
+  const { nativeObserverDependencies } = await import("../src/service/source-observer.js");
   const unwrap = <T,>(result: ServiceResult<T>): T => { if (!result.ok) throw new Error(result.error.code); return result.value; };
   for (const language of ["en", "ru"] as const) {
     const directory = mkdtempSync(join(tmpdir(), "conflicting-category-ui-")), root = join(directory, "root");
     mkdirSync(join(root, "Old/Project"), { recursive: true }); mkdirSync(join(root, "Conflict"));
-    const service = openSettingsService(join(directory, "data.sqlite")); let off: (() => void) | undefined;
+    const hints = new Map<string, { hint(): void; failed(): void }>();
+    const timers = new Set<{ delay: number; callback(): void }>();
+    const advance = (delay: number) => {
+      for (const timer of [...timers]) if (timer.delay === delay) { timers.delete(timer); timer.callback(); }
+    };
+    const service = openSettingsService(join(directory, "data.sqlite"), undefined, undefined, {
+      probe: nativeObserverDependencies.probe,
+      scan: scanOnFixtureClock,
+      watch: (path, hint, failed) => { hints.set(path, { hint, failed }); return { close: () => { hints.delete(path); } }; },
+      schedule: (callback, delay) => {
+        const timer = { callback, delay }; timers.add(timer);
+        return { cancel: () => { timers.delete(timer); } };
+      },
+    });
+    let off: (() => void) | undefined;
     try {
       const created = unwrap(service.workspaces.create({ type: "workspace.create", name: "Grouped", rootPath: root })), workspaceId = created.workspaceId;
       const review = unwrap(service.workspaces.previewDiscovery({ type: "workspace.previewDiscovery", workspaceId, mode: "grouped" }));
@@ -2975,6 +2990,7 @@ test("EN/RU production Refresh retains metadata and recovery when an existing de
       const api = mockApi({ language, onProjects: query, onProperties: query, onWorkspace: async (input) =>
         (input.type === "workspace.load" || input.type === "workspace.previewProjectRecovery" ? service.handleQuery(input) : service.handleCommand(input)) as ServiceResult<WorkspaceResponse> });
       off = service.workspaces.subscribe(api.emitChange); render(<App />);
+      await act(async () => advance(0));
       await screen.findByRole("cell", { name: "Project" });
       renameSync(join(root, "Conflict"), join(directory, "original-category")); mkdirSync(join(root, "Conflict"));
       renameSync(join(root, "Old/Project"), join(root, "Conflict/Project"));
@@ -2988,8 +3004,13 @@ test("EN/RU production Refresh retains metadata and recovery when an existing de
       assert.equal(text.textContent, "  Retained exact Text 📝  ");
       await userEvent.click(screen.getByRole("button", { name: `${translate(language, "recoveryLocate")}: Project` }));
       await screen.findByText(translate(language, "recoveryCategoryUnavailable"));
-      const target = screen.getByRole("radio", { name: /Conflict\/Project/ }) as HTMLInputElement;
+      const target = await screen.findByRole("radio", { name: /Conflict\/Project/ }) as HTMLInputElement;
       assert.equal(target.disabled, true); assert.equal((screen.getByRole("button", { name: translate(language, "recoveryConfirm") }) as HTMLButtonElement).disabled, true);
+      // Deliver a later watcher failure explicitly; its real observation must invalidate the preview.
+      await act(async () => hints.get(created.canonicalRoot)!.failed());
+      await screen.findByRole("heading", { name: translate(language, "recoveryStale") });
+      assert.equal(screen.queryByRole("radio", { name: /Conflict\/Project/ }), null);
+      assert.equal((screen.getByRole("button", { name: translate(language, "recoveryConfirm") }) as HTMLButtonElement).disabled, true);
       await userEvent.keyboard("{Escape}"); assert.equal(screen.queryByRole("heading", { name: translate(language, "recoveryTitle") }) === null, true);
       assert.equal(text.textContent, "  Retained exact Text 📝  ");
     } finally { off?.(); cleanup(); service.close(); rmSync(directory, { recursive: true, force: true }); }
