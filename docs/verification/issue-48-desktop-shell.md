@@ -100,3 +100,21 @@ allows verified shutdown/cleanup. No off-screen-window override was added.
 
 Focused route `checks: desktop-shell` owns renewed evidence for this exact failure;
 full CI remains behind that gate. GitHub retains current results and delivered SHA.
+
+
+## Scroll-return failure after the focused launch correction
+
+Focused run `39300137710` passed all three platforms on `32b3a95`, with inspected
+native reports: outer launch geometry, eight journeys, normal shutdown and cleanup.
+The renewed full run `39300860777` then failed the first macOS shell return:
+`scrollTop` changed from 1629 to 1633. Geometry, return focus and owned cleanup
+passed. Windows shell journeys passed before entering the ordinary platform suite.
+The secondary macOS collector validation had no original platform run to collect.
+The full run is not accepted.
+
+The unchanged native smoke passed locally; a disposable 30-return probe also found
+no scroll drift. The smoke now records scroll/row geometry before focus, after
+focus, while hidden and after return, retaining the exact equality assertion. This
+is evidence collection for the next focused run, not a product fix or a passing
+claim for the original failure. macOS installation run `39300868384` passed on the
+same source SHA; its report and Russian screenshot were inspected.

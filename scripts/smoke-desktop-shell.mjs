@@ -38,6 +38,15 @@ async function launch() {
   assert.ok(geometry.outer.width >= 1024 && geometry.outer.height >= 720,
     `Fresh launch window below supported minimum: ${JSON.stringify(geometry)}`);
 }
+async function scrollState() {
+  return page.locator(".desktop-workspace").evaluate(el => ({
+    top: el.scrollTop, height: el.scrollHeight, viewport: el.clientHeight,
+    hidden: el.hidden, fonts: document.fonts.status,
+    rows: [...el.querySelectorAll("tr[data-project-id]")].slice(0, 8).map(row => ({
+      ready: row.dataset.fieldsReady, top: row.getBoundingClientRect().top, height: row.getBoundingClientRect().height,
+    })),
+  }));
+}
 async function close() { if (app) { await closeElectron(app); app = undefined; } }
 try {
   await launch();
@@ -72,8 +81,11 @@ try {
         await page.screenshot({ path: join(evidence, `${language}-${theme}-${size.width}-table.png`) });
         // Keyboard-only entry/return preserves scroll, mounted rows and focus.
         const settings = page.getByRole("button", { name: /^(Settings|Настройки)$/ });
-        const scrollBefore = await page.locator(".desktop-workspace").evaluate(el => el.scrollTop);
-        await settings.focus(); await settings.press("Enter");
+        const scrollBefore = await scrollState();
+        await settings.focus();
+        const scrollFocused = await scrollState();
+        await settings.press("Enter");
+        const scrollHidden = await scrollState();
         await page.getByRole("tab", { name: /^(General|Основные)$/ }).focus();
         await page.keyboard.press("Enter");
         await page.keyboard.press("ArrowDown");
@@ -84,7 +96,9 @@ try {
         const back = page.getByRole("button", { name: /^(Back to workspace|Вернуться к работе)$/ });
         await back.focus(); await back.press("Enter");
         assert.equal(await settings.evaluate(el => el === document.activeElement), true);
-        assert.equal(await page.locator(".desktop-workspace").evaluate(el => el.scrollTop), scrollBefore);
+        const scrollAfter = await scrollState();
+        checks.push({ scrollReturn: { language, theme, size, before:scrollBefore, focused:scrollFocused, hidden:scrollHidden, after:scrollAfter } });
+        assert.equal(scrollAfter.top, scrollBefore.top);
         checks.push({ language, theme, size, layout, keyboardFocusAndScroll:true });
       }
     }
