@@ -1,8 +1,11 @@
 # Workspace desktop experience
 
-Status: complete interview draft for owner review. Product decisions Q1–Q19
-and the default-name spelling are incorporated. This document specifies future
-behavior; it does not report an implemented UI or authorize implementation.
+Status: product decisions Q1–Q19 and the default-name spelling are incorporated;
+the owner requested publication and ticket preparation. The standalone issue body
+and [proposed implementation breakdown](workspace-desktop-ux-tickets/README.md)
+are ready for review. Publication awaits resolution of the repository visibility
+conflict recorded there. This document specifies future behavior; it does not
+report an implemented UI or authorize implementation.
 
 ## Outcome and release relationship
 
@@ -374,23 +377,17 @@ and isolated application data. Add behavioral checks for new session and file
 commands, not assertions that merely freeze component markup or document wording.
 Inspect UI evidence for complete journeys, not just isolated controls.
 
-## Suggested implementation slices
+## Proposed implementation breakdown
 
-These are preparation for linked GitHub issues, not started work or a second
-tracker. Each slice must be independently reviewable and retain existing behavior.
-
-| Slice | Deliverable | Acceptance rows |
-| --- | --- | --- |
-| A — Component foundation and shell | Radix/Tailwind tokens/components, desktop shell, themes, sidebar and bb-style settings shell | UX02, UX16–UX18 |
-| B — Workspace/source journeys | Automatic naming, creation/setup, source settings, contextual workspace management and source status | UX01–UX02, UX08, UX16 |
-| C — Project area and session | Single preview/expanded model, unique tabs, transitions, resizing and persisted/backed-up session | UX03–UX08, UX19 |
-| D — Daily views and editing | Contextual Board/Table controls and consistent editors, navigation guards and assignment interactions | UX09–UX13, UX17–UX18 |
-| E — Files and operation surfaces | Contained project tree/Open, native Reveal and contextual reviewed filesystem/recovery flows | UX14–UX15, UX08 |
-| F — Integrated UX acceptance | Cross-slice journeys, visual/accessibility inspection, real-platform checks and renewed scale/recovery evidence | UX01–UX20 |
-
-A establishes shared UI. B–E must coordinate their contracts, with project/session
-and editor guards tested together before F. Shipping an attractive empty shell
-or passing isolated slice checks does not complete this specification.
+The [20 proposed vertical tickets](workspace-desktop-ux-tickets/README.md) replace
+the earlier six broad preparation areas. Each ticket has a complete observable
+journey, scoped acceptance and immediate blocking edges. U01 delivers a working
+workspace/settings journey while establishing the component foundation; subsequent
+tickets adapt existing services and preserve functional entry points throughout
+the migration. U20 verifies the composed UX01–UX20 matrix and renewed performance
+after #41. The graph is a proposal awaiting owner review, not published work or
+another live tracker. An attractive empty shell or isolated checks do not complete
+this specification.
 
 ## Primary reference map
 
