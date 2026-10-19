@@ -79,3 +79,43 @@ Running the original property-driver file (9/9), normal-quit file (1/1) and exac
 250ms observer cancellation (1/1) separately then passed. This does not override
 the failed full result or establish its cause. The symptoms and original logs
 are retained; full cross-platform CI must still run after focused Windows success.
+
+## Observed repaired-SHA Windows installation and full CI
+
+Reviewed code SHA **90d1e861fd81e2d74c9164c08545c989af002a12** passed:
+
+- [Windows installer run 39231270069](https://github.com/kornouhovas/workspace/actions/runs/39231270069),
+  attempt 1, job `117989548439`, artifact `12178060499`. Actual host:
+  **Microsoft Windows Server 2025 Datacenter**, x64, kernel `10.0.26100`.
+  Fifty policy/version/route controls and both original installed-driver controls
+  pass. The actual NSIS Unicode/space installation, bundled backend/SQLite
+  create/normal quit/reopen, retained workspace/source/view and language,
+  same-candidate reinstall, independent normal APPDATA create/reopen, unchanged
+  project marker, uninstall data retention and owned cleanup all pass.
+  Installed ProductVersion is `0.1.0.0`, FileVersion `0.1.0`, product `Workspace`,
+  signature `NotSigned`. EN-wide/RU-narrow screenshots were inspected.
+  Installer SHA256: `1b9375bb78ac157c37e07e8cdce69c1c61e6257e5bd641fef77e5568b343788b`.
+- [Full desktop run 39231966910](https://github.com/kornouhovas/workspace/actions/runs/39231966910),
+  attempt 1: common/static checks and complete macOS latest, Windows latest and
+  Windows 2022 acceptance pass. Downloaded/inspected runtime artifacts
+  `12178499657`, `12179420419`, `12179260014`: all **54** final runtime reports
+  pass, with normal shutdown/cleanup and candidate-matching SHA-bearing feature
+  reports. Artifact API/run provenance binds the remaining runtime observations.
+- [macOS installation run 39231972406](https://github.com/kornouhovas/workspace/actions/runs/39231972406),
+  attempt 1, artifact `12178145853`: macOS 14.8.9 arm64 DMG install, bundled
+  runtime create/reopen/replacement, EN/RU/isolation and cleanup pass on the same SHA.
+
+This final report-only follow-up does not change the platform-tested code SHA.
+Its Markdown links and whitespace checks are separate from those platform runs.
+The first failed Windows run and the seven-failure renewed local full result
+remain recorded above; successful CI does not rewrite those observations.
+
+## Remaining target acceptance
+
+**Issue 40 remains open and the task branch remains unintegrated.** The owner
+selected Windows 11 x64 and confirmed that no target machine/VM is available.
+Windows Server installation is observed Windows evidence, not proof of Windows 11
+installation or its unsigned-installer desktop prompts. Windows 11 acceptance is
+still required before issue closure/integration. No signing identity, automatic
+update, future-schema upgrade/downgrade, release tag or public installer download
+has been validated or published.
