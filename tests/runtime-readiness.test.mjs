@@ -23,7 +23,7 @@ function fixture() {
       throw new Error("Controlled readiness never completed");
     },
     evaluate: (callback) => runInNewContext(`(${callback.toString()})()`, context),
-    locator: () => ({ waitFor: async () => { assert.ok(browser.document.querySelector("#interface-language")); } }),
+    locator: () => ({ waitFor: async () => { assert.ok(browser.document.querySelector('.workspace-screen[data-ready="true"]')); } }),
   };
   return { browser, context, page, attempted, attempts: () => attempts };
 }
@@ -100,7 +100,7 @@ test("runtime interface stays pending while starting and records ready only for 
     await f.attempted;
     assert.deepEqual(outcomes, []);
     f.browser.workspace.getBackendStatus = async () => ({ state: "ready" });
-    f.browser.document.body.innerHTML = '<select id="interface-language"></select>';
+    f.browser.document.body.innerHTML = '<main class="workspace-screen" data-ready="true"></main>';
     await waiting;
     assert.deepEqual(JSON.parse(JSON.stringify(outcomes)), [{ state: "ready" }]);
   } finally { await f.browser.happyDOM.close(); }

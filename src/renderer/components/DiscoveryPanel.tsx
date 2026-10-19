@@ -1,3 +1,5 @@
+import { createPortal } from "react-dom";
+import { useSourceSettingsHost } from "./DesktopShell.js";
 import { ViewsPanel } from "./ViewsPanel.js";
 import type { WorkspaceView } from "../../contracts/views.js";
 import { ProjectArchivePanel } from "./ProjectArchivePanel.js";
@@ -220,7 +222,7 @@ export function DiscoveryController({ client, workspaceId, sourceId, minimumRevi
       if (current === version.current) setPending(false);
     }
   };
-  return <>
+  const content = <div className="source-tools">
     <button ref={trigger} type="button" className="workspace-button workspace-button--secondary" disabled={disabled || open}
       onClick={() => { mode.current = undefined; setOpen(true); setApplyError(false); setValidationError(false); setStale(false); void request(); }}>{translate(language, "discoveryAction")}</button>
     {open && <DiscoveryPanel language={language} preview={preview && preview.revision >= minimumRevision.current ? preview : null} pending={pending} error={error} applying={applying} disabled={disabled} applyError={applyError} stale={stale} validationError={validationError} onApply={() => void apply()}
@@ -236,7 +238,9 @@ export function DiscoveryController({ client, workspaceId, sourceId, minimumRevi
         void request([...draft]);
       }}
       onCancel={() => { version.current++; returnFocus.current = true; setOpen(false); setPreview(null); setPending(false); }} />}
-  </>;
+  </div>;
+  const sourceHost = useSourceSettingsHost();
+  return sourceHost ? createPortal(content, sourceHost) : content;
 }
 
 

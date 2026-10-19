@@ -11,7 +11,7 @@ import type { ProjectRevealResult } from "../contracts/project-reveal.js";
 import type { ProjectRecoveryPreview } from "../contracts/project-recovery.js";
 import type { TextPropertySnapshot, TextPropertyMutation } from "../contracts/text-properties.js";
 import type { BackendStatus, WorkspaceDesktopApi } from "../contracts/desktop-api.js";
-import type { Language, ServiceResult, Settings } from "../contracts/settings.js";
+import type { Appearance, Language, ServiceResult, Settings } from "../contracts/settings.js";
 import type { CategoryPropertySnapshot, ProjectList, DiscoveryMode, DiscoveryPreview, ActiveWorkspace, WorkspaceCreated, WorkspaceLoad, WorkspaceSourceObservationSnapshot, WorkspaceSourceState, WorkspaceChangeEvent } from "../contracts/workspaces.js";
 import type { RootPickerResult } from "../contracts/desktop-api.js";
 
@@ -237,6 +237,10 @@ export class WorkspaceServiceClient {
 
   loadSettings(): Promise<ServiceResult<Settings>> {
     return this.api.settings({ type: "settings.load" });
+  }
+
+  setAppearance(appearance: Appearance): Promise<ServiceResult<Settings>> {
+    return this.api.settings({ type: "settings.setAppearance", appearance });
   }
 
   setLanguage(language: Language): Promise<ServiceResult<Settings>> {

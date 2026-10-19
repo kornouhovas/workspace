@@ -678,3 +678,24 @@ Drizzle retains its transaction rollback boundary, and failed migrations expose 
 startup diagnostics with EN/RU recovery instructions. Pre-migration copies are never
 subject to automatic retention. Matching-version restore remains explicit; schema
 migration does not execute snapshot-provided SQL or replay filesystem operations.
+
+## Desktop shell foundation (Issue 48)
+
+The viewport-bound renderer shell selects saved workspaces through the existing
+activation service and keeps the working subtree mounted while settings is open.
+General, Appearance, Workspaces, Sources, Backup and recovery, and About use
+Radix Tabs with explicit keyboard activation and in-session section memory.
+Existing discovery preview is also reachable inside Sources without replacing its
+service or draft state. Fresh launch opens the workspace, while Back restores the
+entry focus and working scroll/context. The legacy project/view/property controls
+remain operational during subsequent slices.
+
+The existing device-local settings key/value table stores `appearance` alongside
+`language`; no schema migration is needed. `settings.setAppearance` validates
+Light/Dark/System and returns committed settings through the existing isolated
+preload/IPC route. Missing appearance defaults to System. The renderer subscribes
+to the OS media query, applying changes only in System mode; failed saves retain
+the accepted preference. Semantic Tailwind tokens and selective bb pattern
+adaptations share typography, density, focus and light/dark control colors. See
+[provenance](reuse.md#issue-48-desktop-shell) and
+[verification](verification/issue-48-desktop-shell.md).

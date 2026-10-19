@@ -21,7 +21,7 @@ test("fresh database migrates and starts with English", () => {
     const service = openSettingsService(databasePath);
     assert.deepEqual(service.handleQuery({ type: "settings.load" }), {
       ok: true,
-      value: { language: "en" },
+      value: { language: "en", appearance: "system" },
     });
     service.close();
 
@@ -36,14 +36,14 @@ test("Russian preference survives service close and reopen", () => {
     const first = openSettingsService(databasePath);
     assert.deepEqual(first.handleCommand({ type: "settings.setLanguage", language: "ru" }), {
       ok: true,
-      value: { language: "ru" },
+      value: { language: "ru", appearance: "system" },
     });
     first.close();
 
     const second = openSettingsService(databasePath);
     assert.deepEqual(second.handleQuery({ type: "settings.load" }), {
       ok: true,
-      value: { language: "ru" },
+      value: { language: "ru", appearance: "system" },
     });
     second.close();
   });
@@ -66,7 +66,7 @@ test("existing settings database upgrades to workspaces without losing its langu
     mkdirSync(root);
     const upgraded = openSettingsService(databasePath);
     assert.deepEqual(upgraded.handleQuery({ type: "settings.load" }), {
-      ok: true, value: { language: "ru" },
+      ok: true, value: { language: "ru", appearance: "system" },
     });
     const created = upgraded.handleCommand({ type: "workspace.create", name: "Upgraded", rootPath: root });
     assert.equal(created.ok, true);
@@ -132,7 +132,7 @@ test("settings routing delegates category labels without confusing Text or setti
     assert.equal(service.handleQuery(command).error.code, "invalid_input");
     assert.equal(service.handleCommand({ ...command, extra: true }).error.code, "invalid_input");
     assert.equal(service.handleCommand(command).value.name, "  Label  ");
-    assert.deepEqual(service.handleQuery({ type: "settings.load" }).value, { language: "en" });
+    assert.deepEqual(service.handleQuery({ type: "settings.load" }).value, { language: "en", appearance: "system" });
     assert.deepEqual(service.handleQuery({ type: "workspace.listTextProperties", workspaceId }).value.definitions, []);
     service.close();
     assert.equal(service.handleCommand(command).error.code, "storage");
@@ -172,6 +172,28 @@ test("settings dispatcher exposes rename receipts and reviewed recovery without 
       assert.equal(kept.value.problem, "kept_original"); assert.equal(calls, 1);
       assert.deepEqual(service.handleQuery({ type: "workspace.listProjectRenames", workspaceId }).value.operations, []);
       assert.deepEqual(service.handleCommand(input), kept);
+    } finally { service.close(); }
+  });
+});
+
+
+test("appearance defaults to system and persists independently of language through reopen", () => {
+  withDatabase((databasePath) => {
+    let service = openSettingsService(databasePath);
+    try {
+      assert.equal(service.handleQuery({ type: "settings.load" }).value.appearance, "system");
+      for (const appearance of ["light", "dark", "system"]) {
+        assert.equal(service.handleCommand({ type: "settings.setAppearance", appearance }).value.appearance, appearance);
+        assert.equal(service.handleCommand({ type: "settings.setLanguage", language: "ru" }).value.appearance, appearance);
+        service.close(); service = openSettingsService(databasePath);
+        assert.deepEqual(service.handleQuery({ type: "settings.load" }).value, { language: "ru", appearance });
+      }
+      for (const appearance of ["auto", null, 1]) assert.equal(service.handleCommand({ type: "settings.setAppearance", appearance }).error.code, "invalid_input");
+      const sqlite = new Database(databasePath);
+      sqlite.exec("CREATE TRIGGER reject_theme BEFORE INSERT ON settings WHEN NEW.key='appearance' BEGIN SELECT RAISE(ABORT, 'injected'); END;");
+      assert.equal(service.handleCommand({ type: "settings.setAppearance", appearance: "dark" }).error.code, "storage");
+      assert.equal(service.handleQuery({ type: "settings.load" }).value.appearance, "system");
+      sqlite.close();
     } finally { service.close(); }
   });
 });

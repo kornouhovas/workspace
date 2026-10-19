@@ -1,3 +1,4 @@
+import { setInterfaceLanguage } from "./runtime-settings.mjs";
 /* global window, document, innerWidth */
 import assert from "node:assert/strict";
 import { openPropertyCreator } from "./property-editor-driver.mjs";
@@ -102,11 +103,11 @@ try {
     }
     assert.equal(await editor.evaluate(element => element === document.activeElement), true, "Failed save restores focus before switching language");
     const otherLanguage = language === "en" ? "ru" : "en";
-    await page.getByLabel(language === "en" ? "Interface language" : "Язык интерфейса", { exact: true }).selectOption(otherLanguage);
+    await setInterfaceLanguage(page, otherLanguage);
     const otherLabel = `${otherLanguage === "en" ? "Edit Date value" : "Редактировать Date-значение"}: Project / Deadline`;
     const switchedEditor = page.getByRole("textbox", { name: otherLabel, exact: true });
     assert.equal(await switchedEditor.inputValue(), "2025-02-29");
-    await page.getByLabel(otherLanguage === "en" ? "Interface language" : "Язык интерфейса", { exact: true }).selectOption(language);
+    await setInterfaceLanguage(page, language);
     await editor.focus();
     assert.equal(await editor.evaluate(element => element === document.activeElement), true, "Editor remains keyboard operable after switching language");
     await page.keyboard.press("Escape");

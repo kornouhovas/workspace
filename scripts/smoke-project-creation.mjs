@@ -1,3 +1,4 @@
+import { setInterfaceLanguage } from "./runtime-settings.mjs";
 import { waitForFocusedInput } from "./property-editor-driver.mjs";
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
@@ -213,7 +214,7 @@ try {
       const { workspace, sibling, other, properties } = seed.setup;
       const page = await launch(data);
       const language = discoveryMode === "direct" ? "en" : "ru";
-      await page.locator("#interface-language").selectOption(language);
+      await setInterfaceLanguage(page, language);
       await page.waitForFunction((lang) => globalThis.document.documentElement.lang === lang && !globalThis.document.querySelector("#interface-language")?.disabled, language);
       await select(page, workspace);
       const t = labels[language];

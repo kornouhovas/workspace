@@ -45,3 +45,22 @@ The language control and status/empty-state primitives in `src/renderer/componen
 Upstream repository: [get-bb/bb](https://github.com/get-bb/bb), revision `f135a001e72942cee9118d2693208ec0725e2f18`. Complete upstream root MIT license notice: `src/renderer/components/bb/LICENSE`. No unrelated chat, session, table or mobile modules were copied. Ladle previews and component checks cover both languages and status states. This entry records UI-pattern adaptation; it does not claim line-for-line component copying.
 
 Verify the actual distributed contents before each release. Reuse does not imply endorsement by bb or its authors.
+
+## Issue 48 desktop shell
+
+At the same pinned bb revision, inspected `apps/app/src/components/settings/SettingsSidebar.tsx`,
+`apps/app/src/components/ui/settings-section.tsx`, `apps/app/src/components/ui/theme.css`
+and `apps/app/src/hooks/useAppSettingsRouteMemory.ts`. `DesktopShell.tsx` adapts the
+section sidebar, Back action, selected rows, heading/card hierarchy and in-session
+settings-route memory patterns. `app.css` adapts semantic background/foreground,
+sidebar, muted, border and ring roles and compact desktop typography. Workspace's
+neutral palette, layout, state and service wiring are local implementations; bb's
+router, plugins, mobile routes, chat/session state and large theme inventory were
+not imported. This is a pattern adaptation, not a claim of verbatim module copying.
+
+Pinned compatible foundation: Radix Tabs 1.2.1 and Radio Group 1.5.1, Tailwind CSS
+and its Vite plugin 4.3.3, with the existing React/Vite versions. Selection was checked
+against npm metadata and the committed lockfile; actual builds and interactions
+are recorded in the issue verification report. The full bb MIT notice remains at
+`src/renderer/components/bb/LICENSE` and in packaged resources. Radix and Tailwind
+retain their dependency licenses in the npm dependency tree.

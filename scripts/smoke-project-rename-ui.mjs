@@ -1,3 +1,4 @@
+import { setInterfaceLanguage } from "./runtime-settings.mjs";
 import { installRenameSubmissionReceipt } from "./rename-submission-receipt.mjs";
 import assert from "node:assert/strict";
 import { showRuntimeProject } from "./runtime-project-visibility.mjs";
@@ -190,7 +191,7 @@ export async function runProjectRenameUi(mode = "dev") {
     await save();
   }
   async function select(page, workspace, language) {
-    await page.locator("#interface-language").selectOption(language);
+    await setInterfaceLanguage(page, language);
     await page.waitForFunction(lang => globalThis.document.documentElement.lang === lang && !globalThis.document.querySelector("#interface-language")?.disabled, language);
     await page.locator("#workspace-switcher").selectOption(workspace.workspaceId);
     await page.getByRole("heading", { name: workspace.name, exact: true }).waitFor();

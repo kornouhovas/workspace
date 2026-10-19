@@ -27,7 +27,7 @@ function fixture() {
       return { dispose: async () => {} };
     },
     evaluate: callback => runInNewContext(`(${callback.toString()})()`, { window: { workspace: { getBackendStatus: async () => state.status ?? ({ state: "ready" }) } } }),
-    locator: selector => ({ waitFor: async () => assert.equal(selector, "#interface-language") }),
+    locator: selector => ({ waitFor: async () => assert.equal(selector, '.workspace-screen[data-ready="true"]') }),
   };
   const electron = {
     process: () => child,

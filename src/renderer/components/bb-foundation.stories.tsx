@@ -129,7 +129,7 @@ function WorkspacePreview({ language, state = "management" }: {
       onBackendStatus: () => () => {},
       settings: async (input) => {
         if (input.type === "settings.setLanguage") savedLanguage = input.language;
-        return { ok: true, value: { language: savedLanguage } };
+        return { ok: true, value: { language: savedLanguage, appearance: "system" } };
       },
       workspace: workspace as WorkspaceDesktopApi["workspace"],
       onWorkspaceChange: (listener) => { listeners.add(listener); return () => { listeners.delete(listener); }; },
@@ -255,7 +255,7 @@ function TextPreview({ language, state }: { language: Language; state: TextStory
       workspace: workspace as WorkspaceDesktopApi["workspace"],
       recovery: async () => ({ ok: false, error: { code: "service_unavailable", message: "Recovery is unavailable in this fixture." } }),
       getBackendStatus: async () => ({ state: "ready" }), onBackendStatus: () => () => {},
-      settings: async () => ({ ok: true, value: { language } }), pickRoot: async () => ({ outcome: "cancelled" }),
+      settings: async () => ({ ok: true, value: { language, appearance: "system" } }), pickRoot: async () => ({ outcome: "cancelled" }),
       onWorkspaceChange: (listener) => { listeners.add(listener); return () => { listeners.delete(listener); }; },
     };
     setClient(new WorkspaceServiceClient(api));
@@ -340,7 +340,7 @@ function CategoryPreview({ language, state }: { language: Language; state: Categ
       workspace: workspace as WorkspaceDesktopApi["workspace"],
       recovery: async () => ({ ok: false, error: { code: "service_unavailable", message: "Recovery is unavailable in this fixture." } }),
       getBackendStatus: async () => ({ state: "ready" }), onBackendStatus: () => () => {},
-      settings: async () => ({ ok: true, value: { language } }), pickRoot: async () => ({ outcome: "cancelled" }), onWorkspaceChange: () => () => {},
+      settings: async () => ({ ok: true, value: { language, appearance: "system" } }), pickRoot: async () => ({ outcome: "cancelled" }), onWorkspaceChange: () => () => {},
     };
     setClient(new WorkspaceServiceClient(api));
     let opened = false;

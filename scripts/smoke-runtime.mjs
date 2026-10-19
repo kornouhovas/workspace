@@ -1,3 +1,4 @@
+import { setInterfaceLanguage, openSettingsSection, returnToWorkspace } from "./runtime-settings.mjs";
 import assert from "node:assert/strict";
 import { lstat, mkdir, mkdtemp, readdir, readFile, readlink, realpath, rename, stat, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -241,24 +242,28 @@ async function create(current, name, rootPath, language = "en") {
 }
 
 async function select(page, workspace) {
+  await returnToWorkspace(page);
   await page.locator("#workspace-switcher").selectOption(workspace.workspaceId);
   await page.getByRole("heading", { name: workspace.name.trim(), exact: true }).waitFor();
   await page.waitForFunction(() => !globalThis.document.querySelector("#workspace-switcher")?.disabled);
 }
 
 async function remove(page, workspace) {
+  await openSettingsSection(page, "workspaces");
   await page.getByRole("button", { name: `Удалить рабочее пространство: ${workspace.name.trim()}`, exact: true }).click();
   await page.getByText("Будут удалены только конфигурация этого рабочего пространства и её представления. Файлы проектов и метаданные источника сохранятся, даже если это последнее рабочее пространство для папки.", { exact: true }).waitFor();
   await page.getByRole("button", { name: "Удалить конфигурацию", exact: true }).press("Enter");
   await page.locator(".workspace-removal").waitFor({ state: "detached" });
   await page.waitForFunction(() => !globalThis.document.querySelector("#workspace-switcher")?.disabled);
+  await returnToWorkspace(page);
   return load(page);
 }
 
 async function captureLayouts(page, language, name) {
-  await page.locator("#interface-language").selectOption(language);
+  await setInterfaceLanguage(page, language);
   await page.waitForFunction((lang) => globalThis.document.documentElement.lang === lang &&
     !globalThis.document.querySelector("#interface-language")?.disabled, language);
+  await openSettingsSection(page, "workspaces");
   const removeLabel = language === "en" ? "Remove workspace" : "Удалить рабочее пространство";
   for (const size of [{ width: 1440, height: 960 }, { width: 1024, height: 720 }, { width: 420, height: 800 }]) {
     await page.setViewportSize(size);
@@ -276,6 +281,7 @@ async function captureLayouts(page, language, name) {
       if (state === "confirmation") await page.locator(".workspace-removal").press("Escape");
     }
   }
+  await returnToWorkspace(page);
 }
 
 let current;
@@ -334,7 +340,7 @@ try {
   const canonicalOtherRoot = await realpath(otherRoot);
   current = await launch(dataDirectory, projectRoot);
   let { page } = current;
-  await page.getByRole("combobox", { name: "Interface language" }).waitFor();
+  await page.locator('.workspace-screen[data-ready="true"]').waitFor();
   assert.equal(await page.locator("html").getAttribute("lang"), "en");
   assert.equal(await page.evaluate(() => typeof process), "undefined");
   assert.equal(await page.evaluate(() => typeof require), "undefined");
@@ -359,6 +365,7 @@ try {
   await page.getByText("Preview folders, choose exclusions and apply the reviewed projects to this Table.", { exact: true }).waitFor();
   await select(page, first);
   const authoredName = `  Renamed-${workspaceName}  `;
+  await openSettingsSection(page, "workspaces");
   await page.getByRole("button", { name: "Rename workspace", exact: true }).click();
   await page.getByRole("textbox").fill(authoredName);
   await page.getByRole("textbox").press("Enter");
@@ -372,6 +379,7 @@ try {
   const orderedIds = [other, first, sibling].map((item) => item.workspaceId);
   assert.deepEqual((await load(page)).workspaces.map((item) => item.workspaceId), orderedIds);
   assert.deepEqual(identity((await load(page)).activeWorkspace), identity(first));
+  await returnToWorkspace(page);
   const unconfigured = await projects(page, first.workspaceId);
   await previewFolders(page);
   for (const name of [".hidden", "$RECYCLE.BIN", "External-link"]) {
@@ -514,7 +522,7 @@ try {
   assert.deepEqual(await folderBytes(otherRoot), otherBytes);
   observations.push({ scenario: "Text create/rename/authored/empty/clear/whitespace, sibling visibility and other-source isolation", identities: [first, sibling, other].map(identity), savedProperties, otherProperties, savedProjects, propertyChanges, unchangedProjectInventory: originalBytes });
   for (const language of ["en", "ru"]) {
-    await page.locator("#interface-language").selectOption(language);
+    await setInterfaceLanguage(page, language);
     await page.waitForFunction((lang) => globalThis.document.documentElement.lang === lang && !globalThis.document.querySelector("#interface-language")?.disabled, language);
     await captureDiscovery(page, language, "applied-table");
     const valueLabel = `${propertyLabels[language].edit}: ${projectName} / ${propertyName}`;
@@ -624,7 +632,7 @@ try {
   observations.push({ scenario: "management and source notifications", identities: [first, sibling, other], sourceChanges });
 
   // Grouped workflow runs through the UI and actual preload/utilityProcess route.
-  await page.locator("#interface-language").selectOption("en");
+  await setInterfaceLanguage(page, "en");
   await page.waitForFunction(() => globalThis.document.documentElement.lang === "en" && !globalThis.document.querySelector("#interface-language")?.disabled);
   const grouped = await create(current, "Grouped configuration", groupedRoot);
   const groupedSibling = await create(current, "Grouped sibling", groupedRoot);
@@ -698,7 +706,7 @@ try {
   });
   let groupedLabel;
   for (const language of ["en", "ru"]) {
-    await page.locator("#interface-language").selectOption(language);
+    await setInterfaceLanguage(page, language);
     await page.waitForFunction((lang) => globalThis.document.documentElement.lang === lang && !globalThis.document.querySelector("#interface-language")?.disabled, language);
     await previewFolders(page, language);
     assert.equal(await page.locator(".discovery-mode select").inputValue(), "grouped");
@@ -781,7 +789,7 @@ try {
   }
   // Cancel in both languages preserves the entire persisted metadata snapshot.
   for (const language of ["en", "ru"]) {
-    await page.locator("#interface-language").selectOption(language);
+    await setInterfaceLanguage(page, language);
     await page.waitForFunction((lang) => globalThis.document.documentElement.lang === lang && !globalThis.document.querySelector("#interface-language")?.disabled, language);
     const beforeCancel = await storageMetadata();
     await previewFolders(page, language); await chooseMode("direct", language);
@@ -961,7 +969,7 @@ try {
   await assertRuntimeCategoryCell(page, groupedProjectName, neededCategory);
   await waitForProjectCell(page, groupedProjectName);
   for (const language of ["en", "ru"]) {
-    await page.locator("#interface-language").selectOption(language);
+    await setInterfaceLanguage(page, language);
     await page.waitForFunction((lang) => globalThis.document.documentElement.lang === lang &&
       !globalThis.document.querySelector("#interface-language")?.disabled, language);
     await refresh(grouped, language);
@@ -1112,7 +1120,7 @@ try {
   await select(page, sibling);
   assert.deepEqual(await projects(page, sibling.workspaceId), { ...savedProjects, workspaceId: sibling.workspaceId });
 
-  await page.locator("#interface-language").selectOption("en");
+  await setInterfaceLanguage(page, "en");
   await page.waitForFunction(() => globalThis.document.documentElement.lang === "en" && !globalThis.document.querySelector("#interface-language")?.disabled);
   await select(page, grouped);
   const groupedOriginal = savedGroupedProjects.projects.find((entry) => entry.name === groupedProjectName);
@@ -1144,7 +1152,7 @@ try {
   assert.ok(recoveryEvents.every((event) => event.sourceId !== other.sourceId));
   assert.deepEqual(await folderBytes(externalRoot), externalBytes);
   assert.deepEqual(await folderBytes(otherRoot), otherBytes);
-  await page.locator("#interface-language").selectOption("ru");
+  await setInterfaceLanguage(page, "ru");
   await page.waitForFunction(() => globalThis.document.documentElement.lang === "ru" && !globalThis.document.querySelector("#interface-language")?.disabled);
   observations.push({ scenario: "direct/grouped recovery identities, revisions, source events and independent Text/category revisions", recoveryEvents,
     savedProjects, savedProperties, savedGroupedProjects, savedGroupedProperties, savedSettings, identities: [first, sibling, grouped, groupedSibling].map(identity) });

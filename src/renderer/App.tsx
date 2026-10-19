@@ -1,9 +1,10 @@
+import { DesktopShell, AppearanceControl, shellLabels } from "./components/DesktopShell.js";
 import { DataRecoveryPanel } from "./components/DataRecoveryPanel.js";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { BackendStatus } from "../contracts/desktop-api.js";
 import type { ServiceErrorCode } from "../contracts/settings.js";
 import type { ActiveWorkspace, WorkspaceLoad, WorkspaceSourceState, WorkspaceChangeEvent, ProjectList } from "../contracts/workspaces.js";
-import type { Language } from "../contracts/settings.js";
+import type { Appearance, Language } from "../contracts/settings.js";
 import { LanguageSelect, StatusMessage } from "./components/bb-foundation.js";
 import { translate, type TranslationKey } from "./localization.js";
 import { SourceRefresh } from "./components/SourceRefresh.js";
@@ -28,6 +29,9 @@ export function App() {
   const [backendGeneration, setBackendGeneration] = useState(0);
   const [viewState, setViewState] = useState<ViewState>("loading");
   const [language, setLanguage] = useState<Language>("en");
+  const [appearance, setAppearance] = useState<Appearance>("system");
+  const [savingAppearance, setSavingAppearance] = useState(false);
+  const [appearanceError, setAppearanceError] = useState(false);
   const [savingLanguage, setSavingLanguage] = useState(false);
   const [saveError, setSaveError] = useState(false);
   const [workspaceData, setWorkspaceData] = useState<WorkspaceLoad | null>(null);
@@ -147,6 +151,7 @@ export function App() {
         return;
       }
       setLanguage(settings.value.language);
+      setAppearance(settings.value.appearance ?? "system");
       if (workspaces.ok && version === dataVersion.current) applyWorkspaceData(workspaces.value);
       setViewState("ready");
     } catch {
@@ -239,6 +244,28 @@ export function App() {
     } finally {
       setSavingLanguage(false);
     }
+  };
+
+  useEffect(() => {
+    const media = window.matchMedia("(prefers-color-scheme: dark)");
+    const apply = () => {
+      const dark = appearance === "dark" || appearance === "system" && media.matches;
+      document.documentElement.dataset.theme = dark ? "dark" : "light";
+      document.documentElement.style.colorScheme = dark ? "dark" : "light";
+    };
+    apply(); media.addEventListener("change", apply);
+    return () => media.removeEventListener("change", apply);
+  }, [appearance]);
+
+  const changeAppearance = async (next: Appearance) => {
+    if (savingAppearance || next === appearance) return;
+    setSavingAppearance(true); setAppearanceError(false);
+    try {
+      const result = await client.setAppearance(next);
+      if (result.ok) setAppearance(result.value.appearance);
+      else setAppearanceError(true);
+    } catch { setAppearanceError(true); }
+    finally { setSavingAppearance(false); }
   };
 
   const pickRoot = async () => {
@@ -437,26 +464,13 @@ export function App() {
   };
   const activeWorkspace = workspaceData?.activeWorkspace ?? null;
 
+  const settingsAvailable = viewState === "ready";
+  const unavailableSettings = <StatusMessage kind="info" title={shellLabels[language].unavailable} />;
   return (
-    <main className="workspace-screen" aria-label={t("appTitle")}>
-      <header className="workspace-header"><h1>{t("appTitle")}</h1></header>
-      {uncertainRecovery && (!activeWorkspace || activeWorkspace.workspaceId === uncertainRecovery) &&
-        <StatusMessage kind="error" title={t("recoveryUncertain")} />}
-      {viewState === "loading" && <StatusMessage kind="info" title={t("loading")} />}
-      {viewState === "unavailable" && (
-        <StatusMessage kind="error" title={t("unavailableTitle")}>
-          {t(backend.diagnostic?.code === "BACKUP_FAILED" ? "backupStartupFailed" : backend.diagnostic?.code === "MIGRATION_FAILED" ? "backupMigrationFailed" : "unavailableDescription")}
-        </StatusMessage>
-      )}
-      {viewState === "load-error" && (
-        <StatusMessage kind="error" title={t("loadErrorTitle")}>
-          {t("loadErrorDescription")}
-        </StatusMessage>
-      )}
-      {viewState === "ready" && (
-        <>
-          <fieldset disabled={dataLocked} hidden={dataLocked} className="workspace-controls">
-          <section className="workspace-settings" aria-labelledby="settings-title">
+    <DesktopShell language={language} data={workspaceData} busy={viewState !== "ready" || busy !== null || renameDraft !== null || removalTarget !== null} locked={dataLocked}
+      onActivate={(id) => { setAddingWorkspace(false); void activateWorkspace(id); }}
+      renderPanels={(back) => ({
+        general: settingsAvailable ? <>          <section className="workspace-settings" aria-labelledby="settings-title">
             <h2 id="settings-title">{t("settingsTitle")}</h2>
             <LanguageSelect
               id="interface-language"
@@ -471,29 +485,21 @@ export function App() {
               </StatusMessage>
             )}
           </section>
-          {activeWorkspace && !addingWorkspace ? (
-            <section className="workspace-content" aria-labelledby="workspace-title">
-              <div className="workspace-toolbar">
-                <div>
-                  <h2 id="workspace-title">{activeWorkspace.name}</h2>
-                  <p className="workspace-root">{activeWorkspace.canonicalRoot}</p>
-                </div>
-                <div className="bb-field workspace-switcher">
-                  <label className="bb-label" htmlFor="workspace-switcher">{t("workspaceSelectLabel")}</label>
-                  <select
-                    className="bb-select"
-                    id="workspace-switcher"
-                    value={activeWorkspace.workspaceId}
-                    disabled={busy !== null || renameDraft !== null || removalTarget !== null}
-                    onChange={(event) => void activateWorkspace(event.currentTarget.value)}
-                  >
-                    {workspaceData?.workspaces.map((workspace) => (
-                      <option key={workspace.workspaceId} value={workspace.workspaceId}>{workspace.name}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-              <section className="workspace-management" aria-labelledby="workspace-order-title" aria-busy={busy === "reorder"}>
+</> : unavailableSettings,
+        appearance: settingsAvailable ? <>
+          <AppearanceControl language={language} value={appearance} disabled={savingAppearance} onChange={next => void changeAppearance(next)} />
+          {appearanceError && <StatusMessage kind="error" title={t("saveErrorTitle")}>{t("saveErrorDescription")}</StatusMessage>}
+        </> : unavailableSettings,
+        workspaces: settingsAvailable ? <>{activeWorkspace ? <>
+          <h2>{activeWorkspace.name}</h2>
+          <label className="bb-field">{t("workspaceSelectLabel")}
+            <select className="bb-select" value={activeWorkspace.workspaceId} disabled={busy !== null || renameDraft !== null || removalTarget !== null}
+              onChange={event => void activateWorkspace(event.currentTarget.value)}>
+              {workspaceData?.workspaces.map(workspace => <option key={workspace.workspaceId} value={workspace.workspaceId}>{workspace.name}</option>)}
+            </select>
+          </label>
+          <button type="button" className="workspace-button workspace-button--secondary" disabled={busy !== null || renameDraft !== null || removalTarget !== null}
+            onClick={() => { setFormMessage(null); setAddingWorkspace(true); back(); }}>{t("addWorkspaceAction")}</button>              <section className="workspace-management" aria-labelledby="workspace-order-title" aria-busy={busy === "reorder"}>
                 <h3 id="workspace-order-title">{t("workspaceOrderTitle")}</h3>
                 <ol ref={managementList} className="workspace-management__list" aria-label={t("workspaceOrderTitle")}>
                   {workspaceData?.workspaces.map((workspace, index, all) => (
@@ -617,6 +623,52 @@ export function App() {
                   )}
                 </form>
               )}
+</> : <p>{t("createWorkspaceDescription")}</p>}</> : unavailableSettings,
+        sources: settingsAvailable && activeWorkspace ? <><h2>{activeWorkspace.name}</h2><p className="workspace-root">{activeWorkspace.canonicalRoot}</p></> : settingsAvailable ? <p>{t("createWorkspaceDescription")}</p> : unavailableSettings,
+        backup: settingsAvailable ? <DataRecoveryPanel key={backendGeneration} client={client} language={language} onRestored={() => window.location.reload()} onLock={setDataLocked} /> : unavailableSettings,
+        about: <><h2>Workspace</h2><p>{shellLabels[language].aboutDescription}</p><p>bb · MIT · Copyright (c) 2026 Michael Yong</p></>,
+      })}>
+    <main data-ready={viewState === "ready"} className="workspace-screen" aria-label={t("appTitle")}>
+      <header className="workspace-header"><h1>{t("appTitle")}</h1></header>
+      {uncertainRecovery && (!activeWorkspace || activeWorkspace.workspaceId === uncertainRecovery) &&
+        <StatusMessage kind="error" title={t("recoveryUncertain")} />}
+      {viewState === "loading" && <StatusMessage kind="info" title={t("loading")} />}
+      {viewState === "unavailable" && (
+        <StatusMessage kind="error" title={t("unavailableTitle")}>
+          {t(backend.diagnostic?.code === "BACKUP_FAILED" ? "backupStartupFailed" : backend.diagnostic?.code === "MIGRATION_FAILED" ? "backupMigrationFailed" : "unavailableDescription")}
+        </StatusMessage>
+      )}
+      {viewState === "load-error" && (
+        <StatusMessage kind="error" title={t("loadErrorTitle")}>
+          {t("loadErrorDescription")}
+          <button type="button" className="workspace-button workspace-button--secondary" onClick={() => { setViewState("loading"); void loadInitialData(() => backendState.current === "ready"); }}>{shellLabels[language].retry}</button>
+        </StatusMessage>
+      )}
+      {viewState === "ready" && (
+        <>
+          <fieldset disabled={dataLocked} hidden={dataLocked} className="workspace-controls">
+          {activeWorkspace && !addingWorkspace ? (
+            <section className="workspace-content" aria-labelledby="workspace-title">
+              <div className="workspace-toolbar">
+                <div>
+                  <h2 id="workspace-title">{activeWorkspace.name}</h2>
+                  <p className="workspace-root">{activeWorkspace.canonicalRoot}</p>
+                </div>
+                <div className="bb-field workspace-switcher">
+                  <label className="bb-label" htmlFor="workspace-switcher">{t("workspaceSelectLabel")}</label>
+                  <select
+                    className="bb-select"
+                    id="workspace-switcher"
+                    value={activeWorkspace.workspaceId}
+                    disabled={busy !== null || renameDraft !== null || removalTarget !== null}
+                    onChange={(event) => void activateWorkspace(event.currentTarget.value)}
+                  >
+                    {workspaceData?.workspaces.map((workspace) => (
+                      <option key={workspace.workspaceId} value={workspace.workspaceId}>{workspace.name}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
               {formMessage === "activation" && (
                 <StatusMessage kind="error" title={t(messageTitle.activation)}>
                   {t(messageDescription.activation)}
@@ -690,9 +742,10 @@ export function App() {
             </section>
           )}
           </fieldset>
-          <DataRecoveryPanel key={backendGeneration} client={client} language={language} onRestored={() => window.location.reload()} onLock={setDataLocked} />
+
         </>
       )}
     </main>
+    </DesktopShell>
   );
 }

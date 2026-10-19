@@ -1,3 +1,4 @@
+import { setInterfaceLanguage } from "./runtime-settings.mjs";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { execFile } from "node:child_process";
@@ -52,7 +53,7 @@ async function launch() {
   parents.add(electron.process());
   const page = await electron.firstWindow({ timeout: 30000 });
   page.setDefaultTimeout(30000);
-  await page.locator("#interface-language").waitFor();
+  await page.locator('.workspace-screen[data-ready="true"]').waitFor();
   const runtime = await electron.evaluate(({ app, Menu, BrowserWindow }) => {
     const menu = Menu.getApplicationMenu();
     const roles = items => items.flatMap(item => [item.role, ...roles(item.submenu?.items ?? [])]);
@@ -102,7 +103,7 @@ try {
   assert.equal(saved.activeWorkspace.name, "Installed workspace");
   assert.equal(saved.activeWorkspace.canonicalRoot, await realpath(source));
   for (const language of ["en", "ru"]) {
-    await page.locator("#interface-language").selectOption(language);
+    await setInterfaceLanguage(page, language);
     await page.waitForFunction(lang => globalThis.document.documentElement.lang === lang && !globalThis.document.querySelector("#interface-language")?.disabled, language);
     await page.setViewportSize({ width: language === "en" ? 1440 : 720, height: 900 });
     await page.screenshot({ path: join(evidence, `installed-${language}.png`), fullPage: true });

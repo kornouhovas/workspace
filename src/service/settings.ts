@@ -34,6 +34,8 @@ import {
   type ServiceResult,
   type Settings,
   supportedLanguages,
+  supportedAppearances,
+  type Appearance,
 } from "../contracts/settings.js";
 import { settings } from "./db/schema.js";
 import * as schema from "./db/schema.js";
@@ -101,6 +103,12 @@ export function openSettingsService(
     }
   })();
 
+  const readSettings = (): Settings => {
+    const language = db.select().from(settings).where(eq(settings.key, "language")).get()?.value;
+    const appearance = db.select().from(settings).where(eq(settings.key, "appearance")).get()?.value;
+    return { language: isLanguage(language) ? language : "en",
+      appearance: supportedAppearances.includes(appearance as Appearance) ? appearance as Appearance : "system" };
+  };
   const backups = createAutomaticBackups(sqlite, databasePath);
   let workspaces = createWorkspaceService(db, workspaceFilesystem, observerDependencies, projectFilesystem, projectRenameNative);
   return {
@@ -161,9 +169,7 @@ export function openSettingsService(
       }
 
       try {
-        const row = db.select().from(settings).where(eq(settings.key, "language")).get();
-        if (!row || !isLanguage(row.value)) return { ok: true, value: { language: "en" } };
-        return { ok: true, value: { language: row.value } };
+        return { ok: true, value: readSettings() };
       } catch {
         return { ok: false, error: storageError() };
       }
@@ -216,6 +222,16 @@ export function openSettingsService(
       if (isRecord(input) && input.type === "workspace.reorder") return workspaces.reorder(input);
       if (isRecord(input) && input.type === "workspace.refreshSource") return workspaces.refreshSource(input);
       if (isRecord(input) && input.type === "workspace.remove") return workspaces.remove(input);
+      if (isRecord(input) && input.type === "settings.setAppearance") {
+        if (!supportedAppearances.includes(input.appearance as Appearance) || Object.keys(input).some(key => !["type", "appearance"].includes(key))) {
+          return { ok: false, error: invalidInput("Expected a supported appearance: light, dark or system.") };
+        }
+        try {
+          db.insert(settings).values({ key: "appearance", value: input.appearance as Appearance })
+            .onConflictDoUpdate({ target: settings.key, set: { value: input.appearance as Appearance } }).run();
+          return { ok: true, value: readSettings() };
+        } catch { return { ok: false, error: storageError() }; }
+      }
       if (!isRecord(input) || input.type !== "settings.setLanguage" || !isLanguage(input.language)) {
         return { ok: false, error: invalidInput("Expected a supported language: en or ru.") };
       }
@@ -225,7 +241,7 @@ export function openSettingsService(
           .values({ key: "language", value: input.language })
           .onConflictDoUpdate({ target: settings.key, set: { value: input.language } })
           .run();
-        return { ok: true, value: { language: input.language } };
+        return { ok: true, value: readSettings() };
       } catch {
         return { ok: false, error: storageError() };
       }

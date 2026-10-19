@@ -1329,6 +1329,17 @@ jobs:
         run: npm run smoke:runtime -- dev --creation --discovery-mode=direct --checkpoint=after_evidence
         env:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-creation-dev-direct
+      - name: Desktop shell EN/RU themes, sidebar, settings and keyboard return
+        run: npm run smoke:shell
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-desktop-shell
+      - name: Preserve desktop shell evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-48-desktop-shell-${{ matrix.os }}-${{ github.sha }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
+          path: work/ci-desktop-shell
+          if-no-files-found: error
       - run: npm run test:platform
         env:
           OBSERVER_MATRIX: ${{ matrix.os }}

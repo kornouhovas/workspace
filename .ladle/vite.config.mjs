@@ -1,3 +1,3 @@
-// Let Ladle use its compatible React plugin and preview root instead of the
-// desktop renderer's Vite configuration.
-export default {};
+// Ladle owns its React plugin and preview root; share the desktop CSS compiler.
+import tailwindcss from "@tailwindcss/vite";
+export default { plugins: [tailwindcss()] };

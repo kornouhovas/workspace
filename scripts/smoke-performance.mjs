@@ -1,3 +1,4 @@
+import { setInterfaceLanguage } from "./runtime-settings.mjs";
 /* global window, document, requestAnimationFrame, DataTransfer */
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
@@ -228,7 +229,7 @@ try {
     assert.equal(refreshed.projects.find(row => row.projectId === p.projectId).relativePath, renamed);
     assert.equal(await readFile(join(source.root, renamed, "preserved.txt"), "utf8"), "Keep project contents.\n");
     assert.equal((await command("listTextProperties")).values.find(v => v.projectId === p.projectId && v.propertyId === source.properties[0].propertyId).value, "Accepted board");
-    await page.locator("#interface-language").selectOption("ru"); await page.setViewportSize({ width: 720, height: 900 });
+    await setInterfaceLanguage(page, "ru"); await page.setViewportSize({ width: 720, height: 900 });
     await page.waitForFunction(() => document.documentElement.lang === "ru");
     const last = source.projects.at(-1), lastRow = page.locator(`[data-project-id="${last.projectId}"]`);
     await lastRow.scrollIntoViewIfNeeded();

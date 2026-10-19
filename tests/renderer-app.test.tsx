@@ -12,7 +12,7 @@ import { Window } from "happy-dom";
 import type { BackendStatus, WorkspaceDesktopApi, WorkspaceRequest, WorkspaceResponse } from "../src/contracts/desktop-api.js";
 import type { ServiceResult, Settings } from "../src/contracts/settings.js";
 import type { ActiveWorkspace, WorkspaceLoad, WorkspaceChangeEvent } from "../src/contracts/workspaces.js";
-import { App } from "../src/renderer/App.js";
+
 import { translate } from "../src/renderer/localization.js";
 import { WorkspaceServiceClient } from "../src/renderer/workspace-service-client.js";
 import { TextPropertiesTable } from "../src/renderer/components/TextPropertiesTable.js";
@@ -24,15 +24,25 @@ import { nativeProjectFilesystem } from "../src/service/project-filesystem.js";
 import type { ProjectRenameResult } from "../src/contracts/project-rename.js";
 
 const browser = new Window({ url: "http://localhost" });
+// Match the browser hidden rule when user-event computes keyboard tab order.
+browser.document.head.innerHTML = "<style>[hidden] { display: none !important; }</style>";
 Object.assign(globalThis, {
   window: browser,
   document: browser.document,
   HTMLElement: browser.HTMLElement,
   Node: browser.Node,
   MutationObserver: browser.MutationObserver,
+  getComputedStyle: browser.getComputedStyle.bind(browser),
+  CustomEvent: browser.CustomEvent,
+  HTMLInputElement: browser.HTMLInputElement,
+  HTMLFormElement: browser.HTMLFormElement,
+  Event: browser.Event,
+  requestAnimationFrame: browser.requestAnimationFrame.bind(browser),
+  cancelAnimationFrame: browser.cancelAnimationFrame.bind(browser),
 });
 Object.defineProperty(globalThis, "navigator", { configurable: true, value: browser.navigator });
 
+const { App } = await import("../src/renderer/App.js");
 const { act, cleanup, render, screen, waitFor, within, fireEvent } = await import("@testing-library/react");
 const { default: userEvent } = await import("@testing-library/user-event");
 afterEach(() => cleanup());
@@ -42,7 +52,7 @@ const fail = <T,>(code: "invalid_input" | "filesystem" | "storage" | "service_un
   ok: false,
   error: { code, message: "private service detail" },
 });
-const settings = (language: "en" | "ru" = "en") => ok<Settings>({ language });
+const settings = (language: "en" | "ru" = "en") => ok<Settings>({ language, appearance: "system" });
 const makeActive = (workspaceId: string, name: string, root = "/Projects/Work") : ActiveWorkspace => ({
   workspaceId,
   sourceId: `source-${workspaceId}`,
@@ -111,7 +121,7 @@ function mockApi(options: MockOptions = {}) {
   const statusListeners = new Set<(status: BackendStatus) => void>();
   const onSettings = options.onSettings ?? (async (input) => input.type === "settings.load"
     ? options.settingsResult ?? settings(options.language ?? "en")
-    : settings(input.language));
+    : input.type === "settings.setLanguage" ? settings(input.language) : ok({ language: options.language ?? "en", appearance: input.appearance }));
   const onWorkspace = options.onWorkspace ?? (async (input) => input.type === "workspace.load"
     ? options.load ?? ok(emptyLoad())
     : fail("invalid_input"));
@@ -177,6 +187,15 @@ function mockApi(options: MockOptions = {}) {
   return { changeListenerCount: () => changeListeners.size, emitChange: (event: WorkspaceChangeEvent) => changeListeners.forEach((listener) => listener(event)), emitStatus: (nextState: BackendStatus["state"]) => statusListeners.forEach((listener) => listener({ state: nextState })) };
 }
 
+async function openSettings(section: "general" | "workspaces" = "general") {
+  const entry = screen.queryByRole("button", { name: /^(Settings|Настройки)$/ });
+  if (entry) await userEvent.click(entry);
+  await userEvent.click(await screen.findByRole("tab", { name: section === "general" ? /^(General|Основные)$/ : /^(Workspaces|Рабочие пространства)$/ }));
+}
+async function backToWorkspace() {
+  await userEvent.click(screen.getByRole("button", { name: /^(Back to workspace|Вернуться к работе)$/ }));
+}
+
 test("loads English settings and preserves the language only after a successful save", async () => {
   const calls: string[] = [];
   let finishSave: ((result: ServiceResult<Settings>) => void) | undefined;
@@ -187,10 +206,11 @@ test("loads English settings and preserves the language only after a successful 
   } });
 
   render(<App />);
+  await openSettings();
   const selector = await screen.findByRole("combobox", { name: "Interface language" });
   assert.equal((selector as HTMLSelectElement).value, "en");
   assert.equal(document.documentElement.lang, "en");
-  await userEvent.tab();
+  selector.focus();
   assert.equal(document.activeElement, selector);
   await userEvent.selectOptions(selector, "ru");
   assert.equal((selector as HTMLSelectElement).value, "en");
@@ -199,6 +219,7 @@ test("loads English settings and preserves the language only after a successful 
   await waitFor(() => assert.equal((selector as HTMLSelectElement).value, "ru"));
   assert.equal(document.documentElement.lang, "ru");
   assert.deepEqual(calls, ["settings.load", "settings.setLanguage"]);
+  await backToWorkspace();
   assert.ok(screen.getByRole("heading", { name: "Создать рабочее пространство" }));
   cleanup();
 });
@@ -484,6 +505,7 @@ test("renames through the typed client and applies the committed snapshot using 
     return fail("invalid_input");
   } });
   render(<App />);
+      await openSettings("workspaces");
   await userEvent.click(await screen.findByRole("button", { name: "Rename workspace" }));
   const input = screen.getByRole("textbox", { name: "Workspace name" });
   assert.equal(document.activeElement, input);
@@ -507,6 +529,7 @@ test("Russian rename supports cancel and blank validation without sending a comm
     return ok({ workspaces: [{ workspaceId: active.workspaceId, name: active.name }], activeWorkspace: active });
   } });
   render(<App />);
+      await openSettings("workspaces");
   await userEvent.click(await screen.findByRole("button", { name: "Переименовать рабочее пространство" }));
   const input = screen.getByRole("textbox", { name: "Название рабочего пространства" });
   await userEvent.clear(input);
@@ -540,6 +563,7 @@ test("pending and failed rename preserve the actual name and entered draft and a
     return fail("invalid_input");
   } });
   render(<App />);
+      await openSettings("workspaces");
   await userEvent.click(await screen.findByRole("button", { name: "Rename workspace" }));
   const input = screen.getByRole("textbox");
   await userEvent.clear(input);
@@ -571,6 +595,7 @@ test("rename reports unavailable transport and stale targets in both languages",
         return fail(failure);
       } });
       render(<App />);
+      await openSettings("workspaces");
       await userEvent.click(await screen.findByRole("button", { name: translate(language, "renameWorkspaceAction") }));
       const input = screen.getByRole("textbox");
       await userEvent.clear(input);
@@ -597,13 +622,14 @@ test("reorder is localized, keyboard operable and preserves focus and active wor
       return ok(data);
     } });
     render(<App />);
+      await openSettings("workspaces");
     const label = (key: "moveWorkspaceUp" | "moveWorkspaceDown", name: string) => `${translate(language, key)}: ${name}`;
     const up = await screen.findByRole("button", { name: label("moveWorkspaceUp", "Two") });
     assert.equal((screen.getByRole("button", { name: label("moveWorkspaceUp", "One") }) as HTMLButtonElement).disabled, true);
     assert.equal((screen.getByRole("button", { name: label("moveWorkspaceDown", "Three") }) as HTMLButtonElement).disabled, true);
     // Reach the reorder control using native tab navigation, then submit with Enter.
-    for (let step = 0; document.activeElement !== up && step < 15; step++) await userEvent.tab();
-    assert.equal(document.activeElement, up);
+    for (let step = 0; document.activeElement !== up && step < 30; step++) await userEvent.tab();
+    assert.ok(document.activeElement === up, `Expected reorder focus; got ${document.activeElement?.textContent?.slice(0, 100)}`);
     await userEvent.keyboard("{Enter}");
     await waitFor(() => assert.deepEqual(calls[0], { type: "workspace.reorder", workspaceIds: ["two", "one", "three"] }));
     const down = screen.getByRole("button", { name: label("moveWorkspaceDown", "Two") });
@@ -636,6 +662,7 @@ test("reorder disables conflicting controls while pending and failures preserve 
         return result;
       } });
       render(<App />);
+      await openSettings("workspaces");
       const up = await screen.findByRole("button", { name: `${translate(language, "moveWorkspaceUp")}: Two` });
       await userEvent.click(up);
       assert.equal((up as HTMLButtonElement).disabled, true);
@@ -647,7 +674,7 @@ test("reorder disables conflicting controls while pending and failures preserve 
       assert.ok(await screen.findByRole("heading", { name: translate(language, "reorderErrorTitle") }));
       assert.equal(screen.queryByText("private service detail"), null);
       assert.deepEqual(Array.from((screen.getByRole("combobox", { name: translate(language, "workspaceSelectLabel") }) as HTMLSelectElement).options).map((option) => option.value), ["one", "two"]);
-      assert.equal(document.activeElement, up);
+      assert.ok(document.activeElement === up, `Expected reorder focus; got ${document.activeElement?.textContent?.slice(0, 100)}`);
       assert.equal(calls, 1);
       cleanup();
     }
@@ -663,6 +690,7 @@ test("removal confirmation names the configuration, explains retention and resto
       return ok({ workspaces: [{ workspaceId: active.workspaceId, name: active.name }], activeWorkspace: active });
     } });
     render(<App />);
+      await openSettings("workspaces");
     const remove = await screen.findByRole("button", { name: `${translate(language, "removeWorkspaceAction")}: ${active.name.trim()}` });
     await userEvent.click(remove);
     assert.ok(screen.getByRole("form", { name: `${translate(language, "removeWorkspaceTitle")}: ${active.name.trim()}` }));
@@ -696,6 +724,7 @@ test("keyboard removal applies committed inactive, active and final snapshots an
       return ok(data);
     } });
     render(<App />);
+      await openSettings("workspaces");
     for (const target of [one, other, sibling]) {
       const remove = await screen.findByRole("button", { name: `${translate(language, "removeWorkspaceAction")}: ${target.name}` });
       remove.focus();
@@ -738,6 +767,7 @@ test("pending and failed removal retain selection, confirmation and list and per
         return result;
       } });
       render(<App />);
+      await openSettings("workspaces");
       await userEvent.click(await screen.findByRole("button", { name: `${translate(language, "removeWorkspaceAction")}: Actual` }));
       await userEvent.click(screen.getByRole("button", { name: translate(language, "confirmRemoveWorkspace") }));
       assert.equal((screen.getByRole("button", { name: translate(language, "removingWorkspace") }) as HTMLButtonElement).disabled, true);
@@ -933,11 +963,14 @@ test("long authored names and paths survive language changes and keyboard confir
   mockApi({ load: ok(snapshotOf(active, [active, sibling])) });
   render(<App />);
   for (const language of ["en", "ru"] as const) {
+    await openSettings();
     const languageSelect = await screen.findByRole("combobox", { name: /Interface language|Язык интерфейса/ });
     await userEvent.selectOptions(languageSelect, language);
     await waitFor(() => assert.equal(document.documentElement.lang, language));
+    await backToWorkspace();
     assert.equal(screen.getByRole("heading", { name: active.name.trim() }).textContent, active.name);
     assert.equal(screen.getByText(active.canonicalRoot, { exact: true }).textContent, active.canonicalRoot);
+    await openSettings("workspaces");
     const remove = screen.getByRole("button", { name: `${translate(language, "removeWorkspaceAction")}: ${active.name.trim()}` });
     remove.focus();
     await userEvent.keyboard("{Enter}");
@@ -3657,4 +3690,71 @@ for (const language of ["en", "ru"] as const) test(`${language}: production cate
     if (command.type !== "workspace.moveProjectCategory") throw new Error("Unexpected command");
     assert.deepEqual(statuses[0], { type: "workspace.getProjectCategoryMove", workspaceId, operationId: command.operationId });
   } finally { cleanup(); off?.(); service.close(); rmSync(directory, { recursive: true, force: true }); }
+});
+
+for (const language of ["en", "ru"] as const) test(`${language}: desktop settings remembers its section and returns keyboard focus to workspace`, async () => {
+  const active = makeActive("shell", "  Authored workspace  ");
+  mockApi({ language, load: ok(snapshotOf(active)), onProjects: async () => ok(projectList(active, ["Real project"])) });
+  render(<App />);
+  await screen.findByRole("cell", { name: "Real project" });
+  const settingsButton = screen.getByRole("button", { name: language === "en" ? "Settings" : "Настройки" });
+  settingsButton.focus(); await userEvent.keyboard("{Enter}");
+  const appearance = await screen.findByRole("tab", { name: language === "en" ? "Appearance" : "Оформление" });
+  await userEvent.click(appearance);
+  await screen.findByRole("radiogroup", { name: language === "en" ? "Color theme" : "Цветовая тема" });
+  const back = screen.getByRole("button", { name: language === "en" ? "Back to workspace" : "Вернуться к работе" });
+  back.focus(); await userEvent.keyboard("{Enter}");
+  assert.equal(document.activeElement, settingsButton);
+  assert.ok(screen.getByRole("cell", { name: "Real project" }));
+  await userEvent.click(settingsButton);
+  assert.equal(appearance.getAttribute("aria-selected"), "true");
+  cleanup(); render(<App />);
+  await screen.findByRole("cell", { name: "Real project" });
+  assert.equal(screen.queryByRole("tab", { name: language === "en" ? "Appearance" : "Оформление" }), null);
+});
+
+test("appearance keeps the accepted theme while saving, reports failure and permits explicit retry", async () => {
+  let finish: ((result: ServiceResult<Settings>) => void) | undefined;
+  let requests = 0;
+  mockApi({ onSettings: async input => {
+    if (input.type === "settings.load") return settings();
+    requests++;
+    if (requests === 1) return new Promise(resolve => { finish = resolve; });
+    return ok({ language: "en", appearance: "dark" });
+  } });
+  render(<App />); await openSettings();
+  await userEvent.click(screen.getByRole("tab", { name: "Appearance" }));
+  const dark = await screen.findByRole("radio", { name: "Dark" });
+  await userEvent.click(dark);
+  assert.equal(document.documentElement.dataset.theme, "light");
+  assert.equal((dark as HTMLButtonElement).disabled, true);
+  await act(async () => finish?.(fail("storage")));
+  await screen.findByRole("heading", { name: translate("en", "saveErrorTitle") });
+  assert.equal(dark.getAttribute("aria-checked"), "false");
+  await userEvent.click(dark);
+  await waitFor(() => assert.equal(document.documentElement.dataset.theme, "dark"));
+  assert.equal(dark.getAttribute("aria-checked"), "true");
+  assert.equal(requests, 2);
+});
+
+test("settings remains reachable through startup, read failure and backend disconnection without replay", async () => {
+  let reads = 0;
+  const api = mockApi({ settingsResult: fail("storage"), onWorkspace: async input => {
+    reads++; assert.equal(input.type, "workspace.load"); return ok(emptyLoad());
+  } });
+  render(<App />);
+  await screen.findByRole("heading", { name: translate("en", "loadErrorTitle") });
+  await openSettings();
+  assert.ok(screen.getByRole("heading", { name: "Settings will be available when the backend reconnects." }));
+  await backToWorkspace();
+  await userEvent.click(screen.getByRole("button", { name: "Retry" }));
+  await screen.findByRole("heading", { name: translate("en", "loadErrorTitle") });
+  assert.equal(reads, 2);
+  await act(async () => api.emitStatus("unavailable"));
+  await openSettings();
+  await userEvent.click(screen.getByRole("tab", { name: "About" }));
+  assert.ok(screen.getByRole("heading", { name: "Workspace" }));
+  await backToWorkspace();
+  await screen.findByRole("heading", { name: translate("en", "unavailableTitle") });
+  assert.equal(reads, 2);
 });
