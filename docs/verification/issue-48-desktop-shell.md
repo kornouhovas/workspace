@@ -578,3 +578,35 @@ dependent original journeys. No application, helper, deadline or acceptance
 assertion changed. Both review axes accepted this setup repair; all 87 local
 affected tests passed with the prerequisite. Lint/docs/diff checks passed.
 Renewed exact-SHA focused acceptance remains required before full CI.
+
+## Views startup before backend metrics
+
+The retained full `39330579764` completed with Windows latest entirely passing,
+including all development/packaged routes. Its downloaded original reports were
+inspected at exact `f8339dea`; macOS and Windows 2022 failures remain above.
+Focused `39335025656` on `8db78c42` then passed all 87 regressions on all three
+hosts, confirming that the serial installation prerequisite allowed the native
+test to execute. macOS and Windows 2022 completed all three original journeys.
+Windows latest's first original journey passed; the second stopped at restart,
+before its next scenario, on the immediate nonempty backend-PID assertion.
+Its downloaded evidence retains three completed check blocks and conservatively
+skips fixture deletion because ownership of that new launch was unverified.
+
+The views driver previously queried metrics immediately after `firstWindow`,
+before its readiness wait. That subsequent async `waitForFunction` predicate
+also had the already-reproduced truthy-Promise problem. It now reuses the existing
+`waitForRuntimeInterface` boundary before reading metrics, recording only its
+finite sanitized startup outcome. Nonempty backend PIDs are still mandatory,
+ownership is verified only afterward, terminal backend failure is fatal, and
+unverified termination still prevents fixture cleanup. No application behavior,
+deadline or cleanup requirement changed.
+
+Existing startup/readiness regressions cover pending mount, terminal failure,
+readiness before metrics and rejection of empty ownership; they are included in
+the focused route rather than duplicating the script's implementation in a test.
+All 115 affected local tests passed, as did the complete original local views
+journey: six report blocks, three ready startup receipts, ordinary quits/backend
+exits and cleanup. Both review axes accepted the repair and narrowing of the
+focused matrix to Windows latest, the only remaining failed original command.
+Other focused/default/full matrices remain unchanged. All 45 routing checks,
+lint/docs/diff passed. Final matching focused/full acceptance remains in GitHub.

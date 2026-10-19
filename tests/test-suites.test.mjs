@@ -961,7 +961,7 @@ test('shell runtime failure selector replays only the affected original commands
 });
 
 
-test('views readiness isolates the original failed macOS and Windows lifecycles', () => {
+test('views readiness isolates the remaining Windows latest startup failure', () => {
   const workflow = load(readFileSync('.github/workflows/desktop-ci.yml', 'utf8'));
   for (const event of ['push', 'pull_request', 'workflow_dispatch']) {
     const active = Object.entries(workflow.jobs).filter(([,job]) => job.if && runInNewContext(job.if.slice(3,-2), {github:{event_name:event}, inputs:{checks:'views-readiness'}})).map(([name]) => name);
@@ -970,7 +970,7 @@ test('views readiness isolates the original failed macOS and Windows lifecycles'
   const job = workflow.jobs['focused-views-readiness'];
   assert.ok(job.steps.find(step => step.id === 'build').run.includes('node -e "require(\'electron\')"'));
   assert.equal(job['runs-on'], '${{ matrix.os }}');
-  assert.deepEqual(job.strategy.matrix.os, ['macos-latest', 'windows-latest', 'windows-2022']);
+  assert.deepEqual(job.strategy.matrix.os, ['windows-latest']);
   assert.equal(job.strategy['fail-fast'], false);
   assert.ok(job.steps.every(step => step['continue-on-error'] === undefined));
   const original = job.steps.find(step => step.name === 'Original development views');

@@ -226,7 +226,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-latest, windows-latest, windows-2022]
+        os: [windows-latest]
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
@@ -249,7 +249,7 @@ jobs:
         shell: bash
         run: |
           set -o pipefail
-          node --import tsx --test tests/runtime-group-drag.test.mjs tests/runtime-project-visibility.test.mjs tests/group-assignment-ui.test.tsx tests/viewport-projects-ui.test.tsx tests/test-suites.test.mjs 2>&1 | tee work/ci-views-readiness/regressions.log
+          node --import tsx --test tests/runtime-readiness.test.mjs tests/rename-runtime-startup.test.mjs tests/runtime-group-drag.test.mjs tests/runtime-project-visibility.test.mjs tests/group-assignment-ui.test.tsx tests/viewport-projects-ui.test.tsx tests/test-suites.test.mjs 2>&1 | tee work/ci-views-readiness/regressions.log
       - name: Original development views
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         shell: bash

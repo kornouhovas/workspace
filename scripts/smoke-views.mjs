@@ -15,6 +15,7 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { _electron } from "playwright-core";
 import { closeElectron, cleanupOwnedFixture, ownedProcessesStopped } from "./runtime-lifecycle.mjs";
+import { waitForRuntimeInterface } from "./runtime-startup.mjs";
 import { packagedExecutablePath } from "./runtime-executable.mjs";
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const mode = process.argv[2] ?? "dev";
@@ -24,7 +25,7 @@ const fixture = await realpath(await mkdtemp(join(tmpdir(), "views-runtime-")));
 const dataDirectory = join(fixture, "app-data");
 const evidenceDirectory = resolve(process.env.WORKSPACE_SMOKE_EVIDENCE_DIR ?? "work/issue-27-views-runtime");
 await mkdir(evidenceDirectory, { recursive: true });
-const evidence = { issue: 27, mode, platform: process.platform, sha: process.env.GITHUB_SHA ?? null, checks: [], shutdowns: [], cleanup: null, status: "running" };
+const evidence = { issue: 27, mode, platform: process.platform, sha: process.env.GITHUB_SHA ?? null, checks: [], startups: [], shutdowns: [], cleanup: null, status: "running" };
 const children = new Set(), backendPids = new Set();
 let session, failure, launchUnverified = false;
 const quitEvents = new WeakMap();
@@ -50,9 +51,9 @@ async function launch() {
     for (const event of ["before-quit", "will-quit", "quit", "window-all-closed"]) app.on(event, () => process.stdout.write(`[views-quit:${event}]\n`));
   });
   const page = await app.firstWindow(); page.setDefaultTimeout(15000);
+  await waitForRuntimeInterface(page, async outcome => { evidence.startups.push(outcome); });
   const pids = await app.evaluate(({ app }) => app.getAppMetrics().filter(m => m.type === "Utility" && m.serviceName?.includes("Node")).map(m => m.pid));
   assert.ok(pids.length > 0); for (const pid of pids) backendPids.add(pid);
-  await page.waitForFunction(async () => (await window.workspace.getBackendStatus()).state === "ready");
   launchUnverified = false;
   return { app, page };
 }
