@@ -14,6 +14,10 @@ User-facing changes are maintained in English. The first target release is 0.1.0
 
 ### Added
 
+- Open saved workspaces in a viewport-bound desktop shell with an independently
+  scrolling sidebar, categorized settings, keyboard return to work, and persisted
+  English/Russian and Light/Dark/System appearance preferences.
+
 - Review and delete custom properties or clear/reassign ordinary Select options across source workspaces, with atomic cleanup of saved Table/Board filters, grouping and presentation references.
 
 - Rename project folders by dragging between Name groups, or move them between folder-backed category groups in Board and Table, preserving identity and metadata with safe conflict handling and existing recovery.

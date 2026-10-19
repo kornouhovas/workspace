@@ -479,6 +479,7 @@ export function App() {
   const unavailableSettings = <StatusMessage kind="info" title={shellLabels[language].unavailable} />;
   return (
     <DesktopShell language={language} data={workspaceData} busy={viewState !== "ready" || busy !== null || renameDraft !== null || removalTarget !== null} locked={dataLocked}
+      onEmptyWorkspaceShown={() => createNameInput.current?.focus()}
       onActivate={(id) => { setAddingWorkspace(false); void activateWorkspace(id); }}
       renderPanels={(back) => ({
         general: settingsAvailable ? <>          <section className="workspace-settings" aria-labelledby="settings-title">

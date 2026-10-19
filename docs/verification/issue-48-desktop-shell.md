@@ -145,3 +145,42 @@ acceptance. Targeted keyboard tests passed 3/3 after the HappyDOM fixture applie
 the production visibility rule, and CI route tests passed 43/43. Typecheck, lint
 and documentation checks passed. Remote verification must still establish both
 original shell shutdown and the Windows creation-layout failure receipt.
+
+
+## Native scroll repair and final-workspace focus
+
+On `8b94693`, the original remote macOS native shell passed all eight journeys,
+exact scroll return, normal shutdown and cleanup. Its renderer regression exposed
+a final-workspace deletion focus transition; the original DOM-node assertion then
+exhausted the test process while formatting the mismatch. Compact identity
+assertions preserve that requirement without dumping the React DOM. The shell
+notifies App after the empty workspace is shown and idle; App owns focusing its
+creation field. The test awaits that actual asynchronous transition.
+
+All 96 renderer tests passed locally after the focus repair; the targeted removal/
+EN/RU return group passed 3/3, and routing tests passed 43/43. The rebuilt native
+shell passed its original journeys, normal shutdown/restart/cleanup and the added
+real final-workspace removal/focus scenario. Both review axes accepted the repair.
+
+The Windows 2022 focused receipt identified the wrapping failure precisely: its
+204-character authored name fit a 1412-pixel line under the new 13px typography,
+without overflow. The same story failed on Windows latest in the original full
+run. Presentation fixtures now use 238/239-character names (250/245 UTF-8 bytes),
+retaining realizable basenames and forcing the long-name stimulus at wide sizes.
+No wrapping, containment, native shutdown or data-preservation assertion was
+removed. Both affected Windows runners now replay original creation/recovery
+layouts in the focused route. Renewed exact-SHA remote acceptance remains pending.
+
+
+Final-candidate local checks: application and Ladle builds passed; the repaired
+creation-blocked story passed all three layouts and its wide screenshot was
+inspected. Typecheck, lint, links and diff checks passed. The completed candidate's
+full `test:all` ran 3145 tests: 3118 passed, 26 platform skips, one failed. The
+unchanged Russian Number property-editor fixture completed keyboard activation,
+then hit the previously recorded native ten-second shutdown failure; its finite
+receipt observed before-quit/will-quit/quit/Node-exit before parent termination.
+The original failure is retained in `/tmp/issue48-final-candidate-all.log`; it is
+not counted as a successful full local run. No shutdown deadline or behavior was
+changed. Exact-SHA remote full acceptance is still required after focused repair
+verification. No repeated broad local run is scheduled for this unchanged native
+failure.

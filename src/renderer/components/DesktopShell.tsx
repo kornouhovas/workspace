@@ -25,9 +25,9 @@ export function AppearanceControl({ language, value, disabled, onChange }: { lan
   </RadioGroup.Root>;
 }
 
-export function DesktopShell({ language, data, busy, locked, onActivate, renderPanels, children }: {
+export function DesktopShell({ language, data, busy, locked, onActivate, onEmptyWorkspaceShown, renderPanels, children }: {
   language: Language; data: WorkspaceLoad | null; busy: boolean; locked: boolean;
-  onActivate(id: string): void; renderPanels(back: () => void): Record<Section, ReactNode>; children: ReactNode;
+  onActivate(id: string): void; onEmptyWorkspaceShown?(): void; renderPanels(back: () => void): Record<Section, ReactNode>; children: ReactNode;
 }) {
   const l = shellLabels[language];
   const [sourceHost, setSourceHost] = useState<HTMLDivElement | null>(null);
@@ -37,12 +37,16 @@ export function DesktopShell({ language, data, busy, locked, onActivate, renderP
   const backButton = useRef<HTMLButtonElement>(null);
   const previousFocus = useRef<HTMLElement | null>(null);
   const changedPage = useRef(false);
+  const returningToEmpty = useRef(false);
   useEffect(() => {
-    if (!changedPage.current) return;
+    if (!changedPage.current || (!open && returningToEmpty.current && busy)) return;
     changedPage.current = false;
     if (open) backButton.current?.focus();
-    else (previousFocus.current?.isConnected ? previousFocus.current : settingsButton.current)?.focus({ preventScroll: true });
-  }, [open]);
+    else if (returningToEmpty.current && onEmptyWorkspaceShown) {
+      returningToEmpty.current = false;
+      onEmptyWorkspaceShown();
+    } else (previousFocus.current?.isConnected ? previousFocus.current : settingsButton.current)?.focus({ preventScroll: true });
+  }, [open, busy, onEmptyWorkspaceShown]);
   const enter = () => {
     previousFocus.current = document.activeElement instanceof HTMLElement ? document.activeElement : settingsButton.current;
     changedPage.current = true; setOpen(true);
@@ -50,7 +54,10 @@ export function DesktopShell({ language, data, busy, locked, onActivate, renderP
   const back = () => { changedPage.current = true; setOpen(false); };
   const previousCount = useRef(data?.workspaces.length ?? 0);
   useEffect(() => {
-    if (previousCount.current > 0 && data?.workspaces.length === 0 && open && section === "workspaces") back();
+    if (previousCount.current > 0 && data?.workspaces.length === 0 && open && section === "workspaces") {
+      returningToEmpty.current = true;
+      back();
+    }
     previousCount.current = data?.workspaces.length ?? 0;
   }, [data, open, section]);
   const panels = renderPanels(back);

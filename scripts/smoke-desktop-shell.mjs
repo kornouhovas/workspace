@@ -130,6 +130,21 @@ try {
   const settings = unwrap(await page.evaluate(() => window.workspace.settings({ type: "settings.load" })));
   assert.deepEqual(settings, { language:"ru", appearance:"system" });
   checks.push({ sidebarSwitchAndSavedView:true, systemThemeChanges:true, restartPreferencesAndWorkspace:true });
+  const workspaceList = await query({ type: "workspace.load" });
+  for (const workspace of workspaceList.workspaces) {
+    if (workspace.workspaceId !== first.workspaceId) await query({ type: "workspace.remove", workspaceId:workspace.workspaceId });
+  }
+  await page.reload();
+  await page.getByRole("heading", { name: "Рабочие проекты", exact: true }).waitFor();
+  await openSettingsSection(page, "workspaces");
+  await page.getByRole("button", { name: /^(Remove workspace|Удалить рабочее пространство):/ }).click();
+  const confirmRemoval = page.getByRole("button", { name: /^(Remove configuration|Удалить конфигурацию)$/ });
+  await confirmRemoval.focus(); await confirmRemoval.press("Enter");
+  const createName = page.getByRole("textbox", { name: /^(Workspace name|Название рабочего пространства)$/ });
+  await createName.waitFor();
+  await page.waitForFunction(() => document.activeElement?.matches(".workspace-create input"));
+  assert.equal(await createName.evaluate(el => el === document.activeElement), true);
+  checks.push({ lastWorkspaceRemovalFocus:true });
 } catch (error) { failed = error;
   if (page) { await page.screenshot({ path: join(evidence, "failure.png") }).catch(() => {});
     console.log(await page.evaluate(() => ({ focus:document.activeElement?.textContent?.slice(0,80), selected:document.querySelector('[role="tab"][aria-selected="true"]')?.textContent })).catch(() => ({}))); }

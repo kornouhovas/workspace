@@ -403,8 +403,8 @@ export const CategoryNewerRussian: Story = () => <CategoryPreview language="ru" 
 // Presentation states exercise production recovery and retained Text components.
 // Selection, cancellation and saving are explicit fixture actions, never timers.
 type RecoveryStoryState = "retained" | "loading" | "empty" | "selection" | "grouped" | "conflict" | "stale" | "failure" | "pending" | "saved";
-const recoveryName = "  Authored-日本語-проект-" + "long-name-".repeat(18) + "  ";
-const recoveryTarget = "Target-日本語-" + "long-target-".repeat(18);
+const recoveryName = "  Authored-日本語-проект-" + "long-name-".repeat(21) + "tail  ";
+const recoveryTarget = "Target-日本語-" + "long-target-".repeat(19);
 function RecoveryPreview({ language, state }: { language: Language; state: RecoveryStoryState }) {
   const grouped = state === "grouped" || state === "conflict";
   const path = grouped ? `${longCategory}/${recoveryTarget}` : recoveryTarget;

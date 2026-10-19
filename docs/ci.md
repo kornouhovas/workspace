@@ -30,7 +30,7 @@ does not stand in for Windows 11 desktop acceptance. Installer downloads are not
 uploaded. See [Windows installation](windows-install.md).
 
 The issue #48 `desktop-shell` focused route also replays the original Windows
-2022 creation/recovery Ladle layouts after the corresponding full-run failure.
+creation/recovery Ladle layouts after the corresponding full-run failure.
 Its original assertions and exact-SHA artifact remain required; the broader
 ordinary platform matrix is unchanged.
 

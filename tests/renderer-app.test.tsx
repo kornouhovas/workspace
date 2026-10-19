@@ -738,10 +738,10 @@ test("keyboard removal applies committed inactive, active and final snapshots an
       if (data.activeWorkspace) {
         assert.equal(document.querySelector("#workspace-title")?.textContent, data.activeWorkspace.name);
         assert.equal((screen.getByRole("combobox", { name: translate(language, "workspaceSelectLabel") }) as HTMLSelectElement).value, data.activeWorkspace.workspaceId);
-        assert.equal(document.activeElement, screen.getByRole("button", { name: `${translate(language, "removeWorkspaceAction")}: Sibling` }));
+        assert.ok(document.activeElement === screen.getByRole("button", { name: `${translate(language, "removeWorkspaceAction")}: Sibling` }), `Expected sibling removal focus; got ${document.activeElement?.textContent?.slice(0, 80)}`);
       } else {
         assert.ok(screen.getByRole("heading", { name: translate(language, "createWorkspaceTitle") }));
-        assert.equal(document.activeElement, screen.getByRole("textbox", { name: translate(language, "workspaceNameLabel") }));
+        await waitFor(() => assert.ok(document.activeElement === screen.getByRole("textbox", { name: translate(language, "workspaceNameLabel") }), `Expected workspace-name focus; got ${document.activeElement?.textContent?.slice(0, 80)}`));
         assert.equal(screen.queryByRole("combobox", { name: translate(language, "workspaceSelectLabel") }), null);
       }
     }
