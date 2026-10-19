@@ -73,6 +73,25 @@ checks. The latest focused service run passed 356 cases; the EN/RU Table/Board
 filter and viewport run passed 11 cases. Typecheck, lint and documentation links
 also passed before review. Final candidate evidence remains pending.
 
+## Independent review
+
+Two read-only Matt Pocock review agents examined `d925f8b7...46e3dfe4` separately.
+Standards reported no confirmed hard violation and two advisory duplication
+findings: lazy editor lifecycle state and source/project validation. The stored
+route's discovery-revision validity check was aligned with the original path;
+the distinct editor implementations remain explicit to preserve their existing
+draft/save semantics. Spec reported one P2: identity skeletons alone did not prove
+visible fields usable. The harness now requires actual controls on every visible
+row/card, all outer/inner busy states clear, and rechecks after layout before the
+final paint. The same reviewer inspected that repair and confirmed it addressed
+the finding. Review did not substitute for runtime or platform acceptance.
+
+The completed reviewed candidate passed `npm run test:all` on Node 22.21.1/macOS:
+3,100 passed, zero failed, 26 explicit platform skips (3,126 total). The fresh
+build, typecheck, lint and 22 focused filter/viewport/IPC regressions also passed.
+Platform-specific skips require their real-platform CI routes. Final packaged
+comparison, exact-SHA CI and integration remain governed by the GitHub checkpoint.
+
 The retained reports/screens are under ignored `work/issue-41-performance/` in
 the task checkout. Earlier failures are not replaced by later successes. Final
 before/after comparison requires the same final harness on baseline and candidate

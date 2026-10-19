@@ -57,6 +57,7 @@ export function createViewFilterService(db: Database, model: ReadModel) {
           // complete current non-archived membership of this source.
           if (input.projection && input.projection.revision !== source.discoveryRevision) return invalid();
           if (!validExclusions(JSON.parse(source.excludedRelativePaths), "grouped") || !validArchive(source.archiveRelativePath) ||
+            !Number.isSafeInteger(source.discoveryRevision) || source.discoveryRevision < 0 ||
             !Number.isSafeInteger(source.categoryPropertyRevision) || source.categoryPropertyRevision < 0 ||
             ![null, "direct", "grouped"].includes(source.discoveryMode) || source.discoveryMode === "grouped" && !category) return storage();
           if (source.appliedRootIdentity !== null) JSON.parse(source.appliedRootIdentity);

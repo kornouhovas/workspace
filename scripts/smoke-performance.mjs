@@ -47,14 +47,24 @@ async function recordUi(source, scenario, limit = report.limits.interaction) {
   console.log(`${source} ${scenario}: ${ms.toFixed(1)} ms (limit ${limit})`);
 }
 async function painted() { await page.evaluate(() => new Promise(done => requestAnimationFrame(() => requestAnimationFrame(done)))); }
-async function ready(ids) {
-  await page.waitForFunction(ids => {
+function usableProjection(ids) {
     const content = document.querySelector(".text-properties");
     if (!content || content.getAttribute("aria-busy") !== "false") return false;
     if (document.querySelector('[aria-busy="true"]')) return false;
     const rows = [...content.querySelectorAll("[data-project-id]")].map(row => row.getAttribute("data-project-id"));
+    for (const row of content.querySelectorAll("[data-project-id]")) {
+      const rect = row.getBoundingClientRect();
+      if (rect.top >= window.innerHeight || rect.bottom <= 0 || rect.left >= window.innerWidth || rect.right <= 0) continue;
+      if (row.getAttribute("data-fields-ready") === "false" || !row.querySelector("button, input, textarea, select")) return false;
+    }
     return ids ? rows.length === ids.length && rows.every((id, index) => id === ids[index]) : rows.length > 0;
-  }, ids);
+}
+async function ready(ids) {
+  await page.waitForFunction(usableProjection, ids);
+  await painted();
+  // Field mounting can change row geometry and reveal another row. Recheck the
+  // visible controls after layout; offscreen identity skeletons remain allowed.
+  await page.waitForFunction(usableProjection, ids);
   await painted();
 }
 async function memory(scenario) {
@@ -72,6 +82,7 @@ async function launch(data, executable, expected, mode) {
   const started = performance.now();
   app = await _electron.launch({ executablePath: executable, cwd: fixture,
     env: { ...process.env, WORKSPACE_USER_DATA_DIR: data }, timeout: 30000 });
+  const connectedMs = performance.now() - started;
   parents.add(app.process());
   const events = []; (report.lifecycle ??= []).push({ source: mode, events });
   app.process().once("exit", (code, signal) => events.push({ event: "parent-exit", code, signal }));
@@ -84,6 +95,7 @@ async function launch(data, executable, expected, mode) {
     process.on("exit", () => process.stdout.write("[performance-quit:node-exit]\n"));
   });
   page = await app.firstWindow(); page.setDefaultTimeout(30000);
+  const firstWindowMs = performance.now() - started;
   const runtime = await app.evaluate(({ app, BrowserWindow }) => ({ packaged: app.isPackaged,
     isolation: (() => { const p = BrowserWindow.getAllWindows()[0].webContents.getLastWebPreferences(); return [p.contextIsolation, p.nodeIntegration, p.sandbox]; })(),
     backends: app.getAppMetrics().filter(m => m.type === "Utility" && m.serviceName?.includes("Node")).map(m => m.pid) }));
@@ -91,6 +103,7 @@ async function launch(data, executable, expected, mode) {
   assert.equal(runtime.packaged, true); assert.deepEqual(runtime.isolation, [true, false, true]); assert.ok(runtime.backends.length);
   launchUnverified = false;
   await ready(expected); record(mode, "saved-view startup", started, report.limits.startup);
+  (report.startupPhases ??= []).push({ source: mode, connectedMs, firstWindowMs, usableMs: performance.now() - started });
   await memory(`${mode} startup`);
 }
 async function stop() {

@@ -24,6 +24,7 @@ jobs:
           node-version: 22.21.1
           cache: npm
       - run: npm ci
+        id: candidate-dependencies
       - uses: actions/checkout@v4
         with:
           ref: d925f8b758caea6dc079061d42be1d132dcbc8a1
@@ -45,10 +46,13 @@ jobs:
         env:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-performance/baseline
       - name: Package candidate
+        id: candidate-package
+        if: ${{ !cancelled() && steps.candidate-dependencies.outcome == 'success' }}
         shell: bash
         run: |
           if [[ "$RUNNER_OS" == "macOS" ]]; then npm run package:dev:mac; else npm run package:dev:win; fi
       - name: Require candidate correctness and approved targets
+        if: ${{ !cancelled() && steps.candidate-package.outcome == 'success' }}
         shell: bash
         run: |
           set -o pipefail
