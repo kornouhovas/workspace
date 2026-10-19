@@ -50,8 +50,10 @@ CI retains reports and screenshots, not downloadable installer artifacts.
    are required. A protected folder is unsuitable for this installer.
 3. Launch **Workspace** from the Start menu. To identify the installed version,
    right-click the installed **Workspace.exe**, open **Properties → Details**
-   and read **Product version** (`0.1.0`) and **File version** (`0.1.0.0`). These
-   are standard Windows, keyboard-accessible, system-localized surfaces.
+   and read **Product version** and **File version**. The canonical `0.1.0`
+   can appear as `0.1.0.0` in four-part Windows version metadata; only a zero
+   fourth component is equivalent. These are standard Windows,
+   keyboard-accessible, system-localized surfaces.
 4. Select your language in Settings, create a workspace over a disposable folder,
    quit the app and relaunch it. Confirm the workspace, source, selected view and
    language remain. Use a path containing spaces and non-ASCII characters when

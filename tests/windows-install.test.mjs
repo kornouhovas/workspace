@@ -18,3 +18,16 @@ test("Windows application keeps version resources while explicitly disabling sig
   assert.equal(manifest.build.win.signExecutable, false);
   assert.equal(manifest.build.win.forceCodeSigning, false);
 });
+
+test("installed Windows version metadata accepts the builder's canonical three/four-part representation", async () => {
+  const { checkWindowsVersion } = await import("../scripts/check-windows-version.mjs");
+  checkWindowsVersion({ product: "0.1.0.0", file: "0.1.0", name: "Workspace", signature: "NotSigned" }, "0.1.0");
+});
+
+
+for (const [key, value] of [["product", "0.0.9"], ["file", "0.1.0.1"], ["file", "44.7.0"], ["signature", "Valid"], ["name", "Electron"]]) {
+  test(`installed Windows metadata rejects mismatched ${key}: ${value}`, async () => {
+    const { checkWindowsVersion } = await import("../scripts/check-windows-version.mjs");
+    assert.throws(() => checkWindowsVersion({ product: "0.1.0.0", file: "0.1.0", name: "Workspace", signature: "NotSigned", [key]: value }, "0.1.0"));
+  });
+}

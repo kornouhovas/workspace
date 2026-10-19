@@ -9,6 +9,7 @@ import { fileURLToPath } from "node:url";
 import { _electron } from "playwright-core";
 import { createInstalledWorkspace } from "./workspace-install-driver.mjs";
 import { checkArtifact } from "./check-artifact.mjs";
+import { checkWindowsVersion } from "./check-windows-version.mjs";
 import { cleanupOwnedFixture, closeElectron, ownedProcessesStopped, withDeadline } from "./runtime-lifecycle.mjs";
 
 assert.equal(process.platform, "win32", "Installation acceptance requires actual Windows");
@@ -51,10 +52,7 @@ async function install() {
   const metadata = JSON.parse((await exec("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command",
     '$f=Get-Item -LiteralPath $env:WORKSPACE_INSTALLED_EXE; $s=Get-AuthenticodeSignature -LiteralPath $f.FullName; @{product=$f.VersionInfo.ProductVersion;file=$f.VersionInfo.FileVersion;name=$f.VersionInfo.ProductName;signature=[string]$s.Status} | ConvertTo-Json -Compress'],
   { env: { ...process.env, WORKSPACE_INSTALLED_EXE: executable }, timeout: 30000 })).stdout);
-  assert.equal(metadata.product, version);
-  assert.equal(metadata.file, `${version}.0`);
-  assert.equal(metadata.name, "Workspace");
-  assert.equal(metadata.signature, "NotSigned", "No validated signing identity is claimed");
+  checkWindowsVersion(metadata, version);
   report.executable = metadata;
   for (const name of ["LICENSE.electron.txt", "LICENSES.chromium.html"]) await stat(join(installed, name));
   for (const name of ["THIRD_PARTY_NOTICES.txt", "Drizzle-Apache-2.0.txt"]) {

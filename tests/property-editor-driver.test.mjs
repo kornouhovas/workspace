@@ -131,8 +131,13 @@ test("creation input readiness observes delayed app-owned focus without taking i
 test("installed workspace keyboard creation waits for the asynchronous folder selection", async () => {
   const { createInstalledWorkspace } = await import("../scripts/workspace-install-driver.mjs");
   await withPage(async page => {
-    page.setDefaultTimeout(1000);
-    await page.setContent('<label>Workspace name<input></label><button id="pick">Choose project folder</button><p id="root"></p><button id="create" disabled>Create workspace</button><div id="result"></div>');
+    // Controlled initial resource load keeps fixture preparation separate from
+    // the driver's unchanged one-second keyboard/enablement deadline.
+    await page.route("https://workspace-fixture.invalid/prepare", async route => {
+      await new Promise(done => setTimeout(done, 1200));
+      await route.fulfill({ status: 200, contentType: "text/plain", body: "prepared" });
+    });
+    await page.setContent('<img src="https://workspace-fixture.invalid/prepare" alt=""><label>Workspace name<input></label><button id="pick">Choose project folder</button><p id="root"></p><button id="create" disabled>Create workspace</button><div id="result"></div>');
     await page.evaluate(() => {
       const pick = globalThis.document.querySelector("#pick"), create = globalThis.document.querySelector("#create");
       globalThis.installFixtureCreates = 0;
@@ -147,6 +152,7 @@ test("installed workspace keyboard creation waits for the asynchronous folder se
         globalThis.document.querySelector("#result").innerHTML = '<h2>Installed workspace</h2>';
       });
     });
+    page.setDefaultTimeout(1000);
     await createInstalledWorkspace(page, { name: "Installed workspace", source: "/selected-source" });
     assert.equal(await page.evaluate(() => globalThis.installFixtureCreates), 1);
   });
