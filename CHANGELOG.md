@@ -4,8 +4,8 @@ User-facing changes are maintained in English. The first target release is 0.1.0
 
 ## Unreleased
 
-- Add unsigned per-user Windows x64 NSIS packaging and installation/recovery
-  guidance; Windows 11 target acceptance remains pending actual desktop evidence.
+- Add unsigned per-user Windows x64 NSIS packaging, installed-app restart and
+  data-preservation checks, and installation/recovery guidance.
 
 - Add a local macOS 14+ Apple Silicon DMG installation route, installed-app reopen/replacement checks and installation guidance. No release download is published.
 

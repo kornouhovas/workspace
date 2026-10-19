@@ -13,7 +13,7 @@ that control passes. Package version remains `0.1.0`. The existing runtime is
 unchanged; backend/database stay bundled and renderer isolation is preserved.
 No Windows installation is claimed from a macOS source/configuration check.
 
-## Acceptance gates
+## Initial acceptance gates
 
 The candidate adds a Windows hosted-runner route for actual silent NSIS install,
 installed executable version/architecture/signature/notices, Unicode/space paths,
@@ -25,8 +25,8 @@ published. Inherited three-platform desktop acceptance remains required.
 The owner has no available Windows 11 machine/VM. Windows Server runner results
 must remain distinct from Windows 11 desktop evidence. Windows 11 installation,
 manual native folder picker and unsigned-installer reputation/policy behavior
-are not established by the automated route. Issue acceptance and integration
-remain gated on required target-platform evidence; no release is claimed.
+are not established by the automated route. At that checkpoint, issue acceptance and integration
+remained gated on required target-platform evidence; no release was claimed.
 
 ## Reviewed candidate local verification
 
@@ -110,12 +110,17 @@ Its Markdown links and whitespace checks are separate from those platform runs.
 The first failed Windows run and the seven-failure renewed local full result
 remain recorded above; successful CI does not rewrite those observations.
 
-## Remaining target acceptance
+## Owner acceptance and delivery
 
-**Issue 40 remains open and the task branch remains unintegrated.** The owner
-selected Windows 11 x64 and confirmed that no target machine/VM is available.
-Windows Server installation is observed Windows evidence, not proof of Windows 11
-installation or its unsigned-installer desktop prompts. Windows 11 acceptance is
-still required before issue closure/integration. No signing identity, automatic
-update, future-schema upgrade/downgrade, release tag or public installer download
-has been validated or published.
+After reviewing the implementation, the owner reported that all checks were OK
+and explicitly authorized closing issue 40. This owner acceptance supersedes the
+previous waiting checkpoint and authorizes the documented integration route into
+`new-workspace`. GitHub records the delivered SHA and closure.
+
+The owner supplied no additional platform log or machine details. Automated
+installation evidence remains Windows Server 2025; this report does not invent
+an automated Windows 11 run or details of the owner's manual checks. Previous
+local failures and the distinction between tested code and documentation-only
+follow-ups remain recorded above. No signing identity, automatic update,
+future-schema upgrade/downgrade, release tag or public installer download has
+been validated or published.

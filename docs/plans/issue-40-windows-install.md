@@ -29,3 +29,11 @@ acceptance must additionally pass on Windows; configuration alone is insufficien
 No release tag, download publication, signing credential validation, automatic
 updater or downgrade compatibility is authorized. CI retains reports/screenshots,
 not installer downloads. Full inherited desktop coverage remains required.
+
+## Owner acceptance
+
+The owner reported successful checks and explicitly authorized closing issue 40.
+This supersedes the previous waiting gate and permits integration into
+`new-workspace` under the existing development policy. Observed automated Windows
+coverage remains Windows Server 2025; no additional platform run or manual-machine
+details are inferred. Final delivery SHA and closure belong to GitHub.

@@ -5,8 +5,9 @@
 The supported target selected for this slice is **Windows 11 x64**. ARM64,
 32-bit Windows and Windows 10 are outside this distribution. Automated installed
 runtime coverage records the actual Windows Server runner separately in the
-[verification report](verification/issue-40-windows-install.md). It does not prove
-Windows 11 desktop acceptance, which requires an available target machine.
+[verification report](verification/issue-40-windows-install.md). Automated coverage
+is distinct from the owner's manual acceptance recorded in that report; no
+additional automated Windows 11 run is claimed.
 
 The offline NSIS installer is unsigned and installs for the current user without
 administrator elevation. No signing credential or trusted publisher has been
