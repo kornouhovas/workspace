@@ -8,5 +8,8 @@ file as bb-MIT.txt. Source provenance is recorded in docs/reuse.md.
 Electron includes third-party software and Chromium. Its license and Chromium
 notices ship in the application bundle's Resources directory as LICENSE.electron.txt and
 LICENSES.chromium.html. Packaged npm dependencies retain their license files
-inside app.asar (including better-sqlite3, Drizzle ORM, React and React DOM).
+inside app.asar (including better-sqlite3, React and React DOM).
+Drizzle ORM 0.45.4 is bundled into the backend under Apache License 2.0; its
+complete upstream LICENSE is included as Drizzle-Apache-2.0.txt. Source:
+https://github.com/drizzle-team/drizzle-orm/blob/0.45.4/LICENSE
 This file records provenance; it does not replace the accompanying license texts.

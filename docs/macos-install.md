@@ -56,7 +56,9 @@ database. Its root-picker seam does not exercise the native dialog manually.
 
 Applicable notices ship under `Workspace.app/Contents/Resources`: Electron's
 `LICENSE.electron.txt`, `LICENSES.chromium.html`, `licenses/bb-MIT.txt` and
-`licenses/THIRD_PARTY_NOTICES.txt`. Packaged npm dependency licenses remain in
+`licenses/THIRD_PARTY_NOTICES.txt` and `licenses/Drizzle-Apache-2.0.txt`
+(from upstream Drizzle ORM 0.45.4, whose code is bundled into the backend).
+Other packaged npm dependency licenses remain in
 `app.asar`. UI provenance is recorded in [reuse](reuse.md).
 
 ## Updates and data locations

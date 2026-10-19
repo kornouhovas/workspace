@@ -31,10 +31,28 @@ screenshot: **Workspace Version 0.1.0 (0.1.0)**. The OS menu is named Workspace,
 while Electron's internal app name and existing default data-directory component
 remain `workspace`; no production data path is renamed by this issue.
 
-## Remaining verification
+## Final local verification and remaining gates
 
-Final review, fresh package/installation evidence, full local suite and exact-SHA
-CI are pending at this checkpoint. The dedicated `macos-install.yml` route targets
+Standards and Spec reviews found no blockers. The CI source-map suggestion was
+applied. Fresh build/package and final DMG install/reopen/replacement pass,
+including byte-equal Drizzle/provenance notices. DMG SHA256:
+`d5812a7dd25a1039575c000bbdc2d68bad9965a196159cbde613ed55fb74a9e4`.
+The local report was collected from the follow-up working tree based on
+`40341fcb`; it is not an exact-commit CI receipt.
+
+Lint, typecheck, version consistency, 161-file local Markdown links,
+`git diff --check` and 46 focused manifest/CI-route controls pass.
+The required complete local run (`npm run test:all`, reusing the fresh build)
+finished with **3078 passed, 1 failed, 26 conditional skips** (3105 tests).
+The sole failure was the unchanged `property-editor-driver.test.mjs` Number
+creator fixture's normal Electron shutdown timeout after 10000ms. Its timeline
+showed before-quit, will-quit, quit and node-exit; parent exit required confirmed
+forced cleanup. The observed symptom matches the previously recorded
+[local macOS 27 limitation](issue-38-automatic-backups.md#full-suite-result-and-local-limitation),
+not an established shared root cause or a claimed repair. The local full suite is
+**not green**. No application guard, deadline or assertion was relaxed.
+
+Exact-SHA CI and integration remain pending in GitHub at this checkpoint. The dedicated `macos-install.yml` route targets
 macOS 14 arm64; the existing desktop three-platform workflow remains unchanged.
 The workflow retains reports/screenshots, not DMG downloads. Local evidence files
 are under ignored `work/issue-39-install/`; CI evidence has SHA/run/attempt provenance.

@@ -37,7 +37,8 @@ async function install() {
   assert.equal((await exec("/usr/bin/lipo", ["-archs", executable])).stdout.trim(), "arm64");
   await stat(join(installed, "Contents/Resources/LICENSE.electron.txt"));
   await stat(join(installed, "Contents/Resources/LICENSES.chromium.html"));
-  assert.match(await readFile(join(installed, "Contents/Resources/licenses/THIRD_PARTY_NOTICES.txt"), "utf8"), /f135a001e72942cee9118d2693208ec0725e2f18/);
+  assert.equal(await readFile(join(installed, "Contents/Resources/licenses/THIRD_PARTY_NOTICES.txt"), "utf8"), await readFile(join(root, "THIRD_PARTY_NOTICES.txt"), "utf8"));
+  assert.equal(await readFile(join(installed, "Contents/Resources/licenses/Drizzle-Apache-2.0.txt"), "utf8"), await readFile(join(root, "licenses/Drizzle-Apache-2.0.txt"), "utf8"));
   assert.equal(artifact.version, version);
 }
 
@@ -81,7 +82,7 @@ async function stop() {
   assert.equal(ownedProcessesStopped(parents, backends), true, "App/backend must exit before replacement");
 }
 async function load(page) {
-  const result = await page.evaluate(() => window.workspace.workspace({ type: "workspace.load" }));
+  const result = await page.evaluate(() => globalThis.window.workspace.workspace({ type: "workspace.load" }));
   assert.equal(result.ok, true); return result.value;
 }
 try {
@@ -104,7 +105,7 @@ try {
   assert.equal(saved.activeWorkspace.canonicalRoot, await realpath(source));
   for (const language of ["en", "ru"]) {
     await page.locator("#interface-language").selectOption(language);
-    await page.waitForFunction(lang => document.documentElement.lang === lang && !document.querySelector("#interface-language")?.disabled, language);
+    await page.waitForFunction(lang => globalThis.document.documentElement.lang === lang && !globalThis.document.querySelector("#interface-language")?.disabled, language);
     await page.setViewportSize({ width: language === "en" ? 1440 : 720, height: 900 });
     await page.screenshot({ path: join(evidence, `installed-${language}.png`), fullPage: true });
   }

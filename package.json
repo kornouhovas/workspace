@@ -116,6 +116,10 @@
       {
         "from": "THIRD_PARTY_NOTICES.txt",
         "to": "licenses/THIRD_PARTY_NOTICES.txt"
+      },
+      {
+        "from": "licenses/Drizzle-Apache-2.0.txt",
+        "to": "licenses/Drizzle-Apache-2.0.txt"
       }
     ],
     "artifactName": "Workspace-${version}-${os}-${arch}.${ext}",

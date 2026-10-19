@@ -1,6 +1,9 @@
 # CI checks and diagnostic routes
 
-Read when selecting or diagnosing a CI route, changing CI scheduling, or checking exact-SHA acceptance. [Development](development.md#verification) owns verification policy; [.github/workflows/desktop-ci.yml](../.github/workflows/desktop-ci.yml) owns actual job wiring.
+Read when selecting or diagnosing a CI route, changing CI scheduling, or checking exact-SHA acceptance. [Development](development.md#verification) owns verification policy; [.github/workflows/desktop-ci.yml](../.github/workflows/desktop-ci.yml) owns the inherited desktop routes.
+[macos-install.yml](../.github/workflows/macos-install.yml) adds macOS 14 arm64 DMG
+build/install/reopen/replacement acceptance on push, pull requests and manual dispatch.
+It retains exact-SHA reports/screenshots without publishing the DMG.
 
 ## Candidate and handoff
 
