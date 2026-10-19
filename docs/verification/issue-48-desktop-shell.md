@@ -184,3 +184,28 @@ not counted as a successful full local run. No shutdown deadline or behavior was
 changed. Exact-SHA remote full acceptance is still required after focused repair
 verification. No repeated broad local run is scheduled for this unchanged native
 failure.
+
+
+## Property-label presentation fixture correction
+
+Focused run `39304907771` passed all three OSes on `41623b2`; exact-SHA reports
+were inspected for eight shell journeys, final removal focus, shutdown and cleanup,
+plus 108 creation/recovery screenshots on each Windows runner. Both installer
+routes passed on that source (`39305766114`, `39306105998`); reports confirm data
+preservation and cleanup.
+
+Full run `39305756420` passed common and macOS platform tests, then the original
+category-layout route failed `category-move-collision-english`. Its inspected
+receipt identifies only the authored property label: 202 characters fit its
+1440-pixel span, without overflow, at the new density. The existing shared long
+property/category-label fixtures now use 26 repeated segments, strengthening the
+wrapping stimulus across their dependent scenes. Property labels are not
+filesystem basenames and their public service validation accepts these nonblank
+values. No production code, style, assertion, deadline or route is changed.
+Both review axes accepted this fixture-only delta. The complete original local
+category-layout route passed 150 EN/RU screenshots, wrapping/containment,
+interaction and normal native shutdown. New remote evidence uses the existing
+`view-fixtures` route, which runs the matching original category command and
+related UI regressions. Windows jobs from the failed full run are retained rather
+than canceled. The unchanged production source retains `41623b2` installer
+acceptance; renewed full desktop acceptance remains pending after focused success.

@@ -225,7 +225,7 @@ const textStoryIds = {
   workspaceId: "00000000-0000-4000-8000-000000000001", sourceId: "00000000-0000-4000-8000-000000000010",
   propertyId: "00000000-0000-4000-8000-000000000030", projectId: "00000000-0000-4000-8000-000000000040",
 };
-const longPropertyName = "  Authored-свойство-" + "long-name-".repeat(18) + "  ";
+const longPropertyName = "  Authored-свойство-" + "long-name-".repeat(26) + "  ";
 const longTextValue = "  日本語 📝 Authored-value-" + "unbroken-text-".repeat(20) + "\nВторая строка  ";
 function TextPreview({ language, state }: { language: Language; state: TextStoryState }) {
   const [client, setClient] = useState<WorkspaceServiceClient | null>(null);
@@ -318,7 +318,7 @@ export const GroupedStaleRussian: Story = () => <DiscoveryState language="ru" st
 // Folder-backed Table and label editor states use the production client/header.
 type CategoryStoryState = "default" | "authored" | "no-projects" | "loading" | "editing" | "saving" | "validation" | "failure" | "sibling" | "saved" | "newer";
 const longCategory = "Категория-日本語-" + "long-category-".repeat(16);
-const longCategoryLabel = "  Authored-категория-" + "long-label-".repeat(18) + "  ";
+const longCategoryLabel = "  Authored-категория-" + "long-label-".repeat(26) + "  ";
 function CategoryPreview({ language, state }: { language: Language; state: CategoryStoryState }) {
   const [client, setClient] = useState<WorkspaceServiceClient | null>(null);
   const [prepared, setPrepared] = useState(false);
