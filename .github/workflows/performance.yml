@@ -1,0 +1,110 @@
+name: Representative-scale packaged performance
+
+on:
+  push:
+    branches: [codex/issue-41-performance]
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: Platform for the original performance command
+        type: choice
+        options: [both, macos-14, windows-latest]
+        default: both
+      candidate_only:
+        description: Focus the failed candidate step; retain the earlier immutable baseline evidence
+        type: boolean
+        default: false
+      profile_filters:
+        description: Run a separate diagnostic profile before strict unprofiled acceptance
+        type: boolean
+        default: false
+      profile_service:
+        description: Profile real public-service scans and native observation separately from acceptance
+        type: boolean
+        default: false
+
+concurrency:
+  group: performance-${{ github.ref }}${{ inputs.candidate_only && format('-candidate-{0}', inputs.platform) || '' }}
+  cancel-in-progress: true
+
+jobs:
+  performance:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ${{ fromJSON(inputs.platform == 'macos-14' && '["macos-14"]' || inputs.platform == 'windows-latest' && '["windows-latest"]' || '["macos-14","windows-latest"]') }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.21.1
+          cache: npm
+      - run: npm ci
+        id: candidate-dependencies
+      - uses: actions/checkout@v4
+        if: ${{ !inputs.candidate_only }}
+        with:
+          ref: d925f8b758caea6dc079061d42be1d132dcbc8a1
+          path: baseline-source
+      - run: npm ci
+        if: ${{ !inputs.candidate_only }}
+        working-directory: baseline-source
+      - name: Package immutable baseline
+        if: ${{ !inputs.candidate_only }}
+        shell: bash
+        working-directory: baseline-source
+        run: |
+          if [[ "$RUNNER_OS" == "macOS" ]]; then npm run package:dev:mac; else npm run package:dev:win; fi
+      - name: Measure baseline with the same harness and targets
+        if: ${{ !inputs.candidate_only }}
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p work/ci-performance/baseline
+          export WORKSPACE_PERFORMANCE_ROOT="$GITHUB_WORKSPACE/baseline-source"
+          node scripts/smoke-performance.mjs 2>&1 | tee work/ci-performance/baseline/runtime.log
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-performance/baseline
+      - name: Package candidate
+        id: candidate-package
+        if: ${{ !cancelled() && steps.candidate-dependencies.outcome == 'success' }}
+        shell: bash
+        run: |
+          if [[ "$RUNNER_OS" == "macOS" ]]; then npm run package:dev:mac; else npm run package:dev:win; fi
+      - name: Diagnose public-service scans and native observation
+        if: ${{ !cancelled() && inputs.profile_service && steps.candidate-package.outcome == 'success' }}
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p work/ci-performance/service-profile
+          node scripts/profile-performance-service.mjs 2>&1 | tee work/ci-performance/service-profile/runtime.log
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-performance/service-profile
+      - name: Diagnose the full-view Board filter transition
+        if: ${{ !cancelled() && inputs.profile_filters && steps.candidate-package.outcome == 'success' }}
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p work/ci-performance/profile
+          node scripts/smoke-performance.mjs --profile-filters 2>&1 | tee work/ci-performance/profile/runtime.log
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-performance/profile
+      - name: Require candidate correctness and approved targets
+        if: ${{ !cancelled() && steps.candidate-package.outcome == 'success' }}
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p work/ci-performance/candidate
+          node scripts/smoke-performance.mjs --enforce 2>&1 | tee work/ci-performance/candidate/runtime.log
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-performance/candidate
+      - name: Retain raw reports and screens without application downloads
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: performance-${{ matrix.os }}-${{ github.sha }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
+          path: work/ci-performance/
+          if-no-files-found: error
+          retention-days: 7

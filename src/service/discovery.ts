@@ -79,7 +79,8 @@ function automaticDirectoryReason(name: string, archiveChild: string | null): Ex
     : name === archiveChild ? "archive" : null;
 }
 
-function scanOnce(canonicalRoot: string, archiveRelativePath: string | null, exclusions: string[]): DiscoverySnapshot {
+function scanOnce(canonicalRoot: string, archiveRelativePath: string | null, exclusions: string[], cancelled?: () => boolean): DiscoverySnapshot {
+  if (cancelled?.()) throw new ScanChanged();
   const root = observation("", lstatSync(canonicalRoot, { bigint: true }));
   // Do not open a retargeted root or a link, including a link in an ancestor.
   if (root.kind !== "directory" || realpathSync.native(canonicalRoot) !== canonicalRoot) throw new RootConflict();
@@ -90,6 +91,7 @@ function scanOnce(canonicalRoot: string, archiveRelativePath: string | null, exc
   try {
     let entry;
     while ((entry = directory.readSync()) !== null) {
+      if (cancelled?.()) throw new ScanChanged();
       // Ordinary files have no discovery interpretation, including platform-valid nonportable names.
       if (entry.isFile()) continue;
       if (!isChildName(entry.name)) throw new ScanChanged();
@@ -134,11 +136,11 @@ function scanOnce(canonicalRoot: string, archiveRelativePath: string | null, exc
     .sort((a, b) => a.relativePath < b.relativePath ? -1 : a.relativePath > b.relativePath ? 1 : 0) };
 }
 
-export function scanDirectSource(canonicalRoot: string, archiveRelativePath: string | null, exclusions: string[]): DiscoveryScan {
+export function scanDirectSource(canonicalRoot: string, archiveRelativePath: string | null, exclusions: string[], cancelled?: () => boolean): DiscoveryScan {
   try {
-    const snapshot = scanOnce(canonicalRoot, archiveRelativePath, exclusions);
+    const snapshot = scanOnce(canonicalRoot, archiveRelativePath, exclusions, cancelled);
     // Recheck the complete interpretation, including kind swaps and disappearing entries.
-    if (JSON.stringify(snapshot) !== JSON.stringify(scanOnce(canonicalRoot, archiveRelativePath, exclusions))) throw new ScanChanged();
+    if (JSON.stringify(snapshot) !== JSON.stringify(scanOnce(canonicalRoot, archiveRelativePath, exclusions, cancelled))) throw new ScanChanged();
     const archiveChild = snapshot.archiveChild;
     const entries: DiscoveryEntry[] = snapshot.children.filter((child) => child.kind !== "other").map((child) => {
       const name = child.relativePath;
@@ -157,13 +159,15 @@ export function scanDirectSource(canonicalRoot: string, archiveRelativePath: str
 
 // Exactly two levels. Every parent is reverified before accessing children and
 // after enumeration; excluded entries use only their parent's directory entries.
-function scanGroupedOnce(canonicalRoot: string, archiveRelativePath: string | null, exclusions: string[]): DiscoverySnapshot {
+function scanGroupedOnce(canonicalRoot: string, archiveRelativePath: string | null, exclusions: string[], cancelled?: () => boolean): DiscoverySnapshot {
+  if (cancelled?.()) throw new ScanChanged();
   const root = observation("", lstatSync(canonicalRoot, { bigint: true }));
   if (root.kind !== "directory" || realpathSync.native(canonicalRoot) !== canonicalRoot ||
     !validArchive(archiveRelativePath)) throw new RootConflict();
   const children: DiscoverySnapshot["children"] = [];
   const archive = archiveRelativePath?.split("/") ?? [];
   const verify = (parent: DirectoryObservation) => {
+    if (cancelled?.()) throw new ScanChanged();
     const path = join(canonicalRoot, parent.relativePath);
     // lstat first: a swapped link must never be resolved or traversed.
     if (changed(parent, observation(parent.relativePath, lstatSync(path, { bigint: true }))) ||
@@ -178,6 +182,7 @@ function scanGroupedOnce(canonicalRoot: string, archiveRelativePath: string | nu
       verify(root); verify(parent);
       let entry;
       while ((entry = directory.readSync()) !== null) {
+        if (cancelled?.()) throw new ScanChanged();
         if (entry.isFile()) continue;
         if (!isChildName(entry.name)) throw new ScanChanged();
         entries.push(entry);
@@ -241,10 +246,10 @@ function scanGroupedOnce(canonicalRoot: string, archiveRelativePath: string | nu
     children: children.sort((a, b) => a.relativePath < b.relativePath ? -1 : a.relativePath > b.relativePath ? 1 : 0) };
 }
 
-export function scanGroupedSource(canonicalRoot: string, archiveRelativePath: string | null, exclusions: string[]): DiscoveryScan {
+export function scanGroupedSource(canonicalRoot: string, archiveRelativePath: string | null, exclusions: string[], cancelled?: () => boolean): DiscoveryScan {
   try {
-    const snapshot = scanGroupedOnce(canonicalRoot, archiveRelativePath, exclusions);
-    if (JSON.stringify(snapshot) !== JSON.stringify(scanGroupedOnce(canonicalRoot, archiveRelativePath, exclusions))) throw new ScanChanged();
+    const snapshot = scanGroupedOnce(canonicalRoot, archiveRelativePath, exclusions, cancelled);
+    if (JSON.stringify(snapshot) !== JSON.stringify(scanGroupedOnce(canonicalRoot, archiveRelativePath, exclusions, cancelled))) throw new ScanChanged();
     const entries: DiscoveryEntry[] = snapshot.children.filter((child) => child.kind !== "other").map((child) => {
       const parts = child.relativePath.split("/");
       const reason = child.kind === "excluded" ? child.reason : child.kind === "link" ? "link" :

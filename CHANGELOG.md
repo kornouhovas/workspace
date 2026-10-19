@@ -4,6 +4,9 @@ User-facing changes are maintained in English. The first target release is 0.1.0
 
 ## Unreleased
 
+- Reduce repeated discovery work and large Table/Board rendering, preserving
+  offscreen drafts and keyboard access while fields load near the viewport.
+
 - Add unsigned per-user Windows x64 NSIS packaging, installed-app restart and
   data-preservation checks, and installation/recovery guidance.
 

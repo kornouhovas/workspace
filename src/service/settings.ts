@@ -233,8 +233,8 @@ export function openSettingsService(
 
     close() {
       backups.close();
-      workspaces.close();
-      sqlite.close();
+      try { workspaces.close(); }
+      finally { sqlite.close(); }
     },
   };
 }

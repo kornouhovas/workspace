@@ -50,7 +50,7 @@ export function ProjectRevealButton({ client, workspaceId, projectId, name, lang
     } catch { if (current === lifetime.current) setMessage("revealUncertain"); }
     finally { if (current === lifetime.current) { busy.current = false; setPending(false); } }
   };
-  return <div className="project-reveal">
+  return <div className="project-reveal" aria-busy={pending}>
     <button type="button" className="workspace-button workspace-button--secondary" aria-label={`${t("revealProject")}: ${name}`} disabled={disabled || pending}
       onClick={() => void reveal()}>{t(pending ? "revealPending" : "revealProject")}</button>
     {message && <StatusMessage kind={message === "revealDispatched" ? "info" : "error"} title={t(message)} />}

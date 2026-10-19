@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { scanDirectSource, scanGroupedSource } from "../src/service/discovery.js";
 import test from "node:test";
 import React from "react";
 import fs from "node:fs";
@@ -274,6 +275,8 @@ function controlledRevealObserver() {
   const timers = new Set<{ callback(): void; delay: number }>();
   const dependencies: ObserverDependencies = {
     ...nativeObserverDependencies,
+    // This fixture explicitly drains its fake observation clock.
+    scan: request => (request.mode === "grouped" ? scanGroupedSource : scanDirectSource)(request.canonicalRoot, request.archiveRelativePath, request.exclusions),
     watch(path, hint) { watches.set(path, hint); return { close() { watches.delete(path); } }; },
     schedule(callback, delay) {
       const timer = { callback, delay }; timers.add(timer);

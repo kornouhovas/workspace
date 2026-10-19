@@ -10,6 +10,7 @@ test("build emits desktop, renderer, backend, and matching version artifacts", a
     "dist/desktop/main.cjs",
     "dist/desktop/preload.cjs",
     "dist/service/entry.cjs",
+    "dist/service/discovery-worker.cjs",
     "dist/service/project-rename-filesystem.mjs",
     "dist/service/project-rename-filesystem.cjs",
     "dist/service/native/project-rename.node",

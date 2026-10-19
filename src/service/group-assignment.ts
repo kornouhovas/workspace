@@ -7,16 +7,19 @@ export function assignProjectGroup(model: WorkspaceService, input: unknown): Ser
   if (!isAssignProjectGroupCommand(input)) return invalid();
   // All validation and the existing transactional value command run synchronously
   // in the owning backend; no renderer-supplied destination value is trusted.
-  const projection = model.filterRequest({ type: "workspace.queryView", workspaceId: input.workspaceId, viewId: input.viewId, archived: input.archived });
+  const properties = model.listTextProperties({ type: "workspace.listTextProperties", workspaceId: input.workspaceId });
+  if (!properties.ok) return properties;
+  const property = properties.value.definitions.find(p => p.propertyId === input.propertyId);
+  // Ordinary metadata edits already allow retained projects. Their eligibility
+  // uses current source-owned DB membership, filters and values, derived here
+  // by the service. Filesystem assignments still require fresh disk evidence.
+  const projection = model.filterRequest({ type: "workspace.queryView", workspaceId: input.workspaceId, viewId: input.viewId, archived: input.archived }, property && !input.archived ? "stored" : undefined);
   if (!projection.ok) return projection;
   if (!("projectIds" in projection.value) || projection.value.groupPropertyId !== input.propertyId) return invalid();
   const groups = projection.value.groups;
   const origin = groups?.find(group => group.key === input.fromKey);
   const destination = groups?.find(group => group.key === input.toKey);
   if (!origin?.projectIds.includes(input.projectId) || !destination || destination.hidden) return invalid();
-  const properties = model.listTextProperties({ type: "workspace.listTextProperties", workspaceId: input.workspaceId });
-  if (!properties.ok) return properties;
-  const property = properties.value.definitions.find(p => p.propertyId === input.propertyId);
   if (input.propertyId === "name" || !property) {
     // Read current source ownership/revision; a drop never supplies paths or a revision.
     const projects = model.listProjects({type:"workspace.listProjects",workspaceId:input.workspaceId});

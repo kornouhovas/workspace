@@ -4,6 +4,25 @@ Read when selecting or diagnosing a CI route, changing CI scheduling, or checkin
 [macos-install.yml](../.github/workflows/macos-install.yml) adds macOS 14 arm64 DMG
 build/install/reopen/replacement acceptance on push, pull requests and manual dispatch.
 It retains exact-SHA reports/screenshots without publishing the DMG.
+The issue-scoped [performance workflow](../.github/workflows/performance.yml)
+packages immutable baseline `d925f8b7` and the candidate on macOS 14 and Windows
+latest, then applies the same disposable 1,000-project harness. Baseline target
+misses are retained; scenario, shutdown and cleanup failures remain failures.
+The candidate must pass correctness and all approved limits. Artifacts contain
+raw reports/screens with SHA/run/attempt provenance, without application binaries.
+See [measurement boundaries](verification/issue-41-performance.md).
+For a failed performance candidate step, dispatch that workflow with
+`candidate_only: true` and the actual failed `platform`. `profile_filters: true`
+adds a separate renderer CPU profile of the 100-to-1,000-row Board filter
+transition. Profiled runs are diagnostic and cannot use `--enforce`; the original
+unprofiled strict command still runs independently after its package prerequisite.
+Baseline failure evidence remains retained, and ordinary push/full dispatch
+defaults still measure both baseline and candidate on both platforms. A focused
+success does not replace the full acceptance run on the repaired SHA.
+`profile_service: true` separately profiles real public-service open, source
+lists, displayed-view reads, refresh and the native observer interval using the
+same disposable scale. These Node profiles diagnose backend work; they do not
+substitute for the original packaged Electron command that still follows them.
 The same workflow adds Windows x64 NSIS installation/reopen/reinstall acceptance
 on ordinary push/PR, or independently with `checks: windows-install` on dispatch.
 This runs on `windows-latest` and records its actual Windows Server version; it
@@ -17,6 +36,16 @@ Use the [implementation sequence](development.md#implementation-sequence) before
 After acceptance, record the run/attempt, tested SHA, actual checks/artifacts, delivered SHA and integration verification in that checkpoint. A fast-forward delivery of the same commit retains exact-SHA evidence. If a required later change creates another commit, identify its affected boundary and renew the checks it requires; state explicitly when a documentation-only change has separate checks rather than describing its SHA as platform-tested. Preserve existing workflow defaults and required platform coverage.
 
 ## Failed Actions loop
+
+For issue #41's macOS/Windows development runtimes waiting for offscreen project cells,
+dispatch the desktop workflow with `checks: viewport-runtime`. It runs only
+the three affected platforms, the viewport/rename/category driver regressions and the original
+`npm run smoke:runtime -- dev` command with its existing deadlines, layout,
+data-preservation, native and shutdown assertions. The driver scrolls to the
+owned project identity before expecting its real fields. It never accepts a
+placeholder as a cell. Exact-SHA evidence is retained; unrelated raw-rename and
+observer CLI diagnostics are not selected. Full acceptance follows focused
+success on the repaired SHA.
 
 Apply this loop automatically when a GitHub Actions check fails during an authorized task, including continuation in a new window. The agent invokes `diagnosing-bugs` without requiring another user command. Executor selection remains governed by [development](development.md#executor-selection); CI failure does not select Ralphex. Continue within existing implementation/push/Actions authorization; request only genuinely missing access or consequential decisions.
 

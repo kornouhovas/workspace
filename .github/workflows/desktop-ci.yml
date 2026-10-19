@@ -8,7 +8,7 @@ on:
       checks:
         description: Full acceptance or a selected focused failure route
         type: choice
-        options: [full, failed, readiness, windows-release, issue22-failures, creation-shutdown, raw-rename, issue24-failures, category-fixture, issue24-startup, multiselect, etw-controls, app-fixture, property-fixture, runtime-observation, view-fixtures, number, windows-property-fixture, rename-authoring, rename-fixture]
+        options: [full, failed, readiness, windows-release, issue22-failures, creation-shutdown, raw-rename, issue24-failures, category-fixture, issue24-startup, multiselect, etw-controls, app-fixture, property-fixture, runtime-observation, view-fixtures, number, windows-property-fixture, rename-authoring, rename-fixture, viewport-runtime]
         default: full
       recovery_windows_2022:
         description: With checks=issue22-failures, replay the backend recovery file on Windows 2022 and the original macOS runtime
@@ -89,7 +89,7 @@ concurrency:
 
 jobs:
   common:
-    if: ${{ github.event_name != 'workflow_dispatch' || (inputs.checks != 'failed' && inputs.checks != 'readiness' && inputs.checks != 'windows-release' && inputs.checks != 'issue22-failures' && inputs.checks != 'creation-shutdown' && inputs.checks != 'raw-rename' && inputs.checks != 'issue24-failures' && inputs.checks != 'category-fixture' && inputs.checks != 'issue24-startup' && inputs.checks != 'multiselect' && inputs.checks != 'etw-controls' && inputs.checks != 'app-fixture' && inputs.checks != 'property-fixture' && inputs.checks != 'runtime-observation' && inputs.checks != 'view-fixtures' && inputs.checks != 'number' && inputs.checks != 'windows-property-fixture' && inputs.checks != 'rename-authoring' && inputs.checks != 'rename-fixture') }}
+    if: ${{ github.event_name != 'workflow_dispatch' || (inputs.checks != 'failed' && inputs.checks != 'readiness' && inputs.checks != 'windows-release' && inputs.checks != 'issue22-failures' && inputs.checks != 'creation-shutdown' && inputs.checks != 'raw-rename' && inputs.checks != 'issue24-failures' && inputs.checks != 'category-fixture' && inputs.checks != 'issue24-startup' && inputs.checks != 'multiselect' && inputs.checks != 'etw-controls' && inputs.checks != 'app-fixture' && inputs.checks != 'property-fixture' && inputs.checks != 'runtime-observation' && inputs.checks != 'view-fixtures' && inputs.checks != 'number' && inputs.checks != 'windows-property-fixture' && inputs.checks != 'rename-authoring' && inputs.checks != 'rename-fixture' && inputs.checks != 'viewport-runtime') }}
     name: Common tests and static checks
     runs-on: macos-latest
     steps:
@@ -344,9 +344,13 @@ jobs:
           if-no-files-found: error
 
   focused-rename-runtime:
-    if: ${{ github.event_name == 'workflow_dispatch' && inputs.checks == 'raw-rename' && !inputs.raw_windows_only }}
-    name: Focused macOS original development runtime
-    runs-on: macos-latest
+    if: ${{ github.event_name == 'workflow_dispatch' && (inputs.checks == 'viewport-runtime' || inputs.checks == 'raw-rename' && !inputs.raw_windows_only) }}
+    name: Focused original development runtime (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ${{ fromJSON(inputs.checks == 'viewport-runtime' && '["macos-latest","windows-latest","windows-2022"]' || '["macos-latest"]') }}
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
@@ -357,6 +361,9 @@ jobs:
       - id: dependencies
         run: npm ci
       - run: npm run build
+      - name: Viewport draft and keyboard regressions
+        if: ${{ inputs.checks == 'viewport-runtime' }}
+        run: node --import tsx --test tests/viewport-projects-ui.test.tsx tests/project-category-move-runtime.test.mjs tests/project-rename-runtime.test.mjs
       - name: Original failed development runtime command
         shell: bash
         run: |
@@ -366,7 +373,7 @@ jobs:
         env:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-rename-runtime
       - name: Original observer CLI cancellation cases
-        if: ${{ !cancelled() && steps.dependencies.outcome == 'success' }}
+        if: ${{ !cancelled() && inputs.checks == 'raw-rename' && steps.dependencies.outcome == 'success' }}
         shell: bash
         run: |
           set -o pipefail
@@ -376,7 +383,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: issue-24-rename-runtime-${{ github.sha }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
+          name: ${{ inputs.checks == 'viewport-runtime' && format('issue-41-viewport-runtime-{0}', matrix.os) || 'issue-24-rename-runtime' }}-${{ github.sha }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
           path: work/ci-rename-runtime/
           if-no-files-found: error
 

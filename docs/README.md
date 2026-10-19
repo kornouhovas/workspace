@@ -30,6 +30,7 @@ Read development's scope, integration, tracker, executor-selection and verificat
 
 | Task | Relevant contracts |
 | --- | --- |
+| Representative-scale responsiveness | [Approved targets/scenarios](plans/issue-41-performance.md), Architecture's view projection contract and [measurement evidence](verification/issue-41-performance.md) |
 | Service, storage or filesystem changes | Affected sections in [architecture](architecture.md), [ADRs](adr/) and typed contracts in `src/shared/`; inspect the active service wiring |
 | Automatic/pre-migration backups | [Contract/scenarios](plans/issue-38-automatic-backups.md), typed recovery commands and [recovery](recovery.md#automatic-backups-and-updates) |
 | Custom property/ordinary option deletion | [Contract/scenarios](plans/issue-36-metadata-removal.md), typed reviewed metadata commands and [verification](verification/issue-36-metadata-removal.md) |

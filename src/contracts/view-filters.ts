@@ -4,9 +4,12 @@ export interface FilterRule { propertyId: string; operator: FilterOperator; oper
 export interface ViewFilterConfig { search: string; rules: FilterRule[] }
 export interface ViewFilterSnapshot { workspaceId: string; viewId: string; config: ViewFilterConfig }
 export interface ViewFilterResult { workspaceId: string; viewId: string; archived: boolean; projectIds: string[]; groups?: import("./view-grouping.js").ViewGroup[]; groupPropertyId?: string | null }
+// A read-only view may use the complete project order already displayed from a
+// validated source snapshot. The service checks its revision and full ownership.
+export interface ViewProjectProjection { revision: number; projectIds: string[] }
 export type ViewFilterQuery =
   | { type: "workspace.getViewFilter"; workspaceId: string; viewId: string }
-  | { type: "workspace.queryView"; workspaceId: string; viewId: string; archived: boolean };
+  | { type: "workspace.queryView"; workspaceId: string; viewId: string; archived: boolean; projection?: ViewProjectProjection };
 export type ViewFilterCommand = { type: "workspace.setViewFilter"; workspaceId: string; viewId: string; config: ViewFilterConfig };
 export type ViewFilterPayload = ViewFilterSnapshot | ViewFilterResult;
 export const viewFilterRequests = ["workspace.getViewFilter", "workspace.queryView", "workspace.setViewFilter"];
@@ -27,6 +30,14 @@ export function isViewFilterConfig(v: unknown): v is ViewFilterConfig {
 export function isViewFilterRequest(v: unknown): v is ViewFilterQuery | ViewFilterCommand {
   if (!record(v) || !uuid(v.workspaceId) || !uuid(v.viewId)) return false;
   if (v.type === "workspace.getViewFilter") return exact(v, ["type", "workspaceId", "viewId"]);
-  if (v.type === "workspace.queryView") return exact(v, ["type", "workspaceId", "viewId", "archived"]) && typeof v.archived === "boolean";
+  if (v.type === "workspace.queryView") {
+    const keys = ["type", "workspaceId", "viewId", "archived"];
+    if (Object.hasOwn(v, "projection")) keys.push("projection");
+    return exact(v, keys) && typeof v.archived === "boolean" && (!Object.hasOwn(v, "projection") ||
+      v.archived === false && record(v.projection) && exact(v.projection, ["revision", "projectIds"]) &&
+      Number.isSafeInteger(v.projection.revision) && (v.projection.revision as number) >= 0 &&
+      Array.isArray(v.projection.projectIds) && v.projection.projectIds.length <= 100000 &&
+      Array.from(v.projection.projectIds).every(uuid) && new Set(v.projection.projectIds).size === v.projection.projectIds.length);
+  }
   return v.type === "workspace.setViewFilter" && exact(v, ["type", "workspaceId", "viewId", "config"]) && isViewFilterConfig(v.config);
 }

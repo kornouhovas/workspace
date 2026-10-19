@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { showRuntimeProject } from "./runtime-project-visibility.mjs";
 import { installCategorySubmissionReceipt } from "./category-submission-receipt.mjs";
 import { execFileSync, fork } from "node:child_process";
 import { createHash, randomUUID } from "node:crypto";
@@ -379,7 +380,7 @@ export async function categoryMoveRuntimeInputs(mode, executablePath) {
       else { assert.equal(entry.isFile(), true); await include(`${path}/${entry.name}`); }
     }
   }
-  for (const path of ["package.json", "package-lock.json", "scripts/smoke-runtime.mjs", "scripts/smoke-project-category-move-ui.mjs", "scripts/category-submission-receipt.mjs", "scripts/runtime-evidence.mjs", "scripts/runtime-executable.mjs", "scripts/rename-runtime-startup.mjs", "scripts/runtime-startup.mjs", "scripts/runtime-lifecycle.mjs", "scripts/runtime-layout.mjs", "tests/fixtures/project-category-move-crash-worker.mjs", "dist/service/project-rename-filesystem.mjs", "dist/service-test-native/project-rename.node", "dist/desktop/main.cjs", "dist/desktop/preload.cjs", "dist/service/settings.mjs", "dist/service/entry.cjs", "node_modules/better-sqlite3/package.json", "node_modules/better-sqlite3/lib/binding.js", `node_modules/better-sqlite3/prebuilds/${process.platform}-${process.arch}.node`]) await include(path);
+  for (const path of ["package.json", "package-lock.json", "scripts/smoke-runtime.mjs", "scripts/smoke-project-category-move-ui.mjs", "scripts/category-submission-receipt.mjs", "scripts/runtime-evidence.mjs", "scripts/runtime-project-visibility.mjs", "scripts/runtime-executable.mjs", "scripts/rename-runtime-startup.mjs", "scripts/runtime-startup.mjs", "scripts/runtime-lifecycle.mjs", "scripts/runtime-layout.mjs", "tests/fixtures/project-category-move-crash-worker.mjs", "dist/service/project-rename-filesystem.mjs", "dist/service-test-native/project-rename.node", "dist/desktop/main.cjs", "dist/desktop/preload.cjs", "dist/service/settings.mjs", "dist/service/entry.cjs", "dist/service/discovery-worker.cjs", "node_modules/better-sqlite3/package.json", "node_modules/better-sqlite3/lib/binding.js", `node_modules/better-sqlite3/prebuilds/${process.platform}-${process.arch}.node`]) await include(path);
   for (const path of ["src/contracts", "src/service", "src/desktop", "src/renderer", "dist/renderer", "dist/service/db/migrations", "dist/service/native", "dist/desktop/native"]) await tree(path);
   if (mode === "release") {
     const resources = process.platform === "darwin" ? resolve(dirname(executablePath), "../Resources") : join(dirname(executablePath), "resources");
@@ -511,10 +512,14 @@ export async function runProjectCategoryMoveUi(mode = "dev") {
     assert.deepEqual(metadata, expectedMetadata);
     return list;
   }
+  async function categoryCell(page, setup, categoryName, t) {
+    await showRuntimeProject(page, setup.project.name, setup.project.projectId);
+    return assertRuntimeCategoryCell(page, setup.project.name, categoryName, t.move);
+  }
   async function openEditor(page, setup, t) {
     const list = await query(page, "listProjects", setup.workspace.workspaceId);
     const project = list.projects.find(p => p.projectId === setup.project.projectId);
-    const cell = await assertRuntimeCategoryCell(page, project.name, project.categoryName, t.move);
+    const cell = await categoryCell(page, setup, project.categoryName, t);
     const trigger = cell.getByRole("button", { name: `${t.move}: ${setup.project.name}`.replace(/\s+/g, " ").trim(), exact: true });
     await trigger.press("Enter");
     const input = page.locator("#project-category-move-destination"); await input.waitFor();
@@ -537,7 +542,7 @@ export async function runProjectCategoryMoveUi(mode = "dev") {
       await check(target, "readOnlyReopen", async () => {
         await preserved(page, setup, "Current");
         assert.deepEqual((await query(page, "listProjectCategoryMoves", setup.workspace.workspaceId)).operations, []);
-        await assertRuntimeCategoryCell(page, setup.project.name, "Current", t.move);
+        await categoryCell(page, setup, "Current", t);
       });
       await page.evaluate(() => { globalThis.categoryMoveEvents = []; globalThis.window.workspace.onWorkspaceChange(event => { if (event.type === "workspace.projectsChanged") globalThis.categoryMoveEvents.push(event); }); });
       const destination = setup.projection.categories.find(c => c.name === "Destination");
@@ -668,7 +673,7 @@ export async function runProjectCategoryMoveUi(mode = "dev") {
       });
       await check(target, "sibling", async () => {
         await select(page, setup.sibling, language);
-        await assertRuntimeCategoryCell(page, setup.project.name, "Destination", t.move);
+        await categoryCell(page, setup, "Destination", t);
         const list = await query(page, "listProjects", setup.sibling.workspaceId);
         assert.equal(list.projects.find(p => p.projectId === setup.project.projectId).categoryId, destination.categoryId);
         assert.deepEqual(await query(page, "listTextProperties", setup.sibling.workspaceId), { ...setup.properties, workspaceId: setup.sibling.workspaceId });
@@ -676,13 +681,13 @@ export async function runProjectCategoryMoveUi(mode = "dev") {
       });
       await check(target, "preservation", async () => { await preserved(page, setup, "Destination"); });
       await check(target, "layout", async () => {
-        await assertRuntimeCategoryCell(page, setup.project.name, "Destination", t.move);
+        await categoryCell(page, setup, "Destination", t);
         await capture(page, language, "saved");
       });
       const settings = unwrap(await page.evaluate(() => globalThis.window.workspace.settings({ type: "settings.load" })));
       await shutdown(); page = await launch(setup.data); await select(page, setup.workspace, language);
       await check(target, "restartPersistence", async () => {
-        await preserved(page, setup, "Destination"); await assertRuntimeCategoryCell(page, setup.project.name, "Destination", t.move);
+        await preserved(page, setup, "Destination"); await categoryCell(page, setup, "Destination", t);
         assert.deepEqual(unwrap(await page.evaluate(() => globalThis.window.workspace.settings({ type: "settings.load" }))), settings);
         assert.deepEqual((await query(page, "listProjectCategoryMoves", setup.workspace.workspaceId)).operations, []);
         assert.equal((await query(page, "load")).activeWorkspace.viewId, setup.workspace.viewId);
@@ -815,12 +820,12 @@ export async function runProjectCategoryMoveUi(mode = "dev") {
           assert.equal(list.revision, setup.projection.revision + (checkpoint === "keep_original" ? 0 : 1));
           const sibling = await query(page, "listProjects", setup.sibling.workspaceId);
           assert.deepEqual(sibling, { ...list, workspaceId: setup.sibling.workspaceId });
-          await assertRuntimeCategoryCell(page, setup.project.name, placement, t.move);
+          await categoryCell(page, setup, placement, t);
         });
         const finalState = await recoveryState(setup);
         await shutdown(); page = await launch(setup.data); await select(page, setup.sibling, language);
         await check(recovery, "restartPersistence", async () => {
-          await preserved(page, setup, placement); await assertRuntimeCategoryCell(page, setup.project.name, placement, t.move);
+          await preserved(page, setup, placement); await categoryCell(page, setup, placement, t);
           assert.deepEqual(await status(), resolvedStatus);
           assert.deepEqual((await query(page, "listProjectCategoryMoves", setup.workspace.workspaceId)).operations, []);
           assert.deepEqual(await recoveryState(setup), finalState);

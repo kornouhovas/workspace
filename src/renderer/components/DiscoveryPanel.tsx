@@ -314,7 +314,7 @@ export function DiscoveryWorkspace({ client, workspaceId, sourceId, refreshVersi
     const current = ++version.current;
     setLoading(true); setError(false);
     try {
-      const result = await client.listProjects(workspaceId);
+      const result = await client.listProjects(workspaceId, { observed: true });
       if (current !== version.current) return;
       if (result.ok && result.value.workspaceId === workspaceId && result.value.sourceId === sourceId) {
         const currentProjects = committedProjects.current;

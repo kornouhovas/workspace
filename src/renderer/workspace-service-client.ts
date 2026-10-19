@@ -35,7 +35,7 @@ export class WorkspaceServiceClient {
   setViewGrouping(workspaceId: string, viewId: string, config: import("../contracts/view-grouping.js").ViewGroupingConfig): Promise<ServiceResult<import("../contracts/view-grouping.js").ViewGroupingSnapshot>> { return this.api.workspace({ type: "workspace.setViewGrouping", workspaceId, viewId, config }); }
   getViewFilter(workspaceId: string, viewId: string): Promise<ServiceResult<ViewFilterSnapshot>> { return this.api.workspace({ type: "workspace.getViewFilter", workspaceId, viewId }); }
   setViewFilter(workspaceId: string, viewId: string, config: ViewFilterConfig): Promise<ServiceResult<ViewFilterSnapshot>> { return this.api.workspace({ type: "workspace.setViewFilter", workspaceId, viewId, config }); }
-  queryView(workspaceId: string, viewId: string, archived: boolean): Promise<ServiceResult<ViewFilterResult>> { return this.api.workspace({ type: "workspace.queryView", workspaceId, viewId, archived }); }
+  queryView(workspaceId: string, viewId: string, archived: boolean, projection?: import("../contracts/view-filters.js").ViewProjectProjection): Promise<ServiceResult<ViewFilterResult>> { return this.api.workspace({ type: "workspace.queryView", workspaceId, viewId, archived, ...(projection ? { projection } : {}) }); }
 
   listViews(workspaceId: string): Promise<ServiceResult<ViewSnapshot>> { return this.api.workspace({ type: "workspace.listViews", workspaceId }); }
   changeView(input: ViewCommand): Promise<ServiceResult<ViewSnapshot>> { return this.api.workspace(input); }
@@ -216,8 +216,8 @@ export class WorkspaceServiceClient {
     return this.api.workspace({ type: "workspace.reassociateProject", workspaceId, projectId, previewToken, relativePath });
   }
 
-  listProjects(workspaceId: string): Promise<ServiceResult<ProjectList>> {
-    return this.api.workspace({ type: "workspace.listProjects", workspaceId });
+  listProjects(workspaceId: string, observation?: { observed: true }): Promise<ServiceResult<ProjectList>> {
+    return this.api.workspace({ type: "workspace.listProjects", workspaceId, ...observation });
   }
 
   async getSourceObservation(workspaceId: string): Promise<ServiceResult<WorkspaceSourceObservationSnapshot>> {

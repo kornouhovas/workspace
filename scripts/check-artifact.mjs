@@ -11,6 +11,7 @@ const requiredFiles = [
   "dist/desktop/main.cjs",
   "dist/desktop/preload.cjs",
   "dist/service/entry.cjs",
+  "dist/service/discovery-worker.cjs",
   "dist/service/project-rename-filesystem.cjs",
   "dist/service/native/project-rename.node",
   "dist/renderer/index.html",
@@ -88,6 +89,11 @@ export async function checkArtifact(root, { platform = process.platform, arch = 
   assert.ok((await lstat(renameBinary).catch(() => null))?.isFile(), "Unpacked project rename adapter is missing or linked");
   const builtRename = fileURLToPath(new URL("../dist/service/native/project-rename.node", import.meta.url));
   assert.equal((await readFile(renameBinary)).equals(await readFile(builtRename)), true, "Project rename adapter differs from current runtime build");
+  const workerRelative=join("dist","service","discovery-worker.cjs");
+  assert.equal(statFile(asarPath,workerRelative).unpacked,true,"Discovery worker must be unpacked from ASAR");
+  const workerFile=join(`${asarPath}.unpacked`,"dist","service","discovery-worker.cjs");
+  assert.ok((await lstat(workerFile).catch(()=>null))?.isFile(),"Unpacked discovery worker is missing or linked");
+  assert.equal((await readFile(workerFile)).equals(await readFile(fileURLToPath(new URL("../dist/service/discovery-worker.cjs",import.meta.url)))),true,"Discovery worker differs from current runtime build");
   const licensePath = join(resourcesDirectory, "licenses/bb-MIT.txt");
   const license = await readFile(licensePath, "utf8");
   assert.match(license, /Copyright \(c\) 2026 Michael Yong/);

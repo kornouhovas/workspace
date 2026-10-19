@@ -2,7 +2,7 @@ import Database from 'better-sqlite3';
 import { randomUUID } from 'node:crypto';
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, rmSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, rmSync, renameSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { openSettingsService } from '../dist/service/settings.mjs';
@@ -23,6 +23,50 @@ function fixture(run) {
     reopen() { service.close(); service = openSettingsService(path); } };
   try { run(f); } finally { service.close(); rmSync(directory, { recursive: true, force: true }); }
 }
+
+test('an explicit displayed-source projection preserves supplied order while reading current values and rejects stale or foreign membership', () => fixture(f => {
+  const list = f.query('listProjects').value;
+  const ids = list.projects.map(p => p.projectId).reverse();
+  const projection = { revision: list.revision, projectIds: ids };
+  assert.deepEqual(f.results({ projection }).value?.projectIds, ids);
+  const text = f.command('createProperty', { name: 'Notes', propertyType: 'text' }).value.propertyId;
+  assert.equal(f.command('setTextValue', { projectId: ids[0], propertyId: text, value: 'Latest' }).ok, true);
+  assert.equal(f.save({search:'',rules:[{propertyId:text,operator:'equals',operand:'Latest'}]}).ok,true);
+  assert.deepEqual(f.results({ projection }).value.projectIds, [ids[0]]);
+  for (const invalid of [
+    { ...projection, revision: projection.revision + 1 },
+    { ...projection, projectIds: ids.slice(1) },
+    { ...projection, projectIds: [ids[0],ids[0],ids[1]] },
+    { ...projection, projectIds: [randomUUID(), ...ids.slice(1)] },
+    { ...projection, projectIds: ['not-an-id', ...ids.slice(1)] },
+  ]) assert.equal(f.results({projection:invalid}).error.code,'invalid_input');
+  assert.equal(f.results({projection, archived:true}).error.code,'invalid_input');
+}));
+
+test('displayed reads cannot authorize filesystem changes and expire when source discovery changes', () => fixture(f => {
+  const list = f.query('listProjects').value;
+  const projection = { revision: list.revision, projectIds: list.projects.map(p => p.projectId) };
+  const alpha = list.projects.find(p => p.name === 'Alpha');
+  renameSync(join(f.root, 'Alpha'), join(f.root, 'External'));
+  // The displayed snapshot is explicit; ordinary source reads still observe disk.
+  assert.deepEqual(f.results({projection}).value.projectIds, projection.projectIds);
+  assert.ok(f.query('listProjects').value.retainedProjects.some(p => p.projectId === alpha.projectId));
+  const denied = f.command('renameProject', {projectId:alpha.projectId,operationId:randomUUID(),name:'Unauthorized',expectedRevision:list.revision});
+  assert.equal(denied.ok, true);
+  assert.equal(denied.value.outcome, 'rejected');
+  assert.equal(f.command('refreshSource').ok, true);
+  assert.equal(f.results({projection}).error.code, 'invalid_input');
+  const fresh = f.query('listProjects').value;
+  const current = {revision:fresh.revision,projectIds:[...fresh.projects,...fresh.retainedProjects].map(p=>p.projectId)};
+  assert.deepEqual(f.results({projection:current}).value.projectIds, current.projectIds);
+  f.reopen();
+  assert.deepEqual(f.results({projection:current}).value.projectIds, current.projectIds);
+  const foreignRoot = join(f.directory, 'foreign'); mkdirSync(foreignRoot); mkdirSync(join(foreignRoot,'Other'));
+  const other = f.service.handleCommand({type:'workspace.create',rootPath:foreignRoot,name:'Other'}).value;
+  const preview = f.service.handleQuery({type:'workspace.previewDiscovery',workspaceId:other.workspaceId}).value;
+  assert.equal(f.service.handleCommand({type:'workspace.applyDiscovery',workspaceId:other.workspaceId,previewToken:preview.previewToken}).ok,true);
+  assert.equal(f.service.handleQuery({type:'workspace.queryView',workspaceId:other.workspaceId,viewId:other.viewId,archived:false,projection:current}).error.code,'invalid_input');
+}));
 
 test('name search is case insensitive, trimmed and saved independently with duplicated views across restart', () => fixture(f => {
   const { viewId } = f.workspace;

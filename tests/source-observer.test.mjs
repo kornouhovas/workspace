@@ -10,12 +10,14 @@ import Database from "better-sqlite3";
 import { openSettingsService } from "../dist/service/settings.mjs";
 import { nativeProjectFilesystem } from "../src/service/project-filesystem.ts";
 import { createSourceObserver, nativeObserverDependencies } from "../src/service/source-observer.ts";
+import { scanDirectSource, scanGroupedSource } from "../src/service/discovery.ts";
 
 function harness(probe = nativeObserverDependencies.probe) {
   let now = 0;
   const timers = new Set(), watches = [], probes = [], attempts = [];
   let rejected = new Set();
   const dependencies = {
+    scan(request) { return (request.mode === "grouped" ? scanGroupedSource : scanDirectSource)(request.canonicalRoot, request.archiveRelativePath, request.exclusions); },
     probe(path) { probes.push(path); return probe(path); },
     schedule(callback, delay) {
       const timer = { callback, delay, due: now + delay, active: true };
@@ -49,6 +51,28 @@ function harness(probe = nativeObserverDependencies.probe) {
 }
 const identity = { dev: "1", ino: "2", birthtimeNs: "3" };
 const target = (path, ino = "2", stamp = "1:1") => ({ path, identity: { ...identity, ino }, stamp });
+
+test("an asynchronous observation leaves commands free and cannot replace an explicitly accepted newer lifetime", async () => {
+  const h = harness(path=>target(path)), events=[];
+  let resolve; const deferred = new Promise(done=>{resolve=done;});
+  const observer=createSourceObserver(()=>deferred,(_,observation)=>events.push(observation.signature),h.dependencies);
+  observer.sync([{sourceId:"one",root:"/root"}]);
+  assert.deepEqual(events,[],"A pending scan is not an accepted observation");
+  observer.accept("one",{state:"ready",signature:"newer",targets:[target("/root")]});
+  resolve({state:"ready",signature:"old",targets:[target("/root")]});
+  await Promise.resolve(); await Promise.resolve();
+  assert.deepEqual(events,["newer"]);
+  observer.close(); assert.equal(h.live().length,0);assert.equal(h.timers.size,0);
+});
+test("closing during an asynchronous observation rejects late watch installation and events", async()=>{
+  const h=harness(path=>target(path)),events=[];
+  let resolve;const deferred=new Promise(done=>{resolve=done;});
+  const observer=createSourceObserver(()=>deferred,(...event)=>events.push(event),h.dependencies);
+  observer.sync([{sourceId:"one",root:"/root"}]);observer.close();
+  resolve({state:"ready",signature:"late",targets:[target("/root")]});
+  await Promise.resolve();await Promise.resolve();
+  assert.deepEqual(events,[]);assert.equal(h.live().length,0);assert.equal(h.timers.size,0);
+});
 
 test("native rename diagnostic compares root-only and root-plus-category directory handles", (t) => {
   const directory = fs.realpathSync.native(fs.mkdtempSync(join(tmpdir(), "watch-rename-diagnostic-")));
@@ -236,10 +260,38 @@ function fixture(grouped, run, projectFilesystem, pollCategories = false) {
     service = openSettingsService(databasePath, undefined, undefined, h.dependencies, projectFilesystem);
     service.workspaces.subscribe((event) => events.push(event));
   };
-  try { run({ h, root, path, directory, sqlite, databasePath, one, two, initial, projectId, propertyId, query, command, records, events, restart,
-    subscribe: (listener) => service.workspaces.subscribe(listener), close: () => service.close() }); }
-  finally { service.close(); sqlite.close(); fs.rmSync(directory, { recursive: true, force: true }); }
+  const cleanup=()=>{service.close();sqlite.close();fs.rmSync(directory,{recursive:true,force:true});};
+  let asynchronous=false;
+  try { const result=run({ h, root, path, directory, sqlite, databasePath, one, two, initial, projectId, propertyId, query, command, records, events, restart,
+    subscribe: (listener) => service.workspaces.subscribe(listener), close: () => service.close() });
+    if(result instanceof Promise){asynchronous=true;return result.finally(cleanup);}return result;
+  } finally {if(!asynchronous)cleanup();}
 }
+
+test("a delayed real scan reconciles identity without overwriting a metadata edit accepted while it was pending",()=>fixture(false,async f=>{
+  const scan=f.h.dependencies.scan;let release;
+  f.h.dependencies.scan=request=>{const result=scan(request);return new Promise(resolve=>{release=()=>resolve(result);});};
+  fs.renameSync(join(f.root,"Project"),join(f.root,"Renamed"));
+  f.h.hint(f.root);f.h.advance(100);assert.equal(typeof release,"function");
+  const saved=f.command("workspace.setTextValue",{projectId:f.projectId,propertyId:f.propertyId,value:"Accepted during background read"});
+  assert.equal(saved.ok,true);
+  release();await new Promise(setImmediate);
+  const projects=f.query("workspace.listProjects",{observed:true});
+  assert.equal(projects.value.projects.find(p=>p.projectId===f.projectId).name,"Renamed");
+  assert.equal(f.query("workspace.listTextProperties").value.values.find(v=>v.projectId===f.projectId).value,"Accepted during background read");
+}));
+test("a real scan from an older mode cannot overwrite newer Apply and close rejects late reconciliation",()=>fixture(false,async f=>{
+  const scan=f.h.dependencies.scan;let release;
+  f.h.dependencies.scan=request=>{const result=scan(request);return new Promise(resolve=>{release=()=>resolve(result);});};
+  f.h.hint(f.root);f.h.advance(100);
+  const preview=f.query("workspace.previewDiscovery",{mode:"grouped"}).value;
+  const applied=f.command("workspace.applyDiscovery",{previewToken:preview.previewToken});assert.equal(applied.ok,true);
+  const after=f.records();release();await new Promise(setImmediate);
+  assert.deepEqual(f.records(),after);assert.equal(f.query("workspace.listProjects",{observed:true}).value.mode,"grouped");
+  f.h.advance(100);const beforeClose=f.records(),count=f.events.length;
+  f.close();release();await new Promise(setImmediate);
+  assert.deepEqual(f.records(),beforeClose);assert.equal(f.events.length,count);assert.equal(f.h.live().length,0);assert.equal(f.h.timers.size,0);
+}));
 
 for (const grouped of [false, true]) test(`notification reconciliation preserves identities/metadata and only needed categories (${grouped ? "grouped" : "direct"})`, () => fixture(grouped, (f) => {
   const before = f.records();
