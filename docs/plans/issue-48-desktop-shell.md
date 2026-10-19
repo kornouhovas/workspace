@@ -14,7 +14,15 @@ Issue authority: GitHub #48 and parent #47. Baseline: `8b35d16e` (owner-stopped 
 
 ## Delivery
 
-Review against baseline and #48, repair findings, typecheck/lint/focused checks and full suite on completed candidate. Local evidence will be recorded in `docs/verification/issue-48-desktop-shell.md`. GitHub checkpoint owns CI, human acceptance and integration gates. The owner explicitly authorized public push and integration of #48 on 2026-10-19.
+Implementation and both review axes are complete. Typecheck/lint, focused checks,
+local full-suite outcomes and inherited-test repairs are recorded in the
+[verification report](../verification/issue-48-desktop-shell.md). Full desktop CI
+[39340151374](https://github.com/kornouhovas/workspace/actions/runs/39340151374)
+passed on `6bca28fd` across all three required platforms, with inspected artifacts.
+The [GitHub checkpoint](https://github.com/kornouhovas/workspace/issues/48#issuecomment-6279411744)
+records the tested SHA and will record delivery verification after integration.
+The owner explicitly
+authorized public push and integration of #48 on 2026-10-19.
 
 Review additionally adapted the Backup/recovery dev/release smoke route, two
 real-service IPC settings-response fixtures and the exact CI command inventory.

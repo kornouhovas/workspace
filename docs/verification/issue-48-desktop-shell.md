@@ -30,19 +30,44 @@ The [scenario plan](../plans/issue-48-desktop-shell.md) records the inherited-te
 The native driver waits for the actual Radix arrow-key focus transition before
 sending Enter. It does not retry the navigation or extend product deadlines.
 
-## Remaining delivery gates
+## Accepted candidate and delivery evidence
 
-Two-axis review found and repaired the missing Backup smoke navigation and the
-old initial window size. A shared WorkspaceSwitcher resolves the Standards duplication
-heuristic; both reviewers accepted these repairs without further findings.
+Full desktop CI [39340151374, attempt 1](https://github.com/kornouhovas/workspace/actions/runs/39340151374)
+passed on reviewed source/test/CI commit
+`6bca28fd191a2f5eb98249a22d4895440521414f`: common/static checks and the complete
+macOS latest, Windows latest and Windows 2022 jobs. The final macOS removal
+repair first passed its original development runtime and 180 regressions in
+focused [39339389571](https://github.com/kornouhovas/workspace/actions/runs/39339389571)
+on that same commit. Both Standards and Spec reviewers accepted the repairs.
 
-Completed-candidate full suite, inherited native smoke journeys, exact-SHA
-CI on macOS/Windows and integration evidence are pending. GitHub owns those live
-gates, human acceptance and delivered SHA. New ordinary CI coverage adds
-`smoke:shell` to the existing three-platform matrix and uploads screenshots and
-results with SHA/run/attempt identity. Existing tests and platform routes remain
-registered. No migration, filesystem/domain command, permission or performance
-assertion was removed.
+Downloaded full-run artifacts were inspected on all three hosts. Each shell
+report identifies that exact SHA and passes eight EN/RU, light/dark and size
+combinations, outer-window geometry, independent scrolling, keyboard/focus/scroll
+return, saved workspace/view, OS-theme changes, restart preferences and final
+workspace removal. Representative Table/settings screenshots were inspected.
+Each host also passes all 16 inherited development/packaged feature reports,
+creation/native and crash-recovery journeys, and both full runtimes. Per runtime,
+four primary, 46 rename and 34 category shutdowns have confirmed owned exits and
+cleanup. Native Windows creation receipts retain one exact navigation, selection
+and completion; bridge and file-manager cleanup passed. Historical artifact names
+identify the inherited scenarios, not an older tested checkout.
+
+Installer evidence remains [macOS 39322390525](https://github.com/kornouhovas/workspace/actions/runs/39322390525)
+and [Windows 39322690736](https://github.com/kornouhovas/workspace/actions/runs/39322690736),
+with inspected installation, reopen, replacement/reinstall, persisted identity,
+language, isolation and cleanup reports. Those runs tested `f634ae6f`; application
+sources and package manifests/lockfile are unchanged between that commit and
+`6bca28fd`. This is explicit source equivalence, not an exact-SHA installer claim.
+Windows 11 manual release acceptance and #41 performance acceptance remain separate.
+Historical local native shutdown and Windows owner-deadline causes below remain
+unproven; successful current CI does not establish that either cause was repaired.
+
+The final handoff update changes only this report and the scenario plan, checked
+with documentation links and `git diff --check`. Its delivered SHA and integration
+verification will be recorded after integration in the [GitHub checkpoint](https://github.com/kornouhovas/workspace/issues/48#issuecomment-6279411744);
+that documentation commit is not described as platform-tested. The chronological
+failure evidence below remains retained. No migration, filesystem/domain command,
+permission or performance assertion was removed.
 
 
 ## Local shutdown diagnosis
@@ -674,4 +699,6 @@ route's narrowing to the actual macOS failure, with those relevant regressions.
 Resolved Windows MultiSelect focused steps are retired from this route; ordinary
 full Windows tests and commands remain registered. Serial Electron setup, strict
 exits and exact-SHA evidence remain. All 45 route checks and lint/docs/diff passed.
-Matching original hosted macOS success is required before renewed full acceptance.
+Matching original hosted macOS run `39339389571` passed on `6bca28fd`; its
+downloaded baseline, rename, category, shutdown and cleanup evidence was inspected
+before the successful same-SHA full run recorded above.
