@@ -1,6 +1,6 @@
-/* global document, innerWidth, window */
+/* global document, innerWidth */
 import assert from 'node:assert/strict';
-import { showRuntimeProject } from './runtime-project-visibility.mjs';
+import { showRuntimeProject, waitForRuntimeProjectPath } from './runtime-project-visibility.mjs';
 import { mkdir, readdir, writeFile, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
@@ -31,7 +31,7 @@ export async function exerciseFolderGroupAssignment({page,query,rootPath,languag
     const heading=region('Target').getByRole('heading');
     await heading.evaluate(el=>el.scrollIntoView({block:'start',inline:'nearest'}));
     await handle.dragTo(heading);
-    await page.waitForFunction(({projectId,workspaceId})=>window.workspace.workspace({type:'workspace.listProjects',workspaceId}).then(r=>r.ok&&r.value.projects.some(p=>p.projectId===projectId&&p.relativePath==='A/Target')),{projectId:project.projectId,workspaceId});
+    await waitForRuntimeProjectPath(page, workspaceId, project.projectId, 'A/Target');
     assert.deepEqual(await readdir(join(source,'A')),['Target']);
     assert.equal(await readFile(join(source,'A','Target','keep'),'utf8'),'A');
     const categoryPropertyId=list.categoryProperty.propertyId;
@@ -45,7 +45,7 @@ export async function exerciseFolderGroupAssignment({page,query,rootPath,languag
     await call('renameProject',{projectId:other.projectId,operationId:randomUUID(),name:'Other',expectedRevision:(await call('listProjects')).revision});
     const selector=region('A').getByLabel(change('Target'),{exact:true}).and(page.locator(':enabled'));
     await selector.selectOption(JSON.stringify(list.categories.find(c=>c.name==='C').categoryId));
-    await page.waitForFunction(({projectId,workspaceId})=>window.workspace.workspace({type:'workspace.listProjects',workspaceId}).then(r=>r.ok&&r.value.projects.some(p=>p.projectId===projectId&&p.relativePath==='C/Target')),{projectId:project.projectId,workspaceId});
+    await waitForRuntimeProjectPath(page, workspaceId, project.projectId, 'C/Target');
     await showRuntimeProject(page, 'Target', project.projectId);
     await region('C').getByLabel(change('Target'),{exact:true}).and(page.locator(':enabled')).waitFor();
     assert.equal(await readFile(join(source,'C','Target','keep'),'utf8'),'A');

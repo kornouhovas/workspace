@@ -413,3 +413,35 @@ MultiSelect command passed both languages, restart, normal shutdown and cleanup.
 Both review axes accepted this readiness-only delta. The preceding macOS original
 runtime was left running rather than canceled. Production source remains the
 category-cache repair `e5fe6ab`; remote focused/full and installer gates are pending.
+
+## Awaiting committed asynchronous project-path reads
+
+Full run `39322384619` on `f634ae6` passed all common/platform suites, then Windows
+latest's original development views command found `A/Alpha` on disk immediately
+after its asynchronous readiness predicate purported to wait for `A/Target`.
+The completed job log and original views artifact were downloaded and inspected.
+The other platform jobs were retained. Renewed macOS/Windows installation reports
+`39322390525` and `39322690736` passed on this source and were downloaded/inspected.
+
+The installed Playwright 1.64.0 implementation calls its predicate and treats the
+returned Promise as truthy without awaiting its boolean before deciding to stop
+polling. A real-Electron control returned `{result:false, checks:1}` for a
+predicate that becomes true only on its third read. The new public driver helper's
+native regression, initially using that same old async wait, likewise failed at
+one read instead of three. This reproduces premature readiness acceptance; it is
+not evidence that the service acknowledged a filesystem move before its effect.
+
+The two affected folder-assignment waits now use sequential host-awaited,
+read-only service responses, requiring exact workspace, project UUID and path.
+One shared 15-second deadline includes transport and polling, with at most one
+query in flight; no mutation is retried. Existing filesystem bytes, identities,
+metadata, UI and width assertions remain. The native regression checks false
+paths, another project and another workspace before acceptance. It is included in
+the normal platform inventory automatically.
+
+Both review axes accepted the helper and the narrow `views-readiness` route for
+the original Windows latest development views command. All 86 affected native/
+assignment/viewport/routing tests passed. The complete original local views replay
+passed all six report blocks, normal native shutdown and cleanup. Lint, docs and
+diff checks passed. Production source remains unchanged from installer-tested
+`f634ae6`; new original focused/full acceptance remains in the GitHub checkpoint.

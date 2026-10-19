@@ -45,6 +45,12 @@ reproduced keep-original observation-cache failure in that same original macOS
 runtime. This route does not replace full acceptance or establish the cause of
 an intermittent failure.
 
+For #48's later Windows latest views failure, `checks: views-readiness` runs
+only that original development Table/Board command with the async path-readiness,
+assignment and viewport regressions. It retains the original 15-second readiness
+allowance, strict failures and exact-SHA evidence; full acceptance follows only
+after the original command passes.
+
 ## Candidate and handoff
 
 Use the [implementation sequence](development.md#implementation-sequence) before dispatching candidate acceptance. The candidate includes application changes, tests, fixtures, CI routes and relevant repository reports. Record observed local results before committing it; keep pending CI/integration status in the GitHub issue checkpoint linked from the plan.
