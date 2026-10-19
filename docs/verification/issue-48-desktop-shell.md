@@ -486,3 +486,18 @@ passed both languages and layouts, normal shutdown and cleanup; all four
 receipts contained accepted Target drops. Both review axes accepted the shared
 observer reuse. This is diagnostic evidence only, with the hosted cause still
 unproven and renewed original Windows focused acceptance pending.
+
+Run `39328107342` on `068bcef6` failed that original folder-path gate again,
+this time in English Table. Its exact-SHA receipt contained zero dragstart,
+dragover, drop and dragend events. This establishes missing native gesture
+delivery in that run, without identifying why it did not start. A reduced native
+Electron geometry control passed 12 gestures each with one, two and four mouse
+movement steps; it did not reproduce the hosted failure and does not justify a
+step-count repair. The observer now additionally retains at most 12 pressed-mouse
+movement/down/up rows, including target group and nearest button's current
+disabled/draggable state. The cap can omit later mouse events; absence beyond a
+full trace is not evidence of missing release. The original gesture and all
+assertions remain unchanged. Both review axes accepted this diagnostic delta;
+the original reduced folder replay passed EN/RU Table/Board with ordinary
+shutdown and cleanup. Lint/docs/diff checks passed. Hosted cause and acceptance
+remain unresolved.
