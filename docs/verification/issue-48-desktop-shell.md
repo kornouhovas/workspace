@@ -284,3 +284,46 @@ EN/RU report entries, including four folder assignments, eight metadata-removal
 combinations, layout/filter/grouping lifecycle, restart, unchanged fixture files,
 normal shutdown and cleanup. Its retained report is
 `work/issue-48-ci/views-filter-repair/evidence.json` (local, no remote SHA claim).
+
+## Subsequent native authoring and MultiSelect gates
+
+Focused run `39314196926` passed all three OSes on `51d076f`; inspected reports
+confirm original shell and complete views lifecycles, native shutdown/cleanup,
+220 macOS or 219 Windows regressions and 108 Windows creation/recovery screenshots.
+Renewed installer runs `39315201734` (macOS 14.8.9 arm64) and `39315489549`
+(Windows Server 2025 x64) passed on that SHA. Downloaded installation reports
+confirm installed bundled backend/SQLite, EN/RU, identity/language reopening,
+replacement/reinstallation data preservation and cleanup. Windows desktop 11 human
+release acceptance remains a separate boundary.
+
+Full run `39315194250` passed common and the macOS/Windows 2022 platform suites,
+then failed two later original native commands. The macOS runtime stopped at the
+unchanged-name rejection's exact-draft assertion before submission. Its retained
+screenshot shows the existing name duplicated; its receipt records zero service
+requests and successful initial editor readiness. A reduced direct/grouped
+rejection probe passed repeated UI cases; it did not establish the hosted cause.
+A real-Electron control injecting selection collapse during native `beforeinput`
+reproduced the same pre-submit failure. This proves that mechanism is possible,
+not that it caused the historical hosted failure. The driver now avoids redundant
+fill when the input already equals the requested draft, while retaining exact-text,
+Enter, unchanged-outcome and no-mutation assertions. Changed drafts retain their
+original replacement action. The native control changed from red to green.
+
+Windows 2022's original MultiSelect command timed out expecting the sibling's
+renamed selection on a closed value button. Its retained DOM instead contains an
+open editor with an authored-draft external-change notice. The original local
+replay stopped earlier at the already recorded native shutdown timeout; separate
+reload-only debug probes passed both UI languages. They do not reproduce or prove
+the hosted failure, and an injected-focus probe failed earlier at a different
+visibility check. No MultiSelect implementation or original driver assertion was
+changed or declared repaired. The next tight hosted loop replays that original
+command on Windows 2022.
+
+Both review axes accepted the unchanged-name driver and narrow `shell-runtime`
+route: only original macOS development runtime and Windows 2022 development
+MultiSelect, strict regression/build gates, failure propagation and exact-SHA
+artifacts. All 48 runtime/route tests and the full native readiness file passed
+locally. Full acceptance remains behind both original focused commands. Production
+source is unchanged from installer-tested `51d076f`; these changes affect native
+test authoring and CI routing only. Debug probes remain clearly marked under the
+ignored `work/issue-48-ci` evidence directory and do not establish full acceptance.

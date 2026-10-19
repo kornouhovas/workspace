@@ -444,3 +444,19 @@ test("exact nonempty rename authoring does not depend on a separate native Delet
     assert.deepEqual(await page.evaluate(() => globalThis.authoringControl), { deletes: 0, submissions: 0 });
   });
 });
+
+test("unchanged rename authoring preserves exact text despite native selection collapse", async () => {
+  await withPage(async page => {
+    await mount(page, "ready");
+    const input = page.locator("#project-rename-name");
+    await input.fill("  Renamed 日本語");
+    await page.evaluate(() => {
+      const node = globalThis.document.querySelector("input");
+      node.addEventListener("beforeinput", event => {
+        if (event.inputType === "insertText") node.setSelectionRange(node.value.length, node.value.length);
+      });
+    });
+    assert.equal(await fillExactRenameDraft(input, "  Renamed 日本語"), true);
+    assert.equal(await input.inputValue(), "  Renamed 日本語");
+  });
+});

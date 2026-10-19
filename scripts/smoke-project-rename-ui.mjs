@@ -23,9 +23,10 @@ import { installNativeRevealReceipt, retainNativeRevealReceipt } from "./native-
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const unwrap = result => { assert.equal(result.ok, true, JSON.stringify(result)); return result.value; };
 export async function fillExactRenameDraft(input, draft) {
-  // One standard replacement action owns the complete authored draft. A
-  // separate empty fill relies on keyboard Delete delivery before replacement.
-  await input.fill(draft);
+  // An unchanged-name rejection already has the exact authored value. Avoid
+  // reselecting/reinserting it: native selection loss can append a duplicate.
+  // Other drafts still use one standard replacement action.
+  if (await input.inputValue() !== draft) await input.fill(draft);
   assert.equal(await input.inputValue() === draft, true, "Rename driver must author the exact draft before submitting");
   return true;
 }

@@ -42,7 +42,7 @@ test('suite CLI lists the selected real files and rejects unknown invocations', 
 test('ordinary CI runs common checks once and retains all three platform acceptance routes', () => {
   const workflow = load(readFileSync('.github/workflows/desktop-ci.yml', 'utf8'));
   const { common, verify } = workflow.jobs;
-  assert.equal(common.if, "${{ github.event_name != 'workflow_dispatch' || (inputs.checks != 'failed' && inputs.checks != 'readiness' && inputs.checks != 'windows-release' && inputs.checks != 'issue22-failures' && inputs.checks != 'creation-shutdown' && inputs.checks != 'raw-rename' && inputs.checks != 'issue24-failures' && inputs.checks != 'category-fixture' && inputs.checks != 'issue24-startup' && inputs.checks != 'multiselect' && inputs.checks != 'etw-controls' && inputs.checks != 'app-fixture' && inputs.checks != 'property-fixture' && inputs.checks != 'runtime-observation' && inputs.checks != 'view-fixtures' && inputs.checks != 'number' && inputs.checks != 'windows-property-fixture' && inputs.checks != 'rename-authoring' && inputs.checks != 'rename-fixture' && inputs.checks != 'viewport-runtime' && inputs.checks != 'desktop-shell') }}");
+  assert.equal(common.if, "${{ github.event_name != 'workflow_dispatch' || (inputs.checks != 'failed' && inputs.checks != 'readiness' && inputs.checks != 'windows-release' && inputs.checks != 'issue22-failures' && inputs.checks != 'creation-shutdown' && inputs.checks != 'raw-rename' && inputs.checks != 'issue24-failures' && inputs.checks != 'category-fixture' && inputs.checks != 'issue24-startup' && inputs.checks != 'multiselect' && inputs.checks != 'etw-controls' && inputs.checks != 'app-fixture' && inputs.checks != 'property-fixture' && inputs.checks != 'runtime-observation' && inputs.checks != 'view-fixtures' && inputs.checks != 'number' && inputs.checks != 'windows-property-fixture' && inputs.checks != 'rename-authoring' && inputs.checks != 'rename-fixture' && inputs.checks != 'viewport-runtime' && inputs.checks != 'desktop-shell' && inputs.checks != 'shell-runtime') }}");
   assert.equal(common.strategy, undefined);
   assert.deepEqual(common.steps.filter(step => step.run).map(step => step.run), [
     'npm ci', 'npm run lint', 'npm run typecheck', 'npm run check:docs', 'npm run test:common',
@@ -83,7 +83,7 @@ test('investigation jobs run only with explicit manual diagnostic inputs', () =>
 test('manual failed-check scope runs only the Windows observer and macOS rename routes', () => {
   const workflow = load(readFileSync('.github/workflows/desktop-ci.yml', 'utf8'));
   assert.equal(workflow.on.workflow_dispatch.inputs.checks.default, 'full');
-  assert.deepEqual(workflow.on.workflow_dispatch.inputs.checks.options, ['full', 'failed', 'readiness', 'windows-release', 'issue22-failures', 'creation-shutdown', 'raw-rename', 'issue24-failures', 'category-fixture', 'issue24-startup', 'multiselect', 'etw-controls', 'app-fixture', 'property-fixture', 'runtime-observation', 'view-fixtures', 'number', 'windows-property-fixture', 'rename-authoring', 'rename-fixture', 'viewport-runtime', 'desktop-shell']);
+  assert.deepEqual(workflow.on.workflow_dispatch.inputs.checks.options, ['full', 'failed', 'readiness', 'windows-release', 'issue22-failures', 'creation-shutdown', 'raw-rename', 'issue24-failures', 'category-fixture', 'issue24-startup', 'multiselect', 'etw-controls', 'app-fixture', 'property-fixture', 'runtime-observation', 'view-fixtures', 'number', 'windows-property-fixture', 'rename-authoring', 'rename-fixture', 'viewport-runtime', 'desktop-shell', 'shell-runtime']);
   const enabled = (job, event, checks) => runInNewContext(job.if.slice(3, -2), { github: { event_name: event }, inputs: { checks } });
   for (const event of ['push', 'pull_request', 'workflow_dispatch']) for (const checks of [undefined, 'full', 'failed']) {
     const focused = event === 'workflow_dispatch' && checks === 'failed';
@@ -933,4 +933,28 @@ test('desktop shell failure route retains the original journey on all affected O
   assert.equal(upload.if, 'always()');
   assert.equal(upload.with['if-no-files-found'], 'error');
   for (const field of ['github.sha', 'github.run_id', 'github.run_attempt', 'matrix.os']) assert.ok(upload.with.name.includes(field));
+});
+
+
+test('shell runtime failure selector replays only the two affected original commands', () => {
+  const workflow = load(readFileSync('.github/workflows/desktop-ci.yml', 'utf8'));
+  for (const event of ['push', 'pull_request', 'workflow_dispatch']) {
+    const active = Object.entries(workflow.jobs).filter(([, job]) => job.if && runInNewContext(job.if.slice(3, -2), { github: {event_name: event}, inputs: {checks: 'shell-runtime'} })).map(([name]) => name);
+    assert.deepEqual(active, event === 'workflow_dispatch' ? ['focused-shell-runtime'] : ['common']);
+  }
+  const job = workflow.jobs['focused-shell-runtime'];
+  assert.deepEqual(job.strategy.matrix.os, ['macos-latest', 'windows-2022']);
+  assert.equal(job.strategy['fail-fast'], false);
+  assert.ok(job.steps.every(step => step['continue-on-error'] === undefined));
+  for (const [name, os, command] of [
+    ['Original macOS development runtime', 'macos-latest', 'npm run smoke:runtime -- dev'],
+    ['Original Windows 2022 development MultiSelect', 'windows-2022', 'npm run smoke:multiselect -- dev'],
+  ]) {
+    const step = job.steps.find(step => step.name === name);
+    assert.ok(step.run.includes(command)); assert.ok(step.run.includes('set -o pipefail'));
+    for (const selected of job.strategy.matrix.os) for (const outcome of ['success', 'failure']) {
+      assert.equal(runInNewContext(step.if.slice(3, -2), {cancelled: () => false, steps: {build: {outcome}}, matrix: {os: selected}}), selected === os && outcome === 'success');
+    }
+  }
+  assert.equal(job.steps.find(step => step.uses === 'actions/upload-artifact@v4').with['if-no-files-found'], 'error');
 });

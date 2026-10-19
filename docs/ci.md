@@ -36,6 +36,13 @@ creation/recovery Ladle layouts after the corresponding full-run failure.
 Its original assertions and exact-SHA artifact remain required; the broader
 ordinary platform matrix is unchanged.
 
+For the subsequent #48 macOS unchanged-name authoring and Windows 2022
+MultiSelect failures, `checks: shell-runtime` selects only those two original
+development commands on their affected OSes. It retains native authoring,
+MultiSelect interaction and routing regressions, strict build gates and exact-SHA
+evidence. This route does not replace full acceptance or establish the cause of
+an intermittent failure.
+
 ## Candidate and handoff
 
 Use the [implementation sequence](development.md#implementation-sequence) before dispatching candidate acceptance. The candidate includes application changes, tests, fixtures, CI routes and relevant repository reports. Record observed local results before committing it; keep pending CI/integration status in the GitHub issue checkpoint linked from the plan.
