@@ -15,3 +15,9 @@ Issue authority: GitHub #48 and parent #47. Baseline: `8b35d16e` (owner-stopped 
 ## Delivery
 
 Review against baseline and #48, repair findings, typecheck/lint/focused checks and full suite on completed candidate. Local evidence will be recorded in `docs/verification/issue-48-desktop-shell.md`. GitHub checkpoint owns CI, human acceptance and integration gates. The owner explicitly authorized public push and integration of #48 on 2026-10-19.
+
+Review additionally adapted the Backup/recovery dev/release smoke route, two
+real-service IPC settings-response fixtures and the exact CI command inventory.
+The behavior, filesystem preservation, malformed-request, event fanout and
+three-OS/no-skipped-route assertions were retained. Full-run/native failure
+classification and review repairs are recorded in the verification report.

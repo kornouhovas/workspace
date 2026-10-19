@@ -222,7 +222,7 @@ test('full product OS comparison retains identical checks and unique evidence/pa
   const early = runs.find(step => step.name === 'Early Windows latest direct development creation/native evidence');
   const late = runs.find(step => step.name === 'Direct development creation/native evidence');
   assert.deepEqual(runs.filter(step => step !== early).map((step) => step.run), [
-    'npm ci', 'npm run build', 'npm run test:platform', 'node scripts/windows-observer-diagnostics.mjs validate-call --output work/ci-observer-full-suite',
+    'npm ci', 'npm run build', 'npm run smoke:shell', 'npm run test:platform', 'node scripts/windows-observer-diagnostics.mjs validate-call --output work/ci-observer-full-suite',
     'npm run build:ladle',
     'node scripts/smoke-discovery-layouts.mjs --creation',
     'node scripts/smoke-discovery-layouts.mjs --category-move',
@@ -237,7 +237,7 @@ test('full product OS comparison retains identical checks and unique evidence/pa
     'npm run smoke:runtime -- release',
   ]);
   // Only the unchanged direct native command changes position. Each OS retains
-  // the complete original command multiset, with no skipped acceptance route.
+  // the complete original command multiset plus shell acceptance, with no skipped route.
   assert.equal(early.run, late.run);
   for (const os of ['windows-latest', 'windows-2022', 'macos-latest']) {
     const active = runs.filter(step => step !== early && step !== late ||

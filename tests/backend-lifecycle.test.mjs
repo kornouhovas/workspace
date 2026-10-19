@@ -174,7 +174,7 @@ test("malformed request discriminators leave the service connection usable", asy
       id: 2, result: { ok: true, value: { workspaces: [], activeWorkspace: null } },
     });
     port.receive({ id: 3, input: { type: "settings.load" } });
-    assert.deepEqual(port.sent[2], { id: 3, result: { ok: true, value: { language: "en" } } });
+    assert.deepEqual(port.sent[2], { id: 3, result: { ok: true, value: { language: "en", appearance: "system" } } });
   } finally {
     parent.emit("message", { data: { type: "shutdown" }, ports: [] });
     await rm(directory, { recursive: true, force: true });
@@ -453,7 +453,7 @@ test("real service ports interleave committed source events with requests, fan o
     desktopPort.receive({ type: "workspace.change", id: 999, change: changes.at(-1) });
     desktopPort.receive({ type: "workspace.change", change: { type: "workspace.sourceChanged", source: { sourceId: 42 } } });
     assert.equal(changes.length, 2);
-    assert.deepEqual(await pending, { ok: true, value: { language: "en" } });
+    assert.deepEqual(await pending, { ok: true, value: { language: "en", appearance: "system" } });
     unsubscribe();
     await rm(root, { recursive: true });
     await controller.request(refresh);

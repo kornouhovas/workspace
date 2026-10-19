@@ -1,3 +1,4 @@
+import { openSettingsSection } from "./runtime-settings.mjs";
 /* global window, document, innerWidth */
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";
@@ -86,6 +87,7 @@ try {
     await query(page, { type: "workspace.createView", workspaceId, name: "Independent Board", kind: "board" });
     await page.evaluate(language => window.workspace.settings({ type: "settings.setLanguage", language }), language);
     await page.reload();
+    await openSettingsSection(page, "backup");
     const title = () => page.locator("#data-title");
     await title().click();
     const exportButton = page.getByRole("button", { name: en ? "Export application data" : "Экспортировать данные приложения", exact: true });

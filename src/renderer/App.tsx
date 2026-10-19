@@ -21,6 +21,17 @@ function errorMessage(code: ServiceErrorCode): FormMessage {
   return "activation";
 }
 
+function WorkspaceSwitcher({ data, disabled, label, id, onActivate }: {
+  data: WorkspaceLoad; disabled: boolean; label: string; id?: string; onActivate(id: string): void;
+}) {
+  return <label className="bb-field workspace-switcher">{label}
+    <select className="bb-select" id={id} value={data.activeWorkspace?.workspaceId ?? ""} disabled={disabled}
+      onChange={event => onActivate(event.currentTarget.value)}>
+      {data.workspaces.map(workspace => <option key={workspace.workspaceId} value={workspace.workspaceId}>{workspace.name}</option>)}
+    </select>
+  </label>;
+}
+
 export function App() {
   const [dataLocked, setDataLocked] = useState(false);
   const [client] = useState(() => new WorkspaceServiceClient());
@@ -492,14 +503,11 @@ export function App() {
         </> : unavailableSettings,
         workspaces: settingsAvailable ? <>{activeWorkspace ? <>
           <h2>{activeWorkspace.name}</h2>
-          <label className="bb-field">{t("workspaceSelectLabel")}
-            <select className="bb-select" value={activeWorkspace.workspaceId} disabled={busy !== null || renameDraft !== null || removalTarget !== null}
-              onChange={event => void activateWorkspace(event.currentTarget.value)}>
-              {workspaceData?.workspaces.map(workspace => <option key={workspace.workspaceId} value={workspace.workspaceId}>{workspace.name}</option>)}
-            </select>
-          </label>
+          {workspaceData && <WorkspaceSwitcher data={workspaceData} label={t("workspaceSelectLabel")}
+            disabled={busy !== null || renameDraft !== null || removalTarget !== null} onActivate={id => void activateWorkspace(id)} />}
           <button type="button" className="workspace-button workspace-button--secondary" disabled={busy !== null || renameDraft !== null || removalTarget !== null}
-            onClick={() => { setFormMessage(null); setAddingWorkspace(true); back(); }}>{t("addWorkspaceAction")}</button>              <section className="workspace-management" aria-labelledby="workspace-order-title" aria-busy={busy === "reorder"}>
+            onClick={() => { setFormMessage(null); setAddingWorkspace(true); back(); }}>{t("addWorkspaceAction")}</button>
+              <section className="workspace-management" aria-labelledby="workspace-order-title" aria-busy={busy === "reorder"}>
                 <h3 id="workspace-order-title">{t("workspaceOrderTitle")}</h3>
                 <ol ref={managementList} className="workspace-management__list" aria-label={t("workspaceOrderTitle")}>
                   {workspaceData?.workspaces.map((workspace, index, all) => (
@@ -641,7 +649,7 @@ export function App() {
       {viewState === "load-error" && (
         <StatusMessage kind="error" title={t("loadErrorTitle")}>
           {t("loadErrorDescription")}
-          <button type="button" className="workspace-button workspace-button--secondary" onClick={() => { setViewState("loading"); void loadInitialData(() => backendState.current === "ready"); }}>{shellLabels[language].retry}</button>
+          <button type="button" className="workspace-button workspace-button--secondary" onClick={() => { const lifetime = backendLifetime.current; setViewState("loading"); void loadInitialData(() => backendState.current === "ready" && backendLifetime.current === lifetime); }}>{shellLabels[language].retry}</button>
         </StatusMessage>
       )}
       {viewState === "ready" && (
@@ -654,20 +662,8 @@ export function App() {
                   <h2 id="workspace-title">{activeWorkspace.name}</h2>
                   <p className="workspace-root">{activeWorkspace.canonicalRoot}</p>
                 </div>
-                <div className="bb-field workspace-switcher">
-                  <label className="bb-label" htmlFor="workspace-switcher">{t("workspaceSelectLabel")}</label>
-                  <select
-                    className="bb-select"
-                    id="workspace-switcher"
-                    value={activeWorkspace.workspaceId}
-                    disabled={busy !== null || renameDraft !== null || removalTarget !== null}
-                    onChange={(event) => void activateWorkspace(event.currentTarget.value)}
-                  >
-                    {workspaceData?.workspaces.map((workspace) => (
-                      <option key={workspace.workspaceId} value={workspace.workspaceId}>{workspace.name}</option>
-                    ))}
-                  </select>
-                </div>
+                {workspaceData && <WorkspaceSwitcher data={workspaceData} label={t("workspaceSelectLabel")} id="workspace-switcher"
+                  disabled={busy !== null || renameDraft !== null || removalTarget !== null} onActivate={id => void activateWorkspace(id)} />}
               </div>
               {formMessage === "activation" && (
                 <StatusMessage kind="error" title={t(messageTitle.activation)}>

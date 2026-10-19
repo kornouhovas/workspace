@@ -25,6 +25,9 @@ async function launch() {
   parents.add(app.process()); page = await app.firstWindow(); page.setDefaultTimeout(15000);
   await page.waitForFunction(async () => (await window.workspace.getBackendStatus()).state === "ready");
   for (const pid of await app.evaluate(({ app }) => app.getAppMetrics().filter(m => m.type === "Utility" && m.serviceName?.includes("Node")).map(m => m.pid))) backends.add(pid);
+  const content = await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].getContentSize());
+  assert.ok(content[0] >= 1024 && content[1] >= 720, `Fresh launch content viewport ${content}`);
+  checks.push({ freshLaunchContentSize:content });
   launchUnverified = false;
 }
 async function close() { if (app) { await closeElectron(app); app = undefined; } }
@@ -36,7 +39,7 @@ try {
   const saved = await query({ type: "workspace.createView", workspaceId: first.workspaceId, name: "Authored Table", kind: "table" });
   const view = saved.views.find(v => v.name === "Authored Table"); assert.ok(view);
   await query({ type: "workspace.activateView", workspaceId: first.workspaceId, viewId: view.viewId });
-  const second = await query({ type: "workspace.create", name: "Second workspace", rootPath: source });
+  await query({ type: "workspace.create", name: "Second workspace", rootPath: source });
   for (let i = 0; i < 24; i++) await query({ type: "workspace.create", name: `Extra workspace ${i}`, rootPath: source });
   await query({ type: "workspace.activate", workspaceId: first.workspaceId }); await page.reload();
   for (const language of ["en", "ru"]) {
@@ -93,6 +96,7 @@ try {
   await nav.getByRole("button", { name: /Second workspace/ }).click();
   await page.getByRole("heading", { name: "Second workspace", exact: true }).waitFor();
   await nav.getByRole("button", { name: /Рабочие проекты/ }).click();
+  await page.waitForFunction(viewId => document.querySelector('.view-controls select')?.value === viewId, view.viewId);
   assert.equal(await page.getByRole("combobox", { name: /^(Current view|Текущее представление)$/ }).inputValue(), view.viewId);
   await close(); await launch();
   await page.getByRole("heading", { name: "Рабочие проекты", exact: true }).waitFor();

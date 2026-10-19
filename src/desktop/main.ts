@@ -36,8 +36,9 @@ controller.onWorkspaceChange((change) => {
 
 async function createWindow(): Promise<void> {
   const window = new BrowserWindow({
-    width: 960,
-    height: 640,
+    width: 1024,
+    height: 720,
+    useContentSize: true,
     webPreferences: {
       preload: join(__dirname, "preload.cjs"),
       contextIsolation: true,
@@ -46,6 +47,10 @@ async function createWindow(): Promise<void> {
     },
   });
 
+  // Minimum dimensions describe usable renderer content, accounting for OS chrome.
+  const [outerWidth, outerHeight] = window.getSize();
+  const [contentWidth, contentHeight] = window.getContentSize();
+  window.setMinimumSize(1024 + outerWidth - contentWidth, 720 + outerHeight - contentHeight);
   window.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
   const rendererUrl = pathToFileURL(join(__dirname, "../renderer/index.html")).href;
   window.webContents.on("will-navigate", (event, url) => {
