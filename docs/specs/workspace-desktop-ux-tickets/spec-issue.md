@@ -464,4 +464,3 @@ pinned references describe the inspected baseline.
   [source creation/discovery](https://github.com/kornouhovas/workspace/blob/d925f8b758caea6dc079061d42be1d132dcbc8a1/src/service/workspaces.ts),
   [Number contract](https://github.com/kornouhovas/workspace/blob/d925f8b758caea6dc079061d42be1d132dcbc8a1/docs/plans/issue-23-number-properties.md),
   [recovery](https://github.com/kornouhovas/workspace/blob/d925f8b758caea6dc079061d42be1d132dcbc8a1/docs/recovery.md), [reuse and attribution](https://github.com/kornouhovas/workspace/blob/d925f8b758caea6dc079061d42be1d132dcbc8a1/docs/reuse.md).
-
