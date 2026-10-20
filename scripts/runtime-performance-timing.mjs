@@ -6,7 +6,8 @@ function afterPaint() {
 }
 function stabilizeProjection({ ids, timeout }, usable, painted) {
   return (async () => {
-    const deadline = performance.now() + timeout;
+    const observationStartedAt = performance.now();
+    const deadline = observationStartedAt + timeout;
     const ready = async () => {
       while (!usable(ids)) {
         if (performance.now() >= deadline) throw new Error("Runtime projection readiness timed out");
@@ -18,7 +19,7 @@ function stabilizeProjection({ ids, timeout }, usable, painted) {
     // Mounting can reveal additional rows. Recheck complete membership and all
     // visible editors after layout, then retain the original final frame pair.
     await ready();
-    return { firstPaintedAt, paintedAt: await painted() };
+    return { observationStartedAt, firstPaintedAt, paintedAt: await painted() };
   })();
 }
 // Playwright serializes functions without their module imports. Embed only our
@@ -29,9 +30,9 @@ export async function waitForRuntimeProjection(page, ids) {
   try { return await result.jsonValue(); }
   finally { await result.dispose(); }
 }
-export async function readRuntimeInteraction(page, { firstPaintedAt, paintedAt } = {}) {
+export async function readRuntimeInteraction(page, { observationStartedAt, firstPaintedAt, paintedAt } = {}) {
   const { startedAt, observedAt } = await page.evaluate(() => ({ startedAt: globalThis.__workspacePerformanceStarted, observedAt: performance.now() }));
-  assert.ok(Number.isFinite(startedAt) && Number.isFinite(firstPaintedAt) && Number.isFinite(paintedAt) && firstPaintedAt >= startedAt && paintedAt >= firstPaintedAt && paintedAt <= observedAt, "A fresh measured event and completed paint must precede observation");
-  return { ms: paintedAt - startedAt, firstPaintedMs: firstPaintedAt - startedAt, stabilizationMs: paintedAt - firstPaintedAt,
+  assert.ok(Number.isFinite(startedAt) && Number.isFinite(observationStartedAt) && Number.isFinite(firstPaintedAt) && Number.isFinite(paintedAt) && observationStartedAt >= startedAt && firstPaintedAt >= observationStartedAt && paintedAt >= firstPaintedAt && paintedAt <= observedAt, "A fresh measured event and completed paint must precede observation");
+  return { ms: paintedAt - startedAt, observationStartMs: observationStartedAt - startedAt, initialReadinessMs: firstPaintedAt - observationStartedAt, firstPaintedMs: firstPaintedAt - startedAt, stabilizationMs: paintedAt - firstPaintedAt,
     observedMs: observedAt - startedAt, paintedMs: paintedAt - startedAt, driverObservationDelayMs: observedAt - paintedAt };
 }

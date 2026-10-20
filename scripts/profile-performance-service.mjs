@@ -51,6 +51,19 @@ try {
     const projection = {revision:list.revision,projectIds:list.projects.map(p => p.projectId)};
     const result = await profile(`${source.mode}-displayed-view`, () => unwrap(service.handleQuery({type:"workspace.queryView",workspaceId,viewId,archived:false,projection})));
     assert.deepEqual(result.projectIds, projection.projectIds);
+    const displayed = () => unwrap(service.handleQuery({type:"workspace.queryView",workspaceId,viewId,archived:false,projection}));
+    await profile(`${source.mode}-save-filter`, () => unwrap(service.handleCommand({type:"workspace.setViewFilter",workspaceId,viewId,config:{search:"Project 00",rules:[]}})));
+    const filtered = await profile(`${source.mode}-filtered-view`, displayed);
+    assert.deepEqual(filtered.projectIds, projection.projectIds.filter(id => source.projects.find(p => p.projectId === id).name.includes("Project 00")));
+    const property = source.properties.find(p => p.type === "single_select");
+    await profile(`${source.mode}-save-grouping`, () => unwrap(service.handleCommand({type:"workspace.setViewGrouping",workspaceId,viewId,config:{propertyId:property.propertyId,settings:[]}})));
+    const grouped = await profile(`${source.mode}-grouped-view`, displayed);
+    const projectId = source.projects[0].projectId;
+    const from = grouped.groups.find(group => group.projectIds.includes(projectId));
+    const to = grouped.groups.find(group => group.value === property.options[2] && group.key !== from.key);
+    assert.ok(from && to);
+    await profile(`${source.mode}-assign-project-group`, () => unwrap(service.handleCommand({type:"workspace.assignProjectGroup",workspaceId,viewId,projectId,propertyId:property.propertyId,fromKey:from.key,toKey:to.key,archived:false})));
+    assert.ok(displayed().groups.find(group => group.key === to.key).projectIds.includes(projectId));
     await profile(`${source.mode}-refresh-source`, () => unwrap(service.handleCommand({type:"workspace.refreshSource",workspaceId})));
   }
   // Let the unchanged native observer execute its ordinary health pass. This

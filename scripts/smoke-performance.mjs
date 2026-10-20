@@ -143,11 +143,12 @@ try {
         const profiler = profileFilters && ((kind === "table" && sample === 0) || (kind === "board" && sample === 1)) ? await page.context().newCDPSession(page) : undefined;
         if (profiler) { await profiler.send("Profiler.enable"); await profiler.send("Profiler.start"); }
         const text = sample % 2 ? "Project 0" : "Project 00";
+        // Fixture expectation preparation is outside the user-event clock.
+        const ids = expected.filter(id => source.projects.find(p => p.projectId === id).name.includes(text));
         const search = page.getByLabel("Search project names", { exact: true });
         await search.fill(text);
         const save = page.getByRole("button", { name: "Save search and filters", exact: true }); await save.focus();
         await startUiTiming(save, "keydown"); await save.press("Enter");
-        const ids = expected.filter(id => source.projects.find(p => p.projectId === id).name.includes(text));
         await ready(ids); await recordUi(source.mode, `${kind} filter ${sample}`);
         if (profiler) {
           const { profile } = await profiler.send("Profiler.stop");

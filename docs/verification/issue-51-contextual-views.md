@@ -329,3 +329,39 @@ targets, four normal quits/backend exits and cleanup. It still failed initial
 startup 5,278.2ms and conservative final peaks 1,005,371,392/1,015,136,256 bytes.
 Those local failures are retained; neither a remote pass nor a unique historical
 cause is inferred. Both supported strict candidates remain required.
+
+
+## Inspected macOS acceptance and remaining Windows diagnosis
+
+Run [39424627943](https://github.com/kornouhovas/workspace/actions/runs/39424627943),
+attempt 1 at `b77d388573adcda2cd0bbc1952dda0db40191464`, passed macOS 14:
+six native controls, all 32 strict samples, startup 3,177.8ms, maximum interaction
+225.7ms, conservative peak 944,537,600 bytes, four normal quits/backend exits and
+cleanup. Exact-SHA raw report/regression log were downloaded and inspected.
+
+Its Windows latest original completed all 32 cases and six native controls;
+startups/memory/four normal quits/backend exits/cleanup passed. Strict failures:
+direct Table filter 388.7ms, direct Board grouping 366.7ms, grouped Table filters
+330.0/400.4ms, grouped Table assignment 405.2ms, grouped Board grouping 346.6ms
+and grouped refresh 5,124.1ms. At those misses the first paint was already late;
+final stabilization took 28.1–32.5ms and late observation 4.0–5.2ms. This bounds
+those intervals but does not distinguish earlier driver work from service/UI work.
+
+Additional observation-start and initial-readiness timestamps now provide that
+split without changing the readiness sequence or measured endpoint. Expected-ID
+fixture computation moves before search/activation; #41 excludes preparation from
+the user-event clock. It preserves the exact expected membership and user action.
+The separate service diagnostic profiles real save-filter/query, save-grouping/
+query and assignment with durable membership checks. Local diagnostic completed
+18 nonempty CPU profiles and cleanup: assignments 25.6–27.7ms, filter saves about
+2ms, projected reads about 10–16ms; these local values are not Windows evidence.
+Six native controls and static checks pass. Both independent reviews have no
+findings and accept Windows-only renewal with explicit macOS evidence retention.
+
+Retain the inspected macOS strict receipt at actual `b77d3885` under evidence reuse:
+application/build/runtime inputs, readiness sequence, event and final endpoint are
+unchanged. Added timestamps are diagnostic; previously included fixture preparation
+made the passing filter bound conservative. This does not prove future timings
+must improve or provide macOS evidence for the new diagnostic fields. Their native
+consumer was renewed locally on macOS. Renew the expanded service diagnostic and
+original strict Windows consumer; no past Windows failure is waived.

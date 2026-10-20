@@ -125,6 +125,7 @@ test("event-to-paint timing includes delayed committed work and excludes later d
     assert.ok(after.observedMs - before.observedMs >= 240, "The injected driver delay is independently observable");
     assert.ok(after.driverObservationDelayMs >= 240);
     await assert.rejects(readRuntimeInteraction(page, { ...readyTiming, paintedAt: Number.NaN }), /fresh measured event/);
+    await assert.rejects(readRuntimeInteraction(page, { ...readyTiming, observationStartedAt: Number.NaN }), /fresh measured event/);
     await assert.rejects(readRuntimeInteraction(page, { ...readyTiming, firstPaintedAt: Number.NaN }), /fresh measured event/);
     await assert.rejects(readRuntimeInteraction(page), /fresh measured event/);
     const startedAt = await page.evaluate(() => globalThis.__workspacePerformanceStarted);

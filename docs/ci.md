@@ -786,3 +786,15 @@ adapter preserves the immutable baseline's inline select without changing the
 shared current settings driver. The failed baseline General-tab comparison remains
 failed diagnostic evidence; neither its target misses nor unreached cases are
 relabeled as passing current acceptance.
+
+
+After `39424627943`, macOS 14 strict acceptance at `b77d3885` is inspected/passing;
+only Windows latest remains failed. Observation-start metadata leaves the endpoint
+and readiness algorithm unchanged, while expected-ID preparation now occurs before
+the event as the contract requires. Retain the actual macOS receipt with that
+unchanged-input/conservative-bound justification and renewed native controls.
+Select Windows only with `candidate_only: true`, `profile_service: true`; the
+separate diagnostic now includes actual filter/grouping saves and group assignment,
+then the original unprofiled strict command runs independently. New phases split
+pre-observation time from initial readiness; neither diagnostics nor local timings
+substitute for the failed Windows targets.
