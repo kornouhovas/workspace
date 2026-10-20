@@ -233,7 +233,9 @@ try {
       // Ordinary Select grouping retains exact option identities and an empty group.
       const property = source.properties.find(p => p.type === "single_select");
       const assignmentProfiler = profileFilters ? await startInteractionProfile(source.mode === "direct" && kind === "table") : undefined;
+      const presentationStarted = performance.now();
       await openGroupingControls(page);
+      (report.preparations ??= []).push({source:source.mode,scenario:`${kind} grouping controls presentation`,ms:performance.now()-presentationStarted});
       const groupBy = page.getByLabel("Group by", { exact: true });
       await startUiTiming(groupBy, "change"); await groupBy.selectOption(property.propertyId);
       await ready(undefined,[{selector:".project-group"}]);

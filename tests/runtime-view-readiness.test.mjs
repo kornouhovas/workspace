@@ -357,3 +357,26 @@ test('scheduling diagnostics reject ordinary and strict routes before creating e
     }
   }finally{await rm(directory,{recursive:true,force:true});}
 });
+
+test('grouping preparation observes a presented stable popover before choosing a value', async () => {
+  await withPage(async page => {
+    const {openGroupingControls} = await import('../scripts/runtime-presentation-controls.mjs');
+    await page.setContent('<button aria-expanded="false">Grouping</button><section role="region" aria-label="Grouping" hidden style="width:260px;height:100px;background:green"><select aria-label="Group by"><option value="">None</option><option value="field">Field</option></select></section>');
+    await page.evaluate(() => {
+      globalThis.activations = 0; globalThis.changes = 0; globalThis.presented = false;
+      const trigger = document.querySelector('button'), panel = document.querySelector('section');
+      trigger.onclick = () => {
+        globalThis.activations++; trigger.setAttribute('aria-expanded','true'); panel.hidden = false;
+        panel.animate([{transform:'translateX(80px)'},{transform:'translateX(0)'}],{duration:250,fill:'forwards'}).finished.then(() => {globalThis.presented = true;});
+      };
+      document.querySelector('select').onchange = () => {globalThis.changes++;};
+    });
+    const panel = await openGroupingControls(page);
+    assert.equal(await page.evaluate(() => globalThis.presented),true,'DOM presence alone must not release an unpresented moving popover');
+    assert.equal(await page.evaluate(() => globalThis.activations),1);
+    assert.equal(await page.evaluate(() => globalThis.changes),0,'Preparation never chooses or warms grouping values');
+    assert.equal(await panel.getByLabel('Group by',{exact:true}).inputValue(),'');
+    await panel.getByLabel('Group by',{exact:true}).selectOption('field');
+    assert.equal(await page.evaluate(() => globalThis.changes),1);
+  });
+});

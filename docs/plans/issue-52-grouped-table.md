@@ -105,3 +105,11 @@ Adapt renderer-app's own-event list resolver to deferred observation. Retain the
 separate out-of-order list guarantee by issuing a later external event while the
 stale mutation's fallback read is pending, then resolve the newest read first.
 No guarantee is retired; renew the complete renderer-app consumer.
+
+Expanded GPU traces locate the remaining macOS grouping overlap in popover
+presentation that started before the measured choice. Observe the stable
+composited popover before permitting that choice, and record opening latency
+separately. Retain animations, one opening, no preparatory value selection,
+inline-baseline behavior and every original change-event/result/frame operand.
+Add a native delayed-presentation regression, renew shared helper consumers and
+both strict performance hosts. Reject the unpublished border experiment.

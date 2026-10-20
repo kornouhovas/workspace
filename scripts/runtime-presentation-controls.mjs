@@ -7,6 +7,9 @@ export async function openGroupingControls(page, language = "en") {
   if (await trigger.count() && await trigger.getAttribute("aria-expanded") !== "true") {
     await trigger.scrollIntoViewIfNeeded();
     await trigger.press("Enter");
+    // DOM actionability can precede the first composited popover frame. Observe
+    // its stable pixels before a caller starts timing a choice inside it.
+    await panel.screenshot({ animations: "allow" });
   }
   return panel;
 }

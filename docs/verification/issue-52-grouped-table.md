@@ -471,3 +471,46 @@ routes, application/build inputs, actions and acceptance predicates stay unchang
 Native readiness controls passed 14/14 and CI route controls 50/50; lint/whitespace
 and both independent reviews passed. Renew only the macOS diagnostic for this
 new evidence; Windows strict receipt remains available for unchanged inputs.
+
+## First-group GPU scheduling experiment
+
+Expanded macOS diagnostic `39480983785`, attempt 1 at `290b9089`, completed its
+32 cases; first Table grouping still missed at 453.8 ms. The newly included GPU
+process records two `DawnPlatformImpl::RunWorkerTask` spans (154.9 and 164.3 ms)
+at about 105 and 187 ms after the grouping event. Presentation then spends 72.8 ms
+in `CALayerTreeCoordinator::ApplyBackpressure`. Renderer tasks were about 13,
+20 and 29 ms; its CPU profile explains neither GPU work nor the prior idle gap.
+This identifies observed GPU intervals, not a specific shader or causal CSS rule.
+[Chromium's coordinator source](https://chromium.googlesource.com/chromium/src/+/HEAD/ui/accelerated_widget_mac/ca_layer_tree_coordinator.mm)
+implements backpressure by waiting on the prior frame's fences.
+
+Ranked comparisons: new rounded Table-group border geometry, repeated Table/header
+geometry, then host GPU/frame scheduling independent of those styles. The first
+single-variable source experiment uses square outer Table-group borders while
+preserving Board styling, dimensions, padding, contents, interactions, popovers
+and all measured operands. Reject this experiment if hosted GPU spans and latency
+remain; local speed alone is insufficient. It is not an accepted performance fix.
+
+
+Before publishing the radius experiment, correlate spans that STARTED before the
+measured event: GPU raster/flush ran from -45.6 to +351.4 ms; three Dawn tasks
+started at -42.4/-39.8/-39.3 ms and lasted 307.4/226.4/144.7 ms. The expensive
+work therefore preceded group creation and overlaps initial popover rendering.
+Reject and restore the unpublished radius experiment. Its 23 UI controls, fresh
+package/artifact and native shell journey passed, but these do not establish a
+performance effect. No experimental CSS is retained or published.
+
+The current helper opens the popover then immediately permits selectOption;
+DOM presence does not prove that its pixels reached the GPU output. Test explicit
+popover visual readiness before the measured user choice. Retain start at the
+same change event, original action, all result predicates and four-frame endpoint;
+record preparatory screenshot latency separately rather than hiding it.
+
+Native delayed-presentation control failed before the helper repair (DOM-visible
+moving popover released before presentation). After observing stable panel pixels,
+it passed with one open, zero preparatory grouping changes, unchanged initial
+selection and one subsequent actual choice. Full native readiness suite passed
+15/15, route controls 50/50; fresh unmodified-application package/artifact, lint and
+both independent reviews passed. Opening duration is recorded separately in
+`preparations`; no renderer/service/style application input changes are retained.
+Renew both strict hosts and actual shared-helper runtime consumers.
