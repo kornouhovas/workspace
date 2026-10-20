@@ -46,7 +46,7 @@ try {
   assert.equal((await query({ type: "workspace.load" })).workspaces.length, 0);
   await app.evaluate(({ dialog }) => { dialog.showOpenDialog = globalThis.originalWorkspaceDialog; });
   await selectRoot(); await add().press("Enter");
-  await page.getByRole("heading", { name: "Workspace", exact: true }).waitFor();
+  await page.locator("#workspace-title").filter({ hasText: /^Workspace$/ }).waitFor();
   const first = (await query({ type: "workspace.load" })).activeWorkspace;
   const views = await query({ type: "workspace.listViews", workspaceId: first.workspaceId });
   assert.equal(views.views.length, 1); assert.equal(views.views[0].kind, "table");
@@ -68,6 +68,7 @@ try {
         const bounds = await group.boundingBox(); assert.ok(bounds && bounds.x >= 0 && bounds.x + bounds.width <= size.width && bounds.y + bounds.height <= size.height);
         await page.screenshot({ path: join(evidence, `${language}-${theme}-${size.width}-context.png`) });
         await group.getByRole("button", { name: /^(Settings|Настройки)$/ }).press("Enter");
+        await page.getByRole("tab", { name: /^(Workspaces|Рабочие пространства)$/ }).waitFor();
         assert.equal(await page.getByRole("combobox", { name: /^(Saved workspaces|Сохранённые рабочие пространства)$/ }).inputValue(), first.workspaceId);
         await page.screenshot({ path: join(evidence, `${language}-${theme}-${size.width}-detail.png`) });
         await returnToWorkspace(page);
@@ -105,6 +106,7 @@ try {
   await query({ type: "workspace.activate", workspaceId:first.workspaceId });
   await actions().nth(1).press("Enter");
   await page.getByRole("group", { name: /^(Workspace actions|Действия с рабочим пространством):/ }).getByRole("button", { name: /^(Settings|Настройки)$/ }).press("Enter");
+  await page.getByRole("tab", { name: /^(Workspaces|Рабочие пространства)$/ }).waitFor();
   assert.equal(await page.getByRole("combobox", { name: /^(Saved workspaces|Сохранённые рабочие пространства)$/ }).inputValue(), second.workspaceId);
   await renameActiveWorkspace(page, "Renamed workspace");
   await actions().nth(1).press("Enter");
@@ -119,9 +121,10 @@ try {
     await page.getByRole("group", { name: new RegExp(`${name}$`) }).getByRole("button", { name: /^(Remove workspace|Удалить рабочее пространство)$/ }).press("Enter");
     await page.getByRole("button", { name: /^(Remove configuration|Удалить конфигурацию)$/ }).press("Enter");
     await page.waitForFunction(async remaining => (await window.workspace.workspace({ type:"workspace.load" })).value?.workspaces.length === remaining, name === "Renamed workspace" ? 1 : 0);
-    await returnToWorkspace(page);
+    if (name === "Renamed workspace") await returnToWorkspace(page);
   }
   await page.getByRole("button", { name: /^(Choose project folder|Выбрать папку проекта)$/ }).waitFor();
+  await page.waitForFunction(() => document.activeElement?.matches(".workspace-create .root-picker-row button"));
   assert.equal((await query({ type: "workspace.load" })).workspaces.length, 0);
   assert.equal(await readFile(join(source, "Project", "keep.txt"), "utf8"), "User project bytes");
   await selectRoot(); await add().press("Enter");

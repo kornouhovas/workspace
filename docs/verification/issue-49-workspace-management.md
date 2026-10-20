@@ -57,3 +57,28 @@ both Settings and Rename against an inactive workspace.
 Review preparation also scopes authored root-path waits to visible content,
 because the same path is retained in hidden settings sections. No ownership or
 native assertions were removed.
+
+## Completed native candidate journey
+
+After the reviewed event-race repair and driver synchronization fixes,
+`npm run smoke:workspaces` passed the entire disposable macOS Electron journey,
+including both normal shutdowns, restart/order/name persistence, final-removal
+picker focus, preserved project bytes and orphan-source reuse with stable project
+IDs. The 24 screenshots were renewed and inspected. Earlier shutdown failures are
+retained as failures; the passing run does not identify their underlying cause.
+
+The driver waits for the saved workspace heading (rather than the identically
+named app heading), visible Settings navigation and authoritative removal count.
+It waits for automatic final-removal navigation instead of requesting a second
+Back action. The inherited asynchronous install fixture now includes the app
+heading collision. Copy after cancellation/validation now reflects folder-only
+creation in both languages. Follow-up Standards review accepted these changes;
+Spec review's P1 is repaired and its remaining copy finding is corrected.
+
+## Final local verification
+
+- Full `npm run test:all`: 3,156 tests, 3,125 passed, 26 platform skips, five failed. Every failure was an inherited renderer positive root-path text query matching both the visible workspace and the new hidden settings detail.
+- Adapted those five positive queries to the visible `main` boundary, preserving exact path assertions and global negative stale-path checks. Spec review accepted the adaptation. Renewed complete affected files (`renderer-app.test.tsx` and `property-editor-driver.test.mjs`): **109 passed, zero failures/skips**. This renewal also verifies the asynchronous install fixture's app-heading collision and absence of a saved workspace when creation never completes.
+- The full run's other service/SQLite/filesystem/IPC/native regressions passed; no application change followed that run. No test was disabled or deadline relaxed. Only the affected test files were renewed after their locator repair.
+- Fresh build, typecheck, lint, documentation links and `git diff --check` completed; real-Electron `smoke:workspaces` passed. The CI route/inventory focused suites passed 66 tests earlier in preparation.
+- Final review: Standards zero findings; Spec's activation-event and copy findings repaired, with no remaining findings after follow-up. Actual Windows/packaged/integrated acceptance remains in the issue checkpoint until exact-SHA CI completes.

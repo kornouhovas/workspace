@@ -353,7 +353,7 @@ test("renders the persisted active Table workspace and flags an unavailable sour
   });
   render(<App />);
   assert.ok(await screen.findByRole("heading", { name: "Saved workspace" }));
-  assert.equal(screen.getByText((_content, element) => element?.classList.contains("workspace-root") ?? false).textContent, "/Users/me/Keep  Verbatim");
+  assert.equal(within(screen.getByRole("main")).getByText((_content, element) => element?.classList.contains("workspace-root") ?? false).textContent, "/Users/me/Keep  Verbatim");
   assert.ok(screen.getByRole("heading", { name: "Таблица" }));
   assert.ok(await screen.findByText(/Просмотрите папки, выберите исключения/));
   assert.ok(screen.getByRole("heading", { name: "Папка проекта недоступна" }));
@@ -385,7 +385,7 @@ test("activates another saved workspace from the selector", async () => {
   await userEvent.selectOptions(selector, "two");
   await waitFor(() => assert.equal(screen.getByRole("heading", { name: "Second" }).textContent, "Second"));
   assert.deepEqual(calls, ["two"]);
-  assert.equal(screen.getByText("/Projects/B").textContent, "/Projects/B");
+  assert.equal(within(screen.getByRole("main")).getByText("/Projects/B").textContent, "/Projects/B");
   cleanup();
 });
 
@@ -954,7 +954,7 @@ test("long authored names and paths survive language changes and keyboard confir
     await waitFor(() => assert.equal(document.documentElement.lang, language));
     await backToWorkspace();
     assert.equal(screen.getByRole("heading", { name: active.name.trim() }).textContent, active.name);
-    assert.equal(screen.getByText(active.canonicalRoot, { exact: true }).textContent, active.canonicalRoot);
+    assert.equal(within(screen.getByRole("main")).getByText(active.canonicalRoot, { exact: true }).textContent, active.canonicalRoot);
     await openSettings("workspaces");
     const remove = screen.getByRole("button", { name: `${translate(language, "removeWorkspaceAction")}: ${active.name.trim()}` });
     remove.focus();
@@ -1871,7 +1871,7 @@ test("backend generations discard old source observations and preserve newer eve
         await act(async () => finish?.(ok(data)));
         await screen.findByRole("button", { name: `${translate(language, "renameProperty")}: Notes` });
         assert.equal(screen.queryByText(translate(language, "sourceUnavailableTitle")) !== null, newerEvent);
-        assert.ok(screen.getByText(newerEvent ? "/New-generation" : active.canonicalRoot));
+        assert.ok(within(screen.getByRole("main")).getByText(newerEvent ? "/New-generation" : active.canonicalRoot));
         assert.equal(screen.queryByText("/Old-generation"), null);
         cleanup();
       }
@@ -2855,7 +2855,7 @@ test("EN/RU stale Refresh responses cannot override newer observations or select
     await act(async () => { finish?.(ok({ sourceId: active.sourceId, workspaceIds: [active.workspaceId], canonicalRoot: "/Stale root", sourceAvailable: false })); });
     assert.ok(screen.queryByText("/Stale root") === null, `${language} ${reason}: stale response replaced current root`);
     assert.ok(screen.queryByText(translate(language, "refreshSourceErrorTitle")) === null);
-    if (reason === "observation") assert.ok(screen.getByText("/Current root"));
+    if (reason === "observation") assert.ok(within(screen.getByRole("main")).getByText("/Current root"));
     if (reason === "selection") assert.ok(screen.getByRole("heading", { name: "Other" }));
     if (reason === "removal") assert.ok(screen.getByRole("heading", { name: translate(language, "createWorkspaceTitle") }));
     cleanup();
