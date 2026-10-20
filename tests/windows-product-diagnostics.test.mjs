@@ -470,3 +470,18 @@ test('raw-rename dispatch selects only Windows 2022 comparisons and original reg
   assert.equal(upload.with['if-no-files-found'], 'error');
   assert.ok(upload.with.name.includes('${{ github.sha }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}'));
 });
+
+test('source fixture route renews only canonical path scenarios across affected platforms', async () => {
+  const { jobs } = load(await readFile('.github/workflows/desktop-ci.yml', 'utf8'));
+  const job = jobs['source-settings-fixture'];
+  assert.match(job.if, /inputs.checks == 'source-fixture'/);
+  assert.deepEqual(job.strategy.matrix.os, ['windows-2022', 'windows-latest', 'macos-latest']);
+  assert.equal(job.strategy['fail-fast'], false);
+  assert.ok(job.steps.every(step => step['continue-on-error'] === undefined));
+  const commands = job.steps.filter(step => step.run).map(step => step.run).join('\n');
+  assert.match(commands, /npm run build/);
+  assert.match(commands, /--test-name-pattern="\[Ss\]ources\? settings" tests\/renderer-app\.test\.tsx tests\/workspaces-service\.test\.mjs/);
+  assert.doesNotMatch(commands, /test:all|test:platform|smoke:/);
+  assert.match(jobs.common.if, /inputs.checks != 'source-fixture'/);
+  assert.equal(jobs.verify.needs, 'common');
+});

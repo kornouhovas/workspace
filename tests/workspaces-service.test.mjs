@@ -1786,7 +1786,7 @@ test("source settings lists one shared source without changing active workspace"
       assert.equal(result.ok, true);
       assert.equal(result.value.sources.length, 1);
       assert.deepEqual(result.value.sources[0], {
-        sourceId: first.sourceId, canonicalRoot: realpathSync(root), sourceAvailable: true,
+        sourceId: first.sourceId, canonicalRoot: realpathSync.native(root), sourceAvailable: true,
         mode: null, excludedRelativePaths: [], archiveRelativePath: null,
         workspaces: [{ workspaceId: first.workspaceId, name: "One" }, { workspaceId: second.workspaceId, name: "Two" }],
       });

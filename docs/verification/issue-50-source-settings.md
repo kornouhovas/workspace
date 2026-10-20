@@ -71,3 +71,21 @@ ownership gaps; Spec review found the archive draft/review mismatch. All three
 were repaired with regressions; both follow-up reviews report zero remaining
 findings. Final platform CI, installer acceptance and integration remain gates until
 recorded in GitHub. Local macOS evidence is not Windows or release acceptance.
+
+## CI canonical-path fixture repair
+
+Desktop run `39398466086`, attempt 1, application SHA `068b87c`, Windows 2022:
+`test:platform` failed two new source settings tests. Retained job log
+`118547502222` shows their expected root uses `C:\Users\RUNNER~1` while the
+service/UI correctly expose the native canonical `C:\Users\runneradmin` path.
+The renderer failure is the exact-name locator mismatch; the service failure is
+the same sole expected-field mismatch. Both tests now use `realpathSync.native`,
+matching the accepted native canonicalization contract without changing the
+application. No identity, shared-ownership, cancel/Apply or retained-data assertion
+was removed. Local affected scenarios pass 5/5.
+
+The manual `checks: source-fixture` route builds the original fixtures and runs
+only these source settings scenarios plus related regressions on both Windows
+hosts and macOS. It records SHA/run/attempt and original logs. Ordinary full CI
+remains unchanged; common/platform jobs are not dispatched by this focused gate.
+Passing original source-native and both installer receipts remain at `068b87c`.

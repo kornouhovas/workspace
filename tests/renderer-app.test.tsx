@@ -3928,7 +3928,7 @@ test("Sources settings reviews and applies discovery through real shared source 
       ? service.handleCommand(input) : service.handleQuery(input)) as ServiceResult<WorkspaceResponse> });
     off = service.workspaces.subscribe(api.emitChange);
     render(<SourceSettings client={new WorkspaceServiceClient()} language="en" disabled={false} />);
-    await userEvent.click(await screen.findByRole("button", { name: realpathSync(root) }));
+    await userEvent.click(await screen.findByRole("button", { name: realpathSync.native(root) }));
     await userEvent.click(screen.getByRole("button", { name: translate("en", "discoveryAction") }));
     await userEvent.selectOptions(await screen.findByRole("combobox", { name: translate("en", "discoveryMode") }), "grouped");
     await waitFor(() => assert.equal((screen.getByRole("button", { name: translate("en", "discoveryApply") }) as HTMLButtonElement).disabled, false));

@@ -707,3 +707,11 @@ remain. Always-uploaded evidence records SHA/run/attempt and the original result
 Inspect focused results before renewed full desktop acceptance on the same SHA.
 Application and installer inputs are unchanged by this driver/fixture/CI repair;
 retain their separately recorded successful exact-SHA receipts.
+
+For #50's canonical-path fixture mismatch, `checks: source-fixture` renews the
+source settings renderer/service scenarios on Windows 2022, Windows latest and
+macOS after their required build. The original Windows 2022 log distinguishes
+legacy short-path expectations from the native canonical path displayed by the
+application. This route preserves original assertions and captures exact-SHA
+provenance. Apply the evidence-reuse policy to this test/route-only repair; source
+native and installer receipts retain their actual earlier SHA.
