@@ -48,7 +48,6 @@ export function App() {
   const [workspaceData, setWorkspaceData] = useState<WorkspaceLoad | null>(null);
   const selectedWorkspace = useRef<ActiveWorkspace | null>(null);
   selectedWorkspace.current = workspaceData?.activeWorkspace ?? null;
-  const [name, setName] = useState("");
   const [rootPath, setRootPath] = useState("");
   const [formMessage, setFormMessage] = useState<FormMessage>(null);
   const [addingWorkspace, setAddingWorkspace] = useState(false);
@@ -121,7 +120,7 @@ export function App() {
     return () => { active = false; dataVersion.current++; unsubscribe(); };
   }, [client, acceptSourceObservation]);
   const removalFocus = useRef<string | null>(null);
-  const createNameInput = useRef<HTMLInputElement>(null);
+  const createPickerButton = useRef<HTMLButtonElement>(null);
   const managementList = useRef<HTMLOListElement>(null);
   const reorderFocus = useRef<{ workspaceId: string; direction: "up" | "down" } | null>(null);
 
@@ -129,7 +128,7 @@ export function App() {
     if (busy || removalTarget || !removalFocus.current) return;
     const buttons = Array.from(managementList.current?.querySelectorAll<HTMLButtonElement>("button[data-action='remove']") ?? []);
     const target = buttons.find((button) => button.dataset.workspaceId === removalFocus.current) ?? buttons[0];
-    (target ?? createNameInput.current)?.focus();
+    (target ?? createPickerButton.current)?.focus();
     removalFocus.current = null;
   }, [busy, removalTarget, workspaceData]);
 
@@ -279,32 +278,16 @@ export function App() {
     finally { setSavingAppearance(false); }
   };
 
-  const pickRoot = async () => {
-    if (busy) return;
-    setBusy("picker");
+  const createWorkspace = async (path: string) => {
     setFormMessage(null);
-    try {
-      const result = await client.pickRoot();
-      if (result.outcome === "selected") setRootPath(result.path);
-      else setFormMessage(result.outcome === "cancelled" ? "cancelled" : "picker-failed");
-    } catch {
-      setFormMessage("picker-failed");
-    } finally {
-      setBusy(null);
-    }
-  };
-
-  const createWorkspace = async () => {
-    if (busy) return;
-    setFormMessage(null);
-    if (!name.trim() || !rootPath) {
+    if (!path) {
       setFormMessage("validation");
       return;
     }
     const version = ++dataVersion.current;
     setBusy("create");
     try {
-      const result = await client.createWorkspace(name, rootPath);
+      const result = await client.createWorkspace("Workspace", path);
       if (!result.ok) {
         setFormMessage(errorMessage(result.error.code));
         return;
@@ -318,7 +301,6 @@ export function App() {
         activeWorkspace,
       }));
       setFormMessage(null);
-      setName("");
       setAddingWorkspace(false);
     } catch {
       setFormMessage("storage");
@@ -327,15 +309,33 @@ export function App() {
     }
   };
 
+  const pickRoot = async () => {
+    if (busy || dataLocked || viewState !== "ready") return;
+    setAddingWorkspace(true);
+    setRootPath("");
+    setBusy("picker");
+    setFormMessage(null);
+    try {
+      const result = await client.pickRoot();
+      if (result.outcome === "selected") {
+        setRootPath(result.path);
+        await createWorkspace(result.path);
+      } else setFormMessage(result.outcome === "cancelled" ? "cancelled" : "picker-failed");
+    } catch { setFormMessage("picker-failed"); }
+    finally { setBusy(null); }
+  };
+
   const activateWorkspace = async (workspaceId: string) => {
-    if (busy || !workspaceId) return;
+    if (busy || !workspaceId) return false;
     const version = ++dataVersion.current;
     setBusy("activate");
     setFormMessage(null);
     try {
       const result = await client.activateWorkspace(workspaceId);
       if (result.ok) {
-        if (version === dataVersion.current) setWorkspaceData((current) => current ? { ...current, activeWorkspace: applyObservedSource(result.value) } : current);
+        if (version !== dataVersion.current) return false;
+        setWorkspaceData((current) => current ? { ...current, activeWorkspace: applyObservedSource(result.value) } : current);
+        return true;
       } else {
         setFormMessage("activation");
       }
@@ -376,14 +376,14 @@ export function App() {
     }
   };
 
-  const moveWorkspace = async (workspaceId: string, direction: "up" | "down") => {
+  const moveWorkspace = async (workspaceId: string, direction: "up" | "down", focusInSettings = true) => {
     if (busy || renameDraft || removalTarget || !workspaceData) return;
     const workspaceIds = workspaceData.workspaces.map((workspace) => workspace.workspaceId);
     const index = workspaceIds.indexOf(workspaceId);
     const target = index + (direction === "up" ? -1 : 1);
     if (index < 0 || target < 0 || target >= workspaceIds.length) return;
     [workspaceIds[index], workspaceIds[target]] = [workspaceIds[target], workspaceIds[index]];
-    reorderFocus.current = { workspaceId, direction };
+    if (focusInSettings) reorderFocus.current = { workspaceId, direction };
     const version = ++dataVersion.current;
     setBusy("reorder");
     setReorderError(null);
@@ -479,7 +479,18 @@ export function App() {
   const unavailableSettings = <StatusMessage kind="info" title={shellLabels[language].unavailable} />;
   return (
     <DesktopShell language={language} data={workspaceData} busy={viewState !== "ready" || busy !== null || renameDraft !== null || removalTarget !== null} locked={dataLocked}
-      onEmptyWorkspaceShown={() => createNameInput.current?.focus()}
+      onCreate={() => void pickRoot()}
+      onManage={async (id, action) => {
+        const target = workspaceData?.workspaces.find(workspace => workspace.workspaceId === id);
+        if (!target || busy || dataLocked) return false;
+        if (action === "up" || action === "down") { await moveWorkspace(id, action, false); return true; }
+        if (action !== "remove" && activeWorkspace?.workspaceId !== id && !await activateWorkspace(id)) return false;
+        setAddingWorkspace(false);
+        if (action === "rename") { setRenameDraft({ workspaceId: id, name: target.name }); setRenameError(null); returnRenameFocus.current = true; }
+        if (action === "remove") { setRemovalTarget(target); setRemovalError(null); }
+        return true;
+      }}
+      onEmptyWorkspaceShown={() => createPickerButton.current?.focus()}
       onActivate={(id) => { setAddingWorkspace(false); void activateWorkspace(id); }}
       renderPanels={(back) => ({
         general: settingsAvailable ? <>          <section className="workspace-settings" aria-labelledby="settings-title">
@@ -504,6 +515,7 @@ export function App() {
         </> : unavailableSettings,
         workspaces: settingsAvailable ? <>{activeWorkspace ? <>
           <h2>{activeWorkspace.name}</h2>
+          <p className="workspace-root">{activeWorkspace.canonicalRoot}</p>
           {workspaceData && <WorkspaceSwitcher data={workspaceData} label={t("workspaceSelectLabel")}
             disabled={busy !== null || renameDraft !== null || removalTarget !== null} onActivate={id => void activateWorkspace(id)} />}
           <button type="button" className="workspace-button workspace-button--secondary" disabled={busy !== null || renameDraft !== null || removalTarget !== null}
@@ -632,7 +644,7 @@ export function App() {
                   )}
                 </form>
               )}
-</> : <p>{t("createWorkspaceDescription")}</p>}</> : unavailableSettings,
+</> : <><p>{t("createWorkspaceDescription")}</p><button type="button" className="workspace-button" disabled={busy !== null} onClick={() => { back(); void pickRoot(); }}>{t("addWorkspaceAction")}</button></>}</> : unavailableSettings,
         sources: settingsAvailable && activeWorkspace ? <><h2>{activeWorkspace.name}</h2><p className="workspace-root">{activeWorkspace.canonicalRoot}</p></> : settingsAvailable ? <p>{t("createWorkspaceDescription")}</p> : unavailableSettings,
         backup: settingsAvailable ? <DataRecoveryPanel key={backendGeneration} client={client} language={language} onRestored={() => window.location.reload()} onLock={setDataLocked} /> : unavailableSettings,
         about: <><h2>Workspace</h2><p>{shellLabels[language].aboutDescription}</p><p>bb · MIT · Copyright (c) 2026 Michael Yong</p></>,
@@ -641,6 +653,7 @@ export function App() {
       <header className="workspace-header"><h1>{t("appTitle")}</h1></header>
       {uncertainRecovery && (!activeWorkspace || activeWorkspace.workspaceId === uncertainRecovery) &&
         <StatusMessage kind="error" title={t("recoveryUncertain")} />}
+      {reorderError && <StatusMessage kind="error" title={t("reorderErrorTitle")}>{t(reorderError === "stale" ? "reorderStaleDescription" : "reorderErrorDescription")}</StatusMessage>}
       {viewState === "loading" && <StatusMessage kind="info" title={t("loading")} />}
       {viewState === "unavailable" && (
         <StatusMessage kind="error" title={t("unavailableTitle")}>
@@ -699,18 +712,8 @@ export function App() {
             <section className="workspace-create" aria-labelledby="create-title">
               <h2 id="create-title">{t("createWorkspaceTitle")}</h2>
               <p className="workspace-intro">{t("createWorkspaceDescription")}</p>
-              <label className="bb-field">
-                <span className="bb-label">{t("workspaceNameLabel")}</span>
-                <input
-                  ref={createNameInput}
-                  className="bb-input"
-                  value={name}
-                  onChange={(event) => setName(event.currentTarget.value)}
-                  autoComplete="off"
-                />
-              </label>
               <div className="root-picker-row">
-                <button type="button" className="workspace-button workspace-button--secondary" onClick={() => void pickRoot()} disabled={busy !== null}>
+                <button ref={createPickerButton} type="button" className="workspace-button workspace-button--secondary" onClick={() => void pickRoot()} disabled={busy !== null}>
                   {busy === "picker" ? t("pickerLoading") : t("pickRootAction")}
                 </button>
                 <div className="selected-root" aria-live="polite">
@@ -718,9 +721,9 @@ export function App() {
                   <span className="selected-root__path">{rootPath || t("noRootSelected")}</span>
                 </div>
               </div>
-              <button type="button" className="workspace-button" onClick={() => void createWorkspace()} disabled={busy !== null}>
+              {rootPath && <button type="button" className="workspace-button" onClick={() => void createWorkspace(rootPath)} disabled={busy !== null}>
                 {busy === "create" ? t("creatingWorkspace") : t("createWorkspaceAction")}
-              </button>
+              </button>}
               {activeWorkspace && (
                 <button
                   type="button"

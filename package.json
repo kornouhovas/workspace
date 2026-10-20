@@ -59,7 +59,8 @@
     "smoke:install:win": "node scripts/smoke-windows-install.mjs",
     "smoke:performance": "node scripts/smoke-performance.mjs",
     "build:discovery-worker": "esbuild src/service/discovery-worker.ts --bundle --platform=node --format=cjs --outfile=dist/service/discovery-worker.cjs",
-    "smoke:shell": "node scripts/smoke-desktop-shell.mjs"
+    "smoke:shell": "node scripts/smoke-desktop-shell.mjs",
+    "smoke:workspaces": "node scripts/smoke-workspace-management.mjs"
   },
   "dependencies": {
     "@radix-ui/react-radio-group": "1.5.1",

@@ -1,3 +1,4 @@
+import { renameActiveWorkspace } from "./runtime-settings.mjs";
 import { setInterfaceLanguage, openSettingsSection, returnToWorkspace } from "./runtime-settings.mjs";
 import assert from "node:assert/strict";
 import { lstat, mkdir, mkdtemp, readdir, readFile, readlink, realpath, rename, stat, symlink, writeFile } from "node:fs/promises";
@@ -233,10 +234,10 @@ async function create(current, name, rootPath, language = "en") {
   if (await page.locator("#workspace-title").count()) {
     await page.getByRole("button", { name: language === "en" ? "Create another workspace" : "Создать ещё одно рабочее пространство", exact: true }).click();
   }
-  await page.getByRole("textbox").fill(name);
   await page.getByRole("button", { name: language === "en" ? "Choose project folder" : "Выбрать папку проекта", exact: true }).click();
   await page.getByText(rootPath, { exact: true }).waitFor();
-  await page.getByRole("button", { name: language === "en" ? "Create workspace" : "Создать рабочее пространство", exact: true }).click();
+  await page.getByRole("heading", { name: "Workspace", exact: true }).waitFor();
+  await renameActiveWorkspace(page, name);
   await page.getByRole("heading", { name: name.trim(), exact: true }).waitFor();
   return (await load(page)).activeWorkspace;
 }

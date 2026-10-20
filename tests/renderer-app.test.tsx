@@ -224,19 +224,18 @@ test("loads English settings and preserves the language only after a successful 
   cleanup();
 });
 
-test("shows a keyboard-operable create form and displays selected paths verbatim", async () => {
+test("creates from keyboard folder selection with the standard name and preserves exact paths", async () => {
   const selectedPath = "/Volumes/Projects/  Team & Work  ";
   mockApi({ picker: async () => ({ outcome: "selected", path: selectedPath }) });
   render(<App />);
-  const nameInput = await screen.findByRole("textbox", { name: "Workspace name" });
-  await userEvent.type(nameInput, "  My workspace  ");
-  await userEvent.tab();
+  await screen.findByRole("button", { name: "Choose project folder" });
+  assert.equal(screen.queryByRole("textbox"), null);
   const picker = screen.getByRole("button", { name: "Choose project folder" });
-  assert.equal(document.activeElement, picker);
+  picker.focus();
   await userEvent.keyboard("{Enter}");
   const displayedPath = screen.getByText((_content, element) => element?.classList.contains("selected-root__path") ?? false);
   assert.equal(displayedPath.textContent, selectedPath);
-  assert.equal((nameInput as HTMLInputElement).value, "  My workspace  ");
+  assert.equal(screen.queryByRole("textbox"), null);
   cleanup();
 });
 
@@ -250,29 +249,25 @@ test("picker cancellation is actionable and never sends a create command", async
     },
   });
   render(<App />);
-  await screen.findByRole("textbox", { name: "Workspace name" });
+  await screen.findByRole("button", { name: "Choose project folder" });
   await userEvent.click(screen.getByRole("button", { name: "Choose project folder" }));
   assert.ok(await screen.findByRole("heading", { name: "Folder selection cancelled" }));
   assert.equal(createCalls, 0);
   cleanup();
 });
 
-test("validates blank names and keeps the form usable", async () => {
-  let createCalls = 0;
-  mockApi({
-    picker: async () => ({ outcome: "selected", path: "/tmp/real-root" }),
-    onWorkspace: async (input) => {
-      if (input.type === "workspace.create") createCalls++;
-      return input.type === "workspace.load" ? ok(emptyLoad()) : fail("invalid_input");
-    },
-  });
+test("pending folder selection cannot create or open a second picker", async () => {
+  let resolvePicker!: (value: { outcome: "cancelled" }) => void;
+  let picks = 0;
+  mockApi({ picker: () => { picks++; return new Promise(resolve => { resolvePicker = resolve; }); } });
   render(<App />);
-  await screen.findByRole("textbox", { name: "Workspace name" });
-  await userEvent.click(screen.getByRole("button", { name: "Create workspace" }));
-  assert.ok(await screen.findByRole("heading", { name: "Check the workspace details" }));
-  assert.equal(createCalls, 0);
-  assert.ok(screen.getByRole("button", { name: "Create workspace" }));
-  cleanup();
+  const picker = await screen.findByRole("button", { name: "Choose project folder" });
+  await userEvent.click(picker);
+  assert.equal((picker as HTMLButtonElement).disabled, true);
+  await userEvent.click(picker);
+  assert.equal(picks, 1);
+  await act(async () => resolvePicker({ outcome: "cancelled" }));
+  assert.ok(await screen.findByRole("heading", { name: "Folder selection cancelled" }));
 });
 
 test("reports inaccessible roots in Russian without exposing service details", async () => {
@@ -284,14 +279,11 @@ test("reports inaccessible roots in Russian without exposing service details", a
       : fail("filesystem"),
   });
   render(<App />);
-  const name = await screen.findByRole("textbox", { name: "Название рабочего пространства" });
-  await userEvent.type(name, "Мои проекты");
+  await screen.findByRole("button", { name: "Выбрать папку проекта" });
   await userEvent.click(screen.getByRole("button", { name: "Выбрать папку проекта" }));
-  await userEvent.click(screen.getByRole("button", { name: "Создать рабочее пространство" }));
   assert.ok(await screen.findByRole("heading", { name: "Нет доступа к папке" }));
   assert.equal(screen.queryByText("private service detail"), null);
   assert.ok(screen.getByRole("button", { name: "Создать рабочее пространство" }));
-  assert.equal((name as HTMLInputElement).value, "Мои проекты");
   cleanup();
 });
 
@@ -303,17 +295,15 @@ test("failed storage create does not render a saved workspace", async () => {
       : fail("storage"),
   });
   render(<App />);
-  const name = await screen.findByRole("textbox", { name: "Workspace name" });
-  await userEvent.type(name, "Not saved");
+  await screen.findByRole("button", { name: "Choose project folder" });
   await userEvent.click(screen.getByRole("button", { name: "Choose project folder" }));
-  await userEvent.click(screen.getByRole("button", { name: "Create workspace" }));
   assert.ok(await screen.findByRole("heading", { name: "Workspace not saved" }));
   assert.equal(screen.queryByRole("heading", { name: "Not saved" }), null);
-  assert.ok(screen.getByRole("textbox", { name: "Workspace name" }));
+  assert.equal(screen.queryByRole("textbox"), null);
   cleanup();
 });
 
-test("creates named workspaces and then lets the user activate either one", async () => {
+test("creates identically named workspaces with distinct IDs and activates either one", async () => {
   const created: ActiveWorkspace[] = [];
   mockApi({
     picker: async () => ({ outcome: "selected", path: "/tmp/Workspace Root" }),
@@ -339,24 +329,19 @@ test("creates named workspaces and then lets the user activate either one", asyn
     },
   });
   render(<App />);
-  const firstName = await screen.findByRole("textbox", { name: "Workspace name" });
-  await userEvent.type(firstName, "  Alpha  ");
+  await screen.findByRole("button", { name: "Choose project folder" });
   await userEvent.click(screen.getByRole("button", { name: "Choose project folder" }));
-  await userEvent.click(screen.getByRole("button", { name: "Create workspace" }));
-  await waitFor(() => assert.equal(document.querySelector("#workspace-title")?.textContent, "  Alpha  "));
+  await waitFor(() => assert.equal(document.querySelector("#workspace-title")?.textContent, "Workspace"));
 
   await userEvent.click(screen.getByRole("button", { name: "Create another workspace" }));
-  const secondName = screen.getByRole("textbox", { name: "Workspace name" });
-  await userEvent.type(secondName, "Beta");
   await userEvent.click(screen.getByRole("button", { name: "Choose project folder" }));
-  await userEvent.click(screen.getByRole("button", { name: "Create workspace" }));
-  await waitFor(() => assert.equal(document.querySelector("#workspace-title")?.textContent, "Beta"));
+  await waitFor(() => assert.equal(created.length, 2));
 
   const selector = screen.getByRole("combobox", { name: "Saved workspaces" });
   assert.equal((selector as HTMLSelectElement).options.length, 2);
   await userEvent.selectOptions(selector, "workspace-1");
-  await waitFor(() => assert.equal(document.querySelector("#workspace-title")?.textContent, "  Alpha  "));
-  assert.deepEqual(created.map(({ name: workspaceName }) => workspaceName), ["  Alpha  ", "Beta"]);
+  await waitFor(() => assert.equal(document.querySelector("#workspace-title")?.textContent, "Workspace"));
+  assert.deepEqual(created.map(({ name: workspaceName }) => workspaceName), ["Workspace", "Workspace"]);
   cleanup();
 });
 
@@ -741,7 +726,7 @@ test("keyboard removal applies committed inactive, active and final snapshots an
         assert.ok(document.activeElement === screen.getByRole("button", { name: `${translate(language, "removeWorkspaceAction")}: Sibling` }), `Expected sibling removal focus; got ${document.activeElement?.textContent?.slice(0, 80)}`);
       } else {
         assert.ok(screen.getByRole("heading", { name: translate(language, "createWorkspaceTitle") }));
-        await waitFor(() => assert.ok(document.activeElement === screen.getByRole("textbox", { name: translate(language, "workspaceNameLabel") }), `Expected workspace-name focus; got ${document.activeElement?.textContent?.slice(0, 80)}`));
+        await waitFor(() => assert.ok(document.activeElement === screen.getByRole("button", { name: translate(language, "pickRootAction") }), `Expected folder-picker focus; got ${document.activeElement?.textContent?.slice(0, 80)}`));
         assert.equal(screen.queryByRole("combobox", { name: translate(language, "workspaceSelectLabel") }), null);
       }
     }
@@ -3779,4 +3764,98 @@ test("settings remains reachable through startup, read failure and backend disco
   await backToWorkspace();
   await screen.findByRole("heading", { name: translate("en", "unavailableTitle") });
   assert.equal(reads, 2);
+});
+
+test("EN/RU sidebar context Settings and Rename target the chosen workspace through the keyboard", async () => {
+  for (const language of ["en", "ru"] as const) {
+    const one = makeActive("one", "First"), two = makeActive("two", "Second");
+    const data = { workspaces: [one, two], activeWorkspace: one };
+    mockApi({ language, onWorkspace: async input => input.type === "workspace.load" ? ok(data)
+      : input.type === "workspace.activate" ? ok(input.workspaceId === "two" ? two : one) : fail("invalid_input") });
+    render(<App />);
+    const context = await screen.findByRole("button", { name: `${translate(language, "workspaceActions")}: Second` });
+    context.focus(); await userEvent.keyboard("{Enter}");
+    const menu = screen.getByRole("group", { name: `${translate(language, "workspaceActions")}: Second` });
+    await userEvent.click(within(menu).getByRole("button", { name: translate(language, "renameWorkspaceAction") }));
+    const draft = await screen.findByRole("textbox", { name: translate(language, "workspaceNameLabel") });
+    assert.equal((draft as HTMLInputElement).value, "Second");
+    assert.equal(document.activeElement, draft);
+    await userEvent.keyboard("{Escape}");
+    await backToWorkspace();
+    assert.equal(document.querySelector("#workspace-title")?.textContent, "Second");
+    cleanup();
+  }
+});
+
+test("EN/RU setup can be postponed and cancelled without removing the saved workspace", async () => {
+  for (const language of ["en", "ru"] as const) {
+    const active = makeActive("setup", "Workspace");
+    let previewCalls = 0, mutationCalls = 0;
+    mockApi({ language, load: ok({ workspaces: [active], activeWorkspace: active }), onWorkspace: async input => {
+      if (input.type === "workspace.load") return ok({ workspaces: [active], activeWorkspace: active });
+      if (input.type === "workspace.previewDiscovery") { previewCalls++; return ok(previewResult(active)); }
+      if (input.type === "workspace.remove" || input.type === "workspace.applyDiscovery") mutationCalls++;
+      return fail("invalid_input");
+    } });
+    render(<App />);
+    const later = await screen.findByRole("button", { name: translate(language, "setupLater") });
+    later.focus(); await userEvent.keyboard("{Enter}");
+    assert.equal(screen.queryByRole("button", { name: translate(language, "setupLater") }), null);
+    assert.equal(previewCalls, 0);
+    const setup = screen.getByRole("button", { name: translate(language, "discoveryAction") });
+    setup.focus(); await userEvent.keyboard("{Enter}");
+    await screen.findByRole("button", { name: translate(language, "discoveryApply") });
+    await userEvent.click(screen.getByRole("button", { name: translate(language, "cancelRenameWorkspace") }));
+    assert.equal(document.activeElement, setup);
+    assert.equal(document.querySelector("#workspace-title")?.textContent, "Workspace");
+    assert.equal(mutationCalls, 0);
+    cleanup();
+  }
+});
+
+test("EN/RU sidebar Settings opens matching detail and inactive removal preserves current selection", async () => {
+  for (const language of ["en", "ru"] as const) {
+    const one = makeActive("one", "First"), two = makeActive("two", "Second");
+    let data: WorkspaceLoad = { workspaces: [one, two], activeWorkspace: one };
+    mockApi({ language, onWorkspace: async input => {
+      if (input.type === "workspace.load") return ok(data);
+      if (input.type === "workspace.activate") { data = { ...data, activeWorkspace: input.workspaceId === "two" ? two : one }; return ok(data.activeWorkspace!); }
+      if (input.type === "workspace.remove") { data = { ...data, workspaces: data.workspaces.filter(w => w.workspaceId !== input.workspaceId) }; return ok(data); }
+      return fail("invalid_input");
+    } });
+    render(<App />);
+    const actions = `${translate(language, "workspaceActions")}: Second`;
+    await userEvent.click(await screen.findByRole("button", { name: actions }));
+    await userEvent.click(within(screen.getByRole("group", { name: actions })).getByRole("button", { name: /^(Settings|Настройки)$/ }));
+    assert.equal((screen.getByRole("combobox", { name: translate(language, "workspaceSelectLabel") }) as HTMLSelectElement).value, "two");
+    await backToWorkspace();
+    const firstActions = `${translate(language, "workspaceActions")}: First`;
+    await userEvent.click(screen.getByRole("button", { name: firstActions }));
+    await userEvent.click(within(screen.getByRole("group", { name: firstActions })).getByRole("button", { name: translate(language, "removeWorkspaceAction") }));
+    assert.ok(await screen.findByRole("heading", { name: `${translate(language, "removeWorkspaceTitle")}: First` }));
+    await userEvent.click(screen.getByRole("button", { name: translate(language, "confirmRemoveWorkspace") }));
+    await backToWorkspace();
+    assert.equal(document.querySelector("#workspace-title")?.textContent, "Second");
+    assert.deepEqual(data.workspaces.map(w => w.workspaceId), ["two"]);
+    cleanup();
+  }
+});
+
+test("sidebar ordering keeps keyboard focus and Escape closes contextual actions", async () => {
+  const one = makeActive("one", "First"), two = makeActive("two", "Second");
+  let data: WorkspaceLoad = { workspaces:[one, two], activeWorkspace: one };
+  mockApi({ onWorkspace:async input => {
+    if (input.type === "workspace.load") return ok(data);
+    if (input.type === "workspace.reorder") { data = { ...data, workspaces:[two, one] }; return ok(data); }
+    return fail("invalid_input");
+  } });
+  render(<App />);
+  const trigger = await screen.findByRole("button", { name:"Workspace actions: Second" });
+  trigger.focus(); await userEvent.keyboard("{Enter}{Escape}");
+  assert.equal(screen.queryByRole("group", { name:"Workspace actions: Second" }), null);
+  await userEvent.keyboard("{Enter}");
+  await userEvent.click(within(screen.getByRole("group", { name:"Workspace actions: Second" })).getByRole("button", { name:"Move up" }));
+  await waitFor(() => assert.ok(document.activeElement === trigger));
+  assert.deepEqual(data.workspaces.map(w => w.workspaceId), ["two", "one"]);
+  assert.equal(document.querySelector("#workspace-title")?.textContent, "First");
 });

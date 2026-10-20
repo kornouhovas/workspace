@@ -137,33 +137,30 @@ test("installed workspace keyboard creation waits for the asynchronous folder se
       await new Promise(done => setTimeout(done, 1200));
       await route.fulfill({ status: 200, contentType: "text/plain", body: "prepared" });
     });
-    await page.setContent('<img src="https://workspace-fixture.invalid/prepare" alt=""><label>Workspace name<input></label><button id="pick">Choose project folder</button><p id="root"></p><button id="create" disabled>Create workspace</button><div id="result"></div>');
+    await page.setContent('<img src="https://workspace-fixture.invalid/prepare" alt=""><button id="pick">Choose project folder</button><p id="root"></p><div id="result"></div>');
     await page.evaluate(() => {
-      const pick = globalThis.document.querySelector("#pick"), create = globalThis.document.querySelector("#create");
+      const pick = globalThis.document.querySelector("#pick");
       globalThis.installFixtureCreates = 0;
       pick.addEventListener("click", () => {
         globalThis.setTimeout(() => {
           globalThis.document.querySelector("#root").textContent = "/selected-source";
-          create.disabled = false;
+          globalThis.installFixtureCreates++;
+          globalThis.document.querySelector("#result").innerHTML = '<h2>Workspace</h2>';
         }, 200);
-      });
-      create.addEventListener("click", () => {
-        globalThis.installFixtureCreates++;
-        globalThis.document.querySelector("#result").innerHTML = '<h2>Installed workspace</h2>';
       });
     });
     page.setDefaultTimeout(1000);
-    await createInstalledWorkspace(page, { name: "Installed workspace", source: "/selected-source" });
+    await createInstalledWorkspace(page, { name: "Workspace", source: "/selected-source" });
     assert.equal(await page.evaluate(() => globalThis.installFixtureCreates), 1);
   });
 });
 
-test("installed workspace keyboard driver retains its deadline when creation stays disabled", async () => {
+test("installed workspace keyboard driver retains its deadline when automatic creation never completes", async () => {
   const { createInstalledWorkspace } = await import("../scripts/workspace-install-driver.mjs");
   await withPage(async page => {
-    await page.setContent('<label>Workspace name<input></label><button>Choose project folder</button><p>/selected-source</p><button disabled>Create workspace</button>');
+    await page.setContent('<button>Choose project folder</button><p>/selected-source</p>');
     page.setDefaultTimeout(100);
-    await assert.rejects(createInstalledWorkspace(page, { name: "Installed workspace", source: "/selected-source" }), /Timeout/);
+    await assert.rejects(createInstalledWorkspace(page, { name: "Workspace", source: "/selected-source" }), /Timeout/);
     assert.equal(await page.getByRole("heading", { name: "Installed workspace" }).count(), 0);
   });
 });

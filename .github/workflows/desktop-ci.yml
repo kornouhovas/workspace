@@ -1499,6 +1499,17 @@ jobs:
           name: issue-48-desktop-shell-${{ matrix.os }}-${{ github.sha }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
           path: work/ci-desktop-shell
           if-no-files-found: error
+      - name: Workspace management EN/RU picker, contextual controls and retained sources
+        run: npm run smoke:workspaces
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-workspace-management
+      - name: Preserve workspace management evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-49-workspace-management-${{ matrix.os }}-${{ github.sha }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
+          path: work/ci-workspace-management
+          if-no-files-found: error
       - run: npm run test:platform
         env:
           OBSERVER_MATRIX: ${{ matrix.os }}

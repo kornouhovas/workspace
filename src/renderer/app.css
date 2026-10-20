@@ -561,3 +561,15 @@ p { margin-block: .5rem; }
 .theme-radio-indicator { width: 8px; height: 8px; border-radius: 50%; background: var(--ring); }
 @media (max-width: 800px) { .desktop-shell { grid-template-columns: 185px minmax(0, 1fr); } .workspace-screen { padding: 16px; } .settings-page { padding: 24px 16px; } }
 @media (max-width: 480px) { .desktop-shell { grid-template-columns: 140px minmax(0, 1fr); } .desktop-sidebar { padding-inline: 5px; } }
+
+
+.sidebar-workspace-row { position: relative; display: flex; flex-wrap: wrap; min-width: 0; }
+.sidebar-workspace-row > .sidebar-item { flex: 1; min-width: 0; width: auto; }
+.workspace-context-trigger { flex: 0 0 30px; border-radius: var(--radius); color: var(--muted-foreground); }
+.workspace-context-trigger:hover, .workspace-context-trigger[aria-expanded=true] { background: var(--accent); color: var(--foreground); }
+.workspace-context { flex: 0 0 100%; padding: 4px; margin-block: 4px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--popover, var(--background)); }
+.workspace-context .sidebar-item { width: 100%; white-space: normal; text-align: start; }
+.sidebar-create { margin-top: 8px; white-space: normal; }
+
+.source-tools { display: flex; flex-wrap: wrap; gap: .5rem; }
+.source-tools > .discovery-panel { flex-basis: 100%; }

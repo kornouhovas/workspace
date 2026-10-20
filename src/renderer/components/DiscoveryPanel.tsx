@@ -133,9 +133,9 @@ export function DiscoveryPanel({ language, preview, pending, error, applying, di
   </section>;
 }
 
-export function DiscoveryController({ client, workspaceId, sourceId, minimumRevision, observationVersion, invalidation, language, disabled, onApplied, onPendingChange }: {
+export function DiscoveryController({ client, workspaceId, sourceId, minimumRevision, observationVersion, invalidation, language, disabled, onApplied, onPendingChange, onPostpone }: {
   client: WorkspaceServiceClient; workspaceId: string; sourceId: string; minimumRevision: { current: number }; observationVersion: { current: number }; invalidation: number; language: Language; disabled: boolean; onApplied?(projects: ProjectList, observedVersion: number): void;
-  onPendingChange?(pending: boolean): void;
+  onPendingChange?(pending: boolean): void; onPostpone?(): void;
 }) {
   const [open, setOpen] = useState(false);
   const [preview, setPreview] = useState<DiscoveryPreview | null>(null);
@@ -225,6 +225,8 @@ export function DiscoveryController({ client, workspaceId, sourceId, minimumRevi
   const content = <div className="source-tools">
     <button ref={trigger} type="button" className="workspace-button workspace-button--secondary" disabled={disabled || open}
       onClick={() => { mode.current = undefined; setOpen(true); setApplyError(false); setValidationError(false); setStale(false); void request(); }}>{translate(language, "discoveryAction")}</button>
+    {onPostpone && <button type="button" className="workspace-button workspace-button--secondary" disabled={disabled || applying}
+      onClick={() => { version.current++; setOpen(false); setPreview(null); setPending(false); onPostpone(); trigger.current?.focus(); }}>{translate(language, "setupLater")}</button>}
     {open && <DiscoveryPanel language={language} preview={preview && preview.revision >= minimumRevision.current ? preview : null} pending={pending} error={error} applying={applying} disabled={disabled} applyError={applyError} stale={stale} validationError={validationError} onApply={() => void apply()}
       onMode={(value) => { mode.current = value; setApplyError(false); setValidationError(false); setStale(false); void request(exclusions.current); }}
       onRetry={() => { setApplyError(false); void request(exclusions.current); }}
@@ -251,6 +253,7 @@ export function DiscoveryWorkspace({ client, workspaceId, sourceId, refreshVersi
 }) {
   const [view, setView] = useState<WorkspaceView | null>(null);
   const [showArchived, setShowArchived] = useState(false);
+  const [setupDeferred, setSetupDeferred] = useState(false);
   const [archiveBlocked, setArchiveBlocked] = useState(false);
   const [projects, setProjects] = useState<ProjectList | null>(null);
   const committedProjects = useRef<ProjectList | null>(null);
@@ -403,7 +406,10 @@ export function DiscoveryWorkspace({ client, workspaceId, sourceId, refreshVersi
   }, [refreshVersion]);
   useEffect(() => { if (projects) onSourceState?.(workspaceId, projects.state); }, [projects?.state, workspaceId, onSourceState]);
   return <>
-    <DiscoveryController client={client} workspaceId={workspaceId} sourceId={sourceId} minimumRevision={minimumRevision}
+    {projects && !projects.configured && <div className="workspace-setup" role="status">
+      <p>{t(setupDeferred ? "setupDeferred" : "setupOffer")}</p>
+    </div>}
+    <DiscoveryController onPostpone={projects && !projects.configured && !setupDeferred ? () => setSetupDeferred(true) : undefined} client={client} workspaceId={workspaceId} sourceId={sourceId} minimumRevision={minimumRevision}
       observationVersion={observationVersion}
       invalidation={invalidation} language={language} onPendingChange={setDiscoveryPending} disabled={disabled || archiveBlocked || categoryOptionsBlocked || creationBlocked || recoveryProject !== null || renameProject !== null || renameBlocked || categoryMoveProject !== null || categoryMoveBlocked}
       onApplied={(value, observedVersion) => {

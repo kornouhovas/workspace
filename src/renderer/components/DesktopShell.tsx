@@ -11,8 +11,8 @@ export const useSourceSettingsHost = () => useContext(SourceSettingsHost);
 const sections = ["general", "appearance", "workspaces", "sources", "backup", "about"] as const;
 type Section = typeof sections[number];
 export const shellLabels = {
-  en: { settings: "Settings", back: "Back to workspace", general: "General", appearance: "Appearance", workspaces: "Workspaces", sources: "Sources", backup: "Backup and recovery", about: "About", theme: "Color theme", light: "Light", dark: "Dark", system: "System", retry: "Retry", workspace: "Workspace", unavailable: "Settings will be available when the backend reconnects.", aboutDescription: "Workspace organizes real project folders using properties and saved views." },
-  ru: { settings: "Настройки", back: "Вернуться к работе", general: "Основные", appearance: "Оформление", workspaces: "Рабочие пространства", sources: "Источники", backup: "Резервные копии и восстановление", about: "О приложении", theme: "Цветовая тема", light: "Светлая", dark: "Тёмная", system: "Системная", retry: "Повторить", workspace: "Рабочее пространство", unavailable: "Настройки станут доступны после подключения сервиса.", aboutDescription: "Workspace помогает работать с папками проектов, свойствами и сохранёнными видами." },
+  en: { actions: "Workspace actions", add: "Add workspace", rename: "Rename workspace", remove: "Remove workspace", up: "Move up", down: "Move down", settings: "Settings", back: "Back to workspace", general: "General", appearance: "Appearance", workspaces: "Workspaces", sources: "Sources", backup: "Backup and recovery", about: "About", theme: "Color theme", light: "Light", dark: "Dark", system: "System", retry: "Retry", workspace: "Workspace", unavailable: "Settings will be available when the backend reconnects.", aboutDescription: "Workspace organizes real project folders using properties and saved views." },
+  ru: { actions: "Действия с рабочим пространством", add: "Добавить рабочее пространство", rename: "Переименовать рабочее пространство", remove: "Удалить рабочее пространство", up: "Переместить выше", down: "Переместить ниже", settings: "Настройки", back: "Вернуться к работе", general: "Основные", appearance: "Оформление", workspaces: "Рабочие пространства", sources: "Источники", backup: "Резервные копии и восстановление", about: "О приложении", theme: "Цветовая тема", light: "Светлая", dark: "Тёмная", system: "Системная", retry: "Повторить", workspace: "Рабочее пространство", unavailable: "Настройки станут доступны после подключения сервиса.", aboutDescription: "Workspace помогает работать с папками проектов, свойствами и сохранёнными видами." },
 };
 
 export function AppearanceControl({ language, value, disabled, onChange }: { language: Language; value: Appearance; disabled?: boolean; onChange(value: Appearance): void }) {
@@ -25,13 +25,22 @@ export function AppearanceControl({ language, value, disabled, onChange }: { lan
   </RadioGroup.Root>;
 }
 
-export function DesktopShell({ language, data, busy, locked, onActivate, onEmptyWorkspaceShown, renderPanels, children }: {
+export type WorkspaceAction = "settings" | "rename" | "remove" | "up" | "down";
+
+export function DesktopShell({ language, data, busy, locked, onCreate, onManage, onActivate, onEmptyWorkspaceShown, renderPanels, children }: {
   language: Language; data: WorkspaceLoad | null; busy: boolean; locked: boolean;
+  onCreate?(): void; onManage?(id: string, action: WorkspaceAction): Promise<boolean>;
   onActivate(id: string): void; onEmptyWorkspaceShown?(): void; renderPanels(back: () => void): Record<Section, ReactNode>; children: ReactNode;
 }) {
   const l = shellLabels[language];
   const [sourceHost, setSourceHost] = useState<HTMLDivElement | null>(null);
   const [open, setOpen] = useState(false);
+  const [contextId, setContextId] = useState<string | null>(null);
+  const contextTrigger = useRef<HTMLButtonElement | null>(null);
+  const [restoreContextFocus, setRestoreContextFocus] = useState(false);
+  useEffect(() => {
+    if (restoreContextFocus && !busy) { contextTrigger.current?.focus(); setRestoreContextFocus(false); }
+  }, [restoreContextFocus, busy]);
   const [section, setSection] = useState<Section>("general");
   const settingsButton = useRef<HTMLButtonElement>(null);
   const backButton = useRef<HTMLButtonElement>(null);
@@ -60,6 +69,16 @@ export function DesktopShell({ language, data, busy, locked, onActivate, onEmpty
     }
     previousCount.current = data?.workspaces.length ?? 0;
   }, [data, open, section]);
+  const manage = async (id: string, action: WorkspaceAction) => {
+    setContextId(null);
+    if (await onManage?.(id, action)) {
+      if (action === "up" || action === "down") { setRestoreContextFocus(true); return; }
+      previousFocus.current = contextTrigger.current;
+      // The editor/confirmation owns initial focus when entered contextually.
+      changedPage.current = action === "settings";
+      setSection("workspaces"); setOpen(true);
+    }
+  };
   const panels = renderPanels(back);
   return <SourceSettingsHost.Provider value={open && section === "sources" ? sourceHost : null}><Tabs.Root className="desktop-shell bg-background text-foreground" orientation="vertical" activationMode="manual" value={section} onValueChange={value => setSection(value as Section)}>
     <aside className="desktop-sidebar" aria-label={open ? l.settings : l.workspaces}>
@@ -68,12 +87,25 @@ export function DesktopShell({ language, data, busy, locked, onActivate, onEmpty
         <div hidden={open}>
           <p className="sidebar-label">{l.workspaces}</p>
           <nav aria-label={l.workspaces} className="sidebar-items">
-            {data?.workspaces.map(workspace => <button key={workspace.workspaceId} type="button" className="sidebar-item"
-              aria-current={data.activeWorkspace?.workspaceId === workspace.workspaceId ? "page" : undefined}
-              disabled={busy || locked} onClick={() => onActivate(workspace.workspaceId)}>
-              <span aria-hidden="true" className="workspace-monogram">{workspace.name.trim().slice(0, 1).toUpperCase() || "W"}</span>
-              <span className="sidebar-name">{workspace.name}</span>
-            </button>)}
+            {data?.workspaces.map((workspace, index, all) => <div key={workspace.workspaceId} className="sidebar-workspace-row"
+              onBlur={event => { if (contextId === workspace.workspaceId && !event.currentTarget.contains(event.relatedTarget as Node | null)) setContextId(null); }}
+              onKeyDown={event => { if (event.key === "Escape" && contextId === workspace.workspaceId) { event.preventDefault(); setContextId(null); contextTrigger.current?.focus(); } }}>
+              <button type="button" className="sidebar-item"
+                aria-current={data.activeWorkspace?.workspaceId === workspace.workspaceId ? "page" : undefined}
+                disabled={busy || locked} onClick={() => { setContextId(null); onActivate(workspace.workspaceId); }}>
+                <span aria-hidden="true" className="workspace-monogram">{workspace.name.trim().slice(0, 1).toUpperCase() || "W"}</span>
+                <span className="sidebar-name">{workspace.name}</span>
+              </button>
+              {onManage && <button type="button" className="workspace-context-trigger" disabled={busy || locked}
+                aria-label={`${l.actions}: ${workspace.name}`} aria-expanded={contextId === workspace.workspaceId}
+                onClick={event => { contextTrigger.current = event.currentTarget; setContextId(contextId === workspace.workspaceId ? null : workspace.workspaceId); }}>⋯</button>}
+              {contextId === workspace.workspaceId && <div role="group" className="workspace-context" aria-label={`${l.actions}: ${workspace.name}`}>
+                {(["settings", "rename", "up", "down", "remove"] as const).map(action => <button key={action} type="button" className="sidebar-item"
+                  disabled={busy || locked || (action === "up" && index === 0) || (action === "down" && index === all.length - 1)}
+                  onClick={() => void manage(workspace.workspaceId, action)}>{l[action]}</button>)}
+              </div>}
+            </div>)}
+            {onCreate && <button type="button" className="sidebar-item sidebar-create" disabled={busy || locked} onClick={onCreate}>+ {l.add}</button>}
           </nav>
         </div>
         <div hidden={!open}>

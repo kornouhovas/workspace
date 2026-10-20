@@ -140,9 +140,9 @@ try {
   await page.getByRole("button", { name: /^(Remove workspace|Удалить рабочее пространство):/ }).click();
   const confirmRemoval = page.getByRole("button", { name: /^(Remove configuration|Удалить конфигурацию)$/ });
   await confirmRemoval.focus(); await confirmRemoval.press("Enter");
-  const createName = page.getByRole("textbox", { name: /^(Workspace name|Название рабочего пространства)$/ });
+  const createName = page.getByRole("button", { name: /^(Choose project folder|Выбрать папку проекта)$/ });
   await createName.waitFor();
-  await page.waitForFunction(() => document.activeElement?.matches(".workspace-create input"));
+  await page.waitForFunction(() => document.activeElement?.matches(".workspace-create .root-picker-row button"));
   assert.equal(await createName.evaluate(el => el === document.activeElement), true);
   checks.push({ lastWorkspaceRemovalFocus:true });
 } catch (error) { failed = error;

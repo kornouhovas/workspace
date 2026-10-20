@@ -16,3 +16,14 @@ export async function setInterfaceLanguage(page, language) {
   await page.waitForFunction(lang => globalThis.document.documentElement.lang === lang && !globalThis.document.querySelector("#interface-language")?.disabled, language);
   await returnToWorkspace(page);
 }
+
+export async function renameActiveWorkspace(page, name) {
+  await openSettingsSection(page, "workspaces");
+  await page.getByRole("button", { name: /^(Rename workspace|Переименовать рабочее пространство)$/ }).click();
+  const input = page.getByRole("textbox", { name: /^(Workspace name|Название рабочего пространства)$/ });
+  await input.fill(name);
+  await input.press("Enter");
+  await input.waitFor({ state: "hidden" });
+  await returnToWorkspace(page);
+  await page.getByRole("heading", { name: name.trim(), exact: true }).waitFor();
+}
