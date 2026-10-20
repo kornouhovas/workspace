@@ -162,3 +162,11 @@ window; corresponding set/query IPC was 4.3/52.4 ms, with about 336.8 ms rendere
 idle in the first 500 ms. A long frame gap is observed, not a proven native cause.
 Further bounded quit diagnostics and a controls-only route separate the Windows
 fixture failure from strict performance; no application/build inputs changed.
+
+Isolated Windows native controls `39460699645`, attempt 1 at `87e63246`, passed
+10/10 with original normal close unchanged. The earlier native-close failures
+remain recorded; no unique cause or lifecycle repair is claimed. A real local
+1000-project locator comparison found about 4–6 ms for the assignment heading,
+so broad/scoped locator work did not reproduce hosted assignment delay.
+The next diagnostic-only request observations cover each remaining operation,
+not only grouping, with a red/green one-invocation/no-authored-data control.

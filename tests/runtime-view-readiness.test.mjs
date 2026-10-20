@@ -282,3 +282,19 @@ test('failed projection inspection is readonly and retains only bounded counts a
     assert.equal(/private|authored|different/i.test(JSON.stringify(result)),false);
   });
 });
+
+
+test('performance request observations distinguish assignment, filtering, editing and scan latency without authored data', async () => {
+  const { installPerformanceCommandProbe } = await import('../scripts/runtime-performance-probe.mjs');
+  const handlers=new Map(), requests=[];
+  handlers.set('workspace:command',async(_event,input)=>{requests.push(input);return {ok:true};});
+  const ipcMain={_invokeHandlers:handlers,removeHandler:name=>handlers.delete(name),handle:(name,handler)=>handlers.set(name,handler)};
+  try {
+    installPerformanceCommandProbe({ipcMain});
+    const types=['workspace.assignProjectGroup','workspace.setViewFilter','workspace.setTextValue','workspace.refreshSource','workspace.listTextProperties'];
+    for(const type of types) await handlers.get('workspace:command')(null,{type,value:'Private authored value',projectId:'Private project'});
+    assert.equal(requests.length,types.length);
+    assert.deepEqual(globalThis.__workspacePerformanceCommands.map(item=>item.type),types);
+    assert.equal(JSON.stringify(globalThis.__workspacePerformanceCommands).includes('Private'),false);
+  } finally {delete globalThis.__workspacePerformanceCommands;}
+});

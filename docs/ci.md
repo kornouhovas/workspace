@@ -861,3 +861,19 @@ controls with bounded quit-event/debugger-wait/exit evidence. This route skips
 packaging, baseline and strict performance; it cannot supply performance acceptance.
 Ordinary workflow defaults and the independent strict command remain unchanged.
 Do not infer a repaired native lifecycle from a functional assertion or forced exit.
+
+The isolated Windows controls then passed 10/10 at `87e63246`, run `39460699645`;
+no fixture shutdown logic was changed and the historical timeout cause remains
+unproven. The next optional profile records request timings for assignment,
+filter saves, Text saves, snapshot reads and refresh as well as grouping/view
+reads, after every measured UI endpoint. This distinguishes backend time from
+renderer/driver time in the actual remaining failures. The fixed allowlist,
+256-request history, privacy boundary and diagnostic-only installation remain;
+original strict clocks, actions, endpoints and targets are unchanged.
+
+For investigation without unchanged strict reruns, `diagnostic_only: true` skips
+baseline and strict acceptance, requires at least one selected `profile_filters`
+or `profile_service`, and uses a separate platform-specific concurrency group.
+It still packages the exact candidate, retains the original native controls and
+runs selected profiles. It cannot supply strict acceptance. Defaults preserve
+the existing original full/candidate routes and their limits.

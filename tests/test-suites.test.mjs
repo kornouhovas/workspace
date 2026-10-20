@@ -1064,7 +1064,6 @@ test('performance readiness repair retains the original strict command after reg
   const originalIndex = job.steps.findIndex(step => step.name === 'Require candidate correctness and approved targets');
   assert.ok(guardIndex >= 0 && guardIndex < originalIndex);
   const guard = job.steps[guardIndex], original = job.steps[originalIndex];
-  const condition = "${{ !cancelled() && steps.candidate-package.outcome == 'success' }}";
   assert.equal(guard.if, "${{ !cancelled() && (inputs.readiness_only || steps.candidate-package.outcome == 'success') }}");
   assert.equal(workflow.on.workflow_dispatch.inputs.readiness_only.default, false);
   assert.ok(workflow.concurrency.group.includes("inputs.readiness_only && format('-readiness-{0}', inputs.platform)"), 'Focused readiness cannot cancel full acceptance');
@@ -1072,7 +1071,14 @@ test('performance readiness repair retains the original strict command after reg
   for (const step of job.steps.filter(step => step.name?.includes('baseline') || step['working-directory'] === 'baseline-source')) {
     assert.ok(step.if.includes('!inputs.readiness_only'));
   }
-  assert.equal(original.if, condition, 'The original still runs after a failed regression if packaging passed');
+  assert.equal(workflow.on.workflow_dispatch.inputs.diagnostic_only.default, false);
+  assert.ok(workflow.concurrency.group.includes("inputs.diagnostic_only && format('-diagnostic-{0}', inputs.platform)"));
+  const diagnosticGuard=job.steps.find(step=>step.name==='Require a selected diagnostic profile');
+  assert.equal(diagnosticGuard.if,'${{ inputs.diagnostic_only }}');
+  assert.ok(diagnosticGuard.run.includes("throw new Error('Select a diagnostic profile')"));
+  assert.ok(diagnosticGuard.run.includes("process.env.READINESS_ONLY === 'true'"));
+  assert.equal(diagnosticGuard.env.READINESS_ONLY,'${{ inputs.readiness_only }}');
+  assert.equal(original.if, "${{ !cancelled() && !inputs.diagnostic_only && steps.candidate-package.outcome == 'success' }}", 'The original still runs after a failed regression if packaging passed');
   assert.ok(guard.run.includes('set -o pipefail') && guard.run.includes('node --test tests/runtime-view-readiness.test.mjs'));
   assert.ok(original.run.includes('set -o pipefail') && original.run.includes('node scripts/smoke-performance.mjs --enforce'));
   assert.equal(original.env.WORKSPACE_SMOKE_EVIDENCE_DIR, 'work/ci-performance/candidate');

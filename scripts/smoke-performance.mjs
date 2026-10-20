@@ -97,7 +97,7 @@ async function recordUi(source, scenario, limit = report.limits.interaction) {
   assert.equal(Number.isFinite(ms), true, "The measured user event must have occurred");
   report.measurements.push({ source, scenario, ...timing, limit, passed: ms <= limit, clock: "renderer event through committed paint" });
   console.log(`${source} ${scenario}: ${ms.toFixed(1)} ms (limit ${limit})`);
-  if (profileFilters && scenario === "table grouping") {
+  if (profileFilters) {
     const eventWallTime = await page.evaluate(() => performance.timeOrigin + window.__workspacePerformanceStarted);
     const native = await app.evaluate(({ BrowserWindow }) => {
       const window = BrowserWindow.getAllWindows()[0];

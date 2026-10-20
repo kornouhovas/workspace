@@ -9,7 +9,7 @@ export function installPerformanceCommandProbe({ipcMain}) {
     const started = Date.now(), clock = performance.now();
     try { return await original(event, input); }
     finally {
-      if (['workspace.setViewGrouping','workspace.queryView','workspace.getViewGrouping','workspace.getTableLayout'].includes(input?.type)) {
+      if (['workspace.setViewGrouping','workspace.queryView','workspace.getViewGrouping','workspace.getTableLayout','workspace.assignProjectGroup','workspace.setViewFilter','workspace.setTextValue','workspace.refreshSource','workspace.listTextProperties'].includes(input?.type)) {
         globalThis.__workspacePerformanceCommands.push({type:input.type,started,finished:Date.now(),durationMs:performance.now()-clock});
         if (globalThis.__workspacePerformanceCommands.length > 256) globalThis.__workspacePerformanceCommands.shift();
       }
