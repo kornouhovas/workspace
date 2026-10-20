@@ -58,6 +58,11 @@ for (const language of ["en", "ru"] as const) {
       await waitFor(() => assert.equal(document.activeElement, entry));
       const headerEntry = screen.getByRole("button", {name:`${t("tableColumnSettings")}: Notes`});
       headerEntry.focus(); await user.keyboard("{Enter}");
+      await screen.findByRole("dialog", {name:`${t("tableColumnSettings")}: Notes`});
+      await user.keyboard("{Escape}");
+      const reopenedHeader = screen.getByRole("button", {name:`${t("tableColumnSettings")}: Notes`});
+      await waitFor(() => assert.equal(document.activeElement, reopenedHeader));
+      await user.keyboard(" ");
       const headerPanel = await screen.findByRole("dialog", {name:`${t("tableColumnSettings")}: Notes`});
       assert.equal(within(headerPanel).queryByLabelText(`${t("tableWidth")}: ${t("projectName")}`), null);
       await user.click(within(headerPanel).getByLabelText(`${t("tableVisible")}: Notes`));

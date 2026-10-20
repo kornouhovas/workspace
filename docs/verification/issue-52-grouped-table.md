@@ -315,3 +315,29 @@ The real local endpoint-driver diagnostic completed 32 scenarios, four normal
 quits/backend exits/cleanup and four batches/252 phase/request records. Interaction
 samples were below target, while direct diagnostic startup was 5601.3 ms; this is
 not strict or hosted acceptance. Lint/docs/whitespace passed on the final delta.
+
+## First-use compact trigger candidate
+
+The actual endpoint-driver diagnostic run `39472649575`, attempt 1 at `0fce55b0`,
+retained macOS first Table grouping at 847.4 ms: grouping IPC 2.1 ms, projection
+44.4 ms, observation 37.4 ms, first stabilized paint 594.9 ms, final 847.4 ms.
+The focused/visible window had roughly 180 ms in two React work tasks and long
+frame gaps; backend phases do not establish a service cause for this sample.
+Windows completed all 32 diagnostic scenarios and normal quits/backend exits and
+cleanup, but the required diagnostic close-batch inspector failed (three batches,
+missing the grouped interaction backend). This remains failed diagnostic evidence;
+its main IPC observations cannot supply missing backend execution timings.
+
+A production-mode native probe of actual closed Table column controls measured
+63 repeated triggers at 5.2 ms commit; deferring only compact Radix roots until
+first activation measured 1.1 ms. The small isolated probe does not establish the
+hosted cause. Keep an activated root mounted so subsequent open/close, Escape,
+outside dismissal and removed-header fallback retain the existing Radix behavior.
+Noncompact Table/grouping popovers are unchanged. Table/grouping UI scenarios pass
+23/23, including EN/RU first Enter, Escape focus return, Space reopen, removed-header
+fallback and first pointer width-rejection/retry. Both independent reviews found
+zero findings. Fresh build, directory package/artifact, typecheck/lint and the
+28-check/eight-variant native shell journey passed with owned cleanup. Inspected
+RU dark 1024 column popup retains bounds and long content. This application change
+requires actual hosted performance proof and renewed full application/platform/
+installer acceptance; no complete target pass is claimed from the local probe.

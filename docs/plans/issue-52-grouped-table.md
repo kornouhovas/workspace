@@ -73,3 +73,9 @@ result DOM within renderer readiness first. Retain all original locators after
 the captured paint, complete projection/visible fields/busy guards and frame pairs;
 no action, target or start clock changes. Add a native delayed-result/late-driver
 regression. This is shared measurement preparation, so renew both strict hosts.
+
+Evaluate deferring compact column-trigger Radix trees until first activation,
+then retaining their existing lifecycle. Preserve labels, first pointer/Enter/Space
+activation, repeated opening, Escape/outside focus and removed-header fallback.
+Use hosted first-grouping profiles to test the proposed performance effect; an
+isolated mount-cost reduction alone does not establish the remaining latency cause.
