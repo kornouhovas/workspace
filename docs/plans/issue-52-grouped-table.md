@@ -39,7 +39,7 @@ strict performance evidence remain gates until observed. Commit the verified loc
 candidate; publish/push only within the owner's corresponding authorization.
 
 Observed local results and review: [verification report](../verification/issue-52-grouped-table.md).
-Current SHA/run/attempt acceptance and next gates belong to the [GitHub checkpoint](https://github.com/kornouhovas/workspace/issues/52#issuecomment-6294773446).
+Current SHA/run/attempt acceptance and next gates belong to the [GitHub checkpoint](https://github.com/kornouhovas/workspace/issues/52#issuecomment-6300181694).
 
 ## Performance follow-up
 

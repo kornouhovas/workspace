@@ -4,6 +4,28 @@ Issue: [#52](https://github.com/kornouhovas/workspace/issues/52); baseline `d931
 Branch: `codex/issue-52-grouped-table`. Scope/retention mapping:
 [implementation plan](../plans/issue-52-grouped-table.md).
 
+## Accepted candidate
+
+Tested SHA: `ce18c264684734cd23d04d58d083e02324250a52`. All runs below are
+attempt 1; their logs and required artifacts were inspected. The final handoff
+changes documentation only and reuses these unchanged runtime/build/test inputs.
+Delivery is recorded in the [GitHub checkpoint](https://github.com/kornouhovas/workspace/issues/52#issuecomment-6300181694).
+
+| Acceptance | Observed result |
+| --- | --- |
+| [Full Desktop matrix](https://github.com/kornouhovas/workspace/actions/runs/39483128565) | Common 494/494; macOS 2,687 passed / 26 platform skips; each Windows host 2,719 passed / 13 platform skips; zero failures. All development/packaged/native/layout/artifact steps passed. |
+| [Strict performance](https://github.com/kornouhovas/workspace/actions/runs/39482340125) | Both hosts: 32 timings, ten memory samples, four normal quits/backend exits and cleanup passed. |
+| [macOS DMG](https://github.com/kornouhovas/workspace/actions/runs/39483135137) | macOS 14.8.9 arm64 installation, reopen and replacement/data preservation passed. |
+| [Windows NSIS](https://github.com/kornouhovas/workspace/actions/runs/39483534204) | Windows Server 2025 x64 installation, reopen/reinstall/APPDATA preservation, uninstall and cleanup passed. |
+| Final Standards / Spec audits | Zero actionable findings on each axis for `d931bf32...ce18c264`. |
+
+Cold first popover presentation on the macOS runner was separately recorded at
+680.6 ms; the grouping choice after presentation was 207.9 ms. Do not interpret
+these as sub-300ms cold opening. Windows Server evidence does not establish a
+Windows 11 human desktop check. No stable release or installer download is
+published. Earlier failed and pending receipts below are chronological history,
+not the current acceptance state.
+
 ## Behavior and boundaries
 
 Table grouping and presentation open in Radix popovers. Column headers expose
@@ -11,8 +33,9 @@ compact contextual actions with full accessible authored names. Whole-Table cont
 restore hidden columns; Name remains visible. Existing typed values/editors, exact
 scalar/Select/category/MultiSelect grouping, ordering/hide/collapse/hide-empty,
 manual row order, width/wrapping, independent view/workspace settings and recovery
-routes remain on their existing typed service contracts. No schema/backend/IPC
-change or additional dependency/upstream source import.
+routes remain on their existing typed service contracts. No schema migration or
+additional dependency/upstream source import. Later bounded observation and
+discovery performance repairs, diagnostics and evidence are recorded below.
 
 Escape dismisses the active popover and restores the trigger. Hiding a column
 from its header falls back to the whole-Table trigger when that header disappears.
@@ -514,3 +537,65 @@ selection and one subsequent actual choice. Full native readiness suite passed
 both independent reviews passed. Opening duration is recorded separately in
 `preparations`; no renderer/service/style application input changes are retained.
 Renew both strict hosts and actual shared-helper runtime consumers.
+
+## Presented-control acceptance candidate
+
+Strict original run `39482340125`, attempt 1 at `ce18c264`, PASSED on both
+macOS 14 arm64 and Windows latest x64: 32 timings, ten memory samples, four normal
+quits/backend exits and asserted owned cleanup per host. Native controls passed
+15/15 on each. Mac direct/grouped Table grouping was 207.9/125.0 ms. The separately
+recorded first Table popover preparation took 680.6/232.6 ms on Mac and
+135.7/132.7 ms on Windows. These records do not claim sub-300ms cold menu opening
+or a production GPU repair; the measured choice starts with presented operands.
+
+Application, dependency and build sources are unchanged from `39e5b3c5` through
+`ce18c264`; later commits add only driver preparation, diagnostic tracing, tests
+and evidence. The final Standards and Spec audits of `d931bf32...ce18c264`
+reported zero actionable findings on each axis. No discarded CSS, lazy-root or altered scheduling
+experiment is retained in application behavior.
+
+Fresh local original `--enforce` performance passed 32 timings, ten memory samples,
+four normal quits/backend exits and cleanup. Current shared-helper development and
+packaged views journeys each passed six checks and three normal quits/backend
+exits/cleanup. Shell renewed all 28 checks over EN/RU, light/dark and
+1024x720/1440x960, including bounds/focus. Inspected narrow Russian dark grouping
+and wide English light column popovers; no overflow or hidden actions were found.
+
+Full Desktop `39483128565` and macOS installation `39483135137` are pending on
+this exact acceptance SHA; Windows installation follows after macOS workflow
+completion. These are remaining gates, not passing evidence.
+
+Installer acceptance at `ce18c264`, attempt 1, is now inspected and passing:
+macOS `39483135137` on 14.8.9 arm64 validated installed DMG resources, bundled
+backend, EN/RU/isolation, saved identities/language after reopening and data
+preservation after app replacement. Windows `39483534204` on Windows Server 2025
+Datacenter x64 validated offline unsigned NSIS in a Unicode/space path, installed
+backend/SQLite, EN/RU/normal quit/isolation, persisted identities/language,
+same-candidate reinstall, independent normal APPDATA storage, uninstall and
+asserted cleanup. These hosted Windows receipts do not establish a Windows 11
+human desktop check. No installer binary download or stable release is published.
+
+
+## Final broad acceptance
+
+Full Desktop `39483128565` completed successfully at `ce18c264`, attempt 1.
+Common tests passed 494/494 with lint, typecheck and documentation checks. macOS
+platform tests: 2,713 total, 2,687 passed, 26 platform skips, zero failures.
+Windows latest and Windows 2022 each: 2,732 total, 2,719 passed, 13 platform skips,
+zero failures. All original build, Ladle/layout, artifact, creation/Reveal,
+development and packaged runtime stages completed successfully.
+
+Inspected current artifacts: shell 28, workspace management 11 and source settings
+9 checks per platform; all stopped/cleanup receipts passed. Each host retained 16
+passing typed dev/release runtime reports, normal quits/backend exits and asserted
+cleanup, including six-check views journeys. General runtime, rename and category
+observation reports passed. Creation crash matrices retained eight dev and eight
+release scenarios per host; direct/grouped creation receipts retained cleanup.
+Windows native bridge receipts had no active or unknown child. Earlier run failures
+remain separately retained and are not relabeled as passing.
+
+The final documentation-only handoff is checked with local Markdown links and
+whitespace checks. All non-documentation inputs remain byte-identical to tested
+`ce18c264`; runtime acceptance is reused under the shared evidence policy. The
+owner-authorized integration proceeds only after verifying that `new-workspace`
+is still clean at `d931bf32`; record the delivered SHA in GitHub after push.
