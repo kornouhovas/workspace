@@ -491,7 +491,8 @@ test('source continuation retains every unreached Windows layout/runtime/package
   const job = jobs['source-runtime'];
   assert.match(job.if, /inputs.checks == 'source-runtime'/);
   assert.equal(job.strategy['fail-fast'], false);
-  assert.deepEqual(job.strategy.matrix.include, [{ os: 'windows-latest', artifact: 'windows' }, { os: 'windows-2022', artifact: 'windows-2022' }]);
+  const defaultMatrix=runInNewContext(job.strategy.matrix.include.slice(3,-2),{fromJSON:JSON.parse,inputs:{}});
+  assert.deepEqual(JSON.parse(JSON.stringify(defaultMatrix)), [{ os: 'windows-latest', artifact: 'windows' }, { os: 'windows-2022', artifact: 'windows-2022' }]);
   assert.equal(job['continue-on-error'], undefined);
   assert.ok(job.steps.every(step => step['continue-on-error'] === undefined));
   const originalStart = jobs.verify.steps.findIndex(step => step.run === 'npm run build:ladle');

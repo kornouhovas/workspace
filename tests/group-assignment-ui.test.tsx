@@ -63,7 +63,9 @@ for (const language of ["en", "ru"] as const) for (const layout of ["table", "bo
       const selected=JSON.stringify(target);
       await waitFor(()=>assert.equal((screen.getByLabelText(`${changeLabel}: Alpha`) as HTMLSelectElement).value,selected));
       if(type==='text') {
-        assert.equal((screen.getByLabelText(`${changeLabel}: Alpha`) as HTMLSelectElement).disabled,true);
+        await waitFor(()=>assert.equal((screen.getByLabelText(`${changeLabel}: Alpha`) as HTMLSelectElement).disabled,false,
+          'A complete accepted mutation snapshot must not wait for a redundant property read'));
+        await waitFor(()=>assert.equal(document.activeElement===screen.getByLabelText(`${changeLabel}: Alpha`),true));
         holdProperties=false;for(const release of releaseProperties.splice(0))release();
       }
       await waitFor(()=>assert.equal(document.activeElement===screen.getByLabelText(`${changeLabel}: Alpha`),true));
@@ -239,3 +241,38 @@ for (const language of ['en','ru'] as const) for (const layout of ['table','boar
     } finally {cleanup();service.close();rmSync(directory,{recursive:true,force:true});}
   });
 }
+
+test('a newer property change during assignment supersedes its older reply without replay', async () => {
+  const directory=mkdtempSync(join(tmpdir(),'assignment-revision-ui-')),root=join(directory,'root');mkdirSync(root);
+  for(const name of ['Alpha','Beta'])mkdirSync(join(root,name));
+  const service=openSettingsService(join(directory,'app.sqlite'));
+  const {workspaceId,viewId,sourceId}=service.handleCommand({type:'workspace.create',rootPath:root,name:'One'}).value;
+  const command=(type:string,fields={})=>service.handleCommand({type:`workspace.${type}`,workspaceId,...fields});
+  const projects=command('applyDiscovery',{previewToken:service.handleQuery({type:'workspace.previewDiscovery',workspaceId}).value.previewToken}).value.projects;
+  const alpha=projects.find((p:{name:string})=>p.name==='Alpha'),beta=projects.find((p:{name:string})=>p.name==='Beta');
+  const propertyId=command('createProperty',{name:'Field',propertyType:'text'}).value.propertyId;
+  command('setTextValue',{projectId:beta.projectId,propertyId,value:'Ready'});
+  command('setViewGrouping',{viewId,config:{propertyId,settings:[]}});
+  let assignments=0;
+  const api={getBackendStatus:async()=>({state:'ready'}),onBackendStatus:()=>()=>{},onWorkspaceChange:service.workspaces.subscribe,workspace:async(input:{type:string})=>{
+    if(input.type==='workspace.assignProjectGroup'){
+      assignments++;
+      const reply=service.handleCommand(input);
+      command('setTextValue',{projectId:alpha.projectId,propertyId,value:'Newer'});
+      return reply;
+    }
+    return /workspace\.(list|get|query)/.test(input.type)?service.handleQuery(input):service.handleCommand(input);
+  }} as unknown as WorkspaceDesktopApi;
+  try {
+    render(<TextPropertiesTable viewId={viewId} client={new WorkspaceServiceClient(api)} workspaceId={workspaceId} sourceId={sourceId} projects={projects} language="en" disabled={false}/>);
+    const control=await screen.findByLabelText('Change group: Alpha');
+    await waitFor(()=>assert.equal((control as HTMLSelectElement).disabled,false));
+    await userEvent.setup({document}).selectOptions(control,JSON.stringify('Ready'));
+    await waitFor(()=>{
+      const current=screen.getByLabelText('Change group: Alpha') as HTMLSelectElement;
+      assert.equal(current.value,JSON.stringify('Newer'));assert.equal(current.disabled,false);
+    });
+    assert.equal(assignments,1);
+    assert.equal(service.handleQuery({type:'workspace.listTextProperties',workspaceId}).value.values.find((v:{projectId:string})=>v.projectId===alpha.projectId).value,'Newer');
+  } finally {cleanup();service.close();rmSync(directory,{recursive:true,force:true});}
+});

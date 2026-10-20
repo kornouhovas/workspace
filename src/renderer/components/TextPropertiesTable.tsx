@@ -135,7 +135,9 @@ function TextPropertiesContent({ viewId, layout = "table", hideReveal, client, w
     const unsubscribe = client.onWorkspaceChange((event) => {
       if (event.type !== "workspace.propertiesChanged" || event.sourceId !== sourceId || !event.workspaceIds.includes(workspaceId) || event.revision <= minimumRevision.current) return;
       minimumRevision.current = event.revision;
-      void load();
+      // The in-flight assignment returns a complete revisioned snapshot. Defer
+      // observation until that reply is accepted or its fallback read is needed.
+      if (!assigning.current) void load();
     });
     void load();
     return () => { listVersion.current++; lifetime.current++; unsubscribe(); };
@@ -234,12 +236,14 @@ function TextPropertiesContent({ viewId, layout = "table", hideReveal, client, w
     if (assignmentBusy || assigning.current) return;
     const owner = assignmentOwner, generation = lifetime.current;
     assigning.current = true; setAssignmentPending(true); setAssignmentMessage(null);
+    let observedSnapshot = false;
     try {
       const result = await client.assignProjectGroup(command);
       if (generation !== lifetime.current || owner !== currentAssignmentOwner.current) return;
       if (result.ok && result.value.projectId === command.projectId && result.value.propertyId === command.propertyId && result.value.snapshot.workspaceId === workspaceId && result.value.snapshot.sourceId === sourceId) {
         if (accepts(result.value.snapshot)) {
           listVersion.current++; minimumRevision.current = result.value.snapshot.revision; setSnapshot(result.value.snapshot); setLoading(false); setLoadError(false);
+          observedSnapshot = !filesystemAssignment;
         }
         const effect = result.value.filesystem;
         if (!effect || effect.outcome === "completed" || effect.outcome === "unchanged") setAssignmentMessage("groupAssignmentSaved");
@@ -253,8 +257,10 @@ function TextPropertiesContent({ viewId, layout = "table", hideReveal, client, w
       assigning.current = false;
       if (generation === lifetime.current) {
         setAssignmentPending(false);
-        // Observe actual state even when the mutation reply was lost. Never replay.
-        void load();
+        // Ordinary metadata replies already carry the actual complete snapshot.
+        // Lost/stale replies and filesystem outcomes still require observation.
+        // Never replay a mutation.
+        if (!observedSnapshot) void load();
         if (filesystemAssignment && owner === currentAssignmentOwner.current) onFilesystemAssignmentObserved?.();
         const token = ++assignmentSequence.current;
         if (owner === currentAssignmentOwner.current) assignmentFocus.current = {token,projectId:command.projectId,toKey:command.toKey,owner};

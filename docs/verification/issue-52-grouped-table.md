@@ -170,3 +170,40 @@ remain recorded; no unique cause or lifecycle repair is claimed. A real local
 so broad/scoped locator work did not reproduce hosted assignment delay.
 The next diagnostic-only request observations cover each remaining operation,
 not only grouping, with a red/green one-invocation/no-authored-data control.
+
+## Assignment snapshot follow-up (application change)
+
+Both `80d6a202` diagnostic-only profiles at run `39461540010`, attempt 1,
+completed. Their green job result is diagnostic completion, not strict acceptance.
+Per-operation IPC showed two complete property reads after each assignment on
+both hosts (roughly 13–47 ms each), after a reply already carrying that snapshot.
+The Windows profile's direct startup was 20.7 seconds; its interactions passed.
+The macOS profile still observed direct grouping 503.4 ms and grouped assignment
+319.8 ms. Profiles do not establish the complete historical delay cause.
+
+At the existing renderer/real-service seam, a delayed property-read regression
+failed because a complete accepted mutation reply still left controls disabled.
+The repair defers property-event observation during an assignment, keeps the
+minimum revision, accepts only the existing ownership/revision-checked complete
+snapshot and avoids the redundant read for ordinary metadata success. Stale,
+lost/rejected and filesystem outcomes retain fallback observation without replay.
+Actual group projection refresh and focus sequencing remain intact. A newer
+property change during assignment supersedes its older reply through fallback.
+
+Assignment UI scenarios passed 37/37 (EN/RU, Table/Board, scalar/MultiSelect,
+filesystem/recovery, lost/rejected replies, focus, filters and newer revision).
+Typecheck/lint/docs, application build and both independent reviews passed.
+The earlier native controls and route contracts passed 11/11 and 50/50.
+Full local suite `/tmp/issue52-refresh-full.log`: 3187 tests, 3160 passed,
+26 skipped, one failed obsolete literal Windows continuation matrix assertion.
+All application/native cases passed. Adapt that assertion to evaluate the default
+host expression while retaining every original command parity assertion; focused
+renewal covers that bounded test-only repair without repeating unchanged passing
+application cases. The actual full run remains recorded as failed.
+All required platform/package/installer/performance acceptance must be renewed;
+previous unchanged-application receipts remain historical, not final acceptance
+for this source change. GitHub owns actual candidate SHA/run status.
+
+Focused continuation/test-suite contracts passed 73/73 after the literal-matrix
+adaptation; both independent incremental reviews found no remaining findings.
+The original complete run and its sole static failure are preserved above.
