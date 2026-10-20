@@ -798,3 +798,14 @@ separate diagnostic now includes actual filter/grouping saves and group assignme
 then the original unprofiled strict command runs independently. New phases split
 pre-observation time from initial readiness; neither diagnostics nor local timings
 substitute for the failed Windows targets.
+
+
+For `39440696066`'s remaining Windows interaction misses, the existing optional
+`profile_filters` renderer diagnostic now additionally retains Chromium timeline
+streams and fixed event/paint marks alongside CPU profiles. This distinguishes
+native layout/paint, JS/GC and idle spans; data loss rejects and collection has a
+bounded completion/owned cleanup path. Marks/tracing execute only in the diagnostic
+branch. Select Windows candidate-only with `profile_filters: true`; the unchanged
+unprofiled original follows independently. Retain actual macOS `b77d3885` strict
+acceptance and the separately inspected desktop/installers. No trace or isolated
+service timing substitutes for a Windows strict pass.

@@ -39,10 +39,53 @@ const record = (source, scenario, started, limit = report.limits.interaction) =>
   console.log(`${source} ${scenario}: ${ms.toFixed(1)} ms (limit ${limit})`);
 };
 async function startUiTiming(locator, event) {
-  await locator.evaluate((element, event) => {
+  await locator.evaluate((element, { event, trace }) => {
     window.__workspacePerformanceStarted = undefined;
-    element.addEventListener(event, () => { window.__workspacePerformanceStarted = performance.now(); }, { capture: true, once: true });
-  }, event);
+    element.addEventListener(event, () => {
+      window.__workspacePerformanceStarted = performance.now();
+      if (trace) performance.mark("workspace-performance-event", { detail: { event } });
+    }, { capture: true, once: true });
+  }, { event, trace: profileFilters });
+}
+async function startInteractionProfile() {
+  const session = await page.context().newCDPSession(page);
+  try {
+    await session.send("Profiler.enable"); await session.send("Profiler.start");
+    await session.send("Tracing.start", { categories: "devtools.timeline,blink.user_timing,v8", transferMode: "ReturnAsStream", streamFormat: "json" });
+    return session;
+  } catch (error) { await session.detach().catch(() => {}); throw error; }
+}
+async function stopInteractionProfile(session, name) {
+  let handle, timer, completed, failure;
+  try {
+    const { profile } = await session.send("Profiler.stop");
+    await writeFile(join(evidence, `${name}.cpuprofile`), JSON.stringify(profile));
+    const completion = new Promise(resolve => {
+      completed = resolve; session.once("Tracing.tracingComplete", completed);
+    });
+    const ending = Promise.all([session.send("Tracing.end"), completion]);
+    const [, trace] = await Promise.race([ending, new Promise((_, reject) => {
+      timer = setTimeout(() => reject(new Error("Diagnostic tracing completion timed out")), 30000);
+    })]);
+    clearTimeout(timer);
+    handle = trace.stream;
+    assert.ok(handle, "Diagnostic trace must provide its stream");
+    const chunks = [];
+    let eof = false;
+    while (!eof) {
+      const part = await session.send("IO.read", { handle, size: 1048576 });
+      chunks.push(Buffer.from(part.data, part.base64Encoded ? "base64" : "utf8")); eof = part.eof;
+    }
+    await writeFile(join(evidence, `${name}.trace.json`), Buffer.concat(chunks));
+    assert.equal(trace.dataLossOccurred, false, "Diagnostic timeline must not lose events");
+  } catch (error) { failure = error; }
+  finally {
+    clearTimeout(timer);
+    if (completed) session.off("Tracing.tracingComplete", completed);
+    try { if (handle) await session.send("IO.close", { handle }); } catch (error) { failure ??= error; }
+    try { await session.detach(); } catch (error) { failure ??= error; }
+  }
+  if (failure) throw failure;
 }
 let lastReadyTiming;
 async function recordUi(source, scenario, limit = report.limits.interaction) {
@@ -53,7 +96,7 @@ async function recordUi(source, scenario, limit = report.limits.interaction) {
   console.log(`${source} ${scenario}: ${ms.toFixed(1)} ms (limit ${limit})`);
 }
 async function ready(ids) {
-  lastReadyTiming = await waitForRuntimeProjection(page, ids);
+  lastReadyTiming = await waitForRuntimeProjection(page, ids, profileFilters);
 }
 async function memory(scenario) {
   const metrics = await app.evaluate(({ app }) => app.getAppMetrics().map(m => ({ type: m.type, serviceName: m.serviceName,
@@ -140,8 +183,7 @@ try {
       const expected = (await command("queryView", { viewId, archived: false })).projectIds;
       await ready(expected); activeIds = expected;
       for (let sample = 0; sample < 3; sample++) {
-        const profiler = profileFilters && ((kind === "table" && sample === 0) || (kind === "board" && sample === 1)) ? await page.context().newCDPSession(page) : undefined;
-        if (profiler) { await profiler.send("Profiler.enable"); await profiler.send("Profiler.start"); }
+        const profiler = profileFilters && ((kind === "table" && sample === 0) || (kind === "board" && sample === 1)) ? await startInteractionProfile() : undefined;
         const text = sample % 2 ? "Project 0" : "Project 00";
         // Fixture expectation preparation is outside the user-event clock.
         const ids = expected.filter(id => source.projects.find(p => p.projectId === id).name.includes(text));
@@ -151,16 +193,13 @@ try {
         await startUiTiming(save, "keydown"); await save.press("Enter");
         await ready(ids); await recordUi(source.mode, `${kind} filter ${sample}`);
         if (profiler) {
-          const { profile } = await profiler.send("Profiler.stop");
-          await writeFile(join(evidence, `${source.mode}-${kind}-filter-${sample}.cpuprofile`), JSON.stringify(profile));
-          await profiler.detach();
+          await stopInteractionProfile(profiler, `${source.mode}-${kind}-filter-${sample}`);
         }
         assert.deepEqual((await command("queryView", { viewId, archived: false })).projectIds, ids);
       }
       // Ordinary Select grouping retains exact option identities and an empty group.
       const property = source.properties.find(p => p.type === "single_select");
-      const assignmentProfiler = profileFilters ? await page.context().newCDPSession(page) : undefined;
-      if (assignmentProfiler) { await assignmentProfiler.send("Profiler.enable"); await assignmentProfiler.send("Profiler.start"); }
+      const assignmentProfiler = profileFilters ? await startInteractionProfile() : undefined;
       const groupBy = page.getByLabel("Group by", { exact: true });
       await startUiTiming(groupBy, "change"); await groupBy.selectOption(property.propertyId);
       await page.locator(".project-group").first().waitFor();
@@ -188,9 +227,7 @@ try {
       await group.locator(`[data-project-id="${projectId}"]`).waitFor();
       await ready(); await recordUi(source.mode, `${kind} filtered group drag`);
       if (assignmentProfiler) {
-        const { profile } = await assignmentProfiler.send("Profiler.stop");
-        await writeFile(join(evidence, `${source.mode}-${kind}-grouping-assignment.cpuprofile`), JSON.stringify(profile));
-        await assignmentProfiler.detach();
+        await stopInteractionProfile(assignmentProfiler, `${source.mode}-${kind}-grouping-assignment`);
       }
       const assigned = await command("queryView", { viewId, archived: false });
       await ready(assigned.groups.flatMap(g => g.projectIds));

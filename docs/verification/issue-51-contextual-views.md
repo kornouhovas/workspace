@@ -365,3 +365,42 @@ made the passing filter bound conservative. This does not prove future timings
 must improve or provide macOS evidence for the new diagnostic fields. Their native
 consumer was renewed locally on macOS. Renew the expanded service diagnostic and
 original strict Windows consumer; no past Windows failure is waived.
+
+
+## Windows renderer timeline diagnosis
+
+Run `39440696066`, attempt 1 at `cf9ff85c`, completed its separate 18-profile
+service diagnostic, six native controls and all 32 unprofiled functional samples,
+startups/memory/four normal quits/backend exits/cleanup. Strict interaction misses
+remain: direct Table filter 408.4ms, Table assignment 364.4ms, Board grouping
+356.7ms; grouped Table filter 325.6ms and Board assignment 400.4ms. For the first
+Table filters, observation began at 8.5/27.4ms but initial readiness took
+284.8/348.6ms. For failed assignment/grouping, observation began at 312.6–338.7ms
+and initial readiness then took 13.1–30.4ms. Thus a single delay explanation does
+not fit all cases. Final stabilization remains about 30ms.
+
+The independent Windows public-service diagnostic measured filter saves
+3.0–15.1ms, projected filtered reads 22.4–25.6ms, grouping saves about 5ms and
+assignments 55.8–69.6ms. Grouped full list/refresh were 1,586.9/2,083.4ms. It
+verified filtered IDs and saved group membership, closed and cleaned up. These
+separate Node timings do not include packaged IPC, concurrent backend queues or
+renderer work, so they do not establish a unique cause for the UI misses.
+
+The next opt-in renderer diagnostic retains existing CPU profiles and adds CDP
+`devtools.timeline`/V8/user-timing streams around the same first Table filter,
+Board widening and grouping/assignment spans. Fixed event/first-paint/final-paint
+marks align native layout/paint, JS/GC and idle spans with the measured interval.
+Only profiled runs create these marks/traces; the original strict branch remains
+unprofiled. Stream completion is bounded, data loss rejects, handles/sessions close
+and primary errors are preserved. No app/build input or strict endpoint changes.
+Local diagnostic completed all 32 cases, eight CPU profiles/eight parseable
+nonempty timelines with the expected event/ready markers, four normal quits and
+cleanup. Six native controls and static checks passed. This is diagnostic evidence
+only; the remaining Windows strict original still needs passing acceptance.
+
+Collector review repair bounds both `Tracing.end` and its completion event in one
+handled race. Local fault probes covered no completion, completion with stalled
+command, command rejection, data loss and success; each detached and removed its
+listener, stream cases closed their handle, and primary errors were preserved.
+Both review axes have no remaining findings. Typecheck/lint/docs (174 files) and
+whitespace checks passed after the repair.

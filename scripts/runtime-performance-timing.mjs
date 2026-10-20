@@ -4,7 +4,7 @@ import { usableRuntimeViewProjection } from "./runtime-view-readiness.mjs";
 function afterPaint() {
   return new Promise(done => globalThis.requestAnimationFrame(() => globalThis.requestAnimationFrame(() => done(performance.now()))));
 }
-function stabilizeProjection({ ids, timeout }, usable, painted) {
+function stabilizeProjection({ ids, timeout, trace }, usable, painted) {
   return (async () => {
     const observationStartedAt = performance.now();
     const deadline = observationStartedAt + timeout;
@@ -16,17 +16,20 @@ function stabilizeProjection({ ids, timeout }, usable, painted) {
     };
     await ready();
     const firstPaintedAt = await painted();
+    if (trace) performance.mark("workspace-performance-first-paint");
     // Mounting can reveal additional rows. Recheck complete membership and all
     // visible editors after layout, then retain the original final frame pair.
     await ready();
-    return { observationStartedAt, firstPaintedAt, paintedAt: await painted() };
+    const paintedAt = await painted();
+    if (trace) performance.mark("workspace-performance-ready");
+    return { observationStartedAt, firstPaintedAt, paintedAt };
   })();
 }
 // Playwright serializes functions without their module imports. Embed only our
 // fixed, owned functions so host RPC pauses cannot split the stabilization.
 const observeProjection = new Function("input", `return (${stabilizeProjection.toString()})(input, (${usableRuntimeViewProjection.toString()}), (${afterPaint.toString()}));`);
-export async function waitForRuntimeProjection(page, ids) {
-  const result = await page.waitForFunction(observeProjection, { ids, timeout: 30000 });
+export async function waitForRuntimeProjection(page, ids, trace = false) {
+  const result = await page.waitForFunction(observeProjection, { ids, timeout: 30000, trace });
   try { return await result.jsonValue(); }
   finally { await result.dispose(); }
 }
