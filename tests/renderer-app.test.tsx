@@ -3886,3 +3886,87 @@ test("EN/RU postponing an open pending setup returns focus and rejects the delay
     cleanup();
   }
 });
+
+test("Sources settings displays shared ownership and current configuration without activating a workspace", async () => {
+  for (const language of ["en", "ru"] as const) {
+    const active = makeActive("one", "One");
+    const requests: WorkspaceRequest[] = [];
+    mockApi({ language, load: ok({ workspaces: [{ workspaceId: "one", name: "One" }, { workspaceId: "two", name: "Two" }], activeWorkspace: active }),
+      onWorkspace: async input => {
+        requests.push(input);
+        if (input.type === "workspace.load") return ok({ workspaces: [{ workspaceId: "one", name: "One" }, { workspaceId: "two", name: "Two" }], activeWorkspace: active });
+        if (input.type === "workspace.listSources") return ok({ sources: [{ sourceId: active.sourceId, canonicalRoot: active.canonicalRoot, sourceAvailable: true, mode: "grouped", excludedRelativePaths: ["Client/Excluded"], archiveRelativePath: "Saved", workspaces: [{ workspaceId: "one", name: "One" }, { workspaceId: "two", name: "Two" }] }] });
+        return fail("invalid_input");
+      } });
+    render(<App />);
+    await openSettings();
+    await userEvent.click(screen.getByRole("tab", { name: language === "en" ? "Sources" : "Источники" }));
+    const source = await screen.findByRole("button", { name: active.canonicalRoot });
+    source.focus(); await userEvent.keyboard("{Enter}");
+    const detail = await screen.findByRole("region", { name: active.canonicalRoot });
+    assert.ok(within(detail).getByText("One"));
+    assert.ok(within(detail).getByText("Two"));
+    assert.ok(within(detail).getByText("Client/Excluded"));
+    assert.ok(within(detail).getByText("Saved"));
+    assert.equal(requests.some(request => request.type === "workspace.activate"), false);
+    assert.equal(within(detail).queryByRole("button", { name: /^(Save|Сохранить)$/ }), null);
+    cleanup();
+  }
+});
+
+test("Sources settings reviews and applies discovery through real shared source service", async () => {
+  const { SourceSettings } = await import("../src/renderer/components/SourceSettings.js");
+  const directory = mkdtempSync(join(tmpdir(), "source-settings-ui-")), root = join(directory, "root");
+  mkdirSync(join(root, "Client", "Project"), { recursive: true });
+  const service = openSettingsService(join(directory, "data.sqlite"));
+  let off: (() => void) | undefined;
+  try {
+    const first = service.workspaces.create({ type: "workspace.create", name: "One", rootPath: root });
+    const second = service.workspaces.create({ type: "workspace.create", name: "Two", rootPath: root });
+    assert.ok(first.ok && second.ok); if (!first.ok || !second.ok) throw new Error("fixture");
+    const api = mockApi({ onWorkspace: async input => (input.type === "workspace.applyDiscovery" || input.type === "workspace.refreshSource"
+      ? service.handleCommand(input) : service.handleQuery(input)) as ServiceResult<WorkspaceResponse> });
+    off = service.workspaces.subscribe(api.emitChange);
+    render(<SourceSettings client={new WorkspaceServiceClient()} language="en" disabled={false} />);
+    await userEvent.click(await screen.findByRole("button", { name: realpathSync(root) }));
+    await userEvent.click(screen.getByRole("button", { name: translate("en", "discoveryAction") }));
+    await userEvent.selectOptions(await screen.findByRole("combobox", { name: translate("en", "discoveryMode") }), "grouped");
+    await waitFor(() => assert.equal((screen.getByRole("button", { name: translate("en", "discoveryApply") }) as HTMLButtonElement).disabled, false));
+    await userEvent.click(screen.getByRole("button", { name: translate("en", "cancelRenameWorkspace") }));
+    assert.equal(service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId: first.value.workspaceId }).ok, true);
+    const saved = service.workspaces.listSources({ type: "workspace.listSources" });
+    assert.ok(saved.ok); if (saved.ok) assert.equal(saved.value.sources[0].mode, null);
+    await userEvent.click(screen.getByRole("button", { name: translate("en", "discoveryAction") }));
+    await userEvent.selectOptions(await screen.findByRole("combobox", { name: translate("en", "discoveryMode") }), "grouped");
+    await waitFor(() => assert.equal((screen.getByRole("button", { name: translate("en", "discoveryApply") }) as HTMLButtonElement).disabled, false));
+    await userEvent.click(screen.getByRole("button", { name: translate("en", "discoveryApply") }));
+    await waitFor(() => assert.equal(screen.queryByRole("button", { name: translate("en", "discoveryApply") }), null));
+    const sibling = service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId: second.value.workspaceId });
+    assert.ok(sibling.ok); if (sibling.ok) { assert.equal(sibling.value.mode, "grouped"); assert.equal(sibling.value.projects[0].relativePath, "Client/Project"); }
+    const loaded = service.workspaces.load();
+    assert.ok(loaded.ok); if (loaded.ok) assert.equal(loaded.value.activeWorkspace?.workspaceId, second.value.workspaceId);
+  } finally { cleanup(); off?.(); service.close(); rmSync(directory, { recursive: true, force: true }); }
+});
+
+test("Sources settings invalidates reviews on source changes and ignores older status reads", async () => {
+  const { SourceSettings } = await import("../src/renderer/components/SourceSettings.js");
+  const active = { ...makeActive(randomUUID(), "One"), sourceId: randomUUID() };
+  let finishStatus!: (value: ServiceResult<WorkspaceResponse>) => void;
+  const status = new Promise<ServiceResult<WorkspaceResponse>>(resolve => { finishStatus = resolve; });
+  const api = mockApi({ onObservation: () => status, onWorkspace: async input => {
+    if (input.type === "workspace.listSources") return ok({ sources: [{ sourceId: active.sourceId, canonicalRoot: active.canonicalRoot, sourceAvailable: true, mode: null, excludedRelativePaths: [], archiveRelativePath: null, workspaces: [{ workspaceId: active.workspaceId, name: "One" }] }] });
+    if (input.type === "workspace.previewDiscovery") return ok(previewResult(active));
+    return fail("invalid_input");
+  } });
+  render(<SourceSettings client={new WorkspaceServiceClient()} language="en" disabled={false} />);
+  await userEvent.click(await screen.findByRole("button", { name: active.canonicalRoot }));
+  await act(async () => api.emitChange({ type: "workspace.sourceObserved", sourceId: active.sourceId, workspaceIds: [active.workspaceId], observationRevision: 2, state: "ready", automaticUpdates: "degraded" }));
+  await screen.findByText(translate("en", "automaticUpdatesDegraded"));
+  await act(async () => finishStatus(ok({ observation: { type: "workspace.sourceObserved", sourceId: active.sourceId, workspaceIds: [active.workspaceId], observationRevision: 1, state: "ready", automaticUpdates: "active" } })));
+  assert.ok(screen.getByText(translate("en", "automaticUpdatesDegraded")));
+  await userEvent.click(screen.getByRole("button", { name: translate("en", "discoveryAction") }));
+  const apply = await screen.findByRole("button", { name: translate("en", "discoveryApply") }) as HTMLButtonElement;
+  await waitFor(() => assert.equal(apply.disabled, false));
+  await act(async () => api.emitChange({ type: "workspace.sourceChanged", source: { sourceId: active.sourceId, workspaceIds: [active.workspaceId], canonicalRoot: active.canonicalRoot, sourceAvailable: false } }));
+  await waitFor(() => assert.equal(apply.disabled, true));
+});

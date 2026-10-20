@@ -1,3 +1,4 @@
+import type { SourceSettingsList } from "../contracts/workspaces.js";
 import { protectMigration } from "./migration-backup.js";
 import { createAutomaticBackups } from "./automatic-backups.js";
 import { dataRecovery } from "./data-recovery.js";
@@ -54,7 +55,7 @@ export interface SettingsService {
   previewProjectRenameRecovery(input: unknown): ServiceResult<ProjectRenameRecoveryPreview>;
   recoverProjectRename(input: unknown): ServiceResult<ProjectRenameResult>;
   revealProject(input: unknown, native?: NativeProjectReveal): Promise<ServiceResult<ProjectRevealResult>>;
-  handleQuery(input: unknown): ServiceResult<DataRecoveryPayload | MetadataRemovalPreview | MetadataRemovalResult | BoardLayoutSnapshot | TableLayoutSnapshot | ViewGroupingSnapshot | ViewFilterPayload | ViewSnapshot | ArchivePayload | CategoryRemovalPayload | CategoryOptionsPayload | ProjectCategoryMoveResult | ProjectCategoryMoveList | ProjectCategoryMoveRecoveryPreview | ProjectRenameResult | ProjectRenameList | ProjectRenameRecoveryPreview | ProjectCreationResult | ProjectCreationList | ProjectCreationRecoveryPreview | WorkspaceSourceObservationSnapshot | ProjectRecoveryPreview | TextPropertySnapshot | Settings | WorkspaceLoad | DiscoveryPreview | ProjectList>;
+  handleQuery(input: unknown): ServiceResult<SourceSettingsList | DataRecoveryPayload | MetadataRemovalPreview | MetadataRemovalResult | BoardLayoutSnapshot | TableLayoutSnapshot | ViewGroupingSnapshot | ViewFilterPayload | ViewSnapshot | ArchivePayload | CategoryRemovalPayload | CategoryOptionsPayload | ProjectCategoryMoveResult | ProjectCategoryMoveList | ProjectCategoryMoveRecoveryPreview | ProjectRenameResult | ProjectRenameList | ProjectRenameRecoveryPreview | ProjectCreationResult | ProjectCreationList | ProjectCreationRecoveryPreview | WorkspaceSourceObservationSnapshot | ProjectRecoveryPreview | TextPropertySnapshot | Settings | WorkspaceLoad | DiscoveryPreview | ProjectList>;
   handleCommand(input: unknown): ServiceResult<DataRecoveryPayload | MetadataRemovalPreview | MetadataRemovalResult | BoardLayoutSnapshot | TableLayoutSnapshot | ViewGroupingSnapshot | ViewFilterPayload | ViewSnapshot | ArchivePayload | CategoryRemovalPayload | CategoryOptionsPayload | ProjectCategoryMoveResult | ProjectRenameResult | ProjectCreationResult | CategoryPropertySnapshot | TextPropertyMutation | Settings | WorkspaceCreated | ActiveWorkspace | WorkspaceLoad | WorkspaceSourceState | ProjectList>;
   workspaces: WorkspaceService;
   close(): void;
@@ -163,6 +164,7 @@ export function openSettingsService(
       if (isRecord(input) && input.type === "workspace.listTextProperties") return workspaces.listTextProperties(input);
       if (isRecord(input) && input.type === "workspace.listProjects") return workspaces.listProjects(input);
       if (isRecord(input) && input.type === "workspace.previewDiscovery") return workspaces.previewDiscovery(input);
+      if (isRecord(input) && input.type === "workspace.listSources") return workspaces.listSources(input);
       if (isRecord(input) && input.type === "workspace.load") return workspaces.load();
       if (!isRecord(input) || input.type !== "settings.load") {
         return { ok: false, error: invalidInput("Expected a settings.load query.") };

@@ -1,3 +1,4 @@
+import type { SourceSettingsList } from "../contracts/workspaces.js";
 import type { ViewFilterSnapshot, ViewFilterResult, ViewFilterConfig } from "../contracts/view-filters.js";
 import type { ViewCommand, ViewSnapshot } from "../contracts/views.js";
 import type { SelectCommand } from "../contracts/text-properties.js";
@@ -245,6 +246,10 @@ export class WorkspaceServiceClient {
 
   setLanguage(language: Language): Promise<ServiceResult<Settings>> {
     return this.api.settings({ type: "settings.setLanguage", language });
+  }
+
+  listSources(): Promise<ServiceResult<SourceSettingsList>> {
+    return this.api.workspace({ type: "workspace.listSources" });
   }
 
   loadWorkspaces(): Promise<ServiceResult<WorkspaceLoad>> {

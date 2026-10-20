@@ -114,6 +114,7 @@ try {
   await page.emulateMedia({ colorScheme: "light" }); await page.waitForFunction(() => document.documentElement.dataset.theme === "light");
   await returnToWorkspace(page);
   await openSettingsSection(page, "sources");
+  await page.getByRole("button", { name: source, exact: true }).click();
   await page.getByRole("button", { name: /^(Preview project folders|Посмотреть папки проектов)$/ }).click();
   await page.getByRole("button", { name: /^(Apply reviewed projects|Применить проверенные проекты)$/ }).waitFor();
   await page.getByRole("button", { name: /^(Cancel|Отмена)$/ }).click();

@@ -573,3 +573,10 @@ p { margin-block: .5rem; }
 
 .source-tools { display: flex; flex-wrap: wrap; gap: .5rem; }
 .source-tools > .discovery-panel { flex-basis: 100%; }
+
+.source-list { display: grid; gap: 8px; }
+.source-list-item { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; padding: 14px; border: 1px solid var(--border); border-radius: 8px; background: var(--background); color: var(--foreground); text-align: left; cursor: pointer; }
+.source-list-item:hover { background: var(--muted); }
+.source-summary { display: grid; grid-template-columns: minmax(120px, 1fr) minmax(0, 2fr); gap: 12px; }
+.source-summary dd { margin: 0; overflow-wrap: anywhere; }
+.source-settings section { min-width: 0; }

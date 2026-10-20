@@ -7,6 +7,7 @@ import { translate, type TranslationKey } from "../localization.js";
 import { StatusMessage } from "./bb-foundation.js";
 import { TextPropertiesTable } from "./TextPropertiesTable.js";
 interface Props {
+  locationOnly?: boolean;
   viewId?: string;
   categoryProperty?: CategoryProperty | null; categories?: CategorySummary[];
   layout?: "table" | "board";
@@ -20,7 +21,7 @@ const problemKeys: Record<string, TranslationKey> = {
   busy: "archiveProblemBusy", owned_location: "archiveProblemOwned",
 };
 export function ProjectArchivePanel(props: Props) { return <ArchiveContent key={`${props.workspaceId}:${props.sourceId}`} {...props} />; }
-function ArchiveContent({ viewId, categoryProperty, categories, layout = "table", client, workspaceId, sourceId, projects, language, disabled, revision, invalidation, onCommitted, onViewChange, onBlockedChange }: Props) {
+function ArchiveContent({ locationOnly = false, viewId, categoryProperty, categories, layout = "table", client, workspaceId, sourceId, projects, language, disabled, revision, invalidation, onCommitted, onViewChange, onBlockedChange }: Props) {
   const projectSelectId = useId();
   const t = (key: TranslationKey) => translate(language, key);
   const [archived, setArchived] = useState(false), [snapshot, setSnapshot] = useState<ArchiveSnapshot | null>(null);
@@ -150,15 +151,15 @@ function ArchiveContent({ viewId, categoryProperty, categories, layout = "table"
   const controlsDisabled = disabled || blocked || loading || error;
   return <section ref={section} tabIndex={-1} className="project-archive" aria-label={t("archiveTitle")} aria-busy={pending || loading}
     onKeyDown={event => { if (event.key === "Escape" && (review || locationReview || recovery)) { event.preventDefault(); cancel(); } }}>
-    <h3>{t("archiveTitle")}</h3>
-    <div className="workspace-form-actions">{[false, true].map(value => <button type="button" key={String(value)} className="workspace-button workspace-button--secondary" aria-pressed={archived === value}
-      disabled={blocked} onClick={() => changeDraft(() => { setArchived(value); setProjectId(""); setName(""); setCreateParent(false); onViewChange(value); })}>{t(value ? "archiveArchived" : "archiveActive")}</button>)}</div>
+    <h3>{t(locationOnly ? "archiveLocation" : "archiveTitle")}</h3>
+    {!locationOnly && <div className="workspace-form-actions">{[false, true].map(value => <button type="button" key={String(value)} className="workspace-button workspace-button--secondary" aria-pressed={archived === value}
+      disabled={blocked} onClick={() => changeDraft(() => { setArchived(value); setProjectId(""); setName(""); setCreateParent(false); onViewChange(value); })}>{t(value ? "archiveArchived" : "archiveActive")}</button>)}</div>}
     {loading && <StatusMessage kind="info" title={t("archiveLoading")} />}
     {error && <><StatusMessage kind="error" title={t("archiveError")} /><button type="button" disabled={pending} className="workspace-button workspace-button--secondary" onClick={() => void load()}>{t("propertiesRetry")}</button></>}
     {message && <StatusMessage kind={message === "archiveCompleted" ? "info" : "error"} title={t(message)} />}
     {unknown && <div><button type="button" disabled={pending || disabled} className="workspace-button workspace-button--secondary" onClick={() => void check()}>{t("archiveCheck")}</button>
       {unknown.initial && <button type="button" disabled={pending || disabled} className="workspace-button workspace-button--secondary" onClick={() => void apply(unknown)}>{t("archiveRetryOriginalRequest")}</button>}</div>}
-    <details onToggle={event => setLocationEditor(event.currentTarget.open)}><summary>{t("archiveLocation")}: {snapshot?.relativePath ?? "Archive"}</summary>
+    <details onToggle={event => { setLocationEditor(event.currentTarget.open); if (event.currentTarget.open) changeDraft(() => setLocation(snapshot?.relativePath ?? "Archive")); }}><summary>{t("archiveLocation")}: {snapshot?.relativePath ?? "Archive"}</summary>
       {locationEditor && <div><p>{t("archiveLocationPolicy")}</p>
       <label className="bb-field"><span>{t("archiveLocation")}</span><input className="bb-input" value={location} disabled={controlsDisabled} onChange={e => changeDraft(() => setLocation(e.currentTarget.value))} /></label>
       <button type="button" disabled={controlsDisabled} className="workspace-button workspace-button--secondary" onClick={event => { returnFocus.current = event.currentTarget; void preview(true); }}>{t("archiveReviewLocation")}</button>
@@ -168,7 +169,7 @@ function ArchiveContent({ viewId, categoryProperty, categories, layout = "table"
       </div>}
     </details>
     {!snapshot?.relativePath && <p>{t("archiveNoLocation")}</p>}
-    <form onSubmit={e => { e.preventDefault(); returnFocus.current = trigger.current; void preview(false); }}>
+    {!locationOnly && <><form onSubmit={e => { e.preventDefault(); returnFocus.current = trigger.current; void preview(false); }}>
       <div className="bb-field"><label htmlFor={projectSelectId}>{t(archived ? "archiveRestoreProject" : "archiveProject")}</label>
         <select id={projectSelectId} className="bb-input" disabled={controlsDisabled} value={projectId} onChange={e => changeDraft(() => setProjectId(e.currentTarget.value))}>
           <option value="">{t("archiveChoose")}</option>{(archived ? snapshot?.projects ?? [] : projects).map(p => <option key={p.projectId} value={p.projectId}>{p.relativePath}</option>)}
@@ -187,5 +188,6 @@ function ArchiveContent({ viewId, categoryProperty, categories, layout = "table"
     {archived && <>{snapshot?.projects.length ? <>
       {viewId && <TextPropertiesTable categoryProperty={categoryProperty} categories={categories} viewId={viewId} layout={layout} client={client} workspaceId={workspaceId} sourceId={sourceId} language={language} disabled={disabled} projects={snapshot.projects} hideReveal />}
     </> : <p>{t("archiveEmpty")}</p>}</>}
+    </>}
   </section>;
 }

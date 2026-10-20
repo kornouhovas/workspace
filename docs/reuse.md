@@ -64,3 +64,10 @@ against npm metadata and the committed lockfile; actual builds and interactions
 are recorded in the issue verification report. The full bb MIT notice remains at
 `src/renderer/components/bb/LICENSE` and in packaged resources. Radix and Tailwind
 retain their dependency licenses in the npm dependency tree.
+
+## Issue 50 shared source settings
+
+Sources uses the existing issue-48 section/card, semantic theme and keyboard
+foundation with a local source list/detail controller. No additional upstream
+module is copied. Existing discovery and archive review services remain the
+mutation boundaries; source selection does not activate a workspace.

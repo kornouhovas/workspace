@@ -1,3 +1,4 @@
+import type { SourceSettingsList } from "../contracts/workspaces.js";
 import { createMetadataRemovalService } from "./metadata-removal.js";
 import { createBackgroundDiscovery, type BackgroundScanRequest } from "./background-discovery.js";
 import { assignProjectGroup } from "./group-assignment.js";
@@ -71,6 +72,7 @@ const nativeFilesystem: WorkspaceFilesystem = {
 };
 
 export interface WorkspaceService {
+  listSources(input: unknown): ServiceResult<SourceSettingsList>;
   metadataRemovalRequest(input: unknown): ServiceResult<import("../contracts/metadata-removal.js").MetadataRemovalPreview | import("../contracts/metadata-removal.js").MetadataRemovalResult>;
   boardLayoutRequest(input: unknown): ServiceResult<BoardLayoutSnapshot>;
   tableLayoutRequest(input: unknown): ServiceResult<TableLayoutSnapshot>;
@@ -714,6 +716,21 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
       } catch {
         return false;
       }
+    },
+    listSources(input) {
+      if (!isRecord(input) || input.type !== "workspace.listSources" || Object.keys(input).length !== 1) return invalid("Choose source settings.");
+      try {
+        const workspaces = db.select().from(schema.workspaces).orderBy(asc(schema.workspaces.position), asc(schema.workspaces.id)).all();
+        const sources = db.select().from(schema.sources).orderBy(asc(schema.sources.canonicalRoot)).all().map(source => ({
+          sourceId: source.id, canonicalRoot: source.canonicalRoot,
+          sourceAvailable: availableRoot(source.canonicalRoot, filesystem) !== undefined,
+          mode: source.discoveryMode as "direct" | "grouped" | null,
+          excludedRelativePaths: JSON.parse(source.excludedRelativePaths) as string[],
+          archiveRelativePath: source.archiveRelativePath,
+          workspaces: workspaces.filter(workspace => workspace.sourceId === source.id).map(workspace => ({ workspaceId: workspace.id, name: workspace.name })),
+        }));
+        return { ok: true, value: { sources } };
+      } catch { return storageFailure(); }
     },
     load() {
       try {

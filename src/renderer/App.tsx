@@ -1,3 +1,4 @@
+import { SourceSettings } from "./components/SourceSettings.js";
 import { DesktopShell, AppearanceControl, shellLabels } from "./components/DesktopShell.js";
 import { DataRecoveryPanel } from "./components/DataRecoveryPanel.js";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -33,6 +34,7 @@ function WorkspaceSwitcher({ data, disabled, label, id, onActivate }: {
 }
 
 export function App() {
+  const [sourceSettingsPending, setSourceSettingsPending] = useState(false);
   const [dataLocked, setDataLocked] = useState(false);
   const [client] = useState(() => new WorkspaceServiceClient());
   const [backend, setBackend] = useState<BackendStatus>({ state: "starting" });
@@ -482,7 +484,7 @@ export function App() {
   const settingsAvailable = viewState === "ready";
   const unavailableSettings = <StatusMessage kind="info" title={shellLabels[language].unavailable} />;
   return (
-    <DesktopShell language={language} data={workspaceData} busy={viewState !== "ready" || busy !== null || renameDraft !== null || removalTarget !== null} locked={dataLocked}
+    <DesktopShell language={language} data={workspaceData} busy={viewState !== "ready" || busy !== null || renameDraft !== null || removalTarget !== null} locked={dataLocked || sourceSettingsPending}
       onCreate={() => void pickRoot()}
       onManage={async (id, action) => {
         const target = workspaceData?.workspaces.find(workspace => workspace.workspaceId === id);
@@ -649,7 +651,7 @@ export function App() {
                 </form>
               )}
 </> : <><p>{t("createWorkspaceDescription")}</p><button type="button" className="workspace-button" disabled={busy !== null} onClick={() => { back(); void pickRoot(); }}>{t("addWorkspaceAction")}</button></>}</> : unavailableSettings,
-        sources: settingsAvailable && activeWorkspace ? <><h2>{activeWorkspace.name}</h2><p className="workspace-root">{activeWorkspace.canonicalRoot}</p></> : settingsAvailable ? <p>{t("createWorkspaceDescription")}</p> : unavailableSettings,
+        sources: settingsAvailable ? <SourceSettings key={backendGeneration} client={client} language={language} activeSourceId={activeWorkspace?.sourceId} disabled={dataLocked} onPendingChange={setSourceSettingsPending} /> : unavailableSettings,
         backup: settingsAvailable ? <DataRecoveryPanel key={backendGeneration} client={client} language={language} onRestored={() => window.location.reload()} onLock={setDataLocked} /> : unavailableSettings,
         about: <><h2>Workspace</h2><p>{shellLabels[language].aboutDescription}</p><p>bb · MIT · Copyright (c) 2026 Michael Yong</p></>,
       })}>

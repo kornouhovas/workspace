@@ -1,5 +1,3 @@
-import { createPortal } from "react-dom";
-import { useSourceSettingsHost } from "./DesktopShell.js";
 import { ViewsPanel } from "./ViewsPanel.js";
 import type { WorkspaceView } from "../../contracts/views.js";
 import { ProjectArchivePanel } from "./ProjectArchivePanel.js";
@@ -241,8 +239,7 @@ export function DiscoveryController({ client, workspaceId, sourceId, minimumRevi
       }}
       onCancel={() => { version.current++; returnFocus.current = true; setOpen(false); setPreview(null); setPending(false); }} />}
   </div>;
-  const sourceHost = useSourceSettingsHost();
-  return sourceHost ? createPortal(content, sourceHost) : content;
+  return content;
 }
 
 

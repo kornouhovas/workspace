@@ -69,7 +69,7 @@ export type WorkspaceSourceObservationSnapshot = { observation: WorkspaceSourceO
 export type WorkspaceGetSourceObservationQuery = { type: "workspace.getSourceObservation"; workspaceId: string };
 
 import type { ViewGroupingQuery, ViewGroupingCommand } from "./view-grouping.js";
-export type WorkspaceQuery = import("./metadata-removal.js").PreviewMetadataRemoval | BoardLayoutQuery | TableLayoutQuery | ViewGroupingQuery | ViewFilterQuery | ViewQuery | ArchiveQuery | CategoryRemovalQuery | CategoryOptionsQuery | WorkspaceListProjectCategoryMovesQuery | WorkspaceGetProjectCategoryMoveQuery | WorkspacePreviewProjectCategoryMoveRecoveryQuery | WorkspaceListProjectRenamesQuery | WorkspaceGetProjectRenameQuery | WorkspacePreviewProjectRenameRecoveryQuery | WorkspaceListProjectCreationsQuery | WorkspaceGetProjectCreationQuery | WorkspacePreviewProjectCreationRecoveryQuery | WorkspaceGetSourceObservationQuery | WorkspacePreviewProjectRecoveryQuery | WorkspaceListTextPropertiesQuery | WorkspaceLoadQuery | WorkspacePreviewDiscoveryQuery | WorkspaceListProjectsQuery;
+export type WorkspaceQuery = WorkspaceListSourcesQuery | import("./metadata-removal.js").PreviewMetadataRemoval | BoardLayoutQuery | TableLayoutQuery | ViewGroupingQuery | ViewFilterQuery | ViewQuery | ArchiveQuery | CategoryRemovalQuery | CategoryOptionsQuery | WorkspaceListProjectCategoryMovesQuery | WorkspaceGetProjectCategoryMoveQuery | WorkspacePreviewProjectCategoryMoveRecoveryQuery | WorkspaceListProjectRenamesQuery | WorkspaceGetProjectRenameQuery | WorkspacePreviewProjectRenameRecoveryQuery | WorkspaceListProjectCreationsQuery | WorkspaceGetProjectCreationQuery | WorkspacePreviewProjectCreationRecoveryQuery | WorkspaceGetSourceObservationQuery | WorkspacePreviewProjectRecoveryQuery | WorkspaceListTextPropertiesQuery | WorkspaceLoadQuery | WorkspacePreviewDiscoveryQuery | WorkspaceListProjectsQuery;
 export type WorkspaceCommand = import("./metadata-removal.js").ApplyMetadataRemoval | import("./group-assignment.js").AssignProjectGroupCommand | BoardLayoutCommand | TableLayoutCommand | ViewGroupingCommand | ViewFilterCommand | ViewCommand | SelectCommand | ArchiveCommand | CategoryRemovalCommand | CategoryOptionsCommand | WorkspaceMoveProjectCategoryCommand | WorkspaceRecoverProjectCategoryMoveCommand | WorkspaceRenameProjectCommand | WorkspaceRecoverProjectRenameCommand | WorkspaceRevealProjectCommand | WorkspaceCreateProjectCommand | WorkspaceRecoverProjectCreationCommand | WorkspaceReassociateProjectCommand | WorkspaceRenameCategoryPropertyCommand | WorkspaceSetDateValueCommand | WorkspaceSetNumberValueCommand | WorkspaceSetTextValueCommand | WorkspaceCreatePropertyCommand | WorkspaceRenamePropertyCommand | WorkspaceCreateCommand | WorkspaceActivateCommand | WorkspaceRenameCommand | WorkspaceReorderCommand | WorkspaceRemoveCommand | WorkspaceRefreshSourceCommand | WorkspaceApplyDiscoveryCommand;
 
 export interface WorkspaceSummary {
@@ -205,3 +205,15 @@ export interface CategoryPropertySnapshot {
   name: string;
   revision: number;
 }
+
+export interface SourceSettingsSummary {
+  sourceId: string;
+  canonicalRoot: string;
+  sourceAvailable: boolean;
+  mode: DiscoveryMode | null;
+  excludedRelativePaths: string[];
+  archiveRelativePath: string | null;
+  workspaces: WorkspaceSummary[];
+}
+export interface SourceSettingsList { sources: SourceSettingsSummary[] }
+export type WorkspaceListSourcesQuery = { type: "workspace.listSources" };

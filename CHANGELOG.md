@@ -14,6 +14,10 @@ User-facing changes are maintained in English. The first target release is 0.1.0
 
 ### Added
 
+- Inspect shared sources and their workspace relationships in Sources settings;
+  review discovery and archive configuration independently, with source refresh
+  and retained metadata when folders are excluded or unavailable.
+
 - Create automatically named workspaces from the sidebar folder picker, each with
   its own default Table; reuse configured sources or postpone setup and return later.
 - Rename, reorder and remove workspaces through sidebar controls and matching

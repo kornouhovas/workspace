@@ -1,12 +1,10 @@
 // Settings navigation/section patterns adapted from bb f135a001. See docs/reuse.md and bb/LICENSE.
-import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import * as Tabs from "@radix-ui/react-tabs";
 import * as RadioGroup from "@radix-ui/react-radio-group";
 import type { Appearance, Language } from "../../contracts/settings.js";
 import type { WorkspaceLoad } from "../../contracts/workspaces.js";
 
-const SourceSettingsHost = createContext<HTMLElement | null>(null);
-export const useSourceSettingsHost = () => useContext(SourceSettingsHost);
 
 const sections = ["general", "appearance", "workspaces", "sources", "backup", "about"] as const;
 type Section = typeof sections[number];
@@ -33,7 +31,6 @@ export function DesktopShell({ language, data, busy, locked, onCreate, onManage,
   onActivate(id: string): void; onEmptyWorkspaceShown?(): void; renderPanels(back: () => void): Record<Section, ReactNode>; children: ReactNode;
 }) {
   const l = shellLabels[language];
-  const [sourceHost, setSourceHost] = useState<HTMLDivElement | null>(null);
   const [open, setOpen] = useState(false);
   const [contextId, setContextId] = useState<string | null>(null);
   const contextTrigger = useRef<HTMLButtonElement | null>(null);
@@ -80,7 +77,7 @@ export function DesktopShell({ language, data, busy, locked, onCreate, onManage,
     }
   };
   const panels = renderPanels(back);
-  return <SourceSettingsHost.Provider value={open && section === "sources" ? sourceHost : null}><Tabs.Root className="desktop-shell bg-background text-foreground" orientation="vertical" activationMode="manual" value={section} onValueChange={value => setSection(value as Section)}>
+  return <Tabs.Root className="desktop-shell bg-background text-foreground" orientation="vertical" activationMode="manual" value={section} onValueChange={value => setSection(value as Section)}>
     <aside className="desktop-sidebar" aria-label={open ? l.settings : l.workspaces}>
       <div className="desktop-brand">Workspace</div>
       <div className="sidebar-scroll">
@@ -123,9 +120,9 @@ export function DesktopShell({ language, data, busy, locked, onCreate, onManage,
       <div className="desktop-settings" hidden={!open}>
         {sections.map(item => <Tabs.Content key={item} value={item} forceMount hidden={!open || section !== item} className="settings-page" tabIndex={0}>
           <header className="settings-page-heading"><p>{l.settings}</p><h1>{l[item]}</h1></header>
-          <div className="settings-card">{item === "sources" && (!open || section !== item) ? null : panels[item]}{item === "sources" && <div ref={setSourceHost} />}</div>
+          <div className="settings-card">{item === "sources" && (!open || section !== item) ? null : panels[item]}</div>
         </Tabs.Content>)}
       </div>
     </div>
-  </Tabs.Root></SourceSettingsHost.Provider>;
+  </Tabs.Root>;
 }

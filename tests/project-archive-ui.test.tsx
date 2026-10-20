@@ -9,7 +9,7 @@ import { translate } from "../src/renderer/localization.js";
 const browser = new Window({ url: "http://localhost" });
 Object.assign(globalThis, { window: browser, document: browser.document, HTMLElement: browser.HTMLElement, Node: browser.Node, MutationObserver: browser.MutationObserver });
 Object.defineProperty(globalThis, "navigator", { configurable: true, value: browser.navigator });
-const { render, screen, cleanup, waitFor } = await import("@testing-library/react");
+const { render, screen, cleanup, waitFor, fireEvent, act } = await import("@testing-library/react");
 const { default: userEvent } = await import("@testing-library/user-event");
 test.afterEach(cleanup);
 for (const language of ["en", "ru"] as const) test(`${language}: archive review requires explicit Apply and keyboard cancel restores focus`, async () => {
@@ -154,4 +154,26 @@ test("unavailable recovery transport retains an unknown outcome until a read-onl
   await user.click(screen.getByRole("button", { name: "Check saved outcome" }));
   await screen.findByText(translate("en", "archiveCompleted"));
   assert.equal(calls.filter(c => c.type === "workspace.recoverProjectArchive").length, 1);
+});
+
+test("reopening archive location resets the draft and discards its previous review", async () => {
+  const api = { workspace: async (input: { type: string }) => {
+    if (input.type === "workspace.listArchivedProjects") return { ok: true, value: { workspaceId: "w", sourceId: "s", relativePath: "Archive", revision: 1, projects: [] } };
+    if (input.type === "workspace.listProjectArchiveOperations") return { ok: true, value: { workspaceId: "w", sourceId: "s", operations: [] } };
+    if (input.type === "workspace.previewArchiveLocation") return { ok: true, value: { workspaceId: "w", sourceId: "s", relativePath: "Stored", revision: 1, blockers: [], previewToken: "stored-review" } };
+    throw new Error("No mutation authorized");
+  }, onWorkspaceChange: () => () => {} } as unknown as WorkspaceDesktopApi;
+  render(<ProjectArchivePanel locationOnly client={new WorkspaceServiceClient(api)} workspaceId="w" sourceId="s" projects={[]} language="en" disabled={false} revision={1} invalidation={0} onCommitted={() => {}} onViewChange={() => {}} />);
+  const user = userEvent.setup({ document });
+  const summary = document.querySelector("summary")!;
+  await act(async () => { summary.parentElement!.setAttribute("open", ""); fireEvent(summary.parentElement!, new browser.Event("toggle") as unknown as Event); });
+  const input = await screen.findByRole("textbox", { name: translate("en", "archiveLocation") }) as HTMLInputElement;
+  await waitFor(() => assert.equal(input.disabled, false));
+  await user.clear(input); await user.type(input, "Stored");
+  await user.click(screen.getByRole("button", { name: translate("en", "archiveReviewLocation") }));
+  await screen.findByRole("button", { name: translate("en", "archiveConfirmLocation") });
+  await act(async () => { summary.parentElement!.removeAttribute("open"); fireEvent(summary.parentElement!, new browser.Event("toggle") as unknown as Event); });
+  await act(async () => { summary.parentElement!.setAttribute("open", ""); fireEvent(summary.parentElement!, new browser.Event("toggle") as unknown as Event); });
+  await waitFor(() => assert.equal((screen.getByRole("textbox", { name: translate("en", "archiveLocation") }) as HTMLInputElement).value, "Archive"));
+  assert.equal(screen.queryByRole("button", { name: translate("en", "archiveConfirmLocation") }) === null, true);
 });

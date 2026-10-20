@@ -1774,3 +1774,48 @@ test("configured source Refresh preserves command validation and blocks reconcil
     } finally { sqlite.close(); service.close(); }
   });
 });
+
+test("source settings lists one shared source without changing active workspace", () => {
+  withFixture(({ root, databasePath }) => {
+    const service = openSettingsService(databasePath);
+    try {
+      const first = service.workspaces.create({ type: "workspace.create", name: "One", rootPath: root }).value;
+      const second = service.workspaces.create({ type: "workspace.create", name: "Two", rootPath: root }).value;
+      const before = service.workspaces.load().value.activeWorkspace;
+      const result = service.handleQuery({ type: "workspace.listSources" });
+      assert.equal(result.ok, true);
+      assert.equal(result.value.sources.length, 1);
+      assert.deepEqual(result.value.sources[0], {
+        sourceId: first.sourceId, canonicalRoot: realpathSync(root), sourceAvailable: true,
+        mode: null, excludedRelativePaths: [], archiveRelativePath: null,
+        workspaces: [{ workspaceId: first.workspaceId, name: "One" }, { workspaceId: second.workspaceId, name: "Two" }],
+      });
+      assert.deepEqual(service.workspaces.load().value.activeWorkspace, before);
+    } finally { service.close(); }
+  });
+});
+
+test("source settings retains orphan configuration and reports unavailable roots without losing metadata", () => {
+  withFixture(({ root, directory, databasePath }) => {
+    mkdirSync(join(root, "Keep")); mkdirSync(join(root, "Excluded"));
+    let service = openSettingsService(databasePath);
+    try {
+      const created = service.workspaces.create({ type: "workspace.create", name: "One", rootPath: root }).value;
+      const review = service.workspaces.previewDiscovery({ type: "workspace.previewDiscovery", workspaceId: created.workspaceId, mode: "direct", excludedRelativePaths: ["Excluded"] });
+      assert.equal(review.ok, true);
+      assert.equal(service.workspaces.applyDiscovery({ type: "workspace.applyDiscovery", workspaceId: created.workspaceId, previewToken: review.value.previewToken }).ok, true);
+      const before = service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId: created.workspaceId }).value;
+      assert.equal(service.workspaces.remove({ type: "workspace.remove", workspaceId: created.workspaceId }).ok, true);
+      const orphan = service.handleQuery({ type: "workspace.listSources" }).value.sources[0];
+      assert.deepEqual(orphan.workspaces, []); assert.equal(orphan.mode, "direct"); assert.deepEqual(orphan.excludedRelativePaths, ["Excluded"]);
+      fs.renameSync(root, join(directory, "temporarily-away"));
+      assert.equal(service.handleQuery({ type: "workspace.listSources" }).value.sources[0].sourceAvailable, false);
+      assert.equal(service.handleQuery({ type: "workspace.listSources", workspaceId: created.workspaceId }).ok, false);
+      fs.renameSync(join(directory, "temporarily-away"), root);
+      service.close(); service = openSettingsService(databasePath);
+      const reopened = service.workspaces.create({ type: "workspace.create", name: "Restored", rootPath: root }).value;
+      assert.equal(reopened.sourceId, created.sourceId);
+      assert.deepEqual(service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId: reopened.workspaceId }).value.projects, before.projects);
+    } finally { service.close(); }
+  });
+});

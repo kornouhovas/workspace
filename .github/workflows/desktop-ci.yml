@@ -1656,6 +1656,18 @@ jobs:
           name: issue-49-workspace-management-${{ matrix.os }}-${{ github.sha }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
           path: work/ci-workspace-management
           if-no-files-found: error
+      - name: Shared source settings EN/RU review and persistence
+        id: source_settings
+        run: npm run smoke:sources
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-source-settings
+      - name: Preserve source settings evidence
+        if: ${{ always() && (steps.source_settings.outcome == 'success' || steps.source_settings.outcome == 'failure') }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-50-source-settings-${{ matrix.os }}-${{ github.sha }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
+          path: work/ci-source-settings
+          if-no-files-found: error
       - run: npm run test:platform
         env:
           OBSERVER_MATRIX: ${{ matrix.os }}
