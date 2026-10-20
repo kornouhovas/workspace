@@ -63,6 +63,8 @@ A failed GitHub Actions check during authorized execution enters the mandatory [
 
 ### Inherited test coverage
 
+This policy and [CI evidence reuse](ci.md#evidence-reuse-after-test-only-repairs) apply to all current and future issues, including resumed tasks and older worktrees. Read the current integration-branch policy before choosing checks; reconcile older issue/plan wording with it. Issue-specific product requirements, supported platforms, release acceptance and human gates remain authoritative in their domains.
+
 Preserve coverage of current accepted requirements, not every inherited test or historical interaction. For affected inherited scenarios, record one decision in the existing plan or checkpoint: retain, adapt, replace or retire. Replace a test when a better public-boundary check covers the same contract; retire it when the behavior is explicitly superseded by an accepted requirement or when another identified check already covers the same scenario, failure mode and required platform boundary. Cite the governing requirement and replacement check, or the accepted reason the behavior no longer applies.
 
 Data preservation, identity/ownership, recovery, isolation and supported-platform requirements remain covered wherever still applicable. A test failure or maintenance cost alone does not retire its requirement. Changing a product contract or supported-platform promise requires the owner's corresponding decision. Coverage preservation governs observable guarantees; it does not freeze test counts, locators, suite structure or the frequency of full CI runs.

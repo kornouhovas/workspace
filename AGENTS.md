@@ -8,7 +8,8 @@ This repository uses a spec-first, agent-ready workflow. The user owns product d
 2. Read [development](docs/development.md) for workflow, tracking and checks; use the [source map](docs/README.md) for affected contracts. Read [product](docs/product.md) and [decisions](docs/decisions.md) before changing behavior; open decisions are not requirements.
 3. Read [architecture](docs/architecture.md) and the relevant [ADRs](docs/adr/) for storage or boundary changes. Use [GLOSSARY.md](GLOSSARY.md) for domain language.
 4. For UI or borrowed modules, read [reuse](docs/reuse.md). For versions, packaging or publication, read [releases](docs/releases.md).
-5. After a failed GitHub Actions check, automatically use `diagnosing-bugs` and follow the [failed Actions loop](docs/ci.md#failed-actions-loop), including when resuming in a new window.
+5. For every issue, including resumed work, apply [requirement-based test retention](docs/development.md#inherited-test-coverage) and [CI evidence reuse](docs/ci.md#evidence-reuse-after-test-only-repairs). These shared policies govern verification across existing and future issues; preserve issue-specific product and release requirements.
+6. After a failed GitHub Actions check, automatically use `diagnosing-bugs` and follow the [failed Actions loop](docs/ci.md#failed-actions-loop), including when resuming in a new window.
 
 ## Project boundaries
 

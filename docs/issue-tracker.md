@@ -38,3 +38,9 @@ Apply [executor selection](development.md#executor-selection) before starting an
 ## Task preparation and implementation
 
 Publish specifications and approved issues with acceptance criteria and blocking relationships to GitHub. Implementation starts from the selected issue and fulfills its acceptance criteria under the [development rules](development.md) and [verification policy](development.md#verification). Use skills available in the current session when they fit the task; tracker operations do not depend on a particular skill being installed.
+
+## Verification policy in issues
+
+Every new or revised implementation issue links to [requirement-based test retention](development.md#inherited-test-coverage) and [CI evidence reuse](ci.md#evidence-reuse-after-test-only-repairs). These policies also apply when resuming existing issues. Keep scenario-specific acceptance in the issue; reference the shared policies rather than copying a mandatory full-rerun rule into each ticket. Update older conflicting verification instructions when encountered, retaining product, data-safety, platform and release requirements.
+
+The owner applied this policy to all 22 open issues on 2026-10-20: #6, #7, #42, #47 and #50–#67. Closed issue reports remain historical evidence. New issues inherit the same policy through this tracker rule and AGENTS.md.
