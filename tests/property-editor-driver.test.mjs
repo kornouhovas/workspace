@@ -168,9 +168,13 @@ test("installed workspace keyboard driver retains its deadline when automatic cr
 test("keyboard discovery Apply waits for the reviewed preview before submitting exactly once in EN/RU", async () => {
   const { applyReviewedDiscovery } = await import("../scripts/workspace-management-driver.mjs");
   await withPage(async page => {
+    await page.route("https://workspace-fixture.invalid/discovery-prepare", async route => {
+      await new Promise(done => setTimeout(done, 1200));
+      await route.fulfill({ status:200, contentType:"text/plain", body:"prepared" });
+    });
     page.setDefaultTimeout(1000);
     for (const label of ["Apply reviewed projects", "Применить проверенные проекты"]) {
-      await page.setContent(`<button disabled>${label}</button>`);
+      await page.setContent(`<img src="https://workspace-fixture.invalid/discovery-prepare" alt=""><button disabled>${label}</button>`, { timeout:30000 });
       await page.evaluate(() => {
         const apply = globalThis.document.querySelector("button");
         globalThis.discoveryApplies = 0;

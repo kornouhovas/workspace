@@ -93,7 +93,12 @@ keyboard-readiness/route regressions. The other two management targets and all
 original-shell targets retain their passed evidence. The driver waits for an
 enabled reviewed Apply before one Enter, retaining the caller deadline and
 original project/persistence assertions. Focused success and artifact inspection
-precede renewed full acceptance on the same SHA.
+precede renewed full acceptance on the same SHA. For the subsequent fixture-only
+preparation timeout, `checks: workspace-setup-readiness` runs only the failed
+readiness fixtures and route tests; the original Windows 2022 native journey
+already passed in run 39376901213 and retains its separate evidence. Fixture
+preparation has its existing 30-second budget; the 1,000-ms keyboard action and
+100-ms negative action deadlines remain unchanged.
 
 ## Failed Actions loop
 

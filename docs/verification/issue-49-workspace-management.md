@@ -164,3 +164,22 @@ its specific timing cause remains an inference. The new Windows-2022-only
 exact provenance, without replaying already-passed unrelated targets. The route/
 inventory suites passed 68/68; both reviewers accepted the repair and this evidence
 boundary. Focused/full receipts remain in the issue checkpoint.
+
+## Fixture preparation boundary
+
+Focused run `39376901213`, attempt 1, SHA `eb3162ed`, passed the original Windows
+2022 native management journey (11 check receipts, normal shutdown and cleanup;
+artifact inspected). The job failed only because the positive readiness fixture's
+`page.setContent` preparation inherited its 1,000-ms action budget. The negative
+100-ms action case passed. This was before the positive case's Apply action.
+
+A controlled 1,200-ms resource reproduces that preparation timeout locally.
+`setContent` now explicitly uses the existing 30-second fixture preparation
+budget; Apply remains limited to 1,000 ms and the never-enabled case to 100 ms.
+Both regressions pass, including exactly-one submission. The route suites pass
+68/68. Reviewers accepted the separation without product/assertion relaxation.
+
+The `workspace-setup-readiness` selector reruns only the failed fixtures and
+routing checks. The already-passed original native receipt is inherited
+separately; full acceptance still follows the focused gate. Application code and
+the Apply helper did not change in this fixture-only repair.
