@@ -82,3 +82,20 @@ Spec review's P1 is repaired and its remaining copy finding is corrected.
 - The full run's other service/SQLite/filesystem/IPC/native regressions passed; no application change followed that run. No test was disabled or deadline relaxed. Only the affected test files were renewed after their locator repair.
 - Fresh build, typecheck, lint, documentation links and `git diff --check` completed; real-Electron `smoke:workspaces` passed. The CI route/inventory focused suites passed 66 tests earlier in preparation.
 - Final review: Standards zero findings; Spec's activation-event and copy findings repaired, with no remaining findings after follow-up. Actual Windows/packaged/integrated acceptance remains in the issue checkpoint until exact-SHA CI completes.
+
+## Canonical-path runtime driver repair
+
+Proactive execution of the original `npm run smoke:runtime -- dev` exposed a
+post-creation driver wait for a raw `/var/...` picker path, while the saved source
+correctly displayed `/private/var/...`. The original command timed out at that
+exact wait. The driver now resolves its fixture path with `realpath` before exact
+visible-content matching; the later reopen path wait also excludes hidden
+settings content. Canonical identity, project/value/byte preservation and timeout
+assertions remain unchanged. Standards review accepted this two-line repair.
+
+The renewed original primary runtime completed its configured-mode, discovery,
+recovery, persistence, source sharing, restart/removal/reuse, EN/RU, isolation and
+backend-exit assertions. Its unchanged rename/category continuations remain
+part of native/CI acceptance. The superseded initial desktop CI was cancelled
+before runtime acceptance rather than presented as a failure or success; exact
+SHA results remain in the issue checkpoint.

@@ -235,7 +235,7 @@ async function create(current, name, rootPath, language = "en") {
     await page.getByRole("button", { name: language === "en" ? "Create another workspace" : "Создать ещё одно рабочее пространство", exact: true }).click();
   }
   await page.getByRole("button", { name: language === "en" ? "Choose project folder" : "Выбрать папку проекта", exact: true }).click();
-  await page.getByText(rootPath, { exact: true }).and(page.locator(":visible")).waitFor();
+  await page.getByText(await realpath(rootPath), { exact: true }).and(page.locator(":visible")).waitFor();
   await page.locator("#workspace-title").filter({ hasText: /^Workspace$/ }).waitFor();
   await renameActiveWorkspace(page, name);
   await page.getByRole("heading", { name: name.trim(), exact: true }).waitFor();
@@ -1192,7 +1192,7 @@ try {
   const reopened = await load(page);
   assert.deepEqual(identity(reopened.activeWorkspace), identity(first));
   assert.deepEqual(reopened.workspaces, [other, first, sibling, grouped, groupedSibling].map(({ workspaceId, name }) => ({ workspaceId, name })));
-  await page.getByText(canonicalProjectRoot, { exact: true }).waitFor();
+  await page.getByText(canonicalProjectRoot, { exact: true }).and(page.locator(":visible")).waitFor();
   await page.getByRole("heading", { name: "Table", exact: true }).waitFor();
   savedProjects = await projects(page, first.workspaceId);
   assertProjection(savedProjects, { ...directBeforeRestart, revision: directBeforeRestart.revision + 1,
