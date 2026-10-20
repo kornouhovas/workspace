@@ -923,3 +923,12 @@ batch; they never authorize or replace a scan, result or request. Exact pinned
 function markers and copied-artifact child execution are verified. This separates
 otherwise unexplained pre-request queue time from service execution; no original
 application or strict package is instrumented.
+
+For issue-52 serial endpoint polling delay, the performance readiness predicate
+also checks the operation's committed result DOM before its original frame pairs.
+Observation starts before retained role-locator waits. Saved group heading and
+destination membership, actual edited text and external rename remain required;
+all later locators and public-service/filesystem assertions still execute. Native
+controls cover delayed commitment and late driver delivery. Both strict hosts
+must renew after this shared measurement-driver repair; a passing diagnostic
+profile does not satisfy acceptance or establish a backend queue repair.

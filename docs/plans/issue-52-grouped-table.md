@@ -67,3 +67,9 @@ ordering assertion; stale/foreign/incomplete projections still fail. Validate
 Table/Board parity, MultiSelect overlap/manual order and the explicit transition
 back to filesystem observation. This changes preparation on both hosts, so renew
 both original strict performance consumers rather than infer a pass from profiles.
+
+Adapt serial measured-endpoint locator preparation to observe the same exact
+result DOM within renderer readiness first. Retain all original locators after
+the captured paint, complete projection/visible fields/busy guards and frame pairs;
+no action, target or start clock changes. Add a native delayed-result/late-driver
+regression. This is shared measurement preparation, so renew both strict hosts.

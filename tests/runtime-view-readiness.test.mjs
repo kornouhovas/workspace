@@ -298,3 +298,29 @@ test('performance request observations distinguish assignment, filtering, editin
     assert.equal(JSON.stringify(globalThis.__workspacePerformanceCommands).includes('Private'),false);
   } finally {delete globalThis.__workspacePerformanceCommands;}
 });
+
+
+test('projection endpoint observation precedes slow locator delivery but requires committed result text and membership',async()=>{
+  await withPage(async page=>{
+    await page.setContent('<button id="save">Apply</button><section class="text-properties" aria-busy="false"><div data-project-id="one" data-fields-ready="true"><button>Edit value</button></div></section>');
+    await page.evaluate(()=>{
+      document.querySelector('#save').addEventListener('keydown',()=>{globalThis.__workspacePerformanceStarted=performance.now();},{once:true});
+      document.querySelector('#save').addEventListener('click',()=>{
+        setTimeout(()=>{
+          const group=document.createElement('section');group.className='project-group';group.setAttribute('aria-label','Destination');
+          group.append(document.querySelector('[data-project-id="one"]'));document.querySelector('.text-properties').append(group);
+          const status=document.createElement('h2');status.className='bb-status__title';status.textContent='Saved';document.querySelector('.text-properties').append(status);
+          globalThis.endpointCommittedAt=performance.now();
+        },150);
+      });
+    });
+    await page.locator('#save').press('Enter');
+    const waiting=waitForRuntimeProjection(page,['one'],false,[{selector:'.text-properties .bb-status__title',text:'Saved'},{selector:'.project-group[aria-label="Destination"] [data-project-id="one"]'}]);
+    await page.getByRole('heading',{name:'Saved',exact:true}).waitFor();
+    await new Promise(done=>setTimeout(done,300)); // Controlled late driver delivery.
+    const timing=await waiting,committed=await page.evaluate(()=>globalThis.endpointCommittedAt);
+    assert.ok(timing.firstPaintedAt>=committed,'Actual committed result must precede the paint endpoint');
+    const measured=await readRuntimeInteraction(page,timing);
+    assert.ok(measured.driverObservationDelayMs>=200,'Late host polling cannot move an already captured endpoint');
+  });
+});

@@ -292,3 +292,26 @@ four normal quits/backend exits/cleanup and four batches (113/13/113/13 records)
 without reaching the 256 bound. Diagnostic startup remains above target. Both
 independent re-reviews found zero findings; lint/docs/whitespace passed. This
 changes only the diagnostic copy and its controls; no strict retry is selected.
+
+## Observe the actual endpoint before serial driver delivery
+
+A controlled native regression failed when projection readiness could finish before
+its required saved heading/destination membership. Extend that same predicate with
+operation-specific DOM endpoints and start it immediately after the measured event,
+before the retained serial locator waits. Grouping requires groups; assignment
+requires the exact saved heading and destination/project; editing requires the
+actual saved visible button text; external Refresh requires the renamed row text.
+Global busy, complete ordered membership, all visible editors, both readiness checks
+and the original four paint frames remain. Every original locator and subsequent
+service/filesystem assertion still executes. Targets, deadlines, actions and event
+start clocks are unchanged; later host observation cannot move captured paint.
+The regression passed with delayed result commitment plus 300 ms driver delivery;
+all 12 native readiness controls passed. Both independent reviews found zero
+findings, including immutable-baseline/current markup compatibility. Lint and
+whitespace passed. This shared driver/helper change requires both strict hosts
+and readiness consumers to renew; it does not repair the separate backend queue.
+
+The real local endpoint-driver diagnostic completed 32 scenarios, four normal
+quits/backend exits/cleanup and four batches/252 phase/request records. Interaction
+samples were below target, while direct diagnostic startup was 5601.3 ms; this is
+not strict or hosted acceptance. Lint/docs/whitespace passed on the final delta.

@@ -110,8 +110,8 @@ async function recordUi(source, scenario, limit = report.limits.interaction) {
     report.measurements[report.measurements.length - 1].diagnostic = {eventWallTime,...native};
   }
 }
-async function ready(ids) {
-  try { lastReadyTiming = await waitForRuntimeProjection(page, ids, profileFilters); }
+async function ready(ids, endpoint) {
+  try { lastReadyTiming = await waitForRuntimeProjection(page, ids, profileFilters, endpoint); }
   catch (error) {
     try { (report.readinessFailures ??= []).push(await page.evaluate(inspectRuntimeProjectionFailure, ids)); }
     catch { report.readinessInspectionFailed = true; }
@@ -228,8 +228,9 @@ try {
       await openGroupingControls(page);
       const groupBy = page.getByLabel("Group by", { exact: true });
       await startUiTiming(groupBy, "change"); await groupBy.selectOption(property.propertyId);
+      await ready(undefined,[{selector:".project-group"}]);
       await page.locator(".project-group").first().waitFor();
-      await ready(); await recordUi(source.mode, `${kind} grouping`);
+      await recordUi(source.mode, `${kind} grouping`);
       await closeGroupingControls(page);
       // Correctness reads run after the event-to-paint clock. They are not an
       // additional user action and must not inflate the measured interaction.
@@ -250,9 +251,11 @@ try {
       const group = page.locator(".project-group").filter({ has: page.locator("h3", { hasText: `${destination.label} (` }) });
       await startUiTiming(group, "drop");
       await group.dispatchEvent("drop", { dataTransfer: transfer }); await transfer.dispose();
+      await ready(undefined,[{selector:".text-properties .bb-status__title",text:"Group value saved. Filters may hide the project from this view."},
+        {selector:`.project-group[aria-label=${JSON.stringify(destination.label ?? String(destination.value))}] [data-project-id=${JSON.stringify(projectId)}]`}]);
       await page.getByRole("heading", { name: "Group value saved. Filters may hide the project from this view.", exact: true }).waitFor();
       await group.locator(`[data-project-id="${projectId}"]`).waitFor();
-      await ready(); await recordUi(source.mode, `${kind} filtered group drag`);
+      await recordUi(source.mode, `${kind} filtered group drag`);
       if (assignmentProfiler) {
         await stopInteractionProfile(assignmentProfiler, `${source.mode}-${kind}-grouping-assignment`);
       }
@@ -271,7 +274,8 @@ try {
       await row.locator("textarea, input").fill(`Accepted ${kind}`);
       const saveValue = row.getByRole("button", { name: "Save value", exact: true }); await saveValue.focus();
       await startUiTiming(saveValue, "keydown"); await saveValue.press("Enter");
-      await row.getByText(`Accepted ${kind}`, { exact: true }).waitFor(); await ready(expected);
+      await ready(expected,[{selector:`[data-project-id=${JSON.stringify(p.projectId)}] .text-value-button:not([hidden])`,text:`Accepted ${kind}`}]);
+      await row.getByText(`Accepted ${kind}`, { exact: true }).waitFor();
       await recordUi(source.mode, `${kind} edit`);
       assert.equal((await command("listTextProperties")).values.find(v => v.projectId === p.projectId && v.propertyId === field.propertyId).value, `Accepted ${kind}`);
       await page.screenshot({ path: join(evidence, `${source.mode}-${kind}-en.png`) });
@@ -283,8 +287,8 @@ try {
     await rename(join(source.root, p.relativePath), join(source.root, renamed));
     const refresh = page.getByRole("button", { name: "Refresh source", exact: true });
     await startUiTiming(refresh, "keydown"); await refresh.press("Enter");
+    await ready(activeIds,[{selector:`[data-project-id=${JSON.stringify(p.projectId)}] *`,text:"External rename"}]);
     await page.locator(`[data-project-id="${p.projectId}"]`).getByText("External rename", { exact: true }).waitFor();
-    await ready(activeIds);
     await recordUi(source.mode, "external-change full scan and refresh", report.limits.scan);
     assert.deepEqual((await command("queryView", { viewId: source.views.find(v => v.kind === "board").viewId, archived: false })).projectIds, activeIds);
     const refreshed = await command("listProjects"); assert.equal(refreshed.projects.length, 1000);
