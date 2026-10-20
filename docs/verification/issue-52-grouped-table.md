@@ -404,3 +404,49 @@ passed: 3203 tests, 3177 passed, 26 platform skips, zero failures (130.3 seconds
 Earlier failed full runs remain recorded separately; this is an actual later full
 pass, not relabeling their results. Hosted platform/installer and original strict
 performance acceptance still require renewed evidence for this application change.
+
+## Value-edit observation repair
+
+Normal-scheduling indexed diagnostic `39477194538`, attempt 1 at `4c5bc681`,
+completed 32 functional scenarios, four normal quits/backend exits/cleanup and
+four complete backend batches on each host (252 macOS / 253 Windows records).
+This diagnostic completion is not strict acceptance. macOS first Table grouping
+was 527.3 ms; mutation IPC was 3.4 ms and projection 27.8 ms, with first observed
+ready DOM at 355.8 ms and final paint at 527.3 ms. Windows missed direct Table
+filter (360.2), assignment (313.1), edit (362.3), grouped Table edit (321.1) and
+external refresh (5265.6 ms). First filter backend queue was 171 ms; indexed
+interpretation reduced the prior measured queue but did not resolve every miss.
+
+Windows edit profiling also observed an unnecessary property request alongside
+layout/grouping refresh and projection. The value-edit path now defers property
+observation while value mutations are pending, accepts only correctly owned,
+current complete reply snapshots, and reads actual values after stale, rejected,
+mismatched or lost replies. Overlapping commands are counted; no mutation is
+replayed. Existing assignment behavior and all strict timing predicates, frame
+pairs, scenarios and budgets are unchanged.
+
+The public renderer/real-service regression first failed with one duplicate
+property request, then passed with zero duplicates for an accepted reply. Newer
+revision and lost-after-commit cases verify actual displayed values, fallback
+reads, one mutation and restored focus. Focused typed editor/assignment tests
+passed 48/48. Both independent Standards and Spec reviews found zero actionable
+findings; typecheck, lint and fresh package/artifact validation passed. Complete
+local and hosted acceptance results are recorded when observed below.
+
+The new application inputs' full local run `/tmp/issue52-value-full.log` ran
+3206 tests: 3178 passed, 26 platform skips, two failures. Preserve both failures:
+(1) renderer-app's old own-event read resolver no longer existed after the
+observation repair; (2) a Russian Single Select native creation fixture reached
+JavaScript quit/page close but its parent exceeded the unchanged 10-second normal
+shutdown deadline on local macOS 27. Forced cleanup passed; this is not a normal
+quit receipt or proof of its cause.
+
+Adapt the first fixture to the accepted complete-response guarantee while retaining
+own-event success, newer-change feedback, duplicate suppression, stale mutation
+fallback and a genuine later-event/overtaken-list response race. No application or
+build inputs changed during this fixture repair. Both independent reviews found
+zero findings. Renewed renderer-app passed 104/104. The unchanged original native
+property-editor-driver suite subsequently passed 13/13, including normal shutdown;
+that later receipt does not erase or explain the earlier timeout. Reuse the other
+unchanged-input full-run checks under the shared policy; hosted strict/platform/
+installer acceptance remains pending.

@@ -2023,24 +2023,29 @@ test("Text cell saves keep own event-before-response success and reject overtake
     };
     const event = (revision: number) => api.emitChange({ type: "workspace.propertiesChanged", sourceId: f.sourceId, workspaceIds: [f.workspaceId], revision });
     await editSave("Own");
-    await act(async () => { event(2); lists[1](ok(f.snapshot(2, "Own"))); });
+    await act(async () => { event(2); });
+    assert.equal(lists.length, 1, "the pending value reply supplies its complete snapshot");
     await act(async () => { finish?.(ok({ snapshot: f.snapshot(2, "Own"), projectId: f.projectId, propertyId: f.propertyId })); });
     assert.ok(screen.getByText(translate(language, "textValueSaved")));
     assert.equal(screen.queryByText(translate(language, "textValueExternalChange")), null);
-    await act(async () => { event(3); lists[2](ok(f.snapshot(3, "Later sibling"))); });
+    await act(async () => { event(3); lists[1](ok(f.snapshot(3, "Later sibling"))); });
     assert.ok(screen.getByText(translate(language, "textValueNewerChange")));
     await editSave("Older own");
     await act(async () => { event(4); event(5); event(5); });
-    assert.equal(lists.length, 5, "duplicate events must not create reloads");
+    assert.equal(lists.length, 2, "pending and duplicate events must not create redundant reads");
     await act(async () => {
-      lists[4](ok(f.snapshot(5, "Newest sibling"))); lists[3](ok(f.snapshot(4, "Older own")));
       finish?.(ok({ snapshot: f.snapshot(4, "Older own"), projectId: f.projectId, propertyId: f.propertyId }));
+    });
+    assert.equal(lists.length, 3, "the overtaken reply requires an actual fallback snapshot");
+    await act(async () => { event(6); });
+    await act(async () => {
+      lists[3](ok(f.snapshot(6, "Newest sibling"))); lists[2](ok(f.snapshot(5, "Older sibling")));
     });
     assert.equal(screen.getByRole("button", { name: label }).textContent, "Newest sibling");
     assert.ok(screen.getByText(translate(language, "textValueNewerChange")));
     assert.equal(screen.queryByText(translate(language, "textValueSaved")), null);
     assert.equal(saves, 2); cleanup(); assert.equal(api.changeListenerCount(), 0);
-    await act(async () => { event(6); }); assert.equal(lists.length, 5);
+    await act(async () => { event(7); }); assert.equal(lists.length, 4);
   }
 });
 

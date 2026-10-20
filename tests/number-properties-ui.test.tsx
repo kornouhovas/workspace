@@ -53,3 +53,50 @@ for (const language of ["en", "ru"] as const) {
     } finally { cleanup(); service.close(); rmSync(directory, { recursive: true, force: true }); }
   });
 }
+
+
+for (const outcome of ["accepted", "newer", "lost"] as const) test(`${outcome} value reply observes current values without replay`, async () => {
+  const directory = mkdtempSync(join(tmpdir(), "value-reply-ui-")), root = join(directory, "root");
+  mkdirSync(root); mkdirSync(join(root, "Project"));
+  const service = openSettingsService(join(directory, "app.sqlite"));
+  const { workspaceId, sourceId } = service.handleCommand({ type: "workspace.create", rootPath: root, name: "One" }).value;
+  const preview = service.handleQuery({ type: "workspace.previewDiscovery", workspaceId }).value;
+  const projects = service.handleCommand({ type: "workspace.applyDiscovery", workspaceId, previewToken: preview.previewToken }).value.projects;
+  service.handleCommand({ type: "workspace.createProperty", workspaceId, name: "Budget", propertyType: "number" });
+  let hold = false, mutations = 0, reads = 0;
+  const releases: (() => void)[] = [];
+  const api = {
+    workspace: async (input: { type: string }) => {
+      if (input.type === "workspace.setNumberValue") {
+        hold = outcome === "accepted"; mutations++;
+        const result = service.handleCommand(input);
+        if (outcome === "newer") service.handleCommand({ ...input, expression: "84", workspaceId });
+        if (outcome === "lost") throw new Error("Lost reply after commit");
+        return result;
+      }
+      if (input.type === "workspace.listTextProperties") reads++;
+      if (input.type === "workspace.listTextProperties" && hold) await new Promise<void>(resolve => releases.push(resolve));
+      return input.type === "workspace.listTextProperties" ? service.handleQuery(input) : service.handleCommand(input);
+    }, onWorkspaceChange: service.workspaces.subscribe,
+  } as unknown as WorkspaceDesktopApi;
+  try {
+    const user = userEvent.setup({ document });
+    render(<TextPropertiesTable client={new WorkspaceServiceClient(api)} workspaceId={workspaceId} sourceId={sourceId} projects={projects} language="en" disabled={false} hideReveal />);
+    const label = "Edit Number value: Project / Budget";
+    const button = await screen.findByRole("button", { name: label });
+    await user.click(button); await user.keyboard("42{Enter}");
+    if (outcome === "lost") { await screen.findByRole("alert"); await user.keyboard("{Escape}"); }
+    await waitFor(() => {
+      const saved = screen.getByRole("button", { name: label });
+      assert.equal(saved.textContent, outcome === "newer" ? "84" : "42");
+      assert.equal(saved.hasAttribute("disabled"), false, "The accepted complete snapshot must finish without an event-triggered read");
+    });
+    assert.equal(releases.length, 0, "The complete accepted reply avoids a duplicate property request");
+    assert.equal(reads, outcome === "accepted" ? 1 : 2);
+    assert.equal(mutations, 1);
+    assert.equal(document.activeElement, screen.getByRole("button", { name: label }));
+  } finally {
+    hold = false; for (const release of releases) release();
+    cleanup(); service.close(); rmSync(directory, { recursive: true, force: true });
+  }
+});

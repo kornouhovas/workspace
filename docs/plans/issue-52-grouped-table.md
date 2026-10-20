@@ -93,3 +93,15 @@ unchanged. Retain inherited discovery/recovery/mode/reconciliation/native tests;
 add thousand-record ordering/input preservation, replaced history, alias birth
 evidence, missing-path and reservation cases. Compare seeded mixed histories
 against the original algorithm. Hosted strict acceptance remains required.
+
+Apply the same complete-response observation guarantee to ordinary typed value
+edits after hosted profiles showed an additional property read. Count overlapping
+value saves, retain every event's minimum revision, and fall back to observation
+after stale/rejected/lost replies without mutation replay. Exercise accepted,
+superseded and lost-after-commit replies at the existing renderer/real-service seam;
+renew typed editor, assignment, full-suite and hosted acceptance evidence.
+
+Adapt renderer-app's own-event list resolver to deferred observation. Retain the
+separate out-of-order list guarantee by issuing a later external event while the
+stale mutation's fallback read is pending, then resolve the newest read first.
+No guarantee is retired; renew the complete renderer-app consumer.

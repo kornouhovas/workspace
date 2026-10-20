@@ -62,6 +62,8 @@ function TextPropertiesContent({ viewId, layout = "table", hideReveal, client, w
   const [assignmentMessage, setAssignmentMessage] = useState<TranslationKey | null>(null);
   const [assignmentRefresh, setAssignmentRefresh] = useState(0);
   const assigning = useRef(false);
+  const valueSaves = useRef(0);
+  const valueReloadNeeded = useRef(false);
   const assignmentSequence = useRef(0);
   const assignmentFocus = useRef<{token:number; projectId:string; toKey:string; owner:string} | null>(null);
   const assignmentControls = useRef(new Map<string, HTMLSelectElement>());
@@ -135,9 +137,10 @@ function TextPropertiesContent({ viewId, layout = "table", hideReveal, client, w
     const unsubscribe = client.onWorkspaceChange((event) => {
       if (event.type !== "workspace.propertiesChanged" || event.sourceId !== sourceId || !event.workspaceIds.includes(workspaceId) || event.revision <= minimumRevision.current) return;
       minimumRevision.current = event.revision;
-      // The in-flight assignment returns a complete revisioned snapshot. Defer
+      // In-flight value and assignment commands return complete revisioned snapshots. Defer
       // observation until that reply is accepted or its fallback read is needed.
-      if (!assigning.current) void load();
+      if (valueSaves.current) valueReloadNeeded.current = true;
+      else if (!assigning.current) void load();
     });
     void load();
     return () => { listVersion.current++; lifetime.current++; unsubscribe(); };
@@ -219,12 +222,24 @@ function TextPropertiesContent({ viewId, layout = "table", hideReveal, client, w
   };
   const saveValue = async (projectId: string, propertyId: string, value: string | null | string[], propertyType: "text" | "number" | "date" | "single_select" | "multi_select") => {
     const current = lifetime.current;
-    const result = Array.isArray(value) ? await client.selectCommand({ type: "workspace.setMultiSelectValue", workspaceId, projectId, propertyId, optionIds: value }) : propertyType === "single_select" ? await client.selectCommand({ type: "workspace.setSelectValue", workspaceId, projectId, propertyId, optionId: value }) : propertyType === "date" ? await client.setDateValue(workspaceId, projectId, propertyId, value) : propertyType === "number" ? await client.setNumberValue(workspaceId, projectId, propertyId, value) : await client.setTextValue(workspaceId, projectId, propertyId, value);
-    if (current === lifetime.current && result.ok && result.value.projectId === projectId && result.value.propertyId === propertyId && accepts(result.value.snapshot)) {
-      listVersion.current++; setLoading(false); setLoadError(false);
-      minimumRevision.current = result.value.snapshot.revision; setSnapshot(result.value.snapshot);
+    valueSaves.current++;
+    let accepted = false;
+    try {
+      const result = Array.isArray(value) ? await client.selectCommand({ type: "workspace.setMultiSelectValue", workspaceId, projectId, propertyId, optionIds: value }) : propertyType === "single_select" ? await client.selectCommand({ type: "workspace.setSelectValue", workspaceId, projectId, propertyId, optionId: value }) : propertyType === "date" ? await client.setDateValue(workspaceId, projectId, propertyId, value) : propertyType === "number" ? await client.setNumberValue(workspaceId, projectId, propertyId, value) : await client.setTextValue(workspaceId, projectId, propertyId, value);
+      if (current === lifetime.current && result.ok && result.value.projectId === projectId && result.value.propertyId === propertyId && accepts(result.value.snapshot)) {
+        listVersion.current++; setLoading(false); setLoadError(false);
+        minimumRevision.current = result.value.snapshot.revision; setSnapshot(result.value.snapshot);
+        accepted = true; valueReloadNeeded.current = false;
+      }
+      return result;
+    } finally {
+      if (!accepted) valueReloadNeeded.current = true;
+      valueSaves.current--;
+      if (current === lifetime.current && !valueSaves.current && valueReloadNeeded.current) {
+        valueReloadNeeded.current = false;
+        void load();
+      }
     }
-    return result;
   };
   const assignmentProperty = grouped?.viewId !== viewId ? undefined
     : grouped?.propertyId === "name" ? {propertyId:"name"}
