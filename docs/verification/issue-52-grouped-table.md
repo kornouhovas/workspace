@@ -450,3 +450,24 @@ property-editor-driver suite subsequently passed 13/13, including normal shutdow
 that later receipt does not erase or explain the earlier timeout. Reuse the other
 unchanged-input full-run checks under the shared policy; hosted strict/platform/
 installer acceptance remains pending.
+
+Original strict candidate run `39480066531`, attempt 1 at `39e5b3c5`, passed
+Windows latest: all 32 timings, ten memory samples, four normal quits/backend
+exits and asserted cleanup. Table edit was 228.6 / 240.5 ms for direct/grouped;
+grouped external refresh was 4724.5 ms. macOS completed all functional scenarios,
+all ten memory samples, four normal quits/backend exits and cleanup, but failed
+one timing: first direct Table grouping 561.8 ms (observation start 43.0,
+first stabilized paint 519.2, final stabilization 42.6 ms). All other 31 timings
+passed. Preserve the original miss; the run is failed overall.
+
+Fresh development and packaged views journeys each passed six checks with three
+normal quits/backend exits and fixture cleanup. Scheduling investigation reads
+original `4c5bc681` CPU samples: the renderer was `(idle)` throughout about
+145–340 ms after the first grouping event, while its recorded JS tasks were 15
+and 39 ms. This bounds the evidence; it does not identify the scheduler cause.
+Add toplevel/renderer scheduler/compositor/GPU/frame tracing only to the separate
+diagnostic direct-Table grouping/assignment interval. Other profiles, strict/default
+routes, application/build inputs, actions and acceptance predicates stay unchanged.
+Native readiness controls passed 14/14 and CI route controls 50/50; lint/whitespace
+and both independent reviews passed. Renew only the macOS diagnostic for this
+new evidence; Windows strict receipt remains available for unchanged inputs.

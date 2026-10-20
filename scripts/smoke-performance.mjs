@@ -59,11 +59,11 @@ async function startUiTiming(locator, event) {
     }, { capture: true, once: true });
   }, { event, trace: profileFilters });
 }
-async function startInteractionProfile() {
+async function startInteractionProfile(scheduling = false) {
   const session = await page.context().newCDPSession(page);
   try {
     await session.send("Profiler.enable"); await session.send("Profiler.start");
-    await session.send("Tracing.start", { categories: "devtools.timeline,blink.user_timing,v8", transferMode: "ReturnAsStream", streamFormat: "json" });
+    await session.send("Tracing.start", { categories: "devtools.timeline,blink.user_timing,v8" + (scheduling ? ",toplevel,renderer.scheduler,cc,viz,gpu,disabled-by-default-devtools.timeline.frame" : ""), transferMode: "ReturnAsStream", streamFormat: "json" });
     return session;
   } catch (error) { await session.detach().catch(() => {}); throw error; }
 }
@@ -232,7 +232,7 @@ try {
       }
       // Ordinary Select grouping retains exact option identities and an empty group.
       const property = source.properties.find(p => p.type === "single_select");
-      const assignmentProfiler = profileFilters ? await startInteractionProfile() : undefined;
+      const assignmentProfiler = profileFilters ? await startInteractionProfile(source.mode === "direct" && kind === "table") : undefined;
       await openGroupingControls(page);
       const groupBy = page.getByLabel("Group by", { exact: true });
       await startUiTiming(groupBy, "change"); await groupBy.selectOption(property.propertyId);
