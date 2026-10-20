@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {observePerformanceService} from '../scripts/runtime-performance-backend-profile.mjs';
+import {observePerformanceService,observePerformancePhase} from '../scripts/runtime-performance-backend-profile.mjs';
 
 test('diagnostic service observation preserves synchronous replies, errors and one invocation without authored data',()=>{
   const failure=new Error('Private failure'),reply={private:'Private value'},calls=[],batches=[];
@@ -38,7 +38,12 @@ test('backend instrumentation modifies only its copied archive and produces boun
     const source=join(directory,'source'),resources=join(directory,'resources'),original=join(directory,'original.asar'),output=join(directory,'records.jsonl');
     await mkdir(join(source,'dist/service'),{recursive:true});await mkdir(resources);
     const entry=`const parentPort={};
-const openSettingsService=()=>({handleCommand(input){return input.value;},handleQuery(input){return input.value;},close(){}});
+function reconcileSource(){return 3;}
+function scanDirectSource(){}
+function scanGroupedSource(){}
+function nestedScope(){function sourceObservation(){};return sourceObservation;}
+function readWorkspaceLoad(){}
+const openSettingsService=()=>({handleCommand(input){return input.value;},handleQuery(input){if(reconcileSource()!==3)throw new Error("Phase result changed");return input.value;},close(){}});
 function startServiceProcess(port,factory){const service=factory();if(service.handleQuery({type:'workspace.queryView',value:7})!==7)throw new Error('Reply changed');service.close();}
 if (parentPort) startServiceProcess(parentPort, openSettingsService, (code) => process.exit(code));`;
     await writeFile(join(source,'dist/service/entry.cjs'),entry);await createPackage(source,original);
@@ -48,9 +53,41 @@ if (parentPort) startServiceProcess(parentPort, openSettingsService, (code) => p
     assert.deepEqual(await readFile(original),before);await assert.rejects(access(join(resources,'app.asar')),{code:'ENOENT'});
     execFileSync(process.execPath,[join(resources,'app/dist/service/entry.cjs')]);
     const batches=(await readFile(output,'utf8')).trim().split('\n').map(line=>JSON.parse(line));
-    assert.equal(batches.length,1);assert.equal(batches[0][0].type,'workspace.queryView');
+    assert.equal(batches.length,1);assert.deepEqual(batches[0].map(r=>r.type),['internal.reconcileSource','workspace.queryView']);
     assert.equal(JSON.stringify(batches).includes('value'),false);
-    assert.deepEqual(await inspectPerformanceBackendBatches(output,1),{completedBatches:1,requestCount:1});
+    assert.deepEqual(await inspectPerformanceBackendBatches(output,1),{completedBatches:1,requestCount:2});
     await assert.rejects(inspectPerformanceBackendBatches(output,2),/Every owned diagnostic backend/);
   } finally{await rm(directory,{recursive:true,force:true});}
+});
+
+
+test('internal diagnostic phases preserve receiver, result and failure with one bounded payload-free record',()=>{
+  const records=[],receiver={value:7},failure=new Error('Private detail');let calls=0;
+  const observed=observePerformancePhase('internal.reconcileSource',function(input){calls++;assert.equal(this,receiver);if(input.fail)throw failure;return this.value;},records);
+  assert.equal(observed.call(receiver,{private:'Private name'}),7);
+  assert.throws(()=>observed.call(receiver,{fail:true}),error=>error===failure);
+  assert.equal(calls,2);assert.deepEqual(records.map(r=>r.type),['internal.reconcileSource','internal.reconcileSource']);
+  assert.equal(JSON.stringify(records).includes('Private'),false);
+  for(let i=0;i<300;i++)observed.call(receiver,{});
+  assert.equal(records.length,256);
+});
+
+
+test('phase wrappers execute at module scope in the real bundled backend',async()=>{
+  const {mkdtemp,mkdir,copyFile,readFile,rm}=await import('node:fs/promises');
+  const {tmpdir}=await import('node:os');const {join,resolve}=await import('node:path');
+  const {execFileSync}=await import('node:child_process');const {createPackage}=await import('@electron/asar');
+  const {instrumentPerformanceBackend}=await import('../scripts/runtime-performance-backend-profile.mjs');
+  const directory=await mkdtemp(join(tmpdir(),'backend-phase-scope-'));
+  try{
+    const source=join(directory,'source'),resources=join(directory,'resources'),output=join(directory,'records.jsonl');
+    await mkdir(join(source,'dist/service'),{recursive:true});await mkdir(resources);
+    await copyFile(new URL('../dist/service/entry.cjs',import.meta.url),join(source,'dist/service/entry.cjs'));
+    await createPackage(source,join(resources,'app.asar'));
+    await instrumentPerformanceBackend(resources,output);
+    // Under Node the Electron package has no parentPort; module-level wrappers
+    // must still resolve without starting a service or accessing a real database.
+    execFileSync(process.execPath,[join(resources,'app/dist/service/entry.cjs')],{env:{...process.env,NODE_PATH:resolve('node_modules')}});
+    assert.equal(await readFile(output,'utf8'),'');
+  }finally{await rm(directory,{recursive:true,force:true});}
 });

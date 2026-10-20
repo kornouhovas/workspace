@@ -915,3 +915,11 @@ checks retain their ordinary fresh reads. No measured action, clock, readiness,
 correctness assertion or limit is removed. Renew both original strict consumers
 because preparation changed on both hosts; modified-copy diagnostics are not
 acceptance and earlier receipts keep their actual SHA/harness provenance.
+
+The issue-52 copied backend probe also records fixed internal reconciliation,
+direct/grouped scan and workspace-load phase durations. These
+nested spans share the bounded payload-free service history and normal-close
+batch; they never authorize or replace a scan, result or request. Exact pinned
+function markers and copied-artifact child execution are verified. This separates
+otherwise unexplained pre-request queue time from service execution; no original
+application or strict package is instrumented.

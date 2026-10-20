@@ -262,3 +262,33 @@ package establishes hosted strict acceptance. Application/build inputs remain
 unchanged from `30b502b4`; this shared preparation change requires renewed strict
 performance and readiness consumers on both hosts, followed by full application
 platform/package/installer acceptance for the earlier application repair.
+
+## Displayed-projection renewal and remaining queue
+
+Run `39468948293`, attempt 1 at clean `80d4fc82`: macOS strict passed all 32
+measurements, memory, four normal quits/backend exits and cleanup. Windows strict
+completed the same functional/lifecycle cases with memory passing, but missed
+seven limits: direct Table filter 335.3, assignment 354.0, edit 410.6, Board edit
+312.6; grouped Table assignment 331.7, edit 363.0 ms; grouped refresh 5149.0 ms.
+The separate Windows profile still observed the first filter at 437.7 ms, including
+253 ms before backend execution and 32.8 ms execution. Its grouped Table assignment
+was 333.1 ms with IPC 102.5 ms; the readiness observer began at 281.2 ms after
+serial locator waits. Removing full-scan correctness reads did not resolve all
+misses. Original failures remain failed; no unchanged strict retry is selected.
+
+Ranked remaining questions: internal background source work queues a request;
+renderer work delays the ready projection; serial driver endpoint polling delays
+observation. The next diagnostic copy times only four fixed internal functions
+(reconciliation, direct/grouped scans, workspace load), with
+one-call/result/error/receiver preservation, bounded payload-free shared history
+and normal-close flush. Original application and strict package are unchanged.
+
+The first local phase-instrumented copy failed startup because a nested function
+was injected at module scope. Both reviews identified the error. Remove that phase,
+require module-level declarations and add actual bundled-entry execution coverage.
+The repaired five probe controls passed, including copied child execution and
+real bundled scope. The repaired local diagnostic completed all 32 scenarios,
+four normal quits/backend exits/cleanup and four batches (113/13/113/13 records),
+without reaching the 256 bound. Diagnostic startup remains above target. Both
+independent re-reviews found zero findings; lint/docs/whitespace passed. This
+changes only the diagnostic copy and its controls; no strict retry is selected.

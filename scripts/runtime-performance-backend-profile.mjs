@@ -6,8 +6,7 @@ import { extractAll } from '@electron/asar';
 
 // Serialized only into a disposable diagnostic copy. Preserve synchronous
 // service results/errors and flush bounded, payload-free observations on close.
-export function observePerformanceService(service, writeBatch) {
-  const records=[];
+export function observePerformanceService(service, writeBatch, records=[]) {
   const observed=new Set(['workspace.setViewGrouping','workspace.queryView','workspace.getViewGrouping','workspace.getTableLayout',
     'workspace.assignProjectGroup','workspace.setViewFilter','workspace.setTextValue','workspace.refreshSource','workspace.listTextProperties']);
   const invoke=(method,input)=>{
@@ -26,6 +25,18 @@ export function observePerformanceService(service, writeBatch) {
   }});
 }
 
+// Fixed internal phase labels only; no arguments, results or errors are recorded.
+export function observePerformancePhase(type, operation, records) {
+  return function(...args) {
+    const started=Date.now(),clock=performance.now(),cpu=process.cpuUsage();
+    try{return operation.apply(this,args);}
+    finally {
+      records.push({type,started,finished:Date.now(),durationMs:performance.now()-clock,cpuMicroseconds:process.cpuUsage(cpu)});
+      if(records.length>256)records.shift();
+    }
+  };
+}
+
 export async function instrumentPerformanceBackend(resources, output) {
   const archive=join(resources,'app.asar'),directory=join(resources,'app');
   await assert.rejects(access(directory),{code:'ENOENT'},'A diagnostic extraction cannot overwrite an existing application directory');
@@ -34,7 +45,10 @@ export async function instrumentPerformanceBackend(resources, output) {
   const source=await readFile(backend,'utf8');
   const marker='if (parentPort) startServiceProcess(parentPort, openSettingsService, (code) => process.exit(code));';
   assert.equal(source.split(marker).length,2,'The pinned backend entry must have exactly one known service factory');
-  const replacement=`if (parentPort) startServiceProcess(parentPort, (...args) => (${observePerformanceService.toString()})(openSettingsService(...args), records => require('node:fs').appendFileSync(${JSON.stringify(output)}, JSON.stringify(records) + '\\n')), (code) => process.exit(code));`;
+  const phases=['reconcileSource','scanDirectSource','scanGroupedSource','readWorkspaceLoad'];
+  for(const name of phases)assert.ok(source.includes(`\nfunction ${name}(`),`The pinned backend must provide ${name}`);
+  const wrappers=phases.map(name=>`${name}=(${observePerformancePhase.toString()})('internal.${name}',${name},performanceBackendRecords);`).join('\n');
+  const replacement=`const performanceBackendRecords=[];\n${wrappers}\nif (parentPort) startServiceProcess(parentPort, (...args) => (${observePerformanceService.toString()})(openSettingsService(...args), records => require('node:fs').appendFileSync(${JSON.stringify(output)}, JSON.stringify(records) + '\\n'), performanceBackendRecords), (code) => process.exit(code));`;
   const instrumented=source.replace(marker,replacement);
   await writeFile(output,'',{flag:'wx'});
   await writeFile(backend,instrumented);
