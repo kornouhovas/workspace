@@ -39,11 +39,13 @@ state is recorded in the [GitHub checkpoint](https://github.com/kornouhovas/work
 
 Local implementation and review evidence: [verification report](../verification/issue-51-contextual-views.md).
 
-Implementation and both source-review axes are complete. Local focused checks,
-renewed shell, builds and package resources pass. Full-run native fixture and
-strict performance failures have baseline reproductions; packaged/runtime and
-supported-platform acceptance remain open as recorded in the report. Publication is authorized and underway. Both installer routes pass; full desktop
-acceptance is finishing. macOS strict performance passes at `cfefb0f7`; Windows
-startup/filter target misses require the separate diagnostic and original strict
-renewal recorded in the report. Preserve each receipt’s actual SHA. No next issue
-is selected and no release is authorized.
+Implementation and both source-review axes are complete. Full desktop acceptance
+passes on macOS latest, Windows latest and Windows 2022 at `23c7fb4`, as do macOS
+14/Windows installer routes. Strict packaged performance passes on macOS 14 at
+`b77d3885` and Windows latest at `45064815`; each has six native controls, all 32
+measurements, four normal quits/backend exits and cleanup. The verification report
+records actual SHA/run/attempt/artifacts, renewed consumers and unchanged-input
+justification. Historical failures remain recorded; diagnostic traces do not prove
+the cause of earlier timing misses. No required scoped gate remains unresolved.
+Owner-authorized integration follows this documentation/review checkpoint. No next
+issue is selected and no release is authorized.

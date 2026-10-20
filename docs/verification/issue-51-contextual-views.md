@@ -4,6 +4,47 @@ Issue: [#51](https://github.com/kornouhovas/workspace/issues/51), scoped UX02,
 UX12, UX16 and UX18 from #47. Baseline `53a87519`; implementation branch
 `codex/issue-51-contextual-views`. Integrated UX acceptance remains in #67.
 
+## Final supported-host acceptance
+
+All required #51 scoped acceptance rows now have inspected passing evidence.
+Receipts retain their actual source SHA and attempt 1; later documentation does
+not relabel them as execution on another commit.
+
+| Boundary | Source SHA / run | Inspected result |
+| --- | --- | --- |
+| Full desktop Common + macOS latest / Windows latest / Windows 2022 | `23c7fb4` / [39414604470](https://github.com/kornouhovas/workspace/actions/runs/39414604470) | All suites pass; EN/RU development and packaged views, shell/settings/source journeys, restart, isolation, normal shutdown and cleanup |
+| macOS 14 arm64 DMG + Windows latest x64 NSIS | `23c7fb4` / [39414604799](https://github.com/kornouhovas/workspace/actions/runs/39414604799) | Install/reopen/replacement, preserved IDs/data, EN/RU and cleanup pass |
+| macOS 14 packaged strict performance | `b77d3885` / [39424627943](https://github.com/kornouhovas/workspace/actions/runs/39424627943) | Native 6/6, all 32 measurements; max interaction 225.7ms, initial startup 3177.8ms, peak 944,537,600 bytes; four normal quits/backend exits and cleanup |
+| Windows latest x64 packaged strict performance | `45064815` / [39444498928](https://github.com/kornouhovas/workspace/actions/runs/39444498928) | Native 6/6, all 32 measurements; max interaction 281.5ms, startup 1751.7ms, scan 2449.7ms, peak 795,668,480 bytes; four normal quits/backend exits and cleanup |
+
+The final Windows artifact is
+`performance-windows-latest-45064815452a1089d5e29800a3b1bd1ec23e4e5e-run-39444498928-attempt-1`:
+`candidate/report.json` is `passed`, `diagnostic: false`, clean source diff;
+`readiness/regressions.log` passes six controls. Separate `profile/report.json`
+is explicitly `diagnostic`; its 32 cases, eight nonempty CPU profiles and eight
+parseable timelines with event/paint marks complete with four normal quits and
+cleanup. Profiled measurements are not used as strict acceptance.
+
+The whole delta since `23c7fb4` was reviewed, including intermediate commits:
+application sources, dependency manifests/lockfile, migrations, native resources,
+build/package commands and runtime configuration are unchanged. Changes affect
+performance drivers/readiness/timing, diagnostics, their native regressions and
+route inventory tests, plus documentation. Renewed both strict performance hosts
+after the endpoint/stabilization change; renewed the later metadata/diagnostic
+consumers on Windows and native controls locally on macOS. Reuse of the macOS
+`b77d3885` receipt is justified by its unchanged endpoint/readiness and app inputs;
+its passing filter clock conservatively included fixture preparation later moved
+before the event. No missing new diagnostic fields are claimed on the old receipt.
+Both review axes cleared the source and collector repair.
+
+Historical failures below remain failed evidence. The final Windows runner reports
+AMD EPYC 9V45; prior failed hosts included EPYC 9V74 and 7763. The successful
+traces do not reproduce the old slow intervals, establish their historical cause
+or prove an application optimization. Acceptance applies to the observed supported
+runners and dataset, not all hardware. Local macOS 27 failures are retained below;
+the required macOS 14 and Windows routes now pass. Integrated UX remains #67;
+release/signing/native-dialog manual acceptance remains outside #51.
+
 ## Implemented behavior
 
 Saved Table/Board views use manually activated Radix tabs. The active view's
@@ -102,19 +143,18 @@ activation adaptation. This demonstrates that those failure patterns occur witho
 531.4ms direct Table assignment remains a separately recorded target miss.
 Raw baseline evidence: `/tmp/issue51-baseline-performance/report.json`.
 
-The only changes after the full application run are documentation and the two
+At this initial local checkpoint, changes after the full application run were documentation and the two
 inherited CI-selector expectations plus native focus-observation waits. No
 application, dependency, migration, build/package or runtime-configuration input
 has changed since that full-run candidate. Renewed routing and shell consumers
 are recorded above; the original failures are not relabelled successful.
 
-## Acceptance gates
+## Publication and acceptance history
 
-Required supported-platform CI and installer receipts have not yet been renewed
-for the changed application/dependency inputs. Issue #51 remains open; no delivery
-or integration is claimed. The owner explicitly authorized this issue's publication to the current public
-repository after reviewing candidate `23c7fb4`. This resolves the publication
-gate recorded in that commit; it does not authorize a release or another issue.
+At the original local handoff, supported-platform CI and installer receipts were
+still required. The owner explicitly authorized publication to the current public
+repository after reviewing candidate `23c7fb4`. The final ledger above supersedes
+that earlier waiting state. This does not authorize a release or another issue.
 
 
 ## Original CI and focused readiness repair
