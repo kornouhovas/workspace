@@ -1,5 +1,7 @@
+import { inspectRuntimeProjectionFailure } from "./runtime-view-readiness.mjs";
+import { installPerformanceCommandProbe } from "./runtime-performance-probe.mjs";
 import { openGroupingControls, closeGroupingControls } from "./runtime-presentation-controls.mjs";
-import { activateRuntimeView, setRuntimeViewLanguage } from "./runtime-view-controls.mjs";
+import { activateRuntimeView, setRuntimeViewLanguage, pressRuntimeFilterSave } from "./runtime-view-controls.mjs";
 import { readRuntimeInteraction, waitForRuntimeProjection } from "./runtime-performance-timing.mjs";
 /* global window, document, DataTransfer */
 import assert from "node:assert/strict";
@@ -95,9 +97,22 @@ async function recordUi(source, scenario, limit = report.limits.interaction) {
   assert.equal(Number.isFinite(ms), true, "The measured user event must have occurred");
   report.measurements.push({ source, scenario, ...timing, limit, passed: ms <= limit, clock: "renderer event through committed paint" });
   console.log(`${source} ${scenario}: ${ms.toFixed(1)} ms (limit ${limit})`);
+  if (profileFilters && scenario === "table grouping") {
+    const eventWallTime = await page.evaluate(() => performance.timeOrigin + window.__workspacePerformanceStarted);
+    const native = await app.evaluate(({ BrowserWindow }) => {
+      const window = BrowserWindow.getAllWindows()[0];
+      return {focused:window.isFocused(),visible:window.isVisible(),minimized:window.isMinimized(),commands:globalThis.__workspacePerformanceCommands ?? []};
+    });
+    report.measurements[report.measurements.length - 1].diagnostic = {eventWallTime,...native};
+  }
 }
 async function ready(ids) {
-  lastReadyTiming = await waitForRuntimeProjection(page, ids, profileFilters);
+  try { lastReadyTiming = await waitForRuntimeProjection(page, ids, profileFilters); }
+  catch (error) {
+    try { (report.readinessFailures ??= []).push(await page.evaluate(inspectRuntimeProjectionFailure, ids)); }
+    catch { report.readinessInspectionFailed = true; }
+    throw error;
+  }
 }
 async function memory(scenario) {
   const metrics = await app.evaluate(({ app }) => app.getAppMetrics().map(m => ({ type: m.type, serviceName: m.serviceName,
@@ -126,6 +141,7 @@ async function launch(data, executable, expected, mode) {
     for (const event of ["before-quit", "will-quit", "quit", "window-all-closed"]) app.on(event, () => process.stdout.write(`[performance-quit:${event}]\n`));
     process.on("exit", () => process.stdout.write("[performance-quit:node-exit]\n"));
   });
+  if (profileFilters) await app.evaluate(installPerformanceCommandProbe);
   page = await app.firstWindow(); page.setDefaultTimeout(30000);
   const firstWindowMs = performance.now() - started;
   const runtime = await app.evaluate(({ app, BrowserWindow }) => ({ packaged: app.isPackaged,
@@ -240,7 +256,7 @@ try {
       await page.getByLabel("Group by", { exact: true }).selectOption("");
       await closeGroupingControls(page);
       await page.getByLabel("Search project names", { exact: true }).fill("");
-      await page.getByRole("button", { name: "Save search and filters", exact: true }).press("Enter"); await ready(expected);
+      await pressRuntimeFilterSave(page); await ready(expected);
       const p = source.projects[0], field = source.properties.find(p => p.type === "text");
       const row = page.locator(`[data-project-id="${p.projectId}"]`);
       await row.getByRole("button", { name: `Edit Text value: ${p.name} / text 0`, exact: true }).press("Enter");

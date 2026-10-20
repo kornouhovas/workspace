@@ -809,3 +809,46 @@ branch. Select Windows candidate-only with `profile_filters: true`; the unchange
 unprofiled original follows independently. Retain actual macOS `b77d3885` strict
 acceptance and the separately inspected desktop/installers. No trace or isolated
 service timing substitutes for a Windows strict pass.
+
+## Issue 52 failed-host renewal
+
+The original `350293cc` run missed macOS Table grouping/assignment targets and
+Windows latest's category fixture failed before its injected cleanup checkpoint
+(`grouped.restart`, `stop_owned_timeout_stopped`). These are separate gates.
+Retain the actual failed artifacts and first-failure codes; a later control's
+expected failure cannot stand in for reaching it. The fixture exit assertion now
+includes only its already sanitized finite diagnostic/count/cleanup evidence.
+
+The separate existing `profile_filters` performance run optionally observes main
+IPC request/reply times for four fixed grouping/projection command types, bounded
+to 256 records, and native window focus/visibility/minimized state. It retains no
+payload, reply, exception, path or PID. This helper is installed only in diagnostic
+runs; the original unprofiled strict command, endpoint, clocks, deadlines and
+limits remain unchanged. Wall time correlates events; duration uses a monotonic
+clock. Diagnostic results cannot substitute for strict acceptance.
+
+Use existing `checks: category-fixture` with `category_fixture_only: true` for the
+failed Windows latest original fixture file. After its focused gate passes,
+`checks: source-runtime`, `source_runtime_platform: windows-latest` renews the
+unreached development/packaged routes on that host. The default `all` preserves
+both Windows hosts; ordinary three-platform push/full acceptance is unchanged.
+The early direct Windows latest creation and shell/management/source steps that
+already passed retain their actual inspected receipts; this route retains the
+existing exclusion of that duplicate early direct scenario.
+
+Apply evidence reuse only after reviewing the complete delta: these diagnostic,
+assertion-message, selector/test and documentation changes do not change the
+application, dependencies, migrations, native resources or build/package inputs.
+Retain installer/unaffected full-platform results at their actual source SHA;
+renew changed diagnostics/native controls and the failed/missing consumers.
+
+The same original Windows performance run later timed out after resetting Table
+grouping and search. Its reset driver could press an HTML-disabled Save while a
+new projection was pending. A native delayed-enable regression reproduces the
+lost action (zero submits, filtered rows) and passes when the original single
+Enter is prepared against an enabled/focused control. Only this unmeasured reset
+precondition changes; event-to-paint measurements and membership/readiness checks
+remain intact. This establishes the driver race, not the unique cause of the old
+hosted timeout. A failure-only readonly packet now records expected/actual row
+counts, mismatch index, unloaded/pending/group counts and Save/search booleans;
+it retains no IDs/text/paths and never substitutes for the original timeout.

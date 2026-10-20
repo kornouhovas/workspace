@@ -78,3 +78,66 @@ or release is claimed by this local report. GitHub owns current acceptance statu
 The owner explicitly authorized publication to the current public repository for
 #52. Preserve actual run/attempt/SHA evidence and earlier failures in its checkpoint;
 apply shared CI evidence reuse only to demonstrated unchanged inputs.
+
+## First published candidate and diagnosis
+
+Candidate `350293cc`, attempt 1: installer run `39453035604` passed macOS 14 arm64
+and Windows/latest x64. Both downloaded reports match the SHA, verify installation,
+reopen/reinstall/replacement preserving data, EN/RU/isolation and cleanup. The
+Windows host is Server 2025 Datacenter, not Windows 11. Local final packaged views
+also passed six checks, three normal quits/backend exits and cleanup.
+
+Full desktop `39453035549`: Common/static and macOS/latest passed. Windows/latest's
+isolated original category fixture failed its cleanup control before the intended
+injection: `grouped.restart` / `stop_owned_timeout_stopped`, one utility started
+and exited, normal supervisor handshake, owned shutdown confirmed. Later scenarios
+were unreached; exit 1 correctly failed its expected exit 0. The original 2,692-test
+remaining platform batch and 13 property-driver controls passed. The observed
+failure is not an established UI/backend regression or a repaired lifecycle cause.
+Windows/2022 also passed the full job. Windows/latest still-missing runtime receipts remain in the GitHub checkpoint.
+
+Strict performance `39453041704`: macOS 14 `350293cc` completed all 32 functional
+measurements, memory/startup/scan gates, four normal quits/backend exits and cleanup.
+It failed direct Table grouping 585.8 ms and grouped Table assignment 329.6 ms against
+300 ms. Its failure remains failed. Windows results are recorded below. The immutable
+`d925f8b7` baseline also missed targets; that does not waive candidate limits.
+
+A separate local profile reproduced first direct grouping 541.9 ms and later grouped
+grouping 74.3 ms. The marked slow interval contained about 478.8 ms idle, 22.6 ms program
+and 1.6 ms GC, with no >9 ms JS task. This does not support a local React/Radix CPU
+bottleneck or prove the hosted cause. Subsequent diagnostic request timings were
+fast but did not reproduce the slow interval. A reduced 20-project probe did not
+retain the delay; it is not performance acceptance. No application optimization
+or native cause is claimed from these observations.
+
+Diagnostic-only renewal adds bounded main IPC timing/window-state observations to
+`--profile-filters`; two red-to-green probe tests preserve original replies,
+errors, single invocation and bounded/no-payload output. The original strict
+command is unchanged. The category assertion now prints existing sanitized
+first-failure evidence; no deadline/outcome is weakened. The existing runtime
+continuation can narrow to Windows latest after its fixture gate passes.
+See [the focused route policy](../ci.md#issue-52-failed-host-renewal).
+
+Windows strict `39453041704`, attempt 1, `350293cc`, AMD EPYC 7763: only 22 measurements
+completed. Eight interactions exceeded 300 ms (direct Table assignment 472.0/edit 327.3,
+direct Board assignment 301.4/edit 397.4, grouped Table filters 396.5/360.5,
+grouping 344.2/assignment 328.4). It then timed out after 30 seconds while expecting
+the full projection after Table grouping/search reset. All collected startup/scan/
+memory checks and three actual normal quits/backend exits/cleanup passed; remaining
+cases are unreached, not passing.
+
+The reset call site pressed Save without waiting for its enabled state after the
+preceding grouping command. A real-Electron delayed-enable regression failed with
+zero submits/filtered rows before repair and passed with exactly one submit/full
+rows after preparing the enabled control. The production app is unchanged; the
+unmeasured reset now prepares focus/enabled state before one Enter. Original
+measurements, limits and full ordered membership/readiness predicates remain.
+This demonstrates the driver race, not historical hosted causation. Timeout
+inspection is readonly and bounded to counts/state flags without authored data.
+Both diagnostic and original strict commands require renewed failed-host receipts.
+
+Diagnostic repair verification: native readiness/probe/reset controls 10/10; CI route
+contracts 50/50; typecheck, lint, documentation and whitespace checks passed. Both
+independent Standards and Spec reviews reported zero findings. This delta changes
+only tests, drivers, CI and documentation; application/build inputs remain at
+`350293cc`. Retain its passing receipts and renew affected failed consumers.

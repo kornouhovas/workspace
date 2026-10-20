@@ -1071,3 +1071,22 @@ test('performance readiness repair retains the original strict command after reg
   assert.ok(original.run.includes('set -o pipefail') && original.run.includes('node scripts/smoke-performance.mjs --enforce'));
   assert.equal(original.env.WORKSPACE_SMOKE_EVIDENCE_DIR, 'work/ci-performance/candidate');
 });
+
+test('unreached Windows runtime renewal can select only its missing host while preserving both-host default', () => {
+  const workflow=load(readFileSync('.github/workflows/desktop-ci.yml','utf8'));
+  const input=workflow.on.workflow_dispatch.inputs.source_runtime_platform;
+  assert.equal(input.default,'all');
+  assert.deepEqual(input.options,['all','windows-latest','windows-2022']);
+  const job=workflow.jobs['source-runtime'];
+  const select=platform=>runInNewContext(job.strategy.matrix.include.slice(3,-2),{fromJSON:JSON.parse,inputs:{source_runtime_platform:platform}});
+  for(const platform of [undefined,'all','windows-latest','windows-2022']) {
+    assert.deepEqual(Array.from(select(platform),row=>row.os),platform&&platform!=='all'?[platform]:['windows-latest','windows-2022']);
+  }
+  const commands=job.steps.filter(step=>step.run).map(step=>step.run);
+  for(const mode of ['dev','release']) {
+    assert.ok(commands.includes(`npm run smoke:views -- ${mode}`));
+    assert.ok(commands.includes(`npm run smoke:runtime -- ${mode}`));
+  }
+  assert.ok(!commands.includes('npm run test:platform')&&!commands.includes('npm test'));
+  assert.equal(job.steps.find(step=>step.run==='npm run smoke:runtime -- dev --creation --discovery-mode=direct --checkpoint=after_evidence').if,"${{ matrix.os != 'windows-latest' }}");
+});

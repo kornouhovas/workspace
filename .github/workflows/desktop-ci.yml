@@ -10,6 +10,11 @@ on:
         type: choice
         options: [full, failed, readiness, windows-release, issue22-failures, creation-shutdown, raw-rename, issue24-failures, category-fixture, issue24-startup, multiselect, etw-controls, app-fixture, property-fixture, runtime-observation, view-fixtures, number, windows-property-fixture, rename-authoring, rename-fixture, viewport-runtime, desktop-shell, shell-runtime, views-readiness, workspace-sidebar, workspace-setup, workspace-setup-readiness, select-readiness, source-fixture, source-runtime]
         default: full
+      source_runtime_platform:
+        description: With checks=source-runtime, renew only the missing Windows host
+        type: choice
+        options: [all, windows-latest, windows-2022]
+        default: all
       recovery_windows_2022:
         description: With checks=issue22-failures, replay the backend recovery file on Windows 2022 and the original macOS runtime
         type: boolean
@@ -94,11 +99,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - os: windows-latest
-            artifact: windows
-          - os: windows-2022
-            artifact: windows-2022
+        include: ${{ fromJSON(inputs.source_runtime_platform == 'windows-latest' && '[{"os":"windows-latest","artifact":"windows"}]' || inputs.source_runtime_platform == 'windows-2022' && '[{"os":"windows-2022","artifact":"windows-2022"}]' || '[{"os":"windows-latest","artifact":"windows"},{"os":"windows-2022","artifact":"windows-2022"}]') }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 60
     steps:

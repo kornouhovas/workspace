@@ -151,7 +151,8 @@ function assertNormalHandshake(result, { exitCode = 0, malformed = false, cleanu
   assertStages(result, handshake);
   assertOrderedOnce(result, handshake);
   assertCleanup(result, cleanupFailed);
-  assert.equal(result.exitCode, exitCode);
+  assert.equal(result.exitCode, exitCode, JSON.stringify({diagnostic:result.diagnostic,
+    utilityCount:result.utilityCount,utilityExitCount:result.utilityExitCount,shutdownConfirmed:result.shutdownConfirmed,cleanup:result.cleanup}));
   assert.equal(result.signaled, false);
   assert.equal(result.timedOut ?? false, false);
   assert.equal(result.events.includes("supervisor_timeout"), false);

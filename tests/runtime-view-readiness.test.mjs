@@ -206,3 +206,65 @@ test("runtime language selection preserves current settings navigation and the i
     assert.deepEqual(await page.evaluate(() => globalThis.actions), ["settings", "general", "ru", "back"]);
   });
 });
+
+test('optional performance command probe observes one original request and preserves replies and failures', async () => {
+  const { installPerformanceCommandProbe } = await import('../scripts/runtime-performance-probe.mjs');
+  const handlers = new Map(), requests = [];
+  const failure = new Error('Private command failure');
+  const original = async (event, input) => { requests.push({event,input}); if(input.fail) throw failure; return input.reply; };
+  handlers.set('workspace:command',original);
+  const ipcMain = {_invokeHandlers:handlers,removeHandler:name=>handlers.delete(name),handle:(name,handler)=>handlers.set(name,handler)};
+  try {
+    installPerformanceCommandProbe({ipcMain});
+    const invoke=handlers.get('workspace:command'),reply={ok:true,value:{private:'Not diagnostic output'}};
+    assert.equal(await invoke('event',{type:'workspace.setViewGrouping',reply}),reply);
+    await assert.rejects(invoke('event',{type:'workspace.queryView',fail:true}),error=>error===failure);
+    assert.equal(requests.length,2);
+    const observations=globalThis.__workspacePerformanceCommands;
+    assert.deepEqual(observations.map(item=>item.type),['workspace.setViewGrouping','workspace.queryView']);
+    assert.equal(JSON.stringify(observations).includes('Private'),false);
+    assert.equal(JSON.stringify(observations).includes('Not diagnostic output'),false);
+    for(const observation of observations) assert.ok(Number.isFinite(observation.started)&&Number.isFinite(observation.finished)&&observation.durationMs>=0);
+  } finally {delete globalThis.__workspacePerformanceCommands;}
+});
+
+test('optional command diagnostics retain a bounded history and fail closed for an unavailable Electron handler', async () => {
+  const { installPerformanceCommandProbe } = await import('../scripts/runtime-performance-probe.mjs');
+  const handlers=new Map([['workspace:command',async()=>({ok:true})]]);
+  const ipcMain={_invokeHandlers:handlers,removeHandler:name=>handlers.delete(name),handle:(name,handler)=>handlers.set(name,handler)};
+  try {
+    installPerformanceCommandProbe({ipcMain});
+    for(let i=0;i<260;i++) await handlers.get('workspace:command')(null,{type:'workspace.queryView'});
+    assert.equal(globalThis.__workspacePerformanceCommands.length,256);
+    await handlers.get('workspace:command')(null,{type:'workspace.listProjects'});
+    assert.equal(globalThis.__workspacePerformanceCommands.length,256);
+    assert.throws(()=>installPerformanceCommandProbe({ipcMain:{_invokeHandlers:new Map()}}),/handler unavailable/);
+  } finally {delete globalThis.__workspacePerformanceCommands;}
+});
+
+test('filter reset waits for enabled Save before its single keyboard action and full projection', async () => {
+  const { pressRuntimeFilterSave } = await import('../scripts/runtime-view-controls.mjs');
+  await withPage(async page => {
+    await page.setContent('<button disabled>Save search and filters</button><div data-count="100"></div>');
+    await page.evaluate(() => {
+      globalThis.filterResetCalls=0;
+      const button=document.querySelector('button');
+      button.onclick=()=>{globalThis.filterResetCalls++;document.querySelector('div').dataset.count='1000';};
+      setTimeout(()=>{button.disabled=false;},500);
+    });
+    await pressRuntimeFilterSave(page);
+    assert.deepEqual(await page.evaluate(()=>({calls:globalThis.filterResetCalls,count:document.querySelector('div').dataset.count,enabled:!document.querySelector('button').disabled})),{calls:1,count:'1000',enabled:true});
+  });
+});
+
+test('failed projection inspection is readonly and retains only bounded counts and control states', async () => {
+  const {inspectRuntimeProjectionFailure}=await import('../scripts/runtime-view-readiness.mjs');
+  await withPage(async page=>{
+    await page.setContent('<main class="text-properties"><form class="view-filters" aria-busy="true"><input type="search" value="Private authored search"><button type="submit" disabled>Save</button></form><section class="project-group"><div data-project-id="private-one" data-fields-ready="true"></div><div data-project-id="private-two" data-fields-ready="false"></div></section></main>');
+    const before=await page.content();
+    const result=await page.evaluate(inspectRuntimeProjectionFailure,['private-one','different']);
+    assert.deepEqual(result,{expectedCount:2,rowCount:2,firstMismatch:1,unloadedCount:1,pendingCount:1,groupCount:1,saveDisabled:true,searchEmpty:false});
+    assert.equal(await page.content(),before);
+    assert.equal(/private|authored|different/i.test(JSON.stringify(result)),false);
+  });
+});

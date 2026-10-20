@@ -15,3 +15,9 @@ export async function setRuntimeViewLanguage(page, language) {
   await page.locator("#interface-language").selectOption(language);
   await page.waitForFunction(lang => globalThis.document.documentElement.lang === lang && !globalThis.document.querySelector("#interface-language")?.disabled, language);
 }
+
+export async function pressRuntimeFilterSave(page) {
+  const enabled=page.getByRole('button',{name:'Save search and filters',exact:true}).and(page.locator(':not(:disabled):not([aria-disabled="true"])'));
+  await enabled.focus();
+  await enabled.press('Enter');
+}
