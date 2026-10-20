@@ -14,6 +14,11 @@ User-facing changes are maintained in English. The first target release is 0.1.0
 
 ### Added
 
+- Create automatically named workspaces from the sidebar folder picker, each with
+  its own default Table; reuse configured sources or postpone setup and return later.
+- Rename, reorder and remove workspaces through sidebar controls and matching
+  settings, preserving project files and retained source metadata after removal.
+
 - Open saved workspaces in a viewport-bound desktop shell with an independently
   scrolling sidebar, categorized settings, keyboard return to work, and persisted
   English/Russian and Light/Dark/System appearance preferences.

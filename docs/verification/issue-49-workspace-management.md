@@ -212,3 +212,39 @@ strict exits and exact provenance. Routing checks pass 69/69. Existing app-sourc
 installer receipts at `99584863` are retained separately: macOS run `39381220158`
 and Windows run `39381476934` passed their full install/reopen/replacement/data
 retention/cleanup scenarios. This repair changes only drivers, tests, CI and docs.
+
+
+## Accepted application candidate
+
+Full desktop [run 39385354293](https://github.com/kornouhovas/workspace/actions/runs/39385354293),
+attempt 1, passed on exact SHA `14bcb4cf0f069d87be4d840504e924af285da495`.
+The preceding focused packaged Select run `39384877475` also passed on that SHA;
+its downloaded original EN/RU result, readiness and route logs were inspected.
+
+- Common: 494 passed, zero skips/failures; lint, typecheck and documentation links passed.
+- macOS latest platform: 2,644 passed, 26 platform skips, zero failures.
+- Windows latest and Windows 2022 platform: each 2,676 passed, 13 platform skips,
+  zero failures. These are existing conditional platform cases, not disabled scenarios.
+- All three original shell journeys passed (20 check groups each); all three #49
+  management journeys passed (11 groups, 24 screenshots each). Downloaded reports
+  confirm exact SHA, normal shutdown and owned cleanup. Representative renewed
+  EN/light/wide and RU/dark/narrow Windows screenshots were inspected.
+- All ordinary development and packaged runtime steps passed, including Table/
+  Board, property controls, archive/recovery, creation interruption and file-manager
+  flows. Downloaded runtime artifacts for all three OSes were inspected; original
+  dev/release runtime reports and property/view reports passed with shutdown and
+  cleanup. Native/creation recovery-only stages keep their explicit skip boundaries.
+- Full-suite observer collectors on all three OSes report complete/ordinary/exit0
+  with exact provenance. Positive category-service receipts passed and removed
+  their fixtures; expected negative controls remain separately identified.
+
+The application-source installer receipts remain the inspected successful macOS
+`39381220158` and Windows `39381476934` runs at `99584863`. Only drivers, tests,
+CI and documentation differ from that SHA; source, dependencies and packaging
+inputs are byte-identical. Hosted Windows Server results do not establish Windows
+11 desktop/release acceptance. No release, tag or public download was created.
+
+The following Unreleased notes and this report update are documentation-only;
+they receive documentation-link and whitespace checks separately from platform
+acceptance. The final delivered SHA and integration verification are recorded in
+the issue checkpoint linked above, without relabelling it as a platform-tested SHA.
