@@ -1,3 +1,4 @@
+import { openGroupingControls, closeGroupingControls } from "./runtime-presentation-controls.mjs";
 import { activateRuntimeView, setRuntimeViewLanguage } from "./runtime-view-controls.mjs";
 import { readRuntimeInteraction, waitForRuntimeProjection } from "./runtime-performance-timing.mjs";
 /* global window, document, DataTransfer */
@@ -200,10 +201,12 @@ try {
       // Ordinary Select grouping retains exact option identities and an empty group.
       const property = source.properties.find(p => p.type === "single_select");
       const assignmentProfiler = profileFilters ? await startInteractionProfile() : undefined;
+      await openGroupingControls(page);
       const groupBy = page.getByLabel("Group by", { exact: true });
       await startUiTiming(groupBy, "change"); await groupBy.selectOption(property.propertyId);
       await page.locator(".project-group").first().waitFor();
       await ready(); await recordUi(source.mode, `${kind} grouping`);
+      await closeGroupingControls(page);
       // Correctness reads run after the event-to-paint clock. They are not an
       // additional user action and must not inflate the measured interaction.
       const projection = await command("queryView", { viewId, archived: false });
@@ -233,7 +236,9 @@ try {
       await ready(assigned.groups.flatMap(g => g.projectIds));
       assert.ok(assigned.groups.find(g => g.key === destination.key).projectIds.includes(projectId));
       // Reset through UI for a full-view edit, then verify the durable value.
+      await openGroupingControls(page);
       await page.getByLabel("Group by", { exact: true }).selectOption("");
+      await closeGroupingControls(page);
       await page.getByLabel("Search project names", { exact: true }).fill("");
       await page.getByRole("button", { name: "Save search and filters", exact: true }).press("Enter"); await ready(expected);
       const p = source.projects[0], field = source.properties.find(p => p.type === "text");

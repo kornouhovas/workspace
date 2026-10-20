@@ -1,3 +1,5 @@
+import { waitForPresentationBounds } from "./runtime-presentation-controls.mjs";
+import { dragRuntimeGroup } from "./runtime-group-drag.mjs";
 /* global document, innerWidth, getComputedStyle */
 import assert from "node:assert/strict";
 import { join } from "node:path";
@@ -10,8 +12,9 @@ export async function exerciseTableLayout({page,query,rootPath,language,evidence
   const text="Long authored text ".repeat(12)+"\nExact second line";
   await call("setTextValue",{projectId:projects[0].projectId,propertyId,value:text});
   await page.reload();
-  const controls=page.getByRole("region",{name:en?"Table layout":"Настройки таблицы",exact:true});
-  await controls.locator("summary").press("Enter");
+  const entry=page.getByRole("button",{name:en?"Table layout":"Настройки таблицы",exact:true});
+  await entry.press("Enter");
+  const controls=page.getByRole("dialog",{name:en?"Table layout":"Настройки таблицы",exact:true});
   const visible=controls.getByLabel(`${en?"Visible":"Показывать"}: Notes`,{exact:true});
   await visible.and(page.locator(":enabled")).focus();await visible.press("Space");
   await page.waitForFunction(()=>!Array.from(document.querySelectorAll("th")).some(th=>th.textContent.includes("Notes")));
@@ -35,11 +38,13 @@ export async function exerciseTableLayout({page,query,rootPath,language,evidence
   });
   await wrap.and(page.locator(":enabled")).press("Space");
   await page.waitForFunction(()=>document.querySelector("td.table-text-wrap .text-value-button") && getComputedStyle(document.querySelector("td.table-text-wrap .text-value-button")).whiteSpace==="pre-wrap");
+  await page.keyboard.press("Escape");
+  await page.waitForFunction(label=>document.activeElement?.textContent===label,en?"Table layout":"Настройки таблицы");
   const later=page.getByRole("button",{name:`${en?"Move row later":"Переместить строку позже"}: Alpha`,exact:true});
   await later.and(page.locator(":enabled")).press("Enter");
   await page.waitForFunction(()=>document.querySelector("tbody tr")?.textContent.includes("Beta"));
   const drag=page.getByRole("button",{name:`${en?"Drag to reorder row":"Перетащить строку для изменения порядка"}: Beta`,exact:true});
-  await drag.and(page.locator(":enabled")).dragTo(page.locator(`tr[data-project-id="${projects.find(p=>p.name==="Alpha").projectId}"]`));
+  await dragRuntimeGroup(drag.and(page.locator(":enabled")), page.locator(`tr[data-project-id="${projects.find(p=>p.name==="Alpha").projectId}"]`));
   await page.waitForFunction(()=>document.querySelector("tbody tr")?.textContent.includes("Alpha"));
   const saved=(await call("getTableLayout",{viewId})).config;
   assert.equal(saved.columns.find(c=>c.propertyId===propertyId).width,799);
@@ -52,13 +57,27 @@ export async function exerciseTableLayout({page,query,rootPath,language,evidence
   const sibling=await query(page,{type:"workspace.create",rootPath,name:"Layout sibling"});
   assert.deepEqual((await query(page,{type:"workspace.getTableLayout",workspaceId:sibling.workspaceId,viewId:sibling.viewId})).config,{columns:[],rowOrder:[]});
   await call("activate");await call("activateView",{viewId});await page.reload();
-  await page.getByRole("region",{name:en?"Table layout":"Настройки таблицы",exact:true}).locator("summary").press("Enter");
+  await entry.press("Enter");
   await page.waitForFunction(()=>document.querySelector("th")?.textContent.includes("Notes"));
+  await page.keyboard.press("Escape");
+  const header = page.getByRole("button",{name:`${en?"Column settings":"Настройки столбца"}: Notes`,exact:true});
+  await header.scrollIntoViewIfNeeded();
+  await header.press("Enter");
+  const headerPanel = page.getByRole("dialog",{name:`${en?"Column settings":"Настройки столбца"}: Notes`,exact:true});
+  assert.equal(await headerPanel.getByRole("slider").count(),1);
+  await page.keyboard.press("Escape");
+  await page.waitForFunction(label=>document.activeElement?.getAttribute("aria-label")===label,`${en?"Column settings":"Настройки столбца"}: Notes`);
   for(const width of [360,1024,1440]) {
     await page.setViewportSize({width,height:width===1440?960:720});
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
     if (width === 360) assert.equal(await page.locator(".project-table-scroll").evaluate(el=>el.scrollWidth>el.clientWidth),true);
+    await header.scrollIntoViewIfNeeded();
+  await header.press("Enter");
+    await waitForPresentationBounds(page,`${en?"Column settings":"Настройки столбца"}: Notes`);
+    const bounds=await headerPanel.boundingBox();
+    assert.ok(bounds && bounds.x>=0 && bounds.x+bounds.width<=width && bounds.y>=0 && bounds.y+bounds.height<=(width===1440?960:720), JSON.stringify({width,bounds}));
     await page.screenshot({path:join(evidenceDirectory,`${language}-${width}-table-layout.png`),fullPage:true});
+    await page.keyboard.press("Escape");
   }
   return {keyboard:true,dragOrderOnly:true,columns:true,width:true,wrap:true,independentCopy:true,sibling:true,reload:true,widths:[360,1024,1440]};
 }

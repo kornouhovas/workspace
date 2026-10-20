@@ -7,11 +7,12 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { WorkspaceServiceClient } from "../src/renderer/workspace-service-client.js";
 import type { WorkspaceDesktopApi } from "../src/contracts/desktop-api.js";
-import { TextPropertiesTable } from "../src/renderer/components/TextPropertiesTable.js";
+
 import { translate } from "../src/renderer/localization.js";
 const browser = new Window();
-Object.assign(globalThis, { window: browser, document: browser.document, HTMLElement: browser.HTMLElement, Node: browser.Node, MutationObserver: browser.MutationObserver });
+Object.assign(globalThis, { window: browser, document: browser.document, HTMLElement: browser.HTMLElement, Element: browser.Element, CustomEvent: browser.CustomEvent, getComputedStyle: browser.getComputedStyle.bind(browser), NodeFilter: browser.NodeFilter, HTMLInputElement: browser.HTMLInputElement, ResizeObserver: browser.ResizeObserver, Node: browser.Node, MutationObserver: browser.MutationObserver });
 Object.defineProperty(globalThis, "navigator", { configurable: true, value: browser.navigator });
+const { TextPropertiesTable } = await import("../src/renderer/components/TextPropertiesTable.js");
 const { cleanup, render, screen, waitFor, within } = await import("@testing-library/react");
 const { default: userEvent } = await import("@testing-library/user-event");
 // @ts-expect-error Built service module intentionally has no declarations.
@@ -29,6 +30,7 @@ for (const language of ["en", "ru"] as const) for (const layout of ["table", "bo
     const user=userEvent.setup({document}),t=(key:Parameters<typeof translate>[1])=>translate(language,key);
     try {
       render(<TextPropertiesTable viewId={viewId} layout={layout} client={new WorkspaceServiceClient(api)} workspaceId={workspaceId} sourceId={sourceId} projects={projects} language={language} disabled={false}/>);
+      if (document.querySelector(".presentation-trigger")) await user.click(await screen.findByRole("button", {name:t("groupTitle")}));
       const select=await screen.findByLabelText(t("groupProperty"));
       await waitFor(()=>assert.equal((select as HTMLSelectElement).disabled,false));
       select.focus();await user.selectOptions(select,"name");
@@ -106,11 +108,13 @@ for (const language of ['en','ru'] as const) for (const layout of ['table','boar
     const props={client:new WorkspaceServiceClient(api),workspaceId,sourceId,viewId,projects,language,disabled:false};
     try {
       const rendered=render(<TextPropertiesTable {...props} layout={layout}/>);
+      if (document.querySelector(".presentation-trigger")) await user.click(await screen.findByRole("button", {name:t("groupTitle")}));
       const select=await screen.findByLabelText(t('groupProperty'));
       await waitFor(()=>assert.equal((select as HTMLSelectElement).disabled,false));
       await user.selectOptions(select,propertyId);
       await screen.findByRole('heading',{name:'A (1)'});await screen.findByRole('heading',{name:'B (1)'});
       await screen.findByRole('heading',{name:'Unused (0)'});await screen.findByRole('heading',{name:`${t('groupNoValue')} (0)`});
+      if (layout === "table") await user.keyboard("{Escape}");
       const groupB=screen.getByRole('region',{name:'B'});
       const textButton=within(groupB).getByRole('button',{name:`${t('editTextValue')}: Project / Notes`});
       textButton.focus();await user.keyboard('{Enter}');
@@ -143,7 +147,8 @@ for(const language of ['en','ru'] as const) test(`${language} folder category gr
   const user=userEvent.setup({document}),t=(key:Parameters<typeof translate>[1])=>translate(language,key);
   try {
     const rendered=render(<TextPropertiesTable {...props} layout="table"/>);
-    const select=await screen.findByLabelText(t('groupProperty'));
+    if (document.querySelector(".presentation-trigger")) await user.click(await screen.findByRole("button", {name:t("groupTitle")}));
+      const select=await screen.findByLabelText(t('groupProperty'));
     await waitFor(()=>assert.equal((select as HTMLSelectElement).disabled,false));
     await user.selectOptions(select,list.categoryProperty.propertyId);
     await screen.findByRole('heading',{name:'Category (1)'});await screen.findByRole('heading',{name:'Empty (0)'});
@@ -167,9 +172,11 @@ for(const language of ['en','ru'] as const) test(`${language} ordinary Single Se
   const user=userEvent.setup({document}),t=(key:Parameters<typeof translate>[1])=>translate(language,key);
   try{
     const rendered=render(<TextPropertiesTable {...props} layout="table"/>);
-    const select=await screen.findByLabelText(t('groupProperty'));await waitFor(()=>assert.equal((select as HTMLSelectElement).disabled,false));
+    if (document.querySelector(".presentation-trigger")) await user.click(await screen.findByRole("button", {name:t("groupTitle")}));
+      const select=await screen.findByLabelText(t('groupProperty'));await waitFor(()=>assert.equal((select as HTMLSelectElement).disabled,false));
     await user.selectOptions(select,propertyId);
     await screen.findByRole('heading',{name:`${t('groupNoValue')} (1)`});await screen.findByRole('heading',{name:'Option (0)'});
+    await user.keyboard("{Escape}");
     const empty=screen.getByRole('region',{name:t('groupNoValue')});
     await user.click(within(empty).getByRole('button',{name:`${t('editSelectValue')}: Project / Choice`}));
     await user.selectOptions(within(empty).getByRole('combobox',{name:`${t('editSelectValue')}: Project / Choice`}),optionId);
@@ -199,9 +206,11 @@ for(const language of ['en','ru'] as const) for(const layout of ['table','board'
   try{
     render(<TextPropertiesTable client={new WorkspaceServiceClient(api)} workspaceId={workspaceId} sourceId={sourceId} viewId={viewId} layout={layout}
       projects={list.projects} retainedProjects={list.retainedProjects} categoryProperty={list.categoryProperty} categories={list.categories} language={language} disabled={false} onLocate={project=>{located=project.projectId;}}/>);
-    const select=await screen.findByLabelText(t('groupProperty'));await waitFor(()=>assert.equal((select as HTMLSelectElement).disabled,false));
+    if (document.querySelector(".presentation-trigger")) await user.click(await screen.findByRole("button", {name:t("groupTitle")}));
+      const select=await screen.findByLabelText(t('groupProperty'));await waitFor(()=>assert.equal((select as HTMLSelectElement).disabled,false));
     await user.selectOptions(select,list.categoryProperty.propertyId);
     await screen.findByRole('heading',{name:`${t('groupNoValue')} (1)`});
+    if (layout === "table") await user.keyboard("{Escape}");
     const group=screen.getByRole('region',{name:t('groupNoValue')});
     await within(group).findByText(t('projectModeRetained'));
     const locate=within(group).getByRole('button',{name:`${t('recoveryLocate')}: Project`});locate.focus();await user.keyboard('{Enter}');

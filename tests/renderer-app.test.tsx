@@ -2217,7 +2217,8 @@ test("EN/RU production grouped Apply normalizes child-then-parent exclusions and
       await screen.findByRole("cell", { name: "Project" });
       assert.equal(document.activeElement, trigger);
       const header = screen.getByRole("columnheader", { name: translate(language, "discoveryCategory") });
-      assert.equal(header.querySelectorAll("button").length, 1);
+      assert.ok(within(header).getByRole("button", {name:`${translate(language, "renameCategoryProperty")}: ${translate(language, "discoveryCategory")}`}));
+      assert.ok(within(header).getByRole("button", {name:`${translate(language, "tableColumnSettings")}: ${translate(language, "discoveryCategory")}`}));
       assert.equal(header.querySelector("input, select"), null);
       const categoryCell = screen.getByText("Category", { selector: "td" }); assert.equal(categoryCell.querySelector("input, select"), null);
       assert.equal(categoryCell.querySelector("button")?.getAttribute("aria-label"), `${translate(language, "moveCategory")}: Project`);

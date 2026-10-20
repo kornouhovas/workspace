@@ -1,3 +1,4 @@
+import { openGroupingControls, closeGroupingControls } from "./runtime-presentation-controls.mjs";
 /* global window, document */
 import assert from "node:assert/strict";
 import { join } from "node:path";
@@ -5,7 +6,7 @@ import { join } from "node:path";
 // Extends the existing owned development/packaged view fixture and cleanup route.
 export async function exerciseViewGrouping({ page, query, workspaceId, propertyId, language, layout, evidenceDirectory }) {
   const en = language === "en";
-  const panel = page.getByRole("region", { name: en ? "Grouping" : "Группировка", exact: true });
+  const panel = await openGroupingControls(page, language);
   const grouping = panel.getByLabel(en ? "Group by" : "Группировать по", { exact: true });
   const viewId = (await query(page, { type: "workspace.listViews", workspaceId })).activeViewId;
   const rows = page.locator(layout === "board" ? ".project-board:visible > li" : ".project-table:visible tbody > tr");
@@ -30,15 +31,18 @@ export async function exerciseViewGrouping({ page, query, workspaceId, propertyI
   }
   const config = (await query(page, { type: "workspace.getViewGrouping", workspaceId, viewId })).config;
   assert.equal(config.propertyId, propertyId); assert.equal(config.settings.find(s => s.propertyId === propertyId).order, "descending");
+  await openGroupingControls(page, language);
   await grouping.and(page.locator(":enabled")).selectOption("");
+  await closeGroupingControls(page, language);
   await group().waitFor({ state: "hidden" }); await rows.first().waitFor();
+  await closeGroupingControls(page, language);
   return { layout, exactScalar: true, serviceProjection: true, hideShow: true, collapseExpand: true, keyboard: true, widths: [360, 1024, 1440] };
 }
 
 // Reuse the owned views runtime for real preload/IPC and visual coverage.
 export async function exerciseSelectionGrouping({ page, query, workspaceId, language, layout, evidenceDirectory }) {
   const en = language === "en";
-  const panel = page.getByRole("region", { name: en ? "Grouping" : "Группировка", exact: true });
+  const panel = await openGroupingControls(page, language);
   const grouping = panel.getByLabel(en ? "Group by" : "Группировать по", { exact: true });
   const call = (type, fields = {}) => query(page, { type: `workspace.${type}`, workspaceId, ...fields });
   const projectId = (await call("listProjects")).projects[0].projectId;
@@ -58,6 +62,7 @@ export async function exerciseSelectionGrouping({ page, query, workspaceId, lang
   const viewId = (await call("listViews")).activeViewId;
   const groups = (await call("queryView", { viewId, archived: false })).groups;
   assert.deepEqual(groups.slice(0, 2).map(g => g.projectIds), [[projectId], [projectId]]);
+  await closeGroupingControls(page, language);
   const value = page.getByRole("region", { name: "B", exact: true }).getByRole("button", {
     name: `${en ? "Edit MultiSelect value" : "Редактировать MultiSelect-значение"}: Project / Grouping tags`, exact: true });
   await value.and(page.locator(":enabled")).focus(); await value.press("Enter");
@@ -74,7 +79,9 @@ export async function exerciseSelectionGrouping({ page, query, workspaceId, lang
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), true);
     await page.screenshot({ path: join(evidenceDirectory, `${language}-${width}-${layout}-selection-grouping.png`), fullPage: true });
   }
+  await openGroupingControls(page, language);
   await grouping.and(page.locator(":enabled")).selectOption("");
+  await closeGroupingControls(page, language);
   await page.getByRole("heading", { name: "A (1)", exact: true }).waitFor({ state: "hidden" });
   return { layout, stableOptionIds: true, repeatedLogicalId: true, keyboardEditFromOccurrence: true, widths: [360, 1024, 1440] };
 }
@@ -87,9 +94,10 @@ export async function exerciseCategoryGrouping({ page, query, rootPath, language
   const preview = await call("previewDiscovery", { mode: "grouped" });
   const list = await call("applyDiscovery", { previewToken: preview.previewToken });
   await call("activate"); await page.reload();
-  const grouping = page.getByRole("region", { name: en ? "Grouping" : "Группировка", exact: true })
+  const grouping = (await openGroupingControls(page, language))
     .getByLabel(en ? "Group by" : "Группировать по", { exact: true });
   await grouping.and(page.locator(":enabled")).selectOption(list.categoryProperty.propertyId);
+  await closeGroupingControls(page, language);
   for (const layout of ["table", "board"]) {
     await call("updateView", { viewId, name: "Categories", kind: layout });
     await page.getByRole("heading", { name: "Category (1)", exact: true }).waitFor();
@@ -118,9 +126,10 @@ export async function exerciseRetainedCategoryGrouping({ page, query, rootPath, 
   const list = await call("applyDiscovery", { previewToken: grouped.previewToken });
   assert.equal(list.retainedProjects[0].projectId, projectId);
   await call("activate"); await page.reload();
-  const grouping = page.getByRole("region", { name: en ? "Grouping" : "Группировка", exact: true })
+  const grouping = (await openGroupingControls(page, language))
     .getByLabel(en ? "Group by" : "Группировать по", { exact: true });
   await grouping.and(page.locator(":enabled")).selectOption(list.categoryProperty.propertyId);
+  await closeGroupingControls(page, language);
   for (const layout of ["table", "board"]) {
     await call("updateView", { viewId, name: "Recovery", kind: layout });
     const group = page.getByRole("region", { name: en ? "No value" : "Без значения", exact: true });

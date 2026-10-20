@@ -1,3 +1,4 @@
+import { openGroupingControls, closeGroupingControls, waitForPresentationBounds } from "./runtime-presentation-controls.mjs";
 /* global window, document */
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";
@@ -53,6 +54,9 @@ try {
   const first = await query({ type: "workspace.create", name: "  Рабочие проекты  ", rootPath: source });
   const preview = await query({ type: "workspace.previewDiscovery", workspaceId: first.workspaceId, mode: "direct" });
   await query({ type: "workspace.applyDiscovery", workspaceId: first.workspaceId, previewToken: preview.previewToken });
+  const longProperty = await query({type:"workspace.createProperty",workspaceId:first.workspaceId,name:"Long authored property — Длинное название свойства ".repeat(3),propertyType:"text"});
+  const firstProject = (await query({type:"workspace.listProjects",workspaceId:first.workspaceId})).projects[0];
+  await query({type:"workspace.setTextValue",workspaceId:first.workspaceId,projectId:firstProject.projectId,propertyId:longProperty.propertyId,value:"Long text with exact whitespace. ".repeat(16)+"\nВторая строка"});
   const saved = await query({ type: "workspace.createView", workspaceId: first.workspaceId, name: "Authored Table", kind: "table" });
   const view = saved.views.find(v => v.name === "Authored Table"); assert.ok(view);
   await query({ type: "workspace.activateView", workspaceId: first.workspaceId, viewId: view.viewId });
@@ -95,7 +99,20 @@ try {
         await page.keyboard.press("Escape");
         await filters.and(page.locator(":focus")).waitFor();
         assert.equal(await filters.evaluate(el => el === document.activeElement), true);
-        checks.push({ contextualControls: true, language, theme, size });
+        for (const label of [language === "en" ? "Table layout" : "Настройки таблицы",
+          `${language === "en" ? "Column settings" : "Настройки столбца"}: ${"Long authored property — Длинное название свойства ".repeat(3)}`]) {
+          const entry = page.getByRole("button", {name:label,exact:true});
+          await entry.scrollIntoViewIfNeeded(); await entry.press("Enter");
+          await waitForPresentationBounds(page,label);
+          await page.screenshot({path:join(evidence,`${language}-${theme}-${size.width}-${label.includes(":")?"column":"table"}-settings.png`)});
+          await page.keyboard.press("Escape");
+          await entry.and(page.locator(":focus")).waitFor();
+        }
+        await openGroupingControls(page,language);
+        await waitForPresentationBounds(page,language === "en" ? "Grouping" : "Группировка");
+        await page.screenshot({path:join(evidence,`${language}-${theme}-${size.width}-grouping-settings.png`)});
+        await closeGroupingControls(page,language);
+        checks.push({ contextualControls: true, tableColumnGroupingPortals:true, language, theme, size });
         // Keyboard-only entry/return preserves scroll, mounted rows and focus.
         const settings = page.getByRole("button", { name: /^(Settings|Настройки)$/ });
         const scrollBefore = await scrollState();

@@ -7,11 +7,12 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { WorkspaceServiceClient } from "../src/renderer/workspace-service-client.js";
 import type { WorkspaceDesktopApi } from "../src/contracts/desktop-api.js";
-import { TextPropertiesTable } from "../src/renderer/components/TextPropertiesTable.js";
+
 import { translate } from "../src/renderer/localization.js";
 const browser = new Window();
-Object.assign(globalThis, { window: browser, document: browser.document, HTMLElement: browser.HTMLElement, Node: browser.Node, MutationObserver: browser.MutationObserver });
+Object.assign(globalThis, { window: browser, document: browser.document, HTMLElement: browser.HTMLElement, Element: browser.Element, CustomEvent: browser.CustomEvent, getComputedStyle: browser.getComputedStyle.bind(browser), NodeFilter: browser.NodeFilter, HTMLInputElement: browser.HTMLInputElement, ResizeObserver: browser.ResizeObserver, Node: browser.Node, MutationObserver: browser.MutationObserver });
 Object.defineProperty(globalThis, "navigator", { configurable: true, value: browser.navigator });
+const { TextPropertiesTable } = await import("../src/renderer/components/TextPropertiesTable.js");
 const { cleanup, render, screen, waitFor, within, fireEvent } = await import("@testing-library/react");
 const { default: userEvent } = await import("@testing-library/user-event");
 // @ts-expect-error Built service module intentionally has no declarations.
@@ -30,8 +31,9 @@ for (const language of ["en", "ru"] as const) {
     const user=userEvent.setup({document}),t=(key:Parameters<typeof translate>[1])=>translate(language,key);
     try {
       render(<TextPropertiesTable viewId={viewId} client={new WorkspaceServiceClient(api)} workspaceId={workspaceId} sourceId={sourceId} projects={projects} language={language} disabled={false}/>);
-      const controls=await screen.findByRole("region",{name:language==="en"?"Table layout":"Настройки таблицы"});
-      await user.click(within(controls).getByText(t("tableTitle")));
+      const entry = await screen.findByRole("button", {name:t("tableTitle")});
+      entry.focus(); await user.keyboard("{Enter}");
+      const controls=await screen.findByRole("dialog",{name:t("tableTitle")});
       const hide=await within(controls).findByLabelText(`${t("tableVisible")}: Notes`);
       await waitFor(()=>assert.equal((hide as HTMLInputElement).disabled,false));
       hide.focus();await user.keyboard(" ");
@@ -52,6 +54,18 @@ for (const language of ["en", "ru"] as const) {
       await waitFor(()=>assert.equal(query("getTableLayout",{viewId}).value.config.columns.find((c:{propertyId:string})=>c.propertyId===propertyId).wrap,false));
       await user.click(within(controls).getByLabelText(`${t("tableWrap")}: Notes`));
       await waitFor(()=>assert.equal(query("getTableLayout",{viewId}).value.config.columns.find((c:{propertyId:string})=>c.propertyId===propertyId).wrap,true));
+      await user.keyboard("{Escape}");
+      await waitFor(() => assert.equal(document.activeElement, entry));
+      const headerEntry = screen.getByRole("button", {name:`${t("tableColumnSettings")}: Notes`});
+      headerEntry.focus(); await user.keyboard("{Enter}");
+      const headerPanel = await screen.findByRole("dialog", {name:`${t("tableColumnSettings")}: Notes`});
+      assert.equal(within(headerPanel).queryByLabelText(`${t("tableWidth")}: ${t("projectName")}`), null);
+      await user.click(within(headerPanel).getByLabelText(`${t("tableVisible")}: Notes`));
+      await waitFor(() => assert.equal(screen.queryByRole("columnheader",{name:/Notes/}), null));
+      await waitFor(() => assert.equal(document.activeElement, entry));
+      await user.keyboard("{Enter}");
+      await user.click(screen.getByLabelText(`${t("tableVisible")}: Notes`));
+      await user.keyboard("{Escape}");
       const later=screen.getByRole("button",{name:`${t("tableRowLater")}: Alpha`});
       later.focus();await user.keyboard("{Enter}");
       await waitFor(()=>assert.deepEqual(screen.getAllByRole("row").slice(1).map(r=>r.textContent?.includes("Alpha")?"Alpha":"Beta"),["Beta","Alpha"]));
@@ -78,7 +92,7 @@ test('Table settings expose load retry and save failure without replacing commit
     await screen.findByRole('alert');
     failRead=false;await user.click(screen.getByRole('button',{name:translate('en','viewsRetry')}));
     await waitFor(()=>assert.equal(screen.queryByRole('alert'),null));
-    await user.click(screen.getByText('Table layout'));
+    await user.click(screen.getByRole('button',{name:'Table layout'}));
     assert.equal(screen.getByText('Name').classList.contains('property-authored'),false, 'Built-in Name is not an authored property');
     const width=screen.getByRole('slider') as HTMLInputElement;
     fireEvent.change(width,{target:{value:'350'}});fireEvent.keyUp(width,{key:'ArrowRight'});
@@ -107,7 +121,7 @@ test('a source metadata change arriving during a pending layout reply refreshes 
   const user = userEvent.setup({document});
   try {
     render(<Harness/>); await waitFor(() => assert.ok(screen.queryByText('Loading Table layout...') === null));
-    await user.click(screen.getByText('Table layout'));
+    await user.click(screen.getByRole('button',{name:'Table layout'}));
     const width = screen.getByRole('slider') as HTMLInputElement;
     fireEvent.change(width, {target:{value:'350'}}); fireEvent.keyUp(width,{key:'ArrowRight'});
     await screen.findByText('Saving Table layout...');
@@ -116,4 +130,27 @@ test('a source metadata change arriving during a pending layout reply refreshes 
     await waitFor(() => assert.equal(width.value, '224'));
     await waitFor(() => assert.ok(screen.queryByText('Saving Table layout...') === null));
   } finally { cleanup(); }
+});
+
+test('a rejected header width save stays visible in the column popup and preserves committed width', async () => {
+  const {TableLayoutControls,useTableLayout}=await import('../src/renderer/components/TableLayout.js');
+  const workspaceId='11111111-1111-4111-8111-111111111111',viewId='22222222-2222-4222-8222-222222222222';
+  const committed={columns:[{propertyId:'name',hidden:false,width:224,wrap:false}],rowOrder:[]};
+  const client=new WorkspaceServiceClient({onWorkspaceChange:()=>()=>{},workspace:async(input:{type:string})=>input.type==='workspace.getTableLayout'
+    ? {ok:true,value:{workspaceId,viewId,config:committed}}
+    : {ok:false,error:{code:'storage',message:'Rejected'}}} as unknown as WorkspaceDesktopApi);
+  function Harness(){const state=useTableLayout(client,workspaceId,viewId);return <TableLayoutControls propertyId="name" state={state} fields={[{propertyId:'name',name:'Name',text:false}]} language="en" disabled={false}/>;}
+  const user=userEvent.setup({document});
+  try {
+    render(<Harness/>);
+    await user.click(screen.getByRole('button',{name:'Column settings: Name'}));
+    const popup=screen.getByRole('dialog',{name:'Column settings: Name'});
+    const width=within(popup).getByRole('slider') as HTMLInputElement;
+    await waitFor(()=>assert.equal(width.closest('fieldset')?.disabled,false));
+    fireEvent.change(width,{target:{value:'350'}});fireEvent.keyUp(width,{key:'ArrowRight'});
+    await within(popup).findByRole('alert');
+    await waitFor(()=>assert.equal(width.value,'224'));
+    await user.click(within(popup).getByRole('button',{name:translate('en','viewsRetry')}));
+    await waitFor(()=>assert.equal(within(popup).queryByRole('alert'),null));
+  } finally {cleanup();}
 });

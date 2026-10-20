@@ -141,6 +141,7 @@ function TextPropertiesContent({ viewId, layout = "table", hideReveal, client, w
     return () => { listVersion.current++; lifetime.current++; unsubscribe(); };
   }, [client, workspaceId, sourceId]);
   const boardState = useBoardLayout(client, workspaceId, layout === "board" ? viewId : undefined);
+  const layoutTrigger = useRef<HTMLButtonElement>(null);
   const tableState = useTableLayout(client, workspaceId, layout === "table" ? viewId : undefined);
   const fields = [{propertyId: "name", name: t("projectName"), text: false}, ...(categoryProperty ? [{propertyId:categoryProperty.propertyId, name:categoryProperty.name ?? t("discoveryCategory"), text:false}] : []), ...(snapshot?.definitions.map(p => ({propertyId:p.propertyId, name:p.name, text:p.propertyType === "text"})) ?? [])];
   const columns = tableColumns(tableState.config, fields);
@@ -176,7 +177,7 @@ function TextPropertiesContent({ viewId, layout = "table", hideReveal, client, w
     const children = Children.toArray(fragment.props.children) as ReactElement<Record<string, unknown>>[];
     return <>{columns.filter(c => !c.hidden).map(c => {
       const cell = children.find(child => child.props?.["data-column-id"] === c.propertyId);
-      return cell ? cloneElement(cell, {style:{width:c.width}, className:`${cell.props.className ?? ""} ${fields.find(f => f.propertyId === c.propertyId)?.text ? c.wrap ? "table-text-wrap" : "table-text-nowrap" : ""}`}) : null;
+      return cell ? cloneElement(cell, {children: !card ? <>{cell.props.children as ReactNode}<TableLayoutControls propertyId={c.propertyId} layoutTrigger={layoutTrigger} state={tableState} fields={fields} language={language} disabled={disabled || loadError || loading}/></> : cell.props.children, style:{width:c.width}, className:`${cell.props.className ?? ""} ${fields.find(f => f.propertyId === c.propertyId)?.text ? c.wrap ? "table-text-wrap" : "table-text-nowrap" : ""}`}) : null;
     })}{children.filter(child => !child.props?.["data-column-id"])}</>;
   };
   const moveRow = (id: string, target: string) => {
@@ -359,12 +360,13 @@ function TextPropertiesContent({ viewId, layout = "table", hideReveal, client, w
       onResults={ids => setFilteredIds({ viewId, ids })} onGroups={(groups,propertyId,refreshToken) => setGrouped({viewId,groups,propertyId,refreshToken})} />
     }
     {viewId && layout === "board" && <BoardLayoutControls state={boardState} fields={fields} groups={grouped?.viewId === viewId ? grouped.groups : null} groupPropertyId={grouped?.viewId === viewId ? grouped.propertyId : null} language={language} disabled={disabled || loadError || loading}/>}
-    {viewId && layout === "table" && <TableLayoutControls state={tableState} fields={fields} language={language} disabled={disabled || loadError || loading}/> }
-    {viewId && <ViewGrouping client={client} workspaceId={workspaceId} viewId={viewId} language={language} snapshot={snapshot} categoryProperty={categoryProperty} groups={grouped?.viewId===viewId ? grouped.groups : null} groupPropertyId={grouped?.viewId===viewId ? grouped.propertyId : null} disabled={disabled||loadError} />}
+    <div className="table-presentation-toolbar">{viewId && layout === "table" && <TableLayoutControls layoutTrigger={layoutTrigger} state={tableState} fields={fields} language={language} disabled={disabled || loadError || loading}/> }
+    {viewId && <ViewGrouping contextual={layout === "table"} client={client} workspaceId={workspaceId} viewId={viewId} language={language} snapshot={snapshot} categoryProperty={categoryProperty} groups={grouped?.viewId===viewId ? grouped.groups : null} groupPropertyId={grouped?.viewId===viewId ? grouped.propertyId : null} disabled={disabled||loadError} />}
+    </div>
     {loading && <StatusMessage kind="info" title={t("propertiesLoading")} />}
     {loadError && <><StatusMessage kind="error" title={t("propertiesLoadError")} />
       <button type="button" className="workspace-button workspace-button--secondary" disabled={disabled || loading} onClick={() => void load()}>{t("propertiesRetry")}</button></>}
-    <button ref={trigger} type="button" className="workspace-button workspace-button--secondary" disabled={disabled || loading || loadError || draft !== null}
+    <div className="property-create-controls"><button ref={trigger} type="button" className="workspace-button workspace-button--secondary" disabled={disabled || loading || loadError || draft !== null}
       onClick={() => { setMessage(null); creationType.current = "text"; setDraft({ propertyId: null, name: "", originalName: "", propertyType: "text" }); }}>{t("createTextProperty")}</button>
     <button ref={numberTrigger} type="button" className="workspace-button workspace-button--secondary" disabled={disabled || loading || loadError || draft !== null}
       onClick={() => { setMessage(null); creationType.current = "number"; setDraft({ propertyId: null, name: "", originalName: "", propertyType: "number" }); }}>{t("createNumberProperty")}</button>
@@ -374,6 +376,7 @@ function TextPropertiesContent({ viewId, layout = "table", hideReveal, client, w
       onClick={() => { setMessage(null); creationType.current = "single_select"; setDraft({ propertyId: null, name: "", originalName: "", propertyType: "single_select" }); }}>{t("createSelectProperty")}</button>
     <button ref={multiSelectTrigger} type="button" className="workspace-button workspace-button--secondary" disabled={disabled || loading || loadError || draft !== null}
       onClick={() => { setMessage(null); creationType.current = "multi_select"; setDraft({ propertyId: null, name: "", originalName: "", propertyType: "multi_select" }); }}>{t("createMultiSelectProperty")}</button>
+    </div>
     <div ref={removalStatus} tabIndex={-1}>
       <details><summary>{t("metadataManagement")}</summary>
         <ul>{snapshot?.definitions.map(property => <li key={property.propertyId}><span className="property-authored">{property.name}</span>

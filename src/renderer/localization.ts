@@ -68,6 +68,7 @@ const english = {
   groupAssignmentError: "Could not confirm the group change. Refresh actual values before retrying.",
 
   tableTitle: "Table layout",
+  tableColumnSettings: "Column settings",
   tableVisible: "Visible",
   tableColumnEarlier: "Move column earlier",
   tableColumnLater: "Move column later",
@@ -757,6 +758,7 @@ const russian: Record<keyof typeof english, string> = {
   groupAssignmentError: "Не удалось подтвердить смену группы. Обновите значения перед повторной попыткой.",
 
   tableTitle: "Настройки таблицы",
+  tableColumnSettings: "Настройки столбца",
   tableVisible: "Показывать",
   tableColumnEarlier: "Переместить столбец раньше",
   tableColumnLater: "Переместить столбец позже",

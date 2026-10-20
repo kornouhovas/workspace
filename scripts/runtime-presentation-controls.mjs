@@ -1,0 +1,26 @@
+// The immutable baseline has inline grouping; current Table uses a Radix popover.
+export async function openGroupingControls(page, language = "en") {
+  const label = language === "en" ? "Grouping" : "Группировка";
+  const trigger = page.getByRole("button", {name: label, exact: true});
+  const panel = page.getByRole("region", {name: label, exact: true});
+  await trigger.or(panel).first().waitFor();
+  if (await trigger.count() && await trigger.getAttribute("aria-expanded") !== "true") {
+    await trigger.scrollIntoViewIfNeeded();
+    await trigger.press("Enter");
+  }
+  return panel;
+}
+export async function closeGroupingControls(page, language = "en") {
+  const trigger = page.getByRole("button", {name: language === "en" ? "Grouping" : "Группировка", exact: true});
+  if (await trigger.count() && await trigger.getAttribute("aria-expanded") === "true") await page.keyboard.press("Escape");
+}
+
+// Observe final Radix collision placement without authoring focus or scrolling.
+export async function waitForPresentationBounds(page, label) {
+  await page.waitForFunction(label => {
+    const panel = [...globalThis.document.querySelectorAll('[role="dialog"]')].find(element => element.getAttribute("aria-label") === label);
+    if (!panel) return false;
+    const bounds = panel.getBoundingClientRect();
+    return bounds.width > 0 && bounds.left >= 0 && bounds.right <= globalThis.innerWidth && bounds.top >= 0 && bounds.bottom <= globalThis.innerHeight;
+  }, label);
+}

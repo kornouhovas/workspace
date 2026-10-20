@@ -81,3 +81,10 @@ Versions are pinned in the npm lockfile and retain their dependency MIT notices.
 The UI is a local implementation; no additional bb source was copied.
 API references: [Dropdown Menu](https://www.radix-ui.com/primitives/docs/components/dropdown-menu)
 and [Popover](https://www.radix-ui.com/primitives/docs/components/popover).
+
+## Issue 52 contextual Table presentation
+
+Table/column and grouping popovers reuse the pinned Radix Popover and semantic
+styles from #51. Header actions and focus fallback are local implementations; no
+additional bb module or dependency is copied. Existing typed layout/grouping
+services continue to own saved presentation and value assignment.

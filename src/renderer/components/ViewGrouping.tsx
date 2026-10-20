@@ -1,3 +1,4 @@
+import { PresentationPopover } from "./PresentationPopover.js";
 import { useEffect, useRef, useState } from "react";
 import { defaultGroupSettings, type GroupSettings, type ViewGroup, type ViewGroupingConfig } from "../../contracts/view-grouping.js";
 import type { CategoryProperty } from "../../contracts/workspaces.js";
@@ -16,11 +17,19 @@ interface Props {
     groups: ViewGroup[] | null;
     groupPropertyId?: string | null;
     disabled: boolean;
+    contextual?: boolean;
 }
 export function ViewGrouping(props: Props) { return <GroupingContent key={`${props.workspaceId}:${props.viewId}`} {...props}/>; }
-function GroupingContent({ client, workspaceId, viewId, language, snapshot, categoryProperty, groups, groupPropertyId, disabled }: Props) {
+function GroupingContent({ client, workspaceId, viewId, language, snapshot, categoryProperty, groups, groupPropertyId, disabled, contextual }: Props) {
     const t = (key: TranslationKey) => translate(language, key);
     const [config, setConfig] = useState<ViewGroupingConfig | null>(null), [pending, setPending] = useState(false), [loading, setLoading] = useState(true), [error, setError] = useState(false);
+    const [open, setOpen] = useState(false);
+    const savedFocus = useRef<HTMLElement | null>(null);
+    useEffect(() => {
+        if (pending || loading) return;
+        const element = savedFocus.current; savedFocus.current = null;
+        if (element?.isConnected && !element.matches(":disabled") && document.activeElement === document.body) element.focus();
+    }, [pending, loading]);
     const version = useRef(0), saving = useRef(false), reloadAfterSave = useRef(false);
     const properties = [{ id: "name", name: t("projectName") }, ...(snapshot?.definitions.map(p => ({ id: p.propertyId, name: p.name })) ?? []), ...(categoryProperty ? [{ id: categoryProperty.propertyId, name: categoryProperty.name ?? t("discoveryCategory") }] : [])];
     const load = async () => {
@@ -51,6 +60,7 @@ function GroupingContent({ client, workspaceId, viewId, language, snapshot, cate
     const save = async (next: ViewGroupingConfig) => {
         if (saving.current || disabled)
             return;
+        savedFocus.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
         saving.current = true;
         const request = ++version.current;
         setPending(true);
@@ -92,9 +102,9 @@ function GroupingContent({ client, workspaceId, viewId, language, snapshot, cate
         [ordered[index], ordered[target]] = [ordered[target], ordered[index]];
         change({ ...setting, order: "manual", manualOrder: [...ordered, ...setting.manualOrder.filter(k => !ordered.includes(k))] });
     };
-    return <section className="view-grouping" aria-label={t("groupTitle")} aria-busy={loading || pending}>
+    const controls = <section className="view-grouping" aria-label={t("groupTitle")} aria-busy={loading || pending}>
     <h3>{t("groupTitle")}</h3><p>{t("groupHint")}</p>
-    <fieldset disabled={disabled || pending || loading || !config} onKeyDown={event => { if (event.key === "Escape" && !pending) {
+    <fieldset disabled={disabled || pending || loading || !config} onKeyDown={event => { if (!contextual && event.key === "Escape" && !pending) {
         event.preventDefault();
         void load();
     } }}>
@@ -121,4 +131,8 @@ function GroupingContent({ client, workspaceId, viewId, language, snapshot, cate
     {error && <><StatusMessage kind="error" title={t("groupError")}/><button type="button" className="workspace-button workspace-button--secondary" disabled={pending || loading} onClick={() => void load()}>{t("viewsRetry")}</button>
       <button type="button" className="workspace-button workspace-button--secondary" disabled={pending || loading || disabled} onClick={() => void save({ propertyId: null, settings: [] })}>{t("groupReset")}</button></>}
   </section>;
+    return contextual ? <div className="table-grouping-controls"><PresentationPopover label={t("groupTitle")} onOpenChange={setOpen}>{controls}</PresentationPopover>
+      {!open && loading && <StatusMessage kind="info" title={t("groupLoading")}/>}
+      {!open && error && <StatusMessage kind="error" title={t("groupError")}/>}
+    </div> : controls;
 }
