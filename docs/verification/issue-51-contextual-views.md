@@ -160,3 +160,35 @@ documentation. Application, dependencies, migrations, native resources and
 build/package source inputs remain those of `23c7fb4`; successful installation
 and unaffected desktop receipts retain that actual SHA. Current CI and delivery
 status belongs to the GitHub checkpoint.
+
+
+## Supported-host performance renewal and baseline control compatibility
+
+Focused run [39416296014](https://github.com/kornouhovas/workspace/actions/runs/39416296014),
+attempt 1 at `cfefb0f73bc42288b57a1b56c1ae9789885b6abf`, passed macOS 14:
+all 32 strict measurements, the native clipping regression, four normal shutdowns,
+backend exits and cleanup. Initial startup was 3,822.4ms; conservative peak memory
+was 956,710,912 bytes. This is an inspected receipt for that SHA, not a later run.
+
+Windows latest completed all 32 functional measurements, the native regression,
+four normal shutdowns, backend exits and cleanup, with no clipping deadlock.
+It failed strict initial startup (34,011.8ms) and grouped Table first filter
+(1,736.9ms). Its initial connection alone took 8,982.4ms; later starts were near
+2,200ms. These observations separate the timing failures from clipping but do not
+identify a unique host, service or renderer cause. Renew the failed Windows
+original with the existing separate service profile, then the unchanged
+unprofiled strict command; diagnostic profiles cannot satisfy acceptance.
+
+A subsequent harness review found that the immutable `d925f8b7` performance
+baseline still exposes the original Current view select. Runtime view activation
+now selects the existing control shape and performs exactly one action: the same
+exact-name tab click for the current application, or the original selectOption
+for the historical baseline. There is no retry or fallback after activation.
+A native fixture failed before the repair and passed both control paths afterwards
+(2/2 tests including clipping), asserting single-action behavior. Independent
+Standards and Spec reviewers found no actionable issues. Activation remains before
+interaction timing; startup timing, readiness, limits and lifecycle are unchanged.
+Application, dependency and build inputs remain those of `23c7fb4`. The inspected
+macOS strict receipt above remains attributed to `cfefb0f7`; the current-app action
+is equivalent. Renew the changed native regression and historical-control consumer,
+and retain the separately failed Windows receipt until its original passes.

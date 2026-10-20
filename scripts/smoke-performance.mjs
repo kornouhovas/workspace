@@ -1,3 +1,4 @@
+import { activateRuntimeView } from "./runtime-view-controls.mjs";
 import { usableRuntimeViewProjection } from "./runtime-view-readiness.mjs";
 import { setInterfaceLanguage } from "./runtime-settings.mjs";
 /* global window, document, requestAnimationFrame, DataTransfer */
@@ -140,7 +141,7 @@ try {
     assert.equal((await command("listTextProperties")).definitions.length, 20);
     for (const kind of ["table", "board"]) {
       const viewId = source.views.find(v => v.kind === kind).viewId;
-      await page.getByRole("tab", { name: (await command("listViews")).views.find(view => view.viewId === viewId).name, exact: true }).click();
+      await activateRuntimeView(page, (await command("listViews")).views.find(view => view.viewId === viewId));
       await page.locator(kind === "board" ? ".project-board" : ".project-table").first().waitFor();
       const expected = (await command("queryView", { viewId, archived: false })).projectIds;
       await ready(expected); activeIds = expected;

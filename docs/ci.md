@@ -740,3 +740,13 @@ separately retained startup/filter/assignment target misses. All original limits
 normal shutdown and owned cleanup remain. The original desktop and installer
 runs retain their own SHA; apply evidence reuse only after reviewing unchanged
 application/build inputs and inspecting every missing or renewed receipt.
+
+
+After readiness renewal `39416296014`, retain the inspected macOS 14 strict
+receipt at `cfefb0f7`; only Windows latest failed startup/filter timing. Dispatch
+`platform: windows-latest`, `candidate_only: true`, `profile_service: true` to
+retain a separate public-service diagnosis followed by the original unprofiled
+strict command. Historical failures remain evidence, and profiling is not
+acceptance. The runtime activation helper supports both the current tabs and the
+immutable baseline select with one action and no replay; its native regression
+renews both control paths without changing measured targets or application inputs.

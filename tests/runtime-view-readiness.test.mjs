@@ -9,8 +9,9 @@ import { fileURLToPath } from "node:url";
 import { _electron } from "playwright-core";
 import { closeElectron } from "../scripts/runtime-lifecycle.mjs";
 import { usableRuntimeViewProjection } from "../scripts/runtime-view-readiness.mjs";
+import { activateRuntimeView } from "../scripts/runtime-view-controls.mjs";
 
-test("view readiness excludes clipped fields but requires every visible editor and the complete ordered projection", async () => {
+async function withPage(run) {
   const profile = await mkdtemp(join(tmpdir(), "runtime-view-readiness-"));
   const app = await _electron.launch({ executablePath: createRequire(import.meta.url)("electron"),
     args: [fileURLToPath(new URL("./fixtures/rename-editor-readiness-electron.cjs", import.meta.url))],
@@ -19,6 +20,16 @@ test("view readiness excludes clipped fields but requires every visible editor a
   try {
     const page = await app.firstWindow();
     await page.waitForURL(await app.evaluate(() => globalThis.renameEditorInitialLoad));
+    await run(page);
+  } catch (error) { primary = error; }
+  try { await closeElectron(app); await rm(profile, { recursive: true, force: true }); }
+  catch (error) { primary ??= error; }
+  if (primary) throw primary;
+}
+
+
+test("view readiness excludes clipped fields but requires every visible editor and the complete ordered projection", async () => {
+  await withPage(async page => {
     await page.setViewportSize({ width: 1024, height: 720 });
     await page.setContent(`<style>body{margin:0}#clip{position:absolute;left:300px;top:100px;width:200px;height:100px;overflow:auto}
       #columns{display:flex;width:800px}.row{flex:0 0 200px;height:80px}</style>
@@ -58,8 +69,29 @@ test("view readiness excludes clipped fields but requires every visible editor a
     assert.equal(await page.evaluate(usableRuntimeViewProjection, ids), true, "Vertical clipping also permits fully hidden skeletons");
     await page.evaluate(() => { document.querySelector('[data-project-id="edge"]').setAttribute("data-fields-ready", "false"); });
     assert.equal(await page.evaluate(usableRuntimeViewProjection, ids), false, "A partially visible bottom edge still requires editors");
-  } catch (error) { primary = error; }
-  try { await closeElectron(app); await rm(profile, { recursive: true, force: true }); }
-  catch (error) { primary ??= error; }
-  if (primary) throw primary;
+  });
+});
+
+test("runtime activation supports current tabs and the immutable baseline select with one action each", async () => {
+  await withPage(async page => {
+    page.setDefaultTimeout(500);
+    await page.setContent('<label>Current view <select><option value="table">Table</option><option value="board">Board</option></select></label>');
+    await page.evaluate(() => {
+      globalThis.activations = [];
+      document.querySelector("select").addEventListener("change", event => globalThis.activations.push(event.target.value));
+    });
+    await activateRuntimeView(page, { viewId: "board", name: "Board" });
+    assert.deepEqual(await page.evaluate(() => globalThis.activations), ["board"]);
+    await page.setContent('<div role="tablist" aria-label="Current view"><button role="tab" aria-selected="true">Table</button><button role="tab" aria-selected="false">Board</button></div>');
+    await page.evaluate(() => {
+      globalThis.activations = [];
+      document.querySelectorAll('[role="tab"]').forEach(tab => tab.addEventListener("click", () => {
+        document.querySelectorAll('[role="tab"]').forEach(item => item.setAttribute("aria-selected", String(item === tab)));
+        globalThis.activations.push(tab.textContent);
+      }));
+    });
+    await activateRuntimeView(page, { viewId: "board", name: "Board" });
+    assert.deepEqual(await page.evaluate(() => globalThis.activations), ["Board"]);
+    assert.equal(await page.getByRole("tab", { name: "Board", selected: true }).count(), 1);
+  });
 });

@@ -42,7 +42,8 @@ Local implementation and review evidence: [verification report](../verification/
 Implementation and both source-review axes are complete. Local focused checks,
 renewed shell, builds and package resources pass. Full-run native fixture and
 strict performance failures have baseline reproductions; packaged/runtime and
-supported-platform acceptance remain open as recorded in the report. The next
-action is authorized publication of the concrete candidate followed by full
-supported-host CI, installer and representative-scale acceptance. No next issue
+supported-platform acceptance remain open as recorded in the report. Publication is authorized and underway. Both installer routes pass; full desktop
+acceptance is finishing. macOS strict performance passes at `cfefb0f7`; Windows
+startup/filter target misses require the separate diagnostic and original strict
+renewal recorded in the report. Preserve each receipt’s actual SHA. No next issue
 is selected and no release is authorized.
