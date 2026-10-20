@@ -79,3 +79,17 @@ then retaining their existing lifecycle. Preserve labels, first pointer/Enter/Sp
 activation, repeated opening, Escape/outside focus and removed-header fallback.
 Use hosted first-grouping profiles to test the proposed performance effect; an
 isolated mount-cost reduction alone does not establish the remaining latency cause.
+
+The compact-root experiment did not resolve hosted first grouping (709 ms), so
+restore the original popover implementation and retain its expanded keyboard
+coverage. Altered-scheduling diagnostics still missed the interaction target
+(421 ms), so do not introduce a production scheduling change from that result.
+
+The retained backend repair indexes interpretation paths and native alias
+candidate buckets, preserving original order, every alias, mutable retained-state
+checks, continuously matching historical exceptions and reservations. Scanner,
+identity authority, reconciliation writes and transactional verification stay
+unchanged. Retain inherited discovery/recovery/mode/reconciliation/native tests;
+add thousand-record ordering/input preservation, replaced history, alias birth
+evidence, missing-path and reservation cases. Compare seeded mixed histories
+against the original algorithm. Hosted strict acceptance remains required.

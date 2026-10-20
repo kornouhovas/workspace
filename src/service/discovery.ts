@@ -302,8 +302,31 @@ export function interpretProjects(scan: DiscoveryScan, records: ProjectAssociati
   const entries = scan.entries.map((entry) => ({ ...entry }));
   const additions: { relativePath: string; nativeIdentity: string }[] = [];
   const identities = records.map((row) => storedIdentity(row));
+  // Index candidates without choosing an owner: every alias remains in its
+  // bucket and mutable retained states are still checked at the point of use.
+  const alias = (identity: NativeIdentity) => JSON.stringify([identity.dev, identity.ino]);
+  const childrenByPath = new Map<string, DiscoverySnapshot["children"][number]>();
+  const entriesByPath = new Map<string, DiscoveryEntry>();
+  const retainedByPath = new Map<string, ProjectAssociation[]>();
+  const recordsByAlias = new Map<string, { row: ProjectAssociation; identity: NativeIdentity }[]>();
+  const childrenByAlias = new Map<string, DirectoryObservation[]>();
+  for (const child of scan.snapshot.children) {
+    if (!childrenByPath.has(child.relativePath)) childrenByPath.set(child.relativePath, child);
+    if (child.kind !== "directory") continue;
+    const key = alias(child.identity), bucket = childrenByAlias.get(key) ?? [];
+    bucket.push(child); childrenByAlias.set(key, bucket);
+  }
+  for (const entry of entries) if (!entriesByPath.has(entry.relativePath)) entriesByPath.set(entry.relativePath, entry);
+  for (const row of retained) {
+    const bucket = retainedByPath.get(row.relativePath) ?? [];
+    bucket.push(row); retainedByPath.set(row.relativePath, bucket);
+  }
+  records.forEach((row, index) => {
+    const identity = identities[index], key = alias(identity), bucket = recordsByAlias.get(key) ?? [];
+    bucket.push({row, identity}); recordsByAlias.set(key, bucket);
+  });
   for (const row of retained.filter((row) => row.associationState !== "replaced")) {
-    const child = scan.snapshot.children.find((child) => child.relativePath === row.relativePath);
+    const child = childrenByPath.get(row.relativePath);
     if (child?.kind === "excluded" && child.reason === "unresolved") {
       // Grouped scanning suppresses children when parent evidence is insufficient.
       // This is an ambiguous association, not a user or policy exclusion.
@@ -320,8 +343,8 @@ export function interpretProjects(scan: DiscoveryScan, records: ProjectAssociati
     }
   }
   for (const child of scan.snapshot.children.filter((child): child is DirectoryObservation => child.kind === "directory")) {
-    const entry = entries.find((entry) => entry.relativePath === child.relativePath)!;
-    const current = retained.find((row) => row.relativePath === child.relativePath && row.associationState !== "replaced");
+    const entry = entriesByPath.get(child.relativePath)!;
+    const current = retainedByPath.get(child.relativePath)?.find((row) => row.associationState !== "replaced");
     const reliable = reliableIdentity(child.identity);
     const continuouslyMatching = reliable && current !== undefined &&
       (current.associationState === "active" || current.associationState === "excluded") &&
@@ -329,14 +352,12 @@ export function interpretProjects(scan: DiscoveryScan, records: ProjectAssociati
     const collision = reservations.some((row) => !(row.associationState === "replaced" && continuouslyMatching) &&
       (row.relativePath === child.relativePath ||
       (storedIdentity(row).dev === child.identity.dev && storedIdentity(row).ino === child.identity.ino))) ||
-      records.some((row, index) => row.id !== current?.id &&
+      (recordsByAlias.get(alias(child.identity)) ?? []).some(({row, identity}) => row.id !== current?.id &&
       // Retired evidence alone cannot invalidate a continuously matching active
       // or excluded association established by recovery. New discovery stays conservative.
       !(row.associationState === "replaced" && continuouslyMatching) &&
-      identities[index].dev === child.identity.dev && identities[index].ino === child.identity.ino &&
-      (row.relativePath !== child.relativePath || sameIdentity(identities[index], child.identity))) ||
-      scan.snapshot.children.some((other) => other.relativePath !== child.relativePath && other.kind === "directory" &&
-        other.identity.dev === child.identity.dev && other.identity.ino === child.identity.ino);
+      (row.relativePath !== child.relativePath || sameIdentity(identity, child.identity))) ||
+      (childrenByAlias.get(alias(child.identity)) ?? []).some((other) => other.relativePath !== child.relativePath);
     let unresolved = !reliable || collision;
     if (current) {
       const previous = storedIdentity(current);

@@ -361,3 +361,46 @@ readiness, package and platform assertions. Final route controls passed 50/50.
 Both independent diagnostic reviews found zero findings. The discovery-index
 application repair remains a separate local candidate; it is not part of this
 scheduling-diagnostic comparison's published application inputs.
+
+## Indexed interpretation candidate and explicit readiness observations
+
+Altered-scheduling diagnostic `39475640079`, attempt 1 at `f58f415a`, completed
+32 scenarios, four normal quits/backend exits/cleanup and four batches/252 records.
+Every owned window recorded original throttling true and diagnostic throttling
+false; the page was visible/focused. First Table grouping still missed at 421.3 ms
+(mutation IPC 2.5, projection 20.4; first stabilized paint 365.1, final 421.3 ms),
+with final direct/grouped diagnostic memory misses. This is not a scheduling repair
+or acceptance. Restore the original compact popover source from `0fce55b0`; keep
+its additional EN/RU Enter/Escape/focus/Space coverage.
+
+Actual retained backend interpretation now indexes first path matches and complete
+dev/ino candidate buckets rather than scanning every record for every child.
+Original record order, mutable retained copies, every alias, birth evidence,
+continuously matching historical exceptions and reservations remain. No scanner,
+filesystem authorization, reconciliation write or storage contract changes.
+The isolated 1000-record loop observed median 46.5 to 4.9 ms; its 44 ms candidate
+outlier is retained. Five hundred seeded mixed-history/alias/exclusion/reservation
+comparisons matched `2564a02b` exactly. Four new domain cases preserve complete
+ordering/input immutability, historical shadowing/recovery exceptions, ambiguous
+birth aliases, missing-path non-reattachment and reservations. Rebuilt real-service,
+worker and native filesystem regressions passed 326/326; Table/grouping/assignment
+UI cases passed 60/60 after restoring the original popover. Both reviews found
+zero findings, including incremental restoration and observation changes.
+
+Fresh package/artifact verification passed. Real local indexed-package diagnostic
+`/tmp/issue52-indexed-local` completed all 32 cases, four normal quits/backend exits,
+cleanup and four batches/252 records; original backend hash was
+`859627690b0a7b9023f2cb1463861e44586f6b95f38c5392f6ab5b23e6a16106`.
+These local diagnostic results do not establish hosted strict acceptance.
+Trace-only readiness history records at most 64 timestamps, projection/endpoint
+booleans and pending counts to distinguish waiting for DOM from waiting for the
+original four paint frames. Strict short-circuiting, readiness, deadline and frame
+pairs remain unchanged; no history is allocated for strict execution. All 14 native
+readiness/guard controls passed after the new observations.
+
+The reviewed indexed application candidate's complete local `npm run test:all`
+passed: 3203 tests, 3177 passed, 26 platform skips, zero failures (130.3 seconds;
+`/tmp/issue52-indexed-full.log`). The existing fresh build/package was unchanged.
+Earlier failed full runs remain recorded separately; this is an actual later full
+pass, not relabeling their results. Hosted platform/installer and original strict
+performance acceptance still require renewed evidence for this application change.

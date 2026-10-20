@@ -114,7 +114,7 @@ async function recordUi(source, scenario, limit = report.limits.interaction) {
     });
     const renderer = await page.evaluate(() => ({atEvent:window.__workspacePerformanceEnvironment,
       atObservation:{visibility:document.visibilityState,focused:document.hasFocus()}}));
-    report.measurements[report.measurements.length - 1].diagnostic = {eventWallTime,...native,renderer};
+    report.measurements[report.measurements.length - 1].diagnostic = {eventWallTime,...native,renderer,inspections:lastReadyTiming.inspections};
   }
 }
 async function ready(ids, endpoint) {

@@ -8,8 +8,16 @@ function stabilizeProjection({ ids, timeout, trace, endpoint = [] }, usable, pai
   return (async () => {
     const observationStartedAt = performance.now();
     const deadline = observationStartedAt + timeout;
+    const inspections = trace ? [] : undefined;
     const ready = async () => {
-      while (!usable(ids) || !endpoint.every(({selector,text}) => [...globalThis.document.querySelectorAll(selector)].some(element => text === undefined || element.textContent.trim() === text))) {
+      while (true) {
+        const projectionReady = usable(ids);
+        const endpointReady = projectionReady && endpoint.every(({selector,text}) => [...globalThis.document.querySelectorAll(selector)].some(element => text === undefined || element.textContent.trim() === text));
+        if (trace) {
+          inspections.push({at:performance.now(),projectionReady,endpointReady,pendingCount:globalThis.document.querySelectorAll('[aria-busy="true"]').length});
+          if (inspections.length > 64) inspections.shift();
+        }
+        if (projectionReady && endpointReady) return;
         if (performance.now() >= deadline) throw new Error("Runtime projection readiness timed out");
         await new Promise(done => globalThis.requestAnimationFrame(done));
       }
@@ -22,7 +30,7 @@ function stabilizeProjection({ ids, timeout, trace, endpoint = [] }, usable, pai
     await ready();
     const paintedAt = await painted();
     if (trace) performance.mark("workspace-performance-ready");
-    return { observationStartedAt, firstPaintedAt, paintedAt };
+    return { observationStartedAt, firstPaintedAt, paintedAt, ...(trace ? {inspections} : {}) };
   })();
 }
 // Playwright serializes functions without their module imports. Embed only our

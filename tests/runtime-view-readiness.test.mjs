@@ -130,7 +130,10 @@ test("event-to-paint timing includes delayed committed work and excludes later d
       });
     });
     await page.getByRole("button", { name: "Apply", exact: true }).press("Enter");
-    const readyTiming = await waitForRuntimeProjection(page, ["one"]);
+    const readyTiming = await waitForRuntimeProjection(page, ["one"], true);
+    assert.ok(readyTiming.inspections.length > 0 && readyTiming.inspections.length <= 64);
+    assert.ok(readyTiming.inspections.some(item => !item.projectionReady && item.pendingCount > 0));
+    assert.ok(readyTiming.inspections.at(-1).projectionReady && readyTiming.inspections.at(-1).endpointReady);
     const before = await readRuntimeInteraction(page, readyTiming);
     await new Promise(done => setTimeout(done, 250)); // Deliberate driver delay after completed renderer work.
     const after = await readRuntimeInteraction(page, readyTiming);
