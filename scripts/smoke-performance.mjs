@@ -146,7 +146,7 @@ try {
       const expected = (await command("queryView", { viewId, archived: false })).projectIds;
       await ready(expected); activeIds = expected;
       for (let sample = 0; sample < 3; sample++) {
-        const profiler = profileFilters && kind === "board" && sample === 1 ? await page.context().newCDPSession(page) : undefined;
+        const profiler = profileFilters && ((kind === "table" && sample === 0) || (kind === "board" && sample === 1)) ? await page.context().newCDPSession(page) : undefined;
         if (profiler) { await profiler.send("Profiler.enable"); await profiler.send("Profiler.start"); }
         const text = sample % 2 ? "Project 0" : "Project 00";
         const search = page.getByLabel("Search project names", { exact: true });
@@ -157,13 +157,15 @@ try {
         await ready(ids); await recordUi(source.mode, `${kind} filter ${sample}`);
         if (profiler) {
           const { profile } = await profiler.send("Profiler.stop");
-          await writeFile(join(evidence, `${source.mode}-board-filter-1.cpuprofile`), JSON.stringify(profile));
+          await writeFile(join(evidence, `${source.mode}-${kind}-filter-${sample}.cpuprofile`), JSON.stringify(profile));
           await profiler.detach();
         }
         assert.deepEqual((await command("queryView", { viewId, archived: false })).projectIds, ids);
       }
       // Ordinary Select grouping retains exact option identities and an empty group.
       const property = source.properties.find(p => p.type === "single_select");
+      const assignmentProfiler = profileFilters ? await page.context().newCDPSession(page) : undefined;
+      if (assignmentProfiler) { await assignmentProfiler.send("Profiler.enable"); await assignmentProfiler.send("Profiler.start"); }
       const groupBy = page.getByLabel("Group by", { exact: true });
       await startUiTiming(groupBy, "change"); await groupBy.selectOption(property.propertyId);
       await page.locator(".project-group").first().waitFor();
@@ -190,6 +192,11 @@ try {
       await page.getByRole("heading", { name: "Group value saved. Filters may hide the project from this view.", exact: true }).waitFor();
       await group.locator(`[data-project-id="${projectId}"]`).waitFor();
       await ready(); await recordUi(source.mode, `${kind} filtered group drag`);
+      if (assignmentProfiler) {
+        const { profile } = await assignmentProfiler.send("Profiler.stop");
+        await writeFile(join(evidence, `${source.mode}-${kind}-grouping-assignment.cpuprofile`), JSON.stringify(profile));
+        await assignmentProfiler.detach();
+      }
       const assigned = await command("queryView", { viewId, archived: false });
       await ready(assigned.groups.flatMap(g => g.projectIds));
       assert.ok(assigned.groups.find(g => g.key === destination.key).projectIds.includes(projectId));

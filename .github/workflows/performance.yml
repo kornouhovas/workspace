@@ -15,7 +15,7 @@ on:
         type: boolean
         default: false
       profile_filters:
-        description: Run a separate diagnostic profile before strict unprofiled acceptance
+        description: Profile first Table filter and Board filter/grouping separately from strict acceptance
         type: boolean
         default: false
       profile_service:
@@ -82,7 +82,7 @@ jobs:
           node scripts/profile-performance-service.mjs 2>&1 | tee work/ci-performance/service-profile/runtime.log
         env:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-performance/service-profile
-      - name: Diagnose the full-view Board filter transition
+      - name: Diagnose first Table filtering and view grouping
         if: ${{ !cancelled() && inputs.profile_filters && steps.candidate-package.outcome == 'success' }}
         shell: bash
         run: |

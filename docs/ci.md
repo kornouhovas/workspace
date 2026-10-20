@@ -750,3 +750,16 @@ strict command. Historical failures remain evidence, and profiling is not
 acceptance. The runtime activation helper supports both the current tabs and the
 immutable baseline select with one action and no replay; its native regression
 renews both control paths without changing measured targets or application inputs.
+
+
+Windows renewal `39418142493` at `420158b2` completed all functional/lifecycle
+checks and startup/memory targets, but five interaction samples still exceeded
+300ms. The separate service profile completed; displayed-view reads were
+23.6–36.8ms, while configured-source opening/listing/refresh and native observation
+also consumed CPU. This does not identify the renderer interaction delay.
+The opt-in `profile_filters` diagnostic now additionally captures the first Table
+filter and each Table/Board grouping-assignment span. The existing Board widening
+profile is retained; all profiled measurements remain diagnostic, and the original
+unprofiled strict command runs independently. An explicit Windows dispatch with
+`candidate_only: false` also provides the immutable baseline's original select
+consumer as a differential control; baseline target misses are recorded, not waived.

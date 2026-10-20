@@ -192,3 +192,46 @@ Application, dependency and build inputs remain those of `23c7fb4`. The inspecte
 macOS strict receipt above remains attributed to `cfefb0f7`; the current-app action
 is equivalent. Renew the changed native regression and historical-control consumer,
 and retain the separately failed Windows receipt until its original passes.
+
+
+Windows-only run [39418142493](https://github.com/kornouhovas/workspace/actions/runs/39418142493),
+attempt 1 at `420158b2c426ee9892f7f199a180b152ea1e3550`, passed both native
+regressions and all 32 functional/lifecycle measurements, but strict interaction
+targets failed: direct Table filter 871.0ms, direct Table grouping 383.4ms,
+grouped Table filter 346.7ms, grouped Table assignment 397.9ms and grouped Board
+grouping 375.4ms. All four startups (2,988–3,766ms), memory, normal shutdowns,
+backend exits and cleanup passed. The separate service profile completed with
+cleanup: displayed-view reads 23.6–36.8ms, source opening 2,237.9ms, grouped list
+2,009.3ms, grouped refresh 1,774.9ms; the 6.5s native observer interval consumed
+about 4.55 CPU seconds. These are diagnostic observations, not unique cause proof.
+
+Ranked falsifiable hypotheses for the remaining interactions: cold renderer work
+or GC predicts CPU stacks at first Table filtering; service/IPC delay predicts
+renderer idle time; host scheduling/protocol delay predicts a large wall/CPU gap.
+The next bounded diagnostic extends the existing optional renderer profile to the
+actual first Table filter and grouping/assignment spans, retaining its original
+Board widening sample. A same-run immutable-baseline control uses the historical
+select. The original unprofiled candidate still follows independently with every
+unchanged limit and correctness/lifecycle gate.
+
+The current harness also completed a local old-select consumer against untouched
+`53a87519`: all 32 functional measurements and four normal shutdowns/backend exits
+and cleanup, with initial startup 5,725.5ms still above target. This validates the
+control path, not supported-host target acceptance. Evidence remains at
+`/tmp/issue51-baseline-control-renewal/report.json`.
+
+Full desktop run `39414604470` at `23c7fb4`, attempt 1, completed successfully:
+Common 494/494; all three platform batches had zero failures. Downloaded and
+inspected each host's development and packaged views report (six EN/RU checks,
+three normal quits/backend exits per report), general runtime report (15 stages,
+normal and failed-startup shutdowns, cleanup), shell/management/source reports and
+complete provenance-matched native observer collectors. Both development and
+packaged data recovery and property/archive scenarios passed. Those receipts renew
+the locally missing native/platform acceptance; historical local failures remain
+retained above. Only strict Windows performance remains unresolved.
+
+The extended diagnostic completed locally on macOS 27 with eight nonempty CPU
+profiles, all 32 functional measurements, four normal shutdowns/backend exits and
+cleanup. Its report is explicitly diagnostic and supplies no target acceptance.
+Both independent reviews found no issues; lint/typecheck/docs, 49 routing controls
+and whitespace validation passed before publication.
