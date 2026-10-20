@@ -95,6 +95,17 @@ try {
   assert.equal(reused.configured, true); assert.equal(reused.mode, before.mode);
   assert.deepEqual(reused.projects, before.projects);
   assert.equal(await page.getByRole("button", { name: /^(Set up later|Настроить позже)$/ }).count(), 0);
+  // Target an inactive workspace: real listChanged precedes the activate reply.
+  await query({ type: "workspace.activate", workspaceId:first.workspaceId });
+  await actions().nth(1).press("Enter");
+  await page.getByRole("group", { name: /^(Workspace actions|Действия с рабочим пространством):/ }).getByRole("button", { name: /^(Rename workspace|Переименовать рабочее пространство)$/ }).press("Enter");
+  const renameInput = page.getByRole("textbox", { name: /^(Workspace name|Название рабочего пространства)$/ });
+  await renameInput.waitFor(); assert.equal(await renameInput.inputValue(), "Workspace");
+  await renameInput.press("Escape"); await returnToWorkspace(page);
+  await query({ type: "workspace.activate", workspaceId:first.workspaceId });
+  await actions().nth(1).press("Enter");
+  await page.getByRole("group", { name: /^(Workspace actions|Действия с рабочим пространством):/ }).getByRole("button", { name: /^(Settings|Настройки)$/ }).press("Enter");
+  assert.equal(await page.getByRole("combobox", { name: /^(Saved workspaces|Сохранённые рабочие пространства)$/ }).inputValue(), second.workspaceId);
   await renameActiveWorkspace(page, "Renamed workspace");
   await actions().nth(1).press("Enter");
   await page.getByRole("group", { name: /Renamed workspace$/ }).getByRole("button", { name: /^(Move up|Переместить выше)$/ }).press("Enter");
@@ -107,6 +118,7 @@ try {
     await actions().first().press("Enter");
     await page.getByRole("group", { name: new RegExp(`${name}$`) }).getByRole("button", { name: /^(Remove workspace|Удалить рабочее пространство)$/ }).press("Enter");
     await page.getByRole("button", { name: /^(Remove configuration|Удалить конфигурацию)$/ }).press("Enter");
+    await page.waitForFunction(async remaining => (await window.workspace.workspace({ type:"workspace.load" })).value?.workspaces.length === remaining, name === "Renamed workspace" ? 1 : 0);
     await returnToWorkspace(page);
   }
   await page.getByRole("button", { name: /^(Choose project folder|Выбрать папку проекта)$/ }).waitFor();

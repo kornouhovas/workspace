@@ -42,3 +42,18 @@ the inherited test tree. No historical suite was imported.
 the existing ordinary macOS/Windows latest/Windows 2022 CI matrix, retaining
 exact-SHA reports/screenshots and cleanup evidence. Other inherited routes remain
 registered. Build artifacts are produced and consumed sequentially.
+
+## Review repairs
+
+Independent Standards review found no issues. Spec review found an own-event
+activation race: a real `workspace.listChanged` precedes its successful reply,
+but the contextual routing treated that event as superseding selection. The
+renderer regression with valid UUIDs reproduces the missing editor before the
+repair and passes afterward. Contextual activation now accepts the authoritative
+matching selection within the same backend lifetime, while existing removal/
+superseded-selection regression checks remain. The native journey now exercises
+both Settings and Rename against an inactive workspace.
+
+Review preparation also scopes authored root-path waits to visible content,
+because the same path is retained in hidden settings sections. No ownership or
+native assertions were removed.

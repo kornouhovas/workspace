@@ -3768,10 +3768,14 @@ test("settings remains reachable through startup, read failure and backend disco
 
 test("EN/RU sidebar context Settings and Rename target the chosen workspace through the keyboard", async () => {
   for (const language of ["en", "ru"] as const) {
-    const one = makeActive("one", "First"), two = makeActive("two", "Second");
-    const data = { workspaces: [one, two], activeWorkspace: one };
-    mockApi({ language, onWorkspace: async input => input.type === "workspace.load" ? ok(data)
-      : input.type === "workspace.activate" ? ok(input.workspaceId === "two" ? two : one) : fail("invalid_input") });
+    const one = eventWorkspace("First"), two = eventWorkspace("Second");
+    const data = { workspaces: [one, two].map(({ workspaceId, name }) => ({ workspaceId, name })), activeWorkspace: one };
+    const api = mockApi({ language, onWorkspace: async input => input.type === "workspace.load" ? ok(data)
+      : input.type === "workspace.activate" ? (() => {
+        const activeWorkspace = input.workspaceId === two.workspaceId ? two : one;
+        api.emitChange({ type: "workspace.listChanged", snapshot: { ...data, activeWorkspace } });
+        return ok(activeWorkspace);
+      })() : fail("invalid_input") });
     render(<App />);
     const context = await screen.findByRole("button", { name: `${translate(language, "workspaceActions")}: Second` });
     context.focus(); await userEvent.keyboard("{Enter}");

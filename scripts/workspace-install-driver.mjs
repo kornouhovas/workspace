@@ -4,6 +4,6 @@ import { renameActiveWorkspace } from "./runtime-settings.mjs";
 export async function createInstalledWorkspace(page, { name, source }) {
   await page.getByRole("button", { name: "Choose project folder", exact: true }).press("Enter");
   await page.getByRole("heading", { name: "Workspace", exact: true }).waitFor();
-  await page.getByText(source, { exact: true }).waitFor();
+  await page.getByText(source, { exact: true }).and(page.locator(":visible")).waitFor();
   if (name !== "Workspace") await renameActiveWorkspace(page, name);
 }

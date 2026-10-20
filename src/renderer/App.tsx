@@ -328,12 +328,16 @@ export function App() {
   const activateWorkspace = async (workspaceId: string) => {
     if (busy || !workspaceId) return false;
     const version = ++dataVersion.current;
+    const lifetime = backendLifetime.current;
     setBusy("activate");
     setFormMessage(null);
     try {
       const result = await client.activateWorkspace(workspaceId);
       if (result.ok) {
-        if (version !== dataVersion.current) return false;
+        if (lifetime !== backendLifetime.current) return false;
+        // The service publishes its authoritative selection before its response.
+        // Accept that selection, but never reopen a removed/superseded context.
+        if (version !== dataVersion.current) return selectedWorkspace.current?.workspaceId === workspaceId;
         setWorkspaceData((current) => current ? { ...current, activeWorkspace: applyObservedSource(result.value) } : current);
         return true;
       } else {

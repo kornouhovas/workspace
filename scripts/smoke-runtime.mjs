@@ -235,7 +235,7 @@ async function create(current, name, rootPath, language = "en") {
     await page.getByRole("button", { name: language === "en" ? "Create another workspace" : "Создать ещё одно рабочее пространство", exact: true }).click();
   }
   await page.getByRole("button", { name: language === "en" ? "Choose project folder" : "Выбрать папку проекта", exact: true }).click();
-  await page.getByText(rootPath, { exact: true }).waitFor();
+  await page.getByText(rootPath, { exact: true }).and(page.locator(":visible")).waitFor();
   await page.getByRole("heading", { name: "Workspace", exact: true }).waitFor();
   await renameActiveWorkspace(page, name);
   await page.getByRole("heading", { name: name.trim(), exact: true }).waitFor();
