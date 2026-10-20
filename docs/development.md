@@ -20,7 +20,7 @@ Apply this sequence to the affected boundaries; small documentation changes need
 2. Implement in vertical slices at the agreed public seams. Add regression scenarios while implementing their behavior; update the scenario list when evidence expands the scope.
 3. Before the final review/full run, reconcile all changed contracts with existing fixtures and checks. For a migration, inspect the source journal and find every dependent migration count/tag, schema inventory, build/package fixture and upgrade/reopen test. Run `npm run test:migrations` and fix each affected failure while retaining data-preservation and rejection assertions. Extend this focused command when a new migration fixture boundary is introduced; its selected files are defined in `package.json`.
 4. Finish the scoped implementation and scenario coverage, then review against the issue and project standards. Apply review repairs and rerun their affected checks. The resulting source, tests, fixtures and CI routes form the candidate for final verification.
-5. Run the required full suite once on that completed candidate. Reuse an unchanged verified build with `npm run test:all`; use `npm test` when a fresh build is needed. Run artifact-producing builds and their consumers sequentially. A new failure or required code/test change reopens affected verification; record which final evidence was renewed.
+5. Run the required full suite once on that completed candidate. Reuse an unchanged verified build with `npm run test:all`; use `npm test` when a fresh build is needed. Run artifact-producing builds and their consumers sequentially. A new failure or required code/test change reopens affected verification; record which final evidence was renewed. For later test-only or documentation repairs, apply the [CI evidence reuse policy](ci.md#evidence-reuse-after-test-only-repairs) to renew affected consumers and retain justified passing results.
 6. Commit the complete candidate, including relevant contracts and the observed local verification report. Keep CI/integration acceptance in the GitHub checkpoint, with a pointer from the versioned plan. Select CI routes under [CI checks](ci.md); report which checks were inherited and which were added for this issue.
 7. Inspect the candidate's CI results and required artifacts, follow the integration route, and record the tested/delivered SHA and remaining limits in GitHub.
 
@@ -59,7 +59,13 @@ Use bounded English task snapshots/plans with scope, fixtures, acceptance and ex
 | UI | Relevant interaction tests, type/build checks and inspection of changed screens, including narrow layouts and both languages |
 | Release | Full integrated checks, platform packages, version consistency, migration/recovery and release acceptance matrix |
 
-A failed GitHub Actions check during authorized execution enters the mandatory [diagnose, focused checks, then full CI loop](ci.md#failed-actions-loop). Continue that loop across windows/context resets without waiting for the user to invoke the skill again.
+A failed GitHub Actions check during authorized execution enters the mandatory [diagnosis and acceptance renewal loop](ci.md#failed-actions-loop). Continue that loop across windows/context resets without waiting for the user to invoke the skill again.
+
+### Inherited test coverage
+
+Preserve coverage of current accepted requirements, not every inherited test or historical interaction. For affected inherited scenarios, record one decision in the existing plan or checkpoint: retain, adapt, replace or retire. Replace a test when a better public-boundary check covers the same contract; retire it when the behavior is explicitly superseded by an accepted requirement or when another identified check already covers the same scenario, failure mode and required platform boundary. Cite the governing requirement and replacement check, or the accepted reason the behavior no longer applies.
+
+Data preservation, identity/ownership, recovery, isolation and supported-platform requirements remain covered wherever still applicable. A test failure or maintenance cost alone does not retire its requirement. Changing a product contract or supported-platform promise requires the owner's corresponding decision. Coverage preservation governs observable guarantees; it does not freeze test counts, locators, suite structure or the frequency of full CI runs.
 
 Select actual commands from package.json and the affected tests. Verify observable behavior and data safety; documentation checks verify links/anchors and consistency.
 

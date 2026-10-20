@@ -23,3 +23,11 @@ Branch: `codex/issue-49-workspace-management`.
 ## Verification and delivery
 
 Run focused scenarios while implementing, typecheck regularly, review against this baseline and #49, then run the required full suite on the finished candidate. Record actual results in a versioned verification report. CI and human/platform gates remain in the [GitHub checkpoint](https://github.com/kornouhovas/workspace/issues/49).
+
+## Test-only acceptance renewal
+
+The owner authorized the evidence reuse policy in `docs/ci.md` after reviewing repeated full CI on 2026-10-20. Apply it to follow-up repairs; retain every current required scenario and platform under the [inherited coverage policy](../development.md#inherited-test-coverage). This preserves accepted guarantees rather than every historical test; retirement requires the recorded superseding contract or equivalent replacement coverage.
+
+For `99584863` to `14bcb4cf`, the changed paths are the Single Select smoke driver, readiness/routing tests, the focused desktop workflow and documentation. Application/package inputs are unchanged. Run `39384877475` supplies the repaired Windows latest packaged Select receipt; the issue checkpoint records its inspected artifacts. Other affected Select modes/platforms still require candidate evidence or an explicit consumer analysis.
+
+Full run `39381220528` contains successful common/platform and native workspace/shell evidence, but its Windows latest packaged Select failure skipped downstream Date, Number, archive, recovery, category, creation and main runtime steps. These are missing coverage, not inherited passes. Existing run `39385354293` is supplying current candidate coverage; inspect its remaining results and artifacts rather than cancelling it as redundant. Any new failure enters the revised loop. Keep the live acceptance ledger and delivery decision in the GitHub checkpoint; this policy update alone does not close #49.
