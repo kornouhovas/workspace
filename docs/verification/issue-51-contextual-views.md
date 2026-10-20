@@ -112,7 +112,51 @@ are recorded above; the original failures are not relabelled successful.
 
 Required supported-platform CI and installer receipts have not yet been renewed
 for the changed application/dependency inputs. Issue #51 remains open; no delivery
-or integration is claimed. The current repository is public while the tracker
-policy requires private application sources. Publication awaits the owner's
-resolution under [tracker policy](../issue-tracker.md); no issue write or push has
-been made during this task.
+or integration is claimed. The owner explicitly authorized this issue's publication to the current public
+repository after reviewing candidate `23c7fb4`. This resolves the publication
+gate recorded in that commit; it does not authorize a release or another issue.
+
+
+## Original CI and focused readiness repair
+
+At `23c7fb417f5ed0544c6c4b47313edaaefb5c2e4f`, attempt 1, installer run
+[39414604799](https://github.com/kornouhovas/workspace/actions/runs/39414604799)
+passed both macOS/14 arm64 DMG and Windows/latest x64 NSIS installation, EN/RU,
+reopen/replacement/reinstall, preserved identities/data, isolation and cleanup.
+Both exact-SHA reports were downloaded and inspected. Full desktop run
+[39414604470](https://github.com/kornouhovas/workspace/actions/runs/39414604470)
+has passed Common/static and is still providing platform/runtime evidence.
+
+Performance run [39414634270](https://github.com/kornouhovas/workspace/actions/runs/39414634270)
+failed both original hosts at Board assignment readiness. macOS recorded startup
+6,349.2ms and Table assignment 360.2ms; Windows recorded first Table filter
+436.4ms and Table assignment 314.6ms. Each target miss remains failed evidence.
+Normal shutdown and cleanup passed; later scenarios were unreached.
+
+A failure-only local diagnostic found an unloaded row overlapping the window
+but entirely outside its horizontal Board clip (row right=103; clip left=244).
+The renderer correctly left it as a skeleton; the old window-only predicate
+incorrectly classified it as visible. The extracted readonly readiness helper
+now intersects ancestor clipping client boxes. It retains complete ordered IDs,
+all pending checks, real editor controls and ready fields for every partially
+visible row. No timeout, target, mutation, source or application behavior changes.
+The temporary diagnostic packet was removed after identifying the mechanism.
+
+A real-Electron fixture failed before repair and passed after, covering horizontal
+and vertical clipping, partially visible edges, ordered membership, missing
+editors and pending states. Both independent review axes report no findings.
+49 routing checks pass. The focused performance workflow runs this regression
+before the unchanged original strict measurement on each affected host; the
+original still runs after a failed regression when packaging succeeded.
+
+The repaired local original completed all 32 measurements and four normal
+shutdowns with cleanup. It still failed strict targets: initial startup 5,546.5ms
+and grouped-final conservative peak memory 1,011,630,080 bytes. This demonstrates
+resolution of the clipping deadlock, not complete performance acceptance or the
+unique cause of the other historical misses. Supported-host renewal remains open.
+
+The repair changes only acceptance helpers/tests, their performance route and
+documentation. Application, dependencies, migrations, native resources and
+build/package source inputs remain those of `23c7fb4`; successful installation
+and unaffected desktop receipts retain that actual SHA. Current CI and delivery
+status belongs to the GitHub checkpoint.

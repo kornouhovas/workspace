@@ -1,3 +1,4 @@
+import { usableRuntimeViewProjection } from "./runtime-view-readiness.mjs";
 import { setInterfaceLanguage } from "./runtime-settings.mjs";
 /* global window, document, requestAnimationFrame, DataTransfer */
 import assert from "node:assert/strict";
@@ -50,24 +51,13 @@ async function recordUi(source, scenario, limit = report.limits.interaction) {
   console.log(`${source} ${scenario}: ${ms.toFixed(1)} ms (limit ${limit})`);
 }
 async function painted() { await page.evaluate(() => new Promise(done => requestAnimationFrame(() => requestAnimationFrame(done)))); }
-function usableProjection(ids) {
-    const content = document.querySelector(".text-properties");
-    if (!content || content.getAttribute("aria-busy") !== "false") return false;
-    if (document.querySelector('[aria-busy="true"]')) return false;
-    const rows = [...content.querySelectorAll("[data-project-id]")].map(row => row.getAttribute("data-project-id"));
-    for (const row of content.querySelectorAll("[data-project-id]")) {
-      const rect = row.getBoundingClientRect();
-      if (rect.top >= window.innerHeight || rect.bottom <= 0 || rect.left >= window.innerWidth || rect.right <= 0) continue;
-      if (row.getAttribute("data-fields-ready") === "false" || !row.querySelector("button, input, textarea, select")) return false;
-    }
-    return ids ? rows.length === ids.length && rows.every((id, index) => id === ids[index]) : rows.length > 0;
-}
+
 async function ready(ids) {
-  await page.waitForFunction(usableProjection, ids);
+  await page.waitForFunction(usableRuntimeViewProjection, ids);
   await painted();
   // Field mounting can change row geometry and reveal another row. Recheck the
   // visible controls after layout; offscreen identity skeletons remain allowed.
-  await page.waitForFunction(usableProjection, ids);
+  await page.waitForFunction(usableRuntimeViewProjection, ids);
   await painted();
 }
 async function memory(scenario) {

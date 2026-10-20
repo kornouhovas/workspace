@@ -33,8 +33,9 @@ retain the ordinary commands and three-platform matrix. No applicable requiremen
 Run focused renderer/service tests and typechecking during slices; inspect and
 review the completed diff before the final full suite. Native development and
 packaged journeys and required platform CI remain acceptance gates until observed.
-GitHub publication is pending reconciliation of the documented private-source
-policy with current public repository visibility; no issue write or push yet.
+The owner explicitly authorized publication for #51 to the currently public
+repository after reviewing local candidate `23c7fb4`. Current run/repair/integration
+state is recorded in the [GitHub checkpoint](https://github.com/kornouhovas/workspace/issues/51#issuecomment-6289753833).
 
 Local implementation and review evidence: [verification report](../verification/issue-51-contextual-views.md).
 

@@ -91,6 +91,13 @@ jobs:
           node scripts/smoke-performance.mjs --profile-filters 2>&1 | tee work/ci-performance/profile/runtime.log
         env:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-performance/profile
+      - name: Verify clipped view readiness before the original measurement
+        if: ${{ !cancelled() && steps.candidate-package.outcome == 'success' }}
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p work/ci-performance/readiness
+          node --test tests/runtime-view-readiness.test.mjs 2>&1 | tee work/ci-performance/readiness/regressions.log
       - name: Require candidate correctness and approved targets
         if: ${{ !cancelled() && steps.candidate-package.outcome == 'success' }}
         shell: bash

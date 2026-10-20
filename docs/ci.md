@@ -725,3 +725,18 @@ cases, source/shell/management journeys and installers retain their own SHA.
 Windows latest's early direct native receipt is inherited; Windows 2022's later
 direct native step remains in the continuation. This route neither reruns macOS
 nor replaces any missing Windows scenario with inherited success.
+
+
+## Issue 51 clipped Board readiness
+
+For performance run `39414634270` at `23c7fb4`, renew only the candidate on the
+failed hosts with `performance.yml`, `candidate_only: true`, `platform: both`.
+A real-Electron readiness regression precedes the unchanged strict measurement;
+the original still runs after a failed regression if packaging succeeded. The
+readonly predicate intersects ancestor clipping boxes while retaining complete
+ordered membership, pending rejection and real fields for partially visible rows.
+The observed clipped-row mechanism explains the readiness deadlock, not the
+separately retained startup/filter/assignment target misses. All original limits,
+normal shutdown and owned cleanup remain. The original desktop and installer
+runs retain their own SHA; apply evidence reuse only after reviewing unchanged
+application/build inputs and inspecting every missing or renewed receipt.

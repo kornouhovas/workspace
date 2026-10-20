@@ -1054,3 +1054,20 @@ test('Single Select readiness selects only the original Windows latest packaged 
   assert.equal(upload.if, 'always()'); assert.equal(upload.with['if-no-files-found'], 'error');
   for (const field of ['github.sha', 'github.run_id', 'github.run_attempt']) assert.ok(upload.with.name.includes(field));
 });
+
+
+test('performance readiness repair retains the original strict command after regression failure on both platforms', () => {
+  const workflow = load(readFileSync('.github/workflows/performance.yml', 'utf8'));
+  const job = workflow.jobs.performance;
+  assert.ok(job.strategy.matrix.os.includes('macos-14') && job.strategy.matrix.os.includes('windows-latest'));
+  const guardIndex = job.steps.findIndex(step => step.name === 'Verify clipped view readiness before the original measurement');
+  const originalIndex = job.steps.findIndex(step => step.name === 'Require candidate correctness and approved targets');
+  assert.ok(guardIndex >= 0 && guardIndex < originalIndex);
+  const guard = job.steps[guardIndex], original = job.steps[originalIndex];
+  const condition = "${{ !cancelled() && steps.candidate-package.outcome == 'success' }}";
+  assert.equal(guard.if, condition);
+  assert.equal(original.if, condition, 'The original still runs after a failed regression if packaging passed');
+  assert.ok(guard.run.includes('set -o pipefail') && guard.run.includes('node --test tests/runtime-view-readiness.test.mjs'));
+  assert.ok(original.run.includes('set -o pipefail') && original.run.includes('node scripts/smoke-performance.mjs --enforce'));
+  assert.equal(original.env.WORKSPACE_SMOKE_EVIDENCE_DIR, 'work/ci-performance/candidate');
+});
