@@ -14,6 +14,10 @@ User-facing changes are maintained in English. The first target release is 0.1.0
 
 ### Added
 
+- Manage saved Table/Board views through keyboard-accessible tabs and contextual
+  actions, with independent duplication and final-view protection. Find projects
+  through toolbar search and a typed-filter popover with saved per-view settings.
+
 - Inspect shared sources and their workspace relationships in Sources settings;
   review discovery and archive configuration independently, with source refresh
   and retained metadata when folders are excluded or unavailable.

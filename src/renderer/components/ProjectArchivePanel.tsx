@@ -185,9 +185,9 @@ function ArchiveContent({ locationOnly = false, viewId, categoryProperty, catego
       <button type="button" disabled={controlsDisabled} className="workspace-button workspace-button--secondary" onClick={event => { returnFocus.current = event.currentTarget; void reviewRecovery(op.operationId); }}>{t("archiveRecovery")}</button></li>)}</ul> : <p>{t("archiveNoOperations")}</p>}
     {recovery && <div>{recovery.problem && problems([recovery.problem])}{recovery.actions.map(action => <button type="button" key={action} disabled={controlsDisabled} className="workspace-button workspace-button--secondary" onClick={() => void recover(action)}>{t(action === "retry_original" ? "archiveRetryOriginal" : action === "complete_destination" ? "archiveCompleteDestination" : "archiveKeepOriginal")}</button>)}
       <button type="button" disabled={blocked} onClick={cancel} className="workspace-button workspace-button--secondary">{t("archiveCancel")}</button></div>}
-    {archived && <>{snapshot?.projects.length ? <>
+    {archived && <div id={`archived-view-panel-${workspaceId}`} role="tabpanel" aria-labelledby={viewId ? `saved-view-${viewId}` : undefined}>{snapshot?.projects.length ? <>
       {viewId && <TextPropertiesTable categoryProperty={categoryProperty} categories={categories} viewId={viewId} layout={layout} client={client} workspaceId={workspaceId} sourceId={sourceId} language={language} disabled={disabled} projects={snapshot.projects} hideReveal />}
-    </> : <p>{t("archiveEmpty")}</p>}</>}
+    </> : <p>{t("archiveEmpty")}</p>}</div>}
     </>}
   </section>;
 }

@@ -50,6 +50,8 @@ export async function exerciseMetadataRemoval({ page, query, rootPath, language,
     let snapshot = await call('listTextProperties');
     assert.deepEqual(snapshot.selectOptions.filter(o => o.propertyId === propertyId).map(o => o.optionId), [options.Next, options.Other]);
     assert.deepEqual((propertyType === 'single_select' ? snapshot.selectValues : snapshot.multiSelectValues).filter(v => v.propertyId === propertyId).map(v => v.optionId).sort(), (propertyType === 'single_select' ? [options.Next] : [options.Next, options.Other]).sort());
+    const filters = button(en ? 'Search and filters' : 'Поиск и фильтры');
+    if (await filters.getAttribute('aria-expanded') !== 'true') await press(filters);
     await page.waitForFunction(({ propertyId, next }) => {
       const operands = [...document.querySelectorAll('.view-filters select[multiple]')];
       return operands.some(s => [...s.selectedOptions].some(o => o.value === next)) && !document.querySelector(`.project-group[aria-label="Old"]`) && document.querySelector(`[data-column-id="${propertyId}"]`);

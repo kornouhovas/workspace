@@ -1,3 +1,5 @@
+import * as Menu from "@radix-ui/react-dropdown-menu";
+import * as Tabs from "@radix-ui/react-tabs";
 import { useEffect, useRef, useState } from "react";
 import type { ViewCommand, ViewSnapshot, WorkspaceView } from "../../contracts/views.js";
 import type { Language } from "../../contracts/settings.js";
@@ -5,18 +7,20 @@ import { translate, type TranslationKey } from "../localization.js";
 import { WorkspaceServiceClient } from "../workspace-service-client.js";
 import { StatusMessage } from "./bb-foundation.js";
 
-interface Props { client: WorkspaceServiceClient; workspaceId: string; language: Language; disabled: boolean; onChange(view: WorkspaceView | null): void }
+interface Props { client: WorkspaceServiceClient; workspaceId: string; language: Language; disabled: boolean; panelId?: string; onChange(view: WorkspaceView | null): void }
 export function ViewsPanel(props: Props) { return <ViewCollection key={props.workspaceId} {...props} />; }
-function ViewCollection({ client, workspaceId, language, disabled, onChange }: Props) {
+function ViewCollection({ client, workspaceId, language, disabled, panelId, onChange }: Props) {
   const t = (key: TranslationKey) => translate(language, key);
   const [snapshot, setSnapshot] = useState<ViewSnapshot | null>(null);
   const [loading, setLoading] = useState(true), [pending, setPending] = useState(false);
   const [error, setError] = useState<"viewsError" | "viewSaveError" | "viewValidation" | null>(null);
   const [draft, setDraft] = useState<{ action: "create" | "duplicate" | "edit"; viewId?: string; name: string; kind: "table" | "board" } | null>(null);
+  const [menu, setMenu] = useState(false);
+  const menuButton = useRef<HTMLButtonElement>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
   const version = useRef(0), lifetime = useRef(0), busy = useRef(false);
   const current = useRef(onChange); current.current = onChange;
-  const input = useRef<HTMLInputElement>(null), select = useRef<HTMLSelectElement>(null);
+  const input = useRef<HTMLInputElement>(null), select = useRef<HTMLButtonElement>(null);
   const trigger = useRef<HTMLButtonElement | null>(null), restoreFocus = useRef(false);
   const active = snapshot?.views.find(view => view.viewId === snapshot.activeViewId);
   const position = snapshot?.views.findIndex(view => view.viewId === snapshot.activeViewId) ?? -1;
@@ -49,7 +53,7 @@ function ViewCollection({ client, workspaceId, language, disabled, onChange }: P
     try {
       const result = await client.changeView(command);
       if (started !== lifetime.current) return;
-      if (result.ok && result.value.workspaceId === workspaceId) { close(); trigger.current = null; await load(); }
+      if (result.ok && result.value.workspaceId === workspaceId) { close(); trigger.current = command.type === "workspace.activateView" ? null : (trigger.current ?? menuButton.current); await load(); }
       else { setError("viewSaveError"); await load(); }
     } catch { if (started === lifetime.current) { setError("viewSaveError"); await load(); } }
     finally { if (started === lifetime.current) { busy.current = false; setPending(false); } }
@@ -64,6 +68,7 @@ function ViewCollection({ client, workspaceId, language, disabled, onChange }: P
   const blocked = disabled || pending || loading || !snapshot || error === "viewsError" || !!draft || !!deleting;
   const move = (offset: number) => {
     if (!snapshot || position < 0) return;
+    trigger.current = menuButton.current;
     const viewIds = snapshot.views.map(v => v.viewId);
     [viewIds[position], viewIds[position + offset]] = [viewIds[position + offset], viewIds[position]];
     void mutate({ type: "workspace.reorderViews", workspaceId, viewIds });
@@ -73,16 +78,25 @@ function ViewCollection({ client, workspaceId, language, disabled, onChange }: P
     {error && <StatusMessage kind="error" title={t(error)} />}
     {error && <button className="workspace-button workspace-button--secondary" type="button" disabled={loading || pending} onClick={() => void load()}>{t("viewsRetry")}</button>}
     <div className="view-controls">
-      <label>{t("viewCurrent")} <select className="workspace-input" ref={select} aria-label={t("viewCurrent")} value={snapshot?.activeViewId ?? ""} disabled={blocked}
-        onChange={event => void mutate({ type: "workspace.activateView", workspaceId, viewId: event.currentTarget.value })}>
-        {snapshot?.views.map(view => <option key={view.viewId} value={view.viewId}>{view.name}</option>)}
-      </select></label>
+      <Tabs.Root value={snapshot?.activeViewId ?? ""} activationMode="manual" onValueChange={viewId => void mutate({ type: "workspace.activateView", workspaceId, viewId })}>
+        <Tabs.List className="saved-view-tabs" aria-label={t("viewCurrent")}>
+          {snapshot?.views.map(view => <Tabs.Trigger className="saved-view-tab" key={view.viewId} value={view.viewId} id={`saved-view-${view.viewId}`} aria-controls={panelId} disabled={blocked}
+            ref={view.viewId === snapshot.activeViewId ? select : undefined}>{view.name}</Tabs.Trigger>)}
+        </Tabs.List>
+      </Tabs.Root>
       <button className="workspace-button workspace-button--secondary" type="button" disabled={blocked} onClick={event => { trigger.current = event.currentTarget; setDraft({ action: "create", name: "", kind: "table" }); }}>{t("viewCreate")}</button>
-      <button className="workspace-button workspace-button--secondary" type="button" disabled={blocked || !active} onClick={event => { trigger.current = event.currentTarget; setDraft({ action: "edit", viewId: active!.viewId, name: active!.name, kind: active!.kind }); }}>{t("viewEdit")}</button>
-      <button className="workspace-button workspace-button--secondary" type="button" disabled={blocked || !active} onClick={event => { trigger.current = event.currentTarget; setDraft({ action: "duplicate", viewId: active!.viewId, name: active!.name, kind: active!.kind }); }}>{t("viewDuplicate")}</button>
-      <button className="workspace-button workspace-button--secondary" type="button" disabled={blocked || position <= 0} onClick={() => move(-1)}>{t("viewEarlier")}</button>
-      <button className="workspace-button workspace-button--secondary" type="button" disabled={blocked || !snapshot || position >= snapshot.views.length - 1} onClick={() => move(1)}>{t("viewLater")}</button>
-      <button className="workspace-button workspace-button--secondary" type="button" disabled={blocked || !snapshot || snapshot.views.length < 2} onClick={event => { trigger.current = event.currentTarget; setDeleting(active!.viewId); }}>{t("viewDelete")}</button>
+      <Menu.Root open={menu} onOpenChange={setMenu} modal={false}>
+        <Menu.Trigger asChild><button ref={menuButton} type="button" className="workspace-button workspace-button--secondary" disabled={blocked || !active}
+          aria-label={`${t("viewActions")}: ${active?.name ?? ""}`}>•••</button></Menu.Trigger>
+        <Menu.Portal><Menu.Content className="contextual-panel view-actions" align="end" sideOffset={4} collisionPadding={8}
+          onCloseAutoFocus={event => { if (draft || deleting || pending) event.preventDefault(); }}>
+      <Menu.Item className="workspace-button workspace-button--secondary" disabled={blocked || !active} onSelect={() => { trigger.current = menuButton.current; setMenu(false); setDraft({ action: "edit", viewId: active!.viewId, name: active!.name, kind: active!.kind }); }}>{t("viewEdit")}</Menu.Item>
+      <Menu.Item className="workspace-button workspace-button--secondary" disabled={blocked || !active} onSelect={() => { trigger.current = menuButton.current; setMenu(false); setDraft({ action: "duplicate", viewId: active!.viewId, name: active!.name, kind: active!.kind }); }}>{t("viewDuplicate")}</Menu.Item>
+      <Menu.Item className="workspace-button workspace-button--secondary" disabled={blocked || position <= 0} onSelect={() => { setMenu(false); move(-1); }}>{t("viewEarlier")}</Menu.Item>
+      <Menu.Item className="workspace-button workspace-button--secondary" disabled={blocked || !snapshot || position >= snapshot.views.length - 1} onSelect={() => { setMenu(false); move(1); }}>{t("viewLater")}</Menu.Item>
+      <Menu.Item className="workspace-button workspace-button--secondary" disabled={blocked || !snapshot || snapshot.views.length < 2} onSelect={() => { trigger.current = menuButton.current; setMenu(false); setDeleting(active!.viewId); }}>{t("viewDelete")}</Menu.Item>
+        </Menu.Content></Menu.Portal>
+      </Menu.Root>
     </div>
     {draft && <form className="view-form" onSubmit={event => { event.preventDefault(); save(); }} onKeyDown={event => { if (event.key === "Escape" && !pending) { event.preventDefault(); close(); } }}>
       <label>{t("viewName")} <input className="workspace-input" ref={input} value={draft.name} disabled={pending || disabled} aria-invalid={error === "viewValidation"} onChange={event => setDraft({ ...draft, name: event.currentTarget.value })} /></label>

@@ -71,3 +71,13 @@ Sources uses the existing issue-48 section/card, semantic theme and keyboard
 foundation with a local source list/detail controller. No additional upstream
 module is copied. Existing discovery and archive review services remain the
 mutation boundaries; source selection does not activate a workspace.
+
+## Issue 51 contextual saved views
+
+Saved views reuse the semantic desktop tokens and existing service contracts.
+Radix Tabs 1.2.1 supplies manual keyboard activation; Dropdown Menu 2.2.1 and
+Popover 1.3.1 supply contextual actions, focus/dismissal and collision handling.
+Versions are pinned in the npm lockfile and retain their dependency MIT notices.
+The UI is a local implementation; no additional bb source was copied.
+API references: [Dropdown Menu](https://www.radix-ui.com/primitives/docs/components/dropdown-menu)
+and [Popover](https://www.radix-ui.com/primitives/docs/components/popover).

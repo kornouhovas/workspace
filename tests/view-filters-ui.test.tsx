@@ -7,13 +7,13 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { WorkspaceServiceClient } from "../src/renderer/workspace-service-client.js";
 import type { WorkspaceDesktopApi } from "../src/contracts/desktop-api.js";
-import { TextPropertiesTable } from "../src/renderer/components/TextPropertiesTable.js";
 import { translate } from "../src/renderer/localization.js";
 const browser = new Window();
-Object.assign(globalThis, { window: browser, document: browser.document, HTMLElement: browser.HTMLElement, Node: browser.Node, MutationObserver: browser.MutationObserver });
+Object.assign(globalThis, { window: browser, document: browser.document, HTMLElement: browser.HTMLElement, Element: browser.Element, Node: browser.Node, MutationObserver: browser.MutationObserver, CustomEvent: browser.CustomEvent, getComputedStyle: browser.getComputedStyle.bind(browser), NodeFilter: browser.NodeFilter, HTMLInputElement: browser.HTMLInputElement, ResizeObserver: browser.ResizeObserver });
 Object.defineProperty(globalThis, "navigator", { configurable: true, value: browser.navigator });
 const { act, cleanup, render, screen, waitFor, within } = await import("@testing-library/react");
 const { default: userEvent } = await import("@testing-library/user-event");
+const { TextPropertiesTable } = await import("../src/renderer/components/TextPropertiesTable.js");
 // @ts-expect-error Built service module intentionally has no declarations.
 const { openSettingsService } = await import("../dist/service/settings.mjs");
 for (const language of ["en", "ru"] as const) for (const layout of ["table", "board"] as const) {
@@ -51,7 +51,12 @@ for (const language of ["en", "ru"] as const) for (const layout of ["table", "bo
       await screen.findByText(t("filterEmpty")); assert.equal(rowCount(), 0);
       await user.click(screen.getByRole("button", { name: t("filterClear") }));
       await waitFor(() => assert.equal(rowCount(), 2));
+      await user.click(screen.getByRole("button", { name: t("filtersTitle") }));
       screen.getByRole("button", { name: t("filterAdd") }).focus(); await user.keyboard("{Enter}");
+      await user.keyboard("{Escape}");
+      assert.equal(screen.queryByLabelText(t("filterProperty")), null);
+      assert.equal(document.activeElement, screen.getByRole("button", { name: t("filtersTitle") }));
+      await user.keyboard("{Enter}");
       await user.selectOptions(screen.getByLabelText(t("filterProperty")), number);
       await user.clear(screen.getByLabelText(t("filterOperand"))); await user.type(screen.getByLabelText(t("filterOperand")), "5{Enter}");
       await waitFor(() => assert.equal(rowCount(), 1));
@@ -165,6 +170,7 @@ for (const language of ['en', 'ru'] as const) test(`${language} committed metada
   try {
     const snapshot = query('listTextProperties');
     const view = render(<ViewFilters {...props} snapshot={snapshot} refreshKey={String(snapshot.revision)} />);
+    await user.click(screen.getByRole("button", { name: translate(language, "filtersTitle") }));
     const operand = () => screen.getByLabelText(translate(language, 'filterOperand')) as HTMLSelectElement;
     await waitFor(() => assert.deepEqual(Array.from(operand().selectedOptions, o => o.value), [old]));
     const preview = query('previewMetadataRemoval', { propertyId, optionId: old, replacementOptionId: next });

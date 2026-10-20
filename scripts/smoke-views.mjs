@@ -32,7 +32,7 @@ const quitEvents = new WeakMap();
 const unwrap = result => { assert.equal(result.ok, true, JSON.stringify(result)); return result.value; };
 const query = (page, input) => page.evaluate(input => window.workspace.workspace(input), input).then(unwrap);
 async function pressEnabled(page, button) {
-  const enabled = button.and(page.locator(":enabled"));
+  const enabled = button.and(page.locator(':not(:disabled):not([aria-disabled="true"])'));
   await enabled.focus();
   await enabled.press("Enter");
 }
@@ -93,10 +93,11 @@ try {
     await query(page, { type: "workspace.setTextValue", workspaceId, projectId: projects.projects[0].projectId, propertyId: property.propertyId, value: "Initial notes" });
     await query(page, { type: "workspace.activate", workspaceId }); await page.reload();
     const en = language === "en";
-    const current = () => page.getByLabel(en ? "Current view" : "Текущее представление", { exact: true });
+    const selectView = async id => { const snapshot = await query(page, { type: "workspace.listViews", workspaceId }); await pressEnabled(page, page.getByRole("tab", { name: snapshot.views.find(view => view.viewId === id).name, exact: true })); };
+    const actions = () => page.getByRole("button", { name: /^(View actions|Действия с представлением):/ });
     const name = () => page.getByLabel(en ? "View name" : "Название представления", { exact: true });
     const layout = () => page.getByLabel(en ? "Layout" : "Компоновка", { exact: true });
-    const edit = () => page.getByRole("button", { name: en ? "Edit view" : "Изменить представление", exact: true });
+    const edit = () => page.getByRole("menuitem", { name: en ? "Edit view" : "Изменить представление", exact: true });
     await pressEnabled(page, page.getByRole("button", { name: en ? "New view" : "Новое представление", exact: true }));
     await name().press("Enter"); await page.getByRole("alert").waitFor();
     await name().fill("Review"); await layout().selectOption("board"); await name().press("Enter");
@@ -113,10 +114,10 @@ try {
     filters.push(await exerciseViewFilters({ page, query, workspaceId, projectId: projects.projects[0].projectId, propertyId: property.propertyId, language, layout: "board", evidenceDirectory }));
     grouping.push(await exerciseSelectionGrouping({ page, query, workspaceId, language, layout: "board", evidenceDirectory }));
     grouping.push(await exerciseViewGrouping({ page, query, workspaceId, propertyId: property.propertyId, language, layout: "board", evidenceDirectory }));
-    await pressEnabled(page, page.getByRole("button", { name: en ? "Duplicate view" : "Дублировать представление", exact: true }));
+    await pressEnabled(page, actions()); await pressEnabled(page, page.getByRole("menuitem", { name: en ? "Duplicate view" : "Дублировать представление", exact: true }));
     await name().fill("Copy"); await name().press("Enter");
     await page.getByRole("heading", { name: "Copy", exact: true }).waitFor();
-    await pressEnabled(page, edit()); await layout().selectOption("table"); await name().press("Enter");
+    await pressEnabled(page, actions()); await pressEnabled(page, edit()); await layout().selectOption("table"); await name().press("Enter");
     await page.getByRole("table").getByText("Board keyboard edit", { exact: true }).waitFor();
     filters.push(await exerciseViewFilters({ page, query, workspaceId, projectId: projects.projects[0].projectId, propertyId: property.propertyId, language, layout: "table", evidenceDirectory }));
     grouping.push(await exerciseSelectionGrouping({ page, query, workspaceId, language, layout: "table", evidenceDirectory }));
@@ -126,16 +127,15 @@ try {
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
       await page.screenshot({ path: join(evidenceDirectory, `${language}-${width}-table.png`), fullPage: true });
     }
-    await pressEnabled(page, page.getByRole("button", { name: en ? "Move view earlier" : "Переместить представление раньше", exact: true }));
-    await pressEnabled(page, page.getByRole("button", { name: en ? "Delete view" : "Удалить представление", exact: true }));
+    await pressEnabled(page, actions()); await pressEnabled(page, page.getByRole("menuitem", { name: en ? "Move view earlier" : "Переместить представление раньше", exact: true }));
+    await pressEnabled(page, actions()); await pressEnabled(page, page.getByRole("menuitem", { name: en ? "Delete view" : "Удалить представление", exact: true }));
     await page.getByRole("button", { name: en ? "Confirm delete view" : "Подтвердить удаление представления", exact: true }).waitFor();
     await page.keyboard.press("Escape");
-    await page.waitForFunction(label => Array.from(document.querySelectorAll("button")).find(button => button.textContent === label) === document.activeElement,
-      en ? "Delete view" : "Удалить представление");
-    assert.equal(await page.getByRole("button", { name: en ? "Delete view" : "Удалить представление", exact: true }).evaluate(element => element === document.activeElement), true);
-    await pressEnabled(page, page.getByRole("button", { name: en ? "Delete view" : "Удалить представление", exact: true }));
+    await page.waitForFunction(() => document.activeElement?.getAttribute("aria-label")?.match(/^(View actions|Действия с представлением):/));
+    assert.equal(await actions().evaluate(element => element === document.activeElement), true);
+    await pressEnabled(page, actions()); await pressEnabled(page, page.getByRole("menuitem", { name: en ? "Delete view" : "Удалить представление", exact: true }));
     await pressEnabled(page, page.getByRole("button", { name: en ? "Confirm delete view" : "Подтвердить удаление представления", exact: true }));
-    await current().selectOption(boardId); await board().waitFor();
+    await selectView(boardId); await board().waitFor();
     const snapshot = await query(page, { type: "workspace.listViews", workspaceId });
     assert.deepEqual(snapshot.views.map(v => [v.name, v.kind]), [["Table", "table"], ["Review", "board"]]);
     assert.equal((await query(page, { type: "workspace.listViews", workspaceId: sibling.workspaceId })).views.length, 1);
@@ -155,9 +155,9 @@ try {
     assert.equal(archived.operation.stage, "completed");
     await page.getByRole("button", { name: en ? "Archived" : "Архив", exact: true }).click();
     await board().getByText("Board keyboard edit", { exact: true }).waitFor();
-    await current().selectOption(workspace.viewId);
+    await selectView(workspace.viewId);
     await page.getByRole("table").getByText("Board keyboard edit", { exact: true }).waitFor();
-    await current().selectOption(boardId); await board().getByText("Board keyboard edit", { exact: true }).waitFor();
+    await selectView(boardId); await board().getByText("Board keyboard edit", { exact: true }).waitFor();
     await page.screenshot({ path: join(evidenceDirectory, `${language}-archived-board.png`), fullPage: true });
     assert.equal(await readFile(join(source, "Archive", "Project", "keep"), "utf8"), "unchanged");
     const categoryRoot = join(fixture, `categories-${language}`);

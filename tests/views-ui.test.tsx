@@ -1,5 +1,4 @@
 import { randomUUID } from "node:crypto";
-import { DiscoveryWorkspace } from "../src/renderer/components/DiscoveryPanel.js";
 import assert from "node:assert/strict";
 import test from "node:test";
 import React from "react";
@@ -9,14 +8,15 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { WorkspaceServiceClient } from "../src/renderer/workspace-service-client.js";
 import type { WorkspaceDesktopApi } from "../src/contracts/desktop-api.js";
-import { ViewsPanel } from "../src/renderer/components/ViewsPanel.js";
-import { TextPropertiesTable } from "../src/renderer/components/TextPropertiesTable.js";
 import { translate } from "../src/renderer/localization.js";
 const browser = new Window();
-Object.assign(globalThis, { window: browser, document: browser.document, HTMLElement: browser.HTMLElement, Node: browser.Node, MutationObserver: browser.MutationObserver });
+Object.assign(globalThis, { window: browser, document: browser.document, HTMLElement: browser.HTMLElement, Element: browser.Element, Node: browser.Node, MutationObserver: browser.MutationObserver, CustomEvent: browser.CustomEvent, getComputedStyle: browser.getComputedStyle.bind(browser), NodeFilter: browser.NodeFilter, HTMLInputElement: browser.HTMLInputElement, ResizeObserver: browser.ResizeObserver });
 Object.defineProperty(globalThis, "navigator", { configurable: true, value: browser.navigator });
 const { cleanup, render, screen, waitFor, within } = await import("@testing-library/react");
 const { default: userEvent } = await import("@testing-library/user-event");
+const { DiscoveryWorkspace } = await import("../src/renderer/components/DiscoveryPanel.js");
+const { ViewsPanel } = await import("../src/renderer/components/ViewsPanel.js");
+const { TextPropertiesTable } = await import("../src/renderer/components/TextPropertiesTable.js");
 // @ts-expect-error Built service module intentionally has no declarations.
 const { openSettingsService } = await import("../dist/service/settings.mjs");
 for (const language of ["en", "ru"] as const) {
@@ -30,26 +30,44 @@ for (const language of ["en", "ru"] as const) {
     const client = new WorkspaceServiceClient(api), user = userEvent.setup({ document }), t = (key: Parameters<typeof translate>[1]) => translate(language, key);
     try {
       render(<ViewsPanel client={client} workspaceId={workspaceId} language={language} disabled={false} onChange={() => {}} />);
-      await screen.findByRole("option", { name: "Table" });
+      await screen.findByRole("tab", { name: "Table" });
+      const actions = screen.getByRole("button", { name: /^(View actions|Действия с представлением):/ });
+      actions.focus(); await user.keyboard("{Enter}");
+      assert.equal((screen.getByRole("menuitem", { name: t("viewDelete") }) as HTMLElement).getAttribute("aria-disabled"), "true");
+      await user.keyboard("{Escape}"); assert.equal(document.activeElement === actions, true);
       screen.getByRole("button", { name: t("viewCreate") }).focus(); await user.keyboard("{Enter}");
       await user.type(screen.getByLabelText(t("viewName")), "Review");
       await user.selectOptions(screen.getByLabelText(t("viewLayout")), "board"); await user.keyboard("{Tab}{Enter}");
-      await waitFor(() => assert.equal((screen.getByLabelText(t("viewCurrent")) as HTMLSelectElement).selectedOptions[0].textContent, "Review"));
-      await user.click(screen.getByRole("button", { name: t("viewDuplicate") }));
+      await waitFor(() => assert.equal(screen.getByRole("tab", { selected: true }).textContent, "Review"));
+      // Creation restores New view; reorder must restore its own menu trigger.
+      await user.click(actions); await user.click(screen.getByRole("menuitem", { name: t("viewEarlier") }));
+      await waitFor(() => assert.deepEqual(screen.getAllByRole("tab").map(tab => tab.textContent), ["Review", "Table"]));
+      await waitFor(() => assert.equal(document.activeElement === actions, true));
+      await user.keyboard("{Enter}"); await user.click(screen.getByRole("menuitem", { name: t("viewLater") }));
+      await waitFor(() => assert.deepEqual(screen.getAllByRole("tab").map(tab => tab.textContent), ["Table", "Review"]));
+      await waitFor(() => assert.equal(document.activeElement === actions, true));
+      await user.click(screen.getByRole("button", { name: /^(?:View actions|Действия с представлением)/ })); await user.click(screen.getByRole("menuitem", { name: t("viewDuplicate") }));
       const name = screen.getByLabelText(t("viewName")); await user.clear(name); await user.type(name, "Copy{Enter}");
-      await screen.findByRole("option", { name: "Copy" });
-      await user.click(screen.getByRole("button", { name: t("viewEdit") }));
+      await screen.findByRole("tab", { name: "Copy" });
+      await user.click(screen.getByRole("button", { name: /^(?:View actions|Действия с представлением)/ })); await user.click(screen.getByRole("menuitem", { name: t("viewEdit") }));
       await user.selectOptions(screen.getByLabelText(t("viewLayout")), "table"); await user.keyboard("{Tab}{Enter}");
       await waitFor(() => assert.deepEqual(service.handleQuery({ type: "workspace.listViews", workspaceId }).value.views.map((v: {name:string;kind:string}) => [v.name, v.kind]), [["Table", "table"], ["Review", "board"], ["Copy", "table"]]));
-      await user.click(screen.getByRole("button", { name: t("viewEarlier") }));
-      await waitFor(() => assert.deepEqual(Array.from((screen.getByLabelText(t("viewCurrent")) as HTMLSelectElement).options).map(o => o.textContent), ["Table", "Copy", "Review"]));
-      await user.click(screen.getByRole("button", { name: t("viewDelete") }));
+      await user.click(screen.getByRole("button", { name: /^(?:View actions|Действия с представлением)/ })); await user.click(screen.getByRole("menuitem", { name: t("viewEarlier") }));
+      await waitFor(() => assert.deepEqual(screen.getAllByRole("tab").map(o => o.textContent), ["Table", "Copy", "Review"]));
+      await user.click(screen.getByRole("button", { name: /^(?:View actions|Действия с представлением)/ })); await user.click(screen.getByRole("menuitem", { name: t("viewDelete") }));
       await user.click(screen.getByRole("button", { name: t("viewConfirmDelete") }));
-      await waitFor(() => assert.equal(screen.queryByRole("option", { name: "Copy" }), null));
-      await user.selectOptions(screen.getByLabelText(t("viewCurrent")), service.handleQuery({ type: "workspace.listViews", workspaceId }).value.views[1].viewId);
-      await user.click(screen.getByRole("button", { name: t("viewEdit") })); await user.keyboard("{Escape}");
+      await waitFor(() => assert.equal(screen.queryByRole("tab", { name: "Copy" }), null));
+      screen.getByRole("tab", { name: "Table" }).focus();
+      await user.keyboard("{ArrowRight}{Enter}");
+      await waitFor(() => assert.equal(screen.getByRole("tab", { name: "Review" }).getAttribute("aria-selected"), "true"));
+      await waitFor(() => assert.equal(document.activeElement, screen.getByRole("tab", { name: "Review" })));
+      await user.keyboard("{ArrowLeft}{Enter}");
+      await waitFor(() => assert.equal(document.activeElement, screen.getByRole("tab", { name: "Table", selected: true })));
+      await user.keyboard("{ArrowRight}{Enter}");
+      await waitFor(() => assert.equal(document.activeElement, screen.getByRole("tab", { name: "Review", selected: true })));
+      await user.click(screen.getByRole("button", { name: /^(?:View actions|Действия с представлением)/ })); await user.click(screen.getByRole("menuitem", { name: t("viewEdit") })); await user.keyboard("{Escape}");
       assert.equal(screen.queryByLabelText(t("viewName")), null);
-      assert.ok(document.activeElement === screen.getByRole("button", { name: t("viewEdit") }), "Escape restores Edit view focus");
+      assert.match(document.activeElement?.getAttribute("aria-label") ?? "", /View actions|Действия с представлением/);
     } finally { cleanup(); service.close(); rmSync(directory, { recursive: true, force: true }); }
   });
 }
@@ -113,14 +131,14 @@ test('view load retry and rejected duplication retain the authored draft without
   try {
     render(<ViewsPanel client={client} workspaceId={workspaceId} language="en" disabled={false} onChange={() => {}} />);
     await screen.findByRole("alert");
-    await user.click(screen.getByRole("button", { name: "Reload views" })); await screen.findByRole("option", { name: "Table" });
-    await user.click(screen.getByRole("button", { name: "Duplicate view" }));
+    await user.click(screen.getByRole("button", { name: "Reload views" })); await screen.findByRole("tab", { name: "Table" });
+    await user.click(screen.getByRole("button", { name: /^View actions/ })); await user.click(screen.getByRole("menuitem", { name: "Duplicate view" }));
     const name = screen.getByLabelText("View name"); await user.clear(name); await user.type(name, "Preserved draft{Enter}");
     await screen.findByText(translate("en", "viewSaveError"));
     assert.equal((screen.getByLabelText("View name") as HTMLInputElement).value, "Preserved draft");
     assert.equal(service.handleQuery({ type: "workspace.listViews", workspaceId }).value.views.length, 1);
     await user.click(screen.getByRole("button", { name: "Save view" }));
-    await screen.findByRole("option", { name: "Preserved draft" });
+    await screen.findByRole("tab", { name: "Preserved draft" });
   } finally { cleanup(); service.close(); rmSync(directory, { recursive: true, force: true }); }
 });
 
@@ -158,9 +176,9 @@ for (const language of ["en", "ru"] as const) test(`${language} selected layout 
     await within(await screen.findByRole("list", { name: t("boardProjects") })).findByText("Active project");
     await user.click(screen.getByRole("button", { name: t("archiveArchived") }));
     await within(await screen.findByRole("list", { name: t("boardProjects") })).findByText("Archived project");
-    await user.selectOptions(screen.getByLabelText(t("viewCurrent")), workspace.viewId);
+    await user.click(screen.getByRole("tab", { name: "Table" }));
     await within(await screen.findByRole("table")).findByText("Archived project");
-    await user.selectOptions(screen.getByLabelText(t("viewCurrent")), boardId);
+    await user.click(screen.getByRole("tab", { name: "Board" }));
     await within(await screen.findByRole("list", { name: t("boardProjects") })).findByText("Archived project");
     const archivedRegion = screen.getByRole("region", { name: t("archiveTitle") });
     await user.type(within(archivedRegion).getByLabelText(t("filterSearch")), "missing{Enter}");

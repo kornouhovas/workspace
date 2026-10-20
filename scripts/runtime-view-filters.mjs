@@ -21,6 +21,8 @@ export async function exerciseViewFilters({ page, query, workspaceId, projectId,
   }
   await clear.focus(); await clear.press("Enter"); await rows.first().waitFor();
   const add = filters.getByRole("button", { name: en ? "Add condition" : "Добавить условие", exact: true });
+  const toggle = filters.getByRole("button", { name: en ? "Search and filters" : "Поиск и фильтры", exact: true });
+  await toggle.focus(); await toggle.press("Enter");
   await add.focus(); await add.press("Enter");
   await filters.getByLabel(en ? "Property" : "Свойство", { exact: true }).selectOption(propertyId);
   await filters.getByLabel(en ? "Operator" : "Оператор", { exact: true }).selectOption("contains");

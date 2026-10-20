@@ -69,7 +69,7 @@ try {
       for (const size of [{width:1024,height:720},{width:1440,height:960}]) {
         await page.setViewportSize(size);
         await page.getByRole("cell", { name: "Project 00", exact: true }).scrollIntoViewIfNeeded();
-        assert.equal(await page.getByRole("combobox", { name: /^(Current view|Текущее представление)$/ }).inputValue(), view.viewId);
+        assert.equal(await page.getByRole("tab", { name: view.name, exact: true }).getAttribute("aria-selected"), "true");
         const layout = await page.evaluate(() => {
           const sidebar = document.querySelector(".desktop-sidebar").getBoundingClientRect();
           const scroll = document.querySelector(".desktop-workspace"), sidebarScroll = document.querySelector(".sidebar-scroll");
@@ -79,6 +79,23 @@ try {
         });
         assert.deepEqual(layout, { viewport:true, documentScroll:false, workScroll:true, sidebarScroll:true, noHorizontalOverflow:true });
         await page.screenshot({ path: join(evidence, `${language}-${theme}-${size.width}-table.png`) });
+        const actions = page.getByRole("button", { name: /^(View actions|Действия с представлением):/ });
+        await actions.focus(); await actions.press("Enter");
+        await page.getByRole("menu").waitFor();
+        await page.screenshot({ path: join(evidence, `${language}-${theme}-${size.width}-view-actions.png`) });
+        await page.keyboard.press("Escape");
+        await actions.and(page.locator(":focus")).waitFor();
+        assert.equal(await actions.evaluate(el => el === document.activeElement), true);
+        const filters = page.getByRole("button", { name: /^(Search and filters|Поиск и фильтры)$/ });
+        await filters.focus(); await filters.press("Enter");
+        const popover = page.getByRole("dialog", { name: /^(Search and filters|Поиск и фильтры)$/ });
+        await popover.waitFor();
+        assert.equal(await popover.evaluate(el => { const r = el.getBoundingClientRect(); return r.left >= 0 && r.right <= window.innerWidth && r.top >= 0 && r.bottom <= window.innerHeight; }), true);
+        await page.screenshot({ path: join(evidence, `${language}-${theme}-${size.width}-filters.png`) });
+        await page.keyboard.press("Escape");
+        await filters.and(page.locator(":focus")).waitFor();
+        assert.equal(await filters.evaluate(el => el === document.activeElement), true);
+        checks.push({ contextualControls: true, language, theme, size });
         // Keyboard-only entry/return preserves scroll, mounted rows and focus.
         const settings = page.getByRole("button", { name: /^(Settings|Настройки)$/ });
         const scrollBefore = await scrollState();
@@ -123,8 +140,8 @@ try {
   await nav.getByRole("button", { name: "Second workspace", exact: true }).click();
   await page.getByRole("heading", { name: "Second workspace", exact: true }).waitFor();
   await nav.getByRole("button", { name: "Рабочие проекты", exact: true }).click();
-  await page.waitForFunction(viewId => document.querySelector('.view-controls select')?.value === viewId, view.viewId);
-  assert.equal(await page.getByRole("combobox", { name: /^(Current view|Текущее представление)$/ }).inputValue(), view.viewId);
+  await page.getByRole("tab", { name: view.name, exact: true }).and(page.locator('[aria-selected="true"]')).waitFor();
+  assert.equal(await page.getByRole("tab", { name: view.name, exact: true }).getAttribute("aria-selected"), "true");
   await close(); await launch();
   await page.getByRole("heading", { name: "Рабочие проекты", exact: true }).waitFor();
   assert.equal(await page.getByRole("button", { name: /^(Settings|Настройки)$/ }).isVisible(), true);

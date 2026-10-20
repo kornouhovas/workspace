@@ -461,9 +461,9 @@ export function DiscoveryWorkspace({ client, workspaceId, sourceId, refreshVersi
       language={language} revision={projects?.revision ?? 0} invalidation={invalidation} onViewChange={setShowArchived}
       onBlockedChange={setArchiveBlocked} onCommitted={() => void load()}
       disabled={disabled || categoryOptionsBlocked || creationBlocked || discoveryPending || recoveryProject !== null || renameProject !== null || renameBlocked || categoryMoveProject !== null || categoryMoveBlocked} />
-    <ViewsPanel client={client} workspaceId={workspaceId} language={language} onChange={setView}
+    <ViewsPanel panelId={`${showArchived ? "archived" : "active"}-view-panel-${workspaceId}`} client={client} workspaceId={workspaceId} language={language} onChange={setView}
       disabled={disabled || categoryOptionsBlocked || creationBlocked || discoveryPending || recoveryProject !== null || renameProject !== null || renameBlocked || categoryMoveProject !== null || categoryMoveBlocked || archiveBlocked} />
-    <section hidden={showArchived} className="table-view" aria-labelledby="table-title" aria-busy={loading}>
+    <section id={`active-view-panel-${workspaceId}`} role="tabpanel" hidden={showArchived} className="table-view" aria-labelledby={view ? `saved-view-${view.viewId}` : "table-title"} aria-busy={loading}>
       <div className="table-view__heading"><div>
         <h3 id="table-title" ref={tableHeading} tabIndex={-1}>{view?.name ?? t("tableViewTitle")}</h3>
         <p>{t(projects?.configured ? "projectsApplied" : "emptyTableDescription")}</p>

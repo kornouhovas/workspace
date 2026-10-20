@@ -105,6 +105,7 @@ const english = {
   groupAllHidden: "All groups are hidden. Show groups or turn off Hide empty groups.",
   groupHint: "Saved per view. Values and selection options define groups; group visibility does not change project filters.",
 
+  viewActions: "View actions",
   filtersTitle: "Search and filters",
   filterSemantics: "Saved per view. Search and all conditions must match. Selection lists match any chosen value; All requires every chosen value.",
   filterSearch: "Search project names",
@@ -793,6 +794,7 @@ const russian: Record<keyof typeof english, string> = {
   groupAllHidden: "Все группы скрыты. Покажите группы или отключите скрытие пустых групп.",
   groupHint: "Настройки сохраняются для представления. Группы объединяют значения и варианты выбора; их видимость не меняет фильтры проектов.",
 
+  viewActions: "Действия с представлением",
   filtersTitle: "Поиск и фильтры",
   filterSemantics: "Сохраняется в представлении. Поиск и все условия должны совпасть. Список соответствует любому выбранному значению; «Все» требует каждого значения.",
   filterSearch: "Поиск по названиям проектов",

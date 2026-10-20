@@ -1,3 +1,4 @@
+import * as Popover from "@radix-ui/react-popover";
 import { useEffect, useRef, useState } from "react";
 import { filterOperators, type FilterRule, type FilterType, type ViewFilterConfig } from "../../contracts/view-filters.js";
 import type { Language } from "../../contracts/settings.js";
@@ -17,6 +18,8 @@ const clearConfig = (): ViewFilterConfig => ({ search: "", rules: [] });
 export function ViewFilters(props: Props) { return <FilterContent key={`${props.workspaceId}:${props.viewId}:${props.archived}`} {...props} />; }
 function FilterContent({ client, workspaceId, viewId, archived, language, snapshot, categoryProperty, categories, projection, refreshKey, refreshToken = 0, disabled, onResults, onGroups }: Props) {
   const t = (key: TranslationKey) => translate(language, key);
+  const [open, setOpen] = useState(false);
+  const toggle = useRef<HTMLButtonElement>(null);
   const [draft, setDraft] = useState<ViewFilterConfig>(clearConfig);
   const [loading, setLoading] = useState(true), [saving, setSaving] = useState(false);
   const [error, setError] = useState<"filterLoadError" | "filterSaveError" | "filterQueryError" | null>(null);
@@ -106,8 +109,14 @@ function FilterContent({ client, workspaceId, viewId, archived, language, snapsh
     <form onSubmit={event => { event.preventDefault(); void save(); }} onKeyDown={event => {
       if (event.key === "Escape" && !saving) { event.preventDefault(); hasDraft.current = false; void load(); }
     }}>
-      <p>{t("filterSemantics")}</p>
       <label>{t("filterSearch")} <input className="workspace-input" type="search" maxLength={1000} value={draft.search} disabled={disabled || saving} onChange={event => change({ ...draft, search: event.currentTarget.value })} /></label>
+      <Popover.Root open={open} onOpenChange={setOpen}>
+        <Popover.Trigger asChild><button ref={toggle} className="workspace-button workspace-button--secondary" type="button" disabled={disabled || saving}
+          aria-label={t("filtersTitle")}>{t("filtersTitle")} ({draft.rules.length})</button></Popover.Trigger>
+        <Popover.Content className="contextual-panel filter-popover" align="end" sideOffset={4} collisionPadding={8} aria-label={t("filtersTitle")}
+          onEscapeKeyDown={event => { event.stopPropagation(); if (saving) event.preventDefault(); }}
+          onInteractOutside={event => { if (saving) event.preventDefault(); }}>
+          <p>{t("filterSemantics")}</p>
       {draft.rules.map((rule, index) => {
         const property = properties.find(p => p.id === rule.propertyId);
         const type = property?.type ?? "text";
@@ -137,8 +146,11 @@ function FilterContent({ client, workspaceId, viewId, archived, language, snapsh
           <button type="button" className="workspace-button workspace-button--secondary" onClick={() => change({ ...draft, rules: draft.rules.filter((_, i) => i !== index) })}>{t("filterRemove")}</button>
         </fieldset>;
       })}
-      <div className="workspace-form-actions">
         <button className="workspace-button workspace-button--secondary" type="button" disabled={disabled || saving || draft.rules.length >= 100} onClick={() => change({ ...draft, rules: [...draft.rules, { propertyId: "name", operator: "contains", operand: "" }] })}>{t("filterAdd")}</button>
+        </Popover.Content>
+      </Popover.Root>
+      <div className="workspace-form-actions">
+
         <button className="workspace-button" type="submit" disabled={disabled || saving || !snapshot}>{t(saving ? "filterSaving" : "filterApply")}</button>
         <button className="workspace-button workspace-button--secondary" type="button" disabled={disabled || saving} onClick={() => void save(clearConfig())}>{t("filterClear")}</button>
       </div>
