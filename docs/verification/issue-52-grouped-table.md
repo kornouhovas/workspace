@@ -341,3 +341,23 @@ zero findings. Fresh build, directory package/artifact, typecheck/lint and the
 RU dark 1024 column popup retains bounds and long content. This application change
 requires actual hosted performance proof and renewed full application/platform/
 installer acceptance; no complete target pass is claimed from the local probe.
+
+The hosted first-use candidate `2564a02b`, diagnostic run `39474553368`, attempt 1,
+completed all 32 scenarios, four normal quits/backend exits/cleanup and four
+batches/252 records, but first Table grouping remained 709.0 ms (mutation IPC
+11.0 ms, projection 71.2 ms, first stabilized paint 492.4 ms, final 709.0 ms).
+Deferring compact roots did not resolve the measured symptom. No strict acceptance
+is inferred from its green diagnostic-completion job.
+
+A separate scheduling diagnostic records native original/current throttling and
+renderer visibility/focus. Explicit `--profile-unthrottled` requires renderer
+profiling, which rejects `--enforce`; original/default routes never set the native
+property. This will test long frame gaps, not approve altered-scheduling targets.
+Native controls passed 13/13, including actual property/default-state preservation;
+the additional isolated native/CLI controls passed 2/2 and reject invalid modes
+before creating evidence/fixtures. The route suite first failed its old exact guard
+expression after adding the opt-in; adapt it while retaining original strict,
+readiness, package and platform assertions. Final route controls passed 50/50.
+Both independent diagnostic reviews found zero findings. The discovery-index
+application repair remains a separate local candidate; it is not part of this
+scheduling-diagnostic comparison's published application inputs.

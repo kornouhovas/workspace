@@ -1074,7 +1074,10 @@ test('performance readiness repair retains the original strict command after reg
   assert.equal(workflow.on.workflow_dispatch.inputs.diagnostic_only.default, false);
   assert.ok(workflow.concurrency.group.includes("inputs.diagnostic_only && format('-diagnostic-{0}', inputs.platform)"));
   const diagnosticGuard=job.steps.find(step=>step.name==='Require a selected diagnostic profile');
-  assert.equal(diagnosticGuard.if,'${{ inputs.diagnostic_only || inputs.profile_backend }}');
+  assert.equal(diagnosticGuard.if,'${{ inputs.diagnostic_only || inputs.profile_backend || inputs.profile_unthrottled }}');
+  assert.equal(workflow.on.workflow_dispatch.inputs.profile_unthrottled.default,false);
+  assert.equal(diagnosticGuard.env.PROFILE_UNTHROTTLED,'${{ inputs.profile_unthrottled }}');
+  assert.ok(diagnosticGuard.run.includes("Scheduling diagnostics require renderer profiles"));
   assert.ok(diagnosticGuard.run.includes("Backend diagnostics require renderer profiles"));
   assert.equal(workflow.on.workflow_dispatch.inputs.profile_backend.default,false);
   assert.ok(diagnosticGuard.run.includes("throw new Error('Select a diagnostic profile')"));

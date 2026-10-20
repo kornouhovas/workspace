@@ -31,7 +31,7 @@ async function withPage(run) {
     });
     const page = await app.firstWindow();
     await page.waitForURL(await app.evaluate(() => globalThis.renameEditorInitialLoad));
-    await run(page);
+    await run(page, app);
   } catch (error) { primary = error; }
   try { await closeElectron(app); await rm(profile, { recursive: true, force: true }); }
   catch (error) {
@@ -323,4 +323,34 @@ test('projection endpoint observation precedes slow locator delivery but require
     const measured=await readRuntimeInteraction(page,timing);
     assert.ok(measured.driverObservationDelayMs>=200,'Late host polling cannot move an already captured endpoint');
   });
+});
+
+
+test('explicit scheduling diagnostics record original native throttling and leave default observation unchanged',async()=>{
+  await withPage(async(_page,app)=>{
+    const {inspectPerformanceWindow}=await import('../scripts/runtime-performance-probe.mjs');
+    const original=await app.evaluate(inspectPerformanceWindow);
+    assert.equal(original.originalBackgroundThrottling,true);assert.equal(original.backgroundThrottling,true);
+    const changed=await app.evaluate(inspectPerformanceWindow,true);
+    assert.equal(changed.originalBackgroundThrottling,true);assert.equal(changed.backgroundThrottling,false);
+    const after=await app.evaluate(inspectPerformanceWindow);
+    assert.equal(after.originalBackgroundThrottling,false);assert.equal(after.backgroundThrottling,false);
+  });
+});
+
+
+test('scheduling diagnostics reject ordinary and strict routes before creating evidence or fixtures',async()=>{
+  const {spawnSync}=await import('node:child_process');const {access}=await import('node:fs/promises');
+  const directory=await mkdtemp(join(tmpdir(),'scheduling-guard-')),evidence=join(directory,'uncreated');
+  try{
+    for(const [flags,message] of [
+      [['--profile-unthrottled'],'Scheduling diagnostics require a separate renderer profile'],
+      [['--profile-unthrottled','--profile-filters','--enforce'],'Profiled runs are diagnostic, never target acceptance'],
+    ]){
+      const result=spawnSync(process.execPath,[fileURLToPath(new URL('../scripts/smoke-performance.mjs',import.meta.url)),...flags],
+        {encoding:'utf8',env:{...process.env,WORKSPACE_SMOKE_EVIDENCE_DIR:evidence}});
+      assert.equal(result.status,1);assert.ok(result.stderr.includes(message));
+      await assert.rejects(access(evidence),{code:'ENOENT'});
+    }
+  }finally{await rm(directory,{recursive:true,force:true});}
 });

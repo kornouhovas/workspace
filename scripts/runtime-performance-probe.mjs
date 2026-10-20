@@ -16,3 +16,14 @@ export function installPerformanceCommandProbe({ipcMain}) {
     }
   });
 }
+
+
+// Only the explicit diagnostic variant changes scheduling; default and strict
+// execution never call this setter. Keep both states in its diagnostic receipt.
+export function inspectPerformanceWindow({BrowserWindow}, unthrottled = false) {
+  const window = BrowserWindow.getAllWindows()[0];
+  const original = window.webContents.backgroundThrottling;
+  if (unthrottled) window.webContents.backgroundThrottling = false;
+  return {originalBackgroundThrottling:original,backgroundThrottling:window.webContents.backgroundThrottling,
+    focused:window.isFocused(),visible:window.isVisible(),minimized:window.isMinimized()};
+}

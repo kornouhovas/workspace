@@ -1,7 +1,7 @@
 import { createPerformanceQueries } from "./runtime-performance-queries.mjs";
 import { inspectRuntimeProjectionFailure } from "./runtime-view-readiness.mjs";
 import { instrumentPerformanceBackend, inspectPerformanceBackendBatches } from "./runtime-performance-backend-profile.mjs";
-import { installPerformanceCommandProbe } from "./runtime-performance-probe.mjs";
+import { installPerformanceCommandProbe, inspectPerformanceWindow } from "./runtime-performance-probe.mjs";
 import { openGroupingControls, closeGroupingControls } from "./runtime-presentation-controls.mjs";
 import { activateRuntimeView, setRuntimeViewLanguage, pressRuntimeFilterSave } from "./runtime-view-controls.mjs";
 import { readRuntimeInteraction, waitForRuntimeProjection } from "./runtime-performance-timing.mjs";
@@ -22,6 +22,8 @@ import { cleanupOwnedFixture, closeElectron, ownedProcessesStopped } from "./run
 const root = resolve(process.env.WORKSPACE_PERFORMANCE_ROOT ?? join(dirname(fileURLToPath(import.meta.url)), ".."));
 const profileFilters = process.argv.includes("--profile-filters");
 const profileBackend = process.argv.includes("--profile-backend");
+const profileUnthrottled = process.argv.includes("--profile-unthrottled");
+assert.ok(!profileUnthrottled || profileFilters, "Scheduling diagnostics require a separate renderer profile");
 assert.ok(!profileBackend || profileFilters, "Backend probes require a separate diagnostic renderer profile");
 assert.ok(!profileFilters || !process.argv.includes("--enforce"), "Profiled runs are diagnostic, never target acceptance");
 const evidence = resolve(process.env.WORKSPACE_SMOKE_EVIDENCE_DIR ?? "work/issue-41-performance/baseline");
@@ -50,7 +52,10 @@ async function startUiTiming(locator, event) {
     window.__workspacePerformanceStarted = undefined;
     element.addEventListener(event, () => {
       window.__workspacePerformanceStarted = performance.now();
-      if (trace) performance.mark("workspace-performance-event", { detail: { event } });
+      if (trace) {
+        window.__workspacePerformanceEnvironment={visibility:document.visibilityState,focused:document.hasFocus()};
+        performance.mark("workspace-performance-event", { detail: { event } });
+      }
     }, { capture: true, once: true });
   }, { event, trace: profileFilters });
 }
@@ -107,7 +112,9 @@ async function recordUi(source, scenario, limit = report.limits.interaction) {
       const window = BrowserWindow.getAllWindows()[0];
       return {focused:window.isFocused(),visible:window.isVisible(),minimized:window.isMinimized(),commands:globalThis.__workspacePerformanceCommands ?? []};
     });
-    report.measurements[report.measurements.length - 1].diagnostic = {eventWallTime,...native};
+    const renderer = await page.evaluate(() => ({atEvent:window.__workspacePerformanceEnvironment,
+      atObservation:{visibility:document.visibilityState,focused:document.hasFocus()}}));
+    report.measurements[report.measurements.length - 1].diagnostic = {eventWallTime,...native,renderer};
   }
 }
 async function ready(ids, endpoint) {
@@ -147,6 +154,7 @@ async function launch(data, executable, expected, mode) {
   });
   if (profileFilters) await app.evaluate(installPerformanceCommandProbe);
   page = await app.firstWindow(); page.setDefaultTimeout(30000);
+  if (profileFilters) (report.windowDiagnostics ??= []).push(await app.evaluate(inspectPerformanceWindow,profileUnthrottled));
   const firstWindowMs = performance.now() - started;
   const runtime = await app.evaluate(({ app, BrowserWindow }) => ({ packaged: app.isPackaged,
     isolation: (() => { const p = BrowserWindow.getAllWindows()[0].webContents.getLastWebPreferences(); return [p.contextIsolation, p.nodeIntegration, p.sandbox]; })(),

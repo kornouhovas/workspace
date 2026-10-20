@@ -932,3 +932,13 @@ all later locators and public-service/filesystem assertions still execute. Nativ
 controls cover delayed commitment and late driver delivery. Both strict hosts
 must renew after this shared measurement-driver repair; a passing diagnostic
 profile does not satisfy acceptance or establish a backend queue repair.
+
+For the remaining issue-52 focused macOS first-group frame gaps, the separate
+renderer profile accepts `profile_unthrottled: true` (CLI
+`--profile-filters --profile-unthrottled`). It records original/current native
+background throttling and renderer visibility/focus at the event and observation.
+Only this explicit diagnostic changes scheduling; default/strict launches never
+set it, and CLI enforcement rejects profiled execution. Native property and
+pre-fixture CLI guard controls cover the distinction. The altered configuration
+cannot supply performance acceptance or justify a production runtime change by
+itself. Retain the original normal-scheduling failure for comparison.
