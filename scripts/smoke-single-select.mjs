@@ -8,6 +8,7 @@ import { fileURLToPath } from "node:url";
 import { _electron } from "playwright-core";
 import { closeElectron, cleanupOwnedFixture, ownedProcessesStopped } from "./runtime-lifecycle.mjs";
 import { packagedExecutablePath } from "./runtime-executable.mjs";
+import { openPropertyCreator } from "./property-editor-driver.mjs";
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const mode = process.argv[2] ?? "dev";
 assert.ok(["dev", "release"].includes(mode));
@@ -59,9 +60,10 @@ try {
     const projects = await query(page, { type: "workspace.applyDiscovery", workspaceId, previewToken: preview.previewToken });
     await query(page, { type: "workspace.activate", workspaceId }); await page.reload();
     const en = language === "en";
-    const create = page.getByRole("button", { name: en ? "Create Single Select property" : "Создать Single Select-свойство", exact: true });
-    await create.focus(); await create.press("Enter");
-    const propertyName = page.getByLabel(en ? "Property name" : "Название свойства", { exact: true });
+    const propertyName = await openPropertyCreator(page, {
+      createLabel: en ? "Create Single Select property" : "Создать Single Select-свойство",
+      propertyNameLabel: en ? "Property name" : "Название свойства",
+    });
     await propertyName.fill("Status"); await propertyName.press("Enter");
     await page.locator("summary").filter({ hasText: en ? "Select options: Status" : "Опции Select: Status" }).click();
     const add = page.getByRole("button", { name: en ? "Add option" : "Добавить опцию", exact: true });

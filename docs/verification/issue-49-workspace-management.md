@@ -183,3 +183,32 @@ The `workspace-setup-readiness` selector reruns only the failed fixtures and
 routing checks. The already-passed original native receipt is inherited
 separately; full acceptance still follows the focused gate. Application code and
 the Apply helper did not change in this fixture-only repair.
+
+
+## Windows latest packaged Single Select diagnosis
+
+Full run `39381220528` at `99584863` passed Common, all three platform suites,
+all three workspace-management journeys (11 check groups each) and shell journeys
+(20 each), and complete macOS/latest and Windows/2022 runtime acceptance. The only
+failed step was Windows/latest's packaged `npm run smoke:select -- release`:
+`Property name` fill timed out at the first property creation. Its screenshot
+showed no creator; normal quit/backend exit and owned cleanup passed. Original
+job `118491010590` logs and `issue-17-windows-evidence` are retained locally.
+
+The call site pressed Enter without waiting for the initially disabled create
+button. Controlled native EN/RU fixtures reproducing that call sequence both failed
+at the same missing Property name input (5-second caller deadline, zero successful
+cases). Restoring the existing `openPropertyCreator` enabled-button helper passes
+both plus the never-enabled deadline regression (3/3); the original local dev
+Single Select journey passes both language scenarios with shutdown and cleanup.
+No product code, original 15-second action deadline, option/value/hiding/restart
+assertion or quit gate changed. The exact original CI enabled state was not
+recorded: this proves a driver defect and a matching failure mechanism, while the
+historical timing explanation remains an inference.
+
+The dedicated `select-readiness` route packages on Windows/latest and replays the
+exact original failed command after related readiness/routing regressions, with
+strict exits and exact provenance. Routing checks pass 69/69. Existing app-source
+installer receipts at `99584863` are retained separately: macOS run `39381220158`
+and Windows run `39381476934` passed their full install/reopen/replacement/data
+retention/cleanup scenarios. This repair changes only drivers, tests, CI and docs.

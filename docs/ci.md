@@ -673,3 +673,22 @@ regression when its build succeeded; strict exits, exact SHA/run/attempt provena
 and always-uploaded results remain. Inspect native geometry, original journey and
 cleanup before full CI on the same reviewed repair SHA. Ordinary/default coverage
 is unchanged.
+
+
+## Issue 49 packaged Single Select readiness
+
+Full desktop run `39381220528` at `99584863` passed Common, all platform suites,
+and complete macOS/latest and Windows/2022 acceptance. Only Windows/latest's
+`npm run smoke:select -- release` failed waiting for Property name after keyboard
+creation. The failed screenshot showed the workspace without a property form;
+normal shutdown and owned cleanup passed. The enabled state at activation was not
+captured, so the historical timing cause remains an inference.
+
+Dispatch `checks: select-readiness` to build and package on Windows/latest, run the
+real-Electron EN/RU creator readiness regressions and routing checks, then replay
+that exact packaged command. Enabled-button keyboard activation reuses the
+existing property driver; all original action deadlines and scenario assertions
+remain. Always-uploaded evidence records SHA/run/attempt and the original result.
+Inspect focused results before renewed full desktop acceptance on the same SHA.
+Application and installer inputs are unchanged by this driver/fixture/CI repair;
+retain their separately recorded successful exact-SHA receipts.
