@@ -1003,6 +1003,9 @@ test('workspace sidebar failure route runs only the original failed shell and re
   const upload = job.steps.find(step => step.uses === 'actions/upload-artifact@v4');
   assert.equal(upload.if,'always()'); assert.equal(upload.with['if-no-files-found'],'error');
   for (const field of ['matrix.os','github.sha','github.run_id','github.run_attempt']) assert.ok(upload.with.name.includes(field));
+  const nativeManagement = job.steps.find(step => step.name === 'Workspace setup focus and management native journey');
+  assert.ok(nativeManagement.run.includes('npm run smoke:workspaces'));
+  assert.ok(nativeManagement.run.includes('set -o pipefail'));
   const full = workflow.jobs.verify;
   const management = full.steps.find(step => step.name === 'Preserve workspace management evidence');
   for (const outcome of ['success','failure','skipped',undefined]) assert.equal(runInNewContext(management.if.slice(3,-2), {always:()=>true,steps:{workspace_management:{outcome}}}), outcome === 'success' || outcome === 'failure');

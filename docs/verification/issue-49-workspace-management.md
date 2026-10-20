@@ -124,3 +124,18 @@ behind the focused gate; focused/full run receipts belong to the issue checkpoin
 Separate installer run `39374699133`, same SHA/attempt, passed macOS 14 arm64 DMG
 and Windows x64 NSIS installation/reopen checks. These remain separate evidence
 and do not replace the pending desktop focused/full gates.
+
+## Open-preview postponement focus repair
+
+A targeted EN/RU renderer scenario found that Set up later from an open preview
+attempted to focus its still-disabled trigger before React closed the preview.
+The regression went red, then passed after reusing the existing post-close focus
+restoration effect. It also verifies that a delayed preview cannot reopen setup.
+Initial closed-preview postponement and explicit Cancel remain covered.
+
+The #49 native journey now postpones an open preview and verifies actual trigger
+focus. Both reviewers accepted the repair and coverage. The full desktop run
+`39375719753` was superseded/cancelled during Common checks before platform
+acceptance. The focused three-OS gate now includes this directly affected native
+management journey alongside the previously repaired original shell; full
+acceptance follows renewed focused evidence on the new SHA.

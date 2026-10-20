@@ -3863,3 +3863,26 @@ test("sidebar ordering keeps keyboard focus and Escape closes contextual actions
   assert.deepEqual(data.workspaces.map(w => w.workspaceId), ["two", "one"]);
   assert.equal(document.querySelector("#workspace-title")?.textContent, "First");
 });
+
+test("EN/RU postponing an open pending setup returns focus and rejects the delayed preview", async () => {
+  for (const language of ["en", "ru"] as const) {
+    const active = makeActive("postpone", "Workspace");
+    let finishPreview!: (result: ServiceResult<WorkspaceResponse>) => void;
+    mockApi({ language, load:ok(snapshotOf(active)), onWorkspace:async input => {
+      if (input.type === "workspace.load") return ok(snapshotOf(active));
+      if (input.type === "workspace.previewDiscovery") return new Promise(resolve => { finishPreview = resolve; });
+      return fail("invalid_input");
+    } });
+    render(<App />);
+    const later = await screen.findByRole("button", { name:translate(language,"setupLater") });
+    const setup = screen.getByRole("button", { name:translate(language,"discoveryAction") });
+    await userEvent.click(setup);
+    await waitFor(() => assert.ok(finishPreview));
+    later.focus(); await userEvent.keyboard("{Enter}");
+    await waitFor(() => assert.ok(document.activeElement === setup));
+    await act(async () => finishPreview(ok(previewResult(active))));
+    assert.equal(screen.queryByRole("button", { name:translate(language,"discoveryApply") }), null);
+    assert.equal(document.querySelector("#workspace-title")?.textContent, "Workspace");
+    cleanup();
+  }
+});

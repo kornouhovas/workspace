@@ -74,12 +74,14 @@ Use the [implementation sequence](development.md#implementation-sequence) before
 
 After acceptance, record the run/attempt, tested SHA, actual checks/artifacts, delivered SHA and integration verification in that checkpoint. A fast-forward delivery of the same commit retains exact-SHA evidence. If a required later change creates another commit, identify its affected boundary and renew the checks it requires; state explicitly when a documentation-only change has separate checks rather than describing its SHA as platform-tested. Preserve existing workflow defaults and required platform coverage.
 
-For #49's inherited sidebar switching failure, `checks: workspace-sidebar` runs
-only the original `npm run smoke:shell` on macOS latest, Windows latest and
-Windows 2022, with its build and related workspace/routing regressions. The
+For #49's sidebar switching and source-setup focus repairs, `checks: workspace-sidebar`
+runs the original `npm run smoke:shell` and the focused `smoke:workspaces` native
+journey on macOS latest, Windows latest and Windows 2022, with their build and
+related workspace/routing regressions. The
 failure was an ambiguous name selector matching both workspace selection and the
 new contextual-actions button. Exact-name selection retains saved-view and
-restart/focus assertions. This focused route retains SHA/run/attempt artifacts;
+restart/focus assertions. Setup postponement now returns focus after its preview
+trigger is enabled, including delayed-preview rejection. This focused route retains SHA/run/attempt artifacts;
 its success precedes a full acceptance dispatch on the same repaired SHA.
 Ordinary platform coverage remains unchanged. Workspace-management artifacts are
 required after an attempted management step; an earlier skipped step has no

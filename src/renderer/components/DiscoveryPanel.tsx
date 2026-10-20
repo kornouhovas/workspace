@@ -226,7 +226,7 @@ export function DiscoveryController({ client, workspaceId, sourceId, minimumRevi
     <button ref={trigger} type="button" className="workspace-button workspace-button--secondary" disabled={disabled || open}
       onClick={() => { mode.current = undefined; setOpen(true); setApplyError(false); setValidationError(false); setStale(false); void request(); }}>{translate(language, "discoveryAction")}</button>
     {onPostpone && <button type="button" className="workspace-button workspace-button--secondary" disabled={disabled || applying}
-      onClick={() => { version.current++; setOpen(false); setPreview(null); setPending(false); onPostpone(); trigger.current?.focus(); }}>{translate(language, "setupLater")}</button>}
+      onClick={() => { version.current++; if (open) returnFocus.current = true; else trigger.current?.focus(); setOpen(false); setPreview(null); setPending(false); onPostpone(); }}>{translate(language, "setupLater")}</button>}
     {open && <DiscoveryPanel language={language} preview={preview && preview.revision >= minimumRevision.current ? preview : null} pending={pending} error={error} applying={applying} disabled={disabled} applyError={applyError} stale={stale} validationError={validationError} onApply={() => void apply()}
       onMode={(value) => { mode.current = value; setApplyError(false); setValidationError(false); setStale(false); void request(exclusions.current); }}
       onRetry={() => { setApplyError(false); void request(exclusions.current); }}

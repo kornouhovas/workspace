@@ -76,8 +76,11 @@ try {
       }
     }
   }
-  await page.getByRole("button", { name: /^(Set up later|Настроить позже)$/ }).press("Enter");
   const configure = page.getByRole("button", { name: /^(Preview project folders|Посмотреть папки проектов)$/ });
+  await configure.press("Enter");
+  await page.getByRole("button", { name: /^(Apply reviewed projects|Применить проверенные проекты)$/ }).waitFor();
+  await page.getByRole("button", { name: /^(Set up later|Настроить позже)$/ }).press("Enter");
+  await page.waitForFunction(() => document.activeElement === document.querySelector(".source-tools > button"));
   await configure.press("Enter");
   await page.getByRole("button", { name: /^(Apply reviewed projects|Применить проверенные проекты)$/ }).waitFor();
   await page.getByRole("button", { name: /^(Cancel|Отмена)$/ }).press("Enter");
