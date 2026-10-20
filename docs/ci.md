@@ -774,3 +774,15 @@ endpoint, and invalidated fields require the second readiness check. Renew only
 the candidate plus these controls on both performance hosts; earlier performance
 receipts retain their old clock and SHA. The original `--enforce` command and all
 limits/correctness/lifecycle gates remain; desktop/installer inputs are unchanged.
+
+
+For `39422590498`'s remaining macOS Table assignment and Windows interaction/scan
+misses, renew both original strict candidate hosts after the in-renderer
+stabilization repair. It retains both complete readiness observations and both
+frame pairs within one renderer promise, records phase timestamps, and removes
+only driver round trips between those phases. Fixture setup uses its ordinary
+30-second budget; 500ms activation controls remain. A performance-only language
+adapter preserves the immutable baseline's inline select without changing the
+shared current settings driver. The failed baseline General-tab comparison remains
+failed diagnostic evidence; neither its target misses nor unreached cases are
+relabeled as passing current acceptance.

@@ -1,6 +1,5 @@
-import { activateRuntimeView } from "./runtime-view-controls.mjs";
+import { activateRuntimeView, setRuntimeViewLanguage } from "./runtime-view-controls.mjs";
 import { readRuntimeInteraction, waitForRuntimeProjection } from "./runtime-performance-timing.mjs";
-import { setInterfaceLanguage } from "./runtime-settings.mjs";
 /* global window, document, DataTransfer */
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
@@ -45,16 +44,16 @@ async function startUiTiming(locator, event) {
     element.addEventListener(event, () => { window.__workspacePerformanceStarted = performance.now(); }, { capture: true, once: true });
   }, event);
 }
-let lastReadyPaintedAt;
+let lastReadyTiming;
 async function recordUi(source, scenario, limit = report.limits.interaction) {
-  const timing = await readRuntimeInteraction(page, lastReadyPaintedAt);
+  const timing = await readRuntimeInteraction(page, lastReadyTiming);
   const { ms } = timing;
   assert.equal(Number.isFinite(ms), true, "The measured user event must have occurred");
   report.measurements.push({ source, scenario, ...timing, limit, passed: ms <= limit, clock: "renderer event through committed paint" });
   console.log(`${source} ${scenario}: ${ms.toFixed(1)} ms (limit ${limit})`);
 }
 async function ready(ids) {
-  lastReadyPaintedAt = await waitForRuntimeProjection(page, ids);
+  lastReadyTiming = await waitForRuntimeProjection(page, ids);
 }
 async function memory(scenario) {
   const metrics = await app.evaluate(({ app }) => app.getAppMetrics().map(m => ({ type: m.type, serviceName: m.serviceName,
@@ -222,7 +221,7 @@ try {
     assert.equal(refreshed.projects.find(row => row.projectId === p.projectId).relativePath, renamed);
     assert.equal(await readFile(join(source.root, renamed, "preserved.txt"), "utf8"), "Keep project contents.\n");
     assert.equal((await command("listTextProperties")).values.find(v => v.projectId === p.projectId && v.propertyId === source.properties[0].propertyId).value, "Accepted board");
-    await setInterfaceLanguage(page, "ru"); await page.setViewportSize({ width: 720, height: 900 });
+    await setRuntimeViewLanguage(page, "ru"); await page.setViewportSize({ width: 720, height: 900 });
     await page.waitForFunction(() => document.documentElement.lang === "ru");
     const last = source.projects.at(-1), lastRow = page.locator(`[data-project-id="${last.projectId}"]`);
     await lastRow.scrollIntoViewIfNeeded();

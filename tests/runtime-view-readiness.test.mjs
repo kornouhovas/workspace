@@ -9,7 +9,7 @@ import { fileURLToPath } from "node:url";
 import { _electron } from "playwright-core";
 import { closeElectron } from "../scripts/runtime-lifecycle.mjs";
 import { usableRuntimeViewProjection } from "../scripts/runtime-view-readiness.mjs";
-import { activateRuntimeView } from "../scripts/runtime-view-controls.mjs";
+import { activateRuntimeView, setRuntimeViewLanguage } from "../scripts/runtime-view-controls.mjs";
 import { readRuntimeInteraction, waitForRuntimeProjection } from "../scripts/runtime-performance-timing.mjs";
 
 async function withPage(run) {
@@ -76,14 +76,18 @@ test("view readiness excludes clipped fields but requires every visible editor a
 test("runtime activation supports current tabs and the immutable baseline select with one action each", async () => {
   await withPage(async page => {
     page.setDefaultTimeout(500);
-    await page.setContent('<label>Current view <select><option value="table">Table</option><option value="board">Board</option></select></label>');
+    await page.route("https://view-fixture.invalid/ready.svg", async route => {
+      await new Promise(done => setTimeout(done, 650));
+      await route.fulfill({ contentType: "image/svg+xml", body: '<svg xmlns="http://www.w3.org/2000/svg" width="1" height="1"/>' });
+    });
+    await page.setContent('<img alt="" src="https://view-fixture.invalid/ready.svg"><label>Current view <select><option value="table">Table</option><option value="board">Board</option></select></label>', { timeout: 30000 });
     await page.evaluate(() => {
       globalThis.activations = [];
       document.querySelector("select").addEventListener("change", event => globalThis.activations.push(event.target.value));
     });
     await activateRuntimeView(page, { viewId: "board", name: "Board" });
     assert.deepEqual(await page.evaluate(() => globalThis.activations), ["board"]);
-    await page.setContent('<div role="tablist" aria-label="Current view"><button role="tab" aria-selected="true">Table</button><button role="tab" aria-selected="false">Board</button></div>');
+    await page.setContent('<div role="tablist" aria-label="Current view"><button role="tab" aria-selected="true">Table</button><button role="tab" aria-selected="false">Board</button></div>', { timeout: 30000 });
     await page.evaluate(() => {
       globalThis.activations = [];
       document.querySelectorAll('[role="tab"]').forEach(tab => tab.addEventListener("click", () => {
@@ -112,22 +116,24 @@ test("event-to-paint timing includes delayed committed work and excludes later d
       });
     });
     await page.getByRole("button", { name: "Apply", exact: true }).press("Enter");
-    const paintedAt = await waitForRuntimeProjection(page, ["one"]);
-    const before = await readRuntimeInteraction(page, paintedAt);
+    const readyTiming = await waitForRuntimeProjection(page, ["one"]);
+    const before = await readRuntimeInteraction(page, readyTiming);
     await new Promise(done => setTimeout(done, 250)); // Deliberate driver delay after completed renderer work.
-    const after = await readRuntimeInteraction(page, paintedAt);
+    const after = await readRuntimeInteraction(page, readyTiming);
     assert.equal(after.ms, before.ms, "Later driver scheduling must not move the committed-paint endpoint");
     assert.ok(after.ms >= 200, "Pending content and renderer work before the completion frames stay measured");
     assert.ok(after.observedMs - before.observedMs >= 240, "The injected driver delay is independently observable");
     assert.ok(after.driverObservationDelayMs >= 240);
-    await assert.rejects(readRuntimeInteraction(page, Number.NaN), /fresh measured event/);
+    await assert.rejects(readRuntimeInteraction(page, { ...readyTiming, paintedAt: Number.NaN }), /fresh measured event/);
+    await assert.rejects(readRuntimeInteraction(page, { ...readyTiming, firstPaintedAt: Number.NaN }), /fresh measured event/);
+    await assert.rejects(readRuntimeInteraction(page), /fresh measured event/);
     const startedAt = await page.evaluate(() => globalThis.__workspacePerformanceStarted);
-    await assert.rejects(readRuntimeInteraction(page, startedAt - 1), /fresh measured event/);
-    await assert.rejects(readRuntimeInteraction(page, startedAt + 1_000_000), /fresh measured event/);
+    await assert.rejects(readRuntimeInteraction(page, { ...readyTiming, paintedAt: startedAt - 1 }), /fresh measured event/);
+    await assert.rejects(readRuntimeInteraction(page, { ...readyTiming, paintedAt: startedAt + 1_000_000 }), /fresh measured event/);
     await page.evaluate(() => { globalThis.__workspacePerformanceStarted = undefined; });
-    await assert.rejects(readRuntimeInteraction(page, paintedAt), /fresh measured event/);
+    await assert.rejects(readRuntimeInteraction(page, readyTiming), /fresh measured event/);
     await page.evaluate(() => { globalThis.__workspacePerformanceStarted = Number.NaN; });
-    await assert.rejects(readRuntimeInteraction(page, paintedAt), /fresh measured event/);
+    await assert.rejects(readRuntimeInteraction(page, readyTiming), /fresh measured event/);
   });
 });
 
@@ -135,23 +141,67 @@ test("event-to-paint timing includes delayed committed work and excludes later d
 test("projection readiness rechecks fields invalidated during the first frame pair", async () => {
   await withPage(async page => {
     await page.setContent('<section class="text-properties" aria-busy="false"><div data-project-id="one" data-fields-ready="true"><button>Edit value</button></div></section>');
-    let first = true;
-    const controlledPage = {
+    await page.evaluate(() => {
+      const row = document.querySelector("[data-project-id]");
+      const bounds = row.getBoundingClientRect.bind(row);
+      let first = true, invalidated = false;
+      row.getBoundingClientRect = () => {
+        if (first) {
+          first = false;
+          globalThis.requestAnimationFrame(() => { row.setAttribute("data-fields-ready", "false"); invalidated = true; });
+        } else if (invalidated) {
+          row.setAttribute("data-fields-ready", "true"); globalThis.recoveredAt = performance.now(); invalidated = false;
+        }
+        return bounds();
+      };
+    });
+    const { paintedAt } = await waitForRuntimeProjection(page, ["one"]);
+    const recoveredAt = await page.evaluate(() => globalThis.recoveredAt);
+    assert.ok(Number.isFinite(recoveredAt) && paintedAt >= recoveredAt, "Final paint must wait for fields revealed as unready after initial layout");
+  });
+});
+
+
+test("readiness stabilization completes in the renderer before delayed driver result delivery", async () => {
+  await withPage(async page => {
+    await page.setContent('<section class="text-properties" aria-busy="false"><div data-project-id="one" data-fields-ready="true"><button>Edit value</button></div></section>');
+    let gapStartedAt;
+    const delayedPage = {
       evaluate: page.evaluate.bind(page),
       waitForFunction: async (...args) => {
         const result = await page.waitForFunction(...args);
-        if (first) {
-          first = false;
-          await page.evaluate(() => globalThis.requestAnimationFrame(() => {
-            const row = document.querySelector("[data-project-id]"); row.setAttribute("data-fields-ready", "false");
-            setTimeout(() => { row.setAttribute("data-fields-ready", "true"); globalThis.recoveredAt = performance.now(); }, 180);
-          }));
-        }
+        gapStartedAt ??= await page.evaluate(() => performance.now());
+        await new Promise(done => setTimeout(done, 250));
         return result;
       },
     };
-    const paintedAt = await waitForRuntimeProjection(controlledPage, ["one"]);
-    const recoveredAt = await page.evaluate(() => globalThis.recoveredAt);
-    assert.ok(Number.isFinite(recoveredAt) && paintedAt >= recoveredAt, "Final paint must wait for fields revealed as unready after initial layout");
+    const { paintedAt } = await waitForRuntimeProjection(delayedPage, ["one"]);
+    assert.ok(paintedAt <= gapStartedAt, "A host pause delivering the result must occur after renderer stabilization");
+  });
+});
+
+
+test("runtime language selection preserves current settings navigation and the immutable inline select", async () => {
+  await withPage(async page => {
+    page.setDefaultTimeout(500);
+    const select = '<label for="interface-language">Language</label><select id="interface-language"><option value="en">English</option><option value="ru">Russian</option></select>';
+    await page.setContent(select, { timeout: 30000 });
+    await page.evaluate(() => {
+      document.documentElement.lang = "en"; globalThis.actions = [];
+      document.querySelector("select").addEventListener("change", event => { document.documentElement.lang = event.target.value; globalThis.actions.push(event.target.value); });
+    });
+    await setRuntimeViewLanguage(page, "ru");
+    assert.deepEqual(await page.evaluate(() => globalThis.actions), ["ru"]);
+    await page.setContent(`<button id="settings">Settings</button><div id="panel" hidden><button role="tab">General</button>${select}<button id="back">Back to workspace</button></div>`, { timeout: 30000 });
+    await page.evaluate(() => {
+      document.documentElement.lang = "en"; globalThis.actions = [];
+      const panel = document.querySelector("#panel"), settings = document.querySelector("#settings");
+      settings.addEventListener("click", () => { settings.hidden = true; panel.hidden = false; globalThis.actions.push("settings"); });
+      document.querySelector('[role="tab"]').addEventListener("click", () => globalThis.actions.push("general"));
+      document.querySelector("select").addEventListener("change", event => { document.documentElement.lang = event.target.value; globalThis.actions.push(event.target.value); });
+      document.querySelector("#back").addEventListener("click", () => { panel.hidden = true; settings.hidden = false; globalThis.actions.push("back"); });
+    });
+    await setRuntimeViewLanguage(page, "ru");
+    assert.deepEqual(await page.evaluate(() => globalThis.actions), ["settings", "general", "ru", "back"]);
   });
 });

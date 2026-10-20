@@ -274,3 +274,58 @@ strict candidate on both macOS 14 and Windows latest. Retain earlier timing
 receipts at their original metric and SHA; they do not establish acceptance for
 the repaired clock. Application/dependency/native/migration/build inputs remain
 unchanged, so inspected full desktop and installer receipts retain `23c7fb4`.
+
+
+## In-renderer stabilization and bounded fixture repair
+
+Old-clock comparison run `39419612547`, attempt 1 at `2d4207f5`, retained
+28 immutable-baseline measurements with target misses, two normal quits/backend
+exits and cleanup. Both sources then failed at the obsolete General-tab locator
+in `runtime-settings`; RU refresh/reopen were unreached. This is failed diagnostic
+comparison evidence, not passing baseline or current-app acceptance. Its separate
+candidate CPU diagnostic completed 32 samples/eight profiles and lifecycle.
+Renderer stacks include driver role/visibility work and idle spans; for example,
+grouped Table grouping/assignment spent about 2,915ms of 3,296ms idle. Those broad
+spans do not uniquely identify the strict interaction delays. The independent
+unprofiled candidate completed all 32 cases but failed 11 interaction targets.
+Its native control also failed page preparation at the fixture's 500ms timeout.
+
+Clock-renewal run `39422590498`, attempt 1 at `90f0defe`, passed all four native
+controls on both hosts. Both completed 32 samples, startup/scan/memory/lifecycle
+and cleanup except the listed limits: macOS Table assignment 314.7ms; Windows
+Table filters 352.2/347.1/324.9ms, Table assignments 375.1/437.5ms, Board grouping
+368.1/374.0ms and grouped refresh 5,071.6ms. Windows initial startup passed.
+Trailing observation delays were about 2ms at those misses, refuting that interval
+as their sufficient explanation. These are retained failures under that clock.
+
+A further native control reproduced host latency *between* readiness phases:
+delaying delivery of the first driver result moved stabilization after that pause,
+although the renderer was already usable. Both unchanged predicates and both
+frame pairs now run together inside one renderer promise. Only the repository's
+fixed owned functions are serialized; project IDs remain ordinary data arguments.
+The original driver timeout remains, with a 30-second internal readiness bound.
+Reports add first-painted and stabilization durations; later handle delivery and
+observation cannot move captured timestamps. This removes host round trips from
+stabilization, not renderer work, pending states or actual completion frames.
+
+The field invalidation control now changes readiness after the first actual DOM
+observation and restores only on another observation. Removing the second check
+fails; restoring it passes. Pending/renderer-work, post-paint and intermediate
+host-delay controls, invalid/stale/future endpoints, clipping/order/membership and
+real-editor requirements remain. Six native controls pass; lint/typecheck and
+49 routing checks pass. This demonstrates the harness defects, not a unique
+historical cause for every target miss; both original strict hosts need renewal.
+
+Fixture setup retains its ordinary 30-second allowance while activation actions
+keep 500ms. A controlled 650ms resource load reproduced the preparation failure
+before repair and passes after it. The performance-only language adapter retains
+current Settings/General/select/Back actions and the immutable inline select,
+with a single-action native control for each. No shared settings driver, product,
+source/dependency/build input, target or lifecycle requirement changes.
+
+Both independent follow-up reviews found no actionable issues. The local strict
+original with in-renderer stabilization completed 32 samples, all interaction/scan
+targets, four normal quits/backend exits and cleanup. It still failed initial
+startup 5,278.2ms and conservative final peaks 1,005,371,392/1,015,136,256 bytes.
+Those local failures are retained; neither a remote pass nor a unique historical
+cause is inferred. Both supported strict candidates remain required.

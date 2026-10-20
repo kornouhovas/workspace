@@ -1,19 +1,37 @@
 import assert from "node:assert/strict";
 import { usableRuntimeViewProjection } from "./runtime-view-readiness.mjs";
 
-// Keep both readiness observations and both pairs of frames. Capture the final
-// renderer endpoint alongside the later driver read, which cannot move it.
 function afterPaint() {
   return new Promise(done => globalThis.requestAnimationFrame(() => globalThis.requestAnimationFrame(() => done(performance.now()))));
 }
-export async function waitForRuntimeProjection(page, ids) {
-  await page.waitForFunction(usableRuntimeViewProjection, ids);
-  await page.evaluate(afterPaint);
-  await page.waitForFunction(usableRuntimeViewProjection, ids);
-  return page.evaluate(afterPaint);
+function stabilizeProjection({ ids, timeout }, usable, painted) {
+  return (async () => {
+    const deadline = performance.now() + timeout;
+    const ready = async () => {
+      while (!usable(ids)) {
+        if (performance.now() >= deadline) throw new Error("Runtime projection readiness timed out");
+        await new Promise(done => globalThis.requestAnimationFrame(done));
+      }
+    };
+    await ready();
+    const firstPaintedAt = await painted();
+    // Mounting can reveal additional rows. Recheck complete membership and all
+    // visible editors after layout, then retain the original final frame pair.
+    await ready();
+    return { firstPaintedAt, paintedAt: await painted() };
+  })();
 }
-export async function readRuntimeInteraction(page, paintedAt) {
+// Playwright serializes functions without their module imports. Embed only our
+// fixed, owned functions so host RPC pauses cannot split the stabilization.
+const observeProjection = new Function("input", `return (${stabilizeProjection.toString()})(input, (${usableRuntimeViewProjection.toString()}), (${afterPaint.toString()}));`);
+export async function waitForRuntimeProjection(page, ids) {
+  const result = await page.waitForFunction(observeProjection, { ids, timeout: 30000 });
+  try { return await result.jsonValue(); }
+  finally { await result.dispose(); }
+}
+export async function readRuntimeInteraction(page, { firstPaintedAt, paintedAt } = {}) {
   const { startedAt, observedAt } = await page.evaluate(() => ({ startedAt: globalThis.__workspacePerformanceStarted, observedAt: performance.now() }));
-  assert.ok(Number.isFinite(startedAt) && Number.isFinite(paintedAt) && paintedAt >= startedAt && paintedAt <= observedAt, "A fresh measured event and completed paint must precede observation");
-  return { ms: paintedAt - startedAt, observedMs: observedAt - startedAt, paintedMs: paintedAt - startedAt, driverObservationDelayMs: observedAt - paintedAt };
+  assert.ok(Number.isFinite(startedAt) && Number.isFinite(firstPaintedAt) && Number.isFinite(paintedAt) && firstPaintedAt >= startedAt && paintedAt >= firstPaintedAt && paintedAt <= observedAt, "A fresh measured event and completed paint must precede observation");
+  return { ms: paintedAt - startedAt, firstPaintedMs: firstPaintedAt - startedAt, stabilizationMs: paintedAt - firstPaintedAt,
+    observedMs: observedAt - startedAt, paintedMs: paintedAt - startedAt, driverObservationDelayMs: observedAt - paintedAt };
 }
