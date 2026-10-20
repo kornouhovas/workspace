@@ -70,6 +70,14 @@ alone does not establish a repair or acceptance.
 
 ## Candidate and handoff
 
+Subsequent #47 UI work after #52 follows the owner-approved
+[desktop UX selection matrix](desktop-ux-verification.md). Bounded UI changes
+require visual and affected-behavior evidence; broad acceptance runs at its
+integration milestones or when the affected boundary calls for it. This overrides
+blanket application-change/full-rerun wording for that scope only. The actual
+workflow defaults below remain broad until a verified scoped route is implemented;
+the policy does not turn a skipped check into evidence or change #52's live gates.
+
 The acceptance renewal policy below governs all focused routes in this document. Historical route notes requiring a subsequent full run describe the default; eligible test-only repairs use [evidence reuse](#evidence-reuse-after-test-only-repairs) instead. Ordinary push/PR and explicit full workflow defaults remain unchanged.
 
 Use the [implementation sequence](development.md#implementation-sequence) before dispatching candidate acceptance. The candidate includes application changes, tests, fixtures, CI routes and relevant repository reports. Record observed local results before committing it; keep pending CI/integration status in the GitHub issue checkpoint linked from the plan.

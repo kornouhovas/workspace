@@ -1,6 +1,6 @@
 # Issue tracker: GitHub
 
-Workspace uses Issues in [kornouhovas/workspace](https://github.com/kornouhovas/workspace) as its sole task tracker. GitHub owns specifications, acceptance criteria, issue dependencies, and completion status. Project policy requires private application and future marketing-site sources; a public website does not change that requirement. Use `gh` and verify `isPrivate` before the first write to a repository. If actual visibility conflicts with this policy, resolve it with the owner before publishing retained private material.
+Workspace uses Issues in [kornouhovas/workspace](https://github.com/kornouhovas/workspace) as its sole task tracker. GitHub owns specifications, acceptance criteria, issue dependencies, and completion status. On 2026-10-19 the owner confirmed that this application repository is public and authorized normal scoped publication to it (D61). Verify the target repository before writes; its public visibility is expected and does not require repeated confirmation. Existing task authorization still governs issue writes, pushes, merges and releases. This does not change the visibility policy for another repository or authorize publishing secrets, user data or raw recovery archives.
 
 ## Operations
 
@@ -44,3 +44,11 @@ Publish specifications and approved issues with acceptance criteria and blocking
 Every new or revised implementation issue links to [requirement-based test retention](development.md#inherited-test-coverage) and [CI evidence reuse](ci.md#evidence-reuse-after-test-only-repairs). These policies also apply when resuming existing issues. Keep scenario-specific acceptance in the issue; reference the shared policies rather than copying a mandatory full-rerun rule into each ticket. Update older conflicting verification instructions when encountered, retaining product, data-safety, platform and release requirements.
 
 The owner applied this policy to all 22 open issues on 2026-10-20: #6, #7, #42, #47 and #50–#67. Closed issue reports remain historical evidence. New issues inherit the same policy through this tracker rule and AGENTS.md.
+
+For subsequent #47 UI issues after #52, also link the owner-approved
+[desktop UX verification matrix](desktop-ux-verification.md). Its scoped checks
+and early/final integration milestones supersede blanket full-run wording for
+bounded UI changes. Keep explicit visual evidence, affected behavior and retained
+product guarantees separate. Preserve #52's existing acceptance and all final
+release gates. Synchronize native and textual dependency changes and assign an
+explicit owner to any scope transferred between UI issues.

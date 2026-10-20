@@ -8,6 +8,14 @@ The first target, 0.1.0, is a complete local desktop release for macOS and Windo
 
 ## Workspaces and folders
 
+The [desktop experience specification](specs/workspace-desktop-ux.md), published
+as #47, defines main's interface composition and working model with bb typography
+and component styling. One project area can expand; tabs are unique per project
+within a workspace. Nested splits are excluded. Its early visual milestone
+establishes the coherent principal interface; final acceptance also requires
+the remaining editor, session, filesystem and recovery behavior.
+This describes accepted direction, not current implementation completeness.
+
 - Users can create multiple saved workspaces, including different workspaces over the same selected root.
 - Each workspace selects one root initially; multi-root aggregation follows later. Workspaces over the same root share projects, property definitions/values, discovery mode and archive location; their view sets and presentation settings are independent.
 - Initially, folder interpretation has two modes: `Root/Project` and `Root/Select value/Project`. Additional modes may be introduced later.

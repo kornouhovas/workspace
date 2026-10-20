@@ -50,6 +50,44 @@ Design tracking: [GitHub #6](https://github.com/kornouhovas/workspace/issues/6).
 | D40 | Remote operation requires a connected host. When disconnected, show connection loss and do not accumulate changes or commands for automatic replay. Reconnect and reload current state when the host returns. |
 | D41 | The user explicitly deferred Q46's parallel-agent working-file policy until AI implementation design. Shared directories, Git worktrees and non-Git copies remain alternatives; none is the selected default. Resolve this before implementing concurrent editing, without blocking the earlier local release. |
 
+## Desktop UX interview decisions
+
+Accepted after D41:
+
+| ID | Decision |
+| --- | --- |
+| D42 | Restore main's desktop working cycle on new-workspace: navigation, saved-view/project tabs, project preview, file tree, session restoration and appearance choice. D50 explicitly replaces main's split panels. Detailed behavior is resolved in the [desktop UX spec](specs/workspace-desktop-ux.md). |
+| D43 | Main supplies working scenarios and principal layout; Radix UI and Tailwind CSS with bb's visual language supply the component foundation. Preserve new-workspace's domain and safety contracts. See [ADR 0008](adr/0008-desktop-experience-reference-authority.md). |
+| D44 | Desktop UX acceptance is required for the first local 0.1.0 release. Keep a separate linked spec and implementation slices; final integration acceptance must include the new UI. Performance issue 41 may proceed independently, with renewed measurements on the finished UI. |
+| D45 | Use bb's settings organization as the reference. Q4 accepts General, Appearance, Workspaces, Sources, Backup and recovery, and About; sidebar/contextual entry and return to the prior work area; per-preference saving and explicit review/application for consequential operations. Everyday Archive/Restore remains in the work area. |
+| D46 | Show a real project file tree; external default-app opening works on macOS and Windows and is distinct from Reveal. Embedded content viewers/editors are outside the desktop UX spec. |
+| D47 | Retain the workspace session per device/workspace and include it in application-data backups. Reload current project data and verify availability when resuming or restoring. |
+| D48 | Preserve open project tabs across verified moves, archive, exclusion, missing projects and unavailable sources; display actual state and applicable recovery/editing actions. |
+| D49 | Provide keyboard/menu alternatives for tab ordering, opening the project area, resizing allowed boundaries and returning from expanded mode, with explicit focus and acceptance coverage. D50 excludes arbitrary panel placement and splitting. |
+| D50 | Display only one project in the right-hand project area, with an option to expand it into the work area. Exclude nested splits and any division inside the project. Session/layout commands must preserve this simpler model; D51–D53 settle its tabs and transitions. |
+| D51 | Retain multiple project tabs per workspace but show only the selected project, with at most one tab per project. Reopening reuses that tab; duplicate-project tabs are excluded. |
+| D52 | Open from Board/Table in the single right-hand area; another selection replaces its content. Expand replaces the view and retains sidebar navigation. Return-right restores the view beside the project; Close removes the project and returns from expanded mode to Board/Table. Preserve view filters, grouping and scroll; an empty right-hand area occupies no space. |
+| D53 | Support pointer/keyboard resizing and persistence of sidebar/project-area widths. Expanded mode uses the work area; return-right restores the prior project width. |
+| D54 | Use compact ordinary-property editors consistently in Table, Board and project details. Text commits on Cmd/Ctrl+Enter or blur, with Enter for newline; Number/manual Date commit on Enter or blur. Escape cancels uncommitted drafts. Calendar/Single Select choices and each MultiSelect toggle commit immediately; dismissing menus does not undo them. |
+| D55 | Before switching project/workspace or closing a project area, save valid uncommitted input. Invalid drafts or failed saves retain the editor and block the transition until correction or explicit cancellation. Preserve pending/revision/ownership protections. |
+| D56 | Keep Number expression input with result-only persistence. Reopening `10 + 5` after commit shows `15`; persisting the source expression is outside this UX spec. |
+| D57 | Minimum desktop window is 1024x720; also require visual acceptance at 1440x960 for Board, Table, project preview/expanded and settings in EN/RU and light/dark. Work areas scroll independently inside the viewport-bound shell. |
+| D58 | A row/card click requests a right-hand preview. Expand creates or activates the unique project tab. Return-right removes that project's tab and leaves its preview; other tabs remain. Closing a preview does not close retained tabs. |
+| D59 | Automatically name a new workspace Workspace (owner-confirmed spelling), with rename after creation. Choose a folder first; reuse configured sources immediately, or offer discovery preview/exclusions/Apply and Set up later for an unconfigured source. Deferring setup preserves the already-created workspace. |
+| D60 | Place project creation in view actions and applicable rename/move/archive/restore/Reveal in contextual project menus. Use compact dialogs for required consequence review and contextual status with Details/Recover for interrupted operations or unavailable sources; display actual outcomes. |
+| D61 | On 2026-10-19 the owner confirmed kornouhovas/workspace is public, authorized publishing the desktop UX specification and approved U01–U20 breakdown, and replaced the application-repository private-only rule. Normal publication within an authorized task no longer requires a repeated visibility confirmation. Other repositories, private data and release permissions retain their existing boundaries. |
+
+## Desktop UX correction decisions
+
+Accepted on 2026-10-20; applied after completion of the independently owned #52:
+
+| ID | Decision |
+| --- | --- |
+| D62 | Main defines interface composition and daily work with sidebars, tabs, views and workspaces. bb defines typography, component styling and the common visual language. Preserve D50–D58's deliberate exceptions. |
+| D63 | Establish a coherent principal interface as the next delivery milestone, including explicit corrections to completed surfaces and reference-based visual acceptance, before remaining behavioral refinements. Green functional tests do not establish visual fidelity. |
+| D64 | For subsequent UI work, require appearance evidence and affected-behavior checks per issue. Run broad platform/installer acceptance at agreed integration milestones or when the relevant boundary changes. Preserve data-safety coverage, report failures and retain evidence provenance. Do not retrospectively change #52's acceptance gates. |
+| D65 | For the owner's “undo/redo as in main” request, preserve main's actual Back/Forward navigation: visited workspaces/settings, current-run history, end-of-history disabled states and localized hints. Inspection of current remote main confirms this is not Undo/Redo of saved mutations. Keep navigation, Cancel/Escape and persisted workspace sessions distinct; do not infer a new mutation-reversal feature from the label. |
+
 ## Open design branches
 
 | ID | Question and prerequisite |
@@ -68,7 +106,7 @@ Design tracking: [GitHub #6](https://github.com/kornouhovas/workspace/issues/6).
 | O12 | D33/D34/D36/D37 settle personal project chats, local Codex/API-key execution, two permission modes and parallel agents. Per D41, defer working-file isolation/result integration to M6 implementation design. Also define exact tool/network permissions, cancellation/recovery and credential lifecycle before their implementation. |
 | O13 | D35/D38-D40 settle owner-only remote access, initial browser features and connected-only operation without an offline mutation queue. Define device authentication, encryption, revocation and reconciliation of runs/commands already accepted before a disconnect. |
 | O14 | Before distribution: choose supported OS versions/architectures, signing, installer/update strategy, privacy/support policy and release automation. |
-| O15 | Before website: settle product name/domain, downloads, changelog rendering/localization and publication workflow. Repository visibility remains private unless explicitly changed. |
+| O15 | Before website: settle product name/domain, downloads, changelog rendering/localization and publication workflow. The application repository is public under D61; a separate future website repository remains private unless explicitly changed. |
 | O16 | For future roadmap milestones, decide when to publish scoped GitHub issues; reconcile archived tasks through [the retirement checkpoint](beads-retirement.md) without silently importing legacy scope. The local-release tickets are already published; Beads is retired. |
 
 ## Decision tree

@@ -15,6 +15,11 @@ Current issue ownership, waiting states and unresolved acceptance gates belong t
 ## Implementation sequence
 
 Apply this sequence to the affected boundaries; small documentation changes need only their documented checks.
+For subsequent #47 UI work after #52, the owner-approved
+[desktop UX verification matrix](desktop-ux-verification.md) selects per-issue
+checks and broad integration milestones. Its bounded-UI cadence takes precedence
+over blanket full-candidate wording below; uncertain or cross-cutting impact still
+requires broad verification. It does not retrospectively alter #52 acceptance.
 
 1. Resolve the selected issue's blockers and consequential open decisions. Record a compact scenario list in the existing plan or GitHub checkpoint: each acceptance criterion, failure/recovery case, persistence/ownership boundary and required platform/UI route has a check or an explicit unresolved gate.
 2. Implement in vertical slices at the agreed public seams. Add regression scenarios while implementing their behavior; update the scenario list when evidence expands the scope.
@@ -49,6 +54,12 @@ For explicitly selected tasks or an already authorized continuation, read [the R
 Use bounded English task snapshots/plans with scope, fixtures, acceptance and exclusions. Review the plan against settled decisions, retain the immutable issue-start SHA, and review the resulting diff and actual evidence. Follow-up review receipts retain their separate SHA. The existing configuration selects `new-workspace` and disables automatic finalization; configuration is not launch or delivery authorization.
 
 ## Verification
+
+For #47 UI work, record appearance separately from affected behavior and retained
+product guarantees. Compare the implemented screen with its reference before
+final broad acceptance; a passing behavioral suite cannot accept visual fidelity.
+Use the [desktop UX matrix](desktop-ux-verification.md#selection-matrix) to select
+checks and frequency.
 
 | Change | Required evidence |
 | --- | --- |
