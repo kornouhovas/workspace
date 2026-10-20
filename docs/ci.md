@@ -877,3 +877,24 @@ or `profile_service`, and uses a separate platform-specific concurrency group.
 It still packages the exact candidate, retains the original native controls and
 runs selected profiles. It cannot supply strict acceptance. Defaults preserve
 the existing original full/candidate routes and their limits.
+
+At `30b502b4`, strict run `39463627765` passed macOS but Windows still missed
+interaction limits. Both exact artifacts were inspected: all 32 functional cases,
+normal application quits/backend exits and cleanup completed. Windows separate
+profiles observed assignment IPC up to 268.8 ms and filter save 126.2 ms, after
+the redundant property reads had been removed. Preserve the actual macOS strict
+receipt; no unchanged Windows strict rerun is selected for diagnosis.
+
+For that remaining failure, `diagnostic_only: true`, `platform: windows-latest`,
+`profile_filters: true`, `profile_backend: true` instruments only the disposable
+profile bundle copy. Its archive is extracted, the pinned backend factory is
+wrapped once and the diagnostic backend hashes are recorded. The original package
+and strict route remain untouched. Backend observations retain fixed request types,
+wall/CPU durations and timestamps, capped at 256 per process; no payloads, replies,
+errors, authored values or process identities are recorded. Each normal close
+flushes one batch to a new evidence file; missing batches fail diagnostics. CPU
+usage includes backend worker threads and is not a main-thread CPU measurement.
+Compare backend execution start/end with the main IPC interval to distinguish
+service work from queue/transport delay. This modified copy cannot supply startup,
+package or strict performance acceptance. Conflicting modes/missing renderer
+profiling are rejected before execution.

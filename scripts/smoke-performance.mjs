@@ -1,4 +1,5 @@
 import { inspectRuntimeProjectionFailure } from "./runtime-view-readiness.mjs";
+import { instrumentPerformanceBackend, inspectPerformanceBackendBatches } from "./runtime-performance-backend-profile.mjs";
 import { installPerformanceCommandProbe } from "./runtime-performance-probe.mjs";
 import { openGroupingControls, closeGroupingControls } from "./runtime-presentation-controls.mjs";
 import { activateRuntimeView, setRuntimeViewLanguage, pressRuntimeFilterSave } from "./runtime-view-controls.mjs";
@@ -19,6 +20,8 @@ import { cleanupOwnedFixture, closeElectron, ownedProcessesStopped } from "./run
 
 const root = resolve(process.env.WORKSPACE_PERFORMANCE_ROOT ?? join(dirname(fileURLToPath(import.meta.url)), ".."));
 const profileFilters = process.argv.includes("--profile-filters");
+const profileBackend = process.argv.includes("--profile-backend");
+assert.ok(!profileBackend || profileFilters, "Backend probes require a separate diagnostic renderer profile");
 assert.ok(!profileFilters || !process.argv.includes("--enforce"), "Profiled runs are diagnostic, never target acceptance");
 const evidence = resolve(process.env.WORKSPACE_SMOKE_EVIDENCE_DIR ?? "work/issue-41-performance/baseline");
 await mkdir(evidence, { recursive: true });
@@ -173,6 +176,8 @@ try {
   // directory breaks macOS helper resource resolution after relocation.
   report.artifactSha256 = createHash("sha256").update(await readFile(join(bundle, process.platform === "darwin" ? "Contents/Resources/app.asar" : "resources/app.asar"))).digest("hex");
   await cp(bundle, installed, { recursive: true, verbatimSymlinks: true });
+  if (profileBackend) report.backendDiagnostic = await instrumentPerformanceBackend(
+    join(installed, process.platform === "darwin" ? "Contents/Resources" : "resources"),join(evidence,"backend-requests.jsonl"));
   const executable = process.platform === "darwin" ? join(installed, "Contents/MacOS/Workspace") : join(installed, "Workspace.exe");
   const { openSettingsService } = await import(pathToFileURL(join(root, "dist/service/settings.mjs")));
   console.log("Preparing public-service fixture (excluded from timings)");
@@ -319,6 +324,10 @@ try {
   if (page && !page.isClosed()) await page.screenshot({ path: join(evidence, "failure.png") }).catch(() => {});
 } finally {
   if (app) try { await stop(); } catch (error) { failure ??= error; report.status = "failed"; report.shutdownError = error.message; }
+  if (profileBackend) {
+    try { Object.assign(report.backendDiagnostic,await inspectPerformanceBackendBatches(join(evidence,"backend-requests.jsonl"),parents.size)); }
+    catch { failure ??= new Error("Backend diagnostic batches were incomplete"); report.status="failed"; report.backendDiagnosticIncomplete=true; }
+  }
   await writeFile(join(evidence, "report.json"), JSON.stringify(report, null, 2));
   await cleanupOwnedFixture(fixture, { processesStopped: ownedProcessesStopped(parents, backends, { launchUnverified }), primaryFailure: failure,
     record: async cleanup => { report.cleanup = cleanup; await writeFile(join(evidence, "report.json"), JSON.stringify(report, null, 2)); } });

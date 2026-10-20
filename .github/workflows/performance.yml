@@ -26,6 +26,10 @@ on:
         description: Profile first Table filter and Board filter/grouping separately from strict acceptance
         type: boolean
         default: false
+      profile_backend:
+        description: Profile backend request execution in the disposable renderer-profile copy only
+        type: boolean
+        default: false
       profile_service:
         description: Profile real public-service scans and native observation separately from acceptance
         type: boolean
@@ -50,10 +54,11 @@ jobs:
           node-version: 22.21.1
           cache: npm
       - name: Require a selected diagnostic profile
-        if: ${{ inputs.diagnostic_only }}
+        if: ${{ inputs.diagnostic_only || inputs.profile_backend }}
         shell: bash
-        run: node -e "if (process.env.READINESS_ONLY === 'true') throw new Error('Select one diagnostic mode'); if (process.env.PROFILE_FILTERS !== 'true' && process.env.PROFILE_SERVICE !== 'true') throw new Error('Select a diagnostic profile')"
+        run: node -e "if (process.env.PROFILE_BACKEND === 'true' && process.env.PROFILE_FILTERS !== 'true') throw new Error('Backend diagnostics require renderer profiles'); if (process.env.READINESS_ONLY === 'true') throw new Error('Select one diagnostic mode'); if (process.env.PROFILE_FILTERS !== 'true' && process.env.PROFILE_SERVICE !== 'true') throw new Error('Select a diagnostic profile')"
         env:
+          PROFILE_BACKEND: ${{ inputs.profile_backend }}
           READINESS_ONLY: ${{ inputs.readiness_only }}
           PROFILE_FILTERS: ${{ inputs.profile_filters }}
           PROFILE_SERVICE: ${{ inputs.profile_service }}
@@ -104,7 +109,7 @@ jobs:
         run: |
           set -o pipefail
           mkdir -p work/ci-performance/profile
-          node scripts/smoke-performance.mjs --profile-filters 2>&1 | tee work/ci-performance/profile/runtime.log
+          node scripts/smoke-performance.mjs --profile-filters ${{ inputs.profile_backend && '--profile-backend' || '' }} 2>&1 | tee work/ci-performance/profile/runtime.log
         env:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-performance/profile
       - name: Verify clipped view readiness before the original measurement

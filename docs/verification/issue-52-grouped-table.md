@@ -207,3 +207,31 @@ for this source change. GitHub owns actual candidate SHA/run status.
 Focused continuation/test-suite contracts passed 73/73 after the literal-matrix
 adaptation; both independent incremental reviews found no remaining findings.
 The original complete run and its sole static failure are preserved above.
+
+## Remaining Windows performance gate
+
+At exact clean `30b502b4`, run `39463627765` attempt 1, macOS 14 strict passed all
+32 measurements, memory/startup/scan, four normal quits/backend exits and cleanup;
+Table assignment was 237.9/231.4 ms direct/grouped. Native controls passed 11/11.
+The separate profile confirmed both redundant property reads were absent.
+
+Windows strict completed all 32 functional cases but failed direct Table filter
+539.8, assignment 457.2, edit 303.8; grouped Table filters 425.7/319.2, assignment
+373.6, edit 304.5, Board grouping 364.8 ms (300 ms limit). Its separate profile
+observed assignment IPC 268.8 ms and filter save 126.2 ms without redundant reads.
+These failures remain failed. An optional disposable-copy backend timing probe
+will separate actual service execution from IPC queue/delivery time. It preserves
+normal service results/errors and records no authored data; copied backend hashes
+and normal-close batch counts distinguish this diagnostic artifact. The accepted
+macOS strict package remains unmodified; new strict acceptance is not inferred
+from modified-copy diagnostics.
+
+Backend probe controls passed 53/53 (service reply/error/one-call preservation,
+archive-copy isolation, real child execution/parseable output, bounded histories,
+normal-close batch accounting and CI routes). The real local disposable package
+completed all 32 diagnostic scenarios, four normal quits/backend exits and cleanup;
+its four batches contained 178 requests and passed the batch inspector. Local
+assignment service time was about 24–27 ms; the Windows failure is not reproduced
+by those local values. Its startup miss remains diagnostic. Both independent
+reviews found no remaining findings; lint/docs/whitespace passed. Application and
+original package inputs remain unchanged from `30b502b4`.
