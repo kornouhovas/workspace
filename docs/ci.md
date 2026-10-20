@@ -87,6 +87,14 @@ Ordinary platform coverage remains unchanged. Workspace-management artifacts are
 required after an attempted management step; an earlier skipped step has no
 management evidence to upload.
 
+For #49's later Windows 2022 management/Apply failure, `checks: workspace-setup`
+selects only Windows 2022, the original `npm run smoke:workspaces`, and its
+keyboard-readiness/route regressions. The other two management targets and all
+original-shell targets retain their passed evidence. The driver waits for an
+enabled reviewed Apply before one Enter, retaining the caller deadline and
+original project/persistence assertions. Focused success and artifact inspection
+precede renewed full acceptance on the same SHA.
+
 ## Failed Actions loop
 
 For issue #41's macOS/Windows development runtimes waiting for offscreen project cells,

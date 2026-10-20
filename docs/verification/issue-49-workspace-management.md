@@ -139,3 +139,28 @@ focus. Both reviewers accepted the repair and coverage. The full desktop run
 acceptance. The focused three-OS gate now includes this directly affected native
 management journey alongside the previously repaired original shell; full
 acceptance follows renewed focused evidence on the new SHA.
+
+## Windows 2022 Apply readiness diagnosis
+
+Renewed focused run `39376110944`, attempt 1, SHA `32994a22`, passed the original
+shell on all three OSes. Management passed on macOS and Windows latest; only
+Windows 2022 management failed waiting for the Project cell after the final
+keyboard Apply. Its screenshot retained the open preview and unconfigured source;
+normal shutdown and owned cleanup passed. Related regressions passed on all three
+OSes (macOS 230; each Windows 227 with two platform skips).
+
+A controlled real-Electron fixture reproduced the driver's readiness defect:
+plain `press(Enter)` on disabled Apply returned with zero submissions, and a
+never-enabled control returned instead of respecting a readiness timeout. Both
+regressions went red. The focused helper now waits for enabled Apply and sends
+exactly one Enter; both tests pass in EN/RU with the original caller deadlines.
+The original local `smoke:workspaces` also passed. No application code, deadline,
+project-result assertion or mutation-replay policy changed.
+
+The fixture proves that driver defect. The original CI screenshot establishes
+unfinished setup but did not capture Apply's enabled state at the keystroke, so
+its specific timing cause remains an inference. The new Windows-2022-only
+`workspace-setup` route retains the original command, readiness regressions and
+exact provenance, without replaying already-passed unrelated targets. The route/
+inventory suites passed 68/68; both reviewers accepted the repair and this evidence
+boundary. Focused/full receipts remain in the issue checkpoint.

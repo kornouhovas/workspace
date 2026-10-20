@@ -164,3 +164,30 @@ test("installed workspace keyboard driver retains its deadline when automatic cr
     assert.equal(await page.locator("#workspace-title").count(), 0);
   });
 });
+
+test("keyboard discovery Apply waits for the reviewed preview before submitting exactly once in EN/RU", async () => {
+  const { applyReviewedDiscovery } = await import("../scripts/workspace-management-driver.mjs");
+  await withPage(async page => {
+    page.setDefaultTimeout(1000);
+    for (const label of ["Apply reviewed projects", "Применить проверенные проекты"]) {
+      await page.setContent(`<button disabled>${label}</button>`);
+      await page.evaluate(() => {
+        const apply = globalThis.document.querySelector("button");
+        globalThis.discoveryApplies = 0;
+        apply.addEventListener("click", () => { globalThis.discoveryApplies++; });
+        globalThis.setTimeout(() => { apply.disabled = false; }, 200);
+      });
+      await applyReviewedDiscovery(page);
+      assert.equal(await page.evaluate(() => globalThis.discoveryApplies), 1);
+    }
+  });
+});
+
+test("keyboard discovery Apply retains its caller deadline when no reviewed preview becomes available", async () => {
+  const { applyReviewedDiscovery } = await import("../scripts/workspace-management-driver.mjs");
+  await withPage(async page => {
+    await page.setContent('<button disabled>Apply reviewed projects</button>');
+    page.setDefaultTimeout(100);
+    await assert.rejects(applyReviewedDiscovery(page), /Timeout/);
+  });
+});

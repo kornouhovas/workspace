@@ -1,3 +1,4 @@
+import { applyReviewedDiscovery } from "./workspace-management-driver.mjs";
 /* global window, document */
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";
@@ -87,7 +88,7 @@ try {
   assert.equal((await query({ type: "workspace.load" })).activeWorkspace.workspaceId, first.workspaceId);
   assert.equal((await query({ type: "workspace.listProjects", workspaceId: first.workspaceId })).configured, false);
   await configure.press("Enter");
-  await page.getByRole("button", { name: /^(Apply reviewed projects|Применить проверенные проекты)$/ }).press("Enter");
+  await applyReviewedDiscovery(page);
   await page.getByRole("cell", { name: "Project", exact: true }).waitFor();
   const before = await query({ type: "workspace.listProjects", workspaceId: first.workspaceId });
   await add().press("Enter");
