@@ -1,7 +1,7 @@
 import { activateRuntimeView } from "./runtime-view-controls.mjs";
-import { usableRuntimeViewProjection } from "./runtime-view-readiness.mjs";
+import { readRuntimeInteraction, waitForRuntimeProjection } from "./runtime-performance-timing.mjs";
 import { setInterfaceLanguage } from "./runtime-settings.mjs";
-/* global window, document, requestAnimationFrame, DataTransfer */
+/* global window, document, DataTransfer */
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
@@ -45,21 +45,16 @@ async function startUiTiming(locator, event) {
     element.addEventListener(event, () => { window.__workspacePerformanceStarted = performance.now(); }, { capture: true, once: true });
   }, event);
 }
+let lastReadyPaintedAt;
 async function recordUi(source, scenario, limit = report.limits.interaction) {
-  const ms = await page.evaluate(() => performance.now() - window.__workspacePerformanceStarted);
+  const timing = await readRuntimeInteraction(page, lastReadyPaintedAt);
+  const { ms } = timing;
   assert.equal(Number.isFinite(ms), true, "The measured user event must have occurred");
-  report.measurements.push({ source, scenario, ms, limit, passed: ms <= limit, clock: "renderer event through committed paint" });
+  report.measurements.push({ source, scenario, ...timing, limit, passed: ms <= limit, clock: "renderer event through committed paint" });
   console.log(`${source} ${scenario}: ${ms.toFixed(1)} ms (limit ${limit})`);
 }
-async function painted() { await page.evaluate(() => new Promise(done => requestAnimationFrame(() => requestAnimationFrame(done)))); }
-
 async function ready(ids) {
-  await page.waitForFunction(usableRuntimeViewProjection, ids);
-  await painted();
-  // Field mounting can change row geometry and reveal another row. Recheck the
-  // visible controls after layout; offscreen identity skeletons remain allowed.
-  await page.waitForFunction(usableRuntimeViewProjection, ids);
-  await painted();
+  lastReadyPaintedAt = await waitForRuntimeProjection(page, ids);
 }
 async function memory(scenario) {
   const metrics = await app.evaluate(({ app }) => app.getAppMetrics().map(m => ({ type: m.type, serviceName: m.serviceName,

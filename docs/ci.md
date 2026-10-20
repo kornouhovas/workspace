@@ -763,3 +763,14 @@ profile is retained; all profiled measurements remain diagnostic, and the origin
 unprofiled strict command runs independently. An explicit Windows dispatch with
 `candidate_only: false` also provides the immutable baseline's original select
 consumer as a differential control; baseline target misses are recorded, not waived.
+
+
+The subsequent endpoint repair captures interaction completion inside the final
+existing renderer frame, retaining both readiness checks and both frame pairs.
+It records the old late-read observation and trailing driver delay separately;
+finite/fresh timestamp guards reject invalid measurements. Native regressions
+prove delayed rendering remains measured, later driver delay does not move the
+endpoint, and invalidated fields require the second readiness check. Renew only
+the candidate plus these controls on both performance hosts; earlier performance
+receipts retain their old clock and SHA. The original `--enforce` command and all
+limits/correctness/lifecycle gates remain; desktop/installer inputs are unchanged.

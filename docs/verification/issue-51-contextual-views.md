@@ -235,3 +235,42 @@ profiles, all 32 functional measurements, four normal shutdowns/backend exits an
 cleanup. Its report is explicitly diagnostic and supplies no target acceptance.
 Both independent reviews found no issues; lint/typecheck/docs, 49 routing controls
 and whitespace validation passed before publication.
+
+
+## Event-to-paint endpoint repair
+
+A source review identified a distinct measurement defect: `recordUi` sampled
+`performance.now()` through a new driver request after the final completion frame.
+The #41 contract ends at committed projection plus frames; post-frame driver
+scheduling can overstate it. A throwaway real-Electron probe executed the actual
+harness functions with a readonly final-frame timestamp capture: committed work
+159.4ms, observed metric 414.3ms after a deliberate 250ms driver delay. This proves
+that endpoint defect, not the cause or magnitude of historical Windows misses.
+The probe is retained in the ignored diagnostic work directory, not product code.
+
+The timing helper preserves both complete readiness observations and both pairs
+of frames. It captures `performance.now()` inside the final existing frame;
+interaction `ms` uses that endpoint. Each record also retains `observedMs` (the old
+late-read formula), `paintedMs` and `driverObservationDelayMs` for audit. Startup,
+limits, interaction preparation/actions, complete projection, real fields,
+pending checks, post-measurement service assertions and lifecycle are unchanged.
+Invalid/missing event or paint times, stale paints and future paints fail closed.
+
+The native timing regression failed with the previous endpoint (229.8ms became
+482.1ms after driver delay) and passed with a fixed renderer endpoint. Pending
+content for 120ms and real renderer work for 80ms remain included. Missing/NaN,
+stale and future timestamp controls reject. A separate stabilization scenario
+invalidates fields during the first frame pair: removing the second readiness
+check made it fail, and restoring the check passed. All four native scenarios
+pass; lint/typecheck/docs, 49 routing checks and whitespace validation pass.
+Both independent source reviews accepted the scoped repair; requested negative
+controls were added. The complete local strict original finished 32 measurements,
+all interaction/scan/memory samples, four normal shutdowns/backend exits and
+cleanup, but still failed initial startup 5,422.6ms. Observed trailing delays were
+0.7–4.1ms locally; these are not estimates for remote historical samples.
+
+This changes the measurement consumer, so renew the native controls and original
+strict candidate on both macOS 14 and Windows latest. Retain earlier timing
+receipts at their original metric and SHA; they do not establish acceptance for
+the repaired clock. Application/dependency/native/migration/build inputs remain
+unchanged, so inspected full desktop and installer receipts retain `23c7fb4`.

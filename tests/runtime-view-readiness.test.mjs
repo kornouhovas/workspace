@@ -10,6 +10,7 @@ import { _electron } from "playwright-core";
 import { closeElectron } from "../scripts/runtime-lifecycle.mjs";
 import { usableRuntimeViewProjection } from "../scripts/runtime-view-readiness.mjs";
 import { activateRuntimeView } from "../scripts/runtime-view-controls.mjs";
+import { readRuntimeInteraction, waitForRuntimeProjection } from "../scripts/runtime-performance-timing.mjs";
 
 async function withPage(run) {
   const profile = await mkdtemp(join(tmpdir(), "runtime-view-readiness-"));
@@ -93,5 +94,64 @@ test("runtime activation supports current tabs and the immutable baseline select
     await activateRuntimeView(page, { viewId: "board", name: "Board" });
     assert.deepEqual(await page.evaluate(() => globalThis.activations), ["Board"]);
     assert.equal(await page.getByRole("tab", { name: "Board", selected: true }).count(), 1);
+  });
+});
+
+
+test("event-to-paint timing includes delayed committed work and excludes later driver observation", async () => {
+  await withPage(async page => {
+    await page.setContent('<button id="save">Apply</button><section class="text-properties" aria-busy="false"><div data-project-id="one" data-fields-ready="true"><button>Edit value</button></div></section>');
+    await page.evaluate(() => {
+      document.querySelector("#save").addEventListener("keydown", () => { globalThis.__workspacePerformanceStarted = performance.now(); }, { once: true });
+      document.querySelector("#save").addEventListener("click", () => {
+        const content = document.querySelector(".text-properties"); content.setAttribute("aria-busy", "true");
+        setTimeout(() => {
+          content.setAttribute("aria-busy", "false");
+          globalThis.requestAnimationFrame(() => { const until = performance.now() + 80; while (performance.now() < until) { /* controlled renderer work */ } });
+        }, 120);
+      });
+    });
+    await page.getByRole("button", { name: "Apply", exact: true }).press("Enter");
+    const paintedAt = await waitForRuntimeProjection(page, ["one"]);
+    const before = await readRuntimeInteraction(page, paintedAt);
+    await new Promise(done => setTimeout(done, 250)); // Deliberate driver delay after completed renderer work.
+    const after = await readRuntimeInteraction(page, paintedAt);
+    assert.equal(after.ms, before.ms, "Later driver scheduling must not move the committed-paint endpoint");
+    assert.ok(after.ms >= 200, "Pending content and renderer work before the completion frames stay measured");
+    assert.ok(after.observedMs - before.observedMs >= 240, "The injected driver delay is independently observable");
+    assert.ok(after.driverObservationDelayMs >= 240);
+    await assert.rejects(readRuntimeInteraction(page, Number.NaN), /fresh measured event/);
+    const startedAt = await page.evaluate(() => globalThis.__workspacePerformanceStarted);
+    await assert.rejects(readRuntimeInteraction(page, startedAt - 1), /fresh measured event/);
+    await assert.rejects(readRuntimeInteraction(page, startedAt + 1_000_000), /fresh measured event/);
+    await page.evaluate(() => { globalThis.__workspacePerformanceStarted = undefined; });
+    await assert.rejects(readRuntimeInteraction(page, paintedAt), /fresh measured event/);
+    await page.evaluate(() => { globalThis.__workspacePerformanceStarted = Number.NaN; });
+    await assert.rejects(readRuntimeInteraction(page, paintedAt), /fresh measured event/);
+  });
+});
+
+
+test("projection readiness rechecks fields invalidated during the first frame pair", async () => {
+  await withPage(async page => {
+    await page.setContent('<section class="text-properties" aria-busy="false"><div data-project-id="one" data-fields-ready="true"><button>Edit value</button></div></section>');
+    let first = true;
+    const controlledPage = {
+      evaluate: page.evaluate.bind(page),
+      waitForFunction: async (...args) => {
+        const result = await page.waitForFunction(...args);
+        if (first) {
+          first = false;
+          await page.evaluate(() => globalThis.requestAnimationFrame(() => {
+            const row = document.querySelector("[data-project-id]"); row.setAttribute("data-fields-ready", "false");
+            setTimeout(() => { row.setAttribute("data-fields-ready", "true"); globalThis.recoveredAt = performance.now(); }, 180);
+          }));
+        }
+        return result;
+      },
+    };
+    const paintedAt = await waitForRuntimeProjection(controlledPage, ["one"]);
+    const recoveredAt = await page.evaluate(() => globalThis.recoveredAt);
+    assert.ok(Number.isFinite(recoveredAt) && paintedAt >= recoveredAt, "Final paint must wait for fields revealed as unready after initial layout");
   });
 });
