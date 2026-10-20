@@ -69,8 +69,9 @@ source detail. Final native evidence passes with the original action deadlines.
 Independent Standards review found source-event invalidation and delayed-response
 ownership gaps; Spec review found the archive draft/review mismatch. All three
 were repaired with regressions; both follow-up reviews report zero remaining
-findings. Final platform CI, installer acceptance and integration remain gates until
-recorded in GitHub. Local macOS evidence is not Windows or release acceptance.
+findings. Platform and installer receipts are recorded below and in GitHub;
+the delivered integration SHA belongs to the issue checkpoint. Local macOS
+evidence is not Windows or release acceptance.
 
 ## CI canonical-path fixture repair
 
@@ -101,4 +102,33 @@ inputs and runtime configuration are unchanged. The Windows runtime/layout/packa
 suffix skipped by the failed original platform batch remains required. The manual
 `source-runtime` continuation supplies that exact suffix on both Windows hosts
 with fresh build prerequisites and provenance; its command/env/condition parity
-is tested against ordinary acceptance. macOS's original full job continues.
+is tested against ordinary acceptance.
+
+## Inspected CI acceptance receipts
+
+All runs below are attempt 1. The original failed run remains failed; its Windows
+fixture failures and unreached suffixes are covered by the separate renewal runs.
+
+| Evidence | Actual SHA | Run and result |
+| --- | --- | --- |
+| Common/static, complete macOS platform/runtime/package checks; source, shell and management native checks on all three hosts; unaffected Windows platform scenarios | `068b87c77f0e58a3dcc062087ab6aeacf13d4fc4` | [39398466086](https://github.com/kornouhovas/workspace/actions/runs/39398466086): common/macOS passed; two Windows fixture failures diagnosed above |
+| macOS DMG and Windows NSIS install, reopen/reinstall, data retention and cleanup | `068b87c77f0e58a3dcc062087ab6aeacf13d4fc4` | [39398466004](https://github.com/kornouhovas/workspace/actions/runs/39398466004): both passed |
+| Five source settings scenarios, including both corrected path expectations, on all three hosts | `18fba931bccce2a4d1a6554196b9afd51f02fff7` | [39400896137](https://github.com/kornouhovas/workspace/actions/runs/39400896137): all passed |
+| Previously unreached Windows latest/2022 layouts, development runtime, package and packaged runtime | `ea66e902ca228850c8945573dfd4be53e1c52304` | [39401273116](https://github.com/kornouhovas/workspace/actions/runs/39401273116): both passed |
+
+Downloaded and inspected original logs, provenance and scenario reports. Each
+platform's dev/packaged general runtime completed all 15 stages. Archive,
+category-options, properties, Table/Board and data-recovery reports confirm
+normal shutdown and owned cleanup. Creation/native reports confirm exact
+file-manager selection, restart and shutdown; crash matrices retain their
+explicit recovery-only scope. Windows latest's early direct native scenario is
+inherited from the original run; the continuation supplies its remaining cases.
+Positive category service receipts and observer reports passed on all hosts;
+deliberate negative-control fixtures are not counted as production failures.
+
+The complete `068b87c..ea66e902` delta changes only tests, diagnostic CI routes
+and documentation. Application, dependencies, migrations, build/package inputs
+and runtime configuration are unchanged. The final report update is documentation
+only; it does not assign earlier results to a new SHA. Windows hosted-server
+receipts do not establish a separate Windows 11 release acceptance. Release and
+cross-slice acceptance in #67 remain outside this issue's delivery.
