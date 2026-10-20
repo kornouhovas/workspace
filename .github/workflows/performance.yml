@@ -10,6 +10,10 @@ on:
         type: choice
         options: [both, macos-14, windows-latest]
         default: both
+      readiness_only:
+        description: Diagnose the original native readiness controls without packaging or performance reruns
+        type: boolean
+        default: false
       candidate_only:
         description: Focus the failed candidate step; retain the earlier immutable baseline evidence
         type: boolean
@@ -24,7 +28,7 @@ on:
         default: false
 
 concurrency:
-  group: performance-${{ github.ref }}${{ inputs.candidate_only && format('-candidate-{0}', inputs.platform) || '' }}
+  group: performance-${{ github.ref }}${{ inputs.readiness_only && format('-readiness-{0}', inputs.platform) || inputs.candidate_only && format('-candidate-{0}', inputs.platform) || '' }}
   cancel-in-progress: true
 
 jobs:
@@ -44,21 +48,21 @@ jobs:
       - run: npm ci
         id: candidate-dependencies
       - uses: actions/checkout@v4
-        if: ${{ !inputs.candidate_only }}
+        if: ${{ !inputs.candidate_only && !inputs.readiness_only }}
         with:
           ref: d925f8b758caea6dc079061d42be1d132dcbc8a1
           path: baseline-source
       - run: npm ci
-        if: ${{ !inputs.candidate_only }}
+        if: ${{ !inputs.candidate_only && !inputs.readiness_only }}
         working-directory: baseline-source
       - name: Package immutable baseline
-        if: ${{ !inputs.candidate_only }}
+        if: ${{ !inputs.candidate_only && !inputs.readiness_only }}
         shell: bash
         working-directory: baseline-source
         run: |
           if [[ "$RUNNER_OS" == "macOS" ]]; then npm run package:dev:mac; else npm run package:dev:win; fi
       - name: Measure baseline with the same harness and targets
-        if: ${{ !inputs.candidate_only }}
+        if: ${{ !inputs.candidate_only && !inputs.readiness_only }}
         shell: bash
         run: |
           set -o pipefail
@@ -69,7 +73,7 @@ jobs:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-performance/baseline
       - name: Package candidate
         id: candidate-package
-        if: ${{ !cancelled() && steps.candidate-dependencies.outcome == 'success' }}
+        if: ${{ !cancelled() && !inputs.readiness_only && steps.candidate-dependencies.outcome == 'success' }}
         shell: bash
         run: |
           if [[ "$RUNNER_OS" == "macOS" ]]; then npm run package:dev:mac; else npm run package:dev:win; fi
@@ -92,7 +96,7 @@ jobs:
         env:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-performance/profile
       - name: Verify clipped view readiness before the original measurement
-        if: ${{ !cancelled() && steps.candidate-package.outcome == 'success' }}
+        if: ${{ !cancelled() && (inputs.readiness_only || steps.candidate-package.outcome == 'success') }}
         shell: bash
         run: |
           set -o pipefail

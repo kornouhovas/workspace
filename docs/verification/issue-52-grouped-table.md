@@ -141,3 +141,24 @@ contracts 50/50; typecheck, lint, documentation and whitespace checks passed. Bo
 independent Standards and Spec reviews reported zero findings. This delta changes
 only tests, drivers, CI and documentation; application/build inputs remain at
 `350293cc`. Retain its passing receipts and renew affected failed consumers.
+
+## First focused renewal
+
+`c09a0505`, attempt 1: Windows category fixture run `39458142256` passed 51/51;
+its inspected cleanup control reached every intended service scenario, all four
+utilities exited, exit 0/normal handshake was retained and only the intended final
+cleanup injection failed. Missing Windows runtime continues at `39458910748`.
+
+Performance `39458140472` remains failed: macOS strict completed all 32 scenarios,
+but direct/grouped Table assignment was 337.0/316.3 ms (limit 300). Windows strict
+also completed all 32, including reset/full projection. Eight samples missed limits:
+direct Table assignment/edit 346.8/306.4, Board grouping 345.7; grouped Table filters
+353.2/321.1, assignment 407.4, Board grouping 363.7, refresh 5033.1 (scan limit 5000).
+Windows native controls failed eight normal shutdowns; their functional assertions
+do not establish lifecycle acceptance. Two pure diagnostic controls passed.
+
+The macOS separate profile reproduced grouping 498.8 ms with a focused/visible
+window; corresponding set/query IPC was 4.3/52.4 ms, with about 336.8 ms renderer
+idle in the first 500 ms. A long frame gap is observed, not a proven native cause.
+Further bounded quit diagnostics and a controls-only route separate the Windows
+fixture failure from strict performance; no application/build inputs changed.

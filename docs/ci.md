@@ -852,3 +852,12 @@ remain intact. This establishes the driver race, not the unique cause of the old
 hosted timeout. A failure-only readonly packet now records expected/actual row
 counts, mismatch index, unloaded/pending/group counts and Save/search booleans;
 it retains no IDs/text/paths and never substitutes for the original timeout.
+
+The `c09a0505` Windows renewal completed all 32 performance scenarios, including
+reset/full projection, but still missed strict targets. Its eight native driver
+controls failed at normal Electron shutdown. Select `performance.yml` with
+`readiness_only: true`, `platform: windows-latest` to renew only these original
+controls with bounded quit-event/debugger-wait/exit evidence. This route skips
+packaging, baseline and strict performance; it cannot supply performance acceptance.
+Ordinary workflow defaults and the independent strict command remain unchanged.
+Do not infer a repaired native lifecycle from a functional assertion or forced exit.
