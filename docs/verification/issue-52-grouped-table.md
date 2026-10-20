@@ -235,3 +235,30 @@ assignment service time was about 24–27 ms; the Windows failure is not reprodu
 by those local values. Its startup miss remains diagnostic. Both independent
 reviews found no remaining findings; lint/docs/whitespace passed. Application and
 original package inputs remain unchanged from `30b502b4`.
+
+## Validated displayed-projection driver repair
+
+Windows diagnostic run `39466360777`, attempt 1 at `80a9640f`, completed all
+32 scenarios, four normal quits/backend exits, cleanup and four batches/178
+requests. Its grouped Board assignment was 380.5 ms: main IPC 193.8 ms,
+143 ms before backend execution, 41.9 ms service execution and about 8 ms return.
+The preceding unmeasured ordinary query spent 1797 ms walking the source. This
+sample identifies queue delay, not a unique cause for every historical miss.
+
+Metadata-only correctness reads now use the existing complete, revision-validated
+public displayed projection. All actual IDs, groups, values and order assertions
+remain; the service validates ownership/membership and reads current metadata.
+Initial full discovery, packaged startup, external rename/refresh and reopen keep
+the original filesystem path. The explicit filesystem phase removes the hint
+before any external change; stale projections fail without fallback or retries.
+Public adapter and real-service parity/revision controls passed 13/13. Both
+independent incremental reviews found zero findings; lint/docs/whitespace passed.
+
+Local diagnostic `/tmp/issue52-displayed-query-local` completed all 32 scenarios,
+four normal quits/backend exits, cleanup and four batches/178 requests. Its
+interaction samples were below 300 ms, but diagnostic startup and memory misses
+remain non-acceptance evidence. Neither local timings nor a modified diagnostic
+package establishes hosted strict acceptance. Application/build inputs remain
+unchanged from `30b502b4`; this shared preparation change requires renewed strict
+performance and readiness consumers on both hosts, followed by full application
+platform/package/installer acceptance for the earlier application repair.

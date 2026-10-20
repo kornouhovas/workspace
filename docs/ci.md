@@ -898,3 +898,20 @@ Compare backend execution start/end with the main IPC interval to distinguish
 service work from queue/transport delay. This modified copy cannot supply startup,
 package or strict performance acceptance. Conflicting modes/missing renderer
 profiling are rejected before execution.
+
+Windows backend diagnostic `39466360777` at `80a9640f` completed 32 scenarios,
+four normal backend batches/178 requests and cleanup. A slow grouped Board
+assignment spent 143 ms before backend execution, 42 ms executing, and about
+8 ms returning; an unmeasured preceding ordinary queryView spent 1.8 seconds
+walking the source. This identifies queue delay in that diagnostic sample, not
+a unique cause for every older strict failure.
+
+The next driver repair replaces repeated metadata-only unmeasured filesystem
+queries with the existing displayed-source projection derived from a public
+complete source list. The service still validates its revision/full ownership
+and reads current values/filter/group/layout state; stale input fails without
+fallback. Initial source verification and post-filesystem-change/Refresh/identity
+checks retain their ordinary fresh reads. No measured action, clock, readiness,
+correctness assertion or limit is removed. Renew both original strict consumers
+because preparation changed on both hosts; modified-copy diagnostics are not
+acceptance and earlier receipts keep their actual SHA/harness provenance.

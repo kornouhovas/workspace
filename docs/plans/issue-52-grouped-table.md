@@ -56,3 +56,14 @@ Adapt the inherited Windows continuation literal-matrix assertion to evaluate it
 unchanged both-host default after the explicit host selector was added. Retain
 the full original layout/runtime/package command parity assertions and the
 selector contract checks. The full-suite failure and focused renewal are retained.
+
+The Windows backend profile then retained a slow assignment with 143 ms before
+backend execution and 42 ms within it; its preceding unmeasured correctness query
+walked the filesystem for 1.8 seconds. Adapt those metadata-only correctness reads
+to the existing complete/revision-validated displayed-source projection. Initial
+source verification and all explicit filesystem-change/Refresh/identity checks
+retain ordinary fresh reads. Preserve every expected-ID, group, current-value and
+ordering assertion; stale/foreign/incomplete projections still fail. Validate
+Table/Board parity, MultiSelect overlap/manual order and the explicit transition
+back to filesystem observation. This changes preparation on both hosts, so renew
+both original strict performance consumers rather than infer a pass from profiles.

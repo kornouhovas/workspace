@@ -1,3 +1,4 @@
+import { createPerformanceQueries } from "./runtime-performance-queries.mjs";
 import { inspectRuntimeProjectionFailure } from "./runtime-view-readiness.mjs";
 import { instrumentPerformanceBackend, inspectPerformanceBackendBatches } from "./runtime-performance-backend-profile.mjs";
 import { installPerformanceCommandProbe } from "./runtime-performance-probe.mjs";
@@ -190,12 +191,14 @@ try {
     const service = openSettingsService(join(dataset.data, "workspace.sqlite"));
     unwrap(service.handleCommand({ type: "workspace.activate", workspaceId: source.workspaceId }));
     unwrap(service.handleCommand({ type: "settings.setLanguage", language: "en" }));
+    const sourceSnapshot = unwrap(service.handleQuery({type:"workspace.listProjects",workspaceId:source.workspaceId}));
     const initialIds = unwrap(service.handleQuery({ type: "workspace.queryView", workspaceId: source.workspaceId, viewId: source.viewId, archived: false })).projectIds;
     assert.equal(initialIds.length, 1000); assert.equal(new Set(initialIds).size, 1000);
     service.close();
     const { workspaceId } = source;
     let activeIds = initialIds;
-    const command = (name, fields = {}) => query({ type: `workspace.${name}`, workspaceId, ...fields });
+    const checks=createPerformanceQueries(workspaceId,sourceSnapshot,query);
+    const command=checks.query;
     await launch(dataset.data, executable, initialIds, source.mode);
     assert.equal((await command("listTextProperties")).definitions.length, 20);
     for (const kind of ["table", "board"]) {
@@ -273,6 +276,9 @@ try {
       assert.equal((await command("listTextProperties")).values.find(v => v.projectId === p.projectId && v.propertyId === field.propertyId).value, `Accepted ${kind}`);
       await page.screenshot({ path: join(evidence, `${source.mode}-${kind}-en.png`) });
     }
+    // Actual filesystem changes below retain the original unhinted public
+    // queries, fresh scan/revision and project-list identity checks.
+    checks.beginFilesystemPhase();
     const p = source.projects[0]; const renamed = p.relativePath.replace(p.name, "External rename");
     await rename(join(source.root, p.relativePath), join(source.root, renamed));
     const refresh = page.getByRole("button", { name: "Refresh source", exact: true });

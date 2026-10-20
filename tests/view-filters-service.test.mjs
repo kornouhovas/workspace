@@ -1,3 +1,4 @@
+import { createPerformanceQueries } from '../scripts/runtime-performance-queries.mjs';
 import Database from 'better-sqlite3';
 import { randomUUID } from 'node:crypto';
 import test from 'node:test';
@@ -245,3 +246,29 @@ test('pre-filter migration preserves populated view selection, identities and pr
     assert.deepEqual(service.handleQuery({ type: 'workspace.queryView', workspaceId, viewId, archived: false }).value.projectIds, [projectId]);
   } finally { service.close(); rmSync(directory, { recursive: true, force: true }); }
 });
+
+
+for(const kind of ['table','board']) test(`${kind} performance metadata checks match ordinary queries and leave the source snapshot before filesystem checks`,()=>fixture(f=>{
+  const viewId=kind==='table'?f.workspace.viewId:f.command('createView',{name:'Board',kind:'board'}).value.views.find(view=>view.kind==='board').viewId;
+  const list=f.query('listProjects').value,alpha=list.projects.find(project=>project.name==='Alpha'),beta=list.projects.find(project=>project.name==='Beta');
+  const propertyId=f.command('createProperty',{name:'Tags',propertyType:'multi_select'}).value.propertyId;
+  const options=[];
+  for(const name of ['A','B'])options.push(f.command('createSelectOption',{propertyId,name,color:'green'}).value.snapshot.selectOptions.find(option=>option.name===name).optionId);
+  assert.equal(f.command('setMultiSelectValue',{propertyId,projectId:alpha.projectId,optionIds:options}).ok,true);
+  assert.equal(f.command('setMultiSelectValue',{propertyId,projectId:beta.projectId,optionIds:[options[0]]}).ok,true);
+  assert.equal(f.command('setViewGrouping',{viewId,config:{propertyId,settings:[]}}).ok,true);
+  if(kind==='table')assert.equal(f.command('setTableLayout',{viewId,config:{columns:[],rowOrder:list.projects.map(project=>project.projectId).reverse()}}).ok,true);
+  const checks=createPerformanceQueries(f.workspace.workspaceId,list,input=>f.service.handleQuery(input));
+  const fields={viewId,archived:false};
+  assert.deepEqual(checks.query('queryView',fields),f.query('queryView',fields));
+  for(const option of options)assert.ok(checks.query('queryView',fields).value.groups.find(group=>group.value===option).projectIds.includes(alpha.projectId));
+  assert.equal(f.command('setViewFilter',{viewId,config:{search:'Alpha',rules:[]}}).ok,true);
+  const filtered=checks.query('queryView',fields);
+  assert.deepEqual(filtered,f.query('queryView',fields));assert.deepEqual(filtered.value.projectIds,[alpha.projectId]);
+  renameSync(join(f.root,'Alpha'),join(f.root,'Changed'));
+  assert.equal(f.command('refreshSource').ok,true);
+  assert.equal(checks.query('queryView',fields).error.code,'invalid_input','No fallback hides a stale source revision');
+  checks.beginFilesystemPhase();
+  assert.deepEqual(checks.query('queryView',fields),f.query('queryView',fields));
+  assert.ok(f.query('listProjects').value.projects.some(project=>project.name==='Changed'));
+}));
