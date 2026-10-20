@@ -99,3 +99,28 @@ backend-exit assertions. Its unchanged rename/category continuations remain
 part of native/CI acceptance. The superseded initial desktop CI was cancelled
 before runtime acceptance rather than presented as a failure or success; exact
 SHA results remain in the issue checkpoint.
+
+## First full CI diagnosis and repair
+
+Desktop run `39374699145`, attempt 1, SHA `624d9ad8`, passed Common checks but
+failed original `smoke:shell` on macOS latest, Windows latest and Windows 2022 at
+line 122. Every job log reports the same strict selector ambiguity: a broad
+`Second workspace` name regex matches both selection and the new contextual
+trigger. The exact-name selector repair also covers the return to the authored
+Russian workspace name. The original local `npm run smoke:shell` then passed
+without changing its view/persistence/focus/layout/shutdown assertions.
+
+The subsequent missing #49 artifact and missing collector results were unreached
+stages after the original failure, not independent product failures. The new
+management artifact upload now runs only after its step is attempted, still
+requiring evidence for both success and failure. Existing collector behavior is
+retained. No issue-49 native journey from that failed run is claimed as accepted.
+
+The narrow `workspace-sidebar` route runs the failed shell and related ownership/
+routing regressions on the three affected OSes. Routing/inventory tests passed
+67/67. Independent reviews accepted the repair. Push suppression keeps full CI
+behind the focused gate; focused/full run receipts belong to the issue checkpoint.
+
+Separate installer run `39374699133`, same SHA/attempt, passed macOS 14 arm64 DMG
+and Windows x64 NSIS installation/reopen checks. These remain separate evidence
+and do not replace the pending desktop focused/full gates.

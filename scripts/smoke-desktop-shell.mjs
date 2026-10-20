@@ -119,9 +119,9 @@ try {
   await page.getByRole("button", { name: /^(Cancel|Отмена)$/ }).click();
   await returnToWorkspace(page);
   const nav = page.getByRole("navigation", { name: /^(Workspaces|Рабочие пространства)$/ });
-  await nav.getByRole("button", { name: /Second workspace/ }).click();
+  await nav.getByRole("button", { name: "Second workspace", exact: true }).click();
   await page.getByRole("heading", { name: "Second workspace", exact: true }).waitFor();
-  await nav.getByRole("button", { name: /Рабочие проекты/ }).click();
+  await nav.getByRole("button", { name: "Рабочие проекты", exact: true }).click();
   await page.waitForFunction(viewId => document.querySelector('.view-controls select')?.value === viewId, view.viewId);
   assert.equal(await page.getByRole("combobox", { name: /^(Current view|Текущее представление)$/ }).inputValue(), view.viewId);
   await close(); await launch();
