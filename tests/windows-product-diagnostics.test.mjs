@@ -485,3 +485,20 @@ test('source fixture route renews only canonical path scenarios across affected 
   assert.match(jobs.common.if, /inputs.checks != 'source-fixture'/);
   assert.equal(jobs.verify.needs, 'common');
 });
+
+test('source continuation retains every unreached Windows layout/runtime/package step', async () => {
+  const { jobs } = load(await readFile('.github/workflows/desktop-ci.yml', 'utf8'));
+  const job = jobs['source-runtime'];
+  assert.match(job.if, /inputs.checks == 'source-runtime'/);
+  assert.equal(job.strategy['fail-fast'], false);
+  assert.deepEqual(job.strategy.matrix.include, [{ os: 'windows-latest', artifact: 'windows' }, { os: 'windows-2022', artifact: 'windows-2022' }]);
+  assert.equal(job['continue-on-error'], undefined);
+  assert.ok(job.steps.every(step => step['continue-on-error'] === undefined));
+  const originalStart = jobs.verify.steps.findIndex(step => step.run === 'npm run build:ladle');
+  const continuationStart = job.steps.findIndex(step => step.run === 'npm run build:ladle');
+  const checks = steps => steps.filter(step => step.run).map(({ run, env, if: condition }) => ({ run, env, condition }));
+  assert.deepEqual(checks(job.steps.slice(continuationStart)), checks(jobs.verify.steps.slice(originalStart)));
+  assert.deepEqual(job.steps.slice(0, continuationStart).filter(step => step.run && !step.name).map(step => step.run), ['npm ci', 'npm run build']);
+  assert.match(jobs.common.if, /inputs.checks != 'source-runtime'/);
+  assert.equal(jobs.verify.needs, 'common');
+});

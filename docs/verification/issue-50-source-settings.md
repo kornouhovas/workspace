@@ -89,3 +89,16 @@ only these source settings scenarios plus related regressions on both Windows
 hosts and macOS. It records SHA/run/attempt and original logs. Ordinary full CI
 remains unchanged; common/platform jobs are not dispatched by this focused gate.
 Passing original source-native and both installer receipts remain at `068b87c`.
+
+The same two path-expectation failures were confirmed in Windows latest job
+`118547502274` of the original run. Focused run `39400896137`, attempt 1, at
+`18fba931` passed all three hosts: inspected provenance and original logs contain
+5 passed scenarios each, zero failures/skips. Both original failures are renewed.
+
+The complete `068b87c..18fba931` delta contains only two test expectations, focused
+workflow/route tests and documentation; application, dependencies, build/package
+inputs and runtime configuration are unchanged. The Windows runtime/layout/package
+suffix skipped by the failed original platform batch remains required. The manual
+`source-runtime` continuation supplies that exact suffix on both Windows hosts
+with fresh build prerequisites and provenance; its command/env/condition parity
+is tested against ordinary acceptance. macOS's original full job continues.

@@ -715,3 +715,13 @@ legacy short-path expectations from the native canonical path displayed by the
 application. This route preserves original assertions and captures exact-SHA
 provenance. Apply the evidence-reuse policy to this test/route-only repair; source
 native and installer receipts retain their actual earlier SHA.
+
+After #50's original source-fixture gate passes, `checks: source-runtime` supplies
+only the Windows 2022/latest layout, development-runtime and packaged-runtime
+steps that the failed platform batch never reached. It builds fresh inputs and
+retains the ordinary suffix's commands, environments, conditions, deadlines and
+artifacts; a parity regression guards that boundary. Earlier successful platform
+cases, source/shell/management journeys and installers retain their own SHA.
+Windows latest's early direct native receipt is inherited; Windows 2022's later
+direct native step remains in the continuation. This route neither reruns macOS
+nor replaces any missing Windows scenario with inherited success.

@@ -8,7 +8,7 @@ on:
       checks:
         description: Full acceptance or a selected focused failure route
         type: choice
-        options: [full, failed, readiness, windows-release, issue22-failures, creation-shutdown, raw-rename, issue24-failures, category-fixture, issue24-startup, multiselect, etw-controls, app-fixture, property-fixture, runtime-observation, view-fixtures, number, windows-property-fixture, rename-authoring, rename-fixture, viewport-runtime, desktop-shell, shell-runtime, views-readiness, workspace-sidebar, workspace-setup, workspace-setup-readiness, select-readiness, source-fixture]
+        options: [full, failed, readiness, windows-release, issue22-failures, creation-shutdown, raw-rename, issue24-failures, category-fixture, issue24-startup, multiselect, etw-controls, app-fixture, property-fixture, runtime-observation, view-fixtures, number, windows-property-fixture, rename-authoring, rename-fixture, viewport-runtime, desktop-shell, shell-runtime, views-readiness, workspace-sidebar, workspace-setup, workspace-setup-readiness, select-readiness, source-fixture, source-runtime]
         default: full
       recovery_windows_2022:
         description: With checks=issue22-failures, replay the backend recovery file on Windows 2022 and the original macOS runtime
@@ -88,6 +88,162 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  source-runtime:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.checks == 'source-runtime' }}
+    name: Unreached Windows source acceptance (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            artifact: windows
+          - os: windows-2022
+            artifact: windows-2022
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.21.1
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Record continuation provenance
+        shell: bash
+        run: |
+          mkdir -p work/ci-runtime-provenance
+          node --input-type=module -e 'import { writeFileSync } from "node:fs"; writeFileSync("work/ci-runtime-provenance/provenance.json", JSON.stringify({sha:process.env.GITHUB_SHA,run:process.env.GITHUB_RUN_ID,attempt:process.env.GITHUB_RUN_ATTEMPT,platform:process.platform}) + "\n")'
+      - run: npm run build:ladle
+      - name: Capture creation/recovery/Reveal layouts
+        run: node scripts/smoke-discovery-layouts.mjs --creation
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-creation-layouts
+      - name: Capture category move/status/recovery layouts
+        run: node scripts/smoke-discovery-layouts.mjs --category-move
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-category-move-layouts
+      - name: Development creation crash/recovery matrix
+        run: npm run smoke:runtime -- dev --creation --skip-native
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-creation-dev-crash-matrix
+      - name: Direct development creation/native evidence
+        if: ${{ matrix.os != 'windows-latest' }}
+        run: npm run smoke:runtime -- dev --creation --discovery-mode=direct --checkpoint=after_evidence
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-creation-dev-direct
+      - name: Grouped development creation/native evidence
+        run: npm run smoke:runtime -- dev --creation --discovery-mode=grouped --checkpoint=after_evidence
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-creation-dev-grouped
+      - run: npm run smoke:runtime -- dev
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-runtime-dev
+      - name: Development Table and Board EN/RU lifecycle, keyboard and restart
+        run: npm run smoke:views -- dev
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-views-dev
+      - name: Development MultiSelect EN/RU keyboard, sets, hiding and restart
+        run: npm run smoke:multiselect -- dev
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-multiselect-dev
+      - name: Development ordinary Select EN/RU options, values, hiding and restart
+        run: npm run smoke:select -- dev
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-select-dev
+      - name: Development Date boundaries, EN/RU keyboard, timezone and restart
+        run: npm run smoke:date -- dev
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-date-dev
+      - name: Development Number arithmetic, EN/RU keyboard, sibling and restart
+        run: npm run smoke:number -- dev
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-number-dev
+      - name: Development archive and restore UI, Text and restart
+        run: npm run smoke:archive -- dev
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-archive-dev
+      - name: Development application-data export and restore EN/RU
+        run: npm run smoke:data-recovery -- dev
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-data-recovery-dev
+      - name: Development category options UI and persistence
+        run: npm run smoke:category-options -- dev
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-category-options-dev
+      - run: npm run package:built
+      - run: npm run check:artifact -- release
+      - name: Packaged Table and Board EN/RU lifecycle, keyboard and restart
+        run: npm run smoke:views -- release
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-views-release
+      - name: Packaged MultiSelect EN/RU keyboard, sets, hiding and restart
+        run: npm run smoke:multiselect -- release
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-multiselect-release
+      - name: Packaged ordinary Select EN/RU options, values, hiding and restart
+        run: npm run smoke:select -- release
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-select-release
+      - name: Packaged Date boundaries, EN/RU keyboard, timezone and restart
+        run: npm run smoke:date -- release
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-date-release
+      - name: Packaged Number arithmetic, EN/RU keyboard, sibling and restart
+        run: npm run smoke:number -- release
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-number-release
+      - name: Packaged archive and restore UI, Text and restart
+        run: npm run smoke:archive -- release
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-archive-release
+      - name: Packaged application-data export and restore EN/RU
+        run: npm run smoke:data-recovery -- release
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-data-recovery-release
+      - name: Packaged category options UI and persistence
+        run: npm run smoke:category-options -- release
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-category-options-release
+      - name: Packaged creation crash/recovery matrix
+        run: npm run smoke:runtime -- release --creation --skip-native
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-creation-release-crash-matrix
+      - name: Direct packaged creation/native evidence
+        run: npm run smoke:runtime -- release --creation --discovery-mode=direct --checkpoint=after_evidence
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-creation-release-direct
+      - name: Grouped packaged creation/native evidence
+        run: npm run smoke:runtime -- release --creation --discovery-mode=grouped --checkpoint=after_evidence
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-creation-release-grouped
+      - run: npm run smoke:runtime -- release
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-runtime-release
+      - name: Preserve creation/native and category UI failures and unreached stages
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-50-source-runtime-${{ matrix.artifact }}-${{ github.sha }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
+          path: |
+            work/ci-creation-*/
+            work/ci-runtime-*/
+            work/ci-category-move-layouts/
+            work/ci-category-options-*/
+            work/ci-archive-*/
+            work/ci-number-*/
+            work/ci-date-*/
+            work/ci-select-*/
+            work/ci-multiselect-*/
+            work/ci-views-*/
+            work/ci-data-recovery-*/
+          if-no-files-found: warn
+      - uses: actions/upload-artifact@v4
+        with:
+          name: source-runtime-${{ matrix.artifact }}-development-${{ github.sha }}
+          path: release/
+          if-no-files-found: error
+
   source-settings-fixture:
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.checks == 'source-fixture' }}
     strategy:
@@ -124,7 +280,7 @@ jobs:
           if-no-files-found: error
 
   common:
-    if: ${{ github.event_name != 'workflow_dispatch' || (inputs.checks != 'failed' && inputs.checks != 'readiness' && inputs.checks != 'windows-release' && inputs.checks != 'issue22-failures' && inputs.checks != 'creation-shutdown' && inputs.checks != 'raw-rename' && inputs.checks != 'issue24-failures' && inputs.checks != 'category-fixture' && inputs.checks != 'issue24-startup' && inputs.checks != 'multiselect' && inputs.checks != 'etw-controls' && inputs.checks != 'app-fixture' && inputs.checks != 'property-fixture' && inputs.checks != 'runtime-observation' && inputs.checks != 'view-fixtures' && inputs.checks != 'number' && inputs.checks != 'windows-property-fixture' && inputs.checks != 'rename-authoring' && inputs.checks != 'rename-fixture' && inputs.checks != 'viewport-runtime' && inputs.checks != 'desktop-shell' && inputs.checks != 'shell-runtime' && inputs.checks != 'views-readiness' && inputs.checks != 'workspace-sidebar' && inputs.checks != 'workspace-setup' && inputs.checks != 'workspace-setup-readiness' && inputs.checks != 'select-readiness' && inputs.checks != 'source-fixture') }}
+    if: ${{ github.event_name != 'workflow_dispatch' || (inputs.checks != 'failed' && inputs.checks != 'readiness' && inputs.checks != 'windows-release' && inputs.checks != 'issue22-failures' && inputs.checks != 'creation-shutdown' && inputs.checks != 'raw-rename' && inputs.checks != 'issue24-failures' && inputs.checks != 'category-fixture' && inputs.checks != 'issue24-startup' && inputs.checks != 'multiselect' && inputs.checks != 'etw-controls' && inputs.checks != 'app-fixture' && inputs.checks != 'property-fixture' && inputs.checks != 'runtime-observation' && inputs.checks != 'view-fixtures' && inputs.checks != 'number' && inputs.checks != 'windows-property-fixture' && inputs.checks != 'rename-authoring' && inputs.checks != 'rename-fixture' && inputs.checks != 'viewport-runtime' && inputs.checks != 'desktop-shell' && inputs.checks != 'shell-runtime' && inputs.checks != 'views-readiness' && inputs.checks != 'workspace-sidebar' && inputs.checks != 'workspace-setup' && inputs.checks != 'workspace-setup-readiness' && inputs.checks != 'select-readiness' && inputs.checks != 'source-fixture' && inputs.checks != 'source-runtime') }}
     name: Common tests and static checks
     runs-on: macos-latest
     steps:
