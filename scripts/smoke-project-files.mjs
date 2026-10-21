@@ -5,7 +5,7 @@ import {promisify} from 'node:util';
 import {createRequire} from 'node:module';
 import {mkdtemp,mkdir,realpath,writeFile,readFile,rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
-import {join,resolve} from 'node:path';
+import {basename,join,resolve} from 'node:path';
 import {_electron} from 'playwright-core';
 import {closeElectron,cleanupOwnedFixture,ownedProcessesStopped} from './runtime-lifecycle.mjs';
 import {openSettingsSection,returnToWorkspace,setInterfaceLanguage} from './runtime-settings.mjs';
@@ -16,11 +16,11 @@ const root=resolve(import.meta.dirname,'..'), evidence=resolve(process.env.WORKS
 await mkdir(evidence,{recursive:true});
 const fixture=await realpath(await mkdtemp(join(tmpdir(),'workspace-files-'))), source=join(fixture,'source'), project=join(source,'Atlas');
 await mkdir(join(project,'src'),{recursive:true});await mkdir(join(source,'Beacon'));
-const fileName='Workspace file check — Текст.txt', target=join(project,'src',fileName);
+const fileName=`Workspace file check ${basename(fixture)} — Текст.txt`, target=join(project,'src',fileName);
 await writeFile(target,'Workspace issue 64 disposable file. External opening must preserve these bytes.\n');
 await writeFile(join(project,'Release planning — Длинное имя файла для проверки обрезки и подсказки.md'),'Fixture');
 const parents=new Set(),backends=new Set(),checks=[],captures=[];
-let app,page,failure,launchUnverified=false,native,external;
+let app,page,failure,launchUnverified=false,native,external,externalBefore;
 try {
  launchUnverified=true;
  app=await _electron.launch({executablePath:createRequire(import.meta.url)('electron'),args:[root],cwd:root,env:{...process.env,WORKSPACE_USER_DATA_DIR:join(fixture,'data')}});
@@ -76,11 +76,12 @@ try {
  native=await waitForFileManagerTarget(target);
  assert.equal(native.status,'passed',JSON.stringify(native));
  checks.push('actual file manager shows/selects exact disposable nested Unicode file');
+ externalBefore=await observeExternalFile(target);
  await page.getByRole('button',{name:'Open externally',exact:true}).click();
  await page.waitForFunction(()=>!document.querySelector('.project-files [role="alert"]') && ![...document.querySelectorAll('.project-files [role="status"]')].some(el=>el.textContent==='Opening…'));
  // OS document/window observation is separate from the successful shell dispatch.
  for(let attempt=0;attempt<20;attempt++) {
-   external=await observeExternalFile(target);
+   external=await observeExternalFile(target,{allowLocalAppleEvents:true});
    if(external.status==='passed')break;
    await delay(100);
  }
@@ -104,9 +105,9 @@ try {
 finally {
  let stopped=false,cleaned=false;
  try{if(app)await closeElectron(app);stopped=ownedProcessesStopped(parents,backends,{launchUnverified});assert.equal(stopped,true);}catch(error){failure??=error;}
- try{await closeExternalFile(target,external);await closeDisposableFileManagerTarget(target);}catch(error){failure??=error;}
+ try{await closeExternalFile(target,external,externalBefore);await closeDisposableFileManagerTarget(target);}catch(error){failure??=error;}
  try{cleaned=await cleanupOwnedFixture(fixture,{processesStopped:stopped,primaryFailure:failure,record:result=>{cleaned=result;}});}catch(error){failure??=error;}
- await writeFile(join(evidence,'report.json'),JSON.stringify({sha:process.env.GITHUB_SHA??null,platform:process.platform,checks,captures,native,external,stopped,cleaned,failure:failure?.stack},null,2));
+ await writeFile(join(evidence,'report.json'),JSON.stringify({sha:process.env.GITHUB_SHA??null,platform:process.platform,checks,captures,native,external,externalBefore,stopped,cleaned,failure:failure?.stack},null,2));
 }
 if(failure)throw failure;
 console.log(`Project files: ${checks.join('; ')}`);

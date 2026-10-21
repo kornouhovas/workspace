@@ -74,10 +74,10 @@ export const projectFilesTests = [...new Set([...navigationTests,
   'project-files-service.test.mjs', 'project-files-ui.test.tsx', 'project-reveal.test.mjs',
   'backend-lifecycle.test.mjs', 'windows-project-reveal.test.mjs', 'windows-project-reveal-com.test.mjs',
   'native-reveal-receipt.test.mjs', 'project-archive-service.test.mjs',
-  'build-smoke.test.mjs', 'artifact-smoke.test.mjs', 'runtime-project-visibility.test.mjs',
+  'build-smoke.test.mjs', 'artifact-smoke.test.mjs', 'runtime-project-visibility.test.mjs', 'external-file-evidence.test.mjs',
 ])];
 export function projectFilesCommands({nativeOnly=false}={}) {
-  const tests = nativeOnly ? ['project-files-service.test.mjs','project-files-ui.test.tsx','backend-lifecycle.test.mjs','project-reveal.test.mjs','runtime-project-visibility.test.mjs','desktop-ux-checks.test.mjs'] : projectFilesTests;
+  const tests = nativeOnly ? ['project-files-service.test.mjs','project-files-ui.test.tsx','backend-lifecycle.test.mjs','project-reveal.test.mjs','runtime-project-visibility.test.mjs','external-file-evidence.test.mjs','desktop-ux-checks.test.mjs'] : projectFilesTests;
   return [
     ['npm', ['run', 'typecheck']], ['npm', ['run', 'lint']],
     [process.execPath, ['--import','tsx','--test','tests/windows-project-reveal-com.test.mjs']],

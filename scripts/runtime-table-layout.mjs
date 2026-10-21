@@ -1,6 +1,6 @@
 import { enterContextFor } from "./runtime-context-tools.mjs";
 import { waitForPresentationBounds } from "./runtime-presentation-controls.mjs";
-import { dragRuntimeGroup } from "./runtime-group-drag.mjs";
+import { recordGroupDrag } from "./runtime-group-assignment.mjs";
 /* global document, innerWidth, getComputedStyle */
 import assert from "node:assert/strict";
 import { join } from "node:path";
@@ -47,7 +47,7 @@ export async function exerciseTableLayout({page,query,rootPath,language,evidence
   await page.waitForFunction(()=>document.querySelector("tbody tr")?.textContent.includes("Beta"));
   const drag=page.getByRole("button",{name:`${en?"Drag to reorder row":"Перетащить строку для изменения порядка"}: Beta`,exact:true,includeHidden:true});
   await enterContextFor(page,drag);
-  await dragRuntimeGroup(drag.and(page.locator(":enabled")), page.locator(`tr[data-project-id="${projects.find(p=>p.name==="Alpha").projectId}"]`));
+  await recordGroupDrag(page, drag.and(page.locator(":enabled")), page.locator(`tr[data-project-id="${projects.find(p=>p.name==="Alpha").projectId}"]`), join(evidenceDirectory, `${language}-table-order-drag-receipt.json`));
   await page.waitForFunction(()=>document.querySelector("tbody tr")?.textContent.includes("Alpha"));
   const saved=(await call("getTableLayout",{viewId})).config;
   assert.equal(saved.columns.find(c=>c.propertyId===propertyId).width,799);

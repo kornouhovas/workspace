@@ -9,7 +9,7 @@ import {openSettingsService} from '../dist/service/settings.mjs';
 import {createNativeProjectReveal} from '../src/desktop/project-reveal.ts';
 
 async function fixture(run,mode='direct') {
- const temp=realpathSync(mkdtempSync(join(tmpdir(),'project-files-'))),root=join(temp,'root');
+ const temp=realpathSync.native(mkdtempSync(join(tmpdir(),'project-files-'))),root=join(temp,'root');
  mkdirSync(root);const projectPath=mode==='direct'?join(root,'Atlas'):join(root,'Category','Atlas');mkdirSync(projectPath,{recursive:true});
  const service=openSettingsService(join(temp,'data.sqlite'));
  try {

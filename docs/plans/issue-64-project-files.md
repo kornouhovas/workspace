@@ -116,3 +116,28 @@ viewport geometry after two frames within the original15-second bound. A real
 Electron fixture replaces the first scrolled element, requiring a second read.
 No filesystem mutation, keyboard action or native effect is retried. Original
 Views command and full shared consumers remain required for renewal.
+
+
+Focused run39644044020, test-only candidate `bf24f07`: both Windows hosts passed
+all52 isolated original COM controls under unchanged deadlines. The long path
+actually dispatched Open and Reveal; its remaining assertion compared temporary
+DOS alias `RUNNER~1` with the canonical `runneradmin` spelling. The fixture now
+uses `realpathSync.native`, matching the service and other native fixtures.
+
+The macOS desktop diagnostic established the observer cause: the document was
+already visible in TextEdit with the expected bytes, while a system Automation
+prompt blocked the hosted agent's Apple Events inspection. The repaired CI observer
+uses readonly WindowServer metadata, the default executable's PID and a per-fixture
+unique document name. No product permission or system association is changed.
+External CI cleanup requires a newly observed process absent from the pre-Open
+snapshot and exactly one owned document window; pre-existing apps are excluded.
+Local explicitly selected Apple Events observation remains available when native
+window titles are redacted. A local native renewal observed the exact document
+but later failed normal Electron shutdown; that negative receipt is retained,
+not declared passing by its completed behavior.
+
+A later local Views renewal failed a native Table reorder at its original result
+assertion. Added a readonly native gesture receipt; the tightened original Table
+layout reproduction passed EN/RU, one dragstart/drop each with unchanged order,
+keyboard, values, widths and cleanup assertions. Its earlier failure cause is
+not established; the full original Views command remains required for acceptance.

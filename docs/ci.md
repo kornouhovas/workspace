@@ -1066,8 +1066,14 @@ Electron file-tree, Open/Reveal, project navigation, shell and saved-view journe
 on macOS latest, Windows latest and Windows 2022. Artifact
 `desktop-ux-foundation-<host>` includes exact-SHA provenance and
 `work/issue-64-files` appearance/native/shutdown/cleanup evidence. Plain-text
-external observation expects the host's TextEdit/Notepad association and verifies
-the exact disposable document independently of native dispatch acknowledgment.
+external observation uses the host's TextEdit/Notepad association. macOS CI binds
+a uniquely named fixture document's visible WindowServer window to the OS default
+application's executable PID, without requesting Automation control of TextEdit.
+The cleanup guard permits termination only of a newly launched CI app process with
+that one owned document and no other named windows; pre-existing apps are excluded.
+Local hosts may use the explicitly selected existing Apple Events document reader
+when native window names are redacted. Windows observes the exact command-line
+path plus unique window title. These receipts are independent of dispatch acknowledgment.
 This adds no workflow input and preserves default foundation/full/release routes.
 Installer acceptance remains at the integration milestones: no dependency, native
 resource, package or startup/update input changes in this slice.

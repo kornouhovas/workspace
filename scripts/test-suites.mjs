@@ -9,6 +9,7 @@ import { fileURLToPath } from 'node:url';
 const common = new Set([
   'components.test.tsx',
   'project-files-ui.test.tsx',
+  'external-file-evidence.test.mjs',
   'context-tools.test.tsx',
   'desktop-ux-checks.test.mjs',
   'native-bridge-evidence.test.mjs',
