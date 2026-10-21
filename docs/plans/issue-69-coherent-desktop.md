@@ -1051,3 +1051,35 @@ Run onlyoriginalfailedfile+actualprocesscontrol through `native-owner-controls`;
 no appbuild/npmdependency required, strictpipefail andexactSHA/run/attemptupload.
 Source/app stays299a; do not repeatpassed originalnative now. Full/strict/install
 renewal remains behind this focusedfilegate. Source safetyreviews0remain.
+
+
+Focusedcontrol renewal `39693870739`, attempt1, at `9a359816` passes12/12 on
+Windowslatest. Downloadedoriginaltestlog inspected, includingterminalUIAcontrolled
+conditions andactualprocessidentity/unavailablePIDcontrol. Sourceinputs exactly
+match originaltraceoffpassed299a46be. Test-onlydiff preserves that native receipt.
+The focusedgate is now satisfied; this doesnotattribute oldnativeexpiry uniquely.
+
+Currentappcandidate299a46be, verificationhead9a359816. Freshfull39694044347,
+strictbothcandidate-only39694044226 (immutablebaselineinherited), macOSinstaller
+39694044252 dispatched/attempt1. WindowsinstallerfollowscompletedmacOSinstaller
+toavoidsharedworkflowconcurrency cancellation. Renewcurrentnativefileconsumers
+andcoherentcoverage asrequired afterfull; priorrendererappearance inputsremain
+byte-identicalb577, but oldnative/strict/installers cannotacceptnewresources.
+
+
+Freshstrict `39694044226`, attempt1, at `9a359816` fails bothoriginalhosts:
+M1Virtual/kernel23.6.0 directTableTextedit310.8ms>300; EPYC7763/kernel10.0.26100
+directTableassignment314.8ms>300. Bothfinishall32functional/timingcases,10memory
+samples/fournormalapp+backendexits/assertedcleanup. Macpeak918388736bytes. Both
+rawreports/logsdownloadedandinspected. No unchangedstrictretry. Retainusefulfull
+andinstallerjobsalreadyrunning. MacDMG39694044252passes14.8.9arm64completeinstall/
+reopen/replacement/identity/isolation/ENRU/cleanup; hash57b53e00ce7346f497c050ded4a6885573b88390bb36423b09aa2346b7917e96.
+WindowsNSIS39694305845pendingatthesameverificationhead.
+
+Ranked Textsave hypotheses: broadTable re-render, backendcommit/snapshot cost,
+focus/paint stabilization. Existingdiagnosticfilter/assignmenttraces coverWindows;
+add CPU/timelinecaptureforTexteditonlyunderexistingprofileFilters. Strictaction,
+clock, endpoint and300mslimit unchanged; profile/enforceguard retained.8fixture/
+backend/querychecks+1CLIguard pass, lint/docs pass; Standards0. Runexisting
+performance diagnostic_only/profile_filters/profile_backend onbothfailedhosts;
+no baseline or originalstrictrepeat untildiagnosticevidence selectsnextstep.

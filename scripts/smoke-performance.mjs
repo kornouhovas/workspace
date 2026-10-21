@@ -294,10 +294,12 @@ try {
       const saveValue = row.getByRole("button", { name: "Save value", exact: true }); await saveValue.focus();
       await enterContextFor(page, saveValue, { waitForPresentation: true }); await saveValue.focus();
       (report.preparations ??= []).push({source:source.mode,scenario:`${kind} edit controls presentation`,ms:performance.now()-editPreparation});
+      const editProfiler = profileFilters ? await startInteractionProfile(source.mode === "direct" && kind === "table") : undefined;
       await startUiTiming(saveValue, "keydown"); await saveValue.press("Enter");
       await ready(expected,[{selector:`[data-project-id=${JSON.stringify(p.projectId)}] .text-value-button:not([hidden])`,text:`Accepted ${kind}`}]);
       await row.getByText(`Accepted ${kind}`, { exact: true }).waitFor();
       await recordUi(source.mode, `${kind} edit`);
+      if (editProfiler) await stopInteractionProfile(editProfiler, `${source.mode}-${kind}-edit`);
       assert.equal((await command("listTextProperties")).values.find(v => v.projectId === p.projectId && v.propertyId === field.propertyId).value, `Accepted ${kind}`);
       await page.screenshot({ path: join(evidence, `${source.mode}-${kind}-en.png`) });
     }
