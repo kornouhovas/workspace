@@ -760,6 +760,7 @@ p { margin-block: .5rem; }
 .board-layout-controls fieldset { gap: 10px; }
 .board-property-controls { gap: 8px 16px; margin-block: 8px; }
 .board-property-controls > [data-column-id] { display: inline-flex; align-items: center; gap: 4px; min-width: 0; }
+.board-property-controls > .board-field-placeholder { display: none; }
 .grouped-board { gap: 16px; padding: 8px 0; align-items: stretch; }
 .grouped-board > .project-group { margin: 0; padding: 0; border: 0; background: transparent; }
 .project-group-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
@@ -777,3 +778,6 @@ p { margin-block: .5rem; }
 .project-card .context-tools-trigger { border: 0; background: transparent; color: var(--muted-foreground); }
 .project-card .text-value-button, .project-card .multi-select-trigger { border: 0; background: transparent; padding: 2px 0; text-align: start; min-height: 24px; }
 .project-card .text-value-button:hover:not(:disabled), .project-card .multi-select-trigger:hover:not(:disabled) { background: var(--muted); }
+
+/* Portaled view controls sit above their owning contextual tools. */
+.presentation-popover, .filter-popover { z-index: 50; }

@@ -46,6 +46,7 @@ export function boardCommands() {
     ['npm', ['run', 'typecheck']], ['npm', ['run', 'lint']],
     [process.execPath, ['--import','tsx','--test',...boardTests.map(file=>`tests/${file}`)]],
     [process.execPath, ['scripts/smoke-board.mjs']],
+    ['npm', ['run', 'smoke:shell']],
     ['npm', ['run', 'smoke:views']],
   ];
 }

@@ -95,6 +95,7 @@ try {
         await filters.focus(); await filters.press("Enter");
         const popover = page.getByRole("dialog", { name: /^(Search and filters|Поиск и фильтры)$/ });
         await popover.waitFor();
+        await waitForPresentationBounds(page, language === "en" ? "Search and filters" : "Поиск и фильтры");
         assert.equal(await popover.evaluate(el => { const r = el.getBoundingClientRect(); return r.left >= 0 && r.right <= window.innerWidth && r.top >= 0 && r.bottom <= window.innerHeight; }), true);
         await page.screenshot({ path: join(evidence, `${language}-${theme}-${size.width}-filters.png`) });
         await page.keyboard.press("Escape");

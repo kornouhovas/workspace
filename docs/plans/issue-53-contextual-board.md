@@ -103,3 +103,20 @@ regression successfully. Latest focused Board/context/CI/lifecycle run: 53 pass,
 zero fail; typecheck, lint, docs links and whitespace checks pass. The normal
 build succeeds with Node 22.21.1. Final full/native/Actions receipts remain in the
 GitHub checkpoint to preserve the tested code SHA.
+
+The complete local suite on `2d540d3` passed: 3,201 passed, zero failed, 26
+platform/case-sensitive-fixture skips (3,227 total). A later native-driver-only
+repair replaced a strict single-element disappearance wait with an all-cards
+absence predicate and retained cleanup receipts on failure; unchanged suite
+inputs justify retaining that result for `f9cf4d0`.
+
+Final screenshot inspection then exposed an actual shared portal stacking defect:
+view popovers at layer 30 were occluded by their owning tools at layer 40.
+The native bounds helper was extended with corner/center hit-testing; the old
+CSS deterministically failed that check. Presentation/filter portals now use
+layer 50. Board appearance/interaction and shared desktop-shell native journeys
+pass with the stronger check, including the Properties draft/Cancel route.
+Both independent reviewers accepted this repair without new findings. The Board
+profile now includes shell smoke for shared Table/filter consumers. Because CSS
+changed, final build, full suite and exact-candidate native/CI are renewed; prior
+cancelled/superseded workflow runs do not establish acceptance.

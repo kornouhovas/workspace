@@ -69,7 +69,7 @@ try {
           const rename=propertyPanel.getByRole('button',{name:`${language==='en'?'Rename property':'Переименовать свойство'}: Notes`,exact:true});
           await rename.click();
           const draft=propertyPanel.getByRole('textbox',{name:language==='en'?'Property name':'Название свойства',exact:true});
-          await draft.fill('Uncommitted name');await draft.press('Escape');
+          await draft.fill('Uncommitted name');await page.screenshot({path:join(evidence,`${content}-${language}-${theme}-${size.width}-property-draft.png`)});await draft.press('Escape');
           await page.waitForFunction(label=>document.activeElement?.getAttribute('aria-label')===label,`${language==='en'?'Rename property':'Переименовать свойство'}: Notes`);
           await page.keyboard.press('Escape');
           await openLayout(language);

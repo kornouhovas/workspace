@@ -29,6 +29,12 @@ export async function waitForPresentationBounds(page, label) {
     const panel = [...globalThis.document.querySelectorAll('[role="dialog"]')].find(element => element.getAttribute("aria-label") === label);
     if (!panel) return false;
     const bounds = panel.getBoundingClientRect();
-    return bounds.width > 0 && bounds.left >= 0 && bounds.right <= globalThis.innerWidth && bounds.top >= 0 && bounds.bottom <= globalThis.innerHeight;
+    const withinViewport=bounds.width > 0 && bounds.left >= 0 && bounds.right <= globalThis.innerWidth && bounds.top >= 0 && bounds.bottom <= globalThis.innerHeight;
+    if(!withinViewport) return false;
+    // A portal can fit the viewport while its owning tools panel paints over it.
+    const inset=Math.min(16,bounds.width/2,bounds.height/2);
+    return [[bounds.left+inset,bounds.top+inset],[bounds.right-inset,bounds.top+inset],
+      [bounds.left+inset,bounds.bottom-inset],[bounds.right-inset,bounds.bottom-inset],
+      [bounds.left+bounds.width/2,bounds.top+bounds.height/2]].every(([x,y])=>panel.contains(globalThis.document.elementFromPoint(x,y)));
   }, label);
 }
