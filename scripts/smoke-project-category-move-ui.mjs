@@ -1,5 +1,5 @@
 import { collectQuitEvidence, installQuitEvidence } from "./runtime-quit-evidence.mjs";
-import { selectRuntimeWorkspace, selectedRuntimeWorkspace } from "./runtime-settings.mjs";
+import { waitForSelectedRuntimeWorkspace, selectRuntimeWorkspace, selectedRuntimeWorkspace } from "./runtime-settings.mjs";
 import { enterContextFor } from "./runtime-context-tools.mjs";
 import { setInterfaceLanguage } from "./runtime-settings.mjs";
 import assert from "node:assert/strict";
@@ -490,7 +490,7 @@ export async function runProjectCategoryMoveUi(mode = "dev") {
     await setInterfaceLanguage(page, language);
     await page.waitForFunction(lang => globalThis.document.documentElement.lang === lang && !globalThis.document.querySelector("#interface-language")?.disabled, language);
     await selectRuntimeWorkspace(page,workspace.workspaceId);
-    await page.getByRole("heading", { name: workspace.name, exact: true }).waitFor();
+    await waitForSelectedRuntimeWorkspace(page,workspace);
     await page.waitForFunction(() => globalThis.document.querySelector(".table-view")?.getAttribute("aria-busy") === "false" && globalThis.document.querySelector(".category-move-operations")?.getAttribute("aria-busy") === "false");
   }
   async function capture(page, language, state) {

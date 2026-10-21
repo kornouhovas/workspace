@@ -1,4 +1,4 @@
-import { selectRuntimeWorkspace } from "./runtime-settings.mjs";
+import { waitForSelectedRuntimeWorkspace, selectRuntimeWorkspace } from "./runtime-settings.mjs";
 import { enterContextFor } from "./runtime-context-tools.mjs";
 import { setInterfaceLanguage } from "./runtime-settings.mjs";
 import { installRenameSubmissionReceipt } from "./rename-submission-receipt.mjs";
@@ -197,7 +197,7 @@ export async function runProjectRenameUi(mode = "dev") {
     await setInterfaceLanguage(page, language);
     await page.waitForFunction(lang => globalThis.document.documentElement.lang === lang && !globalThis.document.querySelector("#interface-language")?.disabled, language);
     await selectRuntimeWorkspace(page,workspace.workspaceId);
-    await page.getByRole("heading", { name: workspace.name, exact: true }).waitFor();
+    await waitForSelectedRuntimeWorkspace(page,workspace);
     await page.waitForFunction(() => globalThis.document.querySelector(".table-view")?.getAttribute("aria-busy") === "false" && globalThis.document.querySelector(".rename-operations")?.getAttribute("aria-busy") === "false");
   }
   async function capture(page, discoveryMode, language, state) {

@@ -818,3 +818,78 @@ for original execution. Both skip common/full; ordinary defaults and matrices
 remain unchanged. The route test evaluates these conditions and trace mapping,
 in addition to actual pipeline failure/negative controls.14route checks and lint/
 docs pass; both review axes report zero findings on this caller repair.
+
+
+Trace-enabled focused `39684193756`, attempt1, at `9b05276c` completes all
+original tree/Open/Reveal assertions, normal exit and cleanup on Windows kernel
+10.0.26100/AMD EPYC9V45. Observer evidence is complete with no diagnostic errors:
+assemblies170.6ms, compile425.9ms, Shell572.9ms, binding1044.4ms, window candidate
+2643.5ms, UIA root4225.7ms, readiness4974.3ms, final readiness5033.5ms, one
+SELECT, stopped and done. It does not reproduce or identify the earlier native
+failure; no native production repair or cause is claimed. Run one original
+trace-disabled consumer with the new bounded report at the same diagnostic-only
+candidate to capture the failing bridge phase or establish its actual current
+result. This is not a retry-until-green sequence; another failure returns to its
+new evidence rather than an unchanged rerun. Broad acceptance remains behind it.
+
+Refresh seven curated appearance images from the passing Mac coherent consumer
+at actual application `b577cfd2`; retain the before image's original base. Manifest
+hashes and all renderer inputs match; no src delta exists through diagnostic
+candidate `9b05276c`. Actual Table/empty/error inspected by coordinator and Board/
+real-tree preview/expanded/settings inspected by independent Spec reviewer:
+zero material appearance findings. The compact map now separates current passing
+boundaries, failed/unreached Windows routes and retained local native negatives.
+This appearance renewal does not accept the failed Windows native operation.
+
+
+Original trace-disabled focused `39684755404`, attempt1, at `9b05276c` passes
+on AMD EPYC7763/kernel10.0.26100. All16tree preview/expanded captures, real
+Refresh/disappearance, exact native file selection, exact external document and
+unchanged bytes pass. Events show one started/open/select/stopped/done sequence;
+no observer collection error. Normal exit and asserted cleanup pass. Downloaded
+original report/runtime log are inspected. Earlier cause remains unknown; neither
+this receipt nor the diagnostic is described as a native production repair.
+
+Independent policy audit confirms failed-Actions loop §2 permits bounded
+unresolved-cause evidence; §4 still requires the original focused command and
+its artifacts, now satisfied. §5 permits acceptance renewal after that pass.
+No new human decision is prescribed without a contract/support change. Renew
+unreached Windows navigation/package using existing navigation-native route
+`39685187380`; its fixed two-Windows matrix is retained. Then run ordinary full
+acceptance for missing common/platform/source/shell/workspace/service/package
+coverage. Existing passing Mac/Windows2022 principal evidence and current strict/
+installer results retain their actual unchanged application inputs and SHA.
+
+
+Navigation renewal `39685187380`, attempt1, at `9b05276c` passes both original
+Windowslatest/Windows2022 native navigation consumers and their selected UI
+regressions. Reports/provenance are inspected:32ordinary/long states, rapid
+scroll/visible fields, resize/scroll/focus/history, normal exit and cleanup pass.
+Package steps are deliberately skipped by navigation-native; an initial shorthand
+"navigation/package renewal" was inaccurate and is corrected here. Packaged
+Views and the other unreached source/shell/workspace/native/platform consumers
+remain for ordinary full `39685830877`, now dispatched at the same diagnostic/
+test-only SHA. Current application/installer/strict source inputs stay unchanged.
+
+
+Full `39685830877`, attempt1, at `9b05276c` failed. Common checks pass.
+macOS platform:2756 tests/2728 pass/2 fail/26 skip; Windows2022:
+2775 tests/2760 pass/2 fail/13 skip. Both failures are the same two stale CI
+inventory expectations omitting the new project-files dispatch modes. All other
+executed platform cases pass; Ladle/development/package tails are unreached.
+Windows latest fails its original early direct-creation consumer before native
+invocation: the accepted settings heading exists but is hidden. Its later shell
+artifact/collector failures are consequences of unreached prerequisites, not
+separate product diagnoses. Preserve those failures and exact logs/artifacts.
+
+Adapt the three creation/rename/category drivers to visible selected sidebar
+workspace identity (exact ID and name), retaining navigation readiness. A real
+Electron fixture distinguishes hidden headings, a same-name selected sibling
+and the unselected target before the user's navigation completes. Keep bounded
+normal shutdown, captured owned child and asserted cleanup. Reconcile the two
+inventory expectations. Local focused verification:52/52 pass; lint passes.
+Standards/spec review found no contract finding. No application input changes.
+Renew the original Windows latest early direct command first with the original
+trace environment via existing readiness/native/early route; then selected
+identity/inventory and original Reveal controls. Missing three-host runtime tails
+remain required, retaining individual unchanged passing platform rows above.

@@ -1454,6 +1454,12 @@ jobs:
         env:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-focused-windows-reveal/native
           WORKSPACE_REVEAL_TRACE: ${{ inputs.readiness_native_trace == true && '1' || '0' }}
+      - name: Selected workspace identity and CI inventory regressions
+        if: ${{ !cancelled() && steps.reveal-build.outcome == 'success' && inputs.readiness_native_early == true }}
+        shell: bash
+        run: |
+          set -o pipefail
+          node --test tests/runtime-workspace-identity.test.mjs tests/test-suites.test.mjs 2>&1 | tee work/ci-focused-windows-reveal/workspace-identity.log
       - name: Original Reveal file including dirty and stable authority controls
         if: ${{ !cancelled() && steps.reveal-build.outcome == 'success' }}
         shell: bash

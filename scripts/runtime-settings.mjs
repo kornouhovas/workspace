@@ -37,6 +37,11 @@ export async function selectRuntimeWorkspace(page, workspaceId) {
 export async function selectedRuntimeWorkspace(page) {
   return page.evaluate(()=>globalThis.document.querySelector('.sidebar-workspace-row > button[aria-current="page"]')?.getAttribute('data-workspace-id') ?? globalThis.document.querySelector('#workspace-switcher')?.value ?? null);
 }
+export async function waitForSelectedRuntimeWorkspace(page, {workspaceId,name}) {
+  await page.locator(`.sidebar-workspace-row > button[data-workspace-id=${JSON.stringify(workspaceId)}][aria-current="page"]`)
+    .and(page.getByRole('button',{name,exact:true})).waitFor();
+  await waitForWorkspaceNavigation(page);
+}
 export async function waitForWorkspaceNavigation(page) {
   await page.waitForFunction(()=>{
     const control=globalThis.document.querySelector('.sidebar-workspace-row > button[aria-current="page"]') ?? globalThis.document.querySelector('#workspace-switcher');

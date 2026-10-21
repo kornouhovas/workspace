@@ -1,4 +1,4 @@
-import { selectRuntimeWorkspace, waitForWorkspaceNavigation } from "./runtime-settings.mjs";
+import { waitForSelectedRuntimeWorkspace, selectRuntimeWorkspace } from "./runtime-settings.mjs";
 import { enterContextFor } from "./runtime-context-tools.mjs";
 import { setInterfaceLanguage } from "./runtime-settings.mjs";
 import { waitForFocusedInput } from "./property-editor-driver.mjs";
@@ -153,8 +153,7 @@ async function launch(data) {
 }
 async function select(page, workspace) {
   await selectRuntimeWorkspace(page,workspace.workspaceId);
-  await page.getByRole("heading", { name: workspace.name, exact: true }).waitFor();
-  await waitForWorkspaceNavigation(page);
+  await waitForSelectedRuntimeWorkspace(page,workspace);
   await page.evaluate(() => new Promise((done) => globalThis.requestAnimationFrame(() => globalThis.requestAnimationFrame(done))));
   await page.waitForFunction(() => globalThis.document.querySelector(".table-view")?.getAttribute("aria-busy") === "false" && !globalThis.document.querySelector(".project-creation > button")?.disabled);
 }
