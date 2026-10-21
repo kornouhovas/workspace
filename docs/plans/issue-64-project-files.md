@@ -141,3 +141,44 @@ assertion. Added a readonly native gesture receipt; the tightened original Table
 layout reproduction passed EN/RU, one dragstart/drop each with unchanged order,
 keyboard, values, widths and cleanup assertions. Its earlier failure cause is
 not established; the full original Views command remains required for acceptance.
+
+### Focused native renewal accepted
+
+Run [39647582036](https://github.com/kornouhovas/workspace/actions/runs/39647582036),
+exact `1046abaca8f8f7d15dd61865c68b860e463fd12b`, profile
+`project-files-native`, passes on macOS latest, Windows latest and Windows 2022.
+All three downloaded artifacts have matching provenance. The original real file
+journey observes the exact external document, exact Finder/Explorer selection,
+normal Workspace shutdown and asserted fixture cleanup. macOS uses WindowServer
+with a newly launched TextEdit PID, unique document window and no other named
+windows; no Automation permission is requested. Windows observes the exact
+command-line path and unique document title. Original Views completes all six
+check groups, restart, normal shutdown and cleanup on each host. Table reorder
+receipts retain one original gesture, with the unknown earlier local failure
+remaining explicitly recorded above.
+
+Hosted whole-screen samples on each OS include RU/light preview at1024 and
+EN/dark expanded at1440, compared with the pinned main composition and bb style.
+No new appearance discrepancy was found. The artifact retains all16 file-tree
+captures plus empty/Refresh/disappearance states. Full affected-boundary
+acceptance is recorded in the linked issue checkpoint after this focused gate.
+
+### Final affected-boundary acceptance
+
+Run [39648503761](https://github.com/kornouhovas/workspace/actions/runs/39648503761),
+profile `project-files`, exact `1046abaca8f8f7d15dd61865c68b860e463fd12b`,
+passes on macOS latest, Windows latest and Windows 2022. Downloaded and inspected
+all three archives: matching SHA/run/profile,16 file-tree captures,32 navigation
+captures,28 shell checks and6 Views groups per host. Exact native file selection,
+external-document observation, normal shutdown and asserted cleanup pass on each.
+Mac selected tests:1164pass/1skip plus isolated COM/static2pass/6host skips.
+Each Windows host:1163selected pass plus52isolated COM pass, no failures.
+Build, typecheck and lint pass in these jobs. No required scenario remains open.
+The full local suite's original negative result remains owned by the separate
+#69 broad-harness checkpoint; this scoped receipt does not relabel it as green.
+
+The delivery follow-up changes only this evidence document. Runtime evidence is
+inherited from the exact SHA above under the CI evidence-reuse policy: application,
+migrations, native resources, dependencies/lockfile, build/package inputs and
+runtime configuration remain identical. Documentation links and whitespace are
+renewed locally. Delivered integration SHA is recorded in the issue checkpoint.
