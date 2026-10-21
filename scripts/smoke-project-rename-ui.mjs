@@ -471,7 +471,9 @@ export async function runProjectRenameUi(mode = "dev") {
             return { outcome: "completed_before_interruption", mutationRequired: false };
           }
           const action = checkpoint === "keep_original" ? "keep_original" : checkpoint === "intent" ? "retry_original" : ["first_effect", "staged_evidence"].includes(checkpoint) ? "finish_staged" : "complete_destination";
-          await page.getByRole("button", { name: `${t.review}: Original → original`, exact: true }).press("Enter");
+          const review=page.getByRole("button", { name: `${t.review}: Original → original`, exact: true, includeHidden:true });
+          await enterContextFor(page,review);
+          await review.press("Enter");
           await page.locator(".rename-review").waitFor();
           await page.getByRole("button", { name: t[action], exact: true }).waitFor();
           assert.equal(await page.locator("#rename-review-title").evaluate(node => node === globalThis.document.activeElement), true);

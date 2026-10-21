@@ -64,3 +64,37 @@ records every affected inherited entry point and its retained guarantee. No
 service, storage, migration or filesystem contract was changed. Hosted results
 and final handoff are recorded in the originating issue rather than rewriting
 this local evidence into a full-suite success claim.
+
+## Hosted source receipt and test-only renewal
+
+Run [39584260958 / attempt 1](https://github.com/kornouhovas/workspace/actions/runs/39584260958)
+at `d890103ff4f4e6e5f1d96ca3e3654ad814c4dbb0` passed the complete source
+foundation profile on all three supported hosts, including the original native
+fixture tests, 16 visual variants per host, shell/workspace/source/views and
+normal shutdown/cleanup. Fresh packages and font/license inspection also passed.
+Artifacts were downloaded and provenance/JSON outcomes inspected; representative
+Windows screenshots were compared separately. The overall run failed later and
+is not described as a green workflow.
+
+The new packaged step mistakenly called `smoke:runtime -- release --views`;
+`--views` is unsupported there. All hosts reached the original general runtime
+and failed at its obsolete daily Add entry. A failing regression now locks the
+actual `smoke:views -- release` route. Focused renewal retains the originally
+reached general runtime as well, adapting sidebar auto-picker, contextual
+property/recovery commands and settings return. Its existing data, filesystem,
+recovery, native, shutdown and cleanup assertions remain. Intentional ellipsis
+of the noninteractive heading path is distinguished from accidental overflow;
+regression controls still reject ordinary clipping and overflowing cells.
+
+Only harness/tests/CI/docs changed after the source receipt. The issue checkpoint
+records the reviewed diff and renewed packaged evidence; skipped source checks
+in the focused renewal inherit their identified earlier receipt, not a new pass.
+
+Local renewal: 93 driver/layout/route regressions passed; lint, documentation
+links and whitespace checks passed. The original general packaged-runtime phase
+passed through recovery, restart, removal/source reuse, startup failure, unchanged
+files, backend exit and fixture cleanup. Its subsequent graphical rename recovery
+advanced through intent/keep-original/first-effect and then reproduced the known
+local 10-second Electron shutdown timeout. This remains a failed local command;
+hosted renewal must pass the complete retained command. Both independent reviews
+found no remaining issues after the offscreen recovery-row ordering repair.

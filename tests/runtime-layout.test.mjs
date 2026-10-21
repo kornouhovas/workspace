@@ -52,3 +52,23 @@ test("persistent wrong selection fails the bounded wait without repairing the ed
     assert.equal(f.disposed(), false);
   } finally { await f.browser.happyDOM.close(); }
 });
+
+test('layout inspection accepts an intentionally ellipsized path but still rejects accidental content overflow', async()=>{
+  const { measureDiscoveryLayout }=await import('../scripts/runtime-layout.mjs');
+  const browser=new Window();
+  browser.document.body.innerHTML='<div class="table-view"><div class="workspace-toolbar"><p class="workspace-root" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Full accessible source path</p></div><div class="project-table-scroll"><table class="project-table"><tbody><tr><td>Unintentionally overflowing content</td></tr></tbody></table></div></div>';
+  const path=browser.document.querySelector('.workspace-root'),cell=browser.document.querySelector('td');
+  for(const element of [path,cell]) {
+    Object.defineProperty(element,'scrollWidth',{value:200});
+    Object.defineProperty(element,'clientWidth',{value:80});
+  }
+  const context={document:browser.document,innerWidth:1024,getComputedStyle:element=>browser.getComputedStyle(element),requestAnimationFrame:callback=>callback()};
+  const page={waitForFunction:async()=>({dispose:async()=>{}}),evaluate:async predicate=>runInNewContext(`(${predicate.toString()})()`,context)};
+  try {
+    const layout=await measureDiscoveryLayout(page);
+    assert.deepEqual(Array.from(layout.elements),['TD']);
+    assert.equal(path.textContent,'Full accessible source path');
+    path.style.textOverflow='clip';
+    assert.deepEqual(Array.from((await measureDiscoveryLayout(page)).elements),['workspace-root','TD']);
+  } finally {await browser.happyDOM.close();}
+});

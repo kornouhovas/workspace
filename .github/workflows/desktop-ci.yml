@@ -14,6 +14,10 @@ on:
         description: With desktop-ux, deliberately fail a selected check to verify propagation
         type: boolean
         default: false
+      desktop_ux_packaged_only:
+        description: With desktop-ux, renew packaged consumers after unchanged source acceptance
+        type: boolean
+        default: false
       source_runtime_platform:
         description: With checks=source-runtime, renew only the missing Windows host
         type: choice
@@ -123,8 +127,11 @@ jobs:
         if: ${{ inputs.desktop_ux_failure_probe }}
         run: node scripts/desktop-ux-checks.mjs foundation --failure-probe
       - name: Affected UI, services and real Electron flows
-        if: ${{ !inputs.desktop_ux_failure_probe }}
+        if: ${{ !inputs.desktop_ux_failure_probe && !inputs.desktop_ux_packaged_only }}
         run: npm run test:desktop-ux
+      - name: Packaged renewal adapter regressions
+        if: ${{ inputs.desktop_ux_packaged_only && !inputs.desktop_ux_failure_probe }}
+        run: node --import tsx --test tests/runtime-layout.test.mjs tests/runtime-readiness.test.mjs tests/desktop-ux-checks.test.mjs tests/rename-submission-receipt.test.mjs tests/project-category-move-runtime.test.mjs
       - name: Package shared font and notices
         if: ${{ !inputs.desktop_ux_failure_probe }}
         run: npm run package:built
@@ -133,9 +140,14 @@ jobs:
         run: npm run check:artifact -- release
       - name: Packaged saved-view consumers
         if: ${{ !inputs.desktop_ux_failure_probe }}
-        run: npm run smoke:runtime -- release --views
+        run: npm run smoke:views -- release
         env:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-desktop-ux-packaged
+      - name: Retained packaged runtime after entry-point repair
+        if: ${{ inputs.desktop_ux_packaged_only && !inputs.desktop_ux_failure_probe }}
+        run: npm run smoke:runtime -- release
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-desktop-ux-base
       - name: Preserve exact-candidate UX evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -149,6 +161,7 @@ jobs:
             work/issue-50-source-settings
             work/issue-27-views-runtime
             work/ci-desktop-ux-packaged
+            work/ci-desktop-ux-base
           if-no-files-found: error
 
   source-runtime:

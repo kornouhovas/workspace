@@ -763,7 +763,9 @@ export async function runProjectCategoryMoveUi(mode = "dev") {
           }
           const action = checkpoint === "keep_original" ? "keep_original" : checkpoint === "intent" ? "retry_original" : "complete_destination";
           const reviewName = `${language === "en" ? "Review interrupted category move" : "Проверить прерванное перемещение"}: ${originalStatus.operation.originalRelativePath} → ${originalStatus.operation.requestedRelativePath}`.replace(/\s+/g, " ").trim();
-          await page.getByRole("button", { name: reviewName, exact: true }).press("Enter");
+          const review=page.getByRole("button", { name: reviewName, exact: true, includeHidden:true });
+          await enterContextFor(page,review);
+          await review.press("Enter");
           const actionName = {
             en: { retry_original: "Retry original category move", complete_destination: "Complete destination category move", keep_original: "Keep original category folder" },
             ru: { retry_original: "Повторить исходное перемещение", complete_destination: "Подтвердить перемещение в категорию назначения", keep_original: "Сохранить папку в исходной категории" },

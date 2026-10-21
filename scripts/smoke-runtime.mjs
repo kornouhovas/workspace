@@ -236,9 +236,10 @@ async function create(current, name, rootPath, language = "en") {
   }, rootPath);
   const { page } = current;
   if (await page.locator("#workspace-title").count()) {
-    await page.getByRole("button", { name: language === "en" ? "Create another workspace" : "Создать ещё одно рабочее пространство", exact: true }).click();
+    await page.getByRole("button", { name: language === "en" ? "Add workspace" : "Добавить рабочее пространство", exact: true }).click();
+  } else {
+    await page.getByRole("button", { name: language === "en" ? "Choose project folder" : "Выбрать папку проекта", exact: true }).click();
   }
-  await page.getByRole("button", { name: language === "en" ? "Choose project folder" : "Выбрать папку проекта", exact: true }).click();
   await page.getByText(await realpath(rootPath), { exact: true }).and(page.locator(":visible")).waitFor();
   await page.locator("#workspace-title").filter({ hasText: /^Workspace$/ }).waitFor();
   await renameActiveWorkspace(page, name);
@@ -248,6 +249,7 @@ async function create(current, name, rootPath, language = "en") {
 
 async function select(page, workspace) {
   await returnToWorkspace(page);
+  for (const trigger of await page.locator('.context-tools-trigger[aria-expanded="true"]').all()) await trigger.click();
   await selectRuntimeWorkspace(page,workspace.workspaceId);
   await page.getByRole("heading", { name: workspace.name.trim(), exact: true }).waitFor();
   await waitForWorkspaceNavigation(page);
@@ -284,7 +286,14 @@ async function captureLayouts(page, language, name) {
       const overflow = await page.evaluate(() => ({
         document: globalThis.document.documentElement.scrollWidth > globalThis.innerWidth,
         elements: Array.from(globalThis.document.querySelectorAll(".workspace-screen, #workspace-title, .workspace-root, .workspace-management__row, .workspace-removal"))
-          .filter((node) => node.scrollWidth > node.clientWidth + 1).map((node) => node.className || node.id),
+          .filter((node) => {
+            if (node.scrollWidth <= node.clientWidth + 1) return false;
+            if (node.matches(".workspace-toolbar .workspace-root")) {
+              const style=globalThis.getComputedStyle(node);
+              if (style.overflow === "hidden" && style.textOverflow === "ellipsis" && style.whiteSpace === "nowrap") return false;
+            }
+            return true;
+          }).map((node) => node.className || node.id),
       }));
       assert.deepEqual(overflow, { document: false, elements: [] }, `${language} ${state} ${size.width} overflow`);
       if (evidenceDirectory) await page.screenshot({ path: join(evidenceDirectory, `${mode}-${language}-${size.width}-${state}.png`), fullPage: true });
@@ -379,7 +388,7 @@ try {
   await page.getByRole("button", { name: "Rename workspace", exact: true }).click();
   await page.getByRole("textbox").fill(authoredName);
   await page.getByRole("textbox").press("Enter");
-  await page.getByRole("heading", { name: authoredName.trim(), exact: true }).waitFor();
+  await page.getByRole("textbox").waitFor({state:"hidden"});
   first.name = authoredName;
   assert.equal((await load(page)).activeWorkspace.name, authoredName);
   for (let index = 0; index < 2; index++) {
@@ -390,6 +399,7 @@ try {
   assert.deepEqual((await load(page)).workspaces.map((item) => item.workspaceId), orderedIds);
   assert.deepEqual(identity((await load(page)).activeWorkspace), identity(first));
   await returnToWorkspace(page);
+  await page.getByRole("heading", {name:authoredName.trim(),exact:true}).waitFor();
   const unconfigured = await projects(page, first.workspaceId);
   await previewFolders(page);
   for (const name of [".hidden", "$RECYCLE.BIN", "External-link"]) {
@@ -488,7 +498,7 @@ try {
   const initialPropertyName = "  Notes 日本語  ";
   const propertyName = "  Renamed-свойство-" + "long-name-".repeat(18) + "  ";
   const authoredValue = "  日本語 📝 " + "authored-text-".repeat(20) + "\nСтрока с пробелами  ";
-  await page.getByRole("button", { name: propertyLabels.en.create, exact: true }).press("Enter");
+  await (await enterContextFor(page,page.getByRole("button", { name: propertyLabels.en.create, exact: true, includeHidden:true }))).press("Enter");
   await page.getByRole("textbox", { name: propertyLabels.en.name, exact: true }).fill(initialPropertyName);
   await page.getByRole("textbox", { name: propertyLabels.en.name, exact: true }).press("Enter");
   await page.getByRole("button", { name: accessibleName(`${propertyLabels.en.rename}: ${initialPropertyName}`), exact: true }).waitFor();
@@ -702,7 +712,7 @@ try {
   await assertRuntimeCategoryCell(page, groupedProjectName, categoryName);
   const categoryPropertyId = groupedApplied.categoryProperty.propertyId;
   const groupedTextName = "Grouped Notes";
-  await page.getByRole("button", { name: propertyLabels.en.create, exact: true }).press("Enter");
+  await (await enterContextFor(page,page.getByRole("button", { name: propertyLabels.en.create, exact: true, includeHidden:true }))).press("Enter");
   await page.getByRole("textbox", { name: propertyLabels.en.name, exact: true }).fill(groupedTextName);
   await page.getByRole("textbox", { name: propertyLabels.en.name, exact: true }).press("Enter");
   await page.getByRole("button", { name: `Rename property: ${groupedTextName}`, exact: true }).waitFor();
@@ -870,8 +880,8 @@ try {
   // only by an explicit keyboard selection and reassociation through the UI.
   for (const row of modeBefore.projects) {
     await settleSourceRefresh(page);
-    const locate = page.getByRole("button", { name: accessibleName(`Найти папку: ${row.name}`), exact: true });
     await showProjectRow(page, row.name, row.projectId);
+    const locate = await enterContextFor(page,page.getByRole("button", { name: accessibleName(`Найти папку: ${row.name}`), exact: true, includeHidden:true }));
     await locate.press("Enter");
     const panel = page.locator(".recovery-panel");
     await panel.locator("input[type=radio]").first().waitFor();
@@ -1026,8 +1036,8 @@ try {
     assert.equal(row?.resolution, expectedResolution);
     const textBefore = await properties(page, workspace.workspaceId);
     const bytesBefore = await folderBytes(workspace.canonicalRoot);
-    const locate = page.getByRole("button", { name: accessibleName(`${labels.locate}: ${row.name}`), exact: true });
     await showProjectRow(page, row.name, row.projectId);
+    const locate = await enterContextFor(page,page.getByRole("button", { name: accessibleName(`${labels.locate}: ${row.name}`), exact: true, includeHidden:true }));
     await locate.press("Enter");
     const panel = page.locator(".recovery-panel");
     await panel.locator("input[type=radio]").first().waitFor();

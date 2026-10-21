@@ -975,3 +975,12 @@ pass every selected command. Local regression tests independently prove exit
 propagation and stop-before-next-command behavior. Preserve negative-control and
 positive-run receipts separately, with candidate SHA/run/attempt/host and uploaded
 artifacts. Full/native/data-safety/installer routes are retained, not replaced.
+
+After the #68 packaged-route correction, `desktop_ux_packaged_only: true`
+selects build/package/artifact prerequisites, the actual `smoke:views -- release`
+entry point, and the originally reached `smoke:runtime -- release` consumer.
+It skips the unchanged source profile; retain that profile's separate exact-SHA
+receipt. The extra original runtime preserves its source/discovery/editor/recovery
+assertions after sidebar/context entry adaptation. The default remains false.
+This route is for renewing that failed boundary, not a substitute for missing
+source acceptance.

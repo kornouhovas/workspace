@@ -28,7 +28,16 @@ export async function measureDiscoveryLayout(page) {
         document: globalThis.document.documentElement.scrollWidth > globalThis.innerWidth,
         clippedControls: controls.filter((node) => node.left < node.scrollLeft - 1 || node.right > node.scrollRight + 1).map((node) => node.label),
         elements: Array.from(globalThis.document.querySelectorAll(".discovery-panel, .discovery-effects, .discovery-effects li, .discovery-entries li, .workspace-root, .project-table td, .project-table th, .workspace-form-actions, .text-value-button, .text-value-editor"))
-          .filter((node) => node.scrollWidth > node.clientWidth + 1).map((node) => node.className || node.tagName),
+          .filter((node) => {
+            if (node.scrollWidth <= node.clientWidth + 1) return false;
+            // The compact heading intentionally ellipsizes a noninteractive path;
+            // its full text remains accessible. Other clipping is still a failure.
+            if (node.matches(".workspace-toolbar .workspace-root")) {
+              const style = globalThis.getComputedStyle(node);
+              if (style.overflow === "hidden" && style.textOverflow === "ellipsis" && style.whiteSpace === "nowrap") return false;
+            }
+            return true;
+          }).map((node) => node.className || node.tagName),
         controls,
       };
     }), Math.max(1, deadline - performance.now()), "Runtime layout readiness");
