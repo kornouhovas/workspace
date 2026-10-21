@@ -147,6 +147,7 @@ jobs:
             work/issue-48-desktop-shell
             work/issue-49-workspace-management
             work/issue-50-source-settings
+            work/issue-27-views-runtime
             work/ci-desktop-ux-packaged
           if-no-files-found: error
 
