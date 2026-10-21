@@ -558,3 +558,23 @@ Table grouping362.9/edit408.5ms while Board grouping164.1/edit158.9ms. It
 completes16direct observations, two normal exits and cleanup (diagnostic only,
 not strict acceptance). CPU samples point to repeated React/DOM work and scroll
 restoration, motivating a measured Table presentation-render experiment.
+
+
+## Rejected Table presentation memoization experiment
+
+Experiment stabilizes presentation hook callbacks/state, reuses equal field
+descriptors and memoizes column controls.64affectedUItests/typecheck/lint and
+bothreviews pass, plus a public realSQLite/UI preservation case for open
+column tools across value refresh, metadata rename and EN/RU changes.
+However the same local fixed4xrenderer diagnostic gives grouping373.5ms versus
+362.9baseline, assignment281.2versus279.2 and edit382.7versus408.5. This does
+not establish a useful consistent improvement; discard all three production
+changes. Retain the meaningful public preservation test. No strict retry is
+dispatched for that rejected experiment.
+
+The Windows65099447 diagnostic also directly exposes service queue delay:
+grouping reaches backend at+119ms and executes in3.3ms; reconciliation beginning
+at-29ms occupies94.1ms. Grouped periodic scans can therefore delay unrelated
+metadata interactions. Inspect public-service CPU profiles before choosing a
+backend change; preserve complete native-alias, reservation, identity and
+transaction revalidation guards.

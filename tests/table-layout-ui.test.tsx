@@ -167,3 +167,33 @@ test('a rejected header width save stays visible in the column popup and preserv
     await waitFor(()=>assert.equal(within(popup).queryByRole('alert'),null));
   } finally {cleanup();}
 });
+
+test('open column tools follow metadata and language changes after a value-only refresh',async()=>{
+ const directory=mkdtempSync(join(tmpdir(),'table-presentation-refresh-')),root=join(directory,'root');mkdirSync(root);mkdirSync(join(root,'Alpha'));
+ const service=openSettingsService(join(directory,'app.sqlite'));
+ const {workspaceId,viewId,sourceId}=service.handleCommand({type:'workspace.create',rootPath:root,name:'One'}).value;
+ const command=(type:string,fields={})=>service.handleCommand({type:`workspace.${type}`,workspaceId,...fields});
+ const query=(type:string)=>service.handleQuery({type:`workspace.${type}`,workspaceId});
+ const projects=command('applyDiscovery',{previewToken:query('previewDiscovery').value.previewToken}).value.projects;
+ const propertyId=command('createProperty',{name:'Notes',propertyType:'text'}).value.propertyId;
+ const client=new WorkspaceServiceClient({workspace:async(input:{type:string})=>/workspace\.(list|get|query)/.test(input.type)?service.handleQuery(input):service.handleCommand(input),onWorkspaceChange:service.workspaces.subscribe,onBackendStatus:()=>()=>{}} as unknown as WorkspaceDesktopApi);
+ const ui=(language:'en'|'ru')=><TextPropertiesTable viewId={viewId} client={client} workspaceId={workspaceId} sourceId={sourceId} projects={projects} language={language} disabled={false}/>;
+ const user=userEvent.setup({document});
+ try{
+  const view=render(ui('en'));
+  await user.click(await screen.findByRole('button',{name:`${translate('en','tableColumnSettings')}: Notes`}));
+  const popup=await screen.findByRole('dialog',{name:`${translate('en','tableColumnSettings')}: Notes`});
+  const width=within(popup).getByRole('slider') as HTMLInputElement;
+  await waitFor(()=>assert.equal((width.closest('fieldset') as HTMLFieldSetElement).disabled,false));
+  assert.equal(command('setTextValue',{projectId:projects[0].projectId,propertyId,value:'Changed value'}).ok,true);
+  await waitFor(()=>assert.equal(screen.getByRole('button',{name:'Edit Text value: Alpha / Notes'}).textContent,'Changed value'));
+  await waitFor(()=>assert.equal((width.closest('fieldset') as HTMLFieldSetElement).disabled,false));
+  assert.equal(width.isConnected,true);assert.equal(width.value,'224');
+  assert.equal(command('renameProperty',{propertyId,name:'Renamed notes'}).ok,true);
+  await screen.findByRole('dialog',{name:`${translate('en','tableColumnSettings')}: Renamed notes`});
+  assert.equal(within(popup).getByLabelText(`${translate('en','tableWidth')}: Renamed notes`),width);
+  view.rerender(ui('ru'));
+  await screen.findByRole('dialog',{name:`${translate('ru','tableColumnSettings')}: Renamed notes`});
+  assert.equal(within(popup).getByLabelText(`${translate('ru','tableWidth')}: Renamed notes`),width);
+ }finally{cleanup();service.close();rmSync(directory,{recursive:true,force:true});}
+});
