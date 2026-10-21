@@ -1,3 +1,4 @@
+import { enterContextFor } from "./runtime-context-tools.mjs";
 import { openGroupingControls, closeGroupingControls, waitForPresentationBounds } from "./runtime-presentation-controls.mjs";
 /* global window, document */
 import assert from "node:assert/strict";
@@ -90,7 +91,7 @@ try {
         await page.keyboard.press("Escape");
         await actions.and(page.locator(":focus")).waitFor();
         assert.equal(await actions.evaluate(el => el === document.activeElement), true);
-        const filters = page.getByRole("button", { name: /^(Search and filters|Поиск и фильтры)$/ });
+        const filters = await enterContextFor(page,page.getByRole("button", { name: /^(Search and filters|Поиск и фильтры)$/,includeHidden:true }));
         await filters.focus(); await filters.press("Enter");
         const popover = page.getByRole("dialog", { name: /^(Search and filters|Поиск и фильтры)$/ });
         await popover.waitFor();
@@ -101,7 +102,7 @@ try {
         assert.equal(await filters.evaluate(el => el === document.activeElement), true);
         for (const label of [language === "en" ? "Table layout" : "Настройки таблицы",
           `${language === "en" ? "Column settings" : "Настройки столбца"}: ${"Long authored property — Длинное название свойства ".repeat(3)}`]) {
-          const entry = page.getByRole("button", {name:label,exact:true});
+          const entry = await enterContextFor(page,page.getByRole("button", {name:label,exact:true,includeHidden:true}));
           await entry.scrollIntoViewIfNeeded(); await entry.press("Enter");
           await waitForPresentationBounds(page,label);
           await page.screenshot({path:join(evidence,`${language}-${theme}-${size.width}-${label.includes(":")?"column":"table"}-settings.png`)});
@@ -155,12 +156,12 @@ try {
   await returnToWorkspace(page);
   const nav = page.getByRole("navigation", { name: /^(Workspaces|Рабочие пространства)$/ });
   await nav.getByRole("button", { name: "Second workspace", exact: true }).click();
-  await page.getByRole("heading", { name: "Second workspace", exact: true }).waitFor();
+  await page.getByRole("button", { name: "Second workspace", exact: true }).and(page.locator('[aria-current="page"]')).waitFor();
   await nav.getByRole("button", { name: "Рабочие проекты", exact: true }).click();
   await page.getByRole("tab", { name: view.name, exact: true }).and(page.locator('[aria-selected="true"]')).waitFor();
   assert.equal(await page.getByRole("tab", { name: view.name, exact: true }).getAttribute("aria-selected"), "true");
   await close(); await launch();
-  await page.getByRole("heading", { name: "Рабочие проекты", exact: true }).waitFor();
+  await page.getByRole("button", { name: "Рабочие проекты", exact: true }).and(page.locator('[aria-current="page"]')).waitFor();
   assert.equal(await page.getByRole("button", { name: /^(Settings|Настройки)$/ }).isVisible(), true);
   const settings = unwrap(await page.evaluate(() => window.workspace.settings({ type: "settings.load" })));
   assert.deepEqual(settings, { language:"ru", appearance:"system" });
@@ -170,7 +171,7 @@ try {
     if (workspace.workspaceId !== first.workspaceId) await query({ type: "workspace.remove", workspaceId:workspace.workspaceId });
   }
   await page.reload();
-  await page.getByRole("heading", { name: "Рабочие проекты", exact: true }).waitFor();
+  await page.getByRole("button", { name: "Рабочие проекты", exact: true }).and(page.locator('[aria-current="page"]')).waitFor();
   await openSettingsSection(page, "workspaces");
   await page.getByRole("button", { name: /^(Remove workspace|Удалить рабочее пространство):/ }).click();
   const confirmRemoval = page.getByRole("button", { name: /^(Remove configuration|Удалить конфигурацию)$/ });

@@ -1,5 +1,9 @@
 # Issue 68 visual foundation verification
 
+The owner rejected this first delivery’s appearance and reopened #68. The
+[composition correction](issue-68-composition-correction.md) supersedes its visual
+acceptance claims. The receipts below describe their original inputs only.
+
 The [handoff and retained scenarios](../plans/issue-68-visual-foundation.md)
 pin main, bb and the accepted #52 revision. The baseline checkout is `a6622b4a`.
 The [GitHub checkpoint](https://github.com/kornouhovas/workspace/issues/68)

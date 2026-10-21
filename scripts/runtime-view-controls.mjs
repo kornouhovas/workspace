@@ -1,3 +1,4 @@
+import { enterContextFor } from "./runtime-context-tools.mjs";
 import { setInterfaceLanguage } from "./runtime-settings.mjs";
 // Runtime view activation covers both the current tabs and the immutable
 // performance baseline's original select, without replaying an activation.
@@ -17,7 +18,8 @@ export async function setRuntimeViewLanguage(page, language) {
 }
 
 export async function pressRuntimeFilterSave(page) {
-  const enabled=page.getByRole('button',{name:'Save search and filters',exact:true}).and(page.locator(':not(:disabled):not([aria-disabled="true"])'));
+  const save=await enterContextFor(page,page.getByRole('button',{name:'Save search and filters',exact:true,includeHidden:true}));
+  const enabled=save.and(page.locator(':not(:disabled):not([aria-disabled="true"])'));
   await enabled.focus();
   await enabled.press('Enter');
 }

@@ -1,9 +1,12 @@
+import { enterContextFor } from "./runtime-context-tools.mjs";
 // The immutable baseline has inline grouping; current Table uses a Radix popover.
 export async function openGroupingControls(page, language = "en") {
   const label = language === "en" ? "Grouping" : "Группировка";
-  const trigger = page.getByRole("button", {name: label, exact: true});
-  const panel = page.getByRole("region", {name: label, exact: true});
-  await trigger.or(panel).first().waitFor();
+  const trigger = page.getByRole("button", {name: label, exact: true, includeHidden:true});
+  const panel = page.getByRole("region", {name: label, exact: true, includeHidden:true});
+  await trigger.or(panel).first().waitFor({state:"attached"});
+  if(await trigger.count()) await enterContextFor(page,trigger);
+  else await enterContextFor(page,panel);
   if (await trigger.count() && await trigger.getAttribute("aria-expanded") !== "true") {
     await trigger.scrollIntoViewIfNeeded();
     await trigger.press("Enter");
@@ -14,8 +17,10 @@ export async function openGroupingControls(page, language = "en") {
   return panel;
 }
 export async function closeGroupingControls(page, language = "en") {
-  const trigger = page.getByRole("button", {name: language === "en" ? "Grouping" : "Группировка", exact: true});
+  const trigger = page.getByRole("button", {name: language === "en" ? "Grouping" : "Группировка", exact: true, includeHidden:true});
   if (await trigger.count() && await trigger.getAttribute("aria-expanded") === "true") await page.keyboard.press("Escape");
+  const parent=page.getByRole("button",{name:/^(View settings|Настройки представления)$/});
+  if(await parent.count() && await parent.getAttribute("aria-expanded")==="true") await page.keyboard.press("Escape");
 }
 
 // Observe final Radix collision placement without authoring focus or scrolling.

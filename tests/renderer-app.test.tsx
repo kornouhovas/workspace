@@ -108,6 +108,7 @@ interface MockOptions {
   picker?: WorkspaceDesktopApi["pickRoot"];
   onWorkspace?: (input: WorkspaceRequest) => Promise<ServiceResult<WorkspaceResponse>>;
   onProjects?: MockOptions["onWorkspace"];
+  onArchived?: MockOptions["onWorkspace"];
   onCreations?: MockOptions["onWorkspace"];
   onCategoryMoves?: MockOptions["onWorkspace"];
   onProperties?: MockOptions["onWorkspace"];
@@ -168,7 +169,7 @@ function mockApi(options: MockOptions = {}) {
       : input.type === "workspace.listViews"
       ? Promise.resolve(ok({ workspaceId: input.workspaceId, activeViewId: `view-${input.workspaceId}`, views: [{ viewId: `view-${input.workspaceId}`, name: translate(options.language ?? "en", "tableViewTitle"), kind: "table" as const }] }))
       : input.type === "workspace.listArchivedProjects"
-      ? Promise.resolve(ok({ workspaceId: input.workspaceId, sourceId: (options.load?.ok ? options.load.value.activeWorkspace?.sourceId : null) ?? `source-${input.workspaceId}`, revision: 0, relativePath: null, projects: [] }))
+      ? options.onArchived?.(input) ?? Promise.resolve(ok({ workspaceId: input.workspaceId, sourceId: (options.load?.ok ? options.load.value.activeWorkspace?.sourceId : null) ?? `source-${input.workspaceId}`, revision: 0, relativePath: null, projects: [] }))
       : input.type === "workspace.listProjectArchiveOperations"
       ? Promise.resolve(ok({ workspaceId: input.workspaceId, sourceId: (options.load?.ok ? options.load.value.activeWorkspace?.sourceId : null) ?? `source-${input.workspaceId}`, operations: [] }))
       : input.type === "workspace.listProjectCategoryMoves"
@@ -355,7 +356,7 @@ test("renders the persisted active Table workspace and flags an unavailable sour
   assert.ok(await screen.findByRole("heading", { name: "Saved workspace" }));
   assert.equal(within(screen.getByRole("main")).getByText((_content, element) => element?.classList.contains("workspace-root") ?? false).textContent, "/Users/me/Keep  Verbatim");
   assert.ok(screen.getByRole("heading", { name: "Таблица" }));
-  assert.ok(await screen.findByText(/Просмотрите папки, выберите исключения/));
+  assert.ok(await screen.findByText(translate("ru", "setupOffer")));
   assert.ok(screen.getByRole("heading", { name: "Папка проекта недоступна" }));
   cleanup();
 });
@@ -1049,6 +1050,51 @@ const projectList = (active: ActiveWorkspace, projects: string[] = [], revision 
   workspaceId: active.workspaceId, sourceId: active.sourceId, revision, configured: true, mode: "direct" as const, categories: [], categoryProperty: null, categoryPropertyRevision: 0,
   state: (projects.length ? "ready" : "empty") as "ready" | "empty", retainedProjects: [], retainedCount: 0,
   projects: projects.map((name) => ({ projectId: `project-${name}`, categoryId: null, name, relativePath: name, associationState: "active" as const, resolution: "active" as const, categoryName: null })),
+});
+
+test("EN/RU unconfigured daily work offers one setup state without misleading filter or property emptiness", async () => {
+  for (const language of ["en", "ru"] as const) {
+    const active = makeActive("setup-composition", "Design studio");
+    mockApi({ language, load: ok({ workspaces: [active], activeWorkspace: active }) });
+    render(<App />);
+    await screen.findByText(translate(language, "setupOffer"));
+    for (const key of ["creationUnconfigured", "emptyTableGuidance", "filterEmpty", "propertiesEmpty"] as const) {
+      const message = screen.queryByText(translate(language, key));
+      assert.equal(!message || !!message.closest("[hidden]"), true, key);
+    }
+    const tools = screen.getByRole("button", { name: translate(language, "sourceTools") });
+    await userEvent.click(screen.getByRole("button", { name: translate(language, "setupSource") }));
+    assert.ok(screen.getByRole("button", { name: translate(language, "discoveryAction") }));
+    await userEvent.keyboard("{Escape}");
+    assert.equal(document.activeElement === tools, true);
+    cleanup();
+  }
+});
+
+test("Active/Archived view settings isolate controls and retain the active search draft", async () => {
+  for(const archivedCount of [0,1]) {
+    const active=makeActive("archive-controls","Studio");
+    mockApi({load:ok({workspaces:[active],activeWorkspace:active}),
+      onProjects:async()=>ok(projectList(active,["Current"])),
+      onArchived:async()=>ok({workspaceId:active.workspaceId,sourceId:active.sourceId,relativePath:"Archive",revision:1,
+        projects:archivedCount?[{projectId:"old",categoryId:null,name:"Previous",relativePath:"Archive/Previous",originalRelativePath:"Previous"}]:[]})});
+    render(<App/>);
+    const search=await findAction("searchbox",{name:translate("en","filterSearch")});
+    await userEvent.type(search,"Active draft");
+    await userEvent.click(screen.getByRole("button",{name:"Archived"}));
+    if(archivedCount) {
+      await findAction("searchbox",{name:translate("en","filterSearch")});
+      assert.equal(screen.getAllByRole("searchbox").length,1);
+      assert.equal((screen.getByRole("searchbox") as HTMLInputElement).value,"");
+    } else {
+      assert.equal(screen.queryAllByRole("searchbox").length,0);
+    }
+    await userEvent.click(screen.getByRole("button",{name:"Active"}));
+    const restored=await findAction("searchbox",{name:translate("en","filterSearch")});
+    assert.equal((restored as HTMLInputElement).value,"Active draft");
+    assert.equal(screen.getAllByRole("searchbox").length,1);
+    cleanup();
+  }
 });
 const previewResult = (active: ActiveWorkspace, token = "reviewed", excludedRelativePaths: string[] = []) => ({
   currentMode: null, projectEffects: { added: [], retained: [], noLongerRecognized: [], alreadyRetained: [] },
@@ -1851,7 +1897,7 @@ test("backend generations discard old source observations and preserve newer eve
         const data = { workspaces: [{ workspaceId: f.workspaceId, name: active.name }], activeWorkspace: active };
         let loads = 0;
         let finish: ((result: ServiceResult<WorkspaceResponse>) => void) | undefined;
-        const api = mockApi({ language, onProperties: async () => ok(f.snapshot(1)), onWorkspace: async (input) => {
+        const api = mockApi({ language, onProjects: async () => ok({ ...projectList(active), projects: f.projects }), onProperties: async () => ok(f.snapshot(1)), onWorkspace: async (input) => {
           if (input.type !== "workspace.load") return fail("invalid_input");
           return ++loads === 1 ? ok(data) : new Promise((resolve) => { finish = resolve; });
         } });

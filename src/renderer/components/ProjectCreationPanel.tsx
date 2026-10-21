@@ -1,3 +1,6 @@
+import { ManagementHistory } from "./ManagementSurface.js";
+import { Hint } from "./Hint.js";
+import { Icon } from "./Icons.js";
 import { ContextTools } from "./ContextTools.js";
 import { useEffect, useRef, useState } from "react";
 import type { Language } from "../../contracts/settings.js";
@@ -157,12 +160,12 @@ function CreationContent({ client, workspaceId, sourceId, language, projects, di
   return <section ref={root} tabIndex={-1} className="project-creation" aria-label={t("createProject")} aria-busy={pending} onKeyDown={(event) => {
       if (event.key === "Escape" && (preview || reviewing.current)) { event.preventDefault(); dismissReview(); }
     }}>
-    <button ref={trigger} type="button" className="workspace-button" disabled={mutationsDisabled || pending || !available || (projects?.mode === "grouped" && !projects.categories.length)}
-      onClick={() => { setOpen(true); setMessage(null); }}>{t("createProject")}</button>
-    {!projects?.configured && <p>{t("creationUnconfigured")}</p>}
-    {projects?.configured && !available && <p>{t("creationUnavailable")}</p>}
-    {available && projects?.mode === "grouped" && !projects.categories.length && <p>{t("creationNoCategory")}</p>}
-    {available && projects?.projects.length === 0 && <p>{t("creationEmpty")}</p>}
+    <Hint label={t("createProject")}><button ref={trigger} type="button" className="workspace-button icon-button" aria-label={t("createProject")} disabled={mutationsDisabled || pending || !available || (projects?.mode === "grouped" && !projects.categories.length)}
+      onClick={() => { setOpen(true); setMessage(null); }}><Icon name="plus"/></button></Hint>
+
+    {open && projects?.configured && !available && <p>{t("creationUnavailable")}</p>}
+
+
     {open && <form onSubmit={(event) => {
       event.preventDefault();
       if (mutationsDisabled || !available || !categoryAvailable || busy.current || unknownId) return;
@@ -204,7 +207,10 @@ function CreationContent({ client, workspaceId, sourceId, language, projects, di
         const authoredRequest = originalRequest.current;
         if (authoredRequest?.operationId === unknownId) void run(unknownId, () => client.createProject(authoredRequest));
       }}>{t("creationRetryRequest")}</button>}
-    <ContextTools label={t("creationRecovery")} compact><button type="button" className="workspace-button workspace-button--secondary" disabled={disabled || loading || pending} onClick={() => void load()}>{t("creationReload")}</button></ContextTools>
+    <ManagementHistory><ContextTools label={t("creationRecovery")} compact>
+      {projects?.configured && !available && <p>{t("creationUnavailable")}</p>}
+      {!projects?.configured && <p>{t("creationUnconfigured")}</p>}
+      {available && projects?.mode === "grouped" && !projects.categories.length && <p>{t("creationNoCategory")}</p>}<button type="button" className="workspace-button workspace-button--secondary" disabled={disabled || loading || pending} onClick={() => void load()}>{t("creationReload")}</button></ContextTools></ManagementHistory>
     {operations.length > 0 && <div><h4>{t("creationOutstanding")}</h4><p>{t("creationRecoverable")}</p>
       <ul>{operations.map((operation) => <li key={operation.operationId}>
         <span className="property-authored">{operation.relativePath}</span>

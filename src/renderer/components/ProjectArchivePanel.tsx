@@ -14,7 +14,7 @@ interface Props {
   layout?: "table" | "board";
   client: WorkspaceServiceClient; workspaceId: string; sourceId: string; projects: ProjectSummary[];
   language: Language; disabled: boolean; revision: number; invalidation: number;
-  onCommitted(): void; onViewChange(archived: boolean): void; onBlockedChange?(blocked: boolean): void;
+  onCommitted(): void; onViewChange(archived: boolean): void; onBlockedChange?(blocked: boolean): void; onProjectAvailability?(available:boolean):void;
 }
 const problemKeys: Record<string, TranslationKey> = {
   occupied: "archiveProblemOccupied", case_alias: "archiveProblemOccupied", reserved_destination: "archiveProblemOccupied",
@@ -22,10 +22,11 @@ const problemKeys: Record<string, TranslationKey> = {
   busy: "archiveProblemBusy", owned_location: "archiveProblemOwned",
 };
 export function ProjectArchivePanel(props: Props) { return <ArchiveContent key={`${props.workspaceId}:${props.sourceId}`} {...props} />; }
-function ArchiveContent({ locationOnly = false, viewId, categoryProperty, categories, layout = "table", client, workspaceId, sourceId, projects, language, disabled, revision, invalidation, onCommitted, onViewChange, onBlockedChange }: Props) {
+function ArchiveContent({ locationOnly = false, viewId, categoryProperty, categories, layout = "table", client, workspaceId, sourceId, projects, language, disabled, revision, invalidation, onCommitted, onViewChange, onBlockedChange, onProjectAvailability }: Props) {
   const projectSelectId = useId();
   const t = (key: TranslationKey) => translate(language, key);
   const [archived, setArchived] = useState(false), [snapshot, setSnapshot] = useState<ArchiveSnapshot | null>(null);
+  useEffect(()=>{onProjectAvailability?.(!!snapshot?.projects.length);},[snapshot,onProjectAvailability]);
   const [operations, setOperations] = useState<ProjectArchiveOperation[]>([]);
   const [locationEditor, setLocationEditor] = useState(false);
   const [location, setLocation] = useState("Archive"), [projectId, setProjectId] = useState("");
@@ -160,7 +161,7 @@ function ArchiveContent({ locationOnly = false, viewId, categoryProperty, catego
     {message && <StatusMessage kind={message === "archiveCompleted" ? "info" : "error"} title={t(message)} />}
     {unknown && <div><button type="button" disabled={pending || disabled} className="workspace-button workspace-button--secondary" onClick={() => void check()}>{t("archiveCheck")}</button>
       {unknown.initial && <button type="button" disabled={pending || disabled} className="workspace-button workspace-button--secondary" onClick={() => void apply(unknown)}>{t("archiveRetryOriginalRequest")}</button>}</div>}
-    <ContextTools label={t("archiveTitle")} inline={locationOnly} onEscape={event=>{if(review || locationReview || recovery){event.preventDefault();cancel();}}}>
+    <ContextTools label={t("archiveTitle")} compact={!locationOnly} inline={locationOnly} onEscape={event=>{if(review || locationReview || recovery){event.preventDefault();cancel();}}}>
     <details onToggle={event => { setLocationEditor(event.currentTarget.open); if (event.currentTarget.open) changeDraft(() => setLocation(snapshot?.relativePath ?? "Archive")); }}><summary>{t("archiveLocation")}: {snapshot?.relativePath ?? "Archive"}</summary>
       {locationEditor && <div><p>{t("archiveLocationPolicy")}</p>
       <label className="bb-field"><span>{t("archiveLocation")}</span><input className="bb-input" value={location} disabled={controlsDisabled} onChange={e => changeDraft(() => setLocation(e.currentTarget.value))} /></label>

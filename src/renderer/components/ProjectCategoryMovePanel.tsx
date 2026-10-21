@@ -1,3 +1,5 @@
+import { ManagementHistory } from "./ManagementSurface.js";
+import { contextReturnTarget } from "./ContextTools.js";
 import { useEffect, useRef, useState } from "react";
 import type { Language } from "../../contracts/settings.js";
 import type { ProjectList, ProjectSummary } from "../../contracts/workspaces.js";
@@ -284,7 +286,7 @@ function CategoryMoveContent({ client, workspaceId, sourceId, language, project,
       </div>
       <p>{t("moveCategoryDismissHint")}</p>
     </form>}
-    <details className="operation-history"><summary>{t("moveCategoryListTitle")} ({operations.length})</summary>
+    <ManagementHistory><details className="operation-history"><summary>{t("moveCategoryListTitle")} ({operations.length})</summary>
     <section className="category-move-operations" aria-label={t("moveCategoryListTitle")} aria-busy={listLoading}>
       <h3>{t("moveCategoryListTitle")}</h3>
       {listLoading && <StatusMessage kind="info" title={t("moveCategoryListLoading")} />}
@@ -301,12 +303,12 @@ function CategoryMoveContent({ client, workspaceId, sourceId, language, project,
             bindOperation(operation); void run(true);
           }}>{t("moveCategoryStatus")}</button>}
         <button type="button" className="workspace-button workspace-button--secondary" disabled={pending || disabled || listLoading || listError || !ready.current || unresolved && (binding.current?.uncertain || submitted.current?.operationId !== operation.operationId)}
-          onClick={(event) => { reviewTrigger.current = event.currentTarget; void review(operation); }}
-          aria-label={`${t("moveCategoryReview")}: ${operation.originalRelativePath} → ${operation.requestedRelativePath}`}>{t("moveCategoryReview")}</button>
+          onClick={(event) => { reviewTrigger.current = contextReturnTarget(event.currentTarget); void review(operation); }}
+          data-close-context aria-label={`${t("moveCategoryReview")}: ${operation.originalRelativePath} → ${operation.requestedRelativePath}`}>{t("moveCategoryReview")}</button>
       </div>)}
       <button type="button" className="workspace-button workspace-button--secondary" disabled={listLoading || pending || !ready.current} onClick={() => void loadMoves()}>{t("moveCategoryListReload")}</button>
     </section>
-    </details>
+    </details></ManagementHistory>
     {reviewed && <section ref={reviewRoot} className="category-move-review" aria-labelledby="category-move-review-title" aria-busy={reviewLoading || pending}
       onKeyDown={(event) => { if (event.key === "Escape") { event.preventDefault(); closeReview(); } }}>
       <h3 id="category-move-review-title" ref={reviewHeading} tabIndex={-1}>{t("moveCategoryReviewTitle")}</h3>

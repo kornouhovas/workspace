@@ -25,7 +25,7 @@ export async function renameActiveWorkspace(page, name) {
   await input.press("Enter");
   await input.waitFor({ state: "hidden" });
   await returnToWorkspace(page);
-  await page.getByRole("heading", { name: name.trim(), exact: true }).waitFor();
+  await page.getByRole("button", { name: name.trim(), exact: true }).and(page.locator('[aria-current="page"]')).waitFor();
 }
 
 export async function selectRuntimeWorkspace(page, workspaceId) {

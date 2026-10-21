@@ -1,3 +1,4 @@
+import { findAction } from "./context-tools-driver.js";
 import { randomUUID } from "node:crypto";
 import assert from "node:assert/strict";
 import test from "node:test";
@@ -172,7 +173,7 @@ for (const language of ["en", "ru"] as const) test(`${language} selected layout 
     failViews = false; await user.click(screen.getByRole("button", { name: t("viewsRetry") }));
     await within(archiveRegion).findByText(t("filterEmpty"));
     assert.equal(within(archiveRegion).queryByText("Archived project") === null, true);
-    await user.click(within(archiveRegion).getByRole("button", { name: t("filterClear") }));
+    await user.click(await findAction("button", { name: t("filterClear") }));
     await within(screen.getByRole("list", { name: t("boardProjects") })).findByText("Archived project");
     await user.click(screen.getByRole("button", { name: t("archiveActive") }));
     await within(await screen.findByRole("list", { name: t("boardProjects") })).findByText("Active project");
@@ -183,11 +184,11 @@ for (const language of ["en", "ru"] as const) test(`${language} selected layout 
     await user.click(screen.getByRole("tab", { name: "Board" }));
     await within(await screen.findByRole("list", { name: t("boardProjects") })).findByText("Archived project");
     const archivedRegion = screen.getByRole("region", { name: t("archiveTitle") });
-    await user.type(within(archivedRegion).getByLabelText(t("filterSearch")), "missing{Enter}");
+    await user.type(await findAction("searchbox", { name: t("filterSearch") }), "missing{Enter}");
     await within(archivedRegion).findByText(t("filterEmpty"));
     assert.equal(within(archivedRegion).queryByText("Archived project") === null, true);
     assert.equal(within(archivedRegion).queryByText(new RegExp(t("archiveOriginal"))) === null, true);
-    await user.click(within(archivedRegion).getByRole("button", { name: t("filterClear") }));
+    await user.click(await findAction("button", { name: t("filterClear") }));
     await within(screen.getByRole("list", { name: t("boardProjects") })).findByText("Archived project");
     await user.click(screen.getByRole("button", { name: t("archiveActive") }));
     await within(await screen.findByRole("list", { name: t("boardProjects") })).findByText("Active project");

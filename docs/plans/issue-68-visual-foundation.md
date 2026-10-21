@@ -55,8 +55,13 @@ structural control-count assertions only with the corresponding reachable action
 
 ## Progress
 
-Implementation and independent reviews are complete. Hosted platform acceptance
-and scoped-route failure propagation remain pending in the issue checkpoint.
+The first delivery was visually rejected by the owner and #68 is reopened.
+The active correction baseline is `a59828455de6b335e3a526a7850a3253c0da4810`;
+see [composition correction](../verification/issue-68-composition-correction.md).
+Historical checks below remain evidence for their original candidates, not
+acceptance of the corrected appearance. Renewed affected-platform evidence
+remains open in the issue checkpoint. Agents may perform design and visual review
+under the desktop specification; routine corrections add no owner approval gate.
 See the [local verification report](../verification/issue-68-visual-foundation.md).
 
 ## Requirement retention decisions
@@ -93,3 +98,38 @@ The focused UI/interaction selection passed **837/837** locally under Node
 22.21.1. The complete candidate run and its failures are recorded in the
 [verification report](../verification/issue-68-visual-foundation.md). No full-suite
 success is claimed. Hosted exact-candidate acceptance remains in GitHub.
+
+## Reopened composition handoff
+
+The correction targets the pinned main Table screen, not just smaller controls.
+The ordinary work area starts with saved-view tabs and a table immediately below;
+workspace identity remains in the sidebar, with the exact source path in Source
+tools. View settings groups the existing search/Apply/Clear, layout, grouping and
+Properties entry points. Source tools retains discovery/category commands and
+interrupted-operation lists. Creation, Active/Archived and archive operations
+remain reachable; current operation forms, pending/error feedback and uncertain
+receipts remain in the owning work area. No service command is replaced.
+
+Unconfigured sources show one setup explanation and a Set up project source
+entry. Configured empty sources show the source-empty explanation. A nonempty
+source filtered to zero shows the filter result explanation. No-properties guidance
+belongs in Properties, and zero-count recovery lists belong in Source tools.
+
+The real Electron comparison checks the strip-to-table gap (at most 24px) as well
+as whole-screen images. This replaces the earlier permissive table-top bound that
+allowed the rejected toolbar stack. Preserve the single-project-area model, bb
+fonts/tokens and the later issues' behavior ownership.
+
+| Affected inherited scenario | Correction decision |
+| --- | --- |
+| Permanent filter/property/layout controls | Adapt to View settings. Keep controllers mounted and explicit Apply/Clear/Escape, failed drafts, saved filters and query feedback; adapt public UI drivers to open all containing surfaces. |
+| Interrupted rename/category histories | Adapt to Source tools. Keep status/review/retry/no-replay assertions. A completed review returns to the visible Source tools trigger; a remounted status flow retains its Table focus fallback. |
+| Empty creation guidance above work | Retire the duplicate creation-empty sentence; the source-empty state covers that condition. Keep unconfigured/no-category/unavailable guidance in creation recovery and prevent invalid creation. |
+| Unconfigured property fixture used for backend generation tests | Adapt fixture to an actual configured source so the scenario continues testing metadata generations, not pre-setup presentation. |
+| Repeated workspace path | Replace hidden duplicate with the exact path in Source tools; sidebar and accessible workspace heading retain identity. |
+| Nested contextual Escape | Add a red/green regression for portal recovery menus: inner dismissal first, outer dismissal second, exact draft retained and focus returned to each owning trigger. |
+
+Review records and actual correction checks are recorded in the linked report.
+Do not close #68 or integrate this correction before required reference review
+and affected-platform acceptance. Follow the desktop specification's explicit
+authority for agents to perform routine design and visual review.

@@ -240,10 +240,10 @@ async function create(current, name, rootPath, language = "en") {
   } else {
     await page.getByRole("button", { name: language === "en" ? "Choose project folder" : "Выбрать папку проекта", exact: true }).click();
   }
-  await page.getByText(await realpath(rootPath), { exact: true }).and(page.locator(":visible")).waitFor();
-  await page.locator("#workspace-title").filter({ hasText: /^Workspace$/ }).waitFor();
+  await enterContextFor(page,page.getByText(await realpath(rootPath), { exact: true }));
+  await page.locator("#workspace-title").filter({ hasText: /^Workspace$/ }).waitFor({state:"attached"});
   await renameActiveWorkspace(page, name);
-  await page.getByRole("heading", { name: name.trim(), exact: true }).waitFor();
+  await page.getByRole("button", {name:name.trim(),exact:true}).and(page.locator('[aria-current="page"]')).waitFor();
   return (await load(page)).activeWorkspace;
 }
 
@@ -251,7 +251,7 @@ async function select(page, workspace) {
   await returnToWorkspace(page);
   for (const trigger of await page.locator('.context-tools-trigger[aria-expanded="true"]').all()) await trigger.click();
   await selectRuntimeWorkspace(page,workspace.workspaceId);
-  await page.getByRole("heading", { name: workspace.name.trim(), exact: true }).waitFor();
+  await page.getByRole("button", {name:workspace.name.trim(),exact:true}).and(page.locator('[aria-current="page"]')).waitFor();
   await waitForWorkspaceNavigation(page);
 }
 
@@ -399,7 +399,7 @@ try {
   assert.deepEqual((await load(page)).workspaces.map((item) => item.workspaceId), orderedIds);
   assert.deepEqual(identity((await load(page)).activeWorkspace), identity(first));
   await returnToWorkspace(page);
-  await page.getByRole("heading", {name:authoredName.trim(),exact:true}).waitFor();
+  await page.getByRole("button", {name:authoredName.trim(),exact:true}).and(page.locator('[aria-current="page"]')).waitFor();
   const unconfigured = await projects(page, first.workspaceId);
   await previewFolders(page);
   for (const name of [".hidden", "$RECYCLE.BIN", "External-link"]) {
@@ -561,7 +561,7 @@ try {
   }
   await captureLayouts(page, "en", authoredName);
   await captureLayouts(page, "ru", authoredName);
-  await page.getByRole("heading", { name: "Table", exact: true }).waitFor();
+  await page.getByRole("tab", { name: "Table", exact: true }).and(page.locator('[aria-selected="true"]')).waitFor();
   const savedSettings = await page.evaluate(() => globalThis.window.workspace.settings({ type: "settings.load" }));
   assert.equal(savedSettings.ok && savedSettings.value.language, "ru");
 
@@ -1196,7 +1196,7 @@ try {
   const directBeforeRestart = savedProjects, groupedBeforeRestart = savedGroupedProjects;
   current = await launch(dataDirectory);
   page = current.page;
-  await page.getByRole("heading", { name: authoredName.trim(), exact: true }).waitFor();
+  await page.getByRole("button", {name:authoredName.trim(),exact:true}).and(page.locator('[aria-current="page"]')).waitFor();
   assert.equal(await page.locator("#interface-language").inputValue(), "ru");
   assert.deepEqual(await page.evaluate(() => globalThis.window.workspace.settings({ type: "settings.load" })), savedSettings);
   assert.equal(await page.locator("html").getAttribute("lang"), "ru");
@@ -1206,8 +1206,9 @@ try {
   const reopened = await load(page);
   assert.deepEqual(identity(reopened.activeWorkspace), identity(first));
   assert.deepEqual(reopened.workspaces, [other, first, sibling, grouped, groupedSibling].map(({ workspaceId, name }) => ({ workspaceId, name })));
-  await page.getByText(canonicalProjectRoot, { exact: true }).and(page.locator(":visible")).waitFor();
-  await page.getByRole("heading", { name: "Table", exact: true }).waitFor();
+  await enterContextFor(page,page.getByText(canonicalProjectRoot, { exact: true }));
+  await page.keyboard.press("Escape");
+  await page.getByRole("tab", { name: "Table", exact: true }).and(page.locator('[aria-selected="true"]')).waitFor();
   savedProjects = await projects(page, first.workspaceId);
   assertProjection(savedProjects, { ...directBeforeRestart, revision: directBeforeRestart.revision + 1,
     projects: directBeforeRestart.projects.map((entry) => entry.name === projectName

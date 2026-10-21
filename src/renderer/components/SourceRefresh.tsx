@@ -1,6 +1,8 @@
 import type { Language } from "../../contracts/settings.js";
 import { translate, type TranslationKey } from "../localization.js";
 import { StatusMessage } from "./bb-foundation.js";
+import { Hint } from "./Hint.js";
+import { Icon } from "./Icons.js";
 
 export function SourceRefresh({ language, pending, error, degraded, unavailable, unavailableTitle = "sourceUnavailableTitle", disabled, onRefresh }: {
   language: Language; pending: boolean; error: boolean; degraded: boolean; unavailable: boolean;
@@ -13,10 +15,11 @@ export function SourceRefresh({ language, pending, error, degraded, unavailable,
       <h2 className="bb-status__title">{t(unavailableTitle)}</h2>
       <p className="bb-status__description">{t("sourceUnavailableDescription")}</p>
     </div>}
-    <button key="refresh" type="button" className="workspace-button workspace-button--secondary workspace-source-retry"
+    <Hint label={t(pending ? "refreshingSource" : unavailable ? "retrySourceAction" : "refreshSourceAction")}><button key="refresh" type="button" className="workspace-button workspace-button--secondary workspace-source-retry"
+      aria-label={t(pending ? "refreshingSource" : unavailable ? "retrySourceAction" : "refreshSourceAction")}
       disabled={disabled || pending} onClick={onRefresh}>
-      {t(pending ? "refreshingSource" : unavailable ? "retrySourceAction" : "refreshSourceAction")}
-    </button>
+      <Icon name="refresh"/><span className={!unavailable && !pending && !degraded && !error ? "sr-only" : undefined}>{t(pending ? "refreshingSource" : unavailable ? "retrySourceAction" : "refreshSourceAction")}</span>
+    </button></Hint>
     {pending && <StatusMessage kind="info" title={t("refreshingSource")} />}
     {degraded && <StatusMessage kind="info" title={t("automaticUpdatesDegraded")}>
       {t("automaticUpdatesDegradedDescription")}

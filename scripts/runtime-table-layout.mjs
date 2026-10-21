@@ -13,7 +13,7 @@ export async function exerciseTableLayout({page,query,rootPath,language,evidence
   const text="Long authored text ".repeat(12)+"\nExact second line";
   await call("setTextValue",{projectId:projects[0].projectId,propertyId,value:text});
   await page.reload();
-  const entry=page.getByRole("button",{name:en?"Table layout":"Настройки таблицы",exact:true});
+  const entry=await enterContextFor(page,page.getByRole("button",{name:en?"Table layout":"Настройки таблицы",exact:true,includeHidden:true}));
   await entry.press("Enter");
   const controls=page.getByRole("dialog",{name:en?"Table layout":"Настройки таблицы",exact:true});
   const visible=controls.getByLabel(`${en?"Visible":"Показывать"}: Notes`,{exact:true});
@@ -60,7 +60,7 @@ export async function exerciseTableLayout({page,query,rootPath,language,evidence
   const sibling=await query(page,{type:"workspace.create",rootPath,name:"Layout sibling"});
   assert.deepEqual((await query(page,{type:"workspace.getTableLayout",workspaceId:sibling.workspaceId,viewId:sibling.viewId})).config,{columns:[],rowOrder:[]});
   await call("activate");await call("activateView",{viewId});await page.reload();
-  await entry.press("Enter");
+  await enterContextFor(page,entry);await entry.press("Enter");
   await page.waitForFunction(()=>document.querySelector("th")?.textContent.includes("Notes"));
   await page.keyboard.press("Escape");
   const header = page.getByRole("button",{name:`${en?"Column settings":"Настройки столбца"}: Notes`,exact:true});

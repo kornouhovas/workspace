@@ -345,7 +345,7 @@ for (const language of ["en", "ru"] as const) {
       await screen.findByText(retained ? "Original" : "Requested", { selector: "td span" });
       assert.ok(screen.getByText("Exact text")); assert.equal(client.statusCalls.length, 0); assert.equal(client.reviews.length, 1); assert.equal(client.renames.length, 0);
       assert.equal(screen.queryByRole("heading", { name: t("renameReviewTitle") }), null);
-      assert.ok(document.activeElement === screen.getByRole("heading", { name: "Table" }));
+      assert.ok(document.activeElement === screen.getByRole("button", { name: t("sourceTools") }));
     });
   }
   for (const state of ["missing", "replaced", "link", "unavailable", "conflicting"] as const) test(`${language}: ${state} evidence advertises no action and cannot adopt a folder`, async () => {
@@ -397,7 +397,7 @@ for (const language of ["en", "ru"] as const) {
       if (change === "backend") { client.statuses.forEach((listener) => listener({ state: "unavailable" })); client.statuses.forEach((listener) => listener({ state: "ready" })); }
       if (change === "selection") { client.list = { ...initial, workspaceId: "other", sourceId: "other-source", projects: [] }; client.unfinished = []; view.rerender(<DiscoveryWorkspace key="other" {...props(client)} workspaceId="other" sourceId="other-source" />); }
     });
-    if (change === "reload") await userEvent.click(screen.getByRole("button", { name: t("renameListReload") }));
+    if (change === "reload") await userEvent.click(await findAction("button", { name: t("renameListReload") }));
     assert.equal(screen.queryByRole("button", { name: t("renameRetryOriginal") }), null); assert.equal(client.recoveries.length, 0); assert.equal(client.reviews.length, 1); assert.equal(client.renames.length, 0);
     if (change !== "selection") await screen.findByText(t("renameReviewStale"));
   });
@@ -418,7 +418,7 @@ for (const language of ["en", "ru"] as const) {
     client.recoveryHandler = async () => ({ ok: false, error: { code: "service_unavailable", message: "lost" } });
     client.statusHandler = async () => { client.unfinished = []; client.listRenameHandler = null; return { ok: true, value: recoveryCompleted() }; };
     render(<DiscoveryWorkspace {...props(client)} />); await openReview(); await userEvent.click(await findAction("button", { name: t("renameRetryOriginal") })); await screen.findByText(t("renameUncertain"));
-    client.listRenameHandler = () => response.promise; await userEvent.click(screen.getByRole("button", { name: t("renameListReload") }));
+    client.listRenameHandler = () => response.promise; await userEvent.click(await findAction("button", { name: t("renameListReload") }));
     await userEvent.click(screen.getByRole("button", { name: t("renameStatus") })); await screen.findByText(t("renameSaved"));
     await act(async () => response.resolve({ ok: true, value: { workspaceId: "workspace", sourceId: "source", operations: [interrupted] } }));
     assert.equal(screen.queryByRole("button", { name: `${t("renameReview")}: Original → Requested` }), null); assert.equal(client.recoveries.length, 1); assert.equal(client.renames.length, 0);
@@ -435,7 +435,7 @@ for (const language of ["en", "ru"] as const) {
     await act(async () => response.resolve({ ok: false, error: { code: "storage", message: "Private DB/path error" } }));
     await screen.findByText(t("renameListError")); assert.equal(screen.queryByText("Private DB/path error"), null); assert.equal(screen.queryByText(t("renameListEmpty")), null);
     client.listRenameHandler = null;
-    await userEvent.click(screen.getByRole("button", { name: t("renameListReload") })); await screen.findByText(t("renameListEmpty"));
+    await userEvent.click(await findAction("button", { name: t("renameListReload") })); await screen.findByText(t("renameListEmpty"));
     assert.equal(client.reviews.length, 0); assert.equal(client.recoveries.length, 0);
   });
   for (const field of ["workspace", "source", "operation-source", "duplicate", "terminal"] as const) test(`${language}: rejects ${field} unfinished list bindings`, async () => {
@@ -458,7 +458,7 @@ for (const language of ["en", "ru"] as const) {
     const client = new Client(); client.unfinished = [interrupted]; render(<DiscoveryWorkspace {...props(client)} />); await openReview();
     await findAction("button", { name: t("renameRetryOriginal") });
     client.unfinished = [{ ...interrupted, projectId: "foreign" }];
-    await userEvent.click(screen.getByRole("button", { name: t("renameListReload") })); await screen.findByText(t("renameListError"));
+    await userEvent.click(await findAction("button", { name: t("renameListReload") })); await screen.findByText(t("renameListError"));
     assert.equal(screen.queryByRole("button", { name: t("renameRetryOriginal") }), null); assert.equal(client.recoveries.length, 0);
   });
   test(`${language}: changing selected operation discards an older delayed review`, async () => {
@@ -534,7 +534,7 @@ test("rename recovery review blocks competing folder reassociation while retaini
   render(<DiscoveryWorkspace client={client} workspaceId="workspace" sourceId="source" language="en" disabled={false} />);
   const locate = await findAction("button", { name: `${translate("en", "recoveryLocate")}: Original` });
   assert.equal((locate as HTMLButtonElement).disabled, false);
-  await userEvent.click(screen.getByRole("button", { name: "Review interrupted rename: Original → Requested" })); await findAction("button", { name: "Keep original folder" });
+  await userEvent.click(await findAction("button", { name: "Review interrupted rename: Original → Requested" })); await findAction("button", { name: "Keep original folder" });
   assert.equal((locate as HTMLButtonElement).disabled, true);
   const text = screen.getByRole("button", { name: `${translate("en", "editTextValue")}: Original / Notes` }); assert.equal((text as HTMLButtonElement).disabled, false);
   await userEvent.click(screen.getByRole("button", { name: "Close recovery review" })); assert.equal((locate as HTMLButtonElement).disabled, false);

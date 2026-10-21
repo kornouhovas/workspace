@@ -55,11 +55,11 @@ export async function exerciseMetadataRemoval({ page, query, rootPath, language,
     const filters = button(en ? 'Search and filters' : 'Поиск и фильтры');
     if (await filters.getAttribute('aria-expanded') !== 'true') await press(filters);
     await page.waitForFunction(({ propertyId, next }) => {
-      const operands = [...document.querySelectorAll('.view-filters select[multiple]')];
+      const operands = [...document.querySelectorAll('.view-filter-controls select[multiple], .view-filters select[multiple]')];
       return operands.some(s => [...s.selectedOptions].some(o => o.value === next)) && !document.querySelector(`.project-group[aria-label="Old"]`) && document.querySelector(`[data-column-id="${propertyId}"]`);
     }, { propertyId, next: options.Next });
     await press(button(en ? "Properties" : "Свойства"));
-    await page.locator('.text-properties details').filter({ has: page.locator('summary', { hasText: en ? 'Remove custom properties' : 'Удаление пользовательских свойств' }) }).locator('summary').press('Enter');
+    await page.getByRole('dialog',{name:en?'Properties':'Свойства',exact:true}).locator('details').filter({ has: page.locator('summary', { hasText: en ? 'Remove custom properties' : 'Удаление пользовательских свойств' }) }).locator('summary').press('Enter');
     await press(button(`${en ? 'Delete property' : 'Удалить свойство'}: ${name}`));
     await enabled(confirm()).waitFor();
     for (const width of [360, 1440]) {

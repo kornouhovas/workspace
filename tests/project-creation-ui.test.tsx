@@ -79,7 +79,7 @@ for (const language of ["en", "ru"] as const) {
     for (const [list, key] of [[{ ...initial, configured: false, mode: null }, "creationUnconfigured"], [{ ...initial, mode: "grouped" }, "creationNoCategory"], [{ ...initial, state: "unavailable" }, "creationUnavailable"]] as const) {
       panel(new Client(), { projects: list }); assert.ok(screen.getByText(t(key))); assert.equal(((await findAction("button",{ name: t("createProject") })) as HTMLButtonElement).disabled, true); cleanup();
     }
-    panel(); assert.ok(screen.getByText(t("creationEmpty")));
+    panel(); assert.equal(screen.queryByText(t("creationEmpty")) === null, true);
   });
   test(`${language}: Escape retains draft, double submission is blocked and pending cancel never implies rollback`, async () => {
     const client = new Client(), response = deferred<ServiceResult<ProjectCreationResult>>(); client.handler = () => response.promise;

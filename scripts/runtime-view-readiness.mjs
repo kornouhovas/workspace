@@ -37,8 +37,8 @@ export function usableRuntimeViewProjection(ids) {
 export function inspectRuntimeProjectionFailure(ids) {
   const content=document.querySelector('.text-properties');
   const rows=content?[...content.querySelectorAll('[data-project-id]')]:[];
-  const save=document.querySelector('.view-filters button[type="submit"]');
-  const search=document.querySelector('.view-filters input[type="search"]');
+  const save=document.querySelector('.view-filter-controls:not([aria-hidden="true"] *) button[type="submit"], .view-filters button[type="submit"]');
+  const search=document.querySelector('.view-filter-controls:not([aria-hidden="true"] *) input[type="search"], .view-filters input[type="search"]');
   return {expectedCount:ids?.length??null,rowCount:rows.length,
     firstMismatch:ids?rows.findIndex((row,index)=>row.getAttribute('data-project-id')!==ids[index]):null,
     unloadedCount:rows.filter(row=>row.getAttribute('data-fields-ready')==='false').length,

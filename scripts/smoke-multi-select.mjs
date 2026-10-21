@@ -79,7 +79,7 @@ try {
     await query(page, { type: "workspace.activate", workspaceId }); await page.reload();
     const en = language === "en";
     const createLabel = en ? "Create MultiSelect property" : "Создать MultiSelect-свойство";
-    const creation = { language, enabledAtEntry: await page.getByRole("button", { name: createLabel, exact: true }).isEnabled() };
+    const creation = { language, enabledAtEntry: await page.getByRole("button", { name: createLabel, exact: true, includeHidden:true }).isEnabled() };
     (evidence.creationReadiness ??= []).push(creation);
     const propertyName = await openPropertyCreator(page, { createLabel, propertyNameLabel: en ? "Property name" : "Название свойства" });
     await propertyName.fill("Status"); await propertyName.press("Enter");

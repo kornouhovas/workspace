@@ -1,3 +1,4 @@
+import { enterContextFor } from "./runtime-context-tools.mjs";
 /* global window, document */
 import assert from "node:assert/strict";
 import { join } from "node:path";
@@ -6,13 +7,15 @@ import { join } from "node:path";
 // renderer/preload/service path, keeping its owned fixture and shutdown gates.
 export async function exerciseViewFilters({ page, query, workspaceId, projectId, propertyId, language, layout, evidenceDirectory }) {
   const en = language === "en";
-  const filters = page.getByRole("region", { name: en ? "Search and filters" : "Поиск и фильтры", exact: true });
-  const search = filters.getByLabel(en ? "Search project names" : "Поиск по названиям проектов", { exact: true });
-  const save = filters.getByRole("button", { name: en ? "Save search and filters" : "Сохранить поиск и фильтры", exact: true });
-  const clear = filters.getByRole("button", { name: en ? "Clear search and filters" : "Очистить поиск и фильтры", exact: true });
-  const empty = filters.getByText(en ? "No matching projects" : "Нет подходящих проектов", { exact: true });
   const rows = layout === "board" ? page.locator(".project-board:visible > li") : page.locator(".project-table:visible tbody > tr");
   await rows.first().waitFor();
+  const filters = page.getByRole("region", { name: en ? "Search and filters" : "Поиск и фильтры", exact: true });
+  const controls = await page.locator(".view-filter-controls").count() ? page.locator('.view-filter-controls:not([aria-hidden="true"] *)') : filters;
+  await enterContextFor(page,controls);
+  const search = controls.getByLabel(en ? "Search project names" : "Поиск по названиям проектов", { exact: true });
+  const save = controls.getByRole("button", { name: en ? "Save search and filters" : "Сохранить поиск и фильтры", exact: true });
+  const clear = controls.getByRole("button", { name: en ? "Clear search and filters" : "Очистить поиск и фильтры", exact: true });
+  const empty = filters.getByText(en ? "No matching projects" : "Нет подходящих проектов", { exact: true });
   await search.fill("does-not-match"); await search.press("Enter"); await empty.waitFor(); assert.equal(await rows.count(), 0);
   for (const width of [360, 1024, 1440]) {
     await page.setViewportSize({ width, height: width === 1440 ? 960 : 720 });
@@ -20,13 +23,13 @@ export async function exerciseViewFilters({ page, query, workspaceId, projectId,
     await page.screenshot({ path: join(evidenceDirectory, `${language}-${width}-${layout}-filter-empty.png`), fullPage: true });
   }
   await clear.focus(); await clear.press("Enter"); await rows.first().waitFor();
-  const add = filters.getByRole("button", { name: en ? "Add condition" : "Добавить условие", exact: true });
-  const toggle = filters.getByRole("button", { name: en ? "Search and filters" : "Поиск и фильтры", exact: true });
+  const add = controls.getByRole("button", { name: en ? "Add condition" : "Добавить условие", exact: true });
+  const toggle = controls.getByRole("button", { name: en ? "Search and filters" : "Поиск и фильтры", exact: true });
   await toggle.focus(); await toggle.press("Enter");
   await add.focus(); await add.press("Enter");
-  await filters.getByLabel(en ? "Property" : "Свойство", { exact: true }).selectOption(propertyId);
-  await filters.getByLabel(en ? "Operator" : "Оператор", { exact: true }).selectOption("contains");
-  await filters.getByLabel(en ? "Value" : "Значение", { exact: true }).fill("keyboard");
+  await controls.getByLabel(en ? "Property" : "Свойство", { exact: true }).selectOption(propertyId);
+  await controls.getByLabel(en ? "Operator" : "Оператор", { exact: true }).selectOption("contains");
+  await controls.getByLabel(en ? "Value" : "Значение", { exact: true }).fill("keyboard");
   await save.focus(); await save.press("Enter"); await rows.first().waitFor();
   const viewId = (await query(page, { type: "workspace.listViews", workspaceId })).activeViewId;
   assert.deepEqual((await query(page, { type: "workspace.getViewFilter", workspaceId, viewId })).config.rules,

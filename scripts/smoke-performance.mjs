@@ -1,3 +1,4 @@
+import { enterContextFor } from "./runtime-context-tools.mjs";
 import { createPerformanceQueries } from "./runtime-performance-queries.mjs";
 import { inspectRuntimeProjectionFailure } from "./runtime-view-readiness.mjs";
 import { instrumentPerformanceBackend, inspectPerformanceBackendBatches } from "./runtime-performance-backend-profile.mjs";
@@ -220,7 +221,7 @@ try {
         const text = sample % 2 ? "Project 0" : "Project 00";
         // Fixture expectation preparation is outside the user-event clock.
         const ids = expected.filter(id => source.projects.find(p => p.projectId === id).name.includes(text));
-        const search = page.getByLabel("Search project names", { exact: true });
+        const search = await enterContextFor(page,page.getByLabel("Search project names", { exact: true }));
         await search.fill(text);
         const save = page.getByRole("button", { name: "Save search and filters", exact: true }); await save.focus();
         await startUiTiming(save, "keydown"); await save.press("Enter");
@@ -276,7 +277,7 @@ try {
       await openGroupingControls(page);
       await page.getByLabel("Group by", { exact: true }).selectOption("");
       await closeGroupingControls(page);
-      await page.getByLabel("Search project names", { exact: true }).fill("");
+      await (await enterContextFor(page,page.getByLabel("Search project names", { exact: true }))).fill("");
       await pressRuntimeFilterSave(page); await ready(expected);
       const p = source.projects[0], field = source.properties.find(p => p.type === "text");
       const row = page.locator(`[data-project-id="${p.projectId}"]`);

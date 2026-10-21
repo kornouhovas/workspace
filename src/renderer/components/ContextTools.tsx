@@ -1,15 +1,18 @@
-import { useEffect, useLayoutEffect, useRef, useState, useId, type ReactNode, type KeyboardEvent } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, useId, type ReactNode } from "react";
 import { Hint } from "./Hint.js";
 import { Icon } from "./Icons.js";
 /** Nonmodal tools keep controllers mounted, including drafts and pending receipts. */
-export function ContextTools({label,children,icon="more",compact=false,disabled=false,onEscape,inline=false}: {
-  label:string;children:ReactNode;icon?:"more"|"properties"|"settings";compact?:boolean;disabled?:boolean;inline?:boolean;onEscape?(event:KeyboardEvent<HTMLDivElement>):void;
+export function ContextTools({label,children,icon="more",compact=false,disabled=false,onEscape,inline=false,open:controlledOpen,onOpenChange}: {
+  open?:boolean;onOpenChange?(open:boolean):void;label:string;children:ReactNode;icon?:"more"|"properties"|"settings";compact?:boolean;disabled?:boolean;inline?:boolean;onEscape?(event: { preventDefault(): void; readonly defaultPrevented: boolean }):void;
 }) {
-  const [open,setOpen]=useState(false);
+  const [localOpen,setLocalOpen]=useState(false);
+  const open=controlledOpen ?? localOpen;
+  const setOpen=(value:boolean)=>{setLocalOpen(value);onOpenChange?.(value);};
   const triggerId=useId();
   const [position,setPosition]=useState({left:12,top:12});
   const panel=useRef<HTMLDivElement>(null);
   const trigger=useRef<HTMLButtonElement>(null);
+  const escapeHandler=useRef(onEscape); escapeHandler.current=onEscape;
   const close=(focus=false)=>{setOpen(false);if(focus) trigger.current?.focus({preventScroll:true});};
   useLayoutEffect(()=>{
     if(!open) return;
@@ -28,9 +31,28 @@ export function ContextTools({label,children,icon="more",compact=false,disabled=
   useEffect(()=>{
     if(!open) return;
     (panel.current?.querySelector<HTMLElement>('button:not(:disabled), input:not(:disabled), select:not(:disabled), summary') ?? panel.current)?.focus({preventScroll:true});
-    const outside=(event:PointerEvent)=>{if(event.target instanceof Node && !panel.current?.contains(event.target) && !trigger.current?.contains(event.target)) close();};
+    const outside=(event:PointerEvent)=>{
+      if(!(event.target instanceof Node) || panel.current?.contains(event.target) || trigger.current?.contains(event.target)) return;
+      const element=event.target.nodeType===1 ? event.target as Element : event.target.parentElement;
+      const owner=element?.closest('[data-context-owner]')?.getAttribute('data-context-owner');
+      const owningTrigger=owner ? document.getElementById(owner) : null;
+      if(owner===triggerId || owningTrigger && panel.current?.contains(owningTrigger)) return;
+      close();
+    };
+    // Document bubbling runs after child React handlers, including portaled
+    // management history. Editors and nested tools retain first Escape ownership.
+    const escape=(event:KeyboardEvent)=>{
+      if(event.key!=="Escape" || event.defaultPrevented || !(event.target instanceof HTMLElement) || event.target.closest('[data-context-return]')!==panel.current) return;
+      escapeHandler.current?.(event);
+      if(!event.defaultPrevented){event.preventDefault();event.stopPropagation();close(true);}
+    };
+    const command=(event:MouseEvent)=>{
+      if(event.target instanceof HTMLElement && panel.current?.contains(event.target) && event.target.closest("[data-close-context]")) close();
+    };
     document.addEventListener("pointerdown",outside);
-    return ()=>document.removeEventListener("pointerdown",outside);
+    document.addEventListener("keydown",escape);
+    document.addEventListener("click",command);
+    return ()=>{document.removeEventListener("pointerdown",outside);document.removeEventListener("keydown",escape);document.removeEventListener("click",command);};
   },[open]);
   if(inline) return <div className="context-tools-inline">{children}</div>;
   return <>
@@ -38,8 +60,7 @@ export function ContextTools({label,children,icon="more",compact=false,disabled=
       <Icon name={icon}/>{!compact && <span>{label}</span>}
     </button></Hint>
     <div id={`${triggerId}-tools`} ref={panel} hidden={!open} role="dialog" tabIndex={-1} className="contextual-panel context-tools-panel" data-context-return={triggerId} aria-label={label} style={position}
-      onClick={event=>{if(event.target instanceof HTMLElement && event.target.closest("[data-close-context]")) close();}}
-      onKeyDown={event=>{if(event.key==="Escape") onEscape?.(event); if(event.key==="Escape" && !event.defaultPrevented){event.preventDefault();event.stopPropagation();close(true);}}}>
+      >
       <h3>{label}</h3>{children}
     </div>
   </>;
@@ -49,4 +70,8 @@ export function contextReturnTarget(element: HTMLButtonElement): HTMLButtonEleme
   const id=element.closest("[data-context-return]")?.getAttribute("data-context-return");
   const trigger=id ? document.getElementById(id) : null;
   return trigger?.tagName === "BUTTON" ? trigger as HTMLButtonElement : element;
+}
+
+export function contextOwner(element: HTMLElement | null): string | undefined {
+  return element?.closest('[data-context-return]')?.getAttribute('data-context-return') ?? undefined;
 }

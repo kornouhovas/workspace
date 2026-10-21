@@ -48,7 +48,7 @@ try {
   assert.equal((await query({ type: "workspace.load" })).workspaces.length, 0);
   await app.evaluate(({ dialog }) => { dialog.showOpenDialog = globalThis.originalWorkspaceDialog; });
   await selectRoot(); await add().press("Enter");
-  await page.locator("#workspace-title").filter({ hasText: /^Workspace$/ }).waitFor();
+  await page.getByRole("button",{name:"Workspace",exact:true}).and(page.locator('[aria-current="page"]')).waitFor();
   const first = (await query({ type: "workspace.load" })).activeWorkspace;
   const views = await query({ type: "workspace.listViews", workspaceId: first.workspaceId });
   assert.equal(views.views.length, 1); assert.equal(views.views[0].kind, "table");

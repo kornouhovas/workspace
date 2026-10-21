@@ -1,3 +1,4 @@
+import { openGroupingControls,closeGroupingControls } from "./runtime-presentation-controls.mjs";
 /* global document, innerWidth, getComputedStyle */
 import assert from "node:assert/strict";
 import { join } from "node:path";
@@ -51,14 +52,16 @@ export async function exerciseBoardLayout({page, query, rootPath, language, evid
   const visible = controls.getByLabel(`${en ? "Show on cards" : "Показывать в карточках"}: Notes`, {exact:true});
   await enabled(visible).press("Space");
   await page.waitForFunction(id => !document.querySelector(`.project-card [data-column-id="${id}"]`), propertyId);
-  const later = page.getByRole("button", {name:`${en ? "Move group later" : "Переместить группу ниже"}: A`, exact:true});
+  const grouping=await openGroupingControls(page,language);
+  const later = grouping.getByRole("button", {name:`${en ? "Move group later" : "Переместить группу ниже"}: A`, exact:true});
   await enabled(later).press("Enter");
   await page.waitForFunction(() => document.querySelector(".project-group")?.getAttribute("aria-label") === "B");
-  const hide = page.getByRole("button", {name:`${en ? "Hide group" : "Скрыть группу"}: A`, exact:true});
+  const hide = grouping.getByRole("button", {name:`${en ? "Hide group" : "Скрыть группу"}: A`, exact:true});
   await enabled(hide).press("Enter");
   await page.locator('.project-group[aria-label="A"]').waitFor({state:"detached"});
-  await enabled(page.getByRole("button", {name:`${en ? "Show group" : "Показать группу"}: A`, exact:true})).press("Enter");
+  await enabled(grouping.getByRole("button", {name:`${en ? "Show group" : "Показать группу"}: A`, exact:true})).press("Enter");
   await page.locator('.project-group[aria-label="A"]').waitFor();
+  await closeGroupingControls(page,language);
   assert.deepEqual(await call("listTextProperties"), before);
   await call("updateSelectOption", {propertyId:groupProperty, optionId:a, name:"Renamed", color:"default"});
   await page.locator('.project-group[aria-label="Renamed"]').waitFor();

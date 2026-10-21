@@ -714,6 +714,43 @@ p { margin-block: .5rem; }
 .operation-panels { display: contents; }
 .operation-panels > section { align-self: center; }
 
+/* The daily surface starts with views, followed by the working table. */
+.workspace-screen { padding: 8px 12px; }
+.daily-workspace { gap: 6px; align-items: center; }
+.daily-workspace > .views-panel { flex: 1 1 20rem; padding: 0; border: 0; }
+.daily-workspace > .project-archive { flex: 0 1 auto; align-items: center; gap: 4px; }
+.daily-workspace > .table-view { border-top: 1px solid var(--border); padding-top: 6px; }
+.daily-workspace > .source-refresh { flex-basis: 100%; }
+.daily-workspace > .source-refresh--quiet { position: static; flex-basis: auto; order: 1; }
+.daily-workspace > .table-view { order: 2; }
+.daily-workspace > .table-view { gap: 6px; }
+.source-management { display: grid; gap: 10px; }
+.source-management .operation-history { width: 100%; }
+.source-management .source-refresh--quiet { position: static; }
+.daily-workspace .project-creation { gap: 0; }
+.daily-workspace .project-creation:has(> form),
+.daily-workspace .project-creation:has(> [role="alert"]),
+.daily-workspace .project-creation:has(> [role="status"]),
+.daily-workspace .project-creation:has(> .creation-review) { flex-basis: 100%; }
+.daily-workspace > .operation-panels > section:empty { display: none; }
+.daily-workspace > .project-archive:has(> [role="tabpanel"]) { flex-basis: 100%; }
+.table-view > .bb-empty { margin-top: 24px; }
+.daily-workspace .text-properties > .view-filters { flex: 1 1 16rem; }
+.daily-workspace .view-filters .search-field { flex: 0 1 18rem; }
+.daily-workspace .view-filters form { gap: 4px; }
+.daily-workspace .project-table td { padding-block: 4px; }
+.daily-workspace .text-properties > div:empty { display: none; }
+.daily-workspace .text-properties > .view-filters { display: contents; }
+.view-settings-controls { display: grid; gap: 12px; min-width: 0; }
+.view-controls-scope:not([hidden]) { display: contents; }
+.view-controls-scope[hidden] { display: none !important; }
+.view-tools-entry:not([hidden]) { display: contents; }
+.view-tools-entry[hidden] { display: none !important; }
+.view-filter-controls form { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.view-filter-controls .search-field { flex-basis: 100%; }
+.view-filter-controls input { width: 100%; }
+.view-settings-controls .table-presentation-toolbar { display: flex; gap: 6px; flex-wrap: wrap; }
+
 .project-table th .property-authored { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-right: 22px; }
 .project-table th .property-rename { position: absolute; top: 6px; right: 36px; }
 .project-table td { padding-block: 4px; }

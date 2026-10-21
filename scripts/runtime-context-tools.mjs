@@ -1,11 +1,26 @@
 // Follow the real UI entry point; never invoke service commands to reveal UI.
 export async function enterContextFor(page, control) {
   await control.waitFor({state:'attached'});
-  const entry=await control.evaluate(element=>{
-    const panel=element.closest('[data-context-return]');
-    return panel?.hidden ? panel.getAttribute('data-context-return') : null;
+  const owners=await control.evaluate(element=>{
+    const owners=[];
+    for(let panel=element.parentElement;panel;panel=panel.parentElement) {
+      if(panel.hasAttribute('data-context-return')) owners.push(panel.getAttribute('data-context-return'));
+    }
+    return owners;
   });
-  if(entry) await page.locator(`[id=${JSON.stringify(entry)}]`).click();
+  // Dismiss another tools surface before navigating to an obscured row/field.
+  // Work inside out so each real trigger remains visible and actionable.
+  for(const trigger of (await page.locator('.context-tools-trigger[aria-expanded="true"]').all()).reverse()) {
+    if(!owners.includes(await trigger.getAttribute('id'))) { await trigger.focus(); await trigger.press('Enter'); }
+  }
+  const entries=await control.evaluate(element=>{
+    const entries=[];
+    for(let panel=element.parentElement;panel;panel=panel.parentElement) {
+      if(panel.hidden && panel.hasAttribute('data-context-return')) entries.unshift(panel.getAttribute('data-context-return'));
+    }
+    return entries;
+  });
+  for(const entry of entries) await page.locator(`[id=${JSON.stringify(entry)}]`).click();
   const details=await control.evaluate(element=>{
     const summaries=[];
     for(let parent=element.parentElement;parent;parent=parent.parentElement) {

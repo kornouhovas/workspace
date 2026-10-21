@@ -116,7 +116,7 @@ try {
     grouping.push(await exerciseViewGrouping({ page, query, workspaceId, propertyId: property.propertyId, language, layout: "board", evidenceDirectory }));
     await pressEnabled(page, actions()); await pressEnabled(page, page.getByRole("menuitem", { name: en ? "Duplicate view" : "Дублировать представление", exact: true }));
     await name().fill("Copy"); await name().press("Enter");
-    await page.getByRole("heading", { name: "Copy", exact: true }).waitFor();
+    await page.getByRole("tab", { name: "Copy", exact: true }).and(page.locator('[aria-selected="true"]')).waitFor();
     await pressEnabled(page, actions()); await pressEnabled(page, edit()); await layout().selectOption("table"); await name().press("Enter");
     await page.getByRole("table").getByText("Board keyboard edit", { exact: true }).waitFor();
     filters.push(await exerciseViewFilters({ page, query, workspaceId, projectId: projects.projects[0].projectId, propertyId: property.propertyId, language, layout: "table", evidenceDirectory }));

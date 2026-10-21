@@ -7,6 +7,7 @@ import { join, resolve } from 'node:path';
 import { _electron } from 'playwright-core';
 import { closeElectron, cleanupOwnedFixture, ownedProcessesStopped } from './runtime-lifecycle.mjs';
 import { openSettingsSection, returnToWorkspace, setInterfaceLanguage } from './runtime-settings.mjs';
+import { enterContextFor } from './runtime-context-tools.mjs';
 const root = resolve(import.meta.dirname, '..');
 const before = process.argv.includes('--before');
 const evidence = resolve(process.env.WORKSPACE_SMOKE_EVIDENCE_DIR ?? `work/issue-68/${before ? 'before' : 'after'}`);
@@ -14,7 +15,7 @@ await mkdir(evidence, {recursive:true});
 const fixture = await realpath(await mkdtemp(join(tmpdir(), 'workspace-visual-foundation-')));
 const source = join(fixture, 'source'); await mkdir(source);
 for (const name of ['Brand refresh', 'Customer portal', 'Release checklist']) await mkdir(join(source, name));
-const parents = new Set(), backends = new Set(), checks = [];
+const parents = new Set(), backends = new Set(), checks = [], stateChecks = [];
 let app, page, cdp, failure;
 try {
   app = await _electron.launch({executablePath:createRequire(import.meta.url)('electron'),args:[root],cwd:root,env:{...process.env,WORKSPACE_USER_DATA_DIR:join(fixture,'data')}});
@@ -27,6 +28,39 @@ try {
   const query = async input => { const r = await page.evaluate(input => window.workspace.workspace(input),input); assert.equal(r.ok,true,JSON.stringify(r)); return r.value; };
   const workspace = await query({type:'workspace.create',name:'Design studio',rootPath:source});
   const workspaceId = workspace.workspaceId;
+  const captureState = async (content) => {
+    for(const language of ['en','ru']) {
+      await setInterfaceLanguage(page,language);
+      for(const theme of ['light','dark']) {
+        await openSettingsSection(page,'appearance');
+        await page.getByRole('radio',{name:theme==='light'?/^(Light|Светлая)$/:/^(Dark|Тёмная)$/}).click();
+        await page.waitForFunction(t=>document.documentElement.dataset.theme===t,theme);
+        await returnToWorkspace(page);
+        for(const size of [{width:1024,height:720},{width:1440,height:960}]) {
+          await page.setViewportSize(size);
+          await page.locator('.desktop-workspace').evaluate(el=>el.scrollTop=0);
+          const state=content==='unconfigured' ? page.getByRole('button',{name:language==='en'?'Set up project source':'Настроить источник проектов'})
+            : content==='configured-empty' ? page.locator('.table-view .bb-empty-state')
+            : page.getByRole('heading',{name:language==='en'?'No matching projects':'Нет подходящих проектов'});
+          await state.waitFor();
+          assert.equal(await page.locator('.table-view .bb-empty-state:visible').count(),content==='filtered-empty'?0:1);
+          assert.equal(await page.locator('.project-table tbody tr:visible').count(),0);
+          if(content==='unconfigured') assert.equal(await page.getByRole('heading',{name:/^(No matching projects|Нет подходящих проектов)$/}).count(),0);
+          assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>window.innerWidth),false);
+          await page.screenshot({path:join(evidence,`${content}-${language}-${theme}-${size.width}.png`)});
+          if(content==='unconfigured') {
+            await state.click();
+            const sourceTools=page.getByRole('dialog',{name:language==='en'?'Source tools':'Инструменты источника',exact:true});
+            await sourceTools.waitFor();
+            await page.keyboard.press('Escape');
+            assert.equal(await sourceTools.isVisible(),false);
+          }
+          stateChecks.push({content,language,theme,...size});
+        }
+      }
+    }
+  };
+  if(!before) { await page.reload(); await captureState('unconfigured'); }
   const preview = await query({type:'workspace.previewDiscovery',workspaceId,mode:'direct'});
   await query({type:'workspace.applyDiscovery',workspaceId,previewToken:preview.previewToken});
   const property = await query({type:'workspace.createProperty',workspaceId,name:'Notes',propertyType:'text'});
@@ -53,9 +87,9 @@ try {
           await page.locator('.desktop-workspace').evaluate(el=>el.scrollTop=0);
           await page.locator('.project-table tbody tr').first().waitFor();
           await page.evaluate(()=>document.fonts.ready);
-          const geometry = await page.evaluate(()=>({tableTop:document.querySelector('.project-table')?.getBoundingClientRect().top,fonts:[...document.fonts].map(f=>({family:f.family,status:f.status})),overflow:document.documentElement.scrollWidth>window.innerWidth}));
+          const geometry = await page.evaluate(()=>({tableTop:document.querySelector('.project-table')?.getBoundingClientRect().top,viewStripBottom:document.querySelector('.views-panel')?.getBoundingClientRect().bottom,fonts:[...document.fonts].map(f=>({family:f.family,status:f.status})),overflow:document.documentElement.scrollWidth>window.innerWidth}));
           await page.screenshot({path:join(evidence,`${content}-${language}-${theme}-${size.width}-table.png`)});
-          if (!before) { assert.ok(geometry.tableTop < 360,JSON.stringify(geometry)); assert.equal(geometry.overflow,false); assert.ok(geometry.fonts.some(f=>f.family.includes('Inter')&&f.status==='loaded'),'Bundled Inter rendered'); }
+          if (!before) { assert.ok(geometry.tableTop - geometry.viewStripBottom <= 24,JSON.stringify(geometry)); assert.equal(geometry.overflow,false); assert.ok(geometry.fonts.some(f=>f.family.includes('Inter')&&f.status==='loaded'),'Bundled Inter rendered'); }
           const {root:dom}=await cdp.send('DOM.getDocument');
           const {nodeId}=await cdp.send('DOM.querySelector',{nodeId:dom.nodeId,selector:'.sidebar-label'});
           const {fonts:platformFonts}=await cdp.send('CSS.getPlatformFontsForNode',{nodeId});
@@ -65,7 +99,8 @@ try {
           if (!before) {
             const labels = language === 'en' ? ['Source tools','Properties','Project archive'] : ['Инструменты источника','Свойства','Архив проектов'];
             for (const [index,label] of labels.entries()) {
-              const trigger=page.getByRole('button',{name:label,exact:true});
+              const trigger=page.getByRole('button',{name:label,exact:true,includeHidden:true});
+              await enterContextFor(page,trigger);
               await trigger.focus(); await trigger.press('Enter');
               const panel=page.getByRole('dialog',{name:label,exact:true});
               await panel.waitFor();
@@ -111,6 +146,16 @@ try {
       }
     }
   }
+  if(!before) {
+    await query({type:'workspace.setViewFilter',workspaceId,viewId:views.views.find(v=>v.name==='All projects').viewId,config:{search:'No matching synthetic project',rules:[]}});
+    await captureState('filtered-empty');
+    const emptyRoot=join(fixture,'empty-source');await mkdir(emptyRoot);
+    const empty=await query({type:'workspace.create',name:'Empty studio',rootPath:emptyRoot});
+    const preview=await query({type:'workspace.previewDiscovery',workspaceId:empty.workspaceId,mode:'direct'});
+    await query({type:'workspace.applyDiscovery',workspaceId:empty.workspaceId,previewToken:preview.previewToken});
+    await page.reload();
+    await captureState('configured-empty');
+  }
 } catch (error) {
   failure=error;
   if(page) console.log(await page.evaluate(()=>({focus:document.activeElement?.outerHTML?.slice(0,250),openTools:[...document.querySelectorAll('.context-tools-panel:not([hidden])')].map(panel=>panel.getAttribute('aria-label'))})).catch(()=>({diagnostic:'unavailable'})));
@@ -121,7 +166,7 @@ finally {
   catch(error) { failure??=error; }
   let cleaned=false;
   try { cleaned=await cleanupOwnedFixture(fixture,{processesStopped:stopped,primaryFailure:failure,record:result=>{cleaned=result.status === "passed";}}); } catch(error) { failure??=error; }
-  await writeFile(join(evidence,'report.json'),JSON.stringify({sha:process.env.GITHUB_SHA??null,before,checks,stopped,cleaned,failure:failure?.stack},null,2));
+  await writeFile(join(evidence,'report.json'),JSON.stringify({sha:process.env.GITHUB_SHA??null,before,checks,stateChecks,stopped,cleaned,failure:failure?.stack},null,2));
 }
 if(failure) throw failure;
-console.log(`Visual foundation: ${checks.length} screen variants, clean shutdown and fixture cleanup`);
+console.log(`Visual foundation: ${checks.length} screen variants and ${stateChecks.length} empty-state variants, clean shutdown and fixture cleanup`);

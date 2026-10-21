@@ -1,3 +1,5 @@
+import { ManagementHistory } from "./ManagementSurface.js";
+import { contextReturnTarget } from "./ContextTools.js";
 import { useEffect, useRef, useState } from "react";
 import type { Language } from "../../contracts/settings.js";
 import type { ProjectList, ProjectSummary } from "../../contracts/workspaces.js";
@@ -237,7 +239,7 @@ function RenameContent({ client, workspaceId, sourceId, language, project, proje
       </div>
       <p>{t("renameCancelHint")}</p>
     </form>}
-    <details className="operation-history"><summary>{t("renameListTitle")} ({operations.length})</summary>
+    <ManagementHistory><details className="operation-history"><summary>{t("renameListTitle")} ({operations.length})</summary>
     <section className="rename-operations" aria-label={t("renameListTitle")} aria-busy={listLoading}>
       <h3>{t("renameListTitle")}</h3>
       {listLoading && <StatusMessage kind="info" title={t("renameListLoading")} />}
@@ -247,12 +249,12 @@ function RenameContent({ client, workspaceId, sourceId, language, project, proje
         <dl><dt>{t("renameOriginalName")}</dt><dd>{operation.originalName}</dd><dt>{t("renameRequestedName")}</dt><dd>{operation.name}</dd></dl>
         <p>{t(operation.stage === "uncertain" ? "renameOperationUncertain" : "renameOperationInterrupted")}</p>
         <button type="button" className="workspace-button workspace-button--secondary" disabled={pending || disabled || listLoading || listError || !ready.current || unresolved && (binding.current?.uncertain || submitted.current?.operationId !== operation.operationId)}
-          onClick={(event) => { reviewTrigger.current = event.currentTarget; void review(operation); }}
-          aria-label={`${t("renameReview")}: ${operation.originalName} → ${operation.name}`}>{t("renameReview")}</button>
+          onClick={(event) => { reviewTrigger.current = contextReturnTarget(event.currentTarget); void review(operation); }}
+          data-close-context aria-label={`${t("renameReview")}: ${operation.originalName} → ${operation.name}`}>{t("renameReview")}</button>
       </div>)}
       <button type="button" className="workspace-button workspace-button--secondary" disabled={listLoading || pending || !ready.current} onClick={() => void loadRenames()}>{t("renameListReload")}</button>
     </section>
-    </details>
+    </details></ManagementHistory>
     {reviewed && <section ref={reviewRoot} className="rename-review" aria-labelledby="rename-review-title" aria-busy={reviewLoading || pending}
       onKeyDown={(event) => { if (event.key === "Escape") { event.preventDefault(); closeReview(); } }}>
       <h3 id="rename-review-title" ref={reviewHeading} tabIndex={-1}>{t("renameReviewTitle")}</h3>

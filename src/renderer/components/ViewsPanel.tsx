@@ -2,16 +2,16 @@ import { Hint } from "./Hint.js";
 import { Icon } from "./Icons.js";
 import * as Menu from "@radix-ui/react-dropdown-menu";
 import * as Tabs from "@radix-ui/react-tabs";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { ViewCommand, ViewSnapshot, WorkspaceView } from "../../contracts/views.js";
 import type { Language } from "../../contracts/settings.js";
 import { translate, type TranslationKey } from "../localization.js";
 import { WorkspaceServiceClient } from "../workspace-service-client.js";
 import { StatusMessage } from "./bb-foundation.js";
 
-interface Props { client: WorkspaceServiceClient; workspaceId: string; language: Language; disabled: boolean; panelId?: string; onChange(view: WorkspaceView | null): void }
+interface Props { tools?: ReactNode; client: WorkspaceServiceClient; workspaceId: string; language: Language; disabled: boolean; panelId?: string; onChange(view: WorkspaceView | null): void }
 export function ViewsPanel(props: Props) { return <ViewCollection key={props.workspaceId} {...props} />; }
-function ViewCollection({ client, workspaceId, language, disabled, panelId, onChange }: Props) {
+function ViewCollection({ tools, client, workspaceId, language, disabled, panelId, onChange }: Props) {
   const t = (key: TranslationKey) => translate(language, key);
   const [snapshot, setSnapshot] = useState<ViewSnapshot | null>(null);
   const [loading, setLoading] = useState(true), [pending, setPending] = useState(false);
@@ -86,7 +86,7 @@ function ViewCollection({ client, workspaceId, language, disabled, panelId, onCh
             ref={view.viewId === snapshot.activeViewId ? select : undefined}><Icon name={view.kind === "table" ? "table" : "board"}/>{view.name}</Tabs.Trigger>)}
         </Tabs.List>
       </Tabs.Root>
-      <button className="workspace-button workspace-button--secondary" type="button" disabled={blocked} onClick={event => { trigger.current = event.currentTarget; setDraft({ action: "create", name: "", kind: "table" }); }}>{t("viewCreate")}</button>
+      <Hint label={t("viewCreate")}><button className="workspace-button workspace-button--secondary icon-button" type="button" aria-label={t("viewCreate")} disabled={blocked} onClick={event => { trigger.current = event.currentTarget; setDraft({ action: "create", name: "", kind: "table" }); }}><Icon name="plus"/></button></Hint>
       <Menu.Root open={menu} onOpenChange={setMenu} modal={false}>
         <Hint label={`${t("viewActions")}: ${active?.name ?? ""}`}><Menu.Trigger asChild><button ref={menuButton} type="button" className="workspace-button workspace-button--secondary" disabled={blocked || !active}
           aria-label={`${t("viewActions")}: ${active?.name ?? ""}`}><Icon name="more"/></button></Menu.Trigger></Hint>
@@ -99,6 +99,7 @@ function ViewCollection({ client, workspaceId, language, disabled, panelId, onCh
       <Menu.Item className="workspace-button workspace-button--secondary" disabled={blocked || !snapshot || snapshot.views.length < 2} onSelect={() => { trigger.current = menuButton.current; setMenu(false); setDeleting(active!.viewId); }}>{t("viewDelete")}</Menu.Item>
         </Menu.Content></Menu.Portal>
       </Menu.Root>
+      {tools}
     </div>
     {draft && <form className="view-form" onSubmit={event => { event.preventDefault(); save(); }} onKeyDown={event => { if (event.key === "Escape" && !pending) { event.preventDefault(); close(); } }}>
       <label>{t("viewName")} <input className="workspace-input" ref={input} value={draft.name} disabled={pending || disabled} aria-invalid={error === "viewValidation"} onChange={event => setDraft({ ...draft, name: event.currentTarget.value })} /></label>

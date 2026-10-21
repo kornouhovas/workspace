@@ -1,3 +1,5 @@
+import { ViewControls, useViewControlsVisible } from "./ManagementSurface.js";
+import { contextOwner } from "./ContextTools.js";
 import { Hint } from "./Hint.js";
 import { Icon } from "./Icons.js";
 import * as Popover from "@radix-ui/react-popover";
@@ -11,16 +13,19 @@ import { translate, type TranslationKey } from "../localization.js";
 import { StatusMessage } from "./bb-foundation.js";
 
 interface Props {
-  client: WorkspaceServiceClient; workspaceId: string; viewId: string; archived: boolean; language: Language;
+  showEmpty?: boolean; client: WorkspaceServiceClient; workspaceId: string; viewId: string; archived: boolean; language: Language;
   snapshot: PropertySnapshot | null; categoryProperty?: CategoryProperty | null; categories: CategorySummary[];
   projection?: import("../../contracts/view-filters.js").ViewProjectProjection;
   refreshKey: string; refreshToken?: number; disabled: boolean; onResults(ids: string[] | null): void; onGroups?(groups: import("../../contracts/view-grouping.js").ViewGroup[] | null, propertyId: string | null, refreshToken: number): void;
 }
 const clearConfig = (): ViewFilterConfig => ({ search: "", rules: [] });
 export function ViewFilters(props: Props) { return <FilterContent key={`${props.workspaceId}:${props.viewId}:${props.archived}`} {...props} />; }
-function FilterContent({ client, workspaceId, viewId, archived, language, snapshot, categoryProperty, categories, projection, refreshKey, refreshToken = 0, disabled, onResults, onGroups }: Props) {
+function FilterContent({ showEmpty = true, client, workspaceId, viewId, archived, language, snapshot, categoryProperty, categories, projection, refreshKey, refreshToken = 0, disabled, onResults, onGroups }: Props) {
   const t = (key: TranslationKey) => translate(language, key);
   const [open, setOpen] = useState(false);
+  const [owner,setOwner]=useState<string | undefined>(undefined);
+  const visible=useViewControlsVisible();
+  useEffect(()=>{if(!visible)setOpen(false);},[visible]);
   const toggle = useRef<HTMLButtonElement>(null);
   const [draft, setDraft] = useState<ViewFilterConfig>(clearConfig);
   const [loading, setLoading] = useState(true), [saving, setSaving] = useState(false);
@@ -108,14 +113,14 @@ function FilterContent({ client, workspaceId, viewId, archived, language, snapsh
   };
   const ruleChange = (index: number, rule: FilterRule) => change({ ...draft, rules: draft.rules.map((current, i) => i === index ? rule : current) });
   return <section className="view-filters" aria-label={t("filtersTitle")} aria-busy={loading || saving}>
-    <form onSubmit={event => { event.preventDefault(); void save(); }} onKeyDown={event => {
+    <ViewControls><div className="view-filter-controls"><form onSubmit={event => { event.preventDefault(); void save(); }} onKeyDown={event => {
       if (event.key === "Escape" && !saving) { event.preventDefault(); hasDraft.current = false; void load(); }
     }}>
       <label className="search-field"><span className="sr-only">{t("filterSearch")}</span><input placeholder={t("filterSearch")} className="workspace-input" type="search" maxLength={1000} value={draft.search} disabled={disabled || saving} onChange={event => change({ ...draft, search: event.currentTarget.value })} /></label>
-      <Popover.Root open={open} onOpenChange={setOpen}>
+      <Popover.Root open={visible && open} onOpenChange={open=>{if(open)setOwner(contextOwner(toggle.current));setOpen(open);}}>
         <Popover.Trigger asChild><button ref={toggle} className="workspace-button workspace-button--secondary" type="button" disabled={disabled || saving}
           aria-label={t("filtersTitle")}>{t("filtersTitle")} ({draft.rules.length})</button></Popover.Trigger>
-        <Popover.Content className="contextual-panel filter-popover" align="end" sideOffset={4} collisionPadding={8} aria-label={t("filtersTitle")}
+        <Popover.Content data-context-owner={owner} className="contextual-panel filter-popover" align="end" sideOffset={4} collisionPadding={8} aria-label={t("filtersTitle")}
           onEscapeKeyDown={event => { event.stopPropagation(); if (saving) event.preventDefault(); }}
           onInteractOutside={event => { if (saving) event.preventDefault(); }}>
           <p>{t("filterSemantics")}</p>
@@ -156,9 +161,9 @@ function FilterContent({ client, workspaceId, viewId, archived, language, snapsh
         <Hint label={t(saving ? "filterSaving" : "filterApply")}><button className="workspace-button icon-button" aria-label={t(saving ? "filterSaving" : "filterApply")} type="submit" disabled={disabled || saving || !snapshot}><Icon name="check"/></button></Hint>
         <Hint label={t("filterClear")}><button className="workspace-button workspace-button--secondary icon-button" aria-label={t("filterClear")} type="button" disabled={disabled || saving} onClick={() => void save(clearConfig())}><Icon name="close"/></button></Hint>
       </div>
-    </form>
+    </form></div></ViewControls>
     {loading && <StatusMessage kind="info" title={t("filterLoading")} />}
     {error && <><StatusMessage kind="error" title={t(error)} /><button type="button" className="workspace-button workspace-button--secondary" disabled={saving || loading} onClick={() => void load()}>{t("viewsRetry")}</button></>}
-    {empty && !loading && !error && <StatusMessage kind="info" title={t("filterEmpty")}>{t("filterEmptyHint")}</StatusMessage>}
+    {showEmpty && empty && !loading && !error && <StatusMessage kind="info" title={t("filterEmpty")}>{t("filterEmptyHint")}</StatusMessage>}
   </section>;
 }

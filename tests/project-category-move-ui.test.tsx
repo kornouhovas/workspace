@@ -466,7 +466,7 @@ for (const language of ["en", "ru"] as const) {
     const client = new Client(); client.unfinished = [interrupted];
     render(<DiscoveryWorkspace {...props(client)} />); await findAction("button", { name: new RegExp(`^${t("moveCategoryReview")}:`) });
     client.listHandler = async () => ({ ok: false, error: { code: "storage", message: "cannot read" } });
-    await userEvent.click(screen.getByRole("button", { name: t("moveCategoryListReload") })); await screen.findByText(t("moveCategoryListError"));
+    await userEvent.click(await findAction("button", { name: t("moveCategoryListReload") })); await screen.findByText(t("moveCategoryListError"));
     await findAction("button", {name:new RegExp(`^${t("moveCategory")}:`)});
     assert.equal((screen.getByRole("button", { name: new RegExp(`^${t("moveCategory")}:`) }) as HTMLButtonElement).disabled, true);
     assert.equal((screen.getByRole("button", { name: new RegExp(`^${t("renameProject")}:`) }) as HTMLButtonElement).disabled, true);
@@ -497,7 +497,7 @@ for (const language of ["en", "ru"] as const) {
     await act(async () => response.resolve({ ok: true, value: client.completed() }));
     await screen.findByText(t("moveCategoryUncertain"));
     client.listHandler = async () => ({ ok: false, error: { code: "storage", message: "list failed" } });
-    await userEvent.click(screen.getByRole("button", { name: t("moveCategoryListReload") })); await screen.findByText(t("moveCategoryListError"));
+    await userEvent.click(await findAction("button", { name: t("moveCategoryListReload") })); await screen.findByText(t("moveCategoryListError"));
     client.statusHandler = async () => ({ ok: false, error: { code: "service_unavailable", message: "unknown" } });
     await userEvent.click(screen.getByRole("button", { name: t("moveCategoryStatus") })); await screen.findByText(t("moveCategoryUncertain"));
     assert.equal(client.moves.length, 1);
@@ -564,7 +564,7 @@ for (const language of ["en", "ru"] as const) {
       if (change === "backend") { client.statuses.forEach((fn) => fn({ state: "unavailable" })); client.statuses.forEach((fn) => fn({ state: "ready" })); }
       if (change === "selection") { client.list = { ...initial, workspaceId: "other", sourceId: "other-source" }; client.unfinished = []; view.rerender(<DiscoveryWorkspace key="other" {...props(client)} workspaceId="other" sourceId="other-source" />); }
     });
-    if (change === "reload") await userEvent.click(screen.getByRole("button", { name: t("moveCategoryListReload") }));
+    if (change === "reload") await userEvent.click(await findAction("button", { name: t("moveCategoryListReload") }));
     assert.equal(screen.queryByRole("button", { name: t("moveCategoryRetryOriginal") }), null); fireEvent.click(action);
     assert.equal(client.recoveries.length, 0); assert.equal(client.reviews.length, 1);
     if (change !== "selection") await screen.findByText(t("moveCategoryReviewStale"));
@@ -642,7 +642,7 @@ for (const language of ["en", "ru"] as const) {
     const client = new Client(), response = deferred<ServiceResult<ProjectCategoryMoveList>>(); client.listHandler = () => response.promise;
     render(<DiscoveryWorkspace {...props(client)} />); await screen.findByText(t("moveCategoryListLoading"));
     await act(async () => response.resolve({ ok: false, error: { code: "storage", message: "failed list" } })); await screen.findByText(t("moveCategoryListError"));
-    client.listHandler = null; await userEvent.click(screen.getByRole("button", { name: t("moveCategoryListReload") })); await screen.findByText(t("moveCategoryListEmpty"));
+    client.listHandler = null; await userEvent.click(await findAction("button", { name: t("moveCategoryListReload") })); await screen.findByText(t("moveCategoryListEmpty"));
     assert.equal(client.moves.length, 0); assert.equal(client.recoveries.length, 0); assert.equal(client.reviews.length, 0);
   });
   for (const field of ["workspace", "source", "operation-source", "duplicate", "terminal"] as const) test(`${language}: wrong ${field} operation list exposes no review`, async () => {
@@ -655,7 +655,7 @@ for (const language of ["en", "ru"] as const) {
     const client = new Client(); client.unfinished = [interrupted]; render(<DiscoveryWorkspace {...props(client)} />);
     await findAction("button", { name: new RegExp(`^${t("moveCategoryReview")}:`) });
     client.unfinished = [{ ...interrupted, projectId: "foreign" }];
-    await userEvent.click(screen.getByRole("button", { name: t("moveCategoryListReload") })); await screen.findByText(t("moveCategoryListError"));
+    await userEvent.click(await findAction("button", { name: t("moveCategoryListReload") })); await screen.findByText(t("moveCategoryListError"));
     const button = screen.getByRole("button", { name: new RegExp(`^${t("moveCategoryReview")}:`) }); assert.equal((button as HTMLButtonElement).disabled, true);
     assert.equal(client.recoveries.length, 0);
   });
@@ -666,7 +666,7 @@ for (const language of ["en", "ru"] as const) {
     await userEvent.click(await findAction("button", { name: `${t("moveCategoryStatus")}: ${interrupted.originalRelativePath}`.replace(/\s+/g, " ").trim() }));
     await screen.findByText(t("moveCategoryUncertain"));
     client.listHandler = async () => ({ ok: false, error: { code: "storage", message: "failed list" } });
-    await userEvent.click(screen.getByRole("button", { name: t("moveCategoryListReload") })); await screen.findByText(t("moveCategoryListError"));
+    await userEvent.click(await findAction("button", { name: t("moveCategoryListReload") })); await screen.findByText(t("moveCategoryListError"));
     client.statusHandler = async () => { client.unfinished = []; return { ok: true, value: recoveryCompleted() }; };
     await userEvent.click(screen.getByRole("button", { name: t("moveCategoryStatus") })); await screen.findByText(t("moveCategorySaved"));
     assert.deepEqual(client.statusCalls, [["workspace", "interrupted"], ["workspace", "interrupted"]]);
@@ -679,7 +679,7 @@ for (const language of ["en", "ru"] as const) {
     const client = new Client(), response = deferred<ServiceResult<ProjectCategoryMoveList>>(); client.unfinished = [interrupted];
     client.recoveryHandler = async () => ({ ok: false, error: { code: "service_unavailable", message: "lost" } });
     render(<DiscoveryWorkspace {...props(client)} />); await openReview(); await userEvent.click(await findAction("button", { name: t("moveCategoryRetryOriginal") })); await screen.findByText(t("moveCategoryUncertain"));
-    client.listHandler = () => response.promise; await userEvent.click(screen.getByRole("button", { name: t("moveCategoryListReload") }));
+    client.listHandler = () => response.promise; await userEvent.click(await findAction("button", { name: t("moveCategoryListReload") }));
     client.statusHandler = async () => { client.unfinished = []; client.listHandler = null; return { ok: true, value: recoveryCompleted() }; };
     await userEvent.click(screen.getByRole("button", { name: t("moveCategoryStatus") })); await screen.findByText(t("moveCategorySaved"));
     await act(async () => response.resolve({ ok: true, value: { workspaceId: "workspace", sourceId: "source", operations: [interrupted] } }));

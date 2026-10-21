@@ -1,3 +1,4 @@
+import { ManagementSurface, ManagementTarget, ViewToolsTarget, ViewControlsScope } from "./ManagementSurface.js";
 import { ContextTools } from "./ContextTools.js";
 import { ViewsPanel } from "./ViewsPanel.js";
 import type { WorkspaceView } from "../../contracts/views.js";
@@ -8,7 +9,7 @@ import { ProjectRenamePanel } from "./ProjectRenamePanel.js";
 import { ProjectCreationPanel } from "./ProjectCreationPanel.js";
 import { ProjectRecoveryController } from "./ProjectRecoveryPanel.js";
 import { TextPropertiesTable } from "./TextPropertiesTable.js";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { ProjectAssociationSummary, CategoryPropertySnapshot, DiscoveryEntry, DiscoveryMode, DiscoveryPreview, ProjectList } from "../../contracts/workspaces.js";
 import type { Language } from "../../contracts/settings.js";
 import { translate, type TranslationKey } from "../localization.js";
@@ -244,14 +245,16 @@ export function DiscoveryController({ client, workspaceId, sourceId, minimumRevi
 }
 
 
-export function DiscoveryWorkspace({ client, workspaceId, sourceId, refreshVersion = 0, onSourceState, onRecoveryPending, language, disabled }: {
-  client: WorkspaceServiceClient; workspaceId: string; sourceId: string; refreshVersion?: number;
+export function DiscoveryWorkspace({ client, workspaceId, sourceId, refreshVersion = 0, onSourceState, onRecoveryPending, language, disabled, sourcePath, sourceStatus }: {
+  sourceStatus?: ReactNode; sourcePath?: string; client: WorkspaceServiceClient; workspaceId: string; sourceId: string; refreshVersion?: number;
   onSourceState?(workspaceId: string, state: ProjectList["state"]): void; language: Language; disabled: boolean;
   onRecoveryPending?(pending: boolean): void;
 }) {
   const [view, setView] = useState<WorkspaceView | null>(null);
   const [showArchived, setShowArchived] = useState(false);
+  const [archiveHasProjects,setArchiveHasProjects]=useState(false);
   const [setupDeferred, setSetupDeferred] = useState(false);
+  const [sourceToolsOpen, setSourceToolsOpen] = useState(false);
   const [archiveBlocked, setArchiveBlocked] = useState(false);
   const [projects, setProjects] = useState<ProjectList | null>(null);
   const committedProjects = useRef<ProjectList | null>(null);
@@ -403,11 +406,12 @@ export function DiscoveryWorkspace({ client, workspaceId, sourceId, refreshVersi
     void load();
   }, [refreshVersion]);
   useEffect(() => { if (projects) onSourceState?.(workspaceId, projects.state); }, [projects?.state, workspaceId, onSourceState]);
-  return <div className="daily-workspace">
-    {projects && !projects.configured && <div className="workspace-setup" role="status">
-      <p>{t(setupDeferred ? "setupDeferred" : "setupOffer")}</p>
-    </div>}
-    <ContextTools label={t("sourceTools")} icon="settings">
+  return <ManagementSurface><div className="daily-workspace">
+    {sourceStatus}
+    <ViewsPanel tools={projects?.configured ? <ViewToolsTarget label={t("viewSettings")} hidden={showArchived && !archiveHasProjects} /> : undefined} panelId={`${showArchived ? "archived" : "active"}-view-panel-${workspaceId}`} client={client} workspaceId={workspaceId} language={language} onChange={setView}
+      disabled={disabled || categoryOptionsBlocked || creationBlocked || discoveryPending || recoveryProject !== null || renameProject !== null || renameBlocked || categoryMoveProject !== null || categoryMoveBlocked || archiveBlocked} />
+    <ContextTools label={t("sourceTools")} icon="settings" compact open={sourceToolsOpen} onOpenChange={setSourceToolsOpen}>
+    {sourcePath && <p className="workspace-root">{sourcePath}</p>}
     <DiscoveryController onPostpone={projects && !projects.configured && !setupDeferred ? () => setSetupDeferred(true) : undefined} client={client} workspaceId={workspaceId} sourceId={sourceId} minimumRevision={minimumRevision}
       observationVersion={observationVersion}
       invalidation={invalidation} language={language} onPendingChange={setDiscoveryPending} disabled={disabled || archiveBlocked || categoryOptionsBlocked || creationBlocked || recoveryProject !== null || renameProject !== null || renameBlocked || categoryMoveProject !== null || categoryMoveBlocked}
@@ -427,6 +431,7 @@ export function DiscoveryWorkspace({ client, workspaceId, sourceId, refreshVersi
       categories={projects.categories} language={language} revision={projects.revision} invalidation={invalidation}
       disabled={disabled || archiveBlocked || creationBlocked || discoveryPending || recoveryProject !== null || renameProject !== null || renameBlocked || categoryMoveProject !== null || categoryMoveBlocked}
       onBlockedChange={setCategoryOptionsBlocked} onCommitted={() => void load()} />}
+    <ManagementTarget />
     </ContextTools>
     <ProjectCreationPanel client={client} workspaceId={workspaceId} sourceId={sourceId} language={language}
       projects={projects} onBlockedChange={setCreationBlocked} disabled={disabled || archiveBlocked || categoryOptionsBlocked || discoveryPending || loading || error || recoveryProject !== null || renameProject !== null || renameBlocked}
@@ -463,13 +468,11 @@ export function DiscoveryWorkspace({ client, workspaceId, sourceId, refreshVersi
       }} />}
     {recoverySaved && <StatusMessage kind="info" title={t("recoverySaved")} />}
     <ProjectArchivePanel categoryProperty={projects?.categoryProperty} categories={projects?.categories} viewId={view?.viewId} layout={view?.kind} client={client} workspaceId={workspaceId} sourceId={sourceId} projects={projects?.projects ?? []}
-      language={language} revision={projects?.revision ?? 0} invalidation={invalidation} onViewChange={setShowArchived}
+      language={language} revision={projects?.revision ?? 0} invalidation={invalidation} onViewChange={setShowArchived} onProjectAvailability={setArchiveHasProjects}
       onBlockedChange={setArchiveBlocked} onCommitted={() => void load()}
       disabled={disabled || categoryOptionsBlocked || creationBlocked || discoveryPending || recoveryProject !== null || renameProject !== null || renameBlocked || categoryMoveProject !== null || categoryMoveBlocked} />
-    <ViewsPanel panelId={`${showArchived ? "archived" : "active"}-view-panel-${workspaceId}`} client={client} workspaceId={workspaceId} language={language} onChange={setView}
-      disabled={disabled || categoryOptionsBlocked || creationBlocked || discoveryPending || recoveryProject !== null || renameProject !== null || renameBlocked || categoryMoveProject !== null || categoryMoveBlocked || archiveBlocked} />
-    <section id={`active-view-panel-${workspaceId}`} role="tabpanel" hidden={showArchived} className="table-view" aria-labelledby={view ? `saved-view-${view.viewId}` : "table-title"} aria-busy={loading}>
-      <div className="table-view__heading"><div>
+    <ViewControlsScope visible={!showArchived}><section id={`active-view-panel-${workspaceId}`} role="tabpanel" hidden={showArchived} className="table-view" aria-labelledby={view ? `saved-view-${view.viewId}` : "table-title"} aria-busy={loading}>
+      <div className="table-view__heading sr-only"><div>
         <h3 id="table-title" ref={tableHeading} tabIndex={-1}>{view?.name ?? t("tableViewTitle")}</h3>
         <p>{t(projects?.configured ? "projectsApplied" : "emptyTableDescription")}</p>
       </div><span className="view-badge">{t(view?.kind === "board" ? "boardViewLabel" : "tableViewLabel")}</span></div>
@@ -479,7 +482,9 @@ export function DiscoveryWorkspace({ client, workspaceId, sourceId, refreshVersi
       {!loading && !error && projects && <>
         {!onSourceState && projects.state !== "ready" && projects.state !== "empty" && <StatusMessage kind="error" title={t(stateLabels[projects.state])} />}
         {projects.retainedCount > 0 && <StatusMessage kind="info" title={t("projectsRetained")} />}
-        {projects.projects.length === 0 && projects.retainedProjects.length === 0 && <EmptyStatePanel>{t(projects.configured ? "projectsEmpty" : "emptyTableGuidance")}</EmptyStatePanel>}
+        {!projects.configured ? <EmptyStatePanel><p>{t(setupDeferred ? "setupDeferred" : "setupOffer")}</p>
+          <button type="button" className="workspace-button" disabled={disabled} onClick={() => setSourceToolsOpen(true)}>{t("setupSource")}</button></EmptyStatePanel>
+          : projects.projects.length === 0 && projects.retainedProjects.length === 0 && <EmptyStatePanel>{t("projectsEmpty")}</EmptyStatePanel>}
       </>}
       {projects?.mode === "grouped" && <details className="saved-categories"><summary>{t("savedCategories")}</summary>
         <p>{t("discoveryGroupedMode")}</p>
@@ -488,7 +493,7 @@ export function DiscoveryWorkspace({ client, workspaceId, sourceId, refreshVersi
         {projects.categories.length > 0 ? <ul>{projects.categories.filter(c => showHiddenCategories || !c.presentation?.hidden).map((category) => <li key={category.categoryId}><span className="category-chip" data-color={category.presentation?.color ?? "default"}>{category.name}</span></li>)}</ul>
           : <p>{t("savedCategoriesEmpty")}</p>}
       </details>}
-      {view && <TextPropertiesTable viewId={view.viewId} layout={view.kind} sourceLifetime={sourceLifetime} discoveryRevision={projects?.revision ?? 0} minimumDiscoveryRevision={minimumRevision} categoryPropertyRevision={projects?.categoryPropertyRevision ?? 0} minimumCategoryPropertyRevision={minimumCategoryPropertyRevision}
+      {view && projects?.configured && <TextPropertiesTable viewId={view.viewId} layout={view.kind} sourceLifetime={sourceLifetime} discoveryRevision={projects?.revision ?? 0} minimumDiscoveryRevision={minimumRevision} categoryPropertyRevision={projects?.categoryPropertyRevision ?? 0} minimumCategoryPropertyRevision={minimumCategoryPropertyRevision}
         onFilesystemAssignmentObserved={() => { setInvalidation(value => value + 1); void load(); }}
         onCategoryPropertyCommitted={commitLabel} categoryProperty={projects?.categoryProperty ?? null} categories={projects?.categories ?? []} client={client} workspaceId={workspaceId} sourceId={sourceId}
         renameDisabled={categoryOptionsBlocked || creationBlocked || discoveryPending || loading || error || renameBlocked || renameProject !== null || recoveryProject !== null || categoryMoveProject !== null || categoryMoveBlocked || !projects?.configured ||
@@ -502,6 +507,6 @@ export function DiscoveryWorkspace({ client, workspaceId, sourceId, refreshVersi
           recoveryTrigger.current = trigger; setRecoverySaved(false); setRecoveryProject(project);
         } : undefined}
         projects={projects?.projects ?? []} retainedProjects={projects?.retainedProjects ?? []} language={language} disabled={disabled} />}
-    </section>
-  </div>;
+    </section></ViewControlsScope>
+  </div></ManagementSurface>;
 }

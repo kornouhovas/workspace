@@ -677,10 +677,9 @@ export function App() {
           <fieldset disabled={dataLocked} hidden={dataLocked} className="workspace-controls">
           {activeWorkspace && !addingWorkspace ? (
             <section className="workspace-content" aria-labelledby="workspace-title">
-              <div className="workspace-toolbar">
+              <div className="workspace-toolbar sr-only">
                 <div>
                   <h2 id="workspace-title">{activeWorkspace.name}</h2>
-                  <p className="workspace-root">{activeWorkspace.canonicalRoot}</p>
                 </div>
               </div>
               {formMessage === "activation" && (
@@ -688,15 +687,14 @@ export function App() {
                   {t(messageDescription.activation)}
                 </StatusMessage>
               )}
-              <SourceRefresh language={language} pending={busy === "refresh"} error={refreshError}
+              <DiscoveryWorkspace key={`${backendGeneration}:${activeWorkspace.workspaceId}:${activeWorkspace.sourceId}`}
+                sourceStatus={<SourceRefresh language={language} pending={busy === "refresh"} error={refreshError}
                 degraded={sourceObservations.get(activeWorkspace.sourceId)?.automaticUpdates === "degraded"}
                 unavailable={!activeWorkspace.sourceAvailable || sourceFeedback?.workspaceId === activeWorkspace.workspaceId &&
                   sourceFeedback.state !== "ready" && sourceFeedback.state !== "empty"}
                 unavailableTitle={!activeWorkspace.sourceAvailable || sourceFeedback?.state === "unavailable" ? "sourceUnavailableTitle"
                   : sourceFeedback?.state === "root_identity_conflict" ? "discoveryRootConflict" : sourceFeedback?.state === "changed" ? "discoveryChanged" : "discoveryUnreadable"}
-                disabled={busy !== null || renameDraft !== null || removalTarget !== null} onRefresh={() => void refreshSource()} />
-              <DiscoveryWorkspace key={`${backendGeneration}:${activeWorkspace.workspaceId}:${activeWorkspace.sourceId}`}
-                refreshVersion={sourceRefreshVersion} onSourceState={observeSourceScan}
+                disabled={busy !== null || renameDraft !== null || removalTarget !== null} onRefresh={() => void refreshSource()} />} sourcePath={activeWorkspace.canonicalRoot} refreshVersion={sourceRefreshVersion} onSourceState={observeSourceScan}
                 onRecoveryPending={(pending) => {
                   recoveryPending.current = pending ? activeWorkspace.workspaceId : null;
                   if (pending) setUncertainRecovery(null);
