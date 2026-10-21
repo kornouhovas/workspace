@@ -445,12 +445,16 @@ test('filter and editor preparation observes presented operands without submitti
         const entry = document.querySelector('#entry'), surface = document.querySelector('#surface');
         entry.onclick = () => {
           globalThis.preparation.opens++; entry.setAttribute('aria-expanded', 'true'); surface.hidden = false;
-          surface.animate([{transform:'translateX(80px)'},{transform:'translateX(0)'}], {duration:500,fill:'forwards'}).finished.then(() => { globalThis.preparation.presented = true; });
+          // A scoped editor locator must observe its changing owner, even when
+          // the Save button itself has already stopped moving.
+          const frames = surface.classList.contains('text-value-editor') ? [{width:'260px'},{width:'520px'}] : [{transform:'translateX(80px)'},{transform:'translateX(0)'}];
+          surface.animate(frames, {duration:500,fill:'forwards'}).finished.then(() => { globalThis.preparation.presented = true; });
         };
         document.querySelector('#save').onclick = () => { globalThis.preparation.saves++; };
       });
       if (!context) await page.getByRole('button', {name:'Open',exact:true}).press('Enter');
-      const save = await enterContextFor(page, page.getByRole('button', {name:'Save',exact:true,includeHidden:true}), { waitForPresentation: true });
+      const control = context ? page.getByRole('button', {name:'Save',exact:true,includeHidden:true}) : page.locator('#surface').getByRole('button', {name:'Save',exact:true,includeHidden:true});
+      const save = await enterContextFor(page, control, { waitForPresentation: true });
       assert.deepEqual(await page.evaluate(() => globalThis.preparation), {opens:1,saves:0,presented:true});
       assert.equal(await page.getByRole('textbox', {name:'Draft',exact:true}).inputValue(), 'Unchanged');
       await save.press('Enter');

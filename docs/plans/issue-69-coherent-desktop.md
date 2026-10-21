@@ -358,3 +358,29 @@ draft, perform one open, zero preparatory saves and one explicit subsequent Save
 Typecheck/lint and 52 route controls pass. Both independent reviews report zero
 findings. Renew the changed native file and original strict scale on both hosts;
 this is a precondition repair, not production GPU or final performance acceptance.
+
+
+## Scoped-owner preparation correction and first strict pass
+
+At `fec9fc26`, downloaded native run `39662918554`/attempt 1 passes 66/66 on
+each host. Original strict run `39662918865`/attempt 1 passes on both macOS 14
+and Windows latest: 32 timings, ten memory samples, four normal quits/backend
+exits and cleanup each. Mac first Table filter is 192.9ms, with its separately
+recorded control preparation 711.3ms; conservative peak memory is 968,359,936
+bytes. Windows runs on AMD EPYC 9V45 and peaks at 833,220,608 bytes; direct/grouped
+Table edit is 213.7/175.8ms and grouped assignment 190.2ms. This is bounded actual
+host evidence, not proof of a unique repair for the earlier Intel-host misses.
+Local `fec9fc26` strict renewal remains failed: 15 direct samples reached, startup
+5,919.7ms exceeds 5,000ms, then normal shutdown fails; cleanup passes. Other
+14 reached timings pass. Do not relabel this local negative as a strict pass.
+
+A stronger native preparation case found a scoped-locator owner bug: re-rooting
+`row.getByRole(...)` inside its own editor with `has` misses the ancestor row,
+so the helper falls back to Save alone. Animate the editor width while Save is
+stationary; the scoped case fails with presentation false while the other two
+cases pass. Resolve `closest()` from the actual control node, screenshot that
+owner and dispose the handle in `finally`. The default path remains unchanged.
+The expanded native control passes 4/4 with normal quit; typecheck/lint and both
+independent reviews pass (zero findings). Original event clocks, mutations,
+readiness, paint frames and limits remain untouched. Renew the affected native
+and original strict consumers on this final owner correction before broad CI.

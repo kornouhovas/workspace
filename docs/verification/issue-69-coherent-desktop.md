@@ -60,10 +60,19 @@ their actual SHA rather than being relabelled as a later run.
 | Boundary | Actual receipt | Result / limit |
 | --- | --- | --- |
 | Completed-candidate full local suite | `8cb8097`, Node 22.21.1/macOS 27 arm64, `npm run test:all` | 3,270 total, 3,244 pass, zero fail, 26 platform skips; later reviewed test-only repairs renew affected consumers |
-| Original four-file native lifecycle, including fractional clipping and timing/delivery controls | `ebd090ab`, [39659477771](https://github.com/kornouhovas/workspace/actions/runs/39659477771), attempt 1; downloaded logs/provenance on macOS latest, Windows latest, Windows 2022 | 62/62 on each host, normal quit preserved; local macOS 27 negatives remain unexplained |
+| Original four-file native lifecycle, including fractional clipping and timing/delivery controls | `fec9fc26`, [39662918554](https://github.com/kornouhovas/workspace/actions/runs/39662918554), attempt 1; downloaded logs/provenance on macOS latest, Windows latest, Windows 2022 | 66/66 on each host, normal quit preserved; local macOS 27 negatives remain unexplained |
 | Actual arm64 DMG install/reopen/replacement | `ebd090ab`, [39659054203](https://github.com/kornouhovas/workspace/actions/runs/39659054203), attempt 1, macOS 14.8.9 | Installed bundled backend, exact workspace/source/view/language, EN/RU keyboard/isolation, replacement preserving data, normal exits and cleanup pass |
 | Actual x64 NSIS install/reopen/reinstall/uninstall | `ebd090ab`, [39659356326](https://github.com/kornouhovas/workspace/actions/runs/39659356326), attempt 1, Windows Server 2025/kernel 10.0.26100 | Unicode/space path, independent default APPDATA, data/identity preservation, normal exits, uninstall and cleanup pass; not Windows 11 release evidence |
 | Original strict packaged scale | `ebd090ab`, [39659477806](https://github.com/kornouhovas/workspace/actions/runs/39659477806), attempt 1, macOS 14 + Windows latest | **Failed numerical limits**. Both hosts complete 32 functional scenarios, ten memory samples, four normal quits/backend exits and cleanup. Mac first Table filter 603.2ms; Windows direct/grouped Table edit 344.5/382.8ms and grouped Table assignment 315.4ms exceed 300ms. All other original timings and memory limits pass. |
+
+Subsequent original strict [39662918865](https://github.com/kornouhovas/workspace/actions/runs/39662918865),
+attempt 1 at `fec9fc26`, **passes both hosts** after presented-control preparation:
+32 timings, ten memory samples, four normal quits/backend exits and cleanup each.
+Mac first filtering is 192.9ms, with control preparation separately 711.3ms;
+conservative memory peaks are 968,359,936 bytes (Mac M1 Virtual) and 833,220,608
+bytes (Windows AMD EPYC 9V45). Earlier Intel-host and local macOS 27 negatives
+retain their own evidence. A later scoped-owner preparation correction still
+requires renewed focused consumers; broad desktop/package CI remains pending.
 
 The macOS diagnostic [39660140707](https://github.com/kornouhovas/workspace/actions/runs/39660140707)
 reproduces first filtering at 529.7ms: mutation/projection IPC approximately

@@ -33,8 +33,11 @@ export async function enterContextFor(page, control, { waitForPresentation = fal
   if (waitForPresentation) {
     // Actionability can precede composited pixels. The caller can explicitly
     // prepare presented operands without submitting or warming a mutation.
-    const surfaces = page.locator('.context-tools-panel, .text-value-editor').filter({ has: control });
-    await (await surfaces.count() ? surfaces.last() : control).screenshot({ animations: 'allow' });
+    // Resolve from the actual node: a row-scoped locator cannot be re-rooted
+    // inside its own editor with Locator.filter({ has: control }).
+    const owner = await control.evaluateHandle(element => element.closest('.context-tools-panel, .text-value-editor') ?? element);
+    try { await owner.asElement().screenshot({ animations: 'allow' }); }
+    finally { await owner.dispose(); }
   }
   return control;
 }
