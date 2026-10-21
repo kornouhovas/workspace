@@ -32,6 +32,23 @@ export function foundationCommands({ failureProbe = false } = {}) {
   if (failureProbe) commands.splice(0, 0, [process.execPath, ['-e', 'process.exit(23)']]);
   return commands;
 }
+// Bounded Board acceptance retains real service/folder seams and shared focus consumers.
+export const boardTests = [
+  'desktop-ux-checks.test.mjs', 'context-tools.test.tsx', 'components.test.tsx',
+  'board-layout-ui.test.tsx', 'board-layout-service.test.mjs',
+  'view-grouping-ui.test.tsx', 'view-grouping-service.test.mjs',
+  'group-assignment-ui.test.tsx', 'group-assignment-service.test.mjs',
+  'views-ui.test.tsx', 'views-service.test.mjs', 'view-filters-ui.test.tsx',
+  'table-layout-ui.test.tsx', 'viewport-projects-ui.test.tsx',
+];
+export function boardCommands() {
+  return [
+    ['npm', ['run', 'typecheck']], ['npm', ['run', 'lint']],
+    [process.execPath, ['--import','tsx','--test',...boardTests.map(file=>`tests/${file}`)]],
+    [process.execPath, ['scripts/smoke-board.mjs']],
+    ['npm', ['run', 'smoke:views']],
+  ];
+}
 export function runChecks(commands, run = (command,args)=>spawnSync(command,args,{stdio:'inherit',shell:process.platform==='win32' && command==='npm'})) {
   for (const [command,args] of commands) {
     const result=run(command,args);
@@ -42,8 +59,9 @@ export function runChecks(commands, run = (command,args)=>spawnSync(command,args
 }
 if(process.argv[1] && resolve(process.argv[1])===fileURLToPath(import.meta.url)) {
   const args=process.argv.slice(2);
-  if(args.some(arg=>!['foundation','--list','--failure-probe'].includes(arg)) || args[0]!=='foundation') throw new Error('Usage: desktop-ux-checks.mjs foundation [--list] [--failure-probe]');
-  const commands=foundationCommands({failureProbe:args.includes('--failure-probe')});
+  if(args.some(arg=>!['foundation','board','--list','--failure-probe'].includes(arg)) || !['foundation','board'].includes(args[0])) throw new Error('Usage: desktop-ux-checks.mjs <foundation|board> [--list] [--failure-probe]');
+  const commands=args[0]==='board' ? boardCommands() : foundationCommands({failureProbe:args.includes('--failure-probe')});
+  if(args[0]==='board' && args.includes('--failure-probe')) commands.unshift([process.execPath,['-e','process.exit(23)']]);
   if(args.includes('--list')) console.log(JSON.stringify(commands));
   else process.exitCode=runChecks(commands);
 }

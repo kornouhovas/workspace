@@ -10,6 +10,11 @@ on:
         type: choice
         options: [full, desktop-ux, failed, readiness, windows-release, issue22-failures, creation-shutdown, raw-rename, issue24-failures, category-fixture, issue24-startup, multiselect, etw-controls, app-fixture, property-fixture, runtime-observation, view-fixtures, number, windows-property-fixture, rename-authoring, rename-fixture, viewport-runtime, desktop-shell, shell-runtime, views-readiness, workspace-sidebar, workspace-setup, workspace-setup-readiness, select-readiness, source-fixture, source-runtime]
         default: full
+      desktop_ux_profile:
+        description: With desktop-ux, select the shared foundation or bounded Board acceptance
+        type: choice
+        options: [foundation, board]
+        default: foundation
       desktop_ux_failure_probe:
         description: With desktop-ux, deliberately fail a selected check to verify propagation
         type: boolean
@@ -127,27 +132,32 @@ jobs:
       - run: npm ci
       - run: npm run build
       - name: Candidate provenance
+        env:
+          WORKSPACE_UX_PROFILE: ${{ inputs.desktop_ux_profile || 'foundation' }}
         shell: bash
         run: |
           mkdir -p work/ci-desktop-ux
-          node --input-type=module -e 'import {writeFileSync} from "node:fs"; writeFileSync("work/ci-desktop-ux/provenance.json", JSON.stringify({sha:process.env.GITHUB_SHA,run:process.env.GITHUB_RUN_ID,attempt:process.env.GITHUB_RUN_ATTEMPT,platform:process.platform,profile:"foundation"}))'
+          node --input-type=module -e 'import {writeFileSync} from "node:fs"; writeFileSync("work/ci-desktop-ux/provenance.json", JSON.stringify({sha:process.env.GITHUB_SHA,run:process.env.GITHUB_RUN_ID,attempt:process.env.GITHUB_RUN_ATTEMPT,platform:process.platform,profile:process.env.WORKSPACE_UX_PROFILE}))'
       - name: Verify selected-check failure propagation
         if: ${{ inputs.desktop_ux_failure_probe }}
         run: node scripts/desktop-ux-checks.mjs foundation --failure-probe
       - name: Affected UI, services and real Electron flows
-        if: ${{ !inputs.desktop_ux_failure_probe && !inputs.desktop_ux_packaged_only && !inputs.desktop_ux_category_only }}
+        if: ${{ !inputs.desktop_ux_failure_probe && !inputs.desktop_ux_packaged_only && !inputs.desktop_ux_category_only && inputs.desktop_ux_profile != 'board' }}
         run: npm run test:desktop-ux
+      - name: Grouped Board appearance, behavior and retained service guarantees
+        if: ${{ !inputs.desktop_ux_failure_probe && inputs.desktop_ux_profile == 'board' }}
+        run: node scripts/desktop-ux-checks.mjs board
       - name: Packaged renewal adapter regressions
         if: ${{ (inputs.desktop_ux_packaged_only || inputs.desktop_ux_category_only) && !inputs.desktop_ux_failure_probe }}
         run: node --import tsx --test tests/runtime-layout.test.mjs tests/runtime-readiness.test.mjs tests/desktop-ux-checks.test.mjs tests/rename-submission-receipt.test.mjs tests/project-category-move-runtime.test.mjs tests/runtime-quit-evidence.test.mjs
       - name: Package shared font and notices
-        if: ${{ !inputs.desktop_ux_failure_probe }}
+        if: ${{ !inputs.desktop_ux_failure_probe && inputs.desktop_ux_profile != 'board' }}
         run: npm run package:built
       - name: Inspect packaged artifact
-        if: ${{ !inputs.desktop_ux_failure_probe }}
+        if: ${{ !inputs.desktop_ux_failure_probe && inputs.desktop_ux_profile != 'board' }}
         run: npm run check:artifact -- release
       - name: Packaged saved-view consumers
-        if: ${{ !inputs.desktop_ux_failure_probe && !inputs.desktop_ux_category_only }}
+        if: ${{ !inputs.desktop_ux_failure_probe && !inputs.desktop_ux_category_only && inputs.desktop_ux_profile != 'board' }}
         run: npm run smoke:views -- release
         env:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-desktop-ux-packaged
@@ -178,6 +188,7 @@ jobs:
           path: |
             work/ci-desktop-ux
             work/issue-68
+            work/issue-53-board
             work/issue-48-desktop-shell
             work/issue-49-workspace-management
             work/issue-50-source-settings

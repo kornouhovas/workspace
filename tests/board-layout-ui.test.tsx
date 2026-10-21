@@ -7,11 +7,12 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { WorkspaceServiceClient } from "../src/renderer/workspace-service-client.js";
 import type { WorkspaceDesktopApi } from "../src/contracts/desktop-api.js";
-import { TextPropertiesTable } from "../src/renderer/components/TextPropertiesTable.js";
+
 import { translate } from "../src/renderer/localization.js";
 const browser = new Window();
-Object.assign(globalThis, { window: browser, document: browser.document, HTMLElement: browser.HTMLElement, Node: browser.Node, MutationObserver: browser.MutationObserver });
+Object.assign(globalThis, { window: browser, document: browser.document, HTMLElement: browser.HTMLElement, Element: browser.Element, CustomEvent: browser.CustomEvent, getComputedStyle: browser.getComputedStyle.bind(browser), NodeFilter: browser.NodeFilter, HTMLInputElement: browser.HTMLInputElement, ResizeObserver: browser.ResizeObserver, Node: browser.Node, MutationObserver: browser.MutationObserver });
 Object.defineProperty(globalThis, "navigator", { configurable: true, value: browser.navigator });
+const { TextPropertiesTable } = await import("../src/renderer/components/TextPropertiesTable.js");
 const { cleanup, render, screen, waitFor, within, fireEvent } = await import("@testing-library/react");
 const { default: userEvent } = await import("@testing-library/user-event");
 // @ts-expect-error Built service module intentionally has no declarations.
@@ -35,8 +36,9 @@ for (const language of ["en", "ru"] as const) {
     const content=<TextPropertiesTable layout="board" viewId={viewId} client={client} workspaceId={workspaceId} sourceId={sourceId} projects={projects} language={language} disabled={false}/>;
     try {
       render(content);
-      const controls=await screen.findByRole("region",{name:language==="en"?"Board layout":"Настройки доски"});
-      await user.click(within(controls).getByText(t("boardLayoutTitle")));
+      const layoutButton=await screen.findByRole("button",{name:t("boardLayoutTitle")});
+      layoutButton.focus(); await user.keyboard("{Enter}");
+      const controls=await screen.findByRole("dialog",{name:t("boardLayoutTitle")});
       const width=await within(controls).findByLabelText(`${t("boardColumnWidth")}: Alpha`) as HTMLInputElement;
       await waitFor(()=>assert.equal((width.closest('fieldset') as HTMLFieldSetElement).disabled,false));
       width.focus();fireEvent.change(width,{target:{value:"300"}});fireEvent.keyUp(width,{key:"ArrowLeft"});
@@ -45,14 +47,32 @@ for (const language of ["en", "ru"] as const) {
       await user.click(within(controls).getByLabelText(`${t("boardPropertyVisible")}: Notes`));
       await waitFor(()=>assert.equal(document.querySelector(`.project-card [data-column-id="${propertyId}"]`),null));
       assert.ok(screen.getByRole('button',{name:`${t('renameProperty')}: Notes`}), 'Definition editing stays available when cards hide a property');
+      const rename=within(controls).getByRole('button',{name:`${t('renameProperty')}: Notes`});
+      await user.click(rename);
+      const name=await within(controls).findByRole('textbox',{name:t('propertyName')});
+      await user.clear(name);await user.type(name,'Uncommitted name');await user.keyboard('{Escape}');
+      await waitFor(()=>assert.ok(document.activeElement===rename));
+      assert.equal(query('listTextProperties').value.definitions.find((p:{propertyId:string})=>p.propertyId===propertyId).name,'Notes');
       await user.click(within(controls).getByLabelText(t("boardWrap")));
       await waitFor(()=>assert.equal(query("getBoardLayout",{viewId}).value.config.wrap,false));
+      await user.keyboard("{Escape}");
+      await waitFor(()=>assert.equal(document.activeElement,layoutButton));
+      await user.click(screen.getByRole("button",{name:t("groupTitle")}));
       const move=screen.getByRole("button",{name:`${t("groupLater")}: Alpha`});move.focus();await user.keyboard("{Enter}");
       await waitFor(()=>assert.equal(document.querySelector('.project-group')?.getAttribute('aria-label'),'Beta'));
       assert.deepEqual(query("listTextProperties"),before);
       cleanup();render(content);
       await waitFor(()=>assert.equal(document.querySelector('.project-group[aria-label="Alpha"]')?.getAttribute('style')?.includes('300px'),true));
       assert.equal(document.querySelector(`.project-card [data-column-id="${propertyId}"]`),null);
+      const columnButton=screen.getByRole("button",{name:`${t("boardColumnWidth")}: Alpha`});
+      await user.click(columnButton);
+      const columnPanel=await screen.findByRole("dialog",{name:`${t("boardColumnWidth")}: Alpha`});
+      const columnWidth=within(columnPanel).getByRole("slider");
+      fireEvent.change(columnWidth,{target:{value:"420"}}); fireEvent.keyUp(columnWidth,{key:"ArrowRight"});
+      await waitFor(()=>assert.equal(query("getBoardLayout",{viewId}).value.config.widths.find((c:{key:string})=>c.key.includes("Alpha")).width,420));
+      await user.keyboard("{Escape}");
+      await waitFor(()=>assert.equal(document.activeElement,columnButton));
+      assert.deepEqual(query("listTextProperties"),before);
     }finally{cleanup();service.close();rmSync(directory,{recursive:true,force:true});}
   });
 }
@@ -71,7 +91,7 @@ test('Board retries reads, retains committed presentation on save failure and ex
   try{
     render(<Harness/>);await screen.findByRole('alert');failRead=false;
     await user.click(screen.getByRole('button',{name:translate('en','viewsRetry')}));
-    await waitFor(()=>assert.equal(screen.queryByRole('alert'),null));await user.click(screen.getByText('Board layout'));
+    await waitFor(()=>assert.equal(screen.queryByRole('alert'),null));await user.click(screen.getByRole('button',{name:'Board layout'}));
     const wrap=screen.getByLabelText('Wrap card content') as HTMLInputElement;
     await user.click(wrap);await screen.findByText('Saving Board layout...');
     assert.equal((wrap.closest('fieldset') as HTMLFieldSetElement).disabled,true);
@@ -90,7 +110,7 @@ test('a late Board save cannot replace the newly selected view presentation',asy
   const client=new WorkspaceServiceClient(api),user=userEvent.setup({document});
   function Harness({viewId}:{viewId:string}){const state=useBoardLayout(client,workspaceId,viewId);return <BoardLayoutControls state={state} fields={[]} groups={null} groupPropertyId={null} language="en" disabled={false}/>;}
   try{
-    const mounted=render(<Harness viewId={first}/>);await user.click(screen.getByText('Board layout'));
+    const mounted=render(<Harness viewId={first}/>);await user.click(screen.getByRole('button',{name:'Board layout'}));
     const wrap=screen.getByLabelText('Wrap card content') as HTMLInputElement;
     await waitFor(()=>assert.equal((wrap.closest('fieldset') as HTMLFieldSetElement).disabled,false));
     await user.click(wrap);await screen.findByText('Saving Board layout...');

@@ -1,3 +1,5 @@
+import { useState, type ReactNode, type RefObject } from "react";
+import { PresentationPopover } from "./PresentationPopover.js";
 import { defaultBoardLayout, defaultBoardColumnWidth, type BoardLayoutConfig } from "../../contracts/board-layout.js";
 import type { ViewGroup } from "../../contracts/view-grouping.js";
 import type { WorkspaceServiceClient } from "../workspace-service-client.js";
@@ -23,22 +25,36 @@ interface Props {
   groupPropertyId: string | null;
   language: Language;
   disabled: boolean;
+  children?: ReactNode;
+  column?: ViewGroup;
+  layoutTrigger?: RefObject<HTMLButtonElement | null>;
 }
-export function BoardLayoutControls({state, fields, groups, groupPropertyId, language, disabled}: Props) {
+export function BoardLayoutControls({state, fields, groups, groupPropertyId, language, disabled, children, column, layoutTrigger}: Props) {
+  const [open, setOpen] = useState(false);
   const t = (key: TranslationKey) => translate(language, key);
   const changeWidth = (key: string, width: number) => {
     if (!state.config || !groupPropertyId) return;
     void state.save({...state.config, widths:[...state.config.widths.filter(c => c.propertyId !== groupPropertyId || c.key !== key), {propertyId:groupPropertyId, key, width}]});
   };
-  return <section className="board-layout-controls" aria-label={t("boardLayoutTitle")} aria-busy={state.loading || state.pending}>
-    <details><summary>{t("boardLayoutTitle")}</summary><p>{t("boardLayoutHint")}</p>
+  const columnLabel = column ? (column.value === null ? t("groupNoValue") : column.label ?? String(column.value)) : null;
+  const label = column ? `${t("boardColumnWidth")}: ${columnLabel}` : t("boardLayoutTitle");
+  const feedback = <>
+    {state.loading && <StatusMessage kind="info" title={t("boardLayoutLoading")}/>}
+    {state.pending && <StatusMessage kind="info" title={t("boardLayoutSaving")}/>}
+    {state.error && <><StatusMessage kind="error" title={t("boardLayoutError")}/><button type="button" disabled={state.pending || state.loading} onClick={() => void state.load()}>{t("viewsRetry")}</button>
+      <button type="button" disabled={disabled || state.pending || state.loading} onClick={() => void state.save(defaultBoardLayout())}>{t("boardLayoutReset")}</button></>}
+  </>;
+  return <div className="board-layout-controls" aria-busy={state.loading || state.pending}>
+    <PresentationPopover compact={!!column} label={label} onOpenChange={setOpen} triggerRef={column ? undefined : layoutTrigger} fallbackFocus={column ? layoutTrigger : undefined}>
+      <p>{column ? columnLabel : t("boardLayoutHint")}</p>
       <fieldset disabled={disabled || state.pending || state.loading || !state.config}>
-        <label><input type="checkbox" aria-label={t("boardWrap")} checked={state.config?.wrap ?? true} onChange={event => {if (state.config) void state.save({...state.config, wrap:event.currentTarget.checked});}}/>{t("boardWrap")}</label>
+        {!column && <><label><input type="checkbox" aria-label={t("boardWrap")} checked={state.config?.wrap ?? true} onChange={event => {if (state.config) void state.save({...state.config, wrap:event.currentTarget.checked});}}/>{t("boardWrap")}</label>
         {fields.map(field => <label key={field.propertyId} className="board-property-control"><span className={field.propertyId === "name" ? undefined : "property-authored"}>{field.name}</span>
           <input type="checkbox" aria-label={`${t("boardPropertyVisible")}: ${field.name}`} disabled={field.propertyId === "name"} checked={!state.config?.properties.find(p => p.propertyId === field.propertyId)?.hidden}
             onChange={event => { if (state.config) void state.save({...state.config, properties:[...state.config.properties.filter(p => p.propertyId !== field.propertyId), {propertyId:field.propertyId, hidden:!event.currentTarget.checked}]}); }}/>{t("boardPropertyVisible")}
         </label>)}
-        {groups?.map(group => {
+        {children}</>}
+        {(column ? [column] : groups)?.map(group => {
           const label = group.value === null ? t("groupNoValue") : group.label ?? String(group.value);
           const width = boardColumnWidth(state.config, groupPropertyId, group.key);
           return <label className="board-column-control" key={group.key}><span className="property-authored">{label}</span> {t("boardColumnWidth")}
@@ -46,10 +62,8 @@ export function BoardLayoutControls({state, fields, groups, groupPropertyId, lan
           </label>;
         })}
       </fieldset>
-    </details>
-    {state.loading && <StatusMessage kind="info" title={t("boardLayoutLoading")}/>}
-    {state.pending && <StatusMessage kind="info" title={t("boardLayoutSaving")}/>}
-    {state.error && <><StatusMessage kind="error" title={t("boardLayoutError")}/><button type="button" disabled={state.pending || state.loading} onClick={() => void state.load()}>{t("viewsRetry")}</button>
-      <button type="button" disabled={disabled || state.pending || state.loading} onClick={() => void state.save(defaultBoardLayout())}>{t("boardLayoutReset")}</button></>}
-  </section>;
+    {feedback}
+    </PresentationPopover>
+    {!column && !open && feedback}
+  </div>;
 }

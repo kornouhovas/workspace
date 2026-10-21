@@ -1,3 +1,4 @@
+import { enterContextFor } from "./runtime-context-tools.mjs";
 import { openGroupingControls,closeGroupingControls } from "./runtime-presentation-controls.mjs";
 /* global document, innerWidth, getComputedStyle */
 import assert from "node:assert/strict";
@@ -21,8 +22,12 @@ export async function exerciseBoardLayout({page, query, rootPath, language, evid
   await call("setMultiSelectValue", {projectId:projects[0].projectId, propertyId:tags, optionIds:[tag]});
   const before = await call("listTextProperties");
   await page.reload();
-  const controls = page.getByRole("region", {name:en ? "Board layout" : "Настройки доски", exact:true});
-  await controls.locator("summary").press("Enter");
+  const layoutLabel=en ? "Board layout" : "Настройки доски";
+  const layoutTrigger=page.getByRole("button",{name:layoutLabel,exact:true,includeHidden:true});
+  const openLayout=async()=>{await enterContextFor(page,layoutTrigger);await layoutTrigger.press("Enter");};
+  const closeLayout=async()=>{await page.keyboard.press("Escape");const parent=page.getByRole("button",{name:/^(View settings|Настройки представления)$/});if(await parent.count() && await parent.getAttribute("aria-expanded")==="true") await page.keyboard.press("Escape");};
+  const controls = page.getByRole("dialog", {name:layoutLabel, exact:true});
+  await openLayout();
   const enabled = locator => locator.and(page.locator(":enabled"));
   const width = controls.getByLabel(`${en ? "Column width" : "Ширина колонки"}: A`, {exact:true});
   await enabled(width).focus(); await width.press("End");
@@ -44,14 +49,17 @@ export async function exerciseBoardLayout({page, query, rootPath, language, evid
   });
   await enabled(wrap).press("Space");
   await page.locator(".board-content-nowrap").first().waitFor();
+  await closeLayout();
   // Presentation clipping must not obstruct keyboard editing or alter exact values.
   const textButton = page.locator('.project-group[aria-label="A"] .text-value-button').first();
   await textButton.focus(); await textButton.press("Enter");
   const textarea = page.locator('.project-group[aria-label="A"] textarea');
   await textarea.waitFor(); assert.equal(await textarea.inputValue(), text); await textarea.press("Escape");
+  await openLayout();
   const visible = controls.getByLabel(`${en ? "Show on cards" : "Показывать в карточках"}: Notes`, {exact:true});
   await enabled(visible).press("Space");
   await page.waitForFunction(id => !document.querySelector(`.project-card [data-column-id="${id}"]`), propertyId);
+  await closeLayout();
   const grouping=await openGroupingControls(page,language);
   const later = grouping.getByRole("button", {name:`${en ? "Move group later" : "Переместить группу ниже"}: A`, exact:true});
   await enabled(later).press("Enter");

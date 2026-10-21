@@ -113,3 +113,19 @@ test("an outside SVG icon dismisses the current contextual tools",async()=>{
     assert.equal(screen.queryByRole("dialog",{name:"View settings"})===null,true);
   } finally {cleanup();}
 });
+
+test('removed column menu returns focus to the visible settings entry when its fallback is hidden',async()=>{
+  const user=userEvent.setup({document});
+  const fallback=React.createRef<HTMLButtonElement>();
+  const content=(column:boolean)=><>
+    <ContextTools label="View settings"><button ref={fallback}>Board layout</button></ContextTools>
+    {column && <PresentationPopover label="Column width" fallbackFocus={fallback}><button>Resize</button></PresentationPopover>}
+  </>;
+  try {
+    const view=render(content(true));
+    await user.click(screen.getByRole('button',{name:'Column width'}));
+    view.rerender(content(false));
+    const {waitFor}=await import('@testing-library/react');
+    await waitFor(()=>assert.ok(document.activeElement===screen.getByRole('button',{name:'View settings'})));
+  } finally {cleanup();}
+});

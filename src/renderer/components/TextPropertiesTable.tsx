@@ -363,7 +363,7 @@ function TextPropertiesContent({ viewId, layout = "table", hideReveal, client, w
             })() : property.propertyType === "date" ? propertyValues.date.get(`${project.projectId}:${property.propertyId}`) ?? null : propertyValues.text.get(`${project.projectId}:${property.propertyId}`) ?? null}
             onSave={(value) => saveValue(project.projectId, property.propertyId, value, property.propertyType)} />}
         </Cell>)}
-        {!hideReveal && <Cell key="project-actions" data-label={t("projectActions")}><ContextTools label={`${t("projectActions")}: ${project.name}`} compact>
+        {!hideReveal && <Cell className="project-card-actions" key="project-actions" data-label={t("projectActions")}><ContextTools label={`${t("projectActions")}: ${project.name}`} compact>
           {layout === "table" && viewId && <div className="table-row-controls">
             <Hint label={`${t("tableDrag")}: ${project.name}`}><button type="button" draggable={!rowBusy} disabled={rowBusy} aria-label={`${t("tableDrag")}: ${project.name}`} onDragStart={event => {event.stopPropagation(); event.dataTransfer.effectAllowed="move"; event.dataTransfer.setData("application/x-workspace-table-row",JSON.stringify({workspaceId,viewId,projectId:project.projectId}));}}><Icon name="drag"/></button></Hint>
             <Hint label={`${t("tableRowEarlier")}: ${project.name}`}><button type="button" disabled={rowBusy || rowIndex <= 0} aria-label={`${t("tableRowEarlier")}: ${project.name}`} onClick={() => moveRow(project.projectId, visibleIds[rowIndex-1])}><Icon name="up"/></button></Hint>
@@ -379,7 +379,7 @@ function TextPropertiesContent({ viewId, layout = "table", hideReveal, client, w
           locatorKey={revealLocator} targetKey={JSON.stringify([revealLocator, retained?.associationState, retained?.resolution])} /></ContextTools></Cell>}
       </>, true)}</ViewportProjectRow>; });
   };
-  const propertyForm = draft && <form className="property-form" onSubmit={(event) => { event.preventDefault(); void save(); }}
+  const propertyForm = draft && <form data-presentation-escape-owner={layout === "board" ? "" : undefined} className="property-form" onSubmit={(event) => { event.preventDefault(); void save(); }}
       onKeyDown={(event) => { if (event.key === "Escape") { event.preventDefault(); cancel(); } }}>
       <label htmlFor="property-name">{t("propertyName")}</label>
       <input ref={input} id="property-name" className="workspace-input" value={draft.name} disabled={disabled || pending}
@@ -396,10 +396,14 @@ function TextPropertiesContent({ viewId, layout = "table", hideReveal, client, w
       refreshToken={assignmentRefresh} refreshKey={JSON.stringify([assignmentRefresh, snapshot?.revision, discoveryRevision, projects.map(p => [p.projectId, p.name, p.categoryId]), retainedProjects.map(p => [p.projectId, p.name, p.categoryId])])}
       onResults={ids => setFilteredIds({ viewId, ids })} onGroups={(groups,propertyId,refreshToken) => setGrouped({viewId,groups,propertyId,refreshToken})} />
     }
-    {viewId && layout === "board" && <BoardLayoutControls state={boardState} fields={fields} groups={grouped?.viewId === viewId ? grouped.groups : null} groupPropertyId={grouped?.viewId === viewId ? grouped.propertyId : null} language={language} disabled={disabled || loadError || loading}/>}
-    <ViewControls><div className="table-presentation-toolbar">{viewId && layout === "table" && <TableLayoutControls layoutTrigger={layoutTrigger} state={tableState} fields={fields} language={language} disabled={disabled || loadError || loading}/> }
-    {viewId && <ViewGrouping contextual={layout === "table"} client={client} workspaceId={workspaceId} viewId={viewId} language={language} snapshot={snapshot} categoryProperty={categoryProperty} groups={grouped?.viewId===viewId ? grouped.groups : null} groupPropertyId={grouped?.viewId===viewId ? grouped.propertyId : null} disabled={disabled||loadError} />}
+    <ViewControls><div className="table-presentation-toolbar">
+    {viewId && layout === "board" && <BoardLayoutControls layoutTrigger={layoutTrigger} state={boardState} fields={fields} groups={grouped?.viewId === viewId ? grouped.groups : null} groupPropertyId={grouped?.viewId === viewId ? grouped.propertyId : null} language={language} disabled={disabled || loadError || loading}>{assignmentProperty && <p>{t(filesystemAssignment ? "groupAssignmentFilesystemHint" : "groupAssignmentHint")}</p>}<div className="board-property-controls">{headers}</div>{draft?.propertyId != null && propertyForm}</BoardLayoutControls>}{viewId && layout === "table" && <TableLayoutControls layoutTrigger={layoutTrigger} state={tableState} fields={fields} language={language} disabled={disabled || loadError || loading}/> }
+    {viewId && <ViewGrouping contextual client={client} workspaceId={workspaceId} viewId={viewId} language={language} snapshot={snapshot} categoryProperty={categoryProperty} groups={grouped?.viewId===viewId ? grouped.groups : null} groupPropertyId={grouped?.viewId===viewId ? grouped.propertyId : null} disabled={disabled||loadError} />}
     </div></ViewControls>
+    {viewId && layout === "board" && <>
+      {boardState.pending && <StatusMessage kind="info" title={t("boardLayoutSaving")}/>}
+      {boardState.error && <StatusMessage kind="error" title={t("boardLayoutError")}/>}
+    </>}
     {loading && <StatusMessage kind="info" title={t("propertiesLoading")} />}
     {loadError && <><StatusMessage kind="error" title={t("propertiesLoadError")} />
       <button type="button" className="workspace-button workspace-button--secondary" disabled={disabled || loading} onClick={() => void load()}>{t("propertiesRetry")}</button></>}
@@ -433,10 +437,10 @@ function TextPropertiesContent({ viewId, layout = "table", hideReveal, client, w
       onCommitted={value => { if (accepts(value)) { listVersion.current++; minimumRevision.current = value.revision; setSnapshot(value); setLoading(false); setLoadError(false); } }} />)}
     {draft?.propertyId === null && propertyForm}
     </ContextTools></ViewControls>
-    {draft?.propertyId != null && propertyForm}
+    {layout !== "board" && draft?.propertyId != null && propertyForm}
     {draft?.propertyId && !pending && snapshot?.definitions.find((property) => property.propertyId === draft.propertyId)?.name !== draft.originalName &&
       <StatusMessage kind="info" title={t("propertyExternalChange")} />}
-    {assignmentProperty && <p>{t(filesystemAssignment ? "groupAssignmentFilesystemHint" : "groupAssignmentHint")}</p>}
+    {assignmentProperty && layout !== "board" && <p>{t(filesystemAssignment ? "groupAssignmentFilesystemHint" : "groupAssignmentHint")}</p>}
     <div ref={assignmentStatus} tabIndex={-1} aria-label={t("groupAssignmentChoose")}>
     {assignmentPending && <StatusMessage kind="info" title={t("groupAssignmentSaving")}/>}
     {assignmentMessage && <StatusMessage kind={assignmentMessage === "groupAssignmentSaved" ? "info" : "error"} title={t(assignmentMessage)}/>}
@@ -444,7 +448,6 @@ function TextPropertiesContent({ viewId, layout = "table", hideReveal, client, w
     {message && <StatusMessage kind={message === "propertyValidation" || message === "propertySaveError" ? "error" : "info"} title={t(message)} />}
 
     {grouped?.viewId===viewId && grouped?.groups ? <>
-      {layout === "board" && <div className="board-property-controls">{headers}</div>}
       {grouped.groups.length>0 && grouped.groups.every(group=>group.hidden) && <p role="status">{t("groupAllHidden")}</p>}
       {grouped.groups.length===0 && <p role="status">{t("groupEmpty")}</p>}
       <div className={layout === "board" ? "grouped-board" : "grouped-table"}>
@@ -458,13 +461,14 @@ function TextPropertiesContent({ viewId, layout = "table", hideReveal, client, w
           const command = readGroupDrop(raw, {workspaceId,viewId,propertyId:assignmentProperty.propertyId,archived:!!hideReveal}, group.key);
           if (command) void assign(command);
         }} style={layout === "board" ? {flexBasis:boardColumnWidth(boardState.config, grouped.propertyId, group.key)} : undefined} key={group.key} aria-label={group.value===null?t("groupNoValue"):(group.label ?? String(group.value))}>
-        <h3 className="property-authored">{group.value===null?t("groupNoValue"):(group.label ?? String(group.value))} ({group.projectIds.length})</h3>
+        <div className="project-group-header"><h3 className="property-authored">{group.value===null?t("groupNoValue"):(group.label ?? String(group.value))} ({group.projectIds.length})</h3>
+        {layout === "board" && viewId && <BoardLayoutControls column={group} layoutTrigger={layoutTrigger} state={boardState} fields={fields} groups={null} groupPropertyId={grouped.propertyId} language={language} disabled={disabled || loadError || loading}/>}
+        </div>
         {!group.collapsed && (group.empty ? <p>{t("groupEmpty")}</p> : layout === "board" ? <ul className="project-board" aria-label={t("boardProjects")}>{rows(group.projectIds, group.key)}</ul> :
           <div className="project-table-scroll"><table className="project-table" style={tableStyle}><thead><tr>{headers}</tr></thead><tbody>{rows(group.projectIds, group.key)}</tbody></table></div>)}
       </section>)}
       </div>
     </> : layout === "board" ? <>
-      <div className="board-property-controls">{headers}</div>
       <ul className="project-board" aria-label={t("boardProjects")}>{rows()}</ul>
     </> : <div className="project-table-scroll">
       <table className="project-table" style={tableStyle}>

@@ -108,3 +108,12 @@ copied. Existing pinned Radix Tabs/Dropdown Menu/Popover and Tailwind foundation
 remain in use. Hints deliberately do not install a dismissable layer or consume
 Escape: menus and editors retain dismissal ownership. Existing bb attribution
 and the complete MIT notice remain unchanged.
+
+## Issue 53 contextual Boards
+
+Board settings and per-column width controls reuse the pinned Radix Popover and
+existing semantic desktop tokens from #51/#68. Main's pinned Board supplies the
+horizontal column/header/card composition; the local card/header density uses
+the existing bb-inspired Inter foundation. No new upstream source, icon asset or
+dependency is copied. Typed value editors and view-owned grouping/layout services
+remain the mutation boundaries. See the [implementation handoff](plans/issue-53-contextual-board.md).

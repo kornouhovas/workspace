@@ -754,3 +754,26 @@ p { margin-block: .5rem; }
 .project-table th .property-authored { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-right: 22px; }
 .project-table th .property-rename { position: absolute; top: 6px; right: 36px; }
 .project-table td { padding-block: 4px; }
+
+/* Board: main's column/card composition on the shared bb desktop foundation. */
+.board-layout-controls { margin: 0; }
+.board-layout-controls fieldset { gap: 10px; }
+.board-property-controls { gap: 8px 16px; margin-block: 8px; }
+.board-property-controls > [data-column-id] { display: inline-flex; align-items: center; gap: 4px; min-width: 0; }
+.grouped-board { gap: 16px; padding: 8px 0; align-items: stretch; }
+.grouped-board > .project-group { margin: 0; padding: 0; border: 0; background: transparent; }
+.project-group-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.grouped-board .project-group-header { min-height: 32px; margin-bottom: 6px; }
+.project-group-header h3 { margin: 0; min-width: 0; font-weight: 600; }
+.project-group-header .board-layout-controls { flex-shrink: 0; }
+.project-group-header .presentation-trigger { border: 0; background: transparent; color: var(--muted-foreground); }
+.project-board { gap: 8px; margin: 0; }
+.project-card { position: relative; padding: 12px; background: var(--background); border-radius: var(--radius); font-size: 12px; }
+.project-card > div { margin-block: 6px; }
+.project-card > div::before { font-size: 11px; font-weight: 400; color: var(--muted-foreground); margin-bottom: 2px; }
+.project-card > [data-column-id="name"] { padding-right: 26px; margin-top: 0; font-size: 13px; font-weight: 600; }
+.project-card > [data-column-id="name"]::before, .project-card > .project-card-actions::before { display: none; }
+.project-card > .project-card-actions { position: absolute; top: 6px; right: 6px; margin: 0; }
+.project-card .context-tools-trigger { border: 0; background: transparent; color: var(--muted-foreground); }
+.project-card .text-value-button, .project-card .multi-select-trigger { border: 0; background: transparent; padding: 2px 0; text-align: start; min-height: 24px; }
+.project-card .text-value-button:hover:not(:disabled), .project-card .multi-select-trigger:hover:not(:disabled) { background: var(--muted); }

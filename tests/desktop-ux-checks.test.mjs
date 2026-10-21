@@ -51,3 +51,18 @@ test('Windows category diagnosis is separate from strict acceptance and retains 
   assert.equal(diagnostic.env.WORKSPACE_CATEGORY_QUIT_TRACE,'1');
   assert.ok(diagnostic.if.includes('!cancelled()'));
 });
+
+
+test('Board profile selects scoped real-service and Electron acceptance without installer work',async()=>{
+  const {boardCommands}=await import('../scripts/desktop-ux-checks.mjs');
+  const commands=boardCommands(), text=JSON.stringify(commands);
+  for(const required of ['board-layout-service.test.mjs','view-grouping-service.test.mjs','group-assignment-service.test.mjs','table-layout-ui.test.tsx','smoke-board.mjs','smoke:views']) assert.ok(text.includes(required),required);
+  assert.equal(text.includes('package:'),false);
+  const result=spawnSync(process.execPath,['scripts/desktop-ux-checks.mjs','board','--failure-probe'],{encoding:'utf8'});
+  assert.equal(result.status,23);
+  const {readFile}=await import('node:fs/promises');
+  const {load}=await import('js-yaml');
+  const workflow=load(await readFile('.github/workflows/desktop-ci.yml','utf8'));
+  assert.equal(workflow.on.workflow_dispatch.inputs.desktop_ux_profile.default,'foundation');
+  assert.ok(workflow.jobs['desktop-ux'].steps.some(step=>step.run==='node scripts/desktop-ux-checks.mjs board'));
+});

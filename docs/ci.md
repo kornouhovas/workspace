@@ -997,3 +997,16 @@ backend, ownership and cleanup gates are unchanged. Trace reports are diagnostic
 not acceptance. Omit the trace input for the separate strict category command;
 its passing artifact is required. Preserve the already passed macOS/Windows 2022
 and Windows latest base/rename/views receipts when their inputs remain unchanged.
+
+### Bounded grouped Board acceptance
+
+For #53, `checks: desktop-ux` with `desktop_ux_profile: board` selects the explicit
+`board` profile in `scripts/desktop-ux-checks.mjs`. The default remains `foundation`.
+The Board profile runs type/lint, affected renderer and real SQLite/folder
+service tests, complete Electron Board appearance/interaction captures and the
+retained development saved-view consumer. It runs on the existing three-host
+matrix and uploads `work/issue-53-board` plus saved-view evidence with the exact
+candidate provenance. It does not package unchanged runtime resources or run
+installers; ordinary/full/foundation and release routes retain those checks.
+Use the Board profile without the packaged/category renewal switches. Failed or
+skipped commands remain gates; `--failure-probe` still propagates exit 23.
