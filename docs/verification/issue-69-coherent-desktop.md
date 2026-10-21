@@ -48,8 +48,32 @@ or Windows 11 release evidence.
 | Independent review | Standards 0 findings; Spec 0 slice findings at `6dc5021` | Review explicitly does not accept remaining milestone gates |
 
 Local artifacts are under `work/issue-69/` in the task checkout. Their names and
-existence do not establish passing evidence. Exact-SHA hosted, broad suite,
-package/installer and strict representative-scale gates remain pending.
+existence do not establish passing evidence. The receipts below renew scoped
+hosted boundaries; broad desktop/package and strict scale acceptance remain gates.
+
+## Hosted and completed-candidate receipts
+
+Application/renderer inputs remain unchanged after `6dc5021`; later changes
+repair fixtures/drivers, diagnostic tracing and reports. Passing receipts keep
+their actual SHA rather than being relabelled as a later run.
+
+| Boundary | Actual receipt | Result / limit |
+| --- | --- | --- |
+| Completed-candidate full local suite | `8cb8097`, Node 22.21.1/macOS 27 arm64, `npm run test:all` | 3,270 total, 3,244 pass, zero fail, 26 platform skips; later reviewed test-only repairs renew affected consumers |
+| Original four-file native lifecycle, including fractional clipping and timing/delivery controls | `ebd090ab`, [39659477771](https://github.com/kornouhovas/workspace/actions/runs/39659477771), attempt 1; downloaded logs/provenance on macOS latest, Windows latest, Windows 2022 | 62/62 on each host, normal quit preserved; local macOS 27 negatives remain unexplained |
+| Actual arm64 DMG install/reopen/replacement | `ebd090ab`, [39659054203](https://github.com/kornouhovas/workspace/actions/runs/39659054203), attempt 1, macOS 14.8.9 | Installed bundled backend, exact workspace/source/view/language, EN/RU keyboard/isolation, replacement preserving data, normal exits and cleanup pass |
+| Actual x64 NSIS install/reopen/reinstall/uninstall | `ebd090ab`, [39659356326](https://github.com/kornouhovas/workspace/actions/runs/39659356326), attempt 1, Windows Server 2025/kernel 10.0.26100 | Unicode/space path, independent default APPDATA, data/identity preservation, normal exits, uninstall and cleanup pass; not Windows 11 release evidence |
+| Original strict packaged scale | `ebd090ab`, [39659477806](https://github.com/kornouhovas/workspace/actions/runs/39659477806), attempt 1, macOS 14 + Windows latest | **Failed numerical limits**. Both hosts complete 32 functional scenarios, ten memory samples, four normal quits/backend exits and cleanup. Mac first Table filter 603.2ms; Windows direct/grouped Table edit 344.5/382.8ms and grouped Table assignment 315.4ms exceed 300ms. All other original timings and memory limits pass. |
+
+The macOS diagnostic [39660140707](https://github.com/kornouhovas/workspace/actions/runs/39660140707)
+reproduces first filtering at 529.7ms: mutation/projection IPC approximately
+4–25ms, a roughly 53ms renderer task including 14ms layout, and long idle/frame
+gaps. The first requested frame at +23ms is delivered at about +297ms. This
+locates observed delay, not its ultimate GPU/scheduling cause. The instrumented
+copy completes four backend batches/252 records; its tracing-related memory
+misses do not replace the separate unprofiled memory pass. Additional profiles
+are diagnostic only; no runtime/dependency/scheduling workaround or target
+relaxation is adopted. Full milestone acceptance remains open.
 
 ## Remaining ownership
 

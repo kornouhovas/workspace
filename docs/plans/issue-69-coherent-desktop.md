@@ -283,3 +283,42 @@ and Spec review report zero findings. Renew actual macOS and Windows installer
 consumers, including their installed-workspace driver controls; retain the full
 `8cb8097` suite for unchanged boundaries under test-only evidence reuse. This
 adapter changes neither application/package inputs nor the strict scale harness.
+
+
+## Supported-host renewal and strict numerical gates
+
+At `ebd090ab`, inspected original native run `39659477771`/attempt 1 passes
+62/62 on each supported hosted platform. Both actual installer renewals pass:
+macOS `39659054203`/attempt 1 on 14.8.9 arm64 and Windows `39659356326`/attempt 1
+on Server 2025 x64. Exact-SHA reports, original logs and cleanup are downloaded;
+the acceptance map records their boundaries. Windows 11 release evidence remains
+separate. The macOS heading-driver failure is repaired at its original consumer.
+
+Original strict packaged run `39659477806`/attempt 1 completes all 32 functional
+cases, ten memory samples and four normal quits/backend exits/cleanup on both
+hosts. Mac fails first Table filter at 603.2ms. Windows fails direct/grouped Table
+edit at 344.5/382.8ms and grouped Table assignment at 315.4ms. All exceed the
+unchanged 300ms limit; other original timing and memory limits pass. Do not repeat
+unchanged strict execution or dispatch broad acceptance before its focused repair.
+
+Mac separate diagnostic `39660140707` reproduces filtering at 529.7ms. Mutation
+and projection IPC are about 4–25ms, while renderer CPU has about 53ms work with
+14ms layout and predominantly idle/frame delay. A frame requested at +23ms is
+not delivered until +297ms. Default native and document visibility/focus are true;
+no ultimate GPU/frame-scheduling cause is proved. Four backend batches/252 requests
+complete; diagnostic tracing memory overhead is not a new unprofiled memory miss.
+
+Ranked remaining questions: outstanding native/GPU frame work before the event,
+frame throttling independent of focus, then application render/queue cost not yet
+observed. Existing issue-52 evidence rejected unthrottling for its first-grouping
+failure and resolved preparatory popover GPU work by observing presented operands.
+Retain those results. The current explicit unthrottled comparison targets the new
+first-filter symptom; it never changes strict or application configuration.
+Windows gets its own existing renderer/backend profile for edit/assignment misses.
+
+Enable existing detailed scheduler/compositor/GPU categories for the diagnostic
+first direct Table filter as well as the already traced grouping interval. This
+one-line change does not change a flag, action, preparation, clock, readiness,
+endpoint, deadline or limit. Syntax/lint and seven focused guard controls pass;
+both independent review axes report zero findings. Renew this diagnostic consumer;
+retain actual unchanged native/installer/full-suite inputs and receipts.

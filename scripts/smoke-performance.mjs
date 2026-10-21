@@ -221,7 +221,7 @@ try {
       const expected = (await command("queryView", { viewId, archived: false })).projectIds;
       await ready(expected); activeIds = expected;
       for (let sample = 0; sample < 3; sample++) {
-        const profiler = profileFilters && ((kind === "table" && sample === 0) || (kind === "board" && sample === 1)) ? await startInteractionProfile() : undefined;
+        const profiler = profileFilters && ((kind === "table" && sample === 0) || (kind === "board" && sample === 1)) ? await startInteractionProfile(source.mode === "direct" && kind === "table") : undefined;
         const text = sample % 2 ? "Project 0" : "Project 00";
         // Fixture expectation preparation is outside the user-event clock.
         const ids = expected.filter(id => source.projects.find(p => p.projectId === id).name.includes(text));
