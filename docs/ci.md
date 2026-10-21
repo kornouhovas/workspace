@@ -116,6 +116,7 @@ For #69's retained standalone native termination failures, dispatch
 `desktop-ci.yml` with `checks: native-lifecycle`. The existing workflow calls
 [native-lifecycle.yml](../.github/workflows/native-lifecycle.yml) at the same
 candidate SHA on macOS latest, Windows latest and Windows 2022. It builds once,
+finishes Electron's lazy binary extraction serially with `require('electron')`,
 then runs the original property-editor, view-readiness, deferred-quit and rename
 fixture files concurrently. Original per-scenario deadlines, ownership and
 cleanup assertions remain intact. Exact SHA/run/attempt/platform/kernel evidence

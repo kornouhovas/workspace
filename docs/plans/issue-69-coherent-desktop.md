@@ -157,3 +157,35 @@ supported hosts, via a reusable same-SHA workflow. Preserve provenance and logs,
 normal deadlines and failure propagation. Route guards and the actual exit-23
 pipeline probe pass with 64 selected CI-route tests. Ordinary routes remain
 unchanged; no full milestone acceptance is inferred from this focused route.
+
+## Hosted fixture route diagnosis
+
+Inspected original property run `39653070240`/attempt 1 at `6dc5021`:
+13/13 original property cases pass on macOS 26.6.2 build 25G83, Node 22.21.1.
+Downloaded provenance and original log match run/SHA/platform. This is scoped
+hosted evidence, not a local macOS 27 repair or a complete milestone receipt.
+
+First three-host native route `39655598104`/attempt 1 at `8c71718b` failed:
+macOS 30 pass/13 fail (43 reported tests), Windows latest 33 pass/10 fail
+(43 reported), Windows 2022 58 pass/three fail (61 reported). All failed cases
+are **launch failures**, with two/three lazy Electron downloads per host and
+zero normal-shutdown timeout messages. Unexecuted nested cases are not passes.
+The ordinary runner prepares Electron serially; `npm run build` alone does not
+do that. The newly added route omitted this prerequisite and let workers race
+the same binary extraction. A new route-order regression fails before repair;
+add the same serial `require('electron')` prerequisite without changing fixture
+concurrency, assertions or deadlines. The repaired route/dispatch/pipeline suite
+passes 64/64. Renew only this original failed route on all three failed hosts;
+inspect its artifacts before any broad acceptance dispatch.
+
+Strict local packaged scale at application candidate `6dc5021` is **failed**:
+direct cold startup 5,991.3ms exceeds 5,000ms; first Table filter 354.8ms exceeds
+300ms. Later recorded interactions and scans are within limits, and all seven
+recorded working-set measurements are below 1GB. Three actual application
+shutdown/backend checks and fixture cleanup pass. Grouped Table reset after
+filtered group assignment times out waiting for usable projection: all 1,000
+ordered IDs match, pending count zero, 989 field skeletons remain. A grouped-only
+diagnostic reproduces this without the direct prefix. It is not a strict pass;
+failure screenshot and bounded geometry collection are being used to minimize
+the case. Remaining grouped Board scenarios are unexecuted. Preserve targets,
+original timings and no-replay assertions; no performance acceptance claimed.

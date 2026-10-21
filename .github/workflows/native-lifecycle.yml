@@ -33,6 +33,8 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
+      - name: Prepare Electron before concurrent workers
+        run: node -e "require('electron')"
       - name: Record native fixture provenance
         shell: bash
         run: |

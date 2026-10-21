@@ -18,6 +18,9 @@ test('native lifecycle diagnostics preserve every failed fixture, original concu
   }
   assert.ok(!command.includes('--test-concurrency'), 'Keep the original concurrent failure boundary');
   assert.ok(workflow.jobs.native.steps.some(step => step.run === 'npm run build'));
+  const prepare = workflow.jobs.native.steps.findIndex(step => step.run === 'node -e "require(\'electron\')"');
+  const fixtures = workflow.jobs.native.steps.indexOf(step);
+  assert.ok(prepare >= 0 && prepare < fixtures, 'Finish Electron lazy extraction before concurrent native workers');
   const artifact = workflow.jobs.native.steps.find(step => step.uses === 'actions/upload-artifact@v4');
   assert.equal(artifact.if, 'always()');
   assert.equal(artifact.with['if-no-files-found'], 'error');
