@@ -305,7 +305,7 @@ test("Windows UIA reader validates HWND/process/tab/view/item before reading Sel
   const execute = promisify(execFile);
   const fixture = String.raw`
 Add-Type -AssemblyName UIAutomationClient, UIAutomationTypes
-function Get-Process { param($Id) $script:step = 'process'; if ($Id -ne 456) { throw 'private process' }; return @{ ProcessName = $(if ($mode -eq 'wrong_process') { 'other' } else { 'explorer' }) } }
+function Get-WorkspaceNativeProcessName($processId) { $script:step = 'process'; if ($processId -ne 456) { throw 'private process' }; return $(if ($mode -eq 'wrong_process') { 'other' } else { 'explorer' }) }
 function Get-WorkspaceUiaRoot($handle) { $script:step = 'root'; if ($handle -ne 123) { throw 'private handle' }; return $root }
 $cases = @('selected', 'unselected', 'wrong_handle', 'wrong_process', 'tabs', 'view_absent', 'wrong_view_class', 'wrong_view_type', 'duplicate_views', 'target_absent', 'duplicates', 'offscreen', 'no_pattern', 'read_error')
 foreach ($mode in $cases) {

@@ -1011,3 +1011,30 @@ whether cmdletfirst-use cost is avoidable without dropping a freshness predicate
 No appsource/resourceinputchange. Varianttestredbeforefix;87pass/2platformskip of89
 selectedchecks; lint/docs pass. Only a measuredcopiedhypothesis, notproductionfix
 or permission to claim originalacceptance. Originaltraceoff remainsrequired.
+
+
+Direct-copy `39692600770`, attempt1, at `70e8c79a` passes onXeon8370C/
+kernel10.0.26100.25validspans, originalexit0, verifiedrestoration; processfirst
+7.5ms, root1205ms. Complete native/independentCOM/UIA/restart/twonormalquits/
+cleanup pass onlyin alteredcopy. Differenthosts preclude a causalratio or old
+failure attribution. This supports a scoped first-use process-cmdlet elimination.
+
+Production replaces the same two process-name reads with a shared fresh
+GetProcessById/ProcessName/finallyDispose helper. Every HWND/PID/Explorer/root/tab,
+pre/post item freshness, permit and deadline guard remains; nothing cached.
+Adapt controlledUIAfixture injection to the new lookup, retainingwrongprocess
+rejection. Add actualWindows control that forbidsprocesscmdlet, reads selftwice
+and rejects unavailablePIDs. Temporary generated-copy tools/selectors/tests are
+retired after their completed diagnostic purpose; reports/history remain. No
+product requirement or native safety scenario is retired. Keepdispatch25limit
+regression. DocsCI currentroute corrected afterreview; sourcecode0findings,
+Spec0. Native source/build inputs nowchanged: oldb577strict/installers are not
+currentacceptance. Originaltraceofffirst, thenfreshfullall3/strictboth/installers.
+
+Initial local targeted command omittedtsx and failed importing the TypeScript
+bridge test; this is invocation failure, not native behavior. Lint/typecheckpass.
+Repeat the selected command with its requiredtsx loader before publication.
+
+Corrected targetedtsx command:190total/176pass/14platformskip/0fail;
+lint/typecheck/docs pass. Standards documentation findingresolved,0remaining;
+Spec0. ActualnewWindowsprocesscontrol and originalnativeexecution remainCIgates.

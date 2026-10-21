@@ -184,7 +184,7 @@ function Read-WorkspaceReadyOwner($handle, $trace = $null) {
     if ($handle -isnot [int] -and $handle -isnot [long]) { return $null }
     if ($handle -le 0 -or -not [WorkspaceReadyWindow]::IsWindow([IntPtr]$handle) -or
         [WorkspaceReadyWindow]::GetWindowThreadProcessId([IntPtr]$handle, [ref]$owner) -eq 0 -or
-        $owner -eq 0 -or (Get-Process -Id $owner -ErrorAction Stop).ProcessName -ne 'explorer') { return $null }
+        $owner -eq 0 -or (Get-WorkspaceNativeProcessName $owner) -ne 'explorer') { return $null }
     # The existing exact-HWND guard rejects shared tabbed views. No desktop UIA.
     $binding = Read-WorkspaceUiaWindow $handle $trace
     if ($binding.stage -ne 'verified') { return $null }

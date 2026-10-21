@@ -3,9 +3,11 @@
 Status: **in progress, not accepted or integrated**. [GitHub #69](https://github.com/kornouhovas/workspace/issues/69)
 owns current gates; the [plan](../plans/issue-69-coherent-desktop.md) preserves
 scenario retention, experiments, exact failures and historical receipts.
-Application candidate: `b577cfd2df4026c3f8584ce1880bf90dfd9d87d6`, based on
+Previous application candidate: `b577cfd2df4026c3f8584ce1880bf90dfd9d87d6`, based on
 accepted `86ec752714c860662d4b1da0c25c2e5b71606bff`. Later diagnostic/CI changes
-through `cbbbd263` do not change application inputs.
+through `70e8c79a` do not change application inputs. The subsequent fresh-process
+native repair changes build resources: current original/full/strict/installer
+renewal is required, and the older passing receipts below remain historical.
 
 ## Appearance and references
 

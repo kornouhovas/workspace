@@ -1,3 +1,11 @@
+# Read a fresh process identity without loading the PowerShell process cmdlet.
+# Every guard still performs its own live PID lookup; no identity is cached.
+function Get-WorkspaceNativeProcessName($processId) {
+    $candidate = [Diagnostics.Process]::GetProcessById($processId)
+    try { return $candidate.ProcessName }
+    finally { $candidate.Dispose() }
+}
+
 # Shared read-only exact Explorer HWND/tab guard. Extracted unchanged from
 # scripts/windows-selection-diagnostics.ps1; diagnostic observation stays read-only.
 function Get-WorkspaceUiaRoot($handle) {
@@ -11,7 +19,7 @@ function Read-WorkspaceUiaWindow($handle, $trace = $null) {
     if ($null -ne $trace) { try { [void](& $trace 'uia_properties') } catch { } }
     if ($null -eq $root -or $root.Current.NativeWindowHandle -ne $handle -or
         $root.Current.ControlType -ne [System.Windows.Automation.ControlType]::Window -or
-        (Get-Process -Id $root.Current.ProcessId -ErrorAction Stop).ProcessName -ne 'explorer') {
+        (Get-WorkspaceNativeProcessName $root.Current.ProcessId) -ne 'explorer') {
         return @{ stage = 'wrong_window'; root = $null }
     }
     # A shared HWND cannot prove which of several Explorer tabs owns ItemsView.
