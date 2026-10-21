@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useId, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useId, useMemo, useRef, useState } from "react";
 import type { Language, ServiceResult } from "../../contracts/settings.js";
 import type { SelectOption, TextPropertyMutation } from "../../contracts/text-properties.js";
 import { formatCalendarDate } from "../date-display.js";
@@ -29,13 +29,15 @@ export function TextPropertyCell(props: Props) {
   const button = useRef<HTMLButtonElement>(null);
   const { propertyType = "text", options = [], value, language, disabled } = props;
   const { label, displayValue } = presentation(props);
-  const t = (key: TranslationKey) => translate(language, key);
   useLayoutEffect(() => { if (state.opened && !state.editing) button.current?.focus(); }, [state.editing]);
-  return <div className="text-property-cell" data-color={propertyType === "single_select" ? options.find(option => option.optionId === value)?.color : undefined} aria-busy={state.pending}>
-    <button ref={button} type="button" className="text-value-button" aria-label={label} disabled={disabled} hidden={state.editing}
+  // Snapshot revisions and unrelated pending controls do not change an idle
+  // value button. Editors below still receive every current prop and callback.
+  const valueButton = useMemo(() => <button ref={button} type="button" className="text-value-button" aria-label={label} disabled={disabled} hidden={state.editing}
       onClick={() => setState(current => ({ ...current, opened: true, editing: true, openToken: current.openToken + 1 }))}>
-      {value === null ? t("textValueAbsent") : value === "" ? t("textValueEmpty") : displayValue}
-    </button>
+      {value === null ? translate(language, "textValueAbsent") : value === "" ? translate(language, "textValueEmpty") : displayValue}
+    </button>, [label, disabled, state.editing, value, displayValue, language]);
+  return <div className="text-property-cell" data-color={propertyType === "single_select" ? options.find(option => option.optionId === value)?.color : undefined} aria-busy={state.pending}>
+    {valueButton}
     {state.opened && <EditingTextPropertyCell {...props} openToken={state.openToken} onState={setState} />}
   </div>;
 }

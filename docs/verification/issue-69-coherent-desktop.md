@@ -176,6 +176,19 @@ were inspected without material mismatch. Hosted strict and complete affected
 appearance/coherent acceptance remain required; prior manifest images retain
 their actual older inputs until that renewal.
 
+Original strict `39679072917` at `09faa767` passes all Mac targets, but Windows
+Xeon8573C fails only direct Table assignment310.5ms (grouped282.1ms). All32
+functional results, ten memory samples, four normal exits and cleanup pass on
+both hosts. The required direct-assignment gate remains open.
+
+The next candidate retains only unchanged idle scalar value-button JSX. Editors
+still receive all current props/callbacks. The strengthened real-service UI case
+opens the latest localized/renamed value and verifies Escape focus return;
+87 related UI cases, typecheck/lint, package/artifact and both reviews pass.
+A same-host fixed4x comparison reduces assignment289.3→269.1ms and FunctionCall
+work140.4→127.9ms; the diagnostic completes16observations, two normal exits and
+cleanup. This does not accept original strict or whole-candidate performance.
+
 ## Remaining ownership
 
 #69 owns coherent principal appearance, full acceptance-map completion and the

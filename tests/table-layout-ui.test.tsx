@@ -195,5 +195,12 @@ test('open column tools follow metadata and language changes after a value-only 
   view.rerender(ui('ru'));
   await screen.findByRole('dialog',{name:`${translate('ru','tableColumnSettings')}: Renamed notes`});
   assert.equal(within(popup).getByLabelText(`${translate('ru','tableWidth')}: Renamed notes`),width);
+  await user.keyboard('{Escape}');
+  const edit=screen.getByRole('button',{name:`${translate('ru','editTextValue')}: Alpha / Renamed notes`});
+  await user.click(edit);
+  const editor=await screen.findByRole('textbox',{name:`${translate('ru','editTextValue')}: Alpha / Renamed notes`}) as HTMLTextAreaElement;
+  assert.equal(editor.value,'Changed value');
+  await user.keyboard('{Escape}');
+  assert.equal(document.activeElement,edit);
  }finally{cleanup();service.close();rmSync(directory,{recursive:true,force:true});}
 });

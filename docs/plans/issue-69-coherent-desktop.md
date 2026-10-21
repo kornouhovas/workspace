@@ -730,3 +730,36 @@ Normal quit and asserted cleanup pass. Raw local reports correctly have no
 manually supplied Git SHA; adjacent source-provenance.json records actual
 execution HEAD, full renderer input hashes and the uncommitted source diff.
 Original hosted strict renewal remains required before any broad acceptance.
+
+
+## Separate-border strict renewal and idle value-button work
+
+Original strict `39679072917`, attempt 1, at `09faa767` passes Mac M1 Virtual:
+32 observations, ten memory samples, four normal exits/backend exits, cleanup,
+maximum interaction276.6ms and conservative peak934,215,680bytes. Table
+assignments are213.0/226.5ms. Windows Xeon8573C fails only direct Table filtered
+assignment310.5ms against300ms; grouped assignment282.1ms and every other
+numerical limit pass. Windows also completes all functional/memory/exit/cleanup
+assertions. Both artifact sets are downloaded and inspected. Required direct
+assignment remains open; no unchanged strict retry or broad acceptance follows.
+
+The next isolated optimization retains JSX only for an unchanged idle scalar
+value button. Dependencies cover its actual label, disabled/editing state, raw
+and displayed value and language. The click handler captures only stable React
+state with a functional update. Retained editors remain outside the memo and
+receive every current identity, revision, option and save callback. No custom
+comparator, stale revision, service cache, timing or readiness change.
+
+Extend the existing real-service Table popup preservation case: after value,
+property-name and language updates, close column tools, open the localized cell,
+assert the latest value and Escape focus return. It passes before the production
+change. All87related Table/assignment/filter/viewport/navigation/component and
+Number/Date/Select UI cases pass afterward; typecheck/lint, package/artifact build
+and both independent reviews pass. No new implementation-coupled timer assertion.
+
+Same-host fixed4x diagnostic completes16direct/reopen observations, two normal
+exits and cleanup. Against the computed-equivalent separate-border copy,
+assignment289.3→269.1ms; drop-window FunctionCall140.4→127.9ms (46→38events),
+Paint55.0→53.6ms and Layout11.6→9.0ms. Table edit288.8→292.2ms and grouping
+375.1→380.7ms do not establish improvement. Retain only the bounded reduction
+in assignment work as justification; original hosted strict renewal is required.
