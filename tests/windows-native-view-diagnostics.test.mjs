@@ -259,7 +259,7 @@ function Get-SyntheticElementShape($element, $isItem) {
   return [ordered]@{ fields = $fields; runtimeId = (Get-SyntheticShape $runtimeId);
     runtimeIdValid = (Test-WorkspaceTerminalRuntimeId $runtimeId); available = ($null -ne $read) }
 }
-function Get-Process { param($Id) return @{ ProcessName = $(if ($mode -eq 'wrong_process') { 'other' } else { 'explorer' }) } }
+function Get-WorkspaceNativeProcessName($processId) { if ($processId -ne 456) { throw 'private process' }; return $(if ($mode -eq 'wrong_process') { 'other' } else { 'explorer' }) }
 function Get-WorkspaceUiaRoot($handle) { return $root }
 function Read-WorkspaceTerminalNativeWindow($handle) { return @{ stage = 'verified'; processId = $(if ($mode -eq 'native_pid_mismatch') { 999 } else { 456 }); windowVisible = $true; windowMinimized = $false; windowForeground = $false } }
 $name = [IO.Path]::GetFileName($env:WORKSPACE_OBSERVE_TARGET)

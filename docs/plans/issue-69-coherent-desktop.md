@@ -1038,3 +1038,16 @@ Repeat the selected command with its requiredtsx loader before publication.
 Corrected targetedtsx command:190total/176pass/14platformskip/0fail;
 lint/typecheck/docs pass. Standards documentation findingresolved,0remaining;
 Spec0. ActualnewWindowsprocesscontrol and originalnativeexecution remainCIgates.
+
+
+Originaltraceoff `39693324029`, attempt1, at `299a46be` COMPLETEPASS onEPYC7763/
+kernel10.0.26100: creation/recovery/nativeopen-select-return1/1/1, independent
+COM/UIAagreement, restart, twonormalquits/backendexits and assertedcleanup.
+Actualnewprocessidentitycontrol and249Revealcontrols pass. Overalljobfails only
+terminalUIAcontrolledfixture still overriding oldGetProcess; secondmock was missed
+in reconciliation. Preservefailedtestlog; no productfailure inferred. Adapt that
+fixture to newhelper, retainwrongprocess/nativePID/offscreen/disabled assertions.
+Run onlyoriginalfailedfile+actualprocesscontrol through `native-owner-controls`;
+no appbuild/npmdependency required, strictpipefail andexactSHA/run/attemptupload.
+Source/app stays299a; do not repeatpassed originalnative now. Full/strict/install
+renewal remains behind this focusedfilegate. Source safetyreviews0remain.

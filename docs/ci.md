@@ -1183,3 +1183,14 @@ selection, independent COM/UIA, restart, normal quit and cleanup before broader
 acceptance. Native build inputs changed, so renew required full desktop/package,
 strict performance and installer evidence; prior candidate receipts remain
 historical evidence, not acceptance of the new native revision.
+
+
+After #69 original native `39693324029` passes but its terminal UIA fixture fails,
+`checks: native-owner-controls` renews only the original
+`windows-native-view-diagnostics.test.mjs` and actual
+`windows-process-owner.test.mjs` on Windows latest. Both use Node core and native
+PowerShell resources; no npm install or application build is needed. Strict
+pipefail, normal test exits and always-upload retain exact-SHA/run/attempt
+results. The test-only fixture repair keeps all wrong-owner and terminal-state
+assertions; retain the separate passed original consumer at its application SHA.
+Renew broader acceptance only after this remaining failed file passes.
