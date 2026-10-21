@@ -7,6 +7,7 @@ import {join,resolve} from 'node:path';
 import {_electron} from 'playwright-core';
 import {closeElectron,cleanupOwnedFixture,ownedProcessesStopped} from './runtime-lifecycle.mjs';
 import {openSettingsSection,returnToWorkspace,setInterfaceLanguage} from './runtime-settings.mjs';
+import {usableRuntimeViewProjection} from './runtime-view-readiness.mjs';
 const root=resolve(import.meta.dirname,'..');
 const evidence=resolve(process.env.WORKSPACE_SMOKE_EVIDENCE_DIR??'work/issue-54-navigation');
 await mkdir(evidence,{recursive:true});
@@ -37,6 +38,21 @@ try{
  await call('setNumberValue',{projectId:atlas.projectId,propertyId:number,expression:'10 + 5'});
  await call('setDateValue',{projectId:atlas.projectId,propertyId:date,value:'2026-10-21'});
  await page.reload();
+ const expectedIds=(await call('queryView',{viewId,archived:false})).projectIds;
+ await page.waitForFunction(usableRuntimeViewProjection,expectedIds);
+ await page.waitForFunction(()=>!document.querySelector('.saved-view-content').dataset.scrollRestoring);
+ // Large scrollbar jumps exercise real IntersectionObserver loading, without
+ // materializing fields or focusing controls on behalf of the application.
+ await page.locator('.saved-view-content').evaluate(async content=>{
+  for(const fraction of [1,0,0.5,0,1]) {
+   content.scrollTop=(content.scrollHeight-content.clientHeight)*fraction;
+   await new Promise(resolve=>requestAnimationFrame(resolve));
+  }
+ });
+ await page.waitForFunction(usableRuntimeViewProjection,expectedIds);
+ await page.locator('.saved-view-content').evaluate(content=>{content.scrollTop=0;});
+ await page.waitForFunction(usableRuntimeViewProjection,expectedIds);
+ checks.push('rapid scroll preserves exact ordered identities and all clipped visible fields');
  await page.getByRole('cell',{name:'Atlas',exact:true}).click({position:{x:150,y:10}});
  await page.getByRole('button',{name:'Close preview',exact:true}).click();
  await page.getByRole('button',{name:'Preview project: Atlas',exact:true}).and(page.locator(':focus')).waitFor();

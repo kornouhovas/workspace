@@ -505,3 +505,22 @@ raw file report preserves a mistakenly supplied malformed GITHUB_SHA; a separate
 source-provenance receipt records the error, actual built source and renderer
 hashes. Versioned images/manifest use the verified application inputs and do
 not claim the pending300px application or a passing files runtime.
+
+
+## Native scroll preservation for reduced preload
+
+Extend the existing project-navigation journey with real scrollbar jumps across
+five animation frames, ending at the lower position. Use the existing readonly
+projection predicate to require exact service-derived ordered identities and all
+actually clipped visible field controls, then return to the top and require
+the same invariants. No synthetic observer callback, field materialization,
+focus intervention, deadline or performance-clock change. Original navigation
+scenarios remain intact. The stronger bottom/return version passes locally on
+`65099447`:32ordinary/long capture states, existing focus/scroll/resize/history/
+Board-preview checks, normal quit and asserted cleanup. Lint/docs and both
+independent review axes pass (zero findings). This establishes eventual Table
+readiness, not a frame-latency or1000project/Board performance result. The
+coherent profile will renew the added native journey across three hosts after
+the original strict failed consumer is repaired. Combined performance renewal
+`39669773440` records separate diagnostic and original strict reports on the
+same observed host; only the original unprofiled `--enforce` step accepts limits.
