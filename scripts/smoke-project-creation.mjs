@@ -1,3 +1,4 @@
+import { setRuntimeCaptureViewport } from "./runtime-settings.mjs";
 import { waitForSelectedRuntimeWorkspace, selectRuntimeWorkspace } from "./runtime-settings.mjs";
 import { enterContextFor } from "./runtime-context-tools.mjs";
 import { setInterfaceLanguage } from "./runtime-settings.mjs";
@@ -182,7 +183,7 @@ const labels = {
 };
 async function capture(page, discoveryMode, state) {
   for (const size of [{ width: 1440, height: 960 }, { width: 1024, height: 720 }, { width: 420, height: 800 }]) {
-    await page.setViewportSize(size);
+    await setRuntimeCaptureViewport(page,size);
     assert.equal(await page.evaluate(() => globalThis.document.documentElement.scrollWidth > globalThis.innerWidth), false);
     for (const button of await page.locator(".project-creation button, .creation-review button").all()) {
       const bounds = await button.evaluate(async (node) => {

@@ -1,3 +1,4 @@
+import { setRuntimeCaptureViewport } from "./runtime-settings.mjs";
 import { selectRuntimeWorkspace, waitForWorkspaceNavigation } from "./runtime-settings.mjs";
 import { enterContextFor } from "./runtime-context-tools.mjs";
 import { renameActiveWorkspace } from "./runtime-settings.mjs";
@@ -214,7 +215,7 @@ async function applyFolders(page, language = "en") {
 }
 async function captureDiscovery(page, language, state) {
   for (const size of [{ width: 1440, height: 960 }, { width: 1024, height: 720 }, { width: 420, height: 800 }]) {
-    await page.setViewportSize(size);
+    await setRuntimeCaptureViewport(page,size);
     const { controls, ...overflow } = await measureDiscoveryLayout(page);
     observations.push({ layout: { language, state, width: size.width, ...overflow, controls } });
     if (evidenceDirectory) await page.screenshot({ path: join(evidenceDirectory, `${mode}-${language}-${size.width}-${state}.png`), fullPage: true });
@@ -278,7 +279,7 @@ async function captureLayouts(page, language, name) {
   await openSettingsSection(page, "workspaces");
   const removeLabel = language === "en" ? "Remove workspace" : "Удалить рабочее пространство";
   for (const size of [{ width: 1440, height: 960 }, { width: 1024, height: 720 }, { width: 420, height: 800 }]) {
-    await page.setViewportSize(size);
+    await setRuntimeCaptureViewport(page,size);
     for (const state of ["management", "confirmation"]) {
       if (state === "confirmation") {
         await page.getByRole("button", { name: `${removeLabel}: ${name.trim()}`, exact: true }).click();

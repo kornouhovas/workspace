@@ -905,3 +905,32 @@ Original observer/category environments, collector validation and artifacts are
 retained. Original Ladle/development/package tails and normal failure propagation
 remain. Spec review:0 findings; skip duplicate Windows early native only after
 its focused receipt passes and is inspected. No blanket unchanged platform rerun.
+
+
+Focused `39688465783`, attempt1, at `df6708a6` fails later: creation form
+420px stress bounds right421>420 with expanded220px sidebar. Required desktop
+1024/1440 captures pass, identity/inventory and original Reveal controls pass;
+native/restart stages remain unreached. Normal failure quit/cleanup pass.
+Artifact and screenshot inspected; no native failure claimed. The desktop spec
+requires1024/1440, not an expanded420px mobile client. Retain420px reachability
+stress via real Collapse/Restore, asserting collapsed/discoverable restore and
+expanded state at required desktop widths. No bounds/operation/ownership/data
+assertion removed. Apply the same capture adapter to creation/rename/category
+and base runtime's inherited420px discovery/settings captures; real workspace
+selection restores its sidebar before using entries. No production change.
+Native adapter regression passes53/53 selected tests; lint passes. Original
+local direct after_evidence creation now passes including native invocation,
+restart, normal exits and cleanup (`work/creation-runtime-dev-1792622873682`).
+Renew the changed original Windows consumer before missing-tail continuation.
+
+
+Standards review found one collapsed-settings continuation error: Back and the
+next Settings tabs were hidden after the420px capture. New native regression
+fails with expected Back action/actual null before repair. Shared settings entry,
+return and workspace selection now restore the sidebar through its real action;
+no settings command is skipped. Repeat inventory52/52 and lint pass. New native settings/collapse assertions
+complete, but local macOS27 normal Electron quit hits the preserved10s timeout;
+52pass/1failed of53. Do not label this renewed native execution green. The
+previous original local creation remains its actual passing receipt; current
+native lifecycle acceptance must renew on named CI hosts. Standards re-review:
+0 remaining findings. No timeout/cleanup weakening or unchanged local retry.

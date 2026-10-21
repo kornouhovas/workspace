@@ -1,3 +1,4 @@
+import { setRuntimeCaptureViewport } from "./runtime-settings.mjs";
 import { collectQuitEvidence, installQuitEvidence } from "./runtime-quit-evidence.mjs";
 import { waitForSelectedRuntimeWorkspace, selectRuntimeWorkspace, selectedRuntimeWorkspace } from "./runtime-settings.mjs";
 import { enterContextFor } from "./runtime-context-tools.mjs";
@@ -495,7 +496,7 @@ export async function runProjectCategoryMoveUi(mode = "dev") {
   }
   async function capture(page, language, state) {
     for (const size of [{ width: 1440, height: 960 }, { width: 1024, height: 720 }, { width: 420, height: 800 }]) {
-      await page.setViewportSize(size);
+      await setRuntimeCaptureViewport(page,size);
       const layout = await measureDiscoveryLayout(page);
       assert.equal(layout.document, false); assert.deepEqual(layout.clippedControls, []);
       for (const button of await page.locator(".project-category-move button, .project-category-move select, .category-move-review button").all()) {
