@@ -893,3 +893,15 @@ Renew the original Windows latest early direct command first with the original
 trace environment via existing readiness/native/early route; then selected
 identity/inventory and original Reveal controls. Missing three-host runtime tails
 remain required, retaining individual unchanged passing platform rows above.
+
+
+Driver/inventory repair committed as `df6708a6`; focused original run
+`39688465783`, attempt1, is pending. The explicit missing-tail selector is tested
+red before addition and passes52/52 inventory checks after implementation.
+It preserves the original two-Windows default, adds all three hosts only with
+`all-desktops`, renews failed inventory/new native identity controls, and copies
+the exact full prefix only for the previously unreached Windowslatest host.
+Original observer/category environments, collector validation and artifacts are
+retained. Original Ladle/development/package tails and normal failure propagation
+remain. Spec review:0 findings; skip duplicate Windows early native only after
+its focused receipt passes and is inspected. No blanket unchanged platform rerun.

@@ -32,9 +32,9 @@ on:
         type: boolean
         default: false
       source_runtime_platform:
-        description: With checks=source-runtime, renew only the missing Windows host
+        description: With checks=source-runtime, renew missing runtime tails; all-desktops also renews the missing Windows latest prefix
         type: choice
-        options: [all, windows-latest, windows-2022]
+        options: [all, windows-latest, windows-2022, all-desktops]
         default: all
       recovery_windows_2022:
         description: With checks=issue22-failures, replay the backend recovery file on Windows 2022 and the original macOS runtime
@@ -228,11 +228,11 @@ jobs:
 
   source-runtime:
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.checks == 'source-runtime' }}
-    name: Unreached Windows source acceptance (${{ matrix.os }})
+    name: Unreached source acceptance (${{ matrix.os }})
     strategy:
       fail-fast: false
       matrix:
-        include: ${{ fromJSON(inputs.source_runtime_platform == 'windows-latest' && '[{"os":"windows-latest","artifact":"windows"}]' || inputs.source_runtime_platform == 'windows-2022' && '[{"os":"windows-2022","artifact":"windows-2022"}]' || '[{"os":"windows-latest","artifact":"windows"},{"os":"windows-2022","artifact":"windows-2022"}]') }}
+        include: ${{ fromJSON(inputs.source_runtime_platform == 'all-desktops' && '[{"os":"macos-latest","artifact":"macos"},{"os":"windows-latest","artifact":"windows"},{"os":"windows-2022","artifact":"windows-2022"}]' || inputs.source_runtime_platform == 'windows-latest' && '[{"os":"windows-latest","artifact":"windows"}]' || inputs.source_runtime_platform == 'windows-2022' && '[{"os":"windows-2022","artifact":"windows-2022"}]' || '[{"os":"windows-latest","artifact":"windows"},{"os":"windows-2022","artifact":"windows-2022"}]') }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 60
     steps:
@@ -248,6 +248,78 @@ jobs:
         run: |
           mkdir -p work/ci-runtime-provenance
           node --input-type=module -e 'import { writeFileSync } from "node:fs"; writeFileSync("work/ci-runtime-provenance/provenance.json", JSON.stringify({sha:process.env.GITHUB_SHA,run:process.env.GITHUB_RUN_ID,attempt:process.env.GITHUB_RUN_ATTEMPT,platform:process.platform}) + "\n")'
+      - name: Renew workspace identity and failed CI inventory
+        if: ${{ inputs.source_runtime_platform == 'all-desktops' }}
+        shell: bash
+        run: |
+          set -o pipefail
+          node --test tests/runtime-workspace-identity.test.mjs tests/test-suites.test.mjs 2>&1 | tee work/ci-runtime-provenance/workspace-identity.log
+      - name: Desktop shell EN/RU themes, sidebar, settings and keyboard return
+        if: ${{ inputs.source_runtime_platform == 'all-desktops' && matrix.os == 'windows-latest' }}
+        run: npm run smoke:shell
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-desktop-shell
+      - name: Preserve desktop shell evidence
+        if: ${{ always() && inputs.source_runtime_platform == 'all-desktops' && matrix.os == 'windows-latest' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-48-desktop-shell-${{ matrix.os }}-${{ github.sha }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
+          path: work/ci-desktop-shell
+          if-no-files-found: error
+      - name: Workspace management EN/RU picker, contextual controls and retained sources
+        if: ${{ inputs.source_runtime_platform == 'all-desktops' && matrix.os == 'windows-latest' }}
+        id: workspace_management
+        run: npm run smoke:workspaces
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-workspace-management
+      - name: Preserve workspace management evidence
+        if: ${{ always() && inputs.source_runtime_platform == 'all-desktops' && matrix.os == 'windows-latest' && (steps.workspace_management.outcome == 'success' || steps.workspace_management.outcome == 'failure') }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-49-workspace-management-${{ matrix.os }}-${{ github.sha }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
+          path: work/ci-workspace-management
+          if-no-files-found: error
+      - name: Shared source settings EN/RU review and persistence
+        if: ${{ inputs.source_runtime_platform == 'all-desktops' && matrix.os == 'windows-latest' }}
+        id: source_settings
+        run: npm run smoke:sources
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-source-settings
+      - name: Preserve source settings evidence
+        if: ${{ always() && inputs.source_runtime_platform == 'all-desktops' && matrix.os == 'windows-latest' && (steps.source_settings.outcome == 'success' || steps.source_settings.outcome == 'failure') }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-50-source-settings-${{ matrix.os }}-${{ github.sha }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
+          path: work/ci-source-settings
+          if-no-files-found: error
+      - run: npm run test:platform
+        if: ${{ inputs.source_runtime_platform == 'all-desktops' && matrix.os == 'windows-latest' }}
+        env:
+          OBSERVER_MATRIX: ${{ matrix.os }}
+          WORKSPACE_OBSERVER_CALL_EVIDENCE_DIR: work/ci-observer-full-suite
+          WORKSPACE_CATEGORY_MOVE_SERVICE_EVIDENCE_DIR: work/ci-category-move-full-suite/${{ matrix.os }}-${{ github.sha }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
+      - name: Validate the original full-suite collector document
+        id: observer-call-validation
+        if: ${{ always() && inputs.source_runtime_platform == 'all-desktops' && matrix.os == 'windows-latest' }}
+        run: node scripts/windows-observer-diagnostics.mjs validate-call --output work/ci-observer-full-suite
+        env:
+          OBSERVER_MATRIX: ${{ matrix.os }}
+      - name: Preserve the validated original collector call including failures
+        if: ${{ always() && inputs.source_runtime_platform == 'all-desktops' && matrix.os == 'windows-latest' && steps.observer-call-validation.outcome == 'success' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-19-observer-full-suite-${{ matrix.os }}-${{ github.sha }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
+          path: work/ci-observer-full-suite/collector.json
+          if-no-files-found: error
+          retention-days: 7
+      - name: Preserve sanitized category checkpoints from the original full suite
+        if: ${{ always() && inputs.source_runtime_platform == 'all-desktops' && matrix.os == 'windows-latest' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-19-category-move-full-suite-${{ matrix.os }}-${{ github.sha }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
+          path: work/ci-category-move-full-suite/${{ matrix.os }}-${{ github.sha }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}/*/service-checkpoint.json
+          if-no-files-found: warn
+          retention-days: 7
       - run: npm run build:ladle
       - name: Capture creation/recovery/Reveal layouts
         run: node scripts/smoke-discovery-layouts.mjs --creation
@@ -362,6 +434,7 @@ jobs:
           path: |
             work/ci-creation-*/
             work/ci-runtime-*/
+            work/ci-runtime-provenance/
             work/ci-category-move-layouts/
             work/ci-category-options-*/
             work/ci-archive-*/

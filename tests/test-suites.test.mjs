@@ -1093,7 +1093,7 @@ test('unreached Windows runtime renewal can select only its missing host while p
   const workflow=load(readFileSync('.github/workflows/desktop-ci.yml','utf8'));
   const input=workflow.on.workflow_dispatch.inputs.source_runtime_platform;
   assert.equal(input.default,'all');
-  assert.deepEqual(input.options,['all','windows-latest','windows-2022']);
+  assert.deepEqual(input.options,['all','windows-latest','windows-2022','all-desktops']);
   const job=workflow.jobs['source-runtime'];
   const select=platform=>runInNewContext(job.strategy.matrix.include.slice(3,-2),{fromJSON:JSON.parse,inputs:{source_runtime_platform:platform}});
   for(const platform of [undefined,'all','windows-latest','windows-2022']) {
@@ -1104,7 +1104,8 @@ test('unreached Windows runtime renewal can select only its missing host while p
     assert.ok(commands.includes(`npm run smoke:views -- ${mode}`));
     assert.ok(commands.includes(`npm run smoke:runtime -- ${mode}`));
   }
-  assert.ok(!commands.includes('npm run test:platform')&&!commands.includes('npm test'));
+  assert.ok(!commands.includes('npm test'));
+  assert.match(job.steps.find(step=>step.run==='npm run test:platform').if, /all-desktops.*windows-latest/);
   assert.equal(job.steps.find(step=>step.run==='npm run smoke:runtime -- dev --creation --discovery-mode=direct --checkpoint=after_evidence').if,"${{ matrix.os != 'windows-latest' }}");
 });
 
@@ -1117,4 +1118,33 @@ test('early direct creation renews visible workspace identity and inventory with
   assert.match(job.steps[regression].run, /set -o pipefail/);
   assert.match(job.steps[regression].run, /node --test tests\/runtime-workspace-identity.test.mjs tests\/test-suites.test.mjs/);
   assert.equal(job.steps[regression]['continue-on-error'], undefined);
+});
+
+test('explicit all-desktops continuation renews missing full prefix only on Windows latest', () => {
+  const workflow = load(readFileSync('.github/workflows/desktop-ci.yml', 'utf8'));
+  const job = workflow.jobs['source-runtime'];
+  assert.ok(workflow.on.workflow_dispatch.inputs.source_runtime_platform.options.includes('all-desktops'));
+  const rows = runInNewContext(job.strategy.matrix.include.slice(3,-2), { fromJSON: JSON.parse, inputs: { source_runtime_platform: 'all-desktops' } });
+  assert.deepEqual(Array.from(rows, row => row.os), ['macos-latest', 'windows-latest', 'windows-2022']);
+  const original = workflow.jobs.verify.steps;
+  const prefixCommands = ['npm run smoke:shell', 'npm run smoke:workspaces', 'npm run smoke:sources', 'npm run test:platform'];
+  for (const command of prefixCommands) {
+    const step = job.steps.find(candidate => candidate.run === command);
+    assert.ok(step, command);
+    assert.deepEqual(step.env, original.find(candidate => candidate.run === command).env);
+    for (const platform of ['all', 'windows-latest', 'all-desktops']) for (const os of ['macos-latest', 'windows-latest', 'windows-2022']) {
+      assert.equal(runInNewContext(step.if.slice(3,-2), { inputs: {source_runtime_platform: platform}, matrix: {os} }), platform === 'all-desktops' && os === 'windows-latest');
+    }
+  }
+  const regressions = job.steps.find(step => step.name === 'Renew workspace identity and failed CI inventory');
+  assert.match(regressions.run, /set -o pipefail/);
+  assert.match(regressions.run, /tests\/runtime-workspace-identity.test.mjs tests\/test-suites.test.mjs/);
+  assert.equal(regressions['continue-on-error'], undefined);
+  const validation = job.steps.find(step => step.name === 'Validate the original full-suite collector document');
+  assert.equal(validation.run, original.find(step => step.name === validation.name).run);
+  assert.match(validation.if, /always\(\).*all-desktops.*windows-latest/);
+  const collector = job.steps.find(step => step.name === 'Preserve the validated original collector call including failures');
+  assert.match(collector.if, /always\(\).*all-desktops.*windows-latest.*observer-call-validation.outcome/);
+  assert.equal(collector.with['if-no-files-found'], 'error');
+  assert.ok(job.steps.every(step => step['continue-on-error'] === undefined));
 });

@@ -1142,3 +1142,25 @@ focused consumers and skip the coherent source bundle.
 This profile supplements ordinary `checks: full`, which does not run the
 dedicated appearance/Board/navigation/files journeys. Both are required for
 the coherent milestone; a diagnostic or skipped command does not accept it.
+
+
+### Coherent milestone missing-tail continuation
+
+After #69 full run `39685830877`, `checks: source-runtime` with explicit
+`source_runtime_platform: all-desktops` renews missing Ladle/development/package
+consumers on macOS latest, Windows latest and Windows 2022. Existing `all`
+continues to select only the two Windows hosts; individual-host choices remain.
+The explicit continuation also renews the failed CI inventory and visible
+workspace-identity native regression on all three hosts. Only Windows latest
+runs the previously unreached full shell/workspaces/sources/platform prefix,
+with original observer/category environments, validation and failure artifacts.
+The earlier independent passing platform cases retain their actual provenance.
+
+First renew the original Windows latest early direct-creation command via
+`checks: readiness`, `readiness_reveal_windows: true`,
+`readiness_native_windows: true`, `readiness_native_early: true` and the original
+`readiness_native_trace: true` environment. Inspect its native/exit/cleanup
+artifacts before selecting the continuation; its existing duplicate exclusion
+is unchanged. A selected regression or consumer failure remains a failure;
+unreached tail rows remain gates. This route changes no application/package
+inputs or ordinary full defaults and supplies no release acceptance.
