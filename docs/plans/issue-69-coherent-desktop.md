@@ -646,3 +646,87 @@ timeout; forced owned-process stop and asserted cleanup pass. Preserve that
 failed diagnostic command: it is neither a complete nor a strict native receipt.
 Both review axes report zero findings on the guard. Renew original strict
 consumers; no timing endpoint, callback observation predicate or budget changes.
+
+
+## Visible-row strict renewal and subsequent isolated probes
+
+Original strict `39675697329`, attempt 1, at `1b87e521` passes Mac M1 Virtual
+and fails Windows AMD EPYC 7763 direct/grouped Table filtered assignment at
+343.4/302.7ms against 300ms. Both reports/logs are downloaded and inspected:
+32 functional observations, ten memory samples, four normal application/backend
+exits and asserted cleanup pass on each host. All other timing limits pass.
+The guard's work reduction does not establish closure of the required strict
+gate. Cumulative Standards and Spec reviews against the issue-start base each
+report zero implementation findings. Broad/coherent/installer renewal remains
+behind the focused gate; do not retry unchanged strict inputs for a green host.
+
+Windows renderer/backend diagnostic `39676643141`, attempt 1, at the same SHA
+runs on faster AMD EPYC 9V45, completes all 32 observations/four normal exits/
+cleanup, and does not reproduce the numerical miss: assignments 198.7/174.4ms.
+Direct assignment command is observed at +0.2 to +51.2ms; configuration reads
+at +46.2 to +53.2ms and projection query at +79.2 to +95.2ms. This is bounded
+scheduling evidence, not acceptance or proof of the earlier host's cause.
+
+Reject a one-variable projection `useLayoutEffect` experiment. Same-host fixed4x
+comparison against the visible-row baseline gives assignment 296.4 versus
+292.0ms, grouping 380.1 versus 382.4ms and edit 405.5 versus 391.7ms. The query
+starts at +119 versus +134ms but end-to-end assignment does not improve.
+All 52 related UI tests pass; the diagnostic completes 16 observations, two
+normal exits and cleanup. Restore original effect scheduling. UI tests completed
+during disposable fixture preparation, before the diagnostic measurements.
+
+The next hypothesis is eager construction of closed column-control panels:
+fixed4x drop samples include approximately 4.6ms self/10ms inclusive work in
+TableLayoutControls, while no column popup is open. Extract column computation
+and control JSX into a stable child component mounted by the existing Radix
+Content. Keep the same content lifetime, current props, feedback ownership,
+keys, width-editor lifetime and focus return; no cache or memo comparator.
+All 52 related UI cases, typecheck/lint, package/artifact build and both review
+axes pass. Measured benefit remains pending; do not infer it from the extraction.
+
+
+Reject the closed-panel extraction after its fixed4x diagnostic completes all
+16 observations, two normal exits and cleanup. Assignment is 301.7 versus
+292.0ms, grouping 362.8 versus 382.4ms and edit 386.0 versus 391.7ms. Drop-window
+FunctionCall work is 143.0 versus 141.5ms and Paint 66.3 versus 63.5ms, so the
+predicted net reduction is not established. Restore original TableLayout source;
+retain the passing preservation checks and zero-finding reviews as experiment
+evidence, not acceptance. Current package must be rebuilt after this restoration.
+
+
+Revisit the separate-border hypothesis specifically for the remaining assignment
+boundary, not as the previously rejected explanation of grouping. On the current
+visible-row renderer, the isolated package-copy override completes 16 direct/
+reopen observations, two normal exits and asserted cleanup. Assignment changes
+292.0→289.3ms, grouping 382.4→375.1ms and edit 391.7→288.8ms. Assignment Paint
+63.5→55.0ms repeats the earlier alias candidate's independent 63.3→54.9ms;
+FunctionCall stays approximately 141.5→140.4ms. This establishes bounded paint
+work reduction, not end-to-end closure or a unique cause of the slow Windows
+host. Keep original budgets, event clocks and readiness/exit predicates.
+
+Adopt only separate table borders with zero spacing. Existing cells own only
+bottom/right borders and remove the last right separator; no competing row/
+table borders or rowspans require collapsed-border arbitration. Both review
+axes report zero source findings. All 69 relevant UI cases, typecheck/lint and
+package/artifact build pass. Actual visual geometry and rapid-scroll/navigation
+renewal are running before candidate publication. Shared active/grouped/archived
+and detail surfaces still require affected coherent/broad acceptance; the old
+appearance manifest does not accept the changed CSS.
+
+
+The current CSS candidate's visual-foundation command reaches all 16 populated/
+long and 24 empty variants with original geometry/font/popup assertions, then
+fails the local normal-shutdown deadline. Forced owned-process stop passes;
+report retains stopped=false/cleaned=false, so this is not a passing native
+receipt. Inspected actual ordinary EN light1440 and long RU dark1024 Table
+captures: single separators, aligned headers, wrapping and compact strip remain
+coherent with the pinned references; no material appearance mismatch observed.
+
+The subsequent original navigation command passes all 32 ordinary/long states,
+rapid-scroll exact identities/clipped visible fields, focus/label isolation,
+vertical/horizontal scroll and filtered clamps, expand/return, resize/endpoints,
+collapse/restore, EN/RU, tab close/reopen/reorder, real history and Board preview.
+Normal quit and asserted cleanup pass. Raw local reports correctly have no
+manually supplied Git SHA; adjacent source-provenance.json records actual
+execution HEAD, full renderer input hashes and the uncommitted source diff.
+Original hosted strict renewal remains required before any broad acceptance.

@@ -2,7 +2,7 @@
 
 Status: **in progress, not accepted**. [GitHub #69](https://github.com/kornouhovas/workspace/issues/69)
 owns current CI/integration gates; the [plan](../plans/issue-69-coherent-desktop.md)
-records scenarios and test retention. Application candidate `83be28eaf685dfc7f1fec4e0054dd9d66f629bd0`
+records scenarios and test retention. Application candidate `1b87e5217fcc0e5da26f8ca0dc2472356588aede`
 starts from accepted `86ec752714c860662d4b1da0c25c2e5b71606bff`.
 
 ## Appearance comparison
@@ -64,7 +64,7 @@ Application/renderer inputs remain unchanged from `6dc5021` through `ed2c6feb`;
 intermediate changes repair fixtures/drivers, diagnostic tracing and reports.
 Candidate `af23242d` changes viewport cleanup scheduling. A300px-margin
 experiment was rejected and restored; Table-control memoization was also rejected.
-Current renderer inputs again match `af23242d` exactly. Candidate `83be28ea`
+Renderer inputs through `83be28ea` again match `af23242d` exactly. Candidate `83be28ea`
 additionally indexes complete native-alias buckets during service reconciliation
 and is under renewed verification. Historical receipts keep their actual SHA; they do not alone
 accept that production change.
@@ -97,7 +97,8 @@ preservation test passes before/after; 64 related UI tests, typecheck/lint and
 both review axes pass. The Windows package profile `39667106631` (attempt 1) completes 32 scenarios,
 four normal exits and cleanup. Drop-to-ready callback counts fall from 416/417
 to 45/29; the changed CPU prevents attributing timing differences solely to the
-guard. Original strict `39667534800` is renewing. Full local suite reaches
+guard. Original strict `39667534800` later fails Windows timing limits; its
+negative results are preserved in the plan. Full local suite reaches
 3,275 total: 3,244 pass, five normal-shutdown failures in unchanged standalone
 HTML fixtures, 26 platform skips. No green local full-suite result is claimed.
 Native named-host receipts remain bounded to unchanged fixtures; current broad
@@ -140,7 +141,7 @@ The service/startup input now differs from the old installer receipt, so the
 previous installer-reuse argument alone no longer accepts the current candidate:
 renew both actual installer consumers after focused strict success.
 
-The next candidate skips cleanup scheduling for loaded visible/permanently
+Candidate `1b87e521` skips cleanup scheduling for loaded visible/permanently
 pinned rows. All 65 related UI cases, typecheck, lint, documentation checks and
 both independent reviews pass, including offscreen unpin eviction. Its fixed4x
 diagnostic reduces drop-window animation callbacks from 47 to 9 and assignment
@@ -148,6 +149,32 @@ from 335.7 to 292.0ms, but fails the local normal-shutdown deadline after 15
 direct samples. Forced owned-process stop and cleanup pass. This is a failed
 diagnostic, not strict or complete native acceptance; original strict renewal
 remains required, as does current appearance evidence for the renderer change.
+
+Original strict [39675697329](https://github.com/kornouhovas/workspace/actions/runs/39675697329),
+attempt 1, passes all Mac targets and fails Windows EPYC 7763 direct/grouped
+Table assignment at 343.4/302.7ms against 300ms. Both hosts complete 32 functional
+observations, ten memory samples, four normal application/backend exits and
+asserted cleanup. All other numerical targets pass. The focused gate remains
+open; neither a measured local work reduction nor a faster diagnostic host
+accepts it. Windows diagnostic `39676643141` on EPYC 9V45 completes all scenarios,
+normal exits and cleanup, but does not reproduce the slow-host miss.
+
+Rejected projection-effect and closed-panel experiments are restored, with their
+actual negative comparisons retained in the plan. Cumulative Standards and Spec
+reviews against the issue-start base each report zero implementation findings;
+current full/coherent/package, installer and appearance acceptance remain open.
+
+A pending one-line table CSS candidate uses separate borders and zero spacing.
+Two isolated comparisons show assignment-window Paint reductions 63.3→54.9ms
+and 63.5→55.0ms. This is bounded work reduction, not strict closure. All 69
+related UI cases, typecheck/lint, package/artifact checks and both reviews pass.
+Current navigation passes all 32 states, rapid-scroll/visible-field, width,
+scroll/focus/history checks, normal exit and cleanup. Visual foundation reaches
+16 populated/long and 24 empty variants but **fails** local normal shutdown;
+cleanup remains unverified. Actual EN light1440/long RU dark1024 Table captures
+were inspected without material mismatch. Hosted strict and complete affected
+appearance/coherent acceptance remain required; prior manifest images retain
+their actual older inputs until that renewal.
 
 ## Remaining ownership
 
