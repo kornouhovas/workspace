@@ -1,0 +1,86 @@
+{
+  "base": "86ec752714c860662d4b1da0c25c2e5b71606bff",
+  "candidate": "6dc502147c9ab6f72fa3838e616608bbd8a88128",
+  "main": "080b416c57b2869024ac62363e96b68b40f499c0",
+  "bb": "f135a001e72942cee9118d2693208ec0725e2f18",
+  "note": "Synthetic disposable fixtures. Captures establish appearance only. Failed visual/files shutdowns are not passing runtime receipts. Before capture uses issue-start renderer; corrected captures use candidate renderer.",
+  "images": {
+    "before-table-1024.png": {
+      "source": "visual/ordinary-en-light-1024-table.png",
+      "sha256": "0084e6370e7152f1058a65db275d7d53e5ccd41bb00a958e08b5645411b15bd5"
+    },
+    "table-1440.png": {
+      "source": "visual-corrected/ordinary-en-light-1440-table.png",
+      "sha256": "734ef38624613a22f1a376b94718de02ac5534af9276d210d34a6cf387e388b2"
+    },
+    "long-table-1024.png": {
+      "source": "visual-corrected/long-ru-dark-1024-table.png",
+      "sha256": "ec8a3a01e189810acdc497aac18f8b1790eb0976c544543e4a35f9bf21c6aeea"
+    },
+    "settings-1440.png": {
+      "source": "visual-corrected/ordinary-en-light-1440-settings.png",
+      "sha256": "75d31e5ff89a2315124c9991f856c8697c8028e6bb0739f54701e7c904c406b8"
+    },
+    "board-1024.png": {
+      "source": "board/ordinary-ru-dark-1024.png",
+      "sha256": "4929af01b370af631420d9bc501149f42e5dd621013e61d2498b12eb736983b9"
+    },
+    "preview-tree-1024.png": {
+      "source": "files/preview-ru-dark-1024.png",
+      "sha256": "abf8406609dd1ab72981f1e8333c11feeb7691727fa78f699abf28fd1492649f"
+    },
+    "expanded-tree-1440.png": {
+      "source": "files/expanded-en-light-1440.png",
+      "sha256": "35e49c3d5cb270e545ae3a97d01b3a01f9d6355066f5596b9e433755a2f69977"
+    },
+    "files-error.png": {
+      "source": "files/disappeared.png",
+      "sha256": "d20fff6f7de9ff84fc7349cb7da0ae7ae70ad26232fed910e2e8030821304599"
+    }
+  },
+  "sourceInputs": {
+    "src/renderer/App.tsx": "e86a80365ba5a1e405575e5f46a28f86a9ca668ce9f074ebd0b9fe22825568aa",
+    "src/renderer/components/AreaResize.tsx": "f710895ed4f6a8116000de2f8cdf725ab3c084c0b9944d58d43205ba0fc38a31",
+    "src/renderer/components/BackupPanel.tsx": "826f729285c74667252d244279b9591ae623c2427d6402243c30814a1d5992f2",
+    "src/renderer/components/BoardLayout.tsx": "fa767fafc308f3713d7ff3c9467efda94d30b6b0278de04fce9b84b5d2f83023",
+    "src/renderer/components/CategoryOptionsPanel.tsx": "e16a7742bb962a5f5d04dc995de67ed8a0f0f3ea059612d4d7bd04f2141e8288",
+    "src/renderer/components/CategoryPropertyHeader.tsx": "8787086c023e2602c00ad0440ba2992e15380975242b460dcafac2ebb2b9d226",
+    "src/renderer/components/CategoryRemovalPanel.tsx": "1e8b4bca9fd3e269abf59695523779bad81f4b25bb402e4bc9453a19cbcaef01",
+    "src/renderer/components/ColumnWidth.tsx": "6eed752b06d58b3db65b55c693532650e26694ddc7889f57294a578d48a1f3ad",
+    "src/renderer/components/ContextTools.tsx": "9cc055483d98dabfe3a038d83601900d64710d3cc0859d429ef25adc981adc08",
+    "src/renderer/components/DailyControls.tsx": "580c4d50acf7e5d488c31527c26d646b76ed6af7559cd06ed7fe4415d2a6380d",
+    "src/renderer/components/DataRecoveryPanel.tsx": "c84fe8abb11f021b59b2e7c09de1f891f94190fc4656767d5ebbd0d11e6a1f42",
+    "src/renderer/components/DesktopShell.tsx": "3f03828562d6f92456f05014116a591a1563aa52208fc30072876b21da85fb93",
+    "src/renderer/components/DiscoveryPanel.tsx": "44ff54cc899a55e0a3bec0800f3caf0ffbdb81f7340f52aa0ffbcd841a2fb10b",
+    "src/renderer/components/GroupAssignment.tsx": "e7d442383cb35c8ebe6f26544cf0d987f2376d7abc141bc70411dbc0e5d7b5e1",
+    "src/renderer/components/Hint.tsx": "13cc818939b5d5ee528dc7bbdb37b68827df0903f4dfa89a9cb3e8e327bfc103",
+    "src/renderer/components/Icons.tsx": "4e0bd9683a23f2717425e7c3b65856c15b84416f89aa8415b16749cf00848f8f",
+    "src/renderer/components/ManagementSurface.tsx": "8a9832c4f8c3bd06b8ca0304df5bb36a62cc5b0c0457fcb05bbabd7dc837ef2a",
+    "src/renderer/components/MetadataRemovalPanel.tsx": "ced8fbd4dff1aabc6754a8f5fe5337b82370a513a5388a4d8facb63248d8840d",
+    "src/renderer/components/MultiSelectPropertyCell.tsx": "df9220840620dff4ffc986f58a193ad6b6a5fa65bcd94eb7b2396a20c631c417",
+    "src/renderer/components/PresentationPopover.tsx": "6d01bf1e8f369526669db28000edd30ceb181dbe23f2a44bdf297bd877011a30",
+    "src/renderer/components/ProjectArchivePanel.tsx": "29d9ce3df5850fecdc1f64e7db23eeb0beb74768a175d728e8aee22a7b1c0ea7",
+    "src/renderer/components/ProjectCategoryMovePanel.tsx": "ca2036f39406b9f330e429586b9922a23b6640c8217e7d4490bb858ae7072486",
+    "src/renderer/components/ProjectCreationPanel.tsx": "b608ac0fd2ca5c20dde33be1b6a76c1c1b653aaee5540a11f2028cfdffc0032c",
+    "src/renderer/components/ProjectFiles.tsx": "7eec2541bad186b9ee635f550796a2056e3b31ac5185cfcea4917f4594c66c6e",
+    "src/renderer/components/ProjectNavigation.tsx": "481af5d8e441bab7e9d158cde08a3a91859ab6c0bd0a1c631f2e4a9244d898a7",
+    "src/renderer/components/ProjectRecoveryPanel.tsx": "673dc7ea80f92b8c4960890600c71b50f80f2b637e05e7513f0f508801c9ff6b",
+    "src/renderer/components/ProjectRenamePanel.tsx": "67b208bedc4a6e04a01ff3a60a6bcf3afd734acdb57f7caeca06701e167d1320",
+    "src/renderer/components/ProjectRevealButton.tsx": "ea2122783d445922a66583d50153211bdaacae32571355736a20a04e5c1154cc",
+    "src/renderer/components/SelectOptionsEditor.tsx": "88875298705459c57f89cc9b40794b3f11bde101d44aa80732184ca727410c90",
+    "src/renderer/components/SourceRefresh.tsx": "0a4257a4b8d6d03334ddc10c450b9e66a18e17d208093ccd3f186b2068a92d04",
+    "src/renderer/components/SourceSettings.tsx": "83ff7b082da7af07e0a1fc60160ef57ec35bafa1caab2823307ce10251c4f593",
+    "src/renderer/components/TableLayout.tsx": "aef9b9f9f9f045d407166674c87bc90d9a4d1be0c7ffe9689d1a166bb4db4e05",
+    "src/renderer/components/TextPropertiesTable.tsx": "267d5dafdffa6f360bc6bc1a431a9acdaf165d9c6bca1525a0e3b89dc824d57c",
+    "src/renderer/components/TextPropertyCell.tsx": "b280c5d1700099cfe005d83e1500396ffe5fffb280da280fa4052e6bffc149e5",
+    "src/renderer/components/ViewFilters.tsx": "36f9532e23d04fb1f1c1ef1b634963c8032f46a070d82699fe3545b9858beaf8",
+    "src/renderer/components/ViewGrouping.tsx": "a129b3de042ab14fa7413ed9d93fc53ae3b18cf68db3d980ad3392c0ce84bcc5",
+    "src/renderer/components/ViewportProjectRow.tsx": "1eeee63cd81783e4d8d28a9cfca85183b01144fbfc782c9c58b8d05ffd3fa171",
+    "src/renderer/components/ViewsPanel.tsx": "49b6e54658e08bc4d2f200821cd310890f241650448b1e06973a4eb6d3eb28fc",
+    "src/renderer/components/bb-foundation.stories.tsx": "132dbb4273a554480eab9411ac4ef23f05ef8a318dacfb49d21f9c6a44212a9f",
+    "src/renderer/components/bb-foundation.tsx": "230317bb67b0d4601e6a6eb31ff3b9ef6e9974d7b27585a31cf92795ec37b5f3",
+    "src/renderer/components/desktop-shell.stories.tsx": "8f030dd3d87c632a8023146e222114b9e6b9c81f999cff89b491914479df7c29",
+    "src/renderer/main.tsx": "3f5b437fc55a451d88f4f7a2fa1de2e4b2ff4765ead88bb369d89f9604f26640",
+    "src/renderer/app.css": "43930aea54785d3baea9d536b04c7366afe36e42e4d0339ffcb56410f53ea6db"
+  }
+}

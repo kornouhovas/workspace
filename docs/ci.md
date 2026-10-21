@@ -112,6 +112,19 @@ preparation has its existing 30-second budget; the 1,000-ms keyboard action and
 
 ## Failed Actions loop
 
+For #69's retained standalone native termination failures, dispatch
+`desktop-ci.yml` with `checks: native-lifecycle`. The existing workflow calls
+[native-lifecycle.yml](../.github/workflows/native-lifecycle.yml) at the same
+candidate SHA on macOS latest, Windows latest and Windows 2022. It builds once,
+then runs the original property-editor, view-readiness, deferred-quit and rename
+fixture files concurrently. Original per-scenario deadlines, ownership and
+cleanup assertions remain intact. Exact SHA/run/attempt/platform/kernel evidence
+and the original test log are uploaded even after failure. Ordinary push/PR/full
+routes are unchanged. A source inventory/dispatch guard and an actual exit-23
+pipeline probe verify that the route preserves failure propagation. This focused
+route provides native-boundary evidence; it does not accept #69's appearance,
+package, installation or performance gates.
+
 For issue #41's macOS/Windows development runtimes waiting for offscreen project cells,
 dispatch the desktop workflow with `checks: viewport-runtime`. It runs only
 the three affected platforms, the viewport/rename/category driver regressions and the original

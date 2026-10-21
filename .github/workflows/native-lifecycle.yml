@@ -1,0 +1,53 @@
+name: Desktop native lifecycle
+
+on:
+  workflow_call:
+    inputs:
+      platform:
+        type: string
+        default: all
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: Original native fixtures on supported hosts
+        type: choice
+        options: [all, macos-latest, windows-latest, windows-2022]
+        default: all
+
+permissions:
+  contents: read
+
+jobs:
+  native:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ${{ fromJSON(inputs.platform == 'all' && '["macos-latest","windows-latest","windows-2022"]' || format('["{0}"]', inputs.platform)) }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.21.1
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Record native fixture provenance
+        shell: bash
+        run: |
+          mkdir -p work/ci-native-lifecycle
+          node --input-type=module -e 'import {writeFileSync} from "node:fs"; import {release} from "node:os"; writeFileSync("work/ci-native-lifecycle/provenance.json", JSON.stringify({sha:process.env.GITHUB_SHA,run:process.env.GITHUB_RUN_ID,attempt:process.env.GITHUB_RUN_ATTEMPT,platform:process.platform,kernel:release(),node:process.version}))'
+      - name: Original concurrent native lifecycle fixtures
+        shell: bash
+        run: |
+          set -o pipefail
+          node --import tsx --test tests/property-editor-driver.test.mjs tests/runtime-view-readiness.test.mjs tests/runtime-electron-quit.test.mjs tests/rename-editor-readiness.test.mjs 2>&1 | tee work/ci-native-lifecycle/original.log
+      - name: Preserve original result and provenance
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-lifecycle-${{ matrix.os }}-${{ github.sha }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
+          path: work/ci-native-lifecycle/
+          if-no-files-found: error
+          retention-days: 14

@@ -104,3 +104,56 @@ also failed and is not adopted. A native stack sample and blank-window controls
 are retained locally; symbol coverage is insufficient to name a native cause.
 No normal deadline, deferred-cleanup, ownership or forced-cleanup assertion is
 weakened. Native diagnosis and all remaining milestone evidence remain gates.
+
+## Subsequent observations and focused CI
+
+Original Board and navigation commands passed on the repaired renderer, including
+normal parent/backend exit and asserted cleanup. Board covers 16 populated/long,
+eight empty and eight unavailable states; navigation covers 32 ordinary/long
+preview/expanded states and its scroll/focus/resize/history assertions. The
+original file command reached all 16 real-tree variants, Refresh/disappearance,
+exact Finder selection, exact external TextEdit document and unchanged bytes,
+then failed normal shutdown. Its cleanup was skipped, not counted as passing.
+The [acceptance map](../verification/issue-69-coherent-desktop.md) and eight
+synthetic captures preserve concrete appearance comparison separately.
+
+Independent Standards and Spec reviews of `86ec7527...6dc5021` reported zero
+slice findings and explicitly left milestone gates open. Local packaging and
+resource/license artifact inspection passed with the unchanged application
+runtime inputs. Strict packaged scale measurement is still a separate gate.
+
+Downloaded official Electron 44.7.0 Breakpad symbols; framework module UUID
+`4C4C44BE55553144A1E383408F6C571F0` matches the native samples. Symbolized main
+waits in Chromium `BrowserProcessIOThread::ProcessHostCleanUp` and
+`TaskTracker::CompleteShutdown`; a sampled network child also waits for thread
+pool shutdown, with a newly starting worker in macOS
+`_pthread_set_properties_self`. Other samples include internal Chromium SQLite
+initialization and GPU disk-cache cleanup. These identify where work waits;
+they do not establish the ultimate cause or implicate Workspace's SQLite data.
+
+Finite diagnostic comparisons were rejected rather than adopted:
+
+- Disabling DeclarativePerformanceObserver or shader disk cache separately or
+  together still reproduces shutdown failure.
+- A nonpersistent browser-session minimal control passed three launches, but
+  expanded fixture testing reproduced failure. Temporary fixture edits were
+  reverted; the broader run crossed that reversion and is not a candidate
+  acceptance receipt.
+- Official checksum-verified Electron 44.9.3, selected only through a local
+  executable override, reported 29 tests: 24 pass/five fail. Dependencies remain
+  pinned to 44.7.0; no update is claimed to repair termination.
+- Disabling Thread QoS passed three minimal launches, then original four-file
+  renewal reported 61 tests: 51 pass/10 fail. A separate 320-thread native C QoS
+  start/join control completed in 0.003 seconds. No QoS workaround is adopted.
+
+The source candidate remains free of experimental runtime flags, browser-session
+changes and dependency changes. Raw diagnostic programs/symbols/logs stay under
+ignored `work/issue-69/` and are not shipped.
+
+The original macOS property route at `6dc5021`, run `39653070240`, is queued;
+queueing is not evidence. Add `checks: native-lifecycle` to the existing desktop
+workflow to run the four original native fixture files concurrently on all three
+supported hosts, via a reusable same-SHA workflow. Preserve provenance and logs,
+normal deadlines and failure propagation. Route guards and the actual exit-23
+pipeline probe pass with 64 selected CI-route tests. Ordinary routes remain
+unchanged; no full milestone acceptance is inferred from this focused route.
