@@ -964,3 +964,26 @@ Failure-only terminal inspector is not reached; this does not explain or repair
 prior ownerexpiry. New native/inventory/product/inspector controls87/87 and
 original Reveal controls249/249 pass. Trace-disabled original renewal
 `39690488883`, attempt1, pending on sameharness; inspect before all-desktops tail.
+
+
+Original trace-disabled `39690488883`, attempt1, at `cbbbd263` fails again:
+EPYC9V74/kernel10.0.26100, oneexactparentopen/zero selection, owner_deadline
+at12043ms and native_unavailable receipt. Nativebridge, failurequit and exact
+filemanager/fixturecleanup confirmed. No phase trace by design. Gate remains
+failed; previous diagnostic pass is not a native repair or stable original pass.
+
+Read-only audit narrows the earlier trace: owner→uia_root is3996ms failed versus
+1172ms passed, and includes HWND/PID/Get-Process, not UIA root acquisition itself.
+Root→properties is446ms in pass but never completed before expiry in failure.
+Repeated Add-Type and process-name lookup are measurement candidates, not proven
+removable freshness guards. Do not remove repeated owner/UIA authorization checks.
+
+Add explicit `readiness_native_profile` for a generated-copy diagnostic of the
+same Electron creation consumer. Verify generatedbytes match source, pin exact
+replacementmarkers, retainoriginal/instrumentedhashes, profileonly process lookup,
+assemblyload and FromHandle wall/CPU, cap64fixedscalarrecords, restore+verify
+originalbytes in finally. No source/dependency/package-input modification.
+Originalnativeactions/permit/identity/deadlines and failingexit remain. Defaultoff;
+profilecopies cannotaccept productiontiming or originalnativeexecution. Local
+transformation/drift/route/product/inspector tests86pass/2platformskip of88;
+lint/docs pass. Standards0/Spec0, actualPowerShell execution remains forCIprobe.

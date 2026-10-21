@@ -442,7 +442,7 @@ test('remaining Reveal scope replaces unrelated readiness with the original file
     assert.deepEqual(selected, native === true && early === true ? ['windows-latest'] : ['windows-latest', 'windows-2022']);
   }
   assert.equal(job.strategy['fail-fast'], false);
-  const commands = job.steps.filter(step => step.run && !step.name?.startsWith('Early original') && step.name !== 'Selected workspace identity and CI inventory regressions' && step.name !== 'Record native host provenance without invoking Explorer').map(step => step.run);
+  const commands = job.steps.filter(step => step.run && !step.name?.startsWith('Early original') && step.name !== 'Selected workspace identity and CI inventory regressions' && step.name !== 'Record native host provenance without invoking Explorer' && step.name !== 'Diagnostic generated-copy native owner and UIA read spans').map(step => step.run);
   assert.match(commands[0], /set -o pipefail/);
   assert.match(commands[0], /npm ci --loglevel verbose 2>&1 \| tee work\/ci-focused-windows-reveal\/install.log/);
   assert.equal(commands[1], 'npm run build'); assert.equal(commands.length, 8);
@@ -1147,4 +1147,20 @@ test('explicit all-desktops continuation renews missing full prefix only on Wind
   assert.match(collector.if, /always\(\).*all-desktops.*windows-latest.*observer-call-validation.outcome/);
   assert.equal(collector.with['if-no-files-found'], 'error');
   assert.ok(job.steps.every(step => step['continue-on-error'] === undefined));
+});
+
+
+test('native read profile is explicit and substitutes only diagnostic copied-resource execution', () => {
+ const workflow=load(readFileSync('.github/workflows/desktop-ci.yml','utf8'));
+ assert.equal(workflow.on.workflow_dispatch.inputs.readiness_native_profile.default,false);
+ const steps=workflow.jobs['focused-windows-reveal'].steps;
+ const original=steps.find(step=>step.name==='Early original Windows latest direct creation native evidence');
+ const profile=steps.find(step=>step.name==='Diagnostic generated-copy native owner and UIA read spans');
+ for(const flag of [undefined,false,true]) {
+  const context={cancelled:()=>false,steps:{'reveal-build':{outcome:'success'}},inputs:{readiness_native_windows:true,readiness_native_early:true,readiness_native_profile:flag},matrix:{os:'windows-latest'}};
+  const active=step=>runInNewContext(step.if.slice(3,-2).replaceAll('steps.reveal-build','steps["reveal-build"]'),context);
+  assert.equal(active(original),flag!==true);assert.equal(active(profile),flag===true);
+ }
+ assert.equal(profile.run,'node scripts/profile-native-creation.mjs');
+ assert.equal(profile['continue-on-error'],undefined);
 });

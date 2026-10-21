@@ -52,6 +52,10 @@ on:
         description: With readiness native Windows, reproduce the original layout and creation prefix before the failed command
         type: boolean
         default: false
+      readiness_native_profile:
+        description: With early Windows native readiness, profile read spans in a disposable generated copy (diagnostic only)
+        type: boolean
+        default: false
       readiness_native_early:
         description: With readiness native Windows, run native acceptance before the retained desktop prefix
         type: boolean
@@ -253,7 +257,7 @@ jobs:
         shell: bash
         run: |
           set -o pipefail
-          node --test tests/runtime-workspace-identity.test.mjs tests/test-suites.test.mjs tests/windows-product-diagnostics.test.mjs tests/windows-native-view-diagnostics.test.mjs 2>&1 | tee work/ci-runtime-provenance/workspace-identity.log
+          node --test tests/runtime-workspace-identity.test.mjs tests/test-suites.test.mjs tests/windows-product-diagnostics.test.mjs tests/windows-native-view-diagnostics.test.mjs tests/native-creation-profile.test.mjs 2>&1 | tee work/ci-runtime-provenance/workspace-identity.log
       - name: Desktop shell EN/RU themes, sidebar, settings and keyboard return
         if: ${{ inputs.source_runtime_platform == 'all-desktops' && matrix.os == 'windows-latest' }}
         run: npm run smoke:shell
@@ -1526,8 +1530,13 @@ jobs:
         run: |
           mkdir -p work/ci-focused-windows-reveal/native
           node --input-type=module -e 'import os from "node:os"; import {writeFileSync} from "node:fs"; writeFileSync("work/ci-focused-windows-reveal/native/host.json",JSON.stringify({sha:process.env.GITHUB_SHA,run:process.env.GITHUB_RUN_ID,attempt:process.env.GITHUB_RUN_ATTEMPT,release:os.release(),arch:process.arch,cpu:os.cpus()[0]?.model})+"\n")'
+      - name: Diagnostic generated-copy native owner and UIA read spans
+        if: ${{ !cancelled() && steps.reveal-build.outcome == 'success' && inputs.readiness_native_windows == true && inputs.readiness_native_early == true && matrix.os == 'windows-latest' && inputs.readiness_native_profile == true }}
+        run: node scripts/profile-native-creation.mjs
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-focused-windows-reveal/native-profile
       - name: Early original Windows latest direct creation native evidence
-        if: ${{ !cancelled() && steps.reveal-build.outcome == 'success' && inputs.readiness_native_windows == true && inputs.readiness_native_early == true && matrix.os == 'windows-latest' }}
+        if: ${{ !cancelled() && steps.reveal-build.outcome == 'success' && inputs.readiness_native_windows == true && inputs.readiness_native_early == true && matrix.os == 'windows-latest' && inputs.readiness_native_profile != true }}
         run: npm run smoke:runtime -- dev --creation --discovery-mode=direct --checkpoint=after_evidence
         env:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-focused-windows-reveal/native
@@ -1537,7 +1546,7 @@ jobs:
         shell: bash
         run: |
           set -o pipefail
-          node --test tests/runtime-workspace-identity.test.mjs tests/test-suites.test.mjs tests/windows-product-diagnostics.test.mjs tests/windows-native-view-diagnostics.test.mjs 2>&1 | tee work/ci-focused-windows-reveal/workspace-identity.log
+          node --test tests/runtime-workspace-identity.test.mjs tests/test-suites.test.mjs tests/windows-product-diagnostics.test.mjs tests/windows-native-view-diagnostics.test.mjs tests/native-creation-profile.test.mjs 2>&1 | tee work/ci-focused-windows-reveal/workspace-identity.log
       - name: Original Reveal file including dirty and stable authority controls
         if: ${{ !cancelled() && steps.reveal-build.outcome == 'success' }}
         shell: bash
