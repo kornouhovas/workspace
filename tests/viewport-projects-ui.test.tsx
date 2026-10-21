@@ -66,3 +66,23 @@ test("a busy source retains loaded fields without materializing every offscreen 
     assert.ok(screen.queryByRole("button", {name:"Offscreen editor"}) === null);
   } finally { cleanup(); Reflect.deleteProperty(globalThis,"IntersectionObserver"); }
 });
+
+test("pending completion releases offscreen fields and a newly pinned first row loads without an observer event", async () => {
+  Object.assign(globalThis, { IntersectionObserver: Observer });
+  const ui = (busy: boolean, alwaysVisible = false) => <ul><ViewportProjectRow as="li" projectId="retained" projectName="Retained" language="en" columnCount={1}
+    backwards={{current:false}} busy={busy} alwaysVisible={alwaysVisible}>{() => <button type="button">Retained fields</button>}</ViewportProjectRow></ul>;
+  try {
+    const view = render(ui(true));
+    const row = document.querySelector('[data-project-id="retained"]')!;
+    await act(async () => { notify([{target:row,isIntersecting:true}]); });
+    assert.ok(screen.getByRole("button", {name:"Retained fields"}));
+    await act(async () => { notify([{target:row,isIntersecting:false}]); });
+    assert.ok(screen.getByRole("button", {name:"Retained fields"}), "Pending work pins already loaded fields");
+    view.rerender(ui(false));
+    await waitFor(() => assert.ok(screen.getByRole("button", {name:"Load project fields: Retained"})));
+    assert.equal(screen.queryByRole("button", {name:"Retained fields"}), null);
+    view.rerender(ui(false, true));
+    await waitFor(() => assert.ok(screen.getByRole("button", {name:"Retained fields"})));
+    assert.equal(row.getAttribute("data-fields-ready"), "true");
+  } finally { cleanup(); Reflect.deleteProperty(globalThis,"IntersectionObserver"); }
+});

@@ -384,3 +384,33 @@ The expanded native control passes 4/4 with normal quit; typecheck/lint and both
 independent reviews pass (zero findings). Original event clocks, mutations,
 readiness, paint frames and limits remain untouched. Renew the affected native
 and original strict consumers on this final owner correction before broad CI.
+
+
+## Windows assignment renewal and empty-row cleanup experiment
+
+At `ed2c6feb`, native run `39663902847`/attempt 1 reports 66/66 on all
+three hosts (artifact inspection pending). Original strict run `39663902198`/
+attempt 1 passes Mac: 32 timings, ten memory samples, four normal exits and
+cleanup; first filter 167.2ms, maximum interaction 202.8ms, peak 966,017,024 bytes.
+Windows AMD EPYC 7763 fails direct Table/Board filtered assignment at
+328.7/330.7ms against the unchanged 300ms limit. All functional, memory,
+shutdown and cleanup assertions pass. Preserve this required negative gate;
+broad CI remains pending.
+
+Windows diagnostic `39665545703`/attempt 1 at the same SHA runs on Intel Xeon
+8370C. Direct assignment is 293.3/237.7ms, with Table assignment IPC 87.2ms.
+The combined grouping/assignment traces contain 646/640 fired animation
+callbacks (41.8/35.1ms total). This is different-host diagnostic evidence, not
+strict acceptance or proof that callbacks alone caused the earlier miss.
+
+Test the narrow cleanup hypothesis: identity shells that have never mounted
+fields have nothing to evict. Skip their deferred cleanup frames while retaining
+reconciliation for loaded fields and newly always-visible rows. Observer, focus,
+draft and pending retention predicates stay unchanged. A public UI preservation
+case passes before and after: busy retains loaded offscreen fields, completion
+evicts them, and newly pinning the first row loads it without an observer event.
+After the guard, 64 related viewport/group-assignment/layout/navigation tests,
+typecheck and lint pass. Both independent review axes find no issue. This is an
+unproved performance experiment until the actual packaged profile and original
+strict consumer are renewed. Because application input changed, the final full
+suite and affected native/package/performance evidence must also be renewed.

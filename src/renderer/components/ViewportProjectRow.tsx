@@ -59,10 +59,13 @@ export function ViewportProjectRow({ as: Row, projectId, projectName, language, 
   useEffect(() => {
     // Let modal/operation focus restoration finish before evicting an offscreen
     // row. This schedules rendering cleanup only, never a mutation or retry.
+    // An empty identity shell has no fields to evict. Newly pinned first rows
+    // must still reconcile even before their fields have mounted.
+    if (!rendered && !alwaysVisible) return;
     let second = 0;
     const first = window.requestAnimationFrame(() => { second = window.requestAnimationFrame(() => reconcileRef.current()); });
     return () => { window.cancelAnimationFrame(first); window.cancelAnimationFrame(second); };
-  }, [busy, alwaysVisible]);
+  }, [busy, alwaysVisible, rendered]);
   useLayoutEffect(() => {
     if (!rendered || !focusRequested.current) return;
     focusRequested.current = false;
