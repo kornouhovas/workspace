@@ -1011,15 +1011,18 @@ installers; ordinary/full/foundation and release routes retain those checks.
 Use the Board profile without the packaged/category renewal switches. Failed or
 skipped commands remain gates; `--failure-probe` still propagates exit 23.
 
-Issue #53's local macOS full run on `d3f8ad7` exposed standalone property-creator
-and view-readiness fixture shutdown timeouts after their JavaScript quit receipts.
-Those fixtures do not load the application/CSS and are unchanged from the issue
-base. The two-file concurrent reproduction failed one of 28 scenarios; the same
-28 with file concurrency one passed, retaining the original 10-second shutdown
-bounds. Darwin suite scheduling now gives `property-editor-driver.test.mjs` and
-`runtime-view-readiness.test.mjs` separate exclusive batches before the remaining
-files. Windows keeps its existing category/property batches; Linux is unchanged.
-Coverage/host-mapping and failing-batch propagation regressions require every
-selected file once. This is a concurrency-trigger mitigation, not evidence of the
-underlying native Electron shutdown cause. Preserve original failures and renew
-the complete affected run with this schedule.
+Issue #53's local macOS full renewal on `d3f8ad7` exposed standalone native
+property-creator/view-readiness shutdown failures after JavaScript quit receipts.
+The fixture, transitive helpers, Electron dependency/launch inputs and relevant
+native resources are unchanged from the issue base; these fixtures do not load
+the application/CSS. A two-file parallel reproduction yielded 27 pass/one timeout,
+and the same scenarios serially yielded 28 pass. An experimental Darwin batch
+isolation still failed a view-readiness shutdown diagnostic and an independent
+normal-quit fixture in the full run, so the scheduling change was reverted.
+The native cause remains unresolved; the post-close `app.process()` diagnostic
+can obscure the original error. Preserve every negative and the rejected
+isolation hypothesis in #53's checkpoint. #69 owns resolving/accepting these
+broad-harness gates; passing bounded Board acceptance does not certify a green
+full suite or the coherent-interface milestone. The final scoped code/route
+matches the passing `d3f8ad7` three-host Board receipt; documentation-only
+follow-ups inherit it under the evidence policy above.

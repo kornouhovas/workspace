@@ -34,7 +34,7 @@ export function foundationCommands({ failureProbe = false } = {}) {
 }
 // Bounded Board acceptance retains real service/folder seams and shared focus consumers.
 export const boardTests = [
-  'desktop-ux-checks.test.mjs', 'test-suites.test.mjs', 'runtime-lifecycle.test.mjs', 'context-tools.test.tsx', 'components.test.tsx',
+  'desktop-ux-checks.test.mjs', 'runtime-lifecycle.test.mjs', 'context-tools.test.tsx', 'components.test.tsx',
   'board-layout-ui.test.tsx', 'board-layout-service.test.mjs',
   'view-grouping-ui.test.tsx', 'view-grouping-service.test.mjs',
   'group-assignment-ui.test.tsx', 'group-assignment-service.test.mjs',

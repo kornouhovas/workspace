@@ -122,13 +122,34 @@ changed, final build, full suite and exact-candidate native/CI are renewed; prio
 cancelled/superseded workflow runs do not establish acceptance.
 
 The `d3f8ad7` full renewal exposed 11 standalone native fixture failures (3,190
-passed/26 skipped), retained as negative evidence. The application-independent
-property-creator/view-readiness fixture, lifecycle helper and tests are unchanged
-from the base. A two-file concurrent reproduction yielded 27 pass/one shutdown
-timeout; identical scenarios with file concurrency one yielded 28 pass. Darwin
-now isolates those files before the remaining suite, preserving scenario/deadline
-and cleanup assertions, exact-once coverage and failure propagation. Windows's
-existing isolated batches and Linux selection are unchanged. Both review axes
-accepted the scheduling repair; the Spec reviewer independently passed the three
-registry checks. Native concurrency is the evidenced trigger, not a proven
-underlying Electron cause. Full acceptance is renewed using the new schedule.
+passed/26 skipped). The application-independent fixture, transitive helpers,
+Electron version, launch inputs and native resources match the issue base;
+these tests do not import the application/CSS. A two-file concurrent reproduction
+yielded 27 pass/one shutdown timeout; the same 28 scenarios serially passed.
+Experimental Darwin isolation on `45d5e90` still failed a view-readiness
+shutdown diagnostic and an independent normal-quit fixture (3,199 pass/two fail/
+26 skipped across all batches). Isolation is therefore not a sufficient repair
+and is reverted, including its tests/selector changes. The native cause remains
+unresolved; a post-close `app.process()` error can obscure the initial failure.
+Both review axes accepted reverting this unproven extension and retaining the
+unchanged harness failures separately under the desktop UX matrix. #69 owns
+these broad-harness gates; no full-suite or milestone pass is claimed.
+
+Scoped acceptance on `d3f8ad7`: Actions run 39616533635, attempt 1, Board profile,
+success on macOS latest, Windows latest and Windows 2022. Artifact reports match
+the SHA/profile/host, 16 populated/long screen variants plus eight each empty and
+unavailable variants, saved presentation/keyboard/membership/retry controls,
+28 shared-shell checks and six saved-view scenario groups, with normal shutdown
+and cleanup. The final documentation/reversion follow-up restores code, tests,
+route, dependency and build inputs to this exact scoped candidate. Its runtime
+receipts are inherited explicitly; final tracker checkpoint owns delivery SHA,
+local negative logs and representative-scale diagnostic results.
+
+Representative development diagnostic on the unchanged application inputs:
+1,000 projects/20 properties/10 views per direct and grouped source, 1,000 Name
+groups, successful far-edge column menu/keyboard resize/focus. Observed startup
+2,088.7/1,195.5 ms, menu 90.6/82.2 ms, driver-observed width completion
+309.0/298.3 ms, working-set sums 880,508,928/871,038,976 bytes. These raw local
+numbers are not packaged strict performance acceptance. The unchanged native
+harness negatives and future broad/performance gates have an explicit
+[#69 ownership receipt](https://github.com/kornouhovas/workspace/issues/69#issuecomment-6318741523).

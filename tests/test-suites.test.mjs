@@ -591,7 +591,7 @@ test('ETW and property fixture route retains the exact failed files on their ori
 });
 
 
-test('native fixture batches preserve every selected file exactly once', () => {
+test('Windows utility exit controls have an exclusive batch while every selected file still runs once', () => {
   const control = 'tests/project-category-move-fixture.test.mjs';
   for (const suite of ['all', 'common', 'platform']) {
     const selected = selectTestFiles(files, suite).map(name => `tests/${name}`);
@@ -603,10 +603,6 @@ test('native fixture batches preserve every selected file exactly once', () => {
       if (platform === 'win32' && selected.includes(control)) {
         assert.deepEqual(batches[0], [control]);
         assert.ok(!batches[1].includes(control));
-      } else if(platform==='darwin') {
-        for(const file of ['tests/property-editor-driver.test.mjs','tests/runtime-view-readiness.test.mjs']) {
-          if(selected.includes(file)) assert.ok(batches.some(batch=>batch.length===1 && batch[0]===file));
-        }
       } else assert.deepEqual(batches, [selected]);
     }
   }
@@ -818,13 +814,11 @@ test('Number failure selector isolates Windows latest packaged original and pres
   for(const field of ['github.sha','github.run_id','github.run_attempt'])assert.ok(upload.with.name.includes(field));
 });
 
-test('native creator/readiness fixtures have exclusive host batches without omitting other files', () => {
+test('Windows property creator fixtures run alone before remaining files without changing other platforms', () => {
   const creator='tests/property-editor-driver.test.mjs', other='tests/number-properties-service.test.mjs', category='tests/project-category-move-fixture.test.mjs';
   assert.deepEqual(selectTestBatches([other,creator], 'win32'), [[creator],[other]]);
   assert.deepEqual(selectTestBatches([other,creator,category], 'win32'), [[category],[creator],[other]]);
-  const readiness='tests/runtime-view-readiness.test.mjs';
-  assert.deepEqual(selectTestBatches([other,creator,readiness],'darwin'),[[creator],[readiness],[other]]);
-  assert.deepEqual(selectTestBatches([other,creator],'linux'),[[other,creator]]);
+  for(const platform of ['darwin','linux'])assert.deepEqual(selectTestBatches([other,creator],platform),[[other,creator]]);
 });
 
 test('Windows property fixture selector runs only the failed original on Windows latest', () => {
