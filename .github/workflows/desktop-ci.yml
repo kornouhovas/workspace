@@ -18,6 +18,14 @@ on:
         description: With desktop-ux, renew packaged consumers after unchanged source acceptance
         type: boolean
         default: false
+      desktop_ux_category_only:
+        description: With desktop-ux, renew only failed Windows latest category runtime
+        type: boolean
+        default: false
+      desktop_ux_category_quit_trace:
+        description: With category-only, collect read-only quit phases as diagnostic evidence
+        type: boolean
+        default: false
       source_runtime_platform:
         description: With checks=source-runtime, renew only the missing Windows host
         type: choice
@@ -107,7 +115,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-latest, windows-latest, windows-2022]
+        os: ${{ fromJSON(inputs.desktop_ux_category_only && '["windows-latest"]' || '["macos-latest","windows-latest","windows-2022"]') }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 60
     steps:
@@ -127,11 +135,11 @@ jobs:
         if: ${{ inputs.desktop_ux_failure_probe }}
         run: node scripts/desktop-ux-checks.mjs foundation --failure-probe
       - name: Affected UI, services and real Electron flows
-        if: ${{ !inputs.desktop_ux_failure_probe && !inputs.desktop_ux_packaged_only }}
+        if: ${{ !inputs.desktop_ux_failure_probe && !inputs.desktop_ux_packaged_only && !inputs.desktop_ux_category_only }}
         run: npm run test:desktop-ux
       - name: Packaged renewal adapter regressions
-        if: ${{ inputs.desktop_ux_packaged_only && !inputs.desktop_ux_failure_probe }}
-        run: node --import tsx --test tests/runtime-layout.test.mjs tests/runtime-readiness.test.mjs tests/desktop-ux-checks.test.mjs tests/rename-submission-receipt.test.mjs tests/project-category-move-runtime.test.mjs
+        if: ${{ (inputs.desktop_ux_packaged_only || inputs.desktop_ux_category_only) && !inputs.desktop_ux_failure_probe }}
+        run: node --import tsx --test tests/runtime-layout.test.mjs tests/runtime-readiness.test.mjs tests/desktop-ux-checks.test.mjs tests/rename-submission-receipt.test.mjs tests/project-category-move-runtime.test.mjs tests/runtime-quit-evidence.test.mjs
       - name: Package shared font and notices
         if: ${{ !inputs.desktop_ux_failure_probe }}
         run: npm run package:built
@@ -139,15 +147,29 @@ jobs:
         if: ${{ !inputs.desktop_ux_failure_probe }}
         run: npm run check:artifact -- release
       - name: Packaged saved-view consumers
-        if: ${{ !inputs.desktop_ux_failure_probe }}
+        if: ${{ !inputs.desktop_ux_failure_probe && !inputs.desktop_ux_category_only }}
         run: npm run smoke:views -- release
         env:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-desktop-ux-packaged
       - name: Retained packaged runtime after entry-point repair
-        if: ${{ inputs.desktop_ux_packaged_only && !inputs.desktop_ux_failure_probe }}
+        if: ${{ inputs.desktop_ux_packaged_only && !inputs.desktop_ux_category_only && !inputs.desktop_ux_failure_probe }}
         run: npm run smoke:runtime -- release
         env:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-desktop-ux-base
+      - name: Unchanged native quit controls
+        if: ${{ inputs.desktop_ux_category_only && inputs.desktop_ux_category_quit_trace && !inputs.desktop_ux_failure_probe }}
+        run: node --import tsx --test --test-concurrency=1 tests/property-editor-driver.test.mjs tests/runtime-electron-quit.test.mjs
+      - name: Diagnostic Windows category quit phases
+        if: ${{ !cancelled() && inputs.desktop_ux_category_only && inputs.desktop_ux_category_quit_trace && !inputs.desktop_ux_failure_probe }}
+        run: node scripts/smoke-runtime.mjs release --category-move
+        env:
+          WORKSPACE_CATEGORY_QUIT_TRACE: '1'
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-desktop-ux-category-diagnostic
+      - name: Strict Windows category runtime
+        if: ${{ inputs.desktop_ux_category_only && !inputs.desktop_ux_category_quit_trace && !inputs.desktop_ux_failure_probe }}
+        run: node scripts/smoke-runtime.mjs release --category-move
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-desktop-ux-category-strict
       - name: Preserve exact-candidate UX evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -162,6 +184,7 @@ jobs:
             work/issue-27-views-runtime
             work/ci-desktop-ux-packaged
             work/ci-desktop-ux-base
+            work/ci-desktop-ux-category-*
           if-no-files-found: error
 
   source-runtime:

@@ -1,3 +1,4 @@
+import { collectQuitEvidence, installQuitEvidence } from "./runtime-quit-evidence.mjs";
 import { selectRuntimeWorkspace, selectedRuntimeWorkspace } from "./runtime-settings.mjs";
 import { enterContextFor } from "./runtime-context-tools.mjs";
 import { setInterfaceLanguage } from "./runtime-settings.mjs";
@@ -381,7 +382,7 @@ export async function categoryMoveRuntimeInputs(mode, executablePath) {
       else { assert.equal(entry.isFile(), true); await include(`${path}/${entry.name}`); }
     }
   }
-  for (const path of ["package.json", "package-lock.json", "scripts/smoke-runtime.mjs", "scripts/smoke-project-category-move-ui.mjs", "scripts/category-submission-receipt.mjs", "scripts/runtime-evidence.mjs", "scripts/runtime-project-visibility.mjs", "scripts/runtime-executable.mjs", "scripts/rename-runtime-startup.mjs", "scripts/runtime-startup.mjs", "scripts/runtime-lifecycle.mjs", "scripts/runtime-layout.mjs", "tests/fixtures/project-category-move-crash-worker.mjs", "dist/service/project-rename-filesystem.mjs", "dist/service-test-native/project-rename.node", "dist/desktop/main.cjs", "dist/desktop/preload.cjs", "dist/service/settings.mjs", "dist/service/entry.cjs", "dist/service/discovery-worker.cjs", "node_modules/better-sqlite3/package.json", "node_modules/better-sqlite3/lib/binding.js", `node_modules/better-sqlite3/prebuilds/${process.platform}-${process.arch}.node`]) await include(path);
+  for (const path of ["package.json", "package-lock.json", "scripts/smoke-runtime.mjs", "scripts/smoke-project-category-move-ui.mjs", "scripts/category-submission-receipt.mjs", "scripts/runtime-evidence.mjs", "scripts/runtime-project-visibility.mjs", "scripts/runtime-executable.mjs", "scripts/rename-runtime-startup.mjs", "scripts/runtime-startup.mjs", "scripts/runtime-lifecycle.mjs", "scripts/runtime-layout.mjs", "scripts/runtime-quit-evidence.mjs", "tests/fixtures/project-category-move-crash-worker.mjs", "dist/service/project-rename-filesystem.mjs", "dist/service-test-native/project-rename.node", "dist/desktop/main.cjs", "dist/desktop/preload.cjs", "dist/service/settings.mjs", "dist/service/entry.cjs", "dist/service/discovery-worker.cjs", "node_modules/better-sqlite3/package.json", "node_modules/better-sqlite3/lib/binding.js", `node_modules/better-sqlite3/prebuilds/${process.platform}-${process.arch}.node`]) await include(path);
   for (const path of ["src/contracts", "src/service", "src/desktop", "src/renderer", "dist/renderer", "dist/service/db/migrations", "dist/service/native", "dist/desktop/native"]) await tree(path);
   if (mode === "release") {
     const resources = process.platform === "darwin" ? resolve(dirname(executablePath), "../Resources") : join(dirname(executablePath), "resources");
@@ -397,6 +398,7 @@ export async function categoryMoveRuntimeInputs(mode, executablePath) {
     }
     for (const path of ["app.asar", "app.asar.unpacked", "native"]) await artifact(join(resources, path), `packaged/${path}`);
   }
+  digest.update("quitTrace\0").update(process.env.WORKSPACE_CATEGORY_QUIT_TRACE === "1" ? "1" : "0");
   return { inputs: { mode, platform: process.platform, arch: process.arch, node: process.version,
     sourceRevision: execFileSync("git", ["rev-parse", "HEAD"], { cwd: root, encoding: "utf8" }).trim(), inputDigest: digest.digest("hex") }, hashes };
 }
@@ -411,11 +413,13 @@ export async function runProjectCategoryMoveUi(mode = "dev") {
   await writeFile(join(directory, `${mode}-category-move-inputs.json`), JSON.stringify({ inputs, hashes }, null, 2) + "\n");
   const evidence = createCategoryMoveEvidence(inputs), observations = [], shutdowns = [];
   const ownedProcesses = new Set(), backendPids = new Set();
+  const quitTraces = new WeakMap();
   const fixture = await realpath(await mkdtemp(join(tmpdir(), "workspace-category-move-ui-")));
   let failure, active;
   const save = async () => writeFile(join(directory, `${mode}-category-move-observations.json`), JSON.stringify({
     scope: "grouped production UI/preload/backend moves, rejections and explicit controlled-interruption recovery; final platform acceptance remains separate", inputs,
-    status: failure ? "failed" : evidence.fixtureCleanup.status === "passed" ? "passed" : "pending", evidence, observations, shutdowns,
+    status: failure ? "failed" : evidence.fixtureCleanup.status === "passed" ? (process.env.WORKSPACE_CATEGORY_QUIT_TRACE === "1" ? "diagnostic" : "passed") : "pending",
+    diagnosticQuitTrace:process.env.WORKSPACE_CATEGORY_QUIT_TRACE === "1", evidence, observations, shutdowns,
     ...(failure ? { error: failure.message } : {}),
   }, null, 2) + "\n");
   const saveOperationProof = async (language, stage, proof) => writeFile(join(directory, `${mode}-${language}-${stage}-operation-proof.json`),
@@ -437,13 +441,32 @@ export async function runProjectCategoryMoveUi(mode = "dev") {
       }), { contextIsolation: true, nodeIntegration: false, sandbox: true, userData: data, sessionData: data });
       assert.equal(await page.evaluate(() => typeof process), "undefined"); assert.equal(await page.evaluate(() => typeof require), "undefined");
     });
+    if (process.env.WORKSPACE_CATEGORY_QUIT_TRACE === "1") {
+      const child=startup.current.electron.process();
+      const capture=collectQuitEvidence(child);
+      const trace={capture,debuggerWaiting:false};
+      trace.stderr=bytes=>{trace.debuggerWaiting ||= String(bytes).includes("Waiting for the debugger to disconnect");};
+      child.stderr?.on("data",trace.stderr);
+      quitTraces.set(startup.current.electron,trace);
+      await installQuitEvidence(startup.current.electron);
+    }
     return page;
   }
   async function shutdown() {
     const closing = startup.current; startup.clearCurrent();
     const outcome = { passed: false }; shutdowns.push(outcome);
+    const trace=quitTraces.get(closing.electron),child=closing.electron.process();
+    let probe;
+    if(trace) outcome.quitTrace={beforeDeadline:null};
+    const beforeClose=async()=>{
+      await save();
+      if(trace) probe=setTimeout(()=>{
+        outcome.quitTrace.beforeDeadline={atMs:9000,parentExited:child.exitCode!==null || child.signalCode!==null,
+          phases:trace.capture.record.phases.map(phase=>({...phase})),debuggerWaiting:trace.debuggerWaiting};
+      },9000);
+    };
     try {
-      await closeRuntimeSession(closing.electron, { shutdown: outcome, readBackendPids: startup.readBackendPids, beforeClose: save,
+      await closeRuntimeSession(closing.electron, { shutdown: outcome, readBackendPids: startup.readBackendPids, beforeClose,
         assertBackendsStopped: async pids => {
           for (const pid of pids) await withDeadline((async () => {
             for (let attempt = 0; attempt < 50; attempt++) {
@@ -454,6 +477,13 @@ export async function runProjectCategoryMoveUi(mode = "dev") {
           })(), 5000, "Category move backend exit");
         } });
     } catch (error) { recordCategoryMoveEvidence(evidence, "normalShutdown", { status: "failed", reason: error.message, forcedCleanup: error.forcedCleanup }); throw error; }
+    finally {
+      clearTimeout(probe);
+      if(trace) {
+        outcome.quitTrace.final={...trace.capture.stop(),debuggerWaiting:trace.debuggerWaiting};
+        child.stderr?.removeListener("data",trace.stderr);
+      }
+    }
     await save();
   }
   async function select(page, workspace, language) {

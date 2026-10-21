@@ -984,3 +984,16 @@ receipt. The extra original runtime preserves its source/discovery/editor/recove
 assertions after sidebar/context entry adaptation. The default remains false.
 This route is for renewing that failed boundary, not a substitute for missing
 source acceptance.
+
+For #68's later Windows latest category-runtime shutdown failure,
+`desktop_ux_category_only: true` selects only that host, adapter regressions,
+build/package/assets and the original `release --category-move` command.
+Default platform/source selection is unchanged. With
+`desktop_ux_category_quit_trace: true`, the route runs unchanged blank-HTML and
+deferred-quit controls, then a separately named diagnostic category command even
+if a control fails. The explicit trace only observes finite quit phases, debugger
+waiting and a nine-second parent/phase snapshot; the normal ten-second deadline,
+backend, ownership and cleanup gates are unchanged. Trace reports are diagnostic,
+not acceptance. Omit the trace input for the separate strict category command;
+its passing artifact is required. Preserve the already passed macOS/Windows 2022
+and Windows latest base/rename/views receipts when their inputs remain unchanged.

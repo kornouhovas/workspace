@@ -31,3 +31,23 @@ test('packaged renewal keeps the original reached runtime and defaults to the co
   assert.ok(steps.find(step=>step.run==='npm run test:desktop-ux').if.includes('!inputs.desktop_ux_packaged_only'));
   assert.equal(steps.find(step=>step.name==='Retained packaged runtime after entry-point repair').run,'npm run smoke:runtime -- release');
 });
+
+test('Windows category diagnosis is separate from strict acceptance and retains default platform coverage',async()=>{
+  const {readFile}=await import('node:fs/promises');
+  const {load}=await import('js-yaml');
+  const {runInNewContext}=await import('node:vm');
+  const workflow=load(await readFile('.github/workflows/desktop-ci.yml','utf8'));
+  const inputs=workflow.on.workflow_dispatch.inputs;
+  assert.equal(inputs.desktop_ux_category_only.default,false);
+  assert.equal(inputs.desktop_ux_category_quit_trace.default,false);
+  const job=workflow.jobs['desktop-ux'];
+  const matrix=enabled=>Array.from(runInNewContext(job.strategy.matrix.os.slice(3,-2),{fromJSON:JSON.parse,inputs:{desktop_ux_category_only:enabled}}));
+  assert.deepEqual(matrix(false),['macos-latest','windows-latest','windows-2022']);
+  assert.deepEqual(matrix(true),['windows-latest']);
+  const strict=job.steps.find(step=>step.name==='Strict Windows category runtime');
+  assert.ok(strict.if.includes('!inputs.desktop_ux_category_quit_trace'));
+  assert.equal(strict.env.WORKSPACE_CATEGORY_QUIT_TRACE,undefined);
+  const diagnostic=job.steps.find(step=>step.name==='Diagnostic Windows category quit phases');
+  assert.equal(diagnostic.env.WORKSPACE_CATEGORY_QUIT_TRACE,'1');
+  assert.ok(diagnostic.if.includes('!cancelled()'));
+});

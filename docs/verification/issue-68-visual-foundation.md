@@ -105,3 +105,19 @@ no-replay assertions intact. Its local command advanced through English and
 Russian recovery scenarios before another unchanged shutdown timeout; 34 affected
 regressions passed. Intermediate hosted run `39586711625` was explicitly cancelled
 while completing this local adapter audit, and supplies no acceptance credit.
+
+## Remaining Windows category shutdown investigation
+
+Run [39587188927 / attempt 1](https://github.com/kornouhovas/workspace/actions/runs/39587188927)
+at `dc92467` passed the complete packaged renewal on macOS and Windows 2022.
+Windows latest passed actual packaged views, the general runtime and all graphical
+rename scenarios, then failed normal quit in Russian category interruption
+recovery. Its 10-second timeout and forced cleanup remain a failed result.
+The original artifact lacks quit-phase detail and cannot establish a cause.
+
+A separate, explicit diagnostic records bounded quit phases and debugger state
+without changing quit policy or deadlines. The first local traced category run
+completed; this is observational evidence, not proof of a repair or acceptance.
+The focused Windows-only route retains unchanged native quit controls and a
+separate strict command with tracing off. Current receipts, diagnosis and the
+remaining gate stay in the issue checkpoint; no integration is claimed here.
