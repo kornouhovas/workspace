@@ -52,7 +52,7 @@ Read development's scope, integration, tracker, executor-selection and verificat
 | Project rename | [No-replace rename ADR](adr/0007-no-replace-project-renames.md), Architecture's rename/recovery sections, [rename ticket](specs/workspace-0.1.0-tickets/11-rename-project-folders-without-losing-identity.md) and originating issue |
 | Category move | Architecture's category-move/recovery sections, [move ticket](specs/workspace-0.1.0-tickets/12-move-projects-by-editing-folder-backed-select.md) and originating issue |
 | UI implementation/review | [Reuse adaptation policy](reuse.md#adaptation-policy), affected product/architecture interaction, accessibility, EN/RU and failure/recovery constraints, and the issue's acceptance criteria |
-| Desktop UX correction and delivery | [Desktop spec](specs/workspace-desktop-ux.md), [reference authority](adr/0008-desktop-experience-reference-authority.md), [verification matrix](desktop-ux-verification.md) and originating GitHub issue |
+| Desktop UX correction and delivery | [Desktop spec](specs/workspace-desktop-ux.md), [reference authority](adr/0008-desktop-experience-reference-authority.md), [verification matrix](desktop-ux-verification.md), [post-#52 audit](research/desktop-experience-audit.md) and originating GitHub issue |
 | Design-to-development process | [Primary-source research](research/design-to-development-workflow.md), including concrete handoff, running design review and separate visual/behavior evidence |
 | Issue operations or dependency graph | [Tracker](issue-tracker.md), including native and textual fallback relationships |
 

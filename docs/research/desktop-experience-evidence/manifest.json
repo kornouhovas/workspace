@@ -1,0 +1,33 @@
+{
+  "main": "080b416c57b2869024ac62363e96b68b40f499c0",
+  "acceptedRuntime": "663636be9d58a9b4b47a3fc2ca887291b43ba132",
+  "captureCommit": "859b27af86a2492093a73aab38220aef7bb396d8",
+  "captureDelta": "Documentation only; all application/build inputs identical to acceptedRuntime",
+  "date": "2026-10-21",
+  "platform": "macOS arm64",
+  "node": "22.21.1",
+  "rendererViewport": {
+    "width": 1440,
+    "height": 960
+  },
+  "language": "en",
+  "theme": "light",
+  "fixture": {
+    "workspace": "Operations",
+    "folders": [
+      "Active/Website redesign/docs",
+      "Active/Customer research",
+      "Done/Release notes"
+    ],
+    "textProperty": "Notes",
+    "values": "empty"
+  },
+  "cleanup": "Owned Electron and backend exited; disposable candidate fixture removed",
+  "files": {
+    "main-table-1440.png": "1c5c492c28d04254a19f7662e528895e75f1db3f2a21c57eb1d8bb156d5402ce",
+    "main-board-1440.png": "8276165961e00ebcc8e688452108b769ba89733b768b928d23123fc09efaf405",
+    "accepted-initial-1440.png": "1655668af84f0096b9b4a39071b6b757e1397120e5d810ed7a160233ccee8038",
+    "accepted-table-scrolled-1440.png": "c1eca331a35fcf6e0764fb1395a73dc09741ca7e9f6f3e72e4f091bf1fde1eef",
+    "accepted-board-scrolled-1440.png": "a1700113c227a8a823305768562b2b49e23dd2e679fee91c3a5810ec74059713"
+  }
+}

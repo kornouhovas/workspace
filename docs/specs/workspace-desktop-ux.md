@@ -57,7 +57,7 @@ incrementally. Completing #48–#52's scoped criteria does not, by itself, estab
 a finished visual foundation or leave only minor polish. The next milestone must establish
 the coherent principal interface before detailed editor and recovery work.
 
-1. **Correct the existing foundation after #52.** Capture the accepted #52
+1. **Correct the existing foundation in #68 after #52.** Capture the accepted #52
    integration and pinned references. Complete the shared typography, icons,
    controls and surface treatment; bring existing sidebar, saved-view navigation,
    Table and settings into the accepted composition. Move working management
@@ -67,7 +67,7 @@ the coherent principal interface before detailed editor and recovery work.
    #54 supplies preview, expanded project and retained tabs; #64 supplies the
    real project tree. Use the corrected foundation throughout. Do not substitute
    decorative or dead controls for these journeys.
-3. **Accept the early visual milestone.** Review Table, Board, preview, expanded
+3. **Accept the early visual milestone in #69.** Review Table, Board, preview, expanded
    project and settings together on one candidate. Show ordinary populated data,
    not only stress fixtures. The main composition and bb styling must be
    recognizable across the whole working cycle. Each material mismatch is
@@ -80,7 +80,10 @@ the coherent principal interface before detailed editor and recovery work.
    final visual comparison, supported-platform/package and release evidence.
    The early milestone does not substitute for complete product acceptance.
 
-GitHub records the corrective and milestone issues and their blocking edges.
+GitHub records [corrective foundation #68](https://github.com/kornouhovas/workspace/issues/68)
+and [early milestone #69](https://github.com/kornouhovas/workspace/issues/69),
+including their blocking edges. The [post-#52 audit](../research/desktop-experience-audit.md)
+records the observed gap and evidence.
 Keep #48–#52's historical acceptance intact. Later tickets retain every current
 behavioral requirement; scope transferred into the foundation must be named in
 both issues and covered by evidence rather than implemented twice.
@@ -536,8 +539,8 @@ only for a matching failure while preserving ordinary regression/platform covera
 ## Approved implementation breakdown
 
 The original U01–U20 are issues #48–#67 under [#47](https://github.com/kornouhovas/workspace/issues/47).
-The corrective foundation and early visual acceptance add the milestones above;
-GitHub contains their current issue numbers, scoped acceptance and blocking edges.
+U21 (#68) corrects the existing visual foundation; U22 (#69) accepts the early
+coherent interface. GitHub owns their scoped acceptance and blocking edges.
 Closed issues remain historical evidence. U20 verifies the composed UX01–UX20
 matrix and renewed performance after #41. This versioned contract is not another
 status tracker. An attractive empty shell or isolated checks do not complete this
