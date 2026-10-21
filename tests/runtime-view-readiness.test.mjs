@@ -158,18 +158,31 @@ test("event-to-paint timing includes delayed committed work and excludes later d
       document.querySelector("#save").addEventListener("keydown", () => { globalThis.__workspacePerformanceStarted = performance.now(); }, { once: true });
       document.querySelector("#save").addEventListener("click", () => {
         const content = document.querySelector(".text-properties"); content.setAttribute("aria-busy", "true");
-        setTimeout(() => {
-          content.setAttribute("aria-busy", "false");
-          globalThis.requestAnimationFrame(() => { const until = performance.now() + 80; while (performance.now() < until) { /* controlled renderer work */ } });
-        }, 120);
+        // Arm completion from the first actual readiness observation. A late
+        // host cannot skip the pending phase this control is meant to exercise.
+        const getAttribute = content.getAttribute.bind(content);
+        let armed = false;
+        content.getAttribute = name => {
+          const value = getAttribute(name);
+          if (name === "aria-busy" && value === "true" && !armed) {
+            armed = true;
+            setTimeout(() => {
+              content.setAttribute("aria-busy", "false");
+              globalThis.requestAnimationFrame(() => { const until = performance.now() + 80; while (performance.now() < until) { /* controlled renderer work */ } });
+            }, 120);
+          }
+          return value;
+        };
       });
     });
     await page.getByRole("button", { name: "Apply", exact: true }).press("Enter");
+    await new Promise(done => setTimeout(done, 250)); // Reproduce late host delivery before readiness observation.
     const readyTiming = await waitForRuntimeProjection(page, ["one"], true);
     assert.ok(readyTiming.inspections.length > 0 && readyTiming.inspections.length <= 64);
     assert.ok(readyTiming.inspections.some(item => !item.projectionReady && item.pendingCount > 0));
     assert.ok(readyTiming.inspections.at(-1).projectionReady && readyTiming.inspections.at(-1).endpointReady);
     const before = await readRuntimeInteraction(page, readyTiming);
+    assert.ok(before.initialReadinessMs >= 200, "The observed pending phase and renderer work must precede the first paint");
     await new Promise(done => setTimeout(done, 250)); // Deliberate driver delay after completed renderer work.
     const after = await readRuntimeInteraction(page, readyTiming);
     assert.equal(after.ms, before.ms, "Later driver scheduling must not move the committed-paint endpoint");

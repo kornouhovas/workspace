@@ -224,3 +224,41 @@ and provenance match each host/SHA/run. This validates serial Electron preparati
 on the hosted route; it does not explain or repair local macOS 27 shutdowns.
 Renew the changed readiness file on all hosts and the original strict consumer
 on this helper candidate before claiming its acceptance.
+
+
+## Candidate 8cb8097 and deterministic native controls
+
+The completed-candidate local `npm run test:all` passes: 3,270 reported tests,
+3,244 pass, zero fail, 26 platform skips, Node 22.21.1/macOS 27 arm64.
+The original strict scale renewal reaches 15 direct-source measurements, all
+within numerical limits, but fails the first normal 10-second shutdown before
+reopen/grouped scenarios. Cleanup passes. This is not a strict acceptance pass
+or proof that earlier startup/filter target misses were repaired.
+
+Downloaded run `39657440072`/attempt 1 at `8cb8097`: macOS passes 62/62;
+Windows latest passes 61/62, failing a transient-pending trace assertion after
+late driver observation; Windows 2022 passes 60/62, with one failed operand
+subcase and its parent because a 200ms host deadline beats the real snapshot's
+arrival. Fractional geometry and normal shutdown pass on every hosted case.
+
+Both test races reproduce with controlled 250ms host delay. Gate the fixture's
+120ms pending-completion timer on its first actual readiness observation, keep
+80ms renderer work and all existing assertions, and assert at least 200ms from
+observation to first paint so the injected host delay cannot satisfy coverage.
+For operand classification, collect real read-only Electron snapshots first;
+separate unchanged controlled-clock tests retain timely/late delivery, unknown
+operands, 200ms/default 15s deadlines and single-record cleanup guarantees.
+No application, production helper, clock, deadline or performance target changes.
+Reviewed timing control passes 1/1; operand matrix plus delivery controls pass
+17/17, including normal native shutdown. Typecheck/lint pass. Both review axes
+identified the same timing lower-bound gap; the added observation-relative
+assertion resolves it, with zero remaining findings.
+
+Retain the passing full-suite receipt under the test-only evidence policy and
+renew both changed native fixture files on all three hosts. Do not rerun the
+unchanged full suite solely for these fixture repairs. Installer run
+`39657809047` at `8cb8097` builds/verifies the DMG and passes installed-keyboard
+controls but fails actual installation smoke: the old workspace creation driver
+waits for a now-hidden Workspaces settings heading. The downloaded failure report
+and screenshot retain this negative; installed runtime was launched and owned
+cleanup passed. Diagnose/adapt the original installed journey before renewal.

@@ -157,7 +157,11 @@ test("real Electron operands reject absent, hidden, disabled, unfocused and wron
       await mount(page, "ready");
       await page.evaluate(mutate);
       let evidence;
-      await assert.rejects(waitForRenameEditor(promptObservationPage(page), { timeoutMs: 200, record: value => { evidence = value; } }), /readiness timed out/);
+      // Classify actual Electron operands after their read-only I/O completes.
+      // Timely/late host delivery is exercised separately with a controlled clock
+      // below; runner load must not replace this operand matrix with unknowns.
+      const outcome = await promptObservationPage(page).evaluate(observeRenameEditor, { deadline: 0 });
+      await assert.rejects(waitForRenameEditor({ evaluate: async () => outcome }, { timeoutMs: 200, record: value => { evidence = value; } }), /readiness timed out/);
       assert.equal(evidence.status, "timed_out"); assert.equal(evidence.failure, "timeout");
       assert.equal(evidence.classification, expected);
       for (const observation of [evidence.initial, evidence.final]) {
