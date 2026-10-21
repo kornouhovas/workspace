@@ -17,12 +17,13 @@ async function withPage(run) {
   const app = await _electron.launch({ executablePath: createRequire(import.meta.url)("electron"),
     args: [fileURLToPath(new URL("./fixtures/rename-editor-readiness-electron.cjs", import.meta.url))],
     env: { ...process.env, WORKSPACE_RENAME_EDITOR_PROFILE: profile }, timeout: 10000 });
+  const child = app.process();
   const quitEvents = [];
   let debuggerWait = false;
-  app.process().stdout?.on("data", chunk => {
+  child.stdout?.on("data", chunk => {
     for (const match of String(chunk).matchAll(/\[readiness-quit:(before-quit|will-quit|quit|window-all-closed|node-exit)\]/g)) quitEvents.push(match[1]);
   });
-  app.process().stderr?.on("data", chunk => { debuggerWait ||= String(chunk).includes("Waiting for the debugger to disconnect"); });
+  child.stderr?.on("data", chunk => { debuggerWait ||= String(chunk).includes("Waiting for the debugger to disconnect"); });
   let primary;
   try {
     await app.evaluate(({ app }) => {
@@ -35,9 +36,10 @@ async function withPage(run) {
   } catch (error) { primary = error; }
   try { await closeElectron(app); await rm(profile, { recursive: true, force: true }); }
   catch (error) {
-    error.message += ` ${JSON.stringify({ quitEvents, debuggerWait, exitCode: app.process().exitCode,
-      signaled: app.process().signalCode !== null, forcedCleanup: error.forcedCleanup })}`;
-    primary ??= error;
+    error.message += ` ${JSON.stringify({ quitEvents, debuggerWait, exitCode: child.exitCode,
+      signaled: child.signalCode !== null, forcedCleanup: error.forcedCleanup })}`;
+    if (primary) console.error("Additional view readiness cleanup failure:", error);
+    else primary = error;
   }
   if (primary) throw primary;
 }

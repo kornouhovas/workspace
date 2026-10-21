@@ -1,4 +1,5 @@
 import { ContextTools } from "./ContextTools.js";
+import { DailyControl } from "./DailyControls.js";
 import { useEffect, useId, useRef, useState } from "react";
 import type { Language } from "../../contracts/settings.js";
 import type { CategoryProperty, CategorySummary, ProjectSummary } from "../../contracts/workspaces.js";
@@ -157,14 +158,14 @@ function ArchiveContent({ onPreview, onSnapshot, locationOnly = false, viewId, c
   return <section ref={section} tabIndex={-1} className="project-archive" aria-label={t("archiveTitle")} aria-busy={pending || loading}
     onKeyDown={event => { if (event.key === "Escape" && (review || locationReview || recovery)) { event.preventDefault(); cancel(); } }}>
     {locationOnly && <h3>{t("archiveLocation")}</h3>}
-    {!locationOnly && <div className="workspace-form-actions">{[false, true].map(value => <button type="button" key={String(value)} className="workspace-button workspace-button--secondary" aria-pressed={archived === value}
-      disabled={blocked} onClick={() => changeDraft(() => { setArchived(value); setProjectId(""); setName(""); setCreateParent(false); onViewChange(value); })}>{t(value ? "archiveArchived" : "archiveActive")}</button>)}</div>}
+    {!locationOnly && <DailyControl><div className="workspace-form-actions">{[false, true].map(value => <button type="button" key={String(value)} className="workspace-button workspace-button--secondary" aria-pressed={archived === value}
+      disabled={blocked} onClick={() => changeDraft(() => { setArchived(value); setProjectId(""); setName(""); setCreateParent(false); onViewChange(value); })}>{t(value ? "archiveArchived" : "archiveActive")}</button>)}</div></DailyControl>}
     {loading && <StatusMessage kind="info" title={t("archiveLoading")} />}
     {error && <><StatusMessage kind="error" title={t("archiveError")} /><button type="button" disabled={pending} className="workspace-button workspace-button--secondary" onClick={() => void load()}>{t("propertiesRetry")}</button></>}
     {message && <StatusMessage kind={message === "archiveCompleted" ? "info" : "error"} title={t(message)} />}
     {unknown && <div><button type="button" disabled={pending || disabled} className="workspace-button workspace-button--secondary" onClick={() => void check()}>{t("archiveCheck")}</button>
       {unknown.initial && <button type="button" disabled={pending || disabled} className="workspace-button workspace-button--secondary" onClick={() => void apply(unknown)}>{t("archiveRetryOriginalRequest")}</button>}</div>}
-    <ContextTools label={t("archiveTitle")} compact={!locationOnly} inline={locationOnly} onEscape={event=>{if(review || locationReview || recovery){event.preventDefault();cancel();}}}>
+    <ContextTools label={t("archiveTitle")} compact={!locationOnly} inline={locationOnly} daily={!locationOnly} onEscape={event=>{if(review || locationReview || recovery){event.preventDefault();cancel();}}}>
     <details onToggle={event => { setLocationEditor(event.currentTarget.open); if (event.currentTarget.open) changeDraft(() => setLocation(snapshot?.relativePath ?? "Archive")); }}><summary>{t("archiveLocation")}: {snapshot?.relativePath ?? "Archive"}</summary>
       {locationEditor && <div><p>{t("archiveLocationPolicy")}</p>
       <label className="bb-field"><span>{t("archiveLocation")}</span><input className="bb-input" value={location} disabled={controlsDisabled} onChange={e => changeDraft(() => setLocation(e.currentTarget.value))} /></label>

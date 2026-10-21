@@ -802,6 +802,9 @@ p { margin-block: .5rem; }
 .saved-view-content { min-width: 0; min-height: 0; overflow: auto; display: flex; align-content: start; align-items: center; flex-wrap: wrap; gap: 6px; }
 .saved-view-content > .table-view { flex-basis: 100%; min-width: 0; }
 .saved-view-content > .project-creation { margin: 0; border: 0; padding: 0; }
+.daily-controls:not([hidden]) { display: flex; align-items: center; gap: 4px; flex: 0 0 auto; }
+.daily-controls > .workspace-form-actions { flex-wrap: nowrap; margin: 0; gap: 4px; }
+.saved-view-content > .project-creation:empty, .saved-view-content > .project-archive:empty { display: none; }
 .saved-view-content > .project-archive { display: flex; flex: 1; flex-wrap: wrap; margin: 0; border: 0; padding: 0; gap: 4px; }
 .project-area { display: flex; flex-direction: column; min-width: 0; min-height: 0; background: var(--background); }
 .project-area-header { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-bottom: 1px solid var(--border); flex-shrink: 0; }

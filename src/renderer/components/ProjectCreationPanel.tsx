@@ -1,5 +1,6 @@
 import { ManagementHistory } from "./ManagementSurface.js";
 import { Hint } from "./Hint.js";
+import { DailyControl } from "./DailyControls.js";
 import { Icon } from "./Icons.js";
 import { ContextTools } from "./ContextTools.js";
 import { useEffect, useRef, useState } from "react";
@@ -160,8 +161,8 @@ function CreationContent({ client, workspaceId, sourceId, language, projects, di
   return <section ref={root} tabIndex={-1} className="project-creation" aria-label={t("createProject")} aria-busy={pending} onKeyDown={(event) => {
       if (event.key === "Escape" && (preview || reviewing.current)) { event.preventDefault(); dismissReview(); }
     }}>
-    <Hint label={t("createProject")}><button ref={trigger} type="button" className="workspace-button icon-button" aria-label={t("createProject")} disabled={mutationsDisabled || pending || !available || (projects?.mode === "grouped" && !projects.categories.length)}
-      onClick={() => { setOpen(true); setMessage(null); }}><Icon name="plus"/></button></Hint>
+    <DailyControl><Hint label={t("createProject")}><button ref={trigger} type="button" className="workspace-button icon-button" aria-label={t("createProject")} disabled={mutationsDisabled || pending || !available || (projects?.mode === "grouped" && !projects.categories.length)}
+      onClick={() => { setOpen(true); setMessage(null); }}><Icon name="plus"/></button></Hint></DailyControl>
 
     {open && projects?.configured && !available && <p>{t("creationUnavailable")}</p>}
 

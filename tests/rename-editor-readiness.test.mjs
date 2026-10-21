@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
-import { withDeadline } from "../scripts/runtime-lifecycle.mjs";
+import { closeElectron, withDeadline } from "../scripts/runtime-lifecycle.mjs";
 import { _electron } from "playwright-core";
 import { fillExactRenameDraft } from "../scripts/smoke-project-rename-ui.mjs";
 import { observeRenameEditor, waitForRenameEditor } from "../scripts/rename-editor-readiness.mjs";
@@ -42,7 +42,7 @@ async function withPage(run, removeProfile = rm, controlLoad = false) {
   }
   catch (error) { failed = true; primary = error; }
   try {
-    await app.close();
+    await closeElectron(app);
     assert.ok(child.exitCode !== null || child.signalCode !== null, "Fixture must exit before profile removal");
     await removeProfile(profile, { recursive: true, force: true });
   } catch (error) {

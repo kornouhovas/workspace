@@ -26,6 +26,25 @@ function fixture() {
   const api = {onBackendStatus:()=>()=>{}, workspace: async (input: {type:string}) => /workspace\.(list|get|query)/.test(input.type) ? service.handleQuery(input) : service.handleCommand(input), onWorkspaceChange:service.workspaces.subscribe};
   return {api, service, workspace, client:new WorkspaceServiceClient(api as unknown as WorkspaceDesktopApi), dispose(){cleanup();service.close();rmSync(directory,{recursive:true,force:true});}};
 }
+test("daily commands share the view strip and retain source-tools focus across project expansion", async () => {
+  const f=fixture(), user=userEvent.setup({document});
+  try {
+    render(<DiscoveryWorkspace client={f.client} workspaceId={f.workspace.workspaceId} sourceId={f.workspace.sourceId} language="en" disabled={false}/>);
+    const views=await screen.findByRole("region",{name:"Views"});
+    const source=await within(views).findByRole("button",{name:"Source tools"});
+    await within(views).findByRole("button",{name:"Create project folder"});
+    await within(views).findByRole("button",{name:"Archived"});
+    await user.click(source);
+    await screen.findByRole("dialog",{name:"Source tools"});
+    await user.keyboard("{Escape}");
+    assert.equal(document.activeElement,source);
+    await user.click(await screen.findByRole("button",{name:"Preview project: Atlas"}));
+    await user.click(screen.getByRole("button",{name:"Expand project"}));
+    assert.equal(screen.queryByRole("button",{name:"Source tools"}),null);
+    await user.click(screen.getByRole("button",{name:"Return project to the right"}));
+    assert.equal(within(views).getByRole("button",{name:"Source tools"}),source);
+  } finally {f.dispose();}
+});
 test("row preview replaces the previous project, expands uniquely and returns to its saved view", async () => {
   const f=fixture(), user=userEvent.setup({document});
   try {

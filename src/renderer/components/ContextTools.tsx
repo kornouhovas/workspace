@@ -1,9 +1,10 @@
 import { useEffect, useLayoutEffect, useRef, useState, useId, type ReactNode } from "react";
 import { Hint } from "./Hint.js";
 import { Icon } from "./Icons.js";
+import { DailyControl } from "./DailyControls.js";
 /** Nonmodal tools keep controllers mounted, including drafts and pending receipts. */
-export function ContextTools({label,children,icon="more",compact=false,disabled=false,onEscape,inline=false,open:controlledOpen,onOpenChange}: {
-  open?:boolean;onOpenChange?(open:boolean):void;label:string;children:ReactNode;icon?:"more"|"properties"|"settings";compact?:boolean;disabled?:boolean;inline?:boolean;onEscape?(event: { preventDefault(): void; readonly defaultPrevented: boolean }):void;
+export function ContextTools({label,children,icon="more",compact=false,disabled=false,onEscape,inline=false,daily=false,open:controlledOpen,onOpenChange}: {
+  open?:boolean;onOpenChange?(open:boolean):void;label:string;children:ReactNode;icon?:"more"|"properties"|"settings";compact?:boolean;disabled?:boolean;inline?:boolean;daily?:boolean;onEscape?(event: { preventDefault(): void; readonly defaultPrevented: boolean }):void;
 }) {
   const [localOpen,setLocalOpen]=useState(false);
   const open=controlledOpen ?? localOpen;
@@ -55,10 +56,11 @@ export function ContextTools({label,children,icon="more",compact=false,disabled=
     return ()=>{document.removeEventListener("pointerdown",outside);document.removeEventListener("keydown",escape);document.removeEventListener("click",command);};
   },[open]);
   if(inline) return <div className="context-tools-inline">{children}</div>;
-  return <>
-    <Hint label={label}><button id={triggerId} ref={trigger} type="button" className={`workspace-button workspace-button--secondary context-tools-trigger${compact ? " icon-button" : ""}`} disabled={disabled} aria-label={label} aria-expanded={open} aria-controls={`${triggerId}-tools`} aria-haspopup="dialog" onClick={()=>setOpen(!open)}>
+  const entry=<Hint label={label}><button id={triggerId} ref={trigger} type="button" className={`workspace-button workspace-button--secondary context-tools-trigger${compact ? " icon-button" : ""}`} disabled={disabled} aria-label={label} aria-expanded={open} aria-controls={`${triggerId}-tools`} aria-haspopup="dialog" onClick={()=>setOpen(!open)}>
       <Icon name={icon}/>{!compact && <span>{label}</span>}
-    </button></Hint>
+    </button></Hint>;
+  return <>
+    {daily ? <DailyControl>{entry}</DailyControl> : entry}
     <div id={`${triggerId}-tools`} ref={panel} hidden={!open} role="dialog" tabIndex={-1} className="contextual-panel context-tools-panel" data-context-return={triggerId} aria-label={label} style={position}
       >
       <h3>{label}</h3>{children}

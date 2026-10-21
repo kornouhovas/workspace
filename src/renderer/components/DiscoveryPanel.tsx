@@ -1,4 +1,5 @@
 import { ProjectFiles } from "./ProjectFiles.js";
+import { DailyControlsSurface, DailyControlsTarget } from "./DailyControls.js";
 import { useViewScroll } from "./useViewScroll.js";
 import type { ArchiveSnapshot } from "../../contracts/project-archive.js";
 import { ProjectTabs, useProjectNavigation, navigationLabels, type NavigationMemory } from "./ProjectNavigation.js";
@@ -434,16 +435,16 @@ export function DiscoveryWorkspace({ memory, client, workspaceId, sourceId, refr
   const knownNames = useRef(memory?.names ?? new Map<string,string>());
   for(const project of [...(projects?.projects ?? []),...(projects?.retainedProjects ?? []),...(archiveSnapshot?.projects ?? [])]) knownNames.current.set(project.projectId,project.name);
   const projectName = (id:string)=>knownNames.current.get(id) ?? id;
-  return <ManagementSurface><div className={`daily-workspace project-navigation${navigation.expanded ? " project-navigation--expanded" : ""}`}>
+  return <DailyControlsSurface><ManagementSurface><div className={`daily-workspace project-navigation${navigation.expanded ? " project-navigation--expanded" : ""}`}>
 
     {sourceStatus}
     <ViewsPanel onWillLoad={scroll.suspend} projectActive={!!navigation.expanded} onSelectView={()=>{saveScroll();navigation.selectView();}}
       projectTabs={<ProjectTabs session={navigation} language={language} name={projectName} disabled={disabled}/>}
-      tools={projects?.configured ? <ViewToolsTarget label={t("viewSettings")} hidden={showArchived && !archiveHasProjects} /> : undefined} panelId={`${showArchived ? "archived" : "active"}-view-panel-${workspaceId}`} client={client} workspaceId={workspaceId} language={language} onChange={next=>{setView(next);scroll.resume();}}
+      tools={<><DailyControlsTarget hidden={!!navigation.expanded}/>{projects?.configured && <ViewToolsTarget label={t("viewSettings")} hidden={showArchived && !archiveHasProjects} />}</>} panelId={`${showArchived ? "archived" : "active"}-view-panel-${workspaceId}`} client={client} workspaceId={workspaceId} language={language} onChange={next=>{setView(next);scroll.resume();}}
       disabled={disabled || categoryOptionsBlocked || creationBlocked || discoveryPending || recoveryProject !== null || renameProject !== null || renameBlocked || categoryMoveProject !== null || categoryMoveBlocked || archiveBlocked} />
     <div className="project-work-body" ref={workBody} style={{gridTemplateColumns:navigation.expanded || !selectedId ? "minmax(0, 1fr)" : `minmax(280px, 1fr) 5px ${effectiveProjectWidth}px`}}>
     <div className="saved-view-content" ref={scroll.element} onScrollCapture={saveScroll} onWheelCapture={scroll.cancelRestore} onPointerDownCapture={scroll.cancelRestore} onKeyDownCapture={scroll.cancelRestore} hidden={!!navigation.expanded}>
-    <ContextTools label={t("sourceTools")} icon="settings" compact open={sourceToolsOpen} onOpenChange={setSourceToolsOpen}>
+    <ContextTools label={t("sourceTools")} icon="settings" compact daily open={sourceToolsOpen} onOpenChange={setSourceToolsOpen}>
     {sourcePath && <p className="workspace-root">{sourcePath}</p>}
     <DiscoveryController onPostpone={projects && !projects.configured && !setupDeferred ? () => setSetupDeferred(true) : undefined} client={client} workspaceId={workspaceId} sourceId={sourceId} minimumRevision={minimumRevision}
       observationVersion={observationVersion}
@@ -564,5 +565,5 @@ export function DiscoveryWorkspace({ memory, client, workspaceId, sourceId, refr
       </section>
     </>}
     </div>
-  </div></ManagementSurface>;
+  </div></ManagementSurface></DailyControlsSurface>;
 }
