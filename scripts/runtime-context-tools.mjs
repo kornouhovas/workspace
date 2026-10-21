@@ -1,5 +1,5 @@
 // Follow the real UI entry point; never invoke service commands to reveal UI.
-export async function enterContextFor(page, control) {
+export async function enterContextFor(page, control, { waitForPresentation = false } = {}) {
   await control.waitFor({state:'attached'});
   const owners=await control.evaluate(element=>{
     const owners=[];
@@ -30,5 +30,11 @@ export async function enterContextFor(page, control) {
   });
   for(const name of details) await page.getByText(name,{exact:true}).click();
   await control.waitFor({state:'visible'});
+  if (waitForPresentation) {
+    // Actionability can precede composited pixels. The caller can explicitly
+    // prepare presented operands without submitting or warming a mutation.
+    const surfaces = page.locator('.context-tools-panel, .text-value-editor').filter({ has: control });
+    await (await surfaces.count() ? surfaces.last() : control).screenshot({ animations: 'allow' });
+  }
   return control;
 }

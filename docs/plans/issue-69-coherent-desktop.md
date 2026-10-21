@@ -322,3 +322,39 @@ one-line change does not change a flag, action, preparation, clock, readiness,
 endpoint, deadline or limit. Syntax/lint and seven focused guard controls pass;
 both independent review axes report zero findings. Renew this diagnostic consumer;
 retain actual unchanged native/installer/full-suite inputs and receipts.
+
+
+## Presented filter/editor operands
+
+Detailed normal-scheduling Mac diagnostic `39661385601`/attempt 1 at `c41e9126`
+reproduces first filtering at 545.4ms. GPU raster/flush starts 141.7ms before Save
+and lasts 449.3ms; Dawn worker spans also start before the event and last up to
+228ms. Later GPU spans continue through the endpoint. Mutation/projection IPC is
+about 3–17ms and a renderer task is about 46ms. These are observed intervals,
+not an identified shader or proof of the unique cause of every historical miss.
+
+The explicit unthrottled first-filter comparison `39660741556` at `ebd090ab`
+still misses at 597.8ms (and direct startup 5,138.8ms); reject it. Original/default
+runtime throttling remains unchanged. Windows diagnostic `39660689587` completes
+all scenarios with no timing misses, but runs on AMD EPYC 9V45 while original
+strict used Intel Xeon 8370C. Its complete four batches/255 requests do not repair
+or replace the original strict failures on another observed CPU.
+
+Following the existing presented-grouping boundary, add an explicit
+`waitForPresentation` option to the real context-entry helper, default false.
+Only affected performance preparation opts in: stable pixels of the owning
+filter/editor surface, or inline control. Filter drafts, actual edit entry and
+Save are prepared before the same original Enter event; preparation durations
+are recorded separately. No mutation is warmed/replayed, value/filter applied,
+readiness waived, paint frame removed or deadline/limit changed. Entering the
+inline editor also dismisses unrelated tools through their original real entry.
+
+The moving filter/editor native control first fails both presentation assertions
+with zero submissions. After repair its UI subcases pass, but that initial run
+fails local normal shutdown and remains negative. Expanded fallback coverage
+then passes four tests including the parent with normal quit: owning tools,
+inline editor and inline control each present before return, retain the exact
+draft, perform one open, zero preparatory saves and one explicit subsequent Save.
+Typecheck/lint and 52 route controls pass. Both independent reviews report zero
+findings. Renew the changed native file and original strict scale on both hosts;
+this is a precondition repair, not production GPU or final performance acceptance.

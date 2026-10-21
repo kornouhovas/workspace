@@ -225,9 +225,12 @@ try {
         const text = sample % 2 ? "Project 0" : "Project 00";
         // Fixture expectation preparation is outside the user-event clock.
         const ids = expected.filter(id => source.projects.find(p => p.projectId === id).name.includes(text));
+        const filterPreparation = performance.now();
         const search = await enterContextFor(page,page.getByLabel("Search project names", { exact: true }));
         await search.fill(text);
         const save = page.getByRole("button", { name: "Save search and filters", exact: true }); await save.focus();
+        await enterContextFor(page, save, { waitForPresentation: true }); await save.focus();
+        (report.preparations ??= []).push({source:source.mode,scenario:`${kind} filter ${sample} controls presentation`,ms:performance.now()-filterPreparation});
         await startUiTiming(save, "keydown"); await save.press("Enter");
         await ready(ids); await recordUi(source.mode, `${kind} filter ${sample}`);
         if (profiler) {
@@ -285,9 +288,12 @@ try {
       await pressRuntimeFilterSave(page); await ready(expected);
       const p = source.projects[0], field = source.properties.find(p => p.type === "text");
       const row = page.locator(`[data-project-id="${p.projectId}"]`);
-      await row.getByRole("button", { name: `Edit Text value: ${p.name} / text 0`, exact: true }).press("Enter");
+      const editPreparation = performance.now();
+      await (await enterContextFor(page, row.getByRole("button", { name: `Edit Text value: ${p.name} / text 0`, exact: true }), { waitForPresentation: true })).press("Enter");
       await row.locator("textarea, input").fill(`Accepted ${kind}`);
       const saveValue = row.getByRole("button", { name: "Save value", exact: true }); await saveValue.focus();
+      await enterContextFor(page, saveValue, { waitForPresentation: true }); await saveValue.focus();
+      (report.preparations ??= []).push({source:source.mode,scenario:`${kind} edit controls presentation`,ms:performance.now()-editPreparation});
       await startUiTiming(saveValue, "keydown"); await saveValue.press("Enter");
       await ready(expected,[{selector:`[data-project-id=${JSON.stringify(p.projectId)}] .text-value-button:not([hidden])`,text:`Accepted ${kind}`}]);
       await row.getByText(`Accepted ${kind}`, { exact: true }).waitFor();

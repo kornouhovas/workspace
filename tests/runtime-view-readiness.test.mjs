@@ -428,3 +428,33 @@ test('grouping preparation observes a presented stable popover before choosing a
     assert.equal(await page.evaluate(() => globalThis.changes),1);
   });
 });
+
+test('filter and editor preparation observes presented operands without submitting a mutation', async t => {
+  const { enterContextFor } = await import('../scripts/runtime-context-tools.mjs');
+  await withPage(async page => {
+    for (const [name, context, surfaceClass] of [
+      ['filter tools', true, 'context-tools-panel'],
+      ['inline editor', false, 'text-value-editor'],
+      ['inline control', false, ''],
+    ]) await t.test(name, async () => {
+      await page.setContent(`<button id="entry" ${context ? 'class="context-tools-trigger" aria-expanded="false"' : ''}>Open</button>
+        <section id="surface" class="${surfaceClass}" ${context ? 'data-context-return="entry"' : ''}
+          hidden style="width:260px;height:120px;background:green"><label>Draft<input value="Unchanged"></label><button id="save">Save</button></section>`);
+      await page.evaluate(() => {
+        globalThis.preparation = { opens: 0, saves: 0, presented: false };
+        const entry = document.querySelector('#entry'), surface = document.querySelector('#surface');
+        entry.onclick = () => {
+          globalThis.preparation.opens++; entry.setAttribute('aria-expanded', 'true'); surface.hidden = false;
+          surface.animate([{transform:'translateX(80px)'},{transform:'translateX(0)'}], {duration:500,fill:'forwards'}).finished.then(() => { globalThis.preparation.presented = true; });
+        };
+        document.querySelector('#save').onclick = () => { globalThis.preparation.saves++; };
+      });
+      if (!context) await page.getByRole('button', {name:'Open',exact:true}).press('Enter');
+      const save = await enterContextFor(page, page.getByRole('button', {name:'Save',exact:true,includeHidden:true}), { waitForPresentation: true });
+      assert.deepEqual(await page.evaluate(() => globalThis.preparation), {opens:1,saves:0,presented:true});
+      assert.equal(await page.getByRole('textbox', {name:'Draft',exact:true}).inputValue(), 'Unchanged');
+      await save.press('Enter');
+      assert.equal(await page.evaluate(() => globalThis.preparation.saves), 1);
+    });
+  });
+});

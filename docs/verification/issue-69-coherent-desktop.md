@@ -70,7 +70,7 @@ reproduces first filtering at 529.7ms: mutation/projection IPC approximately
 4–25ms, a roughly 53ms renderer task including 14ms layout, and long idle/frame
 gaps. The first requested frame at +23ms is delivered at about +297ms. This
 locates observed delay, not its ultimate GPU/scheduling cause. The instrumented
-copy completes four backend batches/252 records; its tracing-related memory
+copy completes four backend batches/252 records; its diagnostic memory
 misses do not replace the separate unprofiled memory pass. Additional profiles
 are diagnostic only; no runtime/dependency/scheduling workaround or target
 relaxation is adopted. Full milestone acceptance remains open.
