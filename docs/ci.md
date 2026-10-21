@@ -1107,3 +1107,25 @@ none of those diagnostics substitutes for exact document observation.
 The native-only route retains original Open/Reveal, Views, shutdown and cleanup
 gates and does not supply full acceptance. Apply evidence reuse or renew the full
 `project-files` profile after the focused gate passes.
+
+
+## Coherent desktop milestone
+
+For #69, `checks: desktop-ux` with `desktop_ux_profile: coherent` composes the
+existing principal journeys on one candidate: visual foundation, grouped Board,
+real project files/Open/Reveal, project navigation, shell, workspaces, sources
+and saved views. Shared affected UI/service regressions run once; standalone
+native readiness/property fixtures and Windows COM controls retain separate
+invocations. Existing deadlines, assertions, normal exits, owned cleanup and
+fail-fast command propagation remain intact. The three-host desktop matrix,
+package/artifact/license checks and packaged saved-view consumer remain enabled.
+Provenance records `coherent`; existing artifact paths retain every original
+scenario's evidence directory. The default remains `foundation`; this selects
+no release or installer publication.
+
+Use without the packaged-only or category-only switches; those retain their
+focused consumers and skip the coherent source bundle.
+
+This profile supplements ordinary `checks: full`, which does not run the
+dedicated appearance/Board/navigation/files journeys. Both are required for
+the coherent milestone; a diagnostic or skipped command does not accept it.

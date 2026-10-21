@@ -53,14 +53,16 @@ hosted boundaries; broad desktop/package and strict scale acceptance remain gate
 
 ## Hosted and completed-candidate receipts
 
-Application/renderer inputs remain unchanged after `6dc5021`; later changes
-repair fixtures/drivers, diagnostic tracing and reports. Passing receipts keep
-their actual SHA rather than being relabelled as a later run.
+Application/renderer inputs remain unchanged from `6dc5021` through `ed2c6feb`;
+intermediate changes repair fixtures/drivers, diagnostic tracing and reports.
+Candidate `af23242d` changes viewport cleanup scheduling and is under renewed
+verification. Historical receipts keep their actual SHA; they do not alone
+accept that production change.
 
 | Boundary | Actual receipt | Result / limit |
 | --- | --- | --- |
 | Completed-candidate full local suite | `8cb8097`, Node 22.21.1/macOS 27 arm64, `npm run test:all` | 3,270 total, 3,244 pass, zero fail, 26 platform skips; later reviewed test-only repairs renew affected consumers |
-| Original four-file native lifecycle, including fractional clipping and timing/delivery controls | `fec9fc26`, [39662918554](https://github.com/kornouhovas/workspace/actions/runs/39662918554), attempt 1; downloaded logs/provenance on macOS latest, Windows latest, Windows 2022 | 66/66 on each host, normal quit preserved; local macOS 27 negatives remain unexplained |
+| Original four-file native lifecycle, including fractional clipping and timing/delivery controls | `ed2c6feb`, [39663902847](https://github.com/kornouhovas/workspace/actions/runs/39663902847), attempt 1; downloaded logs/provenance on macOS latest, Windows latest, Windows 2022 | 66/66 on each host, normal quit preserved; local macOS 27 negatives remain unexplained |
 | Actual arm64 DMG install/reopen/replacement | `ebd090ab`, [39659054203](https://github.com/kornouhovas/workspace/actions/runs/39659054203), attempt 1, macOS 14.8.9 | Installed bundled backend, exact workspace/source/view/language, EN/RU keyboard/isolation, replacement preserving data, normal exits and cleanup pass |
 | Actual x64 NSIS install/reopen/reinstall/uninstall | `ebd090ab`, [39659356326](https://github.com/kornouhovas/workspace/actions/runs/39659356326), attempt 1, Windows Server 2025/kernel 10.0.26100 | Unicode/space path, independent default APPDATA, data/identity preservation, normal exits, uninstall and cleanup pass; not Windows 11 release evidence |
 | Original strict packaged scale | `ebd090ab`, [39659477806](https://github.com/kornouhovas/workspace/actions/runs/39659477806), attempt 1, macOS 14 + Windows latest | **Failed numerical limits**. Both hosts complete 32 functional scenarios, ten memory samples, four normal quits/backend exits and cleanup. Mac first Table filter 603.2ms; Windows direct/grouped Table edit 344.5/382.8ms and grouped Table assignment 315.4ms exceed 300ms. All other original timings and memory limits pass. |
@@ -71,8 +73,19 @@ attempt 1 at `fec9fc26`, **passes both hosts** after presented-control preparati
 Mac first filtering is 192.9ms, with control preparation separately 711.3ms;
 conservative memory peaks are 968,359,936 bytes (Mac M1 Virtual) and 833,220,608
 bytes (Windows AMD EPYC 9V45). Earlier Intel-host and local macOS 27 negatives
-retain their own evidence. A later scoped-owner preparation correction still
-requires renewed focused consumers; broad desktop/package CI remains pending.
+retain their own evidence. The later scoped-owner preparation correction passes the inspected native
+receipt above. Original strict [39663902198](https://github.com/kornouhovas/workspace/actions/runs/39663902198),
+attempt 1 at `ed2c6feb`, passes Mac (first filter 167.2ms, maximum interaction
+202.8ms, peak 966,017,024 bytes) but fails Windows AMD EPYC 7763 direct
+Table/Board filtered assignment at 328.7/330.7ms. Windows still passes all
+functional, memory, four normal exits and cleanup assertions. This required
+performance failure remains open; broad desktop/package CI remains pending.
+
+`af23242d` skips cleanup frames for empty offscreen identity shells, preserving
+loaded/focused/draft/pending fields and newly pinned first rows. The public
+preservation test passes before/after; 64 related UI tests, typecheck/lint and
+both review axes pass. The package profile and full local suite are renewing.
+No performance benefit or completed-candidate acceptance is claimed yet.
 
 The macOS diagnostic [39660140707](https://github.com/kornouhovas/workspace/actions/runs/39660140707)
 reproduces first filtering at 529.7ms: mutation/projection IPC approximately

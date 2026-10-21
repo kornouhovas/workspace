@@ -128,3 +128,26 @@ test('focused project files renewal isolates original COM controls and preserves
  assert.equal(text.includes('smoke-project-navigation.mjs'),false);
  assert.equal(spawnSync(process.execPath,['scripts/desktop-ux-checks.mjs','project-files','--native-only','--failure-probe'],{encoding:'utf8'}).status,23);
 });
+
+test('coherent milestone runs every principal journey once on the full desktop matrix and preserves failure propagation',async()=>{
+ const {coherentCommands}=await import('../scripts/desktop-ux-checks.mjs');
+ const commands=coherentCommands();
+ for(const command of ['scripts/smoke-visual-foundation.mjs','scripts/smoke-board.mjs','scripts/smoke-project-files.mjs','scripts/smoke-project-navigation.mjs','smoke:shell','smoke:workspaces','smoke:sources','smoke:views']) {
+  assert.equal(commands.filter(([,args])=>args.includes(command)).length,1,command);
+ }
+ const tests=commands.flatMap(([,args])=>args.filter(arg=>arg.startsWith('tests/')));
+ assert.equal(tests.length,new Set(tests).size,'Shared regressions run once');
+ for(const file of ['project-files-service.test.mjs','group-assignment-service.test.mjs','views-service.test.mjs','viewport-projects-ui.test.tsx','property-editor-driver.test.mjs','runtime-view-readiness.test.mjs','windows-project-reveal-com.test.mjs'])assert.ok(tests.includes(`tests/${file}`),file);
+ assert.equal(spawnSync(process.execPath,['scripts/desktop-ux-checks.mjs','coherent','--failure-probe'],{encoding:'utf8'}).status,23);
+ const {readFile}=await import('node:fs/promises');const {load}=await import('js-yaml');const {runInNewContext}=await import('node:vm');
+ const workflow=load(await readFile('.github/workflows/desktop-ci.yml','utf8'));const job=workflow.jobs['desktop-ux'];
+ assert.ok(workflow.on.workflow_dispatch.inputs.desktop_ux_profile.options.includes('coherent'));
+ assert.equal(workflow.on.workflow_dispatch.inputs.desktop_ux_profile.default,'foundation');
+ assert.ok(job.steps.some(step=>step.run==='node scripts/desktop-ux-checks.mjs coherent'));
+ assert.ok(job.steps.find(step=>step.run==='npm run test:desktop-ux').if.includes("inputs.desktop_ux_profile != 'coherent'"));
+ const inputs={desktop_ux_profile:'coherent',desktop_ux_category_only:false,desktop_ux_packaged_only:false,desktop_ux_failure_probe:false};
+ const coherentStep=job.steps.find(step=>step.run==='node scripts/desktop-ux-checks.mjs coherent');
+ for(const focused of ['desktop_ux_packaged_only','desktop_ux_category_only'])assert.equal(runInNewContext(coherentStep.if.slice(3,-2),{inputs:{...inputs,[focused]:true}}),false,focused);
+ assert.deepEqual(Array.from(runInNewContext(job.strategy.matrix.os.slice(3,-2),{inputs,fromJSON:JSON.parse})),['macos-latest','windows-latest','windows-2022']);
+ for(const name of ['Package shared font and notices','Inspect packaged artifact','Packaged saved-view consumers'])assert.equal(runInNewContext(job.steps.find(step=>step.name===name).if.slice(3,-2),{inputs}),true,name);
+});

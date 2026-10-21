@@ -87,6 +87,18 @@ export function projectFilesCommands({nativeOnly=false}={}) {
     ['npm', ['run', 'smoke:views']],
   ];
 }
+// One milestone candidate exercises each principal journey and shared regression once.
+export function coherentCommands() {
+  const nativeTests = ['property-editor-driver.test.mjs', 'runtime-view-readiness.test.mjs', 'windows-project-reveal-com.test.mjs'];
+  const tests = [...new Set([...foundationTests, ...projectFilesTests])].filter(file => !nativeTests.includes(file));
+  return [
+    ['npm', ['run', 'typecheck']], ['npm', ['run', 'lint']],
+    ...nativeTests.map(file => [process.execPath, ['--import', 'tsx', '--test', `tests/${file}`]]),
+    [process.execPath, ['--import', 'tsx', '--test', ...tests.map(file => `tests/${file}`)]],
+    ...['smoke-visual-foundation', 'smoke-board', 'smoke-project-files', 'smoke-project-navigation'].map(script => [process.execPath, [`scripts/${script}.mjs`]]),
+    ...['smoke:shell', 'smoke:workspaces', 'smoke:sources', 'smoke:views'].map(script => ['npm', ['run', script]]),
+  ];
+}
 export function runChecks(commands, run = (command,args)=>spawnSync(command,args,{stdio:'inherit',shell:process.platform==='win32' && command==='npm'})) {
   for (const [command,args] of commands) {
     const result=run(command,args);
@@ -97,9 +109,9 @@ export function runChecks(commands, run = (command,args)=>spawnSync(command,args
 }
 if(process.argv[1] && resolve(process.argv[1])===fileURLToPath(import.meta.url)) {
   const args=process.argv.slice(2);
-  if(args.some(arg=>!['foundation','board','navigation','project-files','--list','--failure-probe','--native-only'].includes(arg)) || !['foundation','board','navigation','project-files'].includes(args[0])) throw new Error('Usage: desktop-ux-checks.mjs <foundation|board|navigation> [--list] [--failure-probe]');
+  if(args.some(arg=>!['foundation','board','navigation','project-files','coherent','--list','--failure-probe','--native-only'].includes(arg)) || !['foundation','board','navigation','project-files','coherent'].includes(args[0])) throw new Error('Usage: desktop-ux-checks.mjs <foundation|board|navigation|project-files|coherent> [--list] [--failure-probe]');
   if(args.includes('--native-only') && !['navigation','project-files'].includes(args[0]))throw new Error('--native-only requires navigation or project-files');
-  const commands=args[0]==='project-files' ? projectFilesCommands({nativeOnly:args.includes('--native-only')}) : args[0]==='navigation' ? navigationCommands({nativeOnly:args.includes('--native-only')}) : args[0]==='board' ? boardCommands() : foundationCommands({failureProbe:args.includes('--failure-probe')});
+  const commands=args[0]==='coherent' ? coherentCommands() : args[0]==='project-files' ? projectFilesCommands({nativeOnly:args.includes('--native-only')}) : args[0]==='navigation' ? navigationCommands({nativeOnly:args.includes('--native-only')}) : args[0]==='board' ? boardCommands() : foundationCommands({failureProbe:args.includes('--failure-probe')});
   if(args[0]!=='foundation' && args.includes('--failure-probe')) commands.unshift([process.execPath,['-e','process.exit(23)']]);
   if(args.includes('--list')) console.log(JSON.stringify(commands));
   else process.exitCode=runChecks(commands);

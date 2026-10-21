@@ -414,3 +414,58 @@ typecheck and lint pass. Both independent review axes find no issue. This is an
 unproved performance experiment until the actual packaged profile and original
 strict consumer are renewed. Because application input changed, the final full
 suite and affected native/package/performance evidence must also be renewed.
+
+
+The renewed local `npm run test:all` on `af23242d` completes in 148.0s:
+3,275 total, 3,244 pass, five fail, 26 platform skips. All five failures are
+normal ten-second Electron shutdown timeouts after JavaScript quit receipts:
+property fixture EN Single Select creation, caller deadline, delayed owned
+focus; view-readiness event timing and invalidation between frame pairs. These
+fixtures load standalone HTML rather than the changed renderer; their primary
+UI assertions complete. Forced cleanup reports stopped owned processes.
+Retain this failed full-suite receipt and the unchanged-input relationship to
+inspected named-host native run `39663902847` (66/66 each, three hosts), rather
+than retrying the local full suite or calling its result green. Actual current
+supported desktop/package acceptance remains required. Original strict renewal
+`39667534800` now tests the production guard on both required performance hosts;
+the separate package profile `39667106631` remains diagnostic only.
+
+
+## Principal-journey acceptance composition
+
+The acceptance audit confirms ordinary broad `checks: full` omits dedicated
+foundation, Board, navigation and real-files native commands. Compose these
+existing commands as `desktop_ux_profile: coherent` rather than assuming broad
+regression alone renews principal appearance and behavior. Union shared affected
+UI/service regressions once, retaining separate native property/readiness and
+Windows COM controls. Run the original eight journeys sequentially, preserve
+three supported hosts and the existing package/artifact/packaged-Views gates.
+The new route first fails its selection regression, then passes all thirteen
+route tests, including actual exit23 propagation, unique shared tests/commands,
+three-host selection and package-gate evaluation. This changes test scheduling,
+not application inputs or original assertions. Renew that actual profile after
+the failed original strict consumer passes; ordinary full desktop remains a
+separate final required gate. Appearance captures retain their actual SHA;
+refresh affected Table/Board/transition states on the production candidate.
+
+Standards review catches conflicting focused switches: coherent initially ignores
+packaged-only/category-only. A condition regression fails for packaged-only;
+exclude both flags from the coherent source step, preserving their existing
+focused consumers rather than launching a broad bundle on a narrowed host.
+
+Both independent route review axes now report zero remaining findings.
+The focused-switch repair passes evaluated tests; typecheck, lint, docs and
+whitespace checks pass. Windows package diagnostic `39667106631`/attempt1
+at `af23242d` completes all 32 functional/timing observations, four normal
+quits and cleanup. Its direct drop windows contain 45/29 fired animation
+callbacks (5.37/4.26ms) rather than baseline 416/417 (19.05/20.62ms). The
+candidate host is AMD EPYC9V45 versus baseline Intel8370C, so callback reduction
+is observed but timings do not isolate hardware-independent speedup. Original
+strict `39667534800` is the numerical acceptance gate.
+
+Current local visual foundation on `af23242d` passes all sixteen populated/long
+variants and twenty-four empty variants, including font, geometry and popup
+assertions, then normal shutdown and fixture cleanup. Inspected light1440 and
+long RU dark1024 Table captures preserve compact composition and complete
+visible fields. This is a fresh affected appearance receipt, not a relabeling
+of historical screenshots; the full-suite shutdown negative remains retained.
