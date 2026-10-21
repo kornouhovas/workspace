@@ -108,7 +108,7 @@ try {
   await closeGroupingControls(page,'en');
   const layout=await openLayout('en');
   await layout.getByLabel('Show on cards: Notes',{exact:true}).click();
-  await page.locator(`.project-card [data-column-id="${notes}"]`).waitFor({state:'detached'});
+  await page.waitForFunction(id=>!document.querySelector(`.project-card [data-column-id="${id}"]`),notes);
   await layout.getByLabel('Wrap card content',{exact:true}).click();await page.locator('.board-content-nowrap').first().waitFor();await page.keyboard.press('Escape');await page.keyboard.press('Escape');
   await page.reload();await page.locator('.project-group[aria-label="To do"] .board-content-nowrap').waitFor();
   assert.equal(await page.locator('.project-group[aria-label="To do"]').evaluate(el=>el.style.flexBasis),'800px');
@@ -140,7 +140,7 @@ try {
 finally {
   let stopped=false,cleaned=false;
   try {if(app)await closeElectron(app);stopped=await ownedProcessesStopped(parents,backends,{launchUnverified});assert.equal(stopped,true);}catch(error){failure??=error;}
-  try {cleaned=await cleanupOwnedFixture(fixture,{processesStopped:stopped,primaryFailure:failure,record:()=>{}});}catch(error){failure??=error;}
+  try {cleaned=await cleanupOwnedFixture(fixture,{processesStopped:stopped,primaryFailure:failure,record:result=>{cleaned=result;}});}catch(error){failure??=error;}
   await writeFile(join(evidence,'report.json'),JSON.stringify({sha:process.env.GITHUB_SHA??null,platform:process.platform,screens,checks,launchUnverified,stopped,cleaned,failure:failure?.stack},null,2));
 }
 if(failure)throw failure;
