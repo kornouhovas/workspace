@@ -46,14 +46,19 @@ for (const language of ["en", "ru"] as const) {
       await waitFor(()=>assert.equal(document.activeElement,width));
       await user.click(within(controls).getByLabelText(`${t("boardPropertyVisible")}: Notes`));
       await waitFor(()=>assert.equal(document.querySelector(`.project-card [data-column-id="${propertyId}"]`),null));
-      assert.ok(screen.getByRole('button',{name:`${t('renameProperty')}: Notes`}), 'Definition editing stays available when cards hide a property');
-      const rename=within(controls).getByRole('button',{name:`${t('renameProperty')}: Notes`});
+      await user.keyboard('{Escape}');
+      await user.click(screen.getByRole('button',{name:t('propertyTools')}));
+      const propertyPanel=screen.getByRole('dialog',{name:t('propertyTools')});
+      const rename=within(propertyPanel).getByRole('button',{name:`${t('renameProperty')}: Notes`});
       await user.click(rename);
-      const name=await within(controls).findByRole('textbox',{name:t('propertyName')});
+      const name=await within(propertyPanel).findByRole('textbox',{name:t('propertyName')});
       await user.clear(name);await user.type(name,'Uncommitted name');await user.keyboard('{Escape}');
       await waitFor(()=>assert.ok(document.activeElement===rename));
       assert.equal(query('listTextProperties').value.definitions.find((p:{propertyId:string})=>p.propertyId===propertyId).name,'Notes');
-      await user.click(within(controls).getByLabelText(t("boardWrap")));
+      await user.keyboard('{Escape}');
+      await user.click(layoutButton);
+      const reopened=screen.getByRole('dialog',{name:t('boardLayoutTitle')});
+      await user.click(within(reopened).getByLabelText(t("boardWrap")));
       await waitFor(()=>assert.equal(query("getBoardLayout",{viewId}).value.config.wrap,false));
       await user.keyboard("{Escape}");
       await waitFor(()=>assert.equal(document.activeElement,layoutButton));
@@ -119,4 +124,44 @@ test('a late Board save cannot replace the newly selected view presentation',asy
     finish!({ok:true,value:{workspaceId,viewId:first,config:{widths:[],properties:[],wrap:true}}});
     await waitFor(()=>assert.equal((wrap.closest('fieldset') as HTMLFieldSetElement).disabled,false));assert.equal(wrap.checked,false);
   }finally{cleanup();}
+});
+
+test('closing Board definition tools preserves a pending category rename and its failure draft',async()=>{
+  const directory=mkdtempSync(join(tmpdir(),'board-category-pending-')),root=join(directory,'root');
+  mkdirSync(join(root,'Category','Alpha'),{recursive:true});
+  const service=openSettingsService(join(directory,'app.sqlite'));
+  const {workspaceId,viewId,sourceId}=service.handleCommand({type:'workspace.create',rootPath:root,name:'One'}).value;
+  const preview=service.handleQuery({type:'workspace.previewDiscovery',workspaceId,mode:'grouped'}).value;
+  service.handleCommand({type:'workspace.applyDiscovery',workspaceId,previewToken:preview.previewToken});
+  service.handleCommand({type:'workspace.setViewLayout',workspaceId,viewId,kind:'board'});
+  const list=service.handleQuery({type:'workspace.listProjects',workspaceId}).value;
+  let finish:((value:unknown)=>void)|undefined,submissions=0;
+  const api={getBackendStatus:async()=>({state:"ready"}),onBackendStatus:()=>()=>{},onWorkspaceChange:service.workspaces.subscribe,workspace:async(input:{type:string})=>{
+    if(input.type==='workspace.renameCategoryProperty'){submissions++;return new Promise(resolve=>{finish=resolve;});}
+    return /workspace\.(list|get|query)/.test(input.type)?service.handleQuery(input):service.handleCommand(input);
+  }} as unknown as WorkspaceDesktopApi;
+  const user=userEvent.setup({document});
+  try {
+    render(<TextPropertiesTable layout="board" viewId={viewId} client={new WorkspaceServiceClient(api)} workspaceId={workspaceId} sourceId={sourceId}
+      projects={list.projects} categoryProperty={list.categoryProperty} categories={list.categories}
+      categoryPropertyRevision={list.categoryPropertyRevision} minimumCategoryPropertyRevision={{current:list.categoryPropertyRevision}}
+      onCategoryPropertyCommitted={()=>assert.fail('Rejected rename must not commit')} language="en" disabled={false}/>);
+    const tools=screen.getByRole('button',{name:translate('en','propertyTools')});await user.click(tools);
+    const panel=screen.getByRole('dialog',{name:translate('en','propertyTools')});
+    const label=list.categoryProperty.name??translate('en','discoveryCategory');
+    await user.click(await within(panel).findByRole('button',{name:`${translate('en','renameCategoryProperty')}: ${label}`}));
+    const input=within(panel).getByRole('textbox',{name:translate('en','categoryPropertyName')}) as HTMLInputElement;
+    await user.clear(input);await user.type(input,'Clients');
+    await user.click(within(panel).getByRole('button',{name:translate('en','saveCategoryPropertyName')}));
+    await waitFor(()=>assert.equal(input.disabled,true));assert.equal(submissions,1);
+    await user.click(tools);await user.click(tools);
+    assert.equal((within(panel).getByRole('textbox',{name:translate('en','categoryPropertyName')}) as HTMLInputElement).disabled,true);
+    await user.click(tools);
+    finish!({ok:false,error:{code:'storage',message:'Rejected'}});
+    await user.click(tools);
+    await within(panel).findByRole('alert');
+    await waitFor(()=>assert.equal(input.disabled,false));assert.equal(input.value,'Clients');assert.equal(submissions,1);
+    await user.click(within(panel).getByRole('button',{name:translate('en','cancelRenameWorkspace')}));
+    assert.equal(within(panel).queryByRole('textbox'),null);
+  } finally {cleanup();service.close();rmSync(directory,{recursive:true,force:true});}
 });

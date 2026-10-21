@@ -54,9 +54,10 @@ installer change is planned; broad release/platform acceptance remains #69/#67.
 The contextual Board and header width controls are implemented without storage,
 IPC, dependency or installer changes. Shared Popover focus fallback now selects
 the visible settings entry if a removed column's fallback lives in closed tools.
-Property-name drafts remain inside Board settings; the form owns the first
-Escape before Radix document-capture dismissal. Category-label drafts use the
-same explicit Escape ownership.
+Definition editing and its drafts live in the existing always-mounted Properties
+tools, separately from Board card presentation. This preserves category-label
+mutation lifetimes when tools close; the form owns Cancel/Escape before its
+containing ContextTools closes.
 
 Early local evidence (macOS arm64, Node 22.21.1): 86 affected UI/service scenarios
 passed; Board smoke covered 16 populated/long and eight each filtered-empty and
@@ -79,3 +80,26 @@ No safety or supported-platform requirement is retired. The bounded `board` CI
 profile selects affected renderer/service suites, the new native Board matrix and
 retained saved-view runtime on the existing desktop hosts. Final review, full
 suite and exact-candidate Actions/integration receipts belong to the issue.
+
+
+## Review repairs
+
+Standards review found one issue: a rejected Electron launch could leave process
+ownership unverified while empty PID sets permitted fixture cleanup. The Board
+smoke now tracks `launchUnverified` through backend discovery and preserves its
+fixture whenever termination is unproven. Existing lifecycle tests retain this
+policy; the Board CI selection includes that suite.
+
+Spec review found one issue: definition controllers nested inside the Board Radix
+popover were unmounted on dismissal, losing pending category-rename feedback.
+Definitions now live in the existing always-mounted Properties tools. A real
+SQLite/renderer regression with a deferred typed rename verifies pending state,
+no duplicate submission, rejected-response feedback and draft/cancel preservation
+across close/reopen. Fourteen focused Board/context scenarios pass after repair.
+
+Both independent reviewers confirmed their findings resolved, with no new
+concrete findings. The Spec reviewer independently ran the deferred-category
+regression successfully. Latest focused Board/context/CI/lifecycle run: 53 pass,
+zero fail; typecheck, lint, docs links and whitespace checks pass. The normal
+build succeeds with Node 22.21.1. Final full/native/Actions receipts remain in the
+GitHub checkpoint to preserve the tested code SHA.

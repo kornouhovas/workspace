@@ -78,7 +78,7 @@ export function CategoryPropertyHeader({ client, workspaceId, sourceId, property
     <button ref={trigger} type="button" className="workspace-button workspace-button--secondary property-rename"
       aria-label={`${t("renameCategoryProperty")}: ${name}`} disabled={disabled || editing}
       onClick={() => { originalRevision.current = revision; updateDraft(name); setMessage(null); }}>{t("renameCategoryProperty")}</button>
-    {editing && <form data-presentation-escape-owner="" className="property-form" onSubmit={(event) => { event.preventDefault(); void save(); }}
+    {editing && <form className="property-form" onSubmit={(event) => { event.preventDefault(); void save(); }}
       onKeyDown={(event) => { if (event.key === "Escape") { event.preventDefault(); cancel(); } }}>
       <label htmlFor={id}>{t("categoryPropertyName")}</label>
       <input ref={input} id={id} className="workspace-input" value={draft} disabled={disabled || pending}

@@ -16,11 +16,7 @@ export function PresentationPopover({ label, children, triggerRef, fallbackFocus
   return <Popover.Root open={visible && open} onOpenChange={open=>{setOpen(open);if(open) setOwner(contextOwner(trigger.current));onOpenChange?.(open);}}>
     <Hint label={label}><Popover.Trigger ref={trigger} aria-label={label} title={compact ? label : undefined} className="workspace-button workspace-button--secondary presentation-trigger">{compact ? <Icon name="more"/> : label}</Popover.Trigger></Hint>
     <Popover.Portal>
-      <Popover.Content data-context-owner={owner} className="contextual-panel presentation-popover" aria-label={label} sideOffset={6} collisionPadding={12} onEscapeKeyDown={event => {
-        // Radix observes Escape in document capture, before a React form can
-        // cancel its draft. Leave dismissal to that form for this keypress.
-        if (event.target instanceof Element && event.target.closest("[data-presentation-escape-owner]")) event.preventDefault();
-      }} onCloseAutoFocus={event => {
+      <Popover.Content data-context-owner={owner} className="contextual-panel presentation-popover" aria-label={label} sideOffset={6} collisionPadding={12} onCloseAutoFocus={event => {
         if (!trigger.current?.isConnected && fallbackFocus?.current?.isConnected) {
           event.preventDefault();
           const fallback = fallbackFocus.current;

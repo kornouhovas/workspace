@@ -379,7 +379,7 @@ function TextPropertiesContent({ viewId, layout = "table", hideReveal, client, w
           locatorKey={revealLocator} targetKey={JSON.stringify([revealLocator, retained?.associationState, retained?.resolution])} /></ContextTools></Cell>}
       </>, true)}</ViewportProjectRow>; });
   };
-  const propertyForm = draft && <form data-presentation-escape-owner={layout === "board" ? "" : undefined} className="property-form" onSubmit={(event) => { event.preventDefault(); void save(); }}
+  const propertyForm = draft && <form className="property-form" onSubmit={(event) => { event.preventDefault(); void save(); }}
       onKeyDown={(event) => { if (event.key === "Escape") { event.preventDefault(); cancel(); } }}>
       <label htmlFor="property-name">{t("propertyName")}</label>
       <input ref={input} id="property-name" className="workspace-input" value={draft.name} disabled={disabled || pending}
@@ -397,7 +397,7 @@ function TextPropertiesContent({ viewId, layout = "table", hideReveal, client, w
       onResults={ids => setFilteredIds({ viewId, ids })} onGroups={(groups,propertyId,refreshToken) => setGrouped({viewId,groups,propertyId,refreshToken})} />
     }
     <ViewControls><div className="table-presentation-toolbar">
-    {viewId && layout === "board" && <BoardLayoutControls layoutTrigger={layoutTrigger} state={boardState} fields={fields} groups={grouped?.viewId === viewId ? grouped.groups : null} groupPropertyId={grouped?.viewId === viewId ? grouped.propertyId : null} language={language} disabled={disabled || loadError || loading}>{assignmentProperty && <p>{t(filesystemAssignment ? "groupAssignmentFilesystemHint" : "groupAssignmentHint")}</p>}<div className="board-property-controls">{headers}</div>{draft?.propertyId != null && propertyForm}</BoardLayoutControls>}{viewId && layout === "table" && <TableLayoutControls layoutTrigger={layoutTrigger} state={tableState} fields={fields} language={language} disabled={disabled || loadError || loading}/> }
+    {viewId && layout === "board" && <BoardLayoutControls layoutTrigger={layoutTrigger} state={boardState} fields={fields} groups={grouped?.viewId === viewId ? grouped.groups : null} groupPropertyId={grouped?.viewId === viewId ? grouped.propertyId : null} language={language} disabled={disabled || loadError || loading}>{assignmentProperty && <p>{t(filesystemAssignment ? "groupAssignmentFilesystemHint" : "groupAssignmentHint")}</p>}</BoardLayoutControls>}{viewId && layout === "table" && <TableLayoutControls layoutTrigger={layoutTrigger} state={tableState} fields={fields} language={language} disabled={disabled || loadError || loading}/> }
     {viewId && <ViewGrouping contextual client={client} workspaceId={workspaceId} viewId={viewId} language={language} snapshot={snapshot} categoryProperty={categoryProperty} groups={grouped?.viewId===viewId ? grouped.groups : null} groupPropertyId={grouped?.viewId===viewId ? grouped.propertyId : null} disabled={disabled||loadError} />}
     </div></ViewControls>
     {viewId && layout === "board" && <>
@@ -408,6 +408,7 @@ function TextPropertiesContent({ viewId, layout = "table", hideReveal, client, w
     {loadError && <><StatusMessage kind="error" title={t("propertiesLoadError")} />
       <button type="button" className="workspace-button workspace-button--secondary" disabled={disabled || loading} onClick={() => void load()}>{t("propertiesRetry")}</button></>}
     <ViewControls><ContextTools label={t("propertyTools")} icon="properties">
+    {layout === "board" && <div className="board-property-controls">{headers}</div>}
     {snapshot && snapshot.definitions.length === 0 && <p>{t("propertiesEmpty")}</p>}
     <div className="property-create-controls"><button ref={trigger} type="button" className="workspace-button workspace-button--secondary" disabled={disabled || loading || loadError || draft !== null}
       onClick={() => { setMessage(null); creationType.current = "text"; setDraft({ propertyId: null, name: "", originalName: "", propertyType: "text" }); }}>{t("createTextProperty")}</button>
@@ -435,7 +436,7 @@ function TextPropertiesContent({ viewId, layout = "table", hideReveal, client, w
     {snapshot?.definitions.filter(property => property.propertyType === "single_select" || property.propertyType === "multi_select").map(property => <SelectOptionsEditor onRemove={(optionId, element) => { removalTrigger.current = element; setRemoval({property, optionId}); }} removalOpen={removal !== null} key={property.propertyId}
       client={client} workspaceId={workspaceId} property={property} snapshot={snapshot} language={language} disabled={disabled || loadError || draft !== null}
       onCommitted={value => { if (accepts(value)) { listVersion.current++; minimumRevision.current = value.revision; setSnapshot(value); setLoading(false); setLoadError(false); } }} />)}
-    {draft?.propertyId === null && propertyForm}
+    {(draft?.propertyId === null || layout === "board") && propertyForm}
     </ContextTools></ViewControls>
     {layout !== "board" && draft?.propertyId != null && propertyForm}
     {draft?.propertyId && !pending && snapshot?.definitions.find((property) => property.propertyId === draft.propertyId)?.name !== draft.originalName &&

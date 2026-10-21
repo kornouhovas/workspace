@@ -16,12 +16,14 @@ const fixture=await realpath(await mkdtemp(join(tmpdir(),'workspace-board-')));
 const source=join(fixture,'source');await mkdir(source);
 for(const name of ['Brand refresh','Customer portal','Release checklist']) await mkdir(join(source,name));
 const parents=new Set(),backends=new Set(),screens=[],checks=[];
-let app,page,failure;
+let app,page,failure,launchUnverified=false;
 try {
+  launchUnverified=true;
   app=await _electron.launch({executablePath:createRequire(import.meta.url)('electron'),args:[root],cwd:root,env:{...process.env,WORKSPACE_USER_DATA_DIR:join(fixture,'data')}});
   parents.add(app.process());page=await app.firstWindow();page.setDefaultTimeout(15000);
   await page.waitForFunction(async()=> (await window.workspace.getBackendStatus()).state==='ready');
   for(const pid of await app.evaluate(({app})=>app.getAppMetrics().filter(m=>m.type==='Utility'&&m.serviceName?.includes('Node')).map(m=>m.pid)))backends.add(pid);
+  assert.ok(backends.size>0);launchUnverified=false;
   const query=async input=>{const result=await page.evaluate(input=>window.workspace.workspace(input),input);assert.equal(result.ok,true,JSON.stringify(result));return result.value;};
   const {workspaceId,viewId}=await query({type:'workspace.create',name:'Design studio',rootPath:source});
   const call=(type,fields={})=>query({type:`workspace.${type}`,workspaceId,...fields});
@@ -60,12 +62,17 @@ try {
           await page.setViewportSize(size);await page.locator('.project-card').first().waitFor();await page.evaluate(()=>document.fonts.ready);
           assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
           await page.screenshot({path:join(evidence,`${content}-${language}-${theme}-${size.width}.png`)});
-          const layout=await openLayout(language);
-          const rename=layout.getByRole('button',{name:`${language==='en'?'Rename property':'Переименовать свойство'}: Notes`,exact:true});
+          const propertiesLabel=language==='en'?'Properties':'Свойства';
+          const properties=page.getByRole('button',{name:propertiesLabel,exact:true,includeHidden:true});
+          await enterContextFor(page,properties);await properties.click();
+          const propertyPanel=page.getByRole('dialog',{name:propertiesLabel,exact:true});
+          const rename=propertyPanel.getByRole('button',{name:`${language==='en'?'Rename property':'Переименовать свойство'}: Notes`,exact:true});
           await rename.click();
-          const draft=layout.getByRole('textbox',{name:language==='en'?'Property name':'Название свойства',exact:true});
+          const draft=propertyPanel.getByRole('textbox',{name:language==='en'?'Property name':'Название свойства',exact:true});
           await draft.fill('Uncommitted name');await draft.press('Escape');
           await page.waitForFunction(label=>document.activeElement?.getAttribute('aria-label')===label,`${language==='en'?'Rename property':'Переименовать свойство'}: Notes`);
+          await page.keyboard.press('Escape');
+          await openLayout(language);
           await page.screenshot({path:join(evidence,`${content}-${language}-${theme}-${size.width}-layout.png`)});
           await page.keyboard.press('Escape');
           await page.waitForFunction(label=>document.activeElement?.getAttribute('aria-label')===label,language==='en'?'Board layout':'Настройки доски');
@@ -132,9 +139,9 @@ try {
 } catch(error) {failure=error; if(page) await page.screenshot({path:join(evidence,'failure.png')}).catch(()=>{});}
 finally {
   let stopped=false,cleaned=false;
-  try {if(app)await closeElectron(app);stopped=await ownedProcessesStopped(parents,backends);assert.equal(stopped,true);}catch(error){failure??=error;}
+  try {if(app)await closeElectron(app);stopped=await ownedProcessesStopped(parents,backends,{launchUnverified});assert.equal(stopped,true);}catch(error){failure??=error;}
   try {cleaned=await cleanupOwnedFixture(fixture,{processesStopped:stopped,primaryFailure:failure,record:()=>{}});}catch(error){failure??=error;}
-  await writeFile(join(evidence,'report.json'),JSON.stringify({sha:process.env.GITHUB_SHA??null,platform:process.platform,screens,checks,stopped,cleaned,failure:failure?.stack},null,2));
+  await writeFile(join(evidence,'report.json'),JSON.stringify({sha:process.env.GITHUB_SHA??null,platform:process.platform,screens,checks,launchUnverified,stopped,cleaned,failure:failure?.stack},null,2));
 }
 if(failure)throw failure;
 console.log(`Board: ${screens.length} populated/long variants, 8 empty and 8 unavailable variants; ${checks.join(', ')}`);
