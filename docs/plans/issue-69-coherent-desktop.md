@@ -763,3 +763,48 @@ assignment289.3→269.1ms; drop-window FunctionCall140.4→127.9ms (46→38event
 Paint55.0→53.6ms and Layout11.6→9.0ms. Table edit288.8→292.2ms and grouping
 375.1→380.7ms do not establish improvement. Retain only the bounded reduction
 in assignment work as justification; original hosted strict renewal is required.
+
+
+## Passing scale/installers and Windows file-Reveal failure map
+
+At `b577cfd2`, original strict `39680595721` (attempt1) passes both required
+hosts; downloaded reports/logs verify32timings, ten memory samples, four normal
+application/backend exits and asserted cleanup each. Mac M1 maximum interaction
+286.8ms/peak924,696,576bytes; Windows Xeon8573C maximum241.2ms/peak847,798,272,
+direct/grouped Table assignments227.5/214.4ms. Historical failures retain their
+actual host/SHA; no unchanged strict retry or target relaxation accepts them.
+
+Both actual installers pass at the same candidate, attempt1: Mac `39681337146`
+on14.8.9arm64 (DMG SHA2560fc3cf1447947fa70c94c2e772f691cb2acd7931aa0d0aebb6b79657bcac3527)
+and Windows `39681752968` on Server2025x64/kernel10.0.26100 (NSIS SHA256
+86ef9d9e75aae33517a4d9beff85b16f5d9d791eac6e33d2d93e91415d39207e).
+Actual outside-build installation, bundled service/data identity, EN/RU,
+isolation, reopen/replacement/reinstall, Windows default APPDATA/uninstall,
+normal exits and asserted cleanup pass. Reports/artifacts are inspected;
+this does not supply Windows11 release evidence.
+
+Coherent `39681330400`, attempt1, passes all principal and package steps on
+macOS latest and Windows2022 at `b577cfd2`. Windows latest passes1374shared
+regressions, original native controls, visual16/24 variants and Board16/8/8,
+then fails original `smoke-project-files.mjs:75`: actual nested Unicode-file
+Reveal presents the external-action failure. All16preview/expanded captures,
+real tree/arrow focus, empty/Refresh/disappearance checks precede that failure.
+Normal application/backend exit and asserted cleanup pass. Navigation/shell/
+workspace/source/Views and package gates on this host remain unreached; full
+CI is not dispatched while this focused boundary is open. Original report
+lacks native phase/CPU evidence, so do not claim a specific COM cause.
+
+Ranked hypotheses: native bridge/COM rejection, Explorer readiness, or Unicode
+path handling. Add a dedicated Windows-only workflow for the unchanged original
+file consumer, existing build prerequisite, pipefail and always-upload evidence;
+trace defaults off, trace-enabled probes are diagnostic only. Subscribe to the
+existing trusted main-process native events with128metadata records, no paths,
+and report exact SHA/run/attempt/kernel/CPU. Both observer installation and read
+have independent1000ms diagnostic deadlines and separately recorded failures;
+they do not replace the original failure or block normal close/owned cleanup.
+Both review axes identified that missing bound initially and now report zero
+remaining findings after its repair.47route/lifecycle tests, lint, syntax and
+documentation checks pass; actual pipeline exit23 and a no-pipefail negative
+control establish failure propagation. No application, permit, retry, UI/native
+deadline, ownership or data assertion changes. Renew only the failed original
+consumer before classifying acceptance reuse and unreached Windows journeys.

@@ -112,6 +112,17 @@ preparation has its existing 30-second budget; the 1,000-ms keyboard action and
 
 ## Failed Actions loop
 
+For #69's original Windows latest project-file Reveal failure, dispatch
+`project-files-windows.yml`. It builds the candidate and runs the unchanged
+`node scripts/smoke-project-files.mjs` consumer only on Windows latest, preserving
+the existing native/UI deadlines, exact Open/Reveal and data assertions, normal
+exit and cleanup. `trace: true` enables bounded native-phase diagnostics and is
+not acceptance; the default `false` retains the original native execution.
+The report records SHA/run/attempt/kernel/CPU and bounded bridge events, including
+on failure. Raw logs and original result propagate through the upload step.
+Passing evidence for unchanged boundaries on the other coherent hosts remains
+at its actual tested SHA; unreached Windows journeys still require renewal.
+
 For #69's retained standalone native termination failures, dispatch
 `desktop-ci.yml` with `checks: native-lifecycle`. The existing workflow calls
 [native-lifecycle.yml](../.github/workflows/native-lifecycle.yml) at the same

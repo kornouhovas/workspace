@@ -1,0 +1,46 @@
+name: Windows project file native consumer
+
+on:
+  workflow_dispatch:
+    inputs:
+      trace:
+        description: Collect bounded native phase diagnostics; not an acceptance run
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: project-files-windows-${{ github.ref }}-${{ inputs.trace }}
+  cancel-in-progress: true
+
+jobs:
+  files:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.21.1
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Original project files Open and Reveal
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p work/ci-project-files-windows
+          node scripts/smoke-project-files.mjs 2>&1 | tee work/ci-project-files-windows/runtime.log
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-project-files-windows
+          WORKSPACE_REVEAL_TRACE: ${{ inputs.trace && '1' || '0' }}
+      - name: Preserve exact original consumer evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: project-files-windows-${{ github.sha }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
+          path: work/ci-project-files-windows/
+          if-no-files-found: error
+          retention-days: 14

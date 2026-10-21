@@ -4,10 +4,10 @@ import {execFile} from 'node:child_process';
 import {promisify} from 'node:util';
 import {createRequire} from 'node:module';
 import {mkdtemp,mkdir,realpath,writeFile,readFile,rm} from 'node:fs/promises';
-import {tmpdir} from 'node:os';
+import {tmpdir,release,cpus} from 'node:os';
 import {basename,join,resolve} from 'node:path';
 import {_electron} from 'playwright-core';
-import {closeElectron,cleanupOwnedFixture,ownedProcessesStopped} from './runtime-lifecycle.mjs';
+import {closeElectron,cleanupOwnedFixture,ownedProcessesStopped,withDeadline} from './runtime-lifecycle.mjs';
 import {openSettingsSection,returnToWorkspace,setInterfaceLanguage} from './runtime-settings.mjs';
 import {observeExternalFile,closeExternalFile} from './external-file-evidence.mjs';
 import {setTimeout as delay} from 'node:timers/promises';
@@ -20,11 +20,18 @@ const fileName=`Workspace file check ${basename(fixture)} — Текст.txt`, t
 await writeFile(target,'Workspace issue 64 disposable file. External opening must preserve these bytes.\n');
 await writeFile(join(project,'Release planning — Длинное имя файла для проверки обрезки и подсказки.md'),'Fixture');
 const parents=new Set(),backends=new Set(),checks=[],captures=[];
-let app,page,failure,launchUnverified=false,native,external,externalBefore;
+const nativeEventProblems=[];
+let app,page,failure,launchUnverified=false,native,external,externalBefore,nativeEvents;
 try {
  launchUnverified=true;
  app=await _electron.launch({executablePath:createRequire(import.meta.url)('electron'),args:[root],cwd:root,env:{...process.env,WORKSPACE_USER_DATA_DIR:join(fixture,'data')}});
  parents.add(app.process());page=await app.firstWindow();page.setDefaultTimeout(15000);
+ try{await withDeadline(app.evaluate(()=>{
+  globalThis.fileNativeEvents=[];
+  process.on('workspace:native-reveal',({stage,phase,reason,boundary,exceptionKind,elapsedMs})=>{
+   if(globalThis.fileNativeEvents.length<128)globalThis.fileNativeEvents.push({stage,phase,reason,boundary,exceptionKind,elapsedMs});
+  });
+ }),1000,'File native event observer installation');}catch(error){nativeEventProblems.push(error.message);}
  await page.waitForFunction(async()=>(await window.workspace.getBackendStatus()).state==='ready');
  for(const pid of await app.evaluate(({app})=>app.getAppMetrics().filter(m=>m.type==='Utility'&&m.serviceName?.includes('Node')).map(m=>m.pid)))backends.add(pid);
  assert.ok(backends.size);launchUnverified=false;
@@ -104,10 +111,11 @@ try {
 }
 finally {
  let stopped=false,cleaned=false;
+ try{if(app)nativeEvents=await withDeadline(app.evaluate(()=>globalThis.fileNativeEvents),1000,'File native event collection');}catch(error){nativeEventProblems.push(error.message);}
  try{if(app)await closeElectron(app);stopped=ownedProcessesStopped(parents,backends,{launchUnverified});assert.equal(stopped,true);}catch(error){failure??=error;}
  try{await closeExternalFile(target,external,externalBefore);await closeDisposableFileManagerTarget(target);}catch(error){failure??=error;}
  try{cleaned=await cleanupOwnedFixture(fixture,{processesStopped:stopped,primaryFailure:failure,record:result=>{cleaned=result;}});}catch(error){failure??=error;}
- await writeFile(join(evidence,'report.json'),JSON.stringify({sha:process.env.GITHUB_SHA??null,platform:process.platform,checks,captures,native,external,externalBefore,stopped,cleaned,failure:failure?.stack},null,2));
+ await writeFile(join(evidence,'report.json'),JSON.stringify({sha:process.env.GITHUB_SHA??null,run:process.env.GITHUB_RUN_ID??null,attempt:process.env.GITHUB_RUN_ATTEMPT??null,platform:process.platform,kernel:release(),cpu:cpus()[0]?.model,diagnostic:process.env.WORKSPACE_REVEAL_TRACE==='1',checks,captures,native,external,externalBefore,nativeEvents,nativeEventProblems,stopped,cleaned,failure:failure?.stack},null,2));
 }
 if(failure)throw failure;
 console.log(`Project files: ${checks.join('; ')}`);
