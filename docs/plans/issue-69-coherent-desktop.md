@@ -995,3 +995,19 @@ selection into existingchecks choice `native-owner-profile`, preserving all
 25inputs/defaults. Reconcile common/checks inventory and assert only its focused
 Windowslatest job selects; ordinaryreadiness remains original. No product failure
 or successful diagnosticexecution is inferred from dispatch rejection.
+
+
+Generated-copy diagnostic `39692017634`, attempt1, at `feaa5226` passes onEPYC7763/
+kernel10.0.26100.25fixedscalarspans, originalexit0 and verifiedrestorationhashes.
+Firstprocesslookup567.2ms/CPU15.6, firstroot599.7ms/CPU31.3; repeatedprocess/root
+reads1–2ms, repeatedassemblyload1–2ms. Actualcreation/recovery/native/independent
+COM+UIA/restart/twonormalquits/cleanup pass in this alteredcopy only. It doesnot
+reproduce or explain the original failure. Preserveoriginalgatefailed.
+
+Next explicitdiagnostic `native-owner-direct-profile` changes only generatedcopy
+processlookup to fresh .NETGetProcessById/ProcessName withfinallyDispose, keeping
+all HWND/PID/Explorer/root checks and originalnativeguards/deadlines. This tests
+whether cmdletfirst-use cost is avoidable without dropping a freshness predicate.
+No appsource/resourceinputchange. Varianttestredbeforefix;87pass/2platformskip of89
+selectedchecks; lint/docs pass. Only a measuredcopiedhypothesis, notproductionfix
+or permission to claim originalacceptance. Originaltraceoff remainsrequired.

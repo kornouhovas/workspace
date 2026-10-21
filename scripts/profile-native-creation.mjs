@@ -37,9 +37,10 @@ function replaceOnce(text,marker,replacement) {
  assert.equal(text.split(marker).length,2,`Pinned native profile marker: ${marker}`);
  return text.replace(marker,replacement);
 }
-export function instrumentNativeCreation(sources) {
+export function instrumentNativeCreation(sources, {directProcess=false}={}) {
  const result={...sources};
- result['windows-binding.ps1']=helpers+replaceOnce(result['windows-binding.ps1'],'(Get-Process -Id $owner -ErrorAction Stop).ProcessName','(Get-WorkspaceProfileProcessName $owner)');
+ const profileHelpers=directProcess?replaceOnce(helpers,'(Get-Process -Id $processId -ErrorAction Stop).ProcessName','$candidate = [Diagnostics.Process]::GetProcessById($processId); try { $candidate.ProcessName } finally { $candidate.Dispose() }'):helpers;
+ result['windows-binding.ps1']=profileHelpers+replaceOnce(result['windows-binding.ps1'],'(Get-Process -Id $owner -ErrorAction Stop).ProcessName','(Get-WorkspaceProfileProcessName $owner)');
  result['windows-view.ps1']=replaceOnce(result['windows-view.ps1'],'(Get-Process -Id $root.Current.ProcessId -ErrorAction Stop).ProcessName','(Get-WorkspaceProfileProcessName $root.Current.ProcessId)');
  result['windows-view.ps1']=replaceOnce(result['windows-view.ps1'],'return [System.Windows.Automation.AutomationElement]::FromHandle([IntPtr]$handle)',"return (Invoke-WorkspaceNativeReadProfile 'root' { [System.Windows.Automation.AutomationElement]::FromHandle([IntPtr]$handle) })");
  for(const name of ['windows-view.ps1','windows-project-reveal.ps1']) {
@@ -50,16 +51,17 @@ export function instrumentNativeCreation(sources) {
 }
 async function main() {
  assert.equal(process.platform,'win32','Native owner profile requires Windows');
- assert.equal(process.argv.length,2,'No profile arguments accepted');
+ const directProcess=process.argv[2]==='--direct-process';
+ assert.ok(process.argv.length===2||(process.argv.length===3&&directProcess),'Only the fixed direct-process experiment is accepted');
  const root=fileURLToPath(new URL('../',import.meta.url));
  const directory=resolve(process.env.WORKSPACE_SMOKE_EVIDENCE_DIR??join(root,'work/ci-native-owner-profile'));
  await mkdir(directory,{recursive:true});
  const sources=Object.fromEntries(await Promise.all(names.map(async name=>[name,await readFile(join(root,'src/desktop/native',name),'utf8')])));
- const copies=instrumentNativeCreation(sources);
+ const copies=instrumentNativeCreation(sources,{directProcess});
  const originals=Object.fromEntries(await Promise.all(names.map(async name=>[name,await readFile(join(root,'dist/desktop/native',name),'utf8')])));
  for(const name of names)assert.equal(originals[name],sources[name],'Generated native input must match source');
  const hash=text=>createHash('sha256').update(text).digest('hex');
- const report={diagnosticOnly:true,sha:process.env.GITHUB_SHA,run:process.env.GITHUB_RUN_ID,attempt:process.env.GITHUB_RUN_ATTEMPT,inputs:Object.fromEntries(names.map(name=>[name,{original:hash(originals[name]),instrumented:hash(copies[name])}])),restored:false,exitCode:null,samples:[]};
+ const report={diagnosticOnly:true,processLookup:directProcess?'direct':'cmdlet',sha:process.env.GITHUB_SHA,run:process.env.GITHUB_RUN_ID,attempt:process.env.GITHUB_RUN_ATTEMPT,inputs:Object.fromEntries(names.map(name=>[name,{original:hash(originals[name]),instrumented:hash(copies[name])}])),restored:false,exitCode:null,samples:[]};
  const sampleFile=join(directory,'read-spans.jsonl');
  await writeFile(sampleFile,'');
  try {

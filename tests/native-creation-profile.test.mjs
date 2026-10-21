@@ -17,3 +17,14 @@ test('native creation profiling changes only pinned generated read boundaries an
  for(const text of Object.values(result))assert.doesNotMatch(text,/10000\s*\+|12000\s*\+|Start-Sleep -Milliseconds [1-9][0-9]{3}/);
  assert.ok(result['windows-project-reveal.ps1'].includes("[void]$anchor.document.SelectItem($anchor.item, 5)"));
 });
+
+
+test('direct process experiment remains confined to the diagnostic copy with a fresh disposed lookup',async()=>{
+ const sources=Object.fromEntries(await Promise.all(['windows-binding.ps1','windows-view.ps1','windows-project-reveal.ps1'].map(async name=>[name,await readFile(new URL(`../src/desktop/native/${name}`,import.meta.url),'utf8')])));
+ const direct=instrumentNativeCreation(sources,{directProcess:true});
+ assert.match(direct['windows-binding.ps1'],/GetProcessById\(\$processId\)/);
+ assert.match(direct['windows-binding.ps1'],/finally \{ \$candidate.Dispose\(\) \}/);
+ assert.doesNotMatch(direct['windows-binding.ps1'],/Get-Process -Id \$processId/);
+ assert.equal(direct['windows-view.ps1'],instrumentNativeCreation(sources)['windows-view.ps1']);
+ assert.equal(direct['windows-project-reveal.ps1'],instrumentNativeCreation(sources)['windows-project-reveal.ps1']);
+});

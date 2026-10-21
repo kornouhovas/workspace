@@ -1179,3 +1179,11 @@ Existing readiness inputs retain their original defaults and consumer. Instrumen
 adds overhead and cannot supply original performance/native acceptance; use its
 actual evidence to select a repair or bounded unresolved-cause continuation,
 then renew the original trace-disabled command before missing-tail acceptance.
+
+The separate `checks: native-owner-direct-profile` experiment changes only the
+profile copy's process-name read to fresh .NET `GetProcessById`/`ProcessName`,
+with disposal. HWND/PID, Explorer-name and UIA ownership guards remain. It records
+the lookup mode and copied-resource hashes, retains the same restoration/exit
+and diagnostic-only boundary, and adds no dispatch input or ordinary selection.
+Compare its measured first-use read with the cmdlet profile; neither copied
+variant accepts the original native consumer or proves an old failure's cause.

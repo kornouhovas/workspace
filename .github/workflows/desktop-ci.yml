@@ -8,7 +8,7 @@ on:
       checks:
         description: Full acceptance or a selected focused failure route
         type: choice
-        options: [full, desktop-ux, native-owner-profile, native-lifecycle, project-files-windows, project-files-windows-trace, failed, readiness, windows-release, issue22-failures, creation-shutdown, raw-rename, issue24-failures, category-fixture, issue24-startup, multiselect, etw-controls, app-fixture, property-fixture, runtime-observation, view-fixtures, number, windows-property-fixture, rename-authoring, rename-fixture, viewport-runtime, desktop-shell, shell-runtime, views-readiness, workspace-sidebar, workspace-setup, workspace-setup-readiness, select-readiness, source-fixture, source-runtime]
+        options: [full, desktop-ux, native-owner-profile, native-owner-direct-profile, native-lifecycle, project-files-windows, project-files-windows-trace, failed, readiness, windows-release, issue22-failures, creation-shutdown, raw-rename, issue24-failures, category-fixture, issue24-startup, multiselect, etw-controls, app-fixture, property-fixture, runtime-observation, view-fixtures, number, windows-property-fixture, rename-authoring, rename-fixture, viewport-runtime, desktop-shell, shell-runtime, views-readiness, workspace-sidebar, workspace-setup, workspace-setup-readiness, select-readiness, source-fixture, source-runtime]
         default: full
       desktop_ux_profile:
         description: With desktop-ux, select foundation, grouped Board or project navigation acceptance
@@ -487,7 +487,7 @@ jobs:
           if-no-files-found: error
 
   common:
-    if: ${{ github.event_name != 'workflow_dispatch' || (inputs.checks != 'failed' && inputs.checks != 'readiness' && inputs.checks != 'windows-release' && inputs.checks != 'issue22-failures' && inputs.checks != 'creation-shutdown' && inputs.checks != 'raw-rename' && inputs.checks != 'issue24-failures' && inputs.checks != 'category-fixture' && inputs.checks != 'issue24-startup' && inputs.checks != 'multiselect' && inputs.checks != 'etw-controls' && inputs.checks != 'app-fixture' && inputs.checks != 'property-fixture' && inputs.checks != 'runtime-observation' && inputs.checks != 'view-fixtures' && inputs.checks != 'number' && inputs.checks != 'windows-property-fixture' && inputs.checks != 'rename-authoring' && inputs.checks != 'rename-fixture' && inputs.checks != 'viewport-runtime' && inputs.checks != 'desktop-shell' && inputs.checks != 'shell-runtime' && inputs.checks != 'views-readiness' && inputs.checks != 'workspace-sidebar' && inputs.checks != 'workspace-setup' && inputs.checks != 'workspace-setup-readiness' && inputs.checks != 'select-readiness' && inputs.checks != 'source-fixture' && inputs.checks != 'source-runtime' && inputs.checks != 'desktop-ux' && inputs.checks != 'native-owner-profile' && inputs.checks != 'native-lifecycle' && inputs.checks != 'project-files-windows' && inputs.checks != 'project-files-windows-trace') }}
+    if: ${{ github.event_name != 'workflow_dispatch' || (inputs.checks != 'failed' && inputs.checks != 'readiness' && inputs.checks != 'windows-release' && inputs.checks != 'issue22-failures' && inputs.checks != 'creation-shutdown' && inputs.checks != 'raw-rename' && inputs.checks != 'issue24-failures' && inputs.checks != 'category-fixture' && inputs.checks != 'issue24-startup' && inputs.checks != 'multiselect' && inputs.checks != 'etw-controls' && inputs.checks != 'app-fixture' && inputs.checks != 'property-fixture' && inputs.checks != 'runtime-observation' && inputs.checks != 'view-fixtures' && inputs.checks != 'number' && inputs.checks != 'windows-property-fixture' && inputs.checks != 'rename-authoring' && inputs.checks != 'rename-fixture' && inputs.checks != 'viewport-runtime' && inputs.checks != 'desktop-shell' && inputs.checks != 'shell-runtime' && inputs.checks != 'views-readiness' && inputs.checks != 'workspace-sidebar' && inputs.checks != 'workspace-setup' && inputs.checks != 'workspace-setup-readiness' && inputs.checks != 'select-readiness' && inputs.checks != 'source-fixture' && inputs.checks != 'source-runtime' && inputs.checks != 'desktop-ux' && inputs.checks != 'native-owner-direct-profile' && inputs.checks != 'native-owner-profile' && inputs.checks != 'native-lifecycle' && inputs.checks != 'project-files-windows' && inputs.checks != 'project-files-windows-trace') }}
     name: Common tests and static checks
     runs-on: macos-latest
     steps:
@@ -1499,12 +1499,12 @@ jobs:
           retention-days: 7
 
   focused-windows-reveal:
-    if: ${{ github.event_name == 'workflow_dispatch' && ((inputs.checks == 'readiness' && inputs.readiness_reveal_windows == true) || inputs.checks == 'native-owner-profile') }}
+    if: ${{ github.event_name == 'workflow_dispatch' && ((inputs.checks == 'readiness' && inputs.readiness_reveal_windows == true) || (inputs.checks == 'native-owner-profile' || inputs.checks == 'native-owner-direct-profile')) }}
     name: Focused original Reveal service regressions (${{ matrix.os }})
     strategy:
       fail-fast: false
       matrix:
-        os: ${{ fromJSON(inputs.checks == 'native-owner-profile' && '["windows-latest"]' || inputs.readiness_native_windows == true && inputs.readiness_native_early == true && '["windows-latest"]' || '["windows-latest","windows-2022"]') }}
+        os: ${{ fromJSON((inputs.checks == 'native-owner-profile' || inputs.checks == 'native-owner-direct-profile') && '["windows-latest"]' || inputs.readiness_native_windows == true && inputs.readiness_native_early == true && '["windows-latest"]' || '["windows-latest","windows-2022"]') }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 10
     steps:
@@ -1527,18 +1527,18 @@ jobs:
           mkdir -p work/ci-focused-windows-reveal/native
           node --input-type=module -e 'import os from "node:os"; import {writeFileSync} from "node:fs"; writeFileSync("work/ci-focused-windows-reveal/native/host.json",JSON.stringify({sha:process.env.GITHUB_SHA,run:process.env.GITHUB_RUN_ID,attempt:process.env.GITHUB_RUN_ATTEMPT,release:os.release(),arch:process.arch,cpu:os.cpus()[0]?.model})+"\n")'
       - name: Diagnostic generated-copy native owner and UIA read spans
-        if: ${{ !cancelled() && steps.reveal-build.outcome == 'success' && inputs.checks == 'native-owner-profile' && matrix.os == 'windows-latest' }}
-        run: node scripts/profile-native-creation.mjs
+        if: ${{ !cancelled() && steps.reveal-build.outcome == 'success' && (inputs.checks == 'native-owner-profile' || inputs.checks == 'native-owner-direct-profile') && matrix.os == 'windows-latest' }}
+        run: node scripts/profile-native-creation.mjs ${{ inputs.checks == 'native-owner-direct-profile' && '--direct-process' || '' }}
         env:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-focused-windows-reveal/native-profile
       - name: Early original Windows latest direct creation native evidence
-        if: ${{ !cancelled() && steps.reveal-build.outcome == 'success' && inputs.readiness_native_windows == true && inputs.readiness_native_early == true && matrix.os == 'windows-latest' && inputs.checks != 'native-owner-profile' }}
+        if: ${{ !cancelled() && steps.reveal-build.outcome == 'success' && inputs.readiness_native_windows == true && inputs.readiness_native_early == true && matrix.os == 'windows-latest' && inputs.checks != 'native-owner-profile' && inputs.checks != 'native-owner-direct-profile' }}
         run: npm run smoke:runtime -- dev --creation --discovery-mode=direct --checkpoint=after_evidence
         env:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-focused-windows-reveal/native
           WORKSPACE_REVEAL_TRACE: ${{ inputs.readiness_native_trace == true && '1' || '0' }}
       - name: Selected workspace identity and CI inventory regressions
-        if: ${{ !cancelled() && steps.reveal-build.outcome == 'success' && (inputs.readiness_native_early == true || inputs.checks == 'native-owner-profile') }}
+        if: ${{ !cancelled() && steps.reveal-build.outcome == 'success' && (inputs.readiness_native_early == true || (inputs.checks == 'native-owner-profile' || inputs.checks == 'native-owner-direct-profile')) }}
         shell: bash
         run: |
           set -o pipefail
