@@ -578,3 +578,26 @@ at-29ms occupies94.1ms. Grouped periodic scans can therefore delay unrelated
 metadata interactions. Inspect public-service CPU profiles before choosing a
 backend change; preserve complete native-alias, reservation, identity and
 transaction revalidation guards.
+
+
+## Reconciliation alias index: measured candidate
+
+The public-service baseline atd7cf7de profiles groupedRefresh272.1ms, with
+about34.2ms CPU sampled in repeated grouped alias-conflict scans. Replace only
+those full-array comparisons with exact JSON(dev,ino) buckets containing every
+matching directory/historical record. Keep original self/owner, continuous
+replaced and category-role-history predicates; birthtime remains excluded from
+the alias key, matching the original conservative nativeAlias relation. No
+scan, reservation, mapping, transaction revalidation or write is bypassed.
+
+After this isolated change,148external-reconciliation/discovery-interpretation/
+observed-project/background-discovery tests pass, including ambiguous aliases,
+historical reused evidence, category/project relocations and native observation.
+Typecheck/lint and both independent safety reviews pass (zero findings). Same
+public-service profile gives groupedRefresh236.6ms versus272.1ms; native realpath
+samples remain about144ms versus147ms, while conflict scans disappear from the
+leading CPU samples and index construction is about1.6ms. This supports the
+predicted removal of repeated comparisons, not strict desktop acceptance.
+Renew original packaged strict consumers and all affected service/native/full
+coverage. Startup reconciliation changed, so renew actual installer consumers
+instead of relying solely on previous unchanged-service installer reuse.

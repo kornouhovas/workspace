@@ -19,6 +19,15 @@ function storedIdentity(row: Association): NativeIdentity {
   return value;
 }
 const nativeAlias = (a: NativeIdentity, b: NativeIdentity) => a.dev === b.dev && a.ino === b.ino;
+function indexNativeAliases<T>(values: T[], identity: (value: T) => NativeIdentity) {
+  const index = new Map<string, T[]>();
+  for (const value of values) {
+    const { dev, ino } = identity(value), key = JSON.stringify([dev, ino]);
+    const matches = index.get(key) ?? [];
+    matches.push(value); index.set(key, matches);
+  }
+  return (native: NativeIdentity) => index.get(JSON.stringify([native.dev, native.ino])) ?? [];
+}
 
 function indexCandidates(scan: DiscoveryScan, directories: DirectoryObservation[]) {
   const eligible = new Set(scan.entries.filter(entry => entry.reason === null).map(entry => entry.relativePath));
@@ -71,6 +80,10 @@ interface Placement { relativePath: string; categoryId: string | null }
 function groupedMappings(scan: DiscoveryScan, projects: Project[], categories: Category[], exclusions: string[], archive: string | null) {
   const directories = scan.snapshot!.children.filter((child): child is DirectoryObservation => child.kind === "directory");
   const evidence = [...categories, ...projects].map((row) => ({ row, identity: storedIdentity(row) }));
+  // Keep every alias, including historical and insufficient birth evidence.
+  // The index narrows comparisons; it never chooses an owner or authorizes a move.
+  const directoryAliases = indexNativeAliases(directories, child => child.identity);
+  const evidenceAliases = indexNativeAliases(evidence, item => item.identity);
   // Index exact, reliable candidate identities once. Keep every alias and all
   // reservation checks below; the index must never choose an ambiguous match.
   const { eligible, matches: candidatesByIdentity } = indexCandidates(scan, directories);
@@ -87,8 +100,8 @@ function groupedMappings(scan: DiscoveryScan, projects: Project[], categories: C
     row.modeInactive && (row.associationState === "active" || row.associationState === "excluded") &&
     reliableIdentity(identity) && sameIdentity(identity, storedIdentity(owner));
   const conflict = (child: DirectoryObservation, owner?: Association, continuous = false) =>
-    directories.some((other) => other !== child && nativeAlias(other.identity, child.identity)) ||
-    evidence.some(({ row, identity }) => row.id !== owner?.id && nativeAlias(identity, child.identity) &&
+    directoryAliases(child.identity).some((other) => other !== child) ||
+    evidenceAliases(child.identity).some(({ row, identity }) => row.id !== owner?.id &&
       !(continuous && row.associationState === "replaced") && !categoryRoleHistory(row, identity, owner));
   // The same-path recovery exception is continuous only. Cross-path matching
   // still rejects competing same-role records and ambiguous native evidence.
