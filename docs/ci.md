@@ -1049,7 +1049,9 @@ while the prior view's scroll restoration was still active), select
 `checks: desktop-ux` and `desktop_ux_profile: navigation-native`. This retains the build prerequisites,
 type/lint and navigation/viewport/views/route regressions, then the original
 `smoke-project-navigation.mjs` command with unchanged deadlines and shutdown/
-cleanup gates on the originally failed macOS host. It omits the unrelated
+cleanup gates. After the original macOS renewal passed, complete run39629050743
+exposed late native anchoring on both Windows hosts. The focused profile now
+selects those two failed hosts; the earlier macOS receipt retains its own SHA. It omits the unrelated
 full-profile consumers while diagnosing the failure. The default profile remains `foundation`;
 application repairs renew the complete navigation profile after focused success.
 Provenance records both profile and focused-mode selection. A shorter filtered

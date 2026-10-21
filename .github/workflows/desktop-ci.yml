@@ -120,7 +120,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: ${{ fromJSON(inputs.desktop_ux_profile == 'navigation-native' && '["macos-latest"]' || inputs.desktop_ux_category_only && '["windows-latest"]' || '["macos-latest","windows-latest","windows-2022"]') }}
+        os: ${{ fromJSON(inputs.desktop_ux_profile == 'navigation-native' && '["windows-latest","windows-2022"]' || inputs.desktop_ux_category_only && '["windows-latest"]' || '["macos-latest","windows-latest","windows-2022"]') }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 60
     steps:

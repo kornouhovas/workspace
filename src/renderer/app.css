@@ -843,4 +843,6 @@ p { margin-block: .5rem; }
 .project-detail-fields td:last-child { border-bottom: 0; }
 /* Native anchoring must not adjust the explicit per-view restoration while
    asynchronous/windowed rows replace their measured placeholders. */
-.saved-view-content[data-scroll-restoring="true"] { overflow-anchor: none; }
+/* This viewport owns explicit per-view coordinates, including async refreshes.
+   Native anchoring after restoration must not rewrite those saved offsets. */
+.saved-view-content { overflow-anchor: none; }

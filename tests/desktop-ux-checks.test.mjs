@@ -89,11 +89,11 @@ test('focused navigation renewal retains the original native command and affecte
  assert.ok(workflow.jobs['desktop-ux'].steps.some(step=>step.run==='node scripts/desktop-ux-checks.mjs navigation --native-only'));
 });
 
-test('focused navigation failure renewal selects only the failed macOS host and retains the normal three-host profile',async()=>{
+test('focused navigation failure renewal selects only the failed Windows hosts and retains the normal three-host profile',async()=>{
  const {readFile}=await import('node:fs/promises');const {load}=await import('js-yaml');const {runInNewContext}=await import('node:vm');
  const workflow=load(await readFile('.github/workflows/desktop-ci.yml','utf8'));const expression=workflow.jobs['desktop-ux'].strategy.matrix.os.slice(3,-2);
  const matrix=focused=>Array.from(runInNewContext(expression,{fromJSON:JSON.parse,inputs:{desktop_ux_profile:focused?'navigation-native':'navigation',desktop_ux_category_only:false}}));
- assert.deepEqual(matrix(true),['macos-latest']);assert.deepEqual(matrix(false),['macos-latest','windows-latest','windows-2022']);
+ assert.deepEqual(matrix(true),['windows-latest','windows-2022']);assert.deepEqual(matrix(false),['macos-latest','windows-latest','windows-2022']);
 });
 
 test('candidate provenance records focused navigation mode after shell quote processing',async()=>{

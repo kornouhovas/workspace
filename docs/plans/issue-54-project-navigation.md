@@ -188,3 +188,59 @@ adding a boolean exceeded GitHub's 25 workflow-dispatch inputs. The repair uses
 a fourth value in the existing profile choice instead. A route regression guards
 the input limit and focused/default host selection; no rejected dispatch counts
 as a failed or passing native run.
+
+## Final renewal receipts
+
+Application/configuration candidate: `cfe52a5516232bab7bd8733e66b1781f6e110060`.
+Focused macOS job in [39628465274](https://github.com/kornouhovas/workspace/actions/runs/39628465274),
+attempt 1, passed the original native command and affected regressions. Inspected
+artifact provenance matches that SHA, `navigation-native`, `navigationOnly:true`:
+32 screenshots, short-filter clamp, editor isolation/focus, per-view scroll,
+resize/collapse, tabs/history, Board, normal shutdown and asserted cleanup.
+Final Standards review of the enum route found no blockers; route tests pass
+10/10. Complete three-host renewal and delivery remain in the
+[GitHub checkpoint](https://github.com/kornouhovas/workspace/issues/54#issuecomment-6320187402).
+
+Representative local real-Electron scale diagnostic used the public service and
+temporary SQLite/folder fixtures for direct and grouped sources, each with
+1,000 projects, 20 properties and 10 views. Both passed first preview, repeated
+unique expand/return, far Board preview and keyboard preview across 1,000 Name
+columns; only three project rows were rendered at the far Board viewport.
+Observed first-preview times were 219/543ms and far-Board-preview 102/110ms
+(direct/grouped). These are single diagnostic observations, not a benchmark or
+strict packaged performance acceptance. Process shutdown and asserted fixture
+cleanup passed. Broader packaged/performance acceptance stays with #69/#67.
+
+Full renewal [39629050743](https://github.com/kornouhovas/workspace/actions/runs/39629050743)
+on `cfe52a55`: all three hosts passed 787 selected tests. macOS also passed
+the complete native/navigation, shell and saved-view profile. Both Windows
+hosts failed the original per-view return assertion: saved top 160 became 207,
+while horizontal 100 remained correct; no capture/cleanup failure masked it.
+The focused profile now selects the two failed Windows hosts for that original
+command and affected regressions. No timeout or assertion is weakened.
+
+A local trace confirmed `settle160 → save208` after restoration had released
+native anchoring. The earlier temporary suppression did not cover later async
+filter geometry changes. The saved-view viewport now retains `overflow-anchor:
+none` throughout its lifetime: the existing hook consistently owns explicit
+coordinates, including refreshes. Temporary trace logging was removed. Both
+independent reviews accepted this narrow repair; typecheck/lint/docs and 32
+affected tests pass. Local native behavior and all captures passed, but normal
+shutdown timed out; its report remains negative (forced parent cleanup, fixture
+cleanup skipped). Hosted normal-close evidence is still required.
+
+The final full local attempt on `cfe52a55` reported 3,177 pass / 24 fail / 26 skip
+(3,227 reported tests). Eleven property-editor fixture cases and eleven
+runtime-view-readiness cases failed their unchanged shutdown gates (three of
+the latter masked shutdown with post-close `app.process()` errors). The
+unchanged rename-editor-readiness worker hung in unbounded `app.close()` after
+its never-focused case; after over 95 seconds its owned worker/native process
+required forced termination, producing one failed file receipt. Its unexecuted
+cases are not counted as passes. The remaining failure was the initial Saved
+row wait in a renderer grouped-Apply scenario under the broad concurrent load;
+unchanged isolated case and complete renderer-file renewal passed (106/106),
+as did all 787 selected tests on each hosted platform. No test deadlines changed.
+The full attempt is not green and is not rerun to erase these negatives. Fixture,
+transitive native helpers, dependencies and launch resources are unchanged from
+the issue base. Broad native harness diagnosis remains #69; scoped delivery
+requires passing original navigation/platform consumers on the repaired input.
