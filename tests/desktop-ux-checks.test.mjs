@@ -78,3 +78,31 @@ test('navigation profile exercises shared shell, projects, real-service and nati
  assert.ok(workflow.on.workflow_dispatch.inputs.desktop_ux_profile.options.includes('navigation'));
  assert.ok(workflow.jobs['desktop-ux'].steps.some(step=>step.run==='node scripts/desktop-ux-checks.mjs navigation'));
 });
+
+test('focused navigation renewal retains the original native command and affected regressions without replaying other consumers',async()=>{
+ const {navigationCommands}=await import('../scripts/desktop-ux-checks.mjs');const text=JSON.stringify(navigationCommands({nativeOnly:true}));
+ for(const required of ['project-navigation-ui.test.tsx','viewport-projects-ui.test.tsx','views-ui.test.tsx','smoke-project-navigation.mjs'])assert.ok(text.includes(required));
+ assert.equal(text.includes('smoke:shell'),false);assert.equal(text.includes('renderer-app.test.tsx'),false);
+ const result=spawnSync(process.execPath,['scripts/desktop-ux-checks.mjs','navigation','--native-only','--failure-probe'],{encoding:'utf8'});assert.equal(result.status,23);
+ const {readFile}=await import('node:fs/promises');const {load}=await import('js-yaml');const workflow=load(await readFile('.github/workflows/desktop-ci.yml','utf8'));
+ assert.equal(workflow.on.workflow_dispatch.inputs.desktop_ux_navigation_only.default,false);
+ assert.ok(workflow.jobs['desktop-ux'].steps.some(step=>step.run==='node scripts/desktop-ux-checks.mjs navigation --native-only'));
+});
+
+test('focused navigation failure renewal selects only the failed macOS host and retains the normal three-host profile',async()=>{
+ const {readFile}=await import('node:fs/promises');const {load}=await import('js-yaml');const {runInNewContext}=await import('node:vm');
+ const workflow=load(await readFile('.github/workflows/desktop-ci.yml','utf8'));const expression=workflow.jobs['desktop-ux'].strategy.matrix.os.slice(3,-2);
+ const matrix=focused=>Array.from(runInNewContext(expression,{fromJSON:JSON.parse,inputs:{desktop_ux_navigation_only:focused,desktop_ux_profile:'navigation',desktop_ux_category_only:false}}));
+ assert.deepEqual(matrix(true),['macos-latest']);assert.deepEqual(matrix(false),['macos-latest','windows-latest','windows-2022']);
+});
+
+test('candidate provenance records focused navigation mode after shell quote processing',async()=>{
+ const {readFile}=await import('node:fs/promises');const {load}=await import('js-yaml');const {runInNewContext}=await import('node:vm');
+ const workflow=load(await readFile('.github/workflows/desktop-ci.yml','utf8'));const command=workflow.jobs['desktop-ux'].steps.find(step=>step.name==='Candidate provenance').run;
+ const argument=command.match(/-e ((?:'[^']*'|[^\s])+)/)?.[1];assert.ok(argument);
+ const source=argument.replace(/'([^']*)'/g,'$1').replace(/^import \{writeFileSync\} from "node:fs"; /,'');
+ for(const [flag,expected] of [['1',true],['0',false]]){
+  let receipt;runInNewContext(source,{process:{env:{GITHUB_SHA:'candidate-sha',WORKSPACE_UX_PROFILE:'navigation',WORKSPACE_UX_NAVIGATION_ONLY:flag}},writeFileSync:(_path,content)=>{receipt=JSON.parse(content);}});
+  assert.equal(receipt.sha,'candidate-sha');assert.equal(receipt.navigationOnly,expected);
+ }
+});

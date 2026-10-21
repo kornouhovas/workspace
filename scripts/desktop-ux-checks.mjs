@@ -54,9 +54,14 @@ export function boardCommands() {
 export const navigationTests = [...new Set([...boardTests,
   'project-navigation-ui.test.tsx', 'renderer-app.test.tsx',
   'view-filters-service.test.mjs', 'project-archive-ui.test.tsx',
-  'project-rename-ui.test.tsx', 'project-recovery-ui.test.tsx',
+  'project-rename-ui.test.tsx', 'project-recovery-ui.test.tsx', 'project-category-move-ui.test.tsx',
 ])];
-export function navigationCommands() {
+export function navigationCommands({nativeOnly=false}={}) {
+  if(nativeOnly) return [
+    ['npm',['run','typecheck']], ['npm',['run','lint']],
+    [process.execPath,['--import','tsx','--test','tests/project-navigation-ui.test.tsx','tests/viewport-projects-ui.test.tsx','tests/views-ui.test.tsx','tests/desktop-ux-checks.test.mjs']],
+    [process.execPath,['scripts/smoke-project-navigation.mjs']],
+  ];
   return [
     ['npm', ['run', 'typecheck']], ['npm', ['run', 'lint']],
     [process.execPath, ['--import','tsx','--test',...navigationTests.map(file=>`tests/${file}`)]],
@@ -74,8 +79,9 @@ export function runChecks(commands, run = (command,args)=>spawnSync(command,args
 }
 if(process.argv[1] && resolve(process.argv[1])===fileURLToPath(import.meta.url)) {
   const args=process.argv.slice(2);
-  if(args.some(arg=>!['foundation','board','navigation','--list','--failure-probe'].includes(arg)) || !['foundation','board','navigation'].includes(args[0])) throw new Error('Usage: desktop-ux-checks.mjs <foundation|board|navigation> [--list] [--failure-probe]');
-  const commands=args[0]==='navigation' ? navigationCommands() : args[0]==='board' ? boardCommands() : foundationCommands({failureProbe:args.includes('--failure-probe')});
+  if(args.some(arg=>!['foundation','board','navigation','--list','--failure-probe','--native-only'].includes(arg)) || !['foundation','board','navigation'].includes(args[0])) throw new Error('Usage: desktop-ux-checks.mjs <foundation|board|navigation> [--list] [--failure-probe]');
+  if(args.includes('--native-only') && args[0]!=='navigation')throw new Error('--native-only requires navigation');
+  const commands=args[0]==='navigation' ? navigationCommands({nativeOnly:args.includes('--native-only')}) : args[0]==='board' ? boardCommands() : foundationCommands({failureProbe:args.includes('--failure-probe')});
   if(args[0]!=='foundation' && args.includes('--failure-probe')) commands.unshift([process.execPath,['-e','process.exit(23)']]);
   if(args.includes('--list')) console.log(JSON.stringify(commands));
   else process.exitCode=runChecks(commands);

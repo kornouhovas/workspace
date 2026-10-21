@@ -62,6 +62,13 @@ try{
  await page.getByRole('tab',{name:'Review Table',exact:true}).click();await assertScroll(80,50);
  await page.getByRole('tab',{name:'Table',exact:true}).click();await assertScroll(160,100);
  await call('deleteView',{viewId:review.viewId});
+ await call('setViewFilter',{viewId,config:{search:'Atlas',rules:[]}});
+ await page.waitForFunction(()=>!document.querySelector('.saved-view-content').dataset.scrollRestoring && document.querySelectorAll('.saved-view-content [data-project-id]').length===1);
+ assert.equal(await page.locator('.saved-view-content').evaluate(el=>el.scrollTop),0);
+ await call('setViewFilter',{viewId,config:{search:'',rules:[]}});
+ await page.waitForFunction(()=>!document.querySelector('.saved-view-content').dataset.scrollRestoring && document.querySelectorAll('.saved-view-content [data-project-id]').length>1);
+ checks.push('scroll clamps and releases after a shorter filtered projection');
+
  await setScroll(0,0);
  const handle=page.getByRole('separator',{name:'Project area width',exact:true});
  const before=await page.locator('.project-area').evaluate(el=>el.getBoundingClientRect().width);
@@ -73,7 +80,7 @@ try{
   await setInterfaceLanguage(page,language);
   const en=language==='en';
   const preview=name=>page.getByRole('button',{name:`${en?'Preview project':'Открыть предпросмотр проекта'}: ${name}`,exact:true});
-  const openPreview=async name=>{const project=projects.find(p=>p.name===name);await page.locator(`.saved-view-content [data-project-id="${project.projectId}"]`).first().scrollIntoViewIfNeeded();await preview(name).click();};
+  const openPreview=async name=>{await page.waitForFunction(()=>!document.querySelector(".saved-view-content").dataset.scrollRestoring && !document.querySelector(".saved-view-content [aria-busy=true]"));const project=projects.find(p=>p.name===name);await page.locator(`.saved-view-content [data-project-id="${project.projectId}"]`).first().scrollIntoViewIfNeeded();await preview(name).click();};
   const expand=()=>page.getByRole('button',{name:en?'Expand project':'Развернуть проект',exact:true});
   const backRight=()=>page.getByRole('button',{name:en?'Return project to the right':'Вернуть проект вправо',exact:true});
   for(const theme of ['light','dark']){

@@ -1043,3 +1043,16 @@ dependency, native resource or installer input changes in this slice; ordinary
 full/foundation/release routes retain packaged checks. The route does not accept
 #64's tree, #55's persisted session, #56's complete draft guard or #69/#67.
 Failure propagation remains strict; suppressed/skipped jobs are not passes.
+
+For the original #54 native navigation failure (long project preview requested
+while the prior view's scroll restoration was still active), select
+`checks: desktop-ux`, `desktop_ux_profile: navigation`, and
+`desktop_ux_navigation_only: true`. This retains the build prerequisites,
+type/lint and navigation/viewport/views/route regressions, then the original
+`smoke-project-navigation.mjs` command with unchanged deadlines and shutdown/
+cleanup gates on the originally failed macOS host. It omits the unrelated
+full-profile consumers while diagnosing the failure. Default remains false;
+application repairs renew the complete navigation profile after focused success.
+Provenance records both profile and focused-mode selection. A shorter filtered
+projection must clamp its saved scroll to current bounds and release restoration;
+programmatic smoke scrolling waits for the actual selected projection to settle.

@@ -24,17 +24,28 @@ export function useViewScroll(viewId: string | undefined, expanded: boolean, pos
     const restore = () => {
       if(restoring.current !== target) return;
       window.cancelAnimationFrame(frame);
-      owner.scrollTop=target.top;owner.scrollLeft=target.left;
-      const children=scrollAreas(owner);
-      children.forEach((child,index)=>{const position=target.children[index] ?? {top:0,left:0};child.scrollTop=position.top;child.scrollLeft=position.left;});
       const ready=!owner.querySelector('[aria-busy="true"]');
-      const placed=owner.scrollTop===target.top && owner.scrollLeft===target.left && target.children.every((position,index)=>children[index]?.scrollLeft===position.left && children[index]?.scrollTop===position.top);
+      const bounded=(value:number,extent:number,viewport:number)=>ready ? Math.min(value,Math.max(0,extent-viewport)):value;
+      const apply=()=>{
+        const top=bounded(target.top,owner.scrollHeight,owner.clientHeight);
+        const left=bounded(target.left,owner.scrollWidth,owner.clientWidth);
+        owner.scrollTop=top;owner.scrollLeft=left;
+        const children=scrollAreas(owner);
+        let placed=owner.scrollTop===top && owner.scrollLeft===left;
+        children.forEach((child,index)=>{
+          const position=target.children[index] ?? {top:0,left:0};
+          const childTop=bounded(position.top,child.scrollHeight,child.clientHeight);
+          const childLeft=bounded(position.left,child.scrollWidth,child.clientWidth);
+          child.scrollTop=childTop;child.scrollLeft=childLeft;
+          placed &&= child.scrollTop===childTop && child.scrollLeft===childLeft;
+        });
+        return placed && (ready || children.length>=target.children.length);
+      };
+      const placed=apply();
       if(ready && placed)frame=window.requestAnimationFrame(()=>{
         frame=window.requestAnimationFrame(()=>{
           if(restoring.current!==target)return;
-          owner.scrollTop=target.top;owner.scrollLeft=target.left;
-          scrollAreas(owner).forEach((child,index)=>{const position=target.children[index] ?? {top:0,left:0};child.scrollTop=position.top;child.scrollLeft=position.left;});
-          restoring.current=null;delete owner.dataset.scrollRestoring;
+          apply();restoring.current=null;delete owner.dataset.scrollRestoring;
         });
       });
     };

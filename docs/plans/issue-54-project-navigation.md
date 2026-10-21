@@ -157,3 +157,28 @@ preview and restore focus to the preview button after a non-editor row click.
 The final row event guard excludes the entire existing property-editor subtree.
 The focused selected view/filter/layout/navigation renewal passes 37 scenarios;
 typecheck and lint pass. Final native confirms both click/focus cases as well.
+
+## Exact-SHA Actions failure and repair
+
+Candidate `22b5e7a4`, run [39626354180](https://github.com/kornouhovas/workspace/actions/runs/39626354180)
+attempt 1: Windows latest and Windows 2022 passed the complete navigation profile;
+macOS passed all selected renderer/service tests but the native flow timed out
+opening the long project after expand/return. Only five macOS artifact files
+were produced; later shell/views consumers there were not reached.
+
+The original native driver scrolled a windowed row before the previous view's
+restoration finished; that restoration could move it away and evict its fields.
+`openPreview` now waits for the selected projection's busy/restoration state to
+finish before programmatic scrolling. No deadline, product assertion or shutdown
+requirement changes. A new shorter-filter projection check also locks down an
+observed boundary: a saved offset beyond the new content extent must clamp and
+release restoration. The hook now clamps to current bounds once the projection
+is ready. The local original native command passes all 32 variants and that
+additional scenario; focused navigation/viewport/views/route regressions pass.
+
+The dedicated `desktop_ux_navigation_only` route defaults false and renews only
+the original failed macOS native command and affected regressions, with build
+prerequisites and exact provenance. The complete three-host navigation profile
+must then be renewed because the scroll-bound repair changes application input.
+Original failures, Windows successes and their separate SHA provenance remain
+recorded; no skipped/unreached stage is counted as passing evidence.
