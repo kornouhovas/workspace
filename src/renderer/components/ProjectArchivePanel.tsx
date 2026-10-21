@@ -8,6 +8,8 @@ import { translate, type TranslationKey } from "../localization.js";
 import { StatusMessage } from "./bb-foundation.js";
 import { TextPropertiesTable } from "./TextPropertiesTable.js";
 interface Props {
+  onPreview?(projectId:string,trigger:HTMLElement):void;
+  onSnapshot?(snapshot:ArchiveSnapshot|null):void;
   locationOnly?: boolean;
   viewId?: string;
   categoryProperty?: CategoryProperty | null; categories?: CategorySummary[];
@@ -22,10 +24,11 @@ const problemKeys: Record<string, TranslationKey> = {
   busy: "archiveProblemBusy", owned_location: "archiveProblemOwned",
 };
 export function ProjectArchivePanel(props: Props) { return <ArchiveContent key={`${props.workspaceId}:${props.sourceId}`} {...props} />; }
-function ArchiveContent({ locationOnly = false, viewId, categoryProperty, categories, layout = "table", client, workspaceId, sourceId, projects, language, disabled, revision, invalidation, onCommitted, onViewChange, onBlockedChange, onProjectAvailability }: Props) {
+function ArchiveContent({ onPreview, onSnapshot, locationOnly = false, viewId, categoryProperty, categories, layout = "table", client, workspaceId, sourceId, projects, language, disabled, revision, invalidation, onCommitted, onViewChange, onBlockedChange, onProjectAvailability }: Props) {
   const projectSelectId = useId();
   const t = (key: TranslationKey) => translate(language, key);
   const [archived, setArchived] = useState(false), [snapshot, setSnapshot] = useState<ArchiveSnapshot | null>(null);
+  useEffect(()=>{onSnapshot?.(snapshot);},[snapshot,onSnapshot]);
   useEffect(()=>{onProjectAvailability?.(!!snapshot?.projects.length);},[snapshot,onProjectAvailability]);
   const [operations, setOperations] = useState<ProjectArchiveOperation[]>([]);
   const [locationEditor, setLocationEditor] = useState(false);
@@ -190,7 +193,7 @@ function ArchiveContent({ locationOnly = false, viewId, categoryProperty, catego
       <button type="button" disabled={blocked} onClick={cancel} className="workspace-button workspace-button--secondary">{t("archiveCancel")}</button></div>}
     </ContextTools>
     {!locationOnly && archived && <div id={`archived-view-panel-${workspaceId}`} role="tabpanel" aria-labelledby={viewId ? `saved-view-${viewId}` : undefined}>{snapshot?.projects.length ? <>
-      {viewId && <TextPropertiesTable categoryProperty={categoryProperty} categories={categories} viewId={viewId} layout={layout} client={client} workspaceId={workspaceId} sourceId={sourceId} language={language} disabled={disabled} projects={snapshot.projects} hideReveal />}
+      {viewId && <TextPropertiesTable key={viewId} onPreview={onPreview} categoryProperty={categoryProperty} categories={categories} viewId={viewId} layout={layout} client={client} workspaceId={workspaceId} sourceId={sourceId} language={language} disabled={disabled} projects={snapshot.projects} hideReveal />}
     </> : <p>{t("archiveEmpty")}</p>}</div>}
   </section>;
 }

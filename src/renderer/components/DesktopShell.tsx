@@ -1,7 +1,9 @@
+import { AreaResize } from "./AreaResize.js";
+import { navigationLabels } from "./ProjectNavigation.js";
 import { Hint } from "./Hint.js";
 import { Icon } from "./Icons.js";
 // Settings navigation/section patterns adapted from bb f135a001. See docs/reuse.md and bb/LICENSE.
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import * as Tabs from "@radix-ui/react-tabs";
 import * as RadioGroup from "@radix-ui/react-radio-group";
 import type { Appearance, Language } from "../../contracts/settings.js";
@@ -30,9 +32,19 @@ export type WorkspaceAction = "settings" | "rename" | "remove" | "up" | "down";
 export function DesktopShell({ language, data, busy, locked, onCreate, onManage, onActivate, onEmptyWorkspaceShown, renderPanels, children }: {
   language: Language; data: WorkspaceLoad | null; busy: boolean; locked: boolean;
   onCreate?(): void; onManage?(id: string, action: WorkspaceAction): Promise<boolean>;
-  onActivate(id: string): void; onEmptyWorkspaceShown?(): void; renderPanels(back: () => void): Record<Section, ReactNode>; children: ReactNode;
+  onActivate(id: string): void | Promise<boolean>; onEmptyWorkspaceShown?(): void; renderPanels(back: () => void): Record<Section, ReactNode>; children: ReactNode;
 }) {
   const l = shellLabels[language];
+  const n = navigationLabels[language];
+  const [sidebarWidth,setSidebarWidth]=useState(220);
+  const [collapsed,setCollapsed]=useState(false);
+  const collapseButton=useRef<HTMLButtonElement>(null);
+  const collapseChanged=useRef(false);
+  useLayoutEffect(()=>{if(collapseChanged.current){collapseButton.current?.focus();collapseChanged.current=false;}},[collapsed]);
+  const [history,setHistory]=useState<{entries:string[];index:number}>({entries:[],index:-1});
+  const traversal=useRef<{destination:string;index:number}|null>(null);
+  const [historyPending,setHistoryPending]=useState(false);
+  const [historyError,setHistoryError]=useState(false);
   const [open, setOpen] = useState(false);
   const [contextId, setContextId] = useState<string | null>(null);
   const contextTrigger = useRef<HTMLButtonElement | null>(null);
@@ -40,6 +52,37 @@ export function DesktopShell({ language, data, busy, locked, onCreate, onManage,
   useEffect(() => {
     if (restoreContextFocus && !busy) { contextTrigger.current?.focus(); setRestoreContextFocus(false); }
   }, [restoreContextFocus, busy]);
+  const destination=open ? "settings" : data?.activeWorkspace ? `workspace:${data.activeWorkspace.workspaceId}` : null;
+  useEffect(()=>{
+    if(!destination)return;
+    const target=traversal.current;
+    if(target){
+      if(destination===target.destination){setHistory(h=>({...h,index:target.index}));traversal.current=null;setHistoryPending(false);}
+      return;
+    }
+    setHistory(h=>h.entries[h.index]===destination ? h : {entries:[...h.entries.slice(0,h.index+1),destination],index:h.index+1});
+  },[destination]);
+  const goHistory=async(index:number)=>{
+    if(busy || locked || traversal.current || index<0 || index>=history.entries.length)return;
+    const target=history.entries[index];
+    setHistoryError(false);
+    if(target===destination){setHistory(h=>({...h,index}));return;}
+    if(target!=="settings" && !data?.workspaces.some(w=>`workspace:${w.workspaceId}`===target)){
+      setHistoryError(true);setHistory(h=>({entries:h.entries.filter((_,i)=>i!==index),index:h.index-(index<h.index?1:0)}));return;
+    }
+    traversal.current={destination:target,index};setHistoryPending(true);
+    if(target==="settings"){enter();return;}
+    try{
+      const accepted=await onActivate(target.slice("workspace:".length));
+      if(accepted===false){traversal.current=null;setHistoryPending(false);setHistoryError(true);return;}
+      changedPage.current=true;setOpen(false);
+    }catch{traversal.current=null;setHistoryPending(false);setHistoryError(true);}
+  };
+  const navigationControls=<>
+    <Hint label={n.back}><button type="button" className="workspace-button workspace-button--secondary icon-button" aria-label={n.back} disabled={busy || locked || historyPending || history.index<=0} onClick={()=>void goHistory(history.index-1)}><Icon name="back"/></button></Hint>
+    <Hint label={n.forward}><button type="button" className="workspace-button workspace-button--secondary icon-button" aria-label={n.forward} disabled={busy || locked || historyPending || history.index>=history.entries.length-1} onClick={()=>void goHistory(history.index+1)}><Icon name="forward"/></button></Hint>
+    <Hint label={collapsed?n.restore:n.collapse}><button type="button" ref={collapseButton} className="workspace-button workspace-button--secondary icon-button" aria-label={collapsed?n.restore:n.collapse} aria-expanded={!collapsed} onClick={()=>{collapseChanged.current=true;setCollapsed(!collapsed);}}><Icon name="sidebar"/></button></Hint>
+  </>;
   const [section, setSection] = useState<Section>("general");
   const settingsButton = useRef<HTMLButtonElement>(null);
   const backButton = useRef<HTMLButtonElement>(null);
@@ -79,9 +122,10 @@ export function DesktopShell({ language, data, busy, locked, onCreate, onManage,
     }
   };
   const panels = renderPanels(back);
-  return <Tabs.Root className="desktop-shell bg-background text-foreground" orientation="vertical" activationMode="manual" value={section} onValueChange={value => setSection(value as Section)}>
+  return <Tabs.Root className={`desktop-shell bg-background text-foreground${collapsed?" desktop-shell--collapsed":""}`} style={{"--sidebar-width":`${sidebarWidth}px`} as React.CSSProperties} orientation="vertical" activationMode="manual" value={section} onValueChange={value => setSection(value as Section)}>
     <aside className="desktop-sidebar" aria-label={open ? l.settings : l.workspaces}>
-      <div className="desktop-brand">Workspace</div>
+      <div className="sidebar-navigation"><div className="desktop-brand">Workspace</div>{!collapsed && navigationControls}</div>
+      {historyError && <p role="status">{n.destination}</p>}
       <div className="sidebar-scroll">
         <div hidden={open}>
           <p className="sidebar-label">{l.workspaces}</p>
@@ -91,33 +135,36 @@ export function DesktopShell({ language, data, busy, locked, onCreate, onManage,
               onKeyDown={event => { if (event.key === "Escape" && contextId === workspace.workspaceId) { event.preventDefault(); setContextId(null); contextTrigger.current?.focus(); } }}>
               <button type="button" className="sidebar-item" data-workspace-id={workspace.workspaceId}
                 aria-current={data.activeWorkspace?.workspaceId === workspace.workspaceId ? "page" : undefined}
-                disabled={busy || locked} onClick={() => { setContextId(null); onActivate(workspace.workspaceId); }}>
+                disabled={busy || locked || historyPending} onClick={() => { setContextId(null); onActivate(workspace.workspaceId); }}>
                 <span aria-hidden="true" className="workspace-monogram">{workspace.name.trim().slice(0, 1).toUpperCase() || "W"}</span>
                 <span className="sidebar-name">{workspace.name}</span>
               </button>
-              {onManage && <Hint label={`${l.actions}: ${workspace.name}`}><button type="button" className="workspace-context-trigger" disabled={busy || locked}
+              {onManage && <Hint label={`${l.actions}: ${workspace.name}`}><button type="button" className="workspace-context-trigger" disabled={busy || locked || historyPending}
                 aria-label={`${l.actions}: ${workspace.name}`} aria-expanded={contextId === workspace.workspaceId}
                 onClick={event => { contextTrigger.current = event.currentTarget; setContextId(contextId === workspace.workspaceId ? null : workspace.workspaceId); }}><Icon name="more"/></button></Hint>}
               {contextId === workspace.workspaceId && <div role="group" className="workspace-context" aria-label={`${l.actions}: ${workspace.name}`}>
                 {(["settings", "rename", "up", "down", "remove"] as const).map(action => <button key={action} type="button" className="sidebar-item"
-                  disabled={busy || locked || (action === "up" && index === 0) || (action === "down" && index === all.length - 1)}
+                  disabled={busy || locked || historyPending || (action === "up" && index === 0) || (action === "down" && index === all.length - 1)}
                   onClick={() => void manage(workspace.workspaceId, action)}>{l[action]}</button>)}
               </div>}
             </div>)}
-            {onCreate && <button type="button" className="sidebar-item sidebar-create" disabled={busy || locked} onClick={onCreate}><Icon name="plus"/> {l.add}</button>}
+            {onCreate && <button type="button" className="sidebar-item sidebar-create" disabled={busy || locked || historyPending} onClick={onCreate}><Icon name="plus"/> {l.add}</button>}
           </nav>
         </div>
         <div hidden={!open}>
-          <button ref={backButton} type="button" className="sidebar-item" disabled={locked} onClick={back}><Icon name="back"/> {l.back}</button>
+          <button ref={backButton} type="button" className="sidebar-item" disabled={locked || historyPending} onClick={back}><Icon name="back"/> {l.back}</button>
           <p className="sidebar-label">{l.settings}</p>
           <Tabs.List aria-label={l.settings} className="sidebar-items">
-            {sections.map(item => <Tabs.Trigger className="sidebar-item" key={item} value={item} disabled={locked && item !== section}>{l[item]}</Tabs.Trigger>)}
+            {sections.map(item => <Tabs.Trigger className="sidebar-item" key={item} value={item} disabled={historyPending || locked && item !== section}>{l[item]}</Tabs.Trigger>)}
           </Tabs.List>
         </div>
       </div>
-      <button ref={settingsButton} type="button" className="sidebar-item sidebar-settings" hidden={open} disabled={locked} onClick={enter}><Icon name="settings"/>{l.settings}</button>
+      <button ref={settingsButton} type="button" className="sidebar-item sidebar-settings" hidden={open} disabled={locked || historyPending} onClick={enter}><Icon name="settings"/>{l.settings}</button>
     </aside>
+    {!collapsed && <AreaResize label={n.sidebar} value={sidebarWidth} min={180} max={320} onChange={setSidebarWidth}/>}
     <div className="desktop-area">
+      {collapsed && <div className="collapsed-navigation">{navigationControls}</div>}
+      {collapsed && historyError && <p className="collapsed-history-error" role="status">{n.destination}</p>}
       <div className="desktop-workspace" aria-hidden={open} inert={open}>{children}</div>
       <div className="desktop-settings" hidden={!open}>
         {sections.map(item => <Tabs.Content key={item} value={item} forceMount hidden={!open || section !== item} className="settings-page" tabIndex={0}>

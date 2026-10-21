@@ -1,5 +1,10 @@
 import type { ReactNode } from "react";
 const paths: Record<string, ReactNode> = {
+  expand: <path d="M14 4h6v6M20 4l-7 7M10 20H4v-6M4 20l7-7"/>,
+  returnRight: <><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M15 4v16M6 12h6m-3-3 3 3-3 3"/></>,
+  reopen: <><path d="M4 5v5h5M4 10a8 8 0 1 1 1 9"/></>,
+  forward: <path d="m10 6 6 6-6 6"/>,
+  sidebar: <><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16"/></>,
   up: <path d="m6 14 6-6 6 6"/>,
   down: <path d="m6 10 6 6 6-6"/>,
   edit: <><path d="m15 4 5 5-11 11H4v-5L15 4Z"/><path d="m12 7 5 5"/></>,

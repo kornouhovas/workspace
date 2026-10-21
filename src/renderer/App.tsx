@@ -1,3 +1,4 @@
+import { createNavigationMemory, type NavigationMemory } from "./components/ProjectNavigation.js";
 import { SourceSettings } from "./components/SourceSettings.js";
 import { DesktopShell, AppearanceControl, shellLabels } from "./components/DesktopShell.js";
 import { DataRecoveryPanel } from "./components/DataRecoveryPanel.js";
@@ -34,6 +35,8 @@ function WorkspaceSwitcher({ data, disabled, label, id, onActivate }: {
 }
 
 export function App() {
+  const navigationMemories = useRef(new Map<string,NavigationMemory>());
+  const memoryFor = (id:string) => { let memory=navigationMemories.current.get(id); if(!memory){memory=createNavigationMemory();navigationMemories.current.set(id,memory);}return memory; };
   const [sourceSettingsPending, setSourceSettingsPending] = useState(false);
   const [dataLocked, setDataLocked] = useState(false);
   const [client] = useState(() => new WorkspaceServiceClient());
@@ -350,6 +353,7 @@ export function App() {
     } finally {
       setBusy(null);
     }
+    return false;
   };
 
   const cancelRename = () => {
@@ -497,7 +501,7 @@ export function App() {
         return true;
       }}
       onEmptyWorkspaceShown={() => createPickerButton.current?.focus()}
-      onActivate={(id) => { setAddingWorkspace(false); void activateWorkspace(id); }}
+      onActivate={(id) => { setAddingWorkspace(false); return activateWorkspace(id); }}
       renderPanels={(back) => ({
         general: settingsAvailable ? <>          <section className="workspace-settings" aria-labelledby="settings-title">
             <h2 id="settings-title">{t("settingsTitle")}</h2>
@@ -687,7 +691,7 @@ export function App() {
                   {t(messageDescription.activation)}
                 </StatusMessage>
               )}
-              <DiscoveryWorkspace key={`${backendGeneration}:${activeWorkspace.workspaceId}:${activeWorkspace.sourceId}`}
+              <DiscoveryWorkspace memory={memoryFor(activeWorkspace.workspaceId)} key={`${backendGeneration}:${activeWorkspace.workspaceId}:${activeWorkspace.sourceId}`}
                 sourceStatus={<SourceRefresh language={language} pending={busy === "refresh"} error={refreshError}
                 degraded={sourceObservations.get(activeWorkspace.sourceId)?.automaticUpdates === "degraded"}
                 unavailable={!activeWorkspace.sourceAvailable || sourceFeedback?.workspaceId === activeWorkspace.workspaceId &&

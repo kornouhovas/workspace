@@ -781,3 +781,66 @@ p { margin-block: .5rem; }
 
 /* Portaled view controls sit above their owning contextual tools. */
 .presentation-popover, .filter-popover { z-index: 50; }
+
+/* Issue 54: one optional project area; no empty host or nested splits. */
+.desktop-shell { grid-template-columns: var(--sidebar-width, 220px) 5px minmax(0, 1fr); }
+.desktop-shell--collapsed { grid-template-columns: 0 0 minmax(0, 1fr); }
+.desktop-shell--collapsed > .desktop-sidebar { visibility: hidden; padding: 0; overflow: hidden; }
+.sidebar-navigation { display: flex; align-items: center; gap: 2px; flex-shrink: 0; }
+.sidebar-navigation .desktop-brand { flex: 1; min-width: 0; }
+.collapsed-navigation { position: absolute; left: 8px; top: 8px; display: flex; gap: 2px; z-index: 5; background: var(--background); border-radius: 5px; }
+.desktop-shell--collapsed .workspace-screen { padding-top: 44px; }
+.area-resize { cursor: col-resize; touch-action: none; background: var(--border); min-height: 0; outline-offset: -2px; }
+.area-resize:hover, .area-resize:focus-visible { background: var(--ring); }
+.workspace-screen, .workspace-controls, .workspace-content { min-height: 0; }
+.workspace-screen { height: 100%; }
+.workspace-controls { flex: 1; }
+.workspace-content { height: 100%; display: flex; flex-direction: column; }
+.project-navigation { height: 100%; display: flex; flex-direction: column; align-items: stretch; flex-wrap: nowrap; overflow: hidden; }
+.project-navigation > .views-panel { flex: 0 0 auto; min-width: 0; }
+.project-navigation > .project-work-body { flex: 1; min-height: 0; display: grid; gap: 0; overflow: hidden; }
+.saved-view-content { min-width: 0; min-height: 0; overflow: auto; display: flex; align-content: start; align-items: center; flex-wrap: wrap; gap: 6px; }
+.saved-view-content > .table-view { flex-basis: 100%; min-width: 0; }
+.saved-view-content > .project-creation { margin: 0; border: 0; padding: 0; }
+.saved-view-content > .project-archive { display: flex; flex: 1; flex-wrap: wrap; margin: 0; border: 0; padding: 0; gap: 4px; }
+.project-area { display: flex; flex-direction: column; min-width: 0; min-height: 0; background: var(--background); }
+.project-area-header { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.project-area-header h2 { font-size: 14px; font-weight: 600; margin: 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.project-area-actions { display: flex; gap: 2px; margin-left: auto; flex-shrink: 0; }
+.project-area-scroll { overflow: auto; min-height: 0; padding: 12px; }
+.project-area-path { color: var(--muted-foreground); font-size: 11px; overflow-wrap: anywhere; margin: 0 0 16px; }
+.project-detail-fields .project-table, .project-detail-fields tbody, .project-detail-fields tr { display: block; width: 100%; min-width: 0; }
+.project-detail-fields td { display: grid; grid-template-columns: minmax(80px, 35%) minmax(0, 1fr); gap: 8px; padding: 6px 0; border: 0; }
+.project-detail-fields td::before { content: attr(data-label); color: var(--muted-foreground); font-size: 12px; overflow-wrap: anywhere; }
+.project-detail-fields td[data-column-id="name"] { display: none; }
+.project-detail-fields .text-property-cell, .project-detail-fields .text-value-editor { min-width: 0; }
+.project-detail-fields .text-value-button { white-space: pre-wrap; overflow-wrap: anywhere; text-align: left; }
+.project-detail-fields .project-card-actions { display: block; }
+.project-detail-fields .project-card-actions::before { display: none; }
+.project-preview-trigger { padding: 0; border: 0; background: transparent; color: inherit; text-align: left; font: inherit; cursor: pointer; overflow-wrap: anywhere; }
+.project-preview-trigger:hover { text-decoration: underline; }
+.project-tabs, .retained-project-tabs, .project-tab { display: flex; align-items: center; min-width: 0; }
+.project-tabs { max-width: 100%; overflow-x: auto; flex: 1 1 auto; }
+.retained-project-tabs { gap: 3px; }
+.project-tab { flex: 0 0 auto; border: 1px solid var(--border); border-radius: 5px; max-width: 260px; }
+.project-tab:has([data-state="active"]) { background: var(--accent); }
+.project-tab .saved-view-tab { border: 0; max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.project-tab .tab-close, .project-tab .tab-menu { background: transparent; border: 0; padding: 3px; color: var(--muted-foreground); cursor: pointer; }
+.project-tab .tab-menu:hover, .project-tab .tab-close:hover { color: var(--foreground); background: var(--muted); }
+[hidden] { display: none !important; }
+.sidebar-navigation { flex-wrap: wrap; }
+.sidebar-navigation .desktop-brand { flex: 1 0 100%; }
+.project-detail-fields td { grid-template-columns: minmax(80px, 160px) minmax(0, 1fr); }
+.project-area-scroll { scrollbar-gutter: stable; }
+.collapsed-history-error { position: absolute; top: 36px; left: 8px; z-index: 6; background: var(--background); padding: 8px; border: 1px solid var(--border); }
+.desktop-shell > .desktop-area { grid-column: 3; }
+.project-navigation--expanded .project-area-header { padding: 14px 20px; }
+.project-navigation--expanded .project-area-header h2 { font-size: 20px; letter-spacing: -.02em; }
+.project-navigation--expanded .project-area-scroll { padding: 16px 20px; }
+.project-properties-heading { margin: 0 0 10px; font-size: 12px; color: var(--muted-foreground); font-weight: 500; }
+.project-detail-fields .project-table { border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+.project-detail-fields td { padding: 8px; border-bottom: 1px solid var(--border); }
+.project-detail-fields td:last-child { border-bottom: 0; }
+/* Native anchoring must not adjust the explicit per-view restoration while
+   asynchronous/windowed rows replace their measured placeholders. */
+.saved-view-content[data-scroll-restoring="true"] { overflow-anchor: none; }

@@ -1026,3 +1026,20 @@ broad-harness gates; passing bounded Board acceptance does not certify a green
 full suite or the coherent-interface milestone. The final scoped code/route
 matches the passing `d3f8ad7` three-host Board receipt; documentation-only
 follow-ups inherit it under the evidence policy above.
+
+### Bounded project navigation acceptance
+
+For #54, `checks: desktop-ux` with `desktop_ux_profile: navigation` selects
+`navigationCommands()` in `scripts/desktop-ux-checks.mjs`. It runs type/lint,
+affected shell/Table/Board/property/archive renderer and real SQLite/folder
+services, the Electron project preview/tab/resize journey and shared shell/views
+consumers on macOS latest, Windows latest and Windows 2022. Captures include
+EN/RU, both themes and sizes, preview/expanded/return, tab close/reopen, released
+width, resize bounds and sidebar collapse/restore. Artifacts include
+`work/issue-54-navigation` and exact candidate provenance.
+
+Use without packaged/category renewal switches. No IPC, database, runtime
+dependency, native resource or installer input changes in this slice; ordinary
+full/foundation/release routes retain packaged checks. The route does not accept
+#64's tree, #55's persisted session, #56's complete draft guard or #69/#67.
+Failure propagation remains strict; suppressed/skipped jobs are not passes.

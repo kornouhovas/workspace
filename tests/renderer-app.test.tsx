@@ -3671,7 +3671,7 @@ for (const platform of process.platform === "win32" ? [process.platform] : [proc
       assert.equal(renames.length, 1); assert.equal(statuses.length, 0); assert.equal(nativeCalls, 1);
       await userEvent.click(statusButton);
       await screen.findByText(t("renameSaved"));
-      assert.ok(screen.getByText(authoredName, { selector: "td span", normalizer: (text) => text }));
+      assert.ok(screen.getByText(authoredName, { selector: "td button.project-preview-trigger", normalizer: (text) => text }));
       assert.deepEqual(statusResults, serviceResults);
       const after = unwrap(service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId }));
       assert.equal(after.projects[0].projectId, project.projectId); assert.equal(after.projects[0].categoryId, project.categoryId);

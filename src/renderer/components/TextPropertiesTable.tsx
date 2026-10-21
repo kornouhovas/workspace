@@ -1,3 +1,4 @@
+import { navigationLabels } from "./ProjectNavigation.js";
 import { ViewControls } from "./ManagementSurface.js";
 import { Hint } from "./Hint.js";
 import { Icon } from "./Icons.js";
@@ -30,6 +31,8 @@ const resolutionLabels = {
 } as const;
 
 interface Props {
+  detail?: boolean;
+  onPreview?(projectId: string, trigger: HTMLElement): void;
   viewId?: string;
   layout?: "table" | "board";
   client: WorkspaceServiceClient;
@@ -59,7 +62,7 @@ interface Props {
 export function TextPropertiesTable(props: Props) {
   return <TextPropertiesContent key={`${props.workspaceId}:${props.sourceId}`} {...props} />;
 }
-function TextPropertiesContent({ viewId, layout = "table", hideReveal, client, workspaceId, sourceId, projects, retainedProjects = [], onLocate, locateDisabled, onRename, renameDisabled, onMoveCategory, onFilesystemAssignmentObserved, categoryMoveDisabled, categoryProperty, categories = [], categoryPropertyRevision = 0, discoveryRevision = 0, minimumDiscoveryRevision, sourceLifetime, minimumCategoryPropertyRevision, onCategoryPropertyCommitted, language, disabled }: Props) {
+function TextPropertiesContent({ detail, onPreview, viewId, layout = "table", hideReveal, client, workspaceId, sourceId, projects, retainedProjects = [], onLocate, locateDisabled, onRename, renameDisabled, onMoveCategory, onFilesystemAssignmentObserved, categoryMoveDisabled, categoryProperty, categories = [], categoryPropertyRevision = 0, discoveryRevision = 0, minimumDiscoveryRevision, sourceLifetime, minimumCategoryPropertyRevision, onCategoryPropertyCommitted, language, disabled }: Props) {
   const [grouped, setGrouped] = useState<{viewId:string; groups:ViewGroup[]|null;propertyId:string|null;refreshToken:number}|null>(null);
   const [filteredIds, setFilteredIds] = useState<{ viewId: string; ids: string[] | null } | null>(null);
   const [assignmentPending, setAssignmentPending] = useState(false);
@@ -319,6 +322,7 @@ function TextPropertiesContent({ viewId, layout = "table", hideReveal, client, w
         const rowIndex = rowPositions.get(project.projectId) ?? -1;
         const revealLocator = JSON.stringify([project.relativePath, project.categoryId, categories.find(category => category.categoryId === project.categoryId)?.relativePath, retained?.retentionReason]);
         return <ViewportProjectRow as={layout === "board" ? "li" : "tr"} key={project.projectId} projectId={project.projectId} projectName={project.name} language={language}
+          onPreview={onPreview ? trigger => onPreview(project.projectId, trigger) : undefined}
           columnCount={(viewId && layout === "table" ? columns.filter(column => !column.hidden).length : fields.length) + (hideReveal ? 0 : 1)}
           alwaysVisible={project.projectId === rowIds[0]} backwards={backwards} busy={disabled || !!renameDisabled || !!categoryMoveDisabled || !!locateDisabled || assignmentPending} className={layout === "board" ? `project-card ${boardState.config?.wrap === false ? "board-content-nowrap" : "board-content-wrap"}` : undefined}
           onDragOver={event => {if (layout === "table" && !rowBusy && event.dataTransfer.types.includes("application/x-workspace-table-row")) event.preventDefault();}}
@@ -328,7 +332,7 @@ function TextPropertiesContent({ viewId, layout = "table", hideReveal, client, w
             if (!raw) return;
             event.preventDefault(); event.stopPropagation();
             try { const payload = JSON.parse(raw); if (payload.workspaceId === workspaceId && payload.viewId === viewId && visibleIds.includes(payload.projectId)) moveRow(payload.projectId, project.projectId); } catch { /* Ignore unrelated drags. */ }
-          }}>{() => presentCells(<><Cell data-column-id="name" data-label={t("projectName")} key="project-name" aria-label={retained ? undefined : project.name}><span className="property-authored">{project.name}</span>
+          }}>{() => presentCells(<><Cell data-column-id="name" data-label={t("projectName")} key="project-name" aria-label={retained ? undefined : project.name}><span className="property-authored">{onPreview ? <button type="button" className="project-preview-trigger" disabled={disabled} aria-label={`${navigationLabels[language].preview}: ${project.name}`} onClick={event => onPreview(project.projectId,event.currentTarget)}>{project.name}</button> : project.name}</span>
           {viewId && assignmentProperty && grouped?.groups && (() => {
             const origin = grouped.groups.find(group => group.key === groupKey && group.projectIds.includes(project.projectId));
             return origin ? <GroupAssignment command={{type:"workspace.assignProjectGroup",workspaceId,viewId,propertyId:assignmentProperty.propertyId,projectId:project.projectId,fromKey:origin.key,toKey:origin.key,archived:!!hideReveal}}
@@ -389,6 +393,12 @@ function TextPropertiesContent({ viewId, layout = "table", hideReveal, client, w
         <button type="button" className="workspace-button workspace-button--secondary" disabled={pending} onClick={cancel}>{t("cancelRenameWorkspace")}</button>
       </div>
     </form>;
+  if (detail) return <div className="project-detail-fields" aria-busy={loading}>
+    <h3 className="project-properties-heading">{t("propertyTools")}</h3>
+    {loading && <StatusMessage kind="info" title={t("propertiesLoading")}/>}
+    {loadError && <><StatusMessage kind="error" title={t("propertiesLoadError")}/><button type="button" className="workspace-button" onClick={()=>void load()}>{t("propertiesRetry")}</button></>}
+    <table className="project-table"><tbody>{rows()}</tbody></table>
+  </div>;
   return <div className="text-properties" aria-busy={pending || loading} onKeyDownCapture={event => { if (event.key === "Tab") backwards.current = event.shiftKey; }}>
     {viewId && <ViewFilters client={client} workspaceId={workspaceId} viewId={viewId} archived={!!hideReveal} language={language}
       showEmpty={projects.length + retainedProjects.length > 0} snapshot={snapshot} categoryProperty={categoryProperty} categories={categories} disabled={disabled || loadError}
@@ -404,7 +414,7 @@ function TextPropertiesContent({ viewId, layout = "table", hideReveal, client, w
       {boardState.pending && <StatusMessage kind="info" title={t("boardLayoutSaving")}/>}
       {boardState.error && <StatusMessage kind="error" title={t("boardLayoutError")}/>}
     </>}
-    {loading && <StatusMessage kind="info" title={t("propertiesLoading")} />}
+    {loading && <StatusMessage kind="info" title={t("projectsLoading")} />}
     {loadError && <><StatusMessage kind="error" title={t("propertiesLoadError")} />
       <button type="button" className="workspace-button workspace-button--secondary" disabled={disabled || loading} onClick={() => void load()}>{t("propertiesRetry")}</button></>}
     <ViewControls><ContextTools label={t("propertyTools")} icon="properties">

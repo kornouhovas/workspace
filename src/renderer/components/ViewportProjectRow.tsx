@@ -23,10 +23,11 @@ interface Props {
   backwards: { current: boolean }; className?: string; style?: CSSProperties;
   onDragOver?(event: DragEvent<HTMLElement>): void;
   onDrop?(event: DragEvent<HTMLElement>): void;
+  onPreview?(trigger: HTMLElement): void;
   children(): ReactNode;
 }
 export function ViewportProjectRow({ as: Row, projectId, projectName, language, columnCount, alwaysVisible = false,
-  busy = false, backwards, className, style, onDragOver, onDrop, children }: Props) {
+  busy = false, backwards, className, style, onDragOver, onDrop, onPreview, children }: Props) {
   const supported = typeof IntersectionObserver !== "undefined";
   const [rendered, setRendered] = useState(!supported || alwaysVisible);
   const element = useRef<HTMLElement | null>(null), visible = useRef(false), focusRequested = useRef(false);
@@ -74,6 +75,7 @@ export function ViewportProjectRow({ as: Row, projectId, projectName, language, 
     onFocus={() => { focusRequested.current = true; setRendered(true); }}>{projectName}</button>;
   return <Row ref={(node: HTMLTableRowElement | HTMLLIElement | null) => { element.current = node; }} data-project-id={projectId} data-fields-ready={rendered}
     className={className} style={rendered ? style : { ...style, height: height.current, boxSizing: "border-box" }}
+    onClick={event => { const target = event.target as HTMLElement; if (onPreview && typeof target.closest === "function" && !target.closest('button, input, select, textarea, a, .text-property-cell, [role="button"], [role="menu"], [role="dialog"]')) onPreview(event.currentTarget.querySelector<HTMLButtonElement>(".project-preview-trigger") ?? event.currentTarget); }}
     onDragOver={onDragOver} onDrop={onDrop}
     onBlurCapture={() => { window.requestAnimationFrame(() => reconcileRef.current()); }}>
     {rendered ? children() : Row === "tr" ? <td colSpan={Math.max(1, columnCount)}>{gate}</td> : gate}

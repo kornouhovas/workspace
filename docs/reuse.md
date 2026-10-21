@@ -117,3 +117,12 @@ horizontal column/header/card composition; the local card/header density uses
 the existing bb-inspired Inter foundation. No new upstream source, icon asset or
 dependency is copied. Typed value editors and view-owned grouping/layout services
 remain the mutation boundaries. See the [implementation handoff](plans/issue-53-contextual-board.md).
+
+## Issue 54 project navigation
+
+Project preview/expanded composition and retained tab journeys follow pinned
+main `080b416c`, subject to the accepted single-project/unique-tab exceptions.
+The implementation uses the existing Inter, semantic tokens, local outline icons,
+Hint and pinned Radix Tabs/Dropdown Menu. New tab/session, resize and scroll
+controllers are local code; no additional upstream module or dependency was
+copied. Existing bb notices and licenses remain applicable and unchanged.

@@ -99,7 +99,7 @@ for (const observation of [false, true]) test(`${language}: current-category com
   assert.deepEqual(client.list, before);
   assert.deepEqual(client.moves, [{ workspaceId: "workspace", projectId: "project", operationId: operation.operationId, destinationCategoryId: "current", expectedRevision: 1 }]);
   assert.deepEqual(client.recoveries, []); assert.deepEqual(client.statusCalls, []);
-  assert.ok(screen.getByText("  Exact 📝  ", { selector: "td span", normalizer: value => value }));
+  assert.ok(screen.getByText("  Exact 📝  ", { selector: "td .project-preview-trigger", normalizer: value => value }));
   assert.ok(screen.getByText("  Exact Text\nТекст  ", { normalizer: value => value }));
 });
 test(`${language}: delayed creation list keeps read-only status usable with an unsubmitted category editor open`, async () => {
@@ -160,7 +160,7 @@ test(`${language}: explicit grouped category selection moves the folder without 
   assert.deepEqual({ ...client.moves[0], operationId: "fresh" }, { workspaceId: "workspace", projectId: "project", destinationCategoryId: "empty", expectedRevision: 1, operationId: "fresh" });
   assert.match(client.moves[0].operationId, /^[0-9a-f-]{36}$/);
   await waitFor(() => assert.equal(client.list.projects[0].categoryId, "empty"));
-  assert.ok(screen.getByText("  Exact 📝  ", { selector: "td span", normalizer: (value) => value }));
+  assert.ok(screen.getByText("  Exact 📝  ", { selector: "td .project-preview-trigger", normalizer: (value) => value }));
   assert.ok(screen.getByText("  Exact Text\nТекст  ", { normalizer: (value) => value }));
 });
 
@@ -278,7 +278,7 @@ for (const language of ["en", "ru"] as const) {
       if (restriction === "retained") client.list = { ...client.list, retainedCount: 1, retainedProjects: [{ ...client.list.projects[0], associationState: "missing", resolution: "missing" }], projects: [] };
       if (restriction === "unresolved") client.list = { ...client.list, projects: [{ ...client.list.projects[0], resolution: "unresolved" }] };
       if (restriction === "unavailable") client.list = { ...client.list, state: "unavailable", projects: [{ ...client.list.projects[0], resolution: null }] };
-      mount(client); await screen.findByText("  Exact 📝  ", { selector: "td span", normalizer: (value) => value });
+      mount(client); await screen.findByText("  Exact 📝  ", { selector: "td .project-preview-trigger", normalizer: (value) => value });
       assert.equal(screen.queryByRole("button", { name: new RegExp(`^${t("moveCategory")}:`) }), null);
       assert.ok(await findAction("button", { name: new RegExp(`^${t("editTextValue")}:`) }));
       assert.equal(client.moves.length, 0);
@@ -452,7 +452,7 @@ for (const language of ["en", "ru"] as const) {
     await screen.findByText(t(action === "keep_original" ? "moveCategoryKeptOriginal" : "moveCategorySaved"));
     assert.deepEqual(client.recoveries, [["workspace", "interrupted", "fresh-token", action]]);
     assert.deepEqual(client.reviews, [["workspace", "interrupted"]]); assert.equal(client.moves.length, 0);
-    assert.ok(screen.getByText("  Exact 📝  ", { selector: "td span", normalizer: (value) => value }));
+    assert.ok(screen.getByText("  Exact 📝  ", { selector: "td .project-preview-trigger", normalizer: (value) => value }));
     assert.ok(screen.getByText("  Exact Text\nТекст  ", { normalizer: (value) => value }));
   });
   for (const state of ["missing", "replaced", "link", "unavailable", "conflicting"] as const) test(`${language}: ${state} recovery evidence offers no action`, async () => {

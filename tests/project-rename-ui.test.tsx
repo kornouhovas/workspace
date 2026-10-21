@@ -75,7 +75,7 @@ for (const language of ["en", "ru"] as const) {
     const input = screen.getByRole("textbox", { name: t("projectName") });
     assert.equal(document.activeElement === input, true);
     await userEvent.clear(input); await userEvent.type(input, "  Текст 📝  {Enter}");
-    await screen.findByText("  Текст 📝  ", { selector: "td span", normalizer: (text) => text });
+    await screen.findByText("  Текст 📝  ", { selector: "td .project-preview-trigger", normalizer: (text) => text });
     assert.equal(client.renames.length, 1);
     assert.equal(client.renames[0].name, "  Текст 📝  ");
     assert.equal(client.renames[0].workspaceId, "workspace"); assert.equal(client.renames[0].projectId, "project"); assert.equal(client.renames[0].expectedRevision, 1);
@@ -99,7 +99,7 @@ for (const language of ["en", "ru"] as const) {
     await userEvent.clear(input); await userEvent.type(input, "Draft");
     const submit = screen.getByRole("button", { name: t("renameSubmit") });
     fireEvent.click(submit); fireEvent.click(submit); assert.equal(client.renames.length, 1);
-    assert.ok(screen.getByText("Original", { selector: "td span" })); assert.equal(document.activeElement, screen.getByRole("button", { name: t("cancelRenameWorkspace") }));
+    assert.ok(screen.getByText("Original", { selector: "td .project-preview-trigger" })); assert.equal(document.activeElement, screen.getByRole("button", { name: t("cancelRenameWorkspace") }));
     await userEvent.click(screen.getByRole("button", { name: t("cancelRenameWorkspace") }));
     assert.equal((document.activeElement as HTMLElement)?.getAttribute("aria-label"), `${t("projectActions")}: Original`);
     const trigger = await findAction("button", { name: `${t("renameProject")}: Original` }); assert.equal((trigger as HTMLButtonElement).disabled, true);
@@ -124,7 +124,7 @@ for (const language of ["en", "ru"] as const) {
       mount(client); await edit(); const input = screen.getByRole("textbox", { name: t("projectName") });
       await userEvent.clear(input); await userEvent.type(input, "  Draft  {Enter}");
       await screen.findByText(t(key)); assert.equal((input as HTMLInputElement).value, "  Draft  "); assert.equal((input as HTMLInputElement).disabled, false);
-      assert.equal(document.activeElement === input, true); assert.ok(screen.getByText("Original", { selector: "td span" }));
+      assert.equal(document.activeElement === input, true); assert.ok(screen.getByText("Original", { selector: "td .project-preview-trigger" }));
       assert.equal(screen.queryByRole("button", { name: t("renameStatus") }), null); assert.equal(client.renames.length, 1);
     });
   }
@@ -146,7 +146,7 @@ for (const language of ["en", "ru"] as const) {
     mount(client); await edit(); await userEvent.type(screen.getByRole("textbox", { name: t("projectName") }), "{Enter}");
     await screen.findByText(t("renameRecoverable")); assert.ok(screen.getByRole("button", { name: t("renameStatus") }));
     assert.equal((screen.getByRole("button", { name: t("renameSubmit") }) as HTMLButtonElement).disabled, true);
-    assert.ok(screen.getByText("Original", { selector: "td span" })); assert.equal(client.renames.length, 1);
+    assert.ok(screen.getByText("Original", { selector: "td .project-preview-trigger" })); assert.equal(client.renames.length, 1);
   });
 }
 for (const language of ["en", "ru"] as const) {
@@ -216,12 +216,12 @@ for (const language of ["en", "ru"] as const) {
           ? { type: "workspace.sourceObserved", sourceId: "source", workspaceIds: ["workspace", "sibling"], observationRevision: 10, state: change === "unavailable" ? "unavailable" : "ready", automaticUpdates: "active" }
           : { type: "workspace.projectsChanged", sourceId: change === "unrelated" ? "another-source" : "source", workspaceIds: ["workspace", "sibling"], revision: client.list.revision }));
       });
-      if (change === "unrelated") assert.ok(screen.getByText("Original", { selector: "td span" }));
+      if (change === "unrelated") assert.ok(screen.getByText("Original", { selector: "td .project-preview-trigger" }));
       await act(async () => response.resolve({ ok: true, value: receipt }));
       const newer = ["newer-sibling", "observation", "unavailable", "refresh"].includes(change);
       await screen.findByText(t(newer ? "renameNewer" : "renameSaved"));
-      assert.ok(screen.getByText(change === "newer-sibling" ? "Newer external" : "Requested", { selector: "td span" }));
-      if (change === "newer-sibling") assert.equal(screen.queryByText("Requested", { selector: "td span" }), null);
+      assert.ok(screen.getByText(change === "newer-sibling" ? "Newer external" : "Requested", { selector: "td .project-preview-trigger" }));
+      if (change === "newer-sibling") assert.equal(screen.queryByText("Requested", { selector: "td .project-preview-trigger" }), null);
       assert.equal(client.renames.length, 1);
     });
   }
@@ -309,7 +309,7 @@ test("explicit recovery review advertises fresh placements and submits only the 
   await userEvent.click(screen.getByRole("button", { name: "Keep original folder" }));
   await screen.findByText("Original folder retained. Rename resolved.");
   assert.deepEqual(client.recoveries, [["workspace", "interrupted", "fresh-token", "keep_original"]]);
-  assert.equal(client.renames.length, 0); assert.ok(screen.getByText("Original", { selector: "td span" }));
+  assert.equal(client.renames.length, 0); assert.ok(screen.getByText("Original", { selector: "td .project-preview-trigger" }));
 });
 
 const recoveryActions = { retry_original: "renameRetryOriginal", finish_staged: "renameFinishStaged", complete_destination: "renameCompleteDestination", keep_original: "renameKeepOriginal" } as const;
@@ -336,13 +336,13 @@ for (const language of ["en", "ru"] as const) {
       assert.ok(document.activeElement === screen.getByRole("heading", { name: t("renameReviewTitle") }));
       submit.focus(); fireEvent.click(submit); fireEvent.click(submit);
       assert.deepEqual(client.recoveries, [["workspace", "interrupted", "fresh-token", action]]);
-      assert.ok(screen.getByText("Original", { selector: "td span" })); assert.ok(screen.getByText("Exact text"));
+      assert.ok(screen.getByText("Original", { selector: "td .project-preview-trigger" })); assert.ok(screen.getByText("Exact text"));
       assert.ok(document.activeElement === screen.getByRole("button", { name: t("renameReviewClose") }));
       const retained = action === "keep_original";
       client.unfinished = []; client.list = { ...client.list, revision: retained ? 1 : 2, projects: [{ ...client.list.projects[0], name: retained ? "Original" : "Requested", relativePath: retained ? operation.originalRelativePath : operation.requestedRelativePath }] };
       await act(async () => response.resolve({ ok: true, value: retained ? { outcome: "rejected", problem: "kept_original", operation: { ...operation, stage: "failed", resultKind: "rejected", problem: "kept_original", lastVerifiedPlacement: "original" } } : recoveryCompleted(operation) }));
       await screen.findByText(t(retained ? "renameKeptOriginal" : "renameSaved"));
-      await screen.findByText(retained ? "Original" : "Requested", { selector: "td span" });
+      await screen.findByText(retained ? "Original" : "Requested", { selector: "td .project-preview-trigger" });
       assert.ok(screen.getByText("Exact text")); assert.equal(client.statusCalls.length, 0); assert.equal(client.reviews.length, 1); assert.equal(client.renames.length, 0);
       assert.equal(screen.queryByRole("heading", { name: t("renameReviewTitle") }), null);
       assert.ok(document.activeElement === screen.getByRole("button", { name: t("sourceTools") }));
@@ -493,7 +493,7 @@ for (const language of ["en", "ru"] as const) {
     client.unfinished = []; client.list = { ...client.list, revision: 3, projects: [{ ...initial.projects[0], name: "Newer external", relativePath: "Newer external" }] };
     await act(async () => client.events.forEach((listener) => listener({ type: "workspace.projectsChanged", sourceId: "source", workspaceIds: ["workspace", "sibling"], revision: 3 })));
     await act(async () => response.resolve({ ok: true, value: recoveryCompleted() })); await screen.findByText(t("renameNewer"));
-    await screen.findByText("Newer external", { selector: "td span" }); assert.ok(document.activeElement === text); assert.equal(client.recoveries.length, 1); assert.equal(client.reviews.length, 1);
+    await screen.findByText("Newer external", { selector: "td .project-preview-trigger" }); assert.ok(document.activeElement === text); assert.equal(client.recoveries.length, 1); assert.equal(client.reviews.length, 1);
   });
   for (const change of ["observation", "refresh", "backend", "unmount"] as const) test(`${language}: ${change} rejects delayed preview without recovery`, async () => {
     const client = new Client(), response = deferred<ServiceResult<ProjectRenameRecoveryPreview>>(); client.unfinished = [interrupted]; client.reviewHandler = () => response.promise;
@@ -561,7 +561,7 @@ for (const language of ["en", "ru"] as const) for (const mode of ["direct", "gro
     await userEvent.keyboard("{Enter}");
     assert.equal(screen.queryByRole("textbox", { name: t("projectName") }), null);
     assert.equal(document.activeElement === contextReturnTarget(trigger as HTMLButtonElement), true); assert.equal(client.renames.length, 0);
-    assert.equal(screen.getByText(original, { selector: "td span", normalizer: (text) => text }).textContent, original);
+    assert.equal(screen.getByText(original, { selector: "td .project-preview-trigger", normalizer: (text) => text }).textContent, original);
     assert.ok(screen.getByText("Exact text"));
     await userEvent.keyboard("{Enter}");
     await userEvent.click(await findAction("button", {name:new RegExp(`^${t("renameProject")}:`)}));

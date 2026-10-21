@@ -1,3 +1,9 @@
+import { useViewScroll } from "./useViewScroll.js";
+import type { ArchiveSnapshot } from "../../contracts/project-archive.js";
+import { ProjectTabs, useProjectNavigation, navigationLabels, type NavigationMemory } from "./ProjectNavigation.js";
+import { AreaResize } from "./AreaResize.js";
+import { Hint } from "./Hint.js";
+import { Icon } from "./Icons.js";
 import { ManagementSurface, ManagementTarget, ViewToolsTarget, ViewControlsScope } from "./ManagementSurface.js";
 import { ContextTools } from "./ContextTools.js";
 import { ViewsPanel } from "./ViewsPanel.js";
@@ -9,7 +15,7 @@ import { ProjectRenamePanel } from "./ProjectRenamePanel.js";
 import { ProjectCreationPanel } from "./ProjectCreationPanel.js";
 import { ProjectRecoveryController } from "./ProjectRecoveryPanel.js";
 import { TextPropertiesTable } from "./TextPropertiesTable.js";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import type { ProjectAssociationSummary, CategoryPropertySnapshot, DiscoveryEntry, DiscoveryMode, DiscoveryPreview, ProjectList } from "../../contracts/workspaces.js";
 import type { Language } from "../../contracts/settings.js";
 import { translate, type TranslationKey } from "../localization.js";
@@ -245,13 +251,29 @@ export function DiscoveryController({ client, workspaceId, sourceId, minimumRevi
 }
 
 
-export function DiscoveryWorkspace({ client, workspaceId, sourceId, refreshVersion = 0, onSourceState, onRecoveryPending, language, disabled, sourcePath, sourceStatus }: {
-  sourceStatus?: ReactNode; sourcePath?: string; client: WorkspaceServiceClient; workspaceId: string; sourceId: string; refreshVersion?: number;
+export function DiscoveryWorkspace({ memory, client, workspaceId, sourceId, refreshVersion = 0, onSourceState, onRecoveryPending, language, disabled, sourcePath, sourceStatus }: {
+  memory?: NavigationMemory; sourceStatus?: ReactNode; sourcePath?: string; client: WorkspaceServiceClient; workspaceId: string; sourceId: string; refreshVersion?: number;
   onSourceState?(workspaceId: string, state: ProjectList["state"]): void; language: Language; disabled: boolean;
   onRecoveryPending?(pending: boolean): void;
 }) {
   const [view, setView] = useState<WorkspaceView | null>(null);
+  const navigation = useProjectNavigation(view?.viewId,memory);
+  const labels = navigationLabels[language];
+  const [projectWidth, setProjectWidth] = useState(memory?.width ?? 360);
+  const workBody=useRef<HTMLDivElement>(null);
+  const [maximumProjectWidth,setMaximumProjectWidth]=useState(600);
+  useLayoutEffect(()=>{
+    const element=workBody.current;if(!element)return;
+    const resize=()=>{if(element.clientWidth>0)setMaximumProjectWidth(Math.max(280,Math.min(600,element.clientWidth-285)));};
+    resize();const observer=typeof ResizeObserver === "undefined"?null:new ResizeObserver(resize);observer?.observe(element);return ()=>observer?.disconnect();
+  },[]);
+  const effectiveProjectWidth=Math.min(projectWidth,maximumProjectWidth);
+  useEffect(()=>{if(memory)memory.width=projectWidth;},[memory,projectWidth]);
+  const scrolls = useRef(memory?.scrolls ?? new Map());
+  const scroll = useViewScroll(view?.viewId,!!navigation.expanded,scrolls.current);
+  const saveScroll = scroll.save;
   const [showArchived, setShowArchived] = useState(false);
+  const [archiveSnapshot,setArchiveSnapshot]=useState<ArchiveSnapshot|null>(null);
   const [archiveHasProjects,setArchiveHasProjects]=useState(false);
   const [setupDeferred, setSetupDeferred] = useState(false);
   const [sourceToolsOpen, setSourceToolsOpen] = useState(false);
@@ -406,10 +428,20 @@ export function DiscoveryWorkspace({ client, workspaceId, sourceId, refreshVersi
     void load();
   }, [refreshVersion]);
   useEffect(() => { if (projects) onSourceState?.(workspaceId, projects.state); }, [projects?.state, workspaceId, onSourceState]);
-  return <ManagementSurface><div className="daily-workspace">
+  const selectedId = navigation.expanded ?? navigation.preview;
+  const selectedProject = [...(projects?.projects ?? []), ...(projects?.retainedProjects ?? []),...(archiveSnapshot?.projects ?? [])].find(project=>project.projectId===selectedId);
+  const knownNames = useRef(memory?.names ?? new Map<string,string>());
+  for(const project of [...(projects?.projects ?? []),...(projects?.retainedProjects ?? []),...(archiveSnapshot?.projects ?? [])]) knownNames.current.set(project.projectId,project.name);
+  const projectName = (id:string)=>knownNames.current.get(id) ?? id;
+  return <ManagementSurface><div className={`daily-workspace project-navigation${navigation.expanded ? " project-navigation--expanded" : ""}`}>
+
     {sourceStatus}
-    <ViewsPanel tools={projects?.configured ? <ViewToolsTarget label={t("viewSettings")} hidden={showArchived && !archiveHasProjects} /> : undefined} panelId={`${showArchived ? "archived" : "active"}-view-panel-${workspaceId}`} client={client} workspaceId={workspaceId} language={language} onChange={setView}
+    <ViewsPanel onWillLoad={scroll.suspend} projectActive={!!navigation.expanded} onSelectView={()=>{saveScroll();navigation.selectView();}}
+      projectTabs={<ProjectTabs session={navigation} language={language} name={projectName} disabled={disabled}/>}
+      tools={projects?.configured ? <ViewToolsTarget label={t("viewSettings")} hidden={showArchived && !archiveHasProjects} /> : undefined} panelId={`${showArchived ? "archived" : "active"}-view-panel-${workspaceId}`} client={client} workspaceId={workspaceId} language={language} onChange={next=>{setView(next);scroll.resume();}}
       disabled={disabled || categoryOptionsBlocked || creationBlocked || discoveryPending || recoveryProject !== null || renameProject !== null || renameBlocked || categoryMoveProject !== null || categoryMoveBlocked || archiveBlocked} />
+    <div className="project-work-body" ref={workBody} style={{gridTemplateColumns:navigation.expanded || !selectedId ? "minmax(0, 1fr)" : `minmax(280px, 1fr) 5px ${effectiveProjectWidth}px`}}>
+    <div className="saved-view-content" ref={scroll.element} onScrollCapture={saveScroll} onWheelCapture={scroll.cancelRestore} onPointerDownCapture={scroll.cancelRestore} onKeyDownCapture={scroll.cancelRestore} hidden={!!navigation.expanded}>
     <ContextTools label={t("sourceTools")} icon="settings" compact open={sourceToolsOpen} onOpenChange={setSourceToolsOpen}>
     {sourcePath && <p className="workspace-root">{sourcePath}</p>}
     <DiscoveryController onPostpone={projects && !projects.configured && !setupDeferred ? () => setSetupDeferred(true) : undefined} client={client} workspaceId={workspaceId} sourceId={sourceId} minimumRevision={minimumRevision}
@@ -467,7 +499,7 @@ export function DiscoveryWorkspace({ client, workspaceId, sourceId, refreshVersi
         if (updated.categoryPropertyRevision < minimumCategoryPropertyRevision.current) void load();
       }} />}
     {recoverySaved && <StatusMessage kind="info" title={t("recoverySaved")} />}
-    <ProjectArchivePanel categoryProperty={projects?.categoryProperty} categories={projects?.categories} viewId={view?.viewId} layout={view?.kind} client={client} workspaceId={workspaceId} sourceId={sourceId} projects={projects?.projects ?? []}
+    <ProjectArchivePanel onPreview={(id,trigger)=>navigation.show(id,trigger)} onSnapshot={setArchiveSnapshot} categoryProperty={projects?.categoryProperty} categories={projects?.categories} viewId={view?.viewId} layout={view?.kind} client={client} workspaceId={workspaceId} sourceId={sourceId} projects={projects?.projects ?? []}
       language={language} revision={projects?.revision ?? 0} invalidation={invalidation} onViewChange={setShowArchived} onProjectAvailability={setArchiveHasProjects}
       onBlockedChange={setArchiveBlocked} onCommitted={() => void load()}
       disabled={disabled || categoryOptionsBlocked || creationBlocked || discoveryPending || recoveryProject !== null || renameProject !== null || renameBlocked || categoryMoveProject !== null || categoryMoveBlocked} />
@@ -493,7 +525,7 @@ export function DiscoveryWorkspace({ client, workspaceId, sourceId, refreshVersi
         {projects.categories.length > 0 ? <ul>{projects.categories.filter(c => showHiddenCategories || !c.presentation?.hidden).map((category) => <li key={category.categoryId}><span className="category-chip" data-color={category.presentation?.color ?? "default"}>{category.name}</span></li>)}</ul>
           : <p>{t("savedCategoriesEmpty")}</p>}
       </details>}
-      {view && projects?.configured && <TextPropertiesTable viewId={view.viewId} layout={view.kind} sourceLifetime={sourceLifetime} discoveryRevision={projects?.revision ?? 0} minimumDiscoveryRevision={minimumRevision} categoryPropertyRevision={projects?.categoryPropertyRevision ?? 0} minimumCategoryPropertyRevision={minimumCategoryPropertyRevision}
+      {view && projects?.configured && <TextPropertiesTable key={view.viewId} onPreview={(id,trigger)=>navigation.show(id,trigger)} viewId={view.viewId} layout={view.kind} sourceLifetime={sourceLifetime} discoveryRevision={projects?.revision ?? 0} minimumDiscoveryRevision={minimumRevision} categoryPropertyRevision={projects?.categoryPropertyRevision ?? 0} minimumCategoryPropertyRevision={minimumCategoryPropertyRevision}
         onFilesystemAssignmentObserved={() => { setInvalidation(value => value + 1); void load(); }}
         onCategoryPropertyCommitted={commitLabel} categoryProperty={projects?.categoryProperty ?? null} categories={projects?.categories ?? []} client={client} workspaceId={workspaceId} sourceId={sourceId}
         renameDisabled={categoryOptionsBlocked || creationBlocked || discoveryPending || loading || error || renameBlocked || renameProject !== null || recoveryProject !== null || categoryMoveProject !== null || categoryMoveBlocked || !projects?.configured ||
@@ -508,5 +540,26 @@ export function DiscoveryWorkspace({ client, workspaceId, sourceId, refreshVersi
         } : undefined}
         projects={projects?.projects ?? []} retainedProjects={projects?.retainedProjects ?? []} language={language} disabled={disabled} />}
     </section></ViewControlsScope>
+    </div>
+    {selectedId && <>
+      {!navigation.expanded && <AreaResize label={labels.projectWidth} value={effectiveProjectWidth} min={280} max={maximumProjectWidth} reverse onChange={setProjectWidth}/>}
+      <section className="project-area" role="region" aria-label={`${labels.project}: ${projectName(selectedId)}`}>
+        <header className="project-area-header"><h2 title={projectName(selectedId)}>{projectName(selectedId)}</h2>
+          <div className="project-area-actions">
+            <Hint label={navigation.expanded ? labels.returnRight : labels.expand}><button type="button" className="workspace-button workspace-button--secondary icon-button" disabled={disabled} aria-label={navigation.expanded ? labels.returnRight : labels.expand}
+              onClick={()=>{saveScroll();if(navigation.expanded){navigation.close([selectedId],true);navigation.focusView();}else navigation.expand(selectedId);}}><Icon name={navigation.expanded ? "returnRight":"expand"}/></button></Hint>
+            <Hint label={navigation.expanded ? labels.close : labels.closePreview}><button type="button" className="workspace-button workspace-button--secondary icon-button" disabled={disabled} aria-label={navigation.expanded ? labels.close : labels.closePreview}
+              onClick={()=>{if(navigation.expanded){navigation.close([selectedId]);navigation.focusView();}else navigation.closePreview();}}><Icon name="close"/></button></Hint>
+          </div>
+        </header>
+        <div className="project-area-scroll">
+          {selectedProject ? <><p className="project-area-path">{selectedProject.relativePath}</p>
+            <TextPropertiesTable key={selectedId} detail hideReveal={"originalRelativePath" in selectedProject} client={client} workspaceId={workspaceId} sourceId={sourceId} projects={[selectedProject]}
+              retainedProjects={projects?.retainedProjects.filter(project=>project.projectId===selectedId)} categories={projects?.categories} categoryProperty={projects?.categoryProperty}
+              language={language} disabled={disabled || loading || error}/></> : <StatusMessage kind="info" title={labels.unavailable}/>}
+        </div>
+      </section>
+    </>}
+    </div>
   </div></ManagementSurface>;
 }

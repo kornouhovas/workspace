@@ -41,13 +41,14 @@ async function launch() {
     `Fresh launch window below supported minimum: ${JSON.stringify(geometry)}`);
 }
 async function scrollState() {
-  return page.locator(".desktop-workspace").evaluate(el => ({
-    top: el.scrollTop, height: el.scrollHeight, viewport: el.clientHeight,
-    hidden: el.getAttribute("aria-hidden") === "true", inert: el.inert, fonts: document.fonts.status,
-    rows: [...el.querySelectorAll("tr[data-project-id]")].slice(0, 8).map(row => ({
-      ready: row.dataset.fieldsReady, top: row.getBoundingClientRect().top, height: row.getBoundingClientRect().height,
-    })),
-  }));
+  return page.locator(".desktop-workspace").evaluate(host => {
+    const el=host.querySelector(".saved-view-content") ?? host;
+    return {
+      top:el.scrollTop,height:el.scrollHeight,viewport:el.clientHeight,
+      hidden:host.getAttribute("aria-hidden")==="true",inert:host.inert,fonts:document.fonts.status,
+      rows:[...el.querySelectorAll("tr[data-project-id]")].slice(0,8).map(row=>({ready:row.dataset.fieldsReady,top:row.getBoundingClientRect().top,height:row.getBoundingClientRect().height})),
+    };
+  });
 }
 async function close() { if (app) { await closeElectron(app); app = undefined; } }
 try {
@@ -77,7 +78,7 @@ try {
         assert.equal(await page.getByRole("tab", { name: view.name, exact: true }).getAttribute("aria-selected"), "true");
         const layout = await page.evaluate(() => {
           const sidebar = document.querySelector(".desktop-sidebar").getBoundingClientRect();
-          const scroll = document.querySelector(".desktop-workspace"), sidebarScroll = document.querySelector(".sidebar-scroll");
+          const scroll = document.querySelector(".saved-view-content"), sidebarScroll = document.querySelector(".sidebar-scroll");
           return { viewport: sidebar.top === 0 && sidebar.bottom <= window.innerHeight, documentScroll: document.documentElement.scrollHeight > window.innerHeight,
             workScroll: scroll.scrollHeight > scroll.clientHeight, sidebarScroll: sidebarScroll.scrollHeight > sidebarScroll.clientHeight,
             noHorizontalOverflow: document.documentElement.scrollWidth === window.innerWidth };

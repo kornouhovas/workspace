@@ -66,3 +66,15 @@ test('Board profile selects scoped real-service and Electron acceptance without 
   assert.equal(workflow.on.workflow_dispatch.inputs.desktop_ux_profile.default,'foundation');
   assert.ok(workflow.jobs['desktop-ux'].steps.some(step=>step.run==='node scripts/desktop-ux-checks.mjs board'));
 });
+
+test('navigation profile exercises shared shell, projects, real-service and native consumers and propagates failure',async()=>{
+ const {navigationCommands}=await import('../scripts/desktop-ux-checks.mjs');
+ const commands=navigationCommands(),text=JSON.stringify(commands);
+ for(const required of ['project-navigation-ui.test.tsx','renderer-app.test.tsx','views-service.test.mjs','view-filters-service.test.mjs','project-archive-ui.test.tsx','smoke-project-navigation.mjs','smoke:shell','smoke:views'])assert.ok(text.includes(required),required);
+ assert.equal(text.includes('package:'),false);
+ assert.equal(spawnSync(process.execPath,['scripts/desktop-ux-checks.mjs','navigation','--failure-probe'],{encoding:'utf8'}).status,23);
+ const {readFile}=await import('node:fs/promises');const {load}=await import('js-yaml');
+ const workflow=load(await readFile('.github/workflows/desktop-ci.yml','utf8'));
+ assert.ok(workflow.on.workflow_dispatch.inputs.desktop_ux_profile.options.includes('navigation'));
+ assert.ok(workflow.jobs['desktop-ux'].steps.some(step=>step.run==='node scripts/desktop-ux-checks.mjs navigation'));
+});

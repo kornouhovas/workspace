@@ -50,6 +50,20 @@ export function boardCommands() {
     ['npm', ['run', 'smoke:views']],
   ];
 }
+// Project navigation changes the shell and both project-list consumers.
+export const navigationTests = [...new Set([...boardTests,
+  'project-navigation-ui.test.tsx', 'renderer-app.test.tsx',
+  'view-filters-service.test.mjs', 'project-archive-ui.test.tsx',
+  'project-rename-ui.test.tsx', 'project-recovery-ui.test.tsx',
+])];
+export function navigationCommands() {
+  return [
+    ['npm', ['run', 'typecheck']], ['npm', ['run', 'lint']],
+    [process.execPath, ['--import','tsx','--test',...navigationTests.map(file=>`tests/${file}`)]],
+    [process.execPath, ['scripts/smoke-project-navigation.mjs']],
+    ['npm', ['run', 'smoke:shell']], ['npm', ['run', 'smoke:views']],
+  ];
+}
 export function runChecks(commands, run = (command,args)=>spawnSync(command,args,{stdio:'inherit',shell:process.platform==='win32' && command==='npm'})) {
   for (const [command,args] of commands) {
     const result=run(command,args);
@@ -60,9 +74,9 @@ export function runChecks(commands, run = (command,args)=>spawnSync(command,args
 }
 if(process.argv[1] && resolve(process.argv[1])===fileURLToPath(import.meta.url)) {
   const args=process.argv.slice(2);
-  if(args.some(arg=>!['foundation','board','--list','--failure-probe'].includes(arg)) || !['foundation','board'].includes(args[0])) throw new Error('Usage: desktop-ux-checks.mjs <foundation|board> [--list] [--failure-probe]');
-  const commands=args[0]==='board' ? boardCommands() : foundationCommands({failureProbe:args.includes('--failure-probe')});
-  if(args[0]==='board' && args.includes('--failure-probe')) commands.unshift([process.execPath,['-e','process.exit(23)']]);
+  if(args.some(arg=>!['foundation','board','navigation','--list','--failure-probe'].includes(arg)) || !['foundation','board','navigation'].includes(args[0])) throw new Error('Usage: desktop-ux-checks.mjs <foundation|board|navigation> [--list] [--failure-probe]');
+  const commands=args[0]==='navigation' ? navigationCommands() : args[0]==='board' ? boardCommands() : foundationCommands({failureProbe:args.includes('--failure-probe')});
+  if(args[0]!=='foundation' && args.includes('--failure-probe')) commands.unshift([process.execPath,['-e','process.exit(23)']]);
   if(args.includes('--list')) console.log(JSON.stringify(commands));
   else process.exitCode=runChecks(commands);
 }

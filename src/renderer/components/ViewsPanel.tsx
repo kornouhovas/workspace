@@ -9,9 +9,9 @@ import { translate, type TranslationKey } from "../localization.js";
 import { WorkspaceServiceClient } from "../workspace-service-client.js";
 import { StatusMessage } from "./bb-foundation.js";
 
-interface Props { tools?: ReactNode; client: WorkspaceServiceClient; workspaceId: string; language: Language; disabled: boolean; panelId?: string; onChange(view: WorkspaceView | null): void }
+interface Props { onWillLoad?(): void; projectTabs?: ReactNode; projectActive?: boolean; onSelectView?(): void; tools?: ReactNode; client: WorkspaceServiceClient; workspaceId: string; language: Language; disabled: boolean; panelId?: string; onChange(view: WorkspaceView | null): void }
 export function ViewsPanel(props: Props) { return <ViewCollection key={props.workspaceId} {...props} />; }
-function ViewCollection({ tools, client, workspaceId, language, disabled, panelId, onChange }: Props) {
+function ViewCollection({ onWillLoad, projectTabs, projectActive, onSelectView, tools, client, workspaceId, language, disabled, panelId, onChange }: Props) {
   const t = (key: TranslationKey) => translate(language, key);
   const [snapshot, setSnapshot] = useState<ViewSnapshot | null>(null);
   const [loading, setLoading] = useState(true), [pending, setPending] = useState(false);
@@ -22,12 +22,14 @@ function ViewCollection({ tools, client, workspaceId, language, disabled, panelI
   const [deleting, setDeleting] = useState<string | null>(null);
   const version = useRef(0), lifetime = useRef(0), busy = useRef(false);
   const current = useRef(onChange); current.current = onChange;
+  const willLoad=useRef(onWillLoad);willLoad.current=onWillLoad;
   const input = useRef<HTMLInputElement>(null), select = useRef<HTMLButtonElement>(null);
   const trigger = useRef<HTMLButtonElement | null>(null), restoreFocus = useRef(false);
   const active = snapshot?.views.find(view => view.viewId === snapshot.activeViewId);
   const position = snapshot?.views.findIndex(view => view.viewId === snapshot.activeViewId) ?? -1;
   const load = async () => {
     const request = ++version.current;
+    willLoad.current?.();
     setLoading(true);
     try {
       const result = await client.listViews(workspaceId);
@@ -50,6 +52,7 @@ function ViewCollection({ tools, client, workspaceId, language, disabled, panelI
   const close = () => { restoreFocus.current = true; setDraft(null); setDeleting(null); setError(null); };
   const mutate = async (command: ViewCommand) => {
     if (busy.current || disabled) return;
+    willLoad.current?.();
     busy.current = true; setPending(true); setError(null);
     const started = lifetime.current;
     try {
@@ -80,7 +83,7 @@ function ViewCollection({ tools, client, workspaceId, language, disabled, panelI
     {error && <StatusMessage kind="error" title={t(error)} />}
     {error && <button className="workspace-button workspace-button--secondary" type="button" disabled={loading || pending} onClick={() => void load()}>{t("viewsRetry")}</button>}
     <div className="view-controls">
-      <Tabs.Root value={snapshot?.activeViewId ?? ""} activationMode="manual" onValueChange={viewId => void mutate({ type: "workspace.activateView", workspaceId, viewId })}>
+      <Tabs.Root value={projectActive ? "" : snapshot?.activeViewId ?? ""} activationMode="manual" onValueChange={viewId => { onSelectView?.(); if(viewId !== snapshot?.activeViewId) void mutate({ type: "workspace.activateView", workspaceId, viewId }); }}>
         <Tabs.List className="saved-view-tabs" aria-label={t("viewCurrent")}>
           {snapshot?.views.map(view => <Tabs.Trigger className="saved-view-tab" key={view.viewId} value={view.viewId} id={`saved-view-${view.viewId}`} aria-controls={panelId} disabled={blocked}
             ref={view.viewId === snapshot.activeViewId ? select : undefined}><Icon name={view.kind === "table" ? "table" : "board"}/>{view.name}</Tabs.Trigger>)}
@@ -99,6 +102,7 @@ function ViewCollection({ tools, client, workspaceId, language, disabled, panelI
       <Menu.Item className="workspace-button workspace-button--secondary" disabled={blocked || !snapshot || snapshot.views.length < 2} onSelect={() => { trigger.current = menuButton.current; setMenu(false); setDeleting(active!.viewId); }}>{t("viewDelete")}</Menu.Item>
         </Menu.Content></Menu.Portal>
       </Menu.Root>
+      {projectTabs}
       {tools}
     </div>
     {draft && <form className="view-form" onSubmit={event => { event.preventDefault(); save(); }} onKeyDown={event => { if (event.key === "Escape" && !pending) { event.preventDefault(); close(); } }}>
