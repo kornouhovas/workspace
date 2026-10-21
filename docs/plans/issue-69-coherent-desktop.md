@@ -978,7 +978,7 @@ Root→properties is446ms in pass but never completed before expiry in failure.
 Repeated Add-Type and process-name lookup are measurement candidates, not proven
 removable freshness guards. Do not remove repeated owner/UIA authorization checks.
 
-Add explicit `readiness_native_profile` for a generated-copy diagnostic of the
+Add explicit `checks: native-owner-profile` for a generated-copy diagnostic of the
 same Electron creation consumer. Verify generatedbytes match source, pin exact
 replacementmarkers, retainoriginal/instrumentedhashes, profileonly process lookup,
 assemblyload and FromHandle wall/CPU, cap64fixedscalarrecords, restore+verify
@@ -987,3 +987,11 @@ Originalnativeactions/permit/identity/deadlines and failingexit remain. Defaulto
 profilecopies cannotaccept productiontiming or originalnativeexecution. Local
 transformation/drift/route/product/inspector tests86pass/2platformskip of88;
 lint/docs pass. Standards0/Spec0, actualPowerShell execution remains forCIprobe.
+
+
+GitHub rejected the new boolean dispatch at `47fdfe24` with HTTP422: maximum25
+workflow_dispatch inputs. No job was created. Move this explicit diagnostic
+selection into existingchecks choice `native-owner-profile`, preserving all
+25inputs/defaults. Reconcile common/checks inventory and assert only its focused
+Windowslatest job selects; ordinaryreadiness remains original. No product failure
+or successful diagnosticexecution is inferred from dispatch rejection.
