@@ -20,12 +20,20 @@ export function usableRuntimeViewProjection(ids) {
         const style = window.getComputedStyle(parent), bounds = parent.getBoundingClientRect();
         const x = /^(auto|scroll|hidden|clip)$/.test(style.overflowX);
         const y = /^(auto|scroll|hidden|clip)$/.test(style.overflowY);
-        clip = { x, y, left: bounds.left + parent.clientLeft, top: bounds.top + parent.clientTop,
-          width: parent.clientWidth, height: parent.clientHeight };
+        // Client dimensions round to integers. Recover the fractional padding
+        // box from the actual bounds, retaining any native scrollbar space.
+        const borderLeft = parseFloat(style.borderLeftWidth) || 0, borderRight = parseFloat(style.borderRightWidth) || 0;
+        const borderTop = parseFloat(style.borderTopWidth) || 0, borderBottom = parseFloat(style.borderBottomWidth) || 0;
+        const scrollbarX = Math.max(0, parent.offsetHeight - parent.clientHeight - Math.round(borderTop + borderBottom));
+        const scrollbarY = Math.max(0, parent.offsetWidth - parent.clientWidth - Math.round(borderLeft + borderRight));
+        const scrollbarLeft = Math.max(0, parent.clientLeft - Math.round(borderLeft));
+        clip = { x, y, left: bounds.left + borderLeft + scrollbarLeft, top: bounds.top + borderTop,
+          right: bounds.right - borderRight - scrollbarY + scrollbarLeft,
+          bottom: bounds.bottom - borderBottom - scrollbarX };
         clips.set(parent, clip);
       }
-      if (clip.x) { left = Math.max(left, clip.left); right = Math.min(right, clip.left + clip.width); }
-      if (clip.y) { top = Math.max(top, clip.top); bottom = Math.min(bottom, clip.top + clip.height); }
+      if (clip.x) { left = Math.max(left, clip.left); right = Math.min(right, clip.right); }
+      if (clip.y) { top = Math.max(top, clip.top); bottom = Math.min(bottom, clip.bottom); }
     }
     if (right <= left || bottom <= top) continue;
     if (row.getAttribute("data-fields-ready") === "false" || !row.querySelector("button, input, textarea, select")) return false;

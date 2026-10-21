@@ -189,3 +189,38 @@ diagnostic reproduces this without the direct prefix. It is not a strict pass;
 failure screenshot and bounded geometry collection are being used to minimize
 the case. Remaining grouped Board scenarios are unexecuted. Preserve targets,
 original timings and no-replay assertions; no performance acceptance claimed.
+
+
+## Fractional projection readiness repair
+
+The original grouped reset failure minimizes from 1,000 to 100 projects without
+changing its geometry: the working clip ends at 624.5px, while integer
+`clientHeight` extends the helper's calculated edge to 625px. A fully hidden
+skeleton begins at 624.8125px. Real viewport loading correctly leaves it unloaded;
+the acceptance helper incorrectly waits for it. The native fractional-bound
+regression first fails on exactly that assertion (with an additional independent
+shutdown timeout), then passes with normal native quit after repairing the clip.
+
+Use fractional padding-box bounds while retaining native scrollbar space.
+Complete ordered membership, pending state, actual controls and every genuinely
+visible fractional row remain required. The regression covers both axes,
+rounded-up/down dimensions and borders. Its expanded matrix passes; the adjacent
+original clipping case passes its assertions but fails normal shutdown on the
+local macOS 27 host. Typecheck/lint and independent Standards/Spec review pass
+(zero findings each). A bounded failure-only screenshot retains the original
+readiness exception, without action retries or deadline/target changes.
+
+The renewed grouped-only 1,000-project diagnostic passes Table reset/edit and
+Board filter/group/assignment/edit, external Refresh and RU/offscreen-draft checks.
+It fails the first normal 10-second application shutdown before reopen; forced
+owned-process cleanup and fixture removal pass. This proves the original readiness
+repair, not complete grouped, strict-scale or lifecycle acceptance. Direct startup
+and first-filter target misses from the original strict run remain gates.
+
+Inspected native route `39656728828`/attempt 1 at `6c89b095`: all four original
+fixture files pass 61/61 on each of macOS latest (kernel 25.6.0), Windows latest
+(10.0.26100) and Windows 2022 (10.0.20348), Node 22.21.1. Downloaded original logs
+and provenance match each host/SHA/run. This validates serial Electron preparation
+on the hosted route; it does not explain or repair local macOS 27 shutdowns.
+Renew the changed readiness file on all hosts and the original strict consumer
+on this helper candidate before claiming its acceptance.

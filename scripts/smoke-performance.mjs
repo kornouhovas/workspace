@@ -123,6 +123,10 @@ async function ready(ids, endpoint) {
   catch (error) {
     try { (report.readinessFailures ??= []).push(await page.evaluate(inspectRuntimeProjectionFailure, ids)); }
     catch { report.readinessInspectionFailed = true; }
+    // Preserve the failed surface before per-source teardown closes the page.
+    // This never retries an action or changes the original readiness deadline.
+    try { await page.screenshot({ path: join(evidence, "projection-failure.png"), timeout: 3000 }); }
+    catch { report.readinessScreenshotFailed = true; }
     throw error;
   }
 }

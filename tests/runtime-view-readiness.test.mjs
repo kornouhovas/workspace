@@ -89,6 +89,39 @@ test("view readiness excludes clipped fields but requires every visible editor a
   });
 });
 
+test("fractional scroll bounds exclude fully clipped skeletons while retaining a subpixel visible row", async () => {
+  await withPage(async page => {
+    await page.setContent(`<style>body{margin:0}#clip{position:absolute;left:100px;top:100px;width:200px;height:100.5px;overflow:hidden}
+      .row{position:absolute;width:200px;height:20px}#outside{top:100.8125px}#edge{top:100.3125px}</style>
+      <main class="text-properties" aria-busy="false"><div id="clip">
+        <div id="outside" class="row" data-project-id="outside" data-fields-ready="false"><button>Load outside</button></div>
+        <div id="edge" class="row" data-project-id="edge" data-fields-ready="true"><button>Edit edge</button></div>
+      </div></main>`);
+    const ids = ["outside", "edge"];
+    assert.equal(await page.evaluate(usableRuntimeViewProjection, ids), true,
+      "Integer clientHeight must not extend a fractional clip to include an invisible skeleton");
+    await page.evaluate(() => document.querySelector("#edge").setAttribute("data-fields-ready", "false"));
+    assert.equal(await page.evaluate(usableRuntimeViewProjection, ids), false,
+      "Even a subpixel visible portion still requires loaded fields");
+    for (const axis of ["vertical", "horizontal"]) for (const extent of [100.4, 100.5]) {
+      await page.evaluate(({ axis, extent }) => {
+        const clip = document.querySelector("#clip"), edge = document.querySelector("#edge"), outside = document.querySelector("#outside");
+        clip.style.border = "1.5px solid transparent";
+        clip.style.width = `${axis === "horizontal" ? extent : 200}px`;
+        clip.style.height = `${axis === "vertical" ? extent : 200}px`;
+        for (const row of [edge, outside]) {
+          row.style.left = axis === "horizontal" ? `${row === edge ? 100.3125 : 100.8125}px` : "0px";
+          row.style.top = axis === "vertical" ? `${row === edge ? 100.3125 : 100.8125}px` : "0px";
+        }
+        edge.setAttribute("data-fields-ready", "true");
+      }, { axis, extent });
+      assert.equal(await page.evaluate(usableRuntimeViewProjection, ids), true, `${axis} ${extent}: fully hidden skeleton is excluded`);
+      await page.evaluate(() => document.querySelector("#edge").setAttribute("data-fields-ready", "false"));
+      assert.equal(await page.evaluate(usableRuntimeViewProjection, ids), false, `${axis} ${extent}: a visible fraction requires fields`);
+    }
+  });
+});
+
 test("runtime activation supports current tabs and the immutable baseline select with one action each", async () => {
   await withPage(async page => {
     page.setDefaultTimeout(500);
