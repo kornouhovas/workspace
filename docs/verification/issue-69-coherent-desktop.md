@@ -5,7 +5,7 @@ owns current gates; the [plan](../plans/issue-69-coherent-desktop.md) preserves
 scenario retention, experiments, exact failures and historical receipts.
 Application candidate: `b577cfd2df4026c3f8584ce1880bf90dfd9d87d6`, based on
 accepted `86ec752714c860662d4b1da0c25c2e5b71606bff`. Later diagnostic/CI changes
-through `8fb787e` do not change application inputs.
+through `cbbbd263` do not change application inputs.
 
 ## Appearance and references
 
@@ -78,6 +78,7 @@ inspected. A diagnostic or earlier receipt is never relabeled as current success
 | Broad integrated suite | `9b05276c`, [39685830877](https://github.com/kornouhovas/workspace/actions/runs/39685830877) | **Failed**: common passes; Mac platform2728 pass/2 stale inventory failures/26 skips, Windows2022 platform2760 pass/same2 failures/13 skips. Windowslatest early direct creation fails on hidden settings heading before native invocation; later collector/artifact errors follow unreached prerequisites. All runtime tails remain unreached. |
 | Original early direct creation renewal | driver/test-only `df6708a6`, [39688465783](https://github.com/kornouhovas/workspace/actions/runs/39688465783) | **Failed later** at inherited420px stress capture: creation button right421>420 with expanded sidebar. Required desktop captures, identity/inventory and Reveal controls pass; original native/restart unreached. Normal failure quit/cleanup pass. |
 | Narrow driver renewal | `8fb787e` | Real Collapse/Restore adapts retained420px stress; required1024/1440 remain expanded. Settings entry/return restore real navigation. Local original creation passes native/restart/exit/cleanup before final helper extension; new native settings assertions complete but local normal quit times out10s. Hosted original and three-host tail renewal remain required. |
+| Current creation diagnostic | `cbbbd263`, [39690085187](https://github.com/kornouhovas/workspace/actions/runs/39690085187) | **Pass diagnostic** on EPYC7763/kernel10.0.26100: exact open/select/return1/1/1, independent COM/UIA agreement, creation/recovery/restart, two normal backend/application exits and cleanup.87 native/inventory/inspector controls and249 Reveal controls pass. Failure-only inspector is not reached; earlier owner-expiry cause remains unknown. Original trace-disabled renewal39690488883 pending. |
 | Independent review | Cumulative source through `b577cfd2`; diagnostic/caller deltas separately reviewed | Standards 0 remaining findings; Spec 0 implementation findings. Initial unbounded diagnostic read finding repaired with separate finite budgets and preserved primary failure/cleanup. |
 
 ## Negative evidence and remaining ownership

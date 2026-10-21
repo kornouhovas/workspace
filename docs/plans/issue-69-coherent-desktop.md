@@ -954,3 +954,13 @@ source-continuation prefix fixture to account only unconditional defaultsteps;
 actual optionalguard and unchangedtail remain independently asserted. Both
 reviews0findings. Renew these changedcontrols on all3tailhosts. One diagnostic
 focused run precedes justified originaltraceoff renewal; neverretryuntilgreen.
+
+
+Bounded diagnostic `39690085187`, attempt1, at `cbbbd263` passes on AMD
+EPYC7763/kernel10.0.26100. Downloaded host/report/log inspected: exactnative
+open/select/return1/1/1, independentCOM/UIAselected agreement, readiness5107ms,
+creation/recovery/restart, two normal backend/app exits and assertedcleanup pass.
+Failure-only terminal inspector is not reached; this does not explain or repair
+prior ownerexpiry. New native/inventory/product/inspector controls87/87 and
+original Reveal controls249/249 pass. Trace-disabled original renewal
+`39690488883`, attempt1, pending on sameharness; inspect before all-desktops tail.
