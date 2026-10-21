@@ -84,5 +84,8 @@ test("pending completion releases offscreen fields and a newly pinned first row 
     view.rerender(ui(false, true));
     await waitFor(() => assert.ok(screen.getByRole("button", {name:"Retained fields"})));
     assert.equal(row.getAttribute("data-fields-ready"), "true");
+    view.rerender(ui(false));
+    await waitFor(() => assert.ok(screen.getByRole("button", {name:"Load project fields: Retained"})));
+    assert.equal(screen.queryByRole("button", {name:"Retained fields"}), null);
   } finally { cleanup(); Reflect.deleteProperty(globalThis,"IntersectionObserver"); }
 });

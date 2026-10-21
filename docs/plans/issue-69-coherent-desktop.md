@@ -601,3 +601,48 @@ predicted removal of repeated comparisons, not strict desktop acceptance.
 Renew original packaged strict consumers and all affected service/native/full
 coverage. Startup reconciliation changed, so renew actual installer consumers
 instead of relying solely on previous unchanged-service installer reuse.
+
+Original strict renewal39673607042 tests83be28ea on both hosts. A separate
+local fixed4xrenderer profile on that package still reproduces Table grouping
+410.1/edit399.3ms (Board158.7/158.3); the alias index does not claim to remove
+renderer cost. A further ignored-copy diagnostic changes only table border
+layout to separate/zero-spacing, leaving repository CSS and its consumers
+unchanged until a measured comparison justifies adoption.
+
+The isolated separate-border diagnostic does not explain grouping:410.1→415.8ms,
+with grouping Paint78.6→79.0ms and Layout36.4→33.6ms. Assignment335.7→286.2
+and edit399.3→307.8ms improve, but assignment Paint only63.3→54.9ms and other
+renderer scheduling also changes. Do not infer that border collapse is the
+grouping cause or adopt another unproved shared style change. Repository CSS
+remains unchanged; the diagnostic copy completes16observations, two normal
+exits and cleanup and is retained only as an experiment.
+
+
+## Alias candidate strict result and visible-row cleanup hypothesis
+
+At83be28ea, original strict39673607042/attempt1 passes Mac completely:
+32timings/10memory/fournormalexits/cleanup, maximum interaction287.2ms, peak
+979,533,824bytes. Windows AMD EPYC7763 passes every limit except direct Table
+filtered assignment326.5ms; grouped assignment297.6ms, Table grouping285.6/
+241.2ms, grouped Refresh4669.9ms. All32functional results, memory (peak
+844,922,880bytes), fournormalexits and cleanup pass. Retain the required
+assignment failure; no unchanged strict retry or broad CI follows.
+
+The current eviction effect still schedules reconciliation for already visible
+or permanently pinned loaded fields, although those fields cannot be evicted.
+Skip that scheduling; observer visibility changes still reconcile, and loaded
+offscreen fields retain the original delayed cleanup for pending/focus return.
+Newly pinned unloaded rows still schedule loading; add the reverse unpinning
+case to public preservation coverage. Prediction: fewer fired frames/row passes
+in the same fixed4x diagnostic, before renewing the actual Windows strict gate.
+No readiness, event clock, paint endpoint or limit changes.
+
+The visible-row guard's fixed4x diagnostic reaches15direct samples. Table
+assignment335.7→292.0ms, grouping410.1→382.4ms and edit399.3→391.7ms.
+The drop window fires47→9animation callbacks and93→47FunctionCall events;
+Paint remains63.3→63.5ms. This supports the scheduling prediction rather than
+a paint-style cause. The command then fails the known local normal shutdown
+timeout; forced owned-process stop and asserted cleanup pass. Preserve that
+failed diagnostic command: it is neither a complete nor a strict native receipt.
+Both review axes report zero findings on the guard. Renew original strict
+consumers; no timing endpoint, callback observation predicate or budget changes.

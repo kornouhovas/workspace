@@ -62,6 +62,9 @@ export function ViewportProjectRow({ as: Row, projectId, projectName, language, 
     // An empty identity shell has no fields to evict. Newly pinned first rows
     // must still reconcile even before their fields have mounted.
     if (!rendered && !alwaysVisible) return;
+    // Visible and permanently pinned fields cannot be evicted. Visibility
+    // changes already reconcile through the observer above.
+    if (rendered && (visible.current || alwaysVisible)) return;
     let second = 0;
     const first = window.requestAnimationFrame(() => { second = window.requestAnimationFrame(() => reconcileRef.current()); });
     return () => { window.cancelAnimationFrame(first); window.cancelAnimationFrame(second); };

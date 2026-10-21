@@ -2,7 +2,7 @@
 
 Status: **in progress, not accepted**. [GitHub #69](https://github.com/kornouhovas/workspace/issues/69)
 owns current CI/integration gates; the [plan](../plans/issue-69-coherent-desktop.md)
-records scenarios and test retention. Application candidate `af23242d5c6fec5d749fe89ea530a9317678d7f4`
+records scenarios and test retention. Application candidate `83be28eaf685dfc7f1fec4e0054dd9d66f629bd0`
 starts from accepted `86ec752714c860662d4b1da0c25c2e5b71606bff`.
 
 ## Appearance comparison
@@ -62,8 +62,11 @@ hosted boundaries; broad desktop/package and strict scale acceptance remain gate
 
 Application/renderer inputs remain unchanged from `6dc5021` through `ed2c6feb`;
 intermediate changes repair fixtures/drivers, diagnostic tracing and reports.
-Candidate `af23242d` changes viewport cleanup scheduling and is under renewed
-verification. Historical receipts keep their actual SHA; they do not alone
+Candidate `af23242d` changes viewport cleanup scheduling. A300px-margin
+experiment was rejected and restored; Table-control memoization was also rejected.
+Current renderer inputs again match `af23242d` exactly. Candidate `83be28ea`
+additionally indexes complete native-alias buckets during service reconciliation
+and is under renewed verification. Historical receipts keep their actual SHA; they do not alone
 accept that production change.
 
 | Boundary | Actual receipt | Result / limit |
@@ -110,14 +113,41 @@ misses do not replace the separate unprofiled memory pass. Additional profiles
 are diagnostic only; no runtime/dependency/scheduling workaround or target
 relaxation is adopted. Full milestone acceptance remains open.
 
-Installer reuse is bounded to installation behavior: comparison from `ebd090ab`
-to the application candidate has no changes to package manifests/lockfile,
+Earlier installer reuse was bounded to installation behavior: comparison from
+`ebd090ab` to `af23242d` had no changes to package manifests/lockfile,
 installer configuration, desktop startup/native resources, service/contracts,
-migrations, licenses or native/resource-copy build scripts. The renderer guard
-changes field cleanup scheduling only. Retain the actual DMG/NSIS receipts for
+migrations, licenses or native/resource-copy build scripts. That renderer guard
+changes field cleanup scheduling only. Those actual DMG/NSIS receipts cover
 data locations, identity, replacement/uninstall and isolation; require current
 packaged application behavior separately. This does not relabel old installers
 as current binaries or supply Windows 11 release evidence.
+
+The rejected margin candidate's original strict `39669773440` at `65099447`
+fails Mac first Table grouping381.3ms and six Windows numerical samples,
+including first Table filters565.2/780.5ms and grouped Refresh6330.4ms. Both
+complete32functional observations, memory, fournormalexits and cleanup.
+Identical field/DOM counts reject the hypothesized preload reduction; all
+negative evidence remains in the plan.
+
+Latest service optimization:148reconciliation/discovery/observation cases,
+typecheck/lint and two independent safety reviews pass. Local public grouped
+Refresh drops272.1→236.6ms, with the repeated alias comparisons removed; this
+does not accept desktop timing. Original strict `39673607042` (attempt 1)
+passes all Mac samples; Windows passes every limit except direct Table filtered
+assignment (326.5ms against 300ms). Both hosts complete all 32 functional
+observations, ten memory samples, four normal exits and cleanup.
+The service/startup input now differs from the old installer receipt, so the
+previous installer-reuse argument alone no longer accepts the current candidate:
+renew both actual installer consumers after focused strict success.
+
+The next candidate skips cleanup scheduling for loaded visible/permanently
+pinned rows. All 65 related UI cases, typecheck, lint, documentation checks and
+both independent reviews pass, including offscreen unpin eviction. Its fixed4x
+diagnostic reduces drop-window animation callbacks from 47 to 9 and assignment
+from 335.7 to 292.0ms, but fails the local normal-shutdown deadline after 15
+direct samples. Forced owned-process stop and cleanup pass. This is a failed
+diagnostic, not strict or complete native acceptance; original strict renewal
+remains required, as does current appearance evidence for the renderer change.
 
 ## Remaining ownership
 
