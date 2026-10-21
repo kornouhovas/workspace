@@ -2,7 +2,7 @@
 
 Status: **in progress, not accepted**. [GitHub #69](https://github.com/kornouhovas/workspace/issues/69)
 owns current CI/integration gates; the [plan](../plans/issue-69-coherent-desktop.md)
-records scenarios and test retention. Candidate slice `6dc502147c9ab6f72fa3838e616608bbd8a88128`
+records scenarios and test retention. Application candidate `af23242d5c6fec5d749fe89ea530a9317678d7f4`
 starts from accepted `86ec752714c860662d4b1da0c25c2e5b71606bff`.
 
 ## Appearance comparison
@@ -17,7 +17,14 @@ Compared current whole-window Table with the [pinned main Table](../research/des
 the [accepted #68 correction](issue-68-composition-correction.md), and the
 #54/#64 project-area reference mapping. The [manifest](issue-69-evidence/manifest.json)
 records synthetic-fixture images, exact renderer inputs and hashes; these are
-appearance artifacts, not complete runtime passes.
+appearance artifacts, not complete runtime passes. Captures are renewed on the
+application candidate: visual foundation (16 populated/long, 24 empty), Board
+(16 populated/long, eight empty, eight unavailable), navigation (32 transitions),
+and files (16 preview/expanded plus disappearance). First three commands pass
+normal quit/cleanup; the files command fails normal shutdown after its native
+assertions. Its raw manually supplied SHA is malformed; the separate source
+provenance records the error and exact built renderer inputs. The manifest uses
+those verified inputs and preserves the failed receipt.
 
 | Surface | Concrete comparison / result | Evidence |
 | --- | --- | --- |
@@ -38,12 +45,12 @@ or Windows 11 release evidence.
 | Entry/control | Observed local behavior | Retained safety / limitation |
 | --- | --- | --- |
 | Source/Create/Active/Archived/Archive entries | Public UI regression fails before placement repair, passes afterward; Source tools Escape returns to the same trigger, entries hide in expanded mode and return without replacement | Only entry presentation moves. Forms, pending operations, receipts, errors and controller lifetime stay in their existing owners. |
-| Sidebar and project resize/collapse/restore | Original navigation command passes pointer resize, keyboard endpoints, collapse/restore, released width and discoverable restore | No persisted-session claim; #55 owns restart restoration extensions |
-| Preview/expand/return, close/reopen and tabs | Original navigation command passes 32 ordinary/long captures, focus, unique tabs, inactive-close/reopen and reorder, independent vertical/horizontal view scroll | View/filter/scroll constraints retained; original assertions unchanged |
+| Sidebar and project resize/collapse/restore | Renewed `af23242d` navigation command passes pointer resize, keyboard endpoints, collapse/restore, released width and discoverable restore | No persisted-session claim; #55 owns restart restoration extensions |
+| Preview/expand/return, close/reopen and tabs | Renewed `af23242d` navigation command passes 32 ordinary/long captures, focus, unique tabs, inactive-close/reopen and reorder, independent vertical/horizontal view scroll | View/filter/scroll constraints retained; original assertions unchanged |
 | Back/Forward | Native workspace keyboard traversal passes; 241 selected UI/service scenarios include branch truncation, end states, settings return and removed-destination handling | Navigation does not undo committed metadata/filesystem commands; #56 retains the complete draft guard matrix |
-| Board controls | Original Board command passes 16 populated/long, eight empty and eight unavailable captures; width/collapse/hide/restore, saved order/wrap, scalar grouping and MultiSelect membership | Exact memberships and values preserved; normal exit and asserted fixture cleanup passed |
-| Real file tree/Open/Reveal | Original file command reaches 16 preview/expanded captures, arrow focus, Refresh/disappearance, exact Finder selection, exact external TextEdit document and unchanged bytes | Overall command **failed** normal shutdown; cleanup was skipped because exit was unverified. This is not a passing native receipt. |
-| Table/font/settings/state matrix | Original visual command reaches 16 populated/long plus 24 empty variants with original bounds/font/context assertions | Overall command **failed** normal shutdown; appearance evidence alone does not accept the milestone |
+| Board controls | Renewed `af23242d` Board command passes 16 populated/long, eight empty and eight unavailable captures; width/collapse/hide/restore, saved order/wrap, scalar grouping and MultiSelect membership | Exact memberships and values preserved; normal exit and asserted fixture cleanup passed |
+| Real file tree/Open/Reveal | Renewed `af23242d` file command reaches 16 preview/expanded captures, arrow focus, Refresh/disappearance, exact Finder selection, exact external TextEdit document and unchanged bytes | Overall command **failed** normal shutdown; cleanup was skipped because exit was unverified. This is not a passing native receipt. |
+| Table/font/settings/state matrix | Renewed `af23242d` visual command reaches 16 populated/long plus 24 empty variants with original bounds/font/context assertions | Renewed `af23242d` command passes normal shutdown and asserted cleanup; appearance alone still does not accept remaining milestone gates |
 | Native shutdown | Original three-file reproduction 16 pass/13 fail; diagnostic renewal four pass/11 fail exposes original timeout rather than secondary discarded-handle TypeError | Normal 10-second deadline and forced-cleanup failure remain. Native root cause is still under investigation. |
 | Independent review | Standards 0 findings; Spec 0 slice findings at `6dc5021` | Review explicitly does not accept remaining milestone gates |
 
@@ -84,8 +91,14 @@ performance failure remains open; broad desktop/package CI remains pending.
 `af23242d` skips cleanup frames for empty offscreen identity shells, preserving
 loaded/focused/draft/pending fields and newly pinned first rows. The public
 preservation test passes before/after; 64 related UI tests, typecheck/lint and
-both review axes pass. The package profile and full local suite are renewing.
-No performance benefit or completed-candidate acceptance is claimed yet.
+both review axes pass. The Windows package profile `39667106631` (attempt 1) completes 32 scenarios,
+four normal exits and cleanup. Drop-to-ready callback counts fall from 416/417
+to 45/29; the changed CPU prevents attributing timing differences solely to the
+guard. Original strict `39667534800` is renewing. Full local suite reaches
+3,275 total: 3,244 pass, five normal-shutdown failures in unchanged standalone
+HTML fixtures, 26 platform skips. No green local full-suite result is claimed.
+Native named-host receipts remain bounded to unchanged fixtures; current broad
+desktop/package and coherent-journey acceptance remain required.
 
 The macOS diagnostic [39660140707](https://github.com/kornouhovas/workspace/actions/runs/39660140707)
 reproduces first filtering at 529.7ms: mutation/projection IPC approximately
@@ -96,6 +109,15 @@ copy completes four backend batches/252 records; its diagnostic memory
 misses do not replace the separate unprofiled memory pass. Additional profiles
 are diagnostic only; no runtime/dependency/scheduling workaround or target
 relaxation is adopted. Full milestone acceptance remains open.
+
+Installer reuse is bounded to installation behavior: comparison from `ebd090ab`
+to the application candidate has no changes to package manifests/lockfile,
+installer configuration, desktop startup/native resources, service/contracts,
+migrations, licenses or native/resource-copy build scripts. The renderer guard
+changes field cleanup scheduling only. Retain the actual DMG/NSIS receipts for
+data locations, identity, replacement/uninstall and isolation; require current
+packaged application behavior separately. This does not relabel old installers
+as current binaries or supply Windows 11 release evidence.
 
 ## Remaining ownership
 

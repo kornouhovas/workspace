@@ -7,9 +7,10 @@ import { translate } from "../localization.js";
 const targets = new Map<Element, (visible: boolean) => void>();
 let observer: IntersectionObserver | undefined;
 function observe(element: Element, changed: (visible: boolean) => void) {
+  // Preload a short scroll ahead without mounting several screens of field controls.
   observer ??= new IntersectionObserver(entries => {
     for (const entry of entries) targets.get(entry.target)?.(entry.isIntersecting);
-  }, { rootMargin: "1000px" });
+  }, { rootMargin: "300px" });
   targets.set(element, changed); observer.observe(element);
   return () => {
     observer?.unobserve(element); targets.delete(element);

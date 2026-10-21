@@ -469,3 +469,39 @@ assertions, then normal shutdown and fixture cleanup. Inspected light1440 and
 long RU dark1024 Table captures preserve compact composition and complete
 visible fields. This is a fresh affected appearance receipt, not a relabeling
 of historical screenshots; the full-suite shutdown negative remains retained.
+
+
+## Guard strict result and viewport budget hypothesis
+
+Original strict `39667534800`/attempt1 at `af23242d` passes Mac completely:
+32 timings, ten memory samples, four normal exits and cleanup. Windows AMD
+EPYC7763 completes the same functional/memory/exit/cleanup gates but fails eleven
+numerical samples: direct startup8926.6ms; direct Table filters345.2/318.7/301.3,
+assignment441.3/edit343.3; grouped Table filters610.8/330.7, assignment420.4/
+edit316.9 and first Board filter362.5ms. Preserve the failed result. The empty-row
+guard demonstrably reduces callbacks but does not establish performance acceptance.
+No unchanged strict retry or broad desktop dispatch follows this failure.
+
+Ranked next hypotheses: (1) 1000px field overscan mounts excessive offscreen
+controls, increasing startup/React/layout cost; reducing this alone predicts
+lower live-field/DOM/memory work and shorter renderer spans; (2) independent
+layout/grouping reloads cause intermediate full-field renders, predicting
+multiple costly renders per metadata event; (3) native startup/disk latency is
+a separate contributor, predicting long connection/first-window phases even
+when renderer cost falls. Test the first by changing only overscan to300px,
+retaining all identity shells, real observer-driven fields, localized forward/
+backward keyboard gates and focus/draft/pending pinning. The original strict
+consumer is the red performance signal; public viewport preservation cases
+protect behavior rather than asserting an implementation-specific pixel constant.
+
+The300px experiment passes the same64 affected UI cases, typecheck/lint and
+both independent reviews (zero findings). Reviews explicitly require rapid-scroll/
+field readiness, native, current appearance and full renewal before adoption.
+Fresh af23242d Board and navigation commands pass their complete state and
+interaction matrices with normal exits/cleanup. Fresh files reaches16tree
+captures, exact Finder selection and external TextEdit document/unchanged bytes,
+then fails local shutdown; cleanup is skipped, and this remains negative. The
+raw file report preserves a mistakenly supplied malformed GITHUB_SHA; a separate
+source-provenance receipt records the error, actual built source and renderer
+hashes. Versioned images/manifest use the verified application inputs and do
+not claim the pending300px application or a passing files runtime.
