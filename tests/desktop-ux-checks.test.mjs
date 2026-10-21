@@ -118,3 +118,13 @@ test('project files acceptance includes real filesystem/IPC/native regressions a
  assert.ok(workflow.jobs['desktop-ux'].steps.some(step=>step.run==='node scripts/desktop-ux-checks.mjs project-files'));
  assert.ok(Object.keys(workflow.on.workflow_dispatch.inputs).length<=25);
 });
+
+test('focused project files renewal isolates original COM controls and preserves original failed native commands',async()=>{
+ const {projectFilesCommands}=await import('../scripts/desktop-ux-checks.mjs');
+ const commands=projectFilesCommands({nativeOnly:true});const text=JSON.stringify(commands);
+ const com=commands.filter(([,args])=>args.includes('tests/windows-project-reveal-com.test.mjs'));
+ assert.equal(com.length,1);assert.deepEqual(com[0][1],['--import','tsx','--test','tests/windows-project-reveal-com.test.mjs']);
+ for(const file of ['project-files-service.test.mjs','runtime-project-visibility.test.mjs','smoke-project-files.mjs','smoke:views'])assert.ok(text.includes(file));
+ assert.equal(text.includes('smoke-project-navigation.mjs'),false);
+ assert.equal(spawnSync(process.execPath,['scripts/desktop-ux-checks.mjs','project-files','--native-only','--failure-probe'],{encoding:'utf8'}).status,23);
+});

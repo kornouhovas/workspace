@@ -1,3 +1,4 @@
+/* global HTMLElement, requestAnimationFrame, innerHeight */
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {createRequire} from 'node:module';
@@ -6,7 +7,7 @@ import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {_electron} from 'playwright-core';
-import {waitForRuntimeProjectPath} from '../scripts/runtime-project-visibility.mjs';
+import {waitForRuntimeProjectPath,scrollRuntimeControlIntoView} from '../scripts/runtime-project-visibility.mjs';
 
 test('runtime path readiness awaits false async reads and binds the committed workspace/project/path', async () => {
   const profile = await mkdtemp(join(tmpdir(), 'runtime-path-readiness-'));
@@ -42,6 +43,20 @@ test('runtime path readiness awaits false async reads and binds the committed wo
     });
     await waitForRuntimeProjectPath(page, 'workspace', 'project', 'C/Target');
     assert.equal(await page.evaluate(() => globalThis.readiness.reads), 2);
+    await page.setContent('<div style="height:1500px"></div><button id="resized-control">Current owned control</button>');
+    await page.evaluate(() => {
+      globalThis.scrollAttempts = 0;
+      const original = HTMLElement.prototype.scrollIntoView;
+      HTMLElement.prototype.scrollIntoView = function (...args) {
+        globalThis.scrollAttempts++;
+        original.apply(this, args);
+        if (globalThis.scrollAttempts === 1) requestAnimationFrame(() => { this.replaceWith(this.cloneNode(true)); });
+      };
+    });
+    await scrollRuntimeControlIntoView(page.locator('#resized-control'));
+    assert.ok(await page.evaluate(() => globalThis.scrollAttempts >= 2));
+    assert.equal(await page.locator('#resized-control').evaluate(element => element.isConnected && element.getBoundingClientRect().bottom <= innerHeight), true);
+
   } catch (error) {primary = error;}
   try {await app.close(); await rm(profile, {recursive: true, force: true});}
   catch (error) {primary ??= error;}

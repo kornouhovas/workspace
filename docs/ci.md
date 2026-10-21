@@ -1071,3 +1071,19 @@ the exact disposable document independently of native dispatch acknowledgment.
 This adds no workflow input and preserves default foundation/full/release routes.
 Installer acceptance remains at the integration milestones: no dependency, native
 resource, package or startup/update input changes in this slice.
+
+### Issue 64 focused native renewal
+
+After original run 39641467815, `project-files-native` selects the three affected
+desktop hosts and the original real-files/Views native commands, with public
+files/IPC/Reveal/visibility regressions. It runs the unchanged Windows COM control
+file in a separate Node invocation before the selected batch; deadlines, negative
+permit guards and assertions remain unchanged. This tests the Windows-latest
+resource-competition hypothesis without treating it as an established cause.
+The valid-component long-path fixture asserts a real absolute path beyond260
+characters. The macOS failure path captures bounded observer error metadata,
+NSWorkspace process identity and a native desktop screenshot where available;
+none of those diagnostics substitutes for exact document observation.
+The native-only route retains original Open/Reveal, Views, shutdown and cleanup
+gates and does not supply full acceptance. Apply evidence reuse or renew the full
+`project-files` profile after the focused gate passes.

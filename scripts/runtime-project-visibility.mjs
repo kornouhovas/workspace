@@ -1,3 +1,4 @@
+/* global requestAnimationFrame, innerHeight, innerWidth */
 import assert from "node:assert/strict";
 import {setTimeout as delay} from "node:timers/promises";
 import {withDeadline} from "./runtime-lifecycle.mjs";
@@ -31,4 +32,26 @@ export async function waitForRuntimeProjectPath(page, workspaceId, projectId, re
     await delay(Math.min(16, Math.max(0, deadline - performance.now())));
   }
   throw new Error("Runtime project path readiness timed out after 15000ms");
+}
+
+// Resize/viewport projection can replace a control while Playwright holds its
+// previous element handle. Re-read only scroll/geometry; never replay a mutation.
+export async function scrollRuntimeControlIntoView(locator, timeoutMs = 15000) {
+  const deadline = performance.now() + timeoutMs;
+  while (performance.now() < deadline) {
+    try {
+      const visible = await withDeadline(locator.evaluate(element => new Promise(resolve => {
+        element.scrollIntoView({block: "nearest", inline: "nearest"});
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+          const bounds = element.getBoundingClientRect();
+          resolve(element.isConnected && bounds.width > 0 && bounds.height > 0 &&
+            bounds.top >= 0 && bounds.bottom <= innerHeight && bounds.left >= 0 && bounds.right <= innerWidth);
+        }));
+      }), undefined, {timeout: Math.max(1, deadline - performance.now())}), Math.max(1, deadline - performance.now()), "Runtime control visibility");
+      if (visible) return;
+    } catch (error) {
+      if (!/not attached|detached/i.test(String(error.message))) throw error;
+    }
+  }
+  throw new Error(`Runtime control visibility timed out after ${timeoutMs}ms`);
 }

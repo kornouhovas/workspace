@@ -62,9 +62,12 @@ for(const mode of ['direct','grouped'])test(`${mode} unsafe links/hardlinks and 
 },mode));
 
 test('native Open/Reveal receives exact long Unicode paths and external failures are bounded',()=>fixture(async({service,input,projectPath})=>{
- const components=['Длинная папка '.repeat(8),'nested','notes Текст.txt'];mkdirSync(join(projectPath,...components.slice(0,-1)),{recursive:true});const file=join(projectPath,...components);writeFileSync(file,'safe');
+ const components=['Длинная папка '.repeat(8).trimEnd(),'Release documentation and supporting materials','Supporting assets and attachments with examples and approved reference material for review','nested','notes Текст.txt'];mkdirSync(join(projectPath,...components.slice(0,-1)),{recursive:true});const file=join(projectPath,...components);assert.ok(file.length>260,'The fixture must exercise a real path beyond MAX_PATH');writeFileSync(file,'safe');
  const relativePath=components.join('/'),seen=[];const native=createNativeProjectReveal(async(path,context,action)=>{await context.permit(()=>seen.push({path,action}));});
- for(const type of ['workspace.openProjectFile','workspace.revealProjectFile'])assert.equal((await service.workspaces.projectFileCommand({...input,type,relativePath},(target,verify)=>native(target,()=>true,async()=>verify()))).value.outcome,'dispatched');
+ for(const type of ['workspace.openProjectFile','workspace.revealProjectFile']) {
+  const result=await service.workspaces.projectFileCommand({...input,type,relativePath},(target,verify)=>native(target,()=>true,async()=>verify()));
+  assert.equal(result.value.outcome,'dispatched',JSON.stringify({result,length:file.length}));
+ }
  assert.deepEqual(seen,[{path:file,action:'open'},{path:file,action:'reveal'}]);
  const failure=await service.workspaces.projectFileCommand({...input,type:'workspace.openProjectFile',relativePath},(target,verify)=>createNativeProjectReveal(()=>{throw new Error(file);})(target,()=>true,async()=>verify()));
  assert.equal(failure.value.problem,'native_error');assert.equal(JSON.stringify(failure).includes(projectPath),false);

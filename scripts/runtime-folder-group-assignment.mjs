@@ -1,7 +1,7 @@
 /* global document, innerWidth */
 import assert from 'node:assert/strict';
 import { recordGroupDrag } from './runtime-group-assignment.mjs';
-import { showRuntimeProject, waitForRuntimeProjectPath } from './runtime-project-visibility.mjs';
+import { showRuntimeProject, waitForRuntimeProjectPath, scrollRuntimeControlIntoView } from './runtime-project-visibility.mjs';
 import { mkdir, readdir, writeFile, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
@@ -53,7 +53,7 @@ export async function exerciseFolderGroupAssignment({page,query,rootPath,languag
     for(const width of [360,1440]) {
       await page.setViewportSize({width,height:width===1440?960:720});
       await showRuntimeProject(page, 'Target', project.projectId);
-      await region('C').getByLabel(change('Target'),{exact:true}).scrollIntoViewIfNeeded();
+      await scrollRuntimeControlIntoView(region('C').getByLabel(change('Target'),{exact:true}));
       assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
       await page.screenshot({path:join(evidenceDirectory,`${language}-${layout}-${width}-folder-drag.png`)});
     }

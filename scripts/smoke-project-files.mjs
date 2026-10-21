@@ -1,5 +1,7 @@
 /* global window, document, innerWidth */
 import assert from 'node:assert/strict';
+import {execFile} from 'node:child_process';
+import {promisify} from 'node:util';
 import {createRequire} from 'node:module';
 import {mkdtemp,mkdir,realpath,writeFile,readFile,rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
@@ -86,7 +88,19 @@ try {
  assert.equal(await readFile(target,'utf8'),'Workspace issue 64 disposable file. External opening must preserve these bytes.\n');
  checks.push('default external application displays the exact disposable file; bytes preserved');
  await writeFile(join(evidence,'external-target.json'),JSON.stringify({target,fixture,workspaceId,projectId:atlas.projectId}));
-} catch(error) {failure=error;if(page)await page.screenshot({path:join(evidence,'failure.png')}).catch(()=>{});}
+} catch(error) {
+ failure=error;
+ if(page)await page.screenshot({path:join(evidence,'failure.png')}).catch(()=>{});
+ if(process.platform==='darwin') {
+   const diagnostics={errorCode:error.code??null,killed:error.killed??false,signal:error.signal??null,stderr:String(error.stderr??'').slice(-1000)};
+   try {await promisify(execFile)('/usr/sbin/screencapture',['-x',join(evidence,'native-desktop-failure.png')],{timeout:5000});diagnostics.desktopCaptured=true;}catch(error){diagnostics.desktopCaptureCode=error.code??null;}
+   try {
+     const {stdout}=await promisify(execFile)('/usr/bin/osascript',['-l','JavaScript','-e',`ObjC.import("AppKit"); var apps=$.NSWorkspace.sharedWorkspace.runningApplications, result=[]; for(var i=0;i<apps.count;i++){var app=apps.objectAtIndex(i); if(app.bundleIdentifier.js==="com.apple.TextEdit")result.push({name:app.localizedName.js,pid:app.processIdentifier});} JSON.stringify(result)`],{timeout:5000});
+     diagnostics.application=stdout.trim();
+   }catch(error){diagnostics.applicationReadCode=error.code??null;}
+   await writeFile(join(evidence,'native-diagnostic.json'),JSON.stringify(diagnostics,null,2));
+ }
+}
 finally {
  let stopped=false,cleaned=false;
  try{if(app)await closeElectron(app);stopped=ownedProcessesStopped(parents,backends,{launchUnverified});assert.equal(stopped,true);}catch(error){failure??=error;}

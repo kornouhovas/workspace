@@ -91,3 +91,28 @@ repair under the shared evidence-reuse policy.
 Final full-suite result and exact-SHA hosted/native/integration receipts are
 recorded in the [GitHub checkpoint](https://github.com/kornouhovas/workspace/issues/64).
 Current full-suite/hosted gates remain pending until their actual results exist.
+
+
+## First candidate failures and focused renewal
+
+Original candidate `18432cc`, run39641467815: macOS passed1162 selected tests
+and exact Finder selection, then TextEdit's observer was killed at its five-second
+command bound (SIGTERM, empty stdout/stderr); actual document observation and
+later flows were not accepted. Both Windows hosts rejected the authored long
+fixture's trailing-space folder component, as the existing Windows safety contract
+requires. Windows latest also timed out four unchanged COM control cases.
+Artifacts/logs are retained; those failures are not relabeled passing.
+
+Test-only repair uses valid components and asserts a path longer than260; it
+preserves the same expected Open/Reveal outcomes. The original COM file runs
+isolated before the selected batch to test resource competition, preserving its
+original deadlines. macOS observation failure now retains bounded native desktop/
+NSWorkspace/error diagnostics so an unproven cause is not disguised as a repair.
+
+The final local affected profile passed1162 tests/skipped7, files/Open/Reveal,
+navigation and shell; Views then hit a detached element while scrolling a control
+after resize. A read-only helper re-resolves the control and verifies connected
+viewport geometry after two frames within the original15-second bound. A real
+Electron fixture replaces the first scrolled element, requiring a second read.
+No filesystem mutation, keyboard action or native effect is retried. Original
+Views command and full shared consumers remain required for renewal.
