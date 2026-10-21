@@ -113,7 +113,9 @@ preparation has its existing 30-second budget; the 1,000-ms keyboard action and
 ## Failed Actions loop
 
 For #69's original Windows latest project-file Reveal failure, dispatch
-`project-files-windows.yml`. It builds the candidate and runs the unchanged
+`desktop-ci.yml` with `checks: project-files-windows` (original execution) or
+`checks: project-files-windows-trace` (diagnostic). The existing workflow calls
+`project-files-windows.yml` at the same candidate SHA. It builds and runs the unchanged
 `node scripts/smoke-project-files.mjs` consumer only on Windows latest, preserving
 the existing native/UI deadlines, exact Open/Reveal and data assertions, normal
 exit and cleanup. `trace: true` enables bounded native-phase diagnostics and is

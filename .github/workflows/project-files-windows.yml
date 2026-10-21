@@ -1,6 +1,11 @@
 name: Windows project file native consumer
 
 on:
+  workflow_call:
+    inputs:
+      trace:
+        type: boolean
+        default: false
   workflow_dispatch:
     inputs:
       trace:

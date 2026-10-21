@@ -808,3 +808,13 @@ documentation checks pass; actual pipeline exit23 and a no-pipefail negative
 control establish failure propagation. No application, permit, retry, UI/native
 deadline, ownership or data assertion changes. Renew only the failed original
 consumer before classifying acceptance reuse and unreached Windows journeys.
+
+
+Initial direct dispatch of the newly added workflow returns GitHub404 because it
+is not on the default branch; no consumer ran. Add the same-SHA reusable call
+from the existing desktop workflow instead, following the native-lifecycle route:
+`checks: project-files-windows-trace` for diagnostics and `project-files-windows`
+for original execution. Both skip common/full; ordinary defaults and matrices
+remain unchanged. The route test evaluates these conditions and trace mapping,
+in addition to actual pipeline failure/negative controls.14route checks and lint/
+docs pass; both review axes report zero findings on this caller repair.
