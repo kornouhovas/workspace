@@ -13,12 +13,8 @@ on:
       desktop_ux_profile:
         description: With desktop-ux, select foundation, grouped Board or project navigation acceptance
         type: choice
-        options: [foundation, board, navigation]
+        options: [foundation, board, navigation, navigation-native]
         default: foundation
-      desktop_ux_navigation_only:
-        description: With navigation profile, renew the failed project native flow and affected regressions only
-        type: boolean
-        default: false
       desktop_ux_failure_probe:
         description: With desktop-ux, deliberately fail a selected check to verify propagation
         type: boolean
@@ -124,7 +120,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: ${{ fromJSON(inputs.desktop_ux_navigation_only && inputs.desktop_ux_profile == 'navigation' && '["macos-latest"]' || inputs.desktop_ux_category_only && '["windows-latest"]' || '["macos-latest","windows-latest","windows-2022"]') }}
+        os: ${{ fromJSON(inputs.desktop_ux_profile == 'navigation-native' && '["macos-latest"]' || inputs.desktop_ux_category_only && '["windows-latest"]' || '["macos-latest","windows-latest","windows-2022"]') }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 60
     steps:
@@ -138,7 +134,7 @@ jobs:
       - name: Candidate provenance
         env:
           WORKSPACE_UX_PROFILE: ${{ inputs.desktop_ux_profile || 'foundation' }}
-          WORKSPACE_UX_NAVIGATION_ONLY: ${{ inputs.desktop_ux_navigation_only && '1' || '0' }}
+          WORKSPACE_UX_NAVIGATION_ONLY: ${{ inputs.desktop_ux_profile == 'navigation-native' && '1' || '0' }}
         shell: bash
         run: |
           mkdir -p work/ci-desktop-ux
@@ -147,28 +143,28 @@ jobs:
         if: ${{ inputs.desktop_ux_failure_probe }}
         run: node scripts/desktop-ux-checks.mjs foundation --failure-probe
       - name: Affected UI, services and real Electron flows
-        if: ${{ !inputs.desktop_ux_failure_probe && !inputs.desktop_ux_packaged_only && !inputs.desktop_ux_category_only && inputs.desktop_ux_profile != 'board' && inputs.desktop_ux_profile != 'navigation' }}
+        if: ${{ !inputs.desktop_ux_failure_probe && !inputs.desktop_ux_packaged_only && !inputs.desktop_ux_category_only && inputs.desktop_ux_profile != 'board' && inputs.desktop_ux_profile != 'navigation' && inputs.desktop_ux_profile != 'navigation-native' }}
         run: npm run test:desktop-ux
       - name: Grouped Board appearance, behavior and retained service guarantees
         if: ${{ !inputs.desktop_ux_failure_probe && inputs.desktop_ux_profile == 'board' }}
         run: node scripts/desktop-ux-checks.mjs board
       - name: Project navigation and shared shell acceptance
-        if: ${{ !inputs.desktop_ux_failure_probe && inputs.desktop_ux_profile == 'navigation' && !inputs.desktop_ux_navigation_only }}
+        if: ${{ !inputs.desktop_ux_failure_probe && inputs.desktop_ux_profile == 'navigation' }}
         run: node scripts/desktop-ux-checks.mjs navigation
       - name: Focused project navigation native renewal
-        if: ${{ !inputs.desktop_ux_failure_probe && inputs.desktop_ux_profile == 'navigation' && inputs.desktop_ux_navigation_only }}
+        if: ${{ !inputs.desktop_ux_failure_probe && inputs.desktop_ux_profile == 'navigation-native' }}
         run: node scripts/desktop-ux-checks.mjs navigation --native-only
       - name: Packaged renewal adapter regressions
         if: ${{ (inputs.desktop_ux_packaged_only || inputs.desktop_ux_category_only) && !inputs.desktop_ux_failure_probe }}
         run: node --import tsx --test tests/runtime-layout.test.mjs tests/runtime-readiness.test.mjs tests/desktop-ux-checks.test.mjs tests/rename-submission-receipt.test.mjs tests/project-category-move-runtime.test.mjs tests/runtime-quit-evidence.test.mjs
       - name: Package shared font and notices
-        if: ${{ !inputs.desktop_ux_failure_probe && inputs.desktop_ux_profile != 'board' && inputs.desktop_ux_profile != 'navigation' }}
+        if: ${{ !inputs.desktop_ux_failure_probe && inputs.desktop_ux_profile != 'board' && inputs.desktop_ux_profile != 'navigation' && inputs.desktop_ux_profile != 'navigation-native' }}
         run: npm run package:built
       - name: Inspect packaged artifact
-        if: ${{ !inputs.desktop_ux_failure_probe && inputs.desktop_ux_profile != 'board' && inputs.desktop_ux_profile != 'navigation' }}
+        if: ${{ !inputs.desktop_ux_failure_probe && inputs.desktop_ux_profile != 'board' && inputs.desktop_ux_profile != 'navigation' && inputs.desktop_ux_profile != 'navigation-native' }}
         run: npm run check:artifact -- release
       - name: Packaged saved-view consumers
-        if: ${{ !inputs.desktop_ux_failure_probe && !inputs.desktop_ux_category_only && inputs.desktop_ux_profile != 'board' && inputs.desktop_ux_profile != 'navigation' }}
+        if: ${{ !inputs.desktop_ux_failure_probe && !inputs.desktop_ux_category_only && inputs.desktop_ux_profile != 'board' && inputs.desktop_ux_profile != 'navigation' && inputs.desktop_ux_profile != 'navigation-native' }}
         run: npm run smoke:views -- release
         env:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-desktop-ux-packaged

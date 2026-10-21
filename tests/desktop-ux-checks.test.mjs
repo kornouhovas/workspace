@@ -85,14 +85,14 @@ test('focused navigation renewal retains the original native command and affecte
  assert.equal(text.includes('smoke:shell'),false);assert.equal(text.includes('renderer-app.test.tsx'),false);
  const result=spawnSync(process.execPath,['scripts/desktop-ux-checks.mjs','navigation','--native-only','--failure-probe'],{encoding:'utf8'});assert.equal(result.status,23);
  const {readFile}=await import('node:fs/promises');const {load}=await import('js-yaml');const workflow=load(await readFile('.github/workflows/desktop-ci.yml','utf8'));
- assert.equal(workflow.on.workflow_dispatch.inputs.desktop_ux_navigation_only.default,false);
+ assert.equal(workflow.on.workflow_dispatch.inputs.desktop_ux_profile.default,'foundation');assert.ok(workflow.on.workflow_dispatch.inputs.desktop_ux_profile.options.includes('navigation-native'));assert.ok(Object.keys(workflow.on.workflow_dispatch.inputs).length<=25);
  assert.ok(workflow.jobs['desktop-ux'].steps.some(step=>step.run==='node scripts/desktop-ux-checks.mjs navigation --native-only'));
 });
 
 test('focused navigation failure renewal selects only the failed macOS host and retains the normal three-host profile',async()=>{
  const {readFile}=await import('node:fs/promises');const {load}=await import('js-yaml');const {runInNewContext}=await import('node:vm');
  const workflow=load(await readFile('.github/workflows/desktop-ci.yml','utf8'));const expression=workflow.jobs['desktop-ux'].strategy.matrix.os.slice(3,-2);
- const matrix=focused=>Array.from(runInNewContext(expression,{fromJSON:JSON.parse,inputs:{desktop_ux_navigation_only:focused,desktop_ux_profile:'navigation',desktop_ux_category_only:false}}));
+ const matrix=focused=>Array.from(runInNewContext(expression,{fromJSON:JSON.parse,inputs:{desktop_ux_profile:focused?'navigation-native':'navigation',desktop_ux_category_only:false}}));
  assert.deepEqual(matrix(true),['macos-latest']);assert.deepEqual(matrix(false),['macos-latest','windows-latest','windows-2022']);
 });
 

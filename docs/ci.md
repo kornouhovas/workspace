@@ -1046,12 +1046,11 @@ Failure propagation remains strict; suppressed/skipped jobs are not passes.
 
 For the original #54 native navigation failure (long project preview requested
 while the prior view's scroll restoration was still active), select
-`checks: desktop-ux`, `desktop_ux_profile: navigation`, and
-`desktop_ux_navigation_only: true`. This retains the build prerequisites,
+`checks: desktop-ux` and `desktop_ux_profile: navigation-native`. This retains the build prerequisites,
 type/lint and navigation/viewport/views/route regressions, then the original
 `smoke-project-navigation.mjs` command with unchanged deadlines and shutdown/
 cleanup gates on the originally failed macOS host. It omits the unrelated
-full-profile consumers while diagnosing the failure. Default remains false;
+full-profile consumers while diagnosing the failure. The default profile remains `foundation`;
 application repairs renew the complete navigation profile after focused success.
 Provenance records both profile and focused-mode selection. A shorter filtered
 projection must clamp its saved scroll to current bounds and release restoration;

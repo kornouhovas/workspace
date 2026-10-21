@@ -176,9 +176,15 @@ release restoration. The hook now clamps to current bounds once the projection
 is ready. The local original native command passes all 32 variants and that
 additional scenario; focused navigation/viewport/views/route regressions pass.
 
-The dedicated `desktop_ux_navigation_only` route defaults false and renews only
+The opt-in `navigation-native` profile renews only
 the original failed macOS native command and affected regressions, with build
 prerequisites and exact provenance. The complete three-host navigation profile
 must then be renewed because the scroll-bound repair changes application input.
 Original failures, Windows successes and their separate SHA provenance remain
 recorded; no skipped/unreached stage is counted as passing evidence.
+
+The first narrowed-route dispatch at `b934ad0b` was rejected before job creation:
+adding a boolean exceeded GitHub's 25 workflow-dispatch inputs. The repair uses
+a fourth value in the existing profile choice instead. A route regression guards
+the input limit and focused/default host selection; no rejected dispatch counts
+as a failed or passing native run.
