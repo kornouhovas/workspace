@@ -1010,3 +1010,16 @@ candidate provenance. It does not package unchanged runtime resources or run
 installers; ordinary/full/foundation and release routes retain those checks.
 Use the Board profile without the packaged/category renewal switches. Failed or
 skipped commands remain gates; `--failure-probe` still propagates exit 23.
+
+Issue #53's local macOS full run on `d3f8ad7` exposed standalone property-creator
+and view-readiness fixture shutdown timeouts after their JavaScript quit receipts.
+Those fixtures do not load the application/CSS and are unchanged from the issue
+base. The two-file concurrent reproduction failed one of 28 scenarios; the same
+28 with file concurrency one passed, retaining the original 10-second shutdown
+bounds. Darwin suite scheduling now gives `property-editor-driver.test.mjs` and
+`runtime-view-readiness.test.mjs` separate exclusive batches before the remaining
+files. Windows keeps its existing category/property batches; Linux is unchanged.
+Coverage/host-mapping and failing-batch propagation regressions require every
+selected file once. This is a concurrency-trigger mitigation, not evidence of the
+underlying native Electron shutdown cause. Preserve original failures and renew
+the complete affected run with this schedule.

@@ -30,10 +30,14 @@ export function selectTestFiles(files, suite) {
 }
 
 export function selectTestBatches(files, platform) {
-  if (platform !== 'win32') return [files];
-  // Native utility-exit and creator-close controls retain their original bounds
-  // without competing with the rest of the real-Electron platform workers.
-  const isolated = ['tests/project-category-move-fixture.test.mjs', 'tests/property-editor-driver.test.mjs'].filter(file => files.includes(file));
+  // Native fixture shutdown must keep its original deadline without competing
+  // with other Electron fixture workers. Each selected file still runs once.
+  const exclusive = platform === 'win32'
+    ? ['tests/project-category-move-fixture.test.mjs', 'tests/property-editor-driver.test.mjs']
+    : platform === 'darwin'
+      ? ['tests/property-editor-driver.test.mjs', 'tests/runtime-view-readiness.test.mjs']
+      : [];
+  const isolated = exclusive.filter(file => files.includes(file));
   return [...isolated.map(file => [file]), files.filter(file => !isolated.includes(file))].filter(batch => batch.length);
 }
 

@@ -120,3 +120,15 @@ Both independent reviewers accepted this repair without new findings. The Board
 profile now includes shell smoke for shared Table/filter consumers. Because CSS
 changed, final build, full suite and exact-candidate native/CI are renewed; prior
 cancelled/superseded workflow runs do not establish acceptance.
+
+The `d3f8ad7` full renewal exposed 11 standalone native fixture failures (3,190
+passed/26 skipped), retained as negative evidence. The application-independent
+property-creator/view-readiness fixture, lifecycle helper and tests are unchanged
+from the base. A two-file concurrent reproduction yielded 27 pass/one shutdown
+timeout; identical scenarios with file concurrency one yielded 28 pass. Darwin
+now isolates those files before the remaining suite, preserving scenario/deadline
+and cleanup assertions, exact-once coverage and failure propagation. Windows's
+existing isolated batches and Linux selection are unchanged. Both review axes
+accepted the scheduling repair; the Spec reviewer independently passed the three
+registry checks. Native concurrency is the evidenced trigger, not a proven
+underlying Electron cause. Full acceptance is renewed using the new schedule.
