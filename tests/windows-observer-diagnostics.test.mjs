@@ -405,8 +405,17 @@ for (const boundary of ['readiness', 'case', 'child_cleanup', 'file_cleanup']) {
   });
 }
 
-function assertFullSuiteWorkflow(workflow) {
+function fullSuiteJob(workflow) {
   workflow = workflow.replace(/\r\n/g, '\n');
+  const marker = '\n  verify:\n';
+  assert.equal(workflow.split(marker).length, 2, 'One actual full verify job is required');
+  const start = workflow.indexOf(marker) + 1;
+  const remainder = workflow.slice(start);
+  const next = remainder.slice(1).search(/\n {2}[a-zA-Z0-9_-]+:\n/);
+  return next < 0 ? remainder : remainder.slice(0, next + 1);
+}
+function assertFullSuiteWorkflow(workflow) {
+  workflow = fullSuiteJob(workflow);
   assert.match(workflow, /- run: npm run test:platform\n {8}env:\n {10}OBSERVER_MATRIX: \$\{\{ matrix.os \}\}\n {10}WORKSPACE_OBSERVER_CALL_EVIDENCE_DIR: work\/ci-observer-full-suite/);
   assert.match(workflow, /id: observer-call-validation\n {8}if: always\(\)\n {8}run: node scripts\/windows-observer-diagnostics.mjs validate-call --output work\/ci-observer-full-suite\n {8}env:\n {10}OBSERVER_MATRIX: \$\{\{ matrix.os \}\}/);
   assert.match(workflow, /if: \$\{\{ always\(\) && steps.observer-call-validation.outcome == 'success' \}\}/);
@@ -438,8 +447,9 @@ for (const [format, eol] of [['LF', '\n'], ['CRLF', '\r\n']]) {
   for (const [requirement, before, after] of workflowMutations) {
     test(`full-suite workflow validates and rejects changed ${requirement} (${format})`, () => {
       const workflow = readFileSync(new URL('../.github/workflows/desktop-ci.yml', import.meta.url), 'utf8').replace(/\r?\n/g, '\n');
-      assert.equal(workflow.split(before).length, 2, 'mutation must target exactly one real workflow fragment');
-      const mutated = workflow.replace(before, after).replace(/\n/g, eol);
+      const job = fullSuiteJob(workflow);
+      assert.equal(job.split(before).length, 2, 'mutation must target exactly one fragment in the actual verify job');
+      const mutated = workflow.replace(job, job.replace(before, after)).replace(/\n/g, eol);
       assert.throws(() => assertFullSuiteWorkflow(mutated), { code: 'ERR_ASSERTION' });
     });
   }

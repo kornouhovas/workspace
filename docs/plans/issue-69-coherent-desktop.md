@@ -1083,3 +1083,37 @@ clock, endpoint and300mslimit unchanged; profile/enforceguard retained.8fixture/
 backend/querychecks+1CLIguard pass, lint/docs pass; Standards0. Runexisting
 performance diagnostic_only/profile_filters/profile_backend onbothfailedhosts;
 no baseline or originalstrictrepeat untildiagnosticevidence selectsnextstep.
+
+
+### Full-suite observer fixture repair and bounded strict renewal
+
+Full run39694044347/attempt1 at9a359816 has completed. Common passes.
+Mac platform:2763 total,2722 pass,14 fail,27 skip. Both Windows hosts:
+2782 total,2755 pass,the same14 fail,13 skip. Downloaded original job logs
+confirm every failure is an LF/CRLF negative workflow mutation fixture: copied
+source-runtime prerequisites introduced a second matching fragment outside the
+actual verify job. All other platform scenarios and early source/native creation
+prerequisites pass independently; Ladle/dev/package tails remain unreached.
+Retain all24 workflow checks and scope mutation plus validation to the unique
+actual verify job. New observer-workflow route runs both original observer and
+suite-inventory files on all three affected hosts, with original retained-call
+collector validation and always-uploaded exact-SHA evidence. No app/build inputs,
+assertions, deadlines or ordinary CI defaults change. Local97/97 tests, final
+24/24 LF/CRLF controls and lint pass; Standards review0. Focused hosted renewal
+must pass before acceptance continuation.
+
+Diagnostic39694806459/attempt1 atba683bab completes both hosts,32 cases and
+four normal app/backend exits/cleanup each. Mac Textedit181.4ms (backend9.8ms);
+Windows assignment340.7ms (backend51.7ms,76.7ms before backend start).
+Profiles do not identify a removable safety operation or establish a unique
+cause. One predefined original strict renewal39695914995/attempt1 runs with
+unchanged candidate299a,preparation,event clock,endpoints and limits. Spec review
+accepts this bounded renewal after diagnosis; another failure requires renewed
+diagnosis, not another equivalent profile/retry cycle. Mac job has passed;
+Windows is pending. Passing renewal is evidence for its actual host/run, not a
+proof of universal reliability or a reclassification of the previous misses.
+
+Current Windows installer39694305845 passes all installed/offline/isolation/
+reinstall/uninstall/normal-exit/cleanup assertions; NSIS SHA256
+f8ccfd9b2916bfc137571d8d20f00719ec24b054cb5bf692ef65100ffd69754d.
+This is Server2025 x64 evidence, not Windows11 release acceptance.
