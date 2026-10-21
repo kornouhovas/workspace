@@ -1,3 +1,4 @@
+import { inspectNativeView } from "./windows-native-view-diagnostics.mjs";
 import { setRuntimeCaptureViewport } from "./runtime-settings.mjs";
 import { waitForSelectedRuntimeWorkspace, selectRuntimeWorkspace } from "./runtime-settings.mjs";
 import { enterContextFor } from "./runtime-context-tools.mjs";
@@ -471,6 +472,21 @@ try {
       } catch { nativeBridgeCleanup = nativeBridgeCleanupEvidence(null); }
       nativeBridgesStopped &&= nativeBridgeCleanup.status === "passed";
       await saveFailureEvidence();
+    }
+    // Strict failure is already retained. One read-only terminal observation
+    // cannot reselect, extend the native deadline or turn the verdict into success.
+    if (failure && process.platform === "win32" && process.env.WORKSPACE_REVEAL_TRACE === "1" && nativeBridgesStopped) {
+      for (const target of nativeTargets) {
+        try {
+          const terminalNativeView = await inspectNativeView(target);
+          nativeBridgesStopped &&= terminalNativeView.process.termination !== "unknown";
+          observations.push({ terminalNativeView });
+        } catch {
+          nativeBridgesStopped = false;
+          observations.push({ terminalNativeView: { status: "unavailable", stage: "unexpected_error", process: { termination: "unknown" } } });
+        }
+        await saveFailureEvidence();
+      }
     }
     if (diagnostic) {
       try {

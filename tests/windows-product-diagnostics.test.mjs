@@ -499,7 +499,7 @@ test('source continuation retains every unreached Windows layout/runtime/package
   const continuationStart = job.steps.findIndex(step => step.run === 'npm run build:ladle');
   const checks = steps => steps.filter(step => step.run).map(({ run, env, if: condition }) => ({ run, env, condition }));
   assert.deepEqual(checks(job.steps.slice(continuationStart)), checks(jobs.verify.steps.slice(originalStart)));
-  assert.deepEqual(job.steps.slice(0, continuationStart).filter(step => step.run && !step.name).map(step => step.run), ['npm ci', 'npm run build']);
+  assert.deepEqual(job.steps.slice(0, continuationStart).filter(step => step.run && !step.name && !step.if).map(step => step.run), ['npm ci', 'npm run build']);
   assert.match(jobs.common.if, /inputs.checks != 'source-runtime'/);
   assert.equal(jobs.verify.needs, 'common');
 });

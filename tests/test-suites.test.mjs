@@ -442,7 +442,7 @@ test('remaining Reveal scope replaces unrelated readiness with the original file
     assert.deepEqual(selected, native === true && early === true ? ['windows-latest'] : ['windows-latest', 'windows-2022']);
   }
   assert.equal(job.strategy['fail-fast'], false);
-  const commands = job.steps.filter(step => step.run && !step.name?.startsWith('Early original') && step.name !== 'Selected workspace identity and CI inventory regressions').map(step => step.run);
+  const commands = job.steps.filter(step => step.run && !step.name?.startsWith('Early original') && step.name !== 'Selected workspace identity and CI inventory regressions' && step.name !== 'Record native host provenance without invoking Explorer').map(step => step.run);
   assert.match(commands[0], /set -o pipefail/);
   assert.match(commands[0], /npm ci --loglevel verbose 2>&1 \| tee work\/ci-focused-windows-reveal\/install.log/);
   assert.equal(commands[1], 'npm run build'); assert.equal(commands.length, 8);

@@ -380,3 +380,14 @@ foreach ($mode in @('observed','late_selected','unready','wrong_handle','wrong_p
     } else assert.equal(snapshot ?? null, null, mode);
   }
 });
+
+test('creation failure collects terminal native state only after its strict verdict and confirmed bridge stop', async () => {
+  const source=await readFile(new URL('../scripts/smoke-project-creation.mjs',import.meta.url),'utf8');
+  const verdict=source.indexOf('Reveal must invoke the real native API exactly once');
+  const stopped=source.indexOf('nativeBridgesStopped &&= nativeBridgeCleanup.status === "passed";',source.indexOf('} finally {',verdict));
+  const inspect=source.indexOf('await inspectNativeView(target)');
+  assert.ok(inspect > verdict && inspect > stopped);
+  assert.match(source.slice(stopped,inspect), /failure && process.platform === "win32" && process.env.WORKSPACE_REVEAL_TRACE === "1" && nativeBridgesStopped/);
+  assert.match(source.slice(inspect,inspect+700), /termination !== "unknown"/);
+  assert.match(source.slice(inspect,inspect+700), /nativeBridgesStopped = false/);
+});

@@ -934,3 +934,23 @@ complete, but local macOS27 normal Electron quit hits the preserved10s timeout;
 previous original local creation remains its actual passing receipt; current
 native lifecycle acceptance must renew on named CI hosts. Standards re-review:
 0 remaining findings. No timeout/cleanup weakening or unchanged local retry.
+
+
+Focused `39689266663`, attempt1, at `8fb787e4` reaches native and fails:
+one exact parent open, zero selections, owner_deadline in opened state. Trace
+reaches uia_root8663.8ms; no properties marker before12sowner expiry. Receipt
+rejects native_unavailable. Bridge start/stop1/1; failure normalquit and exact
+filemanager/fixturecleanup pass; restart unready. No stale-heading/bounds failure.
+New native settings/identity/inventory controls pass on Windows. Prior cold
+Windows cause is not established by this sample. Ranked hypotheses: UIA read
+latency, lost exact window binding, native event delivery delay. Add one existing
+bounded read-only terminal native inspector after strictfailure+confirmedbridge
+stop, onlywithtrace1. Five-second observation/one-secondtermination budgets;
+unknown/throw prevents ownedcleanup, primaryerror retained. No new select or
+native/application/deadline modification. Host metadata reads no Explorer state.
+Native diagnostic regression redbeforefix;84pass/2platformskip of86 selected
+inspector/product/inventory tests, lint/docs pass. Found/reconciled another
+source-continuation prefix fixture to account only unconditional defaultsteps;
+actual optionalguard and unchangedtail remain independently asserted. Both
+reviews0findings. Renew these changedcontrols on all3tailhosts. One diagnostic
+focused run precedes justified originaltraceoff renewal; neverretryuntilgreen.
