@@ -524,3 +524,37 @@ coherent profile will renew the added native journey across three hosts after
 the original strict failed consumer is repaired. Combined performance renewal
 `39669773440` records separate diagnostic and original strict reports on the
 same observed host; only the original unprofiled `--enforce` step accepts limits.
+
+
+## Rejected preload-margin experiment
+
+At65099447, original strict39669773440/attempt1 on Mac fails only direct
+Table grouping381.3ms (observation32.5, initial readiness282.5, final stability
+66.3ms);32functional samples, tenmemory samples, fournormalexits andcleanup
+complete. Its separate diagnostic passes all timings. Compared with af23242d
+strict39667534800, startup/groupedTable/groupedBoard checkpoints have exactly
+the same loaded rows14/7/3 and DOM nodes6124/3704/2265. The hypothesized
+reduction in mounted fields is not observed. Reject300px and restore1000px;
+do not claim reverting an ineffective experiment uniquely repairs grouping.
+Retain the actual Windows/Mac failures and the useful rapid-scroll regression.
+The next diagnostic uses the actual packaged renderer under a fixed explicit
+CPU throttle in an ignored harness copy, to expose renderer cost consistently;
+it is never strict acceptance. No deadline, target or original harness is
+changed by that diagnostic.
+
+The same65099447 run's Windows AMD EPYC7763 strict fails six samples:
+direct firstTablefilter565.2/assignment481.7; grouped first/secondTablefilters
+780.5/306.2, assignment319.8 and fullRefresh6330.4ms.32functional samples,
+tenmemorysamples, fournormalexits andcleanup complete. Diagnostic on that same
+host reproduces Table grouping373.4/assignment314.0/edit338.1ms. Mounted rows
+and nodes remain identical to af23242d, confirming no measured preload reduction.
+
+Detailed Windows diagnostic puts actual grouping mutation work at3.3ms after
+119ms queue delay; an overlapping reconciliation spans94.1ms. Assignment is
+63.6ms backend plus multiple renderer passes. Preserve both backend scheduling
+and renderer hypotheses; neither is proven as a unique cause. A local fixed4x
+renderer-throttle diagnostic on restored af23242d application reproduces
+Table grouping362.9/edit408.5ms while Board grouping164.1/edit158.9ms. It
+completes16direct observations, two normal exits and cleanup (diagnostic only,
+not strict acceptance). CPU samples point to repeated React/DOM work and scroll
+restoration, motivating a measured Table presentation-render experiment.
