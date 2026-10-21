@@ -98,3 +98,10 @@ advanced through intent/keep-original/first-effect and then reproduced the known
 local 10-second Electron shutdown timeout. This remains a failed local command;
 hosted renewal must pass the complete retained command. Both independent reviews
 found no remaining issues after the offscreen recovery-row ordering repair.
+
+The separate category renewal exposed another collapsed recovery-list entry:
+Reload now opens its owning details before activation, leaving repeated-read and
+no-replay assertions intact. Its local command advanced through English and
+Russian recovery scenarios before another unchanged shutdown timeout; 34 affected
+regressions passed. Intermediate hosted run `39586711625` was explicitly cancelled
+while completing this local adapter audit, and supplies no acceptance credit.

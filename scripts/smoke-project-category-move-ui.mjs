@@ -741,7 +741,9 @@ export async function runProjectCategoryMoveUi(mode = "dev") {
           };
           // Drive the production list and status controls, as well as repeated
           // public reads. Neither control is authorized to recover automatically.
-          await page.getByRole("button", { name: language === "en" ? "Reload interrupted category moves" : "Обновить прерванные перемещения", exact: true }).press("Enter");
+          const reload=page.getByRole("button", { name: language === "en" ? "Reload interrupted category moves" : "Обновить прерванные перемещения", exact: true, includeHidden:true });
+          await enterContextFor(page,reload);
+          await reload.press("Enter");
           await page.waitForFunction(() => globalThis.document.querySelector(".category-move-operations")?.getAttribute("aria-busy") === "false");
           if (checkpoint !== "commit") {
             await page.getByRole("button", { name: `${language === "en" ? "Check category move status" : "Проверить статус перемещения в категорию"}: ${operation.originalRelativePath}`.replace(/\s+/g, " ").trim(), exact: true }).press("Enter");
