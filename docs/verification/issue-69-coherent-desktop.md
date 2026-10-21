@@ -1,30 +1,29 @@
 # Issue 69 acceptance map
 
-Status: **in progress, not accepted**. [GitHub #69](https://github.com/kornouhovas/workspace/issues/69)
-owns current CI/integration gates; the [plan](../plans/issue-69-coherent-desktop.md)
-records scenarios and test retention. Application candidate `1b87e5217fcc0e5da26f8ca0dc2472356588aede`
-starts from accepted `86ec752714c860662d4b1da0c25c2e5b71606bff`.
+Status: **in progress, not accepted or integrated**. [GitHub #69](https://github.com/kornouhovas/workspace/issues/69)
+owns current gates; the [plan](../plans/issue-69-coherent-desktop.md) preserves
+scenario retention, experiments, exact failures and historical receipts.
+Application candidate: `b577cfd2df4026c3f8584ce1880bf90dfd9d87d6`, based on
+accepted `86ec752714c860662d4b1da0c25c2e5b71606bff`. Later diagnostic/CI changes
+through `8fb787e` do not change application inputs.
 
-## Appearance comparison
+## Appearance and references
 
-Reference roles: main `080b416c57b2869024ac62363e96b68b40f499c0` for
-composition/journeys; bb `f135a001e72942cee9118d2693208ec0725e2f18` for
-typography, semantic palette, density and component styling. Reuse the existing
-Inter Latin/Cyrillic assets, outline icons, Hint, Radix and semantic tokens.
-Keep the accepted unique tabs and single project area instead of main's splits.
+Pinned main `080b416c57b2869024ac62363e96b68b40f499c0` owns composition and
+journeys; bb `f135a001e72942cee9118d2693208ec0725e2f18` informs typography,
+semantic palette, density and component styling. Existing Inter Latin/Cyrillic,
+outline icons, Hint, Radix and semantic tokens remain. Accepted unique tabs and
+one project area replace main's nested splits.
 
-Compared current whole-window Table with the [pinned main Table](../research/desktop-experience-evidence/main-table-1440.png),
-the [accepted #68 correction](issue-68-composition-correction.md), and the
-#54/#64 project-area reference mapping. The [manifest](issue-69-evidence/manifest.json)
-records synthetic-fixture images, exact renderer inputs and hashes; these are
-appearance artifacts, not complete runtime passes. Captures are renewed on the
-application candidate: visual foundation (16 populated/long, 24 empty), Board
-(16 populated/long, eight empty, eight unavailable), navigation (32 transitions),
-and files (16 preview/expanded plus disappearance). First three commands pass
-normal quit/cleanup; the files command fails normal shutdown after its native
-assertions. Its raw manually supplied SHA is malformed; the separate source
-provenance records the error and exact built renderer inputs. The manifest uses
-those verified inputs and preserves the failed receipt.
+Current captures come from the **passing macOS consumer** of coherent
+[39681330400](https://github.com/kornouhovas/workspace/actions/runs/39681330400),
+attempt 1, at the exact application SHA. The [manifest](issue-69-evidence/manifest.json)
+records synthetic-fixture image hashes, renderer inputs and actual run/source.
+The before image retains issue-start inputs. Original geometry, fonts, popup
+bounds and EN/RU/theme/1024x720/1440x960 assertions remain. Actual Table,
+long-content/empty/error, Board, real-tree preview/expanded and settings images
+were inspected against the pinned references: no material mismatch found.
+This appearance evidence does not accept the separate failed Windows Reveal.
 
 | Surface | Concrete comparison / result | Evidence |
 | --- | --- | --- |
@@ -36,164 +35,66 @@ those verified inputs and preserves the failed receipt.
 | Settings | bb section sidebar, selected row, constrained content column and bordered setting groups. General/Appearance/Workspaces/Sources/Backup/About remain real panels. | [General](issue-69-evidence/settings-1440.png) |
 | Empty/error/unavailable | One empty/setup explanation per condition; no overlapping empty table guidance. File disappearance keeps selection and actionable error feedback. | [Disappeared file](issue-69-evidence/files-error.png), raw state matrices |
 
-## Behavior and retained guarantees
 
-Local host: Node 22.21.1, macOS arm64; native sample identifies macOS 27.0
-build 26A428. These observations are not substituted for supported hosted OS
-or Windows 11 release evidence.
+## Controls, behavior and retained safety
 
-| Entry/control | Observed local behavior | Retained safety / limitation |
+The following coherent journeys pass on macOS latest and Windows 2022 at the
+application SHA above. Windows latest passes the regression union, visual and
+Board journeys in that run, then fails native file Reveal. Its original file and
+navigation renewals below pass; the remaining broad tail is still required.
+
+| Entry / surface | Affected behavior evidence | Retained guarantee |
 | --- | --- | --- |
-| Source/Create/Active/Archived/Archive entries | Public UI regression fails before placement repair, passes afterward; Source tools Escape returns to the same trigger, entries hide in expanded mode and return without replacement | Only entry presentation moves. Forms, pending operations, receipts, errors and controller lifetime stay in their existing owners. |
-| Sidebar and project resize/collapse/restore | Renewed `af23242d` navigation command passes pointer resize, keyboard endpoints, collapse/restore, released width and discoverable restore | No persisted-session claim; #55 owns restart restoration extensions |
-| Preview/expand/return, close/reopen and tabs | Renewed `af23242d` navigation command passes 32 ordinary/long captures, focus, unique tabs, inactive-close/reopen and reorder, independent vertical/horizontal view scroll | View/filter/scroll constraints retained; original assertions unchanged |
-| Back/Forward | Native workspace keyboard traversal passes; 241 selected UI/service scenarios include branch truncation, end states, settings return and removed-destination handling | Navigation does not undo committed metadata/filesystem commands; #56 retains the complete draft guard matrix |
-| Board controls | Renewed `af23242d` Board command passes 16 populated/long, eight empty and eight unavailable captures; width/collapse/hide/restore, saved order/wrap, scalar grouping and MultiSelect membership | Exact memberships and values preserved; normal exit and asserted fixture cleanup passed |
-| Real file tree/Open/Reveal | Renewed `af23242d` file command reaches 16 preview/expanded captures, arrow focus, Refresh/disappearance, exact Finder selection, exact external TextEdit document and unchanged bytes | Overall command **failed** normal shutdown; cleanup was skipped because exit was unverified. This is not a passing native receipt. |
-| Table/font/settings/state matrix | Renewed `af23242d` visual command reaches 16 populated/long plus 24 empty variants with original bounds/font/context assertions | Renewed `af23242d` command passes normal shutdown and asserted cleanup; appearance alone still does not accept remaining milestone gates |
-| Native shutdown | Original three-file reproduction 16 pass/13 fail; diagnostic renewal four pass/11 fail exposes original timeout rather than secondary discarded-handle TypeError | Normal 10-second deadline and forced-cleanup failure remain. Native root cause is still under investigation. |
-| Independent review | Standards 0 findings; Spec 0 slice findings at `6dc5021` | Review explicitly does not accept remaining milestone gates |
+| Source/Create/Active/Archived/Archive | Public UI placement regression; contextual actions, Escape and expanded-mode hide/return | Only entries move. Existing owners retain forms, drafts, pending operations, receipts and errors. |
+| Sidebar / settings / workspace picker | Real workspace creation, management, contextual menus, sidebar collapse/restore/resize, EN/RU and settings return | Source identity, safe root validation, isolation and removal/destination handling remain service-owned. |
+| Table / Board | Column width/order/hide/wrap, manual rows, scalar/MultiSelect grouping and assignment, unavailable/retry, active/archive projections | Exact project identities, memberships, values and committed revisions; UI never authorizes filesystem writes. |
+| Views | Create/rename/duplicate/reorder/switch/delete, active fallback, final-view protection, cancellation and packaged reopen | View ownership and saved layout/filter/group state; Cancel performs no deletion. |
+| Preview / expanded / tabs | 32 ordinary/long states; close/reopen, unique tabs, reorder, expand/return, released width and focus | Independent horizontal/vertical view scroll, filtered clamps, selection, resize endpoints and discoverable restore. |
+| Rapid scroll / fields / editors | Native rapid jumps preserve exact ordered IDs and every clipped visible field; UI retains offscreen focus/draft/pending; scalar reopening uses latest localized value | Viewport cleanup skips redundant work only. Retained editors receive current revisions, options and callbacks. |
+| Back / Forward | Actual workspace keyboard history, end states, branch truncation, fresh history and removed destinations | Navigation does not undo committed metadata/filesystem commands; editor guard extensions remain #56–#58. |
+| Files / Open / Reveal | Real nested tree, arrow focus, Refresh/disappearance, exact native selected target, external document and unchanged bytes on Mac/Windows 2022 | Containment, fresh identity/authorization, alias ambiguity, no native permit replay; Windows latest original file renewal below passes; its earlier failure remains recorded. |
+| Feedback / keyboard | Original narrow popup bounds, tooltip labels, topmost Escape, disabled/pending/error, cancellation and focus-return scenarios | No event clock, readiness predicate, deadline or numerical target is relaxed. |
 
-Local artifacts are under `work/issue-69/` in the task checkout. Their names and
-existence do not establish passing evidence. The receipts below renew scoped
-hosted boundaries; broad desktop/package and strict scale acceptance remain gates.
+Service optimization indexes every exact native alias, preserving ambiguous and
+historical records plus original owner/replacement/category predicates and
+transaction revalidation. All 148 focused reconciliation/discovery/observation
+cases pass. Broader safety rows pass on Mac/Windows2022 in the full run below; the unreached
+Windowslatest platform rows and all three runtime tails remain required.
 
-## Hosted and completed-candidate receipts
+## Exact candidate receipts
 
-Application/renderer inputs remain unchanged from `6dc5021` through `ed2c6feb`;
-intermediate changes repair fixtures/drivers, diagnostic tracing and reports.
-Candidate `af23242d` changes viewport cleanup scheduling. A300px-margin
-experiment was rejected and restored; Table-control memoization was also rejected.
-Renderer inputs through `83be28ea` again match `af23242d` exactly. Candidate `83be28ea`
-additionally indexes complete native-alias buckets during service reconciliation
-and is under renewed verification. Historical receipts keep their actual SHA; they do not alone
-accept that production change.
+All runs below are attempt 1; downloaded reports/logs and required artifacts were
+inspected. A diagnostic or earlier receipt is never relabeled as current success.
 
-| Boundary | Actual receipt | Result / limit |
+| Boundary | Actual candidate / run | Result / limit |
 | --- | --- | --- |
-| Completed-candidate full local suite | `8cb8097`, Node 22.21.1/macOS 27 arm64, `npm run test:all` | 3,270 total, 3,244 pass, zero fail, 26 platform skips; later reviewed test-only repairs renew affected consumers |
-| Original four-file native lifecycle, including fractional clipping and timing/delivery controls | `ed2c6feb`, [39663902847](https://github.com/kornouhovas/workspace/actions/runs/39663902847), attempt 1; downloaded logs/provenance on macOS latest, Windows latest, Windows 2022 | 66/66 on each host, normal quit preserved; local macOS 27 negatives remain unexplained |
-| Actual arm64 DMG install/reopen/replacement | `ebd090ab`, [39659054203](https://github.com/kornouhovas/workspace/actions/runs/39659054203), attempt 1, macOS 14.8.9 | Installed bundled backend, exact workspace/source/view/language, EN/RU keyboard/isolation, replacement preserving data, normal exits and cleanup pass |
-| Actual x64 NSIS install/reopen/reinstall/uninstall | `ebd090ab`, [39659356326](https://github.com/kornouhovas/workspace/actions/runs/39659356326), attempt 1, Windows Server 2025/kernel 10.0.26100 | Unicode/space path, independent default APPDATA, data/identity preservation, normal exits, uninstall and cleanup pass; not Windows 11 release evidence |
-| Original strict packaged scale | `ebd090ab`, [39659477806](https://github.com/kornouhovas/workspace/actions/runs/39659477806), attempt 1, macOS 14 + Windows latest | **Failed numerical limits**. Both hosts complete 32 functional scenarios, ten memory samples, four normal quits/backend exits and cleanup. Mac first Table filter 603.2ms; Windows direct/grouped Table edit 344.5/382.8ms and grouped Table assignment 315.4ms exceed 300ms. All other original timings and memory limits pass. |
+| Original strict packaged scale | `b577cfd2`, [39680595721](https://github.com/kornouhovas/workspace/actions/runs/39680595721) | **Pass both hosts**: 32 timings, ten memory samples, four normal application/backend exits and asserted cleanup each. Mac M1 Virtual maximum interaction 286.8ms, conservative peak 924,696,576bytes. Windows Xeon8573C/kernel10.0.26100 maximum 241.2ms, peak 847,798,272bytes; Table assignment 227.5/214.4ms. |
+| Coherent desktop / package | `b577cfd2`, [39681330400](https://github.com/kornouhovas/workspace/actions/runs/39681330400) | Mac and Windows 2022 pass principal journeys, real Open/Reveal and packaged Views. **Windows latest fails** file Reveal after 1374 regressions, visual 16/24 and Board 16/8/8; normal exit/cleanup pass. Later native/package steps there are unreached. |
+| Actual arm64 DMG | `b577cfd2`, [39681337146](https://github.com/kornouhovas/workspace/actions/runs/39681337146), macOS14.8.9 | **Pass** installed bundled backend, identity, EN/RU, isolation, reopen/replacement preserving data, normal exits and cleanup. DMG SHA256 `0fc3cf1447947fa70c94c2e772f691cb2acd7931aa0d0aebb6b79657bcac3527`. |
+| Actual x64 NSIS | `b577cfd2`, [39681752968](https://github.com/kornouhovas/workspace/actions/runs/39681752968), Server2025/kernel10.0.26100 | **Pass** Unicode/space path, bundled SQLite/backend, identity, EN/RU, isolation, reopen/reinstall, independent APPDATA, uninstall and cleanup. SHA256 `86ef9d9e75aae33517a4d9beff85b16f5d9d791eac6e33d2d93e91415d39207e`. Not Windows 11 release evidence. |
+| Original Windows file consumer | diagnostic/CI-only `9b05276c`, [39684193756](https://github.com/kornouhovas/workspace/actions/runs/39684193756) | Trace-enabled diagnostic passes on EPYC9V45 with complete native events and original assertions/exit/cleanup. Readiness about 5s; earlier failure not reproduced or explained. It does not accept original native execution. |
+| Original trace-disabled Windows consumer | `9b05276c`, [39684755404](https://github.com/kornouhovas/workspace/actions/runs/39684755404) | **Pass original execution**, EPYC7763/kernel10.0.26100: all tree/exact native selection/external document/bytes assertions, one select/done receipt, normal exit and cleanup; diagnostic collector complete. Earlier cause remains unknown. |
+| Windows navigation | `9b05276c`, [39685187380](https://github.com/kornouhovas/workspace/actions/runs/39685187380) | **Pass** Windows latest and Windows 2022: all 32 states, rapid-scroll readiness, scroll/focus/resize/history, normal exit and cleanup. Package steps are intentionally skipped by this profile. |
+| Broad integrated suite | `9b05276c`, [39685830877](https://github.com/kornouhovas/workspace/actions/runs/39685830877) | **Failed**: common passes; Mac platform2728 pass/2 stale inventory failures/26 skips, Windows2022 platform2760 pass/same2 failures/13 skips. Windowslatest early direct creation fails on hidden settings heading before native invocation; later collector/artifact errors follow unreached prerequisites. All runtime tails remain unreached. |
+| Original early direct creation renewal | driver/test-only `df6708a6`, [39688465783](https://github.com/kornouhovas/workspace/actions/runs/39688465783) | **Failed later** at inherited420px stress capture: creation button right421>420 with expanded sidebar. Required desktop captures, identity/inventory and Reveal controls pass; original native/restart unreached. Normal failure quit/cleanup pass. |
+| Narrow driver renewal | `8fb787e` | Real Collapse/Restore adapts retained420px stress; required1024/1440 remain expanded. Settings entry/return restore real navigation. Local original creation passes native/restart/exit/cleanup before final helper extension; new native settings assertions complete but local normal quit times out10s. Hosted original and three-host tail renewal remain required. |
+| Independent review | Cumulative source through `b577cfd2`; diagnostic/caller deltas separately reviewed | Standards 0 remaining findings; Spec 0 implementation findings. Initial unbounded diagnostic read finding repaired with separate finite budgets and preserved primary failure/cleanup. |
 
-Subsequent original strict [39662918865](https://github.com/kornouhovas/workspace/actions/runs/39662918865),
-attempt 1 at `fec9fc26`, **passes both hosts** after presented-control preparation:
-32 timings, ten memory samples, four normal quits/backend exits and cleanup each.
-Mac first filtering is 192.9ms, with control preparation separately 711.3ms;
-conservative memory peaks are 968,359,936 bytes (Mac M1 Virtual) and 833,220,608
-bytes (Windows AMD EPYC 9V45). Earlier Intel-host and local macOS 27 negatives
-retain their own evidence. The later scoped-owner preparation correction passes the inspected native
-receipt above. Original strict [39663902198](https://github.com/kornouhovas/workspace/actions/runs/39663902198),
-attempt 1 at `ed2c6feb`, passes Mac (first filter 167.2ms, maximum interaction
-202.8ms, peak 966,017,024 bytes) but fails Windows AMD EPYC 7763 direct
-Table/Board filtered assignment at 328.7/330.7ms. Windows still passes all
-functional, memory, four normal exits and cleanup assertions. This required
-performance failure remains open; broad desktop/package CI remains pending.
+## Negative evidence and remaining ownership
 
-`af23242d` skips cleanup frames for empty offscreen identity shells, preserving
-loaded/focused/draft/pending fields and newly pinned first rows. The public
-preservation test passes before/after; 64 related UI tests, typecheck/lint and
-both review axes pass. The Windows package profile `39667106631` (attempt 1) completes 32 scenarios,
-four normal exits and cleanup. Drop-to-ready callback counts fall from 416/417
-to 45/29; the changed CPU prevents attributing timing differences solely to the
-guard. Original strict `39667534800` later fails Windows timing limits; its
-negative results are preserved in the plan. Full local suite reaches
-3,275 total: 3,244 pass, five normal-shutdown failures in unchanged standalone
-HTML fixtures, 26 platform skips. No green local full-suite result is claimed.
-Native named-host receipts remain bounded to unchanged fixtures; current broad
-desktop/package and coherent-journey acceptance remain required.
+Local macOS27.0/build26A428 arm64 retains intermittent normal Electron quit
+failures, including unchanged standalone HTML fixtures. The later full local
+run has 3,275 total: 3,244 pass, five failures and 26 platform skips. Current CSS
+visual command reaches all 16/24 variants but fails normal shutdown; its fixture
+cleanup remains unverified. Named-host successes above cover their actual hosts,
+not every macOS version. Ultimate local native cause remains unproved. Historical
+strict misses and rejected overscan, presentation memoization, projection-effect
+and closed-panel experiments remain in the plan; none is converted into a pass.
 
-The macOS diagnostic [39660140707](https://github.com/kornouhovas/workspace/actions/runs/39660140707)
-reproduces first filtering at 529.7ms: mutation/projection IPC approximately
-4–25ms, a roughly 53ms renderer task including 14ms layout, and long idle/frame
-gaps. The first requested frame at +23ms is delivered at about +297ms. This
-locates observed delay, not its ultimate GPU/scheduling cause. The instrumented
-copy completes four backend batches/252 records; its diagnostic memory
-misses do not replace the separate unprofiled memory pass. Additional profiles
-are diagnostic only; no runtime/dependency/scheduling workaround or target
-relaxation is adopted. Full milestone acceptance remains open.
-
-Earlier installer reuse was bounded to installation behavior: comparison from
-`ebd090ab` to `af23242d` had no changes to package manifests/lockfile,
-installer configuration, desktop startup/native resources, service/contracts,
-migrations, licenses or native/resource-copy build scripts. That renderer guard
-changes field cleanup scheduling only. Those actual DMG/NSIS receipts cover
-data locations, identity, replacement/uninstall and isolation; require current
-packaged application behavior separately. This does not relabel old installers
-as current binaries or supply Windows 11 release evidence.
-
-The rejected margin candidate's original strict `39669773440` at `65099447`
-fails Mac first Table grouping381.3ms and six Windows numerical samples,
-including first Table filters565.2/780.5ms and grouped Refresh6330.4ms. Both
-complete32functional observations, memory, fournormalexits and cleanup.
-Identical field/DOM counts reject the hypothesized preload reduction; all
-negative evidence remains in the plan.
-
-Latest service optimization:148reconciliation/discovery/observation cases,
-typecheck/lint and two independent safety reviews pass. Local public grouped
-Refresh drops272.1→236.6ms, with the repeated alias comparisons removed; this
-does not accept desktop timing. Original strict `39673607042` (attempt 1)
-passes all Mac samples; Windows passes every limit except direct Table filtered
-assignment (326.5ms against 300ms). Both hosts complete all 32 functional
-observations, ten memory samples, four normal exits and cleanup.
-The service/startup input now differs from the old installer receipt, so the
-previous installer-reuse argument alone no longer accepts the current candidate:
-renew both actual installer consumers after focused strict success.
-
-Candidate `1b87e521` skips cleanup scheduling for loaded visible/permanently
-pinned rows. All 65 related UI cases, typecheck, lint, documentation checks and
-both independent reviews pass, including offscreen unpin eviction. Its fixed4x
-diagnostic reduces drop-window animation callbacks from 47 to 9 and assignment
-from 335.7 to 292.0ms, but fails the local normal-shutdown deadline after 15
-direct samples. Forced owned-process stop and cleanup pass. This is a failed
-diagnostic, not strict or complete native acceptance; original strict renewal
-remains required, as does current appearance evidence for the renderer change.
-
-Original strict [39675697329](https://github.com/kornouhovas/workspace/actions/runs/39675697329),
-attempt 1, passes all Mac targets and fails Windows EPYC 7763 direct/grouped
-Table assignment at 343.4/302.7ms against 300ms. Both hosts complete 32 functional
-observations, ten memory samples, four normal application/backend exits and
-asserted cleanup. All other numerical targets pass. The focused gate remains
-open; neither a measured local work reduction nor a faster diagnostic host
-accepts it. Windows diagnostic `39676643141` on EPYC 9V45 completes all scenarios,
-normal exits and cleanup, but does not reproduce the slow-host miss.
-
-Rejected projection-effect and closed-panel experiments are restored, with their
-actual negative comparisons retained in the plan. Cumulative Standards and Spec
-reviews against the issue-start base each report zero implementation findings;
-current full/coherent/package, installer and appearance acceptance remain open.
-
-A pending one-line table CSS candidate uses separate borders and zero spacing.
-Two isolated comparisons show assignment-window Paint reductions 63.3→54.9ms
-and 63.5→55.0ms. This is bounded work reduction, not strict closure. All 69
-related UI cases, typecheck/lint, package/artifact checks and both reviews pass.
-Current navigation passes all 32 states, rapid-scroll/visible-field, width,
-scroll/focus/history checks, normal exit and cleanup. Visual foundation reaches
-16 populated/long and 24 empty variants but **fails** local normal shutdown;
-cleanup remains unverified. Actual EN light1440/long RU dark1024 Table captures
-were inspected without material mismatch. Hosted strict and complete affected
-appearance/coherent acceptance remain required; prior manifest images retain
-their actual older inputs until that renewal.
-
-Original strict `39679072917` at `09faa767` passes all Mac targets, but Windows
-Xeon8573C fails only direct Table assignment310.5ms (grouped282.1ms). All32
-functional results, ten memory samples, four normal exits and cleanup pass on
-both hosts. The required direct-assignment gate remains open.
-
-The next candidate retains only unchanged idle scalar value-button JSX. Editors
-still receive all current props/callbacks. The strengthened real-service UI case
-opens the latest localized/renamed value and verifies Escape focus return;
-87 related UI cases, typecheck/lint, package/artifact and both reviews pass.
-A same-host fixed4x comparison reduces assignment289.3→269.1ms and FunctionCall
-work140.4→127.9ms; the diagnostic completes16observations, two normal exits and
-cleanup. This does not accept original strict or whole-candidate performance.
-
-## Remaining ownership
-
-#69 owns coherent principal appearance, full acceptance-map completion and the
-retained broad native failures. #55 owns persisted sessions; #56/#57/#58 editor
-and draft refinements; #60 and descendants contextual filesystem/recovery
-refinements. #67 owns final UX01–UX20/platform/performance acceptance and #42
-release integration. This map does not transfer a principal visual defect or
-nonfunctional action to unspecified future polish.
+#69 still owns unreached Windows coherent/package journeys, full integrated
+acceptance and final ledger completion. The earlier Windows Reveal failure is
+retained; the trace-disabled original consumer now passes with complete evidence.
+No required failed row is transferred to #67. #55 owns persisted sessions;
+#56–#58 editor/draft refinements; #60 and descendants filesystem/recovery
+extensions; #67 final UX01–UX20/platform/performance acceptance; #42 release
+integration. No release, merge into main, or next issue is selected.
