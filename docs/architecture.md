@@ -699,3 +699,31 @@ the accepted preference. Semantic Tailwind tokens and selective bb pattern
 adaptations share typography, density, focus and light/dark control colors. See
 [provenance](reuse.md#issue-48-desktop-shell) and
 [verification](verification/issue-48-desktop-shell.md).
+
+## Implemented project files boundary
+
+Issue #64 adds one-directory `workspace.listProjectFiles` queries and separate
+`workspace.openProjectFile` / `workspace.revealProjectFile` commands. Requests carry
+workspace/project UUIDs and project-relative paths; responses contain relative
+entries and bounded outcomes. The renderer has no Node/filesystem/native access.
+The existing project authorization checks current source ownership, root/category/
+project evidence, mode, exclusions and pending operations. Archived trees use their
+recorded archive-parent identities without reactivating a project or relaxing
+ordinary project Reveal. The private target includes every required ancestor
+identity and file component; the desktop repeats physical checks and backend
+authorization at the native permit. Symlinks/junctions, special files and multiply
+linked regular files remain visible as unavailable and cannot dispatch Open.
+Shell shortcuts (`.lnk`, `.url`, `.webloc`, `.alias`) cannot Open an indirect
+target; Reveal may select the shortcut itself. For extensionless Finder aliases,
+Open reads the macOS FinderInfo alias flag through fixed `/usr/bin/xattr` with
+no-follow, hex output and strict time/output bounds. Missing attributes allow an
+ordinary file; other inspection failures reject the Open. The check is repeated
+at the final native permit, without changing system associations.
+
+Queries list real children lazily, directories first. Refresh rereads the current
+logical project. Source/locator changes and newer selections discard late renderer
+reads. Open delegates regular files to Electron `shell.openPath`; Reveal retains
+macOS `shell.showItemInFolder` and the Windows ready-view/SelectItem adapter. No
+embedded viewer or general file mutation is added. Path checks and IPC permits do
+not lock the filesystem: the existing substitution/TOCTOU limits still apply; no
+atomic confinement against a hostile concurrent filesystem mutator is claimed.

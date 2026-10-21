@@ -1,3 +1,4 @@
+import { isProjectFilesRequest } from "../contracts/project-files.js";
 import { app, BrowserWindow, dialog, shell, ipcMain, MessageChannelMain, utilityProcess } from "electron";
 import { mkdirSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -22,9 +23,17 @@ const controller = new BackendController((status) => {
   for (const window of BrowserWindow.getAllWindows()) {
     if (!window.isDestroyed()) window.webContents.send("workspace:backend-status", status);
   }
-}, createNativeProjectReveal((path, context) => process.platform === "win32"
+}, createNativeProjectReveal(async (path, context, action) => {
+  if (action === "open") {
+    let opened: Promise<string> | undefined;
+    await context.permit(() => { opened = shell.openPath(path); });
+    if (!opened || await opened) throw new Error("The default application could not open this file.");
+    return;
+  }
+  return process.platform === "win32"
   ? runWindowsProjectReveal(path, context, { program: windowsProgram, nativeDirectory })
-  : shell.showItemInFolder(path)));
+  : shell.showItemInFolder(path);
+}));
 
 controller.onWorkspaceChange((change) => {
   for (const window of BrowserWindow.getAllWindows()) {
@@ -58,7 +67,7 @@ async function createWindow(): Promise<void> {
 
 ipcMain.handle("workspace:backend-status", () => controller.currentStatus);
 const request = (input: unknown) => controller.request(input,
-  process.platform === "win32" && isProjectRevealRequest(input) ? 17000 : 10000);
+  process.platform === "win32" && (isProjectRevealRequest(input) || isProjectFilesRequest(input)) ? 17000 : 10000);
 ipcMain.handle("workspace:settings", (_event, input: unknown) => request(input));
 ipcMain.handle("workspace:command", (_event, input: unknown) => request(input));
 ipcMain.handle("workspace:pick-root", () => createRootPicker(

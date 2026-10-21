@@ -54,8 +54,9 @@ export interface SettingsService {
   getProjectRename(input: unknown): ServiceResult<ProjectRenameResult>;
   previewProjectRenameRecovery(input: unknown): ServiceResult<ProjectRenameRecoveryPreview>;
   recoverProjectRename(input: unknown): ServiceResult<ProjectRenameResult>;
+  projectFileCommand(input: unknown, native?: NativeProjectReveal): Promise<ServiceResult<import("../contracts/project-files.js").ProjectFileResult>>;
   revealProject(input: unknown, native?: NativeProjectReveal): Promise<ServiceResult<ProjectRevealResult>>;
-  handleQuery(input: unknown): ServiceResult<SourceSettingsList | DataRecoveryPayload | MetadataRemovalPreview | MetadataRemovalResult | BoardLayoutSnapshot | TableLayoutSnapshot | ViewGroupingSnapshot | ViewFilterPayload | ViewSnapshot | ArchivePayload | CategoryRemovalPayload | CategoryOptionsPayload | ProjectCategoryMoveResult | ProjectCategoryMoveList | ProjectCategoryMoveRecoveryPreview | ProjectRenameResult | ProjectRenameList | ProjectRenameRecoveryPreview | ProjectCreationResult | ProjectCreationList | ProjectCreationRecoveryPreview | WorkspaceSourceObservationSnapshot | ProjectRecoveryPreview | TextPropertySnapshot | Settings | WorkspaceLoad | DiscoveryPreview | ProjectList>;
+  handleQuery(input: unknown): ServiceResult<import("../contracts/project-files.js").ProjectFilesResult | SourceSettingsList | DataRecoveryPayload | MetadataRemovalPreview | MetadataRemovalResult | BoardLayoutSnapshot | TableLayoutSnapshot | ViewGroupingSnapshot | ViewFilterPayload | ViewSnapshot | ArchivePayload | CategoryRemovalPayload | CategoryOptionsPayload | ProjectCategoryMoveResult | ProjectCategoryMoveList | ProjectCategoryMoveRecoveryPreview | ProjectRenameResult | ProjectRenameList | ProjectRenameRecoveryPreview | ProjectCreationResult | ProjectCreationList | ProjectCreationRecoveryPreview | WorkspaceSourceObservationSnapshot | ProjectRecoveryPreview | TextPropertySnapshot | Settings | WorkspaceLoad | DiscoveryPreview | ProjectList>;
   handleCommand(input: unknown): ServiceResult<DataRecoveryPayload | MetadataRemovalPreview | MetadataRemovalResult | BoardLayoutSnapshot | TableLayoutSnapshot | ViewGroupingSnapshot | ViewFilterPayload | ViewSnapshot | ArchivePayload | CategoryRemovalPayload | CategoryOptionsPayload | ProjectCategoryMoveResult | ProjectRenameResult | ProjectCreationResult | CategoryPropertySnapshot | TextPropertyMutation | Settings | WorkspaceCreated | ActiveWorkspace | WorkspaceLoad | WorkspaceSourceState | ProjectList>;
   workspaces: WorkspaceService;
   close(): void;
@@ -124,8 +125,10 @@ export function openSettingsService(
     getProjectRename: (...args) => workspaces.getProjectRename(...args),
     previewProjectRenameRecovery: (...args) => workspaces.previewProjectRenameRecovery(...args),
     recoverProjectRename: (...args) => workspaces.recoverProjectRename(...args),
+    projectFileCommand: (...args) => workspaces.projectFileCommand(...args),
     revealProject: (...args) => workspaces.revealProject(...args),
     handleQuery(input) {
+      if (isRecord(input) && input.type === "workspace.listProjectFiles") return workspaces.listProjectFiles(input);
       if (isRecord(input) && typeof input.type === "string" && ["data.backups", "data.backupExport"].includes(input.type)) return backups.request(input);
       if (isRecord(input) && input.type === "data.export") return dataRecovery(sqlite, input);
       if (isRecord(input) && input.type === "workspace.previewMetadataRemoval") return workspaces.metadataRemovalRequest(input);

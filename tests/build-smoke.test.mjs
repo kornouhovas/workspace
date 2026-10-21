@@ -62,7 +62,10 @@ test("build emits desktop, renderer, backend, and matching version artifacts", a
   const main = await readFile("dist/desktop/main.cjs", "utf8");
   assert.match(main, /shell\.showItemInFolder/);
   assert.match(main, /windows-project-reveal\.ps1/);
-  assert.doesNotMatch(main, /shell\.openPath/);
+  // #64 adds authorized external Open in main; preload retains renderer isolation.
+  assert.match(main, /shell\.openPath/);
+  const preload = await readFile("dist/desktop/preload.cjs", "utf8");
+  assert.doesNotMatch(preload, /shell\.openPath|node:fs|node:child_process/);
   assert.match(main, /project\.reveal\.native/);
   assert.match(await readFile("dist/service/entry.cjs", "utf8"), /project\.reveal\.native/);
 

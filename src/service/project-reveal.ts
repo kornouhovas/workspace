@@ -21,9 +21,10 @@ export function createProjectRevealService(db: BetterSQLite3Database<typeof sche
     const ordered = <T extends { id: string }>(rows: T[]) => rows.sort((a, b) => a.id.localeCompare(b.id));
     return JSON.stringify([workspace, source, ordered(db.select().from(schema.projects).where(eq(schema.projects.sourceId, source.id)).all()),
       ordered(db.select().from(schema.categories).where(eq(schema.categories.sourceId, source.id)).all()),
-      readProjectReservations(db, source.id), readProjectRelocationReservations(db, source.id)]);
+      readProjectReservations(db, source.id), readProjectRelocationReservations(db, source.id),
+      ordered(db.select().from(schema.projectArchives).where(eq(schema.projectArchives.sourceId, source.id)).all().map(row => ({ ...row, id: row.projectId })))]);
   }
-  function targetFor(workspaceId: string, projectId: string): { target: TrustedProjectRevealTarget; authorization: string } {
+  function targetFor(workspaceId: string, projectId: string, includeArchived = false): { target: TrustedProjectRevealTarget; authorization: string } {
     const authorization = authorizationFor(workspaceId, projectId);
     const source = db.select().from(schema.workspaces).innerJoin(schema.sources, eq(schema.workspaces.sourceId, schema.sources.id))
       .where(eq(schema.workspaces.id, workspaceId)).get()?.sources;
@@ -31,6 +32,21 @@ export function createProjectRevealService(db: BetterSQLite3Database<typeof sche
     if (!source || !project || project.sourceId !== source.id) throw new InvalidReveal();
     if (source.discoveryMode !== "direct" && source.discoveryMode !== "grouped" || source.appliedRootIdentity === null) throw new RevealFailure("unconfigured");
     if (readProjectRelocationReservations(db, source.id).some((row) => row.projectId === projectId)) throw new RevealFailure("unresolved");
+    const archived = includeArchived && db.select().from(schema.projectArchives).where(eq(schema.projectArchives.projectId, projectId)).get();
+    if (archived) {
+      if (archived.sourceId !== source.id || !source.archiveRelativePath || !validArchive(source.archiveRelativePath) ||
+        !archived.relativePath.startsWith(`${source.archiveRelativePath}/`)) throw new RevealFailure("unresolved");
+      const parents: { path: string; identity: unknown }[] = JSON.parse(archived.parents);
+      const ancestors = parents.map(parent => ({ relativePath: parent.path, identity: JSON.stringify(parent.identity) }));
+      const target: TrustedProjectRevealTarget = { canonicalRoot: source.canonicalRoot, rootIdentity: source.appliedRootIdentity,
+        relativePath: archived.relativePath, parentRelativePath: archived.relativePath.split("/").slice(0, -1).join("/"),
+        parentIdentity: ancestors.at(-1)?.identity ?? source.appliedRootIdentity, nativeIdentity: project.nativeIdentity, ancestors };
+      if (readProjectReservations(db, source.id).some(row => row.projectId === projectId ||
+        filesystemAlias(row.relativePath) === filesystemAlias(archived.relativePath))) throw new RevealFailure("unresolved");
+      verifyTrustedProjectRevealTarget(target, filesystem);
+      if (authorizationFor(workspaceId, projectId) !== authorization) throw new RevealFailure("unresolved");
+      return { target, authorization };
+    }
     if (project.modeInactive) throw new RevealFailure("mode_retained");
     if (project.associationState !== "active") throw new RevealFailure(project.associationState);
     const components = project.relativePath.split("/");
@@ -78,6 +94,10 @@ export function createProjectRevealService(db: BetterSQLite3Database<typeof sche
   }
   return {
     close() { closed = true; },
+    authorizeProject(workspaceId: string, projectId: string): TrustedProjectRevealTarget {
+      if (closed) throw new RevealFailure("request_expired");
+      return targetFor(workspaceId, projectId, true).target;
+    },
     async revealProject(input: unknown, native?: NativeProjectReveal): Promise<ServiceResult<ProjectRevealResult>> {
       if (!isProjectRevealRequest(input)) return invalid();
       const rejected = (problem: ProjectRevealProblem): ServiceResult<ProjectRevealResult> => ({ ok: true,
@@ -121,7 +141,7 @@ export function createProjectRevealService(db: BetterSQLite3Database<typeof sche
     },
   };
 }
-class InvalidReveal extends Error {}
+export class InvalidReveal extends Error {}
 class UnstableRevealScan extends RevealFailure {
   constructor() { super("unavailable"); }
 }

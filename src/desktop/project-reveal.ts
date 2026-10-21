@@ -1,3 +1,4 @@
+import { verifyProjectFileTarget } from "../service/project-file-target.js";
 import type { ProjectRevealProblem } from "../contracts/project-reveal.js";
 import type { NativeProjectRevealResult, NativeProjectRevealValidation, TrustedProjectRevealTarget } from "../contracts/service-protocol.js";
 import { nativeProjectFilesystem, verifyTrustedProjectRevealTarget, RevealFailure, type ProjectFilesystem } from "../service/project-filesystem.js";
@@ -9,7 +10,8 @@ export type NativeRevealContext = {
   signal?: AbortSignal;
 };
 
-export function createNativeProjectReveal(showItemInFolder: (path: string, context: NativeRevealContext) => void | Promise<void>, filesystem: ProjectFilesystem = nativeProjectFilesystem) {
+export function createNativeProjectReveal(showItemInFolder: (path: string, context: NativeRevealContext, action: "open" | "reveal") => void | Promise<void>, filesystem: ProjectFilesystem = nativeProjectFilesystem) {
+  const verifyTarget = (target: TrustedProjectRevealTarget) => target.item ? verifyProjectFileTarget(target) : verifyTrustedProjectRevealTarget(target, filesystem);
   return async (target: TrustedProjectRevealTarget, isCurrent: () => boolean,
     authorize?: () => Promise<NativeProjectRevealValidation>, signal?: AbortSignal,
   ): Promise<NativeProjectRevealResult> => {
@@ -21,7 +23,7 @@ export function createNativeProjectReveal(showItemInFolder: (path: string, conte
         if (authorization.outcome === "rejected") return authorization;
         if (!isCurrent() || signal?.aborted) return rejected("request_expired");
       }
-      const path = verifyTrustedProjectRevealTarget(target, filesystem);
+      const path = verifyTarget(target);
       if (!isCurrent() || signal?.aborted) return rejected("request_expired");
       const permit = async (dispatchSync: () => void) => {
         if (!isCurrent() || signal?.aborted) throw new RevealFailure("request_expired");
@@ -30,7 +32,7 @@ export function createNativeProjectReveal(showItemInFolder: (path: string, conte
           if (authorization.outcome === "rejected") throw new RevealFailure(authorization.problem);
         }
         if (!isCurrent() || signal?.aborted) throw new RevealFailure("request_expired");
-        verifyTrustedProjectRevealTarget(target, filesystem);
+        verifyTarget(target);
         if (!isCurrent() || signal?.aborted) throw new RevealFailure("request_expired");
         // No await or promise continuation may separate validation from GO.
         dispatchSync();
@@ -38,9 +40,9 @@ export function createNativeProjectReveal(showItemInFolder: (path: string, conte
       // macOS dispatches synchronously here. Windows repeats these guards through
       // permit after readiness; GO begins its irreversible cross-process dispatch.
       // Neither path checks nor an IPC permit lock policy or the filesystem.
-      await showItemInFolder(path, { permit, isCurrent, signal });
+      await showItemInFolder(path, { permit, isCurrent, signal }, target.item?.action ?? "reveal");
       if (!isCurrent() || signal?.aborted) return rejected("request_expired");
-      verifyTrustedProjectRevealTarget(target, filesystem);
+      verifyTarget(target);
       return { outcome: "dispatched" };
     } catch (error) { return rejected(error instanceof RevealFailure ? error.problem : "native_error"); }
   };

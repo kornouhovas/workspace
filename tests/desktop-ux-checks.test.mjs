@@ -106,3 +106,15 @@ test('candidate provenance records focused navigation mode after shell quote pro
   assert.equal(receipt.sha,'candidate-sha');assert.equal(receipt.navigationOnly,expected);
  }
 });
+
+test('project files acceptance includes real filesystem/IPC/native regressions and actual Open/Reveal smoke',async()=>{
+ const {projectFilesCommands}=await import('../scripts/desktop-ux-checks.mjs');
+ const commands=projectFilesCommands(),text=JSON.stringify(commands);
+ for(const required of ['project-files-service.test.mjs','project-files-ui.test.tsx','backend-lifecycle.test.mjs','project-reveal.test.mjs','windows-project-reveal.test.mjs','smoke-project-files.mjs','smoke-project-navigation.mjs','build-smoke.test.mjs','artifact-smoke.test.mjs','smoke:shell','smoke:views'])assert.ok(text.includes(required),required);
+ assert.equal(spawnSync(process.execPath,['scripts/desktop-ux-checks.mjs','project-files','--failure-probe'],{encoding:'utf8'}).status,23);
+ const {readFile}=await import('node:fs/promises');const {load}=await import('js-yaml');
+ const workflow=load(await readFile('.github/workflows/desktop-ci.yml','utf8'));
+ assert.ok(workflow.on.workflow_dispatch.inputs.desktop_ux_profile.options.includes('project-files'));
+ assert.ok(workflow.jobs['desktop-ux'].steps.some(step=>step.run==='node scripts/desktop-ux-checks.mjs project-files'));
+ assert.ok(Object.keys(workflow.on.workflow_dispatch.inputs).length<=25);
+});

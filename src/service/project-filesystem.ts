@@ -97,7 +97,12 @@ export class RevealFailure extends Error {
 export function verifyTrustedProjectRevealTarget(target: TrustedProjectRevealTarget, filesystem: ProjectFilesystem = nativeProjectFilesystem): string {
   if (!isTrustedProjectRevealTarget(target) || !isAbsolute(target.canonicalRoot)) throw new RevealFailure("unresolved");
   const components = target.relativePath.split("/");
-  if (components.length !== (target.parentRelativePath === "" ? 1 : 2) || !components.every((name) => validProjectBasename(name, filesystem.platform)) ||
+  if (!components.every((name) => validProjectBasename(name, filesystem.platform))) throw new RevealFailure("unresolved");
+  if (target.ancestors) {
+    if (target.ancestors.length !== components.length - 1 || target.parentRelativePath !== components.slice(0, -1).join("/") ||
+      target.ancestors.some((ancestor, index) => ancestor.relativePath !== components.slice(0, index + 1).join("/")) ||
+      target.parentIdentity !== target.ancestors.at(-1)?.identity) throw new RevealFailure("unresolved");
+  } else if (components.length !== (target.parentRelativePath === "" ? 1 : 2) ||
     (target.parentRelativePath !== "" && target.parentRelativePath !== components[0])) throw new RevealFailure("unresolved");
   const path = join(target.canonicalRoot, ...components), parent = join(target.canonicalRoot, target.parentRelativePath);
   const rel = relative(target.canonicalRoot, path);
@@ -116,8 +121,12 @@ export function verifyTrustedProjectRevealTarget(target: TrustedProjectRevealTar
   };
   const root = () => verify(target.canonicalRoot, target.rootIdentity, "root_unavailable", "root_replaced");
   const category = () => verify(parent, target.parentIdentity, "category_unavailable", "category_unavailable");
-  root(); if (target.parentRelativePath) category();
+  const parents = () => {
+    if (target.ancestors) for (const ancestor of target.ancestors) verify(join(target.canonicalRoot, ancestor.relativePath), ancestor.identity, "category_unavailable", "category_unavailable");
+    else if (target.parentRelativePath) category();
+  };
+  root(); parents();
   verify(path, target.nativeIdentity, "missing", "replaced");
-  if (target.parentRelativePath) category(); root();
+  parents(); root();
   return path;
 }

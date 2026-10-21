@@ -1,3 +1,4 @@
+import { isProjectFilesRequest } from "./project-files.js";
 import type { MetadataRemovalPreview, MetadataRemovalResult } from "./metadata-removal.js";
 import type { BoardLayoutSnapshot } from "./board-layout.js";
 import type { TableLayoutSnapshot } from "./table-layout.js";
@@ -17,7 +18,7 @@ import type { ServiceResult } from "./settings.js";
 import type { CategoryPropertySnapshot, ProjectList, DiscoveryPreview, ActiveWorkspace, WorkspaceCreated, WorkspaceLoad, WorkspaceSourceObservationSnapshot, WorkspaceSourceState, WorkspaceChangeEvent } from "./workspaces.js";
 import type { Settings } from "./settings.js";
 
-export type ServicePayload = import("./data-recovery.js").DataRecoveryPayload | MetadataRemovalPreview | MetadataRemovalResult | BoardLayoutSnapshot | TableLayoutSnapshot | ViewGroupingSnapshot | ViewFilterPayload | ViewSnapshot | ArchivePayload | CategoryRemovalPayload | CategoryOptionsPayload | ProjectCategoryMoveResult | ProjectCategoryMoveList | ProjectCategoryMoveRecoveryPreview | ProjectRenameResult | ProjectRenameList | ProjectRenameRecoveryPreview | ProjectRevealResult | ProjectCreationResult | ProjectCreationOperation | ProjectCreationList | ProjectCreationRecoveryPreview | WorkspaceSourceObservationSnapshot | ProjectRecoveryPreview | CategoryPropertySnapshot | TextPropertySnapshot | TextPropertyMutation | ProjectList | DiscoveryPreview | Settings | WorkspaceLoad | WorkspaceCreated | ActiveWorkspace | WorkspaceSourceState;
+export type ServicePayload = import("./project-files.js").ProjectFilesResult | import("./project-files.js").ProjectFileResult | import("./data-recovery.js").DataRecoveryPayload | MetadataRemovalPreview | MetadataRemovalResult | BoardLayoutSnapshot | TableLayoutSnapshot | ViewGroupingSnapshot | ViewFilterPayload | ViewSnapshot | ArchivePayload | CategoryRemovalPayload | CategoryOptionsPayload | ProjectCategoryMoveResult | ProjectCategoryMoveList | ProjectCategoryMoveRecoveryPreview | ProjectRenameResult | ProjectRenameList | ProjectRenameRecoveryPreview | ProjectRevealResult | ProjectCreationResult | ProjectCreationOperation | ProjectCreationList | ProjectCreationRecoveryPreview | WorkspaceSourceObservationSnapshot | ProjectRecoveryPreview | CategoryPropertySnapshot | TextPropertySnapshot | TextPropertyMutation | ProjectList | DiscoveryPreview | Settings | WorkspaceLoad | WorkspaceCreated | ActiveWorkspace | WorkspaceSourceState;
 
 export type ServiceRequest = {
   id: number;
@@ -114,6 +115,8 @@ function ids(value: unknown): value is string[] {
 
 // Private service/main protocol. Never forward these messages to the renderer.
 export interface TrustedProjectRevealTarget {
+  ancestors?: { relativePath: string; identity: string }[];
+  item?: import("./project-files.js").ProjectFileTarget;
   canonicalRoot: string;
   parentRelativePath: string;
   relativePath: string;
@@ -134,6 +137,21 @@ export type NativeProjectRevealReply = {
 };
 export type NativeProjectRevealCancel = { type: "project.reveal.cancel"; requestId: number; dispatchId: string };
 export function isTrustedProjectRevealTarget(value: unknown): value is TrustedProjectRevealTarget {
+  if (record(value) && Object.hasOwn(value, "ancestors")) {
+    const { ancestors, ...base } = value;
+    return isTrustedProjectRevealTarget(base) && Array.isArray(ancestors) && ancestors.length > 0 && ancestors.length < 128 &&
+      ancestors.every(ancestor => record(ancestor) && exact(ancestor, ["relativePath", "identity"]) &&
+        typeof ancestor.relativePath === "string" && isTrustedProjectRevealTarget({ ...base, nativeIdentity: ancestor.identity }));
+  }
+  if (record(value) && Object.hasOwn(value, "item")) {
+    const { item, ...base } = value;
+    if (!isTrustedProjectRevealTarget(base) || !record(item) || !exact(item, ["relativePath", "action", "components"]) ||
+      !["open", "reveal"].includes(String(item.action)) ||
+      !isProjectFilesRequest({ type: "workspace.openProjectFile", workspaceId: "00000000-0000-4000-8000-000000000001", projectId: "00000000-0000-4000-8000-000000000001", relativePath: item.relativePath }) ||
+      !Array.isArray(item.components) || item.components.length !== String(item.relativePath).split("/").length) return false;
+    return item.components.every(component => record(component) && exact(component, ["identity", "kind"]) &&
+      ["directory", "file"].includes(String(component.kind)) && isTrustedProjectRevealTarget({ ...base, nativeIdentity: component.identity }));
+  }
   if (!record(value) || !exact(value, ["canonicalRoot", "parentRelativePath", "relativePath", "rootIdentity", "parentIdentity", "nativeIdentity"]) ||
     ![value.canonicalRoot, value.parentRelativePath, value.relativePath].every((path) => typeof path === "string" && !path.includes("\0")) ||
     value.canonicalRoot === "" || value.relativePath === "") return false;

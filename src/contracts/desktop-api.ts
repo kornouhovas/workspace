@@ -24,13 +24,15 @@ import type { CategoryPropertySnapshot, WorkspaceRenameCategoryPropertyCommand, 
 export type BackendStatus = { state: "starting" | "ready" | "unavailable"; message?: string; diagnostic?: import("./startup-diagnostic.js").StartupDiagnostic };
 export type SettingsRequest = SettingsQuery | SettingsCommand;
 export type WorkspaceRequest = WorkspaceQuery | WorkspaceCommand;
-export type WorkspaceResponse = SourceSettingsList | MetadataRemovalPreview | MetadataRemovalResult | BoardLayoutSnapshot | TableLayoutSnapshot | ViewGroupingSnapshot | ViewFilterPayload | ViewSnapshot | ArchivePayload | CategoryRemovalPayload | CategoryOptionsPayload | ProjectCategoryMoveResult | ProjectCategoryMoveList | ProjectCategoryMoveRecoveryPreview | ProjectRenameResult | ProjectRenameList | ProjectRenameRecoveryPreview | ProjectRevealResult | ProjectCreationResult | ProjectCreationList | ProjectCreationRecoveryPreview | WorkspaceSourceObservationSnapshot | ProjectRecoveryPreview | CategoryPropertySnapshot | TextPropertySnapshot | TextPropertyMutation | ProjectList | DiscoveryPreview | WorkspaceLoad | WorkspaceCreated | ActiveWorkspace | WorkspaceSourceState;
+export type WorkspaceResponse = import("./project-files.js").ProjectFilesResult | import("./project-files.js").ProjectFileResult | SourceSettingsList | MetadataRemovalPreview | MetadataRemovalResult | BoardLayoutSnapshot | TableLayoutSnapshot | ViewGroupingSnapshot | ViewFilterPayload | ViewSnapshot | ArchivePayload | CategoryRemovalPayload | CategoryOptionsPayload | ProjectCategoryMoveResult | ProjectCategoryMoveList | ProjectCategoryMoveRecoveryPreview | ProjectRenameResult | ProjectRenameList | ProjectRenameRecoveryPreview | ProjectRevealResult | ProjectCreationResult | ProjectCreationList | ProjectCreationRecoveryPreview | WorkspaceSourceObservationSnapshot | ProjectRecoveryPreview | CategoryPropertySnapshot | TextPropertySnapshot | TextPropertyMutation | ProjectList | DiscoveryPreview | WorkspaceLoad | WorkspaceCreated | ActiveWorkspace | WorkspaceSourceState;
 export type RootPickerResult =
   | { outcome: "selected"; path: string }
   | { outcome: "cancelled" }
   | { outcome: "failed" };
 
 export interface WorkspaceDesktopApi {
+  workspace(input: import("./project-files.js").ProjectFilesQuery): Promise<ServiceResult<import("./project-files.js").ProjectFilesResult>>;
+  workspace(input: import("./project-files.js").ProjectFileCommand): Promise<ServiceResult<import("./project-files.js").ProjectFileResult>>;
   workspace(input: import("./metadata-removal.js").PreviewMetadataRemoval): Promise<ServiceResult<MetadataRemovalPreview>>;
   workspace(input: import("./metadata-removal.js").ApplyMetadataRemoval): Promise<ServiceResult<MetadataRemovalResult>>;
   workspace(input: import("./group-assignment.js").AssignProjectGroupCommand): Promise<ServiceResult<import("./group-assignment.js").GroupAssignmentResult>>;

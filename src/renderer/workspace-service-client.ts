@@ -164,6 +164,12 @@ export class WorkspaceServiceClient {
   recoverProjectCreation(workspaceId: string, operationId: string, previewToken: string, action: ProjectCreationRecoveryAction): Promise<ServiceResult<ProjectCreationResult>> {
     return this.api.workspace({ type: "workspace.recoverProjectCreation", workspaceId, operationId, previewToken, action });
   }
+  listProjectFiles(workspaceId: string, projectId: string, relativePath: string): Promise<ServiceResult<import("../contracts/project-files.js").ProjectFilesResult>> {
+    return this.api.workspace({ type: "workspace.listProjectFiles", workspaceId, projectId, relativePath });
+  }
+  projectFileCommand(workspaceId: string, projectId: string, relativePath: string, action: "open" | "reveal"): Promise<ServiceResult<import("../contracts/project-files.js").ProjectFileResult>> {
+    return this.api.workspace({ type: action === "open" ? "workspace.openProjectFile" : "workspace.revealProjectFile", workspaceId, projectId, relativePath });
+  }
   revealProject(workspaceId: string, projectId: string): Promise<ServiceResult<ProjectRevealResult>> {
     return this.api.workspace({ type: "workspace.revealProject", workspaceId, projectId });
   }

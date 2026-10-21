@@ -1405,6 +1405,21 @@ for (const mode of ["direct", "grouped"]) {
       const revealed = await client.revealProject(sibling.workspaceId, created.value.project.projectId);
       assert.equal(revealed.value.outcome, "dispatched");
       assert.deepEqual(nativeCalls, [join(root, created.value.project.relativePath)]);
+      const projectId = created.value.project.projectId;
+      const path = join(root, created.value.project.relativePath, "files"); fs.mkdirSync(path);
+      fs.writeFileSync(join(path, "Notes Текст.txt"), "Unchanged fixture bytes");
+      const files = await client.listProjectFiles(one.workspaceId, projectId, "files");
+      assert.equal(files.value.outcome, "listed");
+      assert.deepEqual(files.value.entries.map(row => row.name), ["Notes Текст.txt"]);
+      for (const action of ["open", "reveal"]) {
+        const fileResult = await client.projectFileCommand(one.workspaceId, projectId, "files/Notes Текст.txt", action);
+        assert.equal(fileResult.value.outcome, "dispatched", JSON.stringify(fileResult));
+      }
+      assert.deepEqual(nativeCalls.slice(1), [join(path, "Notes Текст.txt"), join(path, "Notes Текст.txt")]);
+      for (const type of ["workspace.listProjectFiles", "workspace.openProjectFile", "workspace.revealProjectFile"]) {
+        assert.equal((await api.workspace({ type, workspaceId: one.workspaceId, projectId, relativePath: "../outside" })).error.code, "invalid_input");
+        assert.equal((await api.workspace({ type, workspaceId: one.workspaceId, projectId, relativePath: "files", path: "/outside" })).error.code, "invalid_input");
+      }
       // Renderer receives normalized replies only, never private native targets.
       assert.equal(servicePort.sent.some((message) => message.type === "project.reveal.native"), true);
       assert.equal(desktopPort.sent.some((message) => message.type === "project.reveal.reply"), true);
@@ -1762,4 +1777,24 @@ test("compiled entry classifies all rename queries and commands and rejects malf
     }
     assert.deepEqual(routed, requests);
   } finally { parent.emit("message", { data: { type: "shutdown" }, ports: [] }); }
+});
+
+test('private file-native dispatch matches the pending action/path and cannot use tree reads or ordinary Reveal',async()=>{
+  const calls=[];
+  const f=await readyNativeController(async target=>{calls.push(target.item);return {outcome:'dispatched'};});
+  const command={...revealCommand(),type:'workspace.openProjectFile',relativePath:'src/notes.txt'};
+  const item={relativePath:command.relativePath,action:'open',components:[{identity:trustedTarget().nativeIdentity,kind:'directory'},{identity:trustedTarget().nativeIdentity,kind:'file'}]};
+  try {
+    const pending=f.controller.request(command,1000);
+    const message={...nativeMessage(),target:{...trustedTarget(),item}};
+    for(const changed of [{...item,action:'reveal'},{...item,relativePath:'src/other.txt'},{...item,components:[]},{...item,path:'/outside'}])f.port.receive({...message,target:{...trustedTarget(),item:changed}});
+    assert.equal(calls.length,0);
+    f.port.receive(message);f.port.receive(message);await Promise.resolve();assert.equal(calls.length,1);
+    f.port.receive({id:1,result:{ok:true,value:{outcome:'dispatched',workspaceId:command.workspaceId,projectId:command.projectId,relativePath:command.relativePath}}});
+    assert.equal((await pending).ok,true);
+    const query=f.controller.request({...command,type:'workspace.listProjectFiles'},1000);f.port.receive({...message,requestId:2});assert.equal(calls.length,1);
+    f.port.receive({id:2,result:{ok:true,value:{outcome:'listed',entries:[]}}});await query;
+    const reveal=f.controller.request(revealCommand(),1000);f.port.receive({...message,requestId:3});assert.equal(calls.length,1);
+    f.port.receive({id:3,result:{ok:true,value:{outcome:'dispatched'}}});await reveal;
+  }finally{f.child.exit();}
 });

@@ -1,3 +1,4 @@
+import { ProjectFiles } from "./ProjectFiles.js";
 import { useViewScroll } from "./useViewScroll.js";
 import type { ArchiveSnapshot } from "../../contracts/project-archive.js";
 import { ProjectTabs, useProjectNavigation, navigationLabels, type NavigationMemory } from "./ProjectNavigation.js";
@@ -556,7 +557,9 @@ export function DiscoveryWorkspace({ memory, client, workspaceId, sourceId, refr
           {selectedProject ? <><p className="project-area-path">{selectedProject.relativePath}</p>
             <TextPropertiesTable key={selectedId} detail hideReveal={"originalRelativePath" in selectedProject} client={client} workspaceId={workspaceId} sourceId={sourceId} projects={[selectedProject]}
               retainedProjects={projects?.retainedProjects.filter(project=>project.projectId===selectedId)} categories={projects?.categories} categoryProperty={projects?.categoryProperty}
-              language={language} disabled={disabled || loading || error}/></> : <StatusMessage kind="info" title={labels.unavailable}/>}
+              language={language} disabled={disabled || loading || error}/>
+            <ProjectFiles key={`${workspaceId}:${selectedId}:${selectedProject.relativePath}:${sourceLifetime.current}:${invalidation}:${observationVersion}`}
+              client={client} workspaceId={workspaceId} projectId={selectedId} language={language} disabled={disabled || loading || error}/></> : <StatusMessage kind="info" title={labels.unavailable}/>}
         </div>
       </section>
     </>}

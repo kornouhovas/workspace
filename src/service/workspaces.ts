@@ -1,3 +1,4 @@
+import { createProjectFilesService } from "./project-files.js";
 import type { SourceSettingsList } from "../contracts/workspaces.js";
 import { createMetadataRemovalService } from "./metadata-removal.js";
 import { createBackgroundDiscovery, type BackgroundScanRequest } from "./background-discovery.js";
@@ -114,6 +115,8 @@ export interface WorkspaceService {
   getProjectRename(input: unknown): ServiceResult<ProjectRenameResult>;
   previewProjectRenameRecovery(input: unknown): ServiceResult<ProjectRenameRecoveryPreview>;
   recoverProjectRename(input: unknown): ServiceResult<ProjectRenameResult>;
+  listProjectFiles(input: unknown): ServiceResult<import("../contracts/project-files.js").ProjectFilesResult>;
+  projectFileCommand(input: unknown, native?: NativeProjectReveal): Promise<ServiceResult<import("../contracts/project-files.js").ProjectFileResult>>;
   revealProject(input: unknown, native?: NativeProjectReveal): Promise<ServiceResult<ProjectRevealResult>>;
   listProjectCreations(input: unknown): ServiceResult<ProjectCreationList>;
   getProjectCreation(input: unknown): ServiceResult<ProjectCreationResult>;
@@ -260,6 +263,7 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
     observer.request(sourceId);
   }, projectFilesystem);
   const reveal = createProjectRevealService(db, projectFilesystem);
+  const files = createProjectFilesService(reveal.authorizeProject);
   const service: WorkspaceService = {
     boardLayoutRequest: createBoardLayoutService(db),
     tableLayoutRequest: createTableLayoutService(db),
@@ -301,6 +305,8 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
     getProjectRename: rename.getProjectRename,
     previewProjectRenameRecovery: rename.previewProjectRenameRecovery,
     recoverProjectRename: rename.recoverProjectRename,
+    listProjectFiles: files.listProjectFiles,
+    projectFileCommand: files.projectFileCommand,
     revealProject: reveal.revealProject,
     createProject: creation.createProject,
     listProjectCreations: creation.listProjectCreations,

@@ -1,3 +1,4 @@
+import { isProjectFilesRequest } from "../contracts/project-files.js";
 import { isProjectRevealRequest } from "../contracts/project-reveal.js";
 import { readStartupDiagnostic, startupDiagnostic, type StartupDiagnostic } from "../contracts/startup-diagnostic.js";
 import type { BackendStatus } from "../contracts/desktop-api.js";
@@ -187,7 +188,13 @@ export class BackendController {
 
   private async onNativeReveal(message: NativeProjectRevealRequest): Promise<void> {
     const pending = this.pending.get(message.requestId);
-    if (!pending || !isProjectRevealRequest(pending.input) || pending.nativeStarted) return;
+    if (!pending || pending.nativeStarted) return;
+    const input = pending.input;
+    if (isProjectRevealRequest(input)) { if (message.target.item || message.target.ancestors) return; }
+    else if (isProjectFilesRequest(input) && input.type !== "workspace.listProjectFiles") {
+      if (message.target.item?.relativePath !== input.relativePath || message.target.item.action !==
+        (input.type === "workspace.openProjectFile" ? "open" : "reveal")) return;
+    } else return;
     pending.nativeStarted = true;
     const generation = this.generation, port = this.port;
     this.nativeActive.set(message.requestId, message.dispatchId);

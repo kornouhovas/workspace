@@ -15,6 +15,7 @@ const paths: Record<string, ReactNode> = {
   plus: <path d="M12 5v14M5 12h14"/>,
   refresh: <><path d="M20 7v5h-5M4 17v-5h5"/><path d="M6 7a7 7 0 0 1 12-1l2 3M4 15l2 3a7 7 0 0 0 12-1"/></>,
   settings: <><path d="M12 3v3m0 12v3M3 12h3m12 0h3M5.6 5.6l2.1 2.1m8.6 8.6 2.1 2.1M5.6 18.4l2.1-2.1m8.6-8.6 2.1-2.1"/><circle cx="12" cy="12" r="5"/></>,
+  file: <><path d="M14 3H5v18h14V8l-5-5Z"/><path d="M14 3v5h5"/></>,
   folder: <path d="M3 7V5h6l2 2h10v12H3V7Z"/>,
   table: <><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M10 10v10"/></>,
   board: <><rect x="3" y="4" width="7" height="16" rx="2"/><rect x="14" y="4" width="7" height="10" rx="2"/></>,

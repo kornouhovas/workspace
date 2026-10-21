@@ -1057,3 +1057,17 @@ application repairs renew the complete navigation profile after focused success.
 Provenance records both profile and focused-mode selection. A shorter filtered
 projection must clamp its saved scroll to current bounds and release restoration;
 programmatic smoke scrolling waits for the actual selected projection to settle.
+
+## Project files acceptance
+
+The `desktop-ux` dispatch profile `project-files` runs the affected renderer,
+real SQLite/filesystem, IPC/controller and native adapter suites, then actual
+Electron file-tree, Open/Reveal, project navigation, shell and saved-view journeys
+on macOS latest, Windows latest and Windows 2022. Artifact
+`desktop-ux-foundation-<host>` includes exact-SHA provenance and
+`work/issue-64-files` appearance/native/shutdown/cleanup evidence. Plain-text
+external observation expects the host's TextEdit/Notepad association and verifies
+the exact disposable document independently of native dispatch acknowledgment.
+This adds no workflow input and preserves default foundation/full/release routes.
+Installer acceptance remains at the integration milestones: no dependency, native
+resource, package or startup/update input changes in this slice.

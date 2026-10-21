@@ -69,6 +69,22 @@ export function navigationCommands({nativeOnly=false}={}) {
     ['npm', ['run', 'smoke:shell']], ['npm', ['run', 'smoke:views']],
   ];
 }
+// File browsing crosses the service/IPC/native boundary on every supported host.
+export const projectFilesTests = [...new Set([...navigationTests,
+  'project-files-service.test.mjs', 'project-files-ui.test.tsx', 'project-reveal.test.mjs',
+  'backend-lifecycle.test.mjs', 'windows-project-reveal.test.mjs', 'windows-project-reveal-com.test.mjs',
+  'native-reveal-receipt.test.mjs', 'project-archive-service.test.mjs',
+  'build-smoke.test.mjs', 'artifact-smoke.test.mjs',
+])];
+export function projectFilesCommands() {
+  return [
+    ['npm', ['run', 'typecheck']], ['npm', ['run', 'lint']],
+    [process.execPath, ['--import','tsx','--test',...projectFilesTests.map(file=>`tests/${file}`)]],
+    [process.execPath, ['scripts/smoke-project-files.mjs']],
+    [process.execPath, ['scripts/smoke-project-navigation.mjs']],
+    ['npm', ['run', 'smoke:shell']], ['npm', ['run', 'smoke:views']],
+  ];
+}
 export function runChecks(commands, run = (command,args)=>spawnSync(command,args,{stdio:'inherit',shell:process.platform==='win32' && command==='npm'})) {
   for (const [command,args] of commands) {
     const result=run(command,args);
@@ -79,9 +95,9 @@ export function runChecks(commands, run = (command,args)=>spawnSync(command,args
 }
 if(process.argv[1] && resolve(process.argv[1])===fileURLToPath(import.meta.url)) {
   const args=process.argv.slice(2);
-  if(args.some(arg=>!['foundation','board','navigation','--list','--failure-probe','--native-only'].includes(arg)) || !['foundation','board','navigation'].includes(args[0])) throw new Error('Usage: desktop-ux-checks.mjs <foundation|board|navigation> [--list] [--failure-probe]');
+  if(args.some(arg=>!['foundation','board','navigation','project-files','--list','--failure-probe','--native-only'].includes(arg)) || !['foundation','board','navigation','project-files'].includes(args[0])) throw new Error('Usage: desktop-ux-checks.mjs <foundation|board|navigation> [--list] [--failure-probe]');
   if(args.includes('--native-only') && args[0]!=='navigation')throw new Error('--native-only requires navigation');
-  const commands=args[0]==='navigation' ? navigationCommands({nativeOnly:args.includes('--native-only')}) : args[0]==='board' ? boardCommands() : foundationCommands({failureProbe:args.includes('--failure-probe')});
+  const commands=args[0]==='project-files' ? projectFilesCommands() : args[0]==='navigation' ? navigationCommands({nativeOnly:args.includes('--native-only')}) : args[0]==='board' ? boardCommands() : foundationCommands({failureProbe:args.includes('--failure-probe')});
   if(args[0]!=='foundation' && args.includes('--failure-probe')) commands.unshift([process.execPath,['-e','process.exit(23)']]);
   if(args.includes('--list')) console.log(JSON.stringify(commands));
   else process.exitCode=runChecks(commands);
