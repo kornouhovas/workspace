@@ -137,21 +137,30 @@ test("installed workspace keyboard creation waits for the asynchronous folder se
       await new Promise(done => setTimeout(done, 1200));
       await route.fulfill({ status: 200, contentType: "text/plain", body: "prepared" });
     });
-    await page.setContent('<img src="https://workspace-fixture.invalid/prepare" alt=""><button id="pick">Choose project folder</button><p id="root"></p><h1>Workspace</h1><div id="result"></div>');
+    await page.setContent('<img src="https://workspace-fixture.invalid/prepare" alt=""><button id="pick">Choose project folder</button><h1>Workspace</h1><div id="result"></div>');
     await page.evaluate(() => {
       const pick = globalThis.document.querySelector("#pick");
       globalThis.installFixtureCreates = 0;
       pick.addEventListener("click", () => {
         globalThis.setTimeout(() => {
-          globalThis.document.querySelector("#root").textContent = "/selected-source";
           globalThis.installFixtureCreates++;
-          globalThis.document.querySelector("#result").innerHTML = '<h2 id="workspace-title">Workspace</h2>';
+          globalThis.document.querySelector("#result").innerHTML = `<button aria-current="page">Workspace</button><button id="settings">Settings</button>
+            <button id="back" hidden>Back to workspace</button><section id="management" hidden>
+            <button role="tab">Workspaces</button><h2 id="workspace-title">Workspace</h2><p>/selected-source</p></section>`;
+          globalThis.installFixtureSettingsVisits = 0;
+          const management = globalThis.document.querySelector("#management"), back = globalThis.document.querySelector("#back");
+          globalThis.document.querySelector("#settings").addEventListener("click", () => {
+            globalThis.installFixtureSettingsVisits++; management.hidden = false; back.hidden = false;
+          });
+          back.addEventListener("click", () => { management.hidden = true; back.hidden = true; });
         }, 200);
       });
     });
     page.setDefaultTimeout(1000);
     await createInstalledWorkspace(page, { name: "Workspace", source: "/selected-source" });
     assert.equal(await page.evaluate(() => globalThis.installFixtureCreates), 1);
+    assert.equal(await page.evaluate(() => globalThis.installFixtureSettingsVisits), 1);
+    assert.equal(await page.locator("#management").isVisible(), false, "Creation returns to the workspace after checking its exact source");
   });
 });
 

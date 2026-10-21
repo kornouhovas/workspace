@@ -262,3 +262,24 @@ controls but fails actual installation smoke: the old workspace creation driver
 waits for a now-hidden Workspaces settings heading. The downloaded failure report
 and screenshot retain this negative; installed runtime was launched and owned
 cleanup passed. Diagnose/adapt the original installed journey before renewal.
+
+
+## Installed workspace navigation adapter
+
+The downloaded macOS 14.8.9/arm64 report confirms installation outside the build
+and then a 30s wait for hidden `#workspace-title`; selected source and active
+Workspace had already been created. The fixture now reproduces the same hidden
+heading/source behind Settings, after its original asynchronous folder selection.
+It fails on the original heading wait before repair. The adapter now waits for
+the active sidebar Workspace, opens Settings / Workspaces, checks the same exact
+visible source, and uses the existing rename/return path. No caller deadline,
+creation action, identity/value/persistence assertion or installed runtime changes.
+The native fixture additionally requires one creation, one Settings visit and
+return to the workspace; its original never-completed creation control remains.
+
+Focused local interaction and rejection assertions pass, but both cases fail
+normal native shutdown, so this receipt is failed overall. Independent Standards
+and Spec review report zero findings. Renew actual macOS and Windows installer
+consumers, including their installed-workspace driver controls; retain the full
+`8cb8097` suite for unchanged boundaries under test-only evidence reuse. This
+adapter changes neither application/package inputs nor the strict scale harness.
