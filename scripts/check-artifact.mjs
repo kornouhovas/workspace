@@ -48,6 +48,17 @@ export async function checkArtifact(root, { platform = process.platform, arch = 
     assert.ok(files.has(`dist/renderer/${resource}`), `Packaged app is missing renderer resource ${resource}`);
   }
 
+  const fontResources=[];
+  for (const resource of resources.filter(file=>file.endsWith('.css'))) {
+    const css=(await extractFile(asarPath, join("dist","renderer",resource))).toString();
+    for(const [,font] of css.matchAll(/url\(\.\/([^)]*\.woff2)\)/g)) {
+      const path=`dist/renderer/assets/${font}`;
+      assert.ok(files.has(path), `Packaged app is missing font resource ${font}`);
+      fontResources.push(font);
+    }
+  }
+  for(const script of ['latin','cyrillic']) assert.ok(fontResources.some(font=>font.startsWith(`inter-${script}-wght-`)),`Packaged renderer is missing Inter ${script}`);
+
   const journal = JSON.parse((await extractFile(asarPath, join("dist", "service", "db", "migrations", "meta", "_journal.json"))).toString());
   assert.ok(journal.entries?.some((entry) => entry.idx === 7 && entry.tag === "0007_discovery_mode_changes"),
     "Packaged migration journal is missing 0007_discovery_mode_changes");
@@ -98,6 +109,10 @@ export async function checkArtifact(root, { platform = process.platform, arch = 
   const license = await readFile(licensePath, "utf8");
   assert.match(license, /Copyright \(c\) 2026 Michael Yong/);
   assert.match(license, /MIT License/);
+
+  const fontLicense=await readFile(join(resourcesDirectory,'licenses/Inter-OFL-1.1.txt'),'utf8');
+  assert.match(fontLicense,/SIL OPEN FONT LICENSE Version 1.1/);
+  assert.match(fontLicense,/The Inter Project Authors/);
 
   const unpackedModules = `${asarPath}.unpacked/node_modules/better-sqlite3`;
   const nativeCandidates = [

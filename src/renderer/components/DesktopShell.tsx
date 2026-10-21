@@ -1,3 +1,5 @@
+import { Hint } from "./Hint.js";
+import { Icon } from "./Icons.js";
 // Settings navigation/section patterns adapted from bb f135a001. See docs/reuse.md and bb/LICENSE.
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import * as Tabs from "@radix-ui/react-tabs";
@@ -87,33 +89,33 @@ export function DesktopShell({ language, data, busy, locked, onCreate, onManage,
             {data?.workspaces.map((workspace, index, all) => <div key={workspace.workspaceId} className="sidebar-workspace-row"
               onBlur={event => { if (contextId === workspace.workspaceId && !event.currentTarget.contains(event.relatedTarget as Node | null)) setContextId(null); }}
               onKeyDown={event => { if (event.key === "Escape" && contextId === workspace.workspaceId) { event.preventDefault(); setContextId(null); contextTrigger.current?.focus(); } }}>
-              <button type="button" className="sidebar-item"
+              <button type="button" className="sidebar-item" data-workspace-id={workspace.workspaceId}
                 aria-current={data.activeWorkspace?.workspaceId === workspace.workspaceId ? "page" : undefined}
                 disabled={busy || locked} onClick={() => { setContextId(null); onActivate(workspace.workspaceId); }}>
                 <span aria-hidden="true" className="workspace-monogram">{workspace.name.trim().slice(0, 1).toUpperCase() || "W"}</span>
                 <span className="sidebar-name">{workspace.name}</span>
               </button>
-              {onManage && <button type="button" className="workspace-context-trigger" disabled={busy || locked}
+              {onManage && <Hint label={`${l.actions}: ${workspace.name}`}><button type="button" className="workspace-context-trigger" disabled={busy || locked}
                 aria-label={`${l.actions}: ${workspace.name}`} aria-expanded={contextId === workspace.workspaceId}
-                onClick={event => { contextTrigger.current = event.currentTarget; setContextId(contextId === workspace.workspaceId ? null : workspace.workspaceId); }}>⋯</button>}
+                onClick={event => { contextTrigger.current = event.currentTarget; setContextId(contextId === workspace.workspaceId ? null : workspace.workspaceId); }}><Icon name="more"/></button></Hint>}
               {contextId === workspace.workspaceId && <div role="group" className="workspace-context" aria-label={`${l.actions}: ${workspace.name}`}>
                 {(["settings", "rename", "up", "down", "remove"] as const).map(action => <button key={action} type="button" className="sidebar-item"
                   disabled={busy || locked || (action === "up" && index === 0) || (action === "down" && index === all.length - 1)}
                   onClick={() => void manage(workspace.workspaceId, action)}>{l[action]}</button>)}
               </div>}
             </div>)}
-            {onCreate && <button type="button" className="sidebar-item sidebar-create" disabled={busy || locked} onClick={onCreate}>+ {l.add}</button>}
+            {onCreate && <button type="button" className="sidebar-item sidebar-create" disabled={busy || locked} onClick={onCreate}><Icon name="plus"/> {l.add}</button>}
           </nav>
         </div>
         <div hidden={!open}>
-          <button ref={backButton} type="button" className="sidebar-item" disabled={locked} onClick={back}><span aria-hidden="true">←</span> {l.back}</button>
+          <button ref={backButton} type="button" className="sidebar-item" disabled={locked} onClick={back}><Icon name="back"/> {l.back}</button>
           <p className="sidebar-label">{l.settings}</p>
           <Tabs.List aria-label={l.settings} className="sidebar-items">
             {sections.map(item => <Tabs.Trigger className="sidebar-item" key={item} value={item} disabled={locked && item !== section}>{l[item]}</Tabs.Trigger>)}
           </Tabs.List>
         </div>
       </div>
-      <button ref={settingsButton} type="button" className="sidebar-item sidebar-settings" hidden={open} disabled={locked} onClick={enter}>{l.settings}</button>
+      <button ref={settingsButton} type="button" className="sidebar-item sidebar-settings" hidden={open} disabled={locked} onClick={enter}><Icon name="settings"/>{l.settings}</button>
     </aside>
     <div className="desktop-area">
       <div className="desktop-workspace" aria-hidden={open} inert={open}>{children}</div>

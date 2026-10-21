@@ -1,3 +1,4 @@
+import { findAction } from "./context-tools-driver.js";
 import assert from "node:assert/strict";
 import test from "node:test";
 import React from "react";
@@ -31,12 +32,12 @@ for (const language of ["en", "ru"] as const) {
     const t = (key: Parameters<typeof translate>[1]) => translate(language, key);
     try {
       render(<TextPropertiesTable client={client} workspaceId={workspaceId} sourceId={sourceId} projects={projects} language={language} disabled={false} hideReveal />);
-      const create = await screen.findByRole("button", { name: language === "en" ? "Create Number property" : "Создать Number-свойство" });
+      const create = await findAction("button", { name: language === "en" ? "Create Number property" : "Создать Number-свойство" });
       await waitFor(() => assert.equal(create.hasAttribute("disabled"), false));
       create.focus(); await user.keyboard("{Enter}");
       await user.keyboard("Budget{Enter}");
       const label = `${language === "en" ? "Edit Number value" : "Редактировать Number-значение"}: Project / Budget`;
-      const button = await screen.findByRole("button", { name: label });
+      const button = await findAction("button", { name: label });
       button.focus(); await user.keyboard("{Enter}");
       await user.keyboard(language === "en" ? "(2+3)*4/2+0.5{Enter}" : "(2+3)*4/2+0,5{Enter}");
       await waitFor(() => assert.equal(screen.getByRole("button", { name: label }).textContent, language === "en" ? "10.5" : "10,5"));
@@ -83,7 +84,7 @@ for (const outcome of ["accepted", "newer", "lost"] as const) test(`${outcome} v
     const user = userEvent.setup({ document });
     render(<TextPropertiesTable client={new WorkspaceServiceClient(api)} workspaceId={workspaceId} sourceId={sourceId} projects={projects} language="en" disabled={false} hideReveal />);
     const label = "Edit Number value: Project / Budget";
-    const button = await screen.findByRole("button", { name: label });
+    const button = await findAction("button", { name: label });
     await user.click(button); await user.keyboard("42{Enter}");
     if (outcome === "lost") { await screen.findByRole("alert"); await user.keyboard("{Escape}"); }
     await waitFor(() => {
@@ -94,7 +95,7 @@ for (const outcome of ["accepted", "newer", "lost"] as const) test(`${outcome} v
     assert.equal(releases.length, 0, "The complete accepted reply avoids a duplicate property request");
     assert.equal(reads, outcome === "accepted" ? 1 : 2);
     assert.equal(mutations, 1);
-    assert.equal(document.activeElement, screen.getByRole("button", { name: label }));
+    assert.equal(document.activeElement, (await findAction("button",{ name: label })));
   } finally {
     hold = false; for (const release of releases) release();
     cleanup(); service.close(); rmSync(directory, { recursive: true, force: true });

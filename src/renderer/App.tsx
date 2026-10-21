@@ -656,7 +656,7 @@ export function App() {
         about: <><h2>Workspace</h2><p>{shellLabels[language].aboutDescription}</p><p>bb · MIT · Copyright (c) 2026 Michael Yong</p></>,
       })}>
     <main data-ready={viewState === "ready"} className="workspace-screen" aria-label={t("appTitle")}>
-      <header className="workspace-header"><h1>{t("appTitle")}</h1></header>
+      {!activeWorkspace && <header className="workspace-header"><h1>{t("appTitle")}</h1></header>}
       {uncertainRecovery && (!activeWorkspace || activeWorkspace.workspaceId === uncertainRecovery) &&
         <StatusMessage kind="error" title={t("recoveryUncertain")} />}
       {reorderError && <StatusMessage kind="error" title={t("reorderErrorTitle")}>{t(reorderError === "stale" ? "reorderStaleDescription" : "reorderErrorDescription")}</StatusMessage>}
@@ -682,8 +682,6 @@ export function App() {
                   <h2 id="workspace-title">{activeWorkspace.name}</h2>
                   <p className="workspace-root">{activeWorkspace.canonicalRoot}</p>
                 </div>
-                {workspaceData && <WorkspaceSwitcher data={workspaceData} label={t("workspaceSelectLabel")} id="workspace-switcher"
-                  disabled={busy !== null || renameDraft !== null || removalTarget !== null} onActivate={id => void activateWorkspace(id)} />}
               </div>
               {formMessage === "activation" && (
                 <StatusMessage kind="error" title={t(messageTitle.activation)}>
@@ -705,14 +703,6 @@ export function App() {
                 }}
                 client={client} workspaceId={activeWorkspace.workspaceId} sourceId={activeWorkspace.sourceId} language={language}
                 disabled={busy !== null && busy !== "refresh" || renameDraft !== null || removalTarget !== null} />
-              <button
-                type="button"
-                className="workspace-button workspace-button--secondary"
-                disabled={busy !== null || renameDraft !== null || removalTarget !== null}
-                onClick={() => { setFormMessage(null); setAddingWorkspace(true); }}
-              >
-                {t("addWorkspaceAction")}
-              </button>
             </section>
           ) : (
             <section className="workspace-create" aria-labelledby="create-title">

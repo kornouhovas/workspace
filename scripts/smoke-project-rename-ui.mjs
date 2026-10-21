@@ -1,3 +1,5 @@
+import { selectRuntimeWorkspace } from "./runtime-settings.mjs";
+import { enterContextFor } from "./runtime-context-tools.mjs";
 import { setInterfaceLanguage } from "./runtime-settings.mjs";
 import { installRenameSubmissionReceipt } from "./rename-submission-receipt.mjs";
 import assert from "node:assert/strict";
@@ -194,7 +196,7 @@ export async function runProjectRenameUi(mode = "dev") {
   async function select(page, workspace, language) {
     await setInterfaceLanguage(page, language);
     await page.waitForFunction(lang => globalThis.document.documentElement.lang === lang && !globalThis.document.querySelector("#interface-language")?.disabled, language);
-    await page.locator("#workspace-switcher").selectOption(workspace.workspaceId);
+    await selectRuntimeWorkspace(page,workspace.workspaceId);
     await page.getByRole("heading", { name: workspace.name, exact: true }).waitFor();
     await page.waitForFunction(() => globalThis.document.querySelector(".table-view")?.getAttribute("aria-busy") === "false" && globalThis.document.querySelector(".rename-operations")?.getAttribute("aria-busy") === "false");
   }
@@ -241,7 +243,8 @@ export async function runProjectRenameUi(mode = "dev") {
     observations.push(observation);
     let primaryFailure;
     try {
-      const trigger = page.getByRole("button", { name: `${t.rename}: ${name}`, exact: true });
+      const trigger = page.getByRole("button", { name: `${t.rename}: ${name}`, exact: true, includeHidden: true });
+      await enterContextFor(page,trigger);
       await trigger.press("Enter");
       await waitForRenameEditor(page, { record: readiness => observations.push({ editorReadiness: readiness }) });
       const input = page.locator("#project-rename-name");
@@ -303,7 +306,9 @@ export async function runProjectRenameUi(mode = "dev") {
     });
     await check(targetEvidence, "revealInvocation", async () => {
       await showRuntimeProject(page, name, setup.project.projectId);
-      await page.getByRole("button", { name: `${t.reveal}: ${name}`, exact: true }).press("Enter");
+      const revealEntry=page.getByRole("button", { name: `${t.reveal}: ${name}`, exact: true, includeHidden:true });
+      await enterContextFor(page,revealEntry);
+      await revealEntry.press("Enter");
       await page.waitForFunction(() => globalThis.document.querySelector(".project-reveal .bb-status") !== null);
       const calls = await withDeadline((async () => {
         for (let attempt = 0; attempt < (process.platform === "win32" ? 150 : 50); attempt++) {
@@ -368,13 +373,14 @@ export async function runProjectRenameUi(mode = "dev") {
       const authoredName = "  Renamed 日本語";
       await check(targetEvidence, "submission", async () => {
         await showRuntimeProject(page, "Original", setup.project.projectId);
-        const trigger = page.getByRole("button", { name: `${t.rename}: Original`, exact: true });
+        const trigger = page.getByRole("button", { name: `${t.rename}: Original`, exact: true, includeHidden: true });
+        await enterContextFor(page,trigger);
         await trigger.press("Enter"); await page.locator("#project-rename-name").fill("Cancelled draft");
         await capture(page, discoveryMode, language, "editing");
         await closeEditor(page);
-        assert.equal(await trigger.evaluate(node => node === globalThis.document.activeElement), true);
+        assert.equal(await trigger.evaluate(node => globalThis.document.activeElement?.id === node.closest("[data-context-return]")?.getAttribute("data-context-return")), true);
         await edit(page, "Original", authoredName, t, t.saved);
-        await page.getByRole("button", { name: `${t.rename}: ${authoredName}`, exact: true }).waitFor();
+        await page.getByRole("button", { name: `${t.rename}: ${authoredName}`, exact: true, includeHidden:true }).waitFor({state:"attached"});
         await capture(page, discoveryMode, language, "saved");
         await preserved(page, setup, authoredName, originalInventory);
         await assert.rejects(stat(join(setup.parent, "Original")), { code: "ENOENT" });
@@ -403,7 +409,7 @@ export async function runProjectRenameUi(mode = "dev") {
           actualAlias = original.dev === alias.dev && original.ino === alias.ino && original.birthtimeNs === alias.birthtimeNs;
         } catch (error) { if (error.code !== "ENOENT") throw error; }
         await edit(page, authoredName, requestedName, t, t.saved);
-        await page.getByRole("button", { name: `${t.rename}: ${requestedName}`, exact: true }).waitFor();
+        await page.getByRole("button", { name: `${t.rename}: ${requestedName}`, exact: true, includeHidden:true }).waitFor({state:"attached"});
         await preserved(page, setup, requestedName, originalInventory);
         const names = await readdir(setup.parent); assert.equal(names.includes(authoredName), false); assert.equal(names.includes(requestedName), true);
         committedName = requestedName; await closeEditor(page);
@@ -412,7 +418,7 @@ export async function runProjectRenameUi(mode = "dev") {
       await check(targetEvidence, "sibling", async () => {
         await select(page, setup.sibling, language);
         await showRuntimeProject(page, committedName, setup.project.projectId);
-        await page.getByRole("button", { name: `${t.rename}: ${committedName}`, exact: true }).waitFor();
+        await page.getByRole("button", { name: `${t.rename}: ${committedName}`, exact: true, includeHidden:true }).waitFor({state:"attached"});
         const sibling = await query(page, "listProjects", setup.sibling.workspaceId);
         assert.equal(sibling.projects.find(project => project.projectId === setup.project.projectId).name, committedName);
         assert.deepEqual(await query(page, "listTextProperties", setup.sibling.workspaceId), { ...setup.properties, workspaceId: setup.sibling.workspaceId });
@@ -424,7 +430,7 @@ export async function runProjectRenameUi(mode = "dev") {
       await check(targetEvidence, "restartPersistence", async () => {
         await preserved(page, setup, committedName, originalInventory);
         await showRuntimeProject(page, committedName, setup.project.projectId);
-        await page.getByRole("button", { name: `${t.rename}: ${committedName}`, exact: true }).waitFor();
+        await page.getByRole("button", { name: `${t.rename}: ${committedName}`, exact: true, includeHidden:true }).waitFor({state:"attached"});
       });
       await shutdown();
       for (const checkpoint of Object.keys(targetEvidence.recovery)) {

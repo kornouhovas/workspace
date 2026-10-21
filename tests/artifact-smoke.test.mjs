@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
-import { mkdir, mkdtemp, readFile, rm, symlink, writeFile, rename } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, readdir, rm, symlink, writeFile, rename } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join, win32 } from "node:path";
 import { createPackageWithOptions } from "@electron/asar";
@@ -72,6 +72,13 @@ async function makeArtifact(root, buildVersion = "0.1.0", omittedFiles = [], omi
     await mkdir(dirname(join(appDirectory, file)), { recursive: true });
     await writeFile(join(appDirectory, file), await readFile(file));
   }
+  const rendererAssets=await readdir('dist/renderer/assets');
+  for(const file of rendererAssets.filter(file=>file.endsWith('.woff2'))) {
+    if(omittedFiles.includes('fonts')) continue;
+    await mkdir(join(appDirectory,'dist/renderer/assets'),{recursive:true});
+    await writeFile(join(appDirectory,'dist/renderer/assets',file),await readFile(join('dist/renderer/assets',file)));
+  }
+  if(!omittedFiles.includes('font-license')) await writeFile(join(resourcesDirectory,'licenses/Inter-OFL-1.1.txt'),await readFile('node_modules/@fontsource-variable/inter/LICENSE'));
   await writeFile(join(appDirectory, "package.json"), JSON.stringify({ version: "0.1.0" }));
   await writeFile(join(resourcesDirectory, "licenses/bb-MIT.txt"), "MIT License\nCopyright (c) 2026 Michael Yong");
   for (const file of nativeScripts) {
@@ -258,6 +265,7 @@ for (const scenario of [
   { name: "packed rename adapter", omitted: ["packed-rename"], error: /must be unpacked/ },
   { name: "missing unpacked rename adapter", omitted: ["unpacked-rename"], error: /adapter is missing or linked/ },
   { name: "corrupt rename adapter", corrupt: "dist/service/native/project-rename.node", error: /differs from current runtime build/ },
+  { name: "missing fonts", omitted: ["fonts"], error: /missing font resource/ },
   { name: "missing renderer assets", omitted: ["renderer-assets"], error: /missing renderer resource/ },
   { name: "missing rename SQL", omitted: ["dist/service/db/migrations/0009_project_rename.sql"], error: /missing.*0009_project_rename/ },
   { name: "missing rename journal entry", omitEntry: 9, error: /journal is missing 0009_project_rename/ },

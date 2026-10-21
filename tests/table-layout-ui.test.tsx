@@ -71,6 +71,14 @@ for (const language of ["en", "ru"] as const) {
       await user.keyboard("{Enter}");
       await user.click(screen.getByLabelText(`${t("tableVisible")}: Notes`));
       await user.keyboard("{Escape}");
+      const rename=screen.getByRole("button",{name:`${t("renameProperty")}: Notes`});
+      await user.click(rename);
+      const propertyName=await screen.findByRole("textbox",{name:t("propertyName")});
+      assert.equal(document.activeElement===propertyName,true);
+      await user.keyboard("{Escape}");
+      assert.equal(query("listTextProperties").value.definitions[0].name,"Notes");
+      assert.equal(document.activeElement===rename,true);
+      await user.click(screen.getByRole("button", {name:`${t("projectActions")}: Alpha`}));
       const later=screen.getByRole("button",{name:`${t("tableRowLater")}: Alpha`});
       later.focus();await user.keyboard("{Enter}");
       await waitFor(()=>assert.deepEqual(screen.getAllByRole("row").slice(1).map(r=>r.textContent?.includes("Alpha")?"Alpha":"Beta"),["Beta","Alpha"]));

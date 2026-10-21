@@ -1,3 +1,4 @@
+import { findAction } from "./context-tools-driver.js";
 import assert from "node:assert/strict";
 import test from "node:test";
 import React from "react";
@@ -31,12 +32,12 @@ for (const language of ["en", "ru"] as const) {
     const t = (key: Parameters<typeof translate>[1]) => translate(language, key);
     try {
       const mounted = render(<TextPropertiesTable client={client} workspaceId={workspaceId} sourceId={sourceId} projects={projects} language={language} disabled={false} hideReveal />);
-      const create = await screen.findByRole("button", { name: language === "en" ? "Create Date property" : "Создать Date-свойство" });
+      const create = await findAction("button", { name: language === "en" ? "Create Date property" : "Создать Date-свойство" });
       await waitFor(() => assert.equal(create.hasAttribute("disabled"), false));
       create.focus(); await user.keyboard("{Enter}");
       await user.keyboard("Deadline{Enter}");
       const label = `${language === "en" ? "Edit Date value" : "Редактировать Date-значение"}: Project / Deadline`;
-      const button = await screen.findByRole("button", { name: label });
+      const button = await findAction("button", { name: label });
       button.focus(); await user.keyboard("{Enter}");
       await user.keyboard("2024-02-29{Enter}");
       await waitFor(() => assert.equal(screen.getByRole("button", { name: label }).textContent, language === "en" ? "Feb 29, 2024" : "29 февр. 2024 г."));

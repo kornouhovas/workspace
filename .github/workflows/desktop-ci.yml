@@ -8,8 +8,12 @@ on:
       checks:
         description: Full acceptance or a selected focused failure route
         type: choice
-        options: [full, failed, readiness, windows-release, issue22-failures, creation-shutdown, raw-rename, issue24-failures, category-fixture, issue24-startup, multiselect, etw-controls, app-fixture, property-fixture, runtime-observation, view-fixtures, number, windows-property-fixture, rename-authoring, rename-fixture, viewport-runtime, desktop-shell, shell-runtime, views-readiness, workspace-sidebar, workspace-setup, workspace-setup-readiness, select-readiness, source-fixture, source-runtime]
+        options: [full, desktop-ux, failed, readiness, windows-release, issue22-failures, creation-shutdown, raw-rename, issue24-failures, category-fixture, issue24-startup, multiselect, etw-controls, app-fixture, property-fixture, runtime-observation, view-fixtures, number, windows-property-fixture, rename-authoring, rename-fixture, viewport-runtime, desktop-shell, shell-runtime, views-readiness, workspace-sidebar, workspace-setup, workspace-setup-readiness, select-readiness, source-fixture, source-runtime]
         default: full
+      desktop_ux_failure_probe:
+        description: With desktop-ux, deliberately fail a selected check to verify propagation
+        type: boolean
+        default: false
       source_runtime_platform:
         description: With checks=source-runtime, renew only the missing Windows host
         type: choice
@@ -93,6 +97,59 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  desktop-ux:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.checks == 'desktop-ux' }}
+    name: Desktop UX foundation (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest, windows-2022]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.21.1
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Candidate provenance
+        shell: bash
+        run: |
+          mkdir -p work/ci-desktop-ux
+          node --input-type=module -e 'import {writeFileSync} from "node:fs"; writeFileSync("work/ci-desktop-ux/provenance.json", JSON.stringify({sha:process.env.GITHUB_SHA,run:process.env.GITHUB_RUN_ID,attempt:process.env.GITHUB_RUN_ATTEMPT,platform:process.platform,profile:"foundation"}))'
+      - name: Verify selected-check failure propagation
+        if: ${{ inputs.desktop_ux_failure_probe }}
+        run: node scripts/desktop-ux-checks.mjs foundation --failure-probe
+      - name: Affected UI, services and real Electron flows
+        if: ${{ !inputs.desktop_ux_failure_probe }}
+        run: npm run test:desktop-ux
+      - name: Package shared font and notices
+        if: ${{ !inputs.desktop_ux_failure_probe }}
+        run: npm run package:built
+      - name: Inspect packaged artifact
+        if: ${{ !inputs.desktop_ux_failure_probe }}
+        run: npm run check:artifact -- release
+      - name: Packaged saved-view consumers
+        if: ${{ !inputs.desktop_ux_failure_probe }}
+        run: npm run smoke:runtime -- release --views
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-desktop-ux-packaged
+      - name: Preserve exact-candidate UX evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-ux-foundation-${{ matrix.os }}
+          path: |
+            work/ci-desktop-ux
+            work/issue-68
+            work/issue-48-desktop-shell
+            work/issue-49-workspace-management
+            work/issue-50-source-settings
+            work/ci-desktop-ux-packaged
+          if-no-files-found: error
+
   source-runtime:
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.checks == 'source-runtime' }}
     name: Unreached Windows source acceptance (${{ matrix.os }})
@@ -281,7 +338,7 @@ jobs:
           if-no-files-found: error
 
   common:
-    if: ${{ github.event_name != 'workflow_dispatch' || (inputs.checks != 'failed' && inputs.checks != 'readiness' && inputs.checks != 'windows-release' && inputs.checks != 'issue22-failures' && inputs.checks != 'creation-shutdown' && inputs.checks != 'raw-rename' && inputs.checks != 'issue24-failures' && inputs.checks != 'category-fixture' && inputs.checks != 'issue24-startup' && inputs.checks != 'multiselect' && inputs.checks != 'etw-controls' && inputs.checks != 'app-fixture' && inputs.checks != 'property-fixture' && inputs.checks != 'runtime-observation' && inputs.checks != 'view-fixtures' && inputs.checks != 'number' && inputs.checks != 'windows-property-fixture' && inputs.checks != 'rename-authoring' && inputs.checks != 'rename-fixture' && inputs.checks != 'viewport-runtime' && inputs.checks != 'desktop-shell' && inputs.checks != 'shell-runtime' && inputs.checks != 'views-readiness' && inputs.checks != 'workspace-sidebar' && inputs.checks != 'workspace-setup' && inputs.checks != 'workspace-setup-readiness' && inputs.checks != 'select-readiness' && inputs.checks != 'source-fixture' && inputs.checks != 'source-runtime') }}
+    if: ${{ github.event_name != 'workflow_dispatch' || (inputs.checks != 'failed' && inputs.checks != 'readiness' && inputs.checks != 'windows-release' && inputs.checks != 'issue22-failures' && inputs.checks != 'creation-shutdown' && inputs.checks != 'raw-rename' && inputs.checks != 'issue24-failures' && inputs.checks != 'category-fixture' && inputs.checks != 'issue24-startup' && inputs.checks != 'multiselect' && inputs.checks != 'etw-controls' && inputs.checks != 'app-fixture' && inputs.checks != 'property-fixture' && inputs.checks != 'runtime-observation' && inputs.checks != 'view-fixtures' && inputs.checks != 'number' && inputs.checks != 'windows-property-fixture' && inputs.checks != 'rename-authoring' && inputs.checks != 'rename-fixture' && inputs.checks != 'viewport-runtime' && inputs.checks != 'desktop-shell' && inputs.checks != 'shell-runtime' && inputs.checks != 'views-readiness' && inputs.checks != 'workspace-sidebar' && inputs.checks != 'workspace-setup' && inputs.checks != 'workspace-setup-readiness' && inputs.checks != 'select-readiness' && inputs.checks != 'source-fixture' && inputs.checks != 'source-runtime' && inputs.checks != 'desktop-ux') }}
     name: Common tests and static checks
     runs-on: macos-latest
     steps:

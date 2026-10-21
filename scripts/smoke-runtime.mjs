@@ -1,3 +1,5 @@
+import { selectRuntimeWorkspace, waitForWorkspaceNavigation } from "./runtime-settings.mjs";
+import { enterContextFor } from "./runtime-context-tools.mjs";
 import { renameActiveWorkspace } from "./runtime-settings.mjs";
 import { setInterfaceLanguage, openSettingsSection, returnToWorkspace } from "./runtime-settings.mjs";
 import assert from "node:assert/strict";
@@ -195,7 +197,9 @@ async function settleSourceRefresh(page) {
 }
 async function previewFolders(page, language = "en") {
   await settleSourceRefresh(page);
-  await page.getByRole("button", { name: discoveryLabels[language].preview, exact: true }).press("Enter");
+  const entry=page.getByRole("button", { name: discoveryLabels[language].preview, exact: true, includeHidden: true });
+  await enterContextFor(page,entry);
+  await entry.press("Enter");
   await page.waitForFunction(() => globalThis.document.querySelector(".discovery-panel")?.getAttribute("aria-busy") === "false");
 }
 async function excludeFolder(page, name, checked, language = "en", kind = null) {
@@ -244,9 +248,9 @@ async function create(current, name, rootPath, language = "en") {
 
 async function select(page, workspace) {
   await returnToWorkspace(page);
-  await page.locator("#workspace-switcher").selectOption(workspace.workspaceId);
+  await selectRuntimeWorkspace(page,workspace.workspaceId);
   await page.getByRole("heading", { name: workspace.name.trim(), exact: true }).waitFor();
-  await page.waitForFunction(() => !globalThis.document.querySelector("#workspace-switcher")?.disabled);
+  await waitForWorkspaceNavigation(page);
 }
 
 async function remove(page, workspace) {
@@ -255,7 +259,7 @@ async function remove(page, workspace) {
   await page.getByText("Будут удалены только конфигурация этого рабочего пространства и её представления. Файлы проектов и метаданные источника сохранятся, даже если это последнее рабочее пространство для папки.", { exact: true }).waitFor();
   await page.getByRole("button", { name: "Удалить конфигурацию", exact: true }).press("Enter");
   await page.locator(".workspace-removal").waitFor({ state: "detached" });
-  await page.waitForFunction(() => !globalThis.document.querySelector("#workspace-switcher")?.disabled);
+  await waitForWorkspaceNavigation(page);
   if ((await load(page)).workspaces.length === 0) {
     // Final removal closes settings itself. Do not race that transition with a
     // Back click whose preceding visibility read can already be stale.
@@ -801,7 +805,7 @@ try {
     await previewFolders(page, language); await chooseMode("direct", language);
     await page.getByRole("button", { name: discoveryLabels[language].cancel, exact: true }).press("Enter");
     await page.locator(".discovery-panel").waitFor({ state: "detached" });
-    assert.equal(await page.getByRole("button", { name: discoveryLabels[language].preview, exact: true }).evaluate((node) => node === globalThis.document.activeElement), true);
+    assert.equal(await page.getByRole("button", { name: discoveryLabels[language].preview, exact: true, includeHidden: true }).evaluate((node) => node === globalThis.document.activeElement), true);
     assert.deepEqual(await projects(page, grouped.workspaceId), modeBefore);
     assert.deepEqual(await storageMetadata(), beforeCancel);
   }

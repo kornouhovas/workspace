@@ -253,9 +253,11 @@ test("EN/RU Table without Text definitions retains the authored Name and only Na
     render(<TextPropertiesTable client={client} workspaceId="workspace" sourceId="source" language={language} disabled={false}
       projects={[{ projectId: "project", categoryId: null, name, relativePath: name }]} />);
     await waitFor(() => assert.equal(document.querySelector(".text-properties")?.getAttribute("aria-busy"), "false"));
-    assert.deepEqual(screen.getAllByRole("columnheader").map((node) => node.textContent), [translate(language, "projectName"), translate(language, "revealProject")]);
+    assert.deepEqual(screen.getAllByRole("columnheader").map((node) => node.textContent), [translate(language, "projectName"), translate(language, "projectActions")]);
     assert.equal(screen.getByText(name, { selector: "td span", normalizer: (text) => text }).textContent, name);
     assert.equal(screen.queryByRole("button", { name: new RegExp(`^${translate(language, "editTextValue")}:`) }), null);
+    const user = userEvent.setup({document});
+    await user.click(screen.getByRole("button", {name:translate(language,"propertyTools")}));
     assert.ok(screen.getByRole("button", { name: translate(language, "createTextProperty") }));
     cleanup();
   }

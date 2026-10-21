@@ -164,7 +164,9 @@ for (const language of ["en", "ru"] as const) test(`${language} selected layout 
     await user.click(screen.getByRole("button", { name: t("archiveArchived") }));
     const archiveRegion = screen.getByRole("region", { name: t("archiveTitle") });
     // Without a selected view, Archived must not bypass its saved filters.
-    await waitFor(() => assert.equal((within(archiveRegion).getByLabelText(t("archiveRestoreProject")) as HTMLSelectElement).disabled, false));
+    await user.click(screen.getByRole("button", {name:t("archiveTitle")}));
+    await waitFor(() => assert.equal((screen.getByLabelText(t("archiveRestoreProject")) as HTMLSelectElement).disabled, false));
+    await user.keyboard("{Escape}");
     assert.equal(within(archiveRegion).queryByRole("table") === null, true);
     assert.equal(within(archiveRegion).queryByText(new RegExp(t("archiveOriginal"))) === null, true);
     failViews = false; await user.click(screen.getByRole("button", { name: t("viewsRetry") }));

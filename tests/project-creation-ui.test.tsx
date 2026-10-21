@@ -1,3 +1,4 @@
+import { findAction } from "./context-tools-driver.js";
 import assert from "node:assert/strict";
 import { scanDirectSource, scanGroupedSource } from "../src/service/discovery.js";
 import test from "node:test";
@@ -65,10 +66,10 @@ for (const language of ["en", "ru"] as const) {
   for (const mode of ["direct", "grouped"] as const) test(`${language}: ${mode} keyboard creation preserves authored text and restores focus`, async () => {
     const client = new Client(); client.list = { ...initial, mode, categories: mode === "grouped" ? [{ categoryId: "category", name: "Existing", relativePath: "Existing" }] : [] };
     let reloads = 0; panel(client, { onCompleted: () => { reloads++; } });
-    const trigger = screen.getByRole("button", { name: t("createProject") }); trigger.focus(); await userEvent.keyboard("{Enter}");
+    const trigger = (await findAction("button",{ name: t("createProject") })); trigger.focus(); await userEvent.keyboard("{Enter}");
     const input = screen.getByRole("textbox", { name: t("creationName") }); assert.equal(document.activeElement, input);
     await userEvent.type(input, "  New folder  ");
-    if (mode === "grouped") { assert.equal((screen.getByRole("button", { name: t("creationSubmit") }) as HTMLButtonElement).disabled, true); await userEvent.selectOptions(screen.getByRole("combobox"), "category"); }
+    if (mode === "grouped") { assert.equal(((await findAction("button",{ name: t("creationSubmit") })) as HTMLButtonElement).disabled, true); await userEvent.selectOptions(screen.getByRole("combobox"), "category"); }
     input.focus(); await userEvent.keyboard("{Enter}"); await screen.findByText(t("creationSaved"));
     assert.equal(client.creates.length, 1); assert.equal(client.creates[0].name, "  New folder  "); assert.equal(client.creates[0].mode, mode);
     assert.match(client.creates[0].operationId, /^[a-f0-9-]{36}$/); assert.equal(client.creates[0].expectedRevision, 1);
@@ -76,13 +77,13 @@ for (const language of ["en", "ru"] as const) {
   });
   test(`${language}: empty/unconfigured/no-category/unavailable guidance`, async () => {
     for (const [list, key] of [[{ ...initial, configured: false, mode: null }, "creationUnconfigured"], [{ ...initial, mode: "grouped" }, "creationNoCategory"], [{ ...initial, state: "unavailable" }, "creationUnavailable"]] as const) {
-      panel(new Client(), { projects: list }); assert.ok(screen.getByText(t(key))); assert.equal((screen.getByRole("button", { name: t("createProject") }) as HTMLButtonElement).disabled, true); cleanup();
+      panel(new Client(), { projects: list }); assert.ok(screen.getByText(t(key))); assert.equal(((await findAction("button",{ name: t("createProject") })) as HTMLButtonElement).disabled, true); cleanup();
     }
     panel(); assert.ok(screen.getByText(t("creationEmpty")));
   });
   test(`${language}: Escape retains draft, double submission is blocked and pending cancel never implies rollback`, async () => {
     const client = new Client(), response = deferred<ServiceResult<ProjectCreationResult>>(); client.handler = () => response.promise;
-    panel(client); const trigger = screen.getByRole("button", { name: t("createProject") }); await userEvent.click(trigger);
+    panel(client); const trigger = (await findAction("button",{ name: t("createProject") })); await userEvent.click(trigger);
     await userEvent.type(screen.getByRole("textbox"), "Authored folder{Escape}"); assert.equal(document.activeElement, trigger); assert.equal(client.creates.length, 0);
     await userEvent.click(trigger); const input = screen.getByRole("textbox") as HTMLInputElement; assert.equal(input.value, "Authored folder");
     fireEvent.submit(input.closest("form")!); fireEvent.submit(input.closest("form")!); assert.equal(client.creates.length, 1);
@@ -92,39 +93,39 @@ for (const language of ["en", "ru"] as const) {
   });
   test(`${language}: unknown response keeps operation ID and requires explicit status/review/acceptance`, async () => {
     const client = new Client(); client.handler = async () => { throw new Error("lost response"); }; const { unmount } = panel(client);
-    await userEvent.click(screen.getByRole("button", { name: t("createProject") })); await userEvent.type(screen.getByRole("textbox"), "Authored folder{Enter}");
-    const status = await screen.findByRole("button", { name: t("creationStatus") }); assert.equal(client.creates.length, 1);
-    assert.equal((screen.getByRole("button", { name: t("creationSubmit") }) as HTMLButtonElement).disabled, true);
+    await userEvent.click((await findAction("button",{ name: t("createProject") }))); await userEvent.type(screen.getByRole("textbox"), "Authored folder{Enter}");
+    const status = await findAction("button", { name: t("creationStatus") }); assert.equal(client.creates.length, 1);
+    assert.equal(((await findAction("button",{ name: t("creationSubmit") })) as HTMLButtonElement).disabled, true);
     await userEvent.click(status); assert.deepEqual(client.statusesRequested, [client.creates[0].operationId]);
     client.preview = { ...client.preview, operation: { ...operation, operationId: client.creates[0].operationId } };
-    await userEvent.click(screen.getByRole("button", { name: t("creationReview") })); await screen.findByText(t("creationOwnershipWarning"));
+    await userEvent.click((await findAction("button",{ name: t("creationReview") }))); await screen.findByText(t("creationOwnershipWarning"));
     assert.equal(client.recoveries.length, 0); assert.equal(client.creates.length, 1);
-    await userEvent.click(screen.getByRole("button", { name: t("creationAssociateReviewed") }));
+    await userEvent.click((await findAction("button",{ name: t("creationAssociateReviewed") })));
     // This fixture deliberately responds with the wrong operation: do not claim success.
     await screen.findByText(t("creationUncertain")); assert.equal(screen.queryByText(t("creationSaved")), null);
     unmount(); assert.equal(client.statuses.size, 0);
   });
   for (const action of ["retry_missing", "complete_recorded", "associate_reviewed"] as const) test(`${language}: reopened operation explicitly recovers with ${action}`, async () => {
     const client = new Client(); client.operations = [operation]; client.preview = { ...client.preview, actions: [action] }; panel(client);
-    await userEvent.click(await screen.findByRole("button", { name: t("creationReview") }));
+    await userEvent.click(await findAction("button", { name: t("creationReview") }));
     const key = ({ retry_missing: "creationRetryMissing", complete_recorded: "creationCompleteRecorded", associate_reviewed: "creationAssociateReviewed" } as const)[action];
-    await userEvent.click(await screen.findByRole("button", { name: t(key) })); await screen.findByText(t("creationSaved"));
+    await userEvent.click(await findAction("button", { name: t(key) })); await screen.findByText(t("creationSaved"));
     assert.deepEqual(client.recoveries, [["workspace", "operation", "token", action]]); assert.equal(client.creates.length, 0);
   });
   test(`${language}: source/revision/observation invalidation rejects delayed recovery and stale confirmation`, async () => {
     const client = new Client(), response = deferred<ServiceResult<ProjectCreationRecoveryPreview>>(); client.operations = [operation]; client.reviewHandler = () => response.promise;
-    const view = panel(client); await userEvent.click(await screen.findByRole("button", { name: t("creationReview") }));
+    const view = panel(client); await userEvent.click(await findAction("button", { name: t("creationReview") }));
     view.props.observationVersion.current++;
     await act(async () => response.resolve({ ok: true, value: client.preview })); await screen.findByText(t("creationReviewChanged"));
     assert.equal(screen.queryByRole("button", { name: t("creationAssociateReviewed") }), null);
-    client.reviewHandler = null; await userEvent.click(screen.getByRole("button", { name: t("creationReview") }));
-    const accept = await screen.findByRole("button", { name: t("creationAssociateReviewed") }); view.props.minimumRevision.current = 2;
+    client.reviewHandler = null; await userEvent.click((await findAction("button",{ name: t("creationReview") })));
+    const accept = await findAction("button", { name: t("creationAssociateReviewed") }); view.props.minimumRevision.current = 2;
     await userEvent.click(accept); assert.equal(client.recoveries.length, 0); assert.ok(screen.getByText(t("creationReviewChanged")));
   });
   test(`${language}: selection/removal/backend changes discard delayed creation responses`, async () => {
     for (const change of ["selection", "removal", "backend"] as const) {
       const client = new Client(), response = deferred<ServiceResult<ProjectCreationResult>>(); client.handler = () => response.promise; const view = panel(client);
-      await userEvent.click(screen.getByRole("button", { name: t("createProject") })); await userEvent.type(screen.getByRole("textbox"), "Authored folder{Enter}");
+      await userEvent.click((await findAction("button",{ name: t("createProject") }))); await userEvent.type(screen.getByRole("textbox"), "Authored folder{Enter}");
       if (change === "selection") view.rerender(<ProjectCreationPanel {...view.props} workspaceId="other" sourceId="other-source" projects={null} />);
       else if (change === "removal") view.unmount();
       else await act(async () => { client.statuses.forEach((listener) => listener({ state: "unavailable" })); client.statuses.forEach((listener) => listener({ state: "ready" })); });
@@ -134,14 +135,14 @@ for (const language of ["en", "ru"] as const) {
   });
   for (const problem of ["invalid_name", "occupied", "source_unavailable", "filesystem_error"] as const) test(`${language}: ${problem} gives useful feedback and keeps draft`, async () => {
     const client = new Client(); client.handler = async () => ({ ok: true, value: { outcome: "rejected", problem, operation: null } }); panel(client);
-    await userEvent.click(screen.getByRole("button", { name: t("createProject") })); await userEvent.type(screen.getByRole("textbox"), "Authored folder{Enter}");
+    await userEvent.click((await findAction("button",{ name: t("createProject") }))); await userEvent.type(screen.getByRole("textbox"), "Authored folder{Enter}");
     const key = ({ invalid_name: "creationInvalid", occupied: "creationCollision", source_unavailable: "creationUnavailable", filesystem_error: "creationFailed" } as const)[problem];
     await screen.findByText(t(key)); assert.equal((screen.getByRole("textbox") as HTMLInputElement).value, "Authored folder"); assert.ok(document.activeElement === screen.getByRole("textbox"));
   });
   test(`${language}: Reveal prevents duplicate dispatch and handles missing/retained/native errors`, async () => {
     const client = new Client(), response = deferred<ServiceResult<ProjectRevealResult>>(); client.revealHandler = () => response.promise;
     render(<ProjectRevealButton client={client} workspaceId="workspace" projectId="project" name="Folder" language={language} disabled={false} />);
-    const button = screen.getByRole("button", { name: `${t("revealProject")}: Folder` }); fireEvent.click(button); fireEvent.click(button); assert.equal(client.reveals, 1);
+    const button = (await findAction("button",{ name: `${t("revealProject")}: Folder` })); fireEvent.click(button); fireEvent.click(button); assert.equal(client.reveals, 1);
     await act(async () => response.resolve({ ok: true, value: { workspaceId: "workspace", projectId: "project", outcome: "dispatched" } })); assert.ok(screen.getByText(t("revealDispatched")));
     for (const [problem, key] of [["missing", "revealMissing"], ["mode_retained", "revealRetained"], ["native_error", "revealError"]] as const) {
       client.revealHandler = async () => ({ ok: true, value: { workspaceId: "workspace", projectId: "project", outcome: "rejected", problem } }); await userEvent.click(button);
@@ -152,7 +153,7 @@ for (const language of ["en", "ru"] as const) {
     for (const change of ["foreign", "foreign-project", "backend", "selection", "removal"] as const) {
       const client = new Client(), response = deferred<ServiceResult<ProjectRevealResult>>(); client.revealHandler = () => response.promise;
       const view = render(<ProjectRevealButton client={client} workspaceId="workspace" projectId="project" name="Folder" language={language} disabled={false} />);
-      await userEvent.click(screen.getByRole("button"));
+      await userEvent.click((await findAction("button")));
       if (change === "backend") await act(async () => {
         client.statuses.forEach((listener) => listener({ state: "unavailable" }));
         client.statuses.forEach((listener) => listener({ state: "ready" }));
@@ -167,9 +168,9 @@ for (const language of ["en", "ru"] as const) {
     const client = new Client(); client.list = { ...initial, state: "ready", projects: [{ projectId: "project", name: "Existing", relativePath: "Existing", categoryId: null, categoryName: null, associationState: "active", resolution: "active" }] };
     const response = deferred<ServiceResult<ProjectCreationResult>>(); client.handler = () => response.promise;
     render(<DiscoveryWorkspace client={client} workspaceId="workspace" sourceId="source" language={language} disabled={false} />);
-    await userEvent.click(await screen.findByRole("button", { name: `${t("editTextValue")}: Existing / Notes` }));
+    await userEvent.click(await findAction("button", { name: `${t("editTextValue")}: Existing / Notes` }));
     const text = screen.getByRole("textbox", { name: `${t("editTextValue")}: Existing / Notes` }); await userEvent.clear(text); await userEvent.type(text, "Unsaved exact Text");
-    await userEvent.click(screen.getByRole("button", { name: t("createProject") })); await userEvent.type(screen.getByRole("textbox", { name: t("creationName") }), "Authored folder{Enter}");
+    await userEvent.click((await findAction("button",{ name: t("createProject") }))); await userEvent.type(screen.getByRole("textbox", { name: t("creationName") }), "Authored folder{Enter}");
     text.focus();
     await act(async () => {
       client.list = { ...client.list, revision: 3 };
@@ -188,8 +189,8 @@ for (const language of ["en", "ru"] as const) {
   test(`${language}: cancelling a delayed recovery review discards its response and restores focus`, async () => {
     const client = new Client(), response = deferred<ServiceResult<ProjectCreationRecoveryPreview>>(); client.operations = [operation]; client.reviewHandler = () => response.promise;
     render(<ProjectCreationPanel {...props(client)} />);
-    await userEvent.click(await screen.findByRole("button", { name: t("creationReview") }));
-    await userEvent.keyboard("{Escape}"); assert.ok(document.activeElement === screen.getByRole("button", { name: t("createProject") }));
+    await userEvent.click(await findAction("button", { name: t("creationReview") }));
+    await userEvent.keyboard("{Escape}"); assert.ok(document.activeElement === (await findAction("button",{ name: t("createProject") })));
     await act(async () => response.resolve({ ok: true, value: client.preview }));
     assert.equal(screen.queryByText(t("creationOwnershipWarning")), null); assert.equal(client.recoveries.length, 0);
   });
@@ -197,31 +198,31 @@ for (const language of ["en", "ru"] as const) {
     const client = new Client(), response = deferred<Awaited<ReturnType<Client["listProjectCreations"]>>>(); client.listHandler = () => response.promise;
     client.handler = async () => ({ ok: true, value: { outcome: "recoverable", operation: { ...operation, operationId: client.creates[0].operationId } } });
     render(<ProjectCreationPanel {...props(client)} />);
-    await userEvent.click(screen.getByRole("button", { name: t("createProject") })); await userEvent.type(screen.getByRole("textbox"), "Authored folder{Enter}");
-    await screen.findByRole("button", { name: t("creationReview") });
+    await userEvent.click((await findAction("button",{ name: t("createProject") }))); await userEvent.type(screen.getByRole("textbox"), "Authored folder{Enter}");
+    await findAction("button", { name: t("creationReview") });
     await act(async () => response.resolve({ ok: true, value: { workspaceId: "workspace", sourceId: "source", operations: [] } }));
-    assert.ok(screen.getByRole("button", { name: t("creationReview") }));
+    assert.ok((await findAction("button",{ name: t("creationReview") })));
     client.listHandler = async () => ({ ok: true, value: { workspaceId: "other", sourceId: "source", operations: [{ ...operation, name: "Foreign", relativePath: "Foreign" }] } });
-    await userEvent.click(screen.getByRole("button", { name: t("creationReload") })); await screen.findByText(t("creationListError")); assert.equal(screen.queryByText("Foreign"), null);
+    await userEvent.click((await findAction("button",{ name: t("creationReload") }))); await screen.findByText(t("creationListError")); assert.equal(screen.queryByText("Foreign"), null);
   });
   test(`${language}: grouped category removal disables submission while preserving its draft`, async () => {
     const client = new Client(); client.list = { ...initial, mode: "grouped", categories: [{ categoryId: "category", name: "Existing", relativePath: "Existing" }] };
     const p = props(client), view = render(<ProjectCreationPanel {...p} />);
-    await userEvent.click(screen.getByRole("button", { name: t("createProject") })); await userEvent.type(screen.getByRole("textbox"), "Authored folder"); await userEvent.selectOptions(screen.getByRole("combobox"), "category");
+    await userEvent.click((await findAction("button",{ name: t("createProject") }))); await userEvent.type(screen.getByRole("textbox"), "Authored folder"); await userEvent.selectOptions(screen.getByRole("combobox"), "category");
     view.rerender(<ProjectCreationPanel {...p} projects={{ ...client.list, revision: 2, categories: [] }} invalidation={1} />);
-    assert.equal((screen.getByRole("textbox") as HTMLInputElement).value, "Authored folder"); assert.equal((screen.getByRole("button", { name: t("creationSubmit") }) as HTMLButtonElement).disabled, true); assert.equal(client.creates.length, 0);
+    assert.equal((screen.getByRole("textbox") as HTMLInputElement).value, "Authored folder"); assert.equal(((await findAction("button",{ name: t("creationSubmit") })) as HTMLButtonElement).disabled, true); assert.equal(client.creates.length, 0);
   });
   test(`${language}: Reveal rejects changed source, discovery and target lifetimes without another pending dispatch`, async () => {
     for (const change of ["revision", "source", "target", "target-roundtrip"] as const) {
       const client = new Client(), response = deferred<ServiceResult<ProjectRevealResult>>(), revision = { current: 1 }, source = { current: 0 }; client.revealHandler = () => response.promise;
       const props = { client, workspaceId: "workspace", projectId: "project", name: "Folder", language, disabled: false, minimumRevision: revision, sourceLifetime: source, targetKey: "original" };
       const view = render(<ProjectRevealButton {...props} />);
-      await userEvent.click(screen.getByRole("button"));
+      await userEvent.click((await findAction("button")));
       if (change === "revision") revision.current++;
       else if (change === "source") source.current++;
       else view.rerender(<ProjectRevealButton {...props} targetKey="changed" />);
       if (change === "target-roundtrip") view.rerender(<ProjectRevealButton {...props} />);
-      fireEvent.click(screen.getByRole("button")); assert.equal(client.reveals, 1);
+      fireEvent.click((await findAction("button"))); assert.equal(client.reveals, 1);
       await act(async () => response.resolve({ ok: true, value: { workspaceId: "workspace", projectId: "project", outcome: "dispatched" } }));
       assert.ok(screen.getByText(t("revealUncertain"))); assert.equal(screen.queryByText(t("revealDispatched")), null); cleanup();
     }
@@ -233,13 +234,13 @@ for (const language of ["en", "ru"] as const) {
         categoryProperty: { propertyId: "label", sourceId: "source", name: "Category" },
         projects: [{ projectId: "project", name: "Folder", relativePath: "Existing/Folder", categoryId: "category", categoryName: "Existing", associationState: "active", resolution: "active" }] };
       render(<DiscoveryWorkspace client={client} workspaceId="workspace" sourceId="source" language={language} disabled={false} />);
-      await userEvent.click(await screen.findByRole("button", { name: `${t("editTextValue")}: Folder / Notes` }));
+      await userEvent.click(await findAction("button", { name: `${t("editTextValue")}: Folder / Notes` }));
       const text = screen.getByRole("textbox", { name: `${t("editTextValue")}: Folder / Notes` });
       await userEvent.clear(text); await userEvent.type(text, "Unsaved Text");
-      await userEvent.click(screen.getByRole("button", { name: `${t("renameCategoryProperty")}: Category` }));
+      await userEvent.click((await findAction("button",{ name: `${t("renameCategoryProperty")}: Category` })));
       const label = screen.getByRole("textbox", { name: t("categoryPropertyName") });
       await userEvent.clear(label); await userEvent.type(label, "Unsaved label");
-      await userEvent.click(screen.getByRole("button", { name: `${t("revealProject")}: Folder` }));
+      await userEvent.click((await findAction("button",{ name: `${t("revealProject")}: Folder` })));
       text.focus();
       await act(async () => {
         if (change === "path") client.list = { ...client.list, projects: [{ ...client.list.projects[0], relativePath: "Existing/Moved" }] };
@@ -251,7 +252,7 @@ for (const language of ["en", "ru"] as const) {
       assert.equal(screen.getByRole("textbox", { name: `${t("editTextValue")}: Folder / Notes` }), text);
       assert.equal((text as HTMLTextAreaElement).value, "Unsaved Text");
       assert.equal((label as HTMLInputElement).value, "Unsaved label"); assert.equal(document.activeElement, text);
-      assert.equal((screen.getByRole("button", { name: `${t("revealProject")}: Folder` }) as HTMLButtonElement).disabled, true);
+      assert.equal(((await findAction("button",{ name: `${t("revealProject")}: Folder` })) as HTMLButtonElement).disabled, true);
       await act(async () => response.resolve({ ok: true, value: { workspaceId: "workspace", projectId: "project", outcome: "dispatched" } }));
       assert.ok(screen.getByText(t(change === "benign" ? "revealDispatched" : "revealUncertain")));
       assert.equal(client.reveals, 1); cleanup();
@@ -260,9 +261,9 @@ for (const language of ["en", "ru"] as const) {
   test(`${language}: grouped creation and sibling changes preserve category-label draft and focus`, async () => {
     const client = new Client(); client.list = { ...initial, mode: "grouped", categories: [{ categoryId: "category", name: "Existing", relativePath: "Existing" }], categoryProperty: { propertyId: "category-label", sourceId: "source", name: "Category" } };
     render(<DiscoveryWorkspace client={client} workspaceId="workspace" sourceId="source" language={language} disabled={false} />);
-    await userEvent.click(await screen.findByRole("button", { name: `${t("renameCategoryProperty")}: Category` }));
+    await userEvent.click(await findAction("button", { name: `${t("renameCategoryProperty")}: Category` }));
     const label = screen.getByRole("textbox", { name: t("categoryPropertyName") }); await userEvent.clear(label); await userEvent.type(label, "Unsaved label");
-    await userEvent.click(screen.getByRole("button", { name: t("createProject") })); await userEvent.type(screen.getByRole("textbox", { name: t("creationName") }), "Authored folder"); await userEvent.selectOptions(within(screen.getByRole("region", { name: t("createProject") })).getByRole("combobox"), "category");
+    await userEvent.click((await findAction("button",{ name: t("createProject") }))); await userEvent.type(screen.getByRole("textbox", { name: t("creationName") }), "Authored folder"); await userEvent.selectOptions(within(screen.getByRole("region", { name: t("createProject") })).getByRole("combobox"), "category");
     label.focus(); await act(async () => { client.list = { ...client.list, revision: 2 }; client.events.forEach((listener) => listener({ type: "workspace.projectsChanged", sourceId: "source", workspaceIds: ["workspace"], revision: 2 })); });
     assert.equal((label as HTMLInputElement).value, "Unsaved label"); assert.ok(document.activeElement === label); assert.equal((screen.getByRole("textbox", { name: t("creationName") }) as HTMLInputElement).value, "Authored folder");
   });
@@ -316,12 +317,13 @@ for (const language of ["en", "ru"] as const) for (const mode of ["direct", "gro
       const props = { client, workspaceId, sourceId, language, projects, disabled: false, invalidation: 0,
         minimumRevision: { current: projects.revision }, observationVersion, onCompleted: () => completions++ };
       const view = render(<ProjectCreationPanel {...props} />);
-      await userEvent.click(screen.getByRole("button", { name: t("createProject") }));
+      await userEvent.click((await findAction("button",{ name: t("createProject") })));
       await userEvent.type(screen.getByRole("textbox"), "Created Текст");
       if (mode === "grouped") await userEvent.selectOptions(screen.getByRole("combobox"), projects.categories[0].categoryId);
-      await userEvent.click(screen.getByRole("button", { name: t("creationSubmit") }));
+      await userEvent.click((await findAction("button",{ name: t("creationSubmit") })));
       await screen.findByText(t("creationSaved"));
-      const reload = () => screen.getByRole("button", { name: t("creationReload") });
+      const reloadControl=await findAction("button",{name:t("creationReload")});
+      const reload = () => reloadControl;
       const snapshot = query(); assert.deepEqual(value(snapshot).operations, []);
       const delayed = deferred<typeof snapshot>(); client.listHandler = () => delayed.promise;
       await userEvent.click(reload());
@@ -371,7 +373,7 @@ for (const language of ["en", "ru"] as const) for (const change of ["backend", "
     const view = render(<ProjectCreationPanel {...props} />);
     await act(async () => {});
     client.listHandler = () => delayed.promise;
-    await userEvent.click(screen.getByRole("button", { name: t("creationReload") }));
+    await userEvent.click((await findAction("button",{ name: t("creationReload") })));
     client.listHandler = null;
     if (change === "backend") await act(async () => {
       client.statuses.forEach((listener) => listener({ state: "unavailable" }));
@@ -383,7 +385,7 @@ for (const language of ["en", "ru"] as const) for (const change of ["backend", "
       view.rerender(<ProjectCreationPanel {...props} workspaceId={client.list.workspaceId} sourceId={client.list.sourceId} projects={client.list} />);
       await act(async () => {});
     } else {
-      await userEvent.click(screen.getByRole("button", { name: t("createProject") }));
+      await userEvent.click((await findAction("button",{ name: t("createProject") })));
       await userEvent.type(screen.getByRole("textbox"), "Folder{Enter}");
       await screen.findByText(t("creationSaved"));
     }
@@ -399,16 +401,16 @@ for (const language of ["en", "ru"] as const) test(`${language}: fresh list reco
   client.handler = async () => { throw new Error("Lost command response"); };
   render(<ProjectCreationPanel client={client} workspaceId="workspace" sourceId="source" language={language} projects={client.list}
     disabled={false} invalidation={0} minimumRevision={{ current: 1 }} observationVersion={{ current: 0 }} onCompleted={() => assert.fail("Unknown command cannot complete")} />);
-  await userEvent.click(screen.getByRole("button", { name: t("createProject") }));
+  await userEvent.click((await findAction("button",{ name: t("createProject") })));
   await userEvent.type(screen.getByRole("textbox"), "Original draft{Enter}");
-  await screen.findByRole("button", { name: t("creationRetryRequest") });
+  await findAction("button", { name: t("creationRetryRequest") });
   client.listHandler = async () => ({ ok: false, error: { code: "service_unavailable", message: "List unavailable" } });
-  await userEvent.click(screen.getByRole("button", { name: t("creationReload") })); await screen.findByText(t("creationListError"));
+  await userEvent.click((await findAction("button",{ name: t("creationReload") }))); await screen.findByText(t("creationListError"));
   client.listHandler = null;
-  await userEvent.click(screen.getByRole("button", { name: t("creationReload") }));
+  await userEvent.click((await findAction("button",{ name: t("creationReload") })));
   assert.equal(screen.queryByText(t("creationListError")), null);
   assert.ok(screen.getAllByText(t("creationUncertain")).length > 0);
-  assert.ok(screen.getByRole("button", { name: t("creationRetryRequest") }));
+  assert.ok((await findAction("button",{ name: t("creationRetryRequest") })));
   assert.equal((screen.getByRole("textbox") as HTMLInputElement).value, "Original draft");
   assert.equal((screen.getByRole("textbox") as HTMLInputElement).disabled, true);
   assert.equal(client.creates.length, 1);
@@ -452,7 +454,7 @@ for (const language of ["en", "ru"] as const) for (const mode of ["direct", "gro
         off = service.workspaces.subscribe((event) => client.events.forEach((listener) => listener(event)));
         const t = (key: Parameters<typeof translate>[1]) => translate(language, key);
         render(<DiscoveryWorkspace client={client} workspaceId={workspaceId} sourceId={sourceId} language={language} disabled={false} />);
-        const reveal = await screen.findByRole("button", { name: `${t("revealProject")}: Folder` });
+        const reveal = await findAction("button", { name: `${t("revealProject")}: Folder` });
         await act(async () => observer.flush());
         await userEvent.click(reveal); assert.equal(calls, 1); assert.equal(initialValidation, "verified");
         const path = change.startsWith("root") ? root : change.startsWith("category") ? join(root, "Category") : join(root, ...(mode === "grouped" ? ["Category", "Folder"] : ["Folder"]));
@@ -525,11 +527,11 @@ for (const language of ["en", "ru"] as const) for (const mode of ["direct", "gro
       } as unknown as WorkspaceServiceClient;
       const t = (key: Parameters<typeof translate>[1]) => translate(language, key);
       const view = render(<ProjectCreationPanel client={client} workspaceId={workspaceId} sourceId={sourceId} language={language} projects={projects} disabled={false} invalidation={0} minimumRevision={{ current: projects.revision }} observationVersion={{ current: 0 }} onCompleted={() => completions++} />);
-      await userEvent.click(screen.getByRole("button", { name: t("createProject") }));
+      await userEvent.click((await findAction("button",{ name: t("createProject") })));
       await userEvent.type(screen.getByRole("textbox"), "  Retry Текст 📝");
       if (mode === "grouped") await userEvent.selectOptions(screen.getByRole("combobox"), projects.categories[0].categoryId);
-      await userEvent.click(screen.getByRole("button", { name: t("creationSubmit") }));
-      const status = await screen.findByRole("button", { name: t("creationStatus") });
+      await userEvent.click((await findAction("button",{ name: t("creationSubmit") })));
+      const status = await findAction("button", { name: t("creationStatus") });
       assert.ok(listResponses.length > 0);
       for (const response of listResponses) assert.deepEqual(value(response), { workspaceId, sourceId, operations: [] });
       if (delivery === "undelivered") {
@@ -545,11 +547,11 @@ for (const language of ["en", "ru"] as const) for (const mode of ["direct", "gro
         assert.equal(receipt.value.outcome, "completed");
         assert.deepEqual(await client.getProjectCreation(workspaceId, calls[0].operationId), receipt);
       }
-      await userEvent.click(screen.getByRole("button", { name: t("cancelRenameWorkspace") }));
+      await userEvent.click((await findAction("button",{ name: t("cancelRenameWorkspace") })));
       await act(async () => { statuses.forEach((listener) => listener({ state: "unavailable" })); statuses.forEach((listener) => listener({ state: "ready" })); });
-      await userEvent.click(screen.getByRole("button", { name: t("createProject") }));
+      await userEvent.click((await findAction("button",{ name: t("createProject") })));
       assert.equal(calls.length, 1); assert.equal((screen.getByRole("textbox") as HTMLInputElement).value, calls[0].name);
-      const retry = screen.getByRole("button", { name: t("creationRetryRequest") });
+      const retry = (await findAction("button",{ name: t("creationRetryRequest") }));
       fireEvent.click(retry); fireEvent.click(retry);
       assert.equal(calls.length, 2); assert.deepEqual(calls[1], calls[0]); assert.equal((retry as HTMLButtonElement).disabled, true);
       await act(async () => gate.resolve());
@@ -583,23 +585,23 @@ for (const language of ["en", "ru"] as const) {
       minimumRevision: { current: 1 }, observationVersion: { current: 0 }, onCompleted() {} };
     render(<ProjectCreationPanel {...props} />);
     await screen.findByText(operation.relativePath);
-    await userEvent.click(screen.getByRole("button", { name: t("createProject") }));
+    await userEvent.click((await findAction("button",{ name: t("createProject") })));
     await userEvent.type(screen.getByRole("textbox"), "Original{Enter}");
-    await screen.findByRole("button", { name: t("creationRetryRequest") });
+    await findAction("button", { name: t("creationRetryRequest") });
     if (action === "status") {
       // The outstanding-operation row is independent from the unknown-request status.
       await userEvent.click(screen.getByText(operation.relativePath).closest("li")!.querySelector("button")!);
       await screen.findAllByText(t("creationRecoverable"));
     } else {
       client.recoverProjectCreation = async () => ({ ok: true, value: completed(operation) });
-      await userEvent.click(screen.getByRole("button", { name: t("creationReview") }));
-      await userEvent.click(await screen.findByRole("button", { name: t("creationAssociateReviewed") }));
+      await userEvent.click((await findAction("button",{ name: t("creationReview") })));
+      await userEvent.click(await findAction("button", { name: t("creationAssociateReviewed") }));
       await screen.findByText(t("creationSaved"));
     }
     const input = screen.getByRole("textbox") as HTMLInputElement;
     assert.equal(input.value, "Original"); assert.equal(input.disabled, true);
-    assert.equal((screen.getByRole("button", { name: t("creationSubmit") }) as HTMLButtonElement).disabled, true);
-    await userEvent.click(screen.getByRole("button", { name: t("creationRetryRequest") }));
+    assert.equal(((await findAction("button",{ name: t("creationSubmit") })) as HTMLButtonElement).disabled, true);
+    await userEvent.click((await findAction("button",{ name: t("creationRetryRequest") })));
     await screen.findByText(t("creationSaved"));
     assert.equal(client.creates.length, 2); assert.deepEqual(client.creates[1], client.creates[0]);
     assert.equal(screen.queryByRole("button", { name: t("creationRetryRequest") }), null);
@@ -609,8 +611,8 @@ for (const language of ["en", "ru"] as const) {
     client.handler = async () => client.creates.length === 1 ? { ok: false, error: { code: "service_unavailable", message: "Undelivered" } } : response.promise;
     const props = { client, workspaceId: "workspace", sourceId: "source", projects: client.list, language, disabled: false, invalidation: 0, minimumRevision: { current: 1 }, observationVersion: { current: 0 }, onCompleted() {} };
     const view = render(<ProjectCreationPanel {...props} />);
-    await userEvent.click(screen.getByRole("button", { name: t("createProject") })); await userEvent.type(screen.getByRole("textbox"), "Original{Enter}");
-    await userEvent.click(await screen.findByRole("button", { name: t("creationRetryRequest") }));
+    await userEvent.click((await findAction("button",{ name: t("createProject") }))); await userEvent.type(screen.getByRole("textbox"), "Original{Enter}");
+    await userEvent.click(await findAction("button", { name: t("creationRetryRequest") }));
     assert.deepEqual(client.creates[1], client.creates[0]);
     if (change === "selection") view.rerender(<ProjectCreationPanel {...props} workspaceId="other" sourceId="other-source" projects={null} />);
     else if (change === "removal") view.unmount();
@@ -623,10 +625,10 @@ for (const language of ["en", "ru"] as const) {
     client.handler = async () => client.creates.length === 1 ? { ok: false, error: { code: "service_unavailable", message: "Undelivered" } } : { ok: true, value: { outcome: "rejected", problem: "stale_configuration", operation: null } };
     const props = { client, workspaceId: "workspace", sourceId: "source", projects: client.list, language, disabled: false, invalidation: 0, minimumRevision: { current: 1 }, observationVersion: { current: 0 }, onCompleted() {} };
     const view = render(<ProjectCreationPanel {...props} />);
-    await userEvent.click(screen.getByRole("button", { name: t("createProject") })); await userEvent.type(screen.getByRole("textbox"), "Original{Enter}");
-    await screen.findByRole("button", { name: t("creationRetryRequest") });
+    await userEvent.click((await findAction("button",{ name: t("createProject") }))); await userEvent.type(screen.getByRole("textbox"), "Original{Enter}");
+    await findAction("button", { name: t("creationRetryRequest") });
     view.rerender(<ProjectCreationPanel {...props} projects={{ ...client.list, revision: 5 }} invalidation={1} />);
-    await userEvent.click(screen.getByRole("button", { name: t("creationRetryRequest") }));
+    await userEvent.click((await findAction("button",{ name: t("creationRetryRequest") })));
     assert.deepEqual(client.creates[1], client.creates[0]); assert.equal(client.creates[1].expectedRevision, 1);
     await screen.findByText(t("creationUnavailable"));
     assert.equal((screen.getByRole("textbox") as HTMLInputElement).disabled, false);
@@ -654,7 +656,7 @@ for (const language of ["en","ru"] as const) test(`${language}: same-path missin
     };
     off=service.workspaces.subscribe(event=>client.events.forEach(listener=>listener(event)));
     render(<DiscoveryWorkspace client={client} workspaceId={workspaceId} sourceId={sourceId} language={language} disabled={false}/>);
-    await userEvent.click(await screen.findByRole("button",{name:`${t("revealProject")}: Folder`}));
+    await userEvent.click(await findAction("button",{name:`${t("revealProject")}: Folder`}));
     await screen.findByText(t("projectMissing"));
     await act(async()=>response.resolve());
     await screen.findByText(t("revealMissing"));

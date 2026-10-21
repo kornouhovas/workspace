@@ -950,3 +950,28 @@ set it, and CLI enforcement rejects profiled execution. Native property and
 pre-fixture CLI guard controls cover the distinction. The altered configuration
 cannot supply performance acceptance or justify a production runtime change by
 itself. Retain the original normal-scheduling failure for comparison.
+
+## Scoped desktop UX foundation
+
+Issue #68 adds `checks: desktop-ux` to the existing manual Desktop workflow.
+The route runs on macOS latest, Windows latest and Windows 2022. It excludes the
+ordinary common/verify chain for this dispatch only; ordinary push/PR/full and
+release/installer routes retain their existing selection.
+
+After `npm ci` and the normal build, `npm run test:desktop-ux` invokes the explicit
+`foundation` profile in [desktop-ux-checks.mjs](../scripts/desktop-ux-checks.mjs):
+static checks, affected React and real-service suites, artifact consumers and
+real Electron visual/shell/workspace/source/saved-view flows. SQLite/folder/native
+suites keep their original boundaries and remain in the ordinary platform/full
+inventory. The route packages the candidate, verifies its resources/licenses and
+runs the packaged saved-view consumers. It is not the #69/#67 milestone or release
+acceptance route.
+
+Use `node scripts/desktop-ux-checks.mjs foundation --list` to inspect the exact
+selected commands. The `desktop_ux_failure_probe` workflow input deliberately
+executes a failing selected command (exit 23). Its jobs must fail; skipped later
+commands do not count as passes. The positive dispatch omits that input and must
+pass every selected command. Local regression tests independently prove exit
+propagation and stop-before-next-command behavior. Preserve negative-control and
+positive-run receipts separately, with candidate SHA/run/attempt/host and uploaded
+artifacts. Full/native/data-safety/installer routes are retained, not replaced.

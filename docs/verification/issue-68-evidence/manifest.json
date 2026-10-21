@@ -1,0 +1,150 @@
+{
+  "baseline": "a6622b4a",
+  "candidate": "precommit source captured by issue-68 candidate commit",
+  "screens": [
+    {
+      "path": "before-long-en-dark-1024-table.png",
+      "sha256": "97224c8911f58271b149eacd2f29cce696823d9be93def29de31670a15f039b3"
+    },
+    {
+      "path": "before-long-en-dark-1440-table.png",
+      "sha256": "85a17cc5617e3af09d6ee7a7e35ecff07746591a47a3af617c9b58e9b27ccec8"
+    },
+    {
+      "path": "before-long-en-light-1024-table.png",
+      "sha256": "692079157392a26205eb681b1bed0eff0d57fd99db6370204f6f1c0faf2bb800"
+    },
+    {
+      "path": "before-long-en-light-1440-table.png",
+      "sha256": "546fb58691800c9bd49a1084ca62330ed525de89b9e1de50420091b958697ae7"
+    },
+    {
+      "path": "before-long-ru-dark-1024-table.png",
+      "sha256": "c926edb6b416b02dab59c390364a133722338f1e6605293b00685e42d7fad840"
+    },
+    {
+      "path": "before-long-ru-dark-1440-table.png",
+      "sha256": "983e3bc5151b6b76e6b1c1547742a9ff7b534043c92e50df7265b04b748941b9"
+    },
+    {
+      "path": "before-long-ru-light-1024-table.png",
+      "sha256": "6f7e73300a77e58f72377f4875a0b3b0b0f4ebbf3a69c706cc332464fade988a"
+    },
+    {
+      "path": "before-long-ru-light-1440-table.png",
+      "sha256": "8918e26a96dc6c8d2845932b7d4e009563b1472f30971d89f64708712a0b4d71"
+    },
+    {
+      "path": "before-ordinary-en-dark-1024-table.png",
+      "sha256": "97224c8911f58271b149eacd2f29cce696823d9be93def29de31670a15f039b3"
+    },
+    {
+      "path": "before-ordinary-en-dark-1440-table.png",
+      "sha256": "85a17cc5617e3af09d6ee7a7e35ecff07746591a47a3af617c9b58e9b27ccec8"
+    },
+    {
+      "path": "before-ordinary-en-light-1024-table.png",
+      "sha256": "692079157392a26205eb681b1bed0eff0d57fd99db6370204f6f1c0faf2bb800"
+    },
+    {
+      "path": "before-ordinary-en-light-1440-table.png",
+      "sha256": "546fb58691800c9bd49a1084ca62330ed525de89b9e1de50420091b958697ae7"
+    },
+    {
+      "path": "before-ordinary-ru-dark-1024-table.png",
+      "sha256": "c926edb6b416b02dab59c390364a133722338f1e6605293b00685e42d7fad840"
+    },
+    {
+      "path": "before-ordinary-ru-dark-1440-table.png",
+      "sha256": "983e3bc5151b6b76e6b1c1547742a9ff7b534043c92e50df7265b04b748941b9"
+    },
+    {
+      "path": "before-ordinary-ru-light-1024-table.png",
+      "sha256": "6f7e73300a77e58f72377f4875a0b3b0b0f4ebbf3a69c706cc332464fade988a"
+    },
+    {
+      "path": "before-ordinary-ru-light-1440-table.png",
+      "sha256": "8918e26a96dc6c8d2845932b7d4e009563b1472f30971d89f64708712a0b4d71"
+    },
+    {
+      "path": "after-long-en-dark-1024-table.png",
+      "sha256": "0ff046909a6dcf2cb772594ebb7d1ec593a23a48ba5ed8eb7be092ef2b0d8e14"
+    },
+    {
+      "path": "after-long-en-dark-1440-table.png",
+      "sha256": "fceb7cacda49e9e6d67925f7f4add371554e82a92d61d7a1a6ce2381ab04a7e8"
+    },
+    {
+      "path": "after-long-en-light-1024-table.png",
+      "sha256": "90893c61c64137a8f8adc01a891e9b943968336f452835670bf8d47a25806d58"
+    },
+    {
+      "path": "after-long-en-light-1440-table.png",
+      "sha256": "50f2455fe84e7b01fdbc875bb19bf8043a47de8c9563da4ac246f6d9a8fda6bf"
+    },
+    {
+      "path": "after-long-ru-dark-1024-table.png",
+      "sha256": "7faec7780e0dbbf3eae5d231a147595b5662846e02bd5fdbcaa865756417d71e"
+    },
+    {
+      "path": "after-long-ru-dark-1440-table.png",
+      "sha256": "8a171791230c75f438e565a4e7d0a374411ff3f458af1644c7428e6c4a7557f9"
+    },
+    {
+      "path": "after-long-ru-light-1024-table.png",
+      "sha256": "84cceaeb46b894b5b00250841c9da25dcd7f24a155bc98318e86b565404a2746"
+    },
+    {
+      "path": "after-long-ru-light-1440-table.png",
+      "sha256": "dba57bddbe5d6d67e24895847bfa8310d7f6632140b493a5f87cf4e29eb4318f"
+    },
+    {
+      "path": "after-ordinary-en-dark-1024-table.png",
+      "sha256": "f78cc3e96b7ad6c33f8642b1ba9883a9a3733d9db4ef47eedf641542a247f65e"
+    },
+    {
+      "path": "after-ordinary-en-dark-1440-table.png",
+      "sha256": "5808b7d82bfcdb6a38d07a4f5df5f835f7994dc0e01bbe4428f42667806bb623"
+    },
+    {
+      "path": "after-ordinary-en-light-1024-table.png",
+      "sha256": "6b79ef8bffe7b4bb2514b4b97a1f11818c802662aedca5b0e16783863fc0cee6"
+    },
+    {
+      "path": "after-ordinary-en-light-1440-table.png",
+      "sha256": "c9adc341331c9b1b35b34570ae212b42cec8f07a9cf1a6060dd5b75905da48d5"
+    },
+    {
+      "path": "after-ordinary-ru-dark-1024-table.png",
+      "sha256": "40e94536f93f5bc6dd68a085dada07d786520a2728c8995e5fd38d3a047fe29c"
+    },
+    {
+      "path": "after-ordinary-ru-dark-1440-table.png",
+      "sha256": "076cee78c6d854babfede0da41b76ed6a89f583ff3d40ed52cf4d11e86aad3fa"
+    },
+    {
+      "path": "after-ordinary-ru-light-1024-table.png",
+      "sha256": "07447bbf7f67e7726831c7be27a6ce37673ca7d35a5c13661198fe5183bdc99a"
+    },
+    {
+      "path": "after-ordinary-ru-light-1440-table.png",
+      "sha256": "0b86be02dd6c511a3ea7af97e46ae76393e2ead65934b845817e1f196c8aaff4"
+    },
+    {
+      "path": "after-ordinary-en-light-1440-tools-1.png",
+      "sha256": "9f509d80724460398fb1255bed2ce3d1ca787473932f471137208e9c384a44f4"
+    },
+    {
+      "path": "after-ordinary-en-light-1440-row-actions.png",
+      "sha256": "b13b68aaba8bfd1b131f38384de7b255eeddfd44722ea5dfd855e6e970bd183f"
+    },
+    {
+      "path": "after-long-ru-dark-1024-settings.png",
+      "sha256": "bb8bca1f87710d24ab4d6ae80418cfd6c367f5ebbcdcce94884d084877c0843b"
+    },
+    {
+      "path": "after-ordinary-en-light-1440-value-editor.png",
+      "sha256": "2bd8a80deb4a3aff98f9b7c639d2dad857534890d04e67334711285475738d63"
+    }
+  ]
+}

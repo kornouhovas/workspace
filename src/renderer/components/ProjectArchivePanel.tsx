@@ -1,3 +1,4 @@
+import { ContextTools } from "./ContextTools.js";
 import { useEffect, useId, useRef, useState } from "react";
 import type { Language } from "../../contracts/settings.js";
 import type { CategoryProperty, CategorySummary, ProjectSummary } from "../../contracts/workspaces.js";
@@ -151,7 +152,7 @@ function ArchiveContent({ locationOnly = false, viewId, categoryProperty, catego
   const controlsDisabled = disabled || blocked || loading || error;
   return <section ref={section} tabIndex={-1} className="project-archive" aria-label={t("archiveTitle")} aria-busy={pending || loading}
     onKeyDown={event => { if (event.key === "Escape" && (review || locationReview || recovery)) { event.preventDefault(); cancel(); } }}>
-    <h3>{t(locationOnly ? "archiveLocation" : "archiveTitle")}</h3>
+    {locationOnly && <h3>{t("archiveLocation")}</h3>}
     {!locationOnly && <div className="workspace-form-actions">{[false, true].map(value => <button type="button" key={String(value)} className="workspace-button workspace-button--secondary" aria-pressed={archived === value}
       disabled={blocked} onClick={() => changeDraft(() => { setArchived(value); setProjectId(""); setName(""); setCreateParent(false); onViewChange(value); })}>{t(value ? "archiveArchived" : "archiveActive")}</button>)}</div>}
     {loading && <StatusMessage kind="info" title={t("archiveLoading")} />}
@@ -159,6 +160,7 @@ function ArchiveContent({ locationOnly = false, viewId, categoryProperty, catego
     {message && <StatusMessage kind={message === "archiveCompleted" ? "info" : "error"} title={t(message)} />}
     {unknown && <div><button type="button" disabled={pending || disabled} className="workspace-button workspace-button--secondary" onClick={() => void check()}>{t("archiveCheck")}</button>
       {unknown.initial && <button type="button" disabled={pending || disabled} className="workspace-button workspace-button--secondary" onClick={() => void apply(unknown)}>{t("archiveRetryOriginalRequest")}</button>}</div>}
+    <ContextTools label={t("archiveTitle")} inline={locationOnly} onEscape={event=>{if(review || locationReview || recovery){event.preventDefault();cancel();}}}>
     <details onToggle={event => { setLocationEditor(event.currentTarget.open); if (event.currentTarget.open) changeDraft(() => setLocation(snapshot?.relativePath ?? "Archive")); }}><summary>{t("archiveLocation")}: {snapshot?.relativePath ?? "Archive"}</summary>
       {locationEditor && <div><p>{t("archiveLocationPolicy")}</p>
       <label className="bb-field"><span>{t("archiveLocation")}</span><input className="bb-input" value={location} disabled={controlsDisabled} onChange={e => changeDraft(() => setLocation(e.currentTarget.value))} /></label>
@@ -169,7 +171,7 @@ function ArchiveContent({ locationOnly = false, viewId, categoryProperty, catego
       </div>}
     </details>
     {!snapshot?.relativePath && <p>{t("archiveNoLocation")}</p>}
-    {!locationOnly && <><form onSubmit={e => { e.preventDefault(); returnFocus.current = trigger.current; void preview(false); }}>
+    <form hidden={locationOnly} onSubmit={e => { e.preventDefault(); returnFocus.current = trigger.current; void preview(false); }}>
       <div className="bb-field"><label htmlFor={projectSelectId}>{t(archived ? "archiveRestoreProject" : "archiveProject")}</label>
         <select id={projectSelectId} className="bb-input" disabled={controlsDisabled} value={projectId} onChange={e => changeDraft(() => setProjectId(e.currentTarget.value))}>
           <option value="">{t("archiveChoose")}</option>{(archived ? snapshot?.projects ?? [] : projects).map(p => <option key={p.projectId} value={p.projectId}>{p.relativePath}</option>)}
@@ -185,9 +187,9 @@ function ArchiveContent({ locationOnly = false, viewId, categoryProperty, catego
       <button type="button" disabled={controlsDisabled} className="workspace-button workspace-button--secondary" onClick={event => { returnFocus.current = event.currentTarget; void reviewRecovery(op.operationId); }}>{t("archiveRecovery")}</button></li>)}</ul> : <p>{t("archiveNoOperations")}</p>}
     {recovery && <div>{recovery.problem && problems([recovery.problem])}{recovery.actions.map(action => <button type="button" key={action} disabled={controlsDisabled} className="workspace-button workspace-button--secondary" onClick={() => void recover(action)}>{t(action === "retry_original" ? "archiveRetryOriginal" : action === "complete_destination" ? "archiveCompleteDestination" : "archiveKeepOriginal")}</button>)}
       <button type="button" disabled={blocked} onClick={cancel} className="workspace-button workspace-button--secondary">{t("archiveCancel")}</button></div>}
-    {archived && <div id={`archived-view-panel-${workspaceId}`} role="tabpanel" aria-labelledby={viewId ? `saved-view-${viewId}` : undefined}>{snapshot?.projects.length ? <>
+    </ContextTools>
+    {!locationOnly && archived && <div id={`archived-view-panel-${workspaceId}`} role="tabpanel" aria-labelledby={viewId ? `saved-view-${viewId}` : undefined}>{snapshot?.projects.length ? <>
       {viewId && <TextPropertiesTable categoryProperty={categoryProperty} categories={categories} viewId={viewId} layout={layout} client={client} workspaceId={workspaceId} sourceId={sourceId} language={language} disabled={disabled} projects={snapshot.projects} hideReveal />}
     </> : <p>{t("archiveEmpty")}</p>}</div>}
-    </>}
   </section>;
 }

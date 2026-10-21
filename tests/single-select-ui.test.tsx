@@ -1,3 +1,4 @@
+import { findAction } from "./context-tools-driver.js";
 import assert from "node:assert/strict";
 import test from "node:test";
 import React from "react";
@@ -39,21 +40,21 @@ for (const language of ["en", "ru"] as const) {
     const t = (key: Parameters<typeof translate>[1]) => translate(language, key);
     try {
       render(<TextPropertiesTable client={client} workspaceId={workspaceId} sourceId={sourceId} projects={projects} language={language} disabled={false} hideReveal />);
-      const create = await screen.findByRole("button", { name: t("createSelectProperty") });
+      const create = await findAction("button", { name: t("createSelectProperty") });
       await waitFor(() => assert.equal(create.hasAttribute("disabled"), false));
       create.focus(); await user.keyboard("{Enter}"); await user.keyboard("Status{Enter}");
       const summary = await screen.findByText(`${t("selectOptions")}: Status`); await user.click(summary);
       await screen.findByText(t("selectOptionsEmpty"));
-      const add = screen.getByRole("button", { name: t("selectAddOption") });
+      const add = (await findAction("button",{ name: t("selectAddOption") }));
       add.focus(); await user.keyboard("{Enter}");
       await user.keyboard("{Enter}"); await screen.findByRole("alert");
       assert.equal(document.activeElement, screen.getByRole("textbox", { name: t("selectOptionName") }));
       await user.keyboard("Ready");
       await user.selectOptions(screen.getByRole("combobox", { name: t("categoryColor") }), "blue");
-      await user.click(screen.getByRole("button", { name: t("savePropertyName") }));
+      await user.click((await findAction("button",{ name: t("savePropertyName") })));
       await waitFor(() => assert.equal(document.activeElement, add));
       const label = `${t("editSelectValue")}: Project / Status`;
-      const button = screen.getByRole("button", { name: label });
+      const button = (await findAction("button",{ name: label }));
       button.focus(); await user.keyboard("{Enter}");
       let editor = screen.getByRole("combobox", { name: label });
       const optionId = service.handleQuery({ type: "workspace.listTextProperties", workspaceId }).value.selectOptions[0].optionId;
@@ -64,11 +65,11 @@ for (const language of ["en", "ru"] as const) {
       assert.deepEqual(service.handleQuery({ type: "workspace.listTextProperties", workspaceId }).value.selectValues, []);
       await user.keyboard("{Enter}");
       await waitFor(() => assert.equal(button.textContent, "Ready")); assert.equal(document.activeElement, button);
-      await user.click(screen.getByRole("button", { name: `${t("selectHide")}: Ready` }));
-      await screen.findByRole("button", { name: `${t("selectShow")}: Ready` });
+      await user.click((await findAction("button",{ name: `${t("selectHide")}: Ready` })));
+      await findAction("button", { name: `${t("selectShow")}: Ready` });
       assert.equal(button.textContent, "Ready");
       assert.equal(service.handleQuery({ type: "workspace.listTextProperties", workspaceId: sibling.workspaceId }).value.selectOptions[0].hidden, false);
-      await user.click(screen.getByRole("button", { name: `${t("selectEditOption")}: Ready` }));
+      await user.click((await findAction("button",{ name: `${t("selectEditOption")}: Ready` })));
       let name = screen.getByRole("textbox", { name: t("selectOptionName") }); await user.clear(name); await user.type(name, "Draft name");
       const propertyId = service.handleQuery({ type: "workspace.listTextProperties", workspaceId }).value.definitions[0].propertyId;
       assert.equal(service.handleCommand({ type: "workspace.updateSelectOption", workspaceId: sibling.workspaceId, propertyId, optionId, name: "Sibling draft change", color: "purple" }).ok, true);
@@ -77,7 +78,7 @@ for (const language of ["en", "ru"] as const) {
       assert.equal((screen.getByRole("combobox", { name: t("categoryColor") }) as HTMLSelectElement).value, "blue");
       await user.keyboard("{Escape}");
       await waitFor(() => assert.equal(button.textContent, "Sibling draft change"));
-      await user.click(screen.getByRole("button", { name: `${t("selectEditOption")}: Sibling draft change` }));
+      await user.click((await findAction("button",{ name: `${t("selectEditOption")}: Sibling draft change` })));
       name = screen.getByRole("textbox", { name: t("selectOptionName") });
       assert.equal((name as HTMLInputElement).value, "Sibling draft change");
       assert.equal((screen.getByRole("combobox", { name: t("categoryColor") }) as HTMLSelectElement).value, "purple");
@@ -86,18 +87,18 @@ for (const language of ["en", "ru"] as const) {
       assert.equal(service.handleCommand({ type: "workspace.updateSelectOption", workspaceId: sibling.workspaceId, propertyId, optionId, name: "Another sibling change", color: "yellow" }).ok, true);
       await screen.findByText(language === "en" ? "This option changed in another workspace. Save submits your retained name and color; Cancel shows the latest option." : "Опция изменилась в другом рабочем пространстве. Сохранение отправит ваши название и цвет; отмена покажет текущую опцию.");
       assert.equal((name as HTMLInputElement).value, "Готово");
-      await user.click(screen.getByRole("button", { name: t("savePropertyName") }));
+      await user.click((await findAction("button",{ name: t("savePropertyName") })));
       await waitFor(() => assert.equal(button.textContent, "Готово"));
       assert.equal(service.handleQuery({ type: "workspace.listTextProperties", workspaceId }).value.selectOptions[0].color, "green");
       button.focus(); await user.keyboard("{Enter}"); editor = screen.getByRole("combobox", { name: label });
       assert.equal((editor as HTMLSelectElement).value, optionId);
-      await user.click(screen.getByRole("button", { name: t("clearTextValue") }));
+      await user.click((await findAction("button",{ name: t("clearTextValue") })));
       await waitFor(() => assert.equal(button.textContent, t("textValueAbsent")));
       await user.keyboard("{Enter}"); assert.equal(screen.queryByRole("option", { name: /Готово/ }), null);
       await user.keyboard("{Escape}"); assert.equal(document.activeElement, button);
       // Sibling changes reload this mounted Table without transferring its visibility.
       assert.equal(service.handleCommand({ type: "workspace.updateSelectOption", workspaceId: sibling.workspaceId, propertyId: service.handleQuery({ type: "workspace.listTextProperties", workspaceId }).value.definitions[0].propertyId, optionId, name: "Shared rename", color: "red" }).ok, true);
-      await screen.findByRole("button", { name: `${t("selectShow")}: Shared rename` });
+      await findAction("button", { name: `${t("selectShow")}: Shared rename` });
     } finally { cleanup(); service.close(); rmSync(directory, { recursive: true, force: true }); }
   });
 }

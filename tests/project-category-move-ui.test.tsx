@@ -1,3 +1,5 @@
+import { contextReturnTarget } from "../src/renderer/components/ContextTools.js";
+import { findAction } from "./context-tools-driver.js";
 import assert from "node:assert/strict";
 import test from "node:test";
 import React from "react";
@@ -81,7 +83,7 @@ for (const observation of [false, true]) test(`${language}: current-category com
   client.handler = () => response.promise;
   const before = structuredClone(client.list);
   render(<DiscoveryWorkspace client={client} workspaceId="workspace" sourceId="source" language={language} disabled={false} />);
-  await userEvent.click(await screen.findByRole("button", { name: new RegExp(`^${t("moveCategory")}:`) }));
+  await userEvent.click(await findAction("button", { name: new RegExp(`^${t("moveCategory")}:`) }));
   const select = screen.getByRole("combobox", { name: t("moveCategoryDestination") }) as HTMLSelectElement;
   assert.equal(select.value, "current"); await userEvent.keyboard("{Enter}");
   assert.equal(client.moves.length, 1);
@@ -119,17 +121,17 @@ test(`${language}: delayed creation list keeps read-only status usable with an u
     override async recoverProjectCreation(): Promise<never> { this.creationMutations.push("recover"); throw new Error("Unexpected recovery"); }
   }();
   render(<DiscoveryWorkspace client={client} workspaceId="workspace" sourceId="source" language={language} disabled={false} />);
-  await userEvent.click(await screen.findByRole("button", { name: new RegExp(`^${t("moveCategory")}:`) }));
+  await userEvent.click(await findAction("button", { name: new RegExp(`^${t("moveCategory")}:`) }));
   const destination = screen.getByRole("combobox", { name: t("moveCategoryDestination") });
   await userEvent.selectOptions(destination, "empty");
   await act(async () => list.resolve({ ok: true, value: { workspaceId: "workspace", sourceId: "source", operations: [operation] } }));
-  const statusButton = await screen.findByRole("button", { name: t("creationStatus") }) as HTMLButtonElement;
+  const statusButton = await findAction("button", { name: t("creationStatus") }) as HTMLButtonElement;
   assert.equal(statusButton.disabled, false);
   for (const key of ["moveCategorySubmit", "createProject", "creationReview"] as const) {
     const button = screen.getByRole("button", { name: t(key) }) as HTMLButtonElement;
     assert.equal(button.disabled, true); fireEvent.click(button);
   }
-  const reload = screen.getByRole("button", { name: t("creationReload") }) as HTMLButtonElement;
+  const reload = await findAction("button", { name: t("creationReload") }) as HTMLButtonElement;
   const listsBeforeReload = client.creationLists;
   assert.equal(reload.disabled, false); await userEvent.click(reload);
   assert.equal(client.creationLists, listsBeforeReload + 1);
@@ -145,7 +147,7 @@ test(`${language}: delayed creation list keeps read-only status usable with an u
 test(`${language}: explicit grouped category selection moves the folder without changing Name or Text`, async () => {
   const client = new Client();
   render(<DiscoveryWorkspace client={client} workspaceId="workspace" sourceId="source" language={language} disabled={false} />);
-  await userEvent.click(await screen.findByRole("button", { name: new RegExp(`^${t("moveCategory")}:`) }));
+  await userEvent.click(await findAction("button", { name: new RegExp(`^${t("moveCategory")}:`) }));
   const select = screen.getByRole("combobox", { name: t("moveCategoryDestination") });
   assert.equal(document.activeElement?.tagName, "SELECT");
   assert.equal((select as HTMLSelectElement).disabled, false);
@@ -168,8 +170,8 @@ for (const language of ["en", "ru"] as const) {
   const t = (key: Parameters<typeof translate>[1]) => translate(language, key);
   const mount = (client: Client) => render(<DiscoveryWorkspace client={client} workspaceId="workspace" sourceId="source" language={language} disabled={false} />);
   const open = async () => {
-    const trigger = await screen.findByRole("button", { name: new RegExp(`^${t("moveCategory")}:`) });
-    await userEvent.click(trigger); return trigger;
+    const trigger = await findAction("button", { name: new RegExp(`^${t("moveCategory")}:`) });
+    const returning=contextReturnTarget(trigger as HTMLButtonElement); await userEvent.click(trigger); return returning;
   };
   const destination = () => screen.getByRole("combobox", { name: t("moveCategoryDestination") }) as HTMLSelectElement;
   const submit = () => screen.getByRole("button", { name: t("moveCategorySubmit") }) as HTMLButtonElement;
@@ -192,8 +194,9 @@ for (const language of ["en", "ru"] as const) {
     await userEvent.selectOptions(destination(), "empty");
     await userEvent.keyboard("{Escape}");
     assert.equal(screen.queryByRole("combobox", { name: t("moveCategoryDestination") }), null);
-    assert.equal(document.activeElement, trigger); assert.equal(client.moves.length, 0);
+    assert.equal(document.activeElement === contextReturnTarget(trigger as HTMLButtonElement), true); assert.equal(client.moves.length, 0);
     await userEvent.keyboard("{Enter}");
+    await userEvent.click(await findAction("button", {name:new RegExp(`^${t("moveCategory")}:`)}));
     await waitFor(() => {
       assert.equal(destination().value, "current");
       assert.equal(document.activeElement, destination());
@@ -223,9 +226,10 @@ for (const language of ["en", "ru"] as const) {
     fireEvent.click(submit()); fireEvent.click(submit());
     assert.equal(client.moves.length, 1); assert.equal(destination().disabled, true);
     assert.equal(document.activeElement, screen.getByRole("button", { name: t("cancelRenameWorkspace") }));
-    assert.ok(await screen.findByRole("button", { name: new RegExp(`^${t("editTextValue")}:`) }));
+    assert.ok(await findAction("button", { name: new RegExp(`^${t("editTextValue")}:`) }));
     await userEvent.keyboard("{Escape}");
     assert.equal(screen.queryByRole("combobox", { name: t("moveCategoryDestination") }), null);
+    await findAction("button", {name:new RegExp(`^${t("moveCategory")}:`)});
     assert.equal((screen.getByRole("button", { name: new RegExp(`^${t("moveCategory")}:`) }) as HTMLButtonElement).disabled, true);
     const receipt = client.completed();
     if (receipt.outcome === "completed") client.list = { ...client.list, revision: 2, projects: [{ ...client.list.projects[0], categoryId: "empty", relativePath: receipt.project.relativePath }] };
@@ -255,6 +259,7 @@ for (const language of ["en", "ru"] as const) {
       await userEvent.click(submit()); await screen.findByText(t(kind === "recoverable" ? "moveCategoryRecoverable" : "moveCategoryUncertain"));
       assert.equal(submit().disabled, true); fireEvent.click(submit()); assert.equal(client.moves.length, 1); assert.ok(client.lists >= 2);
       await userEvent.click(screen.getByRole("button", { name: t("cancelRenameWorkspace") }));
+    await findAction("button", {name:new RegExp(`^${t("moveCategory")}:`)});
       assert.equal((screen.getByRole("button", { name: new RegExp(`^${t("moveCategory")}:`) }) as HTMLButtonElement).disabled, true);
     });
   }
@@ -263,7 +268,7 @@ for (const language of ["en", "ru"] as const) {
 for (const language of ["en", "ru"] as const) {
   const t = (key: Parameters<typeof translate>[1]) => translate(language, key);
   const mount = (client: Client) => render(<DiscoveryWorkspace client={client} workspaceId="workspace" sourceId="source" language={language} disabled={false} />);
-  const open = async () => userEvent.click(await screen.findByRole("button", { name: new RegExp(`^${t("moveCategory")}:`) }));
+  const open = async () => userEvent.click(await findAction("button", { name: new RegExp(`^${t("moveCategory")}:`) }));
   const destination = () => screen.getByRole("combobox", { name: t("moveCategoryDestination") }) as HTMLSelectElement;
   const submit = () => screen.getByRole("button", { name: t("moveCategorySubmit") }) as HTMLButtonElement;
   for (const restriction of ["direct", "retained", "unresolved", "unavailable"] as const) {
@@ -275,7 +280,7 @@ for (const language of ["en", "ru"] as const) {
       if (restriction === "unavailable") client.list = { ...client.list, state: "unavailable", projects: [{ ...client.list.projects[0], resolution: null }] };
       mount(client); await screen.findByText("  Exact 📝  ", { selector: "td span", normalizer: (value) => value });
       assert.equal(screen.queryByRole("button", { name: new RegExp(`^${t("moveCategory")}:`) }), null);
-      assert.ok(await screen.findByRole("button", { name: new RegExp(`^${t("editTextValue")}:`) }));
+      assert.ok(await findAction("button", { name: new RegExp(`^${t("editTextValue")}:`) }));
       assert.equal(client.moves.length, 0);
     });
   }
@@ -386,12 +391,12 @@ test("unknown category move survives backend remount and resolves only through e
   client.handler = async () => { throw new Error("lost response"); };
   const props = { client, workspaceId: "workspace", sourceId: "source", language: "en" as const, disabled: false };
   const view = render(<DiscoveryWorkspace key="first" {...props} />);
-  await userEvent.click(await screen.findByRole("button", { name: /^Move project category:/ }));
+  await userEvent.click(await findAction("button", { name: /^Move project category:/ }));
   await userEvent.selectOptions(screen.getByRole("combobox", { name: "Destination category" }), "empty");
   await userEvent.click(screen.getByRole("button", { name: "Move project folder" }));
   await screen.findByText(translate("en", "moveCategoryUncertain"));
   view.rerender(<DiscoveryWorkspace key="restarted" {...props} />);
-  await userEvent.click(await screen.findByRole("button", { name: "Check category move status" }));
+  await userEvent.click(await findAction("button", { name: "Check category move status" }));
   await screen.findByText(translate("en", "moveCategorySaved"));
   assert.deepEqual(client.statusCalls, [["workspace", client.moves[0].operationId]]);
   assert.equal(client.moves.length, 1);
@@ -417,8 +422,8 @@ for (const language of ["en", "ru"] as const) {
   const t = (key: Parameters<typeof translate>[1]) => translate(language, key);
   const props = (client: Client) => ({ client, workspaceId: "workspace", sourceId: "source", language, disabled: false });
   const openReview = async (operation = interrupted) => {
-    const trigger = await screen.findByRole("button", { name: `${t("moveCategoryReview")}: ${operation.originalRelativePath} → ${operation.requestedRelativePath}`.replace(/\s+/g, " ").trim() });
-    await userEvent.click(trigger); return trigger;
+    const trigger = await findAction("button", { name: `${t("moveCategoryReview")}: ${operation.originalRelativePath} → ${operation.requestedRelativePath}`.replace(/\s+/g, " ").trim() });
+    const returning=contextReturnTarget(trigger as HTMLButtonElement); await userEvent.click(trigger); return returning;
   };
   test(`${language}: interrupted category move exposes durable stage and placement without automatic effects`, async () => {
     const client = new Client(); client.unfinished = [{ ...interrupted, stage: "destination_recorded", lastVerifiedPlacement: "destination", problem: "storage_error" }];
@@ -433,7 +438,7 @@ for (const language of ["en", "ru"] as const) {
     client.reviewHandler = async () => ({ ok: true, value: { ...recoveryPreview(), actions: [action], originalState: action === "complete_destination" ? "missing" : "matching", destinationState: action === "complete_destination" ? "matching" : "missing" } });
     client.recoveryHandler = () => response.promise;
     render(<DiscoveryWorkspace {...props(client)} />); await openReview();
-    const button = await screen.findByRole("button", { name: t(recoveryActions[action]) });
+    const button = await findAction("button", { name: t(recoveryActions[action]) });
     for (const other of Object.keys(recoveryActions) as ProjectCategoryMoveRecoveryAction[]) if (other !== action) assert.equal(screen.queryByRole("button", { name: t(recoveryActions[other]) }), null);
     await userEvent.click(button); fireEvent.click(button);
     assert.equal(client.recoveries.length, 1);
@@ -459,9 +464,10 @@ for (const language of ["en", "ru"] as const) {
   });
   test(`${language}: failed operation-list refresh retains source conflicts and ordinary Text access`, async () => {
     const client = new Client(); client.unfinished = [interrupted];
-    render(<DiscoveryWorkspace {...props(client)} />); await screen.findByRole("button", { name: new RegExp(`^${t("moveCategoryReview")}:`) });
+    render(<DiscoveryWorkspace {...props(client)} />); await findAction("button", { name: new RegExp(`^${t("moveCategoryReview")}:`) });
     client.listHandler = async () => ({ ok: false, error: { code: "storage", message: "cannot read" } });
     await userEvent.click(screen.getByRole("button", { name: t("moveCategoryListReload") })); await screen.findByText(t("moveCategoryListError"));
+    await findAction("button", {name:new RegExp(`^${t("moveCategory")}:`)});
     assert.equal((screen.getByRole("button", { name: new RegExp(`^${t("moveCategory")}:`) }) as HTMLButtonElement).disabled, true);
     assert.equal((screen.getByRole("button", { name: new RegExp(`^${t("renameProject")}:`) }) as HTMLButtonElement).disabled, true);
     await userEvent.click(screen.getByRole("button", { name: new RegExp(`^${t("editTextValue")}:`) }));
@@ -473,7 +479,7 @@ for (const language of ["en", "ru"] as const) {
       const value = client.completed(); Object.assign(value.operation!, { [field]: field === "expectedRevision" ? 99 : "foreign" }); return { ok: true, value };
     };
     render(<DiscoveryWorkspace {...props(client)} />);
-    await userEvent.click(await screen.findByRole("button", { name: new RegExp(`^${t("moveCategory")}:`) }));
+    await userEvent.click(await findAction("button", { name: new RegExp(`^${t("moveCategory")}:`) }));
     await userEvent.selectOptions(screen.getByRole("combobox", { name: t("moveCategoryDestination") }), "empty");
     await userEvent.click(screen.getByRole("button", { name: t("moveCategorySubmit") })); await screen.findByText(t("moveCategoryUncertain"));
     assert.ok(screen.getByRole("button", { name: t("moveCategoryStatus") })); assert.equal(client.moves.length, 1);
@@ -482,7 +488,7 @@ for (const language of ["en", "ru"] as const) {
   test(`${language}: dismissal and sibling remount preserve pending operation and use current workspace for status`, async () => {
     const client = new Client(), response = deferred<ServiceResult<ProjectCategoryMoveResult>>(); client.handler = () => response.promise;
     const view = render(<DiscoveryWorkspace key="first" {...props(client)} />);
-    await userEvent.click(await screen.findByRole("button", { name: new RegExp(`^${t("moveCategory")}:`) }));
+    await userEvent.click(await findAction("button", { name: new RegExp(`^${t("moveCategory")}:`) }));
     await userEvent.selectOptions(screen.getByRole("combobox", { name: t("moveCategoryDestination") }), "empty");
     await userEvent.click(screen.getByRole("button", { name: t("moveCategorySubmit") }));
     await userEvent.keyboard("{Escape}");
@@ -504,20 +510,20 @@ for (const language of ["en", "ru"] as const) {
   test(`${language}: switching away preserves unknown source operation and leaves an unrelated source usable`, async () => {
     const client = new Client(); client.handler = async () => { throw new Error("lost"); };
     const view = render(<DiscoveryWorkspace key="first" {...props(client)} />);
-    await userEvent.click(await screen.findByRole("button", { name: new RegExp(`^${t("moveCategory")}:`) }));
+    await userEvent.click(await findAction("button", { name: new RegExp(`^${t("moveCategory")}:`) }));
     await userEvent.selectOptions(screen.getByRole("combobox", { name: t("moveCategoryDestination") }), "empty");
     await userEvent.click(screen.getByRole("button", { name: t("moveCategorySubmit") })); await screen.findByText(t("moveCategoryUncertain"));
     client.list = { ...initial, workspaceId: "other", sourceId: "other-source" };
     view.rerender(<DiscoveryWorkspace key="other" {...props(client)} workspaceId="other" sourceId="other-source" />);
-    const other = await screen.findByRole("button", { name: new RegExp(`^${t("moveCategory")}:`) });
+    const other = await findAction("button", { name: new RegExp(`^${t("moveCategory")}:`) });
     assert.equal((other as HTMLButtonElement).disabled, false); assert.equal(screen.queryByRole("button", { name: t("moveCategoryStatus") }), null);
     client.list = structuredClone(initial); view.rerender(<DiscoveryWorkspace key="returned" {...props(client)} />);
-    await screen.findByRole("button", { name: t("moveCategoryStatus") }); assert.equal(client.moves.length, 1); assert.equal(client.statusCalls.length, 0);
+    await findAction("button", { name: t("moveCategoryStatus") }); assert.equal(client.moves.length, 1); assert.equal(client.statusCalls.length, 0);
   });
   test(`${language}: backend generation discards old command response and reconnect never replays`, async () => {
     const client = new Client(), response = deferred<ServiceResult<ProjectCategoryMoveResult>>(); client.handler = () => response.promise;
     render(<DiscoveryWorkspace {...props(client)} />);
-    await userEvent.click(await screen.findByRole("button", { name: new RegExp(`^${t("moveCategory")}:`) }));
+    await userEvent.click(await findAction("button", { name: new RegExp(`^${t("moveCategory")}:`) }));
     await userEvent.selectOptions(screen.getByRole("combobox", { name: t("moveCategoryDestination") }), "empty");
     await userEvent.click(screen.getByRole("button", { name: t("moveCategorySubmit") }));
     await act(async () => { client.statuses.forEach((fn) => fn({ state: "unavailable" })); client.statuses.forEach((fn) => fn({ state: "ready" })); response.resolve({ ok: true, value: client.completed() }); });
@@ -529,7 +535,7 @@ for (const language of ["en", "ru"] as const) {
     const client = new Client(); client.handler = async () => { throw new Error("lost"); };
     client.statusHandler = async () => ({ ok: true, value: { outcome: "rejected", operation: null, problem: "project_unavailable" } });
     render(<DiscoveryWorkspace {...props(client)} />);
-    await userEvent.click(await screen.findByRole("button", { name: new RegExp(`^${t("moveCategory")}:`) }));
+    await userEvent.click(await findAction("button", { name: new RegExp(`^${t("moveCategory")}:`) }));
     await userEvent.selectOptions(screen.getByRole("combobox", { name: t("moveCategoryDestination") }), "empty");
     await userEvent.click(screen.getByRole("button", { name: t("moveCategorySubmit") })); await screen.findByText(t("moveCategoryUncertain"));
     await userEvent.click(screen.getByRole("button", { name: t("moveCategoryStatus") })); await screen.findByText(t("moveCategoryUncertain"));
@@ -550,7 +556,7 @@ for (const language of ["en", "ru"] as const) {
   for (const change of ["revision", "observation", "unavailable", "refresh", "backend", "reload", "selection"] as const) test(`${language}: ${change} invalidates category recovery preview without replay`, async () => {
     const client = new Client(); client.unfinished = [interrupted];
     const view = render(<DiscoveryWorkspace key="first" {...props(client)} refreshVersion={0} />); await openReview();
-    const action = await screen.findByRole("button", { name: t("moveCategoryRetryOriginal") }); action.focus();
+    const action = await findAction("button", { name: t("moveCategoryRetryOriginal") }); action.focus();
     await act(async () => {
       if (change === "revision") client.events.forEach((fn) => fn({ type: "workspace.projectsChanged", sourceId: "source", workspaceIds: ["workspace"], revision: 2 }));
       if (change === "observation" || change === "unavailable") client.events.forEach((fn) => fn({ type: "workspace.sourceObserved", sourceId: "source", workspaceIds: ["workspace"], observationRevision: 1, automaticUpdates: "active", state: change === "unavailable" ? "unavailable" : "ready" }));
@@ -567,7 +573,7 @@ for (const language of ["en", "ru"] as const) {
   test(`${language}: story preparation refreshes one stale initial review without retrying mutations`, async () => {
     const client = new Client(); client.unfinished = [interrupted];
     render(<DiscoveryWorkspace {...props(client)} />); await openReview();
-    await screen.findByRole("button", { name: t("moveCategoryRetryOriginal") });
+    await findAction("button", { name: t("moveCategoryRetryOriginal") });
     const refresh = createInitialCategoryMoveReviewRefresh(language);
     assert.equal(refresh(document.body), false);
     for (const revision of [1, 2]) {
@@ -578,7 +584,7 @@ for (const language of ["en", "ru"] as const) {
       if (revision === 1) {
         assert.equal(document.querySelector(".category-move-review"), null);
         await act(async () => assert.equal(refresh(document.body), true));
-        await screen.findByRole("button", { name: t("moveCategoryRetryOriginal") });
+        await findAction("button", { name: t("moveCategoryRetryOriginal") });
         assert.equal(document.activeElement === document.getElementById("category-move-review-title"), true, "Prepared initial review restores heading focus");
       }
       else assert.ok(screen.getByText(t("moveCategoryReviewStale")), "Repeated instability must remain a fixture failure");
@@ -595,7 +601,7 @@ for (const language of ["en", "ru"] as const) {
       if (change === "backend") { client.statuses.forEach((fn) => fn({ state: "unavailable" })); client.statuses.forEach((fn) => fn({ state: "ready" })); }
       if (change === "unmount") view.unmount();
     });
-    if (change === "dismissal") { await userEvent.keyboard("{Escape}"); assert.equal(document.activeElement, trigger); }
+    if (change === "dismissal") { await userEvent.keyboard("{Escape}"); assert.equal(document.activeElement === contextReturnTarget(trigger as HTMLButtonElement), true); }
     await act(async () => response.resolve({ ok: true, value: recoveryPreview() }));
     assert.equal(screen.queryByRole("button", { name: t("moveCategoryRetryOriginal") }), null); assert.equal(client.recoveries.length, 0);
     if (change === "unmount") { assert.equal(client.statuses.size, 0); assert.equal(client.events.size, 0); }
@@ -603,7 +609,7 @@ for (const language of ["en", "ru"] as const) {
   test(`${language}: recovery pending dismissal and failed list retain same-operation status across remount`, async () => {
     const client = new Client(), response = deferred<ServiceResult<ProjectCategoryMoveResult>>(); client.unfinished = [interrupted]; client.recoveryHandler = () => response.promise;
     const view = render(<DiscoveryWorkspace key="first" {...props(client)} />); await openReview();
-    await userEvent.click(await screen.findByRole("button", { name: t("moveCategoryRetryOriginal") }));
+    await userEvent.click(await findAction("button", { name: t("moveCategoryRetryOriginal") }));
     await userEvent.keyboard("{Escape}");
     await act(async () => response.resolve({ ok: false, error: { code: "service_unavailable", message: "lost recovery response" } }));
     client.listHandler = async () => ({ ok: false, error: { code: "storage", message: "list failed" } });
@@ -614,22 +620,22 @@ for (const language of ["en", "ru"] as const) {
   });
   test(`${language}: stale recovery token requires fresh explicit review with no automatic retry`, async () => {
     const client = new Client(); client.unfinished = [interrupted]; client.recoveryHandler = async () => ({ ok: false, error: { code: "stale_preview", message: "stale" } });
-    render(<DiscoveryWorkspace {...props(client)} />); await openReview(); await userEvent.click(await screen.findByRole("button", { name: t("moveCategoryRetryOriginal") }));
+    render(<DiscoveryWorkspace {...props(client)} />); await openReview(); await userEvent.click(await findAction("button", { name: t("moveCategoryRetryOriginal") }));
     await screen.findByText(t("moveCategoryReviewStale")); assert.equal(screen.queryByRole("button", { name: t("moveCategoryRetryOriginal") }), null);
     client.reviewHandler = async () => ({ ok: true, value: { ...recoveryPreview(), previewToken: "new-token" } });
-    await userEvent.click(screen.getByRole("button", { name: t("moveCategoryReviewAgain") })); await screen.findByRole("button", { name: t("moveCategoryRetryOriginal") });
+    await userEvent.click(screen.getByRole("button", { name: t("moveCategoryReviewAgain") })); await findAction("button", { name: t("moveCategoryRetryOriginal") });
     assert.equal(client.reviews.length, 2); assert.equal(client.recoveries.length, 1);
     await userEvent.click(screen.getByRole("button", { name: t("moveCategoryRetryOriginal") })); assert.deepEqual(client.recoveries[1], ["workspace", "interrupted", "new-token", "retry_original"]);
   });
   test(`${language}: category recovery confirmed after a newer event keeps actual placement and Text focus`, async () => {
     const client = new Client(), response = deferred<ServiceResult<ProjectCategoryMoveResult>>(); client.unfinished = [interrupted]; client.recoveryHandler = () => response.promise;
-    render(<DiscoveryWorkspace {...props(client)} />); await openReview(); await userEvent.click(await screen.findByRole("button", { name: t("moveCategoryRetryOriginal") }));
+    render(<DiscoveryWorkspace {...props(client)} />); await openReview(); await userEvent.click(await findAction("button", { name: t("moveCategoryRetryOriginal") }));
     await userEvent.click(screen.getByRole("button", { name: new RegExp(`^${t("editTextValue")}:`) }));
     const text = screen.getByRole("textbox", { name: new RegExp(`^${t("editTextValue")}:`) });
     client.unfinished = []; client.list = { ...client.list, revision: 3 };
     await act(async () => client.events.forEach((fn) => fn({ type: "workspace.projectsChanged", sourceId: "source", workspaceIds: ["workspace"], revision: 3 })));
     await act(async () => response.resolve({ ok: true, value: recoveryCompleted() })); await screen.findByText(t("moveCategoryNewer"));
-    assert.equal(document.activeElement, text); assert.equal(client.moves.length, 0); assert.equal(client.recoveries.length, 1);
+    assert.equal(document.activeElement === text, true); assert.equal(client.moves.length, 0); assert.equal(client.recoveries.length, 1);
     assert.equal(client.list.projects[0].categoryId, "current");
   });
   test(`${language}: loading empty failed and retried lists never replay effects`, async () => {
@@ -647,7 +653,7 @@ for (const language of ["en", "ru"] as const) {
   });
   test(`${language}: later operation list cannot change project binding`, async () => {
     const client = new Client(); client.unfinished = [interrupted]; render(<DiscoveryWorkspace {...props(client)} />);
-    await screen.findByRole("button", { name: new RegExp(`^${t("moveCategoryReview")}:`) });
+    await findAction("button", { name: new RegExp(`^${t("moveCategoryReview")}:`) });
     client.unfinished = [{ ...interrupted, projectId: "foreign" }];
     await userEvent.click(screen.getByRole("button", { name: t("moveCategoryListReload") })); await screen.findByText(t("moveCategoryListError"));
     const button = screen.getByRole("button", { name: new RegExp(`^${t("moveCategoryReview")}:`) }); assert.equal((button as HTMLButtonElement).disabled, true);
@@ -657,7 +663,7 @@ for (const language of ["en", "ru"] as const) {
     const client = new Client(); client.unfinished = [interrupted];
     client.statusHandler = async () => ({ ok: false, error: { code: "service_unavailable", message: "lost status" } });
     render(<DiscoveryWorkspace {...props(client)} />);
-    await userEvent.click(await screen.findByRole("button", { name: `${t("moveCategoryStatus")}: ${interrupted.originalRelativePath}`.replace(/\s+/g, " ").trim() }));
+    await userEvent.click(await findAction("button", { name: `${t("moveCategoryStatus")}: ${interrupted.originalRelativePath}`.replace(/\s+/g, " ").trim() }));
     await screen.findByText(t("moveCategoryUncertain"));
     client.listHandler = async () => ({ ok: false, error: { code: "storage", message: "failed list" } });
     await userEvent.click(screen.getByRole("button", { name: t("moveCategoryListReload") })); await screen.findByText(t("moveCategoryListError"));
@@ -665,13 +671,14 @@ for (const language of ["en", "ru"] as const) {
     await userEvent.click(screen.getByRole("button", { name: t("moveCategoryStatus") })); await screen.findByText(t("moveCategorySaved"));
     assert.deepEqual(client.statusCalls, [["workspace", "interrupted"], ["workspace", "interrupted"]]);
     assert.equal(screen.queryByRole("button", { name: new RegExp(`^${t("moveCategoryReview")}:`) }), null);
+    await findAction("button", {name:new RegExp(`^${t("moveCategory")}:`)});
     await waitFor(() => assert.equal((screen.getByRole("button", { name: new RegExp(`^${t("moveCategory")}:`) }) as HTMLButtonElement).disabled, false));
     assert.equal(client.reviews.length, 0); assert.equal(client.moves.length, 0); assert.equal(client.recoveries.length, 0);
   });
   test(`${language}: older list cannot revive operation resolved through status`, async () => {
     const client = new Client(), response = deferred<ServiceResult<ProjectCategoryMoveList>>(); client.unfinished = [interrupted];
     client.recoveryHandler = async () => ({ ok: false, error: { code: "service_unavailable", message: "lost" } });
-    render(<DiscoveryWorkspace {...props(client)} />); await openReview(); await userEvent.click(await screen.findByRole("button", { name: t("moveCategoryRetryOriginal") })); await screen.findByText(t("moveCategoryUncertain"));
+    render(<DiscoveryWorkspace {...props(client)} />); await openReview(); await userEvent.click(await findAction("button", { name: t("moveCategoryRetryOriginal") })); await screen.findByText(t("moveCategoryUncertain"));
     client.listHandler = () => response.promise; await userEvent.click(screen.getByRole("button", { name: t("moveCategoryListReload") }));
     client.statusHandler = async () => { client.unfinished = []; client.listHandler = null; return { ok: true, value: recoveryCompleted() }; };
     await userEvent.click(screen.getByRole("button", { name: t("moveCategoryStatus") })); await screen.findByText(t("moveCategorySaved"));
@@ -682,14 +689,14 @@ for (const language of ["en", "ru"] as const) {
     const client = new Client(), response = deferred<ServiceResult<ProjectCategoryMoveRecoveryPreview>>();
     const other = { ...interrupted, operationId: "other-operation", projectId: "other-project", name: "Other", originalRelativePath: "Current/Other", requestedRelativePath: "Empty/Other" };
     client.unfinished = [interrupted, other]; client.reviewHandler = () => client.reviews.length === 1 ? response.promise : Promise.resolve({ ok: true, value: recoveryPreview(other) });
-    render(<DiscoveryWorkspace {...props(client)} />); await openReview(); await openReview(other); await screen.findByRole("button", { name: t("moveCategoryRetryOriginal") });
+    render(<DiscoveryWorkspace {...props(client)} />); await openReview(); await openReview(other); await findAction("button", { name: t("moveCategoryRetryOriginal") });
     await act(async () => response.resolve({ ok: true, value: { ...recoveryPreview(), actions: ["complete_destination"] } }));
     assert.equal(screen.queryByRole("button", { name: t("moveCategoryCompleteDestination") }), null);
     client.unfinished = [{ ...other, stage: "destination_recorded", lastVerifiedPlacement: "destination" }];
     await act(async () => { client.statuses.forEach((fn) => fn({ state: "unavailable" })); client.statuses.forEach((fn) => fn({ state: "ready" })); });
     await screen.findByText(t("moveCategoryReviewStale")); assert.equal(screen.queryByRole("button", { name: t("moveCategoryRetryOriginal") }), null);
     client.reviewHandler = async () => ({ ok: true, value: { ...recoveryPreview(client.unfinished[0]), actions: ["complete_destination"], originalState: "missing", destinationState: "matching" } });
-    await userEvent.click(screen.getByRole("button", { name: t("moveCategoryReviewAgain") })); await screen.findByRole("button", { name: t("moveCategoryCompleteDestination") });
+    await userEvent.click(screen.getByRole("button", { name: t("moveCategoryReviewAgain") })); await findAction("button", { name: t("moveCategoryCompleteDestination") });
     assert.equal(client.reviews.length, 3); assert.equal(client.recoveries.length, 0); assert.equal(client.moves.length, 0);
   });
   for (const fault of ["throw", "service-error", "null-operation", "foreign-project"] as const) test(`${language}: ${fault} recovery result retains explicit status`, async () => {
@@ -700,7 +707,7 @@ for (const language of ["en", "ru"] as const) {
       if (fault === "null-operation") return { ok: true, value: { outcome: "rejected", operation: null, problem: "project_unavailable" } };
       const value = recoveryCompleted(); if (value.outcome === "completed") value.project.projectId = "foreign"; return { ok: true, value };
     };
-    render(<DiscoveryWorkspace {...props(client)} />); await openReview(); await userEvent.click(await screen.findByRole("button", { name: t("moveCategoryRetryOriginal") })); await screen.findByText(t("moveCategoryUncertain"));
+    render(<DiscoveryWorkspace {...props(client)} />); await openReview(); await userEvent.click(await findAction("button", { name: t("moveCategoryRetryOriginal") })); await screen.findByText(t("moveCategoryUncertain"));
     assert.ok(screen.getByRole("button", { name: t("moveCategoryStatus") })); assert.equal(client.recoveries.length, 1);
     assert.equal(screen.queryByRole("button", { name: t("moveCategoryRetryOriginal") }), null);
   });
@@ -708,10 +715,11 @@ for (const language of ["en", "ru"] as const) {
     const response = deferred<Awaited<ReturnType<WorkspaceServiceClient["createProject"]>>>();
     const client = new class extends Client { override async createProject() { return response.promise; } }();
     render(<DiscoveryWorkspace {...props(client)} />);
-    await userEvent.click(await screen.findByRole("button", { name: t("createProject") }));
+    await userEvent.click(await findAction("button", { name: t("createProject") }));
     await userEvent.type(screen.getByRole("textbox", { name: t("creationName") }), "New project");
     await userEvent.selectOptions(screen.getByRole("combobox", { name: t("creationCategory") }), "empty");
     await userEvent.click(screen.getByRole("button", { name: t("creationSubmit") }));
+    await findAction("button", {name:new RegExp(`^${t("moveCategory")}:`)});
     const move = screen.getByRole("button", { name: new RegExp(`^${t("moveCategory")}:`) }) as HTMLButtonElement;
     assert.equal(move.disabled, true); fireEvent.click(move); assert.equal(screen.queryByRole("combobox", { name: t("moveCategoryDestination") }), null);
     await act(async () => response.resolve({ ok: false, error: { code: "service_unavailable", message: "unknown" } }));
@@ -728,11 +736,13 @@ for (const language of ["en", "ru"] as const) {
       override async applyDiscovery() { this.applies++; return response.promise; }
     }();
     render(<DiscoveryWorkspace {...props(client)} />);
-    await userEvent.click(await screen.findByRole("button", { name: t("discoveryAction") }));
-    const apply = await screen.findByRole("button", { name: t("discoveryApply") }) as HTMLButtonElement;
+    await userEvent.click(await findAction("button", { name: t("discoveryAction") }));
+    const apply = await findAction("button", { name: t("discoveryApply") }) as HTMLButtonElement;
+    await findAction("button", {name:new RegExp(`^${t("moveCategory")}:`)});
     await userEvent.click(screen.getByRole("button", { name: new RegExp(`^${t("moveCategory")}:`) }));
     assert.equal(apply.disabled, true); fireEvent.click(apply); assert.equal(client.applies, 0);
     await userEvent.keyboard("{Escape}"); await waitFor(() => assert.equal(apply.disabled, false)); await userEvent.click(apply);
+    await findAction("button", {name:new RegExp(`^${t("moveCategory")}:`)});
     const move = screen.getByRole("button", { name: new RegExp(`^${t("moveCategory")}:`) }) as HTMLButtonElement;
     assert.equal(move.disabled, true); fireEvent.click(move); assert.equal(screen.queryByRole("combobox", { name: t("moveCategoryDestination") }), null);
     await act(async () => response.resolve({ ok: false, error: { code: "storage", message: "failed apply" } }));
@@ -755,7 +765,7 @@ for (const language of ["en", "ru"] as const) {
     client.handler = async () => ({ ok: true, value: { outcome: "rejected", operation: null, problem: "occupied" } });
     const t = (key: Parameters<typeof translate>[1]) => translate(language, key);
     render(<DiscoveryWorkspace client={client} workspaceId="workspace" sourceId="source" language={language} disabled={false} />);
-    const trigger = await screen.findByRole("button", { name: new RegExp(`^${t("moveCategory")}:`) });
+    const trigger = await findAction("button", { name: new RegExp(`^${t("moveCategory")}:`) });
     await userEvent.click(trigger);
     const select = screen.getByRole("combobox", { name: t("moveCategoryDestination") }) as HTMLSelectElement;
     assert.equal(select.labels?.[0]?.textContent, t("moveCategoryDestination"));
@@ -769,11 +779,11 @@ for (const language of ["en", "ru"] as const) {
     await screen.findByText(t("moveCategoryCollision"));
     assert.equal(client.moves.length, 1);
     assert.equal(client.moves[0].destinationCategoryId, "empty");
-    assert.equal(select.value, "empty"); assert.equal(document.activeElement, select);
+    assert.equal(select.value, "empty"); assert.equal(document.activeElement === select, true);
     assert.equal(client.list.projects[0].name, name);
     assert.equal(client.list.projects[0].relativePath, `${originalPath}/${name}`);
     assert.ok(screen.getByText("  Exact Text\nТекст  ", { normalizer: (text) => text }));
     await userEvent.keyboard("{Escape}");
-    assert.equal(document.activeElement, trigger); assert.equal(client.moves.length, 1);
+    assert.equal(document.activeElement === contextReturnTarget(trigger as HTMLButtonElement), true); assert.equal(client.moves.length, 1);
   });
 }

@@ -1,3 +1,4 @@
+import { findAction } from "./context-tools-driver.js";
 import assert from "node:assert/strict";
 import test from "node:test";
 import React from "react";
@@ -41,13 +42,13 @@ for (const language of ["en", "ru"] as const) {
     const list = () => service.handleQuery({ type: "workspace.listTextProperties", workspaceId }).value;
     try {
       render(<TextPropertiesTable client={client} workspaceId={workspaceId} sourceId={sourceId} projects={projects} language={language} disabled={false} hideReveal />);
-      const create = await screen.findByRole("button", { name: language === "en" ? "Create MultiSelect property" : "Создать MultiSelect-свойство" });
+      const create = await findAction("button", { name: language === "en" ? "Create MultiSelect property" : "Создать MultiSelect-свойство" });
       await waitFor(() => assert.equal(create.hasAttribute("disabled"), false));
       create.focus(); await user.keyboard("{Enter}Tags{Enter}");
       await waitFor(() => assert.equal(document.activeElement, create));
       const propertyId = list().definitions[0].propertyId;
       const label = `${language === "en" ? "Edit MultiSelect value" : "Редактировать MultiSelect-значение"}: Project / Tags`;
-      const button = screen.getByRole("button", { name: label });
+      const button = (await findAction("button",{ name: label }));
       button.focus(); await user.keyboard("{Enter}");
       await within(screen.getByRole("group", { name: label })).findByText(t("selectOptionsEmpty"));
       await user.keyboard("{Escape}"); assert.equal(document.activeElement, button);
@@ -64,8 +65,8 @@ for (const language of ["en", "ru"] as const) {
       await user.keyboard(" {Enter}");
       await user.click(screen.getByRole("checkbox", { name: "Ready" }));
       assert.equal((screen.getByRole("checkbox", { name: "Ready" }) as HTMLInputElement).checked, true);
-      assert.equal((screen.getByRole("button", { name: t("cancelTextValue") }) as HTMLButtonElement).disabled, true);
-      await screen.findByRole("button", { name: t("textValueSaving") });
+      assert.equal(((await findAction("button",{ name: t("cancelTextValue") })) as HTMLButtonElement).disabled, true);
+      await findAction("button", { name: t("textValueSaving") });
       assert.ok(releaseFailure); releaseFailure();
       await screen.findByRole("alert"); assert.deepEqual(list().multiSelectValues, []);
       assert.equal((screen.getByRole("checkbox", { name: "Ready" }) as HTMLInputElement).checked, true);
@@ -83,20 +84,20 @@ for (const language of ["en", "ru"] as const) {
       await user.keyboard("{Escape}");
       await waitFor(() => assert.equal(button.textContent, "Done")); assert.equal(document.activeElement, button);
       await user.keyboard("{Enter}"); assert.equal(screen.queryByRole("checkbox", { name: /Ready/ }), null);
-      await user.click(screen.getByRole("button", { name: t("clearTextValue") }));
+      await user.click((await findAction("button",{ name: t("clearTextValue") })));
       await waitFor(() => assert.equal(button.textContent, t("textValueAbsent")));
       assert.deepEqual(list().multiSelectValues, []);
       service.handleCommand({ type: "workspace.setMultiSelectValue", workspaceId: sibling.workspaceId, propertyId, projectId: projects[0].projectId, optionIds: [ready.optionId, done.optionId] });
       await waitFor(() => assert.equal(button.textContent, "ReadyDone"));
       await user.click(button); await user.click(screen.getByRole("checkbox", { name: `Ready (${t("selectHidden")})` }));
-      await user.click(screen.getByRole("button", { name: t("saveTextValue") }));
+      await user.click((await findAction("button",{ name: t("saveTextValue") })));
       await waitFor(() => assert.equal(button.textContent, "Done"));
       assert.deepEqual(list().multiSelectValues.map((v: { optionId: string }) => v.optionId), [done.optionId]);
-      await user.click(button); await user.click(screen.getByRole("button", { name: t("clearTextValue") }));
+      await user.click(button); await user.click((await findAction("button",{ name: t("clearTextValue") })));
       service.handleCommand({ type: "workspace.setSelectOptionHidden", workspaceId, propertyId, optionId: done.optionId, hidden: true });
       await user.click(button);
       await within(screen.getByRole("group", { name: label })).findByText(t("multiSelectNoVisibleOptions"));
-      assert.equal(document.activeElement, screen.getByRole("button", { name: t("saveTextValue") }));
+      assert.equal(document.activeElement, (await findAction("button",{ name: t("saveTextValue") })));
       await user.keyboard("{Escape}"); assert.equal(document.activeElement, button);
     } finally { cleanup(); service.close(); rmSync(directory, { recursive: true, force: true }); }
   });

@@ -1,0 +1,761 @@
+{
+  "sha": null,
+  "before": false,
+  "checks": [
+    {
+      "content": "ordinary",
+      "language": "en",
+      "theme": "light",
+      "width": 1024,
+      "height": 720,
+      "tableTop": 271.5390625,
+      "fonts": [
+        {
+          "family": "Inter Variable",
+          "status": "unloaded"
+        },
+        {
+          "family": "Inter Variable",
+          "status": "loaded"
+        },
+        {
+          "family": "Inter Variable",
+          "status": "unloaded"
+        },
+        {
+          "family": "Inter Variable",
+          "status": "unloaded"
+        },
+        {
+          "family": "Inter Variable",
+          "status": "unloaded"
+        },
+        {
+          "family": "Inter Variable",
+          "status": "unloaded"
+        },
+        {
+          "family": "Inter Variable",
+          "status": "loaded"
+        }
+      ],
+      "overflow": false,
+      "platformFonts": [
+        {
+          "familyName": "Inter",
+          "postScriptName": "Inter-Regular",
+          "isCustomFont": true,
+          "glyphCount": 10
+        }
+      ]
+    },
+    {
+      "content": "ordinary",
+      "language": "en",
+      "theme": "light",
+      "width": 1440,
+      "height": 960,
+      "tableTop": 237.5390625,
+      "fonts": [
+        {
+          "family": "Inter Variable",
+          "status": "unloaded"
+        },
+        {
+          "family": "Inter Variable",
+          "status": "loaded"
+        },
+        {
+          "family": "Inter Variable",
+          "status": "unloaded"
+        },
+        {
+          "family": "Inter Variable",
+          "status": "unloaded"
+        },
+        {
+          "family": "Inter Variable",
+          "status": "unloaded"
+        },
+        {
+          "family": "Inter Variable",
+          "status": "unloaded"
+        },
+        {
+          "family": "Inter Variable",
+          "status": "loaded"
+        }
+      ],
+      "overflow": false,
+      "platformFonts": [
+        {
+          "familyName": "Inter",
+          "postScriptName": "Inter-Regular",
+          "isCustomFont": true,
+          "glyphCount": 10
+        }
+      ]
+    },
+    {
+      "content": "ordinary",
+      "language": "en",
+      "theme": "dark",
+      "width": 1024,
+      "height": 720,
+      "tableTop": 271.5390625,
+      "fonts": [
+        {
+          "family": "Inter Variable",
+          "status": "unloaded"
+        },
+        {
+          "family": "Inter Variable",
+          "status": "loaded"
+        },
+        {
+          "family": "Inter Variable",
+          "status": "unloaded"
+        },
+        {
+          "family": "Inter Variable",
+          "status": "unloaded"
+        },
+        {
+          "family": "Inter Variable",
+          "status": "unloaded"
+        },
+        {
+          "family": "Inter Variable",
+          "status": "unloaded"
+        },
+        {
+          "family": "Inter Variable",
+          "status": "loaded"
+        }
+      ],
+      "overflow": false,
+      "platformFonts": [
+        {
+          "familyName": "Inter",
+          "postScriptName": "Inter-Regular",
+          "isCustomFont": true,
+          "glyphCount": 10
+        }
+      ]
+    },
+    {
+      "content": "ordinary",
+      "language": "en",
+      "theme": "dark",
+      "width": 1440,
+      "height": 960,
+      "tableTop": 237.5390625,
+      "fonts": [
+        {
+          "family": "Inter Variable",
+          "status": "unloaded"
+        },
+        {
+          "family": "Inter Variable",
+          "status": "loaded"
+        },
+        {
+          "family": "Inter Variable",
+          "status": "unloaded"
+        },
+        {
+          "family": "Inter Variable",
+          "status": "unloaded"
+        },
+        {
+          "family": "Inter Variable",
+          "status": "unloaded"
+        },
+        {
+          "family": "Inter Variable",
+          "status": "unloaded"
+        },
+        {
+          "family": "Inter Variable",
+          "status": "loaded"
+        }
+      ],
+      "overflow": false,
+      "platformFonts": [
+        {
+          "familyName": "Inter",
+          "postScriptName": "Inter-Regular",
+          "isCustomFont": true,
+          "glyphCount": 10
+        }
+      ]
+    },
+    {
+      "content": "ordinary",
+      "language": "ru",
+      "theme": "light",
+      "width": 1024,
+      "height": 720,
+      "tableTop": 271.5390625,
+      "fonts": [
+        {
+          "family": "Inter Variable",
+          "status": "unloaded"
+        },
+        {
+          "family": "Inter Variable",
+          "status": "loaded"
+        },
+        {
+          "family": "Inter Variable",
+          "status": "unloaded"
+        },
+        {
+          "family": "Inter Variable",
+          "status": "unloaded"
+        },
+        {
+          "family": "Inter Variable",
+          "status": "unloaded"
+        },
+        {
+          "family": "Inter Variable",
+          "status": "unloaded"
+        },
+        {
+          "family": "Inter Variable",
+          "status": "loaded"
+        }
+      ],
+      "overflow": false,
+      "platformFonts": [
+        {
+          "familyName": "Inter",
+          "postScriptName": "Inter-Regular",
+          "isCustomFont": true,
+          "glyphCount": 20
+        }
+      ]
+    },
+    {
+      "content": "ordinary",
+      "language": "ru",
+      "theme": "light",
+      "width": 1440,
+      "height": 960,
+      "tableTop": 237.5390625,
+      "fonts": [
+        {
+          "family": "Inter Variable",
+          "status": "unloaded"
+        },
+        {
+          "family": "Inter Variable",
+          "status": "loaded"
+        },
+        {
+          "family": "Inter Variable",
+          "status": "unloaded"
+        },
+        {
+          "family": "Inter Variable",
+          "status": "unloaded"
+        },
+        {
+          "family": "Inter Variable",
+          "status": "unloaded"
+        },
+        {
+          "family": "Inter Variable",
+          "status": "unloaded"
+        },
+        {
+          "family": "Inter Variable",
+          "status": "loaded"
+        }
+      ],
+      "overflow": false,
+      "platformFonts": [
+        {
+          "familyName": "Inter",
+          "postScriptName": "Inter-Regular",
+          "isCustomFont": true,
+          "glyphCount": 20
+        }
+      ]
+    },
+    {
+      "content": "ordinary",
+      "language": "ru",
+      "theme": "dark",
+      "width": 1024,
+      "height": 720,
+      "tableTop": 271.5390625,
+      "fonts": [
+        {
+          "family": "Inter Variable",
+          "status": "unloaded"
+        },
+        {
+          "family": "Inter Variable",
+          "status": "loaded"
+        },
+        {
+          "family": "Inter Variable",
+          "status": "unloaded"
+        },
+        {
+          "family": "Inter Variable",
+          "status": "unloaded"
+        },
+        {
+          "family": "Inter Variable",
+          "status": "unloaded"
+        },
+        {
+          "family": "Inter Variable",
+          "status": "unloaded"
+        },
+        {
+          "family": "Inter Variable",
+          "status": "loaded"
+        }
+      ],
+      "overflow": false,
+      "platformFonts": [
+        {
+          "familyName": "Inter",
+          "postScriptName": "Inter-Regular",
+          "isCustomFont": true,
+          "glyphCount": 20
+        }
+      ]
+    },
+    {
+      "content": "ordinary",
+      "language": "ru",
+      "theme": "dark",
+      "width": 1440,
+      "height": 960,
+      "tableTop": 237.5390625,
+      "fonts": [
+        {
+          "family": "Inter Variable",
+          "status": "unloaded"
+        },
+        {
+          "family": "Inter Variable",
+          "status": "loaded"
+        },
+        {
+          "family": "Inter Variable",
+          "status": "unloaded"
+        },
+        {
+          "family": "Inter Variable",
+          "status": "unloaded"
+        },
+        {
+          "family": "Inter Variable",
+          "status": "unloaded"
+        },
+        {
+          "family": "Inter Variable",
+          "status": "unloaded"
+        },
+        {
+          "family": "Inter Variable",
+          "status": "loaded"
+        }
+      ],
+      "overflow": false,
+      "platformFonts": [
+        {
+          "familyName": "Inter",
+          "postScriptName": "Inter-Regular",
+          "isCustomFont": true,
+          "glyphCount": 20
+        }
+      ]
+    },
+    {
+      "content": "long",
+      "language": "en",
+      "theme": "light",
+      "width": 1024,
+      "height": 720,
+      "tableTop": 271.5390625,
+      "fonts": [
+        {
+          "family": "Inter Variable",
+          "status": "unloaded"
+        },
+        {
+          "family": "Inter Variable",
+          "status": "loaded"
+        },
+        {
+          "family": "Inter Variable",
+          "status": "unloaded"
+        },
+        {
+          "family": "Inter Variable",
+          "status": "unloaded"
+        },
+        {
+          "family": "Inter Variable",
+          "status": "unloaded"
+        },
+        {
+          "family": "Inter Variable",
+          "status": "unloaded"
+        },
+        {
+          "family": "Inter Variable",
+          "status": "loaded"
+        }
+      ],
+      "overflow": false,
+      "platformFonts": [
+        {
+          "familyName": "Inter",
+          "postScriptName": "Inter-Regular",
+          "isCustomFont": true,
+          "glyphCount": 10
+        }
+      ]
+    },
+    {
+      "content": "long",
+      "language": "en",
+      "theme": "light",
+      "width": 1440,
+      "height": 960,
+      "tableTop": 237.5390625,
+      "fonts": [
+        {
+          "family": "Inter Variable",
+          "status": "unloaded"
+        },
+        {
+          "family": "Inter Variable",
+          "status": "loaded"
+        },
+        {
+          "family": "Inter Variable",
+          "status": "unloaded"
+        },
+        {
+          "family": "Inter Variable",
+          "status": "unloaded"
+        },
+        {
+          "family": "Inter Variable",
+          "status": "unloaded"
+        },
+        {
+          "family": "Inter Variable",
+          "status": "unloaded"
+        },
+        {
+          "family": "Inter Variable",
+          "status": "loaded"
+        }
+      ],
+      "overflow": false,
+      "platformFonts": [
+        {
+          "familyName": "Inter",
+          "postScriptName": "Inter-Regular",
+          "isCustomFont": true,
+          "glyphCount": 10
+        }
+      ]
+    },
+    {
+      "content": "long",
+      "language": "en",
+      "theme": "dark",
+      "width": 1024,
+      "height": 720,
+      "tableTop": 271.5390625,
+      "fonts": [
+        {
+          "family": "Inter Variable",
+          "status": "unloaded"
+        },
+        {
+          "family": "Inter Variable",
+          "status": "loaded"
+        },
+        {
+          "family": "Inter Variable",
+          "status": "unloaded"
+        },
+        {
+          "family": "Inter Variable",
+          "status": "unloaded"
+        },
+        {
+          "family": "Inter Variable",
+          "status": "unloaded"
+        },
+        {
+          "family": "Inter Variable",
+          "status": "unloaded"
+        },
+        {
+          "family": "Inter Variable",
+          "status": "loaded"
+        }
+      ],
+      "overflow": false,
+      "platformFonts": [
+        {
+          "familyName": "Inter",
+          "postScriptName": "Inter-Regular",
+          "isCustomFont": true,
+          "glyphCount": 10
+        }
+      ]
+    },
+    {
+      "content": "long",
+      "language": "en",
+      "theme": "dark",
+      "width": 1440,
+      "height": 960,
+      "tableTop": 237.5390625,
+      "fonts": [
+        {
+          "family": "Inter Variable",
+          "status": "unloaded"
+        },
+        {
+          "family": "Inter Variable",
+          "status": "loaded"
+        },
+        {
+          "family": "Inter Variable",
+          "status": "unloaded"
+        },
+        {
+          "family": "Inter Variable",
+          "status": "unloaded"
+        },
+        {
+          "family": "Inter Variable",
+          "status": "unloaded"
+        },
+        {
+          "family": "Inter Variable",
+          "status": "unloaded"
+        },
+        {
+          "family": "Inter Variable",
+          "status": "loaded"
+        }
+      ],
+      "overflow": false,
+      "platformFonts": [
+        {
+          "familyName": "Inter",
+          "postScriptName": "Inter-Regular",
+          "isCustomFont": true,
+          "glyphCount": 10
+        }
+      ]
+    },
+    {
+      "content": "long",
+      "language": "ru",
+      "theme": "light",
+      "width": 1024,
+      "height": 720,
+      "tableTop": 271.5390625,
+      "fonts": [
+        {
+          "family": "Inter Variable",
+          "status": "unloaded"
+        },
+        {
+          "family": "Inter Variable",
+          "status": "loaded"
+        },
+        {
+          "family": "Inter Variable",
+          "status": "unloaded"
+        },
+        {
+          "family": "Inter Variable",
+          "status": "unloaded"
+        },
+        {
+          "family": "Inter Variable",
+          "status": "unloaded"
+        },
+        {
+          "family": "Inter Variable",
+          "status": "unloaded"
+        },
+        {
+          "family": "Inter Variable",
+          "status": "loaded"
+        }
+      ],
+      "overflow": false,
+      "platformFonts": [
+        {
+          "familyName": "Inter",
+          "postScriptName": "Inter-Regular",
+          "isCustomFont": true,
+          "glyphCount": 20
+        }
+      ]
+    },
+    {
+      "content": "long",
+      "language": "ru",
+      "theme": "light",
+      "width": 1440,
+      "height": 960,
+      "tableTop": 237.5390625,
+      "fonts": [
+        {
+          "family": "Inter Variable",
+          "status": "unloaded"
+        },
+        {
+          "family": "Inter Variable",
+          "status": "loaded"
+        },
+        {
+          "family": "Inter Variable",
+          "status": "unloaded"
+        },
+        {
+          "family": "Inter Variable",
+          "status": "unloaded"
+        },
+        {
+          "family": "Inter Variable",
+          "status": "unloaded"
+        },
+        {
+          "family": "Inter Variable",
+          "status": "unloaded"
+        },
+        {
+          "family": "Inter Variable",
+          "status": "loaded"
+        }
+      ],
+      "overflow": false,
+      "platformFonts": [
+        {
+          "familyName": "Inter",
+          "postScriptName": "Inter-Regular",
+          "isCustomFont": true,
+          "glyphCount": 20
+        }
+      ]
+    },
+    {
+      "content": "long",
+      "language": "ru",
+      "theme": "dark",
+      "width": 1024,
+      "height": 720,
+      "tableTop": 271.5390625,
+      "fonts": [
+        {
+          "family": "Inter Variable",
+          "status": "unloaded"
+        },
+        {
+          "family": "Inter Variable",
+          "status": "loaded"
+        },
+        {
+          "family": "Inter Variable",
+          "status": "unloaded"
+        },
+        {
+          "family": "Inter Variable",
+          "status": "unloaded"
+        },
+        {
+          "family": "Inter Variable",
+          "status": "unloaded"
+        },
+        {
+          "family": "Inter Variable",
+          "status": "unloaded"
+        },
+        {
+          "family": "Inter Variable",
+          "status": "loaded"
+        }
+      ],
+      "overflow": false,
+      "platformFonts": [
+        {
+          "familyName": "Inter",
+          "postScriptName": "Inter-Regular",
+          "isCustomFont": true,
+          "glyphCount": 20
+        }
+      ]
+    },
+    {
+      "content": "long",
+      "language": "ru",
+      "theme": "dark",
+      "width": 1440,
+      "height": 960,
+      "tableTop": 237.5390625,
+      "fonts": [
+        {
+          "family": "Inter Variable",
+          "status": "unloaded"
+        },
+        {
+          "family": "Inter Variable",
+          "status": "loaded"
+        },
+        {
+          "family": "Inter Variable",
+          "status": "unloaded"
+        },
+        {
+          "family": "Inter Variable",
+          "status": "unloaded"
+        },
+        {
+          "family": "Inter Variable",
+          "status": "unloaded"
+        },
+        {
+          "family": "Inter Variable",
+          "status": "unloaded"
+        },
+        {
+          "family": "Inter Variable",
+          "status": "loaded"
+        }
+      ],
+      "overflow": false,
+      "platformFonts": [
+        {
+          "familyName": "Inter",
+          "postScriptName": "Inter-Regular",
+          "isCustomFont": true,
+          "glyphCount": 20
+        }
+      ]
+    }
+  ],
+  "stopped": false,
+  "cleaned": false,
+  "failure": "Error: Electron shutdown timed out after 10000ms\n    at Timeout.<anonymous> (file:///Users/aleksandersk/Documents/programming/Projects/project_folder/.worktrees/issue-68-visual-foundation/scripts/runtime-lifecycle.mjs:11:41)\n    at listOnTimeout (node:internal/timers:588:17)\n    at process.processTimers (node:internal/timers:523:7)"
+}

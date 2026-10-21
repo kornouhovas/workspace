@@ -54,6 +54,10 @@ const english = {
   metadataGrouping: "Grouping settings",
   metadataTable: "Table settings",
   metadataBoard: "Board settings",
+  creationRecovery: "Creation recovery",
+  sourceTools: "Source tools",
+  propertyTools: "Properties",
+  projectActions: "Project actions",
   metadataManagement: "Remove custom properties",
 
   groupAssignmentClear: "Clear grouping value",
@@ -744,6 +748,10 @@ const russian: Record<keyof typeof english, string> = {
   metadataGrouping: "Настройки группировки",
   metadataTable: "Настройки таблицы",
   metadataBoard: "Настройки доски",
+  creationRecovery: "Восстановление создания",
+  sourceTools: "Инструменты источника",
+  propertyTools: "Свойства",
+  projectActions: "Действия с проектом",
   metadataManagement: "Удаление пользовательских свойств",
 
   groupAssignmentClear: "Очистить значение группировки",

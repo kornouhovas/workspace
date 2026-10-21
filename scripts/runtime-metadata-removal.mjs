@@ -1,3 +1,4 @@
+import { enterContextFor } from "./runtime-context-tools.mjs";
 /* global document, innerWidth */
 import assert from 'node:assert/strict';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
@@ -13,8 +14,8 @@ export async function exerciseMetadataRemoval({ page, query, rootPath, language,
   const projectId = (await call('applyDiscovery', { previewToken: (await call('previewDiscovery')).previewToken })).projects[0].projectId;
   const checks = [];
   const enabled = locator => locator.and(page.locator(':enabled'));
-  const press = async locator => { await enabled(locator).focus(); await enabled(locator).press('Enter'); };
-  const button = name => page.getByRole('button', { name, exact: true });
+  const press = async locator => { await enterContextFor(page,locator); await enabled(locator).focus(); await enabled(locator).press('Enter'); };
+  const button = name => page.getByRole('button', { name, exact: true, includeHidden:true });
   const confirm = () => button(en ? 'Confirm deletion' : 'Подтвердить удаление');
   const review = () => button(en ? 'Review usages' : 'Проверить использования');
   for (const propertyType of ['single_select', 'multi_select']) for (const layout of ['table', 'board']) {
@@ -32,9 +33,10 @@ export async function exerciseMetadataRemoval({ page, query, rootPath, language,
       await call('setBoardLayout', { ...ids, config: { properties: [{ propertyId, hidden: false }], widths: [{ propertyId, key: JSON.stringify(options.Old), width: 500 }], wrap: true } });
     }
     await page.reload();
+    await press(button(en ? "Properties" : "Свойства"));
     const editor = page.locator('.select-options').filter({ has: page.locator('summary', { hasText: name }) });
     await editor.locator('summary').press('Enter');
-    const removeOption = editor.getByRole('button', { name: `${en ? 'Delete option' : 'Удалить вариант'}: Old`, exact: true });
+    const removeOption = editor.getByRole('button', { name: `${en ? 'Delete option' : 'Удалить вариант'}: Old`, exact: true, includeHidden:true });
     await press(removeOption);
     const panel = page.locator('.metadata-removal');
     await panel.getByText(`Removal sibling ${language} / Table`, { exact: true }).waitFor();
@@ -56,6 +58,7 @@ export async function exerciseMetadataRemoval({ page, query, rootPath, language,
       const operands = [...document.querySelectorAll('.view-filters select[multiple]')];
       return operands.some(s => [...s.selectedOptions].some(o => o.value === next)) && !document.querySelector(`.project-group[aria-label="Old"]`) && document.querySelector(`[data-column-id="${propertyId}"]`);
     }, { propertyId, next: options.Next });
+    await press(button(en ? "Properties" : "Свойства"));
     await page.locator('.text-properties details').filter({ has: page.locator('summary', { hasText: en ? 'Remove custom properties' : 'Удаление пользовательских свойств' }) }).locator('summary').press('Enter');
     await press(button(`${en ? 'Delete property' : 'Удалить свойство'}: ${name}`));
     await enabled(confirm()).waitFor();

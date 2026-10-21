@@ -1,0 +1,169 @@
+{
+  "sha": null,
+  "before": true,
+  "checks": [
+    {
+      "content": "ordinary",
+      "language": "en",
+      "theme": "light",
+      "width": 1024,
+      "height": 720,
+      "tableTop": 1414.140625,
+      "fonts": [],
+      "overflow": false
+    },
+    {
+      "content": "ordinary",
+      "language": "en",
+      "theme": "light",
+      "width": 1440,
+      "height": 960,
+      "tableTop": 1372.8125,
+      "fonts": [],
+      "overflow": false
+    },
+    {
+      "content": "ordinary",
+      "language": "en",
+      "theme": "dark",
+      "width": 1024,
+      "height": 720,
+      "tableTop": 1414.140625,
+      "fonts": [],
+      "overflow": false
+    },
+    {
+      "content": "ordinary",
+      "language": "en",
+      "theme": "dark",
+      "width": 1440,
+      "height": 960,
+      "tableTop": 1372.8125,
+      "fonts": [],
+      "overflow": false
+    },
+    {
+      "content": "ordinary",
+      "language": "ru",
+      "theme": "light",
+      "width": 1024,
+      "height": 720,
+      "tableTop": 1448.90625,
+      "fonts": [],
+      "overflow": false
+    },
+    {
+      "content": "ordinary",
+      "language": "ru",
+      "theme": "light",
+      "width": 1440,
+      "height": 960,
+      "tableTop": 1392.3125,
+      "fonts": [],
+      "overflow": false
+    },
+    {
+      "content": "ordinary",
+      "language": "ru",
+      "theme": "dark",
+      "width": 1024,
+      "height": 720,
+      "tableTop": 1448.90625,
+      "fonts": [],
+      "overflow": false
+    },
+    {
+      "content": "ordinary",
+      "language": "ru",
+      "theme": "dark",
+      "width": 1440,
+      "height": 960,
+      "tableTop": 1392.3125,
+      "fonts": [],
+      "overflow": false
+    },
+    {
+      "content": "long",
+      "language": "en",
+      "theme": "light",
+      "width": 1024,
+      "height": 720,
+      "tableTop": 1414.140625,
+      "fonts": [],
+      "overflow": false
+    },
+    {
+      "content": "long",
+      "language": "en",
+      "theme": "light",
+      "width": 1440,
+      "height": 960,
+      "tableTop": 1372.8125,
+      "fonts": [],
+      "overflow": false
+    },
+    {
+      "content": "long",
+      "language": "en",
+      "theme": "dark",
+      "width": 1024,
+      "height": 720,
+      "tableTop": 1414.140625,
+      "fonts": [],
+      "overflow": false
+    },
+    {
+      "content": "long",
+      "language": "en",
+      "theme": "dark",
+      "width": 1440,
+      "height": 960,
+      "tableTop": 1372.8125,
+      "fonts": [],
+      "overflow": false
+    },
+    {
+      "content": "long",
+      "language": "ru",
+      "theme": "light",
+      "width": 1024,
+      "height": 720,
+      "tableTop": 1448.90625,
+      "fonts": [],
+      "overflow": false
+    },
+    {
+      "content": "long",
+      "language": "ru",
+      "theme": "light",
+      "width": 1440,
+      "height": 960,
+      "tableTop": 1392.3125,
+      "fonts": [],
+      "overflow": false
+    },
+    {
+      "content": "long",
+      "language": "ru",
+      "theme": "dark",
+      "width": 1024,
+      "height": 720,
+      "tableTop": 1448.90625,
+      "fonts": [],
+      "overflow": false
+    },
+    {
+      "content": "long",
+      "language": "ru",
+      "theme": "dark",
+      "width": 1440,
+      "height": 960,
+      "tableTop": 1392.3125,
+      "fonts": [],
+      "overflow": false
+    }
+  ],
+  "stopped": true,
+  "cleaned": false,
+  "failure": "Error: Owned-process termination is unverified; fixture cleanup skipped\n    at cleanupOwnedFixture (file:///Users/aleksandersk/Documents/programming/Projects/project_folder/.worktrees/issue-68-visual-foundation/scripts/runtime-lifecycle.mjs:105:22)\n    at file:///Users/aleksandersk/Documents/programming/Projects/project_folder/.worktrees/issue-68-visual-foundation/scripts/smoke-visual-foundation.mjs:71:23"
+}

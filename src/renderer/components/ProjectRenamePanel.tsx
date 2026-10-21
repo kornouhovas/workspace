@@ -237,6 +237,7 @@ function RenameContent({ client, workspaceId, sourceId, language, project, proje
       </div>
       <p>{t("renameCancelHint")}</p>
     </form>}
+    <details className="operation-history"><summary>{t("renameListTitle")} ({operations.length})</summary>
     <section className="rename-operations" aria-label={t("renameListTitle")} aria-busy={listLoading}>
       <h3>{t("renameListTitle")}</h3>
       {listLoading && <StatusMessage kind="info" title={t("renameListLoading")} />}
@@ -251,6 +252,7 @@ function RenameContent({ client, workspaceId, sourceId, language, project, proje
       </div>)}
       <button type="button" className="workspace-button workspace-button--secondary" disabled={listLoading || pending || !ready.current} onClick={() => void loadRenames()}>{t("renameListReload")}</button>
     </section>
+    </details>
     {reviewed && <section ref={reviewRoot} className="rename-review" aria-labelledby="rename-review-title" aria-busy={reviewLoading || pending}
       onKeyDown={(event) => { if (event.key === "Escape") { event.preventDefault(); closeReview(); } }}>
       <h3 id="rename-review-title" ref={reviewHeading} tabIndex={-1}>{t("renameReviewTitle")}</h3>

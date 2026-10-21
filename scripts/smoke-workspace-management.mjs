@@ -1,3 +1,4 @@
+import { enterContextFor } from "./runtime-context-tools.mjs";
 import { applyReviewedDiscovery } from "./workspace-management-driver.mjs";
 /* global window, document */
 import assert from "node:assert/strict";
@@ -32,7 +33,7 @@ async function launch() {
 }
 async function close() { if (app) { const current = app; app = null; await closeElectron(current); } }
 const sidebar = () => page.getByRole("navigation", { name: /^(Workspaces|Рабочие пространства)$/ });
-const add = () => sidebar().getByRole("button", { name: /^(\+ Add workspace|\+ Добавить рабочее пространство)$/ });
+const add = () => sidebar().getByRole("button", { name: /^(Add workspace|Добавить рабочее пространство)$/ });
 const actions = () => sidebar().getByRole("button", { name: /^(Workspace actions|Действия с рабочим пространством):/ });
 async function selectRoot() { await app.evaluate((_electron, path) => { process.env.WORKSPACE_TEST_ROOT_PICKER_PATH = path; }, source); }
 try {
@@ -77,7 +78,8 @@ try {
       }
     }
   }
-  const configure = page.getByRole("button", { name: /^(Preview project folders|Посмотреть папки проектов)$/ });
+  const configure = page.getByRole("button", { name: /^(Preview project folders|Посмотреть папки проектов)$/, includeHidden:true });
+  await enterContextFor(page,configure);
   await configure.press("Enter");
   await page.getByRole("button", { name: /^(Apply reviewed projects|Применить проверенные проекты)$/ }).waitFor();
   await page.getByRole("button", { name: /^(Set up later|Настроить позже)$/ }).press("Enter");

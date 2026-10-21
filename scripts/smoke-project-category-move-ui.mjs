@@ -1,3 +1,5 @@
+import { selectRuntimeWorkspace, selectedRuntimeWorkspace } from "./runtime-settings.mjs";
+import { enterContextFor } from "./runtime-context-tools.mjs";
 import { setInterfaceLanguage } from "./runtime-settings.mjs";
 import assert from "node:assert/strict";
 import { showRuntimeProject } from "./runtime-project-visibility.mjs";
@@ -63,16 +65,14 @@ export function assertRuntimeCategoryUnavailablePreservation(before, after, befo
 // text. No guessed composite accessible cell name; both may repeat across rows.
 export async function assertRuntimeCategoryCell(page, projectName, categoryName, moveLabel, eligible = true) {
   moveLabel ??= labels[await page.locator("#interface-language").inputValue()].move;
-  const normalize = value => value.replace(/\s+/g, " ").trim();
-  let cell = page.getByRole("cell").filter({ hasText: categoryName.trim() });
-  if (eligible) cell = cell.filter({ has: page.getByRole("button", { name: normalize(`${moveLabel}: ${projectName}`), exact: true }) });
+  const cell = page.locator("tr[data-project-id]").filter({hasText:projectName.trim()}).locator("td.category-cell").filter({hasText:categoryName.trim()});
   await cell.waitFor();
   assert.equal(await cell.count(), 1, "Unique intended project/category cell");
   assert.equal(await cell.locator("..").locator("td").nth(0).evaluate(node => node.querySelector(".property-authored")?.textContent), projectName);
   assert.equal(await cell.evaluate(node => node.firstChild?.textContent), categoryName, "Exact authored category text");
-  assert.equal(await cell.getByRole("button").count(), eligible ? 1 : 0);
+  assert.equal(await cell.locator("..").getByRole("button",{name:new RegExp(`^${moveLabel}:`),includeHidden:true}).count(),eligible ? 1 : 0);
   if (eligible) {
-    const action = cell.getByRole("button", { name: `${moveLabel}: ${projectName}`.replace(/\s+/g, " ").trim(), exact: true });
+    const action = cell.locator("..").getByRole("button", { name: `${moveLabel}: ${projectName}`.replace(/\s+/g, " ").trim(), exact: true, includeHidden: true });
     assert.equal(await action.isDisabled(), false);
   }
   return cell;
@@ -459,7 +459,7 @@ export async function runProjectCategoryMoveUi(mode = "dev") {
   async function select(page, workspace, language) {
     await setInterfaceLanguage(page, language);
     await page.waitForFunction(lang => globalThis.document.documentElement.lang === lang && !globalThis.document.querySelector("#interface-language")?.disabled, language);
-    await page.locator("#workspace-switcher").selectOption(workspace.workspaceId);
+    await selectRuntimeWorkspace(page,workspace.workspaceId);
     await page.getByRole("heading", { name: workspace.name, exact: true }).waitFor();
     await page.waitForFunction(() => globalThis.document.querySelector(".table-view")?.getAttribute("aria-busy") === "false" && globalThis.document.querySelector(".category-move-operations")?.getAttribute("aria-busy") === "false");
   }
@@ -521,7 +521,8 @@ export async function runProjectCategoryMoveUi(mode = "dev") {
     const list = await query(page, "listProjects", setup.workspace.workspaceId);
     const project = list.projects.find(p => p.projectId === setup.project.projectId);
     const cell = await categoryCell(page, setup, project.categoryName, t);
-    const trigger = cell.getByRole("button", { name: `${t.move}: ${setup.project.name}`.replace(/\s+/g, " ").trim(), exact: true });
+    const trigger = cell.locator("..").getByRole("button", { name: `${t.move}: ${setup.project.name}`.replace(/\s+/g, " ").trim(), exact: true, includeHidden: true });
+    await enterContextFor(page,trigger);
     await trigger.press("Enter");
     const input = page.locator("#project-category-move-destination"); await input.waitFor();
     await page.waitForFunction(() => { const node = globalThis.document.querySelector("#project-category-move-destination"); return node && !node.disabled && node === globalThis.document.activeElement; }, undefined, { timeout: 15000 });
@@ -552,7 +553,7 @@ export async function runProjectCategoryMoveUi(mode = "dev") {
         await capture(page, language, "editing");
         const before = await captureRuntimeCategoryState(page, setup);
         const binding = runtimeCategoryBinding(before, setup.project.projectId, destination.categoryId);
-        assert.equal(await page.locator("#workspace-switcher").inputValue(), binding.workspaceId);
+        assert.equal(await selectedRuntimeWorkspace(page), binding.workspaceId);
         assert.equal(await input.inputValue(), binding.destinationCategoryId);
         await saveOperationProof(language, "submission", { binding, before });
         const ids = await recordRuntimeCategoryAction(page, async () => { await input.press("Enter"); await input.waitFor({ state: "detached" }); });
@@ -583,7 +584,7 @@ export async function runProjectCategoryMoveUi(mode = "dev") {
         const input = await openEditor(page, setup, t); await input.selectOption(destination.categoryId);
         const before = await captureRuntimeCategoryState(page, setup);
         const binding = runtimeCategoryBinding(before, setup.project.projectId, destination.categoryId);
-        assert.equal(await page.locator("#workspace-switcher").inputValue(), binding.workspaceId);
+        assert.equal(await selectedRuntimeWorkspace(page), binding.workspaceId);
         assert.equal(await input.inputValue(), binding.destinationCategoryId);
         await saveOperationProof(language, "current-category", { binding, before });
         const ids = await recordRuntimeCategoryAction(page, async () => { await input.press("Enter"); await input.waitFor({ state: "detached" }); });
@@ -778,7 +779,7 @@ export async function runProjectCategoryMoveUi(mode = "dev") {
           const row = { ...bound, stage: kept ? "failed" : "completed", result_kind: kept ? "rejected" : "completed",
             destination_identity: kept ? bound.destination_identity : bound.native_identity, last_verified_placement: kept ? "original" : "destination",
             problem: kept ? "kept_original" : null, completed_revision: kept ? null : setup.projection.revision + 1 };
-          assert.equal(await page.locator("#workspace-switcher").inputValue(), setup.sibling.workspaceId);
+          assert.equal(await selectedRuntimeWorkspace(page), setup.sibling.workspaceId);
           await saveOperationProof(language, `recovery-${checkpoint}`, { action, operationId: row.operation_id, expectedRow: row, before: actionBefore });
           const ids = await recordRuntimeCategoryAction(page, async () => { await button.press("Enter"); await page.locator(".category-move-review").waitFor({ state: "detached" }); });
           assert.deepEqual(ids, [], "One chosen recovery Enter uses the existing operation, no new move ID");

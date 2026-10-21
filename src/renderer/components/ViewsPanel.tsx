@@ -1,3 +1,5 @@
+import { Hint } from "./Hint.js";
+import { Icon } from "./Icons.js";
 import * as Menu from "@radix-ui/react-dropdown-menu";
 import * as Tabs from "@radix-ui/react-tabs";
 import { useEffect, useRef, useState } from "react";
@@ -81,13 +83,13 @@ function ViewCollection({ client, workspaceId, language, disabled, panelId, onCh
       <Tabs.Root value={snapshot?.activeViewId ?? ""} activationMode="manual" onValueChange={viewId => void mutate({ type: "workspace.activateView", workspaceId, viewId })}>
         <Tabs.List className="saved-view-tabs" aria-label={t("viewCurrent")}>
           {snapshot?.views.map(view => <Tabs.Trigger className="saved-view-tab" key={view.viewId} value={view.viewId} id={`saved-view-${view.viewId}`} aria-controls={panelId} disabled={blocked}
-            ref={view.viewId === snapshot.activeViewId ? select : undefined}>{view.name}</Tabs.Trigger>)}
+            ref={view.viewId === snapshot.activeViewId ? select : undefined}><Icon name={view.kind === "table" ? "table" : "board"}/>{view.name}</Tabs.Trigger>)}
         </Tabs.List>
       </Tabs.Root>
       <button className="workspace-button workspace-button--secondary" type="button" disabled={blocked} onClick={event => { trigger.current = event.currentTarget; setDraft({ action: "create", name: "", kind: "table" }); }}>{t("viewCreate")}</button>
       <Menu.Root open={menu} onOpenChange={setMenu} modal={false}>
-        <Menu.Trigger asChild><button ref={menuButton} type="button" className="workspace-button workspace-button--secondary" disabled={blocked || !active}
-          aria-label={`${t("viewActions")}: ${active?.name ?? ""}`}>•••</button></Menu.Trigger>
+        <Hint label={`${t("viewActions")}: ${active?.name ?? ""}`}><Menu.Trigger asChild><button ref={menuButton} type="button" className="workspace-button workspace-button--secondary" disabled={blocked || !active}
+          aria-label={`${t("viewActions")}: ${active?.name ?? ""}`}><Icon name="more"/></button></Menu.Trigger></Hint>
         <Menu.Portal><Menu.Content className="contextual-panel view-actions" align="end" sideOffset={4} collisionPadding={8}
           onCloseAutoFocus={event => { if (draft || deleting || pending) event.preventDefault(); }}>
       <Menu.Item className="workspace-button workspace-button--secondary" disabled={blocked || !active} onSelect={() => { trigger.current = menuButton.current; setMenu(false); setDraft({ action: "edit", viewId: active!.viewId, name: active!.name, kind: active!.kind }); }}>{t("viewEdit")}</Menu.Item>

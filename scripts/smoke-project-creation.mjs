@@ -1,3 +1,5 @@
+import { selectRuntimeWorkspace, waitForWorkspaceNavigation } from "./runtime-settings.mjs";
+import { enterContextFor } from "./runtime-context-tools.mjs";
 import { setInterfaceLanguage } from "./runtime-settings.mjs";
 import { waitForFocusedInput } from "./property-editor-driver.mjs";
 import assert from "node:assert/strict";
@@ -150,9 +152,9 @@ async function launch(data) {
   return page;
 }
 async function select(page, workspace) {
-  await page.locator("#workspace-switcher").selectOption(workspace.workspaceId);
+  await selectRuntimeWorkspace(page,workspace.workspaceId);
   await page.getByRole("heading", { name: workspace.name, exact: true }).waitFor();
-  await page.waitForFunction(() => !globalThis.document.querySelector("#workspace-switcher")?.disabled);
+  await waitForWorkspaceNavigation(page);
   await page.evaluate(() => new Promise((done) => globalThis.requestAnimationFrame(() => globalThis.requestAnimationFrame(done))));
   await page.waitForFunction(() => globalThis.document.querySelector(".table-view")?.getAttribute("aria-busy") === "false" && !globalThis.document.querySelector(".project-creation > button")?.disabled);
 }
@@ -331,7 +333,9 @@ try {
         // The production observer stays active. Press the newly available row's
         // Reveal directly: no Refresh, sibling switch or settling delay first.
         nativeTargets.add(destination);
-        await page.getByRole("button", { name: `${t.reveal}: ${name}`, exact: true }).press("Enter");
+        const revealEntry=page.getByRole("button", { name: `${t.reveal}: ${name}`, exact: true, includeHidden:true });
+        await enterContextFor(page,revealEntry);
+        await revealEntry.press("Enter");
         const electron = current.electron;
         nativeInvocationOutcome = await pollNativeInvocation({ target: destination,
           attempts: process.platform === "win32" ? 150 : 50, timeoutMs: process.platform === "win32" ? 17000 : 10000,
@@ -384,7 +388,8 @@ try {
           observations.push({ fileManagerCleanup, target: destination });
           nativeTargets.delete(destination);
           activeStage = [discoveryMode, "nativeAcknowledgment"];
-          const revealButton = page.getByRole("button", { name: `${t.reveal}: ${name}`, exact: true });
+          const revealButton = page.getByRole("button", { name: `${t.reveal}: ${name}`, exact: true, includeHidden: true });
+          await enterContextFor(page,revealButton);
           await page.waitForFunction((name) => Array.from(globalThis.document.querySelectorAll(".project-reveal button")).some((node) => node.getAttribute("aria-label") === name && !node.disabled), `${t.reveal}: ${name}`);
           const feedback = await revealButton.locator("..").locator(".bb-status").innerText();
           const afterRevealObservation = await query(page, "getSourceObservation", workspace.workspaceId);

@@ -1,3 +1,4 @@
+import { enterContextFor } from "./runtime-context-tools.mjs";
 import { waitForPresentationBounds } from "./runtime-presentation-controls.mjs";
 import { dragRuntimeGroup } from "./runtime-group-drag.mjs";
 /* global document, innerWidth, getComputedStyle */
@@ -40,10 +41,12 @@ export async function exerciseTableLayout({page,query,rootPath,language,evidence
   await page.waitForFunction(()=>document.querySelector("td.table-text-wrap .text-value-button") && getComputedStyle(document.querySelector("td.table-text-wrap .text-value-button")).whiteSpace==="pre-wrap");
   await page.keyboard.press("Escape");
   await page.waitForFunction(label=>document.activeElement?.textContent===label,en?"Table layout":"Настройки таблицы");
-  const later=page.getByRole("button",{name:`${en?"Move row later":"Переместить строку позже"}: Alpha`,exact:true});
+  const later=page.getByRole("button",{name:`${en?"Move row later":"Переместить строку позже"}: Alpha`,exact:true,includeHidden:true});
+  await enterContextFor(page,later);
   await later.and(page.locator(":enabled")).press("Enter");
   await page.waitForFunction(()=>document.querySelector("tbody tr")?.textContent.includes("Beta"));
-  const drag=page.getByRole("button",{name:`${en?"Drag to reorder row":"Перетащить строку для изменения порядка"}: Beta`,exact:true});
+  const drag=page.getByRole("button",{name:`${en?"Drag to reorder row":"Перетащить строку для изменения порядка"}: Beta`,exact:true,includeHidden:true});
+  await enterContextFor(page,drag);
   await dragRuntimeGroup(drag.and(page.locator(":enabled")), page.locator(`tr[data-project-id="${projects.find(p=>p.name==="Alpha").projectId}"]`));
   await page.waitForFunction(()=>document.querySelector("tbody tr")?.textContent.includes("Alpha"));
   const saved=(await call("getTableLayout",{viewId})).config;

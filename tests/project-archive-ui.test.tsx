@@ -1,3 +1,4 @@
+import { findAction } from "./context-tools-driver.js";
 import assert from "node:assert/strict";
 import test from "node:test";
 import React from "react";
@@ -23,13 +24,13 @@ for (const language of ["en", "ru"] as const) test(`${language}: archive review 
   }, onWorkspaceChange: () => () => {} } as unknown as WorkspaceDesktopApi;
   render(<ProjectArchivePanel client={new WorkspaceServiceClient(api)} workspaceId="w" sourceId="s" projects={[{ projectId: "p", categoryId: null, name: "Project", relativePath: "Project" }]} language={language} disabled={false} revision={1} invalidation={0} onCommitted={() => {}} onViewChange={() => {}} />);
   const user = userEvent.setup({ document });
-  const projectSelect = await screen.findByLabelText(t("archiveProject")) as HTMLSelectElement;
+  const projectSelect = await findAction("combobox", {name:t("archiveProject")}) as HTMLSelectElement;
   await waitFor(() => assert.equal(projectSelect.disabled, false));
   await user.selectOptions(projectSelect, "p");
   const review = screen.getByRole("button", { name: t("archiveReview") }); review.focus(); await user.keyboard("{Enter}");
-  await screen.findByRole("button", { name: t("archiveApply") });
+  await findAction("button", { name: t("archiveApply") });
   await user.keyboard("{Escape}");
-  await waitFor(() => assert.equal(document.activeElement, review));
+  await waitFor(() => assert.equal(document.activeElement === review, true));
   assert.equal(calls.some(c => c === "workspace.applyProjectArchive"), false);
 });
 
@@ -48,11 +49,11 @@ test("a lost Apply response keeps its exact request and checks status without an
   let committed = 0;
   render(<ProjectArchivePanel client={new WorkspaceServiceClient(api)} workspaceId="w" sourceId="s" projects={[{ projectId: "p", categoryId: null, name: "Project", relativePath: "Project" }]} language="en" disabled={false} revision={1} invalidation={0} onCommitted={() => committed++} onViewChange={() => {}} />);
   const user = userEvent.setup({ document });
-  const projectSelect = await screen.findByLabelText("Project to archive") as HTMLSelectElement;
+  const projectSelect = await findAction("combobox", {name:"Project to archive"}) as HTMLSelectElement;
   await waitFor(() => assert.equal(projectSelect.disabled, false));
   await user.selectOptions(projectSelect, "p");
   await user.click(screen.getByRole("button", { name: "Review archive" }));
-  await user.click(await screen.findByRole("button", { name: "Archive project" }));
+  await user.click(await findAction("button", { name: "Archive project" }));
   await screen.findByText(translate("en", "archiveUnknown"));
   assert.equal((screen.getByLabelText("Project to archive") as HTMLSelectElement).disabled, true);
   await user.click(screen.getByRole("button", { name: "Check saved outcome" }));
@@ -83,7 +84,7 @@ for (const language of ["en", "ru"] as const) {
       render(<ProjectArchivePanel client={new WorkspaceServiceClient(api)} workspaceId="w" sourceId="s" projects={[]} language={language} disabled={false} revision={1} invalidation={0} onCommitted={() => {}} onViewChange={() => {}} />);
       const user = userEvent.setup({ document });
       await user.click(screen.getByRole("button", { name: t("archiveArchived") }));
-      const projectSelect = await screen.findByLabelText(t("archiveRestoreProject")) as HTMLSelectElement;
+      const projectSelect = await findAction("combobox", {name:t("archiveRestoreProject")}) as HTMLSelectElement;
   await waitFor(() => assert.equal(projectSelect.disabled, false));
   await user.selectOptions(projectSelect, "p");
       await user.click(screen.getByRole("button", { name: t("archiveRestoreReview") }));
@@ -95,7 +96,7 @@ for (const language of ["en", "ru"] as const) {
         if (scenario === "occupied") await user.type(screen.getByLabelText(t("archiveName")), "Alternative");
         else await user.click(screen.getByLabelText(t("archiveCreateParent")));
         await user.click(screen.getByRole("button", { name: t("archiveRestoreReview") }));
-        const apply = await screen.findByRole("button", { name: t("archiveRestoreApply") });
+        const apply = await findAction("button", { name: t("archiveRestoreApply") });
         apply.focus(); await user.keyboard("{Enter}");
         await screen.findByText(t("archiveCompleted"));
         const request = calls.filter(c => c.type === "workspace.previewProjectArchive").at(-1);
@@ -119,14 +120,14 @@ for (const language of ["en", "ru"] as const) {
     }, onWorkspaceChange: () => () => {} } as unknown as WorkspaceDesktopApi;
     render(<ProjectArchivePanel client={new WorkspaceServiceClient(api)} workspaceId="w" sourceId="s" projects={[]} language={language} disabled={false} revision={1} invalidation={0} onCommitted={() => {}} onViewChange={() => {}} />);
     const user = userEvent.setup({ document });
-    const recoveryTrigger = await screen.findByRole("button", { name: t("archiveRecovery") });
+    const recoveryTrigger = await findAction("button", { name: t("archiveRecovery") });
     await user.click(recoveryTrigger);
-    await screen.findByRole("button", { name: t("archiveRetryOriginal") });
+    await findAction("button", { name: t("archiveRetryOriginal") });
     await user.keyboard("{Escape}");
-    await waitFor(() => assert.equal(document.activeElement, recoveryTrigger));
+    await waitFor(() => assert.equal(document.activeElement === recoveryTrigger, true));
     await user.click(recoveryTrigger);
     assert.equal(calls.some(c => c.type === "workspace.recoverProjectArchive"), false);
-    const retry = await screen.findByRole("button", { name: t("archiveRetryOriginal") }); retry.focus(); await user.keyboard("{Enter}");
+    const retry = await findAction("button", { name: t("archiveRetryOriginal") }); retry.focus(); await user.keyboard("{Enter}");
     await screen.findByText(t("archiveCompleted"));
     assert.deepEqual(calls.find(c => c.type === "workspace.recoverProjectArchive"), { type: "workspace.recoverProjectArchive", workspaceId: "w", operationId: "interrupted", previewToken: "recovery-token", action: "retry_original" });
   });
@@ -146,8 +147,8 @@ test("unavailable recovery transport retains an unknown outcome until a read-onl
   }, onWorkspaceChange: () => () => {} } as unknown as WorkspaceDesktopApi;
   render(<ProjectArchivePanel client={new WorkspaceServiceClient(api)} workspaceId="w" sourceId="s" projects={[]} language="en" disabled={false} revision={1} invalidation={0} onCommitted={() => {}} onViewChange={() => {}} />);
   const user = userEvent.setup({ document });
-  await user.click(await screen.findByRole("button", { name: "Review interrupted operation" }));
-  await user.click(await screen.findByRole("button", { name: "Retry original move" }));
+  await user.click(await findAction("button", { name: "Review interrupted operation" }));
+  await user.click(await findAction("button", { name: "Retry original move" }));
   await screen.findByText(translate("en", "archiveUnknown"));
   assert.equal(screen.queryByRole("button", { name: "Retry original request" }), null);
   assert.equal((screen.getByRole("button", { name: "Active" }) as HTMLButtonElement).disabled, true);
@@ -171,7 +172,7 @@ test("reopening archive location resets the draft and discards its previous revi
   await waitFor(() => assert.equal(input.disabled, false));
   await user.clear(input); await user.type(input, "Stored");
   await user.click(screen.getByRole("button", { name: translate("en", "archiveReviewLocation") }));
-  await screen.findByRole("button", { name: translate("en", "archiveConfirmLocation") });
+  await findAction("button", { name: translate("en", "archiveConfirmLocation") });
   await act(async () => { summary.parentElement!.removeAttribute("open"); fireEvent(summary.parentElement!, new browser.Event("toggle") as unknown as Event); });
   await act(async () => { summary.parentElement!.setAttribute("open", ""); fireEvent(summary.parentElement!, new browser.Event("toggle") as unknown as Event); });
   await waitFor(() => assert.equal((screen.getByRole("textbox", { name: translate("en", "archiveLocation") }) as HTMLInputElement).value, "Archive"));

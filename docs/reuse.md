@@ -88,3 +88,23 @@ Table/column and grouping popovers reuse the pinned Radix Popover and semantic
 styles from #51. Header actions and focus fallback are local implementations; no
 additional bb module or dependency is copied. Existing typed layout/grouping
 services continue to own saved presentation and value assignment.
+
+## Issue 68 loaded typography and desktop presentation
+
+The same pinned bb revision supplies the Inter/compact neutral desktop reference;
+main `080b416c57b2869024ac62363e96b68b40f499c0` remains the composition authority.
+`@fontsource-variable/inter` is pinned to **5.2.8**, matching bb's inspected
+compatible font family. `app.css` imports its normal variable-weight stylesheet;
+Vite bundles the WOFF2 assets locally. English and Russian use actual Inter
+Latin/Cyrillic glyphs, measured through Chromium's platform-font API in the visual
+smoke. System sans-serif remains the offline/render-failure fallback. No network
+font request is required. The complete SIL OFL 1.1 notice from the font package
+is distributed at `licenses/Inter-OFL-1.1.txt`; artifact verification follows the
+CSS font URLs and requires both language subsets and the notice.
+
+The compact contextual tools, noninteractive hover/focus hints and outline SVG
+icons are local implementations. No additional bb module or icon source was
+copied. Existing pinned Radix Tabs/Dropdown Menu/Popover and Tailwind foundations
+remain in use. Hints deliberately do not install a dismissable layer or consume
+Escape: menus and editors retain dismissal ownership. Existing bb attribution
+and the complete MIT notice remain unchanged.

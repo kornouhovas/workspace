@@ -1,3 +1,4 @@
+import { ContextTools } from "./ContextTools.js";
 import { useEffect, useRef, useState } from "react";
 import type { Language } from "../../contracts/settings.js";
 import type { ProjectList } from "../../contracts/workspaces.js";
@@ -203,7 +204,7 @@ function CreationContent({ client, workspaceId, sourceId, language, projects, di
         const authoredRequest = originalRequest.current;
         if (authoredRequest?.operationId === unknownId) void run(unknownId, () => client.createProject(authoredRequest));
       }}>{t("creationRetryRequest")}</button>}
-    <button type="button" className="workspace-button workspace-button--secondary" disabled={disabled || loading || pending} onClick={() => void load()}>{t("creationReload")}</button>
+    <ContextTools label={t("creationRecovery")} compact><button type="button" className="workspace-button workspace-button--secondary" disabled={disabled || loading || pending} onClick={() => void load()}>{t("creationReload")}</button></ContextTools>
     {operations.length > 0 && <div><h4>{t("creationOutstanding")}</h4><p>{t("creationRecoverable")}</p>
       <ul>{operations.map((operation) => <li key={operation.operationId}>
         <span className="property-authored">{operation.relativePath}</span>

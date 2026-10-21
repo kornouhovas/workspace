@@ -1,3 +1,5 @@
+import { Hint } from "./Hint.js";
+import { Icon } from "./Icons.js";
 import * as Popover from "@radix-ui/react-popover";
 import { useEffect, useRef, useState } from "react";
 import { filterOperators, type FilterRule, type FilterType, type ViewFilterConfig } from "../../contracts/view-filters.js";
@@ -109,7 +111,7 @@ function FilterContent({ client, workspaceId, viewId, archived, language, snapsh
     <form onSubmit={event => { event.preventDefault(); void save(); }} onKeyDown={event => {
       if (event.key === "Escape" && !saving) { event.preventDefault(); hasDraft.current = false; void load(); }
     }}>
-      <label>{t("filterSearch")} <input className="workspace-input" type="search" maxLength={1000} value={draft.search} disabled={disabled || saving} onChange={event => change({ ...draft, search: event.currentTarget.value })} /></label>
+      <label className="search-field"><span className="sr-only">{t("filterSearch")}</span><input placeholder={t("filterSearch")} className="workspace-input" type="search" maxLength={1000} value={draft.search} disabled={disabled || saving} onChange={event => change({ ...draft, search: event.currentTarget.value })} /></label>
       <Popover.Root open={open} onOpenChange={setOpen}>
         <Popover.Trigger asChild><button ref={toggle} className="workspace-button workspace-button--secondary" type="button" disabled={disabled || saving}
           aria-label={t("filtersTitle")}>{t("filtersTitle")} ({draft.rules.length})</button></Popover.Trigger>
@@ -151,8 +153,8 @@ function FilterContent({ client, workspaceId, viewId, archived, language, snapsh
       </Popover.Root>
       <div className="workspace-form-actions">
 
-        <button className="workspace-button" type="submit" disabled={disabled || saving || !snapshot}>{t(saving ? "filterSaving" : "filterApply")}</button>
-        <button className="workspace-button workspace-button--secondary" type="button" disabled={disabled || saving} onClick={() => void save(clearConfig())}>{t("filterClear")}</button>
+        <Hint label={t(saving ? "filterSaving" : "filterApply")}><button className="workspace-button icon-button" aria-label={t(saving ? "filterSaving" : "filterApply")} type="submit" disabled={disabled || saving || !snapshot}><Icon name="check"/></button></Hint>
+        <Hint label={t("filterClear")}><button className="workspace-button workspace-button--secondary icon-button" aria-label={t("filterClear")} type="button" disabled={disabled || saving} onClick={() => void save(clearConfig())}><Icon name="close"/></button></Hint>
       </div>
     </form>
     {loading && <StatusMessage kind="info" title={t("filterLoading")} />}

@@ -1,3 +1,6 @@
+import { Hint } from "./Hint.js";
+import { Icon } from "./Icons.js";
+import { ContextTools, contextReturnTarget } from "./ContextTools.js";
 import { ViewportProjectRow } from "./ViewportProjectRow.js";
 import { MetadataRemovalPanel } from "./MetadataRemovalPanel.js";
 import { GroupAssignment, groupAssignmentMime, readGroupDrop } from "./GroupAssignment.js";
@@ -189,7 +192,7 @@ function TextPropertiesContent({ viewId, layout = "table", hideReveal, client, w
     if (rowBusy || !tableState.config) return;
     void tableState.save(moveTableRow(tableState.config, rowIds, id, target));
   };
-  const tableStyle = viewId ? {width:columns.filter(c=>!c.hidden).reduce((sum,c)=>sum+c.width, hideReveal ? 0 : 224), minWidth:"100%"} : {minWidth:`${fields.length * 14}rem`};
+  const tableStyle = viewId ? {width:columns.filter(c=>!c.hidden).reduce((sum,c)=>sum+c.width, hideReveal ? 0 : 48), minWidth:"100%"} : {minWidth:`${fields.length * 14}rem`};
   const cancel = () => {
     if (saving.current || !draft) return;
     focusTarget.current = draft.propertyId;
@@ -296,11 +299,12 @@ function TextPropertiesContent({ viewId, layout = "table", hideReveal, client, w
         </Header>}
         {snapshot?.definitions.map((property) => <Header data-column-id={property.propertyId} key={property.propertyId}>
           <span className="property-authored">{property.name}</span>
+<Hint label={`${t("renameProperty")}: ${property.name}`}>
           <button type="button" ref={(element) => { if (element) renameButtons.current.set(property.propertyId, element); else renameButtons.current.delete(property.propertyId); }}
             className="workspace-button workspace-button--secondary property-rename" aria-label={`${t("renameProperty")}: ${property.name}`}
-            disabled={disabled || draft !== null} onClick={() => { setMessage(null); setDraft({ propertyId: property.propertyId, name: property.name, originalName: property.name, propertyType: property.propertyType }); }}>{t("renameProperty")}</button>
+            disabled={disabled || draft !== null} onClick={() => { setMessage(null); setDraft({ propertyId: property.propertyId, name: property.name, originalName: property.name, propertyType: property.propertyType }); }}><Icon name="edit"/></button></Hint>
         </Header>)}
-        {!hideReveal && <Header className="board-field-placeholder">{t("revealProject")}</Header>}
+        {!hideReveal && <Header className="board-field-placeholder" style={{width:48}}><span className="sr-only">{t("projectActions")}</span></Header>}
       </>);
   const rows = (ids?: string[], groupKey?: string) => {
     const groupIds = ids ? new Set(ids) : null;
@@ -332,15 +336,7 @@ function TextPropertiesContent({ viewId, layout = "table", hideReveal, client, w
                 else assignmentControls.current.delete(`${origin.key}:${project.projectId}`);
               }} onAssign={command => void assign(command)}/> : null;
           })()}
-          {layout === "table" && viewId && <div className="table-row-controls">
-            <button type="button" draggable={!rowBusy} disabled={rowBusy} aria-label={`${t("tableDrag")}: ${project.name}`} onDragStart={event => {event.stopPropagation(); event.dataTransfer.effectAllowed="move"; event.dataTransfer.setData("application/x-workspace-table-row",JSON.stringify({workspaceId,viewId,projectId:project.projectId}));}}>↕</button>
-            <button type="button" disabled={rowBusy || rowIndex <= 0} aria-label={`${t("tableRowEarlier")}: ${project.name}`} onClick={() => moveRow(project.projectId, visibleIds[rowIndex-1])}>↑</button>
-            <button type="button" disabled={rowBusy || rowIndex < 0 || rowIndex >= visibleIds.length-1} aria-label={`${t("tableRowLater")}: ${project.name}`} onClick={() => moveRow(project.projectId, visibleIds[rowIndex+1])}>↓</button>
-          </div>}
           {"originalRelativePath" in project && typeof project.originalRelativePath === "string" && <span className="archive-row-details">{t("archiveOriginal")}: {project.originalRelativePath}{project.categoryName && <> — {t("archiveFrozenCategory")}: {project.categoryName}</>}</span>}
-          {!retained && onRename && <button type="button" className="workspace-button workspace-button--secondary property-rename"
-            aria-label={`${t("renameProject")}: ${project.name}`} disabled={disabled || renameDisabled || ("associationState" in project && (project.associationState !== "active" || ("resolution" in project && project.resolution !== "active")))}
-            onClick={(event) => onRename(project, event.currentTarget)}>{t("renameProject")}</button>}
           {label && <span className="project-resolution">{t(label)}</span>}
           {retained?.retentionReason === "mode_change" && reason === "excluded" && <span className="project-resolution">{t("projectExcluded")}</span>}
           {retained && <span className="project-previous-path">{retained.relativePath}</span>}
@@ -349,10 +345,7 @@ function TextPropertiesContent({ viewId, layout = "table", hideReveal, client, w
               aria-label={`${t("recoveryLocate")}: ${project.name}`} onClick={(event) => onLocate(retained, event.currentTarget)}>{t("recoveryLocate")}</button>}
         </Cell>
         {categoryProperty && <Cell data-column-id={categoryProperty.propertyId} data-label={categoryProperty.name ?? t("discoveryCategory")} key={categoryProperty.propertyId} className="category-cell" data-color={categories.find(category => category.categoryId === project.categoryId)?.presentation?.color ?? "default"}>{layout === "board" ? <span className="board-category-value">{retained?.categoryName ?? categories.find((category) => category.categoryId === project.categoryId)?.name}</span> : retained?.categoryName ?? categories.find((category) => category.categoryId === project.categoryId)?.name}
-          {!retained && onMoveCategory && project.categoryId && "associationState" in project && project.associationState === "active" &&
-            "resolution" in project && project.resolution === "active" && <button type="button" className="workspace-button workspace-button--secondary property-rename"
-              aria-label={`${t("moveCategory")}: ${project.name}`} disabled={disabled || categoryMoveDisabled}
-              onClick={(event) => onMoveCategory(project, event.currentTarget)}>{t("moveCategory")}</button>}
+
         </Cell>}
         {snapshot?.definitions.map((property) => <Cell data-column-id={property.propertyId} key={property.propertyId} data-label={property.name}>
           {property.propertyType === "multi_select" ? <MultiSelectPropertyCell workspaceId={workspaceId} sourceId={sourceId} projectId={project.projectId} propertyId={property.propertyId}
@@ -369,10 +362,32 @@ function TextPropertiesContent({ viewId, layout = "table", hideReveal, client, w
             })() : property.propertyType === "date" ? propertyValues.date.get(`${project.projectId}:${property.propertyId}`) ?? null : propertyValues.text.get(`${project.projectId}:${property.propertyId}`) ?? null}
             onSave={(value) => saveValue(project.projectId, property.propertyId, value, property.propertyType)} />}
         </Cell>)}
-        {!hideReveal && <Cell key="project-actions" data-label={t("revealProject")}><ProjectRevealButton client={client} workspaceId={workspaceId} projectId={project.projectId} name={project.name} language={language} disabled={disabled} minimumRevision={minimumDiscoveryRevision} sourceLifetime={sourceLifetime}
-          locatorKey={revealLocator} targetKey={JSON.stringify([revealLocator, retained?.associationState, retained?.resolution])} /></Cell>}
+        {!hideReveal && <Cell key="project-actions" data-label={t("projectActions")}><ContextTools label={`${t("projectActions")}: ${project.name}`} compact>
+          {layout === "table" && viewId && <div className="table-row-controls">
+            <Hint label={`${t("tableDrag")}: ${project.name}`}><button type="button" draggable={!rowBusy} disabled={rowBusy} aria-label={`${t("tableDrag")}: ${project.name}`} onDragStart={event => {event.stopPropagation(); event.dataTransfer.effectAllowed="move"; event.dataTransfer.setData("application/x-workspace-table-row",JSON.stringify({workspaceId,viewId,projectId:project.projectId}));}}><Icon name="drag"/></button></Hint>
+            <Hint label={`${t("tableRowEarlier")}: ${project.name}`}><button type="button" disabled={rowBusy || rowIndex <= 0} aria-label={`${t("tableRowEarlier")}: ${project.name}`} onClick={() => moveRow(project.projectId, visibleIds[rowIndex-1])}><Icon name="up"/></button></Hint>
+            <Hint label={`${t("tableRowLater")}: ${project.name}`}><button type="button" disabled={rowBusy || rowIndex < 0 || rowIndex >= visibleIds.length-1} aria-label={`${t("tableRowLater")}: ${project.name}`} onClick={() => moveRow(project.projectId, visibleIds[rowIndex+1])}><Icon name="down"/></button></Hint>
+          </div>}
+          {!retained && onRename && <button type="button" className="workspace-button workspace-button--secondary property-rename"
+            aria-label={`${t("renameProject")}: ${project.name}`} disabled={disabled || renameDisabled || ("associationState" in project && (project.associationState !== "active" || ("resolution" in project && project.resolution !== "active")))}
+            data-close-context onClick={(event) => onRename(project, contextReturnTarget(event.currentTarget))}>{t("renameProject")}</button>}
+          {!retained && onMoveCategory && project.categoryId && "associationState" in project && project.associationState === "active" &&
+            "resolution" in project && project.resolution === "active" && <button type="button" className="workspace-button workspace-button--secondary property-rename"
+              aria-label={`${t("moveCategory")}: ${project.name}`} disabled={disabled || categoryMoveDisabled}
+              data-close-context onClick={(event) => onMoveCategory(project, contextReturnTarget(event.currentTarget))}>{t("moveCategory")}</button>}<ProjectRevealButton client={client} workspaceId={workspaceId} projectId={project.projectId} name={project.name} language={language} disabled={disabled} minimumRevision={minimumDiscoveryRevision} sourceLifetime={sourceLifetime}
+          locatorKey={revealLocator} targetKey={JSON.stringify([revealLocator, retained?.associationState, retained?.resolution])} /></ContextTools></Cell>}
       </>, true)}</ViewportProjectRow>; });
   };
+  const propertyForm = draft && <form className="property-form" onSubmit={(event) => { event.preventDefault(); void save(); }}
+      onKeyDown={(event) => { if (event.key === "Escape") { event.preventDefault(); cancel(); } }}>
+      <label htmlFor="property-name">{t("propertyName")}</label>
+      <input ref={input} id="property-name" className="workspace-input" value={draft.name} disabled={disabled || pending}
+        aria-invalid={message === "propertyValidation"} onChange={(event) => setDraft({ ...draft, name: event.currentTarget.value })} />
+      <div className="workspace-form-actions">
+        <button type="submit" className="workspace-button" disabled={disabled || pending}>{t(pending ? "propertySaving" : "savePropertyName")}</button>
+        <button type="button" className="workspace-button workspace-button--secondary" disabled={pending} onClick={cancel}>{t("cancelRenameWorkspace")}</button>
+      </div>
+    </form>;
   return <div className="text-properties" aria-busy={pending || loading} onKeyDownCapture={event => { if (event.key === "Tab") backwards.current = event.shiftKey; }}>
     {viewId && <ViewFilters client={client} workspaceId={workspaceId} viewId={viewId} archived={!!hideReveal} language={language}
       snapshot={snapshot} categoryProperty={categoryProperty} categories={categories} disabled={disabled || loadError}
@@ -387,6 +402,7 @@ function TextPropertiesContent({ viewId, layout = "table", hideReveal, client, w
     {loading && <StatusMessage kind="info" title={t("propertiesLoading")} />}
     {loadError && <><StatusMessage kind="error" title={t("propertiesLoadError")} />
       <button type="button" className="workspace-button workspace-button--secondary" disabled={disabled || loading} onClick={() => void load()}>{t("propertiesRetry")}</button></>}
+    <ContextTools label={t("propertyTools")} icon="properties">
     <div className="property-create-controls"><button ref={trigger} type="button" className="workspace-button workspace-button--secondary" disabled={disabled || loading || loadError || draft !== null}
       onClick={() => { setMessage(null); creationType.current = "text"; setDraft({ propertyId: null, name: "", originalName: "", propertyType: "text" }); }}>{t("createTextProperty")}</button>
     <button ref={numberTrigger} type="button" className="workspace-button workspace-button--secondary" disabled={disabled || loading || loadError || draft !== null}
@@ -401,6 +417,7 @@ function TextPropertiesContent({ viewId, layout = "table", hideReveal, client, w
     <div ref={removalStatus} tabIndex={-1}>
       <details><summary>{t("metadataManagement")}</summary>
         <ul>{snapshot?.definitions.map(property => <li key={property.propertyId}><span className="property-authored">{property.name}</span>
+
           <button type="button" className="workspace-button workspace-button--secondary" disabled={disabled || loading || pending || removal !== null}
             aria-label={`${t("metadataDeleteProperty")}: ${property.name}`} onClick={event => { removalTrigger.current = event.currentTarget; setRemoval({property, optionId:null}); }}>{t("metadataDeleteProperty")}</button>
         </li>)}</ul>
@@ -412,16 +429,9 @@ function TextPropertiesContent({ viewId, layout = "table", hideReveal, client, w
     {snapshot?.definitions.filter(property => property.propertyType === "single_select" || property.propertyType === "multi_select").map(property => <SelectOptionsEditor onRemove={(optionId, element) => { removalTrigger.current = element; setRemoval({property, optionId}); }} removalOpen={removal !== null} key={property.propertyId}
       client={client} workspaceId={workspaceId} property={property} snapshot={snapshot} language={language} disabled={disabled || loadError || draft !== null}
       onCommitted={value => { if (accepts(value)) { listVersion.current++; minimumRevision.current = value.revision; setSnapshot(value); setLoading(false); setLoadError(false); } }} />)}
-    {draft && <form className="property-form" onSubmit={(event) => { event.preventDefault(); void save(); }}
-      onKeyDown={(event) => { if (event.key === "Escape") { event.preventDefault(); cancel(); } }}>
-      <label htmlFor="property-name">{t("propertyName")}</label>
-      <input ref={input} id="property-name" className="workspace-input" value={draft.name} disabled={disabled || pending}
-        aria-invalid={message === "propertyValidation"} onChange={(event) => setDraft({ ...draft, name: event.currentTarget.value })} />
-      <div className="workspace-form-actions">
-        <button type="submit" className="workspace-button" disabled={disabled || pending}>{t(pending ? "propertySaving" : "savePropertyName")}</button>
-        <button type="button" className="workspace-button workspace-button--secondary" disabled={pending} onClick={cancel}>{t("cancelRenameWorkspace")}</button>
-      </div>
-    </form>}
+    {draft?.propertyId === null && propertyForm}
+    </ContextTools>
+    {draft?.propertyId != null && propertyForm}
     {draft?.propertyId && !pending && snapshot?.definitions.find((property) => property.propertyId === draft.propertyId)?.name !== draft.originalName &&
       <StatusMessage kind="info" title={t("propertyExternalChange")} />}
     {assignmentProperty && <p>{t(filesystemAssignment ? "groupAssignmentFilesystemHint" : "groupAssignmentHint")}</p>}

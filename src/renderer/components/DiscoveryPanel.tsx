@@ -1,3 +1,4 @@
+import { ContextTools } from "./ContextTools.js";
 import { ViewsPanel } from "./ViewsPanel.js";
 import type { WorkspaceView } from "../../contracts/views.js";
 import { ProjectArchivePanel } from "./ProjectArchivePanel.js";
@@ -402,10 +403,11 @@ export function DiscoveryWorkspace({ client, workspaceId, sourceId, refreshVersi
     void load();
   }, [refreshVersion]);
   useEffect(() => { if (projects) onSourceState?.(workspaceId, projects.state); }, [projects?.state, workspaceId, onSourceState]);
-  return <>
+  return <div className="daily-workspace">
     {projects && !projects.configured && <div className="workspace-setup" role="status">
       <p>{t(setupDeferred ? "setupDeferred" : "setupOffer")}</p>
     </div>}
+    <ContextTools label={t("sourceTools")} icon="settings">
     <DiscoveryController onPostpone={projects && !projects.configured && !setupDeferred ? () => setSetupDeferred(true) : undefined} client={client} workspaceId={workspaceId} sourceId={sourceId} minimumRevision={minimumRevision}
       observationVersion={observationVersion}
       invalidation={invalidation} language={language} onPendingChange={setDiscoveryPending} disabled={disabled || archiveBlocked || categoryOptionsBlocked || creationBlocked || recoveryProject !== null || renameProject !== null || renameBlocked || categoryMoveProject !== null || categoryMoveBlocked}
@@ -425,10 +427,12 @@ export function DiscoveryWorkspace({ client, workspaceId, sourceId, refreshVersi
       categories={projects.categories} language={language} revision={projects.revision} invalidation={invalidation}
       disabled={disabled || archiveBlocked || creationBlocked || discoveryPending || recoveryProject !== null || renameProject !== null || renameBlocked || categoryMoveProject !== null || categoryMoveBlocked}
       onBlockedChange={setCategoryOptionsBlocked} onCommitted={() => void load()} />}
+    </ContextTools>
     <ProjectCreationPanel client={client} workspaceId={workspaceId} sourceId={sourceId} language={language}
       projects={projects} onBlockedChange={setCreationBlocked} disabled={disabled || archiveBlocked || categoryOptionsBlocked || discoveryPending || loading || error || recoveryProject !== null || renameProject !== null || renameBlocked}
       effectsBlocked={categoryMoveProject !== null || categoryMoveBlocked} invalidation={invalidation}
       minimumRevision={minimumRevision} observationVersion={observationVersion} onCompleted={() => void load()} />
+    <div className="operation-panels">
     <ProjectRenamePanel client={client} workspaceId={workspaceId} sourceId={sourceId} language={language} project={renameProject}
       projects={projects} disabled={disabled || archiveBlocked || categoryOptionsBlocked || creationBlocked || discoveryPending || loading || error || recoveryProject !== null || categoryMoveProject !== null || categoryMoveBlocked} minimumRevision={minimumRevision}
       observationVersion={observationVersion} sourceLifetime={sourceLifetime} invalidation={invalidation} onBlockedChange={setRenameBlocked}
@@ -439,6 +443,7 @@ export function DiscoveryWorkspace({ client, workspaceId, sourceId, refreshVersi
       minimumRevision={minimumRevision} observationVersion={observationVersion} sourceLifetime={sourceLifetime} invalidation={invalidation}
       onRestoreFocus={() => tableHeading.current?.focus()} onBlockedChange={setCategoryMoveBlocked} onCompleted={() => void load()}
       onClose={(focus = true) => { restoreCategoryMoveFocus.current = focus; setCategoryMoveProject(null); }} />
+    </div>
     {recoveryProject && <ProjectRecoveryController client={client} workspaceId={workspaceId} sourceId={sourceId}
       project={recoveryProject} minimumRevision={minimumRevision} observationVersion={observationVersion} sourceLifetime={sourceLifetime} invalidation={invalidation} observation={observation} language={language} disabled={disabled}
       onPendingChange={onRecoveryPending}
@@ -476,13 +481,13 @@ export function DiscoveryWorkspace({ client, workspaceId, sourceId, refreshVersi
         {projects.retainedCount > 0 && <StatusMessage kind="info" title={t("projectsRetained")} />}
         {projects.projects.length === 0 && projects.retainedProjects.length === 0 && <EmptyStatePanel>{t(projects.configured ? "projectsEmpty" : "emptyTableGuidance")}</EmptyStatePanel>}
       </>}
-      {projects?.mode === "grouped" && <div className="saved-categories">
+      {projects?.mode === "grouped" && <details className="saved-categories"><summary>{t("savedCategories")}</summary>
         <p>{t("discoveryGroupedMode")}</p>
         <p>{t("savedCategories")}</p>
         {projects.categories.some(c => c.presentation?.hidden) && <label><input type="checkbox" checked={showHiddenCategories} onChange={e => setShowHiddenCategories(e.currentTarget.checked)} />{t("categoryShowHidden")}</label>}
         {projects.categories.length > 0 ? <ul>{projects.categories.filter(c => showHiddenCategories || !c.presentation?.hidden).map((category) => <li key={category.categoryId}><span className="category-chip" data-color={category.presentation?.color ?? "default"}>{category.name}</span></li>)}</ul>
           : <p>{t("savedCategoriesEmpty")}</p>}
-      </div>}
+      </details>}
       {view && <TextPropertiesTable viewId={view.viewId} layout={view.kind} sourceLifetime={sourceLifetime} discoveryRevision={projects?.revision ?? 0} minimumDiscoveryRevision={minimumRevision} categoryPropertyRevision={projects?.categoryPropertyRevision ?? 0} minimumCategoryPropertyRevision={minimumCategoryPropertyRevision}
         onFilesystemAssignmentObserved={() => { setInvalidation(value => value + 1); void load(); }}
         onCategoryPropertyCommitted={commitLabel} categoryProperty={projects?.categoryProperty ?? null} categories={projects?.categories ?? []} client={client} workspaceId={workspaceId} sourceId={sourceId}
@@ -498,5 +503,5 @@ export function DiscoveryWorkspace({ client, workspaceId, sourceId, refreshVersi
         } : undefined}
         projects={projects?.projects ?? []} retainedProjects={projects?.retainedProjects ?? []} language={language} disabled={disabled} />}
     </section>
-  </>;
+  </div>;
 }

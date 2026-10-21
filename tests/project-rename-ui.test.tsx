@@ -1,3 +1,5 @@
+import { contextReturnTarget } from "../src/renderer/components/ContextTools.js";
+import { findAction } from "./context-tools-driver.js";
 import assert from "node:assert/strict";
 import test from "node:test";
 import React from "react";
@@ -68,10 +70,10 @@ for (const language of ["en", "ru"] as const) {
   test(`${language}: Table Name submits exact authored text and reloads committed Name`, async () => {
     const client = new Client(), t = (key: Parameters<typeof translate>[1]) => translate(language, key);
     render(<DiscoveryWorkspace client={client} workspaceId="workspace" sourceId="source" language={language} disabled={false} />);
-    const trigger = await screen.findByRole("button", { name: `${language === "en" ? "Rename project folder" : "Переименовать папку проекта"}: Original` });
+    const trigger = await findAction("button", { name: `${language === "en" ? "Rename project folder" : "Переименовать папку проекта"}: Original` });
     await userEvent.click(trigger);
     const input = screen.getByRole("textbox", { name: t("projectName") });
-    assert.equal(document.activeElement, input);
+    assert.equal(document.activeElement === input, true);
     await userEvent.clear(input); await userEvent.type(input, "  Текст 📝  {Enter}");
     await screen.findByText("  Текст 📝  ", { selector: "td span", normalizer: (text) => text });
     assert.equal(client.renames.length, 1);
@@ -84,12 +86,12 @@ for (const language of ["en", "ru"] as const) {
 for (const language of ["en", "ru"] as const) {
   const t = (key: Parameters<typeof translate>[1]) => translate(language, key);
   const mount = (client: Client) => render(<DiscoveryWorkspace client={client} workspaceId="workspace" sourceId="source" language={language} disabled={false} />);
-  const edit = async () => { const trigger = await screen.findByRole("button", { name: `${t("renameProject")}: Original` }); await userEvent.click(trigger); return trigger; };
+  const edit = async () => { const trigger = await findAction("button", { name: `${t("renameProject")}: Original` }); const returning=contextReturnTarget(trigger as HTMLButtonElement); await userEvent.click(trigger); return returning; };
   test(`${language}: Escape restores initiating focus without submitting`, async () => {
     const client = new Client(); mount(client); const trigger = await edit();
     await userEvent.type(screen.getByRole("textbox", { name: t("projectName") }), "{Escape}");
     assert.equal(screen.queryByRole("textbox", { name: t("projectName") }), null);
-    assert.equal(document.activeElement, trigger); assert.equal(client.renames.length, 0);
+    assert.equal(document.activeElement === contextReturnTarget(trigger as HTMLButtonElement), true); assert.equal(client.renames.length, 0);
   });
   test(`${language}: pending dismissal retains operation and prevents double/replacement submission`, async () => {
     const client = new Client(), response = deferred<ServiceResult<ProjectRenameResult>>(); client.handler = () => response.promise;
@@ -99,8 +101,8 @@ for (const language of ["en", "ru"] as const) {
     fireEvent.click(submit); fireEvent.click(submit); assert.equal(client.renames.length, 1);
     assert.ok(screen.getByText("Original", { selector: "td span" })); assert.equal(document.activeElement, screen.getByRole("button", { name: t("cancelRenameWorkspace") }));
     await userEvent.click(screen.getByRole("button", { name: t("cancelRenameWorkspace") }));
-    assert.ok(document.activeElement === screen.getByRole("heading", { name: "Table" }));
-    const trigger = screen.getByRole("button", { name: `${t("renameProject")}: Original` }); assert.equal((trigger as HTMLButtonElement).disabled, true);
+    assert.equal((document.activeElement as HTMLElement)?.getAttribute("aria-label"), `${t("projectActions")}: Original`);
+    const trigger = await findAction("button", { name: `${t("renameProject")}: Original` }); assert.equal((trigger as HTMLButtonElement).disabled, true);
     await act(async () => response.resolve({ ok: false, error: { code: "service_unavailable", message: "Lost response" } }));
     await userEvent.click(screen.getByRole("button", { name: t("renameStatus") }));
     assert.deepEqual(client.statusCalls, [["workspace", client.renames[0].operationId]]);
@@ -122,7 +124,7 @@ for (const language of ["en", "ru"] as const) {
       mount(client); await edit(); const input = screen.getByRole("textbox", { name: t("projectName") });
       await userEvent.clear(input); await userEvent.type(input, "  Draft  {Enter}");
       await screen.findByText(t(key)); assert.equal((input as HTMLInputElement).value, "  Draft  "); assert.equal((input as HTMLInputElement).disabled, false);
-      assert.equal(document.activeElement, input); assert.ok(screen.getByText("Original", { selector: "td span" }));
+      assert.equal(document.activeElement === input, true); assert.ok(screen.getByText("Original", { selector: "td span" }));
       assert.equal(screen.queryByRole("button", { name: t("renameStatus") }), null); assert.equal(client.renames.length, 1);
     });
   }
@@ -153,19 +155,19 @@ for (const language of ["en", "ru"] as const) {
     const client = new Client(), response = deferred<ServiceResult<ProjectRenameResult>>(); client.handler = () => response.promise;
     const props = { client, workspaceId: "workspace", sourceId: "source", language, disabled: false };
     const view = render(<DiscoveryWorkspace key="backend-0" {...props} />);
-    await userEvent.click(await screen.findByRole("button", { name: `${t("renameProject")}: Original` }));
+    await userEvent.click(await findAction("button", { name: `${t("renameProject")}: Original` }));
     await userEvent.type(screen.getByRole("textbox", { name: t("projectName") }), "{Enter}");
     view.rerender(<DiscoveryWorkspace key="backend-1" {...props} />);
     await act(async () => response.resolve({ ok: true, value: client.completed() }));
     assert.equal(screen.queryByText(t("renameSaved")), null);
-    await userEvent.click(await screen.findByRole("button", { name: t("renameStatus") }));
+    await userEvent.click(await findAction("button", { name: t("renameStatus") }));
     await screen.findByText(t("renameSaved")); assert.deepEqual(client.statusCalls, [["workspace", client.renames[0].operationId]]); assert.equal(client.renames.length, 1);
   });
 }
 for (const language of ["en", "ru"] as const) {
   const t = (key: Parameters<typeof translate>[1]) => translate(language, key);
   const props = (client: Client) => ({ client, workspaceId: "workspace", sourceId: "source", language, disabled: false });
-  const open = async () => userEvent.click(await screen.findByRole("button", { name: `${t("renameProject")}: Original` }));
+  const open = async () => userEvent.click(await findAction("button", { name: `${t("renameProject")}: Original` }));
   test(`${language}: source observation invalidates an open draft until explicit reopening`, async () => {
     const client = new Client(); render(<DiscoveryWorkspace {...props(client)} />); await open();
     await act(async () => client.events.forEach((listener) => listener({ type: "workspace.sourceObserved", sourceId: "source", workspaceIds: ["workspace"], observationRevision: 3, state: "ready", automaticUpdates: "active" })));
@@ -178,7 +180,7 @@ for (const language of ["en", "ru"] as const) {
 for (const language of ["en", "ru"] as const) {
   const t = (key: Parameters<typeof translate>[1]) => translate(language, key);
   const props = (client: Client) => ({ client, workspaceId: "workspace", sourceId: "source", language, disabled: false });
-  const open = async () => userEvent.click(await screen.findByRole("button", { name: `${t("renameProject")}: Original` }));
+  const open = async () => userEvent.click(await findAction("button", { name: `${t("renameProject")}: Original` }));
   for (const binding of ["operation", "project", "source", "workspace", "name", "revision", "original", "category", "receipt"] as const) {
     test(`${language}: mismatched ${binding} response cannot resolve the submitted operation`, async () => {
       const client = new Client(); client.handler = async () => {
@@ -243,13 +245,13 @@ for (const language of ["en", "ru"] as const) {
     await screen.findByText(t("renameUncertain"));
     client.list = { ...client.list, workspaceId: "sibling" };
     view.rerender(<DiscoveryWorkspace key="sibling" {...props(client)} workspaceId="sibling" />);
-    await userEvent.click(await screen.findByRole("button", { name: t("renameStatus") }));
+    await userEvent.click(await findAction("button", { name: t("renameStatus") }));
     await screen.findByText(t("renameSaved")); assert.deepEqual(client.statusCalls, [["sibling", client.renames[0].operationId]]); assert.equal(client.renames.length, 1);
   });
   test(`${language}: retained rows keep Text editing while Name mutation is unavailable`, async () => {
     const client = new Client(); client.list = { ...client.list, state: "unavailable", projects: [], retainedProjects: [{ ...initial.projects[0], associationState: "unresolved", resolution: "unresolved" }], retainedCount: 1 };
     render(<DiscoveryWorkspace {...props(client)} />);
-    const text = await screen.findByRole("button", { name: `${t("editTextValue")}: Original / Notes` });
+    const text = await findAction("button", { name: `${t("editTextValue")}: Original / Notes` });
     assert.equal(screen.queryByRole("button", { name: `${t("renameProject")}: Original` }), null);
     assert.equal((text as HTMLButtonElement).disabled, false); await userEvent.click(text);
     assert.equal((screen.getByRole("textbox", { name: `${t("editTextValue")}: Original / Notes` }) as HTMLTextAreaElement).disabled, false);
@@ -260,7 +262,7 @@ for (const language of ["en", "ru"] as const) test(`${language}: delayed success
   const client = new Client(), response = deferred<ServiceResult<ProjectRenameResult>>(), t = (key: Parameters<typeof translate>[1]) => translate(language, key);
   client.handler = () => response.promise;
   render(<DiscoveryWorkspace client={client} workspaceId="workspace" sourceId="source" language={language} disabled={false} />);
-  await userEvent.click(await screen.findByRole("button", { name: `${t("renameProject")}: Original` }));
+  await userEvent.click(await findAction("button", { name: `${t("renameProject")}: Original` }));
   await userEvent.type(screen.getByRole("textbox", { name: t("projectName") }), "{Enter}");
   await userEvent.click(screen.getByRole("button", { name: `${t("editTextValue")}: Original / Notes` }));
   const editor = screen.getByRole("textbox", { name: `${t("editTextValue")}: Original / Notes` });
@@ -273,9 +275,9 @@ for (const language of ["en", "ru"] as const) test(`${language}: status must bin
   client.handler = async () => ({ ok: false, error: { code: "service_unavailable", message: "lost" } });
   client.statusHandler = async () => ({ ok: true, value: { outcome: "rejected", problem: "invalid_name", operation: null } });
   render(<DiscoveryWorkspace client={client} workspaceId="workspace" sourceId="source" language={language} disabled={false} />);
-  await userEvent.click(await screen.findByRole("button", { name: `${t("renameProject")}: Original` }));
+  await userEvent.click(await findAction("button", { name: `${t("renameProject")}: Original` }));
   await userEvent.type(screen.getByRole("textbox", { name: t("projectName") }), "{Enter}");
-  await userEvent.click(await screen.findByRole("button", { name: t("renameStatus") }));
+  await userEvent.click(await findAction("button", { name: t("renameStatus") }));
   assert.equal((screen.getByRole("button", { name: t("renameSubmit") }) as HTMLButtonElement).disabled, true);
   assert.ok(screen.getByRole("button", { name: t("renameStatus") }));
   client.statusHandler = async () => ({ ok: true, value: client.completed() });
@@ -290,7 +292,7 @@ function recoveryPreview(operation = interrupted, workspaceId = "workspace"): Pr
 test("unfinished rename loads source-scoped names without implicit review or mutation", async () => {
   const client = new Client(); client.unfinished = [interrupted];
   render(<DiscoveryWorkspace client={client} workspaceId="workspace" sourceId="source" language="en" disabled={false} />);
-  const review = await screen.findByRole("button", { name: "Review interrupted rename: Original → Requested" });
+  const review = await findAction("button", { name: "Review interrupted rename: Original → Requested" });
   assert.ok(review); assert.ok(client.renameLists.length > 0); assert.ok(client.renameLists.every((id) => id === "workspace"));
   assert.equal(client.reviews.length, 0); assert.equal(client.recoveries.length, 0); assert.equal(client.renames.length, 0);
 });
@@ -299,7 +301,7 @@ test("explicit recovery review advertises fresh placements and submits only the 
   const client = new Client(); client.unfinished = [interrupted];
   client.recoveryHandler = async () => { client.unfinished = []; return { ok: true, value: { outcome: "rejected", problem: "kept_original", operation: { ...interrupted, stage: "failed", resultKind: "rejected", problem: "kept_original" } } }; };
   render(<DiscoveryWorkspace client={client} workspaceId="workspace" sourceId="source" language="en" disabled={false} />);
-  await userEvent.click(await screen.findByRole("button", { name: "Review interrupted rename: Original → Requested" }));
+  await userEvent.click(await findAction("button", { name: "Review interrupted rename: Original → Requested" }));
   await screen.findByText("Original folder"); await screen.findByText("Verified project folder");
   assert.equal(client.recoveries.length, 0); assert.equal(client.reviews.length, 1);
   assert.equal(screen.queryByRole("button", { name: "Finish staged rename" }), null);
@@ -318,8 +320,8 @@ for (const language of ["en", "ru"] as const) {
   const t = (key: Parameters<typeof translate>[1]) => translate(language, key);
   const props = (client: Client) => ({ client, workspaceId: "workspace", sourceId: "source", language, disabled: false });
   const openReview = async () => {
-    const trigger = await screen.findByRole("button", { name: `${t("renameReview")}: Original → Requested` });
-    await userEvent.click(trigger); return trigger;
+    const trigger = await findAction("button", { name: `${t("renameReview")}: Original → Requested` });
+    const returning=contextReturnTarget(trigger as HTMLButtonElement); await userEvent.click(trigger); return returning;
   };
   for (const mode of ["direct", "grouped"] as const) for (const action of Object.keys(recoveryActions) as ProjectRenameRecoveryAction[]) {
     test(`${language}/${mode}: explicit ${action} preserves bindings, category and Text; receipts reload committed Name`, async () => {
@@ -329,7 +331,7 @@ for (const language of ["en", "ru"] as const) {
       client.reviewHandler = async () => ({ ok: true, value: { ...recoveryPreview(operation), originalState: action === "finish_staged" || action === "complete_destination" ? "missing" : "matching", stagedState: action === "finish_staged" ? "matching" : null, destinationState: action === "complete_destination" ? "matching" : "missing", actions: [action] } });
       client.recoveryHandler = () => response.promise;
       render(<DiscoveryWorkspace {...props(client)} />); await openReview();
-      const submit = await screen.findByRole("button", { name: t(recoveryActions[action]) });
+      const submit = await findAction("button", { name: t(recoveryActions[action]) });
       assert.equal(client.recoveries.length, 0); assert.equal(client.renames.length, 0);
       assert.ok(document.activeElement === screen.getByRole("heading", { name: t("renameReviewTitle") }));
       submit.focus(); fireEvent.click(submit); fireEvent.click(submit);
@@ -357,13 +359,13 @@ for (const language of ["en", "ru"] as const) {
   test(`${language}: Escape cancels delayed review and restores initiating focus`, async () => {
     const client = new Client(), response = deferred<ServiceResult<ProjectRenameRecoveryPreview>>(); client.unfinished = [interrupted]; client.reviewHandler = () => response.promise;
     render(<DiscoveryWorkspace {...props(client)} />); const trigger = await openReview(); await screen.findByText(t("renameReviewLoading"));
-    await userEvent.keyboard("{Escape}"); assert.equal(document.activeElement, trigger);
+    await userEvent.keyboard("{Escape}"); assert.equal(document.activeElement === contextReturnTarget(trigger as HTMLButtonElement), true);
     await act(async () => response.resolve({ ok: true, value: recoveryPreview() }));
     assert.equal(screen.queryByRole("heading", { name: t("renameReviewTitle") }), null); assert.equal(client.recoveries.length, 0);
   });
   test(`${language}: recovery transport uncertainty and pending dismissal use the same status after list failure and remount`, async () => {
     const client = new Client(), response = deferred<ServiceResult<ProjectRenameResult>>(); client.unfinished = [interrupted]; client.recoveryHandler = () => response.promise;
-    const view = render(<DiscoveryWorkspace key="first" {...props(client)} />); await openReview(); await userEvent.click(await screen.findByRole("button", { name: t("renameRetryOriginal") }));
+    const view = render(<DiscoveryWorkspace key="first" {...props(client)} />); await openReview(); await userEvent.click(await findAction("button", { name: t("renameRetryOriginal") }));
     await userEvent.click(screen.getByRole("button", { name: t("renameReviewClose") }));
     await act(async () => response.resolve({ ok: false, error: { code: "service_unavailable", message: "lost" } }));
     client.listRenameHandler = async () => ({ ok: false, error: { code: "storage", message: "list failed" } });
@@ -378,16 +380,16 @@ for (const language of ["en", "ru"] as const) {
     const client = new Client(); client.unfinished = [interrupted];
     client.recoveryHandler = async () => ({ ok: false, error: { code: "stale_preview", message: "stale" } });
     client.statusHandler = async () => ({ ok: true, value: { outcome: "recoverable", operation: interrupted } });
-    render(<DiscoveryWorkspace {...props(client)} />); await openReview(); await userEvent.click(await screen.findByRole("button", { name: t("renameRetryOriginal") }));
+    render(<DiscoveryWorkspace {...props(client)} />); await openReview(); await userEvent.click(await findAction("button", { name: t("renameRetryOriginal") }));
     await screen.findByText(t("renameUncertain")); assert.equal(screen.queryByRole("button", { name: t("renameRetryOriginal") }), null);
     await userEvent.click(screen.getByRole("button", { name: t("renameStatus") })); await screen.findByText(t("renameRecoverable"));
     assert.equal(client.recoveries.length, 1); assert.equal(client.reviews.length, 1);
-    await userEvent.click(screen.getByRole("button", { name: t("renameReviewAgain") })); await screen.findByRole("button", { name: t("renameRetryOriginal") });
+    await userEvent.click(screen.getByRole("button", { name: t("renameReviewAgain") })); await findAction("button", { name: t("renameRetryOriginal") });
     assert.equal(client.reviews.length, 2); assert.equal(client.recoveries.length, 1);
   });
   for (const change of ["revision", "observation", "unavailable", "refresh", "backend", "reload", "selection"] as const) test(`${language}: ${change} invalidates review without implicit replay`, async () => {
     const client = new Client(); client.unfinished = [interrupted];
-    const view = render(<DiscoveryWorkspace key="first" {...props(client)} refreshVersion={0} />); await openReview(); await screen.findByRole("button", { name: t("renameRetryOriginal") });
+    const view = render(<DiscoveryWorkspace key="first" {...props(client)} refreshVersion={0} />); await openReview(); await findAction("button", { name: t("renameRetryOriginal") });
     await act(async () => {
       if (change === "revision") client.events.forEach((listener) => listener({ type: "workspace.projectsChanged", sourceId: "source", workspaceIds: ["workspace", "sibling"], revision: 2 }));
       if (change === "observation" || change === "unavailable") client.events.forEach((listener) => listener({ type: "workspace.sourceObserved", sourceId: "source", workspaceIds: ["workspace"], observationRevision: 1, automaticUpdates: "active", state: change === "unavailable" ? "unavailable" : "ready" }));
@@ -415,7 +417,7 @@ for (const language of ["en", "ru"] as const) {
     const client = new Client(), response = deferred<ServiceResult<ProjectRenameList>>(); client.unfinished = [interrupted];
     client.recoveryHandler = async () => ({ ok: false, error: { code: "service_unavailable", message: "lost" } });
     client.statusHandler = async () => { client.unfinished = []; client.listRenameHandler = null; return { ok: true, value: recoveryCompleted() }; };
-    render(<DiscoveryWorkspace {...props(client)} />); await openReview(); await userEvent.click(await screen.findByRole("button", { name: t("renameRetryOriginal") })); await screen.findByText(t("renameUncertain"));
+    render(<DiscoveryWorkspace {...props(client)} />); await openReview(); await userEvent.click(await findAction("button", { name: t("renameRetryOriginal") })); await screen.findByText(t("renameUncertain"));
     client.listRenameHandler = () => response.promise; await userEvent.click(screen.getByRole("button", { name: t("renameListReload") }));
     await userEvent.click(screen.getByRole("button", { name: t("renameStatus") })); await screen.findByText(t("renameSaved"));
     await act(async () => response.resolve({ ok: true, value: { workspaceId: "workspace", sourceId: "source", operations: [interrupted] } }));
@@ -426,7 +428,7 @@ for (const language of ["en", "ru"] as const) {
 for (const language of ["en", "ru"] as const) {
   const t = (key: Parameters<typeof translate>[1]) => translate(language, key);
   const props = (client: Client) => ({ client, workspaceId: "workspace", sourceId: "source", language, disabled: false });
-  const openReview = async (original = "Original", requested = "Requested") => { const trigger = await screen.findByRole("button", { name: `${t("renameReview")}: ${original} → ${requested}` }); await userEvent.click(trigger); return trigger; };
+  const openReview = async (original = "Original", requested = "Requested") => { const trigger = await findAction("button", { name: `${t("renameReview")}: ${original} → ${requested}` }); const returning=contextReturnTarget(trigger as HTMLButtonElement); await userEvent.click(trigger); return returning; };
   test(`${language}: loading, empty, list errors and retry never trigger review or mutation`, async () => {
     const client = new Client(), response = deferred<ServiceResult<ProjectRenameList>>(); client.listRenameHandler = () => response.promise;
     render(<DiscoveryWorkspace {...props(client)} />); await screen.findByText(t("renameListLoading"));
@@ -444,17 +446,17 @@ for (const language of ["en", "ru"] as const) {
   test(`${language}: recovery rejects mismatched terminal project and keeps same-operation status access`, async () => {
     const client = new Client(); client.unfinished = [interrupted];
     client.recoveryHandler = async () => ({ ok: true, value: recoveryCompleted({ ...interrupted, projectId: "foreign" }) });
-    render(<DiscoveryWorkspace {...props(client)} />); await openReview(); await userEvent.click(await screen.findByRole("button", { name: t("renameRetryOriginal") })); await screen.findByText(t("renameUncertain"));
+    render(<DiscoveryWorkspace {...props(client)} />); await openReview(); await userEvent.click(await findAction("button", { name: t("renameRetryOriginal") })); await screen.findByText(t("renameUncertain"));
     assert.ok(screen.getByRole("button", { name: t("renameStatus") })); assert.equal(screen.queryByText(t("renameSaved")), null); assert.equal(client.recoveries.length, 1);
   });
   test(`${language}: pending review cannot accept null-operation recovery rejection as resolution`, async () => {
     const client = new Client(); client.unfinished = [interrupted]; client.recoveryHandler = async () => ({ ok: true, value: { outcome: "rejected", operation: null, problem: "storage_error" } });
-    render(<DiscoveryWorkspace {...props(client)} />); await openReview(); await userEvent.click(await screen.findByRole("button", { name: t("renameRetryOriginal") })); await screen.findByText(t("renameUncertain"));
+    render(<DiscoveryWorkspace {...props(client)} />); await openReview(); await userEvent.click(await findAction("button", { name: t("renameRetryOriginal") })); await screen.findByText(t("renameUncertain"));
     assert.ok(screen.getByRole("button", { name: t("renameStatus") })); assert.equal(client.recoveries.length, 1);
   });
   test(`${language}: same operation cannot switch project identity in a later list`, async () => {
     const client = new Client(); client.unfinished = [interrupted]; render(<DiscoveryWorkspace {...props(client)} />); await openReview();
-    await screen.findByRole("button", { name: t("renameRetryOriginal") });
+    await findAction("button", { name: t("renameRetryOriginal") });
     client.unfinished = [{ ...interrupted, projectId: "foreign" }];
     await userEvent.click(screen.getByRole("button", { name: t("renameListReload") })); await screen.findByText(t("renameListError"));
     assert.equal(screen.queryByRole("button", { name: t("renameRetryOriginal") }), null); assert.equal(client.recoveries.length, 0);
@@ -463,30 +465,30 @@ for (const language of ["en", "ru"] as const) {
     const client = new Client(), response = deferred<ServiceResult<ProjectRenameRecoveryPreview>>();
     const other = { ...interrupted, operationId: "other-operation", projectId: "other-project", originalName: "Other", name: "Other requested", originalRelativePath: "Other", requestedRelativePath: "Other requested" };
     client.unfinished = [interrupted, other]; client.reviewHandler = () => client.reviews.length === 1 ? response.promise : Promise.resolve({ ok: true, value: recoveryPreview(other) });
-    render(<DiscoveryWorkspace {...props(client)} />); await openReview(); await openReview("Other", "Other requested"); await screen.findByRole("button", { name: t("renameRetryOriginal") });
+    render(<DiscoveryWorkspace {...props(client)} />); await openReview(); await openReview("Other", "Other requested"); await findAction("button", { name: t("renameRetryOriginal") });
     await act(async () => response.resolve({ ok: true, value: { ...recoveryPreview(), actions: ["complete_destination"] } }));
     const panel = screen.getByRole("heading", { name: t("renameReviewTitle") }).parentElement!;
     assert.equal(within(panel).queryByText("Original"), null); assert.ok(within(panel).getByText("Other"));
     assert.equal(screen.queryByRole("button", { name: t("renameCompleteDestination") }), null); assert.equal(client.recoveries.length, 0);
   });
   test(`${language}: reconnect reloads a changed operation without preview replay`, async () => {
-    const client = new Client(); client.unfinished = [interrupted]; render(<DiscoveryWorkspace {...props(client)} />); await openReview(); await screen.findByRole("button", { name: t("renameRetryOriginal") });
+    const client = new Client(); client.unfinished = [interrupted]; render(<DiscoveryWorkspace {...props(client)} />); await openReview(); await findAction("button", { name: t("renameRetryOriginal") });
     const lists = client.renameLists.length; client.unfinished = [{ ...interrupted, stage: "staged", lastVerifiedPlacement: "staged" }];
     await act(async () => { client.statuses.forEach((listener) => listener({ state: "unavailable" })); client.statuses.forEach((listener) => listener({ state: "ready" })); });
     await waitFor(() => assert.ok(client.renameLists.length > lists)); assert.equal(client.reviews.length, 1); assert.equal(client.recoveries.length, 0);
     client.reviewHandler = async () => ({ ok: true, value: { ...recoveryPreview(client.unfinished[0]), originalState: "missing", stagedState: "matching", actions: ["finish_staged"] } });
-    await userEvent.click(screen.getByRole("button", { name: t("renameReviewAgain") })); await screen.findByRole("button", { name: t("renameFinishStaged") }); assert.equal(client.reviews.length, 2);
+    await userEvent.click(screen.getByRole("button", { name: t("renameReviewAgain") })); await findAction("button", { name: t("renameFinishStaged") }); assert.equal(client.reviews.length, 2);
   });
   test(`${language}: source sibling authorizes explicit recovery even when initiating workspace is gone`, async () => {
     const client = new Client(); client.list = { ...client.list, workspaceId: "sibling" }; client.unfinished = [interrupted];
     client.reviewHandler = async () => ({ ok: true, value: recoveryPreview(interrupted, "sibling") });
     client.recoveryHandler = async () => { client.unfinished = []; return { ok: true, value: recoveryCompleted() }; };
-    render(<DiscoveryWorkspace {...props(client)} workspaceId="sibling" />); await openReview(); await userEvent.click(await screen.findByRole("button", { name: t("renameRetryOriginal") })); await screen.findByText(t("renameSaved"));
+    render(<DiscoveryWorkspace {...props(client)} workspaceId="sibling" />); await openReview(); await userEvent.click(await findAction("button", { name: t("renameRetryOriginal") })); await screen.findByText(t("renameSaved"));
     assert.deepEqual(client.recoveries, [["sibling", "interrupted", "fresh-token", "retry_original"]]); assert.equal(client.renames.length, 0);
   });
   test(`${language}: delayed recovery success preserves external Text focus and reloads newer sibling placement`, async () => {
     const client = new Client(), response = deferred<ServiceResult<ProjectRenameResult>>(); client.unfinished = [interrupted]; client.recoveryHandler = () => response.promise;
-    render(<DiscoveryWorkspace {...props(client)} />); await openReview(); await userEvent.click(await screen.findByRole("button", { name: t("renameRetryOriginal") }));
+    render(<DiscoveryWorkspace {...props(client)} />); await openReview(); await userEvent.click(await findAction("button", { name: t("renameRetryOriginal") }));
     await userEvent.click(screen.getByRole("button", { name: `${t("editTextValue")}: Original / Notes` })); const text = screen.getByRole("textbox", { name: `${t("editTextValue")}: Original / Notes` });
     client.unfinished = []; client.list = { ...client.list, revision: 3, projects: [{ ...initial.projects[0], name: "Newer external", relativePath: "Newer external" }] };
     await act(async () => client.events.forEach((listener) => listener({ type: "workspace.projectsChanged", sourceId: "source", workspaceIds: ["workspace", "sibling"], revision: 3 })));
@@ -518,8 +520,8 @@ for (const language of ["en", "ru"] as const) test(`${language}: stale recovery 
   const client = new Client(), t = (key: Parameters<typeof translate>[1]) => translate(language, key);
   client.unfinished = [interrupted];
   const view = render(<DiscoveryWorkspace client={client} workspaceId="workspace" sourceId="source" language={language} disabled={false} refreshVersion={0} />);
-  await userEvent.click(await screen.findByRole("button", { name: `${t("renameReview")}: Original → Requested` }));
-  const action = await screen.findByRole("button", { name: t("renameRetryOriginal") }); action.focus();
+  await userEvent.click(await findAction("button", { name: `${t("renameReview")}: Original → Requested` }));
+  const action = await findAction("button", { name: t("renameRetryOriginal") }); action.focus();
   view.rerender(<DiscoveryWorkspace client={client} workspaceId="workspace" sourceId="source" language={language} disabled={false} refreshVersion={1} />);
   await screen.findByText(t("renameReviewStale"));
   const again = screen.getByRole("button", { name: t("renameReviewAgain") }); await waitFor(() => assert.equal((again as HTMLButtonElement).disabled, false));
@@ -530,9 +532,9 @@ test("rename recovery review blocks competing folder reassociation while retaini
   const client = new Client(); client.unfinished = [interrupted];
   client.list = { ...client.list, projects: [], retainedProjects: [{ ...initial.projects[0], associationState: "unresolved", resolution: "unresolved" }], retainedCount: 1 };
   render(<DiscoveryWorkspace client={client} workspaceId="workspace" sourceId="source" language="en" disabled={false} />);
-  const locate = await screen.findByRole("button", { name: `${translate("en", "recoveryLocate")}: Original` });
+  const locate = await findAction("button", { name: `${translate("en", "recoveryLocate")}: Original` });
   assert.equal((locate as HTMLButtonElement).disabled, false);
-  await userEvent.click(screen.getByRole("button", { name: "Review interrupted rename: Original → Requested" })); await screen.findByRole("button", { name: "Keep original folder" });
+  await userEvent.click(screen.getByRole("button", { name: "Review interrupted rename: Original → Requested" })); await findAction("button", { name: "Keep original folder" });
   assert.equal((locate as HTMLButtonElement).disabled, true);
   const text = screen.getByRole("button", { name: `${translate("en", "editTextValue")}: Original / Notes` }); assert.equal((text as HTMLButtonElement).disabled, false);
   await userEvent.click(screen.getByRole("button", { name: "Close recovery review" })); assert.equal((locate as HTMLButtonElement).disabled, false);
@@ -547,22 +549,23 @@ for (const language of ["en", "ru"] as const) for (const mode of ["direct", "gro
       categories: mode === "grouped" ? [{ categoryId: "category", name: "Category", relativePath: "Category" }] : [],
       categoryProperty: mode === "grouped" ? { propertyId: "category-property", sourceId: "source", name: "Category" } : null };
     render(<DiscoveryWorkspace client={client} workspaceId="workspace" sourceId="source" language={language} disabled={false} />);
-    const trigger = await screen.findByRole("button", { name: new RegExp(`^${t("renameProject")}:`) });
+    const trigger = await findAction("button", { name: new RegExp(`^${t("renameProject")}:`) });
     assert.equal(trigger.getAttribute("aria-label"), `${t("renameProject")}: ${original}`);
     trigger.focus(); await userEvent.keyboard(" ");
     const input = screen.getByRole("textbox", { name: t("projectName") });
-    assert.equal(document.activeElement, input); assert.equal((input as HTMLInputElement).labels?.length, 1);
+    assert.equal(document.activeElement === input, true); assert.equal((input as HTMLInputElement).labels?.length, 1);
     assert.equal((input as HTMLInputElement).value, original);
     fireEvent.change(input, { target: { value: "  Requested-новое-" + "unbroken-name-".repeat(20) + "  " } });
     await userEvent.tab(); assert.equal(document.activeElement, screen.getByRole("button", { name: t("renameSubmit") }));
     await userEvent.tab(); assert.equal(document.activeElement, screen.getByRole("button", { name: t("cancelRenameWorkspace") }));
     await userEvent.keyboard("{Enter}");
     assert.equal(screen.queryByRole("textbox", { name: t("projectName") }), null);
-    assert.equal(document.activeElement, trigger); assert.equal(client.renames.length, 0);
+    assert.equal(document.activeElement === contextReturnTarget(trigger as HTMLButtonElement), true); assert.equal(client.renames.length, 0);
     assert.equal(screen.getByText(original, { selector: "td span", normalizer: (text) => text }).textContent, original);
     assert.ok(screen.getByText("Exact text"));
     await userEvent.keyboard("{Enter}");
+    await userEvent.click(await findAction("button", {name:new RegExp(`^${t("renameProject")}:`)}));
     assert.equal((screen.getByRole("textbox", { name: t("projectName") }) as HTMLInputElement).value, original);
-    await userEvent.keyboard("{Escape}"); assert.equal(document.activeElement, trigger); assert.equal(client.renames.length, 0);
+    await userEvent.keyboard("{Escape}"); assert.equal(document.activeElement === contextReturnTarget(trigger as HTMLButtonElement), true); assert.equal(client.renames.length, 0);
   });
 }

@@ -7,7 +7,7 @@ export function SourceRefresh({ language, pending, error, degraded, unavailable,
   unavailableTitle?: TranslationKey; disabled: boolean; onRefresh(): void;
 }) {
   const t = (key: Parameters<typeof translate>[1]) => translate(language, key);
-  return <div className={`source-refresh${unavailable ? " bb-status bb-status--error" : ""}`} aria-busy={pending}
+  return <div className={`source-refresh${!unavailable && !pending && !degraded && !error ? " source-refresh--quiet" : ""}${unavailable ? " bb-status bb-status--error" : ""}`} aria-busy={pending}
     role={unavailable ? "alert" : undefined}>
     {unavailable && <div>
       <h2 className="bb-status__title">{t(unavailableTitle)}</h2>

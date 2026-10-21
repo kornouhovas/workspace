@@ -1,3 +1,4 @@
+import { findAction } from "./context-tools-driver.js";
 import assert from "node:assert/strict";
 import { scanDirectSource, scanGroupedSource } from "../src/service/discovery.js";
 import type { BackgroundScanRequest } from "../src/service/background-discovery.js";
@@ -80,8 +81,8 @@ test("EN/RU discovery state controls require a reviewed token and respect pendin
       render(<DiscoveryPanel language={language} preview={preview} pending={pending} applying={state === "applying"}
         error={state === "error"} stale={state === "stale"} onApply={() => { applies++; }} onCancel={() => { cancels++; }}
         onExclude={() => {}} onRetry={() => {}} />);
-      const apply = screen.getByRole("button", { name: translate(language, "discoveryApply") }) as HTMLButtonElement;
-      const cancel = screen.getByRole("button", { name: translate(language, "cancelRenameWorkspace") }) as HTMLButtonElement;
+      const apply = (await findAction("button",{ name: translate(language, "discoveryApply") })) as HTMLButtonElement;
+      const cancel = (await findAction("button",{ name: translate(language, "cancelRenameWorkspace") })) as HTMLButtonElement;
       assert.equal(apply.disabled, state !== "ready" && state !== "empty");
       assert.equal(cancel.disabled, state === "applying");
       if (preview?.entries.length) {
@@ -193,7 +194,7 @@ async function openSettings(section: "general" | "workspaces" = "general") {
   await userEvent.click(await screen.findByRole("tab", { name: section === "general" ? /^(General|Основные)$/ : /^(Workspaces|Рабочие пространства)$/ }));
 }
 async function backToWorkspace() {
-  await userEvent.click(screen.getByRole("button", { name: /^(Back to workspace|Вернуться к работе)$/ }));
+  await userEvent.click((await findAction("button",{ name: /^(Back to workspace|Вернуться к работе)$/ })));
 }
 
 test("loads English settings and preserves the language only after a successful save", async () => {
@@ -228,9 +229,9 @@ test("creates from keyboard folder selection with the standard name and preserve
   const selectedPath = "/Volumes/Projects/  Team & Work  ";
   mockApi({ picker: async () => ({ outcome: "selected", path: selectedPath }) });
   render(<App />);
-  await screen.findByRole("button", { name: "Choose project folder" });
+  await findAction("button",{ name: "Choose project folder" });
   assert.equal(screen.queryByRole("textbox"), null);
-  const picker = screen.getByRole("button", { name: "Choose project folder" });
+  const picker = (await findAction("button",{ name: "Choose project folder" }));
   picker.focus();
   await userEvent.keyboard("{Enter}");
   const displayedPath = screen.getByText((_content, element) => element?.classList.contains("selected-root__path") ?? false);
@@ -249,8 +250,8 @@ test("picker cancellation is actionable and never sends a create command", async
     },
   });
   render(<App />);
-  await screen.findByRole("button", { name: "Choose project folder" });
-  await userEvent.click(screen.getByRole("button", { name: "Choose project folder" }));
+  await findAction("button",{ name: "Choose project folder" });
+  await userEvent.click((await findAction("button",{ name: "Choose project folder" })));
   assert.ok(await screen.findByRole("heading", { name: "Folder selection cancelled" }));
   assert.equal(createCalls, 0);
   cleanup();
@@ -261,7 +262,7 @@ test("pending folder selection cannot create or open a second picker", async () 
   let picks = 0;
   mockApi({ picker: () => { picks++; return new Promise(resolve => { resolvePicker = resolve; }); } });
   render(<App />);
-  const picker = await screen.findByRole("button", { name: "Choose project folder" });
+  const picker = await findAction("button",{ name: "Choose project folder" });
   await userEvent.click(picker);
   assert.equal((picker as HTMLButtonElement).disabled, true);
   await userEvent.click(picker);
@@ -279,11 +280,11 @@ test("reports inaccessible roots in Russian without exposing service details", a
       : fail("filesystem"),
   });
   render(<App />);
-  await screen.findByRole("button", { name: "Выбрать папку проекта" });
-  await userEvent.click(screen.getByRole("button", { name: "Выбрать папку проекта" }));
+  await findAction("button",{ name: "Выбрать папку проекта" });
+  await userEvent.click((await findAction("button",{ name: "Выбрать папку проекта" })));
   assert.ok(await screen.findByRole("heading", { name: "Нет доступа к папке" }));
   assert.equal(screen.queryByText("private service detail"), null);
-  assert.ok(screen.getByRole("button", { name: "Создать рабочее пространство" }));
+  assert.ok((await findAction("button",{ name: "Создать рабочее пространство" })));
   cleanup();
 });
 
@@ -295,8 +296,8 @@ test("failed storage create does not render a saved workspace", async () => {
       : fail("storage"),
   });
   render(<App />);
-  await screen.findByRole("button", { name: "Choose project folder" });
-  await userEvent.click(screen.getByRole("button", { name: "Choose project folder" }));
+  await findAction("button",{ name: "Choose project folder" });
+  await userEvent.click((await findAction("button",{ name: "Choose project folder" })));
   assert.ok(await screen.findByRole("heading", { name: "Workspace not saved" }));
   assert.equal(screen.queryByRole("heading", { name: "Not saved" }), null);
   assert.equal(screen.queryByRole("textbox"), null);
@@ -329,17 +330,16 @@ test("creates identically named workspaces with distinct IDs and activates eithe
     },
   });
   render(<App />);
-  await screen.findByRole("button", { name: "Choose project folder" });
-  await userEvent.click(screen.getByRole("button", { name: "Choose project folder" }));
+  await findAction("button",{ name: "Choose project folder" });
+  await userEvent.click((await findAction("button",{ name: "Choose project folder" })));
   await waitFor(() => assert.equal(document.querySelector("#workspace-title")?.textContent, "Workspace"));
 
-  await userEvent.click(screen.getByRole("button", { name: "Create another workspace" }));
-  await userEvent.click(screen.getByRole("button", { name: "Choose project folder" }));
+  await userEvent.click((await findAction("button",{ name: "Add workspace" })));
   await waitFor(() => assert.equal(created.length, 2));
 
-  const selector = screen.getByRole("combobox", { name: "Saved workspaces" });
-  assert.equal((selector as HTMLSelectElement).options.length, 2);
-  await userEvent.selectOptions(selector, "workspace-1");
+  const entries=within(screen.getByRole("navigation",{name:"Workspaces"})).getAllByRole("button",{name:"Workspace"});
+  assert.equal(entries.length,2);
+  await userEvent.click(entries[0]);
   await waitFor(() => assert.equal(document.querySelector("#workspace-title")?.textContent, "Workspace"));
   assert.deepEqual(created.map(({ name: workspaceName }) => workspaceName), ["Workspace", "Workspace"]);
   cleanup();
@@ -360,7 +360,7 @@ test("renders the persisted active Table workspace and flags an unavailable sour
   cleanup();
 });
 
-test("activates another saved workspace from the selector", async () => {
+test("activates another saved workspace from the sidebar", async () => {
   const first = makeActive("one", "First", "/Projects/A");
   const second = makeActive("two", "Second", "/Projects/B");
   const calls: string[] = [];
@@ -381,8 +381,7 @@ test("activates another saved workspace from the selector", async () => {
     },
   });
   render(<App />);
-  const selector = await screen.findByRole("combobox", { name: "Saved workspaces" });
-  await userEvent.selectOptions(selector, "two");
+  await userEvent.click(await findAction("button", {name:"Second",exact:true}));
   await waitFor(() => assert.equal(screen.getByRole("heading", { name: "Second" }).textContent, "Second"));
   assert.deepEqual(calls, ["two"]);
   assert.equal(within(screen.getByRole("main")).getByText("/Projects/B").textContent, "/Projects/B");
@@ -404,12 +403,11 @@ test("reports failed workspace activation and keeps the current workspace select
     }),
   });
   render(<App />);
-  const selector = await screen.findByRole("combobox", { name: "Сохранённые рабочие пространства" });
-  await userEvent.selectOptions(selector, "two");
+  await userEvent.click(await findAction("button", {name:"Second",exact:true}));
   assert.ok(await screen.findByRole("heading", { name: "Не удалось открыть рабочее пространство" }));
   assert.ok(screen.getByText(/Выберите его снова или перезапустите приложение/));
   assert.equal(screen.getByRole("heading", { name: "First" }).textContent, "First");
-  assert.equal((selector as HTMLSelectElement).value, "one");
+  assert.equal(screen.getByRole("button",{name:"First"}).getAttribute("aria-current"),"page");
   assert.equal(screen.queryByText("private service detail"), null);
   cleanup();
 });
@@ -491,7 +489,7 @@ test("renames through the typed client and applies the committed snapshot using 
   } });
   render(<App />);
       await openSettings("workspaces");
-  await userEvent.click(await screen.findByRole("button", { name: "Rename workspace" }));
+  await userEvent.click(await findAction("button",{ name: "Rename workspace" }));
   const input = screen.getByRole("textbox", { name: "Workspace name" });
   assert.equal(document.activeElement, input);
   await userEvent.clear(input);
@@ -515,7 +513,7 @@ test("Russian rename supports cancel and blank validation without sending a comm
   } });
   render(<App />);
       await openSettings("workspaces");
-  await userEvent.click(await screen.findByRole("button", { name: "Переименовать рабочее пространство" }));
+  await userEvent.click(await findAction("button",{ name: "Переименовать рабочее пространство" }));
   const input = screen.getByRole("textbox", { name: "Название рабочего пространства" });
   await userEvent.clear(input);
   await userEvent.type(input, "   ");
@@ -524,10 +522,10 @@ test("Russian rename supports cancel and blank validation without sending a comm
   assert.equal(renameCalls, 0);
   await userEvent.keyboard("{Escape}");
   assert.equal(screen.queryByRole("textbox"), null);
-  assert.equal(document.activeElement, screen.getByRole("button", { name: "Переименовать рабочее пространство" }));
-  await userEvent.click(screen.getByRole("button", { name: "Переименовать рабочее пространство" }));
+  assert.equal(document.activeElement, (await findAction("button",{ name: "Переименовать рабочее пространство" })));
+  await userEvent.click((await findAction("button",{ name: "Переименовать рабочее пространство" })));
   await userEvent.type(screen.getByRole("textbox"), " changed");
-  await userEvent.click(screen.getByRole("button", { name: "Отмена" }));
+  await userEvent.click((await findAction("button",{ name: "Отмена" })));
   assert.ok(screen.getByRole("heading", { name: "Original" }));
   assert.equal(renameCalls, 0);
   cleanup();
@@ -549,13 +547,13 @@ test("pending and failed rename preserve the actual name and entered draft and a
   } });
   render(<App />);
       await openSettings("workspaces");
-  await userEvent.click(await screen.findByRole("button", { name: "Rename workspace" }));
+  await userEvent.click(await findAction("button",{ name: "Rename workspace" }));
   const input = screen.getByRole("textbox");
   await userEvent.clear(input);
   await userEvent.type(input, "Draft");
-  await userEvent.click(screen.getByRole("button", { name: "Save name" }));
-  assert.equal((screen.getByRole("button", { name: "Saving name…" }) as HTMLButtonElement).disabled, true);
-  assert.equal((screen.getByRole("button", { name: "Cancel" }) as HTMLButtonElement).disabled, true);
+  await userEvent.click((await findAction("button",{ name: "Save name" })));
+  assert.equal(((await findAction("button",{ name: "Saving name…" })) as HTMLButtonElement).disabled, true);
+  assert.equal(((await findAction("button",{ name: "Cancel" })) as HTMLButtonElement).disabled, true);
   assert.equal((screen.getByRole("combobox", { name: "Saved workspaces" }) as HTMLSelectElement).disabled, true);
   assert.equal((input as HTMLInputElement).disabled, true);
   assert.ok(screen.getByRole("heading", { name: "Actual" }));
@@ -564,7 +562,7 @@ test("pending and failed rename preserve the actual name and entered draft and a
   assert.equal((input as HTMLInputElement).value, "Draft");
   assert.ok(screen.getByRole("heading", { name: "Actual" }));
   assert.equal(screen.queryByText("private service detail"), null);
-  await userEvent.click(screen.getByRole("button", { name: "Save name" }));
+  await userEvent.click((await findAction("button",{ name: "Save name" })));
   assert.ok(await screen.findByRole("heading", { name: "Draft" }));
   assert.equal(renameCalls, 2);
   cleanup();
@@ -581,7 +579,7 @@ test("rename reports unavailable transport and stale targets in both languages",
       } });
       render(<App />);
       await openSettings("workspaces");
-      await userEvent.click(await screen.findByRole("button", { name: translate(language, "renameWorkspaceAction") }));
+      await userEvent.click(await findAction("button",{ name: translate(language, "renameWorkspaceAction") }));
       const input = screen.getByRole("textbox");
       await userEvent.clear(input);
       await userEvent.type(input, "Draft");
@@ -609,15 +607,15 @@ test("reorder is localized, keyboard operable and preserves focus and active wor
     render(<App />);
       await openSettings("workspaces");
     const label = (key: "moveWorkspaceUp" | "moveWorkspaceDown", name: string) => `${translate(language, key)}: ${name}`;
-    const up = await screen.findByRole("button", { name: label("moveWorkspaceUp", "Two") });
-    assert.equal((screen.getByRole("button", { name: label("moveWorkspaceUp", "One") }) as HTMLButtonElement).disabled, true);
-    assert.equal((screen.getByRole("button", { name: label("moveWorkspaceDown", "Three") }) as HTMLButtonElement).disabled, true);
+    const up = await findAction("button",{ name: label("moveWorkspaceUp", "Two") });
+    assert.equal(((await findAction("button",{ name: label("moveWorkspaceUp", "One") })) as HTMLButtonElement).disabled, true);
+    assert.equal(((await findAction("button",{ name: label("moveWorkspaceDown", "Three") })) as HTMLButtonElement).disabled, true);
     // Reach the reorder control using native tab navigation, then submit with Enter.
     for (let step = 0; document.activeElement !== up && step < 30; step++) await userEvent.tab();
     assert.ok(document.activeElement === up, `Expected reorder focus; got ${document.activeElement?.textContent?.slice(0, 100)}`);
     await userEvent.keyboard("{Enter}");
     await waitFor(() => assert.deepEqual(calls[0], { type: "workspace.reorder", workspaceIds: ["two", "one", "three"] }));
-    const down = screen.getByRole("button", { name: label("moveWorkspaceDown", "Two") });
+    const down = (await findAction("button",{ name: label("moveWorkspaceDown", "Two") }));
     await waitFor(() => assert.equal(document.activeElement, down));
     assert.equal((up as HTMLButtonElement).disabled, true);
     assert.equal((screen.getByRole("combobox", { name: translate(language, "workspaceSelectLabel") }) as HTMLSelectElement).value, "two");
@@ -648,11 +646,11 @@ test("reorder disables conflicting controls while pending and failures preserve 
       } });
       render(<App />);
       await openSettings("workspaces");
-      const up = await screen.findByRole("button", { name: `${translate(language, "moveWorkspaceUp")}: Two` });
+      const up = await findAction("button",{ name: `${translate(language, "moveWorkspaceUp")}: Two` });
       await userEvent.click(up);
       assert.equal((up as HTMLButtonElement).disabled, true);
-      assert.equal((screen.getByRole("button", { name: translate(language, "renameWorkspaceAction") }) as HTMLButtonElement).disabled, true);
-      assert.equal((screen.getByRole("button", { name: translate(language, "addWorkspaceAction") }) as HTMLButtonElement).disabled, true);
+      assert.equal(((await findAction("button",{ name: translate(language, "renameWorkspaceAction") })) as HTMLButtonElement).disabled, true);
+      assert.equal(((await findAction("button",{ name: translate(language, "addWorkspaceAction") })) as HTMLButtonElement).disabled, true);
       assert.equal((screen.getByRole("combobox", { name: translate(language, "workspaceSelectLabel") }) as HTMLSelectElement).disabled, true);
       assert.ok(screen.getByText(translate(language, "savingWorkspaceOrder")));
       await act(async () => { finish?.(fail(failure === "throw" ? "storage" : failure)); await pending; });
@@ -676,11 +674,11 @@ test("removal confirmation names the configuration, explains retention and resto
     } });
     render(<App />);
       await openSettings("workspaces");
-    const remove = await screen.findByRole("button", { name: `${translate(language, "removeWorkspaceAction")}: ${active.name.trim()}` });
+    const remove = await findAction("button",{ name: `${translate(language, "removeWorkspaceAction")}: ${active.name.trim()}` });
     await userEvent.click(remove);
     assert.ok(screen.getByRole("form", { name: `${translate(language, "removeWorkspaceTitle")}: ${active.name.trim()}` }));
     assert.ok(screen.getByText(translate(language, "removeWorkspaceDescription")));
-    assert.equal(document.activeElement, screen.getByRole("button", { name: translate(language, "cancelRemoveWorkspace") }));
+    assert.equal(document.activeElement, (await findAction("button",{ name: translate(language, "cancelRemoveWorkspace") })));
     await userEvent.keyboard("{Escape}");
     assert.equal(screen.queryByRole("form"), null);
     assert.equal(document.activeElement, remove);
@@ -711,19 +709,19 @@ test("keyboard removal applies committed inactive, active and final snapshots an
     render(<App />);
       await openSettings("workspaces");
     for (const target of [one, other, sibling]) {
-      const remove = await screen.findByRole("button", { name: `${translate(language, "removeWorkspaceAction")}: ${target.name}` });
+      const remove = await findAction("button",{ name: `${translate(language, "removeWorkspaceAction")}: ${target.name}` });
       remove.focus();
       await userEvent.keyboard("{Enter}");
-      assert.ok(screen.getByRole("button", { name: translate(language, "cancelRemoveWorkspace") }));
+      assert.ok((await findAction("button",{ name: translate(language, "cancelRemoveWorkspace") })));
       await userEvent.tab();
-      assert.equal(document.activeElement, screen.getByRole("button", { name: translate(language, "confirmRemoveWorkspace") }));
+      assert.equal(document.activeElement, (await findAction("button",{ name: translate(language, "confirmRemoveWorkspace") })));
       await userEvent.keyboard("{Enter}");
       await waitFor(() => assert.equal(screen.queryByRole("form"), null));
       assert.equal(screen.queryByRole("button", { name: `${translate(language, "removeWorkspaceAction")}: ${target.name}` }), null);
       if (data.activeWorkspace) {
         assert.equal(document.querySelector("#workspace-title")?.textContent, data.activeWorkspace.name);
         assert.equal((screen.getByRole("combobox", { name: translate(language, "workspaceSelectLabel") }) as HTMLSelectElement).value, data.activeWorkspace.workspaceId);
-        assert.ok(document.activeElement === screen.getByRole("button", { name: `${translate(language, "removeWorkspaceAction")}: Sibling` }), `Expected sibling removal focus; got ${document.activeElement?.textContent?.slice(0, 80)}`);
+        assert.ok(document.activeElement === (await findAction("button",{ name: `${translate(language, "removeWorkspaceAction")}: Sibling` })), `Expected sibling removal focus; got ${document.activeElement?.textContent?.slice(0, 80)}`);
       } else {
         assert.ok(screen.getByRole("heading", { name: translate(language, "createWorkspaceTitle") }));
         await waitFor(() => assert.ok(document.activeElement === screen.getByRole("button", { name: translate(language, "pickRootAction") }), `Expected folder-picker focus; got ${document.activeElement?.textContent?.slice(0, 80)}`));
@@ -753,13 +751,13 @@ test("pending and failed removal retain selection, confirmation and list and per
       } });
       render(<App />);
       await openSettings("workspaces");
-      await userEvent.click(await screen.findByRole("button", { name: `${translate(language, "removeWorkspaceAction")}: Actual` }));
-      await userEvent.click(screen.getByRole("button", { name: translate(language, "confirmRemoveWorkspace") }));
-      assert.equal((screen.getByRole("button", { name: translate(language, "removingWorkspace") }) as HTMLButtonElement).disabled, true);
+      await userEvent.click(await findAction("button",{ name: `${translate(language, "removeWorkspaceAction")}: Actual` }));
+      await userEvent.click((await findAction("button",{ name: translate(language, "confirmRemoveWorkspace") })));
+      assert.equal(((await findAction("button",{ name: translate(language, "removingWorkspace") })) as HTMLButtonElement).disabled, true);
       for (const label of ["cancelRemoveWorkspace", "renameWorkspaceAction", "addWorkspaceAction"] as const) {
-        assert.equal((screen.getByRole("button", { name: translate(language, label) }) as HTMLButtonElement).disabled, true);
+        assert.equal(((await findAction("button",{ name: translate(language, label) })) as HTMLButtonElement).disabled, true);
       }
-      assert.equal((screen.getByRole("button", { name: `${translate(language, "moveWorkspaceDown")}: Actual` }) as HTMLButtonElement).disabled, true);
+      assert.equal(((await findAction("button",{ name: `${translate(language, "moveWorkspaceDown")}: Actual` })) as HTMLButtonElement).disabled, true);
       assert.equal((screen.getByRole("combobox", { name: translate(language, "workspaceSelectLabel") }) as HTMLSelectElement).disabled, true);
       await userEvent.keyboard("{Escape}");
       assert.ok(screen.getByRole("form"));
@@ -769,7 +767,7 @@ test("pending and failed removal retain selection, confirmation and list and per
       assert.equal(document.querySelector("#workspace-title")?.textContent, "Actual");
       assert.deepEqual(Array.from((screen.getByRole("combobox", { name: translate(language, "workspaceSelectLabel") }) as HTMLSelectElement).options, (option) => option.value), ["one", "two"]);
       assert.equal(screen.queryByText("private service detail"), null);
-      await userEvent.click(screen.getByRole("button", { name: translate(language, "confirmRemoveWorkspace") }));
+      await userEvent.click((await findAction("button",{ name: translate(language, "confirmRemoveWorkspace") })));
       await waitFor(() => assert.equal(document.querySelector("#workspace-title")?.textContent, "Sibling"));
       assert.equal(calls, 2);
       cleanup();
@@ -803,7 +801,7 @@ test("source notifications affect only referencing workspaces and client rejects
   });
   assert.equal(screen.queryByRole("heading", { name: "Project folder unavailable" }), null);
   await act(async () => { mock.emitChange(sourceEvent(one, [one.workspaceId, two.workspaceId])); });
-  assert.ok(screen.getByRole("button", { name: "Retry folder access" }));
+  assert.ok((await findAction("button",{ name: "Retry folder access" })));
   await act(async () => {
     mock.emitChange({ type: "workspace.listChanged", snapshot: snapshotOf(two, [one, two, other]) });
     mock.emitChange(sourceEvent(two, [one.workspaceId, two.workspaceId], false));
@@ -840,15 +838,15 @@ test("retry folder access supports EN/RU keyboard, pending, failure and recovere
       },
     });
     render(<App />);
-    const retry = await screen.findByRole("button", { name: translate(language, "retrySourceAction") });
+    const retry = await findAction("button",{ name: translate(language, "retrySourceAction") });
     retry.focus();
     await userEvent.keyboard("{Enter}");
-    assert.ok(screen.getByRole("button", { name: translate(language, "refreshingSource") }).hasAttribute("disabled"));
+    assert.ok((await findAction("button",{ name: translate(language, "refreshingSource") })).hasAttribute("disabled"));
     assert.equal(calls, 1);
     await act(async () => { resolveRefresh?.(fail("service_unavailable")); });
     assert.ok(screen.getByRole("heading", { name: translate(language, "refreshSourceErrorTitle") }));
     assert.ok(screen.getByRole("heading", { name: translate(language, "sourceUnavailableTitle") }));
-    await userEvent.click(screen.getByRole("button", { name: translate(language, "retrySourceAction") }));
+    await userEvent.click((await findAction("button",{ name: translate(language, "retrySourceAction") })));
     await act(async () => {
       const event = sourceEvent(active, [active.workspaceId], true);
       mock.emitChange(event);
@@ -878,7 +876,7 @@ test("delayed initial loads and activation responses cannot restore removed or p
     resolveLoad?.(ok(snapshotOf(one, [one, two])));
   });
   assert.ok(await screen.findByRole("heading", { name: "Current" }));
-  await userEvent.selectOptions(screen.getByRole("combobox", { name: "Saved workspaces" }), one.workspaceId);
+  await userEvent.click(await findAction("button", {name:"Old",exact:true}));
   await act(async () => {
     mock.emitChange({ type: "workspace.listChanged", snapshot: snapshotOf(two) });
     resolveActivate?.(ok(one));
@@ -921,7 +919,7 @@ test("a delayed retry result cannot restore a removed configuration or overwrite
       new Promise((resolve) => { resolveRefresh = resolve; }),
   });
   render(<App />);
-  await userEvent.click(await screen.findByRole("button", { name: "Retry folder access" }));
+  await userEvent.click(await findAction("button",{ name: "Retry folder access" }));
   await act(async () => {
     mock.emitChange(sourceEvent(other));
     mock.emitChange(sourceEvent(one, [one.workspaceId], true));
@@ -930,7 +928,7 @@ test("a delayed retry result cannot restore a removed configuration or overwrite
   });
   assert.equal(screen.queryByRole("heading", { name: "Project folder unavailable" }), null);
   await act(async () => { mock.emitChange(sourceEvent(one)); });
-  await userEvent.click(screen.getByRole("button", { name: "Retry folder access" }));
+  await userEvent.click((await findAction("button",{ name: "Retry folder access" })));
   await act(async () => {
     mock.emitChange({ type: "workspace.listChanged", snapshot: snapshotOf(null) });
     const source = sourceEvent(one, [one.workspaceId], true);
@@ -956,7 +954,7 @@ test("long authored names and paths survive language changes and keyboard confir
     assert.equal(screen.getByRole("heading", { name: active.name.trim() }).textContent, active.name);
     assert.equal(within(screen.getByRole("main")).getByText(active.canonicalRoot, { exact: true }).textContent, active.canonicalRoot);
     await openSettings("workspaces");
-    const remove = screen.getByRole("button", { name: `${translate(language, "removeWorkspaceAction")}: ${active.name.trim()}` });
+    const remove = (await findAction("button",{ name: `${translate(language, "removeWorkspaceAction")}: ${active.name.trim()}` }));
     remove.focus();
     await userEvent.keyboard("{Enter}");
     assert.ok(screen.getByRole("form", { name: `${translate(language, "removeWorkspaceTitle")}: ${active.name.trim()}` }));
@@ -985,7 +983,7 @@ test("EN/RU preview requests authoritative exclusion drafts, uses keyboard contr
           ] });
       } });
     render(<App />);
-    const trigger = await screen.findByRole("button", { name: translate(language, "discoveryAction") });
+    const trigger = await findAction("button",{ name: translate(language, "discoveryAction") });
     trigger.focus();
     await userEvent.keyboard("{Enter}");
     const checkbox = await screen.findByRole("checkbox", { name: /Authored project/ });
@@ -998,7 +996,7 @@ test("EN/RU preview requests authoritative exclusion drafts, uses keyboard contr
       { type: "workspace.previewDiscovery", workspaceId: active.workspaceId },
       { type: "workspace.previewDiscovery", workspaceId: active.workspaceId, excludedRelativePaths: ["  Authored project  "] },
     ]);
-    const cancel = screen.getByRole("button", { name: translate(language, "cancelRenameWorkspace") });
+    const cancel = (await findAction("button",{ name: translate(language, "cancelRenameWorkspace") }));
     cancel.focus();
     await userEvent.keyboard("{Enter}");
     assert.equal(screen.queryByRole("heading", { name: translate(language, "discoveryTitle") }), null);
@@ -1015,10 +1013,10 @@ test("preview handles pending cancellation and discards delayed responses", asyn
     ? ok({ workspaces: [{ workspaceId: active.workspaceId, name: active.name }], activeWorkspace: active })
     : new Promise((resolve) => { finish = resolve; }) });
   render(<App />);
-  await userEvent.click(await screen.findByRole("button", { name: "Preview project folders" }));
+  await userEvent.click(await findAction("button",{ name: "Preview project folders" }));
   assert.ok(screen.getByRole("heading", { name: "Scanning project folders…" }));
-  assert.equal((screen.getByRole("button", { name: "Refresh preview" }) as HTMLButtonElement).disabled, true);
-  await userEvent.click(screen.getByRole("button", { name: "Cancel" }));
+  assert.equal(((await findAction("button",{ name: "Refresh preview" })) as HTMLButtonElement).disabled, true);
+  await userEvent.click((await findAction("button",{ name: "Cancel" })));
   await act(async () => { finish?.(fail("storage")); });
   assert.equal(screen.queryByRole("heading", { name: "Direct project preview" }), null);
   assert.equal(screen.queryAllByRole("alert").length, 0);
@@ -1038,9 +1036,9 @@ test("preview exposes localized empty, unavailable, unreadable, changed and retr
           excludedRelativePaths: [], entries: [], state, mode: "direct" as const, configured: false, previewToken: state === "empty" ? "token" : null });
       } });
       render(<App />);
-      await userEvent.click(await screen.findByRole("button", { name: translate(language, "discoveryAction") }));
+      await userEvent.click(await findAction("button",{ name: translate(language, "discoveryAction") }));
       assert.ok(await screen.findByRole("heading", { name: translate(language, "discoveryError") }));
-      await userEvent.click(screen.getByRole("button", { name: translate(language, "discoveryRefresh") }));
+      await userEvent.click((await findAction("button",{ name: translate(language, "discoveryRefresh") })));
       assert.ok(await screen.findByRole("heading", { name: translate(language, label) }));
       cleanup();
     }
@@ -1080,7 +1078,7 @@ test("EN/RU grouped review uses the real service and keyboard mode/exclusion con
             ? service.handleQuery(input) : service.handleCommand(input)) as ServiceResult<WorkspaceResponse>;
         } });
       render(<App />);
-      const trigger = await screen.findByRole("button", { name: translate(language, "discoveryAction") });
+      const trigger = await findAction("button",{ name: translate(language, "discoveryAction") });
       await userEvent.click(trigger);
       const mode = await screen.findByRole("combobox", { name: translate(language, "discoveryMode") });
       mode.focus();
@@ -1095,7 +1093,7 @@ test("EN/RU grouped review uses the real service and keyboard mode/exclusion con
       assert.ok(checkbox("discoveryProject", "src"));
       assert.equal(screen.queryByText("Deeper"), null);
       assert.ok(checkbox("discoveryCategory", "Category").closest("li")?.contains(checkbox("discoveryProject", "Project")));
-      assert.equal((screen.getByRole("button", { name: translate(language, "discoveryApply") }) as HTMLButtonElement).disabled, false);
+      assert.equal(((await findAction("button",{ name: translate(language, "discoveryApply") })) as HTMLButtonElement).disabled, false);
       const project = checkbox("discoveryProject", "Project"); project.focus();
       await userEvent.keyboard(" ");
       await waitFor(() => assert.equal(checkbox("discoveryProject", "Project").disabled, false));
@@ -1105,14 +1103,14 @@ test("EN/RU grouped review uses the real service and keyboard mode/exclusion con
       await userEvent.click(checkbox("discoveryCategory", "DirectLooking"));
       await waitFor(() => assert.equal(checkbox("discoveryCategory", "DirectLooking").disabled, false));
       assert.equal(screen.queryByRole("checkbox", { name: `${translate(language, "discoveryExclude")}: ${translate(language, "discoveryProject")}: src` }), null);
-      await userEvent.click(screen.getByRole("button", { name: translate(language, "cancelRenameWorkspace") }));
+      await userEvent.click((await findAction("button",{ name: translate(language, "cancelRenameWorkspace") })));
       assert.equal(document.activeElement, trigger);
       const list = service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId });
       assert.equal(list.ok && list.value.configured, false);
       await userEvent.click(trigger);
       const restoredMode = await screen.findByRole("combobox", { name: translate(language, "discoveryMode") });
       assert.equal((restoredMode as HTMLSelectElement).value, "direct");
-      await userEvent.click(screen.getByRole("button", { name: translate(language, "discoveryApply") }));
+      await userEvent.click((await findAction("button",{ name: translate(language, "discoveryApply") })));
       await screen.findByRole("cell", { name: "Category" });
       await userEvent.click(trigger);
       await screen.findByRole("checkbox", { name: `${translate(language, "discoveryExclude")}: Category` });
@@ -1132,12 +1130,12 @@ test("delayed grouped requests cannot revive cancelled, switched, removed or res
       return fail("invalid_input");
     } });
     render(<App />);
-    await userEvent.click(await screen.findByRole("button", { name: "Preview project folders" }));
+    await userEvent.click(await findAction("button",{ name: "Preview project folders" }));
     await userEvent.selectOptions(await screen.findByRole("combobox", { name: "Folder interpretation" }), "grouped");
     assert.ok(screen.getByRole("heading", { name: "Scanning project folders…" }));
     if (transition === "cancel") {
-      await userEvent.click(screen.getByRole("button", { name: "Cancel" }));
-      await userEvent.click(screen.getByRole("button", { name: "Preview project folders" }));
+      await userEvent.click((await findAction("button",{ name: "Cancel" })));
+      await userEvent.click((await findAction("button",{ name: "Preview project folders" })));
       await screen.findByRole("checkbox", { name: /^(Exclude|Исключить):/ });
     } else if (transition === "restart") {
       await act(async () => { api.emitStatus("starting"); });
@@ -1169,20 +1167,20 @@ test("EN/RU grouped selection shows pending, recoverable failure and empty revie
       return fail("invalid_input");
     } });
     render(<App />);
-    await userEvent.click(await screen.findByRole("button", { name: translate(language, "discoveryAction") }));
+    await userEvent.click(await findAction("button",{ name: translate(language, "discoveryAction") }));
     const mode = await screen.findByRole("combobox", { name: translate(language, "discoveryMode") });
     await userEvent.selectOptions(mode, "grouped");
     assert.equal((mode as HTMLSelectElement).disabled, true);
     assert.ok(screen.getByRole("heading", { name: translate(language, "discoveryLoading") }));
     await act(async () => { finish?.(fail("storage")); });
     assert.ok(screen.getByRole("heading", { name: translate(language, "discoveryError") }));
-    const retry = screen.getByRole("button", { name: translate(language, "discoveryRefresh") });
+    const retry = (await findAction("button",{ name: translate(language, "discoveryRefresh") }));
     assert.equal(document.activeElement, retry);
     await userEvent.keyboard("{Enter}");
     await screen.findByRole("heading", { name: translate(language, "discoveryGroupedTitle") });
     assert.equal(groupedCalls, 2);
     assert.ok(screen.getByRole("heading", { name: translate(language, "discoveryEmpty") }));
-    assert.equal((screen.getByRole("button", { name: translate(language, "discoveryApply") }) as HTMLButtonElement).disabled, false);
+    assert.equal(((await findAction("button",{ name: translate(language, "discoveryApply") })) as HTMLButtonElement).disabled, false);
     cleanup();
   }
 });
@@ -1200,13 +1198,13 @@ test("EN/RU keyboard Apply prevents duplicate submission and displays committed 
       return fail("invalid_input");
     } });
     render(<App />);
-    const trigger = await screen.findByRole("button", { name: translate(language, "discoveryAction") });
+    const trigger = await findAction("button",{ name: translate(language, "discoveryAction") });
     await userEvent.click(trigger);
-    const apply = await screen.findByRole("button", { name: translate(language, "discoveryApply") });
+    const apply = await findAction("button",{ name: translate(language, "discoveryApply") });
     await waitFor(() => assert.equal((apply as HTMLButtonElement).disabled, false));
     apply.focus(); await userEvent.keyboard("{Enter}{Enter}");
     assert.equal((apply as HTMLButtonElement).disabled, true);
-    assert.equal((screen.getByRole("button", { name: translate(language, "cancelRenameWorkspace") }) as HTMLButtonElement).disabled, true);
+    assert.equal(((await findAction("button",{ name: translate(language, "cancelRenameWorkspace") })) as HTMLButtonElement).disabled, true);
     assert.ok(screen.getByRole("heading", { name: translate(language, "discoveryApplying") }));
     assert.equal(calls.filter((input) => input.type === "workspace.applyDiscovery").length, 1);
     await act(async () => { finish?.(ok(projectList(active, ["  Authored project  "]))); });
@@ -1238,8 +1236,8 @@ test("stale Apply refreshes the draft and requires explicit review/Apply; storag
     } });
     render(<App />);
     await screen.findByRole("cell", { name: "Saved project" });
-    await userEvent.click(screen.getByRole("button", { name: translate(language, "discoveryAction") }));
-    const apply = await screen.findByRole("button", { name: translate(language, "discoveryApply") });
+    await userEvent.click((await findAction("button",{ name: translate(language, "discoveryAction") })));
+    const apply = await findAction("button",{ name: translate(language, "discoveryApply") });
     await userEvent.click(apply);
     assert.ok(await screen.findByRole("heading", { name: translate(language, "discoveryApplyError") }));
     assert.ok(screen.getByRole("cell", { name: "Saved project" }));
@@ -1266,16 +1264,16 @@ test("authoritative exclusion refresh keeps checkbox mounted, invalidates Apply 
     return fail("invalid_input");
   } });
   render(<App />);
-  await userEvent.click(await screen.findByRole("button", { name: "Preview project folders" }));
+  await userEvent.click(await findAction("button",{ name: "Preview project folders" }));
   const checkbox = await screen.findByRole("checkbox", { name: /^(Exclude|Исключить):/ });
   checkbox.focus(); await userEvent.keyboard(" ");
   assert.equal(screen.getByRole("checkbox", { name: /^(Exclude|Исключить):/ }), checkbox);
-  assert.equal((screen.getByRole("button", { name: "Apply reviewed projects" }) as HTMLButtonElement).disabled, true);
+  assert.equal(((await findAction("button",{ name: "Apply reviewed projects" })) as HTMLButtonElement).disabled, true);
   await act(async () => { finish?.(ok({ ...previewResult(active, "new", ["  Authored project  "]),
     entries: [{ kind: "project" as const, categoryPath: null, name: "  Authored project  ", relativePath: "  Authored project  ", reason: "manual" }] })); });
   assert.equal(document.activeElement, checkbox);
   assert.equal((checkbox as HTMLInputElement).checked, true);
-  assert.equal((screen.getByRole("button", { name: "Apply reviewed projects" }) as HTMLButtonElement).disabled, false);
+  assert.equal(((await findAction("button",{ name: "Apply reviewed projects" })) as HTMLButtonElement).disabled, false);
   cleanup();
 });
 
@@ -1300,9 +1298,9 @@ test("EN/RU observer before or after stale Apply response preserves rows and req
       return fail("invalid_input");
     } });
     render(<App />); await screen.findByRole("cell", { name: "Saved project" });
-    await userEvent.click(screen.getByRole("button", { name: t("discoveryAction") }));
+    await userEvent.click((await findAction("button",{ name: t("discoveryAction") })));
     await screen.findByRole("checkbox", { name: /Saved project/ });
-    await userEvent.click(screen.getByRole("button", { name: t("discoveryApply") }));
+    await userEvent.click((await findAction("button",{ name: t("discoveryApply") })));
     const observed: WorkspaceChangeEvent = { type: "workspace.sourceObserved", sourceId: active.sourceId,
       workspaceIds: [active.workspaceId], observationRevision: 1, state: "ready", automaticUpdates: "active" };
     if (order === "before") await act(async () => api.emitChange(observed));
@@ -1311,16 +1309,16 @@ test("EN/RU observer before or after stale Apply response preserves rows and req
     if (order === "after") {
       await act(async () => api.emitChange(observed));
       assert.equal(screen.queryByRole("checkbox", { name: /Late project/ }), null);
-      assert.equal((screen.getByRole("button", { name: t("discoveryApply") }) as HTMLButtonElement).disabled, true);
+      assert.equal(((await findAction("button",{ name: t("discoveryApply") })) as HTMLButtonElement).disabled, true);
     }
     assert.ok(screen.getByRole("heading", { name: t("discoveryStale") }));
     assert.ok(screen.getByRole("cell", { name: "Saved project" }));
     assert.equal(screen.queryByRole("cell", { name: "Late project" }), null);
     assert.equal(applies, 1);
-    await userEvent.click(screen.getByRole("button", { name: t("discoveryRefresh") }));
+    await userEvent.click((await findAction("button",{ name: t("discoveryRefresh") })));
     await screen.findByRole("checkbox", { name: /Late project/ });
     assert.equal(previews, 3); assert.equal(applies, 1);
-    await userEvent.click(screen.getByRole("button", { name: t("discoveryApply") }));
+    await userEvent.click((await findAction("button",{ name: t("discoveryApply") })));
     await screen.findByRole("cell", { name: "Late project" });
     assert.equal(applies, 2);
     cleanup(); assert.equal(api.changeListenerCount(), 0);
@@ -1343,7 +1341,7 @@ test("EN/RU stale draft recovery drops vanished unsaved exclusions and preserves
         onWorkspace: async (input) => (input.type === "workspace.load" || input.type === "workspace.previewDiscovery"
           ? service.handleQuery(input) : service.handleCommand(input)) as ServiceResult<WorkspaceResponse> });
       render(<App />);
-      await userEvent.click(await screen.findByRole("button", { name: translate(language, "discoveryAction") }));
+      await userEvent.click(await findAction("button",{ name: translate(language, "discoveryAction") }));
       const checkbox = (name: string) => screen.getByRole("checkbox", { name: `${translate(language, "discoveryExclude")}: ${name}` });
       await screen.findByRole("checkbox", { name: `${translate(language, "discoveryExclude")}: A` });
       await userEvent.click(checkbox("A"));
@@ -1351,7 +1349,7 @@ test("EN/RU stale draft recovery drops vanished unsaved exclusions and preserves
       await userEvent.click(checkbox("B"));
       await waitFor(() => assert.equal((checkbox("B") as HTMLInputElement).disabled, false));
       renameSync(join(root, "A"), join(directory, "removed-A"));
-      await userEvent.click(screen.getByRole("button", { name: translate(language, "discoveryApply") }));
+      await userEvent.click((await findAction("button",{ name: translate(language, "discoveryApply") })));
       await waitFor(() => {
         assert.equal(screen.queryByRole("checkbox", { name: `${translate(language, "discoveryExclude")}: A` }), null);
         assert.equal((checkbox("B") as HTMLInputElement).disabled, false);
@@ -1363,10 +1361,10 @@ test("EN/RU stale draft recovery drops vanished unsaved exclusions and preserves
       assert.equal(unapplied.ok, true);
       if (!unapplied.ok) throw new Error("Fixture projection could not be read");
       assert.equal(unapplied.value.configured, false);
-      await userEvent.click(screen.getByRole("button", { name: translate(language, "discoveryRefresh") }));
+      await userEvent.click((await findAction("button",{ name: translate(language, "discoveryRefresh") })));
       await waitFor(() => assert.equal((checkbox("B") as HTMLInputElement).disabled, false));
       assert.equal((checkbox("B") as HTMLInputElement).checked, true);
-      await userEvent.click(screen.getByRole("button", { name: translate(language, "discoveryApply") }));
+      await userEvent.click((await findAction("button",{ name: translate(language, "discoveryApply") })));
       assert.ok(await screen.findByRole("cell", { name: "C" }));
       const saved = service.workspaces.previewDiscovery({ type: "workspace.previewDiscovery", workspaceId });
       assert.equal(saved.ok, true);
@@ -1390,10 +1388,10 @@ test("Cancel during authoritative draft recovery discards its delayed response a
       return fail("invalid_input");
     } });
   render(<App />);
-  await userEvent.click(await screen.findByRole("button", { name: "Preview project folders" }));
+  await userEvent.click(await findAction("button",{ name: "Preview project folders" }));
   await userEvent.click(await screen.findByRole("checkbox", { name: /^(Exclude|Исключить):/ }));
   await waitFor(() => assert.equal(baseCalls, 2));
-  await userEvent.click(screen.getByRole("button", { name: "Cancel" }));
+  await userEvent.click((await findAction("button",{ name: "Cancel" })));
   await act(async () => { finish?.(ok(previewResult(active, "late-recovery"))); });
   assert.equal(draftCalls, 1);
   assert.equal(screen.queryByRole("heading", { name: "Direct project preview" }), null);
@@ -1416,7 +1414,7 @@ test("project lists distinguish applied-empty, retained, unavailable and loading
     const finishFirstRequest = finish;
     await act(async () => { finishFirstRequest(fail("storage")); });
     assert.ok(await screen.findByRole("heading", { name: translate(language, "projectsError") }));
-    await userEvent.click(screen.getByRole("button", { name: translate(language, "projectsRetry") }));
+    await userEvent.click((await findAction("button",{ name: translate(language, "projectsRetry") })));
     assert.ok(await screen.findByText(translate(language, "projectExcluded")));
     assert.equal(screen.queryByText(translate(language, "projectsEmpty")), null);
     assert.ok(screen.getByRole("heading", { name: translate(language, "projectsRetained") }));
@@ -1455,7 +1453,7 @@ test("EN/RU source notifications reject delayed rows/previews, preserve draft ex
       } });
     render(<App />);
     await screen.findByRole("cell", { name: "Saved" });
-    await userEvent.click(screen.getByRole("button", { name: translate(language, "discoveryAction") }));
+    await userEvent.click((await findAction("button",{ name: translate(language, "discoveryAction") })));
     const checkbox = await screen.findByRole("checkbox", { name: /Authored project/ });
     await userEvent.click(checkbox);
     await act(async () => {
@@ -1463,10 +1461,10 @@ test("EN/RU source notifications reject delayed rows/previews, preserve draft ex
     });
     assert.equal(listCalls, 1);
     await act(async () => { api.emitChange(projectEvent(active, 2)); });
-    assert.equal(document.activeElement, screen.getByRole("button", { name: translate(language, "discoveryRefresh") }));
+    assert.equal(document.activeElement, (await findAction("button",{ name: translate(language, "discoveryRefresh") })));
     assert.ok(screen.getByRole("heading", { name: translate(language, "discoveryStale") }));
     assert.equal(screen.queryByRole("checkbox", { name: /^(Exclude|Исключить):/ }), null);
-    assert.equal((screen.getByRole("button", { name: translate(language, "discoveryApply") }) as HTMLButtonElement).disabled, true);
+    assert.equal(((await findAction("button",{ name: translate(language, "discoveryApply") })) as HTMLButtonElement).disabled, true);
     await act(async () => { api.emitChange(projectEvent(active, 3)); });
     await screen.findByRole("cell", { name: "Current" });
     await act(async () => {
@@ -1475,10 +1473,10 @@ test("EN/RU source notifications reject delayed rows/previews, preserve draft ex
     });
     assert.equal(screen.queryByRole("cell", { name: "Delayed old rows" }), null);
     assert.equal(screen.queryByRole("checkbox", { name: /^(Exclude|Исключить):/ }), null);
-    await userEvent.click(screen.getByRole("button", { name: translate(language, "discoveryRefresh") }));
+    await userEvent.click((await findAction("button",{ name: translate(language, "discoveryRefresh") })));
     await screen.findByRole("checkbox", { name: /Authored project/ });
     assert.deepEqual(drafts.at(-1), ["  Authored project  "]);
-    assert.equal((screen.getByRole("button", { name: translate(language, "discoveryApply") }) as HTMLButtonElement).disabled, false);
+    assert.equal(((await findAction("button",{ name: translate(language, "discoveryApply") })) as HTMLButtonElement).disabled, false);
     await act(async () => { api.emitChange(projectEvent(active, 2)); api.emitChange(projectEvent(active, 3)); });
     assert.equal(listCalls, 3);
     cleanup(); assert.equal(api.changeListenerCount(), 0);
@@ -1499,15 +1497,15 @@ test("Apply accepts its preceding commit event but rejects a delayed result olde
         return fail("invalid_input");
       } });
     render(<App />); await screen.findByRole("cell", { name: "Saved" });
-    await userEvent.click(screen.getByRole("button", { name: "Preview project folders" }));
-    await userEvent.click(await screen.findByRole("button", { name: "Apply reviewed projects" }));
+    await userEvent.click((await findAction("button",{ name: "Preview project folders" })));
+    await userEvent.click(await findAction("button",{ name: "Apply reviewed projects" }));
     await act(async () => { revision = newerSibling ? 3 : 2; api.emitChange(projectEvent(active, revision)); });
     await screen.findByRole("cell", { name: "Latest" });
     await act(async () => { finishApply?.(ok(projectList(active, ["Applied response"], 2))); });
     if (newerSibling) {
       assert.equal(screen.queryByRole("cell", { name: "Applied response" }), null);
       assert.ok(screen.getByRole("heading", { name: translate("en", "discoveryStale") }));
-      assert.equal((screen.getByRole("button", { name: "Apply reviewed projects" }) as HTMLButtonElement).disabled, true);
+      assert.equal(((await findAction("button",{ name: "Apply reviewed projects" })) as HTMLButtonElement).disabled, true);
     } else {
       assert.ok(screen.getByRole("cell", { name: "Applied response" }));
       assert.equal(screen.queryByRole("heading", { name: "Direct project preview" }), null);
@@ -1533,17 +1531,17 @@ test("EN/RU delayed Apply success preserves a newer same-revision missing-folder
         return fail("invalid_input");
       } });
     render(<App />); await screen.findByRole("cell", { name: "Saved" });
-    await userEvent.click(screen.getByRole("button", { name: translate(language, "discoveryAction") }));
-    await userEvent.click(await screen.findByRole("button", { name: translate(language, "discoveryApply") }));
+    await userEvent.click((await findAction("button",{ name: translate(language, "discoveryAction") })));
+    await userEvent.click(await findAction("button",{ name: translate(language, "discoveryApply") }));
     await act(async () => { revision = 2; api.emitChange(projectEvent(active, revision)); });
     await act(async () => {
       missing = true;
       api.emitChange({ type: "workspace.sourceObserved", sourceId: active.sourceId, workspaceIds: [active.workspaceId],
         observationRevision: 2, state: "empty", automaticUpdates: "active" });
     });
-    await screen.findByRole("button", { name: `${translate(language, "recoveryLocate")}: Saved` });
+    await findAction("button",{ name: `${translate(language, "recoveryLocate")}: Saved` });
     await act(async () => { finishApply?.(ok(applied)); });
-    assert.ok(await screen.findByRole("button", { name: `${translate(language, "recoveryLocate")}: Saved` }));
+    assert.ok(await findAction("button",{ name: `${translate(language, "recoveryLocate")}: Saved` }));
     assert.equal(screen.queryByRole("heading", { name: translate(language, "discoveryTitle") }), null);
     assert.equal(applies, 1, "confirmed success must not replay Apply");
     cleanup(); assert.equal(api.changeListenerCount(), 0);
@@ -1561,7 +1559,7 @@ test("backend restart discards old project and preview responses and reloads the
       ? ok({ workspaces: [{ workspaceId: active.workspaceId, name: active.name }], activeWorkspace: active })
       : new Promise((resolve) => { finishPreview = resolve; }) });
   render(<App />);
-  await userEvent.click(await screen.findByRole("button", { name: "Preview project folders" }));
+  await userEvent.click(await findAction("button",{ name: "Preview project folders" }));
   await act(async () => { api.emitStatus("unavailable"); });
   await act(async () => { api.emitStatus("ready"); });
   await screen.findByRole("cell", { name: "Restarted" });
@@ -1591,11 +1589,11 @@ test("selection and removal discard delayed discovery list, preview and Apply re
           return fail("invalid_input");
         } });
       render(<App />);
-      const trigger = await screen.findByRole("button", { name: "Preview project folders" });
+      const trigger = await findAction("button",{ name: "Preview project folders" });
       if (phase !== "list") {
         await screen.findByRole("cell", { name: "Old saved" });
         await userEvent.click(trigger);
-        if (phase === "apply") await userEvent.click(await screen.findByRole("button", { name: "Apply reviewed projects" }));
+        if (phase === "apply") await userEvent.click(await findAction("button",{ name: "Apply reviewed projects" }));
       }
       await act(async () => { api.emitChange({ type: "workspace.listChanged", snapshot: snapshotOf(other, removed ? [other] : [active, other]) }); });
       await screen.findByRole("cell", { name: "Current saved" });
@@ -1622,11 +1620,11 @@ test("EN/RU notification reload failures and below-revision replies recover thro
     await act(async () => { api.emitChange(projectEvent(active, 2)); });
     await screen.findByRole("heading", { name: translate(language, "projectsError") });
     assert.ok(screen.getByRole("cell", { name: "Saved" }));
-    await userEvent.click(screen.getByRole("button", { name: translate(language, "projectsRetry") }));
+    await userEvent.click((await findAction("button",{ name: translate(language, "projectsRetry") })));
     await screen.findByRole("heading", { name: translate(language, "projectsError") });
     assert.equal(screen.queryByRole("cell", { name: "Outdated reply" }), null);
     assert.ok(screen.getByRole("cell", { name: "Saved" }));
-    await userEvent.click(screen.getByRole("button", { name: translate(language, "projectsRetry") }));
+    await userEvent.click((await findAction("button",{ name: translate(language, "projectsRetry") })));
     await screen.findByRole("cell", { name: "Recovered" });
     cleanup(); assert.equal(api.changeListenerCount(), 0);
   }
@@ -1647,7 +1645,7 @@ test("EN/RU Text definition creation and rename preserve failed drafts, keyboard
     } });
     const client = new WorkspaceServiceClient(window.workspace);
     render(<TextPropertiesTable client={client} workspaceId={workspaceId} sourceId={sourceId} projects={[]} language={language} disabled={false} />);
-    const create = await screen.findByRole("button", { name: translate(language, "createTextProperty") });
+    const create = await findAction("button",{ name: translate(language, "createTextProperty") });
     await waitFor(() => assert.equal((create as HTMLButtonElement).disabled, false));
     create.focus(); await userEvent.keyboard("{Enter}");
     let name = screen.getByRole("textbox", { name: translate(language, "propertyName") });
@@ -1657,7 +1655,7 @@ test("EN/RU Text definition creation and rename preserve failed drafts, keyboard
     await userEvent.clear(name); await userEvent.type(name, "  Заметка 📝  "); await userEvent.keyboard("{Enter}{Enter}");
     assert.equal(saves, 1);
     assert.equal((name as HTMLInputElement).disabled, true);
-    assert.equal((screen.getByRole("button", { name: translate(language, "cancelRenameWorkspace") }) as HTMLButtonElement).disabled, true);
+    assert.equal(((await findAction("button",{ name: translate(language, "cancelRenameWorkspace") })) as HTMLButtonElement).disabled, true);
     await act(async () => { finish?.(fail("storage")); });
     assert.equal((name as HTMLInputElement).value, "  Заметка 📝  ");
     assert.ok(screen.getByText(translate(language, "propertySaveError")));
@@ -1669,7 +1667,7 @@ test("EN/RU Text definition creation and rename preserve failed drafts, keyboard
     });
     assert.ok(await screen.findByText(translate(language, "propertySaved")));
     assert.equal(document.activeElement, create);
-    const renameButton = screen.getByRole("button", { name: `${translate(language, "renameProperty")}: ${snapshot.definitions[0].name.trim()}` });
+    const renameButton = (await findAction("button",{ name: `${translate(language, "renameProperty")}: ${snapshot.definitions[0].name.trim()}` }));
     assert.equal(within(screen.getByRole("columnheader", {name: /Заметка 📝/})).getByText("Заметка 📝").textContent, "  Заметка 📝  ");
     renameButton.focus(); await userEvent.keyboard("{Enter}");
     name = screen.getByRole("textbox", { name: translate(language, "propertyName") });
@@ -1683,7 +1681,7 @@ test("EN/RU Text definition creation and rename preserve failed drafts, keyboard
     snapshot = { ...snapshot, revision: 2, definitions: [{ ...snapshot.definitions[0], name: "  新しい имя  " }] };
     await act(async () => { finish?.(ok({ snapshot, propertyId, projectId: null })); });
     assert.equal(within(screen.getByRole("columnheader", {name: /新しい имя/})).getByText("新しい имя").textContent, "  新しい имя  ");
-    assert.equal(document.activeElement, screen.getByRole("button", { name: `${translate(language, "renameProperty")}: ${snapshot.definitions[0].name.trim()}` }));
+    assert.equal(document.activeElement, (await findAction("button",{ name: `${translate(language, "renameProperty")}: ${snapshot.definitions[0].name.trim()}` })));
     cleanup(); assert.equal(api.changeListenerCount(), 0);
   }
 });
@@ -1699,23 +1697,23 @@ test("Text property lists and saves reject older revisions and responses after w
   const props = { client, workspaceId, sourceId, projects: [], language: "en" as const, disabled: false };
   const rendered = render(<TextPropertiesTable {...props} />);
   await act(async () => { lists[0](ok(snapshot(1, "Original"))); });
-  await userEvent.click(screen.getByRole("button", { name: "Rename property: Original" }));
+  await userEvent.click((await findAction("button",{ name: "Rename property: Original" })));
   await userEvent.clear(screen.getByRole("textbox")); await userEvent.type(screen.getByRole("textbox"), "Own"); await userEvent.keyboard("{Enter}");
   await act(async () => {
     api.emitChange({ type: "workspace.propertiesChanged", sourceId, workspaceIds: [workspaceId], revision: 2 });
     api.emitChange({ type: "workspace.propertiesChanged", sourceId, workspaceIds: [workspaceId], revision: 3 });
   });
   await act(async () => { lists[2](ok(snapshot(3, "Sibling"))); lists[1](ok(snapshot(2, "Own"))); finishSave?.(ok({ snapshot: snapshot(2, "Own"), propertyId, projectId: null })); });
-  assert.ok(screen.getByRole("button", { name: "Rename property: Sibling" }));
+  assert.ok((await findAction("button",{ name: "Rename property: Sibling" })));
   assert.equal(screen.queryByRole("button", { name: "Rename property: Own" }), null);
   assert.ok(screen.getByText(translate("en", "propertyNewerChange")));
-  await userEvent.click(screen.getByRole("button", { name: "Rename property: Sibling" }));
+  await userEvent.click((await findAction("button",{ name: "Rename property: Sibling" })));
   await userEvent.keyboard("{Enter}");
   const next = { ...props, workspaceId: randomUUID(), sourceId: randomUUID() };
   rendered.rerender(<TextPropertiesTable {...next} />);
   await act(async () => { finishSave?.(ok({ snapshot: snapshot(4, "Old workspace"), propertyId, projectId: null })); lists[3](ok({ ...snapshot(0, "New workspace"), workspaceId: next.workspaceId, sourceId: next.sourceId })); });
   assert.equal(screen.queryByText("Old workspace"), null);
-  assert.ok(screen.getByRole("button", {name: "Rename property: New workspace"}));
+  assert.ok((await findAction("button",{name: "Rename property: New workspace"})));
   cleanup(); assert.equal(api.changeListenerCount(), 0);
 });
 
@@ -1740,20 +1738,20 @@ test("EN/RU default Table creates and renames source-owned Text definitions thro
       });
       const unsubscribe = service.workspaces.subscribe(api.emitChange);
       render(<App />);
-      const create = await screen.findByRole("button", { name: translate(language, "createTextProperty") });
+      const create = await findAction("button",{ name: translate(language, "createTextProperty") });
       await waitFor(() => assert.equal((create as HTMLButtonElement).disabled, false));
       await userEvent.click(create); await userEvent.type(screen.getByRole("textbox", { name: translate(language, "propertyName") }), "  Real Text  "); await userEvent.keyboard("{Enter}");
-      const rename = await screen.findByRole("button", { name: `${translate(language, "renameProperty")}: Real Text` });
+      const rename = await findAction("button",{ name: `${translate(language, "renameProperty")}: Real Text` });
       assert.ok(screen.getByRole("cell", { name: "Project" }));
       await userEvent.click(rename); await userEvent.clear(screen.getByRole("textbox", { name: translate(language, "propertyName") }));
       await userEvent.type(screen.getByRole("textbox", { name: translate(language, "propertyName") }), "  Общее имя  "); await userEvent.keyboard("{Enter}");
-      await screen.findByRole("button", { name: `${translate(language, "renameProperty")}: Общее имя` });
+      await findAction("button",{ name: `${translate(language, "renameProperty")}: Общее имя` });
       const shared = service.workspaces.listTextProperties({ type: "workspace.listTextProperties", workspaceId: sibling.value.workspaceId });
       assert.equal(shared.ok, true); if (!shared.ok) throw new Error("Fixture failed");
       assert.equal(shared.value.definitions[0].name, "  Общее имя  "); assert.equal(shared.value.revision, 2);
       assert.ok(screen.getByText(translate(language, "propertySaved")));
       const cellLabel = `${translate(language, "editTextValue")}: Project / Общее имя`;
-      const cell = screen.getByRole("button", { name: cellLabel });
+      const cell = (await findAction("button",{ name: cellLabel }));
       cell.focus(); await userEvent.keyboard("{Enter}");
       await userEvent.type(screen.getByRole("textbox", { name: cellLabel }), "  Real 📝");
       await userEvent.keyboard("{Enter}"); await userEvent.type(screen.getByRole("textbox", { name: cellLabel }), "значение  ");
@@ -1763,7 +1761,7 @@ test("EN/RU default Table creates and renames source-owned Text definitions thro
       assert.equal(values.ok, true); if (!values.ok) throw new Error("Fixture failed");
       assert.equal(values.value.values[0].value, "  Real 📝\nзначение  "); assert.equal(values.value.revision, 3);
       assert.equal(cell.textContent, "  Real 📝\nзначение  ");
-      await userEvent.click(cell); await userEvent.click(screen.getByRole("button", { name: translate(language, "clearTextValue") }));
+      await userEvent.click(cell); await userEvent.click((await findAction("button",{ name: translate(language, "clearTextValue") })));
       await waitFor(() => assert.equal(cell.textContent, translate(language, "textValueAbsent")));
       const cleared = service.workspaces.listTextProperties({ type: "workspace.listTextProperties", workspaceId: sibling.value.workspaceId });
       assert.equal(cleared.ok, true); if (!cleared.ok) throw new Error("Fixture failed");
@@ -1789,7 +1787,7 @@ test("EN/RU Text cells preserve failed drafts, support multiline keyboard saves,
     render(<TextPropertiesTable client={new WorkspaceServiceClient()} workspaceId={workspaceId} sourceId={sourceId}
       projects={[{ projectId, categoryId: null, name: "Project", relativePath: "Project" }]} language={language} disabled={false} />);
     const label = `${translate(language, "editTextValue")}: Project / Notes`;
-    const cell = await screen.findByRole("button", { name: label });
+    const cell = await findAction("button",{ name: label });
     assert.equal(cell.textContent, translate(language, "textValueAbsent"));
     cell.focus(); await userEvent.keyboard("{Enter}");
     const editor = screen.getByRole("textbox", { name: label });
@@ -1800,9 +1798,9 @@ test("EN/RU Text cells preserve failed drafts, support multiline keyboard saves,
     editor.focus(); await userEvent.keyboard("{Control>}{Enter}{/Control}");
     assert.deepEqual(calls, ["  日本語 📝\nСтрока  "]);
     assert.equal((editor as HTMLTextAreaElement).disabled, true);
-    const cancel = screen.getByRole("button", { name: translate(language, "cancelTextValue") }) as HTMLButtonElement;
+    const cancel = (await findAction("button",{ name: translate(language, "cancelTextValue") })) as HTMLButtonElement;
     assert.equal(cancel.disabled, true);
-    assert.equal((screen.getByRole("button", { name: translate(language, "clearTextValue") }) as HTMLButtonElement).disabled, true);
+    assert.equal(((await findAction("button",{ name: translate(language, "clearTextValue") })) as HTMLButtonElement).disabled, true);
     await userEvent.keyboard("{Control>}{Enter}{/Control}{Escape}"); assert.equal(calls.length, 1);
     await act(async () => { finish?.(fail("storage")); });
     await screen.findByText(translate(language, "textValueSaveError"));
@@ -1811,10 +1809,10 @@ test("EN/RU Text cells preserve failed drafts, support multiline keyboard saves,
     await act(async () => { finish?.(fail("invalid_input")); });
     await screen.findByText(translate(language, "textValueValidation"));
     assert.equal((editor as HTMLTextAreaElement).value, "  日本語 📝\nСтрока  ");
-    throws = true; await userEvent.click(screen.getByRole("button", { name: translate(language, "saveTextValue") }));
+    throws = true; await userEvent.click((await findAction("button",{ name: translate(language, "saveTextValue") })));
     await screen.findByText(translate(language, "textValueSaveError"));
     throws = false;
-    await userEvent.click(screen.getByRole("button", { name: translate(language, "saveTextValue") }));
+    await userEvent.click((await findAction("button",{ name: translate(language, "saveTextValue") })));
     snapshot = { ...snapshot, revision: 2, values: [{ projectId, propertyId, value: "  日本語 📝\nСтрока  " }] };
     await act(async () => { finish?.(ok({ snapshot, projectId, propertyId })); });
     await screen.findByText(translate(language, "textValueSaved"));
@@ -1823,11 +1821,11 @@ test("EN/RU Text cells preserve failed drafts, support multiline keyboard saves,
     await userEvent.click(cell); await userEvent.clear(screen.getByRole("textbox", { name: label })); await userEvent.keyboard("{Escape}");
     assert.equal(document.activeElement === cell, true); assert.equal(cell.textContent, "  日本語 📝\nСтрока  ");
     await userEvent.click(cell); await userEvent.clear(screen.getByRole("textbox", { name: label }));
-    await userEvent.click(screen.getByRole("button", { name: translate(language, "saveTextValue") }));
+    await userEvent.click((await findAction("button",{ name: translate(language, "saveTextValue") })));
     assert.equal(calls.at(-1), ""); snapshot = { ...snapshot, revision: 3, values: [{ projectId, propertyId, value: "" }] };
     await act(async () => { finish?.(ok({ snapshot, projectId, propertyId })); });
     assert.equal(cell.textContent, translate(language, "textValueEmpty"));
-    await userEvent.click(cell); await userEvent.click(screen.getByRole("button", { name: translate(language, "clearTextValue") }));
+    await userEvent.click(cell); await userEvent.click((await findAction("button",{ name: translate(language, "clearTextValue") })));
     assert.equal(calls.at(-1), null); snapshot = { ...snapshot, revision: 4, values: [] };
     await act(async () => { finish?.(ok({ snapshot, projectId, propertyId })); });
     assert.equal(cell.textContent, translate(language, "textValueAbsent"));
@@ -1858,7 +1856,7 @@ test("backend generations discard old source observations and preserve newer eve
           return ++loads === 1 ? ok(data) : new Promise((resolve) => { finish = resolve; });
         } });
         render(<App />);
-        await screen.findByRole("button", { name: `${translate(language, "renameProperty")}: Notes` });
+        await findAction("button",{ name: `${translate(language, "renameProperty")}: Notes` });
         const sourceEvent = (root: string): WorkspaceChangeEvent => ({ type: "workspace.sourceChanged", source: {
           sourceId: f.sourceId, workspaceIds: [f.workspaceId], canonicalRoot: root, sourceAvailable: false,
         } });
@@ -1869,7 +1867,7 @@ test("backend generations discard old source observations and preserve newer eve
         await waitFor(() => assert.equal(loads, 2));
         if (newerEvent) await act(async () => api.emitChange(sourceEvent("/New-generation")));
         await act(async () => finish?.(ok(data)));
-        await screen.findByRole("button", { name: `${translate(language, "renameProperty")}: Notes` });
+        await findAction("button",{ name: `${translate(language, "renameProperty")}: Notes` });
         assert.equal(screen.queryByText(translate(language, "sourceUnavailableTitle")) !== null, newerEvent);
         assert.ok(within(screen.getByRole("main")).getByText(newerEvent ? "/New-generation" : active.canonicalRoot));
         assert.equal(screen.queryByText("/Old-generation"), null);
@@ -1895,9 +1893,9 @@ test("same-source availability and locator notifications preserve Text drafts wh
           : input.type === "workspace.previewDiscovery" ? ok(previewResult(active)) : fail("invalid_input"),
       });
       render(<App />);
-      await userEvent.click(await screen.findByRole("button", { name: translate(language, "discoveryAction") }));
-      await screen.findByRole("button", { name: translate(language, "discoveryApply") });
-      await userEvent.click(screen.getByRole("button", { name: kind === "cell" ? `${translate(language, "editTextValue")}: Project / Notes` : `${translate(language, "renameProperty")}: Notes` }));
+      await userEvent.click(await findAction("button",{ name: translate(language, "discoveryAction") }));
+      await findAction("button",{ name: translate(language, "discoveryApply") });
+      await userEvent.click((await findAction("button",{ name: kind === "cell" ? `${translate(language, "editTextValue")}: Project / Notes` : `${translate(language, "renameProperty")}: Notes` })));
       const editor = screen.getByRole("textbox");
       await userEvent.clear(editor); await userEvent.type(editor, "  Unsaved 日本語  ");
       delay = true;
@@ -1907,13 +1905,13 @@ test("same-source availability and locator notifications preserve Text drafts wh
         } }));
         assert.equal(screen.getByRole("textbox") === editor, true, "Source observation remounted the editor");
         assert.equal((editor as HTMLInputElement).value, "  Unsaved 日本語  ");
-        assert.equal((screen.getByRole("button", { name: translate(language, "discoveryApply") }) as HTMLButtonElement).disabled, true);
+        assert.equal(((await findAction("button",{ name: translate(language, "discoveryApply") })) as HTMLButtonElement).disabled, true);
         assert.ok(screen.getByRole("heading", { name: translate(language, "discoveryStale") }));
         await act(async () => finishProjects?.(ok({ ...projection, state: available ? "ready" : "unavailable" })));
         assert.equal(screen.getByRole("textbox") === editor, true, "Project reload discarded the editor");
       }
       editor.focus(); await userEvent.keyboard("{Escape}");
-      await screen.findByRole("button", { name: `${translate(language, "editTextValue")}: Project / Notes` });
+      await findAction("button",{ name: `${translate(language, "editTextValue")}: Project / Notes` });
       cleanup();
     }
   }
@@ -1944,10 +1942,10 @@ test("EN/RU failed project refreshes preserve recoverable Text drafts through er
     });
     render(<App />);
     const label = `${translate(language, "editTextValue")}: Project / Notes`;
-    await userEvent.click(await screen.findByRole("button", { name: label }));
+    await userEvent.click(await findAction("button",{ name: label }));
     const editor = screen.getByRole("textbox") as HTMLTextAreaElement;
     await userEvent.clear(editor); await userEvent.type(editor, "  Unsaved 日本語 📝  ");
-    await userEvent.click(screen.getByRole("button", { name: translate(language, "saveTextValue") }));
+    await userEvent.click((await findAction("button",{ name: translate(language, "saveTextValue") })));
     await screen.findByText(translate(language, "textValueSaveError"));
     const assertDraft = () => {
       assert.equal(screen.queryByRole("textbox") === editor, true, "Project reload discarded a recoverable Text draft");
@@ -1960,20 +1958,20 @@ test("EN/RU failed project refreshes preserve recoverable Text drafts through er
     } }));
     await screen.findByRole("heading", { name: translate(language, "projectsError") }); assertDraft();
     phase = "transport";
-    await userEvent.click(screen.getByRole("button", { name: translate(language, "projectsRetry") }));
+    await userEvent.click((await findAction("button",{ name: translate(language, "projectsRetry") })));
     await screen.findByRole("heading", { name: translate(language, "projectsError") }); assertDraft();
     phase = "stale";
     await act(async () => api.emitChange(projectEvent(active, 2)));
     await screen.findByRole("heading", { name: translate(language, "projectsError") }); assertDraft();
     phase = "retry";
-    await userEvent.click(screen.getByRole("button", { name: translate(language, "projectsRetry") }));
+    await userEvent.click((await findAction("button",{ name: translate(language, "projectsRetry") })));
     await screen.findByRole("heading", { name: translate(language, "projectsLoading") }); assertDraft();
     await act(async () => finish?.(ok({ ...projection, revision: 2 }))); assertDraft();
     assert.equal(screen.queryByRole("heading", { name: translate(language, "projectsError") }), null);
-    await userEvent.click(screen.getByRole("button", { name: translate(language, "saveTextValue") }));
+    await userEvent.click((await findAction("button",{ name: translate(language, "saveTextValue") })));
     await screen.findByText(translate(language, "textValueSaved"));
     assert.deepEqual(saves, ["  Unsaved 日本語 📝  ", "  Unsaved 日本語 📝  "]);
-    assert.equal(screen.getByRole("button", { name: label }).textContent, "  Unsaved 日本語 📝  ");
+    assert.equal((await findAction("button",{ name: label })).textContent, "  Unsaved 日本語 📝  ");
     cleanup(); assert.equal(api.changeListenerCount(), 0);
   }
 });
@@ -1984,23 +1982,23 @@ test("EN/RU sibling changes preserve cell and rename drafts; Cancel reveals the 
     const api = mockApi({ onProperties: async () => ok(committed), onWorkspace: async () => { mutations++; return fail("storage"); } });
     render(<TextPropertiesTable {...f} client={new WorkspaceServiceClient(window.workspace)} language={language} disabled={false} />);
     const label = `${translate(language, "editTextValue")}: Project / Notes`;
-    await userEvent.click(await screen.findByRole("button", { name: label }));
+    await userEvent.click(await findAction("button",{ name: label }));
     await userEvent.clear(screen.getByRole("textbox")); await userEvent.type(screen.getByRole("textbox"), "  Unsaved 📝  ");
     committed = f.snapshot(2, "Sibling");
     await act(async () => { api.emitChange({ type: "workspace.propertiesChanged", sourceId: f.sourceId, workspaceIds: [f.workspaceId], revision: 2 }); });
     assert.equal((screen.getByRole("textbox") as HTMLTextAreaElement).value, "  Unsaved 📝  ");
     assert.ok(screen.getByText(translate(language, "textValueExternalChange")));
     assert.equal(mutations, 0);
-    await userEvent.click(screen.getByRole("button", { name: translate(language, "cancelTextValue") }));
-    assert.equal(screen.getByRole("button", { name: label }).textContent, "Sibling");
-    await userEvent.click(screen.getByRole("button", { name: `${translate(language, "renameProperty")}: Notes` }));
+    await userEvent.click((await findAction("button",{ name: translate(language, "cancelTextValue") })));
+    assert.equal((await findAction("button",{ name: label })).textContent, "Sibling");
+    await userEvent.click((await findAction("button",{ name: `${translate(language, "renameProperty")}: Notes` })));
     await userEvent.clear(screen.getByRole("textbox")); await userEvent.type(screen.getByRole("textbox"), "My name");
     committed = f.snapshot(3, "Sibling", "Their name");
     await act(async () => { api.emitChange({ type: "workspace.propertiesChanged", sourceId: f.sourceId, workspaceIds: [f.workspaceId], revision: 3 }); });
     assert.equal((screen.getByRole("textbox") as HTMLInputElement).value, "My name");
     assert.ok(screen.getByText(translate(language, "propertyExternalChange")));
     await userEvent.keyboard("{Escape}");
-    assert.ok(screen.getByRole("button", { name: `${translate(language, "renameProperty")}: Their name` }));
+    assert.ok((await findAction("button",{ name: `${translate(language, "renameProperty")}: Their name` })));
     assert.equal(mutations, 0); cleanup(); assert.equal(api.changeListenerCount(), 0);
   }
 });
@@ -2017,7 +2015,7 @@ test("Text cell saves keep own event-before-response success and reject overtake
     await act(async () => { lists[0](ok(f.snapshot(1))); });
     const label = `${translate(language, "editTextValue")}: Project / Notes`;
     const editSave = async (value: string) => {
-      await userEvent.click(screen.getByRole("button", { name: label }));
+      await userEvent.click((await findAction("button",{ name: label })));
       await userEvent.clear(screen.getByRole("textbox")); await userEvent.type(screen.getByRole("textbox"), value);
       await userEvent.keyboard("{Control>}{Enter}{/Control}");
     };
@@ -2041,7 +2039,7 @@ test("Text cell saves keep own event-before-response success and reject overtake
     await act(async () => {
       lists[3](ok(f.snapshot(6, "Newest sibling"))); lists[2](ok(f.snapshot(5, "Older sibling")));
     });
-    assert.equal(screen.getByRole("button", { name: label }).textContent, "Newest sibling");
+    assert.equal((await findAction("button",{ name: label })).textContent, "Newest sibling");
     assert.ok(screen.getByText(translate(language, "textValueNewerChange")));
     assert.equal(screen.queryByText(translate(language, "textValueSaved")), null);
     assert.equal(saves, 2); cleanup(); assert.equal(api.changeListenerCount(), 0);
@@ -2076,25 +2074,25 @@ test("backend restart, workspace switch/removal and cleanup invalidate delayed T
       render(<App />);
       await screen.findByRole("heading", { name: "Old workspace" });
       if (phase === "value") {
-        await userEvent.click(await screen.findByRole("button", { name: "Edit Text value: Project / Notes" }));
+        await userEvent.click(await findAction("button",{ name: "Edit Text value: Project / Notes" }));
         await userEvent.type(screen.getByRole("textbox", { name: "Edit Text value: Project / Notes" }), " old draft");
-        await userEvent.click(screen.getByRole("button", { name: "Save value" }));
+        await userEvent.click((await findAction("button",{ name: "Save value" })));
       } else if (phase === "rename") {
-        await userEvent.click(await screen.findByRole("button", { name: "Rename property: Notes" }));
+        await userEvent.click(await findAction("button",{ name: "Rename property: Notes" }));
         await userEvent.type(screen.getByRole("textbox", { name: "Property name" }), " old draft"); await userEvent.keyboard("{Enter}");
       }
       if (transition === "restart-batched") {
         ready = true;
         await act(async () => { api.emitStatus("unavailable"); api.emitStatus("ready"); });
-        await screen.findByRole("button", { name: "Rename property: Restarted property" });
+        await findAction("button",{ name: "Rename property: Restarted property" });
       } else if (transition === "restart") {
         await act(async () => { api.emitStatus("unavailable"); }); ready = true;
         await act(async () => { api.emitStatus("ready"); });
-        await screen.findByRole("button", { name: "Rename property: Restarted property" });
+        await findAction("button",{ name: "Rename property: Restarted property" });
       } else if (transition === "cleanup") cleanup();
       else {
         await act(async () => { api.emitChange({ type: "workspace.listChanged", snapshot: snapshotOf(other, transition === "remove" ? [other] : [active, other]) }); });
-        await screen.findByRole("button", { name: "Rename property: New property" });
+        await findAction("button",{ name: "Rename property: New property" });
       }
       await act(async () => {
         lists.at(-1)?.(ok(f.snapshot(2, "Delayed value", "Delayed property")));
@@ -2120,9 +2118,9 @@ test("EN/RU sibling commits during a failed save retain drafts and require an ex
     } });
     render(<TextPropertiesTable {...f} client={new WorkspaceServiceClient(window.workspace)} language={language} disabled={false} />);
     const label = `${translate(language, "editTextValue")}: Project / Notes`;
-    await userEvent.click(await screen.findByRole("button", { name: label }));
+    await userEvent.click(await findAction("button",{ name: label }));
     await userEvent.clear(screen.getByRole("textbox")); await userEvent.type(screen.getByRole("textbox"), "  My draft\n  ");
-    await userEvent.click(screen.getByRole("button", { name: translate(language, "saveTextValue") }));
+    await userEvent.click((await findAction("button",{ name: translate(language, "saveTextValue") })));
     committed = f.snapshot(2, "Sibling during save");
     await act(async () => {
       api.emitChange({ type: "workspace.propertiesChanged", sourceId: f.sourceId, workspaceIds: [f.workspaceId], revision: 2 });
@@ -2132,7 +2130,7 @@ test("EN/RU sibling commits during a failed save retain drafts and require an ex
     assert.ok(screen.getByText(translate(language, "textValueExternalChange")));
     assert.ok(screen.getByText(translate(language, "textValueSaveError")));
     assert.equal(commands.length, 1);
-    await userEvent.click(screen.getByRole("button", { name: translate(language, "saveTextValue") }));
+    await userEvent.click((await findAction("button",{ name: translate(language, "saveTextValue") })));
     assert.equal(commands.length, 2);
     assert.deepEqual(commands[1], { type: "workspace.setTextValue", workspaceId: f.workspaceId,
       projectId: f.projectId, propertyId: f.propertyId, value: "  My draft\n  " });
@@ -2140,8 +2138,8 @@ test("EN/RU sibling commits during a failed save retain drafts and require an ex
     await act(async () => { finish?.(ok({ snapshot: committed, projectId: f.projectId, propertyId: f.propertyId })); });
     assert.ok(screen.getByText(translate(language, "textValueSaved")));
     assert.equal(screen.queryByText(translate(language, "textValueExternalChange")), null);
-    assert.equal(screen.getByRole("button", { name: label }).textContent, "  My draft\n  ");
-    await userEvent.click(screen.getByRole("button", { name: `${translate(language, "renameProperty")}: Notes` }));
+    assert.equal((await findAction("button",{ name: label })).textContent, "  My draft\n  ");
+    await userEvent.click((await findAction("button",{ name: `${translate(language, "renameProperty")}: Notes` })));
     await userEvent.clear(screen.getByRole("textbox")); await userEvent.type(screen.getByRole("textbox"), "Renamed"); await userEvent.keyboard("{Enter}");
     committed = f.snapshot(4, "  My draft\n  ", "Renamed");
     await act(async () => {
@@ -2198,7 +2196,7 @@ test("EN/RU production grouped Apply normalizes child-then-parent exclusions and
       } });
       unsubscribe = service.workspaces.subscribe(surface.emitChange);
       render(<App />);
-      const trigger = await screen.findByRole("button", { name: translate(language, "discoveryAction") });
+      const trigger = await findAction("button",{ name: translate(language, "discoveryAction") });
       await userEvent.click(trigger);
       await userEvent.selectOptions(await screen.findByRole("combobox", { name: translate(language, "discoveryMode") }), "grouped");
       const checkbox = (kind: "discoveryCategory" | "discoveryProject", name: string) => screen.getByRole("checkbox", {
@@ -2212,12 +2210,12 @@ test("EN/RU production grouped Apply normalizes child-then-parent exclusions and
       assert.equal(checkbox("discoveryCategory", "Category").checked, true);
       assert.equal(screen.queryByRole("checkbox", { name: `${translate(language, "discoveryExclude")}: ${translate(language, "discoveryProject")}: Project` }), null);
       assert.deepEqual(requests.at(-1), { type: "workspace.previewDiscovery", workspaceId, mode: "grouped", excludedRelativePaths: ["Category"] });
-      await userEvent.click(screen.getByRole("button", { name: translate(language, "discoveryRefresh") }));
+      await userEvent.click((await findAction("button",{ name: translate(language, "discoveryRefresh") })));
       await waitFor(() => assert.equal(checkbox("discoveryCategory", "Category").disabled, false));
       await userEvent.click(checkbox("discoveryCategory", "Category"));
       await waitFor(() => assert.equal(checkbox("discoveryProject", "Project").disabled, false));
       assert.equal(checkbox("discoveryProject", "Project").checked, false);
-      const apply = screen.getByRole("button", { name: translate(language, "discoveryApply") });
+      const apply = (await findAction("button",{ name: translate(language, "discoveryApply") }));
       apply.focus(); await userEvent.keyboard("{Enter}");
       await screen.findByRole("cell", { name: "Project" });
       assert.equal(document.activeElement, trigger);
@@ -2226,13 +2224,14 @@ test("EN/RU production grouped Apply normalizes child-then-parent exclusions and
       assert.ok(within(header).getByRole("button", {name:`${translate(language, "tableColumnSettings")}: ${translate(language, "discoveryCategory")}`}));
       assert.equal(header.querySelector("input, select"), null);
       const categoryCell = screen.getByText("Category", { selector: "td" }); assert.equal(categoryCell.querySelector("input, select"), null);
-      assert.equal(categoryCell.querySelector("button")?.getAttribute("aria-label"), `${translate(language, "moveCategory")}: Project`);
+      assert.equal(categoryCell.parentElement?.querySelector(`button[aria-label="${translate(language, "moveCategory")}: Project"]`)?.getAttribute("aria-label"), `${translate(language, "moveCategory")}: Project`);
       assert.ok(screen.getByText("Empty")); assert.ok(screen.getByText(translate(language, "discoveryGroupedMode")));
       const loadedView = service.workspaces.load(); assert.equal(loadedView.ok && loadedView.value.activeWorkspace?.viewId, viewId);
       const valueLabel = `${translate(language, "editTextValue")}: Project / Notes`;
-      await userEvent.click(await screen.findByRole("button", { name: valueLabel }));
+      await userEvent.click(await findAction("button",{ name: valueLabel }));
       const editor = screen.getByRole("textbox", { name: valueLabel }); await userEvent.type(editor, "Retained draft");
       mkdirSync(join(root, "AnotherEmpty"));
+      await findAction("button",{name:translate(language,"discoveryAction")});
       await userEvent.click(trigger);
       await screen.findByRole("checkbox", { name: `${translate(language, "discoveryExclude")}: ${translate(language, "discoveryCategory")}: AnotherEmpty` });
       assert.ok(screen.getByRole("combobox", { name: translate(language, "discoveryMode") }));
@@ -2240,15 +2239,15 @@ test("EN/RU production grouped Apply normalizes child-then-parent exclusions and
       // prevents submission before explicitly requesting a fresh review.
       await act(async () => { deliverNotifications(created.value.canonicalRoot); });
       await screen.findByRole("heading", { name: translate(language, "discoveryStale") });
-      const staleApply = screen.getByRole("button", { name: translate(language, "discoveryApply") }) as HTMLButtonElement;
+      const staleApply = (await findAction("button",{ name: translate(language, "discoveryApply") })) as HTMLButtonElement;
       assert.equal(staleApply.disabled, true);
       await userEvent.click(staleApply);
       assert.equal(requests.filter((request) => request.type === "workspace.applyDiscovery").length, 1);
       assert.equal(finishApply, undefined);
-      await userEvent.click(screen.getByRole("button", { name: translate(language, "discoveryRefresh") }));
+      await userEvent.click((await findAction("button",{ name: translate(language, "discoveryRefresh") })));
       await waitFor(() => assert.equal((screen.getByRole("button", { name: translate(language, "discoveryApply") }) as HTMLButtonElement).disabled, false));
       holdReload = true;
-      await userEvent.click(screen.getByRole("button", { name: translate(language, "discoveryApply") }));
+      await userEvent.click((await findAction("button",{ name: translate(language, "discoveryApply") })));
       await waitFor(() => assert.ok(finishApply));
       // Deliver the real post-commit observation before the held successful
       // response; this must close the review while reloading current placement.
@@ -2332,8 +2331,8 @@ test("EN/RU delayed grouped Apply respects newer discovery and independent categ
         return fail("invalid_input");
       } });
     render(<App />); await screen.findByRole("cell", { name: "Saved" });
-    await userEvent.click(screen.getByRole("button", { name: translate(language, "discoveryAction") }));
-    await userEvent.click(await screen.findByRole("button", { name: translate(language, "discoveryApply") }));
+    await userEvent.click((await findAction("button",{ name: translate(language, "discoveryAction") })));
+    await userEvent.click(await findAction("button",{ name: translate(language, "discoveryApply") }));
     await act(async () => {
       revision = outcome === "newerDiscovery" ? 3 : 2; labelRevision = outcome === "newerLabel" ? 4 : 0;
       api.emitChange(projectEvent(active, revision));
@@ -2384,7 +2383,7 @@ test("EN/RU category label keyboard editor retains drafts and changes only share
         return (input.type === "workspace.load" || input.type === "workspace.previewDiscovery" ? service.handleQuery(input) : service.handleCommand(input)) as ServiceResult<WorkspaceResponse>;
       } });
       off = service.workspaces.subscribe(api.emitChange); render(<App />);
-      const trigger = await screen.findByRole("button", { name: `${translate(language, "renameCategoryProperty")}: ${translate(language, "discoveryCategory")}` });
+      const trigger = await findAction("button",{ name: `${translate(language, "renameCategoryProperty")}: ${translate(language, "discoveryCategory")}` });
       trigger.focus(); await userEvent.keyboard("{Enter}");
       let editor = screen.getByRole("textbox", { name: translate(language, "categoryPropertyName") }) as HTMLInputElement;
       assert.equal(document.activeElement, editor);
@@ -2392,10 +2391,10 @@ test("EN/RU category label keyboard editor retains drafts and changes only share
       assert.ok(screen.getByText(translate(language, "categoryPropertyValidation"))); assert.equal(requests.some((r) => r.type === "workspace.renameCategoryProperty"), false);
       await userEvent.keyboard("{Escape}"); assert.equal(document.activeElement, trigger);
       const textLabel = `${translate(language, "editTextValue")}: Project / Notes`;
-      await userEvent.click(await screen.findByRole("button", { name: textLabel }));
+      await userEvent.click(await findAction("button",{ name: textLabel }));
       const textEditor = screen.getByRole("textbox", { name: textLabel }); await userEvent.type(textEditor, "Keep Text draft");
-      await userEvent.click(screen.getByRole("button", { name: translate(language, "discoveryAction") }));
-      const apply = await screen.findByRole("button", { name: translate(language, "discoveryApply") });
+      await userEvent.click((await findAction("button",{ name: translate(language, "discoveryAction") })));
+      const apply = await findAction("button",{ name: translate(language, "discoveryApply") });
       await userEvent.click(trigger); editor = screen.getByRole("textbox", { name: translate(language, "categoryPropertyName") }) as HTMLInputElement;
       await userEvent.clear(editor); await userEvent.type(editor, "  Draft label 日本語  ");
       await act(async () => { assert.equal(service.workspaces.renameCategoryProperty({ type: "workspace.renameCategoryProperty", workspaceId: sibling.value.workspaceId, propertyId, name: "Sibling label" }).ok, true); });
@@ -2411,7 +2410,7 @@ test("EN/RU category label keyboard editor retains drafts and changes only share
       assert.ok(screen.getByRole("columnheader", { name: "Draft label 日本語" }));
       assert.equal(screen.getByRole("textbox", { name: textLabel }), textEditor); assert.equal((textEditor as HTMLTextAreaElement).value, "Keep Text draft");
       const categoryCell = screen.getByText("Category", { selector: "td" }); assert.equal(categoryCell.querySelector("input, select"), null);
-      assert.equal(categoryCell.querySelector("button")?.getAttribute("aria-label"), `${translate(language, "moveCategory")}: Project`);
+      assert.equal(categoryCell.parentElement?.querySelector(`button[aria-label="${translate(language, "moveCategory")}: Project"]`)?.getAttribute("aria-label"), `${translate(language, "moveCategory")}: Project`);
       const siblingList = service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId: sibling.value.workspaceId });
       assert.equal(siblingList.ok && siblingList.value.categoryProperty?.name, "  Draft label 日本語  ");
       assert.equal(applied.value.revision, siblingList.ok && siblingList.value.revision);
@@ -2461,7 +2460,7 @@ test("EN/RU opening category rename during a pending sibling refresh keeps the r
       } });
       off = service.workspaces.subscribe(api.emitChange);
       render(<App />);
-      const trigger = await screen.findByRole("button", { name: `${translate(language, "renameCategoryProperty")}: Old label` });
+      const trigger = await findAction("button",{ name: `${translate(language, "renameCategoryProperty")}: Old label` });
       delayList = true;
       await act(async () => {
         const renamed = service.workspaces.renameCategoryProperty({ type: "workspace.renameCategoryProperty", workspaceId: sibling.value.workspaceId, propertyId, name: "Sibling label" });
@@ -2502,11 +2501,11 @@ test("EN/RU category label races accept own events but preserve newer labels and
         return fail("invalid_input");
       } });
     render(<App />);
-    await userEvent.click(await screen.findByRole("button", { name: `${translate(language, "renameCategoryProperty")}: ${translate(language, "discoveryCategory")}` }));
+    await userEvent.click(await findAction("button",{ name: `${translate(language, "renameCategoryProperty")}: ${translate(language, "discoveryCategory")}` }));
     const editor = screen.getByRole("textbox", { name: translate(language, "categoryPropertyName") });
     await userEvent.clear(editor); await userEvent.type(editor, "Own label"); await userEvent.keyboard("{Enter}");
     assert.equal((editor as HTMLInputElement).disabled, true);
-    assert.ok(screen.getByRole("button", { name: translate(language, "categoryPropertySaving") }));
+    assert.ok((await findAction("button",{ name: translate(language, "categoryPropertySaving") })));
     await act(async () => {
       currentList = f.list(outcome === "newer" ? "Newer label" : "Own label", outcome === "newer" ? 2 : 1);
       if (outcome === "oldList") delayList = true;
@@ -2542,7 +2541,7 @@ test("EN/RU category saves and lists cannot revive switched, removed, restarted 
     } });
     render(<App />);
     if (reason !== "list") {
-      await userEvent.click(await screen.findByRole("button", { name: `${translate(language, "renameCategoryProperty")}: ${translate(language, "discoveryCategory")}` }));
+      await userEvent.click(await findAction("button",{ name: `${translate(language, "renameCategoryProperty")}: ${translate(language, "discoveryCategory")}` }));
       const input = screen.getByRole("textbox", { name: translate(language, "categoryPropertyName") });
       await userEvent.clear(input); await userEvent.type(input, "Late label"); await userEvent.keyboard("{Enter}");
     } else await screen.findByRole("heading", { name: active.name });
@@ -2576,7 +2575,7 @@ test("EN/RU same-source refresh preserves category drafts and newer label snapsh
       return fail("invalid_input");
     } });
     render(<App />);
-    await userEvent.click(await screen.findByRole("button", { name: `${translate(language, "renameCategoryProperty")}: ${translate(language, "discoveryCategory")}` }));
+    await userEvent.click(await findAction("button",{ name: `${translate(language, "renameCategoryProperty")}: ${translate(language, "discoveryCategory")}` }));
     const input = screen.getByRole("textbox", { name: translate(language, "categoryPropertyName") }) as HTMLInputElement;
     await userEvent.clear(input); await userEvent.type(input, "Recoverable draft");
     const originalLists = lists;
@@ -2602,7 +2601,7 @@ test("EN/RU same-source refresh preserves category drafts and newer label snapsh
     input.focus(); await userEvent.keyboard("{Enter}");
     await screen.findByText(translate(language, "categoryPropertyValidation")); assert.equal(input.value, "Recoverable draft");
     await userEvent.keyboard("{Escape}");
-    assert.equal(document.activeElement, screen.getByRole("button", { name: `${translate(language, "renameCategoryProperty")}: Current label` }));
+    assert.equal(document.activeElement, (await findAction("button",{ name: `${translate(language, "renameCategoryProperty")}: Current label` })));
     assert.equal(screen.queryByText(translate(language, "projectsError")), null);
     cleanup(); assert.equal(api.changeListenerCount(), 0);
   }
@@ -2653,7 +2652,7 @@ test("EN/RU retained transitions, source retry and failed list loads preserve th
         mutations++; return fail("invalid_input");
       } });
     render(<App />);
-    await userEvent.click(await screen.findByRole("button", { name: `${translate(language, "editTextValue")}: Project / Notes` }));
+    await userEvent.click(await findAction("button",{ name: `${translate(language, "editTextValue")}: Project / Notes` }));
     const editor = screen.getByRole("textbox", { name: `${translate(language, "editTextValue")}: Project / Notes` }) as HTMLTextAreaElement;
     await userEvent.clear(editor); await userEvent.type(editor, "Unsaved retained draft 📝");
     resolution = "missing";
@@ -2669,13 +2668,13 @@ test("EN/RU retained transitions, source retry and failed list loads preserve th
     assert.equal(screen.getAllByText(translate(language, "sourceUnavailableTitle")).length, 1);
     assert.equal(screen.queryByText(translate(language, "discoveryUnavailable")), null);
     loadFailure = true;
-    const retry = screen.getByRole("button", { name: translate(language, "retrySourceAction") });
+    const retry = (await findAction("button",{ name: translate(language, "retrySourceAction") }));
     retry.focus(); await userEvent.keyboard("{Enter}");
     await screen.findByText(translate(language, "projectsError"));
     assert.equal(editor.value, "Unsaved retained draft 📝");
     assert.equal(screen.getByRole("textbox", { name: `${translate(language, "editTextValue")}: Project / Notes` }), editor);
     loadFailure = false; state = "ready";
-    await userEvent.click(screen.getByRole("button", { name: translate(language, "retrySourceAction") }));
+    await userEvent.click((await findAction("button",{ name: translate(language, "retrySourceAction") })));
     await waitFor(() => assert.ok(screen.queryByText(translate(language, "projectsError")) === null));
     await waitFor(() => assert.ok(screen.queryByText(translate(language, "sourceUnavailableTitle")) === null));
     assert.equal(retries, 2); assert.equal(mutations, 0);
@@ -2691,10 +2690,10 @@ test("EN/RU unavailable, unreadable and conflicting sources show feedback once a
       mockApi({ language, load: ok(snapshotOf(active)), onProperties: async () => ok(f.snapshot(1)),
         onProjects: async () => ok({ ...projectList(active), state, projects: f.projects.map((row) => ({ ...row, resolution: null })) }) });
       render(<App />);
-      await screen.findByRole("button", { name: `${translate(language, "editTextValue")}: Project / Notes` });
+      await findAction("button",{ name: `${translate(language, "editTextValue")}: Project / Notes` });
       await screen.findByRole("heading", { name: translate(language, label) });
       assert.equal(screen.getAllByRole("heading", { name: translate(language, label) }).length, 1);
-      const retry = screen.getByRole("button", { name: translate(language, "retrySourceAction") });
+      const retry = (await findAction("button",{ name: translate(language, "retrySourceAction") }));
       assert.ok(retry.closest("[role=alert]")?.textContent?.includes(translate(language, label)));
       assert.equal(screen.queryByText(translate(language, "projectMissing")), null);
       assert.equal(screen.queryByText(translate(language, "projectUnresolved")), null);
@@ -2729,10 +2728,10 @@ test("EN/RU delayed recovery previews and accepted responses cannot revive switc
       return fail("invalid_input");
     } });
     render(<App />);
-    await userEvent.click(await screen.findByRole("button", { name: `${t("recoveryLocate")}: Missing project` }));
+    await userEvent.click(await findAction("button",{ name: `${t("recoveryLocate")}: Missing project` }));
     if (phase === "commit") {
       await userEvent.click(await screen.findByRole("radio", { name: "Target" }));
-      await userEvent.click(screen.getByRole("button", { name: t("recoveryConfirm") }));
+      await userEvent.click((await findAction("button",{ name: t("recoveryConfirm") })));
     }
     if (reason === "switch") {
       current = other;
@@ -2785,7 +2784,7 @@ test("EN/RU observer-only changes reject delayed same-revision lists/previews an
       },
     });
     render(<App />); await screen.findByRole("cell", { name: "Saved" });
-    await userEvent.click(screen.getByRole("button", { name: translate(language, "discoveryAction") }));
+    await userEvent.click((await findAction("button",{ name: translate(language, "discoveryAction") })));
     const event: WorkspaceChangeEvent = { type: "workspace.sourceObserved", sourceId: active.sourceId, workspaceIds: [active.workspaceId],
       observationRevision: 2, state: "ready", automaticUpdates: "active" };
     await act(async () => { api.emitChange({ ...event, sourceId: "00000000-0000-4000-8000-000000000099" }); api.emitChange({ ...event, workspaceIds: [] }); });
@@ -2801,10 +2800,10 @@ test("EN/RU observer-only changes reject delayed same-revision lists/previews an
     });
     assert.equal(lists, 3); assert.equal(screen.queryByRole("cell", { name: "Delayed same revision" }), null);
     assert.equal(screen.queryByRole("checkbox", { name: /^(Exclude|Исключить):/ }), null);
-    assert.equal((screen.getByRole("button", { name: translate(language, "discoveryApply") }) as HTMLButtonElement).disabled, true);
-    await userEvent.click(screen.getByRole("button", { name: translate(language, "discoveryRefresh") }));
+    assert.equal(((await findAction("button",{ name: translate(language, "discoveryApply") })) as HTMLButtonElement).disabled, true);
+    await userEvent.click((await findAction("button",{ name: translate(language, "discoveryRefresh") })));
     await screen.findByRole("checkbox", { name: /Authored project/ });
-    assert.equal((screen.getByRole("button", { name: translate(language, "discoveryApply") }) as HTMLButtonElement).disabled, false);
+    assert.equal(((await findAction("button",{ name: translate(language, "discoveryApply") })) as HTMLButtonElement).disabled, false);
     cleanup(); assert.equal(api.changeListenerCount(), 0);
   }
 });
@@ -2819,7 +2818,7 @@ test("EN/RU available and empty sources expose Refresh, prevent duplicate submis
         if (input.type === "workspace.refreshSource") { refreshes++; return new Promise((resolve) => { finish = resolve; }); }
         return fail("invalid_input");
       } });
-    render(<App />); const button = await screen.findByRole("button", { name: translate(language, "refreshSourceAction") });
+    render(<App />); const button = await findAction("button",{ name: translate(language, "refreshSourceAction") });
     button.focus(); await userEvent.keyboard("{Enter}{Enter}");
     assert.equal(refreshes, 1); assert.equal((button as HTMLButtonElement).disabled, true);
     assert.ok(screen.getByRole("heading", { name: translate(language, "refreshingSource") }));
@@ -2851,13 +2850,13 @@ test("EN/RU stale Refresh responses cannot override newer observations or select
         if (input.type === "workspace.refreshSource") return new Promise((resolve) => { finish = resolve; });
         return fail("invalid_input");
       } });
-    render(<App />); await userEvent.click(await screen.findByRole("button", { name: translate(language, "refreshSourceAction") }));
+    render(<App />); await userEvent.click(await findAction("button",{ name: translate(language, "refreshSourceAction") }));
     await act(async () => {
       if (reason === "observation") api.emitChange({ type: "workspace.sourceChanged", source: { sourceId: active.sourceId, workspaceIds: [active.workspaceId], canonicalRoot: "/Current root", sourceAvailable: true } });
       if (reason === "selection" || reason === "removal") { current = other; empty = reason === "removal"; api.emitChange({ type: "workspace.listChanged", snapshot: empty ? emptyLoad() : snapshotOf(other) }); }
       if (reason === "restart") { api.emitStatus("unavailable"); api.emitStatus("ready"); }
     });
-    if (reason === "restart") await screen.findByRole("button", { name: translate(language, "refreshSourceAction") });
+    if (reason === "restart") await findAction("button",{ name: translate(language, "refreshSourceAction") });
     await act(async () => { finish?.(ok({ sourceId: active.sourceId, workspaceIds: [active.workspaceId], canonicalRoot: "/Stale root", sourceAvailable: false })); });
     assert.ok(screen.queryByText("/Stale root") === null, `${language} ${reason}: stale response replaced current root`);
     assert.ok(screen.queryByText(translate(language, "refreshSourceErrorTitle")) === null);
@@ -2910,10 +2909,10 @@ test("EN/RU production Refresh and observer placement create only a needed categ
       } });
       off = service.workspaces.subscribe(api.emitChange); render(<App />);
       const textLabel = `${translate(language, "editTextValue")}: Project / Notes`;
-      await userEvent.click(await screen.findByRole("button", { name: textLabel }));
+      await userEvent.click(await findAction("button",{ name: textLabel }));
       const textEditor = screen.getByRole("textbox", { name: textLabel }) as HTMLTextAreaElement;
       await userEvent.clear(textEditor); await userEvent.type(textEditor, "  Unsaved Text 📝  ");
-      await userEvent.click(screen.getByRole("button", { name: `${translate(language, "renameCategoryProperty")}: Authored label` }));
+      await userEvent.click((await findAction("button",{ name: `${translate(language, "renameCategoryProperty")}: Authored label` })));
       const labelEditor = screen.getByRole("textbox", { name: translate(language, "categoryPropertyName") }) as HTMLInputElement;
       await userEvent.clear(labelEditor); await userEvent.type(labelEditor, "  Unsaved label  ");
       // A late renderer must see the startup watcher failure without another topology change.
@@ -2921,7 +2920,7 @@ test("EN/RU production Refresh and observer placement create only a needed categ
       mkdirSync(join(root, "Needed")); renameSync(join(root, "Old/Project"), join(root, "Needed/Renamed"));
       mkdirSync(join(root, "Needed/Unrelated")); mkdirSync(join(root, "Other/Unrelated"), { recursive: true }); mkdirSync(join(root, "Empty"));
       if (mechanism === "refresh") {
-        const refresh = screen.getByRole("button", { name: translate(language, "refreshSourceAction") }); refresh.focus(); await userEvent.keyboard("{Enter}");
+        const refresh = (await findAction("button",{ name: translate(language, "refreshSourceAction") })); refresh.focus(); await userEvent.keyboard("{Enter}");
       } else {
         textEditor.focus();
         await act(async () => {
@@ -2944,7 +2943,7 @@ test("EN/RU production Refresh and observer placement create only a needed categ
       assert.equal(unwrap(service.workspaces.load()).activeWorkspace!.viewId, one.viewId);
       assert.equal(requests.filter((request) => request.type === "workspace.applyDiscovery").length, 0);
       assert.equal(requests.filter((request) => request.type === "workspace.setTextValue" || request.type === "workspace.renameCategoryProperty").length, 0);
-      await userEvent.click(screen.getByRole("button", { name: translate(language, "refreshSourceAction") }));
+      await userEvent.click((await findAction("button",{ name: translate(language, "refreshSourceAction") })));
       assert.equal(unwrap(service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId })).revision, after.revision);
     } finally { off?.(); cleanup(); service.close(); rmSync(directory, { recursive: true, force: true }); }
   }
@@ -2985,23 +2984,23 @@ test("EN/RU production Refresh retains metadata and recovery when an existing de
       await screen.findByRole("cell", { name: "Project" });
       renameSync(join(root, "Conflict"), join(directory, "original-category")); mkdirSync(join(root, "Conflict"));
       renameSync(join(root, "Old/Project"), join(root, "Conflict/Project"));
-      await userEvent.click(screen.getByRole("button", { name: translate(language, "refreshSourceAction") }));
+      await userEvent.click((await findAction("button",{ name: translate(language, "refreshSourceAction") })));
       await screen.findByText(translate(language, "projectMissing"));
       const after = unwrap(service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId }));
       assert.equal(after.retainedProjects[0].projectId, initial.projects[0].projectId); assert.equal(after.revision, initial.revision);
       assert.deepEqual(after.categories.map((category) => category.categoryId), initial.categories.filter((category) => category.relativePath !== "Conflict").map((category) => category.categoryId));
       assert.deepEqual(after.categoryProperty, initial.categoryProperty);
-      const text = screen.getByRole("button", { name: `${translate(language, "editTextValue")}: Project / Notes` });
+      const text = (await findAction("button",{ name: `${translate(language, "editTextValue")}: Project / Notes` }));
       assert.equal(text.textContent, "  Retained exact Text 📝  ");
-      await userEvent.click(screen.getByRole("button", { name: `${translate(language, "recoveryLocate")}: Project` }));
+      await userEvent.click((await findAction("button",{ name: `${translate(language, "recoveryLocate")}: Project` })));
       await screen.findByText(translate(language, "recoveryCategoryUnavailable"));
       const target = await screen.findByRole("radio", { name: /Conflict\/Project/ }) as HTMLInputElement;
-      assert.equal(target.disabled, true); assert.equal((screen.getByRole("button", { name: translate(language, "recoveryConfirm") }) as HTMLButtonElement).disabled, true);
+      assert.equal(target.disabled, true); assert.equal(((await findAction("button",{ name: translate(language, "recoveryConfirm") })) as HTMLButtonElement).disabled, true);
       // Deliver a later watcher failure explicitly; its real observation must invalidate the preview.
       await act(async () => hints.get(created.canonicalRoot)!.failed());
       await screen.findByRole("heading", { name: translate(language, "recoveryStale") });
       assert.equal(screen.queryByRole("radio", { name: /Conflict\/Project/ }), null);
-      assert.equal((screen.getByRole("button", { name: translate(language, "recoveryConfirm") }) as HTMLButtonElement).disabled, true);
+      assert.equal(((await findAction("button",{ name: translate(language, "recoveryConfirm") })) as HTMLButtonElement).disabled, true);
       await userEvent.keyboard("{Escape}"); assert.equal(screen.queryByRole("heading", { name: translate(language, "recoveryTitle") }) === null, true);
       assert.equal(text.textContent, "  Retained exact Text 📝  ");
     } finally { off?.(); cleanup(); service.close(); rmSync(directory, { recursive: true, force: true }); }
@@ -3013,7 +3012,7 @@ test("EN/RU cached source guidance follows a newly selected sibling and resets a
     const active = { ...sharedEventWorkspace(), viewId: randomUUID() }, sibling = { ...sharedEventWorkspace(), workspaceId: randomUUID(), viewId: randomUUID(), name: "New sibling" };
     let selected = active;
     const api = mockApi({ language, onWorkspace: async (input) => input.type === "workspace.load" ? ok(snapshotOf(selected)) : fail("invalid_input") });
-    render(<App />); await screen.findByRole("button", { name: translate(language, "refreshSourceAction") });
+    render(<App />); await findAction("button",{ name: translate(language, "refreshSourceAction") });
     const event: WorkspaceChangeEvent = { type: "workspace.sourceObserved", sourceId: active.sourceId, workspaceIds: [active.workspaceId], observationRevision: 3, state: "ready", automaticUpdates: "degraded" };
     await act(async () => api.emitChange(event));
     await screen.findByRole("heading", { name: translate(language, "automaticUpdatesDegraded") });
@@ -3023,10 +3022,10 @@ test("EN/RU cached source guidance follows a newly selected sibling and resets a
     assert.ok(screen.getByRole("heading", { name: translate(language, "automaticUpdatesDegraded") }));
     await act(async () => api.emitChange({ ...event, observationRevision: 4, automaticUpdates: "active" }));
     assert.ok(screen.getByRole("heading", { name: translate(language, "automaticUpdatesDegraded") }));
-    await userEvent.click(screen.getByRole("button", { name: translate(language, "refreshSourceAction") }));
+    await userEvent.click((await findAction("button",{ name: translate(language, "refreshSourceAction") })));
     await screen.findByRole("heading", { name: translate(language, "refreshSourceErrorTitle") });
     await act(async () => { api.emitStatus("unavailable"); api.emitStatus("ready"); });
-    await screen.findByRole("button", { name: translate(language, "refreshSourceAction") });
+    await findAction("button",{ name: translate(language, "refreshSourceAction") });
     assert.ok(screen.queryByText(translate(language, "automaticUpdatesDegraded")) === null);
     assert.ok(screen.queryByText(translate(language, "refreshSourceErrorTitle")) === null);
     await act(async () => api.emitChange({ ...event, workspaceIds: [sibling.workspaceId], observationRevision: 1 }));
@@ -3103,7 +3102,7 @@ test("a delayed current-observation read cannot override newer events or a backe
       if (input.type === "workspace.load") return ok(snapshotOf(selected));
       return fail("invalid_input");
     } });
-    render(<App />); await screen.findByRole("button", { name: "Refresh source" });
+    render(<App />); await findAction("button",{ name: "Refresh source" });
     await waitFor(() => assert.equal(reads, 1));
     await act(async () => {
       if (reason === "event") api.emitChange({ ...observation, observationRevision: 2, automaticUpdates: "active" });
@@ -3149,13 +3148,13 @@ test("EN/RU configured mode review cancels safely and preserves exact Text and h
       } });
       off = service.workspaces.subscribe(api.emitChange); render(<App />);
       const textLabel = `${translate(language, "editTextValue")}: Project / Notes`;
-      await userEvent.click(await screen.findByRole("button", { name: textLabel }));
+      await userEvent.click(await findAction("button",{ name: textLabel }));
       const textEditor = screen.getByRole("textbox", { name: textLabel }) as HTMLTextAreaElement;
       await userEvent.clear(textEditor); await userEvent.type(textEditor, "  Unsaved exact Text 📝  ");
-      await userEvent.click(screen.getByRole("button", { name: `${translate(language, "renameCategoryProperty")}: Authored label` }));
+      await userEvent.click((await findAction("button",{ name: `${translate(language, "renameCategoryProperty")}: Authored label` })));
       await userEvent.clear(screen.getByRole("textbox", { name: translate(language, "categoryPropertyName") }));
       await userEvent.type(screen.getByRole("textbox", { name: translate(language, "categoryPropertyName") }), "  Unsaved label  ");
-      const trigger = screen.getByRole("button", { name: translate(language, "discoveryAction") });
+      const trigger = (await findAction("button",{ name: translate(language, "discoveryAction") }));
       await userEvent.click(trigger);
       await userEvent.selectOptions(await screen.findByRole("combobox", { name: translate(language, "discoveryMode") }), "direct");
       await waitFor(() => assert.equal((screen.getByRole("combobox", { name: translate(language, "discoveryMode") }) as HTMLSelectElement).disabled, false));
@@ -3175,12 +3174,12 @@ test("EN/RU configured mode review cancels safely and preserves exact Text and h
       await userEvent.click(trigger);
       await userEvent.selectOptions(await screen.findByRole("combobox", { name: translate(language, "discoveryMode") }), "direct");
       await waitFor(() => assert.equal((screen.getByRole("button", { name: translate(language, "discoveryApply") }) as HTMLButtonElement).disabled, false));
-      screen.getByRole("button", { name: translate(language, "discoveryApply") }).focus(); await userEvent.keyboard("{Enter}");
+      (await findAction("button",{ name: translate(language, "discoveryApply") })).focus(); await userEvent.keyboard("{Enter}");
       await waitFor(() => assert.equal(screen.queryByRole("columnheader", { name: "  Authored label  " }), null));
       assert.equal(screen.queryByRole("textbox", { name: translate(language, "categoryPropertyName") }), null);
       assert.equal(screen.getByRole("textbox", { name: textLabel }), textEditor);
       assert.equal(textEditor.value, "  Unsaved exact Text 📝  ");
-      assert.ok(screen.getByRole("button", { name: `${translate(language, "recoveryLocate")}: Project` }));
+      assert.ok((await findAction("button",{ name: `${translate(language, "recoveryLocate")}: Project` })));
       assert.equal(document.activeElement, trigger);
       assert.equal(unwrap(service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId: sibling.workspaceId })).mode, "direct");
       assert.equal(unwrap(service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId: other.workspaceId })).mode, null);
@@ -3239,11 +3238,11 @@ test("EN/RU delayed category save after sibling mode changes preserves the hidde
       return fail("invalid_input");
     } });
     render(<App />);
-    await userEvent.click(await screen.findByRole("button", { name: `${translate(language, "renameCategoryProperty")}: Original` }));
+    await userEvent.click(await findAction("button",{ name: `${translate(language, "renameCategoryProperty")}: Original` }));
     const editor = screen.getByRole("textbox", { name: translate(language, "categoryPropertyName") });
     await userEvent.clear(editor); await userEvent.type(editor, "  Pending draft  "); await userEvent.keyboard("{Enter}");
     assert.equal((editor as HTMLInputElement).disabled, true);
-    assert.equal((screen.getByRole("button", { name: translate(language, "cancelRenameWorkspace") }) as HTMLButtonElement).disabled, true);
+    assert.equal(((await findAction("button",{ name: translate(language, "cancelRenameWorkspace") })) as HTMLButtonElement).disabled, true);
     listed = { ...projectList(active, ["Direct"], 2), configured: true, categoryPropertyRevision: 1 };
     holdList = delivery === "beforeList";
     await act(async () => api.emitChange({ type: "workspace.projectsChanged", sourceId: active.sourceId, workspaceIds: [active.workspaceId], revision: 2 }));
@@ -3263,7 +3262,7 @@ test("EN/RU delayed category save after sibling mode changes preserves the hidde
     assert.equal(restored.value, "  Pending draft  "); assert.equal(restored.disabled, false);
     assert.ok(screen.getByText(translate(language, "categoryPropertyExternalChange"))); assert.equal(saves, 1);
     await userEvent.keyboard("{Escape}");
-    assert.equal(document.activeElement, screen.getByRole("button", { name: `${translate(language, "renameCategoryProperty")}: Committed sibling label` }));
+    assert.equal(document.activeElement, (await findAction("button",{ name: `${translate(language, "renameCategoryProperty")}: Committed sibling label` })));
     assert.equal(saves, 1); cleanup(); assert.equal(api.changeListenerCount(), 0);
   }
 });
@@ -3287,13 +3286,13 @@ test("EN/RU configured mode validation and storage failures retain a review; sta
       }
       return fail("invalid_input");
     } });
-    render(<App />); await screen.findByRole("cell", { name: "Category" }); await userEvent.click(await screen.findByRole("button", { name: translate(language, "discoveryAction") }));
+    render(<App />); await screen.findByRole("cell", { name: "Category" }); await userEvent.click(await findAction("button",{ name: translate(language, "discoveryAction") }));
     await userEvent.selectOptions(await screen.findByRole("combobox", { name: translate(language, "discoveryMode") }), "grouped");
-    const apply = screen.getByRole("button", { name: translate(language, "discoveryApply") }) as HTMLButtonElement;
+    const apply = (await findAction("button",{ name: translate(language, "discoveryApply") })) as HTMLButtonElement;
     await userEvent.click(apply);
     assert.equal(apply.disabled, true);
     assert.equal((screen.getByRole("combobox", { name: translate(language, "discoveryMode") }) as HTMLSelectElement).disabled, true);
-    assert.equal((screen.getByRole("button", { name: translate(language, "cancelRenameWorkspace") }) as HTMLButtonElement).disabled, true);
+    assert.equal(((await findAction("button",{ name: translate(language, "cancelRenameWorkspace") })) as HTMLButtonElement).disabled, true);
     await userEvent.click(apply); assert.equal(applies, 1);
     await act(async () => finish?.(fail("invalid_input")));
     await screen.findByRole("heading", { name: translate(language, "discoveryValidation") });
@@ -3305,7 +3304,7 @@ test("EN/RU configured mode validation and storage failures retain a review; sta
     assert.equal((screen.getByRole("combobox", { name: translate(language, "discoveryMode") }) as HTMLSelectElement).value, "grouped");
     screen.getByRole("heading", { name: translate(language, "discoveryGroupedTitle") }).focus(); await userEvent.keyboard("{Escape}");
     assert.equal(screen.queryByRole("heading", { name: translate(language, "discoveryGroupedTitle") }), null);
-    assert.equal(applies, 3); assert.equal(document.activeElement, screen.getByRole("button", { name: translate(language, "discoveryAction") }));
+    assert.equal(applies, 3); assert.equal(document.activeElement, (await findAction("button",{ name: translate(language, "discoveryAction") })));
     cleanup();
   }
 });
@@ -3329,7 +3328,7 @@ test("EN/RU initial project list invalidates an early preview and requires expli
         return fail("invalid_input");
       } });
     render(<App />);
-    const trigger = await screen.findByRole("button", { name: translate(language, "discoveryAction") });
+    const trigger = await findAction("button",{ name: translate(language, "discoveryAction") });
     assert.equal((trigger as HTMLButtonElement).disabled, false);
     await userEvent.click(trigger);
     assert.equal(previews, 1);
@@ -3343,15 +3342,15 @@ test("EN/RU initial project list invalidates an early preview and requires expli
     if (delivery === "beforePreview") await act(async () => finishPreview(oldPreview));
     await screen.findByRole("heading", { name: translate(language, "discoveryStale") });
     assert.equal(screen.queryByRole("combobox", { name: translate(language, "discoveryMode") }), null);
-    const apply = screen.getByRole("button", { name: translate(language, "discoveryApply") }) as HTMLButtonElement;
+    const apply = (await findAction("button",{ name: translate(language, "discoveryApply") })) as HTMLButtonElement;
     assert.equal(apply.disabled, true);
     await userEvent.click(apply);
     assert.equal(applies, 0); assert.equal(previews, 1);
-    await userEvent.click(screen.getByRole("button", { name: translate(language, "discoveryRefresh") }));
+    await userEvent.click((await findAction("button",{ name: translate(language, "discoveryRefresh") })));
     const mode = await screen.findByRole("combobox", { name: translate(language, "discoveryMode") }) as HTMLSelectElement;
     assert.equal(mode.value, "direct"); assert.equal(mode.disabled, false);
     assert.equal(apply.disabled, false); assert.equal(previews, 2); assert.equal(applies, 0);
-    await userEvent.click(screen.getByRole("button", { name: translate(language, "cancelRenameWorkspace") }));
+    await userEvent.click((await findAction("button",{ name: translate(language, "cancelRenameWorkspace") })));
     assert.equal(document.activeElement, trigger);
     cleanup(); assert.equal(api.changeListenerCount(), 0);
   }
@@ -3374,13 +3373,13 @@ test("EN/RU configured mode selection discards delayed previews after cancellati
     // Establish the initial source revision before testing later transitions.
     // A late initial list correctly invalidates a review opened during loading.
     await screen.findByRole("cell", { name: "Current" });
-    const trigger = await screen.findByRole("button", { name: translate(language, "discoveryAction") });
+    const trigger = await findAction("button",{ name: translate(language, "discoveryAction") });
     await userEvent.click(trigger);
     const mode = await screen.findByRole("combobox", { name: translate(language, "discoveryMode") });
     await userEvent.selectOptions(mode, "grouped");
     assert.equal((mode as HTMLSelectElement).disabled, true);
     if (transition === "cancel") {
-      await userEvent.click(screen.getByRole("button", { name: translate(language, "cancelRenameWorkspace") }));
+      await userEvent.click((await findAction("button",{ name: translate(language, "cancelRenameWorkspace") })));
       assert.equal(document.activeElement, trigger); await userEvent.click(trigger); await screen.findByRole("checkbox", { name: /^(Exclude|Исключить):/ });
     } else if (transition === "restart") {
       await act(async () => api.emitStatus("starting")); await act(async () => api.emitStatus("ready"));
@@ -3389,7 +3388,7 @@ test("EN/RU configured mode selection discards delayed previews after cancellati
     } else if (transition === "sibling") {
       mode.focus();
       await act(async () => api.emitChange({ type: "workspace.projectsChanged", sourceId: active.sourceId, workspaceIds: [active.workspaceId], revision: 2 }));
-      assert.equal(document.activeElement, screen.getByRole("button", { name: translate(language, "discoveryRefresh") }));
+      assert.equal(document.activeElement, (await findAction("button",{ name: translate(language, "discoveryRefresh") })));
     } else {
       await act(async () => api.emitChange({ type: "workspace.listChanged", snapshot: snapshotOf(other, transition === "remove" ? [other] : [active, other]) }));
     }
@@ -3418,9 +3417,9 @@ test("EN/RU configured mode Apply keeps confirmed delayed success and never over
     // Establish the initial source revision before exercising delayed Apply.
     // Opening a preview during initial loading deliberately makes it stale.
     await screen.findByRole("cell", { name: "Direct" });
-    const trigger = await screen.findByRole("button", { name: translate(language, "discoveryAction") });
+    const trigger = await findAction("button",{ name: translate(language, "discoveryAction") });
     await userEvent.click(trigger); await userEvent.selectOptions(await screen.findByRole("combobox", { name: translate(language, "discoveryMode") }), "grouped");
-    await userEvent.click(screen.getByRole("button", { name: translate(language, "discoveryApply") }));
+    await userEvent.click((await findAction("button",{ name: translate(language, "discoveryApply") })));
     listed = newerSibling ? { ...projectList(active, ["Latest direct"], 3), configured: true } : applied;
     await act(async () => api.emitChange({ type: "workspace.projectsChanged", sourceId: active.sourceId, workspaceIds: [active.workspaceId], revision: listed.revision }));
     await screen.findByRole("cell", { name: newerSibling ? "Latest direct" : "Grouped child" });
@@ -3429,7 +3428,7 @@ test("EN/RU configured mode Apply keeps confirmed delayed success and never over
       assert.ok(screen.getByRole("cell", { name: "Latest direct" }));
       assert.equal(screen.queryByRole("columnheader", { name: "Label" }), null);
       assert.ok(screen.getByRole("heading", { name: translate(language, "discoveryStale") }));
-      assert.equal((screen.getByRole("button", { name: translate(language, "discoveryApply") }) as HTMLButtonElement).disabled, true);
+      assert.equal(((await findAction("button",{ name: translate(language, "discoveryApply") })) as HTMLButtonElement).disabled, true);
     } else {
       assert.ok(screen.getByRole("columnheader", { name: "Label" }));
       assert.equal(screen.queryByRole("heading", { name: translate(language, "discoveryGroupedTitle") }), null);
@@ -3502,7 +3501,7 @@ test("EN/RU production App immediately Reveals creation through an active observ
         }); render(<App />);
         return api;
       };
-      const api = setup(); const trigger = await screen.findByRole("button", { name: t("createProject") });
+      const api = setup(); const trigger = await findAction("button",{ name: t("createProject") });
       await waitFor(() => assert.equal((trigger as HTMLButtonElement).disabled, false)); await userEvent.click(trigger);
       await userEvent.type(screen.getByRole("textbox", { name: t("creationName") }), "Authored folder");
       if (mode === "grouped") {
@@ -3514,7 +3513,7 @@ test("EN/RU production App immediately Reveals creation through an active observ
       await screen.findByText(t("creationSaved")); await screen.findByRole("cell", { name: "Authored folder" });
       const before = service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId }); assert.ok(before.ok); if (!before.ok) throw new Error("Fixture failed");
       assert.equal(before.value.projects.length, 1); const projectId = before.value.projects[0].projectId;
-      const reveal = screen.getByRole("button", { name: `${t("revealProject")}: Authored folder` });
+      const reveal = (await findAction("button",{ name: `${t("revealProject")}: Authored folder` }));
       reveal.focus(); await userEvent.keyboard("{Enter}");
       assert.equal(dispatches, 1);
       const readsBeforeObservation = projectionReads;
@@ -3543,7 +3542,7 @@ test("EN/RU production App immediately Reveals creation through an active observ
       assert.equal(after.value.projects[0].projectId, projectId);
       phase = "remove";
       rmSync(join(root, ...(mode === "grouped" ? ["Existing category", "Authored folder"] : ["Authored folder"])), { recursive: true });
-      const missingReveal = screen.getByRole("button", { name: `${t("revealProject")}: Authored folder` }) as HTMLButtonElement;
+      const missingReveal = (await findAction("button",{ name: `${t("revealProject")}: Authored folder` })) as HTMLButtonElement;
       disabledAtMissingClick = missingReveal.disabled;
       phase = "missingClick"; record({ type: "click", disabled: missingReveal.disabled, observationRevision });
       await userEvent.click(missingReveal);
@@ -3602,7 +3601,7 @@ for (const platform of process.platform === "win32" ? [process.platform] : [proc
         return (input.type === "workspace.load" ? service.handleQuery(input) : service.handleCommand(input)) as ServiceResult<WorkspaceResponse>;
       } });
       off = service.workspaces.subscribe(api.emitChange); render(<App />);
-      await userEvent.click(await screen.findByRole("button", { name: `${t("renameProject")}: Original` }));
+      await userEvent.click(await findAction("button",{ name: `${t("renameProject")}: Original` }));
       const input = screen.getByRole("textbox", { name: t("projectName") });
       await userEvent.clear(input); await userEvent.type(input, `${authoredName}{Enter}`);
       // Assert outside the callback: renderer transport handling catches thrown assertions.
@@ -3620,7 +3619,7 @@ for (const platform of process.platform === "win32" ? [process.platform] : [proc
       await screen.findByText(t("renameUncertain"));
       assert.equal((input as HTMLInputElement).value, authoredName);
       await act(async () => { api.emitStatus("unavailable"); api.emitStatus("ready"); });
-      const statusButton = await screen.findByRole("button", { name: t("renameStatus") });
+      const statusButton = await findAction("button",{ name: t("renameStatus") });
       assert.equal(screen.queryByText(t("renameSaved")), null);
       assert.ok(screen.getByText(authoredName, { selector: "dd", normalizer: (text) => text }));
       assert.equal(renames.length, 1); assert.equal(statuses.length, 0); assert.equal(nativeCalls, 1);
@@ -3682,11 +3681,11 @@ for (const language of ["en", "ru"] as const) test(`${language}: production cate
       return (input.type === "workspace.load" ? service.handleQuery(input) : service.handleCommand(input)) as ServiceResult<WorkspaceResponse>;
     } });
     off = service.workspaces.subscribe(api.emitChange); render(<App />);
-    await userEvent.click(await screen.findByRole("button", { name: `${t("moveCategory")}: ${basename}`.replace(/\s+/g, " ").trim() }));
+    await userEvent.click(await findAction("button",{ name: `${t("moveCategory")}: ${basename}`.replace(/\s+/g, " ").trim() }));
     await userEvent.selectOptions(screen.getByRole("combobox", { name: t("moveCategoryDestination") }), before.categories.find((category) => category.name === "Empty")!.categoryId);
     await userEvent.keyboard("{Enter}"); await screen.findByText(t("moveCategoryUncertain"));
     await act(async () => { api.emitStatus("unavailable"); api.emitStatus("ready"); });
-    const status = await screen.findByRole("button", { name: t("moveCategoryStatus") });
+    const status = await findAction("button",{ name: t("moveCategoryStatus") });
     assert.equal(moves.length, 1); assert.equal(statuses.length, 0); assert.equal(nativeCalls, 1);
     assert.equal(screen.queryByText(t("moveCategorySaved")), null);
     await userEvent.click(status); await screen.findByText(t("moveCategorySaved"));
@@ -3709,13 +3708,13 @@ for (const language of ["en", "ru"] as const) test(`${language}: desktop setting
   mockApi({ language, load: ok(snapshotOf(active)), onProjects: async () => ok(projectList(active, ["Real project"])) });
   render(<App />);
   await screen.findByRole("cell", { name: "Real project" });
-  const settingsButton = screen.getByRole("button", { name: language === "en" ? "Settings" : "Настройки" });
+  const settingsButton = (await findAction("button",{ name: language === "en" ? "Settings" : "Настройки" }));
   settingsButton.focus(); await userEvent.keyboard("{Enter}");
   const appearance = await screen.findByRole("tab", { name: language === "en" ? "Appearance" : "Оформление" });
   await userEvent.click(appearance);
   assert.equal(screen.queryByRole("cell", { name: "Real project" }), null);
   await screen.findByRole("radiogroup", { name: language === "en" ? "Color theme" : "Цветовая тема" });
-  const back = screen.getByRole("button", { name: language === "en" ? "Back to workspace" : "Вернуться к работе" });
+  const back = (await findAction("button",{ name: language === "en" ? "Back to workspace" : "Вернуться к работе" }));
   back.focus(); await userEvent.keyboard("{Enter}");
   assert.equal(document.activeElement, settingsButton);
   assert.ok(screen.getByRole("cell", { name: "Real project" }));
@@ -3760,7 +3759,7 @@ test("settings remains reachable through startup, read failure and backend disco
   await openSettings();
   assert.ok(screen.getByRole("heading", { name: "Settings will be available when the backend reconnects." }));
   await backToWorkspace();
-  await userEvent.click(screen.getByRole("button", { name: "Retry" }));
+  await userEvent.click((await findAction("button",{ name: "Retry" })));
   await screen.findByRole("heading", { name: translate("en", "loadErrorTitle") });
   assert.equal(reads, 2);
   await act(async () => api.emitStatus("unavailable"));
@@ -3783,7 +3782,7 @@ test("EN/RU sidebar context Settings and Rename target the chosen workspace thro
         return ok(activeWorkspace);
       })() : fail("invalid_input") });
     render(<App />);
-    const context = await screen.findByRole("button", { name: `${translate(language, "workspaceActions")}: Second` });
+    const context = await findAction("button",{ name: `${translate(language, "workspaceActions")}: Second` });
     context.focus(); await userEvent.keyboard("{Enter}");
     const menu = screen.getByRole("group", { name: `${translate(language, "workspaceActions")}: Second` });
     await userEvent.click(within(menu).getByRole("button", { name: translate(language, "renameWorkspaceAction") }));
@@ -3808,14 +3807,14 @@ test("EN/RU setup can be postponed and cancelled without removing the saved work
       return fail("invalid_input");
     } });
     render(<App />);
-    const later = await screen.findByRole("button", { name: translate(language, "setupLater") });
+    const later = await findAction("button",{ name: translate(language, "setupLater") });
     later.focus(); await userEvent.keyboard("{Enter}");
     assert.equal(screen.queryByRole("button", { name: translate(language, "setupLater") }), null);
     assert.equal(previewCalls, 0);
-    const setup = screen.getByRole("button", { name: translate(language, "discoveryAction") });
+    const setup = (await findAction("button",{ name: translate(language, "discoveryAction") }));
     setup.focus(); await userEvent.keyboard("{Enter}");
-    await screen.findByRole("button", { name: translate(language, "discoveryApply") });
-    await userEvent.click(screen.getByRole("button", { name: translate(language, "cancelRenameWorkspace") }));
+    await findAction("button",{ name: translate(language, "discoveryApply") });
+    await userEvent.click((await findAction("button",{ name: translate(language, "cancelRenameWorkspace") })));
     assert.equal(document.activeElement, setup);
     assert.equal(document.querySelector("#workspace-title")?.textContent, "Workspace");
     assert.equal(mutationCalls, 0);
@@ -3835,15 +3834,15 @@ test("EN/RU sidebar Settings opens matching detail and inactive removal preserve
     } });
     render(<App />);
     const actions = `${translate(language, "workspaceActions")}: Second`;
-    await userEvent.click(await screen.findByRole("button", { name: actions }));
+    await userEvent.click(await findAction("button",{ name: actions }));
     await userEvent.click(within(screen.getByRole("group", { name: actions })).getByRole("button", { name: /^(Settings|Настройки)$/ }));
     assert.equal((screen.getByRole("combobox", { name: translate(language, "workspaceSelectLabel") }) as HTMLSelectElement).value, "two");
     await backToWorkspace();
     const firstActions = `${translate(language, "workspaceActions")}: First`;
-    await userEvent.click(screen.getByRole("button", { name: firstActions }));
+    await userEvent.click((await findAction("button",{ name: firstActions })));
     await userEvent.click(within(screen.getByRole("group", { name: firstActions })).getByRole("button", { name: translate(language, "removeWorkspaceAction") }));
     assert.ok(await screen.findByRole("heading", { name: `${translate(language, "removeWorkspaceTitle")}: First` }));
-    await userEvent.click(screen.getByRole("button", { name: translate(language, "confirmRemoveWorkspace") }));
+    await userEvent.click((await findAction("button",{ name: translate(language, "confirmRemoveWorkspace") })));
     await backToWorkspace();
     assert.equal(document.querySelector("#workspace-title")?.textContent, "Second");
     assert.deepEqual(data.workspaces.map(w => w.workspaceId), ["two"]);
@@ -3860,7 +3859,7 @@ test("sidebar ordering keeps keyboard focus and Escape closes contextual actions
     return fail("invalid_input");
   } });
   render(<App />);
-  const trigger = await screen.findByRole("button", { name:"Workspace actions: Second" });
+  const trigger = await findAction("button",{ name:"Workspace actions: Second" });
   trigger.focus(); await userEvent.keyboard("{Enter}{Escape}");
   assert.equal(screen.queryByRole("group", { name:"Workspace actions: Second" }), null);
   await userEvent.keyboard("{Enter}");
@@ -3880,8 +3879,8 @@ test("EN/RU postponing an open pending setup returns focus and rejects the delay
       return fail("invalid_input");
     } });
     render(<App />);
-    const later = await screen.findByRole("button", { name:translate(language,"setupLater") });
-    const setup = screen.getByRole("button", { name:translate(language,"discoveryAction") });
+    const later = await findAction("button",{ name:translate(language,"setupLater") });
+    const setup = (await findAction("button",{ name:translate(language,"discoveryAction") }));
     await userEvent.click(setup);
     await waitFor(() => assert.ok(finishPreview));
     later.focus(); await userEvent.keyboard("{Enter}");
@@ -3907,7 +3906,7 @@ test("Sources settings displays shared ownership and current configuration witho
     render(<App />);
     await openSettings();
     await userEvent.click(screen.getByRole("tab", { name: language === "en" ? "Sources" : "Источники" }));
-    const source = await screen.findByRole("button", { name: active.canonicalRoot });
+    const source = await findAction("button",{ name: active.canonicalRoot });
     source.focus(); await userEvent.keyboard("{Enter}");
     const detail = await screen.findByRole("region", { name: active.canonicalRoot });
     assert.ok(within(detail).getByText("One"));
@@ -3934,18 +3933,18 @@ test("Sources settings reviews and applies discovery through real shared source 
       ? service.handleCommand(input) : service.handleQuery(input)) as ServiceResult<WorkspaceResponse> });
     off = service.workspaces.subscribe(api.emitChange);
     render(<SourceSettings client={new WorkspaceServiceClient()} language="en" disabled={false} />);
-    await userEvent.click(await screen.findByRole("button", { name: realpathSync.native(root) }));
-    await userEvent.click(screen.getByRole("button", { name: translate("en", "discoveryAction") }));
+    await userEvent.click(await findAction("button",{ name: realpathSync.native(root) }));
+    await userEvent.click((await findAction("button",{ name: translate("en", "discoveryAction") })));
     await userEvent.selectOptions(await screen.findByRole("combobox", { name: translate("en", "discoveryMode") }), "grouped");
     await waitFor(() => assert.equal((screen.getByRole("button", { name: translate("en", "discoveryApply") }) as HTMLButtonElement).disabled, false));
-    await userEvent.click(screen.getByRole("button", { name: translate("en", "cancelRenameWorkspace") }));
+    await userEvent.click((await findAction("button",{ name: translate("en", "cancelRenameWorkspace") })));
     assert.equal(service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId: first.value.workspaceId }).ok, true);
     const saved = service.workspaces.listSources({ type: "workspace.listSources" });
     assert.ok(saved.ok); if (saved.ok) assert.equal(saved.value.sources[0].mode, null);
-    await userEvent.click(screen.getByRole("button", { name: translate("en", "discoveryAction") }));
+    await userEvent.click((await findAction("button",{ name: translate("en", "discoveryAction") })));
     await userEvent.selectOptions(await screen.findByRole("combobox", { name: translate("en", "discoveryMode") }), "grouped");
     await waitFor(() => assert.equal((screen.getByRole("button", { name: translate("en", "discoveryApply") }) as HTMLButtonElement).disabled, false));
-    await userEvent.click(screen.getByRole("button", { name: translate("en", "discoveryApply") }));
+    await userEvent.click((await findAction("button",{ name: translate("en", "discoveryApply") })));
     await waitFor(() => assert.equal(screen.queryByRole("button", { name: translate("en", "discoveryApply") }), null));
     const sibling = service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId: second.value.workspaceId });
     assert.ok(sibling.ok); if (sibling.ok) { assert.equal(sibling.value.mode, "grouped"); assert.equal(sibling.value.projects[0].relativePath, "Client/Project"); }
@@ -3965,13 +3964,13 @@ test("Sources settings invalidates reviews on source changes and ignores older s
     return fail("invalid_input");
   } });
   render(<SourceSettings client={new WorkspaceServiceClient()} language="en" disabled={false} />);
-  await userEvent.click(await screen.findByRole("button", { name: active.canonicalRoot }));
+  await userEvent.click(await findAction("button",{ name: active.canonicalRoot }));
   await act(async () => api.emitChange({ type: "workspace.sourceObserved", sourceId: active.sourceId, workspaceIds: [active.workspaceId], observationRevision: 2, state: "ready", automaticUpdates: "degraded" }));
   await screen.findByText(translate("en", "automaticUpdatesDegraded"));
   await act(async () => finishStatus(ok({ observation: { type: "workspace.sourceObserved", sourceId: active.sourceId, workspaceIds: [active.workspaceId], observationRevision: 1, state: "ready", automaticUpdates: "active" } })));
   assert.ok(screen.getByText(translate("en", "automaticUpdatesDegraded")));
-  await userEvent.click(screen.getByRole("button", { name: translate("en", "discoveryAction") }));
-  const apply = await screen.findByRole("button", { name: translate("en", "discoveryApply") }) as HTMLButtonElement;
+  await userEvent.click((await findAction("button",{ name: translate("en", "discoveryAction") })));
+  const apply = await findAction("button",{ name: translate("en", "discoveryApply") }) as HTMLButtonElement;
   await waitFor(() => assert.equal(apply.disabled, false));
   await act(async () => api.emitChange({ type: "workspace.sourceChanged", source: { sourceId: active.sourceId, workspaceIds: [active.workspaceId], canonicalRoot: active.canonicalRoot, sourceAvailable: false } }));
   await waitFor(() => assert.equal(apply.disabled, true));

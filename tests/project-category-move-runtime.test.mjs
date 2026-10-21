@@ -59,6 +59,8 @@ Object.assign(globalThis, { window: browser, document: browser.document, HTMLEle
 Object.defineProperty(globalThis, "navigator", { configurable: true, value: browser.navigator });
 const { render, screen, cleanup, within } = await import("@testing-library/react");
 const { TextPropertiesTable } = await import("../src/renderer/components/TextPropertiesTable.tsx");
+const { findAction } = await import("./context-tools-driver.ts");
+const {default:toolsUser}=await import("@testing-library/user-event");
 const { translate } = await import("../src/renderer/localization.ts");
 test.afterEach(cleanup);
 
@@ -68,9 +70,10 @@ function locator(value) {
   const nodes = Array.isArray(value) ? value : [value];
   return {
     nodes,
-    getByRole: (role, options) => locator(nodes.flatMap(node => within(node).queryAllByRole(role, options))),
+    getByRole: (role, options) => locator(nodes.flatMap(node => within(node).queryAllByRole(role, {...options,hidden:options?.includeHidden}))),
     filter: ({ has, hasText }) => locator(nodes.filter(node => has ? has.nodes.some(child => node.contains(child)) : node.textContent.includes(hasText))),
-    locator: selector => selector === ".." ? locator(nodes.map(node => node.parentElement)) : { nth: index => locator(nodes.flatMap(node => [...node.querySelectorAll(selector)])[index]) },
+    locator: selector => selector === ".." ? locator(nodes.map(node => node.parentElement)) : locator(nodes.flatMap(node=>[...node.querySelectorAll(selector)])),
+    nth: index=>locator(nodes[index]),
     evaluate: async fn => { assert.equal(nodes.length, 1); return fn(nodes[0]); },
     waitFor: async () => assert.equal(nodes.length, 1),
     count: async () => nodes.length,
@@ -82,11 +85,13 @@ for (const language of ["en", "ru"]) test(`${language}: runtime category cell bi
   const client = { listTextProperties: async () => ({ ok: true, value: { workspaceId: "w", sourceId: "s", revision: 0, definitions: [], values: [] } }), onBackendStatus: () => () => {}, onWorkspaceChange: () => () => {} };
   let moved;
   render(React.createElement(TextPropertiesTable, { client, workspaceId: "w", sourceId: "s", projects: [project, { ...project, projectId: "other", name: "Other" }, { ...project, projectId: "duplicate", categoryId: "d" }], categories: [{ categoryId: "c", name: "  Exact категория  " }, { categoryId: "d", name: "Different" }], categoryProperty: { propertyId: "label", sourceId: "s", name: "Label" }, language, disabled: false, onMoveCategory: value => { moved = value; } }));
-  await screen.findByRole("button", { name: `${translate(language, "moveCategory")}: Other`, exact: true });
-  const page = { getByRole: (role, options) => locator(screen.queryAllByRole(role, options)) };
+  await findAction("button", { name: `${translate(language, "moveCategory")}: Other` });
+  const page = { getByRole: (role, options) => locator(screen.queryAllByRole(role,{...options,hidden:options?.includeHidden})), locator:selector=>locator([...globalThis.document.querySelectorAll(selector)]) };
   await assertRuntimeCategoryCell(page, project.name, "  Exact категория  ", translate(language, "moveCategory"));
   const cell = await assertRuntimeCategoryCell(page, project.name, "  Exact категория  ", translate(language, "moveCategory"));
-  (await cell.getByRole("button").evaluate(node => node)).click();
+  const move=await cell.locator("..").getByRole("button",{name:`${translate(language,"moveCategory")}: ${project.name}`,includeHidden:true}).evaluate(node=>node);
+  await toolsUser.click(globalThis.document.getElementById(move.closest("[data-context-return]").dataset.contextReturn));
+  await toolsUser.click(move);
   assert.equal(moved.projectId, "p");
   await assert.rejects(assertRuntimeCategoryCell(page, project.name, "Wrong category", translate(language, "moveCategory")));
 });
@@ -516,15 +521,18 @@ for (const language of ["en", "ru"]) for (const observation of [false, true]) te
       onWorkspaceChange: listener => { listeners.add(listener); return () => listeners.delete(listener); },
       onBackendStatus: () => () => {},
     };
-    const page = { getByRole: (role, options) => locator(screen.queryAllByRole(role, options)), evaluate: async (fn, input) => fn(input), locator: selector => ({
+    const page = { getByRole: (role, options) => locator(screen.queryAllByRole(role,{...options,hidden:options?.includeHidden})), evaluate: async (fn, input) => fn(input), locator: selector => ({
       evaluate: async fn => fn(globalThis.document.querySelector(selector)),
       count: async () => globalThis.document.querySelectorAll(selector).length,
     }) };
+    page.locator=selector=>locator([...globalThis.document.querySelectorAll(selector)]);
     render(React.createElement(DiscoveryWorkspace, { client: new WorkspaceServiceClient(), workspaceId: setup.workspace.workspaceId,
       sourceId: setup.workspace.sourceId, language, disabled: false }));
-    await screen.findAllByRole("button", { name: new RegExp(`^${translate(language, "moveCategory")}:`) });
+    await screen.findAllByRole("button", { name: new RegExp(`^${translate(language, "moveCategory")}:`), hidden:true });
     const cell = await assertRuntimeCategoryCell(page, setup.project.name, "Current", translate(language, "moveCategory"));
-    await userEvent.click(await cell.getByRole("button").evaluate(node => node));
+    const move=await cell.locator("..").getByRole("button",{name:new RegExp(`^${translate(language,"moveCategory")}:`),includeHidden:true}).evaluate(node=>node);
+    await userEvent.click(globalThis.document.getElementById(move.closest("[data-context-return]").dataset.contextReturn));
+    await userEvent.click(move);
     const input = screen.getByRole("combobox", { name: translate(language, "moveCategoryDestination") });
     assert.equal(input.value, setup.project.categoryId);
     const before = await captureRuntimeCategoryState(page, setup);
