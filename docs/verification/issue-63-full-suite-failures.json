@@ -1,0 +1,184 @@
+{
+  "command": "npm run test:all",
+  "candidate": "de5c346e235a243b2586221f913a26c62de6ae63",
+  "node": "22.21.1",
+  "logPath": "/tmp/issue63-full.log",
+  "logSha256": "028fa74bfdb745d47a41a96300ec5f32e6ad975216e1d86f77f5fe45ffb4935b",
+  "counts": {
+    "tests": 3437,
+    "pass": 3384,
+    "fail": 26,
+    "skipped": 27
+  },
+  "shutdownTimeouts": 25,
+  "failures": [
+    {
+      "test": "property creation waits for initial loading before keyboard activation in real Electron: Create Single Select property",
+      "location": "property-editor-driver.test.mjs:75:1",
+      "shutdown": true,
+      "error": "|-"
+    },
+    {
+      "test": "property creation waits for initial loading before keyboard activation in real Electron: Создать Single Select-свойство",
+      "location": "property-editor-driver.test.mjs:75:1",
+      "shutdown": true,
+      "error": "|-"
+    },
+    {
+      "test": "property creation waits for initial loading before keyboard activation in real Electron: Create MultiSelect property",
+      "location": "property-editor-driver.test.mjs:75:1",
+      "shutdown": true,
+      "error": "|-"
+    },
+    {
+      "test": "property creation waits for initial loading before keyboard activation in real Electron: Create Number property",
+      "location": "property-editor-driver.test.mjs:75:1",
+      "shutdown": true,
+      "error": "|-"
+    },
+    {
+      "test": "property creation waits for initial loading before keyboard activation in real Electron: Создать Number-свойство",
+      "location": "property-editor-driver.test.mjs:75:1",
+      "shutdown": true,
+      "error": "|-"
+    },
+    {
+      "test": "property creation waits for initial loading before keyboard activation in real Electron: Create Date property",
+      "location": "property-editor-driver.test.mjs:75:1",
+      "shutdown": true,
+      "error": "|-"
+    },
+    {
+      "test": "property creation waits for initial loading before keyboard activation in real Electron: Создать Date-свойство",
+      "location": "property-editor-driver.test.mjs:75:1",
+      "shutdown": true,
+      "error": "|-"
+    },
+    {
+      "test": "property creation keeps the caller deadline and never activates a still-loading control",
+      "location": "property-editor-driver.test.mjs:97:1",
+      "shutdown": true,
+      "error": "|-"
+    },
+    {
+      "test": "installed workspace keyboard creation waits for the asynchronous folder selection",
+      "location": "property-editor-driver.test.mjs:131:1",
+      "shutdown": true,
+      "error": "|-"
+    },
+    {
+      "test": "fixture cleanup errors retain a failed control's primary error and fail a successful control",
+      "location": "rename-editor-readiness.test.mjs:114:1",
+      "shutdown": false,
+      "error": "|-"
+    },
+    {
+      "test": "real Electron operands reject absent, hidden, disabled, unfocused and wrong-label editors",
+      "location": "rename-editor-readiness.test.mjs:140:1",
+      "shutdown": true,
+      "error": "'Electron shutdown timed out after 10000ms'"
+    },
+    {
+      "test": "already-ready editor passes immediately with strict finite operands",
+      "location": "rename-editor-readiness.test.mjs:182:1",
+      "shutdown": true,
+      "error": "'Electron shutdown timed out after 10000ms'"
+    },
+    {
+      "test": "view readiness excludes clipped fields but requires every visible editor and the complete ordered projection",
+      "location": "runtime-view-readiness.test.mjs:48:1",
+      "shutdown": true,
+      "error": "'Electron shutdown timed out after 10000ms {\"quitEvents\":[\"before-quit\",\"will-quit\",\"node-exit\",\"quit\"],\"debuggerWait\":false,\"exitCode\":null,\"signaled\":true,\"forcedCleanup\":{\"status\":\"passed\",\"processStopped\":true}}'"
+    },
+    {
+      "test": "fractional scroll bounds exclude fully clipped skeletons while retaining a subpixel visible row",
+      "location": "runtime-view-readiness.test.mjs:92:1",
+      "shutdown": true,
+      "error": "'Electron shutdown timed out after 10000ms {\"quitEvents\":[\"before-quit\",\"will-quit\",\"node-exit\",\"quit\"],\"debuggerWait\":false,\"exitCode\":null,\"signaled\":true,\"forcedCleanup\":{\"status\":\"passed\",\"processStopped\":true}}'"
+    },
+    {
+      "test": "runtime activation supports current tabs and the immutable baseline select with one action each",
+      "location": "runtime-view-readiness.test.mjs:125:1",
+      "shutdown": true,
+      "error": "'Electron shutdown timed out after 10000ms {\"quitEvents\":[\"before-quit\",\"will-quit\",\"node-exit\",\"quit\"],\"debuggerWait\":false,\"exitCode\":null,\"signaled\":true,\"forcedCleanup\":{\"status\":\"passed\",\"processStopped\":true}}'"
+    },
+    {
+      "test": "event-to-paint timing includes delayed committed work and excludes later driver observation",
+      "location": "runtime-view-readiness.test.mjs:154:1",
+      "shutdown": true,
+      "error": "'Electron shutdown timed out after 10000ms {\"quitEvents\":[\"before-quit\",\"will-quit\",\"node-exit\",\"quit\"],\"debuggerWait\":false,\"exitCode\":null,\"signaled\":true,\"forcedCleanup\":{\"status\":\"passed\",\"processStopped\":true}}'"
+    },
+    {
+      "test": "projection readiness rechecks fields invalidated during the first frame pair",
+      "location": "runtime-view-readiness.test.mjs:207:1",
+      "shutdown": true,
+      "error": "'Electron shutdown timed out after 10000ms {\"quitEvents\":[\"before-quit\",\"will-quit\",\"node-exit\",\"quit\"],\"debuggerWait\":false,\"exitCode\":null,\"signaled\":true,\"forcedCleanup\":{\"status\":\"passed\",\"processStopped\":true}}'"
+    },
+    {
+      "test": "readiness stabilization completes in the renderer before delayed driver result delivery",
+      "location": "runtime-view-readiness.test.mjs:231:1",
+      "shutdown": true,
+      "error": "'Electron shutdown timed out after 10000ms {\"quitEvents\":[\"before-quit\",\"will-quit\",\"node-exit\",\"quit\"],\"debuggerWait\":false,\"exitCode\":null,\"signaled\":true,\"forcedCleanup\":{\"status\":\"passed\",\"processStopped\":true}}'"
+    },
+    {
+      "test": "workspace readiness uses the visible exact selected identity when the old title is hidden",
+      "location": "runtime-workspace-identity.test.mjs:14:1",
+      "shutdown": true,
+      "error": "'Electron shutdown timed out after 10000ms'"
+    },
+    {
+      "test": "source-root readiness and stress capture preserve localized context ownership with a duplicate retained settings path",
+      "location": "runtime-workspace-identity.test.mjs:50:1",
+      "shutdown": true,
+      "error": "'Electron shutdown timed out after 10000ms'"
+    },
+    {
+      "test": "native layout measurement retains operation overflow and supported-window toolbar checks during below-minimum stress",
+      "location": "runtime-workspace-identity.test.mjs:92:1",
+      "shutdown": true,
+      "error": "'Electron shutdown timed out after 10000ms'"
+    },
+    {
+      "test": "Board layout closure waits for nested focus return before the next editor owns input",
+      "location": "selection-driver.test.mjs:34:1",
+      "shutdown": true,
+      "error": "'Electron shutdown timed out after 10000ms'"
+    },
+    {
+      "test": "ru grouping closure completes its delayed focus return before the next selection opens",
+      "location": "selection-driver.test.mjs:80:35",
+      "shutdown": true,
+      "error": "'Electron shutdown timed out after 10000ms'"
+    },
+    {
+      "test": "view actions dismiss the actual owning tools before a delayed grouping focus return in EN/RU",
+      "location": "view-actions-native.test.mjs:37:1",
+      "shutdown": true,
+      "error": "'Electron shutdown timed out after 10000ms'"
+    },
+    {
+      "test": "native scroll restoration retains coordinates, cancels for user input and view changes, and clamps a shorter projection",
+      "location": "view-scroll-native.test.mjs:43:1",
+      "shutdown": true,
+      "error": "'Electron shutdown timed out after 10000ms'"
+    },
+    {
+      "test": "native loading-history control inspection keeps keyboard scroll intent through later restoration notifications",
+      "location": "view-scroll-native.test.mjs:97:1",
+      "shutdown": true,
+      "error": "'Electron shutdown timed out after 10000ms'"
+    }
+  ],
+  "failedFilesChangedFromBaseline": [],
+  "additionalFailureNamesVsIssue62": [
+    "property creation waits for initial loading before keyboard activation in real Electron: Create MultiSelect property",
+    "property creation waits for initial loading before keyboard activation in real Electron: Create Number property",
+    "view readiness excludes clipped fields but requires every visible editor and the complete ordered projection",
+    "runtime activation supports current tabs and the immutable baseline select with one action each",
+    "projection readiness rechecks fields invalidated during the first frame pair",
+    "workspace readiness uses the visible exact selected identity when the old title is hidden",
+    "source-root readiness and stress capture preserve localized context ownership with a duplicate retained settings path",
+    "native layout measurement retains operation overflow and supported-window toolbar checks during below-minimum stress",
+    "view actions dismiss the actual owning tools before a delayed grouping focus return in EN/RU"
+  ]
+}
