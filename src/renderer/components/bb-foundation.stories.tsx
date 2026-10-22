@@ -1,5 +1,5 @@
 import { ProjectCreationPanel } from "./ProjectCreationPanel.js";
-import { createInitialCategoryMoveReviewRefresh } from "./category-move-story-preparation.js";
+import { createInitialCategoryMoveReviewRefresh, openCategoryMoveStoryAction, showCategoryMoveStoryHistory } from "./category-move-story-preparation.js";
 import { ProjectRevealButton } from "./ProjectRevealButton.js";
 import type { ProjectCreationOperation, ProjectCreationResult } from "../../contracts/project-creation.js";
 import type { ProjectRenameOperation, ProjectRenameResult, ProjectRenameRecoveryPreview } from "../../contracts/project-rename.js";
@@ -1120,12 +1120,14 @@ function CategoryMovePreview({ language, state }: { language: Language; state: C
       const target = root.current; if (!target || target.querySelector(".text-properties")?.getAttribute("aria-busy") !== "false") return;
       const done = () => { setPrepared(true); observer.disconnect(); };
       if (state.startsWith("list-") || ["interrupted", "uncertain", "retained", "direct"].includes(state)) {
+        if (!["retained", "direct"].includes(state) && !showCategoryMoveStoryHistory(target)) return;
         const list = target.querySelector(".category-move-operations");
         if (list && (state === "list-loading" || list.getAttribute("aria-busy") === "false")) done();
         return;
       }
       if (fixture.reviewState) {
         if (!opened) {
+          if (!showCategoryMoveStoryHistory(target)) return;
           const button = target.querySelector<HTMLButtonElement>(".category-move-operations > div > button:last-of-type");
           if (button && !button.disabled) { opened = true; button.click(); } return;
         }
@@ -1150,7 +1152,7 @@ function CategoryMovePreview({ language, state }: { language: Language; state: C
         }
         if (review.querySelector(".category-move-placements")) done(); return;
       }
-      if (!opened) { const button = target.querySelector<HTMLButtonElement>("td:nth-child(2) .property-rename"); if (button && !button.disabled) { opened = true; button.click(); } return; }
+      if (!opened) { opened = openCategoryMoveStoryAction(target, language); return; }
       const input = target.querySelector<HTMLSelectElement>("#project-category-move-destination");
       if (input && !authored) {
         authored = true;

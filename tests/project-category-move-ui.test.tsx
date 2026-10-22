@@ -5,7 +5,7 @@ import test from "node:test";
 import React from "react";
 import { Window } from "happy-dom";
 import { DiscoveryWorkspace } from "../src/renderer/components/DiscoveryPanel.js";
-import { createInitialCategoryMoveReviewRefresh } from "../src/renderer/components/category-move-story-preparation.js";
+import { createInitialCategoryMoveReviewRefresh, openCategoryMoveStoryAction, showCategoryMoveStoryHistory } from "../src/renderer/components/category-move-story-preparation.js";
 import { WorkspaceServiceClient } from "../src/renderer/workspace-service-client.js";
 import { translate } from "../src/renderer/localization.js";
 import type { ServiceResult } from "../src/contracts/settings.js";
@@ -570,6 +570,26 @@ for (const language of ["en", "ru"] as const) {
     if (change !== "selection") await screen.findByText(t("moveCategoryReviewStale"));
     if (["observation", "refresh", "backend"].includes(change)) await waitFor(() => assert.equal(document.activeElement, screen.getByRole("button", { name: t("moveCategoryReviewAgain") })));
   });
+  test(`${language}: story preparation enters the current row action before opening category editing`, async () => {
+    const client = new Client();
+    render(<DiscoveryWorkspace {...props(client)} />);
+    await screen.findByText("Current");
+    await waitFor(() => assert.equal(document.querySelector(".text-properties")?.getAttribute("aria-busy"), "false"));
+    await act(async () => { openCategoryMoveStoryAction(document.body, language); });
+    await act(async () => { assert.equal(openCategoryMoveStoryAction(document.body, language), true); });
+    await screen.findByLabelText(t("moveCategoryDestination"));
+    assert.equal(client.moves.length, 0, "Opening preparation cannot submit a filesystem command");
+  });
+  test(`${language}: story preparation reveals operation history without a recovery or move`, async () => {
+    const client = new Client(); client.unfinished = [interrupted];
+    render(<DiscoveryWorkspace {...props(client)} />);
+    await waitFor(() => assert.equal(document.querySelector(".category-move-operations")?.getAttribute("aria-busy"), "false"));
+    await act(async () => { showCategoryMoveStoryHistory(document.body); });
+    await act(async () => { showCategoryMoveStoryHistory(document.body); });
+    assert.equal(showCategoryMoveStoryHistory(document.body), true);
+    await screen.findByRole("button", { name: new RegExp(t("moveCategoryReview")) });
+    assert.equal(client.reviews.length, 0); assert.equal(client.recoveries.length, 0); assert.equal(client.moves.length, 0);
+  });
   test(`${language}: story preparation refreshes one stale initial review without retrying mutations`, async () => {
     const client = new Client(); client.unfinished = [interrupted];
     render(<DiscoveryWorkspace {...props(client)} />); await openReview();
@@ -583,7 +603,10 @@ for (const language of ["en", "ru"] as const) {
       await act(async () => assert.equal(refresh(document.body), revision === 1));
       if (revision === 1) {
         assert.equal(document.querySelector(".category-move-review"), null);
-        await act(async () => assert.equal(refresh(document.body), true));
+        // Reopening follows the current Source tools entry before the review.
+        for (let step = 0; step < 3 && !document.querySelector(".category-move-review"); step++) {
+          await act(async () => assert.equal(refresh(document.body), true));
+        }
         await findAction("button", { name: t("moveCategoryRetryOriginal") });
         assert.equal(document.activeElement === document.getElementById("category-move-review-title"), true, "Prepared initial review restores heading focus");
       }

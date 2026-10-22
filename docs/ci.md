@@ -1206,3 +1206,16 @@ terminal exit and cleanup assertions remain. Exact SHA/run/attempt and test logs
 are uploaded even on failure. This route neither builds nor changes application
 inputs; ordinary/full coverage remains unchanged. Apply evidence reuse only after
 focused success and run every previously unreached runtime scenario separately.
+
+For #69's category-story readiness failure, the original category-layout focused
+route above remains authoritative on all three hosts. Story preparation enters
+current project actions and Source-tools history; it never bypasses the service
+or submits an extra mutation. Layout measurement ignores hidden content and
+accepts compact-header ellipsis only with the exact accessible label. The
+standalone 420px operation-form stress retains wrapping/path/control assertions;
+only the daily Active/Archived row's internal overflow is outside that stress
+below the supported1024px desktop minimum. Required1024/1440 desktop controls
+remain covered by coherent acceptance. These are adapted inherited scenarios,
+not a supported-window change. Shared layout-driver edits additionally require
+all remaining story consumers, through the unfiltered original layout command
+or a complete partition, after the failed focused command passes.

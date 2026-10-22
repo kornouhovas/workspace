@@ -7,6 +7,7 @@ import { dirname, extname, join, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { _electron, chromium } from "playwright-core";
 import { closeElectron } from "./runtime-lifecycle.mjs";
+import { enterContextFor } from "./runtime-context-tools.mjs";
 import { waitForCategoryMoveEditor } from "./runtime-layout.mjs";
 
 // Deterministic Ladle presentation and interaction fixtures complement runtime smoke.
@@ -82,9 +83,11 @@ app.on('window-all-closed', () => app.quit());`);
     const moveText = (en, ru) => categoryMoveLanguage === "ru" ? ru : en;
     const movePanel = page.locator(".project-category-move");
     const moveSelect = page.locator("#project-category-move-destination");
-    const moveTrigger = page.locator("td:nth-child(2) .property-rename");
+    const moveAction = page.locator(`.project-card-actions button[aria-label^="${moveText("Move project category", "Переместить проект в категорию")}: "]`);
+    const moveTrigger = page.locator(".project-card-actions .context-tools-trigger");
     const moveReview = page.locator(".category-move-review");
     const moveReviewTrigger = page.locator(".category-move-operations > div > button:last-of-type");
+    const moveReviewReturn = page.getByRole("button", { name: moveText("Source tools", "Инструменты источника"), exact: true });
     const moveCalls = async () => ({ move: Number(await categoryMoveRoot.getAttribute("data-move-calls")), recovery: Number(await categoryMoveRoot.getAttribute("data-recovery-calls")) });
     if (categoryMoveStory) {
       const list = page.locator(".category-move-operations");
@@ -104,7 +107,7 @@ app.on('window-all-closed', () => app.quit());`);
         await movePanel.locator(":scope > [role=status]").waitFor();
       }
       if (["retained", "direct"].includes(categoryMoveState)) {
-        assert.equal(await moveTrigger.count(), 0);
+        assert.equal(await moveAction.count(), 0);
         assert.equal(await moveSelect.count(), 0);
         assert.equal(await page.locator(".text-property-cell .text-value-button").count(), 1, "Text remains usable on restricted rows");
       }
@@ -217,9 +220,16 @@ app.on('window-all-closed', () => app.quit());`);
           return bounds.left < scroll.left - 1 || bounds.right > scroll.right + 1;
         }).map((node) => node.textContent),
         elements: Array.from(globalThis.document.querySelectorAll(".discovery-panel, .discovery-effects, .discovery-effects li, .discovery-entries li, .project-table td, .project-table th, .workspace-root, .workspace-form-actions, .text-value-button, .text-value-editor, .category-property-header, .recovery-review dd, .recovery-candidates, .recovery-path, .source-refresh, .source-refresh .bb-status, .project-creation, .project-creation .bb-status, .project-creation .workspace-form-actions, .creation-review, .project-reveal .bb-status, .project-rename, .project-rename form, .project-rename .bb-status, .rename-operations, .rename-review, .project-rename dl, .project-rename dt, .project-rename dd, .project-rename .workspace-form-actions, .project-category-move, .project-category-move form, .project-category-move .bb-status, .category-move-operations, .category-move-review, .project-category-move dl, .project-category-move dt, .project-category-move dd, .project-category-move .workspace-form-actions"))
-          .filter((node) => node.scrollWidth > node.clientWidth + 1).map((node) => node.className || node.tagName),
+          .filter((node) => node.checkVisibility() && !(globalThis.innerWidth < 1024 && node.matches(".daily-controls > .workspace-form-actions")) && node.scrollWidth > node.clientWidth + 1).map((node) => node.className || node.tagName),
         wrapped: Array.from(globalThis.document.querySelectorAll(".discovery-name, .property-authored, .text-value-button:not([hidden]), .project-table td, .saved-categories li, .workspace-root, .recovery-review dd, .recovery-path, .project-rename dd, .project-rename p, .project-category-move dd"))
-          .filter((node) => node.textContent.length > 150).every((node) => {
+          .filter((node) => {
+            if (!node.checkVisibility() || node.innerText.length <= 150) return false;
+            const style = globalThis.getComputedStyle(node);
+            // Compact headers intentionally ellipsize; the exact authored label
+            // remains available. Values and operation paths must still wrap.
+            return !(node.matches("th .property-authored") && style.whiteSpace === "nowrap" &&
+              style.textOverflow === "ellipsis" && style.overflow === "hidden" && (node.closest("th")?.getAttribute("aria-label") === node.textContent || [...(node.closest("th")?.querySelectorAll("button[aria-label]") ?? [])].some(button => button.getAttribute("aria-label").endsWith(`: ${node.textContent}`))));
+          }).every((node) => {
             const range = globalThis.document.createRange(); range.selectNodeContents(node);
             return new Set(Array.from(range.getClientRects(), (rect) => Math.round(rect.top))).size > 1;
           }),
@@ -227,11 +237,14 @@ app.on('window-all-closed', () => app.quit());`);
       if (!layout.wrapped) {
         results.unwrapped = await page.locator(".discovery-name, .property-authored, .text-value-button:not([hidden]), .project-table td, .saved-categories li, .workspace-root, .recovery-review dd, .recovery-path, .project-rename dd, .project-rename p, .project-category-move dd").evaluateAll((nodes) => nodes.filter((node) => {
           const range = globalThis.document.createRange(); range.selectNodeContents(node);
-          return node.textContent.length > 150 && new Set(Array.from(range.getClientRects(), (rect) => Math.round(rect.top))).size <= 1;
+          const style = globalThis.getComputedStyle(node);
+          const header = node.matches("th .property-authored") && style.whiteSpace === "nowrap" &&
+            style.textOverflow === "ellipsis" && style.overflow === "hidden" && (node.closest("th")?.getAttribute("aria-label") === node.textContent || [...(node.closest("th")?.querySelectorAll("button[aria-label]") ?? [])].some(button => button.getAttribute("aria-label").endsWith(`: ${node.textContent}`)));
+          return node.checkVisibility() && node.innerText.length > 150 && !header && new Set(Array.from(range.getClientRects(), (rect) => Math.round(rect.top))).size <= 1;
         }).map((node) => ({ tag: node.tagName, className: node.className, textLength: node.textContent.length, width: node.clientWidth, text: node.textContent })));
       }
       if (categoryMoveStory || renameStory || recoveryStory || modeStory || creationStory) {
-        for (const button of await page.locator(categoryMoveStory ? ".project-category-move button, td:nth-child(2) .property-rename" : renameStory ? ".project-rename button, td:first-child .property-rename" : creationStory ? ".project-creation button, .project-reveal button" : recoveryStory ? ".recovery-panel button" : ".workspace-form-actions button, [data-mode-fixture] > button").all()) {
+        for (const button of await page.locator(categoryMoveStory ? ".project-category-move button, .project-card-actions > .context-tools-trigger" : renameStory ? ".project-rename button, td:first-child .property-rename" : creationStory ? ".project-creation button, .project-reveal button" : recoveryStory ? ".recovery-panel button" : ".workspace-form-actions button, [data-mode-fixture] > button").all()) {
           await button.evaluate(async (node) => {
             node.scrollIntoView({ block: "center", inline: "nearest", behavior: "instant" });
             await new Promise((done) => globalThis.requestAnimationFrame(() => globalThis.requestAnimationFrame(done)));
@@ -271,6 +284,7 @@ app.on('window-all-closed', () => app.quit());`);
         await focused(moveSelect);
         await moveSelect.press("Escape"); await moveSelect.waitFor({ state: "detached" }); await focused(moveTrigger);
         await moveTrigger.press("Enter");
+        await moveAction.press("Enter");
         await waitForCategoryMoveEditor(page, "move-original-category");
         await focused(moveSelect);
         assert.equal(await moveSelect.inputValue(), "move-original-category");
@@ -287,7 +301,7 @@ app.on('window-all-closed', () => app.quit());`);
         // A duplicate submit event must also be guarded at the command boundary.
         await moveSelect.evaluate((node) => node.closest("form").dispatchEvent(new Event("submit", { bubbles: true, cancelable: true })));
         await movePanel.locator("form").press("Escape"); await moveSelect.waitFor({ state: "detached" });
-        assert.equal(await moveTrigger.isDisabled(), true); await focused(table);
+        assert.equal(await moveAction.isDisabled(), true); await focused(moveTrigger);
         if (categoryMoveState === "unknown") {
           await status.press("Enter"); await movePanel.getByText(moveText("Project folder moved to the selected category.", "Папка проекта перемещена в выбранную категорию."), { exact: true }).waitFor();
           assert.equal(await categoryMoveRoot.getAttribute("data-status-calls"), "1");
@@ -295,11 +309,14 @@ app.on('window-all-closed', () => app.quit());`);
       } else if (categoryMoveState === "list-error") {
         await page.locator(".category-move-operations > button").press("Enter"); await page.locator(".category-move-operations [role=alert]").waitFor();
       } else if (["interrupted", "uncertain"].includes(categoryMoveState)) {
+        await enterContextFor(page, moveReviewTrigger);
         await moveReviewTrigger.press("Enter"); await page.locator(".category-move-placements").waitFor();
         await focused(page.locator("#category-move-review-title"));
-        await moveReview.press("Escape"); await moveReview.waitFor({ state: "detached" }); await focused(moveReviewTrigger);
+        await moveReview.press("Escape"); await moveReview.waitFor({ state: "detached" }); await focused(moveReviewReturn);
         // Explicit read-only status is available independently of recovery review.
-        await page.locator(".category-move-operations > div > button").first().press("Enter");
+        const historyStatus = page.locator(".category-move-operations > div > button").first();
+        await enterContextFor(page, historyStatus);
+        await historyStatus.press("Enter");
         await movePanel.getByText(moveText("Project folder moved to the selected category.", "Папка проекта перемещена в выбранную категорию."), { exact: true }).waitFor();
         assert.equal(await categoryMoveRoot.getAttribute("data-status-calls"), "1");
       } else if (categoryMoveState.startsWith("recovery-") || categoryMoveState.startsWith("review-")) {
@@ -310,15 +327,15 @@ app.on('window-all-closed', () => app.quit());`);
         if (["recovery-original", "recovery-destination"].includes(categoryMoveState)) {
           await moveReview.locator(".workspace-form-actions").first().getByRole("button").first().press("Enter");
           await movePanel.getByText(moveText("Project folder moved to the selected category.", "Папка проекта перемещена в выбранную категорию."), { exact: true }).waitFor();
-          expectedCalls.recovery++; await focused(table);
+          expectedCalls.recovery++; await focused(moveReviewReturn);
         } else {
           await moveReview.press("Escape"); await moveReview.waitFor({ state: "detached" });
           if (["recovery-pending", "recovery-unknown"].includes(categoryMoveState)) {
-            await focused(table);
+            await focused(moveReviewReturn);
             if (categoryMoveState === "recovery-unknown") {
               await status.press("Enter"); await movePanel.getByText(moveText("Project folder moved to the selected category.", "Папка проекта перемещена в выбранную категорию."), { exact: true }).waitFor();
             }
-          } else await focused(moveReviewTrigger);
+          } else await focused(moveReviewReturn);
         }
       }
       assert.deepEqual(await moveCalls(), expectedCalls, "Dismissal, selection, list, review and status cannot duplicate mutations");

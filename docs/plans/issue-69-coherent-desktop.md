@@ -1282,3 +1282,79 @@ after final checks. Any new failure returns to diagnosis. Native-scroll inputs
 and the previously passing focused control are unchanged; full/coherent/package/
 installer/appearance acceptance still requires current affected renewal before
 integration. No release/main/next issue.
+
+### Frozen application acceptance and auxiliary fixture failures
+
+Application candidate9face229/attempt1 strict39701212914 passes both hosts:
+MacM1Virtual/kernel23.6.0 max258.6ms/peak933085184B; WindowsEPYC9V74/
+kernel10.0.26100 max257.1ms/peak836993024B. Both complete32 observations,
+10memory samples,four normal app/backend exits and asserted cleanup. The
+Windows CPU differs from preceding EPYC7763 failures; no universal or unique
+historical causal claim. Coherent39702006958 passes all3hosts, including
+native exact-target/Open/external-document/byte preservation,32navigation
+states,16ordinary/24longstates,Board and development/packaged Views with
+normal app/backend shutdowns and cleanup. Reports downloaded/inspected;
+seven refreshed Mac images independently reviewed with0 material findings.
+
+MacDMG39702007001 and WindowsNSIS39702006868 pass actual installation,
+bundledbackend,ENRU,identity/views,isolation,replacement/reinstall,normalexit/
+cleanup. Exact hashes and actual hosts are in the acceptance map. Temporary
+verification ref holds exactly9face to avoid same-ref workflow cancellation;
+its build inputs are the same and it must be deleted only after delivery.
+
+Full39702007107/attempt1 at9face: common/static pass. Mac2739pass/1fail/
+27skip: actual0ms observer CLI cancellation's worker exits1. Both Windows
+platform suites2773pass/0fail/13skip, Ladlebuild and108creationcaptures pass;
+category layouts then fail first collision-English fixture readiness15s.
+All later runtime tails remain unreached. Original logs/artifacts retained;
+these failures are not transferred to another issue or counted as passing.
+
+Observer original CLI cases pass2/2 locally. Hypotheses: partial release
+publication, cancellation affecting worker, unrelated terminal failure. The
+parent directly writes the release file while the real child polls it; a
+controlled delay after create/beforewrite reproduces exact workerexit1.
+Test-only helper publishes complete exclusive pending file by same-directory
+rename; the same real-worker regression passes. All110 original observer
+checks pass, and combined originalobserver/inventory/workflow controls208/208
+pass. Original full log lacks child cause: partial publication is a proven
+fixture vulnerability, not a proven unique cause of the initial failure.
+Finite failure-only worker classification retains future evidence without
+paths/log excerpts. Cancellation/ownership/deadlines/terminal/cleanup asserts
+remain. Both independent reviews0 findings; lint/docs/whitespace pass.
+Commit8c68253 adds focused observer-cancellation on all3consumerhosts, retaining
+pipefail, failure artifacts and original/full defaults. Focused success and
+all failed/unreached runtime rows remain gates. Application9face is unchanged.
+
+Observer focused39704164666/attempt1 at8c682531 passes166/166 on eachhost;
+exact provenance/logs downloaded and inspected. The original singleMacfailure
+remains historical; no claim of its unique cause. Requirement coverage renewed.
+
+Category readiness reproduced locally on the exact original command with normal
+quit. Bounded DOM probe: loaded row,moveCalls0,old second-column action absent.
+The current command lives in project actions; no production code repair needed.
+Retain the operation/identity/mutation requirements; adapt fixture preparation to
+actual contextual row action and Source-tools/history disclosure. New ENRU
+productionUI regression fails2/2 under oldselector and passes2/2withnewhelper;
+history disclosure submits no review/recovery/move. All209 originalUIchecks pass.
+Read-only initial review reopening remains bounded to one refresh; focus returns
+to actual visible contextual owner, while disabled mutations remain asserted.
+
+Adapt shared geometry to visible content. Compact Table header ellipsis requires
+actual nowrap/ellipsis/hidden CSS AND the exact full label in accessible metadata;
+values and operation paths retain wrapping. Under accepted desktopminimum1024,
+retire ONLY daily Active/Archived row internaloverflow from standalone420px
+operation-form stress. Required1024/1440toolbar coverage remains coherent39702006958;
+420px operation forms,paths,controls anddocumentoverflow checks remain. Original
+category command passes50states/150images/interactions/normalquit locally at
+work/issue-69/category-layout-repaired6. Every priornegative retained. Both
+independent reviews0; lint/typecheck/docs/whitespace pass. Focused hosted original
+category command remains required, then all shared layout consumers need renewal.
+
+Production-equivalence proof: same isolated9face checkout/toolchain; sequential
+production Vite builds before/after overlaying only the changed story and its
+story-only helper yield all10 identical output hashes. Temporarycheckout removed.
+Helper reachable only fromstories/tests; backend/native/migrations/dependencies/
+configuration are unchanged. Actual installer/coherent packages build without
+Ladle and retain unchanged production inputs. Broad full/source-runtime packages
+also contain dist/Ladle under existing dist/** packaging, so renew their pending
+packaged consumers after current Ladle build; do not call packagebytes identical.
