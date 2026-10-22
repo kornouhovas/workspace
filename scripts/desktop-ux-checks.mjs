@@ -94,7 +94,6 @@ export function filesystemAssignmentRevealCommands() {
   return [
     ['npm',['run','typecheck']], ['npm',['run','lint']],
     [process.execPath,['--import','tsx','--test','tests/project-reveal.test.mjs','tests/windows-project-reveal.test.mjs','tests/windows-project-reveal-com.test.mjs']],
-    ['npm',['run','smoke:runtime','--','dev','--rename']],
   ];
 }
 // After focused success, renew changed test consumers and previously unreached tails.

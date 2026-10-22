@@ -1563,3 +1563,10 @@ three hosts because their helper input changed. Passing unchanged service/UI
 inputs retain their exact original provenance; no full-suite retry is required
 for this test-only repair. Trace-only results and unreached commands do not pass
 acceptance.
+
+If the Windows validation prefix fails before the native command, renew only
+Windows latest with `filesystem-assignment-reveal-repair`. Contract validation
+explicitly uses `WORKSPACE_REVEAL_TRACE=0`; only the following original native
+diagnostic receives trace=1, and a third strict native step uses trace=0. This
+prevents diagnostic output from changing strict finite-protocol assertions.
+The passed macOS focused receipt remains at its actual SHA.

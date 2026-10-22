@@ -27,8 +27,7 @@ The Spec repair was independently re-reviewed with zero remaining findings. Loca
 ## Exact-SHA CI failure and renewal
 
 Run [39871362877](https://github.com/kornouhovas/workspace/actions/runs/39871362877),
-attempt 1, candidate `5aeeb1b255242963975809061c093d5798272b66`: all three hosts
-passed 967 selected tests. Windows 2022 completed every selected native consumer.
+attempt 1, candidate `5aeeb1b255242963975809061c093d5798272b66`: macOS passed 967 selected tests; each Windows host passed 959, all with zero skips. Windows 2022 completed every selected native consumer.
 Windows latest completed the new assignment route (13 journeys/96 captures)
 and original Views, then original rename Reveal failed: bridge opened, no selection,
 `owner_deadline`, rejected `native_unavailable` after about 12.25s. macOS failed
@@ -54,6 +53,19 @@ original acceptance must follow.
 
 The repair changes tests/drivers/CI only. Application, service, schema, native and
 dependency inputs are unchanged from the original candidate. Retain the successful
-967-test receipts for those unchanged inputs; renew route/regression tests and
+967/macOS and 959/Windows test receipts for those unchanged inputs; renew route/regression tests and
 every native consumer of the changed shared visibility helper on all three hosts
 after the focused failure gates pass. No original failure is relabelled passing.
+
+Focused run [39873303740](https://github.com/kornouhovas/workspace/actions/runs/39873303740),
+attempt 1 at `0f0252c0c4c645b1099cbb7170f162ce89266258`: macOS projection
+regression and original expanded assignment command passed. Windows latest
+failed the strict production-file bridge validation because the new workflow
+incorrectly enabled diagnostic trace on the whole validation step; the original
+rename diagnostic and strict commands were not reached. This is a CI environment
+scope defect, not a renewed Reveal verdict. Preserve that failure.
+
+A route regression is red with the leaked trace environment, green after
+isolating validation(trace=0), original diagnostic(trace=1) and original strict
+acceptance(trace=0) into separate steps. Renew only the failed Windows prefix and
+original commands; retain the passing macOS focused receipt without replay.

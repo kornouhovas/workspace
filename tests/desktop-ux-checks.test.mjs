@@ -414,3 +414,14 @@ test('filesystem assignment tail renews all consumers of the changed shared visi
  const renewed=JSON.stringify(filesystemAssignmentTailCommands());
  for(const item of ['runtime-project-visibility.test.mjs','--filesystem','smoke:views','--rename','--category-move'])assert.ok(renewed.includes(item),item);
 });
+
+test('Windows Reveal diagnostics cannot leak trace into strict contract validation',async()=>{
+ const {readFile}=await import('node:fs/promises');const {load}=await import('js-yaml');
+ const workflow=load(await readFile('.github/workflows/desktop-ci.yml','utf8'));
+ const steps=workflow.jobs['desktop-ux'].steps;
+ const validation=steps.find(step=>step.run==='node scripts/desktop-ux-checks.mjs filesystem-assignment-reveal');
+ assert.equal(validation.env.WORKSPACE_REVEAL_TRACE,'0');
+ const diagnostic=steps.find(step=>step.name==='Original Windows latest rename Reveal diagnostic');
+ assert.equal(diagnostic.run,'npm run smoke:runtime -- dev --rename');assert.equal(diagnostic.env.WORKSPACE_REVEAL_TRACE,'1');
+ const strict=steps.find(step=>step.name==='Original Windows latest rename Reveal strict renewal');assert.equal(strict.env.WORKSPACE_REVEAL_TRACE,'0');
+});
