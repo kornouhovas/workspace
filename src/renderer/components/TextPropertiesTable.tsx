@@ -7,6 +7,7 @@ import { ContextTools, contextReturnTarget, contextOwner } from "./ContextTools.
 import { ViewportProjectRow } from "./ViewportProjectRow.js";
 import { PropertyControls } from "./PropertyControls.js";
 import { GroupAssignment, groupAssignmentMime, readGroupDrop } from "./GroupAssignment.js";
+import type { GroupAssignmentResult } from "../../contracts/group-assignment.js";
 import type { AssignProjectGroupCommand } from "../../contracts/group-assignment.js";
 import { BoardLayoutControls, useBoardLayout, boardColumnWidth } from "./BoardLayout.js";
 import { Children, cloneElement, type ReactElement, type ReactNode } from "react";
@@ -47,6 +48,7 @@ interface Props {
   renameDisabled?: boolean;
   categoryMoveDisabled?: boolean;
   onFilesystemAssignmentObserved?(): void;
+  onFilesystemAssignmentDetails?(kind: "name" | "category"): void;
   onMoveCategory?(project: ProjectSummary, trigger: HTMLButtonElement): void;
   onRename?(project: ProjectSummary, trigger: HTMLButtonElement): void;
   onArchive?(project: ProjectSummary, action: "archive" | "restore", trigger: HTMLButtonElement): void;
@@ -66,7 +68,7 @@ interface Props {
 export function TextPropertiesTable(props: Props) {
   return <TextPropertiesContent key={`${props.workspaceId}:${props.sourceId}`} {...props} />;
 }
-function TextPropertiesContent({ detail, onPreview, viewId, layout = "table", hideReveal, client, workspaceId, sourceId, projects, retainedProjects = [], onLocate, locateDisabled, onRename, renameDisabled, onArchive, archiveDisabled, onMoveCategory, onFilesystemAssignmentObserved, categoryMoveDisabled, categoryProperty, categories = [], categoryPropertyRevision = 0, discoveryRevision = 0, minimumDiscoveryRevision, sourceLifetime, minimumCategoryPropertyRevision, onCategoryPropertyCommitted, language, disabled }: Props) {
+function TextPropertiesContent({ detail, onPreview, viewId, layout = "table", hideReveal, client, workspaceId, sourceId, projects, retainedProjects = [], onLocate, locateDisabled, onRename, renameDisabled, onArchive, archiveDisabled, onMoveCategory, onFilesystemAssignmentObserved, onFilesystemAssignmentDetails, categoryMoveDisabled, categoryProperty, categories = [], categoryPropertyRevision = 0, discoveryRevision = 0, minimumDiscoveryRevision, sourceLifetime, minimumCategoryPropertyRevision, onCategoryPropertyCommitted, language, disabled }: Props) {
   const [observedGroups, setGrouped] = useState<{viewId:string; groups:ViewGroup[]|null;propertyId:string|null;refreshToken:number}|null>(null);
   const [observedFilter, setFilteredIds] = useState<{ viewId: string; ids: string[] | null } | null>(null);
   const editingScalar = useScalarDraftActive();
@@ -108,6 +110,8 @@ function TextPropertiesContent({ detail, onPreview, viewId, layout = "table", hi
     if (!assignmentPending) return;
     return draftGuard?.register({commit: async () => false, focus: () => assignmentStatus.current?.focus({preventScroll:true})});
   }, [draftGuard, assignmentPending]);
+  const [assignmentFolderKind, setAssignmentFolderKind] = useState<"name" | "category" | null>(null);
+  const [assignmentFilesystem, setAssignmentFilesystem] = useState<GroupAssignmentResult["filesystem"]>();
   const [assignmentMessage, setAssignmentMessage] = useState<TranslationKey | null>(null);
   const [assignmentRefresh, setAssignmentRefresh] = useState(0);
   const assigning = useRef(false);
@@ -120,7 +124,7 @@ function TextPropertiesContent({ detail, onPreview, viewId, layout = "table", hi
   const assignmentStatus = useRef<HTMLDivElement>(null);
   const assignmentOwner = `${viewId}:${layout}:${!!hideReveal}`;
   const currentAssignmentOwner = useRef(assignmentOwner); currentAssignmentOwner.current = assignmentOwner;
-  useEffect(() => { setAssignmentMessage(null); assignmentFocus.current = null; assignmentFocusIntent.current = null; }, [assignmentOwner]);
+  useEffect(() => { setAssignmentMessage(null); setAssignmentFilesystem(undefined); setAssignmentFolderKind(null); assignmentFocus.current = null; assignmentFocusIntent.current = null; }, [assignmentOwner]);
   useEffect(() => { finishDrag(); }, [assignmentOwner, grouped?.propertyId, editingScalar, disabled]);
   useEffect(() => {
     if (!draggingAssignment) return;
@@ -317,7 +321,8 @@ function TextPropertiesContent({ detail, onPreview, viewId, layout = "table", hi
     if (assignmentBusy || assigning.current) return;
     const owner = assignmentOwner, generation = lifetime.current;
     assignmentFocusIntent.current = {origin: document.activeElement, cancelled: false};
-    assigning.current = true; setAssignmentPending(true); setAssignmentMessage(null);
+    assigning.current = true; setAssignmentPending(true); setAssignmentMessage(null); setAssignmentFilesystem(undefined);
+    setAssignmentFolderKind(filesystemAssignment ? command.propertyId === "name" ? "name" : "category" : null);
     let observedSnapshot = false;
     try {
       const result = await client.assignProjectGroup(command);
@@ -328,6 +333,7 @@ function TextPropertiesContent({ detail, onPreview, viewId, layout = "table", hi
           observedSnapshot = !filesystemAssignment;
         }
         const effect = result.value.filesystem;
+        setAssignmentFilesystem(effect);
         if (!effect || effect.outcome === "completed" || effect.outcome === "unchanged") setAssignmentMessage("groupAssignmentSaved");
         else if (effect.outcome === "recoverable") setAssignmentMessage("groupAssignmentRecovery");
         else if (effect.outcome === "rejected") setAssignmentMessage(effect.problem === "invalid_name" ? "renameInvalid"
@@ -473,6 +479,12 @@ function TextPropertiesContent({ detail, onPreview, viewId, layout = "table", hi
     {draggingAssignment && <div className="group-assignment-drag-feedback"><StatusMessage kind="info" title={t("groupAssignmentDragging")}/></div>}
     {assignmentPending && <StatusMessage kind="info" title={t("groupAssignmentSaving")}/>}
     {assignmentMessage && <StatusMessage kind={assignmentMessage === "groupAssignmentSaved" ? "info" : "error"} title={t(assignmentMessage)}/>}
+    {assignmentMessage !== "groupAssignmentSaved" && assignmentFilesystem?.operation && <dl className="project-operation-path">
+      <dt>{t("groupAssignmentOriginal")}</dt><dd>{assignmentFilesystem.operation.originalRelativePath}</dd>
+      <dt>{t("groupAssignmentDestination")}</dt><dd>{assignmentFilesystem.operation.requestedRelativePath}</dd>
+    </dl>}
+    {assignmentFolderKind && assignmentMessage && assignmentMessage !== "groupAssignmentSaved" && onFilesystemAssignmentDetails &&
+      <button type="button" className="workspace-button workspace-button--secondary" onClick={() => onFilesystemAssignmentDetails(assignmentFolderKind)}>{t("groupAssignmentDetails")}</button>}
     </div>
 
     {grouped?.viewId===viewId && grouped?.groups ? <>

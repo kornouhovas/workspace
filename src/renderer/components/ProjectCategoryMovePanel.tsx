@@ -301,7 +301,7 @@ function CategoryMoveContent({ client, workspaceId, sourceId, language, project,
       <p>{t("moveCategoryDismissHint")}</p>
     </form>}
     {project && feedback}</ProjectOperationDialog>
-    <ManagementHistory><details className="operation-history"><summary>{t("moveCategoryListTitle")} ({operations.length})</summary>
+    <ManagementHistory><details className="operation-history" data-assignment-history="category"><summary>{t("moveCategoryListTitle")} ({operations.length})</summary>
     <section className="category-move-operations" aria-label={t("moveCategoryListTitle")} aria-busy={listLoading}>
       <h3>{t("moveCategoryListTitle")}</h3>
       {listLoading && <StatusMessage kind="info" title={t("moveCategoryListLoading")} />}

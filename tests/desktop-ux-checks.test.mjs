@@ -383,3 +383,14 @@ test('contextual categories select actual three-host folder and recovery consume
  }
  assert.equal(runChecks(commands,()=>({status:23})),23);
 });
+
+test('filesystem assignment route retains all-type, native recovery and changed history consumers',async()=>{
+ const {filesystemAssignmentCommands}=await import('../scripts/desktop-ux-checks.mjs');
+ assert.equal(typeof filesystemAssignmentCommands,'function');
+ const text=JSON.stringify(filesystemAssignmentCommands());
+ for(const name of ['group-assignment-ui.test.tsx','group-assignment-service.test.mjs','group-assignment-ipc.test.mjs','project-rename-crash.test.mjs','project-category-move-crash.test.mjs','project-archive-service.test.mjs','smoke:views','smoke:runtime','--category-move','--rename','--filesystem'])assert.ok(text.includes(name),name);
+ const {readFile}=await import('node:fs/promises');const {load}=await import('js-yaml');
+ const workflow=load(await readFile('.github/workflows/desktop-ci.yml','utf8'));
+ assert.ok(workflow.on.workflow_dispatch.inputs.desktop_ux_profile.options.includes('filesystem-assignment'));
+ assert.equal(spawnSync(process.execPath,['scripts/desktop-ux-checks.mjs','filesystem-assignment','--failure-probe'],{encoding:'utf8'}).status,23);
+});

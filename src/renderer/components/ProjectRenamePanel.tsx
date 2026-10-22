@@ -252,7 +252,7 @@ function RenameContent({ client, workspaceId, sourceId, language, project, proje
       </div>
       <p>{t("renameCancelHint")}</p>
     </form>}
-    <ManagementHistory><details className="operation-history"><summary>{t("renameListTitle")} ({operations.length})</summary>
+    <ManagementHistory><details className="operation-history" data-assignment-history="name"><summary>{t("renameListTitle")} ({operations.length})</summary>
     <section className="rename-operations" aria-label={t("renameListTitle")} aria-busy={listLoading}>
       <h3>{t("renameListTitle")}</h3>
       {listLoading && <StatusMessage kind="info" title={t("renameListLoading")} />}

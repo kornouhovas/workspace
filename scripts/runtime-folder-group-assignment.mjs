@@ -6,7 +6,7 @@ import { mkdir, readdir, writeFile, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
 
-export async function exerciseFolderGroupAssignment({page,query,rootPath,language,evidenceDirectory}) {
+export async function exerciseFolderGroupAssignment({page,query,rootPath,language,evidenceDirectory,onCollision}) {
   const en=language==='en',checks=[];
   await mkdir(rootPath);
   for(const layout of ['table','board']) {
@@ -41,6 +41,7 @@ export async function exerciseFolderGroupAssignment({page,query,rootPath,languag
     await region('A').getByLabel(change('Target'),{exact:true}).selectOption(JSON.stringify(destination));
     await page.getByText(en?'This folder name or identity is occupied or reserved. Choose another name.':'Это имя или идентификатор папки занят или зарезервирован. Выберите другое имя.',{exact:true}).waitFor();
     assert.equal((await call('listProjects')).projects.find(p=>p.projectId===project.projectId).relativePath,'A/Target');
+    await onCollision?.({layout, call, project, list});
     const other=list.projects.find(p=>p.relativePath==='C/Target');
     await call('renameProject',{projectId:other.projectId,operationId:randomUUID(),name:'Other',expectedRevision:(await call('listProjects')).revision});
     const selector=region('A').getByLabel(change('Target'),{exact:true}).and(page.locator(':enabled'));

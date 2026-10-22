@@ -287,6 +287,13 @@ function DiscoveryWorkspaceContent({ memory, client, workspaceId, sourceId, refr
   const [archiveHasProjects,setArchiveHasProjects]=useState(false);
   const [setupDeferred, setSetupDeferred] = useState(false);
   const [sourceToolsOpen, setSourceToolsOpen] = useState(false);
+  const [assignmentHistory, setAssignmentHistory] = useState<"name" | "category" | null>(null);
+  useEffect(() => {
+    if (!sourceToolsOpen || !assignmentHistory) return;
+    const history = workBody.current?.querySelector<HTMLDetailsElement>(`details[data-assignment-history="${assignmentHistory}"]`);
+    if (history) { history.open = true; history.querySelector("summary")?.focus({preventScroll:true}); }
+    setAssignmentHistory(null);
+  }, [sourceToolsOpen, assignmentHistory]);
   const [archiveBlocked, setArchiveBlocked] = useState(false);
   const [archiveRequest, setArchiveRequest] = useState<ArchiveRequest | null>(null);
   const [projects, setProjects] = useState<ProjectList | null>(null);
@@ -539,6 +546,7 @@ function DiscoveryWorkspaceContent({ memory, client, workspaceId, sourceId, refr
           : <p>{t("savedCategoriesEmpty")}</p>}
       </details>}
       {view && projects?.configured && <TextPropertiesTable key={view.viewId} onPreview={(id,trigger)=>navigation.show(id,trigger)} viewId={view.viewId} layout={view.kind} sourceLifetime={sourceLifetime} discoveryRevision={projects?.revision ?? 0} minimumDiscoveryRevision={minimumRevision} categoryPropertyRevision={projects?.categoryPropertyRevision ?? 0} minimumCategoryPropertyRevision={minimumCategoryPropertyRevision}
+        onFilesystemAssignmentDetails={kind => { setAssignmentHistory(kind); setSourceToolsOpen(true); }}
         onFilesystemAssignmentObserved={() => { setInvalidation(value => value + 1); void load(); }}
         onCategoryPropertyCommitted={commitLabel} categoryProperty={projects?.categoryProperty ?? null} categories={projects?.categories ?? []} client={client} workspaceId={workspaceId} sourceId={sourceId}
         renameDisabled={archiveBlocked || categoryOptionsBlocked || creationBlocked || discoveryPending || loading || error || renameBlocked || renameProject !== null || recoveryProject !== null || categoryMoveProject !== null || categoryMoveBlocked || !projects?.configured ||

@@ -191,15 +191,17 @@ for (const language of ['en','ru'] as const) for (const layout of ['table','boar
     command('setViewGrouping',{viewId,config:{propertyId,settings:[]}});
     if(grouping==='name'&&!recoverable) command('setViewFilter',{viewId,config:{search:'Alpha',rules:[]}});
     let count=0,observed=0,lost=false;
+    let lastFilesystem: {operation: unknown} | undefined;
+    let details: string | null = null;
     const api={getBackendStatus:async()=>({state:'ready'}),onBackendStatus:()=>()=>{},workspace:async(input:{type:string})=>{
       const result=/workspace\.(list|get|query)/.test(input.type)?service.handleQuery(input):service.handleCommand(input);
-      if(input.type==='workspace.assignProjectGroup'){count++;if(lost)throw new Error('lost reply');}
+      if(input.type==='workspace.assignProjectGroup'){lastFilesystem=result.value?.filesystem;count++;if(lost)throw new Error('lost reply');}
       return result;
     },onWorkspaceChange:service.workspaces.subscribe} as unknown as WorkspaceDesktopApi;
     const en=language==='en',changeLabel=`${en?'Change group':'Изменить группу'}: Alpha`;
     try {
       render(<TextPropertiesTable viewId={viewId} layout={layout} client={new WorkspaceServiceClient(api)} workspaceId={workspaceId} sourceId={sourceId}
-        projects={list.projects} categoryProperty={list.categoryProperty} categories={list.categories} language={language} disabled={false} onFilesystemAssignmentObserved={()=>observed++}/>);
+        projects={list.projects} categoryProperty={list.categoryProperty} categories={list.categories} language={language} disabled={false} onFilesystemAssignmentObserved={()=>observed++} onFilesystemAssignmentDetails={kind=>{details=kind;}}/>);
       const origin=await screen.findByRole('region',{name:grouping==='name'?'Alpha':'A'});
       const handle=await within(origin).findByRole('button',{name:`${en?'Drag to change group':'Перетащить для изменения группы'}: Alpha`});
       await waitFor(()=>assert.equal((handle as HTMLButtonElement).disabled,false));
@@ -212,7 +214,13 @@ for (const language of ['en','ru'] as const) for (const layout of ['table','boar
         await screen.findByText(translate(language,'groupAssignmentRecovery'));
         assert.equal(screen.queryByText(translate(language,'groupAssignmentSaved')),null);
         await waitFor(()=>assert.equal(observed,1));assert.equal(count,1);
-        assert.equal(query(grouping==='name'?'listProjectRenames':'listProjectCategoryMoves').value.operations.length,1);
+        const operation=query(grouping==='name'?'listProjectRenames':'listProjectCategoryMoves').value.operations[0];
+        assert.ok(operation);
+        assert.ok(screen.getByText(operation.originalRelativePath));
+        assert.ok(screen.getByText(operation.requestedRelativePath));
+        await userEvent.setup({document}).click(screen.getByRole('button',{name:en?'Details / Recover':'Подробности / Восстановить'}));
+        assert.equal(details,grouping);
+        assert.equal(count,1,'Opening recovery never replays assignment');
         return;
       }
       if(grouping==='name') {
@@ -223,6 +231,7 @@ for (const language of ['en','ru'] as const) for (const layout of ['table','boar
         await waitFor(()=>assert.equal(document.activeElement?.getAttribute('aria-label'),en?'Change group':translate(language,'groupAssignmentChoose')));
       } else {
         await screen.findByText(translate(language,"renameCollision"));
+        assert.equal(lastFilesystem?.operation,null,"A preflight collision has no journal operation or receipt paths");
       }
       await waitFor(()=>assert.ok(observed>=1));
       if(grouping==='category') {

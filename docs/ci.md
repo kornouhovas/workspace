@@ -1536,3 +1536,15 @@ acceptance. Earlier failure timing has no uniquely established historical cause.
 ## Contextual folder-backed categories
 
 For #61, `checks: desktop-ux` with `desktop_ux_profile: contextual-categories` selects the three supported CI hosts. It runs affected renderer/service/SQLite/folder/journal/crash/IPC and routing regressions, the new contextual Move/category-review matrix, original category-options/removal and original interrupted category-move native consumers in development and packaged modes. Build/package consumers run sequentially; original deadlines, receipt/identity/file/recovery and normal-shutdown/cleanup assertions remain unchanged. Artifacts include exact profile/SHA/run provenance and each native route's reports/screens. Ordinary full/release defaults remain unchanged. This profile provides scoped #61 evidence; it does not accept #67/#42 or unchanged installer/manual release gates.
+
+## Filesystem group assignment
+
+For #63, `checks: desktop-ux` with `desktop_ux_profile: filesystem-assignment`
+selects the three supported hosts. It runs assignment service/IPC/UI, rename and
+category move crash/recovery, archive restrictions and affected dialog/navigation
+checks; the changed Details/history journeys and the complete ordinary/Name/category
+assignment matrix run in actual development Electron. Original Views, rename and
+category-move native consumers remain explicit. `work/issue-63-assignment` retains
+EN/RU light/dark narrow/wide captures and separate normal-exit/cleanup results.
+No service/schema/native/dependency/package input changes; installer renewal remains
+with the wider milestone. Full and #67/#42 routes remain unchanged.
