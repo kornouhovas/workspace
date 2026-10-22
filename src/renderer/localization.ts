@@ -64,6 +64,7 @@ const english = {
   metadataManagement: "Remove custom properties",
 
   groupAssignmentClear: "Clear grouping value",
+  groupAssignmentDragging: "Choose a destination group. Escape cancels the drag.",
   groupAssignmentDrag: "Drag to change group",
   groupAssignmentChoose: "Change group",
   groupAssignmentFilesystemHint: "Changing Name renames the real folder. Changing category moves it. Occupied destinations are rejected.",
@@ -765,6 +766,7 @@ const russian: Record<keyof typeof english, string> = {
   metadataManagement: "Удаление пользовательских свойств",
 
   groupAssignmentClear: "Очистить значение группировки",
+  groupAssignmentDragging: "Выберите группу назначения. Escape отменяет перетаскивание.",
   groupAssignmentDrag: "Перетащить для изменения группы",
   groupAssignmentChoose: "Изменить группу",
   groupAssignmentFilesystemHint: "Изменение имени переименует папку, изменение категории переместит её. Занятое назначение будет отклонено.",

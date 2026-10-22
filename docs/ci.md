@@ -1462,3 +1462,17 @@ exit-23 propagation. Earlier accepted prefixes retain their tested `d4c6206a`
 receipts only because subsequent changes are confined to test drivers/routing.
 Do not dispatch a new manual run on the same branch until the active one ends:
 the workflow concurrency group cancels its in-progress predecessor.
+
+## Ordinary group assignment
+
+For #59, `checks: desktop-ux` and `desktop_ux_profile: group-assignment` select
+public assignment/service/IPC and affected Table/Board/draft/selection regressions,
+real pointer readiness and the original all-type Views consumers on macOS latest,
+Windows latest and Windows 2022. `smoke-group-assignment.mjs` additionally records
+all five ordinary types, MultiSelect occurrences, keyboard clearing/reopen and
+whole-screen idle/active-drag/cancellation in EN/RU, light/dark, 1024x720/1440x960.
+Exact SHA/run/attempt/host reports and normal shutdown/owned cleanup are preserved
+under `work/issue-59-assignment`. Failure propagation is tested; skipped or
+unreached commands do not supply acceptance. Unchanged service/schema/IPC/native
+filesystem/dependency/package inputs do not trigger installer renewal; ordinary
+full and #67/#42 gates remain intact.

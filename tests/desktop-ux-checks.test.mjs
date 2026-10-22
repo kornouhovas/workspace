@@ -279,3 +279,18 @@ test('property renewal runs changed Windows MultiSelect and unreached macOS View
  assert.ok(selected.includes('node scripts/desktop-ux-checks.mjs property-renewal'));
  assert.equal(selected.some(command=>/test:desktop-ux|package:built|check:artifact|desktop-ux-checks.mjs properties$/.test(command)),false);
 });
+
+test('ordinary group assignment selects real service/IPC/UI and native journeys on all three hosts',async()=>{
+ const {groupAssignmentCommands}=await import('../scripts/desktop-ux-checks.mjs');
+ const text=JSON.stringify(groupAssignmentCommands());
+ for(const name of ['group-assignment-interactions.test.tsx','group-assignment-ui.test.tsx','group-assignment-service.test.mjs','group-assignment-ipc.test.mjs','scalar-drafts-ui.test.tsx','smoke-group-assignment.mjs','smoke:views'])assert.ok(text.includes(name),name);
+ assert.equal(spawnSync(process.execPath,['scripts/desktop-ux-checks.mjs','group-assignment','--failure-probe'],{encoding:'utf8'}).status,23);
+ const {readFile}=await import('node:fs/promises'),{load}=await import('js-yaml'),{runInNewContext}=await import('node:vm');
+ const workflow=load(await readFile('.github/workflows/desktop-ci.yml','utf8')),job=workflow.jobs['desktop-ux'];
+ assert.ok(workflow.on.workflow_dispatch.inputs.desktop_ux_profile.options.includes('group-assignment'));
+ const context={inputs:{desktop_ux_profile:'group-assignment',desktop_ux_failure_probe:false,desktop_ux_category_only:false,desktop_ux_packaged_only:false},fromJSON:JSON.parse,cancelled:()=>false};
+ assert.deepEqual(Array.from(runInNewContext(job.strategy.matrix.os.slice(3,-2),context)),['macos-latest','windows-latest','windows-2022']);
+ const selected=job.steps.filter(step=>step.run&&(!step.if||runInNewContext(step.if.slice(3,-2),context))).map(step=>step.run);
+ assert.ok(selected.includes('node scripts/desktop-ux-checks.mjs group-assignment'));
+ assert.equal(selected.some(command=>/package:built|check:artifact|test:desktop-ux/.test(command)),false);
+});

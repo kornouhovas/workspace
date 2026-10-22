@@ -21,13 +21,15 @@ interface Props {
   language: Language;
   disabled: boolean;
   controlRef(element: HTMLSelectElement | null): void;
+  onDragBegin(command: AssignProjectGroupCommand, trigger: HTMLButtonElement): void;
+  onDragFinish(): void;
   onAssign(command: AssignProjectGroupCommand): void;
 }
-export function GroupAssignment({command, groups, projectName, language, disabled, controlRef, onAssign}: Props) {
+export function GroupAssignment({command, groups, projectName, language, disabled, controlRef, onAssign, onDragBegin, onDragFinish}: Props) {
   const t = (key: Parameters<typeof translate>[1]) => translate(language, key);
   return <div className="group-assignment-controls">
     <Hint label={`${t("groupAssignmentDrag")}: ${projectName}`}><button type="button" disabled={disabled} draggable={!disabled} aria-label={`${t("groupAssignmentDrag")}: ${projectName}`}
-      onDragStart={event => {event.stopPropagation(); event.dataTransfer.effectAllowed = "move"; event.dataTransfer.setData(groupAssignmentMime, JSON.stringify(command));}}><Icon name="drag"/></button></Hint>
+      onDragEnd={onDragFinish} onDragStart={event => {event.stopPropagation(); onDragBegin(command, event.currentTarget); event.dataTransfer.effectAllowed = "move"; event.dataTransfer.setData(groupAssignmentMime, JSON.stringify(command));}}><Icon name="drag"/></button></Hint>
     <label><span className="sr-only">{t("groupAssignmentChoose")}</span><select ref={controlRef} className="workspace-input" aria-label={`${t("groupAssignmentChoose")}: ${projectName}`} value={command.fromKey} disabled={disabled}
       onChange={event => onAssign({...command, toKey: event.currentTarget.value})}>
       {groups.filter(group => !group.hidden || group.key === command.fromKey).map(group => <option key={group.key} value={group.key}>{group.value === null ? t("groupNoValue") : group.label ?? String(group.value)}</option>)}

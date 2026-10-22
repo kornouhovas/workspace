@@ -1,4 +1,4 @@
-import { useScalarDraftActive } from "./ScalarDrafts.js";
+import { useDraftGuard, useScalarDraftActive } from "./ScalarDrafts.js";
 import { navigationLabels } from "./ProjectNavigation.js";
 import { ViewControls } from "./ManagementSurface.js";
 import { Hint } from "./Hint.js";
@@ -68,6 +68,7 @@ function TextPropertiesContent({ detail, onPreview, viewId, layout = "table", hi
   const [observedGroups, setGrouped] = useState<{viewId:string; groups:ViewGroup[]|null;propertyId:string|null;refreshToken:number}|null>(null);
   const [observedFilter, setFilteredIds] = useState<{ viewId: string; ids: string[] | null } | null>(null);
   const editingScalar = useScalarDraftActive();
+  const draftGuard = useDraftGuard();
   // Notifications still update values and revisions. Defer projection relocation
   // while an editor owns a draft, so filtering/regrouping cannot unmount it.
   // Admit newly observed rows without relocating existing editor owners.
@@ -96,7 +97,15 @@ function TextPropertiesContent({ detail, onPreview, viewId, layout = "table", hi
     }
   }
   const { grouped, filteredIds } = projection.current;
+  const activeDrag = useRef<{command: AssignProjectGroupCommand; trigger: HTMLButtonElement} | null>(null);
+  const [draggingAssignment, setDraggingAssignment] = useState(false);
+  const [dropTarget, setDropTarget] = useState<string | null>(null);
+  const finishDrag = () => { activeDrag.current = null; setDraggingAssignment(false); setDropTarget(null); };
   const [assignmentPending, setAssignmentPending] = useState(false);
+  useEffect(() => {
+    if (!assignmentPending) return;
+    return draftGuard?.register({commit: async () => false, focus: () => assignmentStatus.current?.focus({preventScroll:true})});
+  }, [draftGuard, assignmentPending]);
   const [assignmentMessage, setAssignmentMessage] = useState<TranslationKey | null>(null);
   const [assignmentRefresh, setAssignmentRefresh] = useState(0);
   const assigning = useRef(false);
@@ -104,11 +113,35 @@ function TextPropertiesContent({ detail, onPreview, viewId, layout = "table", hi
   const valueReloadNeeded = useRef(false);
   const assignmentSequence = useRef(0);
   const assignmentFocus = useRef<{token:number; projectId:string; toKey:string; owner:string} | null>(null);
+  const assignmentFocusIntent = useRef<{origin: Element | null; cancelled: boolean} | null>(null);
   const assignmentControls = useRef(new Map<string, HTMLSelectElement>());
   const assignmentStatus = useRef<HTMLDivElement>(null);
   const assignmentOwner = `${viewId}:${layout}:${!!hideReveal}`;
   const currentAssignmentOwner = useRef(assignmentOwner); currentAssignmentOwner.current = assignmentOwner;
-  useEffect(() => { setAssignmentMessage(null); assignmentFocus.current = null; }, [assignmentOwner]);
+  useEffect(() => { setAssignmentMessage(null); assignmentFocus.current = null; assignmentFocusIntent.current = null; }, [assignmentOwner]);
+  useEffect(() => { finishDrag(); }, [assignmentOwner, grouped?.propertyId, editingScalar, disabled]);
+  useEffect(() => {
+    if (!draggingAssignment) return;
+    const cancel = (event: KeyboardEvent) => {
+      if (event.key !== "Escape" || !activeDrag.current) return;
+      event.preventDefault(); event.stopPropagation();
+      const trigger = activeDrag.current.trigger;
+      finishDrag(); trigger.focus({preventScroll:true});
+    };
+    const end = () => finishDrag();
+    document.addEventListener("keydown", cancel, true);
+    document.addEventListener("dragend", end);
+    return () => { document.removeEventListener("keydown", cancel, true); document.removeEventListener("dragend", end); };
+  }, [draggingAssignment]);
+  useEffect(() => {
+    const chosen = (event: FocusEvent) => {
+      const intent = assignmentFocusIntent.current;
+      if (!intent || event.target === document.body || event.target === intent.origin || event.target === assignmentStatus.current) return;
+      intent.cancelled = true; assignmentFocus.current = null;
+    };
+    document.addEventListener("focusin", chosen);
+    return () => document.removeEventListener("focusin", chosen);
+  }, []);
   const backwards = useRef(false);
   const categoryDrafts = useRef(new Map<string, CategoryLabelDraft>());
   const t = (key: TranslationKey) => translate(language, key);
@@ -122,7 +155,7 @@ function TextPropertiesContent({ detail, onPreview, viewId, layout = "table", hi
     const control = visible ? assignmentControls.current.get(`${request.toKey}:${request.projectId}`)
       ?? [...assignmentControls.current.entries()].find(([key]) => key.endsWith(`:${request.projectId}`))?.[1] : null;
     const target = control && !control.disabled ? control : assignmentStatus.current;
-    if (target) { target.focus({preventScroll:true}); assignmentFocus.current = null; }
+    if (target) { assignmentFocusIntent.current = null; target.focus({preventScroll:true}); assignmentFocus.current = null; }
   }, [grouped, assignmentPending, assignmentOwner, loading]);
   const [message, setMessage] = useState<"propertySaved" | "propertyNewerChange" | null>(null);
   const savedRevision = useRef(0);
@@ -276,10 +309,11 @@ function TextPropertiesContent({ detail, onPreview, viewId, layout = "table", hi
     : categoryProperty && grouped?.propertyId === categoryProperty.propertyId ? categoryProperty
     : snapshot?.definitions.find(p => p.propertyId === grouped?.propertyId);
   const filesystemAssignment = assignmentProperty?.propertyId === "name" || !!categoryProperty && assignmentProperty?.propertyId === categoryProperty.propertyId;
-  const assignmentBusy = disabled || loading || loadError || assignmentPending || filesystemAssignment && (!!hideReveal || !!renameDisabled || !!categoryMoveDisabled);
+  const assignmentBusy = editingScalar || disabled || loading || loadError || assignmentPending || filesystemAssignment && (!!hideReveal || !!renameDisabled || !!categoryMoveDisabled);
   const assign = async (command: AssignProjectGroupCommand) => {
     if (assignmentBusy || assigning.current) return;
     const owner = assignmentOwner, generation = lifetime.current;
+    assignmentFocusIntent.current = {origin: document.activeElement, cancelled: false};
     assigning.current = true; setAssignmentPending(true); setAssignmentMessage(null);
     let observedSnapshot = false;
     try {
@@ -308,7 +342,8 @@ function TextPropertiesContent({ detail, onPreview, viewId, layout = "table", hi
         if (!observedSnapshot) void load();
         if (filesystemAssignment && owner === currentAssignmentOwner.current) onFilesystemAssignmentObserved?.();
         const token = ++assignmentSequence.current;
-        if (owner === currentAssignmentOwner.current) assignmentFocus.current = {token,projectId:command.projectId,toKey:command.toKey,owner};
+        if (owner === currentAssignmentOwner.current && !assignmentFocusIntent.current?.cancelled) assignmentFocus.current = {token,projectId:command.projectId,toKey:command.toKey,owner};
+        else assignmentFocusIntent.current = null;
         setAssignmentRefresh(token);
       }
     }
@@ -351,7 +386,7 @@ function TextPropertiesContent({ detail, onPreview, viewId, layout = "table", hi
           {viewId && assignmentProperty && grouped?.groups && (() => {
             const origin = grouped.groups.find(group => group.key === groupKey && group.projectIds.includes(project.projectId));
             return origin ? <GroupAssignment command={{type:"workspace.assignProjectGroup",workspaceId,viewId,propertyId:assignmentProperty.propertyId,projectId:project.projectId,fromKey:origin.key,toKey:origin.key,archived:!!hideReveal}}
-              groups={grouped.groups} projectName={project.name} language={language} disabled={assignmentBusy} controlRef={element => {
+              groups={grouped.groups} projectName={project.name} language={language} disabled={assignmentBusy} onDragBegin={(command, trigger) => { activeDrag.current = {command, trigger}; setDraggingAssignment(true); setAssignmentMessage(null); }} onDragFinish={finishDrag} controlRef={element => {
                 if (element) assignmentControls.current.set(`${origin.key}:${project.projectId}`, element);
                 else assignmentControls.current.delete(`${origin.key}:${project.projectId}`);
               }} onAssign={command => void assign(command)}/> : null;
@@ -370,12 +405,12 @@ function TextPropertiesContent({ detail, onPreview, viewId, layout = "table", hi
         {snapshot?.definitions.map((property) => <Cell data-column-id={property.propertyId} key={property.propertyId} data-label={property.name} data-custom-property={detail || undefined}>
           {detail && <div className="detail-property-label"><span className="property-authored">{property.name}</span>{propertyControl(property)}</div>}
           {property.propertyType === "multi_select" ? <MultiSelectPropertyCell workspaceId={workspaceId} sourceId={sourceId} projectId={project.projectId} propertyId={property.propertyId}
-            revision={snapshot.revision} minimumRevision={minimumRevision} projectName={project.name} propertyName={property.name} language={language} disabled={disabled || loadError}
+            revision={snapshot.revision} minimumRevision={minimumRevision} projectName={project.name} propertyName={property.name} language={language} disabled={disabled || loadError || assignmentPending}
             optionsEditor={optionEditor(property)} options={propertyValues.options.get(property.propertyId) ?? []}
             value={propertyValues.multi.get(`${project.projectId}:${property.propertyId}`) ?? []}
             onSave={value => saveValue(project.projectId, property.propertyId, value, property.propertyType)} /> : <TextPropertyCell workspaceId={workspaceId} sourceId={sourceId} projectId={project.projectId} propertyId={property.propertyId}
             revision={snapshot.revision} minimumRevision={minimumRevision}
-            projectName={project.name} propertyName={property.name} language={language} disabled={disabled || loadError}
+            projectName={project.name} propertyName={property.name} language={language} disabled={disabled || loadError || assignmentPending}
             optionsEditor={property.propertyType === "single_select" ? optionEditor(property) : undefined} propertyType={property.propertyType} options={propertyValues.options.get(property.propertyId)}
             value={property.propertyType === "single_select" ? propertyValues.select.get(`${project.projectId}:${property.propertyId}`) ?? null : property.propertyType === "number" ? (() => {
               const numeric = propertyValues.number.get(`${project.projectId}:${property.propertyId}`);
@@ -428,6 +463,7 @@ function TextPropertiesContent({ detail, onPreview, viewId, layout = "table", hi
     {message && <StatusMessage kind="info" title={t(message)}/>}
     {assignmentProperty && layout !== "board" && <p>{t(filesystemAssignment ? "groupAssignmentFilesystemHint" : "groupAssignmentHint")}</p>}
     <div ref={assignmentStatus} tabIndex={-1} aria-label={t("groupAssignmentChoose")}>
+    {draggingAssignment && <div className="group-assignment-drag-feedback"><StatusMessage kind="info" title={t("groupAssignmentDragging")}/></div>}
     {assignmentPending && <StatusMessage kind="info" title={t("groupAssignmentSaving")}/>}
     {assignmentMessage && <StatusMessage kind={assignmentMessage === "groupAssignmentSaved" ? "info" : "error"} title={t(assignmentMessage)}/>}
     </div>
@@ -436,13 +472,17 @@ function TextPropertiesContent({ detail, onPreview, viewId, layout = "table", hi
       {grouped.groups.length>0 && grouped.groups.every(group=>group.hidden) && <p role="status">{t("groupAllHidden")}</p>}
       {grouped.groups.length===0 && <p role="status">{t("groupEmpty")}</p>}
       <div className={layout === "board" ? "grouped-board" : "grouped-table"}>
-      {grouped.groups.filter(group=>!group.hidden).map(group=><section className="project-group" onDragOver={event => {
-          if (assignmentProperty && !assignmentBusy && event.dataTransfer.types.includes(groupAssignmentMime)) event.preventDefault();
+      {grouped.groups.filter(group=>!group.hidden).map(group=><section className="project-group" data-assignment-target={dropTarget === group.key || undefined} onDragLeave={event => {
+          if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setDropTarget(current => current === group.key ? null : current);
+        }} onDragOver={event => {
+          if (activeDrag.current && assignmentProperty && !assignmentBusy && event.dataTransfer.types.includes(groupAssignmentMime)) {
+            event.preventDefault(); event.dataTransfer.dropEffect = "move"; setDropTarget(group.key);
+          }
         }} onDrop={event => {
           if (!viewId || !assignmentProperty || assignmentBusy) return;
           const raw = event.dataTransfer.getData(groupAssignmentMime);
-          if (!raw) return;
-          event.preventDefault(); event.stopPropagation();
+          if (!raw || !activeDrag.current || raw !== JSON.stringify(activeDrag.current.command)) return;
+          event.preventDefault(); event.stopPropagation(); finishDrag();
           const command = readGroupDrop(raw, {workspaceId,viewId,propertyId:assignmentProperty.propertyId,archived:!!hideReveal}, group.key);
           if (command) void assign(command);
         }} style={layout === "board" ? {flexBasis:boardColumnWidth(boardState.config, grouped.propertyId, group.key)} : undefined} key={group.key} aria-label={group.value===null?t("groupNoValue"):(group.label ?? String(group.value))}>
