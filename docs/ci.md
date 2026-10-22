@@ -1194,3 +1194,15 @@ pipefail, normal test exits and always-upload retain exact-SHA/run/attempt
 results. The test-only fixture repair keeps all wrong-owner and terminal-state
 assertions; retain the separate passed original consumer at its application SHA.
 Renew broader acceptance only after this remaining failed file passes.
+
+### Observer cancellation fixture renewal
+
+For #69's macOS observer cancellation worker exit, select
+`checks: observer-cancellation`. The original `ralphex-observe.test.mjs` file
+runs on all three desktop hosts, including both real CLI cancellation cases
+and a real-worker partial-publication regression. The fixture publishes its
+release receipt by rename only after the complete write; cancellation, ownership,
+terminal exit and cleanup assertions remain. Exact SHA/run/attempt and test logs
+are uploaded even on failure. This route neither builds nor changes application
+inputs; ordinary/full coverage remains unchanged. Apply evidence reuse only after
+focused success and run every previously unreached runtime scenario separately.

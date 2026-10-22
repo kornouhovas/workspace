@@ -933,6 +933,12 @@ async function runningFixture(t,mode = 'quiet',duration = 600,{ startupDelayMs =
   return {...f,dir,worker,exited,options:{...f.options,source:{kind:'runner',dir,log:f.log}}};
 }
 
+function releaseFixture(f) {
+  const pending = join(f.dir, 'fixture-release.pending');
+  writeFileSync(pending, 'release\n', { flag: 'wx' });
+  renameSync(pending, join(f.dir, 'fixture-release'));
+}
+
 async function fixtureExit(f) {
   let timer;
   try {
@@ -1013,7 +1019,7 @@ test('real running PID probe denial stays uncertain until the actual worker exit
   finally {
     process.kill = original;
     try {
-      writeFileSync(join(f.dir, 'fixture-release'), 'release\n');
+      releaseFixture(f);
       exit = await fixtureExit(f);
     } catch (error) { failure ??= error; }
   }
@@ -1039,6 +1045,30 @@ test('real running PID probe denial stays uncertain until the actual worker exit
   assert.equal(terminal.exit, 0);
 });
 
+test('gated runner release remains invisible until its complete publication', async t => {
+  const f = await runningFixture(t, 'gated', 20);
+  const original = fs.writeFileSync;
+  let intercepted = 0;
+  fs.writeFileSync = function (path, data, ...args) {
+    if (typeof path === 'string' && path.startsWith(f.dir) && data === 'release\n') {
+      intercepted++;
+      const fd = openSync(path, args[0]?.flag ?? 'w');
+      try {
+        // A separate real process can read between open/truncate and write.
+        Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 250);
+        return original.call(this, fd, data);
+      } finally { closeSync(fd); }
+    }
+    return original.call(this, path, data, ...args);
+  };
+  syncBuiltinESMExports();
+  try { releaseFixture(f); }
+  finally { fs.writeFileSync = original; syncBuiltinESMExports(); }
+  assert.equal(intercepted, 1);
+  assert.equal((await fixtureExit(f)).code, 0, 'partial publication must not fail the actual gated worker');
+  assert.equal(readState(f.dir).status, 'awaiting_review');
+});
+
 for (const startupDelay of [0, 250]) test(`cancelling the actual observer CLI after ${startupDelay}ms startup leaves its quiet executor running to successful exit`, async t => {
   const f = await runningFixture(t, 'gated', 500);
   const observer = spawn(process.execPath, ['--import', `data:text/javascript,await new Promise(resolve=>setTimeout(resolve,${startupDelay}));`,
@@ -1062,9 +1092,19 @@ for (const startupDelay of [0, 250]) test(`cancelling the actual observer CLI af
     assert.equal(readState(f.dir).status, 'running');
   } finally {
     if (!closed) { observer.kill('SIGKILL'); await awaitExit(); }
-    writeFileSync(join(f.dir, 'fixture-release'), 'release\n');
+    releaseFixture(f);
   }
-  assert.equal((await fixtureExit(f)).code, 0); assert.equal(readState(f.dir).status, 'awaiting_review');
+  const workerExit = await fixtureExit(f);
+  if (workerExit.code !== 0) {
+    const state = readState(f.dir), log = readFileSync(f.log, 'utf8');
+    console.error('[observer-cancel-worker]', JSON.stringify({ startupDelay, exitCode: workerExit.code,
+      signal: workerExit.signal, status: state.status, lastExit: state.lastExit,
+      invalidRelease: state.lastError === 'Invalid fixture release',
+      releaseTimeout: state.lastError === 'Fixture release timed out',
+      executorFinished: log.includes('fixture executor finished'),
+      ownershipLost: log.includes('Executor lock ownership lost'), gitError: log.includes('Command failed: git') }));
+  }
+  assert.equal(workerExit.code, 0); assert.equal(readState(f.dir).status, 'awaiting_review');
 });
 
 test('a dead launcher retains running evidence and cannot infer executor completion',async t=>{
