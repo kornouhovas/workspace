@@ -1419,3 +1419,10 @@ Windows latest. The default `selections` and ordinary routes remain intact;
 no skipped package job supplies acceptance. These profiles implement the
 [test-only evidence reuse ledger](#evidence-reuse-after-test-only-repairs), with
 actual results maintained in issue #57.
+
+The subsequent macOS original MultiSelect focus failure is renewed with
+`selection-focus`: native driver/routing regressions and the unchanged original
+MultiSelect journey on macOS only. Content dismissal is followed by observation
+of the exact trigger focus before the retained element-identity assertion.
+Passing Windows native receipts and macOS Selection/Select receipts remain at
+`1695c5ff`; no unchanged platform journey is retried to obtain a green verdict.

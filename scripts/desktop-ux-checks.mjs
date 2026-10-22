@@ -153,6 +153,12 @@ export function selectionNativeCommands({renewViews = false} = {}) {
     ...(renewViews ? [['npm', ['run', 'smoke:views']]] : []),
   ];
 }
+export function selectionFocusCommands() {
+  return [
+    [process.execPath, ['--import', 'tsx', '--test', 'tests/selection-driver.test.mjs', 'tests/desktop-ux-checks.test.mjs']],
+    ['npm', ['run', 'smoke:multiselect', '--', 'dev']],
+  ];
+}
 export function selectionTailCommands() {
   return [
     [process.execPath, ['scripts/smoke-scalar-drafts.mjs', 'dev']],
@@ -169,9 +175,9 @@ export function runChecks(commands, run = (command,args)=>spawnSync(command,args
 }
 if(process.argv[1] && resolve(process.argv[1])===fileURLToPath(import.meta.url)) {
   const args=process.argv.slice(2);
-  if(args.some(arg=>!['foundation','board','navigation','project-files','coherent','sessions','scalars','selections','selection-native','selection-tail','--list','--failure-probe','--native-only'].includes(arg)) || !['foundation','board','navigation','project-files','coherent','sessions','scalars','selections','selection-native','selection-tail'].includes(args[0])) throw new Error('Usage: desktop-ux-checks.mjs <foundation|board|navigation|project-files|coherent|sessions|scalars|selections|selection-native|selection-tail> [--list] [--failure-probe]');
+  if(args.some(arg=>!['foundation','board','navigation','project-files','coherent','sessions','scalars','selections','selection-native','selection-focus','selection-tail','--list','--failure-probe','--native-only'].includes(arg)) || !['foundation','board','navigation','project-files','coherent','sessions','scalars','selections','selection-native','selection-focus','selection-tail'].includes(args[0])) throw new Error('Usage: desktop-ux-checks.mjs <foundation|board|navigation|project-files|coherent|sessions|scalars|selections|selection-native|selection-focus|selection-tail> [--list] [--failure-probe]');
   if(args.includes('--native-only') && !['navigation','project-files'].includes(args[0]))throw new Error('--native-only requires navigation or project-files');
-  const commands=args[0]==='selection-native' ? selectionNativeCommands({renewViews:process.env.WORKSPACE_SELECTION_VIEWS_RENEW==='1'}) : args[0]==='selection-tail' ? selectionTailCommands() : args[0]==='selections' ? selectionCommands() : args[0]==='scalars' ? scalarCommands() : args[0]==='sessions' ? sessionCommands() : args[0]==='coherent' ? coherentCommands() : args[0]==='project-files' ? projectFilesCommands({nativeOnly:args.includes('--native-only')}) : args[0]==='navigation' ? navigationCommands({nativeOnly:args.includes('--native-only')}) : args[0]==='board' ? boardCommands() : foundationCommands({failureProbe:args.includes('--failure-probe')});
+  const commands=args[0]==='selection-focus' ? selectionFocusCommands() : args[0]==='selection-native' ? selectionNativeCommands({renewViews:process.env.WORKSPACE_SELECTION_VIEWS_RENEW==='1'}) : args[0]==='selection-tail' ? selectionTailCommands() : args[0]==='selections' ? selectionCommands() : args[0]==='scalars' ? scalarCommands() : args[0]==='sessions' ? sessionCommands() : args[0]==='coherent' ? coherentCommands() : args[0]==='project-files' ? projectFilesCommands({nativeOnly:args.includes('--native-only')}) : args[0]==='navigation' ? navigationCommands({nativeOnly:args.includes('--native-only')}) : args[0]==='board' ? boardCommands() : foundationCommands({failureProbe:args.includes('--failure-probe')});
   if(args[0]!=='foundation' && args.includes('--failure-probe')) commands.unshift([process.execPath,['-e','process.exit(23)']]);
   if(args.includes('--list')) console.log(JSON.stringify(commands));
   else process.exitCode=runChecks(commands);

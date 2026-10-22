@@ -209,10 +209,10 @@ test('selection driver and unreached-tail renewal preserve original commands and
  assert.equal(text.includes('views-service.test.mjs'),false);
  assert.ok(JSON.stringify(selectionNativeCommands({renewViews:true})).includes('smoke:views'));
  for(const name of ['smoke-scalar-drafts.mjs','smoke:views'])assert.ok(JSON.stringify(selectionTailCommands()).includes(name),name);
- for(const profile of ['selection-native','selection-tail'])assert.equal(spawnSync(process.execPath,['scripts/desktop-ux-checks.mjs',profile,'--failure-probe'],{encoding:'utf8'}).status,23);
+ for(const profile of ['selection-native','selection-focus','selection-tail'])assert.equal(spawnSync(process.execPath,['scripts/desktop-ux-checks.mjs',profile,'--failure-probe'],{encoding:'utf8'}).status,23);
  const {readFile}=await import('node:fs/promises'),{load}=await import('js-yaml'),{runInNewContext}=await import('node:vm');
  const workflow=load(await readFile('.github/workflows/desktop-ci.yml','utf8')),job=workflow.jobs['desktop-ux'];
- for(const [profile,hosts,command] of [['selection-native',['macos-latest','windows-latest','windows-2022'],'selection-native'],['selection-tail',['macos-latest','windows-latest'],'selection-tail']]){
+ for(const [profile,hosts,command] of [['selection-focus',['macos-latest'],'selection-focus'],['selection-native',['macos-latest','windows-latest','windows-2022'],'selection-native'],['selection-tail',['macos-latest','windows-latest'],'selection-tail']]){
   assert.ok(workflow.on.workflow_dispatch.inputs.desktop_ux_profile.options.includes(profile));
   const context={inputs:{desktop_ux_profile:profile,desktop_ux_failure_probe:false,desktop_ux_category_only:false,desktop_ux_packaged_only:false},fromJSON:JSON.parse,cancelled:()=>false};
   assert.deepEqual(Array.from(runInNewContext(job.strategy.matrix.os.slice(3,-2),context)),hosts);

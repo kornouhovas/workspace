@@ -138,3 +138,18 @@ scalar/Views commands on macOS and Windows latest. Windows 2022's passing scalar
 receipt remains at its original SHA/run. The issue checkpoint owns exact repair
 SHA/run/artifact receipts and final acceptance; failed/unreached rows are not
 accepted from this description.
+
+
+## Subsequent macOS focus observation
+
+Run 39831657603 at `1695c5ff` passed both Windows jobs, including original
+Windows 2022 Views. macOS passed the 48-journey selection and original Select
+commands, then original MultiSelect failed its immediate focus assertion after
+menu dismissal. A real-Electron delayed-return fixture reproduces the exact
+`false !== true` failure. The driver now observes focus on the exact trigger
+before retaining the original element-identity assertion, with the original
+deadline. The regression changes from red to green; 22 driver/readiness/routing
+tests, lint and documentation checks pass. `selection-focus` renews the failed
+original macOS command; subsequent scalar/Views remain gated on that success.
+No application or dependency input changed. Exact hosted acceptance stays in
+the issue checkpoint.

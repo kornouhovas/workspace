@@ -9,7 +9,7 @@ import {fileURLToPath} from 'node:url';
 import {_electron} from 'playwright-core';
 import {closeElectron} from '../scripts/runtime-lifecycle.mjs';
 import {closeBoardLayout} from '../scripts/board-layout-driver.mjs';
-import {removeChosenOption} from '../scripts/selection-editor-driver.mjs';
+import {removeChosenOption, waitForSelectionFocus} from '../scripts/selection-editor-driver.mjs';
 
 test('one removal gesture completes when a chosen hidden checkbox disappears during that gesture',async()=>{
  const profile=await mkdtemp(join(tmpdir(),'selection-driver-'));
@@ -52,6 +52,25 @@ test('Board layout closure waits for nested focus return before the next editor 
   await page.getByRole('button',{name:'Edit notes'}).click();
   await page.waitForFunction(()=>document.activeElement?.tagName==='TEXTAREA'&&document.querySelector('#parent').getAttribute('aria-expanded')==='false');
   assert.equal(await page.getByRole('textbox').inputValue(),'Exact notes');
+ }catch(error){failure=error;}
+ try{await closeElectron(app);}catch(error){if(failure)failure.cleanupFailure=error.message;else failure=error;}
+ if(child.exitCode!==null||child.signalCode!==null)await rm(profile,{recursive:true,force:true});
+ if(failure)throw failure;
+});
+
+
+test('selection dismissal waits for asynchronous focus return to its exact trigger',async()=>{
+ const profile=await mkdtemp(join(tmpdir(),'selection-focus-driver-'));
+ const app=await _electron.launch({executablePath:createRequire(import.meta.url)('electron'),args:[fileURLToPath(new URL('./fixtures/rename-editor-readiness-electron.cjs',import.meta.url))],env:{...process.env,WORKSPACE_RENAME_EDITOR_PROFILE:profile}});
+ const child=app.process();let failure;
+ try{
+  const page=await app.firstWindow();const url=await app.evaluate(()=>globalThis.renameEditorInitialLoad);await page.waitForURL(url);
+  const label='Edit MultiSelect value: Project / Status';
+  await page.setContent('<button aria-label="'+label+'">Ready</button><div role="group"><input type="checkbox"></div>');
+  await page.evaluate(()=>{document.querySelector('input').focus();document.addEventListener('keydown',event=>{if(event.key==='Escape'){document.querySelector('[role="group"]').remove();setTimeout(()=>document.querySelector('button').focus(),50);}});});
+  page.setDefaultTimeout(1000);await page.keyboard.press('Escape');await page.getByRole('group').waitFor({state:'hidden'});
+  await waitForSelectionFocus(page,label);
+  assert.equal(await page.getByRole('button',{name:label,exact:true}).evaluate(element=>element===document.activeElement),true);
  }catch(error){failure=error;}
  try{await closeElectron(app);}catch(error){if(failure)failure.cleanupFailure=error.message;else failure=error;}
  if(child.exitCode!==null||child.signalCode!==null)await rm(profile,{recursive:true,force:true});

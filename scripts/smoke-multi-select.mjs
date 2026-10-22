@@ -1,4 +1,4 @@
-import { observeSelectionBackend } from "./selection-editor-driver.mjs";
+import { observeSelectionBackend, waitForSelectionFocus } from "./selection-editor-driver.mjs";
 /* global window, document, innerWidth */
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";
@@ -104,6 +104,7 @@ try {
     await ready.focus(); await ready.press("Space"); await button.filter({ hasText: "Ready" }).waitFor();
     await page.getByRole("button",{name:en ? "Close" : "Закрыть",exact:true}).and(page.locator(":enabled")).waitFor();
     await ready.press("Escape"); await editor.waitFor({state:"hidden"});
+    await waitForSelectionFocus(page, label);
     assert.equal(await button.evaluate(element => element === document.activeElement), true);
     await hide.click();
     await page.getByRole("button", { name: en ? "Show option: Ready" : "Показать опцию: Ready", exact: true }).waitFor();
