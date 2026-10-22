@@ -60,3 +60,41 @@ focused renewals separately, inspect exact-SHA three-host CI and its artifacts,
 then integrate the accepted candidate. No full-suite or hosted pass is claimed
 by this intermediate report. Broader coherent/package/installer/performance and
 release gates remain with #67/#42.
+
+## Final candidate local receipts
+
+Reviewed candidate: `306d71214df5f4083978b0fae7a6cabdca2a2445`.
+Independent Spec and Standards follow-up reviews report zero findings.
+`npm test` performed one fresh build and complete local inventory: **3,356 passed,
+27 skipped, 12 failed / 3,395 tests**. Retain `work/issue-59/full.log` and
+`full-failures.json`; this is not a passing full-suite claim.
+
+Eleven failures are 10-second Electron fixture shutdown timeouts: category-header
+layout (1), property-editor readiness (5), deferred native quit (1), projection
+readiness (2) and selection-driver delayed closure (2). The remaining failure is
+the readiness fixture's cleanup/error-preservation assertion. These standalone
+fixture/lifecycle boundaries are unchanged; for example, the category-header
+fixture bundles `CategoryPropertyHeader`, not the changed Table/Board controller.
+The inherited local native-quit watchpoint also appears in #58's report. This
+classification identifies the observed failure boundary, not its unique cause
+or a waiver of a matching hosted failure. Preserve all original assertions;
+no test was skipped, deadline raised or whole-suite retry used for acceptance.
+
+Fresh production Electron receipt `work/issue-59-assignment-candidate/report.json`
+records the exact `306d7121` SHA: **20 all-type/layout journeys**, the controlled
+source-geometry regression, **32 whole-screen captures**, unchanged project-file
+bytes, normal app/backend termination and asserted owned-fixture cleanup.
+The earlier 32-screen local report has null SHA and supplies development
+comparison only; the fresh exact-SHA receipt renews its acceptance scenarios.
+
+| Affected inherited coverage | Decision and evidence |
+| --- | --- |
+| `group-assignment-service.test.mjs`, `group-assignment-ipc.test.mjs` | Retain exact values, set replacement/empty transitions, identity/ownership, rejection/reopen and unchanged folders; pass in focused/full runs |
+| `group-assignment-ui.test.tsx` | Retain both layouts/languages, occurrence source, lost/stale replies, newer values and filtered projection/focus; 37 cases pass |
+| New `group-assignment-interactions.test.tsx` | Extend with 7 cancel/draft/pending/focus/source-stability cases; pass |
+| Grouping/filtering, Board/Table layout, scalar/selection UI | Retain their public behaviors and distinct ordering commands; selected by the scoped CI profile |
+| Original Views native assignments | Retain original all-type helper and complete Views consumer; exact-SHA hosted result remains a gate |
+| Standalone native fixture lifecycle checks | Retain all failure/shutdown/cleanup assertions and actual local failures; do not relabel forced cleanup as a normal exit |
+
+Only documentation changes follow this application's reviewed candidate so far;
+renew docs/links rather than replaying the full suite solely for this report.
