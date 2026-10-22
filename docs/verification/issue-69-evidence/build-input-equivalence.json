@@ -1,26 +1,35 @@
 {
   "applicationAcceptanceSource": "770e07e5846293309b5357d6f7bc81134772a4c1",
-  "driverCandidate": "d6bcd7c0209673cdbfece719d9b9f6a9e22c6c45",
+  "driverCandidate": "afc496a358c044e1431df8becc7181addaaac91d",
   "method": "Export baseline with git archive into one temporary checkout, link the same installed dependencies, build production renderer, overlay the entire reviewed candidate delta into that same checkout, build again, compare every relative output path and SHA256. Node22.21.1; unchanged package-lock/Vite/source/build inputs.",
-  "review": "Independent Standards and Spec reviews find no application-input changes or affected-consumer coverage gaps; runtime tails remain pending.",
+  "review": "Independent Standards audit of the complete27-path delta finds no application-input changes or affected-consumer gaps. Viewsall3 dev/release renewed39742850826; Windowslatest missing tails pass39743567968. Combined ledger review has no gaps. Documentation-only handoff retains actual runtime source SHAs.",
   "changedPaths": [
     ".github/workflows/desktop-ci.yml",
     "docs/ci.md",
     "docs/plans/issue-69-coherent-desktop.md",
     "docs/verification/issue-69-coherent-desktop.md",
+    "docs/verification/issue-69-evidence/build-input-equivalence.json",
     "docs/verification/issue-69-evidence/category-header-1024.png",
     "docs/verification/issue-69-evidence/expanded-tree-1440.png",
     "docs/verification/issue-69-evidence/manifest.json",
     "docs/verification/issue-69-evidence/preview-tree-1024.png",
+    "scripts/rename-runtime-startup.mjs",
     "scripts/runtime-control-scroll.mjs",
     "scripts/runtime-layout.mjs",
     "scripts/runtime-settings.mjs",
+    "scripts/runtime-view-actions.mjs",
+    "scripts/smoke-category-options.mjs",
     "scripts/smoke-discovery-layouts.mjs",
     "scripts/smoke-multi-select.mjs",
+    "scripts/smoke-project-archive.mjs",
+    "scripts/smoke-project-creation.mjs",
     "scripts/smoke-runtime.mjs",
     "scripts/smoke-single-select.mjs",
+    "scripts/smoke-views.mjs",
+    "tests/rename-runtime-startup.test.mjs",
     "tests/runtime-workspace-identity.test.mjs",
     "tests/test-suites.test.mjs",
+    "tests/view-actions-native.test.mjs",
     "tests/view-scroll-native.test.mjs"
   ],
   "applicationMigrationsNativeResourcesDependenciesBuildPackageRuntimeInputsUnchanged": true,
@@ -37,5 +46,6 @@
     "assets/inter-vietnamese-wght-normal-CBcvBZtf.woff2": "5c66f9e07e90c6d4ac4922cc68d60de26c17b1858e677fb5e603fce3952b3ff2",
     "index.html": "a48d98deea901a06928bcaeb7e9a9060b18644f3a49834ddc411bdadd474f31c"
   },
-  "laterDocumentationOnlyChanges": "Require documentation checks and unchanged-build proof; this receipt retains its actual driverCandidate rather than claiming a future delivered SHA."
+  "laterDocumentationOnlyChanges": "Require documentation checks and unchanged-build proof; this receipt retains its actual driverCandidate rather than claiming a future delivered SHA.",
+  "outputCount": 10
 }

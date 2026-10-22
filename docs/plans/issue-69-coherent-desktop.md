@@ -1821,3 +1821,30 @@ route guard initially sliced plain always() as an expression wrapper; corrected
 to evaluate plain always() directly without weakening route assertions.
 Standards and Spec reviews both report0 source findings. Hosted renewal and
 missing Windows tails remain acceptance gates; no integration is claimed.
+
+
+### Inspected Views renewal and Windows-only continuation
+
+39742850826/attempt1 atafc496a358c044e1431df8becc7181addaaac91d passes all3;
+all artifacts downloaded/inspected. Each host has79 native/UI/service/route
+regressions,0 fail/skip. Original Views dev and release each retain6 checks,
+3 normal app/backend quits and owned cleanup. Complete770..afc classification
+independently audited0:27 paths, unchanged application/migrations/native/deps/
+build/package/runtime inputs, same-checkout full overlay10 byte-identical renderer
+outputs. Shared grouping/strict/shell/Board/installer inputs remain unchanged.
+Windows-only missing tail39743567968 runs on the same SHA; no acceptance yet.
+
+
+### Final Windows tail inspection
+
+39743567968/attempt1 atafc496a358c044e1431df8becc7181addaaac91d passes Windowslatest.
+Downloaded original artifacts inspected:103 regressions,0 fail/skip,20 reports,
+146 normal app/backend quits. Dev Views/MultiSelect/Select/Date/Number/DataRecovery,
+eight packaged features, packaged creation crash/direct/grouped and base/rename/
+category pass exact data/native/persistence/stages/ownership/cleanup assertions.
+Failed-startup exit proof remains additional, not counted as a normal quit. Package
+resources pass. Mac/Windows2022 retain inspected unchanged341ef774 package tails;
+all3 Views drivers retain afc496a3 focused dev/release renewal. Historical failures
+are not erased. Final source/application/appearance and ledger reviews have no
+remaining findings; documentation-only proof and integration are recorded in the
+GitHub delivery checkpoint. No new application/build/package change was needed.

@@ -1,13 +1,15 @@
 # Issue 69 acceptance map
 
-Status: **in progress; not accepted or integrated**. [GitHub #69](https://github.com/kornouhovas/workspace/issues/69)
-owns current gates. The [plan](../plans/issue-69-coherent-desktop.md) retains
+Status: **acceptance evidence complete**. The tested application and driver
+candidates are recorded below; actual delivered/integrated SHA is recorded in
+[GitHub #69](https://github.com/kornouhovas/workspace/issues/69). The
+[plan](../plans/issue-69-coherent-desktop.md) retains
 scenario decisions, experiments, failures and historical receipts.
 
 Application acceptance source: `770e07e5846293309b5357d6f7bc81134772a4c1`,
 based on accepted `86ec7527`; application changes end at `458be520`. Runtime
 driver renewal sources: `3d0a88c3`, `c5d9f5d8` and
-`d6bcd7c0209673cdbfece719d9b9f6a9e22c6c45` and `341ef774`. The complete
+`d6bcd7c0209673cdbfece719d9b9f6a9e22c6c45`, `341ef774` and `afc496a3`. The complete
 subsequent delta contains tests, drivers, CI routes and documentation. Required
 combined receipts retain their actual source below.
 The plan retains earlier failed/diagnostic receipts; none is relabeled as passing.
@@ -84,31 +86,37 @@ findings. Fixed4x traces show restoration work26.72 ->4.88ms and grouping406.7
 
 All runs below are attempt1. Retained application receipts are at `770e07e5`;
 driver renewal sources are explicitly marked perrow. Reports are inspected where
-marked; pending jobs do not establish acceptance. Historical9face229 strict,
+marked. Failed overall runs retain their original conclusions. Historical9face229 strict,
 coherent and installer receipts were renewed after the application repair.
 
 | Boundary | Run | Actual evidence / result |
 | --- | --- | --- |
 | Original unfiltered layout + native regression | [39711258611](https://github.com/kornouhovas/workspace/actions/runs/39711258611) | **All3 pass**, inspected:302states/906captures, normal Electron quit; new production-CSS/fonts native regression passes eachhost. EN/RU, legal120/180px columns at1024/1440px windows, exact Save, zero cancelled writes, focus return and Hint bounds. Old CSS and CSS-only overlap controls fail separately; complete repair passes. |
-| Full broad desktop/package | [39712591684](https://github.com/kornouhovas/workspace/actions/runs/39712591684) | **All3 failed** at the ambiguous global source-root locator in the original development runtime. Common531/531 and lint/typecheck/docs pass; Mac2746pass/27skip; each Windows2843pass/13skip including isolated suites. Prefix creation/native routes pass; later runtime/package rows are unreached. Original logs and artifacts retained. Original-command repair renewal passes below; later tails remain pending. |
+| Full broad desktop/package | [39712591684](https://github.com/kornouhovas/workspace/actions/runs/39712591684) | **All3 failed** at the ambiguous global source-root locator in the original development runtime. Common531/531 and lint/typecheck/docs pass; Mac2746pass/27skip; each Windows2843pass/13skip including isolated suites. Prefix creation/native routes pass; later runtime/package rows are unreached. Original logs and artifacts retained. Original-command repair and bounded tail renewals are recorded below; this overall run remains failed. |
 | Original source-context runtime renewal | [39718705396](https://github.com/kornouhovas/workspace/actions/runs/39718705396), `3d0a88c3` | **All3 pass, inspected**:67 native/layout/route regressions and255 captures eachhost. Base stages alltrue,3 normal quits plus failed-startup exit check; rename46 and category move34 normal shutdowns eachhost, owned processes/fixture cleanup confirmed. |
-| Remaining runtime/package renewal | [39719353774](https://github.com/kornouhovas/workspace/actions/runs/39719353774), `3d0a88c3` | **Both Windows hosts failed** original unfiltered layouts after608 captures: loading-history project action remains offscreen420 after programmatic scroll; normal quit passes. Windows runtime tails are unreached. Mac layouts, creation, base runtime and Views pass, then development MultiSelect fails on hidden option-summary entry;2 normal quits/cleanup pass. Native/route controls and affected407 UI checks pass all3. Layout repair renewal passes below; Select-context renewal remains pending. |
+| Remaining runtime/package renewal | [39719353774](https://github.com/kornouhovas/workspace/actions/runs/39719353774), `3d0a88c3` | **Both Windows hosts failed** original unfiltered layouts after608 captures: loading-history project action remains offscreen420 after programmatic scroll; normal quit passes. Windows runtime tails are unreached. Mac layouts, creation, base runtime and Views pass, then development MultiSelect fails on hidden option-summary entry;2 normal quits/cleanup pass. Native/route controls and affected407 UI checks pass all3. Layout and Select-context renewals pass below; no failed/unreached step is reused. |
 | Coherent desktop | [39712599909](https://github.com/kornouhovas/workspace/actions/runs/39712599909) | **All3 pass, inspected**. Mac M1 Virtual/kernel25.6.0; Windowslatest/2022 EPYC7763/kernel10.0.26100/10.0.20348. All principal journeys, exact native/external document, dev/package Views normal exits and asserted cleanup. |
 | Strict scale | [39712595815](https://github.com/kornouhovas/workspace/actions/runs/39712595815) | **Both pass, inspected**:32 functional/timing observations,10 memory samples,4 normal app/backend exits and cleanup eachhost. Mac M1 Virtual/kernel23.6.0 max222.2ms, conservative peak941,244,416B. Windows EPYC7763/kernel10.0.26100 max294.1ms, peak870,428,672B. Original300ms limit retained. |
 | Actual Mac DMG | [39712603825](https://github.com/kornouhovas/workspace/actions/runs/39712603825) | **Pass, inspected**, macOS14.8.9arm64: outside-build install, bundled backend, EN/RU, saved IDs/views, isolation, reopen/replacement/data preservation, normal quit and cleanup. SHA256 `e2bff9866343fe81a5810754e132e84d3081c2f7fc5366374c40aa1407a1685e`. |
 | Actual Windows NSIS | [39712607793](https://github.com/kornouhovas/workspace/actions/runs/39712607793) | **Pass, inspected**, Server2025x64/kernel10.0.26100: offline Unicode/space path, bundled backend, EN/RU, persisted IDs/views, independent APPDATA, reinstall/data preservation, uninstall and cleanup. SHA256 `932f2e31af64c32e50bc5f928037bf6ff2f598974d2d330373b17f90854474b2`. This is not Windows11 release acceptance. |
 | Loading-history original layout renewal | [39721020706](https://github.com/kornouhovas/workspace/actions/runs/39721020706), `c5d9f5d8` | **All3 pass, inspected**:302states/906captures/274interactions and normal quit eachhost. Production-header and actual-hook native regressions3/3 each; original reachability predicate and negative controls retained. |
 | Select option-context renewal | [39721960056](https://github.com/kornouhovas/workspace/actions/runs/39721960056), `d6bcd7c0` | **Pass, inspected**:82 regressions; original Macdevelopment MultiSelect and both changed drivers in dev/package, EN/RU2checks and3 normal app/backend exits/owned cleanup perconsumer. |
-| Remaining complete runtime consumers | [39722181287](https://github.com/kornouhovas/workspace/actions/runs/39722181287), `d6bcd7c0` | **All3 failed**, inspected. Mac/Windows2022 dev Views6, MultiSelect2, Select2, Date2, Number2 pass normal exit/cleanup, then archive hidden-summary entry fails with cleanup. Windowslatest creation crash matrix completes8runs/16 quits but terminal ownership is unverified and fixture cleanup is skipped; subsequent commands unreached. Focused ownership/context repairs and bounded continuation remain gates. |
-| Independent review | Cumulative source and subsequent scoped deltas separately reviewed | Standards0 and Spec0; current changed appearance0 material findings. Final acceptance-ledger audit remains required. |
+| Remaining complete runtime consumers | [39722181287](https://github.com/kornouhovas/workspace/actions/runs/39722181287), `d6bcd7c0` | **All3 failed**, inspected. Mac/Windows2022 dev Views6, MultiSelect2, Select2, Date2, Number2 pass normal exit/cleanup, then archive hidden-summary entry fails with cleanup. Windowslatest creation crash matrix completes8runs/16 quits but terminal ownership is unverified and fixture cleanup is skipped; subsequent commands unreached. Focused ownership/context repairs pass below; no failed cleanup or unreached row is reused. |
+| Creation ownership renewal | [39724337019](https://github.com/kornouhovas/workspace/actions/runs/39724337019), `341ef774` | **All3 pass, inspected**:118 regressions eachhost;8 crash scenarios/16 normal quits; direct/grouped2 quits each, exact native invocation/acknowledgment/FileManager outcome.20 backend occurrences/20 confirmed exits,0 pending,30 stopped parents and owned cleanup perhost. |
+| Archive/category context renewal | [39724340885](https://github.com/kornouhovas/workspace/actions/runs/39724340885), `341ef774` | **All3 pass, inspected**:141 regressions eachhost; original dev/release Archive12 checks/5 quits and CategoryOptions16 checks/2 quits eachmode; data/restart/ownership/cleanup pass. |
+| Packaged tail renewal | [39724821487](https://github.com/kornouhovas/workspace/actions/runs/39724821487), `341ef774` | **Mac/Windows2022 pass, inspected**:15 reports/131 normal quits each; dev DataRecovery, eight release features, creation crash/direct/grouped and base/rename/category. Windowslatest fails first dev Views; failure exit/cleanup pass, later rows unreached. Changed Views consumers renewed below; unchanged passing rows retain this source. |
+| Views context renewal | [39742850826](https://github.com/kornouhovas/workspace/actions/runs/39742850826), `afc496a3` | **All3 pass, inspected**:79 native/UI/service/route regressions eachhost,0 skips. Original dev/release6 checks and3 normal app/backend quits eachmode; all data/native/configuration/filter/group/restart assertions and owned cleanup retained. |
+| Missing Windowslatest tail | [39743567968](https://github.com/kornouhovas/workspace/actions/runs/39743567968), `afc496a3` | **Pass, inspected**:103 regressions,0 fail/skip;20 reports/146 normal quits. Dev Views/MultiSelect/Select/Date/Number/DataRecovery and all packaged feature/creation/base/rename/category commands pass data/native/persistence/ownership and owned cleanup. Package resources verified. Failed-startup exit check remains separate from normal quits. |
+| Independent review | Cumulative source and subsequent scoped deltas separately reviewed | Standards0 and Spec0; current changed appearance0 material findings. Complete input/consumer and combined acceptance-ledger audits report no gaps; final Windows reports inspected. |
 
-The entire `770e07e5..d6bcd7c0` diff leaves application, migrations, native
+The entire `770e07e5..afc496a3` diff leaves application, migrations, native
 resources, dependencies, build/package inputs and relevant execution inputs
 unchanged. [Same-checkout production builds](issue-69-evidence/build-input-equivalence.json)
 before/after the complete overlay produce10 byte-identical renderer outputs. Independent Standards audit
 finds0 reuse/mapping gaps. Existing coherent/installer exports are unchanged;
-changed capture consumers are creation, base runtime, rename and category move,
-requiring development and packaged renewal. Successful common/platform/prefix
+changed consumers are layout fixtures, creation, base runtime, rename/category
+move, Select/MultiSelect, archive/category options and Views. Their specific
+original-command receipts are recorded above. Successful common/platform/prefix
 reports retain their original770e07e5 receipt; no failed/unreached row is reused.
 
 Regression seams are owner-confirmed: real disposable SQLite/public Workspace
@@ -137,23 +145,22 @@ cover their actual hosts. Later local layout passes do not erase these failures.
 Historical native owner-expiry and strict misses remain negative receipts in
 the plan; profiling does not establish one universal cause.
 
-#69 still owns every unreached development/package tail and final
-ledger/integration. Focused original-runtime renewal passes on all three hosts. The repaired
-original local command completes base runtime, rename and category move; this
-does not substitute for hosted acceptance. No required failed row is transferred
-to #67. #55 owns persisted sessions; #56–#58 editor/draft refinements; #60 and
+#69 closes its required development/package tails through the inspected combined
+receipts above. Earlier failures remain historical evidence; no required failed
+row is transferred to #67. Delivery/integration verification is recorded in the
+GitHub checkpoint. #55 owns persisted sessions; #56–#58 editor/draft refinements; #60 and
 descendants filesystem/recovery extensions; #67 final UX01–UX20/platform/scale
 acceptance; #42 release integration. #47/#7/#42 remain open. No release, main
 merge or next issue is selected.
 
-### Current remaining-runtime gate
+### Final runtime renewal
 
-Focused creation39724337019 and archive/category39724340885 at341ef774 pass on
-all3 hosts; reports inspected, original dev/release context and dev native
-creation assertions/exit/cleanup retained. Package-tails39724821487 at341ef774
-passes macOS and Windows2022 (15 reports,131 normal quits each); Windowslatest
-fails first dev Views menu entry and reaches no later tail. Failure cleanup passes.
-Controlled native focus-return regression is red with old menu entry and green
-with Views-specific context preparation; it does not prove unique historical
-timing. All3 dev/release Views renewal and then missing Windowslatest tails remain
-required before acceptance. Successful unchanged rows retain their actual sources.
+Views39742850826 atafc496a3 passes all3 dev/release and is inspected. Controlled
+native focus-return regression is red with old menu entry and green with
+Views-specific context preparation; it demonstrates a matching mechanism without
+proving unique historical timing. Shared grouping/product inputs remain unchanged.
+Windowslatest39743567968 at the same afc496a3 passes all missing tails:20 reports,
+146 normal quits, complete data/native/persistence/ownership and cleanup evidence.
+Successful unchanged rows retain their actual sources above. Documentation-only
+handoff inherits these receipts after documentation checks and unchanged-build
+proof; no receipt is relabeled as a test on a later delivered commit.
