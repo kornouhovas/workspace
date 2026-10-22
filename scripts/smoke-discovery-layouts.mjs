@@ -6,7 +6,7 @@ import { tmpdir } from "node:os";
 import { dirname, extname, join, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { _electron, chromium } from "playwright-core";
-import { closeElectron } from "./runtime-lifecycle.mjs";
+import { closeElectron, withDeadline } from "./runtime-lifecycle.mjs";
 import { enterContextFor } from "./runtime-context-tools.mjs";
 import { waitForCategoryMoveEditor } from "./runtime-layout.mjs";
 
@@ -36,12 +36,12 @@ const save = () => writeFile(join(evidence, "ladle-observations.json"), JSON.str
 let electron;
 let browser;
 let failure;
+let page;
 try {
   await writeFile(join(fixture, "main.cjs"), `const {app, BrowserWindow} = require('electron');
 app.setPath('userData', ${JSON.stringify(join(fixture, "data"))});
 app.whenReady().then(() => { const window = new BrowserWindow({width:1440,height:960,webPreferences:{contextIsolation:true,nodeIntegration:false,sandbox:true}}); window.loadURL(${JSON.stringify(url)}); });
 app.on('window-all-closed', () => app.quit());`);
-  let page;
   if (browserOnly) {
     browser = await chromium.launch({ executablePath: process.env.WORKSPACE_LAYOUT_BROWSER_PATH ?? "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome", headless: true });
     page = await browser.newPage();
@@ -215,6 +215,18 @@ app.on('window-all-closed', () => app.quit());`);
       if (await page.locator(".category-property-header").count()) await page.locator(".category-property-header").scrollIntoViewIfNeeded();
       const layout = await page.evaluate(() => ({
         overflow: globalThis.document.documentElement.scrollWidth > globalThis.innerWidth,
+        overflowDetails: [...globalThis.document.querySelectorAll(".category-property-header")]
+          .filter(node => node.checkVisibility() && node.scrollWidth > node.clientWidth + 1).slice(0,4).map(node => {
+            const shape = element => {
+              const style = globalThis.getComputedStyle(element), box = element.getBoundingClientRect();
+              return {tag:element.tagName,className:element.className,width:element.clientWidth,scrollWidth:element.scrollWidth,
+                left:box.left,right:box.right,css:{width:style.width,position:style.position,left:style.left,right:style.right,
+                  boxSizing:style.boxSizing,font:style.font,whiteSpace:style.whiteSpace}};
+            };
+            return {...shape(node),parent:shape(node.parentElement),children:[...node.children].slice(0,8)
+              .map(child => ({...shape(child),children:[...child.children].slice(0,8).map(shape)}))};
+          }),
+
         clippedControls: Array.from(globalThis.document.querySelectorAll(".text-value-editor button, .category-property-header button")).filter((node) => {
           const bounds = node.getBoundingClientRect(), scroll = node.closest(".project-table-scroll").getBoundingClientRect();
           return bounds.left < scroll.left - 1 || bounds.right > scroll.right + 1;
@@ -234,6 +246,7 @@ app.on('window-all-closed', () => app.quit());`);
             return new Set(Array.from(range.getClientRects(), (rect) => Math.round(rect.top))).size > 1;
           }),
       }));
+      if (layout.elements.length || layout.overflow || !layout.wrapped) results.failedLayout = {story,...size,layout};
       if (!layout.wrapped) {
         results.unwrapped = await page.locator(".discovery-name, .property-authored, .text-value-button:not([hidden]), .project-table td, .saved-categories li, .workspace-root, .recovery-review dd, .recovery-path, .project-rename dd, .project-rename p, .project-category-move dd").evaluateAll((nodes) => nodes.filter((node) => {
           const range = globalThis.document.createRange(); range.selectNodeContents(node);
@@ -582,7 +595,28 @@ app.on('window-all-closed', () => app.quit());`);
   results.completedStories = selectedStories.length; delete results.currentStory;
   results.featurePassed = true; await save();
   console.info(`Verified ${results.screenshots.length} EN/RU Ladle screenshots, including wrapping and no horizontal overflow`);
-} catch (error) { results.error = error.message; failure = error; await save(); }
+} catch (error) {
+  results.error = error.message; failure = error; await save();
+  if (page) {
+    try {
+      results.failureGeometry = await withDeadline(page.evaluate(() => {
+        const shape = node => {
+          const style = globalThis.getComputedStyle(node), bounds = node.getBoundingClientRect();
+          return { tag:node.tagName, className:node.className, width:node.clientWidth, scrollWidth:node.scrollWidth,
+            bounds:{left:bounds.left,right:bounds.right,top:bounds.top,bottom:bounds.bottom},
+            css:{position:style.position,width:style.width,boxSizing:style.boxSizing,overflowX:style.overflowX,
+              font:style.font,whiteSpace:style.whiteSpace,left:style.left,right:style.right} };
+        };
+        return [...globalThis.document.querySelectorAll(".category-property-header, .workspace-form-actions, .property-form")]
+          .filter(node => node.checkVisibility() && node.scrollWidth > node.clientWidth + 1).slice(0,12)
+          .map(node => ({...shape(node), parent:shape(node.parentElement), children:[...node.children].slice(0,8).map(shape)}));
+      }), 1000, "Ladle failure geometry");
+      await page.screenshot({path:join(evidence,"failure.png"),fullPage:true,timeout:2000});
+      results.failureCapture = "saved";
+    } catch { results.failureCapture = "unavailable"; }
+    await save();
+  }
+}
 finally {
   try {
     if (electron) { await closeElectron(electron); results.shutdownPassed = true; await save(); }

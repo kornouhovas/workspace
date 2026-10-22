@@ -1414,3 +1414,25 @@ localchecks:90pass/3platformskips; finalcombinedinventory/workflowcontrols136:
 source-inventory routeall3withtheexactoriginal5files/provenance/pipefail/always
 artifacts; newrouteguardensuresoriginalcommand. Noapplicationinputschanged.
 Focusedhostedsuccessmustprecedenexttaildispatch; allunreachedrowsremainpending.
+
+Source-inventory39706702525/attempt1 at50d6ee5 passes all3: Mac91pass/3skip,
+bothWindows94pass/0skip. Exactprovenance/logs inspected. Next runtime-tail
+39706958232/attempt1 atsame50d6 builds, passes originalinventory and407UIchecks,
+then unfilteredLadlefails all3 atcategory-editing-English420: measured
+category-property-header overflow. 1440/1024capturespass; originalnormalquit
+passes. Localunfiltered302states/906capturespreviouslypasses onMac27, so
+retainhostdifference ratherthan claiminglocalreproduction. Allruntimetails
+remainunreached. Downloadedall3reports andprimarylogs retained.
+
+Rankeddiagnostichypotheses: nativecontrolmetrics/widthconstraints; measurement
+beforepost-resizegeometrysettles; absoluteheadertrigger expanding themeasured
+box. Add finitegeometry fromtheoriginalmeasurement plus failure-only screenshot/
+corroboratinggeometry. Noassertion ordeadline changes. Reviewcaught anunbounded
+failureevaluate beforecleanup: use existingwithDeadline1000ms andexplicit2000ms
+screenshottimeout; originalfailureassigned/savedfirst, unavailablecaptureseparate.
+Bothreviewsconfirm0remainingfindings. Controllednativefixturefailure proves
+originalnonzerooverflowverdict, geometry/imagecapture, normalElectronquit;
+temporarymutantscriptremoved. All137 route/controlchecks locally134pass/3skip,
+lint/docs/whitespacepass. New layout-fixtures routeall3 runs onlyoriginalunfiltered
+command+Ladleprerequisite, exactprovenance andfailureartifacts. Selectonebounded
+diagnosticprobe; noacceptanceoruniquecauseclaim from it. Productioninputsunchanged.

@@ -1242,3 +1242,12 @@ command order and environments for existing profiles against `verify`; for
 `runtime-tails` only the declared full-layout substitution and Windows latest
 direct consumer differ. Missing commands, changed environments and skips remain
 failures. This focused route does not build or accept application runtimes.
+
+For a shared Ladle layout failure, `checks: layout-fixtures` isolates the original
+unfiltered command and its Ladle prerequisite on all three desktop hosts. It
+retains original assertions and deadlines, records exact provenance and uploads
+the result even on failure. Observed category-header overflow includes finite
+geometry from the original measurement. Later failure geometry has a1000ms
+budget and screenshot a2000ms timeout; unavailable diagnostics do not replace
+the primary failure or prevent ordinary shutdown/cleanup. A diagnostic probe is
+not an acceptance waiver or proof of the historical cause.
