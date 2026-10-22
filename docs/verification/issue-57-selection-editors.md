@@ -153,3 +153,34 @@ tests, lint and documentation checks pass. `selection-focus` renews the failed
 original macOS command; subsequent scalar/Views remain gated on that success.
 No application or dependency input changed. Exact hosted acceptance stays in
 the issue checkpoint.
+
+
+## Bounded scale diagnostics
+
+The existing packaged strict harness was run on macOS 27.0 arm64 with the public
+1,000-project, 20-property, 10-view direct/grouped fixture. A predeclared second
+sequential candidate/baseline pair characterizes variability; no further
+retry-to-green is used. The harness SHA256 is
+`09019fc434e56a6e48508b43bb7008d8f55d73faea0258097cd9d5d95557d78f`.
+Both candidate runs use the same packaged artifact
+`b3033afde56a89e76fe314b1a1f178369b523ee3ee0c3573a54213824b31b2da`
+at `1695c5ff`; later driver changes do not alter it. Both baseline runs use
+`e6de28fb` artifact
+`b04779e78227f9202fb74bce29f3a3d8a9a800f962c309ffb5fdbfb3eeb6bbb1`.
+
+| Run | Timing targets | Highest conservative process peak (bytes) | Strict result |
+| --- | --- | --- | --- |
+| Candidate first | 34/34 pass; cold startup 3,401.9 ms | 1,000,472,576 | Fail: memory exceeds 1,000,000,000 by 472,576 |
+| Baseline first | 34/34 pass | 999,292,928 | Pass |
+| Candidate second | 33/34 pass; cold startup 5,732.0 ms | 989,577,216 | Fail: startup exceeds 5,000 ms |
+| Baseline second | 33/34 pass; cold startup 6,705.6 ms | 940,490,752 | Fail: startup exceeds 5,000 ms |
+
+All measured Table/Board edits, filters, grouping, drag, refresh and offscreen
+draft/reopen scenarios pass their limits in all four runs; normal shutdown and
+owned cleanup pass. Other memory deltas are mixed, including lower candidate
+current working set in the first grouped-final sample. These reports establish
+local budget pressure/variation, not a proven regression cause or a complete
+performance pass. The unchanged strict limits and full integrated performance
+gate remain required by #67/#42. The initial failed candidate receipt is retained.
+Raw reports: task `work/issue-57-scale{,-paired}/report.json` and integration
+`work/issue-57-scale-baseline{,-paired}/report.json`.
