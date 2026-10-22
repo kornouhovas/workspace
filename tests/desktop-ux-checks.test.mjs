@@ -236,7 +236,11 @@ test('property profile runs real metadata safety and contextual Electron consume
 
 test('property repair selects only failed hosts/commands before completing changed and unreached consumers',async()=>{
  const {propertyRepairCommands,propertyTailCommands}=await import('../scripts/desktop-ux-checks.mjs');
- const mac=JSON.stringify(propertyRepairCommands('darwin')),windows=JSON.stringify(propertyRepairCommands('win32'));
+ const repair=propertyRepairCommands('darwin');
+ const install=repair.findIndex(([,args])=>args[0]==='-e'&&args[1]==="require('electron')");
+ const native=repair.findIndex(([,args])=>args.includes('tests/property-editor-driver.test.mjs'));
+ assert.ok(install>=0&&install<native,'Cold extraction must finish before parallel native workers');
+ const mac=JSON.stringify(repair),windows=JSON.stringify(propertyRepairCommands('win32'));
  assert.ok(mac.includes('smoke-property-management.mjs'));assert.equal(mac.includes('smoke:views'),false);
  assert.ok(windows.includes('smoke:views'));assert.equal(windows.includes('smoke-property-management.mjs'),false);
  const macTail=JSON.stringify(propertyTailCommands({platform:'darwin'})),winTail=JSON.stringify(propertyTailCommands({platform:'win32'})),serverTail=JSON.stringify(propertyTailCommands({platform:'win32',renewViews:true}));

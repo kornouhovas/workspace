@@ -1447,3 +1447,6 @@ property smoke on both Windows hosts, and the changed Views consumer on Windows
 2022. Earlier passing source/service results retain their exact receipts under
 the test-only reuse policy. No product, build, dependency, timing threshold or
 ordinary workflow default changes in this repair.
+The property repair profile finishes Electron's lazy binary extraction serially
+before its parallel native regression workers, as the ordinary suite runner does.
+The original commands remain behind that passing preparation/regression gate.

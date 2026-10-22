@@ -162,6 +162,8 @@ export function propertyCommands() {
 export function propertyRepairCommands(platform = process.platform) {
   return [
     ['npm', ['run', 'typecheck']], ['npm', ['run', 'lint']],
+    // Complete Electron's lazy extraction before parallel native workers.
+    [process.execPath, ['-e', "require('electron')"]],
     [process.execPath, ['--import', 'tsx', '--test', '--test-name-pattern=property view entry waits|grouping closure completes', 'tests/property-editor-driver.test.mjs', 'tests/selection-driver.test.mjs']],
     platform === 'darwin' ? [process.execPath, ['scripts/smoke-property-management.mjs', 'dev']] : ['npm', ['run', 'smoke:views']],
   ];

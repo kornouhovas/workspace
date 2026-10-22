@@ -145,3 +145,14 @@ with normal shutdown/cleanup. Both independent follow-up review axes report zero
 findings in the test-only repair and its two-phase consumer mapping.
 Exact focused/tail SHA/run/artifact receipts remain in the GitHub checkpoint;
 missing or unreached commands remain acceptance gates until those runs finish.
+
+The first focused run
+[39843034740](https://github.com/kornouhovas/workspace/actions/runs/39843034740)
+at `8465786c` failed before either original command: both fresh hosts started
+Electron's lazy download/extraction from two parallel native workers, and the
+view-entry worker reported `Process failed to launch!`; the two grouping
+regressions passed. The repair profile now completes `require('electron')`
+serially before parallel native regression workers, matching the existing
+`test-suites.mjs` cold-install contract. This is a preparation failure, not a
+failed property assertion or passing original-command receipt. Original logs
+remain retained; the exact same two-host gate must pass before tail acceptance.
