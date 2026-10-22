@@ -3,7 +3,7 @@ import { navigationLabels } from "./ProjectNavigation.js";
 import { ViewControls } from "./ManagementSurface.js";
 import { Hint } from "./Hint.js";
 import { Icon } from "./Icons.js";
-import { ContextTools, contextReturnTarget } from "./ContextTools.js";
+import { ContextTools, contextReturnTarget, contextOwner } from "./ContextTools.js";
 import { ViewportProjectRow } from "./ViewportProjectRow.js";
 import { PropertyControls } from "./PropertyControls.js";
 import { GroupAssignment, groupAssignmentMime, readGroupDrop } from "./GroupAssignment.js";
@@ -14,7 +14,7 @@ import { useTableLayout, tableColumns, TableLayoutControls, moveTableRow, ordere
 import { ViewGrouping } from "./ViewGrouping.js";
 import type { ViewGroup } from "../../contracts/view-grouping.js";
 import { ViewFilters } from "./ViewFilters.js";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { Language } from "../../contracts/settings.js";
 import type { ProjectSummary, ProjectAssociationSummary, CategoryProperty, CategoryPropertySnapshot, CategorySummary } from "../../contracts/workspaces.js";
 import type { TextPropertySnapshot, TextPropertyDefinition } from "../../contracts/text-properties.js";
@@ -207,8 +207,37 @@ function TextPropertiesContent({ detail, onPreview, viewId, layout = "table", hi
     if (accepts(value)) { listVersion.current++; minimumRevision.current = value.revision; setSnapshot(value); setLoading(false); setLoadError(false); }
   };
   const propertyCreationTrigger = useRef<HTMLButtonElement>(null);
+  const propertyRetry = useRef<HTMLButtonElement>(null);
+  const [propertyFocus, setPropertyFocus] = useState<{trigger: HTMLButtonElement | null; origin: Element | null} | null>(null);
+  useLayoutEffect(() => {
+    if (!propertyFocus) return;
+    const active = document.activeElement;
+    if (active && active !== document.body && active !== propertyFocus.origin && active !== propertyFocus.trigger) {
+      setPropertyFocus(null); return;
+    }
+    let target: HTMLElement | null = propertyFocus.trigger?.isConnected ? propertyFocus.trigger : propertyCreationTrigger.current;
+    const owners = new Set<string>();
+    while (target?.closest('[hidden], [aria-hidden="true"]')) {
+      const owner = contextOwner(target);
+      if (!owner || owners.has(owner)) { target = null; break; }
+      owners.add(owner); target = document.getElementById(owner);
+    }
+    if (target?.hasAttribute("disabled") && loadError && !loading) target = propertyRetry.current;
+    if (!target || target.hasAttribute("disabled") || target.getAttribute("aria-disabled") === "true") return;
+    target.focus({preventScroll:true});
+    if (document.activeElement === target) setPropertyFocus(null);
+  }, [propertyFocus, loading, loadError, disabled, snapshot?.revision]);
+
+  useEffect(() => {
+    if (!propertyFocus) return;
+    const cancel = (event: FocusEvent) => {
+      if (event.target !== propertyFocus.origin && event.target !== document.body && event.target !== propertyFocus.trigger) setPropertyFocus(null);
+    };
+    document.addEventListener("focusin", cancel);
+    return () => document.removeEventListener("focusin", cancel);
+  }, [propertyFocus]);
   const propertyControl = (property?: TextPropertyDefinition) => <PropertyControls client={client} workspaceId={workspaceId} sourceId={sourceId}
-    fallbackFocus={propertyCreationTrigger} snapshot={snapshot} property={property} language={language} disabled={disabled || loadError || loading} onCommitted={committed} onObserved={load}/>;
+    fallbackFocus={propertyCreationTrigger} snapshot={snapshot} property={property} language={language} disabled={disabled || loadError || loading} onCommitted={committed} onObserved={load} onReturnFocus={trigger => setPropertyFocus({trigger, origin: document.activeElement})}/>;
   const categoryHeader = categoryProperty && (onCategoryPropertyCommitted && minimumCategoryPropertyRevision ? <CategoryPropertyHeader client={client} workspaceId={workspaceId} sourceId={sourceId} property={categoryProperty}
     discoveryRevision={discoveryRevision} minimumDiscoveryRevision={minimumDiscoveryRevision} revision={categoryPropertyRevision} minimumRevision={minimumCategoryPropertyRevision}
     preservedDraft={categoryDrafts.current.get(categoryProperty.propertyId)} onDraftChange={draft => {
@@ -374,7 +403,7 @@ function TextPropertiesContent({ detail, onPreview, viewId, layout = "table", hi
     <h3 className="project-properties-heading">{t("propertyTools")}</h3>
     {propertyControl()}
     {loading && <StatusMessage kind="info" title={t("propertiesLoading")}/>}
-    {loadError && <><StatusMessage kind="error" title={t("propertiesLoadError")}/><button type="button" className="workspace-button" onClick={()=>void load()}>{t("propertiesRetry")}</button></>}
+    {loadError && <><StatusMessage kind="error" title={t("propertiesLoadError")}/><button ref={propertyRetry} type="button" className="workspace-button" onClick={()=>void load()}>{t("propertiesRetry")}</button></>}
     <table className="project-table"><tbody>{rows()}</tbody></table>
   </div>;
   return <div className="text-properties" aria-busy={loading} onKeyDownCapture={event => { if (event.key === "Tab") backwards.current = event.shiftKey; }}>
@@ -394,7 +423,7 @@ function TextPropertiesContent({ detail, onPreview, viewId, layout = "table", hi
     </>}
     {loading && <StatusMessage kind="info" title={t("projectsLoading")} />}
     {loadError && <><StatusMessage kind="error" title={t("propertiesLoadError")} />
-      <button type="button" className="workspace-button workspace-button--secondary" disabled={disabled || loading} onClick={() => void load()}>{t("propertiesRetry")}</button></>}
+      <button ref={propertyRetry} type="button" className="workspace-button workspace-button--secondary" disabled={disabled || loading} onClick={() => void load()}>{t("propertiesRetry")}</button></>}
     <ViewControls>{layout === "board" ? <ContextTools label={t("propertyTools")} icon="properties">{propertyTools}</ContextTools> : propertyControl()}</ViewControls>
     {message && <StatusMessage kind="info" title={t(message)}/>}
     {assignmentProperty && layout !== "board" && <p>{t(filesystemAssignment ? "groupAssignmentFilesystemHint" : "groupAssignmentHint")}</p>}

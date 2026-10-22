@@ -105,7 +105,10 @@ try{
  const before=await call('listTextProperties');await close();await launch();assert.deepEqual(await call('listTextProperties'),before);
  assert.equal(await readFile(join(source,'Atlas','notes.txt'),'utf8'),'Project bytes stay outside app backups.');
  await close();report.status='passed';
-}catch(error){failure=error;report.status='failed';report.error=error.stack;if(page)await page.screenshot({path:join(evidence,'failure.png')}).catch(()=>{});}
+}catch(error){failure=error;report.status='failed';report.error=error.stack;if(page){
+ await page.screenshot({path:join(evidence,'failure.png')}).catch(()=>{});
+ report.focusState=await page.evaluate(()=>({active:{tag:document.activeElement?.tagName,label:document.activeElement?.getAttribute('aria-label')},creators:[...document.querySelectorAll('[data-add-property]')].map(button=>({label:button.getAttribute('aria-label'),disabled:button.disabled,hidden:!!button.closest('[hidden], [aria-hidden="true"]'),owner:button.closest('[data-context-owner]')?.getAttribute('data-context-owner')})),loading:[...document.querySelectorAll('.text-properties')].map(panel=>panel.getAttribute('aria-busy'))})).catch(()=>null);
+ }}
 finally{
  try{if(app)await close();}catch(error){failure??=error;report.status='failed';report.shutdownError=error.message;}
  try{const stopped=await ownedProcessesStopped(parents,backends,{launchUnverified});assert.equal(stopped,true);report.cleanup=await cleanupOwnedFixture(fixture,{processesStopped:stopped,primaryFailure:failure,record:result=>{report.cleanup=result;}});}catch(error){failure??=error;report.status='failed';report.cleanupError=error.message;}

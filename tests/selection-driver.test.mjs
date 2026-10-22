@@ -85,7 +85,7 @@ for(const language of ['en','ru'])test(`${language} grouping closure completes i
  try{
   const page=await app.firstWindow();const url=await app.evaluate(()=>globalThis.renameEditorInitialLoad);await page.waitForURL(url);page.setDefaultTimeout(1000);
   const label=language==='en'?'Grouping':'Группировка',parentLabel=language==='en'?'View settings':'Настройки представления';
-  await page.setContent(`<button id="parent" aria-label="${parentLabel}" aria-expanded="true">Settings</button><button id="grouping" aria-label="${label}" aria-expanded="true">Grouping</button><div role="region" aria-label="${label}"><button id="inside">Group by</button></div><button id="edit">Edit selection</button>`);
+  await page.setContent(`<button id="parent" aria-label="${parentLabel}" aria-expanded="true">Settings</button><button id="grouping" aria-label="${label}" aria-expanded="true">Grouping</button><div role="region" aria-label="${label}"><button id="inside">Group by</button></div><button id="edit">Edit selection</button>`,{waitUntil:'domcontentloaded',timeout:15000});
   await page.evaluate(()=>{
    document.addEventListener('keydown',event=>{
     if(event.key!=='Escape')return;

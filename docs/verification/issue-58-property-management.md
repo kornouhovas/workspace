@@ -156,3 +156,43 @@ serially before parallel native regression workers, matching the existing
 `test-suites.mjs` cold-install contract. This is a preparation failure, not a
 failed property assertion or passing original-command receipt. Original logs
 remain retained; the exact same two-host gate must pass before tail acceptance.
+
+
+## Deferred creator focus repair
+
+The cold-install repair run [39843876212](https://github.com/kornouhovas/workspace/actions/runs/39843876212)
+at `397021f9` completes Electron preparation. macOS passes the three controlled
+native regressions, then the original property smoke loses creator focus after
+its second creation. Windows passes view-entry and RU grouping regressions but
+fails EN fixture `setContent` waiting for `load` within the interaction budget;
+its original Views command is unreached. These are failed receipts.
+
+A renderer regression demonstrates a specific application defect: a newer source
+notification starts a read; the older successful creation reply closes the
+creator while its trigger remains disabled. Its one-shot animation-frame focus
+return is lost before the read re-enables the trigger. The corrected UUID fixture
+fails precisely on the final focus assertion (`ci-focus-loading-red3.log`). The
+first two fixture attempts were invalid and do not establish that cause. This
+controlled reproduction proves the defect, but does not by itself prove the
+same timing caused the hosted macOS failure.
+
+The owning property surface now retains its focus request until the trigger is
+usable, retaining same-owner fallback and Retry behavior. Follow-up review found
+that such a deferred request must yield to a newer user focus choice. A second
+regression fails before that cancellation is added (`focus-intent-red.log`), then
+both scenarios pass. The combined focused renderer/removal suite passes 19 tests
+and typecheck. Existing deletion unmount and background Table/Details ownership
+regressions remain green. Bounded smoke failure metadata records active control,
+creator disabled/hidden/owner state and panel loading if hosted failure recurs.
+
+The grouping fixture now waits explicitly for DOMContentLoaded with a separate
+15-second preparation budget. Its original one-second interaction deadline,
+100ms delayed focus, final parent closure and checkbox assertions are unchanged.
+The focused three native regressions pass locally. This repairs setup rather
+than accepting the failed Windows command.
+
+Unlike the preceding driver-only repairs, this changes application source.
+After both original focused commands pass, renew the entire `properties` profile
+on all three hosts at the repaired SHA; the earlier test-only tail reuse is no
+longer sufficient for this candidate. Exact receipts remain in the issue
+checkpoint. A failed or unreached command remains unresolved.

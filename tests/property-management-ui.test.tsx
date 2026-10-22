@@ -129,3 +129,30 @@ test('early deletion notification with a delayed Apply reply returns focus to De
   await waitFor(()=>assert.ok(!screen.queryByRole('dialog')));assert.ok(document.activeElement===add);
  }finally{release?.();cleanup();service.close();rmSync(directory,{recursive:true,force:true});}
 });
+
+for(const moved of [false,true])test(`creator ${moved?'preserves a newer user focus choice':'returns focus'} after a newer source read temporarily disables its initiating control`,async()=>{
+ const property={propertyId:'p',sourceId:'22222222-2222-4222-8222-222222222222',name:'Notes',propertyType:'text' as const};
+ const initial={workspaceId:'11111111-1111-4111-8111-111111111111',sourceId:'22222222-2222-4222-8222-222222222222',revision:0,definitions:[],values:[]};
+ const saved={...initial,revision:1,definitions:[property]};
+ const newer={...saved,revision:2};
+ const listeners=new Set<(event:unknown)=>void>();
+ let save:((value:unknown)=>void)|undefined,read:((value:unknown)=>void)|undefined,lists=0;
+ const client=new WorkspaceServiceClient({workspace:async(input:{type:string})=>{
+  if(input.type==='workspace.listTextProperties')return ++lists===1?{ok:true,value:initial}:new Promise(resolve=>{read=resolve;});
+  return new Promise(resolve=>{save=resolve;});
+ },onWorkspaceChange:(listener:(event:unknown)=>void)=>{listeners.add(listener);return ()=>{listeners.delete(listener);};}} as unknown as WorkspaceDesktopApi);
+ const user=userEvent.setup();
+ try{
+  render(<><textarea aria-label="Other draft"/><TextPropertiesTable client={client} workspaceId="11111111-1111-4111-8111-111111111111" sourceId="22222222-2222-4222-8222-222222222222" projects={[]} language="en" disabled={false}/></>);
+  const add=await screen.findByRole('button',{name:'Add property'});await waitFor(()=>assert.ok(!add.hasAttribute('disabled')));await user.click(add);
+  await user.type(screen.getByRole('textbox',{name:'Property name'}),'Notes{Enter}');
+  for(const notify of listeners)notify({type:'workspace.propertiesChanged',sourceId:'22222222-2222-4222-8222-222222222222',workspaceIds:['11111111-1111-4111-8111-111111111111'],revision:2});
+  await waitFor(()=>assert.equal(lists,2));save!({ok:true,value:{propertyId:'p',projectId:null,snapshot:saved}});
+  await waitFor(()=>assert.ok(!screen.queryByRole('dialog')));
+  await new Promise<void>(resolve=>window.requestAnimationFrame(()=>resolve()));
+  assert.ok(add.hasAttribute('disabled'));
+  const other=screen.getByRole('textbox',{name:'Other draft'});if(moved)await user.click(other);
+  read!({ok:true,value:newer});await waitFor(()=>assert.ok(!add.hasAttribute('disabled')));
+  await waitFor(()=>assert.ok(document.activeElement===(moved?other:add)));
+ }finally{cleanup();}
+});

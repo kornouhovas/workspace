@@ -19,6 +19,7 @@ interface Props {
   fallbackFocus: RefObject<HTMLButtonElement | null>;
   property?: PropertyDefinition; onCommitted(snapshot: PropertySnapshot): void;
   onObserved(): Promise<void>;
+  onReturnFocus(trigger: HTMLButtonElement | null): void;
 }
 const types: {type: PropertyType; label: TranslationKey}[] = [
   {type:"text",label:"propertyTypeText"}, {type:"number",label:"propertyTypeNumber"},
@@ -33,12 +34,7 @@ export function PropertyControls(props: Props) {
   const openAtUnmount = useRef(open); openAtUnmount.current = open;
   const t = (key: TranslationKey) => translate(props.language,key);
   const label = props.property ? `${t("renameProperty")}: ${props.property.name}` : t("addProperty");
-  const returnFocus = () => window.requestAnimationFrame(() => {
-    const fallback = props.fallbackFocus.current;
-    const target = trigger.current?.isConnected ? trigger.current : fallback;
-    const owner = contextOwner(target ?? null);
-    (target?.closest("[hidden]") && owner ? document.getElementById(owner) : target)?.focus();
-  });
+  const returnFocus = () => props.onReturnFocus(trigger.current);
   useEffect(() => () => { if (openAtUnmount.current) returnFocus(); }, []);
   const canClose = useRef(() => true);
   return <Popover.Root open={open} onOpenChange={next => { if (next || canClose.current()) { if (next) setOwner(contextOwner(trigger.current)); setOpen(next); } }}>
@@ -81,7 +77,7 @@ function PropertyEditor({property, owner, canClose, close, ...props}: Props & {o
     } catch {if(alive.current)setError("propertySaveError");}
     finally {if(alive.current){saving.current=false;setPending(false);}}
   };
-  const cancelReview=()=>{setRemoval(null);window.requestAnimationFrame(()=>(removalTrigger.current?.isConnected ? removalTrigger.current : remove.current)?.focus());};
+  const cancelReview=()=>{setRemoval(null);props.onReturnFocus(removalTrigger.current?.isConnected ? removalTrigger.current : remove.current);};
   return <Popover.Content data-context-owner={owner} collisionPadding={12} className="context-popover property-management-popover" align="start" sideOffset={4} aria-label={t("propertyTools")}
     onOpenAutoFocus={event=>{event.preventDefault();input.current?.focus();}}
     onCloseAutoFocus={event=>event.preventDefault()}
