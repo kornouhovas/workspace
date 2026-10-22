@@ -34,6 +34,11 @@ try {
   const call=(type,fields={})=>query({type:`workspace.${type}`,workspaceId,...fields});
   const list=await call('applyDiscovery',{previewToken:(await call('previewDiscovery',{mode:discoveryMode})).previewToken});
   const project=list.projects.find(p=>p.name==='Brand refresh');assert.ok(project);
+  await page.reload();
+  const actions=page.getByRole('button',{name:`${en?'Project actions':'Действия с проектом'}: Brand refresh`,exact:true});
+  await actions.click();
+  assert.equal(await page.getByRole('button',{name:`${en?'Archive project':'Архивировать проект'}: Brand refresh`,exact:true}).isDisabled(),true,'Archive is unavailable before source designation');
+  await actions.click();
   await call('applyArchiveLocation',{operationId:crypto.randomUUID(),previewToken:(await call('previewArchiveLocation',{relativePath:'Archive'})).previewToken});
   const propertyId=(await call('createProperty',{name:'Notes',propertyType:'text'})).propertyId;
   await call('setTextValue',{projectId:project.projectId,propertyId,value:'Keep this exact note'});

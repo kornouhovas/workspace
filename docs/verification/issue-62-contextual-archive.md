@@ -119,3 +119,21 @@ output into distinct dev/release directories, preventing later overwrite.
 Original commands, app/build/dependency inputs, assertions and deadlines are
 unchanged; routing25/25 renewed and independent Standards follow-up has zero
 findings. This does not require another whole-suite run under evidence reuse.
+
+## Designation eligibility renewal
+
+Final requirement reconciliation found Archive still enabled before the source
+had a designated archive location. The service safely rejected it, but this did
+not meet current UI eligibility. Actual Electron pre-designation menu assertion
+was red (`false !== true`); the list/details predicate now also requires
+`archiveSnapshot.relativePath`. That actual journey became green and74 affected
+UI/navigation/routing tests, typecheck and lint pass. Both review axes cleared
+the repair. The default native profile checks pre-designation disabled state in
+all four source/language fixtures, then configured Archive/Restore normally.
+
+The one full local run above predates only this application predicate repair and
+its native assertion. Renew affected native/package acceptance on all selected
+hosts; retain the original full result without replaying unchanged synthetic
+fixture failures. Earlier a7aa8904 CI remains evidence for its actual candidate,
+not acceptance of the repaired predicate. Configured-screen composition is
+unchanged; final hosted appearance/native receipts still require inspection.
