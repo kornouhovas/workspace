@@ -66,7 +66,7 @@ export function groupAssignmentCommands() {
 }
 // Contextual filesystem dialogs retain original native and packaged consumers.
 export function contextualProjectCommands() {
-  const tests = ['desktop-ux-checks.test.mjs', 'project-creation-ui.test.tsx',
+  const tests = ['desktop-ux-checks.test.mjs', 'project-operation-dialog.test.tsx', 'project-creation-ui.test.tsx',
     'project-rename-ui.test.tsx', 'project-navigation-ui.test.tsx', 'scalar-drafts-ui.test.tsx',
     'project-creation-service.test.mjs', 'project-creation-crash.test.mjs',
     'project-rename-service.test.mjs', 'project-rename-journal.test.mjs',

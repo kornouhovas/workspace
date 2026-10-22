@@ -147,10 +147,16 @@ source, dependency or notice is introduced.
 
 Creation and rename reuse the accepted #54/#69 contextual presentation and the
 existing Inter/semantic desktop tokens. Radix Dialog **1.2.0** (MIT) supplies the
-controlled nonmodal Root/Portal/Content/Title boundary, following the
+controlled nonmodal Root/Portal/Title boundary and Radix FocusScope 1.2.0, following the
 [official Dialog API](https://www.radix-ui.com/primitives/docs/components/dialog).
 Dialogs remain nonmodal so independent Text drafts can retain focus during a
 filesystem command; explicit Cancel/Escape owns dismissal. Operation controllers
 and typed create/rename/recovery/native Reveal commands remain local and mounted.
 No additional bb source, font or icon asset is copied; existing bb and dependency
 notices continue to apply.
+
+Escape arbitration uses an ordinary window-bubble fallback, after React editors
+and document-owned contextual menus. Radix Dialog.Content is deliberately not
+used: its unconditional document-capture dismissal would consume Escape before
+independent editors. The public FocusScope preserves loop/autofocus behavior;
+there are no private Radix APIs or native-event modifications.

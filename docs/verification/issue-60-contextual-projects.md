@@ -63,3 +63,14 @@ Early native attempts remain nonpassing evidence in the task worktree:
 Every completed native attempt records normal shutdown/backend exit and owned
 cleanup; failures are not relabeled as passing. No service, journal, IPC or native
 filesystem safety contract was rewritten for this UI change.
+
+## Independent review and Escape repair
+
+At `dbd439b2`, Standards review found no actionable violation; Spec review found
+one P2 Escape-ownership defect in Radix Dialog.Content's capture listener. A
+browser-first DOM regression reproduced five failures (independent/nested editors
+and actual ContextTools menus), with ordinary dialog Escape passing. Replaced
+only the surface with public Radix FocusScope 1.2.0 inside Dialog Root/Portal/Title
+and moved fallback Escape to window bubble, after existing editor/menu owners.
+All six regression cases then pass. This changes no service or mutation contract.
+Follow-up review and renewed native/platform receipts remain required.

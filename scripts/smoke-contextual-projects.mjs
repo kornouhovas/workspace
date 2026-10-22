@@ -43,6 +43,17 @@ try {
    await dialog.getByRole('button',{name:cancelLabel,exact:true}).click();
    assert.equal((await call('listProjects')).projects.length,2+(layout==='board'?1:0));
    await create.press('Enter');dialog=page.getByRole('dialog',{name:createLabel,exact:true});
+   const valueLabel=`${en?'Edit Text value':'Редактировать Text-значение'}: ${name} / Notes`;
+   await page.getByRole('button',{name:valueLabel,exact:true}).click();
+   await page.getByRole('textbox',{name:valueLabel,exact:true}).press('Escape');
+   assert.equal(await dialog.isVisible(),true,'Independent editor Escape keeps creation open');
+   const projectTools=page.getByRole('button',{name:`${en?'Project actions':'Действия с проектом'}: ${name}`,exact:true});
+   await projectTools.click();
+   await page.getByRole('dialog',{name:`${en?'Project actions':'Действия с проектом'}: ${name}`,exact:true}).getByRole('button').first().focus();
+   await page.keyboard.press('Escape');
+   assert.equal(await projectTools.getAttribute('aria-expanded'),'false');
+   assert.equal(await dialog.isVisible(),true,'Independent menu Escape keeps creation open');
+   report.checks.push({language,layout,independentEditorEscape:true,independentMenuEscape:true});
    await dialog.getByRole('textbox').press('Enter');await dialog.waitFor({state:'detached'});
    const created=(await call('listProjects')).projects.find(p=>p.name===`Created ${layout}`);assert.ok(created);assert.equal((await stat(join(source,created.relativePath))).isDirectory(),true);
    report.checks.push({language,layout,create:true,cancelNoEffect:true});

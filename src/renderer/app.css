@@ -908,7 +908,6 @@ p { margin-block: .5rem; }
 
 .group-assignment-drag-feedback { position: fixed; z-index: 60; inset-inline-end: 16px; bottom: 16px; max-width: min(28rem, calc(100vw - 32px)); pointer-events: none; }
 
-.project-operation-overlay { position: fixed; inset: 0; z-index: 90; background: rgb(0 0 0 / .25); }
 .project-operation-dialog { position: fixed; z-index: 91; top: 50%; left: 50%; transform: translate(-50%, -50%); width: min(440px, calc(100vw - 32px)); max-height: calc(100vh - 32px); overflow: auto; padding: 20px; border: 1px solid var(--border); border-radius: 10px; background: var(--background); color: var(--foreground); box-shadow: 0 16px 48px rgb(0 0 0 / .2); }
 .project-operation-dialog > h2 { margin: 0 0 16px; font-size: 15px; font-weight: 600; }
 .project-operation-dialog .project-creation, .project-operation-dialog .project-rename { margin: 0; padding: 0; }
