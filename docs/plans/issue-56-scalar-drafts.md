@@ -118,7 +118,7 @@ The original Ladle file then passes.
 
 Original `desktop-ux/scalars`39807241669/attempt1 fails on all3 hosts at the
 configured-mode round-trip's exact retained-status count (expected2, actual1).
-macOS869pass/1fail; each Windows868pass/1fail/1skip. Native/package commands
+macOS869pass/1fail; each Windows868pass/1fail/0skip. Native/package commands
 are unreached, not accepted. Artifacts/provenance and original job logs are
 retained locally under `work/issue-56-ci-39807241669` and `/tmp/issue56-ci-*.log`.
 
@@ -139,3 +139,42 @@ No requirement/assertion/deadline is removed. Both independent review axes repor
 remaining findings. Renew affected files and the original3-host scalar/native/
 package route; retain the failed full/Actions conclusions. Separate packaged
 Number/Date evidence paths prevent overwriting development receipts.
+
+## Optional broad scale consumer reconciliation
+
+The original packaged strict1000-project/20-property/10-view command reached a
+superseded interaction: it focused Refresh while expecting valid Text to remain
+unsaved. D54 now commits that blur. Adapt the driver to verify the committed value,
+then separately keep an offscreen draft through public external refresh without
+moving focus, Escape and restart. Preserve exact IDs/project bytes, ordinary UI
+refresh event-to-paint measurement,300ms/5s/1GB limits and native cleanup. Both
+independent review axes report0 findings; fixture/query controls3/3 and lint pass.
+
+Original broader attempt: direct Table112.9ms/Board75.6ms edits and normal exit,
+but missing-textarea assertion fails before grouped mode. Complete adapted renewal
+uses the sameb94 application with the recorded changed-driver hash:34 measures,
+10 memory samples,4 normal app/backend quits, owned cleanup and all identity/
+value/restart/cancel assertions complete. Editor durations: direct Table113.2ms,
+Board75.5ms; grouped Table112.3ms,Board75.9ms. Memory maximum949862400bytes.
+The overall strict command remains **failed**: cold direct startup5577.3ms exceeds
+5000ms (only numerical miss). The earlier same-app cold4234.5ms is not substituted
+for this contradictory sample. No unique cause or startup regression attribution
+is proved. Scoped editor/draft event-cost rows pass; full startup/installer/release
+acceptance remains the already-owned#67/#42 milestone boundary. Do not claim a
+green full strict run, change a limit or treat this as numerical startup acceptance.
+
+## Final scoped receipt
+
+[39809408645/attempt1](https://github.com/kornouhovas/workspace/actions/runs/39809408645)
+atb94ef85c passes all3 selected jobs. Actual totals: Mac871/871, eachWindows870/870,
+0fail/0skip. All24 runtime reports,432 scalar screenshots' manifests, provenance,
+normal exits and owned cleanup inspected;17 explicit normal quits plus original
+navigation normal exit perhost. Build/package/resource gates pass. Correction to
+an earlier checkpoint: the initial Windows run had868pass/1fail/**0skip**; its
+one-test inventory difference from macOS was not a skipped test.
+
+Final application inputs are unchanged from that run. The final uncommitted
+follow-up is only the reviewed performance consumer and documentation; its tested
+harness hash matches the report. Preserve b94 hosted receipts at their actual SHA
+and the failed local full/strict outcomes. Delivery/integration SHA belongs to the
+GitHub checkpoint. No next issue, main merge or release is selected.

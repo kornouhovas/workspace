@@ -323,11 +323,23 @@ try {
     const last = source.projects.at(-1), lastRow = page.locator(`[data-project-id="${last.projectId}"]`);
     await lastRow.scrollIntoViewIfNeeded();
     const lastButton = lastRow.getByRole("button", { name: `Редактировать Text-значение: ${last.name} / text 3`, exact: true });
-    await lastButton.press("Enter"); await lastRow.locator("textarea").fill("Unsubmitted draft");
+    await lastButton.press("Enter"); await lastRow.locator("textarea").fill("Committed on blur");
     const refreshRu = page.getByRole("button", { name: "Обновить источник", exact: true });
     await startUiTiming(refreshRu, "keydown"); await refreshRu.press("Enter");
-    await ready(activeIds); await recordUi(source.mode, "RU refresh with offscreen draft", report.limits.scan);
+    await ready(activeIds); await recordUi(source.mode, "RU refresh after scalar blur", report.limits.scan);
+    const lastField = source.properties.find(p => p.type === "text" && p.slot === 3);
+    assert.equal((await command("listTextProperties")).values.find(v => v.projectId === last.projectId && v.propertyId === lastField.propertyId).value, "Committed on blur");
+    // D54 commits when the real Refresh control takes focus. Retain the separate
+    // offscreen-draft guarantee with a public external refresh and unchanged focus.
+    await lastRow.scrollIntoViewIfNeeded(); await lastButton.press("Enter");
+    assert.equal(await lastRow.locator("textarea").inputValue(), "Committed on blur");
+    await lastRow.locator("textarea").fill("Unsubmitted draft");
+    await page.locator(".saved-view-content").evaluate(element => { element.scrollTop = 0; });
+    const draftRefresh = performance.now();
+    await command("refreshSource"); await ready(activeIds);
+    record(source.mode, "RU external refresh with offscreen draft", draftRefresh, report.limits.scan);
     assert.equal(await lastRow.locator("textarea").inputValue(), "Unsubmitted draft");
+    assert.equal(await lastRow.locator("textarea").evaluate(element => element === document.activeElement), true);
     await lastRow.locator("textarea").press("Escape");
     assert.equal(await lastButton.evaluate(element => element === document.activeElement), true);
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), true);
@@ -336,7 +348,7 @@ try {
     await launch(dataset.data, executable, activeIds, `${source.mode} reopen`);
     const reopened = await command("listTextProperties");
     assert.equal(reopened.values.find(v => v.projectId === p.projectId && v.propertyId === source.properties[0].propertyId).value, "Accepted board");
-    assert.equal(reopened.values.find(v => v.projectId === last.projectId && v.propertyId === source.properties.find(p => p.type === "text" && p.slot === 3).propertyId).value, "Notes 9 — описание");
+    assert.equal(reopened.values.find(v => v.projectId === last.projectId && v.propertyId === source.properties.find(p => p.type === "text" && p.slot === 3).propertyId).value, "Committed on blur");
     assert.deepEqual((await command("listProjects")).projects.map(p => p.projectId).sort(), source.projects.map(p => p.projectId).sort());
     await stop();
     } catch (error) {
