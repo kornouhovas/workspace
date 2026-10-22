@@ -3,8 +3,10 @@
 Status: **in progress, not accepted or integrated**. [GitHub #69](https://github.com/kornouhovas/workspace/issues/69)
 owns current gates; the [plan](../plans/issue-69-coherent-desktop.md) preserves
 scenario retention, experiments, exact failures and historical receipts.
-Current application candidate: `299a46beefad717f5bc7453509bcc623863296ee`,
-verification head `ba683baba7a49030ca1684a9779c119d9cf10463` (observer-fixture renewal pending), based on accepted
+Native-resource candidate: `299a46beefad717f5bc7453509bcc623863296ee`.
+A measured service snapshot-batching candidate now awaits strict acceptance;
+its changed backend/package inputs require affected evidence renewal.
+verification head `b8579bba722578c191529742bfa45e0061424dd1` (observer renewal passes all3hosts; strict Windows assignment remains open), based on accepted
 `86ec752714c860662d4b1da0c25c2e5b71606bff`. Renderer/service inputs remain those
 of `b577cfd2`; native process-name reads now use fresh .NET lookup and disposal,
 retaining all HWND/PID/Explorer/root/tab/freshness/permit/deadline guards.

@@ -1117,3 +1117,58 @@ Current Windows installer39694305845 passes all installed/offline/isolation/
 reinstall/uninstall/normal-exit/cleanup assertions; NSIS SHA256
 f8ccfd9b2916bfc137571d8d20f00719ec24b054cb5bf692ef65100ffd69754d.
 This is Server2025 x64 evidence, not Windows11 release acceptance.
+
+
+Continuation checkpoint: observer controls closed; Windows strict assignment remains open
+
+Branch codex/issue-69-coherent-desktop, HEAD b8579bba; app inputs remain 299a46be. Full39694044347/attempt1 at9a359816 completed: common passes; Mac2722 pass/14 fail/27 skip, Windows latest and2022 each2755 pass/14 fail/13 skip. Every failure is the same LF/CRLF workflow mutation fixture targeting duplicated text outside the actual verify job. Other platform and source/native prefix rows pass; Ladle/dev/package tails were unreached.
+
+Repair b8579bba scopes mutations AND validation to the unique actual verify job, retaining all24 controls. Local97/97, lint/docs pass, Standards0. Original focused [39696523771](https://github.com/kornouhovas/workspace/actions/runs/39696523771), attempt1, passes97/97 on each of Mac/latestWindows/Windows2022. Downloaded tests.log and original collector.json inspected: complete, ordinary, exit0, exact SHA/run/attempt/host. No app/build/limit changes.
+
+Bounded diagnostic39694806459 completed both hosts. The predefined original strict renewal [39695914995](https://github.com/kornouhovas/workspace/actions/runs/39695914995), attempt1 atba683bab: Mac M1 Virtual passes all targets (max255.1ms); Windows EPYC7763/kernel10.0.26100 again misses direct Table filtered group drag312.8ms>300. Both complete32 functional/timing cases,10memory samples,four normal app/backend exits and asserted cleanup. Original report/logs inspected. Previous misses remain failures, not host-noise dismissals.
+
+No further unchanged strict retry. Windows-only bounded renderer/backend diagnosis [39696644374](https://github.com/kornouhovas/workspace/actions/runs/39696644374), attempt1 atb8579bba, pending. Distinguish event/command delivery, backend execution and committed Table paint; preserve action/membership/clock/endpoints/limits. A profile alone will not authorize another identical strict retry. Mac need not repeat absent an affecting change. Spec review confirms broad missing tails remain behind this unresolved strict gate. Installer/native receipts remain as previous checkpoint; no release/main/next issue.
+
+
+### Measured snapshot batching candidate
+
+Windows-only diagnostic39696644374/attempt1 atb8579bba runs on the same
+CPU model as the failed strict host (EPYC7763/kernel10.0.26100). It reproduces
+313.7ms direct Table assignment with immediate command arrival: backend75.66ms,
+projection38.77ms. All32 observations,four normal app/backend exits and cleanup
+complete. This rules out delivery delay for this sample, not every earlier miss.
+Do not rerun the unchanged strict candidate.
+
+A bounded public-service experiment identifies avoidable snapshot work: every
+Select option made a separate workspace-visibility query and property type
+presence made four more definition queries. Read source-filtered,position-ordered
+definitions once and derive types; read workspace-filtered visibility once only
+when Select definitions exist. Keep all output field omission,value ordering,
+revision/ownership checks and transaction boundaries. No caching across requests.
+The initial unconditional visibility prototype fails the retained populated
+pre-Select upgrade scenario. Conditional hasSelect repairs it; retain the test,
+not a new assumption that every historical schema already has Select tables.
+
+Temporary real SQLite/folder fixtures use public Workspace service commands.
+100-project/20-property/24-option snapshot mean1.837ms ->1.084ms (100 reads).
+At representative1000 projects with the same20 properties/24 options, snapshot
+mean6.836ms ->5.705ms; complete JSON output is deeply equal. Same-fixture public
+filtered group assignment A/B/B/A (10 warmups+30 measured mutations each) gives
+means23.559/20.429/20.674/23.188ms; medians23.484/20.365/20.522/22.977ms.
+Each mutation asserts the exact selected option. This supports reduced service
+work, not a claim that the full Electron interaction now passes300ms.
+
+Retain/adapt existing regression coverage at the public service seam:105/105
+Text/Number/Date/SingleSelect/MultiSelect/group-assignment/filter/grouping/
+metadata-removal cases pass, including workspace visibility isolation,restart,
+old-schema upgrade and rollback. Lint/typecheck pass. Full-snapshot equality
+and both independent reviews pass (Standards0,Spec0). These existing scenarios
+cover the changed response semantics; no implementation-mirroring query-count
+test or timing-sensitive unit threshold is introduced.
+
+Select one original strict renewal on both hosts after this changed production
+candidate is committed. Keep all original clocks,preparation,endpoints and
+numerical targets. Another failure returns to diagnosis. If adopted, changed
+backend/package inputs reopen affected full runtime/package/installer evidence;
+old native-resource/renderer appearance receipts retain their actual SHA and
+unchanged-input justification. No broad acceptance before focused success.

@@ -1,6 +1,6 @@
 import { isSelectCommand } from "../contracts/text-properties.js";
 import { randomUUID } from "node:crypto";
-import { and, asc, eq, max, inArray } from "drizzle-orm";
+import { and, asc, eq, max } from "drizzle-orm";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import type { ServiceResult } from "../contracts/settings.js";
 import type { TextPropertySnapshot, TextPropertyMutation } from "../contracts/text-properties.js";
@@ -19,27 +19,33 @@ export function createTextPropertyService(db: Database, publish: (events: Worksp
   function snapshot(database: Pick<Database, "select">, workspaceId: string, sourceId: string): TextPropertySnapshot {
     const source = database.select().from(schema.sources).where(eq(schema.sources.id, sourceId)).get()!;
     if (!Number.isSafeInteger(source.propertyRevision) || source.propertyRevision < 0) throw new Error("Invalid property revision");
+    const definitions = database.select().from(schema.propertyDefinitions).where(eq(schema.propertyDefinitions.sourceId, sourceId))
+      .orderBy(asc(schema.propertyDefinitions.position)).all().map(row => ({ propertyId: row.id, sourceId, name: row.name, propertyType: row.propertyType }));
+    const propertyTypes = new Set(definitions.map(property => property.propertyType));
+    const hasSelect = propertyTypes.has("single_select") || propertyTypes.has("multi_select");
+    // Keep visibility workspace-owned without one SQL read per source option.
+    const optionVisibility = new Map(hasSelect ? database.select().from(schema.selectOptionVisibility)
+      .where(eq(schema.selectOptionVisibility.workspaceId, workspaceId)).all().map(row => [row.optionId, row.hidden] as const) : []);
     return {
       workspaceId, sourceId, revision: source.propertyRevision,
-      definitions: database.select().from(schema.propertyDefinitions).where(eq(schema.propertyDefinitions.sourceId, sourceId))
-        .orderBy(asc(schema.propertyDefinitions.position)).all().map((row) => ({ propertyId: row.id, sourceId, name: row.name, propertyType: row.propertyType })),
-      ...(database.select().from(schema.propertyDefinitions).where(and(eq(schema.propertyDefinitions.sourceId, sourceId), eq(schema.propertyDefinitions.propertyType, "number"))).get()
+      definitions,
+      ...(propertyTypes.has("number")
         ? { numberValues: database.select().from(schema.numberPropertyValues).where(eq(schema.numberPropertyValues.sourceId, sourceId))
           .orderBy(asc(schema.numberPropertyValues.projectId), asc(schema.numberPropertyValues.propertyId)).all()
           .map(({ projectId, propertyId, value }) => ({ projectId, propertyId, value })) } : {}),
-      ...(database.select().from(schema.propertyDefinitions).where(and(eq(schema.propertyDefinitions.sourceId, sourceId), eq(schema.propertyDefinitions.propertyType, "date"))).get()
+      ...(propertyTypes.has("date")
         ? { dateValues: database.select().from(schema.datePropertyValues).where(eq(schema.datePropertyValues.sourceId, sourceId))
           .orderBy(asc(schema.datePropertyValues.projectId), asc(schema.datePropertyValues.propertyId)).all()
           .map(({ projectId, propertyId, value }) => ({ projectId, propertyId, value })) } : {}),
-      ...(database.select().from(schema.propertyDefinitions).where(and(eq(schema.propertyDefinitions.sourceId, sourceId), inArray(schema.propertyDefinitions.propertyType, ["single_select", "multi_select"]))).get()
+      ...(hasSelect
         ? { selectOptions: database.select().from(schema.selectOptions).where(eq(schema.selectOptions.sourceId, sourceId))
             .orderBy(asc(schema.selectOptions.propertyId), asc(schema.selectOptions.position)).all().map(({ id, propertyId, name, color, position }) => ({
               optionId: id, propertyId, name, color, position,
-              hidden: database.select().from(schema.selectOptionVisibility).where(and(eq(schema.selectOptionVisibility.workspaceId, workspaceId), eq(schema.selectOptionVisibility.optionId, id))).get()?.hidden ?? false,
+              hidden: optionVisibility.get(id) ?? false,
             })),
             selectValues: database.select().from(schema.selectPropertyValues).where(eq(schema.selectPropertyValues.sourceId, sourceId))
               .orderBy(asc(schema.selectPropertyValues.projectId), asc(schema.selectPropertyValues.propertyId)).all().map(({ projectId, propertyId, optionId }) => ({ projectId, propertyId, optionId })) } : {}),
-      ...(database.select().from(schema.propertyDefinitions).where(and(eq(schema.propertyDefinitions.sourceId, sourceId), eq(schema.propertyDefinitions.propertyType, "multi_select"))).get()
+      ...(propertyTypes.has("multi_select")
         ? { multiSelectValues: database.select().from(schema.multiSelectPropertyValues).where(eq(schema.multiSelectPropertyValues.sourceId, sourceId))
           .orderBy(asc(schema.multiSelectPropertyValues.projectId), asc(schema.multiSelectPropertyValues.propertyId), asc(schema.multiSelectPropertyValues.optionId)).all()
           .map(({ projectId, propertyId, optionId }) => ({ projectId, propertyId, optionId })) } : {}),
