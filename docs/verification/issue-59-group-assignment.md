@@ -53,13 +53,12 @@ unsettled-await exits remain in `work/issue-59/`. They do not supply normal-quit
 acceptance. The completed fresh-fixture run passes original gestures and normal
 shutdown/cleanup after the source-stability repair.
 
-## Remaining delivery gates
+## Delivery boundary
 
-Renew final local full-suite evidence after review, record actual failures and
-focused renewals separately, inspect exact-SHA three-host CI and its artifacts,
-then integrate the accepted candidate. No full-suite or hosted pass is claimed
-by this intermediate report. Broader coherent/package/installer/performance and
-release gates remain with #67/#42.
+Scoped acceptance is complete in the receipts below; the actual delivered
+integration SHA is recorded in GitHub #59. Broader coherent/package/installer/
+performance and release gates remain with #67/#42. The local full-suite failures
+below remain explicit and are not converted into passing evidence.
 
 ## Final candidate local receipts
 
@@ -98,3 +97,49 @@ comparison only; the fresh exact-SHA receipt renews its acceptance scenarios.
 
 Only documentation changes follow this application's reviewed candidate so far;
 renew docs/links rather than replaying the full suite solely for this report.
+
+## Representative scale and package
+
+Packaged macOS arm64 candidate `306d7121` passes artifact/version/font/license
+resource verification and the original representative-scale measurement:
+1,000 projects per direct/grouped source, 20 ordinary properties, 10 views.
+`work/issue-59-scale/report.json` records an empty source diff and **34/34 timing
+measurements plus 10/10 memory samples passing**. Filtered assignment:
+Table direct 116.8ms, Board direct 85.0ms, Table grouped 111.1ms, Board grouped
+84.0ms (300ms limit). Maximum measured interaction 131.0ms; conservative peak
+memory upper bound 996,589,568 bytes (1,000,000,000 limit). Four normal
+app/backend shutdowns and owned-fixture cleanup pass. This single local Apple
+Silicon measurement retains its actual host/kernel/package provenance; it does
+not replace Windows or final #67/#42 performance/release acceptance. The initial
+pre-package ENOENT supplied no timing result and was corrected by building and
+checking the required local artifact, without application changes.
+
+
+## Hosted scoped acceptance
+
+[Run 39852033498](https://github.com/kornouhovas/workspace/actions/runs/39852033498),
+attempt 1, exact candidate `e8f037d46ebfc62bbad21751aae68e65188e171e`:
+
+| Host / job | Actual evidence |
+| --- | --- |
+| macOS latest / `120080474305` | 257 affected regressions + 1 native pointer regression, 20 all-type assignment journeys, geometry regression, 32 captures, 6 original Views journeys: pass |
+| Windows latest / `120080474880` | Same selected inventory and original assertions: pass |
+| Windows 2022 / `120080474901` | Same selected inventory and original assertions: pass |
+
+Downloaded artifacts/provenance confirm SHA, profile, run and attempt. Native
+reports and original Views reports show normal app/backend exits and asserted
+owned-fixture cleanup on every host. Inspected representative hosted macOS
+Table/light/wide, Windows latest Table/RU/light/narrow and Windows 2022
+Board/RU/dark/narrow captures against the local matrix; target contrast, compact
+controls, Russian wrapping and viewport-contained hint agree with the handoff.
+
+Artifacts: [macOS](https://github.com/kornouhovas/workspace/actions/runs/39852033498/artifacts/12456944999),
+[Windows latest](https://github.com/kornouhovas/workspace/actions/runs/39852033498/artifacts/12457569410),
+[Windows 2022](https://github.com/kornouhovas/workspace/actions/runs/39852033498/artifacts/12457757190).
+Raw downloaded reports and original job logs: `work/issue-59/ci/`.
+
+The final report adds documentation only to this accepted candidate. Application,
+tests, fixtures, CI routing, dependencies and build inputs remain byte-identical;
+reuse the exact receipts above, renewing docs/links and integrated-checkout
+identity/build/focused checks. No suppressed job or local forced fixture cleanup
+supplies hosted acceptance, and no release/main merge is performed.
