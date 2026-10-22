@@ -3,9 +3,9 @@
 Baseline: `90c4fbdb04f1720ecf174fd8b388bb39c0fb36cd` (accepted #61/#62).
 [Plan and coverage selection](../plans/issue-65-project-recovery.md).
 Live acceptance and delivered SHA belong to [#65](https://github.com/kornouhovas/workspace/issues/65).
-This report records local evidence. Standards and Spec reviews returned zero
+This report records local and hosted evidence. Standards and Spec reviews returned zero
 findings on candidate `34e30292`; the one full-suite run is recorded below.
-Hosted three-platform acceptance remains pending.
+Hosted three-platform scoped acceptance passed at `aef7ab77`; see the exact-SHA receipt below.
 
 ## Behavior and retained guarantees
 
@@ -132,3 +132,31 @@ Local detailed logs and failed/diagnostic reports remain under `work/issue-65-*`
 and the coordinator's `/tmp/issue-65-*` logs. Hosted exact-SHA results and artifacts
 will renew the selected profile before scoped issue acceptance. Broad #67/#42,
 installer/manual Windows11 and release gates remain their existing scope.
+
+## Hosted scoped acceptance
+
+[Run39873458782](https://github.com/kornouhovas/workspace/actions/runs/39873458782)
+passed `desktop-ux` / `retained-recovery` on exact candidate
+`aef7ab775e68c22208e528dec5fe4c0645619e67`. All selected checks actually executed:
+935/935 tests on macOS,934/934 on Windows latest and Windows2022, with zero
+failures/skips; regular typecheck/lint, development and packaged recovery/session/
+data-recovery/archive consumers, development project navigation, package resource
+inspection and packaged Views all passed. No failed hosted attempt or rerun.
+
+The [hosted receipt](issue-65-evidence/hosted-receipt.json) records all three job
+URLs, artifact IDs/digests, exact SHA/run/attempt/platform,30 inspected report
+digests and384 new recovery capture digests/dimensions. Each new recovery consumer
+passed7 journeys/64 captures, three normal app/backend shutdowns and asserted
+owned cleanup. Existing session, archive, backup/restore and Views reports also
+match this candidate and pass cleanup; development/release archive reports were
+preserved separately. The job logs additionally prove both original data-recovery
+invocations, whose shared evidence destination retains the release report.
+
+Reviewed hosted whole screens on every platform, including RU/dark/1024 recovery
+and expanded missing/source-outage1440 states. They preserve the accepted working
+composition, visible status/actions, contained wrapped dialog controls and focus.
+These results accept this bounded issue; the full-suite synthetic failures above
+and broader #67/#42, installer/manual Windows11/release gates remain explicit.
+Any final evidence-only commit inherits these unchanged runtime/test/package
+inputs, rather than claiming its new SHA ran on the hosts. Integration/delivery
+SHA and the completed checkpoint are recorded in #65.

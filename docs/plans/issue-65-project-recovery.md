@@ -64,5 +64,6 @@ Current: scoped implementation and local behavior/appearance checks pass;
 [verification](../verification/issue-65-project-recovery.md) records actual results
 and retained failures. Standards/Spec review returned zero findings. The one full-suite run completed
 with explicit unrelated synthetic-quit/cleanup failures in the report. Hosted
-three-host scoped acceptance remains pending.
-This plan does not claim acceptance. Live checkpoints and delivery SHA belong to #65.
+three-host scoped acceptance passed at `aef7ab77`, with all selected tests, native
+and packaged consumers and exact-SHA artifacts inspected. The final documentation
+receipt changes no accepted source/test/package inputs. Live checkpoints and delivery SHA belong to #65.
