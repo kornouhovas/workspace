@@ -129,12 +129,15 @@ UI/navigation/routing tests, typecheck and lint pass. Both review axes cleared
 the repair. The default native profile checks pre-designation disabled state in
 all four source/language fixtures, then configured Archive/Restore normally.
 
-The one full local run above predates only this application predicate repair and
-its native assertion. Renew affected native/package acceptance on all selected
+The one full local run above predates this application predicate repair, its
+native assertion, the later driver/CI repair and incorporation of accepted #61.
+The unchanged synthetic fixture failures remain explicit; renew the affected
+inputs through the 283-case archive/category merge checks and final three-host
+profile under the evidence-reuse policy. Renew affected native/package acceptance on all selected
 hosts; retain the original full result without replaying unchanged synthetic
 fixture failures. Earlier a7aa8904 CI remains evidence for its actual candidate,
 not acceptance of the repaired predicate. Configured-screen composition is
-unchanged; final hosted appearance/native receipts still require inspection.
+unchanged; final hosted appearance/native receipts were inspected as recorded below.
 
 ## Original Actions failure map and driver repair
 

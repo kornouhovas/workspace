@@ -56,4 +56,4 @@ final verification. Combined candidate `c7d9c160` passed the selected three-host
 dev/package/original archive-restart/Views profile in run39867249349, with all
 artifacts inspected. Actual local complete-suite failures remain explicitly
 retained in the [verification report](../verification/issue-62-contextual-archive.md).
-No release or whole-suite-green claim. Delivery/integration SHA is recorded in #62.
+No release or whole-suite-green claim. The delivery/integration checkpoint is maintained in #62.
