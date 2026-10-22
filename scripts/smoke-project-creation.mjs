@@ -16,10 +16,10 @@ import { fileURLToPath } from "node:url";
 import { _electron } from "playwright-core";
 import { packagedExecutablePath } from "./runtime-executable.mjs";
 import { collectQuitEvidence, installQuitEvidence } from "./runtime-quit-evidence.mjs";
-import { cleanupOwnedFixture, closeElectron, withDeadline } from "./runtime-lifecycle.mjs";
+import { cleanupOwnedFixture, closeElectron, inspectOwnedProcesses, withDeadline } from "./runtime-lifecycle.mjs";
 import { createCreationEvidence, recordCreationEvidence } from "./runtime-evidence.mjs";
 import { waitForFileManagerTarget, closeDisposableFileManagerTarget } from "./file-manager-evidence.mjs";
-import { waitForRuntimeInterface } from "./runtime-startup.mjs";
+import { createRenameRuntimeStartup } from "./rename-runtime-startup.mjs";
 import { nativeBridgeCleanupEvidence, pollNativeInvocation, nativeInvocationRendererState } from "./native-bridge-evidence.mjs";
 import { collectNativeSelectionMetadata } from "./windows-native-selection.mjs";
 import { productDiagnosticSnapshot, validateProductDiagnostic } from "./windows-product-diagnostics.mjs";
@@ -132,25 +132,23 @@ async function seedCrash(data, discoveryMode, checkpoint, projectRoot, otherRoot
     if (child.exitCode === null && child.signalCode === null) { child.kill("SIGKILL"); await withDeadline(exited, 5000, "Crash seed cleanup"); }
   }
 }
+// Reuse the existing owned-launch registry: exit proof belongs to an observed
+// backend occurrence, not a historical numeric PID that the OS may recycle.
+const startup = createRenameRuntimeStartup({ launchElectron: options => _electron.launch(options), ownedProcesses, backendPids,
+  recordStartup: async outcome => { observations.push({ discoveryMode: activeRun.discoveryMode, checkpoint: activeRun.checkpoint, startup: outcome }); await save(); } });
 async function launch(data) {
-  const electron = await _electron.launch({ executablePath, args: mode === "dev" ? [root] : [], cwd: root,
-    env: { ...process.env, WORKSPACE_USER_DATA_DIR: data }, timeout: 30000 });
-  current = { electron };
-  ownedProcesses.add(electron.process());
-  const page = await electron.firstWindow(); current.page = page;
+  let page;
+  try { page = await startup.launch({ executablePath, args: mode === "dev" ? [root] : [], cwd: root,
+    env: { ...process.env, WORKSPACE_USER_DATA_DIR: data }, timeout: 30000 }); }
+  finally { current = startup.current; }
+  const { electron } = current;
   if (diagnostic) runtime = await electron.evaluate(() => ({ electron: process.versions.electron, node: process.versions.node }));
-  page.setDefaultTimeout(15000);
-  await waitForRuntimeInterface(page, async (startup) => {
-    observations.push({ discoveryMode: activeRun.discoveryMode, checkpoint: activeRun.checkpoint, startup });
-    await save();
-  });
   assert.equal(await page.evaluate(() => typeof process), "undefined");
   assert.equal(await page.evaluate(() => typeof require), "undefined");
   assert.deepEqual(await electron.evaluate(({ BrowserWindow }) => {
     const p = BrowserWindow.getAllWindows()[0].webContents.getLastWebPreferences();
     return { contextIsolation: p.contextIsolation, nodeIntegration: p.nodeIntegration, sandbox: p.sandbox };
   }), { contextIsolation: true, nodeIntegration: false, sandbox: true });
-  for (const pid of await electron.evaluate(({ app }) => app.getAppMetrics().filter((metric) => metric.type === "Utility" && metric.serviceName?.includes("Node")).map((metric) => metric.pid))) backendPids.add(pid);
   return page;
 }
 async function select(page, workspace) {
@@ -161,16 +159,14 @@ async function select(page, workspace) {
 }
 async function shutdown() {
   const closing = current;
-  const pids = await closing.electron.evaluate(({ app }) => app.getAppMetrics().filter((metric) => metric.type === "Utility" && metric.serviceName?.includes("Node")).map((metric) => metric.pid));
-  assert.ok(pids.length);
-  for (const pid of pids) backendPids.add(pid);
-  const quitCapture = collectQuitEvidence(closing.electron.process());
+  const pids = await startup.readBackendPids(closing.electron);
+  const quitCapture = collectQuitEvidence(closing.child);
   try { await withDeadline(installQuitEvidence(closing.electron), 1000, "Quit evidence installation"); }
   catch { quitCapture.record.installationUnavailable = true; }
-  current = undefined;
+  current = undefined; startup.clearCurrent();
   try {
     await closeElectron(closing.electron); // Unchanged ten-second normal quit; forced cleanup throws.
-    for (const pid of pids) assert.throws(() => process.kill(pid, 0), { code: "ESRCH" });
+    for (const pid of pids) assert.equal(startup.confirmBackendExit(closing.electron,pid),true,"Owned creation backend exited after normal quit");
     activeRun.shutdowns.push({ status: "passed", backendStopped: true, quitPhases: quitCapture.stop() });
     await record(null, "normalShutdown", { status: "passed", asserted: true, backendStopped: true });
   } catch (error) {
@@ -464,7 +460,7 @@ try {
   await saveFailureEvidence();
 } finally {
   if (current) {
-    const closing = current; current = undefined;
+    const closing = current; current = undefined; startup.clearCurrent();
     if (closing.nativeTracking) {
       try {
         const snapshot = await withDeadline(closing.electron.evaluate(() => globalThis.creationNativeBridge), 3000, "Native bridge termination evidence");
@@ -494,11 +490,13 @@ try {
         invocationCount = calls.length;
       } catch { invocationCount = null; }
     }
+    let cleanupPids = [];
+    try { cleanupPids = await startup.readBackendPids(closing.electron); }
+    catch (error) { failure ??= error; }
     try {
-      for (const pid of await closing.electron.evaluate(({ app }) => app.getAppMetrics().filter((metric) => metric.type === "Utility" && metric.serviceName?.includes("Node")).map((metric) => metric.pid))) backendPids.add(pid);
-    } catch (error) { failure ??= error; }
-    try {
-      await closeElectron(closing.electron); failureCleanup = { status: "passed" };
+      await closeElectron(closing.electron);
+      for (const pid of cleanupPids) assert.equal(startup.confirmBackendExit(closing.electron,pid),true,"Owned creation backend exited during failure cleanup");
+      failureCleanup = { status: "passed" };
       observations.push({ cleanup: "normal quit passed", acceptance: "failure cleanup does not complete the scenario shutdown/restart stages" });
     } catch (error) {
       failure ??= error; failureCleanup = { status: "failed", forcedCleanup: error.forcedCleanup };
@@ -511,10 +509,9 @@ try {
       : { status: "skipped", reason: "native_bridge_termination_unverified" };
     observations.push({ fileManagerCleanup, target });
   }
-  const processesStopped = nativeBridgesStopped && [...ownedProcesses].every((child) => child.exitCode !== null || child.signalCode !== null) && [...backendPids].every((pid) => {
-    try { process.kill(pid, 0); return false; }
-    catch (error) { return error.code === "ESRCH"; }
-  });
+  const termination = inspectOwnedProcesses(ownedProcesses,startup.pendingBackendPids,{launchUnverified:startup.launchUnverified});
+  const processesStopped = nativeBridgesStopped && termination.stopped;
+  observations.push({fixtureOwnership:{...termination,backendExitEvidence:startup.backendExitEvidence,nativeBridgesStopped}});
   await cleanupOwnedFixture(fixture, { processesStopped, primaryFailure: failure, record: async (outcome) => {
     fixtureCleanup = outcome;
     await saveFailureEvidence();

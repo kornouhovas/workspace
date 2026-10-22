@@ -1321,3 +1321,28 @@ are always preserved. Both drivers enter the existing tools/disclosure path for
 initial and reopened option management; data/keyboard/restart/filesystem/shutdown
 assertions remain. Focused success does not replace required Windows consumers
 or the still-unreached properties/archive/recovery/package tails.
+
+
+For #69's later retained-context and creation-cleanup failures, dispatch the
+reviewed test-driver repair with `checks: archive-contexts` and
+`checks: creation-ownership`. Each selects only its focused all-three-host job.
+Archive-contexts runs archive/category UI/service controls and the exact original
+development plus related packaged commands. Creation-ownership runs occurrence/
+lifecycle controls, original development crash matrix and direct/grouped native
+creation. Both initialize Electron serially and retain exact provenance, pipefail
+and always-uploaded evidence. Creation's existing occurrence registry retains
+positive parent/backend exit proof instead of reprobing an already-exited numeric
+PID; unknown ownership still blocks cleanup. Original skipped cleanup remains a
+failed receipt; matching controlled PID reuse is not unique historical causation.
+
+After those focused originals pass and their reports are inspected, select
+`checks: source-runtime, source_runtime_platform: package-tails`. This keeps all
+three build/package hosts and native inventory controls, builds Ladle for the
+unchanged package composition, runs missing development DataRecovery and every
+original packaged runtime command. Windowslatest also renews dev Views, MultiSelect,
+Select, Date and Number because39722181287 stopped before them. Mac/Windows2022
+skip those only with their inspected successfuld6bcd7c0 reports. Base/rename/category
+retain exact earlier passing receipts; focused creation and archive/category
+renew their changed consumers. No platform suite or full layout/dev prefix is
+replayed for this profile. A new failure reopens its concrete row before acceptance.
+Ordinary/full and older focused defaults remain unchanged; no added dispatch inputs.

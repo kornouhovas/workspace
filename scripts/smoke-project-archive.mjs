@@ -8,6 +8,7 @@ import { fileURLToPath } from "node:url";
 import { _electron } from "playwright-core";
 import { closeElectron, cleanupOwnedFixture, ownedProcessesStopped } from "./runtime-lifecycle.mjs";
 import { packagedExecutablePath } from "./runtime-executable.mjs";
+import { enterContextFor } from "./runtime-context-tools.mjs";
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const mode = process.argv[2] ?? "dev";
 assert.ok(["dev", "release"].includes(mode));
@@ -68,7 +69,7 @@ try {
       title: "Архив проектов", folder: "Папка архива относительно источника", locationReview: "Проверить папку архива", confirm: "Подтвердить папку архива", project: "Проект для архивирования", review: "Проверить архивирование", apply: "Архивировать проект", archived: "Архив", edit: "Редактировать Text-значение", save: "Сохранить значение", restoreProject: "Проект для восстановления", restoreReview: "Проверить восстановление", restore: "Восстановить проект", completed: "Операция с папкой завершена."
     };
     const panel = page.getByRole("region", { name: labels.title, exact: true });
-    await panel.locator("summary").click();
+    await enterContextFor(page,panel.locator("summary"));
     await panel.getByLabel(labels.folder, { exact: true }).fill("Archive");
     await panel.getByRole("button", { name: labels.locationReview, exact: true }).click();
     await panel.getByRole("button", { name: labels.confirm, exact: true }).click();
@@ -77,7 +78,7 @@ try {
     await panel.getByRole("button", { name: labels.apply, exact: true }).click();
     await panel.getByText(labels.completed, { exact: true }).waitFor();
     assert.equal(await readFile(join(source, "Archive", original, "sentinel"), "utf8"), "exact bytes\n");
-    await panel.getByRole("button", { name: labels.archived, exact: true }).click();
+    await page.getByRole("button", { name: labels.archived, exact: true }).click();
     const editLabel = `${labels.edit}: Project / Notes`;
     await panel.getByRole("button", { name: editLabel, exact: true }).click();
     await panel.getByRole("textbox", { name: editLabel, exact: true }).fill("  archived\nТекст  ");
@@ -95,7 +96,8 @@ try {
     assert.equal(saved.projects[0].projectId, projectId);
     assert.equal(saved.projects[0].originalRelativePath, original);
     const reopenedPanel = page.getByRole("region", { name: labels.title, exact: true });
-    await reopenedPanel.getByRole("button", { name: labels.archived, exact: true }).click();
+    await page.getByRole("button", { name: labels.archived, exact: true }).click();
+    await enterContextFor(page,reopenedPanel.getByLabel(labels.restoreProject, { exact: true }));
     await reopenedPanel.getByLabel(labels.restoreProject, { exact: true }).selectOption(projectId);
     await reopenedPanel.getByRole("button", { name: labels.restoreReview, exact: true }).click();
     await reopenedPanel.getByRole("button", { name: labels.restore, exact: true }).click();

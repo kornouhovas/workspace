@@ -1731,3 +1731,51 @@ Build/artifact prerequisites, pipefail regression/provenance and always artifact
 remain. Route60/60 and lint/typecheck pass; Standards0 and Spec0. Focused original
 Mac success/artifact inspection precedes remaining tail acceptance. Application
 inputs stay unchanged; no acceptance or integration is claimed.
+
+
+### Inspected remaining-runtime failure map and bounded repairs
+
+39722181287/attempt1 atd6bcd7c0 is complete and fails all3; exact artifacts
+downloaded. All3 original unfiltered layouts pass. Mac/Windows2022 creation and
+base runtime pass, then Views6checks, MultiSelect2, Select2, Date2 and Number2
+pass with asserted normal app/backend exit and owned cleanup. Both then fail
+archive's hidden summary with no archive feature checks; failure cleanup passes.
+Windowslatest fails development creation crash matrix terminal fixture cleanup: all
+8runs/16 normal shutdowns and restart evidence pass, but final cumulative numeric
+PID probing cannot confirm ownership; fixture cleanup is explicitly skipped.
+No later Windowslatest command or failed cleanup is accepted.
+
+Proactive original local archive/category commands independently reproduce hidden
+context-entry failures with normal quit/owned cleanup. Archive adapts the real
+Archive-tools disclosure, page-owned portaled Active/Archived toggle and reopened
+restore tools;12checks now pass. Category adapts every Source-tools entry, including
+post-removal/reload, through existing enterContextFor and ordinary Enter;16checks
+pass. IDs/Text/exact bytes/sibling/presentation/removal/restart assertions remain.
+Unmodified local DataRecovery preflight EN/RU2checks passes normal quit/cleanup.
+
+Creation reuses the existing owned-launch occurrence registry. Existing controlled
+PID-reuse test demonstrates the historical cumulative predicate fails after a
+proven ESRCH when the numeric PID is later occupied; new occurrences cannot inherit
+old exit proof, and live/denied/unknown ownership still blocks cleanup. This matches
+the failure mechanism but original artifacts do not uniquely prove which historical
+PID or ordering caused it. Cache the already-owned parent on startup.current
+(additive return shape; other consumers unchanged). Creation preserves immediate
+ESRCH after confirmed parent exit and the10s normal-quit deadline, records finite
+fixture ownership/occurrence counters, and retains failed-launch uncertainty.
+Local original creation matrix now passes8scenarios,16confirmed backend occurrences,
+24stopped parents,0pending/unknown and owned cleanup. Lifecycle/startup55checks
+pass; combined UI/service/ownership/routes196/196 and lint/typecheck pass.
+
+New focused archive-contexts runs original archive/category dev+release on all3.
+Creation-ownership runs original creation crash matrix and related direct/grouped
+development consumers on all3 with the existing lifecycle controls. Both retain
+serial Electron initialization, exact provenance, pipefail and always artifacts.
+Original hosted success/artifact inspection is required before further continuation.
+Standards0 and Spec0 cover source safety/retention. Spec found one initial route
+coverage gap: Windowslatest dev Views/MultiSelect/Select/Date/Number were unreached.
+Package-tails now explicitly includes those five commands only on Windowslatest;
+Mac/Windows2022 reuse their inspected currentd6bcd7c0 passes. It runs DataRecovery
+dev and every original packaged consumer on all3, including creation crash/direct/
+grouped and base/rename/category. Build:ladle remains for package input composition;
+already-passing full layouts/platform/dev prefixes are not repeated. Semantic route
+controls63/63 and Spec recheck0 confirm this mapping; actual hosted gates remain.

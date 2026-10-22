@@ -6,11 +6,14 @@ scenario decisions, experiments, failures and historical receipts.
 
 Application acceptance source: `770e07e5846293309b5357d6f7bc81134772a4c1`,
 based on accepted `86ec7527`; application changes end at `458be520`. Runtime
-driver renewal source: `3d0a88c31f93d7e3acbf78a3ba6a51084fabf26d`. The complete
+driver renewal sources: `3d0a88c3`, `c5d9f5d8` and
+`d6bcd7c0209673cdbfece719d9b9f6a9e22c6c45`. The complete
 subsequent delta contains tests, drivers, CI routes and documentation. Required
 combined receipts retain their actual source below.
 The plan retains earlier failed/diagnostic receipts; none is relabeled as passing.
-Original assertions, event clocks, endpoints and numerical limits remain intact.
+Retained safety predicates, event clocks, endpoints and numerical limits remain
+intact; inherited UI-driver adaptations follow current requirements recorded
+in the plan.
 
 ## Appearance
 
@@ -80,7 +83,7 @@ findings. Fixed4x traces show restoration work26.72 ->4.88ms and grouping406.7
 ## Acceptance ledger
 
 All runs below are attempt1. Retained application receipts are at `770e07e5`;
-driver renewal is explicitly marked `3d0a88c3`. Reports are inspected where
+driver renewal sources are explicitly marked perrow. Reports are inspected where
 marked; pending jobs do not establish acceptance. Historical9face229 strict,
 coherent and installer receipts were renewed after the application repair.
 
@@ -94,13 +97,15 @@ coherent and installer receipts were renewed after the application repair.
 | Strict scale | [39712595815](https://github.com/kornouhovas/workspace/actions/runs/39712595815) | **Both pass, inspected**:32 functional/timing observations,10 memory samples,4 normal app/backend exits and cleanup eachhost. Mac M1 Virtual/kernel23.6.0 max222.2ms, conservative peak941,244,416B. Windows EPYC7763/kernel10.0.26100 max294.1ms, peak870,428,672B. Original300ms limit retained. |
 | Actual Mac DMG | [39712603825](https://github.com/kornouhovas/workspace/actions/runs/39712603825) | **Pass, inspected**, macOS14.8.9arm64: outside-build install, bundled backend, EN/RU, saved IDs/views, isolation, reopen/replacement/data preservation, normal quit and cleanup. SHA256 `e2bff9866343fe81a5810754e132e84d3081c2f7fc5366374c40aa1407a1685e`. |
 | Actual Windows NSIS | [39712607793](https://github.com/kornouhovas/workspace/actions/runs/39712607793) | **Pass, inspected**, Server2025x64/kernel10.0.26100: offline Unicode/space path, bundled backend, EN/RU, persisted IDs/views, independent APPDATA, reinstall/data preservation, uninstall and cleanup. SHA256 `932f2e31af64c32e50bc5f928037bf6ff2f598974d2d330373b17f90854474b2`. This is not Windows11 release acceptance. |
-| Loading-history original layout renewal | [39721020706](https://github.com/kornouhovas/workspace/actions/runs/39721020706), `c5d9f5d8` | **All3 pass**; artifact inspection pending. Actual-hook native scroll-intent regression precedes original unfiltered layouts. |
+| Loading-history original layout renewal | [39721020706](https://github.com/kornouhovas/workspace/actions/runs/39721020706), `c5d9f5d8` | **All3 pass, inspected**:302states/906captures/274interactions and normal quit eachhost. Production-header and actual-hook native regressions3/3 each; original reachability predicate and negative controls retained. |
+| Select option-context renewal | [39721960056](https://github.com/kornouhovas/workspace/actions/runs/39721960056), `d6bcd7c0` | **Pass, inspected**:82 regressions; original Macdevelopment MultiSelect and both changed drivers in dev/package, EN/RU2checks and3 normal app/backend exits/owned cleanup perconsumer. |
+| Remaining complete runtime consumers | [39722181287](https://github.com/kornouhovas/workspace/actions/runs/39722181287), `d6bcd7c0` | **All3 failed**, inspected. Mac/Windows2022 dev Views6, MultiSelect2, Select2, Date2, Number2 pass normal exit/cleanup, then archive hidden-summary entry fails with cleanup. Windowslatest creation crash matrix completes8runs/16 quits but terminal ownership is unverified and fixture cleanup is skipped; subsequent commands unreached. Focused ownership/context repairs and bounded continuation remain gates. |
 | Independent review | Cumulative source and subsequent scoped deltas separately reviewed | Standards0 and Spec0; current changed appearance0 material findings. Final acceptance-ledger audit remains required. |
 
-The entire `770e07e5..3d0a88c3` diff leaves application, migrations, native
+The entire `770e07e5..d6bcd7c0` diff leaves application, migrations, native
 resources, dependencies, build/package inputs and relevant execution inputs
-unchanged. Same isolated-checkout production renderer builds before/after the
-complete overlay produce10 byte-identical outputs. Independent Standards audit
+unchanged. [Same-checkout production builds](issue-69-evidence/build-input-equivalence.json)
+before/after the complete overlay produce10 byte-identical renderer outputs. Independent Standards audit
 finds0 reuse/mapping gaps. Existing coherent/installer exports are unchanged;
 changed capture consumers are creation, base runtime, rename and category move,
 requiring development and packaged renewal. Successful common/platform/prefix

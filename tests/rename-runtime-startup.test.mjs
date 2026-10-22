@@ -62,6 +62,7 @@ test("rename launch waits for delayed window and interface before reading backen
     await nextTurn();
     assert.equal(f.ownedProcesses.has(f.child), true);
     assert.equal(f.startup.current.electron, f.electron);
+    assert.equal(f.startup.current.child, f.child);
     assert.equal(f.startup.launchUnverified, true);
     assert.equal(f.state.metricsCalls, 0, "zero-metrics launch must await existing readiness");
     f.window.resolve();

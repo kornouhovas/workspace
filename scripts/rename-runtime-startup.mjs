@@ -53,7 +53,7 @@ export function createRenameRuntimeStartup({ launchElectron, ownedProcesses, bac
       attempt.child = electron.process();
       ownedProcesses.add(attempt.child);
       launches.set(electron, attempt);
-      current = { electron };
+      current = { electron, child: attempt.child };
       const page = await electron.firstWindow({ timeout: 30000 });
       current.page = page;
       page.setDefaultTimeout(15000);

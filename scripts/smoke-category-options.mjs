@@ -9,6 +9,7 @@ import { fileURLToPath } from "node:url";
 import { _electron } from "playwright-core";
 import { closeElectron, cleanupOwnedFixture, ownedProcessesStopped } from "./runtime-lifecycle.mjs";
 import { packagedExecutablePath } from "./runtime-executable.mjs";
+import { enterContextFor } from "./runtime-context-tools.mjs";
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const mode = process.argv[2] ?? "dev";
 assert.ok(["dev", "release"].includes(mode));
@@ -69,7 +70,7 @@ try {
     const l = labels[language];
     unwrap(await page.evaluate(language => window.workspace.settings({ type: "settings.setLanguage", language }), language));
     await page.reload();
-    await page.getByRole("button", { name: l.options, exact: true }).click();
+    await (await enterContextFor(page,page.getByRole("button", { name: l.options, exact: true, includeHidden:true }))).press("Enter");
     await page.getByLabel(l.name, { exact: true }).waitFor();
     await page.getByLabel(l.action, { exact: true }).selectOption("rename");
     await page.getByLabel(l.choose, { exact: true }).selectOption(categoryId);
@@ -111,7 +112,7 @@ try {
   // the new-folder action. The explicit reload observes the fixture's external
   // folder addition before a human-style read-only association review.
   const l = labels.ru;
-  await page.getByRole("button", { name: l.options, exact: true }).click();
+  await (await enterContextFor(page,page.getByRole("button", { name: l.options, exact: true, includeHidden:true }))).press("Enter");
   await page.getByLabel(l.action, { exact: true }).selectOption("create");
   await page.getByLabel(l.name, { exact: true }).fill("Empty category");
   await page.getByRole("button", { name: l.preview, exact: true }).click();
@@ -122,7 +123,7 @@ try {
   await writeFile(join(source, "Existing category", "Second project", "sentinel"), "associated bytes");
   await query(page, { type: "workspace.refreshSource", workspaceId });
   await page.reload();
-  await page.getByRole("button", { name: l.options, exact: true }).click();
+  await (await enterContextFor(page,page.getByRole("button", { name: l.options, exact: true, includeHidden:true }))).press("Enter");
   await page.getByLabel(l.action, { exact: true }).selectOption("associate");
   await page.getByLabel(l.name, { exact: true }).fill("Existing category");
   await page.getByRole("button", { name: l.preview, exact: true }).click();
@@ -151,7 +152,7 @@ try {
     const original = list.categories.find(c => c.name === (language === "en" ? "Existing category" : "Empty category"));
     const destination = list.categories.find(c => c.name === (language === "en" ? "Empty category" : "Переименованная категория"));
     assert.ok(original && destination);
-    await page.getByRole("button", { name: l.options, exact: true }).click();
+    await (await enterContextFor(page,page.getByRole("button", { name: l.options, exact: true, includeHidden:true }))).press("Enter");
     await page.getByRole("button", { name: r.title, exact: true }).click();
     await page.getByLabel(r.category, { exact: true }).selectOption(original.categoryId);
     await page.getByLabel(r.destination, { exact: true }).selectOption(destination.categoryId);
@@ -191,7 +192,7 @@ try {
   const emptyPreview = await query(page, { type: "workspace.previewCategoryFolder", workspaceId, action: "create", name: "Disposable empty", categoryId: null });
   const emptyCategory = await query(page, { type: "workspace.applyCategoryFolder", workspaceId, operationId: randomUUID(), previewToken: emptyPreview.previewToken });
   await page.reload();
-  await page.getByRole("button", { name: labels.ru.options, exact: true }).click();
+  await (await enterContextFor(page,page.getByRole("button", { name: labels.ru.options, exact: true, includeHidden:true }))).press("Enter");
   await page.getByRole("button", { name: removalLabels.ru.title, exact: true }).click();
   await page.getByLabel(removalLabels.ru.category, { exact: true }).selectOption(emptyCategory.operation.categoryId);
   await page.getByRole("button", { name: removalLabels.ru.preview, exact: true }).click();
