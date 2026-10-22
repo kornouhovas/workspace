@@ -13,7 +13,8 @@ export function assignProjectGroup(model: WorkspaceService, input: unknown): Ser
   // Ordinary metadata edits already allow retained projects. Their eligibility
   // uses current source-owned DB membership, filters and values, derived here
   // by the service. Filesystem assignments still require fresh disk evidence.
-  const projection = model.filterRequest({ type: "workspace.queryView", workspaceId: input.workspaceId, viewId: input.viewId, archived: input.archived }, property && !input.archived ? "stored" : undefined);
+  const metadataSnapshot = property && !input.archived ? properties.value : undefined;
+  const projection = model.filterRequest({ type: "workspace.queryView", workspaceId: input.workspaceId, viewId: input.viewId, archived: input.archived }, metadataSnapshot ? "stored" : undefined, metadataSnapshot);
   if (!projection.ok) return projection;
   if (!("projectIds" in projection.value) || projection.value.groupPropertyId !== input.propertyId) return invalid();
   const groups = projection.value.groups;

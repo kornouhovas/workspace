@@ -79,7 +79,7 @@ export interface WorkspaceService {
   tableLayoutRequest(input: unknown): ServiceResult<TableLayoutSnapshot>;
   assignProjectGroup(input: unknown): ServiceResult<import("../contracts/group-assignment.js").GroupAssignmentResult>;
   groupingRequest(input: unknown): ServiceResult<ViewGroupingSnapshot>;
-  filterRequest(input: unknown, membership?: "stored"): ServiceResult<ViewFilterPayload>;
+  filterRequest(input: unknown, membership?: "stored", propertySnapshot?: TextPropertySnapshot): ServiceResult<ViewFilterPayload>;
   viewRequest(input: unknown): ServiceResult<ViewSnapshot>;
   previewProjectArchive(input: unknown): ServiceResult<ProjectArchivePreview>;
   applyProjectArchive(input: unknown): ServiceResult<ProjectArchiveResult>;
@@ -269,7 +269,7 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
     tableLayoutRequest: createTableLayoutService(db),
     assignProjectGroup: input => assignProjectGroup(service, input),
     groupingRequest: input => createViewGroupingService(db)(input),
-    filterRequest: (input, membership) => createViewFilterService(db, service)(input, membership),
+    filterRequest: (input, membership, propertySnapshot) => createViewFilterService(db, service)(input, membership, propertySnapshot),
     viewRequest: createViewService(db),
     previewProjectArchive: archiveMutations.previewProjectArchive,
     applyProjectArchive: archiveMutations.applyProjectArchive,
@@ -993,7 +993,7 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
     boardLayoutRequest: input => run(() => service.boardLayoutRequest(input), isRecord(input) && input.type === "workspace.setBoardLayout" ? currentSnapshot : undefined),
     tableLayoutRequest: input => run(() => service.tableLayoutRequest(input), isRecord(input) && input.type === "workspace.setTableLayout" ? currentSnapshot : undefined),
     groupingRequest: input => run(() => service.groupingRequest(input), isRecord(input) && input.type === "workspace.setViewGrouping" ? currentSnapshot : undefined),
-    filterRequest: (input, membership) => run(() => service.filterRequest(input, membership), isRecord(input) && input.type === "workspace.setViewFilter" ? currentSnapshot : undefined),
+    filterRequest: (input, membership, propertySnapshot) => run(() => service.filterRequest(input, membership, propertySnapshot), isRecord(input) && input.type === "workspace.setViewFilter" ? currentSnapshot : undefined),
     viewRequest: input => run(() => service.viewRequest(input), isRecord(input) && input.type === "workspace.listViews" ? undefined : currentSnapshot),
     create: (input) => run(() => service.create(input), currentSnapshot),
     rename: (input) => run(() => service.rename(input), returnedSnapshot),

@@ -1240,3 +1240,45 @@ covers coherent acceptance; the full platform suite discovers the new file.
 Select one original strict renewal on bothhosts plus focusednative3hosts for
 this changed source. Broad full/coherent/package/installer/appearance acceptance
 remains behind both focused gates; every new failure returns to diagnosis.
+
+
+### Current strict result and request-local snapshot reuse
+
+Original39699904612/attempt1 atf581f93f: MacM1Virtual passes all32 targets,
+maximum298.1ms. WindowsEPYC7763 fails only direct Table assignment310.6ms>300
+(observationstart65.9ms,firstpaint279.5ms,finalstabilization31.1ms). Both complete
+all32 functional observations,10memory samples,four normal application/backend
+exits and asserted cleanup. Downloaded reports and originalfailedlog inspected.
+No unchanged strict retry. Native39699908853/attempt1 atf581f93f passes all3hosts:
+new native scroll control1/1 each, original32-state navigation, exact identities/
+visible fields, scroll/focus,ENRU,Back/Forward,normalquits/cleanup. Original logs
+and reports downloaded/inspected. Cumulative reviews86ec..f581 both0 findings.
+
+The next measured backend optimization removes a repeated full snapshot read
+inside active ordinary metadata assignment. The command already owns a complete
+snapshot; pass it only as a backend-internal argument to stored projection.
+Inside the current read transaction require matching workspace,source and
+propertyRevision, otherwise perform the original fresh read. No IPC field,
+persistent cache or schema change. Filesystem and archived assignments keep
+the original read path; final mutation transaction/authorization stays intact.
+
+Representative1000-project/20-property/24-option public service A/B/B/A,
+10 warmups+30 actual filtered assignment mutations perbatch: mean20.592/14.624/
+14.556/20.208ms; median20.714/14.535/14.580/20.013ms. Every returned committed
+option is asserted. This demonstrates reduced service work, not full strict
+acceptance. All temporary fixtures are closed/removed; hashes and raw benchmark
+receipts retained under ignored work evidence.
+
+Add real SQLite service regressions for a stale snapshot after a committed
+value update and a foreign source at the SAME property revision. Both pass.
+A controlled compiled-copy mutation removes only identity/revision guards;
+both scenarios fail2/2, proving sensitivity. Production source is untouched by
+that negative control; throwaway compiled module/test copy removed. Existing
+41 focused filter/group/folder-assignment cases pass. All107 affected property/filter/group/folder/metadata-removal safety cases pass;
+lint/typecheck/docs pass. Both source reviews0 findings.
+
+Select one original both-host strict renewal on this changed implementation
+after final checks. Any new failure returns to diagnosis. Native-scroll inputs
+and the previously passing focused control are unchanged; full/coherent/package/
+installer/appearance acceptance still requires current affected renewal before
+integration. No release/main/next issue.

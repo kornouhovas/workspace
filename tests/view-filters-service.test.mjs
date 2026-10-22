@@ -272,3 +272,37 @@ for(const kind of ['table','board']) test(`${kind} performance metadata checks m
   assert.deepEqual(checks.query('queryView',fields),f.query('queryView',fields));
   assert.ok(f.query('listProjects').value.projects.some(project=>project.name==='Changed'));
 }));
+
+test('stored metadata projection refreshes stale property snapshots instead of filtering committed values from an earlier revision',()=>fixture(f=>{
+ const projectId=f.query('listProjects').value.projects[0].projectId;
+ const propertyId=f.command('createProperty',{name:'Notes',propertyType:'text'}).value.propertyId;
+ assert.equal(f.command('setTextValue',{projectId,propertyId,value:'Before'}).ok,true);
+ const earlier=f.query('listTextProperties').value;
+ assert.equal(f.save({search:'',rules:[{propertyId,operator:'equals',operand:'After'}]}).ok,true);
+ assert.equal(f.command('setTextValue',{projectId,propertyId,value:'After'}).ok,true);
+ const input={type:'workspace.queryView',workspaceId:f.workspace.workspaceId,viewId:f.workspace.viewId,archived:false};
+ const current=f.service.workspaces.filterRequest(input,'stored',earlier);
+ assert.equal(current.ok,true);assert.deepEqual(current.value.projectIds,[projectId]);
+ assert.deepEqual(current,f.service.workspaces.filterRequest(input,'stored'));
+ f.reopen();assert.deepEqual(f.results().value.projectIds,[projectId]);
+}));
+
+test('stored metadata projection rejects another source snapshot even at the same property revision',()=>fixture(f=>{
+ const projectId=f.query('listProjects').value.projects[0].projectId;
+ const propertyId=f.command('createProperty',{name:'Notes',propertyType:'text'}).value.propertyId;
+ assert.equal(f.command('setTextValue',{projectId,propertyId,value:'Own value'}).ok,true);
+ assert.equal(f.save({search:'',rules:[{propertyId,operator:'equals',operand:'Own value'}]}).ok,true);
+ const root=join(f.directory,'foreign');mkdirSync(root);mkdirSync(join(root,'Foreign project'));
+ const foreign=f.service.handleCommand({type:'workspace.create',rootPath:root,name:'Foreign'}).value;
+ const command=(type,fields)=>f.service.handleCommand({type:`workspace.${type}`,workspaceId:foreign.workspaceId,...fields});
+ const query=type=>f.service.handleQuery({type:`workspace.${type}`,workspaceId:foreign.workspaceId});
+ const foreignProject=command('applyDiscovery',{previewToken:query('previewDiscovery').value.previewToken}).value.projects[0].projectId;
+ const foreignProperty=command('createProperty',{name:'Notes',propertyType:'text'}).value.propertyId;
+ assert.equal(command('setTextValue',{projectId:foreignProject,propertyId:foreignProperty,value:'Foreign value'}).ok,true);
+ const foreignSnapshot=query('listTextProperties').value;
+ assert.equal(foreignSnapshot.revision,f.query('listTextProperties').value.revision);
+ const input={type:'workspace.queryView',workspaceId:f.workspace.workspaceId,viewId:f.workspace.viewId,archived:false};
+ const own=f.service.workspaces.filterRequest(input,'stored',foreignSnapshot);
+ assert.equal(own.ok,true);assert.deepEqual(own.value.projectIds,[projectId]);
+ assert.deepEqual(own,f.service.workspaces.filterRequest(input,'stored'));
+}));

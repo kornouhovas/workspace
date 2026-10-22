@@ -4,9 +4,10 @@ Status: **in progress; not accepted or integrated**. [GitHub #69](https://github
 owns current gates. The [plan](../plans/issue-69-coherent-desktop.md) retains
 scenario decisions, experiments, failures and historical receipts.
 
-Last strict-tested candidate: `f5398b92` (based on accepted `86ec7527`).
-The pending candidate adds measured scroll-restoration coalescing; native
-process-name lookup remains `299a46be` and service snapshot batching `f5398b92`.
+Last strict-tested candidate: `f581f93f` (based on accepted `86ec7527`).
+The pending candidate reuses a request-local backend property snapshot only
+after transactional workspace/source/revision checks. Scroll coalescing remains
+`f581f93f`, native lookup `299a46be` and snapshot batching `f5398b92`.
 Changed renderer/backend/package inputs reopen affected acceptance below.
 No assertion, event clock, readiness endpoint or numerical limit is relaxed.
 
@@ -21,7 +22,7 @@ and one project area replace main's nested splits.
 The [image manifest](issue-69-evidence/manifest.json) retains exact source/run
 and hashes: the passing Mac consumer of [39681330400](https://github.com/kornouhovas/workspace/actions/runs/39681330400),
 attempt 1, at `b577cfd2`. The before image retains issue-start inputs.
-These images retain their actual appearance source. The pending scroll-only
+These images retain their actual appearance source. The scroll-only
 renderer change requires current appearance confirmation; they are not runtime
 tests executed at the new SHA. Actual images were compared with
 the pinned references with no material mismatch found. Original geometry,
@@ -86,7 +87,9 @@ current acceptance; the plan retains superseded reports and precise failure maps
 | Native owner repair | `299a46be`, [39693324029](https://github.com/kornouhovas/workspace/actions/runs/39693324029); controls `9a359816`, [39693870739](https://github.com/kornouhovas/workspace/actions/runs/39693870739) | Original trace-disabled creation passes exact native open/select/return, independent COM/UIA, recovery/restart, normal exits and cleanup. Overall first job fails only a stale terminal fixture; corrected original file plus fresh process controls pass12/12. Native guards/resources unchanged by snapshot batching; affected full runtimes still require renewal. |
 | Previous strict failures | `9a359816`, [39694044226](https://github.com/kornouhovas/workspace/actions/runs/39694044226); `ba683bab`, [39695914995](https://github.com/kornouhovas/workspace/actions/runs/39695914995) | First: Mac Text310.8ms and Windows assignment314.8ms exceed300. Bounded renewal: Mac passes (max255.1ms), Windows assignment312.8ms fails. All32 cases, memory, four normal exits and cleanup otherwise pass. |
 | Assignment diagnosis | `b8579bba`, [39696644374](https://github.com/kornouhovas/workspace/actions/runs/39696644374) | EPYC7763 reproduces313.7ms, immediate delivery, backend75.66ms/projection38.77ms. Diagnostic only; all32 observations/four normal exits/cleanup complete. Leads to the measured changed snapshot candidate; not another unchanged retry. |
-| Current original strict | `f5398b92`, [39697859659](https://github.com/kornouhovas/workspace/actions/runs/39697859659) | **Windows passes** all32 targets (Xeon8370C, max296.5ms). **Mac fails grouped Table grouping309.8ms>300**; all32 cases/memory/four normal exits/cleanup otherwise complete. Mac-only diagnostic39698462359 pending; no unchanged strict retry. |
+| Previous snapshot-candidate strict | `f5398b92`, [39697859659](https://github.com/kornouhovas/workspace/actions/runs/39697859659) | **Windows passes** all32 targets (Xeon8370C, max296.5ms). **Mac fails grouped Table grouping309.8ms>300**; all32 cases/memory/four normal exits/cleanup otherwise complete. Mac-only diagnostic39698462359 pending; no unchanged strict retry. |
+| Scroll candidate strict/native | `f581f93f`, [39699904612](https://github.com/kornouhovas/workspace/actions/runs/39699904612), [39699908853](https://github.com/kornouhovas/workspace/actions/runs/39699908853) | Strict Mac passes (max298.1ms); Windows EPYC7763 assignment310.6ms fails. Both complete32 cases/memory/four normal exits/cleanup. Native navigation and the new cancellation regression pass on all3hosts, with exact IDs/fields/32states/scroll/focus/ENRU/normalquit/cleanup. |
+| Request-local snapshot candidate | Pending original strict renewal | 107 real service checks pass. Stale-revision and same-revision foreign-source controls fail2/2 under a controlled unsafe-copy mutation. Public1000-project assignment A/B/B/A means20.592/14.624/14.556/20.208ms. Both reviews0; no IPC/cache/schema change. Strict and broad acceptance remain required. |
 | Previous actual installers | `9a359816`, Mac [39694044252](https://github.com/kornouhovas/workspace/actions/runs/39694044252), Windows [39694305845](https://github.com/kornouhovas/workspace/actions/runs/39694305845) | Both pass installed bundled backend, identity, EN/RU, isolation, replacement/reinstall, normal exits and cleanup. Exact hashes remain in the plan. Snapshot batching changes backend/package inputs: renew both installers. Server2025 x64 is not Windows11 release acceptance. |
 | Independent review | Cumulative renderer/native work and current snapshot delta separately reviewed | Standards0 and Spec0 implementation findings; appearance reviewed against actual images. Final acceptance-ledger review remains required. |
 

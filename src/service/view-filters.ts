@@ -19,7 +19,7 @@ interface ReadModel {
   listTextProperties(input: unknown): ServiceResult<PropertySnapshot>;
 }
 export function createViewFilterService(db: Database, model: ReadModel) {
-  return (input: unknown, membership?: "stored"): ServiceResult<ViewFilterPayload> => {
+  return (input: unknown, membership?: "stored", propertySnapshot?: PropertySnapshot): ServiceResult<ViewFilterPayload> => {
     if (!isViewFilterRequest(input)) return invalid();
     try {
       return db.transaction(tx => {
@@ -78,7 +78,12 @@ export function createViewFilterService(db: Database, model: ReadModel) {
           if (!list.ok) return list;
           projects = [...list.value.projects, ...("retainedProjects" in list.value ? list.value.retainedProjects : [])];
         }
-        const properties = model.listTextProperties({ type: "workspace.listTextProperties", workspaceId: workspace.id });
+        // Only an owning backend command supplies this request-local snapshot.
+        // Revalidate its identity and revision inside the current read transaction.
+        const properties: ServiceResult<PropertySnapshot> = membership === "stored" && propertySnapshot?.workspaceId === workspace.id &&
+          propertySnapshot.sourceId === source.id && propertySnapshot.revision === source.propertyRevision
+          ? { ok: true, value: propertySnapshot }
+          : model.listTextProperties({ type: "workspace.listTextProperties", workspaceId: workspace.id });
         if (!properties.ok) return properties;
         const search = config.search.trim().toLowerCase();
         const tableConfig: unknown = view.kind === "table" ? JSON.parse(view.tableConfig) : {columns:[],rowOrder:[]};
