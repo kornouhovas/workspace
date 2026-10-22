@@ -25,4 +25,4 @@ Run focused renderer tests and typecheck during each slice. Inspect changed dial
 
 ## Candidate progress
 
-Scoped implementation, early whole-screen inspection and independent reviews are complete; both review axes have zero unresolved findings after Escape/focus repairs. Local scenarios and inheritance decisions are recorded in [verification](../verification/issue-61-contextual-categories.md). Full local/hosted acceptance and integration remain in GitHub #61.
+Scoped implementation, early whole-screen inspection and independent reviews are complete; both review axes have zero unresolved findings after Escape/focus repairs. Local scenarios and inheritance decisions are recorded in [verification](../verification/issue-61-contextual-categories.md). The full local receipt and passing three-host scoped hosted acceptance are recorded in verification. Integration delivery and exact delivered SHA remain in GitHub #61.
