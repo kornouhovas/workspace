@@ -2,7 +2,7 @@ import { setRuntimeCaptureViewport } from "./runtime-settings.mjs";
 import { selectRuntimeWorkspace, waitForWorkspaceNavigation } from "./runtime-settings.mjs";
 import { enterContextFor } from "./runtime-context-tools.mjs";
 import { renameActiveWorkspace } from "./runtime-settings.mjs";
-import { setInterfaceLanguage, openSettingsSection, returnToWorkspace } from "./runtime-settings.mjs";
+import { setInterfaceLanguage, openSettingsSection, returnToWorkspace, showRuntimeSourceRoot, dismissRuntimeTools } from "./runtime-settings.mjs";
 import assert from "node:assert/strict";
 import { lstat, mkdir, mkdtemp, readdir, readFile, readlink, realpath, rename, stat, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -14,7 +14,7 @@ import { packagedExecutablePath } from "./runtime-executable.mjs";
 import { createRuntimeStages, completeRuntimeStage } from "./runtime-evidence.mjs";
 import { cleanupOwnedFixture, closeElectron, closeRuntimeSession, ownedProcessesStopped, withDeadline } from "./runtime-lifecycle.mjs";
 import { assertRuntimeCategoryCell } from "./smoke-project-category-move-ui.mjs";
-import { measureDiscoveryLayout } from "./runtime-layout.mjs";
+import { measureDiscoveryLayout, measureRuntimeWorkspaceSettings } from "./runtime-layout.mjs";
 import { createRuntimeSourceDisconnect, createRuntimeSourceMoveEvidence } from "./runtime-source-disconnect.mjs";
 import { showRuntimeProject as showProjectRow } from "./runtime-project-visibility.mjs";
 
@@ -221,6 +221,9 @@ async function captureDiscovery(page, language, state) {
     if (evidenceDirectory) await page.screenshot({ path: join(evidenceDirectory, `${mode}-${language}-${size.width}-${state}.png`), fullPage: true });
     assert.deepEqual(overflow, { document: false, clippedControls: [], elements: [] }, `${language} discovery ${state} ${size.width} overflow`);
   }
+  // Resume the actual runtime journey at a supported desktop size after the
+  // standalone narrow presentation capture; keep the same open review/draft.
+  await setRuntimeCaptureViewport(page,{width:1440,height:960});
 }
 
 async function load(page) {
@@ -241,7 +244,7 @@ async function create(current, name, rootPath, language = "en") {
   } else {
     await page.getByRole("button", { name: language === "en" ? "Choose project folder" : "Выбрать папку проекта", exact: true }).click();
   }
-  await enterContextFor(page,page.getByText(await realpath(rootPath), { exact: true }));
+  await showRuntimeSourceRoot(page,await realpath(rootPath));
   await page.locator("#workspace-title").filter({ hasText: /^Workspace$/ }).waitFor({state:"attached"});
   await renameActiveWorkspace(page, name);
   await page.getByRole("button", {name:name.trim(),exact:true}).and(page.locator('[aria-current="page"]')).waitFor();
@@ -250,7 +253,7 @@ async function create(current, name, rootPath, language = "en") {
 
 async function select(page, workspace) {
   await returnToWorkspace(page);
-  for (const trigger of await page.locator('.context-tools-trigger[aria-expanded="true"]').all()) await trigger.click();
+  await dismissRuntimeTools(page);
   await selectRuntimeWorkspace(page,workspace.workspaceId);
   await page.getByRole("button", {name:workspace.name.trim(),exact:true}).and(page.locator('[aria-current="page"]')).waitFor();
   await waitForWorkspaceNavigation(page);
@@ -284,18 +287,7 @@ async function captureLayouts(page, language, name) {
       if (state === "confirmation") {
         await page.getByRole("button", { name: `${removeLabel}: ${name.trim()}`, exact: true }).click();
       }
-      const overflow = await page.evaluate(() => ({
-        document: globalThis.document.documentElement.scrollWidth > globalThis.innerWidth,
-        elements: Array.from(globalThis.document.querySelectorAll(".workspace-screen, #workspace-title, .workspace-root, .workspace-management__row, .workspace-removal"))
-          .filter((node) => {
-            if (node.scrollWidth <= node.clientWidth + 1) return false;
-            if (node.matches(".workspace-toolbar .workspace-root")) {
-              const style=globalThis.getComputedStyle(node);
-              if (style.overflow === "hidden" && style.textOverflow === "ellipsis" && style.whiteSpace === "nowrap") return false;
-            }
-            return true;
-          }).map((node) => node.className || node.id),
-      }));
+      const overflow = await measureRuntimeWorkspaceSettings(page,language);
       assert.deepEqual(overflow, { document: false, elements: [] }, `${language} ${state} ${size.width} overflow`);
       if (evidenceDirectory) await page.screenshot({ path: join(evidenceDirectory, `${mode}-${language}-${size.width}-${state}.png`), fullPage: true });
       if (state === "confirmation") await page.locator(".workspace-removal").press("Escape");
@@ -382,7 +374,7 @@ try {
   assert.equal(other.canonicalRoot, canonicalOtherRoot);
   assert.equal(new Set([first, sibling, other].map((item) => item.viewId)).size, 3);
   assert.ok([first, sibling, other].every((item) => item.sourceAvailable));
-  await page.getByText("Preview folders, choose exclusions and apply the reviewed projects to this Table.", { exact: true }).waitFor();
+  await page.getByText("Workspace saved. Preview folders to set up its source, or set up later.", { exact: true }).waitFor();
   await select(page, first);
   const authoredName = `  Renamed-${workspaceName}  `;
   await openSettingsSection(page, "workspaces");
@@ -1044,7 +1036,7 @@ try {
     await panel.locator("input[type=radio]").first().waitFor();
     assert.equal(await page.locator("#recovery-title").evaluate((node) => node === globalThis.document.activeElement), true);
     await captureDiscovery(page, language, `recovery-${workspace.sourceId}-${expectedResolution}-review`);
-    await panel.press("Escape"); await panel.waitFor({ state: "detached" });
+    await panel.locator("#recovery-title").press("Escape"); await panel.waitFor({ state: "detached" });
     assert.equal(await locate.evaluate((node) => node === globalThis.document.activeElement), true);
     assert.deepEqual(await projects(page, workspace.workspaceId), before);
     assert.deepEqual(await properties(page, workspace.workspaceId), textBefore);
@@ -1207,7 +1199,7 @@ try {
   const reopened = await load(page);
   assert.deepEqual(identity(reopened.activeWorkspace), identity(first));
   assert.deepEqual(reopened.workspaces, [other, first, sibling, grouped, groupedSibling].map(({ workspaceId, name }) => ({ workspaceId, name })));
-  await enterContextFor(page,page.getByText(canonicalProjectRoot, { exact: true }));
+  await showRuntimeSourceRoot(page,canonicalProjectRoot);
   await page.keyboard.press("Escape");
   await page.getByRole("tab", { name: "Table", exact: true }).and(page.locator('[aria-selected="true"]')).waitFor();
   savedProjects = await projects(page, first.workspaceId);

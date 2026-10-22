@@ -1505,3 +1505,117 @@ for checking the actual history controls when evaluating the eventual repair.
 Current application inputs remain458be520; diagnostic changes alone do not
 establish cause or accept the failed scenario. Renew the failed original command
 with geometry before choosing a repair; no unchanged-input retry for green.
+
+### Current application acceptance at770e07e5 and runtime driver reconciliation
+
+Application inputs end at458be520;770e07e5 adds only bounded layout diagnostics
+and the plan. Changed-diagnostic39711258611/attempt1 completes the unchanged
+original unfiltered Ladle command on all three hosts:302states/906captures,
+normal Electron quit, new production-CSS/fonts category-header regression pass.
+All exact-SHA artifacts inspected. The earlier Windows2022 control reachability
+failure does not reproduce; its original predicate remains, with finite
+same-measurement diagnostics. Do not claim a unique historical cause or universal
+reliability from this one changed-diagnostic success. Local unfiltered302/906 and
+rename96/288 also pass normal quit. The controlled negative trigger probe proves
+nonzero original verdict, matching geometry and normal shutdown.
+
+Renewed current application evidence, all attempt1 at770e07e5:
+
+- Strict39712595815: both pass32 functional/timing observations,10 memory samples,
+  four normal app/backend exits and asserted cleanup. Mac M1 Virtual/kernel23.6.0
+  maximum222.2ms, conservative peak941244416B; Windows EPYC7763/kernel10.0.26100
+  maximum294.1ms, peak870428672B. Direct/grouped assignments200.5/186.8ms Mac and
+  294.1/257.2ms Windows. Original300ms gate retained. Historical misses remain.
+- Coherent39712599909: all three pass and reports inspected.16 ordinary/24 state
+  matrices,16 principal Board captures plus interaction captures,32 navigation
+  images,16 preview/expanded files images plus native captures; exact native target,
+  external document and unchanged bytes. Dev/package Views each three normal
+  app/backend exits and cleanup perhost. Mac M1 Virtual/kernel25.6.0; both Windows
+  hosts EPYC7763/kernel10.0.26100 and10.0.20348. Current image hashes/provenance are
+  in the manifest. Four principal PNGs identical to9face; changed Board/preview/
+  expanded plus category-header reviewed by implementer and independent Spec:
+  zero material appearance findings, none deferred to67.
+- Actual Mac DMG39712603825: pass, macOS14.8.9arm64, outside-build installation,
+  bundled backend, EN/RU, saved identities/views, isolation, reopen/replacement/data
+  preservation, normal quit/cleanup. SHA256
+  e2bff9866343fe81a5810754e132e84d3081c2f7fc5366374c40aa1407a1685e.
+- Actual Windows NSIS39712607793: pass, Server2025x64/kernel10.0.26100, offline
+  Unicode/space path, bundled backend/SQLite, EN/RU, saved identities/views,
+  independent APPDATA, reinstall/data preservation, uninstall/cleanup. SHA256
+  932f2e31af64c32e50bc5f928037bf6ff2f598974d2d330373b17f90854474b2.
+  Not Windows11 release acceptance.
+
+Full39712591684/attempt1 at770e07e5 fails all three at the original
+`npm run smoke:runtime -- dev`: first creation's global exact root-path locator
+matches Source-tools path and retained Workspaces-settings path. Exact logs and
+all issue artifacts downloaded. Common531/531 plus lint/typecheck/docs pass.
+Mac main2773total/2746pass/27skip; each Windows main2792total/2779pass/13skip plus
+isolated51+13pass: aggregate2856total/2843pass/13skip. All shell/workspaces/source
+prefixes, creation/category layouts, development crash-creation matrix and direct/
+grouped native creation pass before the base-runtime failure. Every later
+runtime/package stage remains unreached. Failure cleanup and owned fixture
+cleanup pass on all three. Do not rerun the successful broad/platform boundaries
+solely for a subsequent eligible test-only repair.
+
+Reconciliation in progress before another hosted dispatch (application inputs
+unchanged):
+
+1. Source readiness now selects the exact path as a direct child of the localized
+   Source-tools dialog, after real return-to-workspace, rather than selecting an
+   arbitrary identical path. Actual native browser regression reproduces the
+   global-locator strict failure, then passes scoped owner selection in EN/RU.
+2. The old emptyTableGuidance text is no longer rendered under the accepted one-
+   setup-state contract. Retain/adapt the readiness assertion to setupOffer;
+   existing renderer-app EN/RU one-setup-state regression is its UI coverage.
+3. Source popup covers the sidebar after the420px resize. Native controlled
+   popup reproduces old resize-then-pointer collapse failure. Prepare collapse
+   before narrow resize, use normal keyboard Enter (no outside pointerdown), and
+   restore the supported desktop after the presentation capture. Actual failing
+   screenshot separately proves a pointer sidebar click had closed the review;
+   a native outside-pointer regression is red for that behavior. No forced click,
+   backend command, hidden control activation or new production UI is used.
+4. Runtime layout measurement now matches the already accepted Ladle rule: only
+   `.daily-controls > .workspace-form-actions` below1024px is excluded. Actual
+   native geometry regression fails the old measurement, accepts that stress
+   toolbar, and still rejects operation overflow at420 and all toolbar overflow
+   at1024/1440. Operation paths/controls and original numerical limits retained.
+5. The next original local journey reaches property metadata and multiple open
+   contexts, then exposes live nth-index drift while closing tools before a
+   workspace switch. Native driver regression and scoped repair are in progress.
+
+New focused workspace-root-runtime choice isolates the original failed development
+command and native source/capture/layout regressions on the three actually failed
+hosts, with exact provenance, pipefail and always artifacts. Existing defaults,
+raw-rename cancellation and viewport-only selections remain. No dispatch until
+local reconciliation and independent review finish; every missing native/runtime/
+package consumer remains a gate. Prior strict/coherent/installer receipts retain
+770e07e5 and require an explicit unchanged-input argument after these script/test/
+workflow-only repairs. No acceptance, integration or closure is claimed.
+
+
+### Local source-context reconciliation complete; hosted renewal pending
+
+The original local `node scripts/smoke-runtime.mjs dev` completes with exit0
+(`work/issue-69/source-root-original-runtime-recovery.log`). Base runtime includes
+mode/recovery/discovery/Cancel/Apply, IDs/Text/Table, native reconciliation,
+restart/removal/reuse, unchanged bytes, isolation, backend exit and startup failure.
+Rename completes direct/grouped native Reveal and seven interruption/restart
+points per mode. Category move completes EN/RU and five controlled recovery
+points per language. The reports retain normal shutdown and owned cleanup.
+
+The remaining driver repairs adapt the same contracts: reverse ordinary keyboard
+closure prevents live-index drift; selected visible Workspaces-panel measurement
+excludes retained inert headings while rejecting actual path overflow; Escape
+targets the existing focusable recovery heading inside its owning handler.
+Actual native regressions fail the old closure and layout behavior, and preserve
+operation420/supported-toolbar overflow negatives in both languages. UI recovery
+checks retain46/46 passing scenarios. No production behavior or safety assertion
+is retired. These HTML driver fixtures establish driver contracts; the original
+actual-application journey separately verifies production behavior.
+
+Focused native/layout/route checks67/67 pass; final lint/typecheck/docs and
+workflow/native owner controls92pass/3skip/0fail pass. Independent Standards0
+and Spec0 cover the complete driver/route delta and the final recovery-heading
+change. The new focused choice is documented in docs/ci.md. Hosted original
+all-three success, affected development/package consumers and final ledger audit
+remain gates. Current appearance artifacts retain their actual770e07e5 provenance.

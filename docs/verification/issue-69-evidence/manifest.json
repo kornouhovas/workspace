@@ -1,9 +1,9 @@
 {
   "base": "86ec752714c860662d4b1da0c25c2e5b71606bff",
-  "candidate": "b577cfd2df4026c3f8584ce1880bf90dfd9d87d6",
+  "candidate": "770e07e5846293309b5357d6f7bc81134772a4c1",
   "main": "080b416c57b2869024ac62363e96b68b40f499c0",
   "bb": "f135a001e72942cee9118d2693208ec0725e2f18",
-  "note": "Synthetic disposable fixtures. Current images come from the passing macOS coherent consumer at the exact application SHA; visual foundation, Board, navigation and real project-files Open/Reveal complete normal exit and asserted cleanup. The whole coherent run fails separately on Windows latest Reveal and does not accept that native boundary. Before image retains issue-start inputs. Historical malformed local capture provenance and negative receipts remain in the plan.",
+  "note": "Synthetic disposable fixtures. Principal images come from the passing macOS coherent consumer at the exact acceptance source SHA. All three coherent desktop hosts pass principal journeys, native Open/Reveal, saved-view dev/package consumers, normal exits and asserted cleanup. The category-header image comes from the passing original unfiltered macOS Ladle consumer at that same SHA (per-image run). Before retains issue-start inputs. Full acceptance is tracked separately; images alone do not accept pending gates.",
   "images": {
     "before-table-1024.png": {
       "source": "visual/ordinary-en-light-1024-table.png",
@@ -11,39 +11,46 @@
       "applicationSourceSha": "86ec752714c860662d4b1da0c25c2e5b71606bff"
     },
     "table-1440.png": {
-      "source": "ci-coherent-39681330400/desktop-ux-foundation-macos-latest/issue-68/after/ordinary-en-light-1440-table.png",
+      "source": "ci-coherent-39712599909/desktop-ux-foundation-macos-latest/issue-68/after/ordinary-en-light-1440-table.png",
       "sha256": "f3ae8ac58c78eeb1c5a382879fc945d3a07c5296bce69eb5ecd8dc99a78303c2",
-      "applicationSourceSha": "b577cfd2df4026c3f8584ce1880bf90dfd9d87d6"
+      "applicationSourceSha": "770e07e5846293309b5357d6f7bc81134772a4c1"
     },
     "long-table-1024.png": {
-      "source": "ci-coherent-39681330400/desktop-ux-foundation-macos-latest/issue-68/after/long-ru-dark-1024-table.png",
+      "source": "ci-coherent-39712599909/desktop-ux-foundation-macos-latest/issue-68/after/long-ru-dark-1024-table.png",
       "sha256": "24ca854aa3074f4aa01e5ae01558221e8930bf762e493b8a48c82821f7e6693b",
-      "applicationSourceSha": "b577cfd2df4026c3f8584ce1880bf90dfd9d87d6"
+      "applicationSourceSha": "770e07e5846293309b5357d6f7bc81134772a4c1"
     },
     "settings-1440.png": {
-      "source": "ci-coherent-39681330400/desktop-ux-foundation-macos-latest/issue-68/after/ordinary-en-light-1440-settings.png",
+      "source": "ci-coherent-39712599909/desktop-ux-foundation-macos-latest/issue-68/after/ordinary-en-light-1440-settings.png",
       "sha256": "4030b17b1fb0e9a8c83c869123030e6eb1c1556c9878e1efd1b081c8515eb12b",
-      "applicationSourceSha": "b577cfd2df4026c3f8584ce1880bf90dfd9d87d6"
+      "applicationSourceSha": "770e07e5846293309b5357d6f7bc81134772a4c1"
     },
     "board-1024.png": {
-      "source": "ci-coherent-39681330400/desktop-ux-foundation-macos-latest/issue-53-board/ordinary-ru-dark-1024.png",
+      "source": "ci-coherent-39712599909/desktop-ux-foundation-macos-latest/issue-53-board/ordinary-ru-dark-1024.png",
       "sha256": "1fdc397cd24a7c7d62d05e558ac84143ba989d80680cad4b9f187c2435fd62d2",
-      "applicationSourceSha": "b577cfd2df4026c3f8584ce1880bf90dfd9d87d6"
+      "applicationSourceSha": "770e07e5846293309b5357d6f7bc81134772a4c1"
     },
     "preview-tree-1024.png": {
-      "source": "ci-coherent-39681330400/desktop-ux-foundation-macos-latest/issue-64-files/preview-ru-dark-1024.png",
-      "sha256": "dec8b9f70ae62ee429c5440d354df61c5d34927cd83a70d771605c8aebd4cf44",
-      "applicationSourceSha": "b577cfd2df4026c3f8584ce1880bf90dfd9d87d6"
+      "source": "ci-coherent-39712599909/desktop-ux-foundation-macos-latest/issue-64-files/preview-ru-dark-1024.png",
+      "sha256": "075eb6609c317cc4ba91656bada388631ccd80cd03629e5f43df01a6817610b9",
+      "applicationSourceSha": "770e07e5846293309b5357d6f7bc81134772a4c1"
     },
     "expanded-tree-1440.png": {
-      "source": "ci-coherent-39681330400/desktop-ux-foundation-macos-latest/issue-64-files/expanded-en-light-1440.png",
-      "sha256": "26967953e9965d5da5f29aed7b76dfab0aed87f00c1e9bf5030ab170a7aba3cc",
-      "applicationSourceSha": "b577cfd2df4026c3f8584ce1880bf90dfd9d87d6"
+      "source": "ci-coherent-39712599909/desktop-ux-foundation-macos-latest/issue-64-files/expanded-en-light-1440.png",
+      "sha256": "aceaa74cca4f504b7a91e43e5be7a2c48dd05e0a0d796ab244455f3f162e21e1",
+      "applicationSourceSha": "770e07e5846293309b5357d6f7bc81134772a4c1"
     },
     "files-error.png": {
-      "source": "ci-coherent-39681330400/desktop-ux-foundation-macos-latest/issue-64-files/disappeared.png",
+      "source": "ci-coherent-39712599909/desktop-ux-foundation-macos-latest/issue-64-files/disappeared.png",
       "sha256": "2a4e7b0e36f0e0001c7e2192d0788f19ade49f560eb4350ca4ee91dba3c4863b",
-      "applicationSourceSha": "b577cfd2df4026c3f8584ce1880bf90dfd9d87d6"
+      "applicationSourceSha": "770e07e5846293309b5357d6f7bc81134772a4c1"
+    },
+    "category-header-1024.png": {
+      "source": "ci-layout-39711258611/layout-fixtures-macos-latest-770e07e5846293309b5357d6f7bc81134772a4c1-run-39711258611-attempt-1/bb-foundation--category-editing-russian-1024x720.png",
+      "sha256": "05870ec8807b55a771c7f689dfffc7d5a6b8b04ded97ab1223092081822d88b1",
+      "applicationSourceSha": "770e07e5846293309b5357d6f7bc81134772a4c1",
+      "captureRun": "39711258611",
+      "captureAttempt": "1"
     }
   },
   "sourceInputs": {
@@ -52,7 +59,7 @@
     "src/renderer/components/BackupPanel.tsx": "826f729285c74667252d244279b9591ae623c2427d6402243c30814a1d5992f2",
     "src/renderer/components/BoardLayout.tsx": "fa767fafc308f3713d7ff3c9467efda94d30b6b0278de04fce9b84b5d2f83023",
     "src/renderer/components/CategoryOptionsPanel.tsx": "e16a7742bb962a5f5d04dc995de67ed8a0f0f3ea059612d4d7bd04f2141e8288",
-    "src/renderer/components/CategoryPropertyHeader.tsx": "8787086c023e2602c00ad0440ba2992e15380975242b460dcafac2ebb2b9d226",
+    "src/renderer/components/CategoryPropertyHeader.tsx": "3b6d4df097751c646c3b4626961784634cb404bd8b97a63be9a44479f0e595f5",
     "src/renderer/components/CategoryRemovalPanel.tsx": "1e8b4bca9fd3e269abf59695523779bad81f4b25bb402e4bc9453a19cbcaef01",
     "src/renderer/components/ColumnWidth.tsx": "6eed752b06d58b3db65b55c693532650e26694ddc7889f57294a578d48a1f3ad",
     "src/renderer/components/ContextTools.tsx": "9cc055483d98dabfe3a038d83601900d64710d3cc0859d429ef25adc981adc08",
@@ -85,14 +92,17 @@
     "src/renderer/components/ViewGrouping.tsx": "a129b3de042ab14fa7413ed9d93fc53ae3b18cf68db3d980ad3392c0ce84bcc5",
     "src/renderer/components/ViewportProjectRow.tsx": "21f7c4e44500fba51bff9b55e89d203da97b3ce117e491ae06b8d72e58f1f65b",
     "src/renderer/components/ViewsPanel.tsx": "49b6e54658e08bc4d2f200821cd310890f241650448b1e06973a4eb6d3eb28fc",
-    "src/renderer/components/bb-foundation.stories.tsx": "132dbb4273a554480eab9411ac4ef23f05ef8a318dacfb49d21f9c6a44212a9f",
+    "src/renderer/components/bb-foundation.stories.tsx": "64206676ad5b0faa01db8d5eca34802af77f9bfc4e153ba9a22c27010494dff2",
     "src/renderer/components/bb-foundation.tsx": "230317bb67b0d4601e6a6eb31ff3b9ef6e9974d7b27585a31cf92795ec37b5f3",
     "src/renderer/components/desktop-shell.stories.tsx": "8f030dd3d87c632a8023146e222114b9e6b9c81f999cff89b491914479df7c29",
     "src/renderer/main.tsx": "3f5b437fc55a451d88f4f7a2fa1de2e4b2ff4765ead88bb369d89f9604f26640",
-    "src/renderer/app.css": "c6a03f315d901a831b62ee23912de47f75163d23d4e07305329c29bc682ba24b"
+    "src/renderer/app.css": "d8a909239915f0178f032f280cb06d8de6d15bbe312e1a7b3b6cfcccb3963bd3",
+    "src/renderer/components/useViewScroll.ts": "017f6998cdfa0b3d7883aebe5bb2520629c18c91aa00fe7bc3ff5d143513806a",
+    "src/renderer/components/story-context-preparation.ts": "31a85dd0e61b66c8e683188b9bc62fc71bc3ca75a9ab7b531ec3776ac26f3644",
+    "src/renderer/components/category-move-story-preparation.ts": "0a60e36eacec623653f9ec08ba82c32683f493d28be8bf4779cb2556cc6d75ba"
   },
-  "previousCandidate": "af23242d5c6fec5d749fe89ea530a9317678d7f4",
-  "captureExecutionHead": "b577cfd2df4026c3f8584ce1880bf90dfd9d87d6",
-  "captureRun": "39681330400",
+  "previousCandidate": "9face229c0c1639faa9df5d728dc7903f0cd80e1",
+  "captureExecutionHead": "770e07e5846293309b5357d6f7bc81134772a4c1",
+  "captureRun": "39712599909",
   "captureAttempt": "1"
 }

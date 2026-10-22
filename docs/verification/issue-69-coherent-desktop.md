@@ -4,16 +4,11 @@ Status: **in progress; not accepted or integrated**. [GitHub #69](https://github
 owns current gates. The [plan](../plans/issue-69-coherent-desktop.md) retains
 scenario decisions, experiments, failures and historical receipts.
 
-Application candidate renewal is pending after the category-header repair on top
-of `10cc299e`. The previous application candidate `9face229` and all receipts
-below are historical evidence, not final acceptance of the new application inputs.
-The repair constrains native input minimum width and replaces the squeezed text
-rename trigger with the shared edit icon and localized Hint. A real-Electron
-regression checks legal120/180px columns at supported1024/1440px windows in EN/RU,
-exact Save, zero cancelled writes, focus return and popup bounds. Old CSS fails
-input containment; CSS alone still fails trigger/editor overlap. Both failures
-pass with the complete repair. All affected hosted acceptance must be renewed.
-No assertion, event clock, endpoint or numerical limit is relaxed.
+Acceptance source: `770e07e5846293309b5357d6f7bc81134772a4c1`, based on
+accepted `86ec7527`. Application changes end at `458be520`; the later delta is
+bounded layout diagnostics and the plan. Required current runs are recorded below.
+The plan retains earlier failed/diagnostic receipts; none is relabeled as passing.
+Original assertions, event clocks, endpoints and numerical limits remain intact.
 
 ## Appearance
 
@@ -23,18 +18,22 @@ semantic palette, density and components. Existing Inter Latin/Cyrillic,
 outline icons, Hint, Radix and semantic tokens remain. Accepted unique tabs
 and one project area replace main's nested splits.
 
-The [image manifest](issue-69-evidence/manifest.json) retains exact source/run
-and hashes: [39702006958](https://github.com/kornouhovas/workspace/actions/runs/39702006958),
-attempt 1, at `9face229`. The before image retains issue-start inputs. These historical
-images were compared with the pinned references by the implementer and
-independent Spec reviewer: no material mismatch. Original geometry, fonts, popup
-bounds and EN/RU/theme/1024x720/1440x960 assertions remain. All three coherent
-jobs complete native journeys, dev/package Views and asserted process cleanup.
+The [image manifest](issue-69-evidence/manifest.json) records exact source/run
+and file hashes. Principal images come from passing macOS coherent
+[39712599909](https://github.com/kornouhovas/workspace/actions/runs/39712599909),
+attempt1, at `770e07e5`; the category-header capture comes from original unfiltered
+[39711258611](https://github.com/kornouhovas/workspace/actions/runs/39711258611)
+at that same SHA. Before retains issue-start inputs. Implementer and independent
+Spec reviewer find no material mismatch in the changed Board, preview, expanded
+project and category-header images. Table, long Table, settings and error images
+are byte-identical to the previously reviewed images. Geometry, loaded fonts,
+popup bounds and EN/RU/theme/1024x720/1440x960 assertions remain.
 
 | Surface | Concrete comparison / result | Evidence |
 | --- | --- | --- |
 | Sidebar and view strip | Main's fixed sidebar, workspace identity and compact horizontal tabs. bb Inter and neutral shared states. Real Back/Forward/restore, settings and contextual actions remain. | [Table](issue-69-evidence/table-1440.png) |
 | Table working area | Repaired the second permanent command row introduced by the independent #54 scroll host. Table starts at 54px with a 12px strip gap in all 16 ordinary/long variants; previous 84px/42px failed the accepted <=24px gap. No threshold relaxed. | [Before](issue-69-evidence/before-table-1024.png), [after](issue-69-evidence/table-1440.png), [long RU dark](issue-69-evidence/long-table-1024.png) |
+| Category header | Scoped input minimum width fixes native intrinsic overflow in legal narrow columns; shared edit Icon/Hint replaces text squeezed over the editor. Exact label, Save/Cancel and return focus remain. | [RU editor](issue-69-evidence/category-header-1024.png), actual-Electron legal-column regression |
 | Board | Main's horizontal group headers, cards and contextual column/card actions. Shared bb type/borders/spacing, real values and assignment controls. No decorative cards replace operations. | [RU dark narrow](issue-69-evidence/board-1024.png) |
 | Preview | Right-hand project owns real properties and expanded folder contents; view remains available. Exact file names, tree indentation, selection and commands use existing typography. | [Populated tree](issue-69-evidence/preview-tree-1024.png) |
 | Expanded project | One project/tab uses released work width; properties and real tree share a continuous surface. Return control remains keyboard discoverable. Main's nested splits are deliberately absent. | [Expanded real tree](issue-69-evidence/expanded-tree-1440.png) |
@@ -54,11 +53,10 @@ jobs complete native journeys, dev/package Views and asserted process cleanup.
 | Files/Open/Reveal | Real nested tree, arrows, Refresh/disappearance, exact native target, external document, unchanged bytes | Containment, fresh identity/authorization, alias ambiguity, no permit replay. |
 | Keyboard/feedback | Tooltips/labels, hit targets, bounds, topmost Escape, cancel, return, pending/error/disabled in both languages/themes | Existing ownership and original deadlines; no acceptance of placeholders as actual fields. |
 
-Principal coherent journeys at `9face229` pass on macOS latest, Windows latest
-and Windows 2022. Downloaded reports assert16 ordinary/24 long states,16 Board
-captures,32 navigation states,16 real-files images, exact native selected target,
-external document observation, unchanged bytes and normal exit/cleanup.
-Development and packaged Views each complete three normal app/backend quits.
+Current all-three-host coherent reports assert16 ordinary/24 long states,16 Board
+captures,32 navigation states,16 real-files images, exact native target, external
+document observation, unchanged bytes and normal exit/cleanup. Development and
+packaged Views each complete three normal app/backend quits perhost.
 
 The alias index preserves every exact native alias, ambiguity, historical
 records, owner/replacement/category predicates and transaction revalidation.
@@ -79,26 +77,35 @@ findings. Fixed4x traces show restoration work26.72 ->4.88ms and grouping406.7
 
 ## Acceptance ledger
 
-All runs are attempt1. Required reports/logs are downloaded and inspected unless
-explicitly pending. Test-only reuse follows [CI policy](../ci.md#evidence-reuse-after-test-only-repairs):
-earlier story/UI/driver/route repairs preserved application inputs, but the new
-category-header application repair reopens full acceptance. Failed/unreached
-rows are never counted as passes. Broad runtime
-packages also include rebuilt Ladle extras under existing dist/** packaging;
-their bytes are not claimed identical to earlier packages.
+All current runs below are attempt1 at `770e07e5`. Reports are inspected where
+marked; pending jobs do not establish acceptance. Historical9face229 strict,
+coherent and installer receipts were renewed after the application repair.
 
-| Boundary | Actual SHA / run | Evidence and result |
+| Boundary | Run | Actual evidence / result |
 | --- | --- | --- |
-| Static/common and platform regression | `9face229`, [39702007107](https://github.com/kornouhovas/workspace/actions/runs/39702007107) | Common523/523 plus lint/type/docs pass. Mac2739pass/1observerfail/27skip. Windows main2773pass/13skip plus isolated51+13pass: aggregate2837pass/13skip each. Shell/workspaces/source settings and Windows Ladlebuild/108creationcaptures pass independently. Category readiness then fails; runtime tails unreached. Failed rows renewed below. |
-| Observer cancellation fixture | `8c682531`, [39704164666](https://github.com/kornouhovas/workspace/actions/runs/39704164666) | **166/166 eachhost**. Actual worker partial-publication regression is red with direct write, passes with atomic complete receipt. Cancellation/ownership/terminal/cleanup assertions retained. Original full CI childcause was not recorded; unique causation is not claimed. |
-| Coherent principal desktop | `9face229`, [39702006958](https://github.com/kornouhovas/workspace/actions/runs/39702006958) | **All3 hosts pass** appearance matrices, Board,32 navigation states, exact native target, external document/unchanged bytes and all cleanup gates. Dev/release Views each record three normal app/backend quits. Mac files host M2 Pro Virtual/kernel25.6.0; Windows latest/2022 EPYC9V74/kernel10.0.26100/10.0.20348. |
-| Strict scale | `9face229`, [39701212914](https://github.com/kornouhovas/workspace/actions/runs/39701212914) | **Both pass**32 functional/timing observations and10 memory samples. Mac M1 Virtual/kernel23.6.0 max258.6ms, conservative peak933,085,184B. Windows EPYC9V74/kernel10.0.26100 max257.1ms, peak836,993,024B. Four normal app/backend exits and cleanup perhost. Windows CPU differs from preceding EPYC7763 failures; no universal reliability or unique historical cause is claimed. |
-| Actual Mac DMG | `9face229`, [39702007001](https://github.com/kornouhovas/workspace/actions/runs/39702007001) | **Pass**, macOS14.8.9arm64: outside-build install, bundled backend, EN/RU, saved identity/views, isolation, reopen/replacement/data preservation, normal quit and cleanup. SHA256 `fc48a7c5fb542182bb271115dd946a66eec632206d4ddfa213405c5f1e1c8cd7`. |
-| Actual Windows NSIS | `9face229`, [39702006868](https://github.com/kornouhovas/workspace/actions/runs/39702006868) | **Pass**, Server2025x64/kernel10.0.26100: offline Unicode/space path, bundled backend, EN/RU, saved IDs/views, independent APPDATA, reinstall/data preservation, uninstall and cleanup. SHA256 `7861ca8457430cd978892ba9b5d3fb17d628791b560991647e04c2734d394b71`. This is not Windows11 release acceptance. |
-| Original category fixture | `ea3f2057`, [39705377859](https://github.com/kornouhovas/workspace/actions/runs/39705377859) | **All3 pass**209 UI checks,50states/150captures/50interactions, normal Electron quit. Actual project actions and Source-tools history replace stale cell selectors. Shared helper extraction renews these consumers again in the full-layout continuation. |
-| Shared layout/rename consumers | Local fixed story/driver inputs | **407 UI checks**, original rename96states/288captures and unfiltered original Ladle302states/906captures pass with normal quit. Copied old-selector mutation fails both EN/RU controls; throwaways removed. Hidden content/accessible compact headers and below-minimum daily-control stress are adapted under the declared1024px minimum; operation paths/forms retain420px checks. Hosted unfiltered renewal remains required. |
-| Continuation inventory | `a959e7a9`, [39706193093](https://github.com/kornouhovas/workspace/actions/runs/39706193093); repair `50d6ee5e`, [39706702525](https://github.com/kornouhovas/workspace/actions/runs/39706702525) | First all3 fail a literal-condition fixture before UI/layout/runtimes. Repaired guard compares evaluated ordered commands/environment with original verify for each profile/OS. Local133pass/3skip, both reviews0. Focused39706702525 passes all3 (Mac91pass/3skip; Windows94pass each). Runtime tails39706958232 then fail all3 at category header overflow before any runtime tail. |
-| Independent review | Cumulative source, snapshot delta and subsequent fixture/route repairs separately reviewed | Standards0 and Spec0; current actual appearance independently reviewed. Final acceptance-ledger audit remains required. |
+| Original unfiltered layout + native regression | [39711258611](https://github.com/kornouhovas/workspace/actions/runs/39711258611) | **All3 pass**, inspected:302states/906captures, normal Electron quit; new production-CSS/fonts native regression passes eachhost. EN/RU, legal120/180px columns at1024/1440px windows, exact Save, zero cancelled writes, focus return and Hint bounds. Old CSS and CSS-only overlap controls fail separately; complete repair passes. |
+| Full broad desktop/package | [39712591684](https://github.com/kornouhovas/workspace/actions/runs/39712591684) | **All3 failed** at the ambiguous global source-root locator in the original development runtime. Common531/531 and lint/typecheck/docs pass; Mac2746pass/27skip; each Windows2843pass/13skip including isolated suites. Prefix creation/native routes pass; later runtime/package rows are unreached. Original logs and artifacts retained. Focused driver repair renewal is pending. |
+| Coherent desktop | [39712599909](https://github.com/kornouhovas/workspace/actions/runs/39712599909) | **All3 pass, inspected**. Mac M1 Virtual/kernel25.6.0; Windowslatest/2022 EPYC7763/kernel10.0.26100/10.0.20348. All principal journeys, exact native/external document, dev/package Views normal exits and asserted cleanup. |
+| Strict scale | [39712595815](https://github.com/kornouhovas/workspace/actions/runs/39712595815) | **Both pass, inspected**:32 functional/timing observations,10 memory samples,4 normal app/backend exits and cleanup eachhost. Mac M1 Virtual/kernel23.6.0 max222.2ms, conservative peak941,244,416B. Windows EPYC7763/kernel10.0.26100 max294.1ms, peak870,428,672B. Original300ms limit retained. |
+| Actual Mac DMG | [39712603825](https://github.com/kornouhovas/workspace/actions/runs/39712603825) | **Pass, inspected**, macOS14.8.9arm64: outside-build install, bundled backend, EN/RU, saved IDs/views, isolation, reopen/replacement/data preservation, normal quit and cleanup. SHA256 `e2bff9866343fe81a5810754e132e84d3081c2f7fc5366374c40aa1407a1685e`. |
+| Actual Windows NSIS | [39712607793](https://github.com/kornouhovas/workspace/actions/runs/39712607793) | **Pass, inspected**, Server2025x64/kernel10.0.26100: offline Unicode/space path, bundled backend, EN/RU, persisted IDs/views, independent APPDATA, reinstall/data preservation, uninstall and cleanup. SHA256 `932f2e31af64c32e50bc5f928037bf6ff2f598974d2d330373b17f90854474b2`. This is not Windows11 release acceptance. |
+| Independent review | Cumulative source and subsequent scoped deltas separately reviewed | Standards0 and Spec0; current changed appearance0 material findings. Final acceptance-ledger audit remains required. |
+
+Regression seams are owner-confirmed: real disposable SQLite/public Workspace
+service, UI user actions and actual Electron/package. Existing107 service checks
+and stale-revision/foreign-source negative controls protect data safety; affected
+UI352/352 and actual production-CSS/native bounds protect the header repair.
+The full/current platform rows renew integrated retained guarantees.
+
+Earlier39710122953 at458be520 passes Mac/Windowslatest full layouts but fails
+Windows2022 rename-list-loading-direct-russian420 control reachability after611
+captures, with normal quit. Changed-diagnostic39711258611 completes the original
+command on all3 without reproducing that failure. Original same-measurement
+predicate is retained; finite failure geometry is verified with a controlled
+negative native trigger. No unique historical cause or universal reliability
+is claimed. The portaled history has real layout/wrapping and keyboard/action
+coverage; the old `.project-rename button` geometry selector is not claimed to
+enumerate its portaled buttons. See the plan for complete retained failure maps.
 
 ## Limits and remaining work
 
@@ -110,8 +117,10 @@ cover their actual hosts. Later local layout passes do not erase these failures.
 Historical native owner-expiry and strict misses remain negative receipts in
 the plan; profiling does not establish one universal cause.
 
-#69 still owns renewed full/layout/strict/coherent/installer/appearance
-acceptance and final ledger/integration. No required failed row is transferred
+#69 still owns focused original-runtime renewal on all three hosts, every
+unreached development/package tail, and final ledger/integration. The repaired
+original local command completes base runtime, rename and category move; this
+does not substitute for hosted acceptance. No required failed row is transferred
 to #67. #55 owns persisted sessions; #56–#58 editor/draft refinements; #60 and
 descendants filesystem/recovery extensions; #67 final UX01–UX20/platform/scale
 acceptance; #42 release integration. #47/#7/#42 remain open. No release, main

@@ -1,3 +1,4 @@
+import { enterContextFor } from "./runtime-context-tools.mjs";
 // User-facing navigation shared by inherited native smoke journeys.
 export async function openSettingsSection(page, section = "general") {
   await restoreRuntimeSidebar(page);
@@ -55,15 +56,19 @@ export async function waitForWorkspaceNavigation(page) {
 // Retained 420px stress captures use the accepted shell's real hide/restore action.
 // Required desktop captures keep their expanded sidebar.
 export async function setRuntimeCaptureViewport(page, size) {
-  await page.setViewportSize(size);
   const collapse = page.getByRole('button', {name:/^(Collapse sidebar|Свернуть боковую панель)$/});
   const restore = page.getByRole('button', {name:/^(Restore sidebar|Восстановить боковую панель)$/});
   if(size.width === 420) {
-    if(await collapse.isVisible()) await collapse.click();
+    // Keep the real toggle reachable before a clamped source popup can cover
+    // the sidebar in the below-minimum stress viewport. Keyboard activation
+    // also preserves an open nonmodal tools surface (no outside pointerdown).
+    if(await collapse.isVisible()) await collapse.press("Enter");
+    await page.setViewportSize(size);
     await restore.waitFor();
     if(await restore.getAttribute('aria-expanded') !== 'false') throw new Error('Stress capture sidebar must be collapsed');
   } else {
-    if(await restore.isVisible()) await restore.click();
+    await page.setViewportSize(size);
+    if(await restore.isVisible()) await restore.press("Enter");
     await collapse.waitFor();
     if(await collapse.getAttribute('aria-expanded') !== 'true') throw new Error('Desktop capture sidebar must be expanded');
   }
@@ -72,4 +77,22 @@ export async function setRuntimeCaptureViewport(page, size) {
 async function restoreRuntimeSidebar(page) {
   const restore=page.getByRole('button',{name:/^(Restore sidebar|Восстановить боковую панель)$/});
   if(await restore.isVisible()) await restore.click();
+}
+
+// Observe the selected source through its actual tools surface.
+export async function showRuntimeSourceRoot(page, canonicalRoot) {
+  await returnToWorkspace(page);
+  const root=page.getByRole("dialog",{name:/^(Source tools|Инструменты источника)$/,includeHidden:true})
+    .locator(":scope > .workspace-root").and(page.getByText(canonicalRoot,{exact:true}));
+  return enterContextFor(page,root);
+}
+
+// Dismiss nonmodal tools before selecting another workspace.
+export async function dismissRuntimeTools(page) {
+  // Locator.all() entries are live nth locators: close from the end so a
+  // removed earlier entry cannot invalidate the next one. Keyboard activation
+  // also avoids outside pointer handlers closing another surface mid-iteration.
+  for(const trigger of (await page.locator('.context-tools-trigger[aria-expanded="true"]').all()).reverse()) {
+    await trigger.focus();await trigger.press("Enter");
+  }
 }

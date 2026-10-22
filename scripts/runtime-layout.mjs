@@ -30,6 +30,9 @@ export async function measureDiscoveryLayout(page) {
         elements: Array.from(globalThis.document.querySelectorAll(".discovery-panel, .discovery-effects, .discovery-effects li, .discovery-entries li, .workspace-root, .project-table td, .project-table th, .workspace-form-actions, .text-value-button, .text-value-editor"))
           .filter((node) => {
             if (node.scrollWidth <= node.clientWidth + 1) return false;
+            // Match the accepted 1024px minimum and the shared Ladle stress
+            // policy. Operation forms/paths and supported windows still fail.
+            if (globalThis.innerWidth < 1024 && node.matches(".daily-controls > .workspace-form-actions")) return false;
             // The compact heading intentionally ellipsizes a noninteractive path;
             // its full text remains accessible. Other clipping is still a failure.
             if (node.matches(".workspace-toolbar .workspace-root")) {
@@ -54,4 +57,16 @@ export async function waitForCategoryMoveEditor(page, originalCategoryId) {
     return !!editor && editor.value === expected && editor === globalThis.document.activeElement && !editor.disabled;
   }, originalCategoryId, { timeout: 15000 });
   await ready.dispose();
+}
+
+
+// Settings retain the inert workspace underneath. Inspect the actual selected
+// Workspaces panel and its content, not hidden workspace headings or other tabs.
+export async function measureRuntimeWorkspaceSettings(page,language="en") {
+  const panel=page.getByRole("tabpanel",{name:language === "en" ? "Workspaces" : "Рабочие пространства",exact:true});
+  return withDeadline(panel.evaluate(panel => ({
+    document: globalThis.document.documentElement.scrollWidth > globalThis.innerWidth,
+    elements: [panel,...panel.querySelectorAll(".workspace-root, .workspace-management__row, .workspace-removal")]
+      .filter(node => node.scrollWidth > node.clientWidth + 1).map(node => node.className || node.id || node.tagName),
+  })),15000,"Runtime workspace settings layout");
 }

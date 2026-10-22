@@ -1261,3 +1261,38 @@ exact keyboard Save/Cancel and focus return with normal shutdown/owned cleanup.
 It does not replace any original layout assertion. Application input changes
 require renewed full/strict/coherent/installer/appearance acceptance after the
 focused original failure passes; earlier test-only reuse does not apply.
+
+
+## Issue 69 source-context runtime reconciliation
+
+Full `39712591684` at `770e07e5` passes common/platform suites and the
+shell/workspaces/source/creation prefixes, then fails the original
+`npm run smoke:runtime -- dev` on all three hosts: a global root-path locator
+matches both Source tools and retained Workspaces settings. Later runtime and
+package rows are unreached. Retain those failures and their successful cleanup.
+
+Dispatch `checks: workspace-root-runtime` after local reconciliation and review.
+Only `focused-rename-runtime` runs, on macOS latest, Windows latest and Windows
+2022: build, native source-context/layout and route regressions, then the exact
+original development runtime command (including rename/category journeys).
+Pipefail, exact SHA/run/attempt provenance and always-uploaded
+`issue-69-source-root-runtime-*` artifacts remain. Ordinary/full, raw-rename and
+viewport selections are unchanged. Inspect original results and owned cleanup
+before renewing missing consumers.
+
+The driver adapts current source/setup ownership, keyboard-preserved context,
+live context closure and visible settings geometry. Only the already accepted
+below-minimum daily toolbar is excluded at widths below1024; operation controls
+at420 and all supported-width overflow assertions remain. Native negative
+controls distinguish these cases. Recovery Escape targets its focusable heading
+inside the existing owning handler; cancellation and data-preservation assertions
+remain.
+
+Apply evidence reuse only after reviewing the entire delta from770e07e5.
+The changed capture helper is consumed by runtime, creation, rename and category
+move drivers; renew each required development and packaged mode. The existing
+`source-runtime` / `runtime-tails` profile completes these consumers and every
+unreached runtime/package tail after focused success. Strict, coherent, installer
+and appearance receipts retain their actual770e07e5 source only when application,
+build, resource, dependency and execution inputs are proved unchanged. No failed
+or unreached row becomes passing through reuse.
