@@ -225,3 +225,18 @@ MultiSelect driver consumes the new helper, follow focused success with changed
 Windows MultiSelect consumers and unreached macOS Views; app/build/dependency
 inputs and earlier passing property/selection/Single Select receipts remain at
 `d4c6206a`. Exact renewed results belong in the issue checkpoint.
+
+The full Windows 2022 job passes all required commands at `d4c6206a`. Windows
+latest passes 288 tests, property/selection/Select/MultiSelect, then its Views
+execution is cancelled by a premature same-branch manual dispatch. This is a
+coordinator error under the existing workflow concurrency group; cancelled Views
+is unverified, not a product failure or a passing receipt. Its completed reports
+were uploaded and inspected independently. No active-run overlap is used for
+subsequent dispatches.
+
+Focused macOS renewal [39847979743](https://github.com/kornouhovas/workspace/actions/runs/39847979743)
+at `c645fb21` succeeds. The final `property-renewal` route fills macOS Views,
+Windows latest Views, and both Windows changed MultiSelect consumers. Twenty-one
+routing checks and both independent reviews validate this bounded mapping,
+actual failure propagation and exclusion of accepted prefixes/package routes.
+Current exact result/artifact/acceptance receipts remain in GitHub.

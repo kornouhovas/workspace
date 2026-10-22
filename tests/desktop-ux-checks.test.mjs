@@ -255,3 +255,27 @@ test('property repair selects only failed hosts/commands before completing chang
   assert.equal(spawnSync(process.execPath,['scripts/desktop-ux-checks.mjs',profile,'--failure-probe'],{encoding:'utf8'}).status,23);
  }
 });
+
+test('property renewal runs changed Windows MultiSelect and unreached macOS Views without replaying accepted prefixes',async()=>{
+ const {propertyRenewalCommands}=await import('../scripts/desktop-ux-checks.mjs');
+ for(const platform of ['darwin','win32']){
+  const commands=propertyRenewalCommands(platform),text=JSON.stringify(commands);
+  assert.ok(text.includes('desktop-ux-checks.test.mjs'));
+  assert.ok(text.includes(platform==='darwin'?'smoke:views':'smoke:multiselect'));
+  for(const excluded of ['smoke-property-management','smoke-selection-editors','smoke:select','package:built','property-management-ui.test'])assert.equal(text.includes(excluded),false,excluded);
+  assert.equal(commands.length,2);
+ }
+ assert.ok(JSON.stringify(propertyRenewalCommands('win32',true)).includes('smoke:views'));
+ assert.equal(propertyRenewalCommands('win32',true).length,3);
+ assert.equal(spawnSync(process.execPath,['scripts/desktop-ux-checks.mjs','property-renewal','--failure-probe'],{encoding:'utf8'}).status,23);
+ const {readFile}=await import('node:fs/promises'),{load}=await import('js-yaml'),{runInNewContext}=await import('node:vm');
+ const workflow=load(await readFile('.github/workflows/desktop-ci.yml','utf8')),job=workflow.jobs['desktop-ux'];
+ assert.ok(workflow.on.workflow_dispatch.inputs.desktop_ux_profile.options.includes('property-renewal'));
+ const context={inputs:{desktop_ux_profile:'property-renewal',desktop_ux_failure_probe:false,desktop_ux_category_only:false,desktop_ux_packaged_only:false},fromJSON:JSON.parse,cancelled:()=>false};
+ assert.deepEqual(Array.from(runInNewContext(job.strategy.matrix.os.slice(3,-2),context)),['macos-latest','windows-latest','windows-2022']);
+ const selected=job.steps.filter(step=>step.run&&(!step.if||runInNewContext(step.if.slice(3,-2),context))).map(step=>step.run);
+ const renewal=job.steps.find(step=>step.run==='node scripts/desktop-ux-checks.mjs property-renewal');
+ for(const os of ['macos-latest','windows-latest','windows-2022'])assert.equal(runInNewContext(renewal.env.WORKSPACE_PROPERTY_VIEWS_RENEW.slice(3,-2),{matrix:{os}}),os==='windows-latest'?'1':'0');
+ assert.ok(selected.includes('node scripts/desktop-ux-checks.mjs property-renewal'));
+ assert.equal(selected.some(command=>/test:desktop-ux|package:built|check:artifact|desktop-ux-checks.mjs properties$/.test(command)),false);
+});

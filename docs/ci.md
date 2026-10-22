@@ -1450,3 +1450,15 @@ ordinary workflow default changes in this repair.
 The property repair profile finishes Electron's lazy binary extraction serially
 before its parallel native regression workers, as the ordinary suite runner does.
 The original commands remain behind that passing preparation/regression gate.
+
+For #58's subsequent macOS MultiSelect reopen/focus failure, the existing
+`selection-focus` profile renews the failed original command and native/routing
+regressions on macOS. After its success, `property-renewal` runs only macOS Views,
+both Windows changed MultiSelect consumers, and Windows latest Views (its earlier
+execution was cancelled, not passed). Candidate build/provenance/artifact upload
+and original product deadlines/assertions remain. The 21 routing checks cover
+all hosts, the explicit latest-only Views environment, CLI registration and
+exit-23 propagation. Earlier accepted prefixes retain their tested `d4c6206a`
+receipts only because subsequent changes are confined to test drivers/routing.
+Do not dispatch a new manual run on the same branch until the active one ends:
+the workflow concurrency group cancels its in-progress predecessor.
