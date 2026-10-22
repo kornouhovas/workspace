@@ -66,7 +66,7 @@ export function groupAssignmentCommands() {
 }
 // Both filesystem group assignment and ordinary all-type inheritance stay explicit.
 export function filesystemAssignmentCommands() {
-  const tests = ['desktop-ux-checks.test.mjs','group-assignment-ui.test.tsx','group-assignment-interactions.test.tsx',
+  const tests = ['runtime-project-visibility.test.mjs','desktop-ux-checks.test.mjs','group-assignment-ui.test.tsx','group-assignment-interactions.test.tsx',
     'group-assignment-service.test.mjs','group-assignment-ipc.test.mjs','project-operation-dialog.test.tsx',
     'project-rename-ui.test.tsx','project-category-move-ui.test.tsx','project-rename-service.test.mjs',
     'project-rename-crash.test.mjs','project-category-move-service.test.mjs','project-category-move-crash.test.mjs',
@@ -75,6 +75,33 @@ export function filesystemAssignmentCommands() {
     ['npm',['run','typecheck']],['npm',['run','lint']],
     [process.execPath,['--import','tsx','--test',...tests.map(file=>`tests/${file}`)]],
     [process.execPath,['scripts/smoke-group-assignment.mjs','--filesystem']],
+    ['npm',['run','smoke:views']],
+    ['npm',['run','smoke:runtime','--','dev','--rename']],
+    ['npm',['run','smoke:runtime','--','dev','--category-move']],
+  ];
+}
+// Failed #63 macOS visibility consumer: renew it before unreached acceptance.
+export function filesystemAssignmentRepairCommands() {
+  return [
+    ['npm',['run','typecheck']], ['npm',['run','lint']],
+    [process.execPath,['-e',"require('electron')"]],
+    [process.execPath,['--import','tsx','--test','tests/runtime-project-visibility.test.mjs','tests/desktop-ux-checks.test.mjs']],
+    [process.execPath,['scripts/smoke-group-assignment.mjs','--filesystem']],
+  ];
+}
+// Original failed Windows latest Reveal; tracing is supplied by the diagnostic CI step.
+export function filesystemAssignmentRevealCommands() {
+  return [
+    ['npm',['run','typecheck']], ['npm',['run','lint']],
+    [process.execPath,['--import','tsx','--test','tests/project-reveal.test.mjs','tests/windows-project-reveal.test.mjs','tests/windows-project-reveal-com.test.mjs']],
+    ['npm',['run','smoke:runtime','--','dev','--rename']],
+  ];
+}
+// After focused success, renew changed test consumers and previously unreached tails.
+export function filesystemAssignmentTailCommands() {
+  // The shared visibility helper is an input to every original native consumer.
+  return [
+    ...filesystemAssignmentRepairCommands(),
     ['npm',['run','smoke:views']],
     ['npm',['run','smoke:runtime','--','dev','--rename']],
     ['npm',['run','smoke:runtime','--','dev','--category-move']],
@@ -330,9 +357,9 @@ export function runChecks(commands, run = (command,args)=>spawnSync(command,args
 }
 if(process.argv[1] && resolve(process.argv[1])===fileURLToPath(import.meta.url)) {
   const args=process.argv.slice(2);
-  if(args.some(arg=>!['foundation','board','contextual-categories','contextual-archive','contextual-archive-native','contextual-projects','contextual-project-regressions','filesystem-assignment','group-assignment','navigation','project-files','coherent','sessions','scalars','selections','properties','property-repair','property-tail','property-renewal','selection-native','selection-focus','selection-tail','--list','--failure-probe','--native-only'].includes(arg)) || !['foundation','board','contextual-categories','contextual-archive','contextual-archive-native','contextual-projects','contextual-project-regressions','filesystem-assignment','group-assignment','navigation','project-files','coherent','sessions','scalars','selections','properties','property-repair','property-tail','property-renewal','selection-native','selection-focus','selection-tail'].includes(args[0])) throw new Error('Usage: desktop-ux-checks.mjs <foundation|board|contextual-categories|contextual-archive|contextual-archive-native|contextual-projects|contextual-project-regressions|group-assignment|navigation|project-files|coherent|sessions|scalars|selections|properties|property-repair|property-tail|property-renewal|selection-native|selection-focus|selection-tail> [--list] [--failure-probe]');
+  if(args.some(arg=>!['foundation','board','contextual-categories','contextual-archive','contextual-archive-native','contextual-projects','contextual-project-regressions','filesystem-assignment-reveal','filesystem-assignment-tail','filesystem-assignment-repair','filesystem-assignment','group-assignment','navigation','project-files','coherent','sessions','scalars','selections','properties','property-repair','property-tail','property-renewal','selection-native','selection-focus','selection-tail','--list','--failure-probe','--native-only'].includes(arg)) || !['foundation','board','contextual-categories','contextual-archive','contextual-archive-native','contextual-projects','contextual-project-regressions','filesystem-assignment-reveal','filesystem-assignment-tail','filesystem-assignment-repair','filesystem-assignment','group-assignment','navigation','project-files','coherent','sessions','scalars','selections','properties','property-repair','property-tail','property-renewal','selection-native','selection-focus','selection-tail'].includes(args[0])) throw new Error('Usage: desktop-ux-checks.mjs <foundation|board|contextual-categories|contextual-archive|contextual-archive-native|contextual-projects|contextual-project-regressions|group-assignment|navigation|project-files|coherent|sessions|scalars|selections|properties|property-repair|property-tail|property-renewal|selection-native|selection-focus|selection-tail> [--list] [--failure-probe]');
   if(args.includes('--native-only') && !['navigation','project-files'].includes(args[0]))throw new Error('--native-only requires navigation or project-files');
-  const commands=args[0]==='contextual-categories' ? contextualCategoryCommands() : args[0]==='contextual-archive-native' ? contextualArchiveCommands({nativeOnly:true}) : args[0]==='contextual-archive' ? contextualArchiveCommands() : args[0]==='contextual-project-regressions' ? contextualProjectCommands({regressionsOnly:true}) : args[0]==='contextual-projects' ? contextualProjectCommands() : args[0]==='filesystem-assignment' ? filesystemAssignmentCommands() : args[0]==='group-assignment' ? groupAssignmentCommands() : args[0]==='property-renewal' ? propertyRenewalCommands(process.platform, process.env.WORKSPACE_PROPERTY_VIEWS_RENEW==='1') : args[0]==='property-repair' ? propertyRepairCommands() : args[0]==='property-tail' ? propertyTailCommands({renewViews:process.env.WORKSPACE_PROPERTY_VIEWS_RENEW==='1'}) : args[0]==='properties' ? propertyCommands() : args[0]==='selection-focus' ? selectionFocusCommands() : args[0]==='selection-native' ? selectionNativeCommands({renewViews:process.env.WORKSPACE_SELECTION_VIEWS_RENEW==='1'}) : args[0]==='selection-tail' ? selectionTailCommands() : args[0]==='selections' ? selectionCommands() : args[0]==='scalars' ? scalarCommands() : args[0]==='sessions' ? sessionCommands() : args[0]==='coherent' ? coherentCommands() : args[0]==='project-files' ? projectFilesCommands({nativeOnly:args.includes('--native-only')}) : args[0]==='navigation' ? navigationCommands({nativeOnly:args.includes('--native-only')}) : args[0]==='board' ? boardCommands() : foundationCommands({failureProbe:args.includes('--failure-probe')});
+  const commands=args[0]==='contextual-categories' ? contextualCategoryCommands() : args[0]==='contextual-archive-native' ? contextualArchiveCommands({nativeOnly:true}) : args[0]==='contextual-archive' ? contextualArchiveCommands() : args[0]==='contextual-project-regressions' ? contextualProjectCommands({regressionsOnly:true}) : args[0]==='contextual-projects' ? contextualProjectCommands() : args[0]==='filesystem-assignment-reveal' ? filesystemAssignmentRevealCommands() : args[0]==='filesystem-assignment-tail' ? filesystemAssignmentTailCommands() : args[0]==='filesystem-assignment-repair' ? filesystemAssignmentRepairCommands() : args[0]==='filesystem-assignment' ? filesystemAssignmentCommands() : args[0]==='group-assignment' ? groupAssignmentCommands() : args[0]==='property-renewal' ? propertyRenewalCommands(process.platform, process.env.WORKSPACE_PROPERTY_VIEWS_RENEW==='1') : args[0]==='property-repair' ? propertyRepairCommands() : args[0]==='property-tail' ? propertyTailCommands({renewViews:process.env.WORKSPACE_PROPERTY_VIEWS_RENEW==='1'}) : args[0]==='properties' ? propertyCommands() : args[0]==='selection-focus' ? selectionFocusCommands() : args[0]==='selection-native' ? selectionNativeCommands({renewViews:process.env.WORKSPACE_SELECTION_VIEWS_RENEW==='1'}) : args[0]==='selection-tail' ? selectionTailCommands() : args[0]==='selections' ? selectionCommands() : args[0]==='scalars' ? scalarCommands() : args[0]==='sessions' ? sessionCommands() : args[0]==='coherent' ? coherentCommands() : args[0]==='project-files' ? projectFilesCommands({nativeOnly:args.includes('--native-only')}) : args[0]==='navigation' ? navigationCommands({nativeOnly:args.includes('--native-only')}) : args[0]==='board' ? boardCommands() : foundationCommands({failureProbe:args.includes('--failure-probe')});
   if(args[0]!=='foundation' && args.includes('--failure-probe')) commands.unshift([process.execPath,['-e','process.exit(23)']]);
   if(args.includes('--list')) console.log(JSON.stringify(commands));
   else process.exitCode=runChecks(commands);

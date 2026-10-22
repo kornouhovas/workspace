@@ -394,3 +394,23 @@ test('filesystem assignment route retains all-type, native recovery and changed 
  assert.ok(workflow.on.workflow_dispatch.inputs.desktop_ux_profile.options.includes('filesystem-assignment'));
  assert.equal(spawnSync(process.execPath,['scripts/desktop-ux-checks.mjs','filesystem-assignment','--failure-probe'],{encoding:'utf8'}).status,23);
 });
+
+test('filesystem assignment repair renews the original native command and projection regression on macOS',async()=>{
+ const {filesystemAssignmentRepairCommands}=await import('../scripts/desktop-ux-checks.mjs');
+ assert.equal(typeof filesystemAssignmentRepairCommands,'function');
+ const text=JSON.stringify(filesystemAssignmentRepairCommands());
+ for(const name of ['runtime-project-visibility.test.mjs','smoke-group-assignment.mjs','--filesystem'])assert.ok(text.includes(name),name);
+ assert.equal(text.includes('smoke:views'),false,'Unreached consumers follow the focused gate');
+ const {readFile}=await import('node:fs/promises');const {load}=await import('js-yaml');
+ const workflow=load(await readFile('.github/workflows/desktop-ci.yml','utf8'));
+ assert.ok(workflow.on.workflow_dispatch.inputs.desktop_ux_profile.options.includes('filesystem-assignment-repair'));
+ assert.ok(workflow.jobs['desktop-ux'].strategy.matrix.os.includes("inputs.desktop_ux_profile == 'filesystem-assignment-repair' && '[\"macos-latest\",\"windows-latest\"]'"));
+ assert.equal(spawnSync(process.execPath,['scripts/desktop-ux-checks.mjs','filesystem-assignment-repair','--failure-probe'],{encoding:'utf8'}).status,23);
+});
+
+test('filesystem assignment tail renews all consumers of the changed shared visibility input',async()=>{
+ const {filesystemAssignmentTailCommands}=await import('../scripts/desktop-ux-checks.mjs');
+ assert.equal(typeof filesystemAssignmentTailCommands,'function');
+ const renewed=JSON.stringify(filesystemAssignmentTailCommands());
+ for(const item of ['runtime-project-visibility.test.mjs','--filesystem','smoke:views','--rename','--category-move'])assert.ok(renewed.includes(item),item);
+});

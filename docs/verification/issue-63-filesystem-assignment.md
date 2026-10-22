@@ -23,3 +23,37 @@ Inspected current EN light Table 1024, RU light Board 1024 and RU dark Board 144
 Standards review had zero findings. Spec review identified missing real Name-history and explicit focus-return assertions; both were added, then the expanded native route passed. The affected-boundary profile passed 967 tests with zero skips; renewed typecheck/lint pass. One complete `npm run test:all` on `de5c346e` finished: **3384 passed / 26 failed / 27 skipped / 3437 total**, 210.327s. [Failure inventory and full-log digest](issue-63-full-suite-failures.json) retain all exact names. Twenty-five failures are original 10-second synthetic Electron shutdown deadlines; one is the existing rename-readiness cleanup-control assertion. The failed files and their synthetic fixture/driver/lifecycle boundaries are unchanged from the accepted baseline and do not load this changed UI. Failure membership varies from #62 (nine additional names, with other prior failures absent); the timing cause is not established. No test/deadline was removed or raised and no full-suite retry was used. These remain explicit broader #67/#42 harness watchpoints. All changed assignment/dialog consumers passed; this is not a full-suite-green claim.
 
 The Spec repair was independently re-reviewed with zero remaining findings. Local Markdown links (206 files) and diff checks pass. Selected three-host CI and integrated verification remain pending. No full-green, closure or release claim. Package, installer, release and final #67/#42 gates remain separate.
+
+## Exact-SHA CI failure and renewal
+
+Run [39871362877](https://github.com/kornouhovas/workspace/actions/runs/39871362877),
+attempt 1, candidate `5aeeb1b255242963975809061c093d5798272b66`: all three hosts
+passed 967 selected tests. Windows 2022 completed every selected native consumer.
+Windows latest completed the new assignment route (13 journeys/96 captures)
+and original Views, then original rename Reveal failed: bridge opened, no selection,
+`owner_deadline`, rejected `native_unavailable` after about 12.25s. macOS failed
+with `Runtime control visibility timed out` after the new RU Table Name-history
+journey, while entering inherited 360px capture. Both failures and normal exits/
+owned cleanup remain failures; their missing tails are not accepted. Retained
+artifacts: macOS `12466307094`; Windows receipts are retained from the same run.
+
+A controlled native regression proves a related stale-projection driver defect:
+the service response can resolve before the displayed grouping changes; a visit
+to the old row returns before the current occurrence exists. It was red
+(`false !== true`) before the optional current-group readiness repair and green
+after it. The shared helper now scopes scrolling to that current group. Existing
+paths/deadlines/360px stress remain intact. This establishes the controlled cause;
+the original macOS timeout is accepted only after its actual command passes.
+
+Windows hypotheses remain explicit: initial Explorer ownership lookup exceeds its
+owner budget; UIA/window readiness is delayed; or the permit/selection boundary
+never becomes eligible. The original receipt establishes opened/owner expiry,
+not which internal boundary caused it. The focused trace distinguishes these
+predictions without changing native code or raising deadlines; trace-disabled
+original acceptance must follow.
+
+The repair changes tests/drivers/CI only. Application, service, schema, native and
+dependency inputs are unchanged from the original candidate. Retain the successful
+967-test receipts for those unchanged inputs; renew route/regression tests and
+every native consumer of the changed shared visibility helper on all three hosts
+after the focused failure gates pass. No original failure is relabelled passing.

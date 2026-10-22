@@ -53,10 +53,10 @@ export async function exerciseFolderGroupAssignment({page,query,rootPath,languag
     assert.deepEqual(await readdir(join(source,'A')),[]);
     if(onCollision){
       await call('setViewGrouping',{viewId,config:{propertyId:'name',settings:[]}});
-      await showRuntimeProject(page,'Target',project.projectId);
+      await showRuntimeProject(page,'Target',project.projectId,'Target');
       await onCollision({layout,call,project,kind:'name',toKey:JSON.stringify('Other'),relativePath:'C/Target'});
       await call('setViewGrouping',{viewId,config:{propertyId:categoryPropertyId,settings:[]}});
-      await showRuntimeProject(page,'Target',project.projectId);
+      await showRuntimeProject(page,'Target',project.projectId,'C');
     }
     for(const width of [360,1440]) {
       await page.setViewportSize({width,height:width===1440?960:720});

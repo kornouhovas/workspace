@@ -1548,3 +1548,18 @@ category-move native consumers remain explicit. `work/issue-63-assignment` retai
 EN/RU light/dark narrow/wide captures and separate normal-exit/cleanup results.
 No service/schema/native/dependency/package input changes; installer renewal remains
 with the wider milestone. Full and #67/#42 routes remain unchanged.
+
+For failed run `39871362877`, select `filesystem-assignment-repair` first.
+It limits execution to the failed macOS visibility command and Windows latest
+original rename Reveal. The Windows diagnostic enables existing bounded native
+trace; a separate subsequent step repeats the exact original trace-disabled
+command and is required for acceptance. macOS runs the projection-race regression
+and original assignment driver. Ordinary three-host defaults remain unchanged.
+
+After both focused gates pass and artifacts are inspected, select
+`filesystem-assignment-tail`. It renews the changed shared visibility regression
+and all native consumers (assignment, Views, rename and category move) on all
+three hosts because their helper input changed. Passing unchanged service/UI
+inputs retain their exact original provenance; no full-suite retry is required
+for this test-only repair. Trace-only results and unreached commands do not pass
+acceptance.

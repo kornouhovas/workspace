@@ -5,7 +5,7 @@ import {withDeadline} from "./runtime-lifecycle.mjs";
 
 // Visit the real owned row before expecting viewport-loaded fields. This only
 // scrolls; callers retain their exact control/value checks and original deadlines.
-export async function showRuntimeProject(page, name, projectId) {
+export async function showRuntimeProject(page, name, projectId, groupLabel) {
   const read = async input => {
     const result = await page.evaluate(input => globalThis.window.workspace.workspace(input), input);
     assert.equal(result.ok, true, result.ok ? undefined : JSON.stringify(result));
@@ -16,7 +16,11 @@ export async function showRuntimeProject(page, name, projectId) {
   const list = await read({type:"workspace.listProjects",workspaceId:active.workspaceId});
   const matches = [...list.projects, ...list.retainedProjects].filter(project => project.name === name && (projectId === undefined || project.projectId === projectId));
   assert.equal(matches.length, 1, "The runtime fixture must identify one owned project");
-  await page.locator(`[data-project-id="${matches[0].projectId}"]`).first().scrollIntoViewIfNeeded();
+  const group = groupLabel === undefined ? null : page.getByRole("region", {name:groupLabel, exact:true});
+  // Service replies precede renderer projection. An old occurrence can still
+  // exist under a different group; visit only the requested current projection.
+  if (group) await group.waitFor({state:"visible"});
+  await (group ?? page).locator(`[data-project-id="${matches[0].projectId}"]`).first().scrollIntoViewIfNeeded();
 }
 
 // Playwright's waitForFunction treats a Promise as truthy before its boolean

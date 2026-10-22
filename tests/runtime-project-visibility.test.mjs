@@ -1,4 +1,4 @@
-/* global HTMLElement, requestAnimationFrame, innerHeight */
+/* global HTMLElement, requestAnimationFrame, innerHeight, document */
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {createRequire} from 'node:module';
@@ -7,7 +7,7 @@ import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {_electron} from 'playwright-core';
-import {waitForRuntimeProjectPath,scrollRuntimeControlIntoView} from '../scripts/runtime-project-visibility.mjs';
+import {waitForRuntimeProjectPath,scrollRuntimeControlIntoView,showRuntimeProject} from '../scripts/runtime-project-visibility.mjs';
 
 test('runtime path readiness awaits false async reads and binds the committed workspace/project/path', async () => {
   const profile = await mkdtemp(join(tmpdir(), 'runtime-path-readiness-'));
@@ -56,6 +56,18 @@ test('runtime path readiness awaits false async reads and binds the committed wo
     await scrollRuntimeControlIntoView(page.locator('#resized-control'));
     assert.ok(await page.evaluate(() => globalThis.scrollAttempts >= 2));
     assert.equal(await page.locator('#resized-control').evaluate(element => element.isConnected && element.getBoundingClientRect().bottom <= innerHeight), true);
+
+    // A grouping command can resolve while the old owned row still exists.
+    // Visit the current group, not that old occurrence, before expecting fields.
+    await page.setContent('<section role="region" aria-label="Name"><div data-project-id="project" id="old">Old occurrence</div></section>');
+    await page.evaluate(() => {
+      globalThis.window.workspace.workspace = async input => ({ok:true,value:input.type==='workspace.load'
+        ? {activeWorkspace:{workspaceId:'workspace'}}
+        : {projects:[{projectId:'project',name:'Target',relativePath:'C/Target'}],retainedProjects:[]}});
+      setTimeout(() => { document.body.innerHTML='<section role="region" aria-label="C"><div style="height:1500px"></div><div data-project-id="project" id="current">Current occurrence</div></section>'; },100);
+    });
+    await showRuntimeProject(page,'Target','project','C');
+    assert.equal(await page.locator('#current').evaluate(element=>element.getBoundingClientRect().bottom<=innerHeight),true);
 
   } catch (error) {primary = error;}
   try {await app.close(); await rm(profile, {recursive: true, force: true});}
