@@ -1476,3 +1476,32 @@ Final current-input checks: lint, typecheck,189-file Markdown links and whitespa
 pass; rebuilt production CSS/native regression1/1 pass, exact five-file route/
 identity inventory92pass/3platformskip. Final icon-input original unfiltered local
 Ladle command is running separately; no pass is claimed before its completion.
+
+### Remaining Windows2022 control reachability diagnosis
+
+Focused39710122953/attempt1 at458be520 passes the new native regression on all
+three hosts. Original unfiltered Ladle passes302states/906captures and normal
+quit on macOS and Windowslatest. Local final icon-input original command also
+passes302states/906captures and normal quit. Windows2022 passes the repaired
+category states, then fails rename-list-loading-direct-russian420 recovery
+control reachability (611 captures saved); normal quit passes. All three exact
+SHA/run/attempt artifact reports are downloaded and inspected. This is a new
+failure, not a category-header recurrence; no broad acceptance is dispatched.
+
+The existing failure capture shows the open Source-tools/history panel but does
+not identify the failing button. Ranked hypotheses: hidden/out-of-context control
+measurement, subpixel edge after scrolling, or actual popup/control clipping.
+Add finite geometry at the same original reachability evaluation: exact predicate
+unchanged, failure-only control/4ancestors, bounded200-character label and scroll/
+viewport/visibility;1000ms deadline and existing normal shutdown/cleanup remain.
+Independent Standards/Spec diagnostic reviews both0 findings. Controlled native
+translated project-action trigger produces the original nonzero unreachable
+verdict with matching negative geometry and normal quit. Initial two probes
+styled `.project-rename button`, which is empty for this portaled history state;
+they reached the deliberate selected-count mismatch without testing the desired
+failure. They are not diagnostic validation receipts. Correct trigger probe is
+retained separately; all temporary scripts removed. This observation also calls
+for checking the actual history controls when evaluating the eventual repair.
+Current application inputs remain458be520; diagnostic changes alone do not
+establish cause or accept the failed scenario. Renew the failed original command
+with geometry before choosing a repair; no unchanged-input retry for green.

@@ -262,10 +262,24 @@ app.on('window-all-closed', () => app.quit());`);
             node.scrollIntoView({ block: "center", inline: "nearest", behavior: "instant" });
             await new Promise((done) => globalThis.requestAnimationFrame(() => globalThis.requestAnimationFrame(done)));
           });
-          assert.equal(await button.evaluate((node) => {
+          const control = await withDeadline(button.evaluate((node) => {
             const rect = node.getBoundingClientRect();
-            return rect.left >= 0 && rect.right <= globalThis.innerWidth && rect.top >= 0 && rect.bottom <= globalThis.innerHeight;
-          }), true, `${story} ${size.width} recovery control unreachable`);
+            const reachable = rect.left >= 0 && rect.right <= globalThis.innerWidth && rect.top >= 0 && rect.bottom <= globalThis.innerHeight;
+            if (reachable) return {reachable};
+            const shape = element => {
+              const bounds = element.getBoundingClientRect(), style = globalThis.getComputedStyle(element);
+              return {tag:element.tagName,className:element.className,visible:element.checkVisibility(),
+                bounds:{left:bounds.left,right:bounds.right,top:bounds.top,bottom:bounds.bottom},
+                clientWidth:element.clientWidth,scrollWidth:element.scrollWidth,scrollLeft:element.scrollLeft,
+                css:{position:style.position,overflowX:style.overflowX,overflowY:style.overflowY}};
+            };
+            const parents=[];let parent=node.parentElement;
+            for(let count=0;parent && count<4;count++,parent=parent.parentElement) parents.push(shape(parent));
+            return {reachable,node:{...shape(node),label:(node.getAttribute("aria-label") ?? node.textContent).slice(0,200)},
+              parents,viewport:{width:globalThis.innerWidth,height:globalThis.innerHeight,x:globalThis.scrollX,y:globalThis.scrollY}};
+          }),1000,"Recovery control geometry");
+          if (!control.reachable) results.failedControl = {story,...size,...control};
+          assert.equal(control.reachable, true, `${story} ${size.width} recovery control unreachable`);
         }
       }
       assert.deepEqual(layout.clippedControls, [], `${story} ${size.width} editing controls clipped after scrolling`);
