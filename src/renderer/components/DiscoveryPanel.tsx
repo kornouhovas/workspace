@@ -1,3 +1,4 @@
+import { useWorkspaceSession, WorkspaceSessionGate } from "./WorkspaceSession.js";
 import { ProjectFiles } from "./ProjectFiles.js";
 import { DailyControlsSurface, DailyControlsTarget } from "./DailyControls.js";
 import { useViewScroll } from "./useViewScroll.js";
@@ -253,7 +254,10 @@ export function DiscoveryController({ client, workspaceId, sourceId, minimumRevi
 }
 
 
-export function DiscoveryWorkspace({ memory, client, workspaceId, sourceId, refreshVersion = 0, onSourceState, onRecoveryPending, language, disabled, sourcePath, sourceStatus }: {
+export function DiscoveryWorkspace(props: Parameters<typeof DiscoveryWorkspaceContent>[0]) {
+  return <WorkspaceSessionGate language={props.language}><DiscoveryWorkspaceContent {...props}/></WorkspaceSessionGate>;
+}
+function DiscoveryWorkspaceContent({ memory, client, workspaceId, sourceId, refreshVersion = 0, onSourceState, onRecoveryPending, language, disabled, sourcePath, sourceStatus }: {
   memory?: NavigationMemory; sourceStatus?: ReactNode; sourcePath?: string; client: WorkspaceServiceClient; workspaceId: string; sourceId: string; refreshVersion?: number;
   onSourceState?(workspaceId: string, state: ProjectList["state"]): void; language: Language; disabled: boolean;
   onRecoveryPending?(pending: boolean): void;
@@ -261,7 +265,10 @@ export function DiscoveryWorkspace({ memory, client, workspaceId, sourceId, refr
   const [view, setView] = useState<WorkspaceView | null>(null);
   const navigation = useProjectNavigation(view?.viewId,memory);
   const labels = navigationLabels[language];
-  const [projectWidth, setProjectWidth] = useState(memory?.width ?? 360);
+  const session = useWorkspaceSession();
+  const [localProjectWidth, setLocalProjectWidth] = useState(memory?.width ?? 360);
+  const projectWidth = session?.state?.projectWidth ?? localProjectWidth;
+  const setProjectWidth = (width: number) => { setLocalProjectWidth(width); session?.update({ projectWidth: width }); };
   const workBody=useRef<HTMLDivElement>(null);
   const [maximumProjectWidth,setMaximumProjectWidth]=useState(600);
   useLayoutEffect(()=>{

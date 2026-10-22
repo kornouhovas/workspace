@@ -1,3 +1,4 @@
+import { useWorkspaceSession } from "./WorkspaceSession.js";
 import { AreaResize } from "./AreaResize.js";
 import { navigationLabels } from "./ProjectNavigation.js";
 import { Hint } from "./Hint.js";
@@ -36,8 +37,14 @@ export function DesktopShell({ language, data, busy, locked, onCreate, onManage,
 }) {
   const l = shellLabels[language];
   const n = navigationLabels[language];
-  const [sidebarWidth,setSidebarWidth]=useState(220);
-  const [collapsed,setCollapsed]=useState(false);
+  const session = useWorkspaceSession();
+  busy = busy || !!session && (!session.ready || session.pending);
+  const [localSidebarWidth,setLocalSidebarWidth]=useState(220);
+  const [localCollapsed,setLocalCollapsed]=useState(false);
+  const sidebarWidth = session?.state?.sidebarWidth ?? localSidebarWidth;
+  const collapsed = session?.state?.sidebarCollapsed ?? localCollapsed;
+  const setSidebarWidth = (width: number) => { setLocalSidebarWidth(width); session?.update({ sidebarWidth: width }); };
+  const setCollapsed = (value: boolean) => { setLocalCollapsed(value); session?.update({ sidebarCollapsed: value }); };
   const collapseButton=useRef<HTMLButtonElement>(null);
   const collapseChanged=useRef(false);
   useLayoutEffect(()=>{if(collapseChanged.current){collapseButton.current?.focus();collapseChanged.current=false;}},[collapsed]);

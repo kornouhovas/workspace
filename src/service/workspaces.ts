@@ -1,3 +1,4 @@
+import { createWorkspaceSessionService } from "./workspace-sessions.js";
 import { createProjectFilesService } from "./project-files.js";
 import type { SourceSettingsList } from "../contracts/workspaces.js";
 import { createMetadataRemovalService } from "./metadata-removal.js";
@@ -73,6 +74,7 @@ const nativeFilesystem: WorkspaceFilesystem = {
 };
 
 export interface WorkspaceService {
+  sessionRequest(input: unknown): ServiceResult<import("../contracts/workspace-sessions.js").WorkspaceSessionSnapshot>;
   listSources(input: unknown): ServiceResult<SourceSettingsList>;
   metadataRemovalRequest(input: unknown): ServiceResult<import("../contracts/metadata-removal.js").MetadataRemovalPreview | import("../contracts/metadata-removal.js").MetadataRemovalResult>;
   boardLayoutRequest(input: unknown): ServiceResult<BoardLayoutSnapshot>;
@@ -271,6 +273,7 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
     groupingRequest: input => createViewGroupingService(db)(input),
     filterRequest: (input, membership, propertySnapshot) => createViewFilterService(db, service)(input, membership, propertySnapshot),
     viewRequest: createViewService(db),
+    sessionRequest: createWorkspaceSessionService(db),
     previewProjectArchive: archiveMutations.previewProjectArchive,
     applyProjectArchive: archiveMutations.applyProjectArchive,
     listProjectArchiveOperations: archiveMutations.listProjectArchiveOperations,

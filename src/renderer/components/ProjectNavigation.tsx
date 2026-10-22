@@ -1,3 +1,4 @@
+import { useWorkspaceSession } from "./WorkspaceSession.js";
 import type { ViewScrollPosition } from "./useViewScroll.js";
 import { useLayoutEffect, useRef, useState } from "react";
 import * as Menu from "@radix-ui/react-dropdown-menu";
@@ -14,7 +15,15 @@ type Session = { tabs: string[]; closed: string[]; expanded: string | null; prev
 export type NavigationMemory = { state?: Session; width?: number; scrolls: Map<string,ViewScrollPosition>; names: Map<string,string> };
 export function createNavigationMemory(): NavigationMemory { return {scrolls:new Map(),names:new Map()}; }
 export function useProjectNavigation(viewId: string | undefined, memory?: NavigationMemory) {
-  const [state, set] = useState<Session>(()=>memory?.state ?? {tabs:[],closed:[],expanded:null,previews:{}});
+  const persisted = useWorkspaceSession();
+  const [local, setLocal] = useState<Session>(()=>memory?.state ?? {tabs:[],closed:[],expanded:null,previews:{}});
+  const state: Session = persisted?.state ? { tabs: persisted.state.tabs, expanded: persisted.state.expanded, previews: persisted.state.previews, closed: local.closed } : local;
+  const latest = useRef(state); latest.current = state;
+  const set = (change: (state: Session) => Session) => {
+    const next = change(latest.current); latest.current = next;
+    setLocal(next);
+    persisted?.update({ tabs: next.tabs, expanded: next.expanded, previews: next.previews });
+  };
   useLayoutEffect(()=>{if(memory) memory.state=state;},[memory,state]);
   const triggers = useRef(new Map<string, HTMLElement>());
   const preview = viewId ? state.previews[viewId] ?? null : null;

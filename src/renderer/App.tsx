@@ -1,3 +1,4 @@
+import { WorkspaceSessionProvider } from "./components/WorkspaceSession.js";
 import { createNavigationMemory, type NavigationMemory } from "./components/ProjectNavigation.js";
 import { SourceSettings } from "./components/SourceSettings.js";
 import { DesktopShell, AppearanceControl, shellLabels } from "./components/DesktopShell.js";
@@ -488,6 +489,7 @@ export function App() {
   const settingsAvailable = viewState === "ready";
   const unavailableSettings = <StatusMessage kind="info" title={shellLabels[language].unavailable} />;
   return (
+    <WorkspaceSessionProvider generation={backendGeneration} client={client} workspaceId={viewState === "ready" ? activeWorkspace?.workspaceId : undefined} language={language}>
     <DesktopShell language={language} data={workspaceData} busy={viewState !== "ready" || busy !== null || renameDraft !== null || removalTarget !== null} locked={dataLocked || sourceSettingsPending}
       onCreate={() => void pickRoot()}
       onManage={async (id, action) => {
@@ -745,5 +747,6 @@ export function App() {
       )}
     </main>
     </DesktopShell>
+    </WorkspaceSessionProvider>
   );
 }

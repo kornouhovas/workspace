@@ -126,3 +126,10 @@ The implementation uses the existing Inter, semantic tokens, local outline icons
 Hint and pinned Radix Tabs/Dropdown Menu. New tab/session, resize and scroll
 controllers are local code; no additional upstream module or dependency was
 copied. Existing bb notices and licenses remain applicable and unchanged.
+
+## Issue 55 sessions
+
+Session persistence uses the existing #69 composition, Inter assets, local
+icons/Hint and Radix controls. No new upstream code, visual asset or dependency is
+copied. Main's pinned session journeys inform the behavior, with Workspace's
+accepted unique-tab/single-project-area model and SQLite service ownership.

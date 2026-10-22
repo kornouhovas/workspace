@@ -1,3 +1,4 @@
+import { isWorkspaceSessionState } from "../contracts/workspace-sessions.js";
 import { validateSnapshotRelations } from "./data-recovery-invariants.js";
 import { validExclusions, validArchive } from "./discovery.js";
 import Database from "better-sqlite3";
@@ -17,6 +18,19 @@ function schema(db: Database.Database): SchemaEntry[] {
 function validate(db: Database.Database) {
   if (db.pragma("integrity_check", { simple: true }) !== "ok" || (db.pragma("foreign_key_check") as unknown[]).length) throw new Error("Invalid SQLite data");
   validateSnapshotRelations(db);
+  // Historical pre-migration backups retain their matching schema.
+  if (db.prepare("SELECT 1 FROM sqlite_schema WHERE type='table' AND name='workspace_sessions'").get()) {
+    if (db.prepare("SELECT 1 FROM workspaces w WHERE NOT EXISTS (SELECT 1 FROM workspace_sessions s WHERE s.workspace_id=w.id)").get()) throw new Error("Missing workspace session");
+    const rows = db.prepare("SELECT s.workspace_id, s.state, s.revision, w.source_id FROM workspace_sessions s JOIN workspaces w ON w.id=s.workspace_id").all() as { workspace_id: string; state: string; revision: number; source_id: string }[];
+    for (const row of rows) {
+      const state: unknown = JSON.parse(row.state);
+      if (!isWorkspaceSessionState(state) || !Number.isSafeInteger(row.revision) || row.revision < 0) throw new Error("Invalid workspace session");
+      const views = new Set((db.prepare("SELECT id FROM views WHERE workspace_id=?").all(row.workspace_id) as { id: string }[]).map(v => v.id));
+      const projects = new Set((db.prepare("SELECT id FROM projects WHERE source_id=?").all(row.source_id) as { id: string }[]).map(p => p.id));
+      if (Object.keys(state.previews).some(id => !views.has(id)) || [...state.tabs, ...Object.values(state.previews).filter((id): id is string => id !== null)].some(id => !projects.has(id))) throw new Error("Foreign session reference");
+    }
+  }
+
   const language = db.prepare("SELECT value FROM settings WHERE key = 'language'").get() as { value: string } | undefined;
   if (!language || !["en", "ru"].includes(language.value)) throw new Error("Invalid language");
   for (const view of db.prepare("SELECT kind, board_config, table_config, grouping_config, filter_config FROM views").all() as Record<string, string>[]) {

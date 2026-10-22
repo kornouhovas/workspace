@@ -19,6 +19,10 @@ import type { RootPickerResult } from "../contracts/desktop-api.js";
 import { isWorkspaceChangeEvent } from "../contracts/service-protocol.js";
 
 export class WorkspaceServiceClient {
+  getSession(workspaceId: string) { return this.api.workspace({ type: "workspace.getSession", workspaceId }); }
+  setSession(workspaceId: string, epoch: string, expectedRevision: number, state: import("../contracts/workspace-sessions.js").WorkspaceSessionState) {
+    return this.api.workspace({ type: "workspace.setSession", workspaceId, epoch, expectedRevision, state });
+  }
   assignProjectGroup(input: import("../contracts/group-assignment.js").AssignProjectGroupCommand): Promise<ServiceResult<import("../contracts/group-assignment.js").GroupAssignmentResult>> { return this.api.workspace(input); }
   constructor(private readonly api: WorkspaceDesktopApi = window.workspace) {}
 

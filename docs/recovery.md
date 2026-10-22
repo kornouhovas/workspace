@@ -83,3 +83,14 @@ A snapshot from an older schema is deliberately rejected by the newer version's 
 there is no implicit downgrade or execution of SQL supplied by the snapshot.
 
 Project-file contents remain outside every backup and restoration route.
+
+## Workspace sessions
+
+Application-data snapshots include each workspace's retained tab IDs/order,
+expanded project, per-view preview context and allowed widths/sidebar collapse.
+Selected saved views are included through their existing workspace-owned table.
+Restore validates session shape and ownership before replacing application data.
+On resuming, Workspace reads current project properties and checks current folder
+availability; a retained tab does not recreate a missing folder or its contents.
+Back/Forward navigation and closed-tab/scroll memory belong to the current app
+run and are not restored from a backup.

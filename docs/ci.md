@@ -1361,3 +1361,19 @@ source_runtime_platform: package-windows-latest` runs only missing Windowslatest
 dev Views/MultiSelect/Select/Date/Number/DataRecovery and all packaged consumers.
 Inspected macOS/Windows2022 package-tail receipts39724821487 retain their actual
 341ef774 source; their changed Views consumers still require focused renewal.
+
+## Workspace session acceptance
+
+For issue #55, `desktop-ci.yml` with `checks: desktop-ux` and
+`desktop_ux_profile: sessions` selects the public real-SQLite session/upgrade/
+backup/recovery and affected renderer suites, development session restart and
+original data-recovery consumers, package/resource verification, and packaged
+session/data-recovery/saved-view consumers on all three existing desktop hosts.
+The ordinary full route also includes the development and packaged session
+commands, preserving its common/platform and original runtime inventory.
+`smoke-workspace-sessions.mjs` records exact SHA/run/attempt/host, whole-window
+EN/RU/theme/size captures, fresh project content, missing tabs, independent sibling
+sessions, normal app/backend exits and asserted owned-fixture cleanup. Skipped or
+unreached consumers are not passing evidence. Changed storage/startup inputs
+require renewed affected package/migration consumers; this route does not waive
+Windows 11 release acceptance or final #67 requirements.

@@ -97,9 +97,14 @@ function fixture(run) {
   const service = openSettingsService(path);
   try {
     unwrap(service.handleCommand({ type: 'settings.setLanguage', language: 'ru' }));
+    const root = join(dir, 'root'); mkdirSync(root);
+    const workspaceId = unwrap(service.handleCommand({type:'workspace.create',rootPath:root,name:'Recovery session'})).workspaceId;
+    const initial = unwrap(service.handleQuery({type:'workspace.getSession',workspaceId}));
+    const saved = unwrap(service.handleCommand({type:'workspace.setSession',workspaceId,epoch:initial.epoch,expectedRevision:initial.revision,state:{...initial.state,sidebarWidth:300}}));
     const content = unwrap(service.handleQuery({ type: 'data.export' })).content;
+    unwrap(service.handleCommand({type:'workspace.setSession',workspaceId,epoch:saved.epoch,expectedRevision:saved.revision,state:{...saved.state,sidebarWidth:250}}));
     unwrap(service.handleCommand({ type: 'settings.setLanguage', language: 'en' }));
-    run({ dir, path, service, content });
+    run({ dir, path, service, content, workspaceId });
   } finally { service.close(); rmSync(dir, { recursive: true, force: true }); }
 }
 function altered(content, mutate) {
@@ -126,7 +131,7 @@ test('malformed, future, corrupt, foreign schema, invalid language and FK export
   }
 }));
 
-test('an engine error midway through replacement rolls back rows and immutable triggers', () => fixture(({service,content,path}) => {
+test('an engine error midway through replacement rolls back rows and immutable triggers', () => fixture(({service,content,path,workspaceId}) => {
   const prepare = Database.prototype.prepare;
   Database.prototype.prepare = function(sql) {
     if (sql.startsWith('INSERT INTO "settings"')) throw new Error('Injected SQLite write failure');
@@ -135,13 +140,14 @@ test('an engine error midway through replacement rolls back rows and immutable t
   try { assert.equal(service.handleCommand({type:'data.restore',content}).error.code,'storage'); }
   finally { Database.prototype.prepare = prepare; }
   assert.equal(unwrap(service.handleQuery({type:'settings.load'})).language,'en');
+  assert.equal(unwrap(service.handleQuery({type:'workspace.getSession',workspaceId})).state.sidebarWidth,250);
   // A successful subsequent restore confirms trigger schema and migration ledger survived.
   unwrap(service.handleCommand({type:'data.restore',content}));
   assert.equal(unwrap(service.handleQuery({type:'settings.load'})).language,'ru');
   const db = new Database(path); try { assert.deepEqual(db.pragma('foreign_key_check'),[]); } finally {db.close();}
 }));
 
-test('process death after deletion rolls back the restore on reopen', () => fixture(({dir,path,content}) => {
+test('process death after deletion rolls back the restore on reopen', () => fixture(({dir,path,content,workspaceId}) => {
   const input = join(dir,'export.json'), marker=join(dir,'inside-transaction'); writeFileSync(input,content);
   const script = `
     import Database from 'better-sqlite3'; import { readFileSync,writeFileSync } from 'node:fs';
@@ -154,7 +160,7 @@ test('process death after deletion rolls back the restore on reopen', () => fixt
   const child=spawnSync(process.execPath,['--input-type=module','-e',script],{cwd:process.cwd(),env:{...process.env,RESTORE_TEST_DB:path,RESTORE_TEST_INPUT:input,RESTORE_TEST_MARKER:marker},timeout:3000,killSignal:'SIGKILL'});
   assert.ok(existsSync(marker),child.stderr?.toString());assert.equal(child.signal,'SIGKILL');
   const reopened=openSettingsService(path);
-  try { assert.equal(unwrap(reopened.handleQuery({type:'settings.load'})).language,'en');unwrap(reopened.handleCommand({type:'data.restore',content})); }
+  try { assert.equal(unwrap(reopened.handleQuery({type:'settings.load'})).language,'en'); assert.equal(unwrap(reopened.handleQuery({type:'workspace.getSession',workspaceId})).state.sidebarWidth,250); unwrap(reopened.handleCommand({type:'data.restore',content})); assert.equal(unwrap(reopened.handleQuery({type:'workspace.getSession',workspaceId})).state.sidebarWidth,300); }
   finally {reopened.close();}
 }));
 

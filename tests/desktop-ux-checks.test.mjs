@@ -164,3 +164,12 @@ test('scroll restoration renewal keeps all three native hosts and excludes unrel
  assert.equal(selected.some(command=>/package:built|check:artifact|smoke:views|coherent|test:desktop-ux/.test(command)),false);
  assert.equal(runInNewContext(job.steps.find(step=>step.name==='Candidate provenance').env.WORKSPACE_UX_NAVIGATION_ONLY.slice(3,-2),context),'1');
 });
+
+test('session acceptance runs public migration/recovery and real dev/release consumers with failure propagation',()=>{
+ const listed=spawnSync(process.execPath,['scripts/desktop-ux-checks.mjs','sessions','--list'],{encoding:'utf8'});
+ assert.equal(listed.status,0,listed.stderr);
+ const commands=JSON.parse(listed.stdout);
+ for(const name of ['workspace-sessions-service.test.mjs','data-recovery-service.test.mjs','automatic-backups-service.test.mjs','project-navigation-ui.test.tsx','renderer-app.test.tsx'])assert.ok(JSON.stringify(commands).includes(name),name);
+ assert.ok(commands.some(([,args])=>args.includes('scripts/smoke-workspace-sessions.mjs')&&args.includes('dev')));
+ assert.equal(spawnSync(process.execPath,['scripts/desktop-ux-checks.mjs','sessions','--failure-probe'],{encoding:'utf8'}).status,23);
+});

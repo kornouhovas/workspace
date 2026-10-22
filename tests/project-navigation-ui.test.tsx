@@ -243,3 +243,83 @@ test("non-editor row click previews and close returns focus to the project's pre
   await waitFor(()=>assert.equal(document.activeElement===screen.getByRole("button",{name:"Preview project: Atlas"}),true));
  }finally{f.dispose();}
 });
+
+test("a fresh workspace mount restores saved expanded content and resizing without replaying default state", async()=>{
+ const f=fixture();
+ try {
+  const {WorkspaceSessionProvider}=await import("../src/renderer/components/WorkspaceSession.js");
+  const initial=await f.client.getSession(f.workspace.workspaceId);assert.equal(initial.ok,true);if(!initial.ok)return;
+  const projects=await f.client.listProjects(f.workspace.workspaceId);assert.equal(projects.ok,true);if(!projects.ok)return;
+  const project=projects.value.projects.find(p=>p.name==="Atlas")!;
+  const state={...initial.value.state,tabs:[project.projectId],expanded:project.projectId,projectWidth:480};
+  assert.equal((await f.client.setSession(f.workspace.workspaceId,initial.value.epoch,initial.value.revision,state)).ok,true);
+  const mount=()=> <WorkspaceSessionProvider client={f.client} workspaceId={f.workspace.workspaceId} language="en"><DiscoveryWorkspace client={f.client} workspaceId={f.workspace.workspaceId} sourceId={f.workspace.sourceId} language="en" disabled={false}/></WorkspaceSessionProvider>;
+  const rendered=render(mount());
+  await screen.findByRole("tab",{name:"Atlas"});
+  await screen.findByRole("button",{name:"Return project to the right"});
+  const user=userEvent.setup({document});await user.click(screen.getByRole("button",{name:"Return project to the right"}));
+  await waitFor(()=>assert.equal((f.service.handleQuery({type:"workspace.getSession",workspaceId:f.workspace.workspaceId})).value.state.expanded,null));
+  rendered.unmount();render(mount());
+  await screen.findByRole("button",{name:"Expand project"});
+  assert.equal(screen.queryByRole("tab",{name:"Atlas"}),null);
+  assert.equal(f.service.handleQuery({type:"workspace.getSession",workspaceId:f.workspace.workspaceId}).value.state.projectWidth,480);
+ } finally {f.dispose();}
+});
+
+test("view deletion reconciles saved preview context before the next project action",async()=>{
+ const f=fixture();
+ try {
+  const {WorkspaceSessionProvider}=await import("../src/renderer/components/WorkspaceSession.js");
+  const id=f.workspace.workspaceId;
+  const board=f.service.handleCommand({type:"workspace.createView",workspaceId:id,name:"Board",kind:"board"}).value.activeViewId;
+  const project=f.service.handleQuery({type:"workspace.listProjects",workspaceId:id}).value.projects[0].projectId;
+  const initial=await f.client.getSession(id);if(!initial.ok)throw Error("session");
+  await f.client.setSession(id,initial.value.epoch,initial.value.revision,{...initial.value.state,previews:{[f.workspace.viewId]:project,[board]:project}});
+  render(<WorkspaceSessionProvider client={f.client} workspaceId={id} language="en"><DiscoveryWorkspace client={f.client} workspaceId={id} sourceId={f.workspace.sourceId} language="en" disabled={false}/></WorkspaceSessionProvider>);
+  await screen.findByRole("button",{name:"Close preview"});
+  assert.equal(f.service.handleCommand({type:"workspace.deleteView",workspaceId:id,viewId:board}).ok,true);
+  await waitFor(()=>assert.equal(screen.getByRole("tab",{name:"Table"}).getAttribute("aria-selected"),"true"));
+  await userEvent.setup({document}).click(screen.getByRole("button",{name:"Close preview"}));
+  await waitFor(()=>assert.deepEqual(f.service.handleQuery({type:"workspace.getSession",workspaceId:id}).value.state.previews,{[f.workspace.viewId]:null}));
+  assert.equal(screen.queryByRole("alert"),null);
+ } finally {f.dispose();}
+});
+
+test("late session reads cannot restore a previous workspace or write unhydrated defaults",async()=>{
+ const f=fixture();
+ try {
+  const {WorkspaceSessionProvider}=await import("../src/renderer/components/WorkspaceSession.js");
+  const sibling=f.service.handleCommand({type:"workspace.create",rootPath:f.workspace.canonicalRoot,name:"Sibling"}).value;
+  let release: (()=>void)|undefined;
+  const client=new WorkspaceServiceClient({...f.api,workspace:async(input:{type:string;workspaceId:string})=>{
+   const result=await f.api.workspace(input);
+   if(input.type==="workspace.getSession"&&input.workspaceId===f.workspace.workspaceId)await new Promise<void>(resolve=>{release=resolve;});
+   return result;
+  }} as unknown as WorkspaceDesktopApi);
+  const mount=(workspace:typeof f.workspace)=><WorkspaceSessionProvider client={client} workspaceId={workspace.workspaceId} language="en"><DiscoveryWorkspace key={workspace.workspaceId} client={client} workspaceId={workspace.workspaceId} sourceId={workspace.sourceId} language="en" disabled={false}/></WorkspaceSessionProvider>;
+  const rendered=render(mount(f.workspace));
+  await waitFor(()=>assert.ok(release));assert.equal(screen.queryByRole("tab",{name:"Table"}),null);
+  rendered.rerender(mount(sibling));await screen.findByRole("tab",{name:"Table"});release!();
+  await waitFor(()=>assert.equal(f.service.handleQuery({type:"workspace.getSession",workspaceId:f.workspace.workspaceId}).value.revision,0));
+  assert.equal(f.service.handleQuery({type:"workspace.getSession",workspaceId:sibling.workspaceId}).value.revision,0);
+ }finally{f.dispose();}
+});
+
+test("EN/RU session save failure offers explicit reload and never replays the failed expansion",async()=>{
+ for(const language of ["en","ru"] as const){
+ const f=fixture();
+ try{
+  const {WorkspaceSessionProvider}=await import("../src/renderer/components/WorkspaceSession.js");
+  const id=f.workspace.workspaceId, initial=f.service.handleQuery({type:"workspace.getSession",workspaceId:id}).value;
+  const project=f.service.handleQuery({type:"workspace.listProjects",workspaceId:id}).value.projects[0].projectId;
+  await f.client.setSession(id,initial.epoch,initial.revision,{...initial.state,previews:{[f.workspace.viewId]:project}});
+  const before=f.service.handleQuery({type:"workspace.getSession",workspaceId:id}).value;
+  const client=new WorkspaceServiceClient({...f.api,workspace:async(input:{type:string})=>input.type==="workspace.setSession"?{ok:false,error:{code:"storage",message:"Fixture write failure"}}:f.api.workspace(input)} as unknown as WorkspaceDesktopApi);
+  render(<WorkspaceSessionProvider client={client} workspaceId={id} language={language}><DiscoveryWorkspace client={client} workspaceId={id} sourceId={f.workspace.sourceId} language={language} disabled={false}/></WorkspaceSessionProvider>);
+  const user=userEvent.setup({document});await user.click(await screen.findByRole("button",{name:language==="en"?"Expand project":"Развернуть проект"}));
+  const alert=await screen.findByRole("alert");await user.click(within(alert).getByRole("button"));
+  await screen.findByRole("button",{name:language==="en"?"Expand project":"Развернуть проект"});
+  assert.deepEqual(f.service.handleQuery({type:"workspace.getSession",workspaceId:id}).value,before);
+ }finally{f.dispose();}
+ }
+});

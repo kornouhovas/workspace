@@ -727,3 +727,30 @@ macOS `shell.showItemInFolder` and the Windows ready-view/SelectItem adapter. No
 embedded viewer or general file mutation is added. Path checks and IPC permits do
 not lock the filesystem: the existing substitution/TOCTOU limits still apply; no
 atomic confinement against a hostile concurrent filesystem mutator is claimed.
+
+## Device-local workspace sessions (issue 55)
+
+Migration 0023 initializes one session per existing workspace and installs an
+insert trigger for new workspaces. Its workspace foreign key cascades only the
+removed workspace's session. Selected saved views remain authoritative in
+`workspace_view_selection`; deleting a view removes its preview context and
+advances the session revision in the same transaction.
+
+`workspace.getSession` and `workspace.setSession` are narrow typed service
+requests. They persist unique ordered logical project IDs, one expanded project,
+view-owned preview IDs, sidebar width/collapse and project-area width. The service
+validates ownership against current workspace views and source projects, bounded
+sizes and expanded-tab membership. A matching revision and runtime-only epoch
+are required for writes. The epoch changes after service restart and successful
+application-data restore, so restored revision numbers cannot authorize a writer
+from the previous runtime.
+
+The renderer hydrates before exposing project navigation and never saves default
+state while a read is pending. It serializes/coalesces accepted local changes,
+rejects late workspace/generation reads, refreshes changed view context and shows
+explicit reload recovery after a failed save. Back/Forward and closed-tab/scroll
+memory remain current-run state. Project properties, availability and the file
+tree come from current services and filesystem authorization, never from session
+content. Existing backup/export includes the session table; restore validates
+its shape, completeness and ownership before replacing any live data. Historical
+pre-migration snapshots keep their exact schema and matching-version recovery.

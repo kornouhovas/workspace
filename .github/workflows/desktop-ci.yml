@@ -13,7 +13,7 @@ on:
       desktop_ux_profile:
         description: With desktop-ux, select foundation, grouped Board or project navigation acceptance
         type: choice
-        options: [foundation, board, navigation, navigation-native, scroll-restoration, project-files, project-files-native, coherent]
+        options: [foundation, board, navigation, navigation-native, scroll-restoration, project-files, project-files-native, coherent, sessions]
         default: foundation
       desktop_ux_failure_probe:
         description: With desktop-ux, deliberately fail a selected check to verify propagation
@@ -311,8 +311,11 @@ jobs:
         if: ${{ inputs.desktop_ux_failure_probe }}
         run: node scripts/desktop-ux-checks.mjs foundation --failure-probe
       - name: Affected UI, services and real Electron flows
-        if: ${{ !inputs.desktop_ux_failure_probe && !inputs.desktop_ux_packaged_only && !inputs.desktop_ux_category_only && inputs.desktop_ux_profile != 'board' && inputs.desktop_ux_profile != 'navigation' && inputs.desktop_ux_profile != 'navigation-native' && inputs.desktop_ux_profile != 'scroll-restoration' && inputs.desktop_ux_profile != 'project-files' && inputs.desktop_ux_profile != 'project-files-native' && inputs.desktop_ux_profile != 'coherent' }}
+        if: ${{ !inputs.desktop_ux_failure_probe && !inputs.desktop_ux_packaged_only && !inputs.desktop_ux_category_only && inputs.desktop_ux_profile != 'board' && inputs.desktop_ux_profile != 'navigation' && inputs.desktop_ux_profile != 'navigation-native' && inputs.desktop_ux_profile != 'scroll-restoration' && inputs.desktop_ux_profile != 'project-files' && inputs.desktop_ux_profile != 'project-files-native' && inputs.desktop_ux_profile != 'coherent' && inputs.desktop_ux_profile != 'sessions' }}
         run: npm run test:desktop-ux
+      - name: Workspace session migration, recovery and real restart acceptance
+        if: ${{ !inputs.desktop_ux_failure_probe && inputs.desktop_ux_profile == 'sessions' }}
+        run: node scripts/desktop-ux-checks.mjs sessions
       - name: Coherent desktop principal journeys and retained guarantees
         if: ${{ !inputs.desktop_ux_failure_probe && !inputs.desktop_ux_packaged_only && !inputs.desktop_ux_category_only && inputs.desktop_ux_profile == 'coherent' }}
         run: node scripts/desktop-ux-checks.mjs coherent
@@ -345,6 +348,12 @@ jobs:
         run: npm run smoke:views -- release
         env:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-desktop-ux-packaged
+      - name: Packaged workspace session restart and recovery
+        if: ${{ !inputs.desktop_ux_failure_probe && inputs.desktop_ux_profile == 'sessions' }}
+        run: node scripts/smoke-workspace-sessions.mjs release
+      - name: Packaged session recovery consumers
+        if: ${{ !inputs.desktop_ux_failure_probe && inputs.desktop_ux_profile == 'sessions' }}
+        run: npm run smoke:data-recovery -- release
       - name: Retained packaged runtime after entry-point repair
         if: ${{ inputs.desktop_ux_packaged_only && !inputs.desktop_ux_category_only && !inputs.desktop_ux_failure_probe }}
         run: npm run smoke:runtime -- release
@@ -375,6 +384,8 @@ jobs:
             work/issue-53-board
             work/issue-54-navigation
             work/issue-64-files
+            work/issue-55-sessions-*
+            work/issue-37-data-runtime
             work/issue-48-desktop-shell
             work/issue-49-workspace-management
             work/issue-50-source-settings
@@ -623,6 +634,7 @@ jobs:
             work/ci-multiselect-*/
             work/ci-views-*/
             work/ci-data-recovery-*/
+            work/ci-sessions-*/
           if-no-files-found: warn
       - uses: actions/upload-artifact@v4
         with:
@@ -2386,6 +2398,10 @@ jobs:
         run: npm run smoke:data-recovery -- dev
         env:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-data-recovery-dev
+      - name: Development workspace session restart, backup and fresh content
+        run: node scripts/smoke-workspace-sessions.mjs dev
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-sessions-dev
       - name: Development category options UI and persistence
         run: npm run smoke:category-options -- dev
         env:
@@ -2420,6 +2436,10 @@ jobs:
         run: npm run smoke:data-recovery -- release
         env:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-data-recovery-release
+      - name: Packaged workspace session restart, backup and fresh content
+        run: node scripts/smoke-workspace-sessions.mjs release
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-sessions-release
       - name: Packaged category options UI and persistence
         run: npm run smoke:category-options -- release
         env:
@@ -2456,6 +2476,7 @@ jobs:
             work/ci-multiselect-*/
             work/ci-views-*/
             work/ci-data-recovery-*/
+            work/ci-sessions-*/
           if-no-files-found: warn
       - uses: actions/upload-artifact@v4
         with:

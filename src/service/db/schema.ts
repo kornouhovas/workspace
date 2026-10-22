@@ -303,3 +303,9 @@ export const selectOptionVisibility = sqliteTable("select_option_visibility", {
   workspaceId: text("workspace_id").notNull().references(() => workspaces.id, { onDelete: "cascade" }),
   optionId: text("option_id").notNull().references(() => selectOptions.id), hidden: integer("hidden", { mode: "boolean" }).notNull(),
 }, (table) => [primaryKey({ columns: [table.workspaceId, table.optionId] })]);
+
+export const workspaceSessions = sqliteTable("workspace_sessions", {
+  workspaceId: text("workspace_id").primaryKey().references(() => workspaces.id, { onDelete: "cascade" }),
+  revision: integer("revision").notNull().default(0),
+  state: text("state").notNull(),
+});

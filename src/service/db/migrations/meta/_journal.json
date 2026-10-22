@@ -162,6 +162,13 @@
       "when": 1791504022000,
       "tag": "0022_board_layout",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1791504023000,
+      "tag": "0023_workspace_sessions",
+      "breakpoints": true
     }
   ]
 }

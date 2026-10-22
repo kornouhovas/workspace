@@ -1,3 +1,4 @@
+import { defaultWorkspaceSession, type WorkspaceSessionSnapshot } from "../src/contracts/workspace-sessions.js";
 import { findAction } from "./context-tools-driver.js";
 import assert from "node:assert/strict";
 import { scanDirectSource, scanGroupedSource } from "../src/service/discovery.js";
@@ -142,6 +143,7 @@ function mockApi(options: MockOptions = {}) {
   const readProjects = async (input: Extract<WorkspaceRequest, { type: "workspace.listProjects" }>) => recordProjects(await (options.onProjects?.(input) ?? Promise.resolve(ok({ workspaceId: input.workspaceId,
     sourceId: `source-${input.workspaceId}`, revision: 0, mode: null, categories: [], categoryProperty: null, categoryPropertyRevision: 0, configured: false, state: "empty" as const,
     projects: [], retainedProjects: [], retainedCount: 0 }))));
+  const sessions = new Map<string, WorkspaceSessionSnapshot>();
   const workspaceRequest = async (input: WorkspaceRequest) => recordProjects(await onWorkspace(input));
   window.workspace = {
     recovery: async (input) => input.type === "data.backups"
@@ -157,7 +159,11 @@ function mockApi(options: MockOptions = {}) {
       return () => { changeListeners.delete(listener); };
     },
     settings: onSettings,
-    workspace: ((input: WorkspaceRequest) => input.type === "workspace.getTableLayout"
+    workspace: ((input: WorkspaceRequest) => input.type === "workspace.getSession" || input.type === "workspace.setSession"
+      ? (() => { const session = sessions.get(input.workspaceId) ?? { workspaceId: input.workspaceId, activeViewId: `view-${input.workspaceId}`, epoch: randomUUID(), revision: 0, state: defaultWorkspaceSession() };
+        const next = input.type === "workspace.setSession" ? { ...session, revision: session.revision + 1, state: input.state } : session;
+        sessions.set(input.workspaceId, next); return Promise.resolve(ok(next)); })()
+      : input.type === "workspace.getTableLayout"
       ? Promise.resolve(ok({ workspaceId: input.workspaceId, viewId: input.viewId, config: { columns: [], rowOrder: [] } }))
       : input.type === "workspace.getViewGrouping"
       ? Promise.resolve(ok({ workspaceId: input.workspaceId, viewId: input.viewId, config: { propertyId: null, settings: [] } }))
