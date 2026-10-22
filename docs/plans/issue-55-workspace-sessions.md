@@ -65,7 +65,8 @@ assertions. No scenario is retired at this preparation stage.
 ## Progress
 
 Implementation and local acceptance are recorded below. All three test seams
-are confirmed; platform acceptance and integration remain gated by GitHub #55.
+are confirmed; final platform acceptance is recorded below. Integration status
+and the delivered SHA are recorded in GitHub #55.
 
 ## Implementation and focused evidence
 
@@ -124,7 +125,7 @@ fixtures as above. Extend existing interrupted/engine-failed recovery fixtures
 with populated saved/current sessions and assert rollback/restore of their widths.
 No accepted requirement or scenario is retired.
 
-## Remaining acceptance
+## Gates at the first local candidate
 
 Independent Standards/Spec review, any repairs and affected renewal; completed
 candidate full suite and full migration renewal; actual supported desktop and
@@ -166,5 +167,37 @@ Windowslatest NSIS installation/reopen consumers and candidate-only packaged
 performance on macOS14/Windowslatest. Existing immutable performance baseline
 and final Windows11/67/42 gates are retained; no release is authorized.
 
-Remaining: inspect those exact-SHA receipts/artifacts, diagnose any failures,
-update the acceptance map, verify and integrate the accepted candidate only.
+The selected hosted acceptance has passed; inspected receipts and final mapping
+follow. Integration and its delivered SHA are recorded in GitHub #55.
+
+
+## Accepted candidate and inspected platform evidence
+
+Tested application candidate: **b2cf0f94f7695ed238b37cdd494218cfed1aaa95**.
+All runs below are attempt1. Reports and captures were downloaded under
+`work/issue-55-ci/<run>/` and inspected; this directory is disposable local evidence,
+not published application data. The final report commit changes this plan only;
+application/schema/native/dependency/build inputs remain identical to b2cf0f9.
+
+| Acceptance boundary | Exact receipt and observed result |
+| --- | --- |
+| Service/renderer/storage | [39799171539](https://github.com/kornouhovas/workspace/actions/runs/39799171539), desktop-ux/sessions: macOS latest298/298; Windows latest and Windows2022 each295pass/0fail/2 POSIX-only skips. The skipped POSIX-name/archive scenarios pass on macOS; no new session scenario is skipped. |
+| Real session resume and backups | Same run, separate dev/release reports on all3 hosts: tabs/order/expanded/widths/collapse, fresh properties/tree after real quit/reopen, fresh-run Back endpoint, retained missing tab, manual and verified-backup restore, independent same-source sibling. Each mode/host has3 normal app/backend quits and asserted cleanup. |
+| Retained recovery and views | Same run: original dev/release data-recovery commands pass EN/RU; release report and exact job logs verify invalid-preserves, explicit backup selection/Cancel/restore/restart and normal shutdown/cleanup. The inherited recovery directory is shared between modes, so its final evidence.json is release; the dev receipt is the separate original command's successful log, not a second copy of that report. Packaged original saved-view EN/RU Table/Board lifecycle, filters/grouping/layout and folder/property operations pass with3 normal quits and cleanup. |
+| Appearance | Separate dev/release session captures on all3 hosts,16 per mode: preview/expanded × EN/RU × light/dark ×1024x720/1440x960. Inspected release contact sheets for each host and full-size narrow/wide variants against accepted #69/main/bb composition. Sidebar/tab hierarchy, one project area, real tree, density/icons, localized hints and return remain coherent. Saved widths/content and normal OS scrollbar rendering explain the fixture differences. No visual mismatch remains in this slice. |
+| macOS installation | [39799195400](https://github.com/kornouhovas/workspace/actions/runs/39799195400): macOS14.8.9 arm64, DMG install outside build directory, installed backend/SQLite, EN/RU keyboard/isolation, saved IDs/views/language reopen and app replacement preserve data; passed with asserted cleanup. |
+| Windows installation | [39800158130](https://github.com/kornouhovas/workspace/actions/runs/39800158130), temporary verification ref at the identical b2cf0f9: Windows Server2025 x64 NSIS, Unicode/space path, installed backend/keyboard/isolation, persisted IDs/settings, reinstall/APPDATA independence, uninstall and cleanup pass. This is not Windows11 desktop acceptance. |
+| Packaged representative scale | [39799180456](https://github.com/kornouhovas/workspace/actions/runs/39799180456), unchanged unprofiled original strict candidate:32 measurements and all memory samples pass on each macOS14/Windows latest. Mac max startup4229.6ms, interaction230ms, memory921174016bytes; Windows3429.8ms/298.5ms/823533568bytes. Each has4 normal app/backend quits and cleanup. Immutable baseline results remain retained; no diagnostic replaces strict acceptance. |
+
+All candidate workflows report completed/success. Review totals remain
+Standards0/Spec0, including the test/route repairs. Local full negative and exact
+144/144 renewal are retained above; no failed full invocation is called green.
+The completed issue scope is UX02/06/07/08/19's session slice, not final67/42 or a
+release. New recovery presentation66, unified draft guards56, richer unavailable
+project recovery65 and Windows11 release acceptance retain their separate owners.
+No project-file contents, remote/sync/AI capability, nested split or mutation
+Undo/Redo is added.
+
+Delivery follows the owner-authorized integration route after docs-only checks
+and source-input identity verification. The temporary install verification ref
+is removed with an exact b2cf0f9 lease after delivery; the task branch is retained.
