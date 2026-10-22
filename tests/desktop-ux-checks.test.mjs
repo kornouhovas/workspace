@@ -186,3 +186,18 @@ test('scalar profile runs shared editors, navigation and native consumers and pr
  assert.ok(workflow.jobs['desktop-ux'].steps.some(step=>step.run==='node scripts/desktop-ux-checks.mjs scalars'));
  assert.ok(workflow.jobs['desktop-ux'].steps.some(step=>step.run?.includes('node scripts/smoke-scalar-drafts.mjs release')));
 });
+
+test('selection profile covers shared choices, retained service ownership and real Electron on every host without unrelated packaging',async()=>{
+ const {selectionCommands}=await import('../scripts/desktop-ux-checks.mjs');
+ const text=JSON.stringify(selectionCommands());
+ for(const name of ['selection-editors-ui.test.tsx','scalar-drafts-ui.test.tsx','single-select-service.test.mjs','multi-select-service.test.mjs','metadata-removal-ui.test.tsx','smoke-selection-editors.mjs','smoke:select','smoke:multiselect','smoke-scalar-drafts.mjs'])assert.ok(text.includes(name),name);
+ assert.equal(spawnSync(process.execPath,['scripts/desktop-ux-checks.mjs','selections','--failure-probe'],{encoding:'utf8'}).status,23);
+ const {readFile}=await import('node:fs/promises'),{load}=await import('js-yaml'),{runInNewContext}=await import('node:vm');
+ const workflow=load(await readFile('.github/workflows/desktop-ci.yml','utf8'));
+ assert.ok(workflow.on.workflow_dispatch.inputs.desktop_ux_profile.options.includes('selections'));
+ const job=workflow.jobs['desktop-ux'],context={inputs:{desktop_ux_profile:'selections',desktop_ux_failure_probe:false,desktop_ux_category_only:false,desktop_ux_packaged_only:false},fromJSON:JSON.parse,cancelled:()=>false};
+ assert.deepEqual(Array.from(runInNewContext(job.strategy.matrix.os.slice(3,-2),context)),['macos-latest','windows-latest','windows-2022']);
+ const selected=job.steps.filter(step=>step.run&&(!step.if||runInNewContext(step.if.slice(3,-2),context))).map(step=>step.run);
+ assert.ok(selected.includes('node scripts/desktop-ux-checks.mjs selections'));
+ assert.equal(selected.some(command=>/package:built|check:artifact|test:desktop-ux/.test(command)),false);
+});

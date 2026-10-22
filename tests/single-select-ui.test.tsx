@@ -11,15 +11,15 @@ import type { WorkspaceDesktopApi } from "../src/contracts/desktop-api.js";
 import { TextPropertiesTable } from "../src/renderer/components/TextPropertiesTable.js";
 import { translate } from "../src/renderer/localization.js";
 const browser = new Window();
-Object.assign(globalThis, { window: browser, document: browser.document, HTMLElement: browser.HTMLElement, Node: browser.Node, MutationObserver: browser.MutationObserver });
+Object.assign(globalThis, { window: browser, document: browser.document, HTMLElement: browser.HTMLElement, Node: browser.Node, MutationObserver: browser.MutationObserver, CustomEvent: browser.CustomEvent, Element: browser.Element, NodeFilter: browser.NodeFilter, HTMLInputElement: browser.HTMLInputElement, ResizeObserver: browser.ResizeObserver, getComputedStyle: browser.getComputedStyle.bind(browser), requestAnimationFrame: browser.requestAnimationFrame.bind(browser), cancelAnimationFrame: browser.cancelAnimationFrame.bind(browser) });
 Object.defineProperty(globalThis, "navigator", { configurable: true, value: browser.navigator });
 const { cleanup, render, screen, waitFor } = await import("@testing-library/react");
 const { default: userEvent } = await import("@testing-library/user-event");
 // The actual backend receives every Table command through the typed client.
 // @ts-expect-error Built service module intentionally has no declarations.
 const { openSettingsService } = await import("../dist/service/settings.mjs");
-for (const language of ["en", "ru"] as const) {
-  test(`${language} keyboard creates ordinary Select/options, edits presentation, assigns, retains hidden usages and clears through real service`, async () => {
+for (const language of ["en", "ru"] as const) for (const surface of ["table", "board"] as const) {
+  test(`${language} ${surface}: keyboard creates ordinary Select/options, edits presentation, assigns, retains hidden usages and clears through real service`, async () => {
     const directory = mkdtempSync(join(tmpdir(), "select-ui-")), root = join(directory, "root");
     mkdirSync(root); mkdirSync(join(root, "Project"));
     const service = openSettingsService(join(directory, "workspace.sqlite"));
@@ -39,7 +39,7 @@ for (const language of ["en", "ru"] as const) {
     const client = new WorkspaceServiceClient(api), user = userEvent.setup();
     const t = (key: Parameters<typeof translate>[1]) => translate(language, key);
     try {
-      render(<TextPropertiesTable client={client} workspaceId={workspaceId} sourceId={sourceId} projects={projects} language={language} disabled={false} hideReveal />);
+      render(<TextPropertiesTable client={client} workspaceId={workspaceId} sourceId={sourceId} projects={projects} language={language} layout={surface === "board" ? "board" : "table"} disabled={false} hideReveal />);
       const create = await findAction("button", { name: t("createSelectProperty") });
       await waitFor(() => assert.equal(create.hasAttribute("disabled"), false));
       create.focus(); await user.keyboard("{Enter}"); await user.keyboard("Status{Enter}");
@@ -58,12 +58,12 @@ for (const language of ["en", "ru"] as const) {
       button.focus(); await user.keyboard("{Enter}");
       let editor = screen.getByRole("combobox", { name: label });
       const optionId = service.handleQuery({ type: "workspace.listTextProperties", workspaceId }).value.selectOptions[0].optionId;
-      await user.selectOptions(editor, optionId); await user.keyboard("{Enter}");
+      await user.selectOptions(editor, optionId);
       await screen.findByRole("alert");
       assert.equal((screen.getByRole("combobox", { name: label }) as HTMLSelectElement).value, optionId);
       assert.equal(document.activeElement, screen.getByRole("combobox", { name: label }));
       assert.deepEqual(service.handleQuery({ type: "workspace.listTextProperties", workspaceId }).value.selectValues, []);
-      await user.keyboard("{Enter}");
+      await user.click(screen.getByRole("button", { name: t("saveTextValue") }));
       await waitFor(() => assert.equal(button.textContent, "Ready")); assert.equal(document.activeElement, button);
       await user.click((await findAction("button",{ name: `${t("selectHide")}: Ready` })));
       await findAction("button", { name: `${t("selectShow")}: Ready` });

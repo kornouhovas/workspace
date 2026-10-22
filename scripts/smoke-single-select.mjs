@@ -82,7 +82,7 @@ try {
     const button = page.getByRole("button", { name: label, exact: true });
     await button.press("Enter");
     const editor = page.getByRole("combobox", { name: label, exact: true });
-    await editor.selectOption(optionId); await editor.press("Enter"); await button.filter({ hasText: "Ready" }).waitFor();
+    await editor.selectOption(optionId); await button.filter({ hasText: "Ready" }).waitFor();
     assert.equal(await button.evaluate(element => element === document.activeElement), true);
     await hide.click();
     await page.getByRole("button", { name: en ? "Show option: Ready" : "Показать опцию: Ready", exact: true }).waitFor();

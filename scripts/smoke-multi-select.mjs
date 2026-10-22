@@ -101,7 +101,8 @@ try {
     await button.press("Enter");
     const editor = page.getByRole("group", { name: label, exact: true });
     const ready = editor.getByRole("checkbox", { name: "Ready", exact: true });
-    await ready.focus(); await ready.press("Space"); await ready.press("Enter"); await button.filter({ hasText: "Ready" }).waitFor();
+    await ready.focus(); await ready.press("Space"); await button.filter({ hasText: "Ready" }).waitFor();
+    await ready.press("Escape"); await editor.waitFor({state:"hidden"});
     assert.equal(await button.evaluate(element => element === document.activeElement), true);
     await hide.click();
     await page.getByRole("button", { name: en ? "Show option: Ready" : "Показать опцию: Ready", exact: true }).waitFor();
@@ -118,8 +119,8 @@ try {
     const assigned = editor.getByRole("checkbox", { name: en ? "Готово (Hidden)" : "Готово (Скрыта)", exact: true });
     assert.equal(await assigned.isChecked(), true);
     const second = editor.getByRole("checkbox", { name: "Second", exact: true });
-    await second.focus(); await second.press("Space"); await second.press("Enter");
-    await button.waitFor(); await button.press("Enter");
+    await second.focus(); await second.press("Space");
+    await button.filter({hasText:"Second"}).waitFor();
     assert.equal((await query(page, { type: "workspace.listTextProperties", workspaceId })).multiSelectValues.length, 2);
     for (const width of [1024, 1440]) {
       await page.setViewportSize({ width, height: width === 1024 ? 720 : 960 });
@@ -136,7 +137,8 @@ try {
     assert.deepEqual(await query(page, { type: "workspace.listTextProperties", workspaceId }), beforeRestart);
     const reopened = page.getByRole("button", { name: label, exact: true }); await reopened.press("Enter");
     await page.getByRole("button", { name: en ? "Clear value" : "Очистить значение", exact: true }).click();
-    await reopened.waitFor();
+    await reopened.filter({hasText:en ? "No value" : "Нет значения"}).waitFor();
+    await page.getByRole("button", {name:en ? "Close" : "Закрыть",exact:true}).click();
     assert.deepEqual((await query(page, { type: "workspace.listTextProperties", workspaceId })).multiSelectValues, []);
     await reopened.press("Enter");
     const clearingEditor = page.getByRole("group", { name: label, exact: true });
@@ -160,7 +162,9 @@ try {
     await reopened.filter({ hasText: "Sibling rename" }).waitFor();
     await reopened.press("Enter");
     const remove = page.getByRole("checkbox", { name: en ? "Sibling rename (Hidden)" : "Sibling rename (Скрыта)", exact: true });
-    await remove.focus(); await remove.press("Space"); await remove.press("Enter"); await reopened.waitFor();
+    await remove.focus(); await remove.press("Space");
+    await page.waitForFunction(async workspaceId=>(await window.workspace.workspace({type:"workspace.listTextProperties",workspaceId})).value.multiSelectValues.length===1,workspaceId);
+    await page.getByRole("group",{name:label,exact:true}).getByRole("checkbox",{name:"Second",exact:true}).press("Escape");
     const remaining = (await query(page, { type: "workspace.listTextProperties", workspaceId })).multiSelectValues;
     assert.equal(remaining.length, 1); assert.equal(remaining[0].optionId, final.selectOptions[0].optionId);
     evidence.checks.push({ language, keyboard: true, options: true, renameColorOrder: true, hiddenUsagesRetained: true, sibling: true, restart: true, clear: true, invalidDraft: true, filesUnchanged: true, widths: [1024, 1440] });

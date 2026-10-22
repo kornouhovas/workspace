@@ -17,7 +17,7 @@ import { ViewFilters } from "./ViewFilters.js";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Language } from "../../contracts/settings.js";
 import type { ProjectSummary, ProjectAssociationSummary, CategoryProperty, CategoryPropertySnapshot, CategorySummary } from "../../contracts/workspaces.js";
-import type { TextPropertySnapshot } from "../../contracts/text-properties.js";
+import type { TextPropertySnapshot, TextPropertyDefinition } from "../../contracts/text-properties.js";
 import { WorkspaceServiceClient } from "../workspace-service-client.js";
 import { translate, type TranslationKey } from "../localization.js";
 import { CategoryPropertyHeader, type CategoryLabelDraft } from "./CategoryPropertyHeader.js";
@@ -257,6 +257,9 @@ function TextPropertiesContent({ detail, onPreview, viewId, layout = "table", hi
       if (current === lifetime.current) { saving.current = false; setPending(false); }
     }
   };
+  const optionEditor = (property: TextPropertyDefinition) => <SelectOptionsEditor
+    client={client} workspaceId={workspaceId} property={property} snapshot={snapshot!} language={language} disabled={disabled || loadError || draft !== null}
+    onCommitted={value => { if (accepts(value)) { listVersion.current++; minimumRevision.current = value.revision; setSnapshot(value); setLoading(false); setLoadError(false); } }} />;
   const saveValue = async (projectId: string, propertyId: string, value: string | null | string[], propertyType: "text" | "number" | "date" | "single_select" | "multi_select") => {
     const current = lifetime.current;
     valueSaves.current++;
@@ -385,12 +388,12 @@ function TextPropertiesContent({ detail, onPreview, viewId, layout = "table", hi
         {snapshot?.definitions.map((property) => <Cell data-column-id={property.propertyId} key={property.propertyId} data-label={property.name}>
           {property.propertyType === "multi_select" ? <MultiSelectPropertyCell workspaceId={workspaceId} sourceId={sourceId} projectId={project.projectId} propertyId={property.propertyId}
             revision={snapshot.revision} minimumRevision={minimumRevision} projectName={project.name} propertyName={property.name} language={language} disabled={disabled || loadError || draft !== null}
-            options={propertyValues.options.get(property.propertyId) ?? []}
+            optionsEditor={optionEditor(property)} options={propertyValues.options.get(property.propertyId) ?? []}
             value={propertyValues.multi.get(`${project.projectId}:${property.propertyId}`) ?? []}
             onSave={value => saveValue(project.projectId, property.propertyId, value, property.propertyType)} /> : <TextPropertyCell workspaceId={workspaceId} sourceId={sourceId} projectId={project.projectId} propertyId={property.propertyId}
             revision={snapshot.revision} minimumRevision={minimumRevision}
             projectName={project.name} propertyName={property.name} language={language} disabled={disabled || loadError || draft !== null}
-            propertyType={property.propertyType} options={propertyValues.options.get(property.propertyId)}
+            optionsEditor={property.propertyType === "single_select" ? optionEditor(property) : undefined} propertyType={property.propertyType} options={propertyValues.options.get(property.propertyId)}
             value={property.propertyType === "single_select" ? propertyValues.select.get(`${project.projectId}:${property.propertyId}`) ?? null : property.propertyType === "number" ? (() => {
               const numeric = propertyValues.number.get(`${project.projectId}:${property.propertyId}`);
               return numeric === undefined ? null : String(numeric);

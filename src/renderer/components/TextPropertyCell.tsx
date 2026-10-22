@@ -1,6 +1,8 @@
 import { useEffect, useLayoutEffect, useId, useMemo, useRef, useState } from "react";
 import type { Language, ServiceResult } from "../../contracts/settings.js";
 import type { SelectOption, TextPropertyMutation } from "../../contracts/text-properties.js";
+import { SelectionPropertyCell } from "./SelectionPropertyCell.js";
+import type { ReactNode } from "react";
 import { useDraftGuard } from "./ScalarDrafts.js";
 import { formatCalendarDate } from "../date-display.js";
 import { translate, type TranslationKey } from "../localization.js";
@@ -16,6 +18,7 @@ interface Props {
   value: string | null;
   propertyType?: "text" | "number" | "date" | "single_select";
   options?: SelectOption[];
+  optionsEditor?: ReactNode;
   revision: number;
   minimumRevision: { current: number };
   language: Language;
@@ -26,10 +29,14 @@ interface Props {
 // Idle cells need a button, not a mounted editor with draft/revision/focus
 // effects. Once opened, retain the editor instance through snapshot refreshes.
 export function TextPropertyCell(props: Props) {
+  if (props.propertyType === "single_select") return <SelectionPropertyCell {...props} options={props.options ?? []} value={props.value === null ? [] : [props.value]} onSave={ids => props.onSave(ids[0] ?? null)} />;
+  return <ScalarPropertyCell {...props} />;
+}
+function ScalarPropertyCell(props: Props) {
   const [state, setState] = useState({ opened: false, editing: false, pending: false, openToken: 0 });
   const button = useRef<HTMLButtonElement>(null);
   const restoreFocus = useRef(true);
-  const { propertyType = "text", options = [], value, language, disabled } = props;
+  const { value, language, disabled } = props;
   const { label, displayValue } = presentation(props);
   useLayoutEffect(() => { if (state.opened && !state.editing && restoreFocus.current) button.current?.focus(); }, [state.editing]);
   // Snapshot revisions and unrelated pending controls do not change an idle
@@ -38,33 +45,32 @@ export function TextPropertyCell(props: Props) {
       onClick={() => setState(current => ({ ...current, opened: true, editing: true, openToken: current.openToken + 1 }))}>
       {value === null ? translate(language, "textValueAbsent") : value === "" ? translate(language, "textValueEmpty") : displayValue}
     </button>, [label, disabled, state.editing, value, displayValue, language]);
-  return <div className="text-property-cell" data-color={propertyType === "single_select" ? options.find(option => option.optionId === value)?.color : undefined} aria-busy={state.pending}>
+  return <div className="text-property-cell" aria-busy={state.pending}>
     {valueButton}
     {state.opened && <EditingTextPropertyCell key={`${props.workspaceId}:${props.sourceId}:${props.projectId}:${props.propertyId}`} {...props} restoreFocus={restoreFocus} openToken={state.openToken} onState={setState} />}
   </div>;
 }
-function presentation({ propertyType = "text", options = [], projectName, propertyName, value, language }: Props) {
-  const select = propertyType === "single_select", numeric = propertyType === "number", date = propertyType === "date";
-  const label = `${translate(language, select ? "editSelectValue" : date ? "editDateValue" : numeric ? "editNumberValue" : "editTextValue")}: ${projectName} / ${propertyName}`;
-  const displayValue = select ? options.find(option => option.optionId === value)?.name ?? value : date && value !== null ? formatCalendarDate(value, language) : numeric && language === "ru" && value !== null ? value.replace(".", ",") : value;
+function presentation({ propertyType = "text", projectName, propertyName, value, language }: Props) {
+  const numeric = propertyType === "number", date = propertyType === "date";
+  const label = `${translate(language, date ? "editDateValue" : numeric ? "editNumberValue" : "editTextValue")}: ${projectName} / ${propertyName}`;
+  const displayValue = date && value !== null ? formatCalendarDate(value, language) : numeric && language === "ru" && value !== null ? value.replace(".", ",") : value;
   return { label, displayValue };
 }
 type EditorState = { opened: boolean; editing: boolean; pending: boolean; openToken: number };
 function EditingTextPropertyCell(props: Props & { restoreFocus: {current:boolean}; openToken: number; onState: React.Dispatch<React.SetStateAction<EditorState>> }) {
   const guard = useDraftGuard();
-  const { restoreFocus, workspaceId, sourceId, projectId, propertyId, value, revision, minimumRevision, language, disabled, propertyType = "text", options = [], onSave, openToken, onState } = props;
-  const select = propertyType === "single_select";
+  const { restoreFocus, workspaceId, sourceId, projectId, propertyId, value, revision, minimumRevision, language, disabled, propertyType = "text", onSave, openToken, onState } = props;
   const numeric = propertyType === "number";
   const date = propertyType === "date";
   const t = (key: TranslationKey) => translate(language, key);
   const { label, displayValue } = presentation(props);
   const id = useId();
-  const [draft, setDraft] = useState<string | null>((date || select ? value : displayValue) ?? "");
+  const [draft, setDraft] = useState<string | null>((date ? value : displayValue) ?? "");
   const [pending, setPending] = useState(false);
   const [message, setMessage] = useState<"textValueValidation" | "textValueSaveError" | "textValueSaved" | "textValueNewerChange" | null>(null);
   const originalValue = useRef(value);
   const savedRevision = useRef(0);
-  const editor = useRef<HTMLTextAreaElement | HTMLInputElement | HTMLSelectElement>(null);
+  const editor = useRef<HTMLTextAreaElement | HTMLInputElement>(null);
   const inFlight = useRef<Promise<boolean> | null>(null);
   const closed = useRef(false);
   const failed = useRef(false);
@@ -73,7 +79,7 @@ function EditingTextPropertyCell(props: Props & { restoreFocus: {current:boolean
   const lifetime = useRef(0);
   const editing = draft !== null;
   useLayoutEffect(() => { onState(current => ({ ...current, editing, pending })); }, [editing, pending, onState]);
-  useEffect(() => { closed.current = false; failed.current = false; restoreFocus.current = true; originalValue.current = value; setDraft((date || select ? value : displayValue) ?? ""); setMessage(null); }, [openToken]);
+  useEffect(() => { closed.current = false; failed.current = false; restoreFocus.current = true; originalValue.current = value; setDraft((date ? value : displayValue) ?? ""); setMessage(null); }, [openToken]);
   useEffect(() => {
     if (revision > savedRevision.current) {
       setMessage((current) => current === "textValueSaved" ? "textValueNewerChange" : current);
@@ -118,25 +124,21 @@ function EditingTextPropertyCell(props: Props & { restoreFocus: {current:boolean
     inFlight.current = request;
     return request;
   };
-  const commit = () => save(select && currentDraft.current === "" ? null : currentDraft.current, true);
+  const commit = () => save(currentDraft.current, true);
   const latestCommit = useRef(commit); latestCommit.current = commit;
   useLayoutEffect(() => {
-    if (!editing || select) return;
+    if (!editing) return;
     return guard?.register({ commit: () => latestCommit.current(), focus: () => { restoreFocus.current = true; editor.current?.focus(); } });
-  }, [guard, editing, select]);
+  }, [guard, editing]);
   return <>
     {editing && <div className="text-value-editor" onBlur={event => {
-      if (!select && !event.currentTarget.contains(event.relatedTarget as Node | null)) void commit();
+      if (!event.currentTarget.contains(event.relatedTarget as Node | null)) void commit();
     }} onKeyDown={(event) => {
       if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); if (calendar) setCalendar(false); else cancel(); }
-      else if (event.key === "Enter" && (date || numeric || select || event.ctrlKey || event.metaKey) && !event.nativeEvent.isComposing) { event.preventDefault(); event.stopPropagation(); void save(select && draft === "" ? null : draft); }
+      else if (event.key === "Enter" && (date || numeric || event.ctrlKey || event.metaKey) && !event.nativeEvent.isComposing) { event.preventDefault(); event.stopPropagation(); void save(draft); }
     }}>
       <label className="text-value-label" htmlFor={id} onPointerDown={event => { event.preventDefault(); editor.current?.focus(); }}>{label}</label>
-      {select ? <select ref={(element) => { editor.current = element; }} id={id} className="workspace-input" value={draft} disabled={disabled || pending}
-        aria-invalid={message === "textValueValidation"} aria-describedby={`${id}-hint`} onChange={event => change(event.currentTarget.value)}>
-        <option value="">{t("textValueAbsent")}</option>
-        {options.filter(option => !option.hidden || option.optionId === draft).map(option => <option key={option.optionId} value={option.optionId}>{option.name}{option.hidden ? ` (${t("selectHidden")})` : ""}</option>)}
-      </select> : date || numeric ? <input ref={(element) => { editor.current = element; }} id={id} className="bb-input" type="text" maxLength={numeric ? 512 : undefined} placeholder={date ? "YYYY-MM-DD" : undefined} value={draft} disabled={disabled || pending}
+      {date || numeric ? <input ref={(element) => { editor.current = element; }} id={id} className="bb-input" type="text" maxLength={numeric ? 512 : undefined} placeholder={date ? "YYYY-MM-DD" : undefined} value={draft} disabled={disabled || pending}
         aria-invalid={message === "textValueValidation"} aria-describedby={`${id}-hint`} onChange={(event) => change(event.currentTarget.value)} />
         : <textarea ref={(element) => { editor.current = element; }} id={id} className="workspace-input" rows={3} value={draft} disabled={disabled || pending}
           aria-invalid={message === "textValueValidation"} aria-describedby={`${id}-hint`} onChange={(event) => change(event.currentTarget.value)} />}
@@ -144,14 +146,14 @@ function EditingTextPropertyCell(props: Props & { restoreFocus: {current:boolean
         <button type="button" className="workspace-button workspace-button--secondary" disabled={disabled || pending} aria-expanded={calendar} aria-controls={`${id}-calendar`} onClick={() => setCalendar(!calendar)}>{t("chooseCalendarDate")}</button>
         {calendar && <label>{t("chooseCalendarDate")}<input id={`${id}-calendar`} className="bb-input" type="date" aria-label={t("chooseCalendarDate")} min="0001-01-01" max="9999-12-31" disabled={disabled || pending} value={/^\d{4}-\d{2}-\d{2}$/.test(draft) ? draft : ""} onChange={event => { const next = event.currentTarget.value; if (next) { change(next); void save(next); } }}/></label>}
       </>}
-      <p id={`${id}-hint`} className="text-value-hint">{t(select ? "selectValueHint" : date ? "dateValueHint" : numeric ? "numberValueHint" : "textValueKeyboardHint")}</p>
+      <p id={`${id}-hint`} className="text-value-hint">{t(date ? "dateValueHint" : numeric ? "numberValueHint" : "textValueKeyboardHint")}</p>
       <div className="workspace-form-actions">
-        <button type="button" className="workspace-button" disabled={disabled || pending} onClick={() => void save(select && draft === "" ? null : draft)}>{t(pending ? "textValueSaving" : "saveTextValue")}</button>
+        <button type="button" className="workspace-button" disabled={disabled || pending} onClick={() => void save(draft)}>{t(pending ? "textValueSaving" : "saveTextValue")}</button>
         <button type="button" className="workspace-button workspace-button--secondary" disabled={disabled || pending} onClick={() => void save(null)}>{t("clearTextValue")}</button>
         <button type="button" className="workspace-button workspace-button--secondary" disabled={pending} onClick={cancel}>{t("cancelTextValue")}</button>
       </div>
     </div>}
     {editing && !pending && value !== originalValue.current && <StatusMessage kind="info" title={t("textValueExternalChange")} />}
-    {message && <StatusMessage kind={message === "textValueSaved" || message === "textValueNewerChange" ? "info" : "error"} title={t(message === "textValueValidation" ? (select ? "selectValueValidation" : date ? "dateValueValidation" : numeric ? "numberValueValidation" : message) : message)} />}
+    {message && <StatusMessage kind={message === "textValueSaved" || message === "textValueNewerChange" ? "info" : "error"} title={t(message === "textValueValidation" ? (date ? "dateValueValidation" : numeric ? "numberValueValidation" : message) : message)} />}
   </>;
 }

@@ -869,3 +869,22 @@ p { margin-block: .5rem; }
 .project-files-status { margin: 8px 0; }
 .project-file-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
 .project-file-actions .workspace-button { font-size: 11px; }
+
+/* Ordinary selection menus share the contextual desktop controls on every surface. */
+.selection-popover {
+  z-index: 60;
+  width: min(360px, calc(100vw - 32px));
+  max-height: min(520px, var(--radix-popover-content-available-height));
+  overflow: auto;
+  padding: 12px;
+  background: var(--popover, var(--background));
+  color: var(--foreground);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 15%);
+}
+.selection-popover .multi-select-choice { display: flex; gap: 8px; padding: 6px; border-radius: 4px; }
+.selection-popover .multi-select-choice:focus-within { outline: 2px solid var(--ring); }
+.selection-popover .select-options ul { display: grid; gap: 8px; padding: 0; list-style: none; }
+.selection-popover .select-options li { display: flex; flex-wrap: wrap; gap: 4px; }
+.selection-popover .select-options .property-authored { flex-basis: 100%; }
