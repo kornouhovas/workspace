@@ -78,7 +78,7 @@ for (const language of ["en", "ru"] as const) {
           corrected = scenario === "occupied" ? input.name === "Alternative" : scenario === "missing_parent" ? input.createParent === true : false;
           return { ok: true, value: { workspaceId: "w", sourceId: "s", projectId: "p", action: "restore", originalRelativePath: archivedProject.relativePath, requestedRelativePath: `Client/${input.name ?? "Project"}`, revision: 1, missingParents: scenario === "missing_parent" ? ["Client"] : [], blockers: corrected ? [] : [scenario], previewToken: corrected ? "corrected" : null } };
         }
-        if (input.type === "workspace.applyProjectArchive") return { ok: true, value: { operation: { operationId: input.operationId, sourceId: "s", projectId: "p", action: "restore", originalRelativePath: archivedProject.relativePath, requestedRelativePath: "Client/Project", stage: "completed", problem: null, completedRevision: 2 } } };
+        if (input.type === "workspace.applyProjectArchive") return { ok: true, value: { operation: { operationId: input.operationId, sourceId: "s", projectId: "p", action: "restore", originalRelativePath: archivedProject.relativePath, requestedRelativePath: scenario === "occupied" ? "Client/Alternative" : "Client/Project", stage: "completed", problem: null, completedRevision: 2 } } };
         throw new Error("Unexpected request");
       }, onWorkspaceChange: () => () => {} } as unknown as WorkspaceDesktopApi;
       render(<ProjectArchivePanel client={new WorkspaceServiceClient(api)} workspaceId="w" sourceId="s" projects={[]} language={language} disabled={false} revision={1} invalidation={0} onCommitted={() => {}} onViewChange={() => {}} />);

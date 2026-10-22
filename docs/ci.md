@@ -1501,3 +1501,22 @@ checks on all three hosts, without replaying unchanged native/package consumers.
 The ordinary contextual profile retains the additional category-move coverage
 for future runs. Preserve the original full local failures and exact native
 receipts; this focused route cannot accept a failed/unreached native command.
+
+## Contextual archive acceptance
+
+For #62, manual `checks: desktop-ux` with `desktop_ux_profile: contextual-archive`
+selects the affected renderer, public archive/real-SQLite/filesystem/crash/IPC,
+retained session and route suites on all three existing desktop hosts. It runs
+contextual Archive/Restore in development and packaged modes, the original archive
+restart consumer and original Views consumer in each mode, with serial packaging
+and artifact/license verification between them. Every selected command retains
+normal failure propagation. Ordinary/full and installer defaults are unchanged.
+
+`smoke-contextual-archive.mjs` records SHA/run/attempt/host, full-window EN/RU,
+light/dark, 1024/1440 captures, identity/ordinary editing/retained-tab/file checks,
+visible focus after Done and normal shutdown/owned cleanup. `dev --focus-only`
+is a one-journey diagnostic for the Archived Restore→Done regression; its receipt
+explicitly sets `focusOnly` and has no appearance captures. It cannot replace
+the full selected profile or the original restart consumer. Evidence lives under
+`work/issue-62-archive-*` and the original archive directories in the hosted
+artifact. Final #67/#42 and supported release-host gates remain separate.

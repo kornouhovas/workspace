@@ -12,7 +12,7 @@ import { ManagementSurface, ManagementTarget, ViewToolsTarget, ViewControlsScope
 import { ContextTools } from "./ContextTools.js";
 import { ViewsPanel } from "./ViewsPanel.js";
 import type { WorkspaceView } from "../../contracts/views.js";
-import { ProjectArchivePanel } from "./ProjectArchivePanel.js";
+import { ProjectArchivePanel, type ArchiveRequest } from "./ProjectArchivePanel.js";
 import { CategoryOptionsPanel } from "./CategoryOptionsPanel.js";
 import { ProjectCategoryMovePanel } from "./ProjectCategoryMovePanel.js";
 import { ProjectRenamePanel } from "./ProjectRenamePanel.js";
@@ -288,6 +288,7 @@ function DiscoveryWorkspaceContent({ memory, client, workspaceId, sourceId, refr
   const [setupDeferred, setSetupDeferred] = useState(false);
   const [sourceToolsOpen, setSourceToolsOpen] = useState(false);
   const [archiveBlocked, setArchiveBlocked] = useState(false);
+  const [archiveRequest, setArchiveRequest] = useState<ArchiveRequest | null>(null);
   const [projects, setProjects] = useState<ProjectList | null>(null);
   const committedProjects = useRef<ProjectList | null>(null);
   const committedCategoryLabel = useRef<{ property: NonNullable<ProjectList["categoryProperty"]>; revision: number } | null>(null);
@@ -509,7 +510,9 @@ function DiscoveryWorkspaceContent({ memory, client, workspaceId, sourceId, refr
         if (updated.categoryPropertyRevision < minimumCategoryPropertyRevision.current) void load();
       }} />}
     {recoverySaved && <StatusMessage kind="info" title={t("recoverySaved")} />}
-    <ProjectArchivePanel onPreview={(id,trigger)=>navigation.show(id,trigger)} onSnapshot={setArchiveSnapshot} categoryProperty={projects?.categoryProperty} categories={projects?.categories} viewId={view?.viewId} layout={view?.kind} client={client} workspaceId={workspaceId} sourceId={sourceId} projects={projects?.projects ?? []}
+    <ProjectArchivePanel request={archiveRequest} onRequestClosed={() => setArchiveRequest(null)}
+      onRestoreFocus={() => workBody.current?.querySelector<HTMLElement>(".project-area-header button:not(:disabled)")?.focus()}
+      onPreview={(id,trigger)=>navigation.show(id,trigger)} onSnapshot={setArchiveSnapshot} categoryProperty={projects?.categoryProperty} categories={projects?.categories} viewId={view?.viewId} layout={view?.kind} client={client} workspaceId={workspaceId} sourceId={sourceId} projects={projects?.projects ?? []}
       language={language} revision={projects?.revision ?? 0} invalidation={invalidation} onViewChange={setShowArchived} onProjectAvailability={setArchiveHasProjects}
       onBlockedChange={setArchiveBlocked} onCommitted={() => void load()}
       disabled={disabled || categoryOptionsBlocked || creationBlocked || discoveryPending || recoveryProject !== null || renameProject !== null || renameBlocked || categoryMoveProject !== null || categoryMoveBlocked} />
@@ -538,13 +541,14 @@ function DiscoveryWorkspaceContent({ memory, client, workspaceId, sourceId, refr
       {view && projects?.configured && <TextPropertiesTable key={view.viewId} onPreview={(id,trigger)=>navigation.show(id,trigger)} viewId={view.viewId} layout={view.kind} sourceLifetime={sourceLifetime} discoveryRevision={projects?.revision ?? 0} minimumDiscoveryRevision={minimumRevision} categoryPropertyRevision={projects?.categoryPropertyRevision ?? 0} minimumCategoryPropertyRevision={minimumCategoryPropertyRevision}
         onFilesystemAssignmentObserved={() => { setInvalidation(value => value + 1); void load(); }}
         onCategoryPropertyCommitted={commitLabel} categoryProperty={projects?.categoryProperty ?? null} categories={projects?.categories ?? []} client={client} workspaceId={workspaceId} sourceId={sourceId}
-        renameDisabled={categoryOptionsBlocked || creationBlocked || discoveryPending || loading || error || renameBlocked || renameProject !== null || recoveryProject !== null || categoryMoveProject !== null || categoryMoveBlocked || !projects?.configured ||
+        renameDisabled={archiveBlocked || categoryOptionsBlocked || creationBlocked || discoveryPending || loading || error || renameBlocked || renameProject !== null || recoveryProject !== null || categoryMoveProject !== null || categoryMoveBlocked || !projects?.configured ||
           !["ready", "empty"].includes(projects?.state ?? "") || (projects?.revision ?? -1) < minimumRevision.current}
-        categoryMoveDisabled={categoryOptionsBlocked || creationBlocked || discoveryPending || loading || error || categoryMoveBlocked || categoryMoveProject !== null || renameBlocked || renameProject !== null || recoveryProject !== null || !projects?.configured ||
+        categoryMoveDisabled={archiveBlocked || categoryOptionsBlocked || creationBlocked || discoveryPending || loading || error || categoryMoveBlocked || categoryMoveProject !== null || renameBlocked || renameProject !== null || recoveryProject !== null || !projects?.configured ||
           !["ready", "empty"].includes(projects?.state ?? "") || (projects?.revision ?? -1) < minimumRevision.current}
         onMoveCategory={projects?.mode === "grouped" ? (project, trigger) => { categoryMoveTrigger.current = trigger; setCategoryMoveProject(project); } : undefined}
+        onArchive={(project, action, trigger) => setArchiveRequest({project, action, trigger})} archiveDisabled={archiveBlocked || categoryOptionsBlocked || creationBlocked || discoveryPending || loading || error || renameBlocked || renameProject !== null || categoryMoveBlocked || categoryMoveProject !== null || recoveryProject !== null || projects.state === "unavailable"}
         onRename={(project, trigger) => { renameTrigger.current = trigger; setRenameProject(project); }}
-        locateDisabled={categoryOptionsBlocked || creationBlocked || discoveryPending || recoveryProject !== null || renameBlocked || renameProject !== null || categoryMoveProject !== null || categoryMoveBlocked}
+        locateDisabled={archiveBlocked || categoryOptionsBlocked || creationBlocked || discoveryPending || recoveryProject !== null || renameBlocked || renameProject !== null || categoryMoveProject !== null || categoryMoveBlocked}
         onLocate={projects?.configured ? (project, trigger) => {
           recoveryTrigger.current = trigger; setRecoverySaved(false); setRecoveryProject(project);
         } : undefined}
@@ -568,7 +572,8 @@ function DiscoveryWorkspaceContent({ memory, client, workspaceId, sourceId, refr
               retainedProjects={projects?.retainedProjects.filter(project=>project.projectId===selectedId)} categories={projects?.categories} categoryProperty={projects?.categoryProperty}
               language={language} disabled={disabled || loading || error}
               discoveryRevision={projects?.revision} minimumDiscoveryRevision={minimumRevision} sourceLifetime={sourceLifetime}
-              renameDisabled={categoryOptionsBlocked || creationBlocked || discoveryPending || loading || error || renameBlocked || renameProject !== null || recoveryProject !== null || categoryMoveProject !== null || categoryMoveBlocked || !projects?.configured || projects.state === "unavailable"}
+              renameDisabled={archiveBlocked || categoryOptionsBlocked || creationBlocked || discoveryPending || loading || error || renameBlocked || renameProject !== null || recoveryProject !== null || categoryMoveProject !== null || categoryMoveBlocked || !projects?.configured || projects.state === "unavailable"}
+              onArchive={(project, action, trigger) => setArchiveRequest({project, action, trigger})} archiveDisabled={archiveBlocked || categoryOptionsBlocked || creationBlocked || discoveryPending || loading || error || renameBlocked || renameProject !== null || categoryMoveBlocked || categoryMoveProject !== null || recoveryProject !== null || projects?.state === "unavailable"}
               onRename={(project, trigger) => { renameTrigger.current = trigger; setRenameProject(project); }}/>
             <ProjectFiles key={`${workspaceId}:${selectedId}:${selectedProject.relativePath}:${sourceLifetime.current}:${invalidation}:${observationVersion}`}
               client={client} workspaceId={workspaceId} projectId={selectedId} language={language} disabled={disabled || loading || error}/></> : <StatusMessage kind="info" title={labels.unavailable}/>}

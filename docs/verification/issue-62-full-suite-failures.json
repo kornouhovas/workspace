@@ -1,0 +1,159 @@
+{
+  "command": "npm test",
+  "node": "22.21.1",
+  "host": "macOS 27.0 (26A428), Apple M1 Pro",
+  "logPath": "/tmp/issue62-full-test.txt",
+  "logSha256": "4490ae20b5083675d7e9297ce32e655c86d96ade48a527eca7154ab2b31039da",
+  "counts": {
+    "total": 3429,
+    "passed": 3378,
+    "failed": 24,
+    "skipped": 27
+  },
+  "failures": [
+    {
+      "test": "2253 - property creation waits for initial loading before keyboard activation in real Electron: Create Single Select property",
+      "location": "property-editor-driver.test.mjs:75:1",
+      "error": "|-",
+      "shutdown": true
+    },
+    {
+      "test": "2254 - property creation waits for initial loading before keyboard activation in real Electron: \u0421\u043e\u0437\u0434\u0430\u0442\u044c Single Select-\u0441\u0432\u043e\u0439\u0441\u0442\u0432\u043e",
+      "location": "property-editor-driver.test.mjs:75:1",
+      "error": "|-",
+      "shutdown": true
+    },
+    {
+      "test": "2257 - property creation waits for initial loading before keyboard activation in real Electron: \u0421\u043e\u0437\u0434\u0430\u0442\u044c Number-\u0441\u0432\u043e\u0439\u0441\u0442\u0432\u043e",
+      "location": "property-editor-driver.test.mjs:75:1",
+      "error": "|-",
+      "shutdown": true
+    },
+    {
+      "test": "2258 - property creation waits for initial loading before keyboard activation in real Electron: Create Date property",
+      "location": "property-editor-driver.test.mjs:75:1",
+      "error": "|-",
+      "shutdown": true
+    },
+    {
+      "test": "2259 - property creation waits for initial loading before keyboard activation in real Electron: \u0421\u043e\u0437\u0434\u0430\u0442\u044c Date-\u0441\u0432\u043e\u0439\u0441\u0442\u0432\u043e",
+      "location": "property-editor-driver.test.mjs:75:1",
+      "error": "|-",
+      "shutdown": true
+    },
+    {
+      "test": "2260 - property creation keeps the caller deadline and never activates a still-loading control",
+      "location": "property-editor-driver.test.mjs:97:1",
+      "error": "|-",
+      "shutdown": true
+    },
+    {
+      "test": "2261 - creation input readiness observes delayed app-owned focus without taking it",
+      "location": "property-editor-driver.test.mjs:113:1",
+      "error": "|-",
+      "shutdown": true
+    },
+    {
+      "test": "2262 - installed workspace keyboard creation waits for the asynchronous folder selection",
+      "location": "property-editor-driver.test.mjs:131:1",
+      "error": "|-",
+      "shutdown": true
+    },
+    {
+      "test": "2402 - fixture cleanup errors retain a failed control's primary error and fail a successful control",
+      "location": "rename-editor-readiness.test.mjs:114:1",
+      "error": "|-",
+      "shutdown": false
+    },
+    {
+      "test": "2404 - real Electron operands reject absent, hidden, disabled, unfocused and wrong-label editors",
+      "location": "rename-editor-readiness.test.mjs:140:1",
+      "error": "'Electron shutdown timed out after 10000ms'",
+      "shutdown": true
+    },
+    {
+      "test": "2405 - already-ready editor passes immediately with strict finite operands",
+      "location": "rename-editor-readiness.test.mjs:182:1",
+      "error": "'Electron shutdown timed out after 10000ms'",
+      "shutdown": true
+    },
+    {
+      "test": "2550 - runtime normal quit waits for deferred application cleanup without a concurrent quit",
+      "location": "runtime-electron-quit.test.mjs:11:1",
+      "error": "'Electron shutdown timed out after 10000ms'",
+      "shutdown": true
+    },
+    {
+      "test": "2701 - fractional scroll bounds exclude fully clipped skeletons while retaining a subpixel visible row",
+      "location": "runtime-view-readiness.test.mjs:92:1",
+      "error": "'Electron shutdown timed out after 10000ms {\"quitEvents\":[\"before-quit\",\"will-quit\",\"node-exit\",\"quit\"],\"debuggerWait\":false,\"exitCode\":null,\"signaled\":true,\"forcedCleanup\":{\"status\":\"passed\",\"processStopped\":true}}'",
+      "shutdown": true
+    },
+    {
+      "test": "2703 - event-to-paint timing includes delayed committed work and excludes later driver observation",
+      "location": "runtime-view-readiness.test.mjs:154:1",
+      "error": "'Electron shutdown timed out after 10000ms {\"quitEvents\":[\"before-quit\",\"will-quit\",\"node-exit\",\"quit\"],\"debuggerWait\":false,\"exitCode\":null,\"signaled\":true,\"forcedCleanup\":{\"status\":\"passed\",\"processStopped\":true}}'",
+      "shutdown": true
+    },
+    {
+      "test": "2705 - readiness stabilization completes in the renderer before delayed driver result delivery",
+      "location": "runtime-view-readiness.test.mjs:231:1",
+      "error": "'Electron shutdown timed out after 10000ms {\"quitEvents\":[\"before-quit\",\"will-quit\",\"node-exit\",\"quit\"],\"debuggerWait\":false,\"exitCode\":null,\"signaled\":true,\"forcedCleanup\":{\"status\":\"passed\",\"processStopped\":true}}'",
+      "shutdown": true
+    },
+    {
+      "test": "2706 - runtime language selection preserves current settings navigation and the immutable inline select",
+      "location": "runtime-view-readiness.test.mjs:250:1",
+      "error": "'Electron shutdown timed out after 10000ms {\"quitEvents\":[\"before-quit\",\"will-quit\",\"node-exit\",\"quit\"],\"debuggerWait\":false,\"exitCode\":null,\"signaled\":true,\"forcedCleanup\":{\"status\":\"passed\",\"processStopped\":true}}'",
+      "shutdown": true
+    },
+    {
+      "test": "2709 - filter reset waits for enabled Save before its single keyboard action and full projection",
+      "location": "runtime-view-readiness.test.mjs:310:1",
+      "error": "'Electron shutdown timed out after 10000ms {\"quitEvents\":[\"before-quit\",\"will-quit\",\"node-exit\",\"quit\"],\"debuggerWait\":false,\"exitCode\":null,\"signaled\":true,\"forcedCleanup\":{\"status\":\"passed\",\"processStopped\":true}}'",
+      "shutdown": true
+    },
+    {
+      "test": "2710 - failed projection inspection is readonly and retains only bounded counts and control states",
+      "location": "runtime-view-readiness.test.mjs:325:1",
+      "error": "'Electron shutdown timed out after 10000ms {\"quitEvents\":[\"before-quit\",\"will-quit\",\"node-exit\",\"quit\"],\"debuggerWait\":false,\"exitCode\":null,\"signaled\":true,\"forcedCleanup\":{\"status\":\"passed\",\"processStopped\":true}}'",
+      "shutdown": true
+    },
+    {
+      "test": "2712 - projection endpoint observation precedes slow locator delivery but requires committed result text and membership",
+      "location": "runtime-view-readiness.test.mjs:354:1",
+      "error": "'Electron shutdown timed out after 10000ms {\"quitEvents\":[\"before-quit\",\"will-quit\",\"node-exit\",\"quit\"],\"debuggerWait\":false,\"exitCode\":null,\"signaled\":true,\"forcedCleanup\":{\"status\":\"passed\",\"processStopped\":true}}'",
+      "shutdown": true
+    },
+    {
+      "test": "2737 - Board layout closure waits for nested focus return before the next editor owns input",
+      "location": "selection-driver.test.mjs:34:1",
+      "error": "'Electron shutdown timed out after 10000ms'",
+      "shutdown": true
+    },
+    {
+      "test": "2740 - ru grouping closure completes its delayed focus return before the next selection opens",
+      "location": "selection-driver.test.mjs:80:35",
+      "error": "'Electron shutdown timed out after 10000ms'",
+      "shutdown": true
+    },
+    {
+      "test": "2741 - closing a selection finishes delayed focus return before reopening the same value editor",
+      "location": "selection-driver.test.mjs:109:1",
+      "error": "'Electron shutdown timed out after 10000ms'",
+      "shutdown": true
+    },
+    {
+      "test": "2950 - native scroll restoration retains coordinates, cancels for user input and view changes, and clamps a shorter projection",
+      "location": "view-scroll-native.test.mjs:43:1",
+      "error": "'Electron shutdown timed out after 10000ms'",
+      "shutdown": true
+    },
+    {
+      "test": "2951 - native loading-history control inspection keeps keyboard scroll intent through later restoration notifications",
+      "location": "view-scroll-native.test.mjs:97:1",
+      "error": "'Electron shutdown timed out after 10000ms'",
+      "shutdown": true
+    }
+  ]
+}

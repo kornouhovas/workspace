@@ -17,6 +17,7 @@ const common = new Set([
   'project-recovery-ui.test.tsx',
   'project-rename-ui.test.tsx',
   'project-operation-dialog.test.tsx',
+  'contextual-archive-ui.test.tsx',
   'rename-runtime-startup.test.mjs',
   'runtime-executable.test.mjs',
   'runtime-layout.test.mjs',

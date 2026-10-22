@@ -326,3 +326,27 @@ test('contextual regression renewal covers the repaired inherited DOM consumer w
  assert.ok(selected.includes('node scripts/desktop-ux-checks.mjs contextual-project-regressions'));
  assert.equal(selected.some(command=>/test:desktop-ux|smoke:views|package:built|check:artifact/.test(command)),false);
 });
+
+test('contextual archive runs original recovery/restart and both native modes on the three-host route',async()=>{
+ const {contextualArchiveCommands}=await import('../scripts/desktop-ux-checks.mjs');
+ const commands=contextualArchiveCommands();
+ for(const mode of ['dev','release']) {
+  assert.ok(commands.some(([command,args])=>command===process.execPath && args[0]==='scripts/smoke-contextual-archive.mjs' && args[1]===mode));
+  assert.ok(commands.some(([command,args])=>command==='npm' && args.join(' ' )===`run smoke:archive -- ${mode}`));
+  const archive=commands.findIndex(([command,args])=>command==='npm' && args.join(' ' )===`run smoke:archive -- ${mode}`);
+  assert.ok(commands[archive+1][1][1].includes(`work/issue-62-archive-original-${mode}`));
+  assert.ok(commands[archive+3][1][1].includes(`work/issue-62-archive-views-${mode}`));
+ }
+ assert.ok(JSON.stringify(commands).includes('project-archive-crash.test.mjs'));
+ assert.ok(JSON.stringify(commands).includes('workspace-sessions-service.test.mjs'));
+ assert.equal(spawnSync(process.execPath,['scripts/desktop-ux-checks.mjs','contextual-archive','--failure-probe'],{encoding:'utf8'}).status,23);
+ const {readFile}=await import('node:fs/promises');const {load}=await import('js-yaml');const {runInNewContext}=await import('node:vm');
+ const workflow=load(await readFile('.github/workflows/desktop-ci.yml','utf8'));
+ assert.ok(workflow.on.workflow_dispatch.inputs.desktop_ux_profile.options.includes('contextual-archive'));
+ const job=workflow.jobs['desktop-ux'],inputs={desktop_ux_profile:'contextual-archive'};
+ const enabled=step=>!step.if || runInNewContext(step.if.startsWith('${{') ? step.if.slice(3,-2) : step.if,{inputs,cancelled:()=>false,always:()=>true,matrix:{os:'macos-latest'}});
+ assert.ok(job.steps.some(step=>enabled(step)&&step.run==='node scripts/desktop-ux-checks.mjs contextual-archive'));
+ assert.equal(job.steps.some(step=>enabled(step)&&step.run==='npm run test:desktop-ux'),false);
+ assert.equal(job.steps.some(step=>enabled(step)&&step.run==='npm run package:built'),false,'package is sequenced inside the selected profile');
+ assert.deepEqual(Array.from(runInNewContext(job.strategy.matrix.os.slice(3,-2),{inputs,fromJSON:JSON.parse})),['macos-latest','windows-latest','windows-2022']);
+});

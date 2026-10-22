@@ -49,6 +49,8 @@ interface Props {
   onFilesystemAssignmentObserved?(): void;
   onMoveCategory?(project: ProjectSummary, trigger: HTMLButtonElement): void;
   onRename?(project: ProjectSummary, trigger: HTMLButtonElement): void;
+  onArchive?(project: ProjectSummary, action: "archive" | "restore", trigger: HTMLButtonElement): void;
+  archiveDisabled?: boolean;
   onLocate?(project: ProjectAssociationSummary, trigger: HTMLButtonElement): void;
   categoryProperty?: CategoryProperty | null;
   categories?: CategorySummary[];
@@ -64,7 +66,7 @@ interface Props {
 export function TextPropertiesTable(props: Props) {
   return <TextPropertiesContent key={`${props.workspaceId}:${props.sourceId}`} {...props} />;
 }
-function TextPropertiesContent({ detail, onPreview, viewId, layout = "table", hideReveal, client, workspaceId, sourceId, projects, retainedProjects = [], onLocate, locateDisabled, onRename, renameDisabled, onMoveCategory, onFilesystemAssignmentObserved, categoryMoveDisabled, categoryProperty, categories = [], categoryPropertyRevision = 0, discoveryRevision = 0, minimumDiscoveryRevision, sourceLifetime, minimumCategoryPropertyRevision, onCategoryPropertyCommitted, language, disabled }: Props) {
+function TextPropertiesContent({ detail, onPreview, viewId, layout = "table", hideReveal, client, workspaceId, sourceId, projects, retainedProjects = [], onLocate, locateDisabled, onRename, renameDisabled, onArchive, archiveDisabled, onMoveCategory, onFilesystemAssignmentObserved, categoryMoveDisabled, categoryProperty, categories = [], categoryPropertyRevision = 0, discoveryRevision = 0, minimumDiscoveryRevision, sourceLifetime, minimumCategoryPropertyRevision, onCategoryPropertyCommitted, language, disabled }: Props) {
   const [observedGroups, setGrouped] = useState<{viewId:string; groups:ViewGroup[]|null;propertyId:string|null;refreshToken:number}|null>(null);
   const [observedFilter, setFilteredIds] = useState<{ viewId: string; ids: string[] | null } | null>(null);
   const editingScalar = useScalarDraftActive();
@@ -233,7 +235,8 @@ function TextPropertiesContent({ detail, onPreview, viewId, layout = "table", hi
     if (rowBusy || !tableState.config) return;
     void tableState.save(moveTableRow(tableState.config, rowIds, id, target));
   };
-  const tableStyle = viewId ? {width:columns.filter(c=>!c.hidden).reduce((sum,c)=>sum+c.width, hideReveal ? 0 : 48), minWidth:"100%"} : {minWidth:`${fields.length * 14}rem`};
+  const hasProjectActions = !hideReveal || !!onArchive;
+  const tableStyle = viewId ? {width:columns.filter(c=>!c.hidden).reduce((sum,c)=>sum+c.width, hasProjectActions ? 48 : 0), minWidth:"100%"} : {minWidth:`${fields.length * 14}rem`};
   const committed = (value: TextPropertySnapshot) => {
     savedRevision.current = value.revision;
     setMessage(accepts(value) ? "propertySaved" : "propertyNewerChange");
@@ -358,7 +361,7 @@ function TextPropertiesContent({ detail, onPreview, viewId, layout = "table", hi
           <span className="property-authored">{property.name}</span>
 {propertyControl(property)}
         </Header>)}
-        {!hideReveal && <Header className="board-field-placeholder" style={{width:48}}><span className="sr-only">{t("projectActions")}</span></Header>}
+        {hasProjectActions && <Header className="board-field-placeholder" style={{width:48}}><span className="sr-only">{t("projectActions")}</span></Header>}
       </>);
   const rows = (ids?: string[], groupKey?: string) => {
     const groupIds = ids ? new Set(ids) : null;
@@ -373,7 +376,7 @@ function TextPropertiesContent({ detail, onPreview, viewId, layout = "table", hi
         const revealLocator = JSON.stringify([project.relativePath, project.categoryId, categories.find(category => category.categoryId === project.categoryId)?.relativePath, retained?.retentionReason]);
         return <ViewportProjectRow as={layout === "board" ? "li" : "tr"} key={project.projectId} projectId={project.projectId} projectName={project.name} language={language}
           onPreview={onPreview ? trigger => onPreview(project.projectId, trigger) : undefined}
-          columnCount={(viewId && layout === "table" ? columns.filter(column => !column.hidden).length : fields.length) + (hideReveal ? 0 : 1)}
+          columnCount={(viewId && layout === "table" ? columns.filter(column => !column.hidden).length : fields.length) + (hasProjectActions ? 1 : 0)}
           alwaysVisible={project.projectId === rowIds[0]} backwards={backwards} busy={disabled || !!renameDisabled || !!categoryMoveDisabled || !!locateDisabled || assignmentPending} className={layout === "board" ? `project-card ${boardState.config?.wrap === false ? "board-content-nowrap" : "board-content-wrap"}` : undefined}
           onDragOver={event => {if (layout === "table" && !rowBusy && event.dataTransfer.types.includes("application/x-workspace-table-row")) event.preventDefault();}}
           onDrop={event => {
@@ -418,20 +421,24 @@ function TextPropertiesContent({ detail, onPreview, viewId, layout = "table", hi
             })() : property.propertyType === "date" ? propertyValues.date.get(`${project.projectId}:${property.propertyId}`) ?? null : propertyValues.text.get(`${project.projectId}:${property.propertyId}`) ?? null}
             onSave={(value) => saveValue(project.projectId, property.propertyId, value, property.propertyType)} />}
         </Cell>)}
-        {!hideReveal && <Cell className="project-card-actions" key="project-actions" data-label={t("projectActions")}><ContextTools label={`${t("projectActions")}: ${project.name}`} compact>
-          {layout === "table" && viewId && <div className="table-row-controls">
+        {hasProjectActions && <Cell className="project-card-actions" key="project-actions" data-label={t("projectActions")}><ContextTools label={`${t("projectActions")}: ${project.name}`} compact>
+          {!hideReveal && layout === "table" && viewId && <div className="table-row-controls">
             <Hint label={`${t("tableDrag")}: ${project.name}`}><button type="button" draggable={!rowBusy} disabled={rowBusy} aria-label={`${t("tableDrag")}: ${project.name}`} onDragStart={event => {event.stopPropagation(); event.dataTransfer.effectAllowed="move"; event.dataTransfer.setData("application/x-workspace-table-row",JSON.stringify({workspaceId,viewId,projectId:project.projectId}));}}><Icon name="drag"/></button></Hint>
             <Hint label={`${t("tableRowEarlier")}: ${project.name}`}><button type="button" disabled={rowBusy || rowIndex <= 0} aria-label={`${t("tableRowEarlier")}: ${project.name}`} onClick={() => moveRow(project.projectId, visibleIds[rowIndex-1])}><Icon name="up"/></button></Hint>
             <Hint label={`${t("tableRowLater")}: ${project.name}`}><button type="button" disabled={rowBusy || rowIndex < 0 || rowIndex >= visibleIds.length-1} aria-label={`${t("tableRowLater")}: ${project.name}`} onClick={() => moveRow(project.projectId, visibleIds[rowIndex+1])}><Icon name="down"/></button></Hint>
           </div>}
-          {!retained && onRename && <button type="button" className="workspace-button workspace-button--secondary property-rename"
+          {!hideReveal && !retained && onRename && <button type="button" className="workspace-button workspace-button--secondary property-rename"
             aria-label={`${t("renameProject")}: ${project.name}`} disabled={disabled || renameDisabled || ("associationState" in project && (project.associationState !== "active" || ("resolution" in project && project.resolution !== "active")))}
             data-close-context onClick={(event) => onRename(project, contextReturnTarget(event.currentTarget))}>{t("renameProject")}</button>}
-          {!retained && onMoveCategory && project.categoryId && "associationState" in project && project.associationState === "active" &&
+          {!retained && onArchive && <button type="button" className="workspace-button workspace-button--secondary" data-close-context
+            aria-label={`${t(hideReveal ? "archiveRestoreApply" : "archiveApply")}: ${project.name}`}
+            disabled={disabled || archiveDisabled || (!hideReveal && "resolution" in project && project.resolution !== "active")}
+            onClick={event => { const trigger = contextReturnTarget(event.currentTarget); const run = () => onArchive(project, hideReveal ? "restore" : "archive", trigger); if (draftGuard) draftGuard.run(run); else run(); }}>{t(hideReveal ? "archiveRestoreApply" : "archiveApply")}</button>}
+          {!hideReveal && !retained && onMoveCategory && project.categoryId && "associationState" in project && project.associationState === "active" &&
             "resolution" in project && project.resolution === "active" && <button type="button" className="workspace-button workspace-button--secondary property-rename"
               aria-label={`${t("moveCategory")}: ${project.name}`} disabled={disabled || categoryMoveDisabled}
-              data-close-context onClick={(event) => onMoveCategory(project, contextReturnTarget(event.currentTarget))}>{t("moveCategory")}</button>}<ProjectRevealButton client={client} workspaceId={workspaceId} projectId={project.projectId} name={project.name} language={language} disabled={disabled} minimumRevision={minimumDiscoveryRevision} sourceLifetime={sourceLifetime}
-          locatorKey={revealLocator} targetKey={JSON.stringify([revealLocator, retained?.associationState, retained?.resolution])} /></ContextTools></Cell>}
+              data-close-context onClick={(event) => onMoveCategory(project, contextReturnTarget(event.currentTarget))}>{t("moveCategory")}</button>}{!hideReveal && <ProjectRevealButton client={client} workspaceId={workspaceId} projectId={project.projectId} name={project.name} language={language} disabled={disabled} minimumRevision={minimumDiscoveryRevision} sourceLifetime={sourceLifetime}
+          locatorKey={revealLocator} targetKey={JSON.stringify([revealLocator, retained?.associationState, retained?.resolution])} />}</ContextTools></Cell>}
       </>, true)}</ViewportProjectRow>; });
   };
   if (detail) return <div className="project-detail-fields" aria-busy={loading}>
