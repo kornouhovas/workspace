@@ -5,6 +5,7 @@ import {mkdtemp,mkdir,realpath,writeFile,readFile} from 'node:fs/promises';
 import {tmpdir,release,cpus} from 'node:os';
 import {join,resolve} from 'node:path';
 import {_electron} from 'playwright-core';
+import {showRuntimeProject} from './runtime-project-visibility.mjs';
 import {exerciseFolderGroupAssignment} from './runtime-folder-group-assignment.mjs';
 import {exerciseGroupAssignment} from './runtime-group-assignment.mjs';
 import {closeElectron,cleanupOwnedFixture,ownedProcessesStopped} from './runtime-lifecycle.mjs';
@@ -29,27 +30,29 @@ try{
   const source=join(fixture,language);await mkdir(join(source,'Alpha'),{recursive:true});await mkdir(join(source,'Beta'));await writeFile(join(source,'Alpha','keep.txt'),'unchanged');
   report.checks.push({language,...await exerciseGroupAssignment({page,query,rootPath:source,language,evidenceDirectory:evidence})});
   assert.equal(await readFile(join(source,'Alpha','keep.txt'),'utf8'),'unchanged');
-  if(filesystem)report.checks.push({language,folder:await exerciseFolderGroupAssignment({page,query,rootPath:join(fixture,`${language}-folders`),language,evidenceDirectory:evidence,onCollision:async({layout,call,list,project})=>{
-   const en=language==='en', selector=()=>page.getByRole('region',{name:'A',exact:true}).getByLabel(`${en?'Change group':'Изменить группу'}: Target`,{exact:true}).and(page.locator(':enabled'));
+  if(filesystem)report.checks.push({language,folder:await exerciseFolderGroupAssignment({page,query,rootPath:join(fixture,`${language}-folders`),language,evidenceDirectory:evidence,onCollision:async({layout,call,project,kind,toKey,relativePath})=>{
+   const en=language==='en', selector=()=>page.locator(`[data-project-id="${project.projectId}"]`).getByLabel(`${en?'Change group':'Изменить группу'}: Target`,{exact:true}).and(page.locator(':enabled'));
    for(const theme of ['light','dark']){
     await openSettingsSection(page,'appearance');await page.getByRole('radio',{name:theme==='light'?/^(Light|Светлая)$/:/^(Dark|Тёмная)$/}).click();await returnToWorkspace(page);
     for(const width of [1024,1440]){
      await page.setViewportSize({width,height:width===1024?720:960});
-     await selector().selectOption(JSON.stringify(list.categories.find(c=>c.name==='B').categoryId));
+     await showRuntimeProject(page,'Target',project.projectId);
+     await selector().selectOption(toKey);
      const details=page.getByRole('button',{name:en?'Details / Recover':'Подробности / Восстановить',exact:true});await details.waitFor();
-     assert.equal((await call('listProjectCategoryMoves')).operations.length,0,'Preflight collisions have no journal operation; do not invent receipt paths');
-     const stem=`${language}-${theme}-${layout}-${width}-filesystem`;
+     assert.equal((await call(kind==='name'?'listProjectRenames':'listProjectCategoryMoves')).operations.length,0,'Preflight collisions have no journal operation; do not invent receipt paths');
+     const stem=`${language}-${theme}-${layout}-${width}-filesystem-${kind}`;
      await page.screenshot({path:join(evidence,`${stem}-collision.png`)});report.screens.push(`${stem}-collision`);
      await details.click();
      const tools=page.getByRole('dialog',{name:en?'Source tools':'Инструменты источника',exact:true});await tools.waitFor();
-     assert.equal(await tools.locator('details[data-assignment-history="category"]').evaluate(element=>element.open),true);
-     assert.equal(await tools.locator('details[data-assignment-history="category"] > summary').evaluate(element=>element===document.activeElement),true);
+     assert.equal(await tools.locator(`details[data-assignment-history="${kind}"]`).evaluate(element=>element.open),true);
+     assert.equal(await tools.locator(`details[data-assignment-history="${kind}"] > summary`).evaluate(element=>element===document.activeElement),true);
      await page.screenshot({path:join(evidence,`${stem}-history.png`)});report.screens.push(`${stem}-history`);
      await page.keyboard.press('Escape');await tools.waitFor({state:'hidden'});
-     assert.equal((await call('listProjects')).projects.find(p=>p.projectId===project.projectId).relativePath,'A/Target');
+     assert.equal(await page.getByRole('button',{name:en?'Source tools':'Инструменты источника',exact:true}).evaluate(element=>element===document.activeElement),true,'Escape returns focus to source tools');
+     assert.equal((await call('listProjects')).projects.find(p=>p.projectId===project.projectId).relativePath,relativePath);
     }
    }
-   report.checks.push({language,layout,detailsHistory:true,keyboardReturn:true,collisionNoEffect:true});
+   report.checks.push({language,layout,kind,detailsHistory:true,keyboardReturn:true,collisionNoEffect:true});
   }})});
  }
  const source=join(fixture,'studio');for(const name of ['Brand refresh','Customer portal'])await mkdir(join(source,name),{recursive:true});

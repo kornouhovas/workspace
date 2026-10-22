@@ -41,7 +41,7 @@ export async function exerciseFolderGroupAssignment({page,query,rootPath,languag
     await region('A').getByLabel(change('Target'),{exact:true}).selectOption(JSON.stringify(destination));
     await page.getByText(en?'This folder name or identity is occupied or reserved. Choose another name.':'Это имя или идентификатор папки занят или зарезервирован. Выберите другое имя.',{exact:true}).waitFor();
     assert.equal((await call('listProjects')).projects.find(p=>p.projectId===project.projectId).relativePath,'A/Target');
-    await onCollision?.({layout, call, project, list});
+    await onCollision?.({layout, call, project, kind:'category', toKey:JSON.stringify(destination), relativePath:'A/Target'});
     const other=list.projects.find(p=>p.relativePath==='C/Target');
     await call('renameProject',{projectId:other.projectId,operationId:randomUUID(),name:'Other',expectedRevision:(await call('listProjects')).revision});
     const selector=region('A').getByLabel(change('Target'),{exact:true}).and(page.locator(':enabled'));
@@ -51,6 +51,13 @@ export async function exerciseFolderGroupAssignment({page,query,rootPath,languag
     await region('C').getByLabel(change('Target'),{exact:true}).and(page.locator(':enabled')).waitFor();
     assert.equal(await readFile(join(source,'C','Target','keep'),'utf8'),'A');
     assert.deepEqual(await readdir(join(source,'A')),[]);
+    if(onCollision){
+      await call('setViewGrouping',{viewId,config:{propertyId:'name',settings:[]}});
+      await showRuntimeProject(page,'Target',project.projectId);
+      await onCollision({layout,call,project,kind:'name',toKey:JSON.stringify('Other'),relativePath:'C/Target'});
+      await call('setViewGrouping',{viewId,config:{propertyId:categoryPropertyId,settings:[]}});
+      await showRuntimeProject(page,'Target',project.projectId);
+    }
     for(const width of [360,1440]) {
       await page.setViewportSize({width,height:width===1440?960:720});
       await showRuntimeProject(page, 'Target', project.projectId);
