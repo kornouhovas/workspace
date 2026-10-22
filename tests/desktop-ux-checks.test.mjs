@@ -326,3 +326,22 @@ test('contextual regression renewal covers the repaired inherited DOM consumer w
  assert.ok(selected.includes('node scripts/desktop-ux-checks.mjs contextual-project-regressions'));
  assert.equal(selected.some(command=>/test:desktop-ux|smoke:views|package:built|check:artifact/.test(command)),false);
 });
+
+test('contextual categories select actual three-host folder and recovery consumers without the broad profile', async()=>{
+ const {contextualCategoryCommands}=await import('../scripts/desktop-ux-checks.mjs');
+ const {readFile}=await import('node:fs/promises');const {load}=await import('js-yaml');const {runInNewContext}=await import('node:vm');
+ const workflow=load(await readFile('.github/workflows/desktop-ci.yml','utf8'));
+ assert.ok(workflow.on.workflow_dispatch.inputs.desktop_ux_profile.options.includes('contextual-categories'));
+ const context={inputs:{desktop_ux_profile:'contextual-categories',desktop_ux_failure_probe:false,desktop_ux_category_only:false,desktop_ux_packaged_only:false},fromJSON:JSON.parse,cancelled:()=>false};
+ const active=workflow.jobs['desktop-ux'].steps.filter(step=>step.run&&(!step.if||runInNewContext(step.if.replace(/^\$\{\{\s*|\s*\}\}$/g,''),context)));
+ assert.ok(active.some(step=>step.run==='node scripts/desktop-ux-checks.mjs contextual-categories'));
+ assert.equal(active.some(step=>step.run==='npm run test:desktop-ux'),false);
+ const commands=contextualCategoryCommands(), text=JSON.stringify(commands);
+ for(const file of ['category-options-service.test.mjs','category-removal-service.test.mjs','project-category-move-crash.test.mjs','project-category-move-ipc.test.mjs'])assert.ok(text.includes(file),file);
+ for(const mode of ['dev','release']) {
+  assert.ok(commands.some(([,args])=>args.join(' ')===`scripts/smoke-contextual-categories.mjs ${mode}`));
+  assert.ok(commands.some(([,args])=>args.join(' ')===`scripts/smoke-category-options.mjs ${mode}`));
+  assert.ok(commands.some(([,args])=>args.join(' ')===`run smoke:runtime -- ${mode} --category-move`));
+ }
+ assert.equal(runChecks(commands,()=>({status:23})),23);
+});

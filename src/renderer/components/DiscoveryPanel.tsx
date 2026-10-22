@@ -569,6 +569,8 @@ function DiscoveryWorkspaceContent({ memory, client, workspaceId, sourceId, refr
               language={language} disabled={disabled || loading || error}
               discoveryRevision={projects?.revision} minimumDiscoveryRevision={minimumRevision} sourceLifetime={sourceLifetime}
               renameDisabled={categoryOptionsBlocked || creationBlocked || discoveryPending || loading || error || renameBlocked || renameProject !== null || recoveryProject !== null || categoryMoveProject !== null || categoryMoveBlocked || !projects?.configured || projects.state === "unavailable"}
+              categoryMoveDisabled={categoryOptionsBlocked || creationBlocked || discoveryPending || loading || error || categoryMoveBlocked || categoryMoveProject !== null || renameBlocked || renameProject !== null || recoveryProject !== null || !projects?.configured || !["ready", "empty"].includes(projects?.state ?? "") || (projects?.revision ?? -1) < minimumRevision.current}
+              onMoveCategory={projects?.mode === "grouped" ? (project, trigger) => { categoryMoveTrigger.current = trigger; setCategoryMoveProject(project); } : undefined}
               onRename={(project, trigger) => { renameTrigger.current = trigger; setRenameProject(project); }}/>
             <ProjectFiles key={`${workspaceId}:${selectedId}:${selectedProject.relativePath}:${sourceLifetime.current}:${invalidation}:${observationVersion}`}
               client={client} workspaceId={workspaceId} projectId={selectedId} language={language} disabled={disabled || loading || error}/></> : <StatusMessage kind="info" title={labels.unavailable}/>}

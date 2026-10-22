@@ -1501,3 +1501,7 @@ checks on all three hosts, without replaying unchanged native/package consumers.
 The ordinary contextual profile retains the additional category-move coverage
 for future runs. Preserve the original full local failures and exact native
 receipts; this focused route cannot accept a failed/unreached native command.
+
+## Contextual folder-backed categories
+
+For #61, `checks: desktop-ux` with `desktop_ux_profile: contextual-categories` selects the three supported CI hosts. It runs affected renderer/service/SQLite/folder/journal/crash/IPC and routing regressions, the new contextual Move/category-review matrix, original category-options/removal and original interrupted category-move native consumers in development and packaged modes. Build/package consumers run sequentially; original deadlines, receipt/identity/file/recovery and normal-shutdown/cleanup assertions remain unchanged. Artifacts include exact profile/SHA/run provenance and each native route's reports/screens. Ordinary full/release defaults remain unchanged. This profile provides scoped #61 evidence; it does not accept #67/#42 or unchanged installer/manual release gates.

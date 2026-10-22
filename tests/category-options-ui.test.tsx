@@ -7,7 +7,7 @@ import { WorkspaceServiceClient } from "../src/renderer/workspace-service-client
 import type { WorkspaceDesktopApi } from "../src/contracts/desktop-api.js";
 import { translate } from "../src/renderer/localization.js";
 const browser = new Window({ url: "http://localhost" });
-Object.assign(globalThis, { window: browser, document: browser.document, HTMLElement: browser.HTMLElement, Node: browser.Node, MutationObserver: browser.MutationObserver });
+Object.assign(globalThis, { window: browser, document: browser.document, HTMLElement: browser.HTMLElement, Node: browser.Node, CustomEvent: browser.CustomEvent, getComputedStyle: browser.getComputedStyle.bind(browser), MutationObserver: browser.MutationObserver });
 Object.defineProperty(globalThis, "navigator", { configurable: true, value: browser.navigator });
 const { render, screen, cleanup, waitFor } = await import("@testing-library/react");
 const { default: userEvent } = await import("@testing-library/user-event");
@@ -27,6 +27,7 @@ for (const language of ["en", "ru"] as const) {
     let commits = 0;
     render(<CategoryOptionsPanel client={new WorkspaceServiceClient(api)} workspaceId="w" sourceId="s" categories={[]} language={language} disabled={false} revision={1} invalidation={0} onCommitted={() => commits++} />);
     await user.click(screen.getByRole("button", { name: t("categoryOptions") }));
+    await screen.findByRole("dialog", { name: t("categoryOptions") });
     await screen.findByLabelText(t("categoryFolderName"));
     await user.type(screen.getByLabelText(t("categoryFolderName")), "New");
     await user.click(screen.getByRole("button", { name: t("categoryPreview") }));
@@ -84,4 +85,27 @@ test("keyboard option ordering saves stable category IDs through presentation on
   down.focus(); await user.keyboard("{Enter}");
   const save = screen.getByRole("button", { name: "Save presentation" }); save.focus(); await user.keyboard("{Enter}");
   await waitFor(() => assert.deepEqual(saved, [{ categoryId: "second", color: "blue", hidden: false, position: 0 }, { categoryId: "first", color: "default", hidden: false, position: 1 }]));
+});
+
+test("Escape cancels the review first, then dismisses the dialog to its visible context trigger", async () => {
+  const { ContextTools } = await import("../src/renderer/components/ContextTools.js");
+  const api = { workspace: async (input: {type:string}) => {
+    if(input.type === "workspace.listCategoryPresentation") return {ok:true,value:{workspaceId:"w",sourceId:"s",options:[]}};
+    if(input.type === "workspace.listCategoryFolderOperations") return {ok:true,value:{workspaceId:"w",sourceId:"s",operations:[]}};
+    if(input.type === "workspace.previewCategoryFolder") return {ok:true,value:{workspaceId:"w",sourceId:"s",action:"create",categoryId:null,originalRelativePath:null,requestedRelativePath:"New",revision:1,affectedProjects:[],previewToken:"token"}};
+    throw new Error("Cancellation must not mutate");
+  }} as unknown as WorkspaceDesktopApi;
+  const user = userEvent.setup({document});
+  render(<ContextTools label="Source tools"><CategoryOptionsPanel client={new WorkspaceServiceClient(api)} workspaceId="w" sourceId="s" categories={[]} language="en" disabled={false} revision={1} invalidation={0} onCommitted={()=>{}}/></ContextTools>);
+  const source = screen.getByRole("button",{name:"Source tools"});
+  await user.click(source);await user.click(screen.getByRole("button",{name:"Category options"}));
+  await user.type(await screen.findByLabelText("Folder name"),"New");
+  await user.click(screen.getByRole("button",{name:"Preview folder effect"}));
+  await screen.findByRole("button",{name:"Apply folder operation"});
+  await user.keyboard("{Escape}");
+  assert.ok(screen.getByRole("dialog",{name:"Category options"}));
+  assert.equal(document.activeElement,screen.getByLabelText("Folder name"));
+  await user.keyboard("{Escape}");
+  assert.equal(screen.queryByRole("dialog",{name:"Category options"}),null);
+  assert.equal(document.activeElement,source);
 });

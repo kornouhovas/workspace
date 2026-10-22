@@ -55,7 +55,7 @@ test("unavailable-category proof rejects effects beyond the deliberate missing e
 });
 
 const browser = new Window({ url: "http://localhost" });
-Object.assign(globalThis, { window: browser, document: browser.document, HTMLElement: browser.HTMLElement, Node: browser.Node, MutationObserver: browser.MutationObserver });
+Object.assign(globalThis, { window: browser, document: browser.document, HTMLElement: browser.HTMLElement, Node: browser.Node, getComputedStyle: browser.getComputedStyle.bind(browser), CustomEvent: browser.CustomEvent, MutationObserver: browser.MutationObserver });
 Object.defineProperty(globalThis, "navigator", { configurable: true, value: browser.navigator });
 const { render, screen, cleanup, within } = await import("@testing-library/react");
 const { TextPropertiesTable } = await import("../src/renderer/components/TextPropertiesTable.tsx");
