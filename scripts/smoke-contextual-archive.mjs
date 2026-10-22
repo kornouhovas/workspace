@@ -5,16 +5,18 @@ import {mkdtemp,mkdir,realpath,writeFile,readFile} from 'node:fs/promises';
 import {tmpdir,release} from 'node:os';
 import {join,resolve} from 'node:path';
 import {_electron} from 'playwright-core';
-import {closeElectron,cleanupOwnedFixture,ownedProcessesStopped} from './runtime-lifecycle.mjs';
+import {closeElectron,cleanupOwnedFixture,ownedProcessesStopped,withDeadline} from './runtime-lifecycle.mjs';
 import {setInterfaceLanguage,openSettingsSection,returnToWorkspace} from './runtime-settings.mjs';
 import {packagedExecutablePath} from './runtime-executable.mjs';
+import {openArchiveTextEditor,exerciseArchiveEditorEntry} from './archive-editor-driver.mjs';
+import {waitForRuntimeInterface} from './runtime-startup.mjs';
 import {enterContextFor} from './runtime-context-tools.mjs';
 const focusOnly=process.argv[3]==='--focus-only';
 const mode=process.argv[2]??'dev';assert.ok(['dev','release'].includes(mode));
 const root=resolve(import.meta.dirname,'..'), evidence=resolve(process.env.WORKSPACE_SMOKE_EVIDENCE_DIR??`work/issue-62-archive-${mode}`);
 await mkdir(evidence,{recursive:true});
 const fixture=await realpath(await mkdtemp(join(tmpdir(),'workspace-contextual-archive-')));
-const report={issue:62,mode,focusOnly,sha:process.env.GITHUB_SHA??null,run:process.env.GITHUB_RUN_ID??null,attempt:process.env.GITHUB_RUN_ATTEMPT??null,platform:process.platform,kernel:release(),checks:[],screens:[],shutdowns:[],status:'running'};
+const report={issue:62,mode,focusOnly,phase:'startup',sha:process.env.GITHUB_SHA??null,run:process.env.GITHUB_RUN_ID??null,attempt:process.env.GITHUB_RUN_ATTEMPT??null,platform:process.platform,kernel:release(),checks:[],screens:[],shutdowns:[],status:'running'};
 const parents=new Set(),backends=new Set();let app,page,failure,launchUnverified=false;
 const query=async input=>{const result=await page.evaluate(input=>window.workspace.workspace(input),input);assert.equal(result.ok,true,JSON.stringify(result));return result.value;};
 async function close(){if(!app)return;const shutdown={normalQuit:false,backendsExited:false};report.shutdowns.push(shutdown);await closeElectron(app);shutdown.normalQuit=true;app=undefined;assert.equal(await ownedProcessesStopped(parents,backends),true);shutdown.backendsExited=true;}
@@ -22,9 +24,11 @@ try {
  launchUnverified=true;
  app=await _electron.launch({executablePath:mode==='dev'?createRequire(import.meta.url)('electron'):packagedExecutablePath(root,process.platform,process.arch),args:[root],cwd:root,env:{...process.env,WORKSPACE_USER_DATA_DIR:join(fixture,'data')}});
  parents.add(app.process());page=await app.firstWindow();page.setDefaultTimeout(15000);
- await page.waitForFunction(async()=>(await window.workspace.getBackendStatus()).state==='ready');
+ await waitForRuntimeInterface(page,status=>{report.startup=status;});
  for(const pid of await app.evaluate(({app})=>app.getAppMetrics().filter(m=>m.type==='Utility'&&m.serviceName?.includes('Node')).map(m=>m.pid)))backends.add(pid);
  assert.ok(backends.size);launchUnverified=false;
+ report.editorEntryControl=await exerciseArchiveEditorEntry(page);
+ await waitForRuntimeInterface(page,status=>{report.reloadedStartup=status;});
 
  for(const discoveryMode of (focusOnly ? ['direct'] : ['direct','grouped'])) for(const language of (focusOnly ? ['en'] : ['en','ru'])) {
   await setInterfaceLanguage(page,language); const en=language==='en';
@@ -90,8 +94,9 @@ try {
     if(location==='expanded')assert.equal(await page.locator(`[data-project-tab="${project.projectId}"]`).count(),1);
     if(location==='list')await page.getByRole('button',{name:en?'Archived':'Архив',exact:true}).click();
     const editLabel=`${en?'Edit Text value':'Редактировать Text-значение'}: Brand refresh / Notes`;
-    await scope.getByRole('button',{name:editLabel,exact:true}).click();
-    await scope.getByRole('textbox',{name:editLabel,exact:true}).fill(`Archived ${layout} ${location}`);
+    report.phase={discoveryMode,language,layout,location,step:'archived-editor'};
+    const editor=await openArchiveTextEditor(scope,editLabel);
+    await editor.fill(`Archived ${layout} ${location}`);
     await scope.getByRole('button',{name:en?'Save value':'Сохранить значение',exact:true}).click();
     await scope.getByRole('button',{name:editLabel,exact:true}).waitFor();
     for(const theme of (focusOnly ? [] : ['light','dark'])) {
@@ -119,6 +124,6 @@ try {
   }
  }
  await close();report.status='passed';
-} catch(error) {failure=error;report.status='failed';report.failure={name:error.name,message:error.message};if(app)try{await page.screenshot({path:join(evidence,'failure.png'),timeout:2000});await close();}catch(error){report.shutdownFailure=error.message;}}
+} catch(error) {failure=error;report.status='failed';report.failure={name:error.name,message:error.message};if(app)try{try {report.failedInterface=await withDeadline(page.evaluate(async()=>{const status=await window.workspace.getBackendStatus();return {state:status.state,diagnostic:status.diagnostic??null,interfaceReady:document.querySelector('.workspace-screen')?.getAttribute('data-ready')??null,activeTag:document.activeElement?.tagName??null,textareas:document.querySelectorAll('.project-area textarea').length};}),1000,'Archive failure observation');}catch {report.failedInterface={unavailable:true};}await page.screenshot({path:join(evidence,'failure.png'),timeout:2000});await close();}catch(error){report.shutdownFailure=error.message;}}
 finally {await cleanupOwnedFixture(fixture,{processesStopped:ownedProcessesStopped(parents,backends,{launchUnverified}),primaryFailure:failure,record:async cleanup=>{report.cleanup=cleanup;await writeFile(join(evidence,'report.json'),JSON.stringify(report,null,2)+'\n');}});}
 console.info(`Contextual archive: ${report.checks.length} journeys, ${report.screens.length} captures; normal shutdown and owned cleanup verified.`);

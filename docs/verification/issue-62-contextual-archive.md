@@ -137,3 +137,37 @@ hosts; retain the original full result without replaying unchanged synthetic
 fixture failures. Earlier a7aa8904 CI remains evidence for its actual candidate,
 not acceptance of the repaired predicate. Configured-screen composition is
 unchanged; final hosted appearance/native receipts still require inspection.
+
+## Original Actions failure map and driver repair
+
+Original run39863932190, attempt1, application a7aa8904:
+
+- Windows2022 job120121272001: affected tests passed; new dev consumer completed
+  22 journeys/180captures, then timed out filling the grouped RU Board preview
+  Text editor. Failure image shows the readonly value; normal quit and owned
+  cleanup passed. Later dev/archive/Views/package consumers were not reached.
+- Windowslatest job120121272356: tests passed; the new dev consumer timed out at
+  initial backend readiness (0 journeys). Screenshot shows the empty workspace
+  interface. Original10000ms quit also timed out; cleanup was correctly skipped
+  because process termination/startup ownership was unverified. This is not a
+  cleanup pass or proof of its historical cause. Later consumers were unreached.
+- macOS job120121272216: complete selected profile success at its actual a7aa SHA;
+  original artifact and job log downloaded for inspection. This is historical
+  coverage, not acceptance of the later application eligibility predicate.
+
+Downloaded original logs and both Windows artifacts. Ranked hypotheses were
+late source observation closing an editor, pointer enablement changing during
+entry, and a separate startup-readiness failure. A controlled real-browser button
+that disables during pointerdown deterministically reproduced the missing editor
+with the click driver (1000ms control failure). One deliberate Enter on the
+currently enabled control passed with exactly one activation and no app-data
+mutation; the real archive editing journey then passed locally. This supports
+the entry repair, not unique causation for the old Windows timing.
+
+The new driver adopts the existing `waitForRuntimeInterface` contract (same
+15000ms deadline, typed backend status) and finite failure diagnostics; no
+backend, product, dependency, resource, assertion or production deadline changed.
+Added a two-Windows original development renewal profile, retaining exact full
+native command, normal shutdown and owned cleanup. Local affected UI/startup/
+routing66/66, typecheck/lint and actual one-journey control pass. Both required
+Windows originals and fresh final application/package acceptance remain pending.

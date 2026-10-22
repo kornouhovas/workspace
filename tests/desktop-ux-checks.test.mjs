@@ -350,3 +350,17 @@ test('contextual archive runs original recovery/restart and both native modes on
  assert.equal(job.steps.some(step=>enabled(step)&&step.run==='npm run package:built'),false,'package is sequenced inside the selected profile');
  assert.deepEqual(Array.from(runInNewContext(job.strategy.matrix.os.slice(3,-2),{inputs,fromJSON:JSON.parse})),['macos-latest','windows-latest','windows-2022']);
 });
+
+test('archive native repair selects only the two failed hosts and original development consumer',async()=>{
+ const {contextualArchiveCommands}=await import('../scripts/desktop-ux-checks.mjs');
+ const commands=contextualArchiveCommands({nativeOnly:true});
+ assert.equal(commands.filter(([,args])=>args[0]==='scripts/smoke-contextual-archive.mjs'&&args[1]==='dev').length,1);
+ assert.equal(JSON.stringify(commands).includes('package:built'),false);
+ assert.ok(JSON.stringify(commands).includes('rename-runtime-startup.test.mjs'));
+ const {readFile}=await import('node:fs/promises');const {load}=await import('js-yaml');const {runInNewContext}=await import('node:vm');
+ const job=load(await readFile('.github/workflows/desktop-ci.yml','utf8')).jobs['desktop-ux'];
+ const inputs={desktop_ux_profile:'contextual-archive-native'};
+ assert.deepEqual(Array.from(runInNewContext(job.strategy.matrix.os.slice(3,-2),{inputs,fromJSON:JSON.parse})),['windows-latest','windows-2022']);
+ assert.ok(job.steps.some(step=>step.run==='node scripts/desktop-ux-checks.mjs contextual-archive-native'));
+ assert.equal(spawnSync(process.execPath,['scripts/desktop-ux-checks.mjs','contextual-archive-native','--failure-probe'],{encoding:'utf8'}).status,23);
+});

@@ -1520,3 +1520,15 @@ explicitly sets `focusOnly` and has no appearance captures. It cannot replace
 the full selected profile or the original restart consumer. Evidence lives under
 `work/issue-62-archive-*` and the original archive directories in the hosted
 artifact. Final #67/#42 and supported release-host gates remain separate.
+
+For #62's original Windows startup/editor-entry failures, select
+`desktop_ux_profile: contextual-archive-native`. Only Windows latest and Windows
+2022 run the affected UI/startup/routing controls and the original development
+contextual archive command, including its full appearance/identity/editing matrix.
+A real-browser pointer-disable control is red for click entry and green for one
+keyboard activation of the currently enabled editor; it writes no application
+data. The driver uses the existing15000ms interface/startup contract with typed
+backend status and bounded failure observation; original native deadlines,
+mutation counts, quit and owned-cleanup assertions remain unchanged. Inspect
+focused original receipts before renewing full native/package/archive/Views
+acceptance. Earlier failure timing has no uniquely established historical cause.
