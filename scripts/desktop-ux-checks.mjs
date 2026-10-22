@@ -59,11 +59,13 @@ export const navigationTests = [...new Set([...boardTests,
 export function navigationCommands({nativeOnly=false}={}) {
   if(nativeOnly) return [
     ['npm',['run','typecheck']], ['npm',['run','lint']],
+    [process.execPath,['--test','tests/view-scroll-native.test.mjs']],
     [process.execPath,['--import','tsx','--test','tests/project-navigation-ui.test.tsx','tests/viewport-projects-ui.test.tsx','tests/views-ui.test.tsx','tests/desktop-ux-checks.test.mjs']],
     [process.execPath,['scripts/smoke-project-navigation.mjs']],
   ];
   return [
     ['npm', ['run', 'typecheck']], ['npm', ['run', 'lint']],
+    [process.execPath,['--test','tests/view-scroll-native.test.mjs']],
     [process.execPath, ['--import','tsx','--test',...navigationTests.map(file=>`tests/${file}`)]],
     [process.execPath, ['scripts/smoke-project-navigation.mjs']],
     ['npm', ['run', 'smoke:shell']], ['npm', ['run', 'smoke:views']],
@@ -89,7 +91,7 @@ export function projectFilesCommands({nativeOnly=false}={}) {
 }
 // One milestone candidate exercises each principal journey and shared regression once.
 export function coherentCommands() {
-  const nativeTests = ['property-editor-driver.test.mjs', 'runtime-view-readiness.test.mjs', 'windows-project-reveal-com.test.mjs'];
+  const nativeTests = ['view-scroll-native.test.mjs', 'property-editor-driver.test.mjs', 'runtime-view-readiness.test.mjs', 'windows-project-reveal-com.test.mjs'];
   const tests = [...new Set([...foundationTests, ...projectFilesTests])].filter(file => !nativeTests.includes(file));
   return [
     ['npm', ['run', 'typecheck']], ['npm', ['run', 'lint']],

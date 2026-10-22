@@ -20,7 +20,7 @@ export function useViewScroll(viewId: string | undefined, expanded: boolean, pos
     const target = positions.get(viewId ?? "") ?? {top:0,left:0,children:[]};
     restoring.current=target;
     owner.dataset.scrollRestoring="true";
-    let frame=0;
+    let frame=0, observerFrame=0;
     const restore = () => {
       if(restoring.current !== target) return;
       window.cancelAnimationFrame(frame);
@@ -49,12 +49,20 @@ export function useViewScroll(viewId: string | undefined, expanded: boolean, pos
         });
       });
     };
+    const scheduleRestore = () => {
+      if (restoring.current !== target) return;
+      // Invalidate final placement immediately, but batch geometry reads from
+      // field mounting and resize notifications into one frame.
+      window.cancelAnimationFrame(frame);
+      if (observerFrame) return;
+      observerFrame=window.requestAnimationFrame(()=>{observerFrame=0;restore();});
+    };
     restore();
-    const observer=new MutationObserver(restore);
+    const observer=new MutationObserver(scheduleRestore);
     observer.observe(owner,{subtree:true,childList:true,attributes:true,attributeFilter:["aria-busy","style"]});
-    const resize=typeof ResizeObserver === "undefined"?null:new ResizeObserver(restore);
+    const resize=typeof ResizeObserver === "undefined"?null:new ResizeObserver(scheduleRestore);
     resize?.observe(owner);
-    return ()=>{window.cancelAnimationFrame(frame);observer.disconnect();resize?.disconnect();delete owner.dataset.scrollRestoring;};
+    return ()=>{window.cancelAnimationFrame(frame);window.cancelAnimationFrame(observerFrame);observer.disconnect();resize?.disconnect();delete owner.dataset.scrollRestoring;};
   },[viewId,expanded,positions,epoch]);
   return {element,save, suspend:()=>{if(!paused.current)save();paused.current=true;}, resume:()=>{paused.current=false;setEpoch(value=>value+1);},cancelRestore:()=>{restoring.current=null;if(element.current)delete element.current.dataset.scrollRestoring;}};
 }

@@ -1172,3 +1172,71 @@ numerical targets. Another failure returns to diagnosis. If adopted, changed
 backend/package inputs reopen affected full runtime/package/installer evidence;
 old native-resource/renderer appearance receipts retain their actual SHA and
 unchanged-input justification. No broad acceptance before focused success.
+
+
+### Snapshot candidate strict result: new Mac grouping gate
+
+Original39697859659/attempt1 atf5398b92 completes both hosts. Windows
+Xeon8370C/kernel10.0.26100 passes all32 targets (max296.5ms),10memory samples,
+four normal app/backend exits and assertedcleanup. This differs from the earlier
+EPYC7763 host; it accepts this actual receipt, not unique causal attribution.
+MacM1Virtual/kernel23.6.0 completes the same correctness/memory/exit/cleanup
+requirements but fails grouped Table grouping309.8ms>300. Direct Table assignment
+252.7ms/edit203.8ms pass. Failed grouping observation starts+7.1ms, firstpaint
+260.9ms, finalstabilization48.9ms. All raw reports downloaded and inspected.
+Do not repeat unchanged strict Mac. Current focused gate is grouped Table
+grouping on Mac, not the now-passing Windows receipt.
+
+Ranked predictions: grouping save/projection/backend queue cost; mounting grouped
+Table controls/fields; layout/paint and original final-frame stabilization.
+Existing Mac-only renderer/backend diagnostic39698462359/attempt1 atf5398b92
+captures the first(change) marker in grouped-table-grouping-assignment trace,
+not its later(drop) marker. Keep original clocks/endpoints/targets. Another
+profile pass alone will not authorize another unchanged strict retry. Broad
+acceptance and integration remain gated.
+
+
+### Measured observer-driven scroll restoration candidate
+
+Mac diagnostic39698462359/attempt1 atf5398b92 completes32 observations/four
+normal exits/cleanup; grouped Table grouping242.8ms is diagnostic, not a strict
+renewal. Backend grouping1.86ms arrives immediately; projection17.5ms. FIRST
+change-event trace identifies9 scroll restore callbacks,10.79ms work and one
+4.52ms forced layout. This supports a scoped rendering-work hypothesis, not
+unique attribution of the earlier309.8ms strict miss.
+
+A same-host packaged renderer experiment under fixed4x CPU (grouped only;
+never acceptance) compares unchanged restoration with observer coalescing.
+Both complete16 observations,two normal application/backend exits and cleanup.
+Grouping406.7 ->394.3ms; assignment325.4 ->307.1ms; edit312.4 ->320.7ms.
+Trace review confirms9 notifications become3 geometry passes; restoration work
+26.72 ->4.88ms and nested forced-layout14.56 ->0ms. FunctionCall union109.65
+->80.29ms; Layout31.97 ->28.85ms; Paint38.00 ->40.13ms. Categories overlap.
+Firstpaint391.9 ->380.3ms and finalreadiness406.7 ->394.3ms; the original
+endpoint/finalframes remain, not a shifted completion criterion. Net latency
+benefit is modest; strict success is not inferred.
+
+Coalesce only observer-driven reads. Observer notifications immediately cancel
+pending final-placement frames; initial placement, current busy/bounds reads,
+parent/child coordinates, final two frames, identity checks, user cancellation
+and effect cleanup remain. Cleanup cancels both frame handles. No change to
+viewport overscan, command preparation, numerical targets or measurements.
+
+Retain17 existing navigation/viewport UI cases, all pass. Add one real Electron
+regression with actual geometry/native input, no DOM dimension/frame mocks:
+expand/return coordinates, wheel/pointer/key interruption while busy without
+later snap-back, view replacement, shorter projection clamping and draft
+retention. A review finding that key cancellation was tested after clamping to
+zero is repaired: End now moves a scrollable owner to a distinct bottom position
+before projection completion. Wheel coordinates are captured after actual final
+position and two frames. Reviewed native test passes1/1 with normalquit/cleanup.
+Both review axes have0 remaining findings. Lint/typecheck and111 selector/
+observer/inventory tests pass; original24 LF/CRLF guards remain intact.
+
+The new scroll-restoration desktop profile runs focused native navigation plus
+this original regression on all3hosts. Existing navigation-native remains2Windows
+and ordinary defaults remain unchanged. Sequential native registration also
+covers coherent acceptance; the full platform suite discovers the new file.
+Select one original strict renewal on bothhosts plus focusednative3hosts for
+this changed source. Broad full/coherent/package/installer/appearance acceptance
+remains behind both focused gates; every new failure returns to diagnosis.

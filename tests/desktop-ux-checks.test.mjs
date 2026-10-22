@@ -81,7 +81,7 @@ test('navigation profile exercises shared shell, projects, real-service and nati
 
 test('focused navigation renewal retains the original native command and affected regressions without replaying other consumers',async()=>{
  const {navigationCommands}=await import('../scripts/desktop-ux-checks.mjs');const text=JSON.stringify(navigationCommands({nativeOnly:true}));
- for(const required of ['project-navigation-ui.test.tsx','viewport-projects-ui.test.tsx','views-ui.test.tsx','smoke-project-navigation.mjs'])assert.ok(text.includes(required));
+ for(const required of ['view-scroll-native.test.mjs','project-navigation-ui.test.tsx','viewport-projects-ui.test.tsx','views-ui.test.tsx','smoke-project-navigation.mjs'])assert.ok(text.includes(required));
  assert.equal(text.includes('smoke:shell'),false);assert.equal(text.includes('renderer-app.test.tsx'),false);
  const result=spawnSync(process.execPath,['scripts/desktop-ux-checks.mjs','navigation','--native-only','--failure-probe'],{encoding:'utf8'});assert.equal(result.status,23);
  const {readFile}=await import('node:fs/promises');const {load}=await import('js-yaml');const workflow=load(await readFile('.github/workflows/desktop-ci.yml','utf8'));
@@ -150,4 +150,17 @@ test('coherent milestone runs every principal journey once on the full desktop m
  for(const focused of ['desktop_ux_packaged_only','desktop_ux_category_only'])assert.equal(runInNewContext(coherentStep.if.slice(3,-2),{inputs:{...inputs,[focused]:true}}),false,focused);
  assert.deepEqual(Array.from(runInNewContext(job.strategy.matrix.os.slice(3,-2),{inputs,fromJSON:JSON.parse})),['macos-latest','windows-latest','windows-2022']);
  for(const name of ['Package shared font and notices','Inspect packaged artifact','Packaged saved-view consumers'])assert.equal(runInNewContext(job.steps.find(step=>step.name===name).if.slice(3,-2),{inputs}),true,name);
+});
+
+
+test('scroll restoration renewal keeps all three native hosts and excludes unrelated package and foundation consumers', async () => {
+ const {readFile}=await import('node:fs/promises');const {load}=await import('js-yaml');const {runInNewContext}=await import('node:vm');
+ const workflow=load(await readFile('.github/workflows/desktop-ci.yml','utf8'));
+ assert.ok(workflow.on.workflow_dispatch.inputs.desktop_ux_profile.options.includes('scroll-restoration'));
+ const job=workflow.jobs['desktop-ux'],context={fromJSON:JSON.parse,cancelled:()=>false,inputs:{desktop_ux_profile:'scroll-restoration',desktop_ux_category_only:false,desktop_ux_failure_probe:false,desktop_ux_packaged_only:false}};
+ assert.deepEqual(Array.from(runInNewContext(job.strategy.matrix.os.slice(3,-2),context)),['macos-latest','windows-latest','windows-2022']);
+ const selected=job.steps.filter(step=>step.run&&(!step.if||runInNewContext(step.if.slice(3,-2),context))).map(step=>step.run);
+ assert.ok(selected.includes('node scripts/desktop-ux-checks.mjs navigation --native-only'));
+ assert.equal(selected.some(command=>/package:built|check:artifact|smoke:views|coherent|test:desktop-ux/.test(command)),false);
+ assert.equal(runInNewContext(job.steps.find(step=>step.name==='Candidate provenance').env.WORKSPACE_UX_NAVIGATION_ONLY.slice(3,-2),context),'1');
 });
