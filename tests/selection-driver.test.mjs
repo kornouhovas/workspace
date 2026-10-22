@@ -76,3 +76,32 @@ test('selection dismissal waits for asynchronous focus return to its exact trigg
  if(child.exitCode!==null||child.signalCode!==null)await rm(profile,{recursive:true,force:true});
  if(failure)throw failure;
 });
+
+for(const language of ['en','ru'])test(`${language} grouping closure completes its delayed focus return before the next selection opens`,async()=>{
+ const {closeGroupingForSelection}=await import('../scripts/selection-editor-driver.mjs');
+ const profile=await mkdtemp(join(tmpdir(),'grouping-close-driver-'));
+ const app=await _electron.launch({executablePath:createRequire(import.meta.url)('electron'),args:[fileURLToPath(new URL('./fixtures/rename-editor-readiness-electron.cjs',import.meta.url))],env:{...process.env,WORKSPACE_RENAME_EDITOR_PROFILE:profile}});
+ const child=app.process();let failure;
+ try{
+  const page=await app.firstWindow();const url=await app.evaluate(()=>globalThis.renameEditorInitialLoad);await page.waitForURL(url);page.setDefaultTimeout(1000);
+  const label=language==='en'?'Grouping':'Группировка',parentLabel=language==='en'?'View settings':'Настройки представления';
+  await page.setContent(`<button id="parent" aria-label="${parentLabel}" aria-expanded="true">Settings</button><button id="grouping" aria-label="${label}" aria-expanded="true">Grouping</button><div role="region" aria-label="${label}"><button id="inside">Group by</button></div><button id="edit">Edit selection</button>`);
+  await page.evaluate(()=>{
+   document.addEventListener('keydown',event=>{
+    if(event.key!=='Escape')return;
+    const panel=document.querySelector('[role="region"]');
+    if(panel){panel.remove();document.querySelector('#grouping').setAttribute('aria-expanded','false');setTimeout(()=>document.querySelector('#grouping').focus(),100);}
+    else if(event.target===document.querySelector('#grouping')){document.querySelector('#parent').setAttribute('aria-expanded','false');document.querySelector('#parent').focus();}
+   });
+   document.querySelector('#edit').addEventListener('click',()=>{const input=document.createElement('input');input.type='checkbox';input.setAttribute('aria-label','A');input.addEventListener('blur',()=>input.remove());document.body.append(input);input.focus();});document.querySelector('#inside').focus();
+  });
+  await closeGroupingForSelection(page,language);
+  assert.equal(await page.locator('#parent').getAttribute('aria-expanded'),'false');
+  await page.getByRole('button',{name:'Edit selection'}).click();
+  await page.waitForFunction(()=>document.activeElement?.getAttribute('aria-label')==='A');
+  assert.equal(await page.getByRole('checkbox',{name:'A'}).count(),1);
+ }catch(error){failure=error;}
+ try{await closeElectron(app);}catch(error){failure??=error;}
+ if(child.exitCode!==null||child.signalCode!==null)await rm(profile,{recursive:true,force:true});
+ if(failure)throw failure;
+});

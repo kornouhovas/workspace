@@ -22,3 +22,17 @@ export async function waitForFocusedInput(page, selector) {
       && input === globalThis.document.activeElement;
   }, selector);
 }
+
+// Switch once; the following property control belongs to the committed view.
+export async function activatePropertyView(page, { name, layout }) {
+  const tab = page.getByRole('tab', { name, exact: true });
+  const id = await tab.getAttribute('id');
+  await tab.click();
+  await page.waitForFunction(({id, layout}) => {
+    const tab = globalThis.document.getElementById(id);
+    const panel = [...globalThis.document.querySelectorAll('.saved-view-content [role="tabpanel"]')].find(panel => panel.getAttribute('aria-labelledby')?.split(' ').includes(id) && !panel.closest('[hidden]'));
+    const fields = panel?.querySelector('.text-properties');
+    return tab?.getAttribute('aria-selected') === 'true' && fields?.getAttribute('aria-busy') === 'false'
+      && fields.querySelector(layout === 'board' ? '.project-board' : 'table.project-table') !== null;
+  }, {id, layout});
+}

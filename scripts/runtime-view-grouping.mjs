@@ -1,3 +1,4 @@
+import { closeGroupingForSelection } from "./selection-editor-driver.mjs";
 import { openGroupingControls, closeGroupingControls } from "./runtime-presentation-controls.mjs";
 /* global window, document */
 import assert from "node:assert/strict";
@@ -62,7 +63,7 @@ export async function exerciseSelectionGrouping({ page, query, workspaceId, lang
   const viewId = (await call("listViews")).activeViewId;
   const groups = (await call("queryView", { viewId, archived: false })).groups;
   assert.deepEqual(groups.slice(0, 2).map(g => g.projectIds), [[projectId], [projectId]]);
-  await closeGroupingControls(page, language);
+  await closeGroupingForSelection(page, language);
   const value = page.getByRole("region", { name: "B", exact: true }).getByRole("button", {
     name: `${en ? "Edit MultiSelect value" : "Редактировать MultiSelect-значение"}: Project / Grouping tags`, exact: true });
   await value.and(page.locator(":enabled")).focus(); await value.press("Enter");

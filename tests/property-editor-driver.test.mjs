@@ -204,3 +204,28 @@ test("keyboard discovery Apply retains its caller deadline when no reviewed prev
     await assert.rejects(applyReviewedDiscovery(page), /Timeout/);
   });
 });
+
+test('property view entry waits for the committed panel and loaded fields after one tab activation', async () => {
+  const {activatePropertyView}=await import('../scripts/property-editor-driver.mjs');
+  await withPage(async page => {
+    await page.setContent(`<button role="tab" id="saved-table" aria-selected="false">Table</button><button role="tab" id="saved-board" aria-selected="true">Board</button>
+      <div class="saved-view-content"><section role="tabpanel" aria-labelledby="saved-board"><div class="text-properties" aria-busy="false"><ul class="project-board"><li>Old Board</li></ul></div></section></div>`);
+    await page.evaluate(()=>{
+      globalThis.propertyViewActivations=0;
+      globalThis.document.querySelector('#saved-table').addEventListener('click',()=>{
+        globalThis.propertyViewActivations++;
+        setTimeout(()=>{
+          globalThis.document.querySelector('#saved-table').setAttribute('aria-selected','true');globalThis.document.querySelector('#saved-board').setAttribute('aria-selected','false');
+          globalThis.document.querySelector('section').setAttribute('aria-labelledby','saved-table');
+          globalThis.document.querySelector('.text-properties').setAttribute('aria-busy','true');
+          globalThis.document.querySelector('.text-properties').innerHTML='<table class="project-table"><tbody><tr><td>Committed Table</td></tr></tbody></table>';
+          setTimeout(()=>globalThis.document.querySelector('.text-properties').setAttribute('aria-busy','false'),150);
+        },150);
+      });
+    });
+    await activatePropertyView(page,{name:'Table',layout:'table'});
+    assert.equal(await page.locator('section').getAttribute('aria-labelledby'),'saved-table');
+    assert.equal(await page.locator('.text-properties').getAttribute('aria-busy'),'false');
+    assert.equal(await page.evaluate(()=>globalThis.propertyViewActivations),1);
+  });
+});

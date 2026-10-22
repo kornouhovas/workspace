@@ -18,3 +18,20 @@ export async function waitForSelectionFocus(page, label) {
   // Content dismissal precedes Radix focus restoration; retain the exact trigger.
   await page.waitForFunction(label => document.activeElement?.getAttribute("aria-label") === label, label);
 }
+
+// Finish the old grouping layer's focus return before opening a value editor.
+export async function closeGroupingForSelection(page, language = "en") {
+  const label = language === "en" ? "Grouping" : "Группировка";
+  const trigger = page.getByRole("button", {name: label, exact: true, includeHidden:true});
+  if (await trigger.count() && await trigger.getAttribute("aria-expanded") === "true") {
+    await page.keyboard.press("Escape");
+    await page.getByRole("region", {name: label, exact: true}).waitFor({state:"hidden"});
+    await page.waitForFunction(label => globalThis.document.activeElement?.getAttribute("aria-label") === label, label);
+  }
+  const parent=page.getByRole("button",{name:/^(View settings|Настройки представления)$/});
+  if(await parent.count() && await parent.getAttribute("aria-expanded")==="true") {
+    await page.keyboard.press("Escape");
+    const parentLabel=await parent.getAttribute("aria-label");
+    await page.waitForFunction(label => globalThis.document.activeElement?.getAttribute("aria-label") === label && globalThis.document.activeElement?.getAttribute("aria-expanded") === "false", parentLabel);
+  }
+}

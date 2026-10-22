@@ -111,3 +111,37 @@ They are not a passing fixture run or an inferred repair. Required hosted eviden
 must resolve actual candidate acceptance; original failure artifacts remain local.
 Runtime dependencies, database schema, filesystem/native commands and installer
 inputs are unchanged; broader performance/release gates remain #67/#42.
+
+## First hosted candidate and driver renewal
+
+Run [39840737080](https://github.com/kornouhovas/workspace/actions/runs/39840737080),
+at `619b4b125587949604e7f79397d75374b7edc805`, retained the original failures:
+
+- macOS: 285 tests pass; the property smoke sampled the old Board owning trigger
+  while Table activation was completing. No property interaction/capture passed
+  in that command. A controlled delayed view switch reproduces `saved-board`
+  after the original single click. Waiting for selected tab, associated visible
+  panel, actual layout and loaded fields fixes that red regression.
+- Windows latest: 284 tests and the property/selection/Select/MultiSelect flows
+  pass. Original Views then loses its newly opened selection editor to delayed
+  Grouping focus return. The failure screenshot retains the old A+B value and
+  focus in Grouping. Controlled EN/RU layer-closure regressions reproduce the
+  still-open parent. Waiting for both layer focus returns before opening the
+  selection editor fixes those regressions without changing selection assertions.
+- Windows 2022: the complete original scoped profile passes, including Views.
+
+The repair is confined to test drivers, regressions, routing and documentation.
+`src`, schema/migrations, native resources, dependencies, lockfile, build and
+packaging inputs remain unchanged from `619b4b12`. Grouping readiness is scoped
+specifically to the selection-edit journey; the shared presentation/performance
+helper remains unchanged. The property flow also observes creator/fallback focus
+return before opening the next tool, using the existing focus-return regression.
+No action is replayed, deadline widened, product assertion removed or failure
+counted as a pass.
+
+The controlled repair run passes 3 native regressions; routing passes 20 tests;
+typecheck/lint pass. The original local Views command passes all six journeys
+with normal shutdown/cleanup. Both independent follow-up review axes report zero
+findings in the test-only repair and its two-phase consumer mapping.
+Exact focused/tail SHA/run/artifact receipts remain in the GitHub checkpoint;
+missing or unreached commands remain acceptance gates until those runs finish.

@@ -233,3 +233,21 @@ test('property profile runs real metadata safety and contextual Electron consume
  assert.ok(job.steps.some(step=>step.run==='node scripts/desktop-ux-checks.mjs properties'));
  for(const step of job.steps.filter(step=>step.run==='npm run test:desktop-ux'||step.name==='Package principal desktop consumers'))assert.ok(step.if.includes("inputs.desktop_ux_profile != 'properties'"));
 });
+
+test('property repair selects only failed hosts/commands before completing changed and unreached consumers',async()=>{
+ const {propertyRepairCommands,propertyTailCommands}=await import('../scripts/desktop-ux-checks.mjs');
+ const mac=JSON.stringify(propertyRepairCommands('darwin')),windows=JSON.stringify(propertyRepairCommands('win32'));
+ assert.ok(mac.includes('smoke-property-management.mjs'));assert.equal(mac.includes('smoke:views'),false);
+ assert.ok(windows.includes('smoke:views'));assert.equal(windows.includes('smoke-property-management.mjs'),false);
+ const macTail=JSON.stringify(propertyTailCommands({platform:'darwin'})),winTail=JSON.stringify(propertyTailCommands({platform:'win32'})),serverTail=JSON.stringify(propertyTailCommands({platform:'win32',renewViews:true}));
+ for(const required of ['smoke-selection-editors.mjs','smoke:select','smoke:multiselect','smoke:views'])assert.ok(macTail.includes(required),required);
+ assert.ok(winTail.includes('smoke-property-management.mjs'));assert.equal(winTail.includes('smoke:views'),false);assert.ok(serverTail.includes('smoke:views'));
+ const {readFile}=await import('node:fs/promises');const {load}=await import('js-yaml');const {runInNewContext}=await import('node:vm');
+ const workflow=load(await readFile('.github/workflows/desktop-ci.yml','utf8')),job=workflow.jobs['desktop-ux'];
+ const hosts=profile=>Array.from(runInNewContext(job.strategy.matrix.os.slice(3,-2),{fromJSON:JSON.parse,inputs:{desktop_ux_profile:profile}}));
+ assert.deepEqual(hosts('property-repair'),['macos-latest','windows-latest']);assert.deepEqual(hosts('property-tail'),['macos-latest','windows-latest','windows-2022']);
+ for(const profile of ['property-repair','property-tail']){
+  assert.ok(workflow.on.workflow_dispatch.inputs.desktop_ux_profile.options.includes(profile));assert.ok(job.steps.some(step=>step.run===`node scripts/desktop-ux-checks.mjs ${profile}`));
+  assert.equal(spawnSync(process.execPath,['scripts/desktop-ux-checks.mjs',profile,'--failure-probe'],{encoding:'utf8'}).status,23);
+ }
+});

@@ -1437,3 +1437,13 @@ It uses the existing macOS latest, Windows latest and Windows 2022 matrix.
 Property screenshots and the flow report are retained in
 `work/issue-58-properties-dev` with the candidate provenance artifact. No installer
 boundary changes; ordinary/full, packaged and final milestone routes remain.
+
+For the #58 view-switch/property-smoke failure on macOS and the Views grouping
+focus failure on Windows latest, use `desktop_ux_profile: property-repair`.
+It selects only those two hosts, the three controlled readiness/focus regressions,
+and each host's original failed command. After focused success, `property-tail`
+renews unreached macOS selection/Select/MultiSelect/Views consumers, the changed
+property smoke on both Windows hosts, and the changed Views consumer on Windows
+2022. Earlier passing source/service results retain their exact receipts under
+the test-only reuse policy. No product, build, dependency, timing threshold or
+ordinary workflow default changes in this repair.

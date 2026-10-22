@@ -1,5 +1,7 @@
 /* global window, document */
 import assert from 'node:assert/strict';
+import { waitForSelectionFocus } from './selection-editor-driver.mjs';
+import { activatePropertyView } from './property-editor-driver.mjs';
 import { enterContextFor } from './runtime-context-tools.mjs';
 import { createRequire } from 'node:module';
 import { mkdir, mkdtemp, realpath, writeFile, readFile } from 'node:fs/promises';
@@ -61,7 +63,7 @@ try{
    for(const size of [{width:1024,height:720},{width:1440,height:960}]){
     await page.setViewportSize(size);
     for(const surface of ['Table','Board','Details']){
-     if(surface!=='Details')await page.getByRole('tab',{name:surface,exact:true}).click();
+     if(surface!=='Details')await activatePropertyView(page,{name:surface,layout:surface.toLowerCase()});
      else await page.getByRole('button',{name:en?'Preview project: Atlas':'Открыть предпросмотр проекта: Atlas',exact:true}).click();
      const scope=surface==='Details'?page.locator('.project-area'):page.locator('.saved-view-content');
      const label=`${en?'Rename property':'Переименовать свойство'}: Research notes`;
@@ -83,12 +85,14 @@ try{
       const name=page.getByRole('textbox',{name:en?'Property name':'Название свойства',exact:true});
       await name.fill(`Draft ${type}`);await page.getByRole('combobox',{name:en?'Property type':'Тип свойства',exact:true}).selectOption(type);
       await name.press('Enter');await page.locator('.property-management-popover').waitFor({state:'detached'});
+      await waitForSelectionFocus(page,en?'Add property':'Добавить свойство');
       const created=(await call('listTextProperties')).definitions.find(property=>property.name===`Draft ${type}`);assert.equal(created.propertyType,type);
       const rename=(surface==='Details'?scope:page).getByRole('button',{name:`${en?'Rename property':'Переименовать свойство'}: Draft ${type}`,exact:true,includeHidden:true});
       await enterContextFor(page,rename);await rename.click();
       await page.getByRole('button',{name:en?'Delete property':'Удалить свойство',exact:true}).click();
       await page.getByRole('button',{name:en?'Confirm deletion':'Подтвердить удаление',exact:true}).and(page.locator(':enabled')).click();
       await page.locator('.metadata-removal').waitFor({state:'detached'});
+      await page.waitForFunction(labels=>labels.includes(document.activeElement?.getAttribute('aria-label')),en?['Add property','View settings','Properties']:['Добавить свойство','Настройки представления','Свойства']);
       assert.ok(!(await call('listTextProperties')).definitions.some(property=>property.propertyId===created.propertyId));
       report.checks.push(`${surface}-${language}-${type}: contextual create/type and current reviewed deletion`);
      }
