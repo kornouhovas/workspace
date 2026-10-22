@@ -306,6 +306,7 @@ body {
 
 .category-property-header { display: grid; gap: 0.5rem; min-width: 0; font-weight: normal; }
 .category-property-header > .property-authored { font-weight: 600; }
+.category-property-header .workspace-input { min-width: 0; }
 .project-resolution, .project-previous-path {
   display: block;
   margin-top: 0.5rem;

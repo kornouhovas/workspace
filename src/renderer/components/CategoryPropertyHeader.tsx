@@ -1,3 +1,5 @@
+import { Hint } from "./Hint.js";
+import { Icon } from "./Icons.js";
 import { useEffect, useId, useRef, useState } from "react";
 import type { Language } from "../../contracts/settings.js";
 import type { CategoryProperty, CategoryPropertySnapshot } from "../../contracts/workspaces.js";
@@ -75,9 +77,9 @@ export function CategoryPropertyHeader({ client, workspaceId, sourceId, property
   };
   return <div className="category-property-header" aria-busy={pending}>
     <span className="property-authored">{name}</span>
-    <button ref={trigger} type="button" className="workspace-button workspace-button--secondary property-rename"
+    <Hint label={`${t("renameCategoryProperty")}: ${name}`}><button ref={trigger} type="button" className="workspace-button workspace-button--secondary property-rename"
       aria-label={`${t("renameCategoryProperty")}: ${name}`} disabled={disabled || editing}
-      onClick={() => { originalRevision.current = revision; updateDraft(name); setMessage(null); }}>{t("renameCategoryProperty")}</button>
+      onClick={() => { originalRevision.current = revision; updateDraft(name); setMessage(null); }}><Icon name="edit" /></button></Hint>
     {editing && <form className="property-form" onSubmit={(event) => { event.preventDefault(); void save(); }}
       onKeyDown={(event) => { if (event.key === "Escape") { event.preventDefault(); cancel(); } }}>
       <label htmlFor={id}>{t("categoryPropertyName")}</label>

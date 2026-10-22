@@ -1251,3 +1251,13 @@ geometry from the original measurement. Later failure geometry has a1000ms
 budget and screenshot a2000ms timeout; unavailable diagnostics do not replace
 the primary failure or prevent ordinary shutdown/cleanup. A diagnostic probe is
 not an acceptance waiver or proof of the historical cause.
+
+
+The category-header application repair adds an actual production renderer build
+and `tests/category-header-layout-native.test.mjs` before that original Ladle
+command. The regression uses real Electron/CSS/fonts and legal narrow Table
+columns at supported windows, checking containment, non-overlap, EN/RU Hint,
+exact keyboard Save/Cancel and focus return with normal shutdown/owned cleanup.
+It does not replace any original layout assertion. Application input changes
+require renewed full/strict/coherent/installer/appearance acceptance after the
+focused original failure passes; earlier test-only reuse does not apply.

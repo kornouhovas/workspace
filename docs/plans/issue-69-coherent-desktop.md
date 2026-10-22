@@ -1436,3 +1436,43 @@ temporarymutantscriptremoved. All137 route/controlchecks locally134pass/3skip,
 lint/docs/whitespacepass. New layout-fixtures routeall3 runs onlyoriginalunfiltered
 command+Ladleprerequisite, exactprovenance andfailureartifacts. Selectonebounded
 diagnosticprobe; noacceptanceoruniquecauseclaim from it. Productioninputsunchanged.
+
+
+### Native category-header cause and application acceptance renewal
+
+Diagnostic39708092795/attempt1 at10cc299e fails the same original unfiltered
+layout on all three hosts. Original and later geometry both show a139px header
+with intrinsic native input width145px on Mac and166px on Windows. Persistence
+across captures rejects the transient-resize hypothesis. The absolute trigger
+stays horizontally contained. A new actual-Electron regression using production
+CSS/fonts and the production React component reproduces overflow at a legal120px
+Table column in a supported1024px window (input136px, owner74px;62px overflow).
+The old-CSS negative control fails1/1. Setting the scoped input min-width to0
+resolves containment. The screenshot independently reveals a22px-wide text
+trigger wrapping over the editor; CSS-only then fails the separate non-overlap
+control (trigger bottom165px versus input top109.75px). Shared edit Icon and
+localized Hint resolve this while preserving the same action/ref/aria-label.
+
+Complete native regression passes1/1 across EN/RU,120/180px columns and
+1024/1440px windows: actual loaded Inter fonts, real geometry, bounded tooltip,
+keyboard exact Save, zero cancelled writes, focus return, normal quit and owned
+fixture cleanup. This is a UI seam with a typed disposable client, not a backend
+persistence claim. Adjacent public-service data-safety evidence remains separate.
+Affected UI352/352 and route controls134pass/3platformskip; independent Standards
+and Spec reviews both report0 findings. The earlier CSS-only unfiltered local
+Ladle run completes302states/906captures with normal quit; it predates the icon
+repair and is not final icon acceptance. Both negative controls are retained in
+ignored local evidence, with no production-mutant files retained.
+
+The layout-fixtures route now builds the actual renderer and runs the native
+regression before its unchanged original unfiltered Ladle command on all three
+hosts. This is an application change, so9face229 strict/coherent/installers and
+published appearance images become historical. Focused original hosted success
+must precede renewed full, strict, coherent, actual installers and appearance
+acceptance at the new reviewed application SHA. No deadline or assertion is
+relaxed. No integration or issue closure is claimed.
+
+Final current-input checks: lint, typecheck,189-file Markdown links and whitespace
+pass; rebuilt production CSS/native regression1/1 pass, exact five-file route/
+identity inventory92pass/3platformskip. Final icon-input original unfiltered local
+Ladle command is running separately; no pass is claimed before its completion.
