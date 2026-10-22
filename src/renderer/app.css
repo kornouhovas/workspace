@@ -930,3 +930,13 @@ p { margin-block: .5rem; }
 
 /* Archive paths are authored filesystem names and may contain no spaces. */
 .project-archive-dialog p { overflow-wrap: anywhere; white-space: pre-wrap; }
+
+/* Contextual category reviews share the issue-60 compact operation foundation. */
+.project-operation-dialog .category-options__body { border: 0; padding: 0; margin: 0; display: grid; gap: 12px; }
+.project-operation-dialog .category-options__body > [hidden] { display: none; }
+.project-operation-dialog .category-options__review { padding: 12px; border-radius: 6px; display: flex; flex-wrap: wrap; gap: 8px; }
+.project-operation-dialog .category-options__review > p, .project-operation-dialog .category-options__review > ul { width: 100%; }
+.project-operation-dialog .category-options__list { margin: 0; padding-left: 20px; }
+.project-operation-dialog .category-options__list li { padding: 8px 0; }
+.project-operation-dialog.project-category-move { margin: 0; }
+.project-operation-dialog .category-move-review { border: 0; padding: 0; }

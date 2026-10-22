@@ -16,7 +16,7 @@ assert.ok(["dev", "release"].includes(mode));
 const executablePath = mode === "dev" ? createRequire(import.meta.url)("electron") : packagedExecutablePath(root, process.platform, process.arch);
 const fixture = await realpath(await mkdtemp(join(tmpdir(), "category-options-runtime-")));
 const source = join(fixture, "source"), dataDirectory = join(fixture, "app-data");
-const evidenceDirectory = resolve(process.env.WORKSPACE_SMOKE_EVIDENCE_DIR ?? "work/issue-20-category-options-runtime");
+const evidenceDirectory = resolve(process.env.WORKSPACE_SMOKE_EVIDENCE_DIR ?? `work/issue-20-category-options-runtime-${mode}`);
 await mkdir(evidenceDirectory, { recursive: true });
 const evidence = { issue: 20, relatedIssues: [21], mode, platform: process.platform, sha: process.env.GITHUB_SHA ?? null, checks: [], shutdowns: [], cleanup: null, status: "running" };
 const children = new Set(), backendPids = new Set();

@@ -1532,3 +1532,7 @@ backend status and bounded failure observation; original native deadlines,
 mutation counts, quit and owned-cleanup assertions remain unchanged. Inspect
 focused original receipts before renewing full native/package/archive/Views
 acceptance. Earlier failure timing has no uniquely established historical cause.
+
+## Contextual folder-backed categories
+
+For #61, `checks: desktop-ux` with `desktop_ux_profile: contextual-categories` selects the three supported CI hosts. It runs affected renderer/service/SQLite/folder/journal/crash/IPC and routing regressions, the new contextual Move/category-review matrix, original category-options/removal and original interrupted category-move native consumers in development and packaged modes. Build/package consumers run sequentially; original deadlines, receipt/identity/file/recovery and normal-shutdown/cleanup assertions remain unchanged. Artifacts include exact profile/SHA/run provenance and each native route's reports/screens. Ordinary full/release defaults remain unchanged. This profile provides scoped #61 evidence; it does not accept #67/#42 or unchanged installer/manual release gates.

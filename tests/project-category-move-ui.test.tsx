@@ -84,6 +84,7 @@ for (const observation of [false, true]) test(`${language}: current-category com
   const before = structuredClone(client.list);
   render(<DiscoveryWorkspace client={client} workspaceId="workspace" sourceId="source" language={language} disabled={false} />);
   await userEvent.click(await findAction("button", { name: new RegExp(`^${t("moveCategory")}:`) }));
+  await screen.findByRole("dialog", { name: t("moveCategory") });
   const select = screen.getByRole("combobox", { name: t("moveCategoryDestination") }) as HTMLSelectElement;
   assert.equal(select.value, "current"); await userEvent.keyboard("{Enter}");
   assert.equal(client.moves.length, 1);
@@ -810,3 +811,22 @@ for (const language of ["en", "ru"] as const) {
     assert.equal(document.activeElement === contextReturnTarget(trigger as HTMLButtonElement), true); assert.equal(client.moves.length, 1);
   });
 }
+
+for (const language of ["en", "ru"] as const) for (const expanded of [false, true]) test(`${language}: ${expanded ? "expanded" : "preview"} project menu opens a cancellable category dialog`, async () => {
+  const client = new Client(), en = language === "en";
+  client.list.projects[0] = { ...client.list.projects[0], name: "Atlas", relativePath: "Current/Atlas" };
+  render(<DiscoveryWorkspace client={client} workspaceId="workspace" sourceId="source" language={language} disabled={false} />);
+  await userEvent.click(await screen.findByRole("button", { name: `${en ? "Preview project" : "Открыть предпросмотр проекта"}: ${"Atlas"}` }));
+  if (expanded) await userEvent.click(screen.getByRole("button", { name: en ? "Expand project" : "Развернуть проект" }));
+  const area = screen.getByRole("region", { name: `${en ? "Project" : "Проект"}: ${"Atlas"}` });
+  const trigger = within(area).getByRole("button", { name: `${translate(language,"projectActions")}: ${"Atlas"}` });
+  await userEvent.click(trigger);
+  await userEvent.click(within(area).getByRole("button", { name: `${translate(language,"moveCategory")}: ${"Atlas"}` }));
+  const dialog = await screen.findByRole("dialog", { name: translate(language,"moveCategory") });
+  await userEvent.selectOptions(within(dialog).getByRole("combobox"), "empty");
+  await userEvent.keyboard("{Escape}");
+  assert.equal(screen.queryByRole("dialog", { name: translate(language,"moveCategory") }), null);
+  assert.equal(client.moves.length, 0);
+  assert.equal(document.activeElement, trigger);
+  assert.ok(screen.getByRole("region", { name: `${en ? "Project" : "Проект"}: ${"Atlas"}` }));
+});

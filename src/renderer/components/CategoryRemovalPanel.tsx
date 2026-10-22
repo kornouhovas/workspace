@@ -28,6 +28,8 @@ export function CategoryRemovalPanel({ client, workspaceId, sourceId, categories
   const [operations, setOperations] = useState<CategoryRemovalOperation[]>([]), [lastResult, setLastResult] = useState<CategoryRemovalOperation | null>(null);
   const [unknown, setUnknown] = useState<{ operationId: string; categoryId: string; destinationCategoryId: string | null } | null>(null);
   const [message, setMessage] = useState<TranslationKey | null>(null);
+  const restoreForm = useRef(false);
+  useEffect(() => { if (restoreForm.current && !preview && !recovery) { categoryInput.current?.focus(); restoreForm.current = false; } }, [preview, recovery]);
   const lifetime = useRef(0), reads = useRef(0), busy = useRef(false);
   useEffect(() => () => { lifetime.current++; reads.current++; }, [client, workspaceId, sourceId]);
   useEffect(() => { setPreview(null); setRecovery(null); reads.current++; setLoading(false); }, [revision, invalidation, disabled]);
@@ -105,7 +107,7 @@ export function CategoryRemovalPanel({ client, workspaceId, sourceId, categories
     setRecovery(null);
     submit(expected, () => client.recoverCategoryRemoval({ workspaceId, operationId: expected.operationId, previewToken: submitted.previewToken!, action }));
   };
-  const cancel = () => { if (!busy.current) { setPreview(null); setRecovery(null); categoryInput.current?.focus(); } };
+  const cancel = () => { if (!busy.current) { restoreForm.current = true; setPreview(null); setRecovery(null); categoryInput.current?.focus(); } };
   const showOperation = (operation: CategoryRemovalOperation) => <div className="category-options__review">
     <p className="workspace-root">{operation.originalRelativePath} → {operation.destinationRelativePath ?? "∅"}</p>
     {operation.problem && operation.problem !== "abandoned" && <p>{t(problemLabel(operation.problem))}</p>}
@@ -115,12 +117,12 @@ export function CategoryRemovalPanel({ client, workspaceId, sourceId, categories
   return <section className="category-removal" aria-busy={pending || loading} onKeyDown={event => { if (event.key === "Escape") { event.stopPropagation(); if (!pending) { event.preventDefault(); cancel(); } } }}>
     <button ref={trigger} type="button" className="workspace-button workspace-button--secondary" disabled={disabled || pending || unknown !== null} aria-expanded={open} onClick={() => { setOpen(!open); setPreview(null); setRecovery(null); if (!open) void load(); }}>{t("removalTitle")}</button>
     {open && <div className="category-options__body">
-      <h4 ref={heading} tabIndex={-1}>{t("removalTitle")}</h4><p>{t("removalPolicy")}</p>
+      <h4 className="sr-only" ref={heading} tabIndex={-1}>{t("removalTitle")}</h4><p>{t("removalPolicy")}</p>
       {(pending || loading) && <StatusMessage kind="info" title={t(pending ? "categoryPending" : "categoryLoading")} />}
       {message && <StatusMessage kind={message === "removalError" || message === "removalUnknown" ? "error" : "info"} title={t(message)} />}
       {unknown && <button type="button" className="workspace-button" disabled={pending || disabled} onClick={check}>{t("removalCheck")}</button>}
       <button type="button" className="workspace-button workspace-button--secondary" disabled={pending || loading} onClick={() => { cancel(); void load(); }}>{t("removalRefresh")}</button>
-      <form className="category-options__form" onSubmit={event => { event.preventDefault(); if (!effectsDisabled && categoryId) review(); }}>
+      <form style={{display: preview || recovery ? "none" : undefined}} className="category-options__form" onSubmit={event => { event.preventDefault(); if (!effectsDisabled && categoryId) review(); }}>
         <label htmlFor={`${id}-category`}>{t("removalCategory")}</label>
         <select ref={categoryInput} id={`${id}-category`} disabled={effectsDisabled} value={categoryId} onChange={e => { setCategoryId(e.currentTarget.value); setPreview(null); }}><option value="">—</option>{categories.map(c => <option key={c.categoryId} value={c.categoryId}>{c.name}</option>)}</select>
         <label htmlFor={`${id}-destination`}>{t("removalDestination")}</label>

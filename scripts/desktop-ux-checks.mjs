@@ -121,6 +121,29 @@ export function contextualArchiveCommands({nativeOnly=false}={}) {
     ...native('release'),
   ];
 }
+
+// Folder-backed contextual UI retains the existing real filesystem/recovery seams.
+export function contextualCategoryCommands() {
+  const tests = ['desktop-ux-checks.test.mjs','project-operation-dialog.test.tsx',
+    'project-category-move-ui.test.tsx','category-options-ui.test.tsx','category-removal-ui.test.tsx',
+    'project-navigation-ui.test.tsx','board-layout-ui.test.tsx','project-creation-ui.test.tsx','project-rename-ui.test.tsx',
+    'category-options-service.test.mjs','category-removal-service.test.mjs',
+    'project-category-move-service.test.mjs','project-category-move-journal.test.mjs',
+    'project-category-move-coordination.test.mjs','project-category-move-crash.test.mjs',
+    'project-category-move-ipc.test.mjs','project-category-move-runtime.test.mjs'];
+  return [
+    ['npm',['run','typecheck']], ['npm',['run','lint']],
+    [process.execPath,['--import','tsx','--test',...tests.map(file=>`tests/${file}`)]],
+    [process.execPath,['-e',"require('electron')"]],
+    [process.execPath,['scripts/smoke-contextual-categories.mjs','dev']],
+    [process.execPath,['scripts/smoke-category-options.mjs','dev']],
+    ['npm',['run','smoke:runtime','--','dev','--category-move']],
+    ['npm',['run','package:built']],['npm',['run','check:artifact','--','release']],
+    [process.execPath,['scripts/smoke-contextual-categories.mjs','release']],
+    [process.execPath,['scripts/smoke-category-options.mjs','release']],
+    ['npm',['run','smoke:runtime','--','release','--category-move']],
+  ];
+}
 // Project navigation changes the shell and both project-list consumers.
 export const navigationTests = [...new Set([...boardTests,
   'project-navigation-ui.test.tsx', 'renderer-app.test.tsx',
@@ -291,9 +314,9 @@ export function runChecks(commands, run = (command,args)=>spawnSync(command,args
 }
 if(process.argv[1] && resolve(process.argv[1])===fileURLToPath(import.meta.url)) {
   const args=process.argv.slice(2);
-  if(args.some(arg=>!['foundation','board','contextual-archive','contextual-archive-native','contextual-projects','contextual-project-regressions','group-assignment','navigation','project-files','coherent','sessions','scalars','selections','properties','property-repair','property-tail','property-renewal','selection-native','selection-focus','selection-tail','--list','--failure-probe','--native-only'].includes(arg)) || !['foundation','board','contextual-archive','contextual-archive-native','contextual-projects','contextual-project-regressions','group-assignment','navigation','project-files','coherent','sessions','scalars','selections','properties','property-repair','property-tail','property-renewal','selection-native','selection-focus','selection-tail'].includes(args[0])) throw new Error('Usage: desktop-ux-checks.mjs <foundation|board|contextual-archive|contextual-archive-native|contextual-projects|contextual-project-regressions|group-assignment|navigation|project-files|coherent|sessions|scalars|selections|properties|property-repair|property-tail|property-renewal|selection-native|selection-focus|selection-tail> [--list] [--failure-probe]');
+  if(args.some(arg=>!['foundation','board','contextual-categories','contextual-archive','contextual-archive-native','contextual-projects','contextual-project-regressions','group-assignment','navigation','project-files','coherent','sessions','scalars','selections','properties','property-repair','property-tail','property-renewal','selection-native','selection-focus','selection-tail','--list','--failure-probe','--native-only'].includes(arg)) || !['foundation','board','contextual-categories','contextual-archive','contextual-archive-native','contextual-projects','contextual-project-regressions','group-assignment','navigation','project-files','coherent','sessions','scalars','selections','properties','property-repair','property-tail','property-renewal','selection-native','selection-focus','selection-tail'].includes(args[0])) throw new Error('Usage: desktop-ux-checks.mjs <foundation|board|contextual-categories|contextual-archive|contextual-archive-native|contextual-projects|contextual-project-regressions|group-assignment|navigation|project-files|coherent|sessions|scalars|selections|properties|property-repair|property-tail|property-renewal|selection-native|selection-focus|selection-tail> [--list] [--failure-probe]');
   if(args.includes('--native-only') && !['navigation','project-files'].includes(args[0]))throw new Error('--native-only requires navigation or project-files');
-  const commands=args[0]==='contextual-archive-native' ? contextualArchiveCommands({nativeOnly:true}) : args[0]==='contextual-archive' ? contextualArchiveCommands() : args[0]==='contextual-project-regressions' ? contextualProjectCommands({regressionsOnly:true}) : args[0]==='contextual-projects' ? contextualProjectCommands() : args[0]==='group-assignment' ? groupAssignmentCommands() : args[0]==='property-renewal' ? propertyRenewalCommands(process.platform, process.env.WORKSPACE_PROPERTY_VIEWS_RENEW==='1') : args[0]==='property-repair' ? propertyRepairCommands() : args[0]==='property-tail' ? propertyTailCommands({renewViews:process.env.WORKSPACE_PROPERTY_VIEWS_RENEW==='1'}) : args[0]==='properties' ? propertyCommands() : args[0]==='selection-focus' ? selectionFocusCommands() : args[0]==='selection-native' ? selectionNativeCommands({renewViews:process.env.WORKSPACE_SELECTION_VIEWS_RENEW==='1'}) : args[0]==='selection-tail' ? selectionTailCommands() : args[0]==='selections' ? selectionCommands() : args[0]==='scalars' ? scalarCommands() : args[0]==='sessions' ? sessionCommands() : args[0]==='coherent' ? coherentCommands() : args[0]==='project-files' ? projectFilesCommands({nativeOnly:args.includes('--native-only')}) : args[0]==='navigation' ? navigationCommands({nativeOnly:args.includes('--native-only')}) : args[0]==='board' ? boardCommands() : foundationCommands({failureProbe:args.includes('--failure-probe')});
+  const commands=args[0]==='contextual-categories' ? contextualCategoryCommands() : args[0]==='contextual-archive-native' ? contextualArchiveCommands({nativeOnly:true}) : args[0]==='contextual-archive' ? contextualArchiveCommands() : args[0]==='contextual-project-regressions' ? contextualProjectCommands({regressionsOnly:true}) : args[0]==='contextual-projects' ? contextualProjectCommands() : args[0]==='group-assignment' ? groupAssignmentCommands() : args[0]==='property-renewal' ? propertyRenewalCommands(process.platform, process.env.WORKSPACE_PROPERTY_VIEWS_RENEW==='1') : args[0]==='property-repair' ? propertyRepairCommands() : args[0]==='property-tail' ? propertyTailCommands({renewViews:process.env.WORKSPACE_PROPERTY_VIEWS_RENEW==='1'}) : args[0]==='properties' ? propertyCommands() : args[0]==='selection-focus' ? selectionFocusCommands() : args[0]==='selection-native' ? selectionNativeCommands({renewViews:process.env.WORKSPACE_SELECTION_VIEWS_RENEW==='1'}) : args[0]==='selection-tail' ? selectionTailCommands() : args[0]==='selections' ? selectionCommands() : args[0]==='scalars' ? scalarCommands() : args[0]==='sessions' ? sessionCommands() : args[0]==='coherent' ? coherentCommands() : args[0]==='project-files' ? projectFilesCommands({nativeOnly:args.includes('--native-only')}) : args[0]==='navigation' ? navigationCommands({nativeOnly:args.includes('--native-only')}) : args[0]==='board' ? boardCommands() : foundationCommands({failureProbe:args.includes('--failure-probe')});
   if(args[0]!=='foundation' && args.includes('--failure-probe')) commands.unshift([process.execPath,['-e','process.exit(23)']]);
   if(args.includes('--list')) console.log(JSON.stringify(commands));
   else process.exitCode=runChecks(commands);

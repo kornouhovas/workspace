@@ -1,3 +1,5 @@
+import { contextReturnTarget } from "./ContextTools.js";
+import { ProjectOperationDialog } from "./ProjectOperationDialog.js";
 import { CategoryRemovalPanel } from "./CategoryRemovalPanel.js";
 import { useEffect, useId, useRef, useState } from "react";
 import type { Language } from "../../contracts/settings.js";
@@ -22,6 +24,8 @@ export function CategoryOptionsPanel({ client, workspaceId, sourceId, categories
   const [operations, setOperations] = useState<CategoryFolderOperation[]>([]), [options, setOptions] = useState<CategoryPresentation[]>([]);
   const [recovery, setRecovery] = useState<CategoryFolderRecoveryPreview | null>(null), [unknownOperation, setUnknownOperation] = useState<string | null>(null);
   const [message, setMessage] = useState<TranslationKey | null>(null);
+  const restoreForm = useRef(false);
+  useEffect(() => { if (restoreForm.current && !preview && !recovery) { nameInput.current?.focus(); restoreForm.current = false; } }, [preview, recovery]);
   const lifetime = useRef(0), busy = useRef(false), reads = useRef(0);
   useEffect(() => () => { lifetime.current++; reads.current++; }, [workspaceId, sourceId, client]);
   useEffect(() => { setPreview(null); setRecovery(null); reads.current++; setLoading(false); }, [revision, invalidation, disabled]);
@@ -102,7 +106,8 @@ export function CategoryOptionsPanel({ client, workspaceId, sourceId, categories
       } catch { if (current === lifetime.current) setMessage("categoryUnknown"); }
     });
   };
-  const cancel = () => { if (!busy.current) { setPreview(null); setRecovery(null); setMessage(null); nameInput.current?.focus(); } };
+  const close = () => { if (busy.current) return; setOpen(false); setPreview(null); setRecovery(null); if (trigger.current) contextReturnTarget(trigger.current).focus(); };
+  const cancel = () => { if (!busy.current) { restoreForm.current = true; setPreview(null); setRecovery(null); setMessage(null); nameInput.current?.focus(); } };
   const update = (index: number, patch: Partial<CategoryPresentation>) => setOptions(current => current.map((o, i) => i === index ? { ...o, ...patch } : o));
   const move = (index: number, direction: number) => setOptions(current => {
     const next = [...current], other = index + direction;
@@ -118,17 +123,18 @@ export function CategoryOptionsPanel({ client, workspaceId, sourceId, categories
     else setMessage("categoryError");
   });
   const effectsDisabled = removalActive || disabled || pending || loading || unknownOperation !== null || operations.length > 0;
-  return <section className="category-options" aria-busy={pending || loading} onKeyDown={event => { if (event.key === "Escape" && !pending && !removalActive) { event.preventDefault(); cancel(); } }}>
-    <button ref={trigger} type="button" className="workspace-button workspace-button--secondary" disabled={removalActive || disabled || pending} aria-expanded={open} onClick={() => { if (open) { setOpen(false); setPreview(null); setRecovery(null); } else { setOpen(true); void load(); } }}>{t("categoryOptions")}</button>
-    {open && <div className="category-options__body">
-      <h3 ref={heading} tabIndex={-1}>{t("categoryOptions")}</h3>
+  return <section className="category-options" aria-busy={pending || loading} onKeyDown={event => { if (event.key === "Escape" && !pending && !removalActive) { event.preventDefault(); if (preview || recovery) cancel(); else close(); } }}>
+    <button ref={trigger} data-close-context type="button" className="workspace-button workspace-button--secondary" disabled={removalActive || disabled || pending} aria-expanded={open} onClick={() => { if (open) { setOpen(false); setPreview(null); setRecovery(null); } else { setOpen(true); void load(); } }}>{t("categoryOptions")}</button>
+    {open && <ProjectOperationDialog open title={t("categoryOptions")} onClose={close}>
+      <div className="category-options__body">
+      <h3 className="sr-only" ref={heading} tabIndex={-1}>{t("categoryOptions")}</h3>
       <p>{t("categorySharedEffect")}</p>
       {loading && <StatusMessage kind="info" title={t("categoryLoading")} />}
       {pending && <StatusMessage kind="info" title={t("categoryPending")} />}
       {message && <StatusMessage kind={message === "categoryError" || message === "categoryUnknown" ? "error" : "info"} title={t(message)} />}
       {unknownOperation && <button type="button" className="workspace-button" disabled={removalActive || pending} onClick={check}>{t("categoryCheck")}</button>}
       <button type="button" className="workspace-button workspace-button--secondary" disabled={removalActive || pending || loading} onClick={() => { setPreview(null); setRecovery(null); void load(); }}>{t("categoryRefresh")}</button>
-      <form className="category-options__form" onSubmit={event => { event.preventDefault(); if (!effectsDisabled) review(); }}>
+      <form style={{ display: preview || recovery || removalActive ? "none" : undefined }} className="category-options__form" onSubmit={event => { event.preventDefault(); if (!effectsDisabled) review(); }}>
         <label htmlFor={`${id}-action`}>{t("categoryAction")}</label>
         <select id={`${id}-action`} disabled={effectsDisabled} value={action} onChange={e => { setAction(e.currentTarget.value as CategoryFolderAction); setPreview(null); }}>
           <option value="create">{t("categoryCreate")}</option><option value="associate">{t("categoryAssociate")}</option><option value="rename">{t("categoryRename")}</option>
@@ -158,7 +164,7 @@ export function CategoryOptionsPanel({ client, workspaceId, sourceId, categories
       <CategoryRemovalPanel key={sourceId} client={client} workspaceId={workspaceId} sourceId={sourceId} categories={categories} language={language}
         disabled={disabled || pending || loading || unknownOperation !== null || operations.length > 0} revision={revision} invalidation={invalidation}
         onCommitted={() => { void load(); onCommitted(); }} onOpenChange={setRemovalActive} />
-      <h4>{t("categoryPresentationScope")}</h4>
+      <div hidden={!!preview || !!recovery || removalActive}><h4>{t("categoryPresentationScope")}</h4>
       {options.length === 0 && !loading && <p>{t("savedCategoriesEmpty")}</p>}
       <ol className="category-options__list">{options.map((o, i) => <li key={o.categoryId}>
         <span className="category-chip" data-color={o.color}>{categories.find(c => c.categoryId === o.categoryId)?.name ?? t("discoveryCategory")}</span>
@@ -167,8 +173,8 @@ export function CategoryOptionsPanel({ client, workspaceId, sourceId, categories
         <button type="button" className="workspace-button workspace-button--secondary" disabled={removalActive || pending || disabled || i === 0} onClick={() => move(i, -1)} aria-label={`${t("categoryUp")}: ${categories.find(c => c.categoryId === o.categoryId)?.name ?? i + 1}`}>{t("categoryUp")}</button>
         <button type="button" className="workspace-button workspace-button--secondary" disabled={removalActive || pending || disabled || i === options.length - 1} onClick={() => move(i, 1)} aria-label={`${t("categoryDown")}: ${categories.find(c => c.categoryId === o.categoryId)?.name ?? i + 1}`}>{t("categoryDown")}</button>
       </li>)}</ol>
-      <button type="button" className="workspace-button" disabled={removalActive || disabled || pending || loading} onClick={savePresentation}>{t("categorySavePresentation")}</button>
-      <button type="button" className="workspace-button workspace-button--secondary" disabled={removalActive || pending} onClick={() => { setOpen(false); setPreview(null); setRecovery(null); trigger.current?.focus(); }}>{t("categoryClose")}</button>
-    </div>}
+      <button type="button" className="workspace-button" disabled={removalActive || disabled || pending || loading} onClick={savePresentation}>{t("categorySavePresentation")}</button></div>
+      <button type="button" className="workspace-button workspace-button--secondary" disabled={removalActive || pending} onClick={close}>{t("categoryClose")}</button>
+    </div></ProjectOperationDialog>}
   </section>;
 }

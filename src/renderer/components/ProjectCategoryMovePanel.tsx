@@ -1,3 +1,4 @@
+import { ProjectOperationDialog } from "./ProjectOperationDialog.js";
 import { ManagementHistory } from "./ManagementSurface.js";
 import { contextReturnTarget } from "./ContextTools.js";
 import { useEffect, useRef, useState } from "react";
@@ -82,6 +83,8 @@ function CategoryMoveContent({ client, workspaceId, sourceId, language, project,
   const [unresolved, setUnresolved] = useState(!!submitted.current);
   const busy = useRef(false), mounted = useRef(true), generation = useRef(0), request = useRef(0), ready = useRef(true);
   const root = useRef<HTMLElement>(null);
+  const dialog = useRef<HTMLDivElement>(null);
+  const ownsFocus = () => !!root.current?.contains(document.activeElement) || !!dialog.current?.contains(document.activeElement);
   const input = useRef<HTMLSelectElement>(null), cancel = useRef<HTMLButtonElement>(null);
   const restoreInput = useRef(false);
   const [operations, setOperations] = useState<ProjectCategoryMoveOperation[]>([]);
@@ -198,7 +201,7 @@ function CategoryMoveContent({ client, workspaceId, sourceId, language, project,
         result.project.name !== binding.current?.project.name || result.project.relativePath !== operation.requestedRelativePath || result.project.categoryId !== operation.destinationCategoryId) return false;
       setMessage(result.project.revision < minimumRevision.current ? "moveCategoryNewer" : result.outcome === "unchanged" ? "moveCategoryUnchanged" : "moveCategorySaved");
       resolvedOperations.current.add(authored.operationId); setOperations((current) => current.filter((item) => item.operationId !== authored.operationId));
-      requests.delete(sourceId); binding.current = null; submitted.current = null; setUnresolved(false); closeReview(document.activeElement === document.body || !!reviewRoot.current?.contains(document.activeElement)); void loadMoves(); onClose(document.activeElement === document.body || !!root.current?.contains(document.activeElement));
+      requests.delete(sourceId); binding.current = null; submitted.current = null; setUnresolved(false); closeReview(document.activeElement === document.body || !!reviewRoot.current?.contains(document.activeElement)); void loadMoves(); onClose(document.activeElement === document.body || ownsFocus());
     } else if (result.outcome === "recoverable") {
       if (!operation || ["completed", "failed"].includes(operation.stage)) return false;
       if (binding.current) { binding.current.operation = { ...operation }; binding.current.uncertain = false; }
@@ -210,7 +213,7 @@ function CategoryMoveContent({ client, workspaceId, sourceId, language, project,
       resolvedOperations.current.add(authored.operationId); setOperations((current) => current.filter((item) => item.operationId !== authored.operationId));
       requests.delete(sourceId); binding.current = null; submitted.current = null; setUnresolved(false);
       if (result.problem === "kept_original") {
-        setMessage("moveCategoryKeptOriginal"); closeReview(document.activeElement === document.body || !!reviewRoot.current?.contains(document.activeElement)); void loadMoves(); onClose(document.activeElement === document.body || !!root.current?.contains(document.activeElement)); return true;
+        setMessage("moveCategoryKeptOriginal"); closeReview(document.activeElement === document.body || !!reviewRoot.current?.contains(document.activeElement)); void loadMoves(); onClose(document.activeElement === document.body || ownsFocus()); return true;
       }
       setMessage(
         ["occupied", "reserved_destination", "native_conflict"].includes(result.problem) ? "moveCategoryCollision" :
@@ -265,7 +268,18 @@ function CategoryMoveContent({ client, workspaceId, sourceId, language, project,
       }
     }
   };
+  const feedback = <>
+    {unresolved && binding.current && !operations.some((operation) => operation.operationId === submitted.current?.operationId) &&
+      <dl><dt>{t("moveCategoryOriginalPlacement")}</dt><dd>{binding.current.project.relativePath}</dd><dt>{t("moveCategoryDestinationPlacement")}</dt><dd>{binding.current.requestedPath}</dd></dl>}
+    {unresolved && binding.current?.operation && !operations.some((operation) => operation.operationId === binding.current?.operation?.operationId) &&
+      <OperationEvidence operation={binding.current.operation} language={language} />}
+    {pending && <StatusMessage kind="info" title={t("moveCategoryPending")} />}
+    {message && <StatusMessage kind={["moveCategorySaved", "moveCategoryUnchanged", "moveCategoryNewer", "moveCategoryRecoverable", "moveCategoryKeptOriginal"].includes(message) ? "info" : "error"} title={t(message)} />}
+    {unresolved && <button type="button" className="workspace-button workspace-button--secondary" disabled={pending || !ready.current}
+      onClick={() => void run(true)}>{t("moveCategoryStatus")}</button>}
+  </>;
   return <section ref={root} className="project-category-move" aria-label={t("moveCategory")} aria-busy={pending}>
+    <ProjectOperationDialog contentRef={dialog} className="project-category-move" open={!!project} title={t("moveCategory")} onClose={() => onClose()}>
     {project && <form onSubmit={(event) => { event.preventDefault(); void run(false); }}
       onKeyDown={(event) => {
         if (event.key === "Escape") { event.preventDefault(); onClose(); }
@@ -286,6 +300,7 @@ function CategoryMoveContent({ client, workspaceId, sourceId, language, project,
       </div>
       <p>{t("moveCategoryDismissHint")}</p>
     </form>}
+    {project && feedback}</ProjectOperationDialog>
     <ManagementHistory><details className="operation-history"><summary>{t("moveCategoryListTitle")} ({operations.length})</summary>
     <section className="category-move-operations" aria-label={t("moveCategoryListTitle")} aria-busy={listLoading}>
       <h3>{t("moveCategoryListTitle")}</h3>
@@ -309,7 +324,7 @@ function CategoryMoveContent({ client, workspaceId, sourceId, language, project,
       <button type="button" className="workspace-button workspace-button--secondary" disabled={listLoading || pending || !ready.current} onClick={() => void loadMoves()}>{t("moveCategoryListReload")}</button>
     </section>
     </details></ManagementHistory>
-    {reviewed && <section ref={reviewRoot} className="category-move-review" aria-labelledby="category-move-review-title" aria-busy={reviewLoading || pending}
+    {reviewed && <ProjectOperationDialog open title={t("moveCategoryReviewTitle")} onClose={() => closeReview()}><section ref={reviewRoot} className="category-move-review" aria-labelledby="category-move-review-title" aria-busy={reviewLoading || pending}
       onKeyDown={(event) => { if (event.key === "Escape") { event.preventDefault(); closeReview(); } }}>
       <h3 id="category-move-review-title" ref={reviewHeading} tabIndex={-1}>{t("moveCategoryReviewTitle")}</h3>
       <p>{t("moveCategoryReviewHint")}</p>
@@ -333,14 +348,7 @@ function CategoryMoveContent({ client, workspaceId, sourceId, language, project,
           onClick={() => void review(operations.find((operation) => operation.operationId === reviewed.operationId) ?? reviewed)}>{t("moveCategoryReviewAgain")}</button>
         <button ref={dismissReview} type="button" className="workspace-button workspace-button--secondary" onClick={() => closeReview()}>{t("moveCategoryReviewClose")}</button>
       </div>
-    </section>}
-    {unresolved && binding.current && !operations.some((operation) => operation.operationId === submitted.current?.operationId) &&
-      <dl><dt>{t("moveCategoryOriginalPlacement")}</dt><dd>{binding.current.project.relativePath}</dd><dt>{t("moveCategoryDestinationPlacement")}</dt><dd>{binding.current.requestedPath}</dd></dl>}
-    {unresolved && binding.current?.operation && !operations.some((operation) => operation.operationId === binding.current?.operation?.operationId) &&
-      <OperationEvidence operation={binding.current.operation} language={language} />}
-    {pending && <StatusMessage kind="info" title={t("moveCategoryPending")} />}
-    {message && <StatusMessage kind={["moveCategorySaved", "moveCategoryUnchanged", "moveCategoryNewer", "moveCategoryRecoverable", "moveCategoryKeptOriginal"].includes(message) ? "info" : "error"} title={t(message)} />}
-    {unresolved && <button type="button" className="workspace-button workspace-button--secondary" disabled={pending || !ready.current}
-      onClick={() => void run(true)}>{t("moveCategoryStatus")}</button>}
+    </section></ProjectOperationDialog>}
+    {!project && feedback}
   </section>;
 }
