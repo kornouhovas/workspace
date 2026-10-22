@@ -399,6 +399,7 @@ const english = {
   renameRequestedName: "Requested Name",
   renameReview: "Review interrupted rename",
   renameProject: "Rename project folder",
+  renameReviewCurrent: "Review current project name",
   renameSubmit: "Rename folder",
   renameHint: "The folder stays in its current category. Project identity and Text values are preserved.",
   renameCancelHint: "Cancel closes the editor. A rename already accepted by the service may still move the folder.",
@@ -421,6 +422,7 @@ const english = {
   creationReviewLink: "The destination is a link. Recovery requires a verified real directory.",
 
   createProject: "Create project folder",
+  creationDestination: "Destination relative to source",
   creationName: "Folder name",
   creationCategory: "Existing category",
   creationChooseCategory: "Choose a category",
@@ -1100,6 +1102,7 @@ const russian: Record<keyof typeof english, string> = {
   renameRequestedName: "Запрошенное имя",
   renameReview: "Проверить прерванное переименование",
   renameProject: "Переименовать папку проекта",
+  renameReviewCurrent: "Проверить текущее имя проекта",
   renameSubmit: "Переименовать папку",
   renameHint: "Папка остаётся в текущей категории. Идентификатор проекта и значения Text сохраняются.",
   renameCancelHint: "Отмена закрывает редактор. Уже принятое сервисом переименование всё ещё может переместить папку.",
@@ -1122,6 +1125,7 @@ const russian: Record<keyof typeof english, string> = {
   creationReviewLink: "По указанному пути находится ссылка. Восстановление требует проверенную настоящую папку.",
 
   createProject: "Создать папку проекта",
+  creationDestination: "Назначение относительно источника",
   creationName: "Имя папки",
   creationCategory: "Существующая категория",
   creationChooseCategory: "Выберите категорию",

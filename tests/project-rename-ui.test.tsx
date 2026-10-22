@@ -13,7 +13,7 @@ import type { ServiceResult } from "../src/contracts/settings.js";
 import type { ProjectRenameOperation, ProjectRenameResult, ProjectRenameList, ProjectRenameRecoveryPreview, ProjectRenameRecoveryAction } from "../src/contracts/project-rename.js";
 import type { ProjectList, WorkspaceChangeEvent } from "../src/contracts/workspaces.js";
 const browser = new Window({ url: "http://localhost" });
-Object.assign(globalThis, { window: browser, document: browser.document, HTMLElement: browser.HTMLElement, Node: browser.Node, MutationObserver: browser.MutationObserver });
+Object.assign(globalThis, { window: browser, document: browser.document, HTMLElement: browser.HTMLElement, Node: browser.Node, MutationObserver: browser.MutationObserver, CustomEvent: browser.CustomEvent, Element: browser.Element, NodeFilter: browser.NodeFilter, HTMLInputElement: browser.HTMLInputElement, getComputedStyle: browser.getComputedStyle.bind(browser) });
 Object.defineProperty(globalThis, "navigator", { configurable: true, value: browser.navigator });
 const { render, screen, cleanup, act, fireEvent, waitFor, within } = await import("@testing-library/react");
 const { default: userEvent } = await import("@testing-library/user-event");
@@ -594,3 +594,46 @@ for (const language of ["en", "ru"] as const) {
     assert.equal(client.renames.length, 0); assert.equal(client.recoveries.length, 0); assert.equal(client.reviews.length, 0);
   });
 }
+
+for (const language of ["en", "ru"] as const) for (const expanded of [false, true]) {
+  test(`${language}: ${expanded ? "expanded" : "preview"} project menu renames without replacing logical tab identity`, async () => {
+    const client = new Client(), t = (key: Parameters<typeof translate>[1]) => translate(language, key);
+    const reveals: string[][] = [];
+    client.revealProject = async (workspaceId, projectId) => {
+      reveals.push([workspaceId, projectId]);
+      return {ok:true, value:{outcome:"dispatched", workspaceId, projectId}};
+    };
+    render(<DiscoveryWorkspace client={client} workspaceId="workspace" sourceId="source" language={language} disabled={false}/>);
+    await userEvent.click(await screen.findByRole("button", {name:`${language === "en" ? "Preview project" : "Открыть предпросмотр проекта"}: Original`}));
+    if (expanded) await userEvent.click(screen.getByRole("button", {name:language === "en" ? "Expand project" : "Развернуть проект"}));
+    const area = screen.getByRole("region", {name:`${language === "en" ? "Project" : "Проект"}: Original`});
+    await userEvent.click(within(area).getByRole("button", {name:`${t("projectActions")}: Original`}));
+    await userEvent.click(within(area).getByRole("button", {name:`${t("renameProject")}: Original`}));
+    const dialog = screen.getByRole("dialog", {name:t("renameProject")});
+    assert.ok(within(dialog).getByText("Original", {selector:"dd"}));
+    const input = within(dialog).getByRole("textbox", {name:t("projectName")});
+    await userEvent.clear(input); await userEvent.type(input, "Renamed{Enter}");
+    await screen.findByRole("region", {name:`${language === "en" ? "Project" : "Проект"}: Renamed`});
+    assert.equal(client.renames.length, 1); assert.equal(client.renames[0].projectId, "project");
+    if (expanded) assert.ok(screen.getByRole("tab", {name:"Renamed"}));
+    const updated = screen.getByRole("region", {name:`${language === "en" ? "Project" : "Проект"}: Renamed`});
+    await userEvent.click(within(updated).getByRole("button", {name:`${t("projectActions")}: Renamed`}));
+    await userEvent.click(within(updated).getByRole("button", {name:`${t("revealProject")}: Renamed`}));
+    await within(updated).findByText(t("revealDispatched"));
+    assert.deepEqual(reveals, [["workspace", "project"]]);
+  });
+}
+
+test('a stale contextual rename requires explicit review of the current name before a new command', async () => {
+ const client=new Client();render(<DiscoveryWorkspace client={client} workspaceId="workspace" sourceId="source" language="en" disabled={false}/>);
+ await userEvent.click(await findAction("button",{name:"Rename project folder: Original"}));
+ const dialog=screen.getByRole("dialog",{name:"Rename project folder"});
+ await act(async()=>{client.list={...client.list,revision:2};client.events.forEach(listener=>listener({type:"workspace.projectsChanged",sourceId:"source",workspaceIds:["workspace"],revision:2}));});
+ assert.equal((within(dialog).getByRole("textbox") as HTMLInputElement).disabled,true);
+ assert.equal(client.renames.length,0);
+ await userEvent.click(within(dialog).getByRole("button",{name:"Review current project name"}));
+ await waitFor(()=>assert.equal((within(dialog).getByRole("textbox") as HTMLInputElement).disabled,false));
+ assert.equal(client.renames.length,0);
+ await userEvent.clear(within(dialog).getByRole("textbox"));await userEvent.type(within(dialog).getByRole("textbox"),"Reviewed{Enter}");
+ assert.equal(client.renames[0].expectedRevision,2);assert.equal(client.renames[0].projectId,"project");
+});

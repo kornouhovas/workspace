@@ -1,3 +1,4 @@
+import { ProjectOperationDialog } from "./ProjectOperationDialog.js";
 import { ManagementHistory } from "./ManagementSurface.js";
 import { contextReturnTarget } from "./ContextTools.js";
 import { useEffect, useRef, useState } from "react";
@@ -41,14 +42,14 @@ function sourceRequests(client: WorkspaceServiceClient) {
 interface Props {
   client: WorkspaceServiceClient; workspaceId: string; sourceId: string; language: Language;
   project: ProjectSummary | null; projects: ProjectList | null; disabled: boolean;
-  invalidation?: number; onRestoreFocus?(): void;
+  invalidation?: number; onRestoreFocus?(): void; onReviewProject?(project: ProjectSummary): void;
   minimumRevision: { current: number }; observationVersion: { current: number }; sourceLifetime: { current: number };
   onClose(restoreFocus?: boolean): void; onCompleted(): void; onBlockedChange(blocked: boolean): void;
 }
 export function ProjectRenamePanel(props: Props) {
   return <RenameContent key={`${props.workspaceId}:${props.sourceId}`} {...props} />;
 }
-function RenameContent({ client, workspaceId, sourceId, language, project, projects, disabled, invalidation = 0, minimumRevision, observationVersion, sourceLifetime, onClose, onCompleted, onBlockedChange, onRestoreFocus }: Props) {
+function RenameContent({ client, workspaceId, sourceId, language, project, projects, disabled, invalidation = 0, minimumRevision, observationVersion, sourceLifetime, onClose, onCompleted, onBlockedChange, onRestoreFocus, onReviewProject }: Props) {
   const t = (key: TranslationKey) => translate(language, key);
   const requests = sourceRequests(client);
   const binding = useRef<SubmittedRename | null>(requests.get(sourceId) ?? null);
@@ -59,6 +60,8 @@ function RenameContent({ client, workspaceId, sourceId, language, project, proje
   const [unresolved, setUnresolved] = useState(!!submitted.current);
   const busy = useRef(false), mounted = useRef(true), generation = useRef(0), request = useRef(0), ready = useRef(true);
   const root = useRef<HTMLElement>(null);
+  const dialog = useRef<HTMLDivElement>(null);
+  const ownsFocus = () => !!root.current?.contains(document.activeElement) || !!dialog.current?.contains(document.activeElement);
   const input = useRef<HTMLInputElement>(null), cancel = useRef<HTMLButtonElement>(null);
   const restoreInput = useRef(false);
   const [operations, setOperations] = useState<ProjectRenameOperation[]>([]);
@@ -168,7 +171,7 @@ function RenameContent({ client, workspaceId, sourceId, language, project, proje
         result.project.operationId !== authored.operationId || result.project.projectId !== authored.projectId || result.project.sourceId !== sourceId ||
         result.project.name !== authored.name || result.project.relativePath !== operation.requestedRelativePath || result.project.categoryId !== operation.categoryId) return false;
       setMessage(result.project.revision < minimumRevision.current ? "renameNewer" : result.outcome === "unchanged" ? "renameUnchanged" : "renameSaved");
-      requests.delete(sourceId); binding.current = null; submitted.current = null; setUnresolved(false); closeReview(document.activeElement === document.body || !!reviewRoot.current?.contains(document.activeElement)); void loadRenames(); onClose(document.activeElement === document.body || !!root.current?.contains(document.activeElement)); onCompleted();
+      requests.delete(sourceId); binding.current = null; submitted.current = null; setUnresolved(false); closeReview(document.activeElement === document.body || !!reviewRoot.current?.contains(document.activeElement)); void loadRenames(); onClose(document.activeElement === document.body || ownsFocus()); onCompleted();
     } else if (result.outcome === "recoverable") {
       if (!operation || ["completed", "failed"].includes(operation.stage)) return false;
       if (binding.current) { binding.current.operation = operation; binding.current.uncertain = false; }
@@ -179,7 +182,7 @@ function RenameContent({ client, workspaceId, sourceId, language, project, proje
       if (result.problem === "kept_original" && (!operation || operation.resultKind !== "rejected" || operation.problem !== "kept_original" || operation.lastVerifiedPlacement !== "original")) return false;
       requests.delete(sourceId); binding.current = null; submitted.current = null; setUnresolved(false);
       if (result.problem === "kept_original") {
-        setMessage("renameKeptOriginal"); closeReview(document.activeElement === document.body || !!reviewRoot.current?.contains(document.activeElement)); void loadRenames(); onClose(document.activeElement === document.body || !!root.current?.contains(document.activeElement)); onCompleted(); return true;
+        setMessage("renameKeptOriginal"); closeReview(document.activeElement === document.body || !!reviewRoot.current?.contains(document.activeElement)); void loadRenames(); onClose(document.activeElement === document.body || ownsFocus()); onCompleted(); return true;
       }
       setMessage(result.problem === "invalid_name" ? "renameInvalid" :
         ["occupied", "reserved_destination", "native_conflict"].includes(result.problem) ? "renameCollision" :
@@ -226,13 +229,23 @@ function RenameContent({ client, workspaceId, sourceId, language, project, proje
       }
     }
   };
-  return <section ref={root} className="project-rename" aria-label={t("renameProject")} aria-busy={pending}>
+  return <section ref={root} className={project || reviewed ? "project-rename-anchor" : "project-rename"} aria-label={t("renameProject")} aria-busy={pending}>
+    <ProjectOperationDialog className="project-rename" contentRef={dialog} open={!!project || !!reviewed} title={t("renameProject")} onClose={() => { if (reviewed) closeReview(); else onClose(); }}>
     {project && <form onSubmit={(event) => { event.preventDefault(); void run(false); }} onKeyDown={(event) => { if (event.key === "Escape") { event.preventDefault(); onClose(); } }}>
       <label htmlFor="project-rename-name">{t("projectName")}</label>
       <input ref={input} id="project-rename-name" className="bb-input" value={name} disabled={disabled || pending || unresolved || !available}
         aria-invalid={message === "renameInvalid"} onChange={(event) => setName(event.currentTarget.value)} />
+      <dl className="project-operation-path"><dt>{t("renameOriginalName")}</dt><dd>{project.relativePath}</dd><dt>{t("renameRequestedName")}</dt><dd><output>{[...project.relativePath.split("/").slice(0, -1), name].join("/")}</output></dd></dl>
       <p>{t("renameHint")}</p>
-      {!available && !pending && !unresolved && <StatusMessage kind="error" title={t("renameStale")} />}
+      {!available && !pending && !unresolved && <>
+        <StatusMessage kind="error" title={t("renameStale")} />
+        {onReviewProject && <button type="button" className="workspace-button workspace-button--secondary"
+          disabled={disabled || !projects?.configured || !["ready", "empty"].includes(projects.state) || projects.revision < minimumRevision.current || !projects.projects.some(row => row.projectId === project.projectId && row.associationState === "active" && row.resolution === "active")}
+          onClick={() => {
+            const current = projects?.projects.find(row => row.projectId === project.projectId && row.associationState === "active" && row.resolution === "active");
+            if (current) onReviewProject({...current});
+          }}>{t("renameReviewCurrent")}</button>}
+      </>}
       <div className="workspace-form-actions">
         <button type="submit" className="workspace-button" disabled={disabled || pending || unresolved || !available}>{t("renameSubmit")}</button>
         <button ref={cancel} type="button" className="workspace-button workspace-button--secondary" onClick={() => onClose()}>{t("cancelRenameWorkspace")}</button>
@@ -285,5 +298,5 @@ function RenameContent({ client, workspaceId, sourceId, language, project, proje
     {message && <StatusMessage kind={["renameSaved", "renameUnchanged", "renameNewer", "renameRecoverable", "renameKeptOriginal"].includes(message) ? "info" : "error"} title={t(message)} />}
     {unresolved && <button type="button" className="workspace-button workspace-button--secondary" disabled={pending || !ready.current}
       onClick={() => void run(true)}>{t("renameStatus")}</button>}
-  </section>;
+  </ProjectOperationDialog></section>;
 }

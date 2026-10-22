@@ -21,7 +21,7 @@ import type { ProjectCreationOperation, ProjectCreationResult, ProjectCreationRe
 import type { ProjectRevealResult } from "../src/contracts/project-reveal.js";
 import type { ProjectList, WorkspaceChangeEvent } from "../src/contracts/workspaces.js";
 const browser = new Window({ url: "http://localhost" });
-Object.assign(globalThis, { window: browser, document: browser.document, HTMLElement: browser.HTMLElement, Node: browser.Node, MutationObserver: browser.MutationObserver });
+Object.assign(globalThis, { window: browser, document: browser.document, HTMLElement: browser.HTMLElement, Node: browser.Node, MutationObserver: browser.MutationObserver, CustomEvent: browser.CustomEvent, Element: browser.Element, NodeFilter: browser.NodeFilter, HTMLInputElement: browser.HTMLInputElement, getComputedStyle: browser.getComputedStyle.bind(browser) });
 Object.defineProperty(globalThis, "navigator", { configurable: true, value: browser.navigator });
 const { render, screen, cleanup, act, fireEvent, within } = await import("@testing-library/react");
 const { default: userEvent } = await import("@testing-library/user-event");
@@ -73,7 +73,7 @@ for (const language of ["en", "ru"] as const) {
     input.focus(); await userEvent.keyboard("{Enter}"); await screen.findByText(t("creationSaved"));
     assert.equal(client.creates.length, 1); assert.equal(client.creates[0].name, "  New folder  "); assert.equal(client.creates[0].mode, mode);
     assert.match(client.creates[0].operationId, /^[a-f0-9-]{36}$/); assert.equal(client.creates[0].expectedRevision, 1);
-    assert.equal("categoryId" in client.creates[0], mode === "grouped"); assert.equal(reloads, 1); assert.equal(document.activeElement, trigger);
+    assert.equal("categoryId" in client.creates[0], mode === "grouped"); assert.equal(reloads, 1); assert.equal(document.activeElement === trigger, true);
   });
   test(`${language}: empty/unconfigured/no-category/unavailable guidance`, async () => {
     for (const [list, key] of [[{ ...initial, configured: false, mode: null }, "creationUnconfigured"], [{ ...initial, mode: "grouped" }, "creationNoCategory"], [{ ...initial, state: "unavailable" }, "creationUnavailable"]] as const) {
@@ -84,12 +84,12 @@ for (const language of ["en", "ru"] as const) {
   test(`${language}: Escape retains draft, double submission is blocked and pending cancel never implies rollback`, async () => {
     const client = new Client(), response = deferred<ServiceResult<ProjectCreationResult>>(); client.handler = () => response.promise;
     panel(client); const trigger = (await findAction("button",{ name: t("createProject") })); await userEvent.click(trigger);
-    await userEvent.type(screen.getByRole("textbox"), "Authored folder{Escape}"); assert.equal(document.activeElement, trigger); assert.equal(client.creates.length, 0);
+    await userEvent.type(screen.getByRole("textbox"), "Authored folder{Escape}"); assert.equal(document.activeElement === trigger, true); assert.equal(client.creates.length, 0);
     await userEvent.click(trigger); const input = screen.getByRole("textbox") as HTMLInputElement; assert.equal(input.value, "Authored folder");
     fireEvent.submit(input.closest("form")!); fireEvent.submit(input.closest("form")!); assert.equal(client.creates.length, 1);
     assert.ok(screen.getByText(t("creationCancelHint"))); await userEvent.keyboard("{Escape}"); assert.equal(screen.queryByRole("textbox"), null);
     await act(async () => response.resolve({ ok: true, value: completed({ ...operation, operationId: client.creates[0].operationId }) }));
-    assert.ok(screen.getByText(t("creationSaved"))); assert.equal(document.activeElement, trigger);
+    assert.ok(screen.getByText(t("creationSaved"))); assert.equal(document.activeElement === trigger, true);
   });
   test(`${language}: unknown response keeps operation ID and requires explicit status/review/acceptance`, async () => {
     const client = new Client(); client.handler = async () => { throw new Error("lost response"); }; const { unmount } = panel(client);
@@ -263,7 +263,7 @@ for (const language of ["en", "ru"] as const) {
     render(<DiscoveryWorkspace client={client} workspaceId="workspace" sourceId="source" language={language} disabled={false} />);
     await userEvent.click(await findAction("button", { name: `${t("renameCategoryProperty")}: Category` }));
     const label = screen.getByRole("textbox", { name: t("categoryPropertyName") }); await userEvent.clear(label); await userEvent.type(label, "Unsaved label");
-    await userEvent.click((await findAction("button",{ name: t("createProject") }))); await userEvent.type(screen.getByRole("textbox", { name: t("creationName") }), "Authored folder"); await userEvent.selectOptions(within(screen.getByRole("region", { name: t("createProject") })).getByRole("combobox"), "category");
+    await userEvent.click((await findAction("button",{ name: t("createProject") }))); await userEvent.type(screen.getByRole("textbox", { name: t("creationName") }), "Authored folder"); await userEvent.selectOptions(within(screen.getByRole("dialog", { name: t("createProject") })).getByRole("combobox"), "category");
     label.focus(); await act(async () => { client.list = { ...client.list, revision: 2 }; client.events.forEach((listener) => listener({ type: "workspace.projectsChanged", sourceId: "source", workspaceIds: ["workspace"], revision: 2 })); });
     assert.equal((label as HTMLInputElement).value, "Unsaved label"); assert.ok(document.activeElement === label); assert.equal((screen.getByRole("textbox", { name: t("creationName") }) as HTMLInputElement).value, "Authored folder");
   });
@@ -666,3 +666,21 @@ for (const language of ["en","ru"] as const) test(`${language}: same-path missin
     assert.equal(retained[0].projectId,projectId);assert.equal(retained[0].relativePath,"Folder");
   }finally{cleanup();off?.();service.close();fs.rmSync(directory,{recursive:true,force:true});}
 });
+
+for (const language of ["en", "ru"] as const) {
+  test(`${language}: contextual creation is a named dialog with destination and cancel focus`, async () => {
+    const t = (key: Parameters<typeof translate>[1]) => translate(language, key);
+    const client = new Client();
+    render(<ProjectCreationPanel client={client} workspaceId="workspace" sourceId="source" language={language} projects={client.list}
+      disabled={false} invalidation={0} minimumRevision={{current:1}} observationVersion={{current:0}} onCompleted={()=>{}} />);
+    const trigger = await findAction("button", {name:t("createProject")});
+    await userEvent.click(trigger);
+    const dialog = screen.getByRole("dialog", {name:t("createProject")});
+    await userEvent.type(within(dialog).getByRole("textbox"), "New project");
+    assert.ok(within(dialog).getByText("New project", {selector:"output"}));
+    await userEvent.click(within(dialog).getByRole("button", {name:t("cancelRenameWorkspace")}));
+    assert.equal(screen.queryByRole("dialog", {name:t("createProject")}), null);
+    assert.equal(document.activeElement === trigger, true);
+    assert.equal(client.creates.length, 0);
+  });
+}

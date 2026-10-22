@@ -1,3 +1,4 @@
+import { ProjectOperationDialog } from "./ProjectOperationDialog.js";
 import { ManagementHistory } from "./ManagementSurface.js";
 import { Hint } from "./Hint.js";
 import { DailyControl } from "./DailyControls.js";
@@ -44,6 +45,8 @@ function CreationContent({ client, workspaceId, sourceId, language, projects, di
   const formCancel = useRef<HTMLButtonElement>(null), pendingFocus = useRef(false);
   const reviewReturnFocus = useRef(false), reviewCancel = useRef<HTMLButtonElement>(null), reviewHeading = useRef<HTMLHeadingElement>(null);
   const restoreFocus = useRef(false), root = useRef<HTMLElement>(null);
+  const dialog = useRef<HTMLDivElement>(null);
+  const ownsFocus = () => !!root.current?.contains(document.activeElement) || !!dialog.current?.contains(document.activeElement);
   const lastInvalidation = useRef(invalidation);
   const previewVersion = useRef(0), previewObservation = useRef(0);
   const load = async () => {
@@ -90,7 +93,7 @@ function CreationContent({ client, workspaceId, sourceId, language, projects, di
   useEffect(() => {
     if (pending && reviewing.current) reviewCancel.current?.focus();
     else if (pending && open && pendingFocus.current) formCancel.current?.focus();
-    if (preview && root.current?.contains(document.activeElement)) reviewHeading.current?.focus();
+    if (preview && ownsFocus()) reviewHeading.current?.focus();
   }, [pending, preview, open]);
   useEffect(() => {
     if (!pending && !disabled && reviewReturnFocus.current) {
@@ -118,7 +121,7 @@ function CreationContent({ client, workspaceId, sourceId, language, projects, di
     setUnknownId((current) => current === operationId ? null : current); setPreview(null);
     if (value.outcome === "completed") {
       setMessage("creationSaved");
-      if (resolvesDraft) { setName(""); close(restoreFocus.current || !!root.current?.contains(document.activeElement)); }
+      if (resolvesDraft) { setName(""); close(restoreFocus.current || ownsFocus()); }
       onCompleted();
     }
     else if (value.outcome === "recoverable") setMessage("creationRecoverable");
@@ -129,7 +132,7 @@ function CreationContent({ client, workspaceId, sourceId, language, projects, di
   };
   const run = async (operationId: string, command: () => ReturnType<WorkspaceServiceClient["getProjectCreation"]>, readOnly = false) => {
     if (busy.current || disabled || (!readOnly && effectsBlocked) || !ready.current) return;
-    pendingFocus.current = !!root.current?.contains(document.activeElement);
+    pendingFocus.current = ownsFocus();
     busy.current = true; setPending(true); setMessage(null); setUnknownId((current) => current ?? operationId);
     const current = ++request.current, backend = generation.current;
     try {
@@ -138,7 +141,7 @@ function CreationContent({ client, workspaceId, sourceId, language, projects, di
       if (!result.ok || !accept(result.value, operationId)) setMessage("creationUncertain");
     } catch { if (mounted.current && current === request.current && backend === generation.current) setMessage("creationUncertain"); }
     finally {
-      if (mounted.current && current === request.current && backend === generation.current) { busy.current = false; setPending(false); if (open && (document.activeElement === document.body || root.current?.contains(document.activeElement))) restoreInputFocus.current = true; }
+      if (mounted.current && current === request.current && backend === generation.current) { busy.current = false; setPending(false); if (open && (document.activeElement === document.body || ownsFocus())) restoreInputFocus.current = true; }
     }
   };
   const available = projects?.configured && projects.mode && ["ready", "empty"].includes(projects.state) && projects.revision >= minimumRevision.current;
@@ -163,6 +166,7 @@ function CreationContent({ client, workspaceId, sourceId, language, projects, di
     }}>
     <DailyControl><Hint label={t("createProject")}><button ref={trigger} type="button" className="workspace-button icon-button" aria-label={t("createProject")} disabled={mutationsDisabled || pending || !available || (projects?.mode === "grouped" && !projects.categories.length)}
       onClick={() => { setOpen(true); setMessage(null); }}><Icon name="plus"/></button></Hint></DailyControl>
+    <ProjectOperationDialog className="project-creation" open={open} title={t("createProject")} onClose={() => close()} contentRef={dialog}>
 
     {open && projects?.configured && !available && <p>{t("creationUnavailable")}</p>}
 
@@ -178,7 +182,7 @@ function CreationContent({ client, workspaceId, sourceId, language, projects, di
       void run(operationId, () => client.createProject(authoredRequest));
     }} onKeyDown={(event) => { if (event.key === "Escape") { event.preventDefault(); close(); } }}>
       <label htmlFor="project-creation-name">{t("creationName")}</label>
-      <input ref={input} id="project-creation-name" className="workspace-input" value={name} disabled={mutationsDisabled || pending || !!unknownId}
+      <input ref={input} id="project-creation-name" className="bb-input" value={name} disabled={mutationsDisabled || pending || !!unknownId}
         onChange={(event) => setName(event.currentTarget.value)} aria-invalid={message === "creationInvalid"} />
       {projects?.mode === "grouped" && <label>{t("creationCategory")}
         <select value={categoryId} disabled={mutationsDisabled || pending || !!unknownId} onChange={(event) => setCategoryId(event.currentTarget.value)}>
@@ -187,6 +191,7 @@ function CreationContent({ client, workspaceId, sourceId, language, projects, di
         </select>
       </label>}
       <p>{t(projects?.mode === "grouped" ? "creationGroupedHint" : "creationDirectHint")}</p>
+      <div className="project-operation-path"><span>{t("creationDestination")}</span><output aria-label={t("creationDestination")}>{[projects?.mode === "grouped" ? projects.categories.find(category => category.categoryId === categoryId)?.relativePath : null, name].filter(Boolean).join("/")}</output></div>
       <div className="workspace-form-actions">
         <button type="submit" className="workspace-button" disabled={mutationsDisabled || pending || !!unknownId || !available || !categoryAvailable}>{t("creationSubmit")}</button>
         <button ref={formCancel} type="button" className="workspace-button workspace-button--secondary" onClick={() => close()}>{t("cancelRenameWorkspace")}</button>
@@ -233,5 +238,5 @@ function CreationContent({ client, workspaceId, sourceId, language, projects, di
         }}>{t(actions[action])}</button>)}
       <button type="button" className="workspace-button workspace-button--secondary" onClick={dismissReview}>{t("cancelRenameWorkspace")}</button>
     </div>}
-  </section>;
+  </ProjectOperationDialog></section>;
 }

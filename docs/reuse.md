@@ -142,3 +142,15 @@ Same-surface focus refs and the established draft registry preserve dismissal an
 navigation ownership. The available-height cap and sticky review actions retain
 access at both supported desktop sizes. All new code is local; no additional bb
 source, dependency or notice is introduced.
+
+## Issue 60 contextual project operations
+
+Creation and rename reuse the accepted #54/#69 contextual presentation and the
+existing Inter/semantic desktop tokens. Radix Dialog **1.2.0** (MIT) supplies the
+controlled nonmodal Root/Portal/Content/Title boundary, following the
+[official Dialog API](https://www.radix-ui.com/primitives/docs/components/dialog).
+Dialogs remain nonmodal so independent Text drafts can retain focus during a
+filesystem command; explicit Cancel/Escape owns dismissal. Operation controllers
+and typed create/rename/recovery/native Reveal commands remain local and mounted.
+No additional bb source, font or icon asset is copied; existing bb and dependency
+notices continue to apply.

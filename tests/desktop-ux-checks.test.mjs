@@ -294,3 +294,19 @@ test('ordinary group assignment selects real service/IPC/UI and native journeys 
  assert.ok(selected.includes('node scripts/desktop-ux-checks.mjs group-assignment'));
  assert.equal(selected.some(command=>/package:built|check:artifact|test:desktop-ux/.test(command)),false);
 });
+
+test('contextual project acceptance retains filesystem/recovery seams and development/package consumers on all hosts',async()=>{
+ const {contextualProjectCommands}=await import('../scripts/desktop-ux-checks.mjs');
+ const commands=contextualProjectCommands(),text=JSON.stringify(commands);
+ for(const required of ['project-creation-service.test.mjs','project-creation-crash.test.mjs','project-rename-ui.test.tsx','project-rename-service.test.mjs','project-reveal.test.mjs','smoke-contextual-projects.mjs','package:built','check:artifact','--rename','--creation','grouped','direct'])assert.ok(text.includes(required),required);
+ assert.ok(commands.some(([,args])=>args.includes('release')));
+ assert.equal(spawnSync(process.execPath,['scripts/desktop-ux-checks.mjs','contextual-projects','--failure-probe'],{encoding:'utf8'}).status,23);
+ const {readFile}=await import('node:fs/promises'),{load}=await import('js-yaml'),{runInNewContext}=await import('node:vm');
+ const workflow=load(await readFile('.github/workflows/desktop-ci.yml','utf8')),job=workflow.jobs['desktop-ux'];
+ assert.ok(workflow.on.workflow_dispatch.inputs.desktop_ux_profile.options.includes('contextual-projects'));
+ const context={inputs:{desktop_ux_profile:'contextual-projects',desktop_ux_failure_probe:false,desktop_ux_category_only:false,desktop_ux_packaged_only:false},fromJSON:JSON.parse,cancelled:()=>false};
+ assert.deepEqual(Array.from(runInNewContext(job.strategy.matrix.os.slice(3,-2),context)),['macos-latest','windows-latest','windows-2022']);
+ const selected=job.steps.filter(step=>step.run&&(!step.if||runInNewContext(step.if.slice(3,-2),context))).map(step=>step.run);
+ assert.ok(selected.includes('node scripts/desktop-ux-checks.mjs contextual-projects'));
+ assert.equal(selected.some(command=>/test:desktop-ux|smoke:views|^npm run package:built$/.test(command)),false);
+});

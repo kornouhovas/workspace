@@ -450,6 +450,11 @@ function DiscoveryWorkspaceContent({ memory, client, workspaceId, sourceId, refr
       projectTabs={<ProjectTabs session={navigation} language={language} name={projectName} disabled={disabled}/>}
       tools={<><DailyControlsTarget hidden={!!navigation.expanded}/>{projects?.configured && <ViewToolsTarget label={t("viewSettings")} hidden={showArchived && !archiveHasProjects} />}</>} panelId={`${showArchived ? "archived" : "active"}-view-panel-${workspaceId}`} client={client} workspaceId={workspaceId} language={language} onChange={next=>{setView(next);scroll.resume();}}
       disabled={disabled || categoryOptionsBlocked || creationBlocked || discoveryPending || recoveryProject !== null || renameProject !== null || renameBlocked || categoryMoveProject !== null || categoryMoveBlocked || archiveBlocked} />
+    <ProjectRenamePanel onReviewProject={setRenameProject} client={client} workspaceId={workspaceId} sourceId={sourceId} language={language} project={renameProject}
+      projects={projects} disabled={disabled || archiveBlocked || categoryOptionsBlocked || creationBlocked || discoveryPending || loading || error || recoveryProject !== null || categoryMoveProject !== null || categoryMoveBlocked} minimumRevision={minimumRevision}
+      observationVersion={observationVersion} sourceLifetime={sourceLifetime} invalidation={invalidation} onBlockedChange={setRenameBlocked}
+      onRestoreFocus={() => tableHeading.current?.focus()}
+      onClose={(focus = true) => { restoreRenameFocus.current = focus; setRenameProject(null); }} onCompleted={() => void load()} />
     <div className="project-work-body" ref={workBody} style={{gridTemplateColumns:navigation.expanded || !selectedId ? "minmax(0, 1fr)" : `minmax(280px, 1fr) 5px ${effectiveProjectWidth}px`}}>
     <div className="saved-view-content" ref={scroll.element} onScrollCapture={saveScroll} onWheelCapture={scroll.cancelRestore} onPointerDownCapture={scroll.cancelRestore} onKeyDownCapture={scroll.cancelRestore} hidden={!!navigation.expanded}>
     <ContextTools label={t("sourceTools")} icon="settings" compact daily open={sourceToolsOpen} onOpenChange={setSourceToolsOpen}>
@@ -480,11 +485,6 @@ function DiscoveryWorkspaceContent({ memory, client, workspaceId, sourceId, refr
       effectsBlocked={categoryMoveProject !== null || categoryMoveBlocked} invalidation={invalidation}
       minimumRevision={minimumRevision} observationVersion={observationVersion} onCompleted={() => void load()} />
     <div className="operation-panels">
-    <ProjectRenamePanel client={client} workspaceId={workspaceId} sourceId={sourceId} language={language} project={renameProject}
-      projects={projects} disabled={disabled || archiveBlocked || categoryOptionsBlocked || creationBlocked || discoveryPending || loading || error || recoveryProject !== null || categoryMoveProject !== null || categoryMoveBlocked} minimumRevision={minimumRevision}
-      observationVersion={observationVersion} sourceLifetime={sourceLifetime} invalidation={invalidation} onBlockedChange={setRenameBlocked}
-      onRestoreFocus={() => tableHeading.current?.focus()}
-      onClose={(focus = true) => { restoreRenameFocus.current = focus; setRenameProject(null); }} onCompleted={() => void load()} />
     <ProjectCategoryMovePanel client={client} workspaceId={workspaceId} sourceId={sourceId} language={language} project={categoryMoveProject}
       projects={projects} disabled={disabled || archiveBlocked || categoryOptionsBlocked || creationBlocked || discoveryPending || loading || error || recoveryProject !== null || renameProject !== null || renameBlocked}
       minimumRevision={minimumRevision} observationVersion={observationVersion} sourceLifetime={sourceLifetime} invalidation={invalidation}
@@ -566,7 +566,10 @@ function DiscoveryWorkspaceContent({ memory, client, workspaceId, sourceId, refr
           {selectedProject ? <><p className="project-area-path">{selectedProject.relativePath}</p>
             <TextPropertiesTable key={selectedId} detail hideReveal={"originalRelativePath" in selectedProject} client={client} workspaceId={workspaceId} sourceId={sourceId} projects={[selectedProject]}
               retainedProjects={projects?.retainedProjects.filter(project=>project.projectId===selectedId)} categories={projects?.categories} categoryProperty={projects?.categoryProperty}
-              language={language} disabled={disabled || loading || error}/>
+              language={language} disabled={disabled || loading || error}
+              discoveryRevision={projects?.revision} minimumDiscoveryRevision={minimumRevision} sourceLifetime={sourceLifetime}
+              renameDisabled={categoryOptionsBlocked || creationBlocked || discoveryPending || loading || error || renameBlocked || renameProject !== null || recoveryProject !== null || categoryMoveProject !== null || categoryMoveBlocked || !projects?.configured || projects.state === "unavailable"}
+              onRename={(project, trigger) => { renameTrigger.current = trigger; setRenameProject(project); }}/>
             <ProjectFiles key={`${workspaceId}:${selectedId}:${selectedProject.relativePath}:${sourceLifetime.current}:${invalidation}:${observationVersion}`}
               client={client} workspaceId={workspaceId} projectId={selectedId} language={language} disabled={disabled || loading || error}/></> : <StatusMessage kind="info" title={labels.unavailable}/>}
         </div>

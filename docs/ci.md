@@ -1476,3 +1476,20 @@ under `work/issue-59-assignment`. Failure propagation is tested; skipped or
 unreached commands do not supply acceptance. Unchanged service/schema/IPC/native
 filesystem/dependency/package inputs do not trigger installer renewal; ordinary
 full and #67/#42 gates remain intact.
+
+## Contextual project operations
+
+For #60, dispatch `checks: desktop-ux`,
+`desktop_ux_profile: contextual-projects`. This selects creation/rename/recovery/
+Reveal service, crash, IPC and affected renderer/navigation checks, the contextual
+project journey and original development creation/rename/native Reveal consumers
+on macOS latest, Windows latest and Windows 2022. The profile then packages and
+checks resources and renews the same packaged consumers. The new Radix runtime
+dependency requires these package checks; installer inputs remain unchanged.
+
+`work/issue-60-projects-*` records exact SHA/run/attempt/host, EN/RU/theme/size
+whole-screen captures, actual committed project IDs/metadata and collision/Cancel
+outcomes, with normal application/backend exits and asserted owned cleanup.
+Original creation/rename reports retain their own directories in the same
+artifact. Suppressed push CI and skipped/unreached commands supply no acceptance.
+Ordinary full and final #67/#42 release routes remain intact.

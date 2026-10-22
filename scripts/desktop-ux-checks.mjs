@@ -64,6 +64,28 @@ export function groupAssignmentCommands() {
     ['npm', ['run', 'smoke:views']],
   ];
 }
+// Contextual filesystem dialogs retain original native and packaged consumers.
+export function contextualProjectCommands() {
+  const tests = ['desktop-ux-checks.test.mjs', 'project-creation-ui.test.tsx',
+    'project-rename-ui.test.tsx', 'project-navigation-ui.test.tsx', 'scalar-drafts-ui.test.tsx',
+    'project-creation-service.test.mjs', 'project-creation-crash.test.mjs',
+    'project-rename-service.test.mjs', 'project-rename-journal.test.mjs',
+    'project-rename-coordination.test.mjs', 'project-rename-crash.test.mjs',
+    'project-rename-ipc.test.mjs', 'project-reveal.test.mjs',
+    'windows-project-reveal.test.mjs', 'windows-project-reveal-com.test.mjs'];
+  const native = mode => [
+    [process.execPath, ['scripts/smoke-contextual-projects.mjs', mode]],
+    ['npm', ['run', 'smoke:runtime', '--', mode, '--rename']],
+    ...['direct','grouped'].map(discovery => ['npm', ['run', 'smoke:runtime', '--', mode,
+      '--creation', `--discovery-mode=${discovery}`, '--checkpoint=after_evidence']]),
+  ];
+  return [
+    ['npm', ['run', 'typecheck']], ['npm', ['run', 'lint']],
+    [process.execPath, ['--import','tsx','--test',...tests.map(file=>`tests/${file}`)]],
+    ...native('dev'), ['npm', ['run','package:built']], ['npm', ['run','check:artifact','--','release']],
+    ...native('release'),
+  ];
+}
 // Project navigation changes the shell and both project-list consumers.
 export const navigationTests = [...new Set([...boardTests,
   'project-navigation-ui.test.tsx', 'renderer-app.test.tsx',
@@ -234,9 +256,9 @@ export function runChecks(commands, run = (command,args)=>spawnSync(command,args
 }
 if(process.argv[1] && resolve(process.argv[1])===fileURLToPath(import.meta.url)) {
   const args=process.argv.slice(2);
-  if(args.some(arg=>!['foundation','board','group-assignment','navigation','project-files','coherent','sessions','scalars','selections','properties','property-repair','property-tail','property-renewal','selection-native','selection-focus','selection-tail','--list','--failure-probe','--native-only'].includes(arg)) || !['foundation','board','group-assignment','navigation','project-files','coherent','sessions','scalars','selections','properties','property-repair','property-tail','property-renewal','selection-native','selection-focus','selection-tail'].includes(args[0])) throw new Error('Usage: desktop-ux-checks.mjs <foundation|board|group-assignment|navigation|project-files|coherent|sessions|scalars|selections|properties|property-repair|property-tail|property-renewal|selection-native|selection-focus|selection-tail> [--list] [--failure-probe]');
+  if(args.some(arg=>!['foundation','board','contextual-projects','group-assignment','navigation','project-files','coherent','sessions','scalars','selections','properties','property-repair','property-tail','property-renewal','selection-native','selection-focus','selection-tail','--list','--failure-probe','--native-only'].includes(arg)) || !['foundation','board','contextual-projects','group-assignment','navigation','project-files','coherent','sessions','scalars','selections','properties','property-repair','property-tail','property-renewal','selection-native','selection-focus','selection-tail'].includes(args[0])) throw new Error('Usage: desktop-ux-checks.mjs <foundation|board|contextual-projects|group-assignment|navigation|project-files|coherent|sessions|scalars|selections|properties|property-repair|property-tail|property-renewal|selection-native|selection-focus|selection-tail> [--list] [--failure-probe]');
   if(args.includes('--native-only') && !['navigation','project-files'].includes(args[0]))throw new Error('--native-only requires navigation or project-files');
-  const commands=args[0]==='group-assignment' ? groupAssignmentCommands() : args[0]==='property-renewal' ? propertyRenewalCommands(process.platform, process.env.WORKSPACE_PROPERTY_VIEWS_RENEW==='1') : args[0]==='property-repair' ? propertyRepairCommands() : args[0]==='property-tail' ? propertyTailCommands({renewViews:process.env.WORKSPACE_PROPERTY_VIEWS_RENEW==='1'}) : args[0]==='properties' ? propertyCommands() : args[0]==='selection-focus' ? selectionFocusCommands() : args[0]==='selection-native' ? selectionNativeCommands({renewViews:process.env.WORKSPACE_SELECTION_VIEWS_RENEW==='1'}) : args[0]==='selection-tail' ? selectionTailCommands() : args[0]==='selections' ? selectionCommands() : args[0]==='scalars' ? scalarCommands() : args[0]==='sessions' ? sessionCommands() : args[0]==='coherent' ? coherentCommands() : args[0]==='project-files' ? projectFilesCommands({nativeOnly:args.includes('--native-only')}) : args[0]==='navigation' ? navigationCommands({nativeOnly:args.includes('--native-only')}) : args[0]==='board' ? boardCommands() : foundationCommands({failureProbe:args.includes('--failure-probe')});
+  const commands=args[0]==='contextual-projects' ? contextualProjectCommands() : args[0]==='group-assignment' ? groupAssignmentCommands() : args[0]==='property-renewal' ? propertyRenewalCommands(process.platform, process.env.WORKSPACE_PROPERTY_VIEWS_RENEW==='1') : args[0]==='property-repair' ? propertyRepairCommands() : args[0]==='property-tail' ? propertyTailCommands({renewViews:process.env.WORKSPACE_PROPERTY_VIEWS_RENEW==='1'}) : args[0]==='properties' ? propertyCommands() : args[0]==='selection-focus' ? selectionFocusCommands() : args[0]==='selection-native' ? selectionNativeCommands({renewViews:process.env.WORKSPACE_SELECTION_VIEWS_RENEW==='1'}) : args[0]==='selection-tail' ? selectionTailCommands() : args[0]==='selections' ? selectionCommands() : args[0]==='scalars' ? scalarCommands() : args[0]==='sessions' ? sessionCommands() : args[0]==='coherent' ? coherentCommands() : args[0]==='project-files' ? projectFilesCommands({nativeOnly:args.includes('--native-only')}) : args[0]==='navigation' ? navigationCommands({nativeOnly:args.includes('--native-only')}) : args[0]==='board' ? boardCommands() : foundationCommands({failureProbe:args.includes('--failure-probe')});
   if(args[0]!=='foundation' && args.includes('--failure-probe')) commands.unshift([process.execPath,['-e','process.exit(23)']]);
   if(args.includes('--list')) console.log(JSON.stringify(commands));
   else process.exitCode=runChecks(commands);
