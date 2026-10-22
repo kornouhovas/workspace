@@ -34,7 +34,7 @@ on:
       source_runtime_platform:
         description: With checks=source-runtime, renew missing runtime tails; all-desktops also renews the missing Windows latest prefix
         type: choice
-        options: [all, windows-latest, windows-2022, all-desktops]
+        options: [all, windows-latest, windows-2022, all-desktops, runtime-tails]
         default: all
       recovery_windows_2022:
         description: With checks=issue22-failures, replay the backend recovery file on Windows 2022 and the original macOS runtime
@@ -323,7 +323,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include: ${{ fromJSON(inputs.source_runtime_platform == 'all-desktops' && '[{"os":"macos-latest","artifact":"macos"},{"os":"windows-latest","artifact":"windows"},{"os":"windows-2022","artifact":"windows-2022"}]' || inputs.source_runtime_platform == 'windows-latest' && '[{"os":"windows-latest","artifact":"windows"}]' || inputs.source_runtime_platform == 'windows-2022' && '[{"os":"windows-2022","artifact":"windows-2022"}]' || '[{"os":"windows-latest","artifact":"windows"},{"os":"windows-2022","artifact":"windows-2022"}]') }}
+        include: ${{ fromJSON((inputs.source_runtime_platform == 'all-desktops' || inputs.source_runtime_platform == 'runtime-tails') && '[{"os":"macos-latest","artifact":"macos"},{"os":"windows-latest","artifact":"windows"},{"os":"windows-2022","artifact":"windows-2022"}]' || inputs.source_runtime_platform == 'windows-latest' && '[{"os":"windows-latest","artifact":"windows"}]' || inputs.source_runtime_platform == 'windows-2022' && '[{"os":"windows-2022","artifact":"windows-2022"}]' || '[{"os":"windows-latest","artifact":"windows"},{"os":"windows-2022","artifact":"windows-2022"}]') }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 60
     steps:
@@ -340,11 +340,14 @@ jobs:
           mkdir -p work/ci-runtime-provenance
           node --input-type=module -e 'import { writeFileSync } from "node:fs"; writeFileSync("work/ci-runtime-provenance/provenance.json", JSON.stringify({sha:process.env.GITHUB_SHA,run:process.env.GITHUB_RUN_ID,attempt:process.env.GITHUB_RUN_ATTEMPT,platform:process.platform}) + "\n")'
       - name: Renew workspace identity and failed CI inventory
-        if: ${{ inputs.source_runtime_platform == 'all-desktops' }}
+        if: ${{ inputs.source_runtime_platform == 'all-desktops' || inputs.source_runtime_platform == 'runtime-tails' }}
         shell: bash
         run: |
           set -o pipefail
           node --test tests/runtime-workspace-identity.test.mjs tests/test-suites.test.mjs tests/windows-product-diagnostics.test.mjs tests/windows-native-view-diagnostics.test.mjs tests/windows-process-owner.test.mjs 2>&1 | tee work/ci-runtime-provenance/workspace-identity.log
+      - name: Renew shared story preparation consumers
+        if: ${{ inputs.source_runtime_platform == 'runtime-tails' }}
+        run: node --import tsx --test tests/project-category-move-ui.test.tsx tests/project-rename-ui.test.tsx
       - name: Desktop shell EN/RU themes, sidebar, settings and keyboard return
         if: ${{ inputs.source_runtime_platform == 'all-desktops' && matrix.os == 'windows-latest' }}
         run: npm run smoke:shell
@@ -413,19 +416,26 @@ jobs:
           retention-days: 7
       - run: npm run build:ladle
       - name: Capture creation/recovery/Reveal layouts
+        if: ${{ inputs.source_runtime_platform != 'runtime-tails' }}
         run: node scripts/smoke-discovery-layouts.mjs --creation
         env:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-creation-layouts
       - name: Capture category move/status/recovery layouts
+        if: ${{ inputs.source_runtime_platform != 'runtime-tails' }}
         run: node scripts/smoke-discovery-layouts.mjs --category-move
         env:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-category-move-layouts
+      - name: Renew every shared layout consumer before runtime tails
+        if: ${{ inputs.source_runtime_platform == 'runtime-tails' }}
+        run: node scripts/smoke-discovery-layouts.mjs
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-all-layouts
       - name: Development creation crash/recovery matrix
         run: npm run smoke:runtime -- dev --creation --skip-native
         env:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-creation-dev-crash-matrix
       - name: Direct development creation/native evidence
-        if: ${{ matrix.os != 'windows-latest' }}
+        if: ${{ matrix.os != 'windows-latest' || inputs.source_runtime_platform == 'runtime-tails' }}
         run: npm run smoke:runtime -- dev --creation --discovery-mode=direct --checkpoint=after_evidence
         env:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-creation-dev-direct
@@ -527,6 +537,7 @@ jobs:
             work/ci-runtime-*/
             work/ci-runtime-provenance/
             work/ci-category-move-layouts/
+            work/ci-all-layouts/
             work/ci-category-options-*/
             work/ci-archive-*/
             work/ci-number-*/

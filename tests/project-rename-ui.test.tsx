@@ -1,3 +1,4 @@
+import { openStoryProjectAction, showStoryHistory } from "../src/renderer/components/story-context-preparation.js";
 import { contextReturnTarget } from "../src/renderer/components/ContextTools.js";
 import { findAction } from "./context-tools-driver.js";
 import assert from "node:assert/strict";
@@ -567,5 +568,29 @@ for (const language of ["en", "ru"] as const) for (const mode of ["direct", "gro
     await userEvent.click(await findAction("button", {name:new RegExp(`^${t("renameProject")}:`)}));
     assert.equal((screen.getByRole("textbox", { name: t("projectName") }) as HTMLInputElement).value, original);
     await userEvent.keyboard("{Escape}"); assert.equal(document.activeElement === contextReturnTarget(trigger as HTMLButtonElement), true); assert.equal(client.renames.length, 0);
+  });
+}
+
+
+for (const language of ["en", "ru"] as const) {
+  test(`${language}: rename story enters public project actions without submitting a rename`, async () => {
+    const client = new Client();
+    render(<DiscoveryWorkspace client={client} workspaceId="workspace" sourceId="source" language={language} disabled={false} />);
+    await waitFor(() => assert.equal(document.querySelector(".text-properties")?.getAttribute("aria-busy"), "false"));
+    const label = translate(language, "renameProject");
+    await act(async () => { openStoryProjectAction(document.body, label); });
+    await act(async () => { assert.equal(openStoryProjectAction(document.body, label), true); });
+    await screen.findByLabelText(translate(language, "projectName"));
+    assert.equal(client.renames.length, 0);
+  });
+  test(`${language}: rename story reveals history without review or recovery`, async () => {
+    const client = new Client(); client.unfinished = [interrupted];
+    render(<DiscoveryWorkspace client={client} workspaceId="workspace" sourceId="source" language={language} disabled={false} />);
+    await waitFor(() => assert.equal(document.querySelector(".rename-operations")?.getAttribute("aria-busy"), "false"));
+    await act(async () => { showStoryHistory(document.body, ".rename-operations"); });
+    await act(async () => { showStoryHistory(document.body, ".rename-operations"); });
+    assert.equal(showStoryHistory(document.body, ".rename-operations"), true);
+    await screen.findByRole("button", {name:new RegExp(translate(language, "renameReview"))});
+    assert.equal(client.renames.length, 0); assert.equal(client.recoveries.length, 0); assert.equal(client.reviews.length, 0);
   });
 }

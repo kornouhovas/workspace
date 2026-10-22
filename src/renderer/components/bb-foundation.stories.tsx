@@ -1,3 +1,4 @@
+import { openStoryProjectAction, showStoryHistory } from "./story-context-preparation.js";
 import { ProjectCreationPanel } from "./ProjectCreationPanel.js";
 import { createInitialCategoryMoveReviewRefresh, openCategoryMoveStoryAction, showCategoryMoveStoryHistory } from "./category-move-story-preparation.js";
 import { ProjectRevealButton } from "./ProjectRevealButton.js";
@@ -859,12 +860,14 @@ function RenamePreview({ language, mode, state }: { language: Language; mode: Di
       const target = root.current; if (!target || target.querySelector(".text-properties")?.getAttribute("aria-busy") !== "false") return;
       const done = () => { setPrepared(true); observer.disconnect(); };
       if (state.startsWith("list-") || ["interrupted", "uncertain"].includes(state)) {
+        if (!showStoryHistory(target, ".rename-operations")) return;
         const list = target.querySelector(".rename-operations");
         if (list && (state === "list-loading" || list.getAttribute("aria-busy") === "false")) done();
         return;
       }
       if (fixture.reviewState) {
         if (!opened) {
+          if (!showStoryHistory(target, ".rename-operations")) return;
           const button = target.querySelector<HTMLButtonElement>(".rename-operations div > button");
           if (button && !button.disabled) { opened = true; button.click(); } return;
         }
@@ -888,7 +891,7 @@ function RenamePreview({ language, mode, state }: { language: Language; mode: Di
         }
         if (review.querySelector(".rename-placements")) done(); return;
       }
-      if (!opened) { const button = target.querySelector<HTMLButtonElement>("td:first-child .property-rename"); if (button && !button.disabled) { opened = true; button.click(); } return; }
+      if (!opened) { opened = openStoryProjectAction(target, translate(language, "renameProject")); return; }
       const input = target.querySelector<HTMLInputElement>("#project-rename-name");
       if (input && !authored) {
         authored = true;

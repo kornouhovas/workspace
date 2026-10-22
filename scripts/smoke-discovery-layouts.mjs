@@ -244,7 +244,7 @@ app.on('window-all-closed', () => app.quit());`);
         }).map((node) => ({ tag: node.tagName, className: node.className, textLength: node.textContent.length, width: node.clientWidth, text: node.textContent })));
       }
       if (categoryMoveStory || renameStory || recoveryStory || modeStory || creationStory) {
-        for (const button of await page.locator(categoryMoveStory ? ".project-category-move button, .project-card-actions > .context-tools-trigger" : renameStory ? ".project-rename button, td:first-child .property-rename" : creationStory ? ".project-creation button, .project-reveal button" : recoveryStory ? ".recovery-panel button" : ".workspace-form-actions button, [data-mode-fixture] > button").all()) {
+        for (const button of await page.locator(categoryMoveStory ? ".project-category-move button, .project-card-actions > .context-tools-trigger" : renameStory ? ".project-rename button, .project-card-actions > .context-tools-trigger" : creationStory ? ".project-creation button, .project-reveal button" : recoveryStory ? ".recovery-panel button" : ".workspace-form-actions button, [data-mode-fixture] > button").all()) {
           await button.evaluate(async (node) => {
             node.scrollIntoView({ block: "center", inline: "nearest", behavior: "instant" });
             await new Promise((done) => globalThis.requestAnimationFrame(() => globalThis.requestAnimationFrame(done)));
@@ -343,7 +343,9 @@ app.on('window-all-closed', () => app.quit());`);
     }
     if (renameStory) {
       const root = page.locator("[data-rename-fixture]");
-      const trigger = page.locator("td:first-child .property-rename");
+      const trigger = page.locator(".project-card-actions > .context-tools-trigger");
+      const renameAction = page.locator(`.project-card-actions button[aria-label^="${renameText("Rename project folder", "Переименовать папку проекта")}: "]`);
+      const reviewReturn = page.getByRole("button", {name: renameText("Source tools", "Инструменты источника"), exact:true});
       const name = page.locator("#project-rename-name");
       const panel = page.locator(".project-rename");
       const calls = async () => ({ rename: Number(await root.getAttribute("data-rename-calls")), recovery: Number(await root.getAttribute("data-recovery-calls")) });
@@ -353,7 +355,7 @@ app.on('window-all-closed', () => app.quit());`);
         const authored = await name.inputValue(); assert.ok(authored.startsWith("  Requested-")); assert.ok(authored.endsWith("  "));
         await name.press("Escape"); await name.waitFor({ state: "detached" });
         assert.equal(await trigger.evaluate((node) => node === globalThis.document.activeElement), true);
-        await trigger.press("Enter"); await name.waitFor();
+        await trigger.press("Enter"); await renameAction.press("Enter"); await name.waitFor();
         assert.equal(await name.evaluate((node) => node === globalThis.document.activeElement), true);
         await name.press("Tab");
         assert.equal(await panel.locator("button[type=submit]").evaluate((node) => node === globalThis.document.activeElement), true);
@@ -362,8 +364,8 @@ app.on('window-all-closed', () => app.quit());`);
         assert.equal(await trigger.evaluate((node) => node === globalThis.document.activeElement), true);
       } else if (["pending", "unknown"].includes(renameState)) {
         await panel.locator("form").press("Escape"); await name.waitFor({ state: "detached" });
-        assert.equal(await trigger.isDisabled(), true);
-        assert.equal(await page.getByRole("heading", { name: "Table", exact: true }).evaluate((node) => node === globalThis.document.activeElement), true);
+        assert.equal(await renameAction.isDisabled(), true);
+        assert.equal(await trigger.evaluate((node) => node === globalThis.document.activeElement), true);
         if (renameState === "unknown") {
           await panel.getByRole("button", { name: renameText("Check rename status", "Проверить статус переименования"), exact: true }).press("Enter");
           await panel.getByText(renameText("Project folder renamed.", "Папка проекта переименована."), { exact: true }).waitFor();
@@ -374,11 +376,12 @@ app.on('window-all-closed', () => app.quit());`);
         await page.locator(".rename-operations [role=alert]").waitFor();
         assert.equal(await page.locator(".rename-operations").getAttribute("aria-busy"), "false");
       } else if (["interrupted", "uncertain"].includes(renameState)) {
+        await enterContextFor(page, page.locator(".rename-operations div > button"));
         await page.locator(".rename-operations div > button").press("Enter");
         await page.locator(".rename-placements").waitFor();
         assert.equal(await page.locator("#rename-review-title").evaluate((node) => node === globalThis.document.activeElement), true);
         await page.locator("#rename-review-title").press("Escape");
-        assert.equal(await page.locator(".rename-operations div > button").evaluate((node) => node === globalThis.document.activeElement), true);
+        assert.equal(await reviewReturn.evaluate((node) => node === globalThis.document.activeElement), true);
       } else if (renameState.startsWith("recovery-") || renameState.startsWith("review-")) {
         const review = page.locator(".rename-review");
         if (renameState === "review-stale") {
@@ -389,12 +392,12 @@ app.on('window-all-closed', () => app.quit());`);
         }
         await review.press("Escape"); await review.waitFor({ state: "detached" });
         if (["recovery-pending", "recovery-unknown"].includes(renameState)) {
-          assert.equal(await page.getByRole("heading", { name: "Table", exact: true }).evaluate((node) => node === globalThis.document.activeElement), true);
+          assert.equal(await reviewReturn.evaluate((node) => node === globalThis.document.activeElement), true);
           if (renameState === "recovery-unknown") {
             await panel.getByRole("button", { name: renameText("Check rename status", "Проверить статус переименования"), exact: true }).press("Enter");
             await panel.getByText(renameText("Project folder renamed.", "Папка проекта переименована."), { exact: true }).waitFor();
           }
-        } else assert.equal(await page.locator(".rename-operations div > button").evaluate((node) => node === globalThis.document.activeElement), true);
+        } else assert.equal(await reviewReturn.evaluate((node) => node === globalThis.document.activeElement), true);
       }
       assert.deepEqual(await calls(), initialCalls, "Keyboard dismissal, list, review and status must not replay rename/recovery");
       results.interactions ??= []; results.interactions.push({ story, state: renameState, passed: true, mutationCalls: initialCalls, native: "typed fixture only" });

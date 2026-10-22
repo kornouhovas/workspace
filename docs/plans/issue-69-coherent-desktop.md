@@ -1358,3 +1358,40 @@ configuration are unchanged. Actual installer/coherent packages build without
 Ladle and retain unchanged production inputs. Broad full/source-runtime packages
 also contain dist/Ladle under existing dist/** packaging, so renew their pending
 packaged consumers after current Ladle build; do not call packagebytes identical.
+
+### Category focused success and complete layout consumer renewal
+
+Original category focused39705377859/attempt1 atea3f2057 passes onall3hosts.
+Downloaded reports eachassert50states,150captures,50interactions,featurePassed
+andnormalshutdown. Original209UIchecks alsopass. Keep actualsourceprovenance;
+subsequent sharedhelperextraction renews categoryconsumersagain inunfilteredrun.
+
+Sharedgeometrymeasurement requires allstoryconsumers, notcategoryonly. Original
+local --rename reproduces firstcollision-direct-English readiness15s/normalquit.
+Same stale cellselector: currentaction is contextual. Extract identicalpublic
+storyentry/historyhelpers into story-context-preparation (stories/tests only),
+use them forrename and keep categorywrappers. Adapt renamefocus toactualvisible
+owner, keep disabledmutation,exactdraft,Cancel/status/recovery/mutationcounts.
+A copiedoldselectorhelper/test negativefails bothENRUcases; originalsource
+untouched andtemporarycopiesremoved. Actual productionUIaction/historycases
+assertzero commands. Combined407UIcheckspass; originalrenamecommand completes
+96states/288images/normalquit. All99 route/workflowguards pass; lint/typecheck
+pass. Both independent reviews0. Unfilteredoriginallayout locallypending covers
+all302states/906images, including every sharedmeasurementbranch.
+
+Add explicit source_runtime_platform=runtime-tails choice under existing
+source-runtime route: all3hosts, unchanged originaldev/releasecommands, direct
+Windowslatestcreation included. Renew storyUI+route/identitycontrols then
+unfilteredLadlebeforemissingruntimeconsumers; skipalready-passedplatform/prefix
+rowsandduplicateselectedcaptures. Preserve every failure and all-layout evidence.
+All existingchoices/defaultsunchanged. Focused originalcategorygatepassed above;
+newlayout/runtime evidence remains required. Noacceptance/integration yet.
+
+Final sharedstory production-equivalence proof passes: isolated9facecheckout,
+sequentialVitebuilds before/after allthreecurrentstory/helperoverlays produce
+10identical hashes. Exact overlay/outputhashes retained under
+work/issue-69/production-equivalence-final-story/report.json; temporarycheckout
+removed. Full diff from9face changes onlytests/stories/drivers/manualroutes/docs;
+backend/native/migrations/dependency/buildconfig/productionresources unchanged.
+Strict/coherent/install receipts retain actual9faceSHA. Pending runtime-tail
+packages intentionally rebuild Ladle extras; packagebytesarenotclaimedidentical.

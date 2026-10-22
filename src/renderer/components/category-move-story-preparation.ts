@@ -1,3 +1,4 @@
+import { openStoryProjectAction, showStoryHistory } from "./story-context-preparation.js";
 import type { Language } from "../../contracts/settings.js";
 import { translate } from "../localization.js";
 
@@ -32,33 +33,10 @@ export function createInitialCategoryMoveReviewRefresh(language: Language) {
   };
 }
 
-// Locate the actual production action while preparing the disposable story.
 export function openCategoryMoveStoryAction(root: HTMLElement, language: Language) {
-  const prefix = `${translate(language, "moveCategory")}: `;
-  const actions = [...root.querySelectorAll<HTMLButtonElement>("button[aria-label]")]
-    .filter(button => button.getAttribute("aria-label")?.startsWith(prefix));
-  if (actions.length !== 1 || actions[0].disabled) return false;
-  const button = actions[0];
-  const panel = button.closest<HTMLElement>("[data-context-return]");
-  if (panel?.hidden) {
-    const trigger = root.ownerDocument.getElementById(panel.dataset.contextReturn!);
-    if (trigger?.tagName === "BUTTON" && !(trigger as HTMLButtonElement).disabled) trigger.click();
-    return false;
-  }
-  button.click();
-  return true;
+  return openStoryProjectAction(root, translate(language, "moveCategory"));
 }
 
 export function showCategoryMoveStoryHistory(root: HTMLElement) {
-  const list = root.querySelector<HTMLElement>(".category-move-operations");
-  if (!list) return false;
-  const panel = list.closest<HTMLElement>("[data-context-return]");
-  if (panel?.hidden) {
-    const trigger = root.ownerDocument.getElementById(panel.dataset.contextReturn!);
-    if (trigger?.tagName === "BUTTON" && !(trigger as HTMLButtonElement).disabled) trigger.click();
-    return false;
-  }
-  const details = list.closest("details");
-  if (details && !details.open) { details.querySelector("summary")?.click(); return false; }
-  return true;
+  return showStoryHistory(root, ".category-move-operations");
 }

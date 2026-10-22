@@ -1219,3 +1219,17 @@ remain covered by coherent acceptance. These are adapted inherited scenarios,
 not a supported-window change. Shared layout-driver edits additionally require
 all remaining story consumers, through the unfiltered original layout command
 or a complete partition, after the failed focused command passes.
+
+For #69's missing runtime tails after inspected focused fixture success, select
+`checks: source-runtime, source_runtime_platform: runtime-tails`. This explicit
+choice builds on all three hosts, renews changed story UI and route/identity
+controls, then runs the **unfiltered original** Ladle command before every
+original development and packaged runtime tail. It includes direct creation on
+Windows latest. The full layout pass covers creation, rename, mode changes and
+all other shared measurement consumers; it replaces duplicate selected captures
+for this choice only. Existing selectors and ordinary defaults remain unchanged.
+Previously successful platform/prefix rows retain their exact earlier receipts;
+failed/unreached rows require the new evidence. The layout/provenance directories
+are preserved with runtime evidence. Packages from this route also contain the
+newly built Ladle assets under the existing dist/** package rule; production
+entry bundles/resources stay separately verified against the application SHA.

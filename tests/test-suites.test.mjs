@@ -1093,7 +1093,7 @@ test('unreached Windows runtime renewal can select only its missing host while p
   const workflow=load(readFileSync('.github/workflows/desktop-ci.yml','utf8'));
   const input=workflow.on.workflow_dispatch.inputs.source_runtime_platform;
   assert.equal(input.default,'all');
-  assert.deepEqual(input.options,['all','windows-latest','windows-2022','all-desktops']);
+  assert.deepEqual(input.options,['all','windows-latest','windows-2022','all-desktops','runtime-tails']);
   const job=workflow.jobs['source-runtime'];
   const select=platform=>runInNewContext(job.strategy.matrix.include.slice(3,-2),{fromJSON:JSON.parse,inputs:{source_runtime_platform:platform}});
   for(const platform of [undefined,'all','windows-latest','windows-2022']) {
@@ -1106,7 +1106,7 @@ test('unreached Windows runtime renewal can select only its missing host while p
   }
   assert.ok(!commands.includes('npm test'));
   assert.match(job.steps.find(step=>step.run==='npm run test:platform').if, /all-desktops.*windows-latest/);
-  assert.equal(job.steps.find(step=>step.run==='npm run smoke:runtime -- dev --creation --discovery-mode=direct --checkpoint=after_evidence').if,"${{ matrix.os != 'windows-latest' }}");
+  assert.equal(job.steps.find(step=>step.run==='npm run smoke:runtime -- dev --creation --discovery-mode=direct --checkpoint=after_evidence').if,"${{ matrix.os != 'windows-latest' || inputs.source_runtime_platform == 'runtime-tails' }}");
 });
 
 
@@ -1198,4 +1198,32 @@ test('observer cancellation renewal isolates the original file on every fixture 
   assert.ok(job.steps.every(step => step['continue-on-error'] === undefined));
   assert.equal(job.steps.at(-1).if, 'always()');
   assert.equal(job.steps.at(-1).with['if-no-files-found'], 'error');
+});
+
+test('runtime tails renew every shared story consumer and original missing modes without replaying passed platform suites', () => {
+  const workflow = load(readFileSync('.github/workflows/desktop-ci.yml', 'utf8'));
+  const job = workflow.jobs['source-runtime'];
+  const context = os => ({ inputs: {source_runtime_platform:'runtime-tails'}, matrix:{os}, fromJSON:JSON.parse });
+  const rows = runInNewContext(job.strategy.matrix.include.slice(3,-2), context('macos-latest'));
+  assert.deepEqual(Array.from(rows, row => row.os), ['macos-latest','windows-latest','windows-2022']);
+  for (const {os} of rows) {
+    const active = job.steps.filter(step => step.run && (!step.if || runInNewContext(step.if.slice(3,-2), {...context(os), always:()=>true})));
+    const commands = active.map(step => step.run);
+    assert.ok(!commands.includes('npm run test:platform'));
+    assert.ok(!commands.includes('npm run smoke:shell'));
+    assert.ok(commands.includes('node scripts/smoke-discovery-layouts.mjs'));
+    assert.ok(!commands.includes('node scripts/smoke-discovery-layouts.mjs --category-move'));
+    assert.ok(!commands.includes('node scripts/smoke-discovery-layouts.mjs --creation'));
+    assert.ok(commands.includes('npm run smoke:runtime -- dev --creation --discovery-mode=direct --checkpoint=after_evidence'));
+    for (const mode of ['dev','release']) {
+      for (const feature of ['views','multiselect','select','date','number','archive','data-recovery','category-options']) {
+        assert.ok(commands.includes(`npm run smoke:${feature} -- ${mode}`), `${os} ${feature} ${mode}`);
+      }
+      assert.ok(commands.includes(`npm run smoke:runtime -- ${mode}`));
+    }
+    assert.ok(active.findIndex(step=>step.run==='node scripts/smoke-discovery-layouts.mjs') < active.findIndex(step=>step.name==='Development creation crash/recovery matrix'));
+  }
+  assert.ok(job.steps.every(step=>step['continue-on-error']===undefined));
+  const upload = job.steps.find(step=>step.with?.path?.includes('work/ci-all-layouts/'));
+  assert.equal(upload.if,'always()');
 });
