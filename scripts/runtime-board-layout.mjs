@@ -1,3 +1,4 @@
+import { closeBoardLayout } from "./board-layout-driver.mjs";
 import { enterContextFor } from "./runtime-context-tools.mjs";
 import { openGroupingControls,closeGroupingControls } from "./runtime-presentation-controls.mjs";
 /* global document, innerWidth, getComputedStyle */
@@ -25,7 +26,7 @@ export async function exerciseBoardLayout({page, query, rootPath, language, evid
   const layoutLabel=en ? "Board layout" : "Настройки доски";
   const layoutTrigger=page.getByRole("button",{name:layoutLabel,exact:true,includeHidden:true});
   const openLayout=async()=>{await enterContextFor(page,layoutTrigger);await layoutTrigger.press("Enter");};
-  const closeLayout=async()=>{await page.keyboard.press("Escape");const parent=page.getByRole("button",{name:/^(View settings|Настройки представления)$/});if(await parent.count() && await parent.getAttribute("aria-expanded")==="true") await page.keyboard.press("Escape");};
+  const closeLayout=()=>closeBoardLayout(page,layoutLabel);
   const controls = page.getByRole("dialog", {name:layoutLabel, exact:true});
   await openLayout();
   const enabled = locator => locator.and(page.locator(":enabled"));

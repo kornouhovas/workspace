@@ -97,3 +97,44 @@ The profile propagates failures and uploads native screenshots/provenance.
 Unchanged package/installer gates remain at the broader milestones (#67/#42).
 Final local, review, exact-SHA hosted results and integration belong to the issue
 checkpoint; this document does not assert their completion.
+
+
+## First hosted failure and test-driver renewal
+
+Run [39829127733](https://github.com/kornouhovas/workspace/actions/runs/39829127733),
+at application candidate `f3ef560e`, retains three failed jobs. Its selected
+source/service/UI suites independently passed: macOS **881/881**, Windows latest
+**880/880**, Windows 2022 **880/880**. The failures occur in native consumers:
+
+- macOS: `smoke-selection-editors.mjs` used Playwright `uncheck` for a chosen
+  hidden option. The input can legitimately disappear during the action. A
+  minimal real-Electron reproduction reports saved `Empty` and zero inputs while
+  `uncheck` times out. One Space gesture completes, while the original smoke still
+  asserts the exact public-service set and focus/menu behavior.
+- Windows latest: the original Select smoke failed its owned-process assertion
+  on reopen, before waiting for backend readiness. The boundary regression
+  reproduces the empty pre-ready metric observation. The shared original
+  Select/MultiSelect driver now observes the existing ready predicate before the
+  unchanged owned-process assertion; no readiness deadline is extended.
+- Windows 2022: original Select/MultiSelect and scalar smokes passed, then Views
+  pressed Escape on an already blurred/saving and detached Text editor after
+  nested Board Layout closure. A real-Electron delayed-focus model reproduces
+  the unsafe close/next-editor sequence. The driver now observes the original
+  dialog dismissal and focus return before sending the next Escape or opening
+  another editor. The exact historical focus actor is not proven by the failed
+  receipt alone; the original Windows Views command still requires renewal.
+
+All three minimized regressions pass after the driver changes. The local
+original 48-journey selection smoke and six-journey Views smoke also pass with
+normal shutdown/cleanup. Original deadlines, values, ownership and cleanup
+assertions are retained. Both review axes report zero findings for the repairs;
+the Spec reviewer independently passed 19 routing/readiness tests.
+
+No application, migration, lockfile, dependency, build or packaging input changes
+from `f3ef560e`. Under the shared evidence-reuse policy, `selection-native` renews
+the changed selection consumers on all three hosts and the failed Windows 2022
+Views command. Only after that focused gate, `selection-tail` fills the unreached
+scalar/Views commands on macOS and Windows latest. Windows 2022's passing scalar
+receipt remains at its original SHA/run. The issue checkpoint owns exact repair
+SHA/run/artifact receipts and final acceptance; failed/unreached rows are not
+accepted from this description.

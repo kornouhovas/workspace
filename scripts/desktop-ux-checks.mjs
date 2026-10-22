@@ -131,7 +131,7 @@ export function scalarCommands() {
 // Immediate choices share the scalar navigation guard and all three working surfaces.
 export function selectionCommands() {
   const tests = [...new Set([...navigationTests, 'selection-editors-ui.test.tsx', 'scalar-drafts-ui.test.tsx',
-    'single-select-ui.test.tsx', 'multi-select-ui.test.tsx', 'single-select-service.test.mjs',
+    'single-select-ui.test.tsx', 'multi-select-ui.test.tsx', 'selection-backend-readiness.test.mjs', 'selection-driver.test.mjs', 'single-select-service.test.mjs',
     'multi-select-service.test.mjs', 'single-select-ipc.test.mjs', 'multi-select-ipc.test.mjs',
     'metadata-removal-ui.test.tsx', 'metadata-removal-service.test.mjs', 'category-options-ui.test.tsx'])];
   return [
@@ -139,6 +139,22 @@ export function selectionCommands() {
     [process.execPath, ['--import', 'tsx', '--test', ...tests.map(file => `tests/${file}`)]],
     [process.execPath, ['scripts/smoke-selection-editors.mjs', 'dev']],
     ['npm', ['run', 'smoke:select', '--', 'dev']], ['npm', ['run', 'smoke:multiselect', '--', 'dev']],
+    [process.execPath, ['scripts/smoke-scalar-drafts.mjs', 'dev']],
+    ['npm', ['run', 'smoke:views']],
+  ];
+}
+// Test-driver-only renewal: unchanged application/878+ source tests retain their receipts.
+export function selectionNativeCommands({renewViews = false} = {}) {
+  return [
+    ['npm', ['run', 'typecheck']], ['npm', ['run', 'lint']],
+    [process.execPath, ['--import', 'tsx', '--test', 'tests/selection-driver.test.mjs', 'tests/selection-backend-readiness.test.mjs', 'tests/desktop-ux-checks.test.mjs']],
+    [process.execPath, ['scripts/smoke-selection-editors.mjs', 'dev']],
+    ['npm', ['run', 'smoke:select', '--', 'dev']], ['npm', ['run', 'smoke:multiselect', '--', 'dev']],
+    ...(renewViews ? [['npm', ['run', 'smoke:views']]] : []),
+  ];
+}
+export function selectionTailCommands() {
+  return [
     [process.execPath, ['scripts/smoke-scalar-drafts.mjs', 'dev']],
     ['npm', ['run', 'smoke:views']],
   ];
@@ -153,9 +169,9 @@ export function runChecks(commands, run = (command,args)=>spawnSync(command,args
 }
 if(process.argv[1] && resolve(process.argv[1])===fileURLToPath(import.meta.url)) {
   const args=process.argv.slice(2);
-  if(args.some(arg=>!['foundation','board','navigation','project-files','coherent','sessions','scalars','selections','--list','--failure-probe','--native-only'].includes(arg)) || !['foundation','board','navigation','project-files','coherent','sessions','scalars','selections'].includes(args[0])) throw new Error('Usage: desktop-ux-checks.mjs <foundation|board|navigation|project-files|coherent|sessions|scalars|selections> [--list] [--failure-probe]');
+  if(args.some(arg=>!['foundation','board','navigation','project-files','coherent','sessions','scalars','selections','selection-native','selection-tail','--list','--failure-probe','--native-only'].includes(arg)) || !['foundation','board','navigation','project-files','coherent','sessions','scalars','selections','selection-native','selection-tail'].includes(args[0])) throw new Error('Usage: desktop-ux-checks.mjs <foundation|board|navigation|project-files|coherent|sessions|scalars|selections|selection-native|selection-tail> [--list] [--failure-probe]');
   if(args.includes('--native-only') && !['navigation','project-files'].includes(args[0]))throw new Error('--native-only requires navigation or project-files');
-  const commands=args[0]==='selections' ? selectionCommands() : args[0]==='scalars' ? scalarCommands() : args[0]==='sessions' ? sessionCommands() : args[0]==='coherent' ? coherentCommands() : args[0]==='project-files' ? projectFilesCommands({nativeOnly:args.includes('--native-only')}) : args[0]==='navigation' ? navigationCommands({nativeOnly:args.includes('--native-only')}) : args[0]==='board' ? boardCommands() : foundationCommands({failureProbe:args.includes('--failure-probe')});
+  const commands=args[0]==='selection-native' ? selectionNativeCommands({renewViews:process.env.WORKSPACE_SELECTION_VIEWS_RENEW==='1'}) : args[0]==='selection-tail' ? selectionTailCommands() : args[0]==='selections' ? selectionCommands() : args[0]==='scalars' ? scalarCommands() : args[0]==='sessions' ? sessionCommands() : args[0]==='coherent' ? coherentCommands() : args[0]==='project-files' ? projectFilesCommands({nativeOnly:args.includes('--native-only')}) : args[0]==='navigation' ? navigationCommands({nativeOnly:args.includes('--native-only')}) : args[0]==='board' ? boardCommands() : foundationCommands({failureProbe:args.includes('--failure-probe')});
   if(args[0]!=='foundation' && args.includes('--failure-probe')) commands.unshift([process.execPath,['-e','process.exit(23)']]);
   if(args.includes('--list')) console.log(JSON.stringify(commands));
   else process.exitCode=runChecks(commands);

@@ -201,3 +201,23 @@ test('selection profile covers shared choices, retained service ownership and re
  assert.ok(selected.includes('node scripts/desktop-ux-checks.mjs selections'));
  assert.equal(selected.some(command=>/package:built|check:artifact|test:desktop-ux/.test(command)),false);
 });
+
+test('selection driver and unreached-tail renewal preserve original commands and isolate the selected hosts',async()=>{
+ const {selectionNativeCommands,selectionTailCommands}=await import('../scripts/desktop-ux-checks.mjs');
+ const text=JSON.stringify(selectionNativeCommands());
+ for(const name of ['selection-driver.test.mjs','selection-backend-readiness.test.mjs','smoke-selection-editors.mjs','smoke:select','smoke:multiselect'])assert.ok(text.includes(name),name);
+ assert.equal(text.includes('views-service.test.mjs'),false);
+ assert.ok(JSON.stringify(selectionNativeCommands({renewViews:true})).includes('smoke:views'));
+ for(const name of ['smoke-scalar-drafts.mjs','smoke:views'])assert.ok(JSON.stringify(selectionTailCommands()).includes(name),name);
+ for(const profile of ['selection-native','selection-tail'])assert.equal(spawnSync(process.execPath,['scripts/desktop-ux-checks.mjs',profile,'--failure-probe'],{encoding:'utf8'}).status,23);
+ const {readFile}=await import('node:fs/promises'),{load}=await import('js-yaml'),{runInNewContext}=await import('node:vm');
+ const workflow=load(await readFile('.github/workflows/desktop-ci.yml','utf8')),job=workflow.jobs['desktop-ux'];
+ for(const [profile,hosts,command] of [['selection-native',['macos-latest','windows-latest','windows-2022'],'selection-native'],['selection-tail',['macos-latest','windows-latest'],'selection-tail']]){
+  assert.ok(workflow.on.workflow_dispatch.inputs.desktop_ux_profile.options.includes(profile));
+  const context={inputs:{desktop_ux_profile:profile,desktop_ux_failure_probe:false,desktop_ux_category_only:false,desktop_ux_packaged_only:false},fromJSON:JSON.parse,cancelled:()=>false};
+  assert.deepEqual(Array.from(runInNewContext(job.strategy.matrix.os.slice(3,-2),context)),hosts);
+  const selected=job.steps.filter(step=>step.run&&(!step.if||runInNewContext(step.if.slice(3,-2),context))).map(step=>step.run);
+  assert.ok(selected.includes(`node scripts/desktop-ux-checks.mjs ${command}`));
+  assert.equal(selected.some(value=>/package:built|check:artifact|test:desktop-ux|desktop-ux-checks.mjs selections$/.test(value)),false);
+ }
+});

@@ -1408,3 +1408,14 @@ The bounded profile does not rebuild unchanged packages or installers. Ordinary
 full routes and #67/#42 milestone gates remain intact. See the
 [selection verification report](verification/issue-57-selection-editors.md) for
 local results, retained failures and the GitHub checkpoint for hosted acceptance.
+
+
+For the first #57 test-driver failures, `desktop_ux_profile: selection-native`
+runs only the new native detaching-control/readiness/focus regressions and
+original Selection/Select/MultiSelect commands on all three hosts. It additionally
+renews original Views on Windows 2022, its failed host. After focused success,
+`selection-tail` runs only the unreached scalar/Views commands on macOS and
+Windows latest. The default `selections` and ordinary routes remain intact;
+no skipped package job supplies acceptance. These profiles implement the
+[test-only evidence reuse ledger](#evidence-reuse-after-test-only-repairs), with
+actual results maintained in issue #57.

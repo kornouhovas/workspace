@@ -1,3 +1,4 @@
+import { observeSelectionBackend } from "./selection-editor-driver.mjs";
 /* global window, document, innerWidth */
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";
@@ -39,9 +40,8 @@ async function launch() {
     for (const event of ["before-quit", "will-quit", "quit", "window-all-closed"]) app.on(event, () => process.stdout.write(`[multiselect-quit:${event}]\n`));
   });
   const page = await app.firstWindow(); page.setDefaultTimeout(15000);
-  const pids = await app.evaluate(({ app }) => app.getAppMetrics().filter(m => m.type === "Utility" && m.serviceName?.includes("Node")).map(m => m.pid));
+  const pids = await observeSelectionBackend(app, page);
   assert.ok(pids.length > 0); for (const pid of pids) backendPids.add(pid);
-  await page.waitForFunction(async () => (await window.workspace.getBackendStatus()).state === "ready");
   launchUnverified = false;
   return { app, page };
 }

@@ -1,5 +1,6 @@
 /* global window, document */
 import assert from 'node:assert/strict';
+import { removeChosenOption } from './selection-editor-driver.mjs';
 import { createRequire } from 'node:module';
 import { mkdir, mkdtemp, realpath, writeFile, readFile } from 'node:fs/promises';
 import { tmpdir, release, cpus } from 'node:os';
@@ -82,7 +83,7 @@ try{
        await menu.getByRole('combobox',{name:label,exact:true}).selectOption(options[1].optionId);
        await menu.waitFor({state:'detached'});assert.equal((await snapshot()).selectValues.find(v=>v.propertyId===propertyId&&v.projectId===atlas.projectId).optionId,options[1].optionId);
       }else{
-       const ready=menu.getByRole('checkbox',{name:en?'Ready (Hidden)':'Ready (Скрыта)',exact:true});await ready.uncheck();
+       const ready=menu.getByRole('checkbox',{name:en?'Ready (Hidden)':'Ready (Скрыта)',exact:true});await removeChosenOption(ready);
        await menu.getByRole('checkbox',{name:'Done',exact:true}).check();
        await page.waitForFunction(async({workspaceId,propertyId,projectId,optionId})=>{
         const values=(await window.workspace.workspace({type:'workspace.listTextProperties',workspaceId})).value.multiSelectValues.filter(v=>v.propertyId===propertyId&&v.projectId===projectId);
