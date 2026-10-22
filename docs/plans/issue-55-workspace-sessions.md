@@ -64,9 +64,8 @@ assertions. No scenario is retired at this preparation stage.
 
 ## Progress
 
-Preparation only: dependencies and accepted integration baseline inspected;
-isolated task checkout created. No application implementation, tests or acceptance
-results yet. All three test seams are confirmed.
+Implementation and local acceptance are recorded below. All three test seams
+are confirmed; platform acceptance and integration remain gated by GitHub #55.
 
 ## Implementation and focused evidence
 
@@ -132,3 +131,40 @@ candidate full suite and full migration renewal; actual supported desktop and
 packaged session/recovery/saved-view consumers with artifact inspection; final
 appearance map; exact-SHA GitHub checkpoint and authorized integration. Windows11
 release and final #67/#42 gates remain separate. No issue acceptance claimed.
+
+
+## Final local candidate and review
+
+Standards review:0 findings; Spec review:0 confirmed findings against
+`8231d8bb...7b39305`. Independent follow-up reviews of both repair diffs also
+returned0/0; reviewers made no changes.
+
+- Final `npm run test:migrations`:675 pass/0 fail/1 skip (676 reported tests).
+- One final `npm run test:all`:3299 pass/3 fail/27 skip (3329 reported tests),
+ 201.1s. The three finite failures were the original App source-path assertion
+ running before asynchronous session hydration, and two exact workflow inventories
+ omitting the added session commands/artifacts. The source-path/heading checks now
+ await the same content with the original budget; full/source continuation retain
+ every prior command and add matching dev/release session commands/environments.
+- Complete affected-file renewal (`renderer-app`, `windows-product-diagnostics`,
+ `desktop-ux-checks`):144/144 pass. No application/schema/dependency/native/build
+ input changed after the broad run; other3299 passing results are retained under
+ the test-only evidence-reuse policy. The original overall broad negative is not
+ relabeled as a green full invocation.
+- Corrected appearance consumer uses actual Settings Appearance radio controls
+ and waits for the document theme. Earlier dark-labelled light captures are not
+ appearance evidence. The corrected original development command passes all16
+ preview/expanded variants,3 normal app/backend quits and asserted fixture cleanup.
+ Inspected the16-image contact sheet plus full-size narrow light/dark and wide
+ expanded captures against accepted #69/main/bb composition. Persisted requested
+ widths and retained tabs are the only intended composition differences.
+
+Selected hosted acceptance: `desktop-ux/sessions` on macOS latest, Windows latest
+and Windows2022, including actual dev/package session/recovery and packaged saved
+views. Because startup/storage inputs changed, renew matching macOS14 DMG and
+Windowslatest NSIS installation/reopen consumers and candidate-only packaged
+performance on macOS14/Windowslatest. Existing immutable performance baseline
+and final Windows11/67/42 gates are retained; no release is authorized.
+
+Remaining: inspect those exact-SHA receipts/artifacts, diagnose any failures,
+update the acceptance map, verify and integrate the accepted candidate only.

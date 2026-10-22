@@ -360,8 +360,8 @@ test("renders the persisted active Table workspace and flags an unavailable sour
   });
   render(<App />);
   assert.ok(await screen.findByRole("heading", { name: "Saved workspace" }));
-  assert.equal(within(screen.getByRole("main")).getByText((_content, element) => element?.classList.contains("workspace-root") ?? false).textContent, "/Users/me/Keep  Verbatim");
-  assert.ok(screen.getByRole("heading", { name: "Таблица" }));
+  assert.equal((await within(screen.getByRole("main")).findByText((_content, element) => element?.classList.contains("workspace-root") ?? false)).textContent, "/Users/me/Keep  Verbatim");
+  assert.ok(await screen.findByRole("heading", { name: "Таблица" }));
   assert.ok(await screen.findByText(translate("ru", "setupOffer")));
   assert.ok(screen.getByRole("heading", { name: "Папка проекта недоступна" }));
   cleanup();

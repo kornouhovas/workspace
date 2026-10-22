@@ -7,7 +7,7 @@ import { join, resolve } from 'node:path';
 import { _electron } from 'playwright-core';
 import { closeElectron, cleanupOwnedFixture, ownedProcessesStopped } from './runtime-lifecycle.mjs';
 import { packagedExecutablePath } from './runtime-executable.mjs';
-import { setInterfaceLanguage } from './runtime-settings.mjs';
+import { setInterfaceLanguage, openSettingsSection, returnToWorkspace } from './runtime-settings.mjs';
 const root=resolve(import.meta.dirname,'..'), mode=process.argv[2]??'dev';
 assert.ok(['dev','release'].includes(mode));
 const executablePath=mode==='dev'?createRequire(import.meta.url)('electron'):packagedExecutablePath(root,process.platform,process.arch);
@@ -57,7 +57,10 @@ try{
  for(const language of ['en','ru']){
   await setInterfaceLanguage(page,language);const en=language==='en';
   for(const theme of ['light','dark']){
-   unwrap(await page.evaluate(appearance=>window.workspace.settings({type:'settings.setAppearance',appearance}),theme));
+   await openSettingsSection(page,'appearance');
+   await page.getByRole('radio',{name:theme==='light'?/^(Light|Светлая)$/:/^(Dark|Тёмная)$/}).click();
+   await page.waitForFunction(theme=>document.documentElement.dataset.theme===theme,theme);
+   await returnToWorkspace(page);
    for(const size of [{width:1024,height:720},{width:1440,height:960}]){
     await page.setViewportSize(size);
     const stem=`${language}-${theme}-${size.width}`;

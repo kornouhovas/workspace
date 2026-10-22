@@ -561,6 +561,10 @@ jobs:
         run: npm run smoke:data-recovery -- dev
         env:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-data-recovery-dev
+      - name: Development workspace session restart, backup and fresh content
+        run: node scripts/smoke-workspace-sessions.mjs dev
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-sessions-dev
       - name: Development category options UI and persistence
         if: ${{ (inputs.source_runtime_platform != 'package-tails' && inputs.source_runtime_platform != 'package-windows-latest') }}
         run: npm run smoke:category-options -- dev
@@ -596,6 +600,10 @@ jobs:
         run: npm run smoke:data-recovery -- release
         env:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-data-recovery-release
+      - name: Packaged workspace session restart, backup and fresh content
+        run: node scripts/smoke-workspace-sessions.mjs release
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-sessions-release
       - name: Packaged category options UI and persistence
         run: npm run smoke:category-options -- release
         env:
