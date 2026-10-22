@@ -1,3 +1,4 @@
+import { openRuntimeViewActions } from "./runtime-view-actions.mjs";
 import { exerciseMetadataRemoval } from "./runtime-metadata-removal.mjs";
 import { exerciseFolderGroupAssignment } from "./runtime-folder-group-assignment.mjs";
 import { exerciseGroupAssignment } from "./runtime-group-assignment.mjs";
@@ -114,10 +115,10 @@ try {
     filters.push(await exerciseViewFilters({ page, query, workspaceId, projectId: projects.projects[0].projectId, propertyId: property.propertyId, language, layout: "board", evidenceDirectory }));
     grouping.push(await exerciseSelectionGrouping({ page, query, workspaceId, language, layout: "board", evidenceDirectory }));
     grouping.push(await exerciseViewGrouping({ page, query, workspaceId, propertyId: property.propertyId, language, layout: "board", evidenceDirectory }));
-    await pressEnabled(page, actions()); await pressEnabled(page, page.getByRole("menuitem", { name: en ? "Duplicate view" : "Дублировать представление", exact: true }));
+    await openRuntimeViewActions(page,actions()); await pressEnabled(page, page.getByRole("menuitem", { name: en ? "Duplicate view" : "Дублировать представление", exact: true }));
     await name().fill("Copy"); await name().press("Enter");
     await page.getByRole("tab", { name: "Copy", exact: true }).and(page.locator('[aria-selected="true"]')).waitFor();
-    await pressEnabled(page, actions()); await pressEnabled(page, edit()); await layout().selectOption("table"); await name().press("Enter");
+    await openRuntimeViewActions(page,actions()); await pressEnabled(page, edit()); await layout().selectOption("table"); await name().press("Enter");
     await page.getByRole("table").getByText("Board keyboard edit", { exact: true }).waitFor();
     filters.push(await exerciseViewFilters({ page, query, workspaceId, projectId: projects.projects[0].projectId, propertyId: property.propertyId, language, layout: "table", evidenceDirectory }));
     grouping.push(await exerciseSelectionGrouping({ page, query, workspaceId, language, layout: "table", evidenceDirectory }));
@@ -127,13 +128,13 @@ try {
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
       await page.screenshot({ path: join(evidenceDirectory, `${language}-${width}-table.png`), fullPage: true });
     }
-    await pressEnabled(page, actions()); await pressEnabled(page, page.getByRole("menuitem", { name: en ? "Move view earlier" : "Переместить представление раньше", exact: true }));
-    await pressEnabled(page, actions()); await pressEnabled(page, page.getByRole("menuitem", { name: en ? "Delete view" : "Удалить представление", exact: true }));
+    await openRuntimeViewActions(page,actions()); await pressEnabled(page, page.getByRole("menuitem", { name: en ? "Move view earlier" : "Переместить представление раньше", exact: true }));
+    await openRuntimeViewActions(page,actions()); await pressEnabled(page, page.getByRole("menuitem", { name: en ? "Delete view" : "Удалить представление", exact: true }));
     await page.getByRole("button", { name: en ? "Confirm delete view" : "Подтвердить удаление представления", exact: true }).waitFor();
     await page.keyboard.press("Escape");
     await page.waitForFunction(() => document.activeElement?.getAttribute("aria-label")?.match(/^(View actions|Действия с представлением):/));
     assert.equal(await actions().evaluate(element => element === document.activeElement), true);
-    await pressEnabled(page, actions()); await pressEnabled(page, page.getByRole("menuitem", { name: en ? "Delete view" : "Удалить представление", exact: true }));
+    await openRuntimeViewActions(page,actions()); await pressEnabled(page, page.getByRole("menuitem", { name: en ? "Delete view" : "Удалить представление", exact: true }));
     await pressEnabled(page, page.getByRole("button", { name: en ? "Confirm delete view" : "Подтвердить удаление представления", exact: true }));
     await selectView(boardId); await board().waitFor();
     const snapshot = await query(page, { type: "workspace.listViews", workspaceId });

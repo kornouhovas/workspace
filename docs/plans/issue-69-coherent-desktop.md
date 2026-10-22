@@ -1779,3 +1779,45 @@ dev and every original packaged consumer on all3, including creation crash/direc
 grouped and base/rename/category. Build:ladle remains for package input composition;
 already-passing full layouts/platform/dev prefixes are not repeated. Semantic route
 controls63/63 and Spec recheck0 confirm this mapping; actual hosted gates remain.
+
+### Views context renewal after package-tail inspection
+
+341ef774 focused creation39724337019 and archive/category39724340885, attempt1,
+pass on all3 hosts; downloaded reports inspected. Creation retains118 regressions,
+8 crash scenarios/16 normal quits and direct/grouped exact native invocation,
+acknowledgment and FileManager outcomes (2 quits each). Every host records20
+confirmed backend occurrences,0 pending,30 stopped parent launches and owned
+cleanup. Archive/category retain141 regressions and original dev/release commands:
+12 archive checks/5 quits and16 category checks/2 quits per mode, all cleanup passed.
+
+Package-tails39724821487/attempt1 at341ef774 passes macOS and Windows2022.
+Each downloaded artifact contains15 complete passing reports and131 normal quits:
+DataRecovery dev; eight packaged features; creation crash/direct/grouped;
+base/rename/category. Exact IDs, bytes, persistence, native outcomes and stopped
+ownership/cleanup pass. Windowslatest fails its first dev Views command at
+smoke-views.mjs:117: the Duplicate menu item detaches during Enter. Failure
+screenshot shows View settings still open and Grouping focused; no duplicate draft.
+Normal app/backend quit and owned failure cleanup pass; later steps are unreached.
+These successful hosts supply only their inspected unchanged rows, not Windows.
+
+Controlled actual-Electron ViewsPanel/ContextTools EN/RU regression delivers a
+Grouping focus return after the real menu mounts. Old direct menu entry goes red
+(menu disappears); preparation through existing enterContextFor goes green.
+This demonstrates a matching focus mechanism, not unique historical CI timing.
+Only the Views driver adopts openRuntimeViewActions for all five menu entries;
+shared grouping helpers, application inputs, assertions and deadlines are unchanged.
+The regression asserts actual draft focus/value, closed tools, zero saved commands,
+Cancel and returned menu-trigger focus, normal quit and owned cleanup. Original
+local dev Views passes all6 checks with normal app/backend quit and fixture cleanup.
+
+New view-contexts choice renews actual Views dev/release exactly once on all3
+hosts with native/UI/service/route controls, required build/package/resources,
+serial Electron setup, provenance, pipefail and always artifacts. Existing
+views-readiness retains its Windows-only three diagnostic iterations. After all
+focused originals pass and artifacts are inspected, package-windows-latest runs
+only Windowslatest's missing scalar/recovery/package consumers. No passing Mac/
+Windows2022 full tail or unchanged layout/platform prefix is repeated. Semantic
+route guard initially sliced plain always() as an expression wrapper; corrected
+to evaluate plain always() directly without weakening route assertions.
+Standards and Spec reviews both report0 source findings. Hosted renewal and
+missing Windows tails remain acceptance gates; no integration is claimed.

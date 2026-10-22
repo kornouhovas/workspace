@@ -1346,3 +1346,18 @@ retain exact earlier passing receipts; focused creation and archive/category
 renew their changed consumers. No platform suite or full layout/dev prefix is
 replayed for this profile. A new failure reopens its concrete row before acceptance.
 Ordinary/full and older focused defaults remain unchanged; no added dispatch inputs.
+
+For #69's subsequent Views menu detachment in39724821487 on Windowslatest,
+select `checks: view-contexts`. It renews only the changed Views driver in dev and
+release once on macOS latest, Windows latest and Windows2022. Real-Electron
+ViewsPanel/context focus-return, existing UI/service and route controls precede
+the original commands; build, package/resource validation, serial Electron setup,
+pipefail, exact provenance and always artifacts remain. `views-readiness` retains
+its older Windows-only three-iteration diagnostic behavior. The Views-specific
+helper dismisses the owning context via actual controls before keyboard menu
+entry; shared grouping behavior, product source and original assertions remain.
+After focused success and artifact inspection, `checks: source-runtime,
+source_runtime_platform: package-windows-latest` runs only missing Windowslatest
+dev Views/MultiSelect/Select/Date/Number/DataRecovery and all packaged consumers.
+Inspected macOS/Windows2022 package-tail receipts39724821487 retain their actual
+341ef774 source; their changed Views consumers still require focused renewal.

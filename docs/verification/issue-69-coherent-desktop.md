@@ -7,7 +7,7 @@ scenario decisions, experiments, failures and historical receipts.
 Application acceptance source: `770e07e5846293309b5357d6f7bc81134772a4c1`,
 based on accepted `86ec7527`; application changes end at `458be520`. Runtime
 driver renewal sources: `3d0a88c3`, `c5d9f5d8` and
-`d6bcd7c0209673cdbfece719d9b9f6a9e22c6c45`. The complete
+`d6bcd7c0209673cdbfece719d9b9f6a9e22c6c45` and `341ef774`. The complete
 subsequent delta contains tests, drivers, CI routes and documentation. Required
 combined receipts retain their actual source below.
 The plan retains earlier failed/diagnostic receipts; none is relabeled as passing.
@@ -145,3 +145,15 @@ to #67. #55 owns persisted sessions; #56–#58 editor/draft refinements; #60 and
 descendants filesystem/recovery extensions; #67 final UX01–UX20/platform/scale
 acceptance; #42 release integration. #47/#7/#42 remain open. No release, main
 merge or next issue is selected.
+
+### Current remaining-runtime gate
+
+Focused creation39724337019 and archive/category39724340885 at341ef774 pass on
+all3 hosts; reports inspected, original dev/release context and dev native
+creation assertions/exit/cleanup retained. Package-tails39724821487 at341ef774
+passes macOS and Windows2022 (15 reports,131 normal quits each); Windowslatest
+fails first dev Views menu entry and reaches no later tail. Failure cleanup passes.
+Controlled native focus-return regression is red with old menu entry and green
+with Views-specific context preparation; it does not prove unique historical
+timing. All3 dev/release Views renewal and then missing Windowslatest tails remain
+required before acceptance. Successful unchanged rows retain their actual sources.

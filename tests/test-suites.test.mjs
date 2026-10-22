@@ -42,7 +42,7 @@ test('suite CLI lists the selected real files and rejects unknown invocations', 
 test('ordinary CI runs common checks once and retains all three platform acceptance routes', () => {
   const workflow = load(readFileSync('.github/workflows/desktop-ci.yml', 'utf8'));
   const { common, verify } = workflow.jobs;
-  assert.equal(common.if, "${{ github.event_name != 'workflow_dispatch' || (inputs.checks != 'failed' && inputs.checks != 'readiness' && inputs.checks != 'windows-release' && inputs.checks != 'issue22-failures' && inputs.checks != 'creation-shutdown' && inputs.checks != 'raw-rename' && inputs.checks != 'issue24-failures' && inputs.checks != 'category-fixture' && inputs.checks != 'issue24-startup' && inputs.checks != 'multiselect' && inputs.checks != 'etw-controls' && inputs.checks != 'app-fixture' && inputs.checks != 'property-fixture' && inputs.checks != 'runtime-observation' && inputs.checks != 'view-fixtures' && inputs.checks != 'number' && inputs.checks != 'windows-property-fixture' && inputs.checks != 'rename-authoring' && inputs.checks != 'rename-fixture' && inputs.checks != 'viewport-runtime' && inputs.checks != 'workspace-root-runtime' && inputs.checks != 'archive-contexts' && inputs.checks != 'creation-ownership' && inputs.checks != 'desktop-shell' && inputs.checks != 'shell-runtime' && inputs.checks != 'views-readiness' && inputs.checks != 'workspace-sidebar' && inputs.checks != 'workspace-setup' && inputs.checks != 'workspace-setup-readiness' && inputs.checks != 'select-readiness' && inputs.checks != 'source-fixture' && inputs.checks != 'source-runtime' && inputs.checks != 'desktop-ux' && inputs.checks != 'layout-fixtures' && inputs.checks != 'source-inventory' && inputs.checks != 'observer-cancellation' && inputs.checks != 'observer-workflow' && inputs.checks != 'native-owner-controls' && inputs.checks != 'native-lifecycle' && inputs.checks != 'project-files-windows' && inputs.checks != 'project-files-windows-trace') }}");
+  assert.equal(common.if, "${{ github.event_name != 'workflow_dispatch' || (inputs.checks != 'failed' && inputs.checks != 'readiness' && inputs.checks != 'windows-release' && inputs.checks != 'issue22-failures' && inputs.checks != 'creation-shutdown' && inputs.checks != 'raw-rename' && inputs.checks != 'issue24-failures' && inputs.checks != 'category-fixture' && inputs.checks != 'issue24-startup' && inputs.checks != 'multiselect' && inputs.checks != 'etw-controls' && inputs.checks != 'app-fixture' && inputs.checks != 'property-fixture' && inputs.checks != 'runtime-observation' && inputs.checks != 'view-fixtures' && inputs.checks != 'number' && inputs.checks != 'windows-property-fixture' && inputs.checks != 'rename-authoring' && inputs.checks != 'rename-fixture' && inputs.checks != 'viewport-runtime' && inputs.checks != 'workspace-root-runtime' && inputs.checks != 'archive-contexts' && inputs.checks != 'creation-ownership' && inputs.checks != 'desktop-shell' && inputs.checks != 'shell-runtime' && inputs.checks != 'views-readiness' && inputs.checks != 'view-contexts' && inputs.checks != 'workspace-sidebar' && inputs.checks != 'workspace-setup' && inputs.checks != 'workspace-setup-readiness' && inputs.checks != 'select-readiness' && inputs.checks != 'source-fixture' && inputs.checks != 'source-runtime' && inputs.checks != 'desktop-ux' && inputs.checks != 'layout-fixtures' && inputs.checks != 'source-inventory' && inputs.checks != 'observer-cancellation' && inputs.checks != 'observer-workflow' && inputs.checks != 'native-owner-controls' && inputs.checks != 'native-lifecycle' && inputs.checks != 'project-files-windows' && inputs.checks != 'project-files-windows-trace') }}");
   assert.equal(common.strategy, undefined);
   assert.deepEqual(common.steps.filter(step => step.run).map(step => step.run), [
     'npm ci', 'npm run lint', 'npm run typecheck', 'npm run check:docs', 'npm run test:common',
@@ -83,7 +83,7 @@ test('investigation jobs run only with explicit manual diagnostic inputs', () =>
 test('manual failed-check scope runs only the Windows observer and macOS rename routes', () => {
   const workflow = load(readFileSync('.github/workflows/desktop-ci.yml', 'utf8'));
   assert.equal(workflow.on.workflow_dispatch.inputs.checks.default, 'full');
-  assert.deepEqual(workflow.on.workflow_dispatch.inputs.checks.options, ['full', 'desktop-ux', 'layout-fixtures', 'source-inventory', 'observer-cancellation', 'observer-workflow', 'native-owner-controls', 'native-lifecycle', 'project-files-windows', 'project-files-windows-trace', 'failed', 'readiness', 'windows-release', 'issue22-failures', 'creation-shutdown', 'raw-rename', 'issue24-failures', 'category-fixture', 'issue24-startup', 'multiselect', 'etw-controls', 'app-fixture', 'property-fixture', 'runtime-observation', 'view-fixtures', 'number', 'windows-property-fixture', 'rename-authoring', 'rename-fixture', 'viewport-runtime', 'workspace-root-runtime', 'archive-contexts', 'creation-ownership', 'desktop-shell', 'shell-runtime', 'views-readiness', 'workspace-sidebar', 'workspace-setup', 'workspace-setup-readiness', 'select-readiness', 'source-fixture', 'source-runtime']);
+  assert.deepEqual(workflow.on.workflow_dispatch.inputs.checks.options, ['full', 'desktop-ux', 'layout-fixtures', 'source-inventory', 'observer-cancellation', 'observer-workflow', 'native-owner-controls', 'native-lifecycle', 'project-files-windows', 'project-files-windows-trace', 'failed', 'readiness', 'windows-release', 'issue22-failures', 'creation-shutdown', 'raw-rename', 'issue24-failures', 'category-fixture', 'issue24-startup', 'multiselect', 'etw-controls', 'app-fixture', 'property-fixture', 'runtime-observation', 'view-fixtures', 'number', 'windows-property-fixture', 'rename-authoring', 'rename-fixture', 'viewport-runtime', 'workspace-root-runtime', 'archive-contexts', 'creation-ownership', 'desktop-shell', 'shell-runtime', 'views-readiness', 'view-contexts', 'workspace-sidebar', 'workspace-setup', 'workspace-setup-readiness', 'select-readiness', 'source-fixture', 'source-runtime']);
   const enabled = (job, event, checks) => runInNewContext(job.if.slice(3, -2), { github: { event_name: event }, inputs: { checks } });
   for (const event of ['push', 'pull_request', 'workflow_dispatch']) for (const checks of [undefined, 'full', 'failed']) {
     const focused = event === 'workflow_dispatch' && checks === 'failed';
@@ -985,13 +985,13 @@ test('views readiness isolates the remaining Windows latest startup failure', ()
   const job = workflow.jobs['focused-views-readiness'];
   assert.ok(job.steps.find(step => step.id === 'build').run.includes('node -e "require(\'electron\')"'));
   assert.equal(job['runs-on'], '${{ matrix.os }}');
-  assert.deepEqual(job.strategy.matrix.os, ['windows-latest']);
+  assert.deepEqual(Array.from(runInNewContext(job.strategy.matrix.os.slice(3,-2),{inputs:{checks:'views-readiness'},fromJSON:JSON.parse})), ['windows-latest']);
   assert.equal(job.strategy['fail-fast'], false);
   assert.ok(job.steps.every(step => step['continue-on-error'] === undefined));
   const original = job.steps.find(step => step.name === 'Original development views');
   assert.ok(original.run.includes('npm run smoke:views -- dev')); assert.ok(original.run.includes('set -o pipefail'));
   for (const outcome of ['success','failure']) for (const cancelled of [true,false]) {
-    assert.equal(runInNewContext(original.if.slice(3,-2), {cancelled:()=>cancelled,steps:{build:{outcome}}}), !cancelled && outcome === 'success');
+    assert.equal(runInNewContext(original.if.slice(3,-2), {cancelled:()=>cancelled,inputs:{checks:'views-readiness'},steps:{build:{outcome}}}), !cancelled && outcome === 'success');
   }
   assert.equal(job.steps.find(step => step.uses === 'actions/upload-artifact@v4').with['if-no-files-found'], 'error');
 });
@@ -1103,7 +1103,7 @@ test('unreached Windows runtime renewal can select only its missing host while p
   const workflow=load(readFileSync('.github/workflows/desktop-ci.yml','utf8'));
   const input=workflow.on.workflow_dispatch.inputs.source_runtime_platform;
   assert.equal(input.default,'all');
-  assert.deepEqual(input.options,['all','windows-latest','windows-2022','all-desktops','runtime-tails','package-tails']);
+  assert.deepEqual(input.options,['all','windows-latest','windows-2022','all-desktops','runtime-tails','package-tails','package-windows-latest']);
   const job=workflow.jobs['source-runtime'];
   const select=platform=>runInNewContext(job.strategy.matrix.include.slice(3,-2),{fromJSON:JSON.parse,inputs:{source_runtime_platform:platform}});
   for(const platform of [undefined,'all','windows-latest','windows-2022']) {
@@ -1116,7 +1116,7 @@ test('unreached Windows runtime renewal can select only its missing host while p
   }
   assert.ok(!commands.includes('npm test'));
   assert.match(job.steps.find(step=>step.run==='npm run test:platform').if, /all-desktops.*windows-latest/);
-  assert.equal(job.steps.find(step=>step.run==='npm run smoke:runtime -- dev --creation --discovery-mode=direct --checkpoint=after_evidence').if,"${{ (matrix.os != 'windows-latest' || inputs.source_runtime_platform == 'runtime-tails') && inputs.source_runtime_platform != 'package-tails' }}");
+  assert.equal(job.steps.find(step=>step.run==='npm run smoke:runtime -- dev --creation --discovery-mode=direct --checkpoint=after_evidence').if,"${{ (matrix.os != 'windows-latest' || inputs.source_runtime_platform == 'runtime-tails') && (inputs.source_runtime_platform != 'package-tails' && inputs.source_runtime_platform != 'package-windows-latest') }}");
 });
 
 
@@ -1317,4 +1317,26 @@ test('package tails retain only missing recovery and packaged consumers after in
   assert.ok(!commands.includes('npm run test:platform'));assert.ok(!commands.some(command=>command.startsWith('node scripts/smoke-discovery-layouts.mjs')));assert.ok(!commands.some(command=>command.startsWith('npm run smoke:runtime -- dev')));
   assert.deepEqual(commands.filter(command=>/^npm run smoke:.* -- dev$/.test(command)),os==='windows-latest'?['views','multiselect','select','date','number','data-recovery'].map(feature=>`npm run smoke:${feature} -- dev`):['npm run smoke:data-recovery -- dev']);
  }
+});
+
+
+test('view contexts renew only the actual Views consumer in both modes on three hosts',()=>{
+ const workflow=load(readFileSync('.github/workflows/desktop-ci.yml','utf8'));const context={github:{event_name:'workflow_dispatch'},inputs:{checks:'view-contexts'},fromJSON:JSON.parse};
+ assert.deepEqual(Object.entries(workflow.jobs).filter(([,job])=>job.if && runInNewContext(job.if.slice(3,-2),context)).map(([name])=>name),['focused-views-readiness']);
+ const job=workflow.jobs['focused-views-readiness'];assert.deepEqual(Array.from(runInNewContext(job.strategy.matrix.os.slice(3,-2),context)),['macos-latest','windows-latest','windows-2022']);
+ const active=job.steps.filter(step=>!step.if || runInNewContext(step.if==='always()'?step.if:step.if.slice(3,-2),{...context,cancelled:()=>false,always:()=>true,steps:{build:{outcome:'success'},view_package:{outcome:'success'},view_artifact:{outcome:'success'}}}));
+ const commands=active.filter(step=>step.run).map(step=>step.run);assert.ok(commands.some(command=>command.includes('tests/view-actions-native.test.mjs')));
+ for(const mode of ['dev','release']){const command=commands.find(command=>command.includes(`npm run smoke:views -- ${mode}`));assert.ok(command);assert.ok(!command.includes('for attempt'));assert.ok(command.includes('set -o pipefail'));}
+ assert.ok(commands.includes('npm run package:built'));assert.ok(commands.includes('npm run check:artifact -- release'));assert.ok(!commands.includes('npm run test:platform'));
+ assert.equal(active.at(-1).if,'always()');assert.equal(active.at(-1).with['if-no-files-found'],'error');
+});
+
+test('package Windows latest continuation preserves missing dev and packaged rows without other hosts',()=>{
+ const job=load(readFileSync('.github/workflows/desktop-ci.yml','utf8')).jobs['source-runtime'];const context={inputs:{source_runtime_platform:'package-windows-latest'},matrix:{os:'windows-latest'},fromJSON:JSON.parse,always:()=>true};
+ const rows=runInNewContext(job.strategy.matrix.include.slice(3,-2),context);assert.deepEqual(Array.from(rows,row=>row.os),['windows-latest']);
+ const commands=job.steps.filter(step=>step.run && (!step.if || runInNewContext(step.if.slice(3,-2),context))).map(step=>step.run);
+ for(const feature of ['views','multiselect','select','date','number','data-recovery'])assert.ok(commands.includes(`npm run smoke:${feature} -- dev`));
+ for(const feature of ['views','multiselect','select','date','number','archive','data-recovery','category-options'])assert.ok(commands.includes(`npm run smoke:${feature} -- release`));
+ for(const suffix of ['', ' --creation --skip-native',' --creation --discovery-mode=direct --checkpoint=after_evidence',' --creation --discovery-mode=grouped --checkpoint=after_evidence'])assert.ok(commands.includes(`npm run smoke:runtime -- release${suffix}`));
+ assert.ok(commands.includes('npm run package:built'));assert.ok(commands.includes('npm run check:artifact -- release'));assert.ok(!commands.includes('npm run test:platform'));assert.ok(!commands.some(command=>command.startsWith('node scripts/smoke-discovery-layouts.mjs')));assert.ok(!commands.some(command=>command.startsWith('npm run smoke:runtime -- dev')));
 });

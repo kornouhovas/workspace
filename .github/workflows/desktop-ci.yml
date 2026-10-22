@@ -8,7 +8,7 @@ on:
       checks:
         description: Full acceptance or a selected focused failure route
         type: choice
-        options: [full, desktop-ux, layout-fixtures, source-inventory, observer-cancellation, observer-workflow, native-owner-controls, native-lifecycle, project-files-windows, project-files-windows-trace, failed, readiness, windows-release, issue22-failures, creation-shutdown, raw-rename, issue24-failures, category-fixture, issue24-startup, multiselect, etw-controls, app-fixture, property-fixture, runtime-observation, view-fixtures, number, windows-property-fixture, rename-authoring, rename-fixture, viewport-runtime, workspace-root-runtime, archive-contexts, creation-ownership, desktop-shell, shell-runtime, views-readiness, workspace-sidebar, workspace-setup, workspace-setup-readiness, select-readiness, source-fixture, source-runtime]
+        options: [full, desktop-ux, layout-fixtures, source-inventory, observer-cancellation, observer-workflow, native-owner-controls, native-lifecycle, project-files-windows, project-files-windows-trace, failed, readiness, windows-release, issue22-failures, creation-shutdown, raw-rename, issue24-failures, category-fixture, issue24-startup, multiselect, etw-controls, app-fixture, property-fixture, runtime-observation, view-fixtures, number, windows-property-fixture, rename-authoring, rename-fixture, viewport-runtime, workspace-root-runtime, archive-contexts, creation-ownership, desktop-shell, shell-runtime, views-readiness, view-contexts, workspace-sidebar, workspace-setup, workspace-setup-readiness, select-readiness, source-fixture, source-runtime]
         default: full
       desktop_ux_profile:
         description: With desktop-ux, select foundation, grouped Board or project navigation acceptance
@@ -34,7 +34,7 @@ on:
       source_runtime_platform:
         description: With checks=source-runtime, renew missing runtime tails; all-desktops also renews the missing Windows latest prefix
         type: choice
-        options: [all, windows-latest, windows-2022, all-desktops, runtime-tails, package-tails]
+        options: [all, windows-latest, windows-2022, all-desktops, runtime-tails, package-tails, package-windows-latest]
         default: all
       recovery_windows_2022:
         description: With checks=issue22-failures, replay the backend recovery file on Windows 2022 and the original macOS runtime
@@ -390,7 +390,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include: ${{ fromJSON((inputs.source_runtime_platform == 'all-desktops' || inputs.source_runtime_platform == 'runtime-tails' || inputs.source_runtime_platform == 'package-tails') && '[{"os":"macos-latest","artifact":"macos"},{"os":"windows-latest","artifact":"windows"},{"os":"windows-2022","artifact":"windows-2022"}]' || inputs.source_runtime_platform == 'windows-latest' && '[{"os":"windows-latest","artifact":"windows"}]' || inputs.source_runtime_platform == 'windows-2022' && '[{"os":"windows-2022","artifact":"windows-2022"}]' || '[{"os":"windows-latest","artifact":"windows"},{"os":"windows-2022","artifact":"windows-2022"}]') }}
+        include: ${{ fromJSON((inputs.source_runtime_platform == 'all-desktops' || inputs.source_runtime_platform == 'runtime-tails' || inputs.source_runtime_platform == 'package-tails') && '[{"os":"macos-latest","artifact":"macos"},{"os":"windows-latest","artifact":"windows"},{"os":"windows-2022","artifact":"windows-2022"}]' || (inputs.source_runtime_platform == 'windows-latest' || inputs.source_runtime_platform == 'package-windows-latest') && '[{"os":"windows-latest","artifact":"windows"}]' || inputs.source_runtime_platform == 'windows-2022' && '[{"os":"windows-2022","artifact":"windows-2022"}]' || '[{"os":"windows-latest","artifact":"windows"},{"os":"windows-2022","artifact":"windows-2022"}]') }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 60
     steps:
@@ -407,7 +407,7 @@ jobs:
           mkdir -p work/ci-runtime-provenance
           node --input-type=module -e 'import { writeFileSync } from "node:fs"; writeFileSync("work/ci-runtime-provenance/provenance.json", JSON.stringify({sha:process.env.GITHUB_SHA,run:process.env.GITHUB_RUN_ID,attempt:process.env.GITHUB_RUN_ATTEMPT,platform:process.platform}) + "\n")'
       - name: Renew workspace identity and failed CI inventory
-        if: ${{ inputs.source_runtime_platform == 'all-desktops' || inputs.source_runtime_platform == 'runtime-tails' || inputs.source_runtime_platform == 'package-tails' }}
+        if: ${{ inputs.source_runtime_platform == 'all-desktops' || inputs.source_runtime_platform == 'runtime-tails' || inputs.source_runtime_platform == 'package-tails' || inputs.source_runtime_platform == 'package-windows-latest' }}
         shell: bash
         run: |
           set -o pipefail
@@ -483,12 +483,12 @@ jobs:
           retention-days: 7
       - run: npm run build:ladle
       - name: Capture creation/recovery/Reveal layouts
-        if: ${{ inputs.source_runtime_platform != 'runtime-tails' && inputs.source_runtime_platform != 'package-tails' }}
+        if: ${{ inputs.source_runtime_platform != 'runtime-tails' && (inputs.source_runtime_platform != 'package-tails' && inputs.source_runtime_platform != 'package-windows-latest') }}
         run: node scripts/smoke-discovery-layouts.mjs --creation
         env:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-creation-layouts
       - name: Capture category move/status/recovery layouts
-        if: ${{ inputs.source_runtime_platform != 'runtime-tails' && inputs.source_runtime_platform != 'package-tails' }}
+        if: ${{ inputs.source_runtime_platform != 'runtime-tails' && (inputs.source_runtime_platform != 'package-tails' && inputs.source_runtime_platform != 'package-windows-latest') }}
         run: node scripts/smoke-discovery-layouts.mjs --category-move
         env:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-category-move-layouts
@@ -498,51 +498,51 @@ jobs:
         env:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-all-layouts
       - name: Development creation crash/recovery matrix
-        if: ${{ inputs.source_runtime_platform != 'package-tails' }}
+        if: ${{ (inputs.source_runtime_platform != 'package-tails' && inputs.source_runtime_platform != 'package-windows-latest') }}
         run: npm run smoke:runtime -- dev --creation --skip-native
         env:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-creation-dev-crash-matrix
       - name: Direct development creation/native evidence
-        if: ${{ (matrix.os != 'windows-latest' || inputs.source_runtime_platform == 'runtime-tails') && inputs.source_runtime_platform != 'package-tails' }}
+        if: ${{ (matrix.os != 'windows-latest' || inputs.source_runtime_platform == 'runtime-tails') && (inputs.source_runtime_platform != 'package-tails' && inputs.source_runtime_platform != 'package-windows-latest') }}
         run: npm run smoke:runtime -- dev --creation --discovery-mode=direct --checkpoint=after_evidence
         env:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-creation-dev-direct
       - name: Grouped development creation/native evidence
-        if: ${{ inputs.source_runtime_platform != 'package-tails' }}
+        if: ${{ (inputs.source_runtime_platform != 'package-tails' && inputs.source_runtime_platform != 'package-windows-latest') }}
         run: npm run smoke:runtime -- dev --creation --discovery-mode=grouped --checkpoint=after_evidence
         env:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-creation-dev-grouped
       - run: npm run smoke:runtime -- dev
-        if: ${{ inputs.source_runtime_platform != 'package-tails' }}
+        if: ${{ (inputs.source_runtime_platform != 'package-tails' && inputs.source_runtime_platform != 'package-windows-latest') }}
         env:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-runtime-dev
       - name: Development Table and Board EN/RU lifecycle, keyboard and restart
-        if: ${{ inputs.source_runtime_platform != 'package-tails' || matrix.os == 'windows-latest' }}
+        if: ${{ (inputs.source_runtime_platform != 'package-tails' && inputs.source_runtime_platform != 'package-windows-latest') || matrix.os == 'windows-latest' }}
         run: npm run smoke:views -- dev
         env:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-views-dev
       - name: Development MultiSelect EN/RU keyboard, sets, hiding and restart
-        if: ${{ inputs.source_runtime_platform != 'package-tails' || matrix.os == 'windows-latest' }}
+        if: ${{ (inputs.source_runtime_platform != 'package-tails' && inputs.source_runtime_platform != 'package-windows-latest') || matrix.os == 'windows-latest' }}
         run: npm run smoke:multiselect -- dev
         env:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-multiselect-dev
       - name: Development ordinary Select EN/RU options, values, hiding and restart
-        if: ${{ inputs.source_runtime_platform != 'package-tails' || matrix.os == 'windows-latest' }}
+        if: ${{ (inputs.source_runtime_platform != 'package-tails' && inputs.source_runtime_platform != 'package-windows-latest') || matrix.os == 'windows-latest' }}
         run: npm run smoke:select -- dev
         env:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-select-dev
       - name: Development Date boundaries, EN/RU keyboard, timezone and restart
-        if: ${{ inputs.source_runtime_platform != 'package-tails' || matrix.os == 'windows-latest' }}
+        if: ${{ (inputs.source_runtime_platform != 'package-tails' && inputs.source_runtime_platform != 'package-windows-latest') || matrix.os == 'windows-latest' }}
         run: npm run smoke:date -- dev
         env:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-date-dev
       - name: Development Number arithmetic, EN/RU keyboard, sibling and restart
-        if: ${{ inputs.source_runtime_platform != 'package-tails' || matrix.os == 'windows-latest' }}
+        if: ${{ (inputs.source_runtime_platform != 'package-tails' && inputs.source_runtime_platform != 'package-windows-latest') || matrix.os == 'windows-latest' }}
         run: npm run smoke:number -- dev
         env:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-number-dev
       - name: Development archive and restore UI, Text and restart
-        if: ${{ inputs.source_runtime_platform != 'package-tails' }}
+        if: ${{ (inputs.source_runtime_platform != 'package-tails' && inputs.source_runtime_platform != 'package-windows-latest') }}
         run: npm run smoke:archive -- dev
         env:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-archive-dev
@@ -551,7 +551,7 @@ jobs:
         env:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-data-recovery-dev
       - name: Development category options UI and persistence
-        if: ${{ inputs.source_runtime_platform != 'package-tails' }}
+        if: ${{ (inputs.source_runtime_platform != 'package-tails' && inputs.source_runtime_platform != 'package-windows-latest') }}
         run: npm run smoke:category-options -- dev
         env:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-category-options-dev
@@ -666,7 +666,7 @@ jobs:
           if-no-files-found: error
 
   common:
-    if: ${{ github.event_name != 'workflow_dispatch' || (inputs.checks != 'failed' && inputs.checks != 'readiness' && inputs.checks != 'windows-release' && inputs.checks != 'issue22-failures' && inputs.checks != 'creation-shutdown' && inputs.checks != 'raw-rename' && inputs.checks != 'issue24-failures' && inputs.checks != 'category-fixture' && inputs.checks != 'issue24-startup' && inputs.checks != 'multiselect' && inputs.checks != 'etw-controls' && inputs.checks != 'app-fixture' && inputs.checks != 'property-fixture' && inputs.checks != 'runtime-observation' && inputs.checks != 'view-fixtures' && inputs.checks != 'number' && inputs.checks != 'windows-property-fixture' && inputs.checks != 'rename-authoring' && inputs.checks != 'rename-fixture' && inputs.checks != 'viewport-runtime' && inputs.checks != 'workspace-root-runtime' && inputs.checks != 'archive-contexts' && inputs.checks != 'creation-ownership' && inputs.checks != 'desktop-shell' && inputs.checks != 'shell-runtime' && inputs.checks != 'views-readiness' && inputs.checks != 'workspace-sidebar' && inputs.checks != 'workspace-setup' && inputs.checks != 'workspace-setup-readiness' && inputs.checks != 'select-readiness' && inputs.checks != 'source-fixture' && inputs.checks != 'source-runtime' && inputs.checks != 'desktop-ux' && inputs.checks != 'layout-fixtures' && inputs.checks != 'source-inventory' && inputs.checks != 'observer-cancellation' && inputs.checks != 'observer-workflow' && inputs.checks != 'native-owner-controls' && inputs.checks != 'native-lifecycle' && inputs.checks != 'project-files-windows' && inputs.checks != 'project-files-windows-trace') }}
+    if: ${{ github.event_name != 'workflow_dispatch' || (inputs.checks != 'failed' && inputs.checks != 'readiness' && inputs.checks != 'windows-release' && inputs.checks != 'issue22-failures' && inputs.checks != 'creation-shutdown' && inputs.checks != 'raw-rename' && inputs.checks != 'issue24-failures' && inputs.checks != 'category-fixture' && inputs.checks != 'issue24-startup' && inputs.checks != 'multiselect' && inputs.checks != 'etw-controls' && inputs.checks != 'app-fixture' && inputs.checks != 'property-fixture' && inputs.checks != 'runtime-observation' && inputs.checks != 'view-fixtures' && inputs.checks != 'number' && inputs.checks != 'windows-property-fixture' && inputs.checks != 'rename-authoring' && inputs.checks != 'rename-fixture' && inputs.checks != 'viewport-runtime' && inputs.checks != 'workspace-root-runtime' && inputs.checks != 'archive-contexts' && inputs.checks != 'creation-ownership' && inputs.checks != 'desktop-shell' && inputs.checks != 'shell-runtime' && inputs.checks != 'views-readiness' && inputs.checks != 'view-contexts' && inputs.checks != 'workspace-sidebar' && inputs.checks != 'workspace-setup' && inputs.checks != 'workspace-setup-readiness' && inputs.checks != 'select-readiness' && inputs.checks != 'source-fixture' && inputs.checks != 'source-runtime' && inputs.checks != 'desktop-ux' && inputs.checks != 'layout-fixtures' && inputs.checks != 'source-inventory' && inputs.checks != 'observer-cancellation' && inputs.checks != 'observer-workflow' && inputs.checks != 'native-owner-controls' && inputs.checks != 'native-lifecycle' && inputs.checks != 'project-files-windows' && inputs.checks != 'project-files-windows-trace') }}
     name: Common tests and static checks
     runs-on: macos-latest
     steps:
@@ -935,13 +935,13 @@ jobs:
           if-no-files-found: error
 
   focused-views-readiness:
-    if: ${{ github.event_name == 'workflow_dispatch' && inputs.checks == 'views-readiness' }}
+    if: ${{ github.event_name == 'workflow_dispatch' && (inputs.checks == 'views-readiness' || inputs.checks == 'view-contexts') }}
     name: Original views readiness (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-latest]
+        os: ${{ fromJSON(inputs.checks == 'view-contexts' && '["macos-latest","windows-latest","windows-2022"]' || '["windows-latest"]') }}
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
@@ -961,12 +961,19 @@ jobs:
           node -e "require('electron')"
           npm run build 2>&1 | tee work/ci-views-readiness/build.log
       - name: Async path and group assignment regressions
+        if: ${{ inputs.checks == 'views-readiness' }}
         shell: bash
         run: |
           set -o pipefail
           node --import tsx --test tests/runtime-readiness.test.mjs tests/rename-runtime-startup.test.mjs tests/runtime-group-drag.test.mjs tests/runtime-project-visibility.test.mjs tests/group-assignment-ui.test.tsx tests/viewport-projects-ui.test.tsx tests/test-suites.test.mjs 2>&1 | tee work/ci-views-readiness/regressions.log
+      - name: Native view context and existing public regressions
+        if: ${{ inputs.checks == 'view-contexts' }}
+        shell: bash
+        run: |
+          set -o pipefail
+          node --import tsx --test tests/view-actions-native.test.mjs tests/views-service.test.mjs tests/views-ui.test.tsx tests/test-suites.test.mjs 2>&1 | tee work/ci-views-readiness/regressions.log
       - name: Original development views
-        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        if: ${{ !cancelled() && inputs.checks == 'views-readiness' && steps.build.outcome == 'success' }}
         shell: bash
         run: |
           set -eu
@@ -976,11 +983,31 @@ jobs:
           for attempt in 1 2 3; do
             WORKSPACE_SMOKE_EVIDENCE_DIR="work/ci-views-readiness/runtime-$attempt" npm run smoke:views -- dev 2>&1 | tee "work/ci-views-readiness/original-$attempt.log"
           done
+      - name: Original context development Views
+        if: ${{ !cancelled() && inputs.checks == 'view-contexts' && steps.build.outcome == 'success' }}
+        shell: bash
+        run: |
+          set -o pipefail
+          WORKSPACE_SMOKE_EVIDENCE_DIR=work/ci-views-readiness/runtime-dev npm run smoke:views -- dev 2>&1 | tee work/ci-views-readiness/original-dev.log
+      - name: Package the view context consumer
+        id: view_package
+        if: ${{ !cancelled() && inputs.checks == 'view-contexts' && steps.build.outcome == 'success' }}
+        run: npm run package:built
+      - name: Validate view consumer resources
+        id: view_artifact
+        if: ${{ !cancelled() && inputs.checks == 'view-contexts' && steps.view_package.outcome == 'success' }}
+        run: npm run check:artifact -- release
+      - name: Original context packaged Views
+        if: ${{ !cancelled() && inputs.checks == 'view-contexts' && steps.view_artifact.outcome == 'success' }}
+        shell: bash
+        run: |
+          set -o pipefail
+          WORKSPACE_SMOKE_EVIDENCE_DIR=work/ci-views-readiness/runtime-release npm run smoke:views -- release 2>&1 | tee work/ci-views-readiness/original-release.log
       - name: Retain original views and async control evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: issue-48-views-readiness-${{ matrix.os }}-${{ github.sha }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
+          name: ${{ inputs.checks == 'view-contexts' && 'issue-69-view-contexts' || 'issue-48-views-readiness' }}-${{ matrix.os }}-${{ github.sha }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
           path: work/ci-views-readiness/
           if-no-files-found: error
 
