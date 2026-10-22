@@ -103,15 +103,26 @@ try {
     }
     assert.equal(await editor.evaluate(element => element === document.activeElement), true, "Failed save restores focus before switching language");
     const otherLanguage = language === "en" ? "ru" : "en";
+    // D55 blocks Settings while an invalid draft requires correction. Live
+    // language-rerender retention remains covered by date-properties-ui; the
+    // native user journey cancels before entering the actual Settings controls.
+    await page.getByRole("button", { name: /^(Settings|Настройки)$/ }).click();
+    assert.equal(await page.getByRole("tab", { name: /^(General|Основные)$/ }).count(), 0);
+    assert.equal(await editor.inputValue(), "2025-02-29");
+    await editor.press("Escape");
+    assert.equal(await button.evaluate(element => element === document.activeElement), true);
     await setInterfaceLanguage(page, otherLanguage);
     const otherLabel = `${otherLanguage === "en" ? "Edit Date value" : "Редактировать Date-значение"}: Project / Deadline`;
+    const otherButton = page.getByRole("button", { name: otherLabel, exact: true });
+    await otherButton.press("Enter");
     const switchedEditor = page.getByRole("textbox", { name: otherLabel, exact: true });
+    assert.equal(await switchedEditor.inputValue(), "2024-02-29");
+    await switchedEditor.fill("2025-02-29"); await switchedEditor.press("Enter");
+    await page.getByRole("alert").waitFor();
     assert.equal(await switchedEditor.inputValue(), "2025-02-29");
+    assert.equal(await switchedEditor.evaluate(element => element === document.activeElement), true);
+    await switchedEditor.press("Escape");
     await setInterfaceLanguage(page, language);
-    await editor.focus();
-    assert.equal(await editor.evaluate(element => element === document.activeElement), true, "Editor remains keyboard operable after switching language");
-    await page.keyboard.press("Escape");
-    assert.equal(await button.evaluate(element => element === document.activeElement), true);
     await close(); ({ page } = await launch());
     assert.deepEqual(await query(page, { type: "workspace.listTextProperties", workspaceId }), beforeInvalid);
     const reopenedButton = page.getByRole("button", { name: label, exact: true });

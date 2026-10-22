@@ -139,7 +139,7 @@ function EditingTextPropertyCell(props: Props & { restoreFocus: {current:boolean
       </select> : date || numeric ? <input ref={(element) => { editor.current = element; }} id={id} className="bb-input" type="text" maxLength={numeric ? 512 : undefined} placeholder={date ? "YYYY-MM-DD" : undefined} value={draft} disabled={disabled || pending}
         aria-invalid={message === "textValueValidation"} aria-describedby={`${id}-hint`} onChange={(event) => change(event.currentTarget.value)} />
         : <textarea ref={(element) => { editor.current = element; }} id={id} className="workspace-input" rows={3} value={draft} disabled={disabled || pending}
-          aria-invalid={message === "textValueValidation"} onChange={(event) => change(event.currentTarget.value)} />}
+          aria-invalid={message === "textValueValidation"} aria-describedby={`${id}-hint`} onChange={(event) => change(event.currentTarget.value)} />}
       {date && <>
         <button type="button" className="workspace-button workspace-button--secondary" disabled={disabled || pending} aria-expanded={calendar} aria-controls={`${id}-calendar`} onClick={() => setCalendar(!calendar)}>{t("chooseCalendarDate")}</button>
         {calendar && <label>{t("chooseCalendarDate")}<input id={`${id}-calendar`} className="bb-input" type="date" aria-label={t("chooseCalendarDate")} min="0001-01-01" max="9999-12-31" disabled={disabled || pending} value={/^\d{4}-\d{2}-\d{2}$/.test(draft) ? draft : ""} onChange={event => { const next = event.currentTarget.value; if (next) { change(next); void save(next); } }}/></label>}

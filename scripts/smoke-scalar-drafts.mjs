@@ -100,6 +100,7 @@ try{
      if(surface==='Details'){
       await page.getByRole('button',{name:en?'Close preview':'Закрыть предпросмотр',exact:true}).click();
       await page.locator('.project-area').waitFor({state:'detached'});
+      await page.waitForFunction(label=>document.activeElement?.getAttribute('aria-label')===label,en?'Preview project: Atlas':'Открыть предпросмотр проекта: Atlas');
      }else{
       await page.getByRole('button',{name:'Independent studio',exact:true}).click();
       await page.getByRole('button',{name:'Independent studio',exact:true}).and(page.locator('[aria-current=page]')).waitFor();

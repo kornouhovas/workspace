@@ -21,11 +21,12 @@ export function useProjectNavigation(viewId: string | undefined, memory?: Naviga
   const [local, setLocal] = useState<Session>(()=>memory?.state ?? {tabs:[],closed:[],expanded:null,previews:{}});
   const state: Session = persisted?.state ? { tabs: persisted.state.tabs, expanded: persisted.state.expanded, previews: persisted.state.previews, closed: local.closed } : local;
   const latest = useRef(state); latest.current = state;
-  const set = (change: (state: Session) => Session) => {
+  const set = (change: (state: Session) => Session, after?: () => void) => {
     const apply = () => {
-    const next = change(latest.current); latest.current = next;
-    setLocal(next);
-    persisted?.update({ tabs: next.tabs, expanded: next.expanded, previews: next.previews });
+      const next = change(latest.current); latest.current = next;
+      setLocal(next);
+      persisted?.update({ tabs: next.tabs, expanded: next.expanded, previews: next.previews });
+      after?.();
     };
     if (guard) guard.run(apply); else apply();
   };
@@ -38,24 +39,24 @@ export function useProjectNavigation(viewId: string | undefined, memory?: Naviga
     set(s=>({...s,expanded:null,previews:{...s.previews,[viewId]:id}}));
   };
   const expand = (id: string) => set(s=>({...s,expanded:id,tabs:s.tabs.includes(id)?s.tabs:[...s.tabs,id],closed:s.closed.filter(p=>p!==id)}));
+  const returnFocus = () => window.requestAnimationFrame(()=> {
+    const id=state.expanded ?? preview;
+    const trigger=id ? triggers.current.get(id):null;
+    (trigger?.isConnected && !trigger.closest('[hidden]') ? trigger : document.getElementById(`saved-view-${viewId}`))?.focus({preventScroll:true});
+  });
   const close = (ids: string[], right = false) => set(s=> {
     const removed=s.tabs.filter(id=>ids.includes(id));
     const activeRemoved=!!s.expanded && removed.includes(s.expanded);
     return {...s,tabs:s.tabs.filter(id=>!ids.includes(id)),closed:[...s.closed.filter(id=>!removed.includes(id)),...removed],expanded:activeRemoved?null:s.expanded,
       previews:right && activeRemoved && viewId ? {...s.previews,[viewId]:s.expanded}:s.previews};
-  });
+  }, returnFocus);
   const move = (id: string, target: string) => set(s=> {
     const from=s.tabs.indexOf(id), to=s.tabs.indexOf(target); if(from<0 || to<0 || from===to) return s;
     const tabs=[...s.tabs]; tabs.splice(to,0,...tabs.splice(from,1)); return {...s,tabs};
   });
-  const focusView = () => { const focus = () => { window.requestAnimationFrame(()=> {
-    const id=state.expanded ?? preview;
-    const trigger=id ? triggers.current.get(id):null;
-    (trigger?.isConnected && !trigger.closest('[hidden]') ? trigger : document.getElementById(`saved-view-${viewId}`))?.focus({preventScroll:true});
-  }); }; if (guard) guard.run(focus); else focus(); };
-  return { ...state, preview, show, expand, close, move, focusView,
+  return { ...state, preview, show, expand, close, move,
     selectView:()=>set(s=>({...s,expanded:null})),
-    closePreview:()=>{if(viewId) set(s=>({...s,previews:{...s.previews,[viewId]:null}})); focusView();},
+    closePreview:()=>{if(viewId) set(s=>({...s,previews:{...s.previews,[viewId]:null}}), returnFocus);},
     reopen:()=>set(s=>{const id=s.closed.at(-1);return id?{...s,tabs:s.tabs.includes(id)?s.tabs:[...s.tabs,id],closed:s.closed.filter(p=>p!==id),expanded:id}:s;}),
   };
 }
@@ -72,15 +73,15 @@ export function ProjectTabs({session,language,name,disabled}: {session:ProjectNa
           onDragOver={event=>{if(drag.current)event.preventDefault();}}
           onDrop={event=>{event.preventDefault();if(!disabled && drag.current)session.move(drag.current,id);drag.current=null;}}>
           <Tabs.Trigger className="saved-view-tab" value={id} disabled={disabled} title={name(id)} data-project-tab={id}><Icon name="folder"/>{name(id)}</Tabs.Trigger>
-          <Hint label={`${l.close}: ${name(id)}`}><button className="tab-close icon-button" type="button" disabled={disabled} aria-label={`${l.close}: ${name(id)}`} onClick={()=>{session.close([id]);session.focusView();}}><Icon name="close"/></button></Hint>
+          <Hint label={`${l.close}: ${name(id)}`}><button className="tab-close icon-button" type="button" disabled={disabled} aria-label={`${l.close}: ${name(id)}`} onClick={()=>{session.close([id]);}}><Icon name="close"/></button></Hint>
           <Menu.Root modal={false}><Hint label={`${l.actions}: ${name(id)}`}><Menu.Trigger asChild><button type="button" className="tab-menu icon-button" disabled={disabled} aria-label={`${l.actions}: ${name(id)}`}><Icon name="more"/></button></Menu.Trigger></Hint>
             <Menu.Portal><Menu.Content className="contextual-panel view-actions" sideOffset={4} collisionPadding={8} onCloseAutoFocus={event=>{if(!session.tabs.includes(id))event.preventDefault();}}>
               {([
                 [l.earlier,index===0,()=>session.move(id,session.tabs[index-1])],
                 [l.later,index===session.tabs.length-1,()=>session.move(id,session.tabs[index+1])],
-                [l.close,false,()=>{session.close([id]);session.focusView();}],
-                [l.others,session.tabs.length<2,()=>{session.close(session.tabs.filter(p=>p!==id));session.focusView();}],
-                [l.right,index===session.tabs.length-1,()=>{session.close(session.tabs.slice(index+1));session.focusView();}],
+                [l.close,false,()=>{session.close([id]);}],
+                [l.others,session.tabs.length<2,()=>{session.close(session.tabs.filter(p=>p!==id));}],
+                [l.right,index===session.tabs.length-1,()=>{session.close(session.tabs.slice(index+1));}],
                 [l.reopen,!session.closed.length,session.reopen],
               ] as const).map(([label,blocked,action])=><Menu.Item className="workspace-button workspace-button--secondary" disabled={blocked} key={label} onSelect={action}>{label}</Menu.Item>)}
             </Menu.Content></Menu.Portal>

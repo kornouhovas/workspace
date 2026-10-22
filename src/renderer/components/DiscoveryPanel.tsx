@@ -557,9 +557,9 @@ function DiscoveryWorkspaceContent({ memory, client, workspaceId, sourceId, refr
         <header className="project-area-header"><h2 title={projectName(selectedId)}>{projectName(selectedId)}</h2>
           <div className="project-area-actions">
             <Hint label={navigation.expanded ? labels.returnRight : labels.expand}><button type="button" className="workspace-button workspace-button--secondary icon-button" disabled={disabled} aria-label={navigation.expanded ? labels.returnRight : labels.expand}
-              onClick={()=>{saveScroll();if(navigation.expanded){navigation.close([selectedId],true);navigation.focusView();}else navigation.expand(selectedId);}}><Icon name={navigation.expanded ? "returnRight":"expand"}/></button></Hint>
+              onClick={()=>{saveScroll();if(navigation.expanded){navigation.close([selectedId],true);}else navigation.expand(selectedId);}}><Icon name={navigation.expanded ? "returnRight":"expand"}/></button></Hint>
             <Hint label={navigation.expanded ? labels.close : labels.closePreview}><button type="button" className="workspace-button workspace-button--secondary icon-button" disabled={disabled} aria-label={navigation.expanded ? labels.close : labels.closePreview}
-              onClick={()=>{if(navigation.expanded){navigation.close([selectedId]);navigation.focusView();}else navigation.closePreview();}}><Icon name="close"/></button></Hint>
+              onClick={()=>{if(navigation.expanded){navigation.close([selectedId]);}else navigation.closePreview();}}><Icon name="close"/></button></Hint>
           </div>
         </header>
         <div className="project-area-scroll">

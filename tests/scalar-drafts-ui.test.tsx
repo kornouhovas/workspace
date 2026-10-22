@@ -58,6 +58,7 @@ test("invalid Number blocks project replacement and close until correction or ex
   await user.keyboard("10+5");await user.click(screen.getByRole("button",{name:"Close preview"}));
   await waitFor(()=>assert.equal(screen.queryByRole("region",{name:"Project: Beacon"}),null));
   assert.equal(service.handleQuery({type:"workspace.listTextProperties",workspaceId}).value.numberValues[0].value,15);
+  await waitFor(()=>assert.equal(document.activeElement?.getAttribute("aria-label"),"Preview project: Beacon"));
  }finally{cleanup();service.close();rmSync(directory,{recursive:true,force:true});}
 });
 
@@ -246,5 +247,41 @@ test("same-source regrouping retains the active draft and focus until explicit c
   await user.keyboard("{Escape}");
   await screen.findByRole("region",{name:"84"});
   assert.equal(f.snapshot().values.length,0);
+ }finally{f.dispose();}
+});
+
+test("invalid scalar blocks saved-view activation until Escape, retaining the owning editor",async()=>{
+ const f=await scalarFixture(),user=userEvent.setup({document});
+ const {DiscoveryWorkspace}=await import("../src/renderer/components/DiscoveryPanel.js");
+ const table=f.service.handleQuery({type:"workspace.listViews",workspaceId:f.workspaceId}).value.activeViewId;
+ f.call("createView",{name:"Board",kind:"board"});f.call("activateView",{viewId:table});
+ try{
+  render(<DiscoveryWorkspace client={f.client} workspaceId={f.workspaceId} sourceId={f.sourceId} language="en" disabled={false}/>);
+  await user.click(await screen.findByRole("button",{name:"Edit Number value: Atlas / Budget"}));
+  await user.keyboard("1/0");
+  await user.click(screen.getByRole("tab",{name:"Board"}));
+  await screen.findByRole("alert");
+  assert.equal(screen.getByRole("tab",{name:"Table"}).getAttribute("aria-selected"),"true");
+  assert.equal((screen.getByRole("textbox",{name:"Edit Number value: Atlas / Budget"}) as HTMLInputElement).value,"1/0");
+  await user.keyboard("{Escape}");await user.click(screen.getByRole("tab",{name:"Board"}));
+  await waitFor(()=>assert.equal(screen.getByRole("tab",{name:"Board"}).getAttribute("aria-selected"),"true"));
+  assert.equal(f.snapshot().numberValues.length,0);
+ }finally{f.dispose();}
+});
+
+test("closing an expanded project tab saves the valid draft and restores its view trigger",async()=>{
+ const f=await scalarFixture(),user=userEvent.setup({document});
+ const {DiscoveryWorkspace}=await import("../src/renderer/components/DiscoveryPanel.js"),{within}=await import("@testing-library/react");
+ try{
+  render(<DiscoveryWorkspace client={f.client} workspaceId={f.workspaceId} sourceId={f.sourceId} language="en" disabled={false}/>);
+  await user.click(await screen.findByRole("button",{name:"Preview project: Atlas"}));
+  await user.click(screen.getByRole("button",{name:"Expand project"}));
+  const area=screen.getByRole("region",{name:"Project: Atlas"});
+  await user.click(await within(area).findByRole("button",{name:"Edit Number value: Atlas / Budget"}));
+  await user.keyboard("10+5");
+  await user.click(screen.getByRole("button",{name:"Close project tab: Atlas"}));
+  await waitFor(()=>assert.equal(screen.queryByRole("tab",{name:"Atlas"}),null));
+  await waitFor(()=>assert.equal(document.activeElement?.getAttribute("aria-label"),"Preview project: Atlas"));
+  assert.equal(f.snapshot().numberValues[0].value,15);
  }finally{f.dispose();}
 });

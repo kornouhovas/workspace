@@ -88,3 +88,22 @@ recorded separately; failed/unreached checks remain explicit gates.
 - Project-navigation label/focus scenarios are retained unchanged: clicking the
   field's own label focuses it without submitting blur or opening a preview.
   Existing Select/MultiSelect behavior remains unchanged.
+
+Original Date native driver adaptation: D55 blocks entering Settings with invalid
+Date. Replace the now-unreachable native Settings-with-invalid-draft journey with
+blocked Settings, Cancel, actual language controls and invalid-date checks in the
+other language. `date-properties-ui.test.tsx` retains live language-rerender draft
+ownership at its public UI seam. Original timezone boundaries, saved values, focus, restart,
+clear, project bytes and normal-exit/cleanup gates remain. The first original
+negative and its later renewal are recorded in the verification map.
+
+## Review repair
+
+Independent Standards review reported no findings. Spec review found a return-focus
+regression: separately guarded focus restoration was dropped while closing a
+project awaited a valid pending save. Preview close reproduction failed with
+focus on no trigger, then passed after close and return-focus scheduling became
+one guarded action. Remove the redundant separate focus API. Added expanded-tab
+close regression and actual native Date blur-plus-close trigger-focus assertion.
+Focused scalar/navigation renewal:30/30 pass; typecheck/lint pass. Independent
+Spec follow-up confirms the repair and reports no remaining findings.
