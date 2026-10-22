@@ -1846,7 +1846,7 @@ test("EN/RU Text cells preserve failed drafts, support multiline keyboard saves,
     assert.equal(document.activeElement === editor, true);
     await userEvent.type(editor, "  日本語 📝"); await userEvent.keyboard("{Enter}"); await userEvent.type(editor, "Строка  ");
     assert.deepEqual(calls, []);
-    await userEvent.click(screen.getByRole("cell", { name: "Project" })); assert.deepEqual(calls, [], "blur must not save");
+    await userEvent.click(screen.getByRole("cell", { name: "Project" })); assert.deepEqual(calls, ["  日本語 📝\nСтрока  "], "blur saves once under D54; Enter joins the pending write");
     editor.focus(); await userEvent.keyboard("{Control>}{Enter}{/Control}");
     assert.deepEqual(calls, ["  日本語 📝\nСтрока  "]);
     assert.equal((editor as HTMLTextAreaElement).disabled, true);
@@ -2240,6 +2240,7 @@ test("EN/RU production grouped Apply normalizes child-then-parent exclusions and
         return holdReload ? new Promise((resolve) => { pendingLists.push(() => resolve(result)); }) : result;
       }, onProperties: query, onWorkspace: async (input) => {
         requests.push(input);
+        if (input.type === "workspace.setTextValue") return fail("storage");
         const result = (input.type === "workspace.load" || input.type === "workspace.previewDiscovery" ? service.handleQuery(input) : service.handleCommand(input)) as ServiceResult<WorkspaceResponse>;
         if (input.type === "workspace.applyDiscovery" && holdReload) {
           return new Promise((resolve) => { finishApply = () => resolve(result); });
@@ -2431,6 +2432,7 @@ test("EN/RU category label keyboard editor retains drafts and changes only share
       const query = async (input: WorkspaceRequest) => service.handleQuery(input) as ServiceResult<WorkspaceResponse>;
       const api = mockApi({ language, onProperties: query, onProjects: query, onWorkspace: async (input) => {
         requests.push(input);
+        if (input.type === "workspace.setTextValue") return fail("storage");
         if (input.type === "workspace.renameCategoryProperty" && failSave) return fail("storage");
         return (input.type === "workspace.load" || input.type === "workspace.previewDiscovery" ? service.handleQuery(input) : service.handleCommand(input)) as ServiceResult<WorkspaceResponse>;
       } });
@@ -2729,7 +2731,7 @@ test("EN/RU retained transitions, source retry and failed list loads preserve th
     await userEvent.click((await findAction("button",{ name: translate(language, "retrySourceAction") })));
     await waitFor(() => assert.ok(screen.queryByText(translate(language, "projectsError")) === null));
     await waitFor(() => assert.ok(screen.queryByText(translate(language, "sourceUnavailableTitle")) === null));
-    assert.equal(retries, 2); assert.equal(mutations, 0);
+    assert.equal(retries, 2); assert.equal(mutations, 1, "D54 blur attempts once; source retry does not replay the failed save");
     assert.equal(editor.value, "Unsaved retained draft 📝");
     cleanup(); assert.equal(api.changeListenerCount(), 0);
   }
@@ -2957,6 +2959,7 @@ test("EN/RU production Refresh and observer placement create only a needed categ
       const query = async (input: WorkspaceRequest) => service.handleQuery(input) as ServiceResult<WorkspaceResponse>;
       const api = mockApi({ language, onProjects: query, onProperties: query, onWorkspace: async (input) => {
         requests.push(input);
+        if (input.type === "workspace.setTextValue") return fail("storage");
         return (input.type === "workspace.load" || input.type === "workspace.previewDiscovery" ? service.handleQuery(input) : service.handleCommand(input)) as ServiceResult<WorkspaceResponse>;
       } });
       off = service.workspaces.subscribe(api.emitChange); render(<App />);
@@ -2994,7 +2997,8 @@ test("EN/RU production Refresh and observer placement create only a needed categ
       assert.deepEqual(unwrap(service.workspaces.listTextProperties({ type: "workspace.listTextProperties", workspaceId })), beforeText);
       assert.equal(unwrap(service.workspaces.load()).activeWorkspace!.viewId, one.viewId);
       assert.equal(requests.filter((request) => request.type === "workspace.applyDiscovery").length, 0);
-      assert.equal(requests.filter((request) => request.type === "workspace.setTextValue" || request.type === "workspace.renameCategoryProperty").length, 0);
+      assert.equal(requests.filter((request) => request.type === "workspace.setTextValue").length, 1, "D54 blur attempts once; the failed draft is never replayed by observation");
+      assert.equal(requests.filter((request) => request.type === "workspace.renameCategoryProperty").length, 0);
       await userEvent.click((await findAction("button",{ name: translate(language, "refreshSourceAction") })));
       assert.equal(unwrap(service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId })).revision, after.revision);
     } finally { off?.(); cleanup(); service.close(); rmSync(directory, { recursive: true, force: true }); }
@@ -3196,7 +3200,8 @@ test("EN/RU configured mode review cancels safely and preserves exact Text and h
       const requests: WorkspaceRequest[] = [];
       const query = async (input: WorkspaceRequest) => service.handleQuery(input) as ServiceResult<WorkspaceResponse>;
       const api = mockApi({ language, onProjects: query, onProperties: query, onWorkspace: async (input) => {
-        requests.push(input); return (input.type === "workspace.load" || input.type === "workspace.previewDiscovery" ? service.handleQuery(input) : service.handleCommand(input)) as ServiceResult<WorkspaceResponse>;
+        requests.push(input);
+        if (input.type === "workspace.setTextValue") return fail("storage"); return (input.type === "workspace.load" || input.type === "workspace.previewDiscovery" ? service.handleQuery(input) : service.handleCommand(input)) as ServiceResult<WorkspaceResponse>;
       } });
       off = service.workspaces.subscribe(api.emitChange); render(<App />);
       const textLabel = `${translate(language, "editTextValue")}: Project / Notes`;
@@ -3245,7 +3250,8 @@ test("EN/RU configured mode review cancels safely and preserves exact Text and h
       assert.equal(after.categoryProperty!.propertyId, labelId); assert.ok(after.retainedProjects.some((project) => project.projectId === projectId));
       assert.deepEqual(unwrap(service.workspaces.listTextProperties({ type: "workspace.listTextProperties", workspaceId })), beforeText);
       assert.equal(requests.filter((request) => request.type === "workspace.applyDiscovery").length, 1);
-      assert.equal(requests.some((request) => request.type === "workspace.setTextValue" || request.type === "workspace.renameCategoryProperty"), false);
+      assert.equal(requests.filter((request) => request.type === "workspace.setTextValue").length, 1, "D54 blur attempts once while retaining the failed draft");
+      assert.equal(requests.some((request) => request.type === "workspace.renameCategoryProperty"), false);
     } finally { off?.(); cleanup(); service.close(); rmSync(directory, { recursive: true, force: true }); }
   }
 });

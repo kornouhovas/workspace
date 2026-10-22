@@ -1,3 +1,4 @@
+import { useDraftGuard } from "./ScalarDrafts.js";
 import { useWorkspaceSession } from "./WorkspaceSession.js";
 import type { ViewScrollPosition } from "./useViewScroll.js";
 import { useLayoutEffect, useRef, useState } from "react";
@@ -15,14 +16,18 @@ type Session = { tabs: string[]; closed: string[]; expanded: string | null; prev
 export type NavigationMemory = { state?: Session; width?: number; scrolls: Map<string,ViewScrollPosition>; names: Map<string,string> };
 export function createNavigationMemory(): NavigationMemory { return {scrolls:new Map(),names:new Map()}; }
 export function useProjectNavigation(viewId: string | undefined, memory?: NavigationMemory) {
+  const guard = useDraftGuard();
   const persisted = useWorkspaceSession();
   const [local, setLocal] = useState<Session>(()=>memory?.state ?? {tabs:[],closed:[],expanded:null,previews:{}});
   const state: Session = persisted?.state ? { tabs: persisted.state.tabs, expanded: persisted.state.expanded, previews: persisted.state.previews, closed: local.closed } : local;
   const latest = useRef(state); latest.current = state;
   const set = (change: (state: Session) => Session) => {
+    const apply = () => {
     const next = change(latest.current); latest.current = next;
     setLocal(next);
     persisted?.update({ tabs: next.tabs, expanded: next.expanded, previews: next.previews });
+    };
+    if (guard) guard.run(apply); else apply();
   };
   useLayoutEffect(()=>{if(memory) memory.state=state;},[memory,state]);
   const triggers = useRef(new Map<string, HTMLElement>());
@@ -43,11 +48,11 @@ export function useProjectNavigation(viewId: string | undefined, memory?: Naviga
     const from=s.tabs.indexOf(id), to=s.tabs.indexOf(target); if(from<0 || to<0 || from===to) return s;
     const tabs=[...s.tabs]; tabs.splice(to,0,...tabs.splice(from,1)); return {...s,tabs};
   });
-  const focusView = () => window.requestAnimationFrame(()=> {
+  const focusView = () => { const focus = () => { window.requestAnimationFrame(()=> {
     const id=state.expanded ?? preview;
     const trigger=id ? triggers.current.get(id):null;
     (trigger?.isConnected && !trigger.closest('[hidden]') ? trigger : document.getElementById(`saved-view-${viewId}`))?.focus({preventScroll:true});
-  });
+  }); }; if (guard) guard.run(focus); else focus(); };
   return { ...state, preview, show, expand, close, move, focusView,
     selectView:()=>set(s=>({...s,expanded:null})),
     closePreview:()=>{if(viewId) set(s=>({...s,previews:{...s.previews,[viewId]:null}})); focusView();},

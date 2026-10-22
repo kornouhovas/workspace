@@ -1,3 +1,4 @@
+import { ScalarDrafts } from "./components/ScalarDrafts.js";
 import { WorkspaceSessionProvider } from "./components/WorkspaceSession.js";
 import { createNavigationMemory, type NavigationMemory } from "./components/ProjectNavigation.js";
 import { SourceSettings } from "./components/SourceSettings.js";
@@ -35,7 +36,8 @@ function WorkspaceSwitcher({ data, disabled, label, id, onActivate }: {
   </label>;
 }
 
-export function App() {
+export function App() { return <ScalarDrafts><WorkspaceApp/></ScalarDrafts>; }
+function WorkspaceApp() {
   const navigationMemories = useRef(new Map<string,NavigationMemory>());
   const memoryFor = (id:string) => { let memory=navigationMemories.current.get(id); if(!memory){memory=createNavigationMemory();navigationMemories.current.set(id,memory);}return memory; };
   const [sourceSettingsPending, setSourceSettingsPending] = useState(false);

@@ -173,3 +173,16 @@ test('session acceptance runs public migration/recovery and real dev/release con
  assert.ok(commands.some(([,args])=>args.includes('scripts/smoke-workspace-sessions.mjs')&&args.includes('dev')));
  assert.equal(spawnSync(process.execPath,['scripts/desktop-ux-checks.mjs','sessions','--failure-probe'],{encoding:'utf8'}).status,23);
 });
+
+test('scalar profile runs shared editors, navigation and native consumers and propagates failure',async()=>{
+ const {scalarCommands}=await import('../scripts/desktop-ux-checks.mjs');
+ const commands=scalarCommands(),text=JSON.stringify(commands);
+ for(const name of ['scalar-drafts-ui.test.tsx','renderer-app.test.tsx','number-properties-service.test.mjs','date-properties-service.test.mjs','workspace-sessions-service.test.mjs','smoke-project-navigation.mjs','smoke:number','smoke:date'])assert.ok(text.includes(name),name);
+ assert.ok(commands.some(([,args])=>args.includes('scripts/smoke-scalar-drafts.mjs')&&args.includes('dev')));
+ assert.equal(spawnSync(process.execPath,['scripts/desktop-ux-checks.mjs','scalars','--failure-probe'],{encoding:'utf8'}).status,23);
+ const {readFile}=await import('node:fs/promises'),{load}=await import('js-yaml');
+ const workflow=load(await readFile('.github/workflows/desktop-ci.yml','utf8'));
+ assert.ok(workflow.on.workflow_dispatch.inputs.desktop_ux_profile.options.includes('scalars'));
+ assert.ok(workflow.jobs['desktop-ux'].steps.some(step=>step.run==='node scripts/desktop-ux-checks.mjs scalars'));
+ assert.ok(workflow.jobs['desktop-ux'].steps.some(step=>step.run?.includes('node scripts/smoke-scalar-drafts.mjs release')));
+});

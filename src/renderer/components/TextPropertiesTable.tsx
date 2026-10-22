@@ -1,3 +1,4 @@
+import { useScalarDraftActive } from "./ScalarDrafts.js";
 import { navigationLabels } from "./ProjectNavigation.js";
 import { ViewControls } from "./ManagementSurface.js";
 import { Hint } from "./Hint.js";
@@ -63,8 +64,14 @@ export function TextPropertiesTable(props: Props) {
   return <TextPropertiesContent key={`${props.workspaceId}:${props.sourceId}`} {...props} />;
 }
 function TextPropertiesContent({ detail, onPreview, viewId, layout = "table", hideReveal, client, workspaceId, sourceId, projects, retainedProjects = [], onLocate, locateDisabled, onRename, renameDisabled, onMoveCategory, onFilesystemAssignmentObserved, categoryMoveDisabled, categoryProperty, categories = [], categoryPropertyRevision = 0, discoveryRevision = 0, minimumDiscoveryRevision, sourceLifetime, minimumCategoryPropertyRevision, onCategoryPropertyCommitted, language, disabled }: Props) {
-  const [grouped, setGrouped] = useState<{viewId:string; groups:ViewGroup[]|null;propertyId:string|null;refreshToken:number}|null>(null);
-  const [filteredIds, setFilteredIds] = useState<{ viewId: string; ids: string[] | null } | null>(null);
+  const [observedGroups, setGrouped] = useState<{viewId:string; groups:ViewGroup[]|null;propertyId:string|null;refreshToken:number}|null>(null);
+  const [observedFilter, setFilteredIds] = useState<{ viewId: string; ids: string[] | null } | null>(null);
+  const editingScalar = useScalarDraftActive();
+  // Notifications still update values and revisions. Defer projection relocation
+  // while an editor owns a draft, so filtering/regrouping cannot unmount it.
+  const projection = useRef({ grouped: observedGroups, filteredIds: observedFilter });
+  if (!editingScalar) projection.current = { grouped: observedGroups, filteredIds: observedFilter };
+  const { grouped, filteredIds } = projection.current;
   const [assignmentPending, setAssignmentPending] = useState(false);
   const [assignmentMessage, setAssignmentMessage] = useState<TranslationKey | null>(null);
   const [assignmentRefresh, setAssignmentRefresh] = useState(0);

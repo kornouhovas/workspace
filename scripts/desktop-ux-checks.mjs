@@ -112,6 +112,22 @@ export function sessionCommands() {
     ['npm', ['run', 'smoke:data-recovery', '--', 'dev']],
   ];
 }
+// Shared scalar editors change Table, Board, project and shell navigation.
+export function scalarCommands() {
+  const tests = [...new Set([...navigationTests, 'scalar-drafts-ui.test.tsx',
+    'number-properties-ui.test.tsx', 'date-properties-ui.test.tsx',
+    'text-properties-service.test.mjs', 'number-properties-service.test.mjs',
+    'date-properties-service.test.mjs', 'single-select-ui.test.tsx',
+    'multi-select-ui.test.tsx', 'workspace-sessions-service.test.mjs'])];
+  return [
+    ['npm', ['run', 'typecheck']], ['npm', ['run', 'lint']],
+    [process.execPath, ['--import', 'tsx', '--test', ...tests.map(file => `tests/${file}`)]],
+    [process.execPath, ['scripts/smoke-scalar-drafts.mjs', 'dev']],
+    [process.execPath, ['scripts/smoke-project-navigation.mjs']],
+    ['npm', ['run', 'smoke:number', '--', 'dev']],
+    ['npm', ['run', 'smoke:date', '--', 'dev']],
+  ];
+}
 export function runChecks(commands, run = (command,args)=>spawnSync(command,args,{stdio:'inherit',shell:process.platform==='win32' && command==='npm'})) {
   for (const [command,args] of commands) {
     const result=run(command,args);
@@ -122,9 +138,9 @@ export function runChecks(commands, run = (command,args)=>spawnSync(command,args
 }
 if(process.argv[1] && resolve(process.argv[1])===fileURLToPath(import.meta.url)) {
   const args=process.argv.slice(2);
-  if(args.some(arg=>!['foundation','board','navigation','project-files','coherent','sessions','--list','--failure-probe','--native-only'].includes(arg)) || !['foundation','board','navigation','project-files','coherent','sessions'].includes(args[0])) throw new Error('Usage: desktop-ux-checks.mjs <foundation|board|navigation|project-files|coherent|sessions> [--list] [--failure-probe]');
+  if(args.some(arg=>!['foundation','board','navigation','project-files','coherent','sessions','scalars','--list','--failure-probe','--native-only'].includes(arg)) || !['foundation','board','navigation','project-files','coherent','sessions','scalars'].includes(args[0])) throw new Error('Usage: desktop-ux-checks.mjs <foundation|board|navigation|project-files|coherent|sessions|scalars> [--list] [--failure-probe]');
   if(args.includes('--native-only') && !['navigation','project-files'].includes(args[0]))throw new Error('--native-only requires navigation or project-files');
-  const commands=args[0]==='sessions' ? sessionCommands() : args[0]==='coherent' ? coherentCommands() : args[0]==='project-files' ? projectFilesCommands({nativeOnly:args.includes('--native-only')}) : args[0]==='navigation' ? navigationCommands({nativeOnly:args.includes('--native-only')}) : args[0]==='board' ? boardCommands() : foundationCommands({failureProbe:args.includes('--failure-probe')});
+  const commands=args[0]==='scalars' ? scalarCommands() : args[0]==='sessions' ? sessionCommands() : args[0]==='coherent' ? coherentCommands() : args[0]==='project-files' ? projectFilesCommands({nativeOnly:args.includes('--native-only')}) : args[0]==='navigation' ? navigationCommands({nativeOnly:args.includes('--native-only')}) : args[0]==='board' ? boardCommands() : foundationCommands({failureProbe:args.includes('--failure-probe')});
   if(args[0]!=='foundation' && args.includes('--failure-probe')) commands.unshift([process.execPath,['-e','process.exit(23)']]);
   if(args.includes('--list')) console.log(JSON.stringify(commands));
   else process.exitCode=runChecks(commands);

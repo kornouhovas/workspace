@@ -1377,3 +1377,17 @@ sessions, normal app/backend exits and asserted owned-fixture cleanup. Skipped o
 unreached consumers are not passing evidence. Changed storage/startup inputs
 require renewed affected package/migration consumers; this route does not waive
 Windows 11 release acceptance or final #67 requirements.
+
+## Scalar draft acceptance
+
+For #56, `checks: desktop-ux` with `desktop_ux_profile: scalars` runs the
+shared scalar/service and affected Table/Board/project/navigation regressions,
+then actual Electron scalar, project-navigation and original Number/Date routes
+on macOS latest, Windows latest and Windows 2022. Packaging/resource gates and
+packaged scalar, original Number/Date and saved-view consumers remain mandatory.
+The ordinary/full defaults are unchanged. `work/issue-56-scalars-*` records the
+candidate SHA/run/attempt/host, EN/RU/theme/size editor captures, public-query
+values, blocked invalid navigation, correction, normal app/backend exit and
+owned-fixture cleanup. New profile failure probes retain nonzero propagation;
+skipped or unreached commands are not passing evidence. No installer input,
+release or main-branch publication is changed by this profile.

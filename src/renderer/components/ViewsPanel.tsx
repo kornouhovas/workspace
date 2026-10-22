@@ -1,3 +1,4 @@
+import { useDraftGuard } from "./ScalarDrafts.js";
 import { Hint } from "./Hint.js";
 import { Icon } from "./Icons.js";
 import * as Menu from "@radix-ui/react-dropdown-menu";
@@ -12,6 +13,8 @@ import { StatusMessage } from "./bb-foundation.js";
 interface Props { onWillLoad?(): void; projectTabs?: ReactNode; projectActive?: boolean; onSelectView?(): void; tools?: ReactNode; client: WorkspaceServiceClient; workspaceId: string; language: Language; disabled: boolean; panelId?: string; onChange(view: WorkspaceView | null): void }
 export function ViewsPanel(props: Props) { return <ViewCollection key={props.workspaceId} {...props} />; }
 function ViewCollection({ onWillLoad, projectTabs, projectActive, onSelectView, tools, client, workspaceId, language, disabled, panelId, onChange }: Props) {
+  const guard = useDraftGuard();
+  const transition = (action: () => void) => { if (guard) guard.run(action); else action(); };
   const t = (key: TranslationKey) => translate(language, key);
   const [snapshot, setSnapshot] = useState<ViewSnapshot | null>(null);
   const [loading, setLoading] = useState(true), [pending, setPending] = useState(false);
@@ -50,7 +53,10 @@ function ViewCollection({ onWillLoad, projectTabs, projectActive, onSelectView, 
   useEffect(() => { if (draft) input.current?.focus(); }, [draft?.action]);
   useEffect(() => { if (!draft && !deleting && !pending && !loading && restoreFocus.current) { restoreFocus.current = false; (trigger.current ?? select.current)?.focus(); } }, [draft, deleting, pending, loading]);
   const close = () => { restoreFocus.current = true; setDraft(null); setDeleting(null); setError(null); };
-  const mutate = async (command: ViewCommand) => {
+  const mutate = (command: ViewCommand) => {
+    if (guard) guard.run(() => applyMutation(command)); else void applyMutation(command);
+  };
+  const applyMutation = async (command: ViewCommand) => {
     if (busy.current || disabled) return;
     willLoad.current?.();
     busy.current = true; setPending(true); setError(null);
@@ -83,7 +89,7 @@ function ViewCollection({ onWillLoad, projectTabs, projectActive, onSelectView, 
     {error && <StatusMessage kind="error" title={t(error)} />}
     {error && <button className="workspace-button workspace-button--secondary" type="button" disabled={loading || pending} onClick={() => void load()}>{t("viewsRetry")}</button>}
     <div className="view-controls">
-      <Tabs.Root value={projectActive ? "" : snapshot?.activeViewId ?? ""} activationMode="manual" onValueChange={viewId => { onSelectView?.(); if(viewId !== snapshot?.activeViewId) void mutate({ type: "workspace.activateView", workspaceId, viewId }); }}>
+      <Tabs.Root value={projectActive ? "" : snapshot?.activeViewId ?? ""} activationMode="manual" onValueChange={viewId => transition(() => { onSelectView?.(); if(viewId !== snapshot?.activeViewId) void mutate({ type: "workspace.activateView", workspaceId, viewId }); })}>
         <Tabs.List className="saved-view-tabs" aria-label={t("viewCurrent")}>
           {snapshot?.views.map(view => <Tabs.Trigger className="saved-view-tab" key={view.viewId} value={view.viewId} id={`saved-view-${view.viewId}`} aria-controls={panelId} disabled={blocked}
             ref={view.viewId === snapshot.activeViewId ? select : undefined}><Icon name={view.kind === "table" ? "table" : "board"}/>{view.name}</Tabs.Trigger>)}

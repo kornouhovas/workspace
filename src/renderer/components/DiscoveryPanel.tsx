@@ -1,3 +1,4 @@
+import { ScalarDrafts } from "./ScalarDrafts.js";
 import { useWorkspaceSession, WorkspaceSessionGate } from "./WorkspaceSession.js";
 import { ProjectFiles } from "./ProjectFiles.js";
 import { DailyControlsSurface, DailyControlsTarget } from "./DailyControls.js";
@@ -255,7 +256,7 @@ export function DiscoveryController({ client, workspaceId, sourceId, minimumRevi
 
 
 export function DiscoveryWorkspace(props: Parameters<typeof DiscoveryWorkspaceContent>[0]) {
-  return <WorkspaceSessionGate language={props.language}><DiscoveryWorkspaceContent {...props}/></WorkspaceSessionGate>;
+  return <ScalarDrafts><WorkspaceSessionGate language={props.language}><DiscoveryWorkspaceContent {...props}/></WorkspaceSessionGate></ScalarDrafts>;
 }
 function DiscoveryWorkspaceContent({ memory, client, workspaceId, sourceId, refreshVersion = 0, onSourceState, onRecoveryPending, language, disabled, sourcePath, sourceStatus }: {
   memory?: NavigationMemory; sourceStatus?: ReactNode; sourcePath?: string; client: WorkspaceServiceClient; workspaceId: string; sourceId: string; refreshVersion?: number;

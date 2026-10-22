@@ -1,3 +1,4 @@
+import { useDraftGuard } from "./ScalarDrafts.js";
 import { useWorkspaceSession } from "./WorkspaceSession.js";
 import { AreaResize } from "./AreaResize.js";
 import { navigationLabels } from "./ProjectNavigation.js";
@@ -35,6 +36,8 @@ export function DesktopShell({ language, data, busy, locked, onCreate, onManage,
   onCreate?(): void; onManage?(id: string, action: WorkspaceAction): Promise<boolean>;
   onActivate(id: string): void | Promise<boolean>; onEmptyWorkspaceShown?(): void; renderPanels(back: () => void): Record<Section, ReactNode>; children: ReactNode;
 }) {
+  const guard = useDraftGuard();
+  const transition = (action: () => void | Promise<unknown>) => { if (guard) guard.run(action); else void action(); };
   const l = shellLabels[language];
   const n = navigationLabels[language];
   const session = useWorkspaceSession();
@@ -86,8 +89,8 @@ export function DesktopShell({ language, data, busy, locked, onCreate, onManage,
     }catch{traversal.current=null;setHistoryPending(false);setHistoryError(true);}
   };
   const navigationControls=<>
-    <Hint label={n.back}><button type="button" className="workspace-button workspace-button--secondary icon-button" aria-label={n.back} disabled={busy || locked || historyPending || history.index<=0} onClick={()=>void goHistory(history.index-1)}><Icon name="back"/></button></Hint>
-    <Hint label={n.forward}><button type="button" className="workspace-button workspace-button--secondary icon-button" aria-label={n.forward} disabled={busy || locked || historyPending || history.index>=history.entries.length-1} onClick={()=>void goHistory(history.index+1)}><Icon name="forward"/></button></Hint>
+    <Hint label={n.back}><button type="button" className="workspace-button workspace-button--secondary icon-button" aria-label={n.back} disabled={busy || locked || historyPending || history.index<=0} onClick={()=>transition(()=>goHistory(history.index-1))}><Icon name="back"/></button></Hint>
+    <Hint label={n.forward}><button type="button" className="workspace-button workspace-button--secondary icon-button" aria-label={n.forward} disabled={busy || locked || historyPending || history.index>=history.entries.length-1} onClick={()=>transition(()=>goHistory(history.index+1))}><Icon name="forward"/></button></Hint>
     <Hint label={collapsed?n.restore:n.collapse}><button type="button" ref={collapseButton} className="workspace-button workspace-button--secondary icon-button" aria-label={collapsed?n.restore:n.collapse} aria-expanded={!collapsed} onClick={()=>{collapseChanged.current=true;setCollapsed(!collapsed);}}><Icon name="sidebar"/></button></Hint>
   </>;
   const [section, setSection] = useState<Section>("general");
@@ -105,10 +108,10 @@ export function DesktopShell({ language, data, busy, locked, onCreate, onManage,
       onEmptyWorkspaceShown();
     } else (previousFocus.current?.isConnected ? previousFocus.current : settingsButton.current)?.focus({ preventScroll: true });
   }, [open, busy, onEmptyWorkspaceShown]);
-  const enter = () => {
+  const enter = () => transition(() => {
     previousFocus.current = document.activeElement instanceof HTMLElement ? document.activeElement : settingsButton.current;
     changedPage.current = true; setOpen(true);
-  };
+  });
   const back = () => { changedPage.current = true; setOpen(false); };
   const previousCount = useRef(data?.workspaces.length ?? 0);
   useEffect(() => {
@@ -142,7 +145,7 @@ export function DesktopShell({ language, data, busy, locked, onCreate, onManage,
               onKeyDown={event => { if (event.key === "Escape" && contextId === workspace.workspaceId) { event.preventDefault(); setContextId(null); contextTrigger.current?.focus(); } }}>
               <button type="button" className="sidebar-item" data-workspace-id={workspace.workspaceId}
                 aria-current={data.activeWorkspace?.workspaceId === workspace.workspaceId ? "page" : undefined}
-                disabled={busy || locked || historyPending} onClick={() => { setContextId(null); onActivate(workspace.workspaceId); }}>
+                disabled={busy || locked || historyPending} onClick={() => { setContextId(null); transition(()=>onActivate(workspace.workspaceId)); }}>
                 <span aria-hidden="true" className="workspace-monogram">{workspace.name.trim().slice(0, 1).toUpperCase() || "W"}</span>
                 <span className="sidebar-name">{workspace.name}</span>
               </button>
@@ -152,10 +155,10 @@ export function DesktopShell({ language, data, busy, locked, onCreate, onManage,
               {contextId === workspace.workspaceId && <div role="group" className="workspace-context" aria-label={`${l.actions}: ${workspace.name}`}>
                 {(["settings", "rename", "up", "down", "remove"] as const).map(action => <button key={action} type="button" className="sidebar-item"
                   disabled={busy || locked || historyPending || (action === "up" && index === 0) || (action === "down" && index === all.length - 1)}
-                  onClick={() => void manage(workspace.workspaceId, action)}>{l[action]}</button>)}
+                  onClick={() => transition(()=>manage(workspace.workspaceId, action))}>{l[action]}</button>)}
               </div>}
             </div>)}
-            {onCreate && <button type="button" className="sidebar-item sidebar-create" disabled={busy || locked || historyPending} onClick={onCreate}><Icon name="plus"/> {l.add}</button>}
+            {onCreate && <button type="button" className="sidebar-item sidebar-create" disabled={busy || locked || historyPending} onClick={()=>transition(()=>onCreate?.())}><Icon name="plus"/> {l.add}</button>}
           </nav>
         </div>
         <div hidden={!open}>
