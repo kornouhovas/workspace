@@ -695,7 +695,7 @@ function WorkspaceApp() {
                   {t(messageDescription.activation)}
                 </StatusMessage>
               )}
-              <DiscoveryWorkspace memory={memoryFor(activeWorkspace.workspaceId)} key={`${backendGeneration}:${activeWorkspace.workspaceId}:${activeWorkspace.sourceId}`}
+              <DiscoveryWorkspace onRefreshSource={() => void refreshSource()} memory={memoryFor(activeWorkspace.workspaceId)} key={`${backendGeneration}:${activeWorkspace.workspaceId}:${activeWorkspace.sourceId}`}
                 sourceStatus={<SourceRefresh language={language} pending={busy === "refresh"} error={refreshError}
                 degraded={sourceObservations.get(activeWorkspace.sourceId)?.automaticUpdates === "degraded"}
                 unavailable={!activeWorkspace.sourceAvailable || sourceFeedback?.workspaceId === activeWorkspace.workspaceId &&

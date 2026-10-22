@@ -3,8 +3,8 @@ import { FocusScope } from "@radix-ui/react-focus-scope";
 import { useEffect, useId, useRef, type ReactNode, type RefObject } from "react";
 
 /** Nonmodal operation forms preserve independent editors and their Escape owner. */
-export function ProjectOperationDialog({ open, title, onClose, children, contentRef, className = "" }: {
-  open: boolean; title: string; onClose(): void; children: ReactNode; contentRef?: RefObject<HTMLDivElement | null>; className?: string;
+export function ProjectOperationDialog({ open, title, onClose, children, contentRef, labelledBy, className = "" }: {
+  open: boolean; title: string; onClose(): void; children: ReactNode; contentRef?: RefObject<HTMLDivElement | null>; labelledBy?: string; className?: string;
 }) {
   const ownContent = useRef<HTMLDivElement>(null);
   const content = contentRef ?? ownContent;
@@ -29,8 +29,8 @@ export function ProjectOperationDialog({ open, title, onClose, children, content
           content.current?.querySelector<HTMLElement>('input:not(:disabled), button:not(:disabled), [tabindex="-1"]')?.focus();
         }}
         onUnmountAutoFocus={event => event.preventDefault()}>
-        <div ref={content} role="dialog" aria-labelledby={titleId} tabIndex={-1} className={`project-operation-dialog ${className}`}>
-          <Dialog.Title id={titleId}>{title}</Dialog.Title>
+        <div ref={content} role="dialog" aria-labelledby={labelledBy ?? titleId} tabIndex={-1} className={`project-operation-dialog ${className}`}>
+          {!labelledBy && <Dialog.Title id={titleId}>{title}</Dialog.Title>}
           {children}
         </div>
       </FocusScope>

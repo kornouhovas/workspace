@@ -465,6 +465,7 @@ const english = {
   revealUncertain: "The file-manager response is unknown. Check the actual outcome before trying again.",
 
   recoveryLocate: "Locate folder",
+  recoverySourceSettings: "Source settings",
   recoveryTitle: "Reassociate project folder",
   recoveryDescription: "Choose a folder in this source and review the target. Reassociation preserves this project's identity and Text values and changes only its stored folder association.",
   recoveryPreviousPath: "Previous path",
@@ -1170,6 +1171,7 @@ const russian: Record<keyof typeof english, string> = {
   revealUncertain: "Ответ файлового менеджера неизвестен. Проверьте результат перед повторной попыткой.",
 
   recoveryLocate: "Найти папку",
+  recoverySourceSettings: "Настройки источника",
   recoveryTitle: "Переподключить папку проекта",
   recoveryDescription: "Выберите папку этого источника и проверьте цель. Переподключение сохраняет идентификатор проекта и значения Text, изменяя только сохранённую связь с папкой.",
   recoveryPreviousPath: "Прежний путь",

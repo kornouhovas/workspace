@@ -383,3 +383,18 @@ test('contextual categories select actual three-host folder and recovery consume
  }
  assert.equal(runChecks(commands,()=>({status:23})),23);
 });
+
+test('retained recovery selects real identity/session and UI seams with native restart/package consumers on all desktops',async()=>{
+ const {retainedRecoveryCommands}=await import('../scripts/desktop-ux-checks.mjs');
+ const commands=retainedRecoveryCommands(),text=JSON.stringify(commands);
+ for(const required of ['project-recovery-service.test.mjs','external-reconciliation-service.test.mjs','workspace-sessions-service.test.mjs','project-recovery-ui.test.tsx','renderer-app.test.tsx','project-operation-dialog.test.tsx','smoke-retained-recovery.mjs','smoke-workspace-sessions.mjs','smoke-project-navigation.mjs','package:built','check:artifact','smoke:data-recovery','smoke:archive','smoke:views'])assert.ok(text.includes(required),required);
+ assert.deepEqual(commands.filter(([,args])=>args.includes('scripts/smoke-retained-recovery.mjs')).map(([,args])=>args.at(-1)),['dev','release']);
+ assert.equal(spawnSync(process.execPath,['scripts/desktop-ux-checks.mjs','retained-recovery','--failure-probe'],{encoding:'utf8'}).status,23);
+ const {readFile}=await import('node:fs/promises'),{load}=await import('js-yaml'),{runInNewContext}=await import('node:vm');
+ const workflow=load(await readFile('.github/workflows/desktop-ci.yml','utf8'));
+ assert.ok(workflow.on.workflow_dispatch.inputs.desktop_ux_profile.options.includes('retained-recovery'));
+ const job=workflow.jobs['desktop-ux'];
+ assert.ok(job.steps.some(step=>step.run==='node scripts/desktop-ux-checks.mjs retained-recovery'));
+ assert.deepEqual(Array.from(runInNewContext(job.strategy.matrix.os.slice(3,-2),{fromJSON:JSON.parse,inputs:{desktop_ux_profile:'retained-recovery'}})),['macos-latest','windows-latest','windows-2022']);
+ for(const name of ['Affected UI, services and real Electron flows','Package shared font and notices','Inspect packaged artifact','Packaged saved-view consumers'])assert.ok(job.steps.find(step=>step.name===name).if.includes("inputs.desktop_ux_profile != 'retained-recovery'"),name);
+});

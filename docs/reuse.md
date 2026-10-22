@@ -160,3 +160,13 @@ and document-owned contextual menus. Radix Dialog.Content is deliberately not
 used: its unconditional document-capture dismissal would consume Escape before
 independent editors. The public FocusScope preserves loop/autofocus behavior;
 there are no private Radix APIs or native-event modifications.
+
+## Issue 65 retained project recovery
+
+The retained-project status and recovery entry extend main's accepted single
+project area and unique tabs using the existing pinned bb Inter/neutral token
+foundation. The existing Radix operation dialog hosts the current service-owned
+reassociation review; its embedded heading supplies the accessible dialog label.
+The source-outage sizing correction is scoped to the vertical project host.
+No new upstream source, asset or runtime dependency is copied; notices and
+renderer/service isolation remain unchanged. See the [handoff](plans/issue-65-project-recovery.md).

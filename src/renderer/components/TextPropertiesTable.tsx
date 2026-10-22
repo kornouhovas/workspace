@@ -1,3 +1,4 @@
+import { retainedProjectAvailability } from "./project-availability.js";
 import { useDraftGuard, useScalarDraftActive } from "./ScalarDrafts.js";
 import { navigationLabels } from "./ProjectNavigation.js";
 import { ViewControls } from "./ManagementSurface.js";
@@ -28,12 +29,9 @@ import { MultiSelectPropertyCell } from "./MultiSelectPropertyCell.js";
 import { TextPropertyCell } from "./TextPropertyCell.js";
 import { StatusMessage } from "./bb-foundation.js";
 
-const resolutionLabels = {
-  excluded: "projectExcluded", missing: "projectMissing", unresolved: "projectUnresolved", replaced: "projectReplaced",
-} as const;
-
 interface Props {
   detail?: boolean;
+  sourceAvailable?: boolean;
   onPreview?(projectId: string, trigger: HTMLElement): void;
   viewId?: string;
   layout?: "table" | "board";
@@ -66,7 +64,7 @@ interface Props {
 export function TextPropertiesTable(props: Props) {
   return <TextPropertiesContent key={`${props.workspaceId}:${props.sourceId}`} {...props} />;
 }
-function TextPropertiesContent({ detail, onPreview, viewId, layout = "table", hideReveal, client, workspaceId, sourceId, projects, retainedProjects = [], onLocate, locateDisabled, onRename, renameDisabled, onArchive, archiveDisabled, onMoveCategory, onFilesystemAssignmentObserved, categoryMoveDisabled, categoryProperty, categories = [], categoryPropertyRevision = 0, discoveryRevision = 0, minimumDiscoveryRevision, sourceLifetime, minimumCategoryPropertyRevision, onCategoryPropertyCommitted, language, disabled }: Props) {
+function TextPropertiesContent({ sourceAvailable = true, detail, onPreview, viewId, layout = "table", hideReveal, client, workspaceId, sourceId, projects, retainedProjects = [], onLocate, locateDisabled, onRename, renameDisabled, onArchive, archiveDisabled, onMoveCategory, onFilesystemAssignmentObserved, categoryMoveDisabled, categoryProperty, categories = [], categoryPropertyRevision = 0, discoveryRevision = 0, minimumDiscoveryRevision, sourceLifetime, minimumCategoryPropertyRevision, onCategoryPropertyCommitted, language, disabled }: Props) {
   const [observedGroups, setGrouped] = useState<{viewId:string; groups:ViewGroup[]|null;propertyId:string|null;refreshToken:number}|null>(null);
   const [observedFilter, setFilteredIds] = useState<{ viewId: string; ids: string[] | null } | null>(null);
   const editingScalar = useScalarDraftActive();
@@ -370,8 +368,7 @@ function TextPropertiesContent({ detail, onPreview, viewId, layout = "table", hi
     return (layout === "table" ? rowIds.map(id => projectById.get(id)!) : [...projects, ...retainedProjects])
       .filter(project => (!groupIds || groupIds.has(project.projectId)) && (!viewId || filteredSet.has(project.projectId))).map((project) => {
         const retained = retainedById.get(project.projectId);
-        const reason = retained?.associationState === "excluded" && retained.retentionReason !== "mode_change" ? "excluded" : retained?.resolution ?? retained?.associationState;
-        const label = retained?.retentionReason === "mode_change" ? "projectModeRetained" : reason && reason !== "active" ? resolutionLabels[reason] : null;
+        const availability = retained ? retainedProjectAvailability(retained, sourceAvailable) : null;
         const rowIndex = rowPositions.get(project.projectId) ?? -1;
         const revealLocator = JSON.stringify([project.relativePath, project.categoryId, categories.find(category => category.categoryId === project.categoryId)?.relativePath, retained?.retentionReason]);
         return <ViewportProjectRow as={layout === "board" ? "li" : "tr"} key={project.projectId} projectId={project.projectId} projectName={project.name} language={language}
@@ -395,10 +392,10 @@ function TextPropertiesContent({ detail, onPreview, viewId, layout = "table", hi
               }} onAssign={command => void assign(command)}/> : null;
           })()}
           {"originalRelativePath" in project && typeof project.originalRelativePath === "string" && <span className="archive-row-details">{t("archiveOriginal")}: {project.originalRelativePath}{project.categoryName && <> — {t("archiveFrozenCategory")}: {project.categoryName}</>}</span>}
-          {label && <span className="project-resolution">{t(label)}</span>}
-          {retained?.retentionReason === "mode_change" && reason === "excluded" && <span className="project-resolution">{t("projectExcluded")}</span>}
+          {!detail && availability?.label && <span className="project-resolution">{t(availability.label)}</span>}
+          {!detail && availability?.excluded && <span className="project-resolution">{t("projectExcluded")}</span>}
           {retained && <span className="project-previous-path">{retained.relativePath}</span>}
-          {onLocate && retained && reason && (["missing", "unresolved", "replaced"].includes(reason) || (retained.retentionReason === "mode_change" && reason !== "excluded")) &&
+          {onLocate && retained && availability?.canLocate &&
             <button type="button" className="workspace-button workspace-button--secondary" disabled={disabled || locateDisabled}
               aria-label={`${t("recoveryLocate")}: ${project.name}`} onClick={(event) => onLocate(retained, event.currentTarget)}>{t("recoveryLocate")}</button>}
         </Cell>
