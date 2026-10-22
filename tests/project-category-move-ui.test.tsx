@@ -15,7 +15,7 @@ import type { ProjectList, WorkspaceChangeEvent } from "../src/contracts/workspa
 import type { ProjectCreationList, ProjectCreationOperation, ProjectCreationResult } from "../src/contracts/project-creation.js";
 
 const browser = new Window({ url: "http://localhost" });
-Object.assign(globalThis, { window: browser, document: browser.document, HTMLElement: browser.HTMLElement, Node: browser.Node, MutationObserver: browser.MutationObserver });
+Object.assign(globalThis, { window: browser, document: browser.document, HTMLElement: browser.HTMLElement, Node: browser.Node, MutationObserver: browser.MutationObserver, CustomEvent: browser.CustomEvent, Element: browser.Element, NodeFilter: browser.NodeFilter, HTMLInputElement: browser.HTMLInputElement, getComputedStyle: browser.getComputedStyle.bind(browser) });
 Object.defineProperty(globalThis, "navigator", { configurable: true, value: browser.navigator });
 const { render, screen, cleanup, act, fireEvent, waitFor, within } = await import("@testing-library/react");
 const { default: userEvent } = await import("@testing-library/user-event");

@@ -1493,3 +1493,11 @@ outcomes, with normal application/backend exits and asserted owned cleanup.
 Original creation/rename reports retain their own directories in the same
 artifact. Suppressed push CI and skipped/unreached commands supply no acceptance.
 Ordinary full and final #67/#42 release routes remain intact.
+
+For #60's test-only inherited category-move DOM setup repair, select
+`desktop_ux_profile: contextual-project-regressions` after the active acceptance
+run completes. It renews creation/rename/dialog/category interaction and routing
+checks on all three hosts, without replaying unchanged native/package consumers.
+The ordinary contextual profile retains the additional category-move coverage
+for future runs. Preserve the original full local failures and exact native
+receipts; this focused route cannot accept a failed/unreached native command.

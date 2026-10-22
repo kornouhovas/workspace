@@ -50,7 +50,7 @@ bb `f135a001` supplies the existing Inter/semantic component styling. Use curren
 forms with shared semantic background/border/focus roles and source-relative
 path wrapping; preserve the whole-screen shell, Table/Board and project area.
 Use Radix Dialog 1.2.0 (MIT), following its controlled Root/Portal/Title contract with public Radix FocusScope 1.2.0
-for focus containment; no additional bb source is copied. This adds a runtime dependency, so
+for focus lifecycle; no additional bb source is copied. This adds a runtime dependency, so
 renew build/package/resource checks and supported-host consumers. Installer
 configuration and native adapter inputs remain unchanged.
 

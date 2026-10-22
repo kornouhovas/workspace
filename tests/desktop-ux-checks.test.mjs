@@ -310,3 +310,19 @@ test('contextual project acceptance retains filesystem/recovery seams and develo
  assert.ok(selected.includes('node scripts/desktop-ux-checks.mjs contextual-projects'));
  assert.equal(selected.some(command=>/test:desktop-ux|smoke:views|^npm run package:built$/.test(command)),false);
 });
+
+test('contextual regression renewal covers the repaired inherited DOM consumer without replaying unchanged native/package commands',async()=>{
+ const {contextualProjectCommands}=await import('../scripts/desktop-ux-checks.mjs');
+ const text=JSON.stringify(contextualProjectCommands({regressionsOnly:true}));
+ for(const name of ['project-category-move-ui.test.tsx','project-operation-dialog.test.tsx','project-creation-ui.test.tsx','project-rename-ui.test.tsx'])assert.ok(text.includes(name),name);
+ assert.equal(/smoke-contextual-projects|smoke:runtime|package:built/.test(text),false);
+ assert.equal(spawnSync(process.execPath,['scripts/desktop-ux-checks.mjs','contextual-project-regressions','--failure-probe'],{encoding:'utf8'}).status,23);
+ const {readFile}=await import('node:fs/promises'),{load}=await import('js-yaml'),{runInNewContext}=await import('node:vm');
+ const workflow=load(await readFile('.github/workflows/desktop-ci.yml','utf8')),job=workflow.jobs['desktop-ux'];
+ assert.ok(workflow.on.workflow_dispatch.inputs.desktop_ux_profile.options.includes('contextual-project-regressions'));
+ const context={inputs:{desktop_ux_profile:'contextual-project-regressions',desktop_ux_failure_probe:false,desktop_ux_category_only:false,desktop_ux_packaged_only:false},fromJSON:JSON.parse,cancelled:()=>false};
+ assert.deepEqual(Array.from(runInNewContext(job.strategy.matrix.os.slice(3,-2),context)),['macos-latest','windows-latest','windows-2022']);
+ const selected=job.steps.filter(step=>step.run&&(!step.if||runInNewContext(step.if.slice(3,-2),context))).map(step=>step.run);
+ assert.ok(selected.includes('node scripts/desktop-ux-checks.mjs contextual-project-regressions'));
+ assert.equal(selected.some(command=>/test:desktop-ux|smoke:views|package:built|check:artifact/.test(command)),false);
+});

@@ -74,3 +74,42 @@ only the surface with public Radix FocusScope 1.2.0 inside Dialog Root/Portal/Ti
 and moved fallback Escape to window bubble, after existing editor/menu owners.
 All six regression cases then pass. This changes no service or mutation contract.
 Follow-up review and renewed native/platform receipts remain required.
+
+## Full local suite and test-only renewal
+
+One complete `npm test` at application candidate `e6fb69ca`: **3,376 passed /
+27 skipped / 6 failed / 3,409 tests**. The original receipt is retained at
+`work/issue-60-projects-local-tests/full-local.log`; no green full-suite claim.
+
+Two failures in `project-category-move-ui.test.tsx` reached the new creation
+dialog through inherited scenarios whose browser setup lacked `getComputedStyle`.
+Added the same browser globals used by the affected creation/rename tests,
+without changing any scenario/assertion. The file then passes **209/209**.
+The explicit contextual regression-renewal profile (creation, rename, operation
+Escape, category move, routing and suite controls) passes **601/601** locally,
+with typecheck and lint. This is a test-environment/CI-selection repair only.
+
+The other four original failures remain nonpassing native fixture receipts:
+
+- `property-editor-driver.test.mjs`: Create Single Select and keyboard Discovery
+  Apply fixtures exceed the unchanged 10-second Electron shutdown deadline.
+- `runtime-view-readiness.test.mjs`: the explicit scheduling diagnostic exceeds
+  that deadline; its recorded forced cleanup confirms process absence.
+- `view-scroll-native.test.mjs`: native scroll restoration fixture shutdown
+  exceeds that deadline.
+
+These fixture/test/driver source files and their deadline inputs are unchanged
+from the accepted baseline. The inherited native-quit watchpoint also exists in
+#58/#59 reports; that history does not turn these new observations into passes or
+prove one unique cause. No deadline was raised, test disabled, full suite retried
+or product acceptance inferred from a forced cleanup. Broader native/full-release
+acceptance remains with #67/#42; scoped original application quit/cleanup still
+requires its own actual receipts.
+
+Test-only renewal changes the category-move browser setup and adds it to the
+future contextual profile. All runtime/dependency/native/build inputs and original
+native drivers remain identical to `e6fb69ca`. Inspect actual hosted native and
+package results at that SHA; renew the changed tests with
+`contextual-project-regressions` after the active run completes. Do not cancel a
+useful running acceptance or replay unchanged passing native consumers solely
+because the regression inventory expanded.
