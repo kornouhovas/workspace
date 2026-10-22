@@ -121,7 +121,7 @@ async function scalarFixture(intercept?: (input: Record<string,unknown>, handle:
   return intercept?intercept(input,handle):handle();
  },onWorkspaceChange:service.workspaces.subscribe};
  const client=new WorkspaceServiceClient(api as unknown as import("../src/contracts/desktop-api.js").WorkspaceDesktopApi);
- return {client,service,workspaceId,sourceId,projects,properties,sibling,call,snapshot:()=>service.handleQuery({type:"workspace.listTextProperties",workspaceId}).value,
+ return {client,service,workspaceId,sourceId,projects,properties,sibling,root,call,snapshot:()=>service.handleQuery({type:"workspace.listTextProperties",workspaceId}).value,
  dispose(){cleanup();service.close();rmSync(directory,{recursive:true,force:true});}};
 }
 
@@ -283,5 +283,29 @@ test("closing an expanded project tab saves the valid draft and restores its vie
   await waitFor(()=>assert.equal(screen.queryByRole("tab",{name:"Atlas"}),null));
   await waitFor(()=>assert.equal(document.activeElement?.getAttribute("aria-label"),"Preview project: Atlas"));
   assert.equal(f.snapshot().numberValues[0].value,15);
+ }finally{f.dispose();}
+});
+
+test("same-source discovery shows new grouped rows while retaining the active scalar draft",async()=>{
+ const f=await scalarFixture(),user=userEvent.setup({document});
+ const {DiscoveryWorkspace}=await import("../src/renderer/components/DiscoveryPanel.js"),{act}=await import("@testing-library/react");
+ const {mkdirSync}=await import("node:fs"),{join}=await import("node:path");
+ const viewId=f.service.handleQuery({type:"workspace.listViews",workspaceId:f.workspaceId}).value.activeViewId;
+ f.call("setViewGrouping",{viewId,config:{propertyId:f.properties.number,settings:[]}});
+ try{
+  render(<DiscoveryWorkspace client={f.client} workspaceId={f.workspaceId} sourceId={f.sourceId} language="en" disabled={false}/>);
+  const label="Edit Text value: Atlas / Notes";
+  await user.click(await screen.findByRole("button",{name:label}));
+  const editor=screen.getByRole("textbox",{name:label});await user.type(editor,"Keep this draft");
+  mkdirSync(join(f.root,"Cedar"));
+  await act(async()=>{
+   const preview=f.service.handleQuery({type:"workspace.previewDiscovery",workspaceId:f.workspaceId}).value;
+   f.call("applyDiscovery",{previewToken:preview.previewToken});
+  });
+  await screen.findByRole("button",{name:"Preview project: Cedar"});
+  assert.equal(screen.getByRole("textbox",{name:label})===editor,true);
+  assert.equal(document.activeElement===editor,true);
+  assert.equal((editor as HTMLTextAreaElement).value,"Keep this draft");
+  assert.equal(f.snapshot().values.length,0);
  }finally{f.dispose();}
 });

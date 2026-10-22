@@ -105,3 +105,25 @@ focus calls are removed. Preview and expanded-tab regressions verify persisted15
 and the original project trigger focus. Scalar/navigation renewal30/30 passes,
 with typecheck/lint passing. Independent Spec follow-up finds0 remaining issues.
 The native scalar route now also asserts trigger focus after Date blur+close.
+
+## Full-run and Actions diagnosis
+
+Local `npm test` at9d83956:3315pass/2fail/27skip,3344reported tests.
+One environment failure was Ladle403 through a dependency symlink outside Vite's
+serving allow-list; real local dependencies fix it without changing any serving
+permission. The second failure, also the sole selected-suite failure on all3
+hosts in39807241669/attempt1, is a projection defect: expected2 retained project
+statuses, actual1. macOS869pass/1fail; each Windows868pass/1fail/1skip. Their
+native/package tails were not reached. This run remains failed.
+
+A scheduling-only wait did not repair it. Public service/query returned2 projects
+while only the original row was visible. The reduced actual grouped-discovery
+regression fails with pristine9d83956 Table source, then passes when new IDs can
+join the pinned projection. Existing draft owners retain row/group position,
+editor identity, exact value and focus; newly discovered rows appear immediately.
+Same-source values/revisions still update; relocating/removing existing rows waits
+for save/cancel. The original mode expectation remains2, with normal readiness
+waiting. Temporary diagnostic tags were removed. Both independent axes reviewed
+the repair and report0 remaining findings. Affected-file and original3-host
+scalar/native/package renewals remain mandatory; failed full/CI runs are never
+relabelled green.

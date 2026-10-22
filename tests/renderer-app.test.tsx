@@ -3245,7 +3245,7 @@ test("EN/RU configured mode review cancels safely and preserves exact Text and h
       const restored = await screen.findByRole("textbox", { name: translate(language, "categoryPropertyName") }) as HTMLInputElement;
       assert.equal(restored.value, "  Unsaved label  "); assert.equal(textEditor.value, "  Unsaved exact Text 📝  ");
       assert.equal(document.activeElement, textEditor);
-      assert.equal(screen.getAllByText(translate(language, "projectModeRetained")).length, 2);
+      await waitFor(() => assert.equal(screen.getAllByText(translate(language, "projectModeRetained")).length, 2));
       const after = unwrap(service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId }));
       assert.equal(after.categoryProperty!.propertyId, labelId); assert.ok(after.retainedProjects.some((project) => project.projectId === projectId));
       assert.deepEqual(unwrap(service.workspaces.listTextProperties({ type: "workspace.listTextProperties", workspaceId })), beforeText);

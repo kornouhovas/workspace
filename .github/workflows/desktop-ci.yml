@@ -356,8 +356,8 @@ jobs:
         shell: bash
         run: |
           node scripts/smoke-scalar-drafts.mjs release
-          npm run smoke:number -- release
-          npm run smoke:date -- release
+          WORKSPACE_SMOKE_EVIDENCE_DIR=work/issue-56-scalars-number-release npm run smoke:number -- release
+          WORKSPACE_SMOKE_EVIDENCE_DIR=work/issue-56-scalars-date-release npm run smoke:date -- release
       - name: Packaged workspace session restart and recovery
         if: ${{ !inputs.desktop_ux_failure_probe && inputs.desktop_ux_profile == 'sessions' }}
         run: node scripts/smoke-workspace-sessions.mjs release

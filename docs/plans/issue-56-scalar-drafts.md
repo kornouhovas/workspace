@@ -107,3 +107,35 @@ one guarded action. Remove the redundant separate focus API. Added expanded-tab
 close regression and actual native Date blur-plus-close trigger-focus assertion.
 Focused scalar/navigation renewal:30/30 pass; typecheck/lint pass. Independent
 Spec follow-up confirms the repair and reports no remaining findings.
+
+## Full run and original Actions repair
+
+The one complete local `npm test` on9d83956 reported3315pass/2fail/27skip
+(3344reported tests). Ladle's403 was an environment defect: a dependency symlink
+resolved outside Vite's serving boundary. Replace that local symlink with a real
+APFS-cloned dependency directory; do not expand application serving permissions.
+The original Ladle file then passes.
+
+Original `desktop-ux/scalars`39807241669/attempt1 fails on all3 hosts at the
+configured-mode round-trip's exact retained-status count (expected2, actual1).
+macOS869pass/1fail; each Windows868pass/1fail/1skip. Native/package commands
+are unreached, not accepted. Artifacts/provenance and original job logs are
+retained locally under `work/issue-56-ci-39807241669` and `/tmp/issue56-ci-*.log`.
+
+Diagnosis loop: original mode test plus reduced public-service/UI grouped
+new-discovery scenario. Ranked hypotheses: pinned projection hides new enrollment
+(public query2/DOM1 until release), independent read timing (eventual wait alone
+passes), or service enrollment mismatch (public count also1). A wait alone failed;
+service retained Category+Project and queryView2 while DOM showed onlyProject.
+The reduced discovery scenario fails against the pristine9d83956 Table source
+and passes with the repair, retaining the active editor/focus/draft and showing
+new Cedar. This establishes projection membership, not timing, as the defect.
+
+Repair: defer relocation/removal of existing editor owners but admit newly
+observed filter/group IDs, including previously empty groups. Preserve source,
+view and group-property boundaries; Map/Set joins stay linear. The inherited mode
+scenario still requires exactly2 statuses and awaits independently updated rows.
+No requirement/assertion/deadline is removed. Both independent review axes report0
+remaining findings. Renew affected files and the original3-host scalar/native/
+package route; retain the failed full/Actions conclusions. Separate packaged
+Number/Date evidence paths prevent overwriting development receipts.

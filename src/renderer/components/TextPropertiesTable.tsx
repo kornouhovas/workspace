@@ -69,8 +69,31 @@ function TextPropertiesContent({ detail, onPreview, viewId, layout = "table", hi
   const editingScalar = useScalarDraftActive();
   // Notifications still update values and revisions. Defer projection relocation
   // while an editor owns a draft, so filtering/regrouping cannot unmount it.
+  // Admit newly observed rows without relocating existing editor owners.
   const projection = useRef({ grouped: observedGroups, filteredIds: observedFilter });
   if (!editingScalar) projection.current = { grouped: observedGroups, filteredIds: observedFilter };
+  else {
+    const previous = projection.current;
+    if (observedFilter?.viewId === previous.filteredIds?.viewId && observedFilter?.ids && previous.filteredIds?.ids) {
+      const known = new Set(previous.filteredIds.ids);
+      const added = observedFilter.ids.filter(id => !known.has(id));
+      if (added.length) projection.current = { ...projection.current, filteredIds: { ...previous.filteredIds, ids: [...previous.filteredIds.ids, ...added] } };
+    }
+    if (observedGroups?.viewId === previous.grouped?.viewId && observedGroups?.propertyId === previous.grouped?.propertyId && observedGroups?.groups && previous.grouped?.groups) {
+      const known = new Set(previous.grouped.groups.flatMap(group => group.projectIds));
+      const additions = observedGroups.groups.map(group => ({ ...group, projectIds: group.projectIds.filter(id => !known.has(id)) })).filter(group => group.projectIds.length);
+      if (additions.length) {
+        const byKey = new Map(additions.map(group => [group.key, group]));
+        const groups = previous.grouped.groups.map(group => {
+          const added = byKey.get(group.key);
+          return added ? { ...(group.empty ? added : group), projectIds: [...group.projectIds, ...added.projectIds], empty: false } : group;
+        });
+        const existing = new Set(groups.map(group => group.key));
+        groups.push(...additions.filter(added => !existing.has(added.key)));
+        projection.current = { ...projection.current, grouped: { ...previous.grouped, groups } };
+      }
+    }
+  }
   const { grouped, filteredIds } = projection.current;
   const [assignmentPending, setAssignmentPending] = useState(false);
   const [assignmentMessage, setAssignmentMessage] = useState<TranslationKey | null>(null);
