@@ -497,8 +497,26 @@ test('source continuation retains every unreached Windows layout/runtime/package
   assert.ok(job.steps.every(step => step['continue-on-error'] === undefined));
   const originalStart = jobs.verify.steps.findIndex(step => step.run === 'npm run build:ladle');
   const continuationStart = job.steps.findIndex(step => step.run === 'npm run build:ladle');
-  const checks = steps => steps.filter(step => step.run).map(({ run, env, if: condition }) => ({ run, env, condition }));
-  assert.deepEqual(checks(job.steps.slice(continuationStart)), checks(jobs.verify.steps.slice(originalStart)));
+  const context = (platform, os) => ({ inputs: {source_runtime_platform:platform}, matrix:{os} });
+  const checks = (steps, platform, os, direct = false) => steps.filter(step => step.run &&
+    (!step.if || direct && step.name === 'Direct development creation/native evidence' ||
+      runInNewContext(step.if.slice(3,-2), context(platform, os)))).map(({run, env}) => ({run, env}));
+  for (const platform of ['all','windows-latest','windows-2022','all-desktops']) {
+    for (const os of ['windows-latest','windows-2022','macos-latest']) {
+      assert.deepEqual(checks(job.steps.slice(continuationStart), platform, os),
+        checks(jobs.verify.steps.slice(originalStart), platform, os), `${platform} ${os}: original command order/environment`);
+    }
+  }
+  for (const os of ['windows-latest','windows-2022','macos-latest']) {
+    const expected = checks(jobs.verify.steps.slice(originalStart), 'runtime-tails', os, true).flatMap(step => {
+      if (step.run === 'node scripts/smoke-discovery-layouts.mjs --creation') {
+        return [{run:'node scripts/smoke-discovery-layouts.mjs', env:{WORKSPACE_SMOKE_EVIDENCE_DIR:'work/ci-all-layouts'}}];
+      }
+      return step.run === 'node scripts/smoke-discovery-layouts.mjs --category-move' ? [] : [step];
+    });
+    assert.deepEqual(checks(job.steps.slice(continuationStart), 'runtime-tails', os), expected,
+      `${os}: full shared layout coverage and every original runtime/package command`);
+  }
   assert.deepEqual(job.steps.slice(0, continuationStart).filter(step => step.run && !step.name && !step.if).map(step => step.run), ['npm ci', 'npm run build']);
   assert.match(jobs.common.if, /inputs.checks != 'source-runtime'/);
   assert.equal(jobs.verify.needs, 'common');

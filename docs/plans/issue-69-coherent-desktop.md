@@ -1395,3 +1395,22 @@ removed. Full diff from9face changes onlytests/stories/drivers/manualroutes/docs
 backend/native/migrations/dependency/buildconfig/productionresources unchanged.
 Strict/coherent/install receipts retain actual9faceSHA. Pending runtime-tail
 packages intentionally rebuild Ladle extras; packagebytesarenotclaimedidentical.
+
+Local unfilteredLadle completes302states/906captures andnormalquit. All shared
+measurement/storybranches pass. Runtime-tail39706193093/attempt1 ata959e7a9
+builds onall3 but fails original5-fileinventory beforeUI/Ladle/runtimes. Exact
+failure: windows-product-diagnostics:489 compares literalif strings andrejects
+newprofileconditions; task missed this dependentfixture. Mac89pass/1fail/3skip;
+bothWindows fail sameguard. No runtime tail executed. Cancellation requested
+only after discovering deterministiccommonfailure; runhadalreadycompleted and
+wasnotcancelled. Preserveactualfailures/logs/artifacts.
+
+Scopedtestrepair evaluates conditionsperprofile/OS and compares authoritative
+originalverify commandorder/environment. Existingprofiles matchexactly; newtails
+permit only selected→unfilteredlayouts andWindowslatestdirectcreation. Retain
+allruntime/packagecommands/order/environment. Original5-filecommand passes93
+localchecks:90pass/3platformskips; finalcombinedinventory/workflowcontrols136:
+133pass/3skip. Bothindependentreviews0; lint/docs/whitespace pass. Addfocused
+source-inventory routeall3withtheexactoriginal5files/provenance/pipefail/always
+artifacts; newrouteguardensuresoriginalcommand. Noapplicationinputschanged.
+Focusedhostedsuccessmustprecedenexttaildispatch; allunreachedrowsremainpending.

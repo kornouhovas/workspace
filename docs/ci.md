@@ -1233,3 +1233,12 @@ failed/unreached rows require the new evidence. The layout/provenance directorie
 are preserved with runtime evidence. Packages from this route also contain the
 newly built Ladle assets under the existing dist/** package rule; production
 entry bundles/resources stay separately verified against the application SHA.
+
+If the source-continuation inventory guard fails, use
+`checks: source-inventory` before renewing tails. It runs the exact five-file
+identity/inventory/native-control command on all three hosts, with strict exit
+propagation and exact provenance/failure logs. The guard compares evaluated
+command order and environments for existing profiles against `verify`; for
+`runtime-tails` only the declared full-layout substitution and Windows latest
+direct consumer differ. Missing commands, changed environments and skips remain
+failures. This focused route does not build or accept application runtimes.
