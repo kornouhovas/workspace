@@ -48,3 +48,12 @@ the contextual journey and original archive/native consumers. Package renewal
 where dialog/native consumers require it; unchanged installer inputs stay at
 their accepted milestone. Actual results and remaining gates belong to #62 and
 the verification report, not this scenario list.
+
+## Result
+
+Implementation and two-axis review complete. Accepted #61 was incorporated before
+final verification. Combined candidate `c7d9c160` passed the selected three-host
+dev/package/original archive-restart/Views profile in run39867249349, with all
+artifacts inspected. Actual local complete-suite failures remain explicitly
+retained in the [verification report](../verification/issue-62-contextual-archive.md).
+No release or whole-suite-green claim. Delivery/integration SHA is recorded in #62.

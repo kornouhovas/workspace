@@ -1,7 +1,9 @@
 # Issue 62 verification
 
 Baseline: `73437086516018598438a38f23535226abdd7646`.
-Candidate, hosted acceptance and integration SHAs will be recorded in #62.
+Tested candidate: `c7d9c1601e5121775fe4c6ab5b427c813056db69`, including accepted #61 at `6bd000f2`.
+Final hosted run: [39867249349](https://github.com/kornouhovas/workspace/actions/runs/39867249349), attempt 1, `contextual-archive`.
+Delivery SHA is recorded in #62 after integration.
 
 ## Appearance
 
@@ -36,7 +38,7 @@ representatives in [evidence](issue-62-evidence/manifest.json).
   its regression, then passed after immutable operation bindings were checked.
 - 102 archive/service/real-SQLite/filesystem/crash/IPC/navigation/editor scenarios
   passed. Subsequent UI/routing renewal passed 53; later pending/focus addition
-  passes in its focused file. Final aggregate results remain pending.
+  passes in its focused file. Final hosted results are recorded below.
 - Dev Electron: 24 journeys/192 captures, identity, exact file bytes, ordinary
   archived Text editing, Cancel/no-effect, retained-tab uniqueness, normal app/
   backend exits and asserted owned-fixture cleanup passed.
@@ -69,7 +71,7 @@ with no visible focus owner; it passed after choosing the visible archive region
 full route retains this assertion for every journey; focus-only is diagnostic,
 not appearance acceptance. Added the missing archived action header/width and
 virtualized placeholder column count; a public columnheader regression was red
-then green. Final follow-up reviews report no remaining findings; hosted acceptance remains pending.
+then green. Final follow-up reviews report no remaining findings. Both merge-conflict review axes also cleared the accepted #61 composition; 283 local archive/category/routing tests, typecheck, lint and docs204 passed.
 
 ## Diagnostic receipts and remaining acceptance
 
@@ -79,10 +81,7 @@ the new driver to the existing localized explanation; no assertion/deadline was
 weakened. Early 96-capture success remains separate from the 192-capture final
 dev matrix. Raw local logs remain in `/tmp/issue62-*` and `work/issue-62-*`.
 
-Required before delivery: final two-axis review, complete local suite once,
-selected three-host contextual archive profile, inspected native/package/restart
-artifacts and verified integration. Broader #67/#42 and Windows 11 release gates
-remain separate. No full-green, hosted acceptance, integration or release claim.
+Final two-axis review and the one complete local suite are finished. The scoped three-host native/package/restart acceptance is recorded below; integration is recorded in #62. Broader #67/#42 and Windows 11 release gates remain separate. This is not a full-suite-green or release claim.
 
 Local host: Apple M1 Pro, macOS 27.0 (26A428), Node 22.21.1. Final review
 follow-ups report Standards 0 and Spec 0 remaining findings. Current focused
@@ -110,8 +109,7 @@ in #60, though this run's exact failure count is its own receipt. These failures
 remain broader #67/#42 harness watchpoints; no deadline/assertion/test was removed
 or raised, and they are not relabelled passing by the scoped native runs.
 All current archive/controller and affected interaction tests passed within the
-full run. The selected three-host native/archive/restart/Views profile still
-must pass before #62 acceptance.
+full run. The final scoped three-host native/archive/restart/Views acceptance is separate from these original synthetic fixture failures.
 
 After that full run started, the only execution change was test/CI evidence
 copying: immediately snapshot each original archive/Views consumer's successful
@@ -169,5 +167,41 @@ The new driver adopts the existing `waitForRuntimeInterface` contract (same
 backend, product, dependency, resource, assertion or production deadline changed.
 Added a two-Windows original development renewal profile, retaining exact full
 native command, normal shutdown and owned cleanup. Local affected UI/startup/
-routing66/66, typecheck/lint and actual one-journey control pass. Both required
-Windows originals and fresh final application/package acceptance remain pending.
+routing66/66, typecheck/lint and actual one-journey control pass. Focused Windows renewal [39866457499](https://github.com/kornouhovas/workspace/actions/runs/39866457499), attempt1 at `e8942337`, passed on both original hosts. Inspected each log/artifact:66 controls,24 dev journeys/192 captures, ready startup/reload, exactly1 editor activation/no app-data mutation, normal app/backend exits and asserted owned cleanup. Fresh combined-candidate acceptance follows below.
+
+
+## Final hosted acceptance
+
+Run39867249349, attempt1, Node22.21.1, candidate `c7d9c1601e5121775fe4c6ab5b427c813056db69`:
+
+| Host / job | Affected tests | Dev and release contextual | Original archive / Views, each mode | Result |
+| --- | --- | --- | --- | --- |
+| macos-latest /120132437073 |366/366|24 journeys +192 captures each|12 /6|Pass|
+| windows-2022 /120132437074 |365/365|24 journeys +192 captures each|12 /6|Pass|
+| windows-latest /120132437124 |365/365|24 journeys +192 captures each|12 /6|Pass|
+
+All selected jobs and commands passed; no affected test skips. Downloaded and
+inspected all three logs/artifacts. Each provenance receipt names the tested SHA,
+run, attempt, host platform and profile. Each contextual report has ready startup
+and reload, exactly one isolated editor-entry activation, no control app-data
+mutation, normal app/backend quit and asserted owned cleanup. Every original
+archive and Views report has normal quit and asserted owned cleanup. Package
+resource/license checks passed on each host before its release consumers.
+[Report hashes and consumer counts](issue-62-evidence/hosted-receipts.json) retain
+the18 separate reports. Artifact names are `desktop-ux-foundation-macos-latest`,
+`desktop-ux-foundation-windows-2022` and `desktop-ux-foundation-windows-latest`.
+
+Inspected final macOS full-screen representatives across EN/RU, light/dark,
+1024/1440 and Table/Board/list/preview/expanded, plus Windows2022 narrow RU dark
+Board preview and Windowslatest wide EN light Table restoration. The dialog,
+path consequence, explicit choices and return controls fit the accepted shell.
+The192-image release manifest and four retained PNGs now refer to this exact
+hosted candidate, replacing earlier local appearance evidence.
+
+Only verification documents and retained evidence change after this tested
+candidate. Production source, dependencies, native resources, build/package
+inputs, tests, drivers and workflow stay byte-identical. Under CI evidence reuse,
+retain these successful native/package receipts and verify documentation plus
+the integrated tree without rerunning the complete suite or unchanged platform
+consumers. Broader #67/#42 and manual Windows11/installer/release gates remain
+open at their existing milestones.

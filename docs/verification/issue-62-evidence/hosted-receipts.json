@@ -1,0 +1,169 @@
+{
+  "candidate": "c7d9c1601e5121775fe4c6ab5b427c813056db69",
+  "run": 39867249349,
+  "attempt": 1,
+  "receipts": [
+    {
+      "host": "macos",
+      "path": "issue-62-archive-dev/report.json",
+      "sha256": "d909feb7e7d6e4014325bf204f46e5e77fcff6c392c163fb074dd12902e7eded",
+      "checks": 24,
+      "screens": 192,
+      "normalQuit": true,
+      "ownedCleanup": true
+    },
+    {
+      "host": "macos",
+      "path": "issue-62-archive-original-dev/evidence.json",
+      "sha256": "15c1bec3308417fbb78d3911058391793358c64e643e1a226adfcf55192c705e",
+      "checks": 12,
+      "screens": 0,
+      "normalQuit": true,
+      "ownedCleanup": true
+    },
+    {
+      "host": "macos",
+      "path": "issue-62-archive-views-dev/evidence.json",
+      "sha256": "0346c8e30a2cf4808a26fd019a2fa2e63619c7c448a27e796032b6ed5d5492d1",
+      "checks": 6,
+      "screens": 0,
+      "normalQuit": true,
+      "ownedCleanup": true
+    },
+    {
+      "host": "macos",
+      "path": "issue-62-archive-release/report.json",
+      "sha256": "3943e02438f0dee8fafb38cebb673a75f4d0946a7bf141eb8a97ed3821ab0c82",
+      "checks": 24,
+      "screens": 192,
+      "normalQuit": true,
+      "ownedCleanup": true
+    },
+    {
+      "host": "macos",
+      "path": "issue-62-archive-original-release/evidence.json",
+      "sha256": "4757134771a259283e931d3750caf34a784c52d8cbdda3fca2325af35e7891fd",
+      "checks": 12,
+      "screens": 0,
+      "normalQuit": true,
+      "ownedCleanup": true
+    },
+    {
+      "host": "macos",
+      "path": "issue-62-archive-views-release/evidence.json",
+      "sha256": "667d204f9499b257b104935c3cb29c07ef6e21fee172c91d8eb6dec83d347cde",
+      "checks": 6,
+      "screens": 0,
+      "normalQuit": true,
+      "ownedCleanup": true
+    },
+    {
+      "host": "windowslatest",
+      "path": "issue-62-archive-dev/report.json",
+      "sha256": "bb73bc1fcb97802473860f71804e2da332c40c8fc76c16dbfaee993fd13dbfbc",
+      "checks": 24,
+      "screens": 192,
+      "normalQuit": true,
+      "ownedCleanup": true
+    },
+    {
+      "host": "windowslatest",
+      "path": "issue-62-archive-original-dev/evidence.json",
+      "sha256": "5053d346d86d2c08aa34fbe170bb61e824c1fc14a7d845e09bd5b49081581568",
+      "checks": 12,
+      "screens": 0,
+      "normalQuit": true,
+      "ownedCleanup": true
+    },
+    {
+      "host": "windowslatest",
+      "path": "issue-62-archive-views-dev/evidence.json",
+      "sha256": "58deafd4e48de960fa09218356e6c5d0f3355dfc2549661c47e2cef45e049f62",
+      "checks": 6,
+      "screens": 0,
+      "normalQuit": true,
+      "ownedCleanup": true
+    },
+    {
+      "host": "windowslatest",
+      "path": "issue-62-archive-release/report.json",
+      "sha256": "ada57d0a66ff0e81f0f0f8f1694dc7eb231dabd394d746775d697656778808f8",
+      "checks": 24,
+      "screens": 192,
+      "normalQuit": true,
+      "ownedCleanup": true
+    },
+    {
+      "host": "windowslatest",
+      "path": "issue-62-archive-original-release/evidence.json",
+      "sha256": "7035cd29d5b9432d15640117562543f68f67a50bfc1dc4204add9cae0c1d9dcf",
+      "checks": 12,
+      "screens": 0,
+      "normalQuit": true,
+      "ownedCleanup": true
+    },
+    {
+      "host": "windowslatest",
+      "path": "issue-62-archive-views-release/evidence.json",
+      "sha256": "8dd17d608c1f60dcd03653e29bb93f78bc443cef5a12470a4a8a8f2fa1a96857",
+      "checks": 6,
+      "screens": 0,
+      "normalQuit": true,
+      "ownedCleanup": true
+    },
+    {
+      "host": "windows2022",
+      "path": "issue-62-archive-dev/report.json",
+      "sha256": "3d37a1ad0d300542be0c8c17b9565563d2702596b1919738854bcab1e1c2c530",
+      "checks": 24,
+      "screens": 192,
+      "normalQuit": true,
+      "ownedCleanup": true
+    },
+    {
+      "host": "windows2022",
+      "path": "issue-62-archive-original-dev/evidence.json",
+      "sha256": "5053d346d86d2c08aa34fbe170bb61e824c1fc14a7d845e09bd5b49081581568",
+      "checks": 12,
+      "screens": 0,
+      "normalQuit": true,
+      "ownedCleanup": true
+    },
+    {
+      "host": "windows2022",
+      "path": "issue-62-archive-views-dev/evidence.json",
+      "sha256": "58deafd4e48de960fa09218356e6c5d0f3355dfc2549661c47e2cef45e049f62",
+      "checks": 6,
+      "screens": 0,
+      "normalQuit": true,
+      "ownedCleanup": true
+    },
+    {
+      "host": "windows2022",
+      "path": "issue-62-archive-release/report.json",
+      "sha256": "e5672206c0b7a2c47092c90756912ee6e51507a6af8afca5d101b01adfa3e506",
+      "checks": 24,
+      "screens": 192,
+      "normalQuit": true,
+      "ownedCleanup": true
+    },
+    {
+      "host": "windows2022",
+      "path": "issue-62-archive-original-release/evidence.json",
+      "sha256": "7035cd29d5b9432d15640117562543f68f67a50bfc1dc4204add9cae0c1d9dcf",
+      "checks": 12,
+      "screens": 0,
+      "normalQuit": true,
+      "ownedCleanup": true
+    },
+    {
+      "host": "windows2022",
+      "path": "issue-62-archive-views-release/evidence.json",
+      "sha256": "8dd17d608c1f60dcd03653e29bb93f78bc443cef5a12470a4a8a8f2fa1a96857",
+      "checks": 6,
+      "screens": 0,
+      "normalQuit": true,
+      "ownedCleanup": true
+    }
+  ]
+}

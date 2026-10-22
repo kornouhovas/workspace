@@ -1,966 +1,969 @@
 {
-  "candidate": "a7aa89049ba5ba196632f01a5736ac2bbf55721f",
-  "source": "work/issue-62-archive-local-release/report.json",
-  "appAsarSha256": "d2d5f67148c53f2df86d5372e74d8ab91fa35dcd9a73bd00778544f434805b1f",
+  "candidate": "c7d9c1601e5121775fe4c6ab5b427c813056db69",
+  "run": "https://github.com/kornouhovas/workspace/actions/runs/39867249349",
+  "attempt": 1,
+  "job": 120132437073,
+  "artifact": "desktop-ux-foundation-macos-latest",
+  "source": "issue-62-archive-release/report.json",
   "screens": [
     {
-      "path": "work/issue-62-archive-local-release/direct-en-dark-board-expanded-1024-archive.png",
-      "sha256": "f5d16ce8ae5fb217548b5672a921cc327d0ed7c63a07a0ea6d35f03f6dce67a8",
+      "path": "issue-62-archive-release/direct-en-dark-board-expanded-1024-archive.png",
+      "sha256": "798ea83cc89de9fff51bc137e604a195cb06dd46fd3e17278b9c88ec9efa580f",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/direct-en-dark-board-expanded-1024-restore.png",
-      "sha256": "60025d1ec402f87c247a135d0333cdfb00e11e932c14a3f4b2e539043a1addde",
+      "path": "issue-62-archive-release/direct-en-dark-board-expanded-1024-restore.png",
+      "sha256": "2c39285ec9d802963ac907e16d67410674133b2c6d8f810b58256943b8ab8b00",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/direct-en-dark-board-expanded-1440-archive.png",
-      "sha256": "759f95acf8f10fbbf993f97fa40058c010ec5837d1ff75239c9560437200e6c9",
+      "path": "issue-62-archive-release/direct-en-dark-board-expanded-1440-archive.png",
+      "sha256": "e3e6f114bb4a2bf027c349c224ae2977026c8b88e11417c7ebe670dae7f408a1",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/direct-en-dark-board-expanded-1440-restore.png",
-      "sha256": "57253486e286ea82b1591ff75f3d6e8424d5137ee7e1436460fdfe6fcca38050",
+      "path": "issue-62-archive-release/direct-en-dark-board-expanded-1440-restore.png",
+      "sha256": "68bd9f338659124e7c6f8615d85f52dacc9ed0896855b1ebe1494449e8a4d9c3",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/direct-en-dark-board-list-1024-archive.png",
-      "sha256": "8ba6dbc4e9aa7b6b2d387f71eb64a731776d6254e0f07bbe089f78211b6b67a6",
+      "path": "issue-62-archive-release/direct-en-dark-board-list-1024-archive.png",
+      "sha256": "c713659ffcb41d76e1bf62769246be4ba782528b7dbbbaef77005a7eadd67c0e",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/direct-en-dark-board-list-1024-restore.png",
-      "sha256": "70b1cf06df436fbda1e60a368b7f7879fc68b97b18283deeb1355d2331714cd3",
+      "path": "issue-62-archive-release/direct-en-dark-board-list-1024-restore.png",
+      "sha256": "93074580022ae9f4605e91ef9efbe62d84e0dc64b05301d11e0bff34bb14937a",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/direct-en-dark-board-list-1440-archive.png",
-      "sha256": "62c67b4d8305af4cabf013491be3546e6fedcbc54496e3b0c1e6034be5a85c0d",
+      "path": "issue-62-archive-release/direct-en-dark-board-list-1440-archive.png",
+      "sha256": "5e645b97fb3cf60b5e267e3f0813ab816ee57e46bd47dc9838430f6914bdfbb1",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/direct-en-dark-board-list-1440-restore.png",
-      "sha256": "c691664763121cbe967f91e1009ce78bdcd571f088c1368acc49efa46981b54c",
+      "path": "issue-62-archive-release/direct-en-dark-board-list-1440-restore.png",
+      "sha256": "d3fc63fc0ef5e0238572e67ffff0a649d9a4ab088bf142a2c5e8449f58df5e17",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/direct-en-dark-board-preview-1024-archive.png",
-      "sha256": "93049581f823f114a3377b3bb8795beab0848f295684d8055f5a289ee60d7ede",
+      "path": "issue-62-archive-release/direct-en-dark-board-preview-1024-archive.png",
+      "sha256": "1a2da5612792c2017ccea6979c623c7616b2acdff76a17a3cd3bad4179cdb11f",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/direct-en-dark-board-preview-1024-restore.png",
-      "sha256": "8992373b1c7d61dddf2f5f25b42b6252b2a1b7603e0e8040c2633c79c8401103",
+      "path": "issue-62-archive-release/direct-en-dark-board-preview-1024-restore.png",
+      "sha256": "5eab93f674afb0a4f08fe6030bc18be7847731f5f4df9421cc67088314f419a8",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/direct-en-dark-board-preview-1440-archive.png",
-      "sha256": "e9e06879f9771e1dd577694fec5e5c8734b020484ac45b9772bc2ca87e793788",
+      "path": "issue-62-archive-release/direct-en-dark-board-preview-1440-archive.png",
+      "sha256": "e5821f8c8aa9eea1725c798ef0d5105f76136c51c745e065fad1aa3a558cfa80",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/direct-en-dark-board-preview-1440-restore.png",
-      "sha256": "5dad461f434de60770c3ee06458fd3a2c29b2f1e83150623af9556def4eb410f",
+      "path": "issue-62-archive-release/direct-en-dark-board-preview-1440-restore.png",
+      "sha256": "6157de51369b7d1300bd9283a2423e317d03a344624a7f272992390c3103ab68",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/direct-en-dark-table-expanded-1024-archive.png",
-      "sha256": "2b6adf7c522be481172d4073731c0b619367ced8f0e0095fc69c871a7cabf6e3",
+      "path": "issue-62-archive-release/direct-en-dark-table-expanded-1024-archive.png",
+      "sha256": "f340766d27d3911693cd94418aaede5ea67a8de278528283805dc1d7d53d510f",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/direct-en-dark-table-expanded-1024-restore.png",
-      "sha256": "15588b54a8ebc258056f2f75dc38a15a7ac502c6c2702300515fe62e8224295b",
+      "path": "issue-62-archive-release/direct-en-dark-table-expanded-1024-restore.png",
+      "sha256": "c3c4abdafd595b3ba5fe87625f9918f57d339baf8a4fc84b72f017a9fb126176",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/direct-en-dark-table-expanded-1440-archive.png",
-      "sha256": "d885579f9fa98e4dfdc022008896481c6e1f4f134be73eb0a3deeb5407ce1927",
+      "path": "issue-62-archive-release/direct-en-dark-table-expanded-1440-archive.png",
+      "sha256": "bb13deec0b3afc2f5713ed461b99075a6167b3079fc59e9107f3d77de4acca07",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/direct-en-dark-table-expanded-1440-restore.png",
-      "sha256": "86151e89e693998f6b98e872873954b3cabd81f7fa02e5111837e4c97bf8c745",
+      "path": "issue-62-archive-release/direct-en-dark-table-expanded-1440-restore.png",
+      "sha256": "b5efc80b6a518acee96faf7f4d5549465e6f70a932af5e2b655d349149aec13f",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/direct-en-dark-table-list-1024-archive.png",
-      "sha256": "74a7f49b347ffcd1f52c2371e8762b588f4d8a1af23133c17a440364125f93e4",
+      "path": "issue-62-archive-release/direct-en-dark-table-list-1024-archive.png",
+      "sha256": "7d9bc6bc7de8f448d4ef2a778ad4420131ddf319297c3b0170c6d9eff6e174cc",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/direct-en-dark-table-list-1024-restore.png",
-      "sha256": "fb2aa885deb4ba14045bec294bc5eea9909ce0a7e5718fc454e72ca67efd48bb",
+      "path": "issue-62-archive-release/direct-en-dark-table-list-1024-restore.png",
+      "sha256": "3dacee2fb5934720108f6dbae69ef3652a63d798254379e4d89d73cc27261fb1",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/direct-en-dark-table-list-1440-archive.png",
-      "sha256": "cd1c4f01a2733bd00cf05b75baecea2ab7ecfbfd5110c4ca52abfeae5a53f4d4",
+      "path": "issue-62-archive-release/direct-en-dark-table-list-1440-archive.png",
+      "sha256": "794eac0c39d8a949344abe55bd27112669b56e8b733576657d1d4c9b9f070524",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/direct-en-dark-table-list-1440-restore.png",
-      "sha256": "6bb6d368f6069e182167e8b02398519bd7dfa38b4da98c84552a20b93d1a67e4",
+      "path": "issue-62-archive-release/direct-en-dark-table-list-1440-restore.png",
+      "sha256": "6734e6b7f12682973216990f22f5247af59718408b630ac74df59ade08a54e80",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/direct-en-dark-table-preview-1024-archive.png",
-      "sha256": "e545cae7253e8a0325efedc2135d521bb927c15ddd6a4bfb401dea48e16b407c",
+      "path": "issue-62-archive-release/direct-en-dark-table-preview-1024-archive.png",
+      "sha256": "eb062f12ce3adb462492eaf7cd21c3c01f9d3f3034d60917b1822eddd8680859",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/direct-en-dark-table-preview-1024-restore.png",
-      "sha256": "7398dfa476ce81b22ad7200d1e6c0e1e5f75874e1149a7dc5f2e95ba82161c5f",
+      "path": "issue-62-archive-release/direct-en-dark-table-preview-1024-restore.png",
+      "sha256": "3c4c981874c960ba36909f93343e6c314478651ca21bb22ed3505708cea8c7ba",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/direct-en-dark-table-preview-1440-archive.png",
-      "sha256": "e7ead19a4ccca2ffa59e4266605fb21d94f3265787ace39efcf23cd6c7f9e3c2",
+      "path": "issue-62-archive-release/direct-en-dark-table-preview-1440-archive.png",
+      "sha256": "aa35760bc1f737bec3da36492e4132a2e837a74f321ac34c303e9fe00cbeaaae",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/direct-en-dark-table-preview-1440-restore.png",
-      "sha256": "265e977d7ff76b4d9cc0bcae77f3b11253fc3e4c044dd0217ad9b585f33354f3",
+      "path": "issue-62-archive-release/direct-en-dark-table-preview-1440-restore.png",
+      "sha256": "492c6ffe4672c883c59a251b3810a9a6292c1e257d32926cb8792d9132aa0615",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/direct-en-light-board-expanded-1024-archive.png",
-      "sha256": "aeda3e0d501cea27ad5c896961a65981a652cdb8f6d9cc07b7645af68b5e7cec",
+      "path": "issue-62-archive-release/direct-en-light-board-expanded-1024-archive.png",
+      "sha256": "2b3fa2a5ce82867cb51123fe4b784c0c2b8bda4c91bfea1362ff222a9ef5b11e",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/direct-en-light-board-expanded-1024-restore.png",
-      "sha256": "463655a08e82b44a361e666ccd7fd57adb255c5760e32cd495f7cea84f115a5a",
+      "path": "issue-62-archive-release/direct-en-light-board-expanded-1024-restore.png",
+      "sha256": "15ccf6d13f69353e2d67de51cfc94121ec5d3a5ea936b9cd60582c3153878740",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/direct-en-light-board-expanded-1440-archive.png",
-      "sha256": "31abeb8a8b0ce3fee2e1775c9d3c425a3de029486ba89b84f6b9719347431add",
+      "path": "issue-62-archive-release/direct-en-light-board-expanded-1440-archive.png",
+      "sha256": "50b3607eca8dce2b32146330596c63f3fb5355aca302f9036619577c0582a567",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/direct-en-light-board-expanded-1440-restore.png",
-      "sha256": "a4654d6ced808d43b7dbaa9d5ec1e5957c50b76d8385d56faeb0cadb95498e34",
+      "path": "issue-62-archive-release/direct-en-light-board-expanded-1440-restore.png",
+      "sha256": "4aff75d200c0fc04bd744eb66f5c5d2571b0a6a75c1570e29c7087f9cad7d96c",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/direct-en-light-board-list-1024-archive.png",
-      "sha256": "33b5ca6bd152204a2503be5e6cba85c0b4935cedf6a6e7322f839a8a3565e979",
+      "path": "issue-62-archive-release/direct-en-light-board-list-1024-archive.png",
+      "sha256": "52afbf6b9d1bbef3a38da52fee4ad55acf6651b81df09f1ca87a07febc5232d9",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/direct-en-light-board-list-1024-restore.png",
-      "sha256": "629a112bd04ffb1d33bedee81494d703b3b1b1462fcb0ddafa609cc2572166c4",
+      "path": "issue-62-archive-release/direct-en-light-board-list-1024-restore.png",
+      "sha256": "ea02dea664a829393b23b3b59a4ba18cffd11ffd5441b98578c6b620bf5c9892",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/direct-en-light-board-list-1440-archive.png",
-      "sha256": "fa0bf25b342f357ac466ecf0fa60a0b1ce84775174e5dfebf04df962ff007c68",
+      "path": "issue-62-archive-release/direct-en-light-board-list-1440-archive.png",
+      "sha256": "a2cf17b395d224660d68c67668059ff027470019496e8990ea01f669bc4574d0",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/direct-en-light-board-list-1440-restore.png",
-      "sha256": "9b2c6a6139ad209d097eae297c4e403c1aecb174d40cb345b00777e8dd2a7cd3",
+      "path": "issue-62-archive-release/direct-en-light-board-list-1440-restore.png",
+      "sha256": "b5f622664d4514ff888cb48322516a9291327a468f515c873f7f931a6e7b9bc2",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/direct-en-light-board-preview-1024-archive.png",
-      "sha256": "b257cb004265676b81aefc8a1ba9423698ecde344b41f26d9d9ca1e03bc0c537",
+      "path": "issue-62-archive-release/direct-en-light-board-preview-1024-archive.png",
+      "sha256": "171891901229a43237b90437b0b8b090a0034be936011bc6aa0fb9dfb83348ea",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/direct-en-light-board-preview-1024-restore.png",
-      "sha256": "c96f5b4ad5bfc16e2c4f74c025155d41b350a0122b57d74852f83150c126716e",
+      "path": "issue-62-archive-release/direct-en-light-board-preview-1024-restore.png",
+      "sha256": "91175781be60a1532554d19e506a9a49ff2608ce4fa2f298a94548da13fbdd8f",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/direct-en-light-board-preview-1440-archive.png",
-      "sha256": "45a3a4408511da6c02210c5bdc34171c528910c621d72238b04c157b57c961ba",
+      "path": "issue-62-archive-release/direct-en-light-board-preview-1440-archive.png",
+      "sha256": "8b1594d023c6ecacd5116345b3e676400c3afcf6fb9901827a28149a2c7b4a47",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/direct-en-light-board-preview-1440-restore.png",
-      "sha256": "d9513b02531daf368a280f00652886b2413e2e1efbbbfbf7b3bfe4c9b576f743",
+      "path": "issue-62-archive-release/direct-en-light-board-preview-1440-restore.png",
+      "sha256": "aeabdb9810fdef182299d6d7008cefcc848749446b233594c6a88b0e8ecb23e1",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/direct-en-light-table-expanded-1024-archive.png",
-      "sha256": "d54f912564334cde162da492e41fa3d778ac036ed2e0e4bf98d29b4e0017fbf9",
+      "path": "issue-62-archive-release/direct-en-light-table-expanded-1024-archive.png",
+      "sha256": "17ba1e11e3d12e01fa45f03f2b5e6bb5afca6d30c293819d145daf3473666af8",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/direct-en-light-table-expanded-1024-restore.png",
-      "sha256": "a01d9f15b6230de15c3576c4c226a65faf3c1e9a8b8eb31a66d39ad00df56d51",
+      "path": "issue-62-archive-release/direct-en-light-table-expanded-1024-restore.png",
+      "sha256": "a5cd022ac6b1d48d560c788a682cd37ebfee084e9b025df3983ea84d5cede944",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/direct-en-light-table-expanded-1440-archive.png",
-      "sha256": "27ee0337a4e894ca07c2424794fcea64c7808c489fc994159cc5d0d5453619c2",
+      "path": "issue-62-archive-release/direct-en-light-table-expanded-1440-archive.png",
+      "sha256": "b80edbc5e8f889b745202ecf7ba7ef9f9c921d353d76b3c5ce1386357208576b",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/direct-en-light-table-expanded-1440-restore.png",
-      "sha256": "0ebeebdb92f283fc1db524ce70dd16fe3b233a022c38e88bc8eaa15feda6ee42",
+      "path": "issue-62-archive-release/direct-en-light-table-expanded-1440-restore.png",
+      "sha256": "b378c8e3e125660b8651c49e3566cb3f8ab07c5494ba324cc9e089cd188f8ace",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/direct-en-light-table-list-1024-archive.png",
-      "sha256": "29a5b82bc26ccb0e66b433ba50b95451496553e9b307ff3b357baf65220de693",
+      "path": "issue-62-archive-release/direct-en-light-table-list-1024-archive.png",
+      "sha256": "6730e4eddf3ca03eb55b7b309eb245fa0cb3f6ec1c3f13233e1c4b1ce88d3afb",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/direct-en-light-table-list-1024-restore.png",
-      "sha256": "ec5625e2eb0947574c71495ae213244eea5250281d2e860595fb62ee4433cf06",
+      "path": "issue-62-archive-release/direct-en-light-table-list-1024-restore.png",
+      "sha256": "d8cc7f8815e9c2c5e0255e1610dcbdf09af2f9110c7c4b9b0e52cfb86dda722a",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/direct-en-light-table-list-1440-archive.png",
-      "sha256": "8dd39266f2c53c923010286ca8350939a7008b59a5f22298f5a9bd7782b97a86",
+      "path": "issue-62-archive-release/direct-en-light-table-list-1440-archive.png",
+      "sha256": "4c2abe5ace31ad858da44071698be54b6464c7ad80da735e117f55a34b05d224",
       "retained": true
     },
     {
-      "path": "work/issue-62-archive-local-release/direct-en-light-table-list-1440-restore.png",
-      "sha256": "6ac24c1588439f44ec2191cf0fa5a11bea7207191409752728d1c60a5d9c0b1a",
+      "path": "issue-62-archive-release/direct-en-light-table-list-1440-restore.png",
+      "sha256": "0ff93c845c6b725a22f5de6b03df5f747d93deff3534a20d0925e85907ce4f1c",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/direct-en-light-table-preview-1024-archive.png",
-      "sha256": "2a83d913ba1d5b67cc0a9a90daec2ba7ad5baacfc9765de44e971a9213c0328b",
+      "path": "issue-62-archive-release/direct-en-light-table-preview-1024-archive.png",
+      "sha256": "4b5529683dbc94e6d827c56047a3bc8d18444d2fad17b91601133c4ed09abf8a",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/direct-en-light-table-preview-1024-restore.png",
-      "sha256": "8fcbffc0656c5a31c9a9b41b8193216ce82d721ac7cf55931b8e4c91a293dc45",
+      "path": "issue-62-archive-release/direct-en-light-table-preview-1024-restore.png",
+      "sha256": "0296a9cc6bcfda1ecb7b7575977a2901378089237e52afb882b8d26db48021b6",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/direct-en-light-table-preview-1440-archive.png",
-      "sha256": "c76582248d9f2729227c941b1142b6b7326af091eca8b8b6bc56348193d31e8a",
+      "path": "issue-62-archive-release/direct-en-light-table-preview-1440-archive.png",
+      "sha256": "1cf2b1c3ee0949609a44611c7a381e36e552694824d6bf1dcb4a25c72d379a48",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/direct-en-light-table-preview-1440-restore.png",
-      "sha256": "ebb060fa5c0e93d76b7ee13c655ee478978c8ef1e1b42e860fb007f5e922a260",
+      "path": "issue-62-archive-release/direct-en-light-table-preview-1440-restore.png",
+      "sha256": "1083ce7c73429b1b2ac078a262a7777249ab9ca6b5e440abf74d0998120d52eb",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/direct-ru-dark-board-expanded-1024-archive.png",
-      "sha256": "404d1278989a4696ecc63140f37674594d823cd03dedc62c152d5c43d5238885",
+      "path": "issue-62-archive-release/direct-ru-dark-board-expanded-1024-archive.png",
+      "sha256": "709634eebba0423ad24de656566570119bea32edc15c8201091eae846d506b25",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/direct-ru-dark-board-expanded-1024-restore.png",
-      "sha256": "f7480964589ac93d0795d0f9385609c7f2f7cb04b86a66535224d0d0a4bb0665",
+      "path": "issue-62-archive-release/direct-ru-dark-board-expanded-1024-restore.png",
+      "sha256": "0f0e809efbcd59b41d40d158d10a63b863070ef64ce9546adebe255624c5e834",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/direct-ru-dark-board-expanded-1440-archive.png",
-      "sha256": "9de164e9ebf96cd0b3b1b96ae8e67cb24302d99ddcd24d649fc07344b12f4947",
+      "path": "issue-62-archive-release/direct-ru-dark-board-expanded-1440-archive.png",
+      "sha256": "34b8711ed0044313fafdec833f14184a22f9023383a81965194abda1de738450",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/direct-ru-dark-board-expanded-1440-restore.png",
-      "sha256": "4d00b1a4eff557e7b270475a591b28544ee3942ad15005b318e6d24ab8c1b1b5",
+      "path": "issue-62-archive-release/direct-ru-dark-board-expanded-1440-restore.png",
+      "sha256": "c1f1fcd4d21fa38c7dd3482dcf63c0b8ab75715cbf7fe93b0ad90b97594d43d2",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/direct-ru-dark-board-list-1024-archive.png",
-      "sha256": "dbadd7da357e0ccac351b7820f731a541cadc54e90774a1c9a7db784dbb81552",
+      "path": "issue-62-archive-release/direct-ru-dark-board-list-1024-archive.png",
+      "sha256": "73a3d89ad5460a271a5b618cf4362900b9aca7974286c4e22c2413ce2d506673",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/direct-ru-dark-board-list-1024-restore.png",
-      "sha256": "605acc3dea744fb9910f0cc4af7670d4c9b05e469a386f0a8224876af2107a38",
+      "path": "issue-62-archive-release/direct-ru-dark-board-list-1024-restore.png",
+      "sha256": "6f7a1b02ec484c701d3140dfd7072cdeed226f2906efa167fc6d05bd64df17a8",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/direct-ru-dark-board-list-1440-archive.png",
-      "sha256": "19b0fddf15e2e8845c18674e53aefd0a8e615bc12ed10410b082062cfefb6a6f",
+      "path": "issue-62-archive-release/direct-ru-dark-board-list-1440-archive.png",
+      "sha256": "8e26a276620d197a3e87a1083a54c6c816c4a51c3b6fca080e7fb5fa9a0a08e8",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/direct-ru-dark-board-list-1440-restore.png",
-      "sha256": "06a764c2179b7e9fa96dc469f12675313e48dd83bdb46cbffa98b6f87b987da8",
+      "path": "issue-62-archive-release/direct-ru-dark-board-list-1440-restore.png",
+      "sha256": "8ef04474ac70a70ce9ba6f747fa84bf643ee9cc2e79bcac9c94b788544f37db8",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/direct-ru-dark-board-preview-1024-archive.png",
-      "sha256": "49cbfe1f7dd520df148de0b1a729c9da4fca71427fa081e0504fa7abb1af34c2",
+      "path": "issue-62-archive-release/direct-ru-dark-board-preview-1024-archive.png",
+      "sha256": "a8137b32f81a1e90025eb4a400a00f9ea661b342a706c62a27dc7c4ec1f3a08a",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/direct-ru-dark-board-preview-1024-restore.png",
-      "sha256": "7c1754f349a267d234ca838d3138785b877af09c5af08191cefaa467f2ac64b2",
+      "path": "issue-62-archive-release/direct-ru-dark-board-preview-1024-restore.png",
+      "sha256": "93db34612dfbe691241aed205faf2a2aa328a0fe24403be2f0bf4605dce7155d",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/direct-ru-dark-board-preview-1440-archive.png",
-      "sha256": "83268b7ab477e93e63c5f34e5c65d99bb032254cd671e1f26b3115f670c37a49",
+      "path": "issue-62-archive-release/direct-ru-dark-board-preview-1440-archive.png",
+      "sha256": "03735f6eb598057ef9250cf25b47dd058cc3fac8a52ba54f06766e96e8e6e316",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/direct-ru-dark-board-preview-1440-restore.png",
-      "sha256": "fc6e5053342b23caa0a4ad4bb1ef5acfd4e4f256903f80856895ccc2c6bcb491",
+      "path": "issue-62-archive-release/direct-ru-dark-board-preview-1440-restore.png",
+      "sha256": "6e2b7a36da8489ad581da0687ca1978aba72968e30bab00acd86af3abaa09fd1",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/direct-ru-dark-table-expanded-1024-archive.png",
-      "sha256": "48a1a410bff28445f2e703015a844adde16e002ccb8da5dd3c6956ba88ca711e",
+      "path": "issue-62-archive-release/direct-ru-dark-table-expanded-1024-archive.png",
+      "sha256": "981dab3600ec19b4dd82f2f235715e6fa770c545f78df8c8691eb1bb98d49957",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/direct-ru-dark-table-expanded-1024-restore.png",
-      "sha256": "928b721ff24cd1717eaa9f184523c6bd54513bc8854dcd0c279c12a4769dcf6c",
+      "path": "issue-62-archive-release/direct-ru-dark-table-expanded-1024-restore.png",
+      "sha256": "5e07f58a74b2ca7fc96651e28b268362ecee52f3a40315669ed79be0a92a8ad6",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/direct-ru-dark-table-expanded-1440-archive.png",
-      "sha256": "0828114ddbfaac987ea95817b914fbf66f9a9422b7a7cfcc4de2830ba08fcfb4",
+      "path": "issue-62-archive-release/direct-ru-dark-table-expanded-1440-archive.png",
+      "sha256": "a5b9c9066b7d033e3d5b1d387ea0dac79e7fbd9a6ae6fa701f7b408cee17de8a",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/direct-ru-dark-table-expanded-1440-restore.png",
-      "sha256": "52decfac4874fc970c303a558b36d1876c49298a0b4ee7181f21465dc8701862",
+      "path": "issue-62-archive-release/direct-ru-dark-table-expanded-1440-restore.png",
+      "sha256": "474d88c638b3844e23caf8221eac9512ec3a8f5fed9eab2e357a61ce07ba2b75",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/direct-ru-dark-table-list-1024-archive.png",
-      "sha256": "6a4fe8229f20496e38f0cce9dc54c5f46d42cb1adaa0df7a8b81ec2304fa4487",
+      "path": "issue-62-archive-release/direct-ru-dark-table-list-1024-archive.png",
+      "sha256": "24a8ee8660d791820098e842e622a85d10dfcf2e6ae2b3c7c6957fd55137655e",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/direct-ru-dark-table-list-1024-restore.png",
-      "sha256": "4a0ee97e24c0b3e32b83c1e944d08b2afe07aeaa4d933b35982380ea03ea432b",
+      "path": "issue-62-archive-release/direct-ru-dark-table-list-1024-restore.png",
+      "sha256": "dd0ee140f8385527fde07f1a991c1e08c51aeecc07207b219042a72e57d12c45",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/direct-ru-dark-table-list-1440-archive.png",
-      "sha256": "8403f794831b3946d87043b5857d0cab1388a3179127559486b480b5f90b8968",
+      "path": "issue-62-archive-release/direct-ru-dark-table-list-1440-archive.png",
+      "sha256": "67a2febdda7fa10fbda8b008500297f15fea69a96be1490ca6a1ec6173eeef91",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/direct-ru-dark-table-list-1440-restore.png",
-      "sha256": "db5da709f462ff6b9dbe58edd16c016ae142473d2483e80836f53d1cd6445351",
+      "path": "issue-62-archive-release/direct-ru-dark-table-list-1440-restore.png",
+      "sha256": "974799e41988d1221dfe582c0c5af5e5da7746aca57627badbcba2275c337982",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/direct-ru-dark-table-preview-1024-archive.png",
-      "sha256": "79b310200bbd06be041032b2480a6806180d344050beef10c0d91a98a9897fdf",
+      "path": "issue-62-archive-release/direct-ru-dark-table-preview-1024-archive.png",
+      "sha256": "8a4dc421e3ce27a67089731588a78f27e9896a807eb7393444961121bdbf4636",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/direct-ru-dark-table-preview-1024-restore.png",
-      "sha256": "cc9577ae65b52a1f1e62aed8a765827156db92f955ab70e992ea1b1f29aae42f",
+      "path": "issue-62-archive-release/direct-ru-dark-table-preview-1024-restore.png",
+      "sha256": "3791ec136c132505d8be1e6f1edecd5873b7aaf688826012f32aeb4745d90b07",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/direct-ru-dark-table-preview-1440-archive.png",
-      "sha256": "12eba7ccad4ba09c94c8e612a5b518367baeae0f963dfa435026a1a2421b795b",
+      "path": "issue-62-archive-release/direct-ru-dark-table-preview-1440-archive.png",
+      "sha256": "a03f5bd7a95e5e17145cee3e9b845e6ef9149d7b901bcd326d6876f8d12554ea",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/direct-ru-dark-table-preview-1440-restore.png",
-      "sha256": "f610986c628e52208b08f0829354028e6adc3cf9616c6949ad0e4bbb160451dc",
+      "path": "issue-62-archive-release/direct-ru-dark-table-preview-1440-restore.png",
+      "sha256": "4a432730c11af93ce604c312928769529c4569768cde9b98c2e5e997ee2ab5bc",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/direct-ru-light-board-expanded-1024-archive.png",
-      "sha256": "c0079380b6b8cf9dbde2353db042bfac139a0bc0ddf274a4464b3aafba32f2ab",
+      "path": "issue-62-archive-release/direct-ru-light-board-expanded-1024-archive.png",
+      "sha256": "218561cba6ec6f661355b3c2715cbcbebff478b7ade1fd88722ce68726473a39",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/direct-ru-light-board-expanded-1024-restore.png",
-      "sha256": "ce808ca05034a4de5f9e483fa468101dee0482722b5ab3f11c769e8090e81825",
+      "path": "issue-62-archive-release/direct-ru-light-board-expanded-1024-restore.png",
+      "sha256": "e9b706f9e330de83095c40bad8f85238b9b7f2fc016e5a5e35679cd84e94f347",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/direct-ru-light-board-expanded-1440-archive.png",
-      "sha256": "8d21c6a3814a1a3861747c298003b0a64d94da5044ef655708bad07d6d7552da",
+      "path": "issue-62-archive-release/direct-ru-light-board-expanded-1440-archive.png",
+      "sha256": "a68e7030e44bdec1a57395b862680dfe8882535753d703ff55578829fec97d09",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/direct-ru-light-board-expanded-1440-restore.png",
-      "sha256": "0971c331a620e25afa65648e31c475c74671ea23605a66eb3ef3a0f668928488",
+      "path": "issue-62-archive-release/direct-ru-light-board-expanded-1440-restore.png",
+      "sha256": "5301a379aa2e54c67a3418aa4b4bc67321b0adb03691f3e755901d1efbb48a7d",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/direct-ru-light-board-list-1024-archive.png",
-      "sha256": "f67c6ecbaac918eecb202e589a98f1cc7f389b4d262e0a394a100321317c51ac",
+      "path": "issue-62-archive-release/direct-ru-light-board-list-1024-archive.png",
+      "sha256": "3ff956264fff102249e6887e4211e784de0b1dbea76c598a547b994e2b1ba9ac",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/direct-ru-light-board-list-1024-restore.png",
-      "sha256": "3caee0eb9c3e353e2ec43a96a2806ef272b65c36bfb4c2e2ffa4866ab172d01d",
+      "path": "issue-62-archive-release/direct-ru-light-board-list-1024-restore.png",
+      "sha256": "f2b114f09e303edd34590a94cae9f2431f2e757faf2e1649cc42ccbc4d079b9f",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/direct-ru-light-board-list-1440-archive.png",
-      "sha256": "1b0910579f2a16f9ad9ddfc243e517d842d5e41acb48fbbda1c570e45f8def00",
+      "path": "issue-62-archive-release/direct-ru-light-board-list-1440-archive.png",
+      "sha256": "6ee5b17544fd459245ce566e86d0e92d19d9a3f980e0649ebe39213695256ee1",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/direct-ru-light-board-list-1440-restore.png",
-      "sha256": "489382c00b640ec574634d8283e12e368dd7144dd9df6d9550c41c56b32da3a5",
+      "path": "issue-62-archive-release/direct-ru-light-board-list-1440-restore.png",
+      "sha256": "fd19d5b29166011b6b48a7554ff61366c1e769892e0a53d20bbb3021f43a13fb",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/direct-ru-light-board-preview-1024-archive.png",
-      "sha256": "2ff46bb68b3ca079d9ebf1e7b8996a0d26d691ae6818bb51fe78789c0714d3d9",
+      "path": "issue-62-archive-release/direct-ru-light-board-preview-1024-archive.png",
+      "sha256": "b944acfa0a4e9e9160f18107601ae755c868f41c5a6e3de00cd7731677f2e5ed",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/direct-ru-light-board-preview-1024-restore.png",
-      "sha256": "1f60ace5b037b63cc97c1ed9dd99350f3038e79c29a317c23afec295e1402d63",
+      "path": "issue-62-archive-release/direct-ru-light-board-preview-1024-restore.png",
+      "sha256": "8e376b12f11f489656556f12eb1052f4566d94b3f97fb55ebc37ca9f10ce90ee",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/direct-ru-light-board-preview-1440-archive.png",
-      "sha256": "9fef2f521b25e27982edd50dc56ec34713fa73cbfd105fafba2c6af2fc38ee37",
+      "path": "issue-62-archive-release/direct-ru-light-board-preview-1440-archive.png",
+      "sha256": "f997c73977728802beb37c56797b31edfc8a2de710e4f8a3da49119abf0cea9c",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/direct-ru-light-board-preview-1440-restore.png",
-      "sha256": "b42ab7d20f6ed1686abd56ff0fa3d42ba20f3bfb7d5e96a8597fc1944b1b2c97",
+      "path": "issue-62-archive-release/direct-ru-light-board-preview-1440-restore.png",
+      "sha256": "9173ba20ab0f1a85f7b49249dbe08559894c7a598485e1868f005b8bbf85a947",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/direct-ru-light-table-expanded-1024-archive.png",
-      "sha256": "008fb262c708d61b20e4d6156a04d999c79ff03c3f2ce7b2edbf56fbd568175e",
+      "path": "issue-62-archive-release/direct-ru-light-table-expanded-1024-archive.png",
+      "sha256": "6e69c35188088f9dd1e2c1dfc077ae7cf1d4f120484035ca51f5548fe9923269",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/direct-ru-light-table-expanded-1024-restore.png",
-      "sha256": "bca90ccdfaffb407a94e16ba37a655064913cf2dcd53433a3d919c5f4aa72892",
+      "path": "issue-62-archive-release/direct-ru-light-table-expanded-1024-restore.png",
+      "sha256": "4bff372b8af43db9770b4b9e565994eedd39c656c74cede83d9aa3c1225d8503",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/direct-ru-light-table-expanded-1440-archive.png",
-      "sha256": "4cce849ab700e9357ddbc485e36b693d2577716d76cedd21043d654c23bcb03b",
+      "path": "issue-62-archive-release/direct-ru-light-table-expanded-1440-archive.png",
+      "sha256": "92e3385e7b0302f82769b79b8392b07704b607a7609c771a60d9f03d8ab69933",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/direct-ru-light-table-expanded-1440-restore.png",
-      "sha256": "df12b9e69e84a760dcb2f1ceb6d7038aab34f4daa4df172b932bad94253b71b8",
+      "path": "issue-62-archive-release/direct-ru-light-table-expanded-1440-restore.png",
+      "sha256": "fbf89d4009de0bea934490dc8f79675282b8bfad16c342a55d78e87c25494dfa",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/direct-ru-light-table-list-1024-archive.png",
-      "sha256": "9584ace938301bca488efc37103d801e5441b9f5475d2e15ae0c8260db128096",
+      "path": "issue-62-archive-release/direct-ru-light-table-list-1024-archive.png",
+      "sha256": "5abca044798e680870fbb434ea4f83a0fb663a587fbb7d9ace3d2e1a3b97d93c",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/direct-ru-light-table-list-1024-restore.png",
-      "sha256": "b5aa114793a21b0b5cae6b66401f15e17aece09094c02cfee5bdfba7db1fb195",
+      "path": "issue-62-archive-release/direct-ru-light-table-list-1024-restore.png",
+      "sha256": "d02b0f3c8c0bf23d6ccc9a192d884fbffcca36dc2d8c6474745856b6a1eba504",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/direct-ru-light-table-list-1440-archive.png",
-      "sha256": "532d5b34ae9840eb7683e10313e1357bba0a5047a6caab7da77a215e7c59aa75",
+      "path": "issue-62-archive-release/direct-ru-light-table-list-1440-archive.png",
+      "sha256": "0e01614d68233c207c6b8a42fc624aade41faeb2c25321bec4dc1a732ea105b0",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/direct-ru-light-table-list-1440-restore.png",
-      "sha256": "c8dc7d2c626e18bf11784be19521de7a1f9a39409801197a39cc5c880aacef51",
+      "path": "issue-62-archive-release/direct-ru-light-table-list-1440-restore.png",
+      "sha256": "b3796f9ffbb1ee78ed7be3caa7686693db1c241afb2f2024dc2f322bba1edcfd",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/direct-ru-light-table-preview-1024-archive.png",
-      "sha256": "4318086afb40527aef92806f304c69549f3ebe790ebedb756d495a9d4a7b307a",
+      "path": "issue-62-archive-release/direct-ru-light-table-preview-1024-archive.png",
+      "sha256": "461b74b0c71509cbd3a52d724bcc1188c4ba0e600a54b9f491528a7f0952e589",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/direct-ru-light-table-preview-1024-restore.png",
-      "sha256": "803e4a7e9932d8d5c75a172a05e73c18988732de3990ef8fb5019d339880e29a",
+      "path": "issue-62-archive-release/direct-ru-light-table-preview-1024-restore.png",
+      "sha256": "700fde6eea0d2282721d8dc82e78c5aec50975e2f285ee05914573e29c4c0307",
       "retained": true
     },
     {
-      "path": "work/issue-62-archive-local-release/direct-ru-light-table-preview-1440-archive.png",
-      "sha256": "0cdb995f96e76c2850980d3128ca66e23da6c674ae45649e02002cb526178b69",
+      "path": "issue-62-archive-release/direct-ru-light-table-preview-1440-archive.png",
+      "sha256": "522e8758725525958bd1cf9c264b997b562ac54f292524402d537cf9f024657d",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/direct-ru-light-table-preview-1440-restore.png",
-      "sha256": "8b6ba381f3364c67ac3811e08afd9205e84f4929779d5297f12726d8f205032e",
+      "path": "issue-62-archive-release/direct-ru-light-table-preview-1440-restore.png",
+      "sha256": "839baca5ae2258bc89b7a05b82da165b60c8a9a1be9312477ce3ff52af2757e5",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/grouped-en-dark-board-expanded-1024-archive.png",
-      "sha256": "7afede0b64075d23f79dd6dd11acb0e4542f8f8d432d78b9708d23f51765d3b7",
+      "path": "issue-62-archive-release/grouped-en-dark-board-expanded-1024-archive.png",
+      "sha256": "b20399de0d56737d3d965d06f05e38234bb8b6a831f1172225434a7b4c054c2b",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/grouped-en-dark-board-expanded-1024-restore.png",
-      "sha256": "cb353bdf1e0e11aae28d9f5b7095cd91620992ee69640e7e2bfcb2a036e8a9a9",
+      "path": "issue-62-archive-release/grouped-en-dark-board-expanded-1024-restore.png",
+      "sha256": "ef745c832a53783840caf27d25288cfb04e44353a930accfde39e223843f99d9",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/grouped-en-dark-board-expanded-1440-archive.png",
-      "sha256": "5c0aa41b3f602b43f343a9836f11bb0c4152c58b3ac7567b9b60af692cee3fe8",
+      "path": "issue-62-archive-release/grouped-en-dark-board-expanded-1440-archive.png",
+      "sha256": "06522462eec9e17f5a3e04a853d0e0d7ecfe43dac8a26467e3f8b057238e64f2",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/grouped-en-dark-board-expanded-1440-restore.png",
-      "sha256": "312d4a11e8cab65c77d3ed563c26e01fa68766a5735208fe9f4f174943468b60",
+      "path": "issue-62-archive-release/grouped-en-dark-board-expanded-1440-restore.png",
+      "sha256": "95fcf4597e4f413a98c959bde2c6a8376b0e66d7b696f9ef342d1a7c4b1ac5ef",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/grouped-en-dark-board-list-1024-archive.png",
-      "sha256": "134525e149b1491f051cfc883bd004d338abe2eecea6f8113a6df2fdfda871ff",
+      "path": "issue-62-archive-release/grouped-en-dark-board-list-1024-archive.png",
+      "sha256": "7c650563a939f57803231fdce6570457f1908cf3745dba97802cf87c7440a8d4",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/grouped-en-dark-board-list-1024-restore.png",
-      "sha256": "aff9945d3798fbb44685614a51813c243b1fca8467623abec2cc252b8eeb21a7",
+      "path": "issue-62-archive-release/grouped-en-dark-board-list-1024-restore.png",
+      "sha256": "c76572ca2b3a3492913dc11e8e59e593441fb8e80974ca21b80b9e7b50363a3f",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/grouped-en-dark-board-list-1440-archive.png",
-      "sha256": "61f68f91a0dfc3a3b79dc80027b54744b182832654f8283afd91fa50e3cab9de",
+      "path": "issue-62-archive-release/grouped-en-dark-board-list-1440-archive.png",
+      "sha256": "74a11e279ab1b0fd8405d2850a70e6b2db3a7f32140220ec70b395a72773e6ed",
       "retained": true
     },
     {
-      "path": "work/issue-62-archive-local-release/grouped-en-dark-board-list-1440-restore.png",
-      "sha256": "1b3b4284a9a41a117d081cc68eb0eff84621af76a9a5acee957873abc38be1ed",
+      "path": "issue-62-archive-release/grouped-en-dark-board-list-1440-restore.png",
+      "sha256": "f851b24b0f60242cadd2a7477aca012e35156c88ef99874487913bb5cffc41dc",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/grouped-en-dark-board-preview-1024-archive.png",
-      "sha256": "c670c16714b7a79120cccef01261560527999ad300fc3e30e0b45cbcff00ffc5",
+      "path": "issue-62-archive-release/grouped-en-dark-board-preview-1024-archive.png",
+      "sha256": "65f9bc8124d538d4577e609401fdf5769f22f0ab4d6c5d9d60b3920aadf90a79",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/grouped-en-dark-board-preview-1024-restore.png",
-      "sha256": "1783eb952cb362a09dc04949d0c1325e6e5028db9842c736610e9368f9ecb81e",
+      "path": "issue-62-archive-release/grouped-en-dark-board-preview-1024-restore.png",
+      "sha256": "0054dbfc5d246f97c983e3c54bfc98c619e3ba2eda8a5650510c7d9f170644b2",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/grouped-en-dark-board-preview-1440-archive.png",
-      "sha256": "67b172c9fdf2d6504da0b4b8b91f69448ae6b06a8eaf9ce2c9167143d8f32928",
+      "path": "issue-62-archive-release/grouped-en-dark-board-preview-1440-archive.png",
+      "sha256": "ada778ecccb2d26ac446b3565fb4ac622f0d21e5fdb6c59c67cb04d7b342c499",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/grouped-en-dark-board-preview-1440-restore.png",
-      "sha256": "8bf75575db61bb8812272d6157d300a241507a9f3d1c3747a57fae0a1ba8b387",
+      "path": "issue-62-archive-release/grouped-en-dark-board-preview-1440-restore.png",
+      "sha256": "d8366508669131f093ceef5db1293b8b21f64c4ec5c35a801812b381badfb1ac",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/grouped-en-dark-table-expanded-1024-archive.png",
-      "sha256": "5bb5492ef212c8594ac499cb6efdafe7824b241b06cff7c08a129c8bb1efa8ac",
+      "path": "issue-62-archive-release/grouped-en-dark-table-expanded-1024-archive.png",
+      "sha256": "e09083fb836776ddc7c4263bfd05aa048525c552cb0a8f2e065ee2f5cc9bed9a",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/grouped-en-dark-table-expanded-1024-restore.png",
-      "sha256": "588092f7e99a13db0601d7e0334fd858b99d006a031fa3965bbe3d039e85d490",
+      "path": "issue-62-archive-release/grouped-en-dark-table-expanded-1024-restore.png",
+      "sha256": "988107927654bf4d09ec1942f5703beed56c4ec1b15314db67cb28effb7672c9",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/grouped-en-dark-table-expanded-1440-archive.png",
-      "sha256": "6e0186fafae38ab1979dc3d7fedacb9f60135aa0dae8ba82bbfc92883addf351",
+      "path": "issue-62-archive-release/grouped-en-dark-table-expanded-1440-archive.png",
+      "sha256": "086cc7c33b549142afe41b3a1881019e5c47d713adddc696181c65f45b78bdfb",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/grouped-en-dark-table-expanded-1440-restore.png",
-      "sha256": "717247440bc82a7e9a939230f880dccf6a3e03e352ddefafbc061f972463ea22",
+      "path": "issue-62-archive-release/grouped-en-dark-table-expanded-1440-restore.png",
+      "sha256": "fb5a14867b68325e9dd58693b94203ced5ba906dd8333583b5e70caa807330a9",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/grouped-en-dark-table-list-1024-archive.png",
-      "sha256": "7325e317e8866c6891ea49c81ab5ba6e72f0ed4f34a69fa374aa2b9d14715e5b",
+      "path": "issue-62-archive-release/grouped-en-dark-table-list-1024-archive.png",
+      "sha256": "fb62870f3d50c171b7c57312086070d3634924dc702c32288f388646581860d1",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/grouped-en-dark-table-list-1024-restore.png",
-      "sha256": "6f99788fdf5188045279bbd314ef5bd53d6766576e93a3090551c4b071aa5206",
+      "path": "issue-62-archive-release/grouped-en-dark-table-list-1024-restore.png",
+      "sha256": "8ec31f0df2642b94de0e649586958f3499524b5334dda1b18d70570a087bc46f",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/grouped-en-dark-table-list-1440-archive.png",
-      "sha256": "65a842bb2d7ad85e29798f468ddb79b22bb249a089c4211fc9382055ca75fe9f",
+      "path": "issue-62-archive-release/grouped-en-dark-table-list-1440-archive.png",
+      "sha256": "266f38a3a46649b5e8d855618bfceed6c7d6956fd6bfe91b765f99e10c27da90",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/grouped-en-dark-table-list-1440-restore.png",
-      "sha256": "cf7bfdb9cc74e04861d35af1c533962a70227e5aa5e994c0540c706bf308e65a",
+      "path": "issue-62-archive-release/grouped-en-dark-table-list-1440-restore.png",
+      "sha256": "ea41568775a78c9c6dc0890ee25c7bcd1bae1144f22338115ba84ca853ea7a2a",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/grouped-en-dark-table-preview-1024-archive.png",
-      "sha256": "031942668c61278cc95abfdfc594c45fb33ef4d6aed763a540199c6d96668a84",
+      "path": "issue-62-archive-release/grouped-en-dark-table-preview-1024-archive.png",
+      "sha256": "0ea1ff6dfe89cff7042974e631f3610717429a8d08f9d5fd6ac2fabb28260da7",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/grouped-en-dark-table-preview-1024-restore.png",
-      "sha256": "55b6a8dc9d9f7c1ac16458d9eee028f8734bff4d457251b6ba8a2780a1f6bd18",
+      "path": "issue-62-archive-release/grouped-en-dark-table-preview-1024-restore.png",
+      "sha256": "f0e5dba1fcf5284c534b1dbb6ad14889e5eca93ee429e3cefb9c8d888311899f",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/grouped-en-dark-table-preview-1440-archive.png",
-      "sha256": "2d4add7362c8374bfac617e4c03d0cd93b277d6789f07c248a17dc864a4b39ef",
+      "path": "issue-62-archive-release/grouped-en-dark-table-preview-1440-archive.png",
+      "sha256": "5ef698044b28cd4a46e01146a876dac3d3b2e037dcffd31871007e92dadb8cc2",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/grouped-en-dark-table-preview-1440-restore.png",
-      "sha256": "6be2fc6c68442b86406a94a02118a824ace097a41089300f3f89f5227075d0d0",
+      "path": "issue-62-archive-release/grouped-en-dark-table-preview-1440-restore.png",
+      "sha256": "1c55001de8810db86bcc38da082952734c3c254c97251bcc1d1f134099f3fb0a",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/grouped-en-light-board-expanded-1024-archive.png",
-      "sha256": "0575b5309fca2c85ad0bdae439e4ef192615d6db13a0c18d4acee1c6c7d87601",
+      "path": "issue-62-archive-release/grouped-en-light-board-expanded-1024-archive.png",
+      "sha256": "8f7ef71f9b2204c7956bfd2d8ec1f6ced9244aa397bbdf7e8210d2b6508fc34d",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/grouped-en-light-board-expanded-1024-restore.png",
-      "sha256": "b718e8a4e64a0e8933df5304f7a33c4dfb55679c79fb587adafa0359b08cdc01",
+      "path": "issue-62-archive-release/grouped-en-light-board-expanded-1024-restore.png",
+      "sha256": "40048545c9efa052aa05063333a6c4f925f8ebf62897eb28351e9bb1f2d57c02",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/grouped-en-light-board-expanded-1440-archive.png",
-      "sha256": "fab7c64989bbacd439a4871b303c4d1e3c636259766e89eae13fea54c1c48d03",
+      "path": "issue-62-archive-release/grouped-en-light-board-expanded-1440-archive.png",
+      "sha256": "e5faa93dc6e7585647548711c6ef2dcecf26334944ee46530a19d01ca349a198",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/grouped-en-light-board-expanded-1440-restore.png",
-      "sha256": "73ebd4e607d59397f5a5640af3b206ecb3b4040784e53720f5081cdb4162ac5d",
+      "path": "issue-62-archive-release/grouped-en-light-board-expanded-1440-restore.png",
+      "sha256": "5cba4cb15a425eef72714cbfa4ff83bfa352d63b20c29c58729173e0c043962d",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/grouped-en-light-board-list-1024-archive.png",
-      "sha256": "e0f7d69cd23823ab84c0ef53c6f543aec279aaf4bada61f8fa2ff1f4a759ae80",
+      "path": "issue-62-archive-release/grouped-en-light-board-list-1024-archive.png",
+      "sha256": "6eeb4f560e04f020ba53bb96c0fbd5edddba585ab4d12fc27a84ee355a11f90e",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/grouped-en-light-board-list-1024-restore.png",
-      "sha256": "5f6f1e0db0af5e603eeae047f6bc60c4c2dcdbdba78befe984f801191e4076ba",
+      "path": "issue-62-archive-release/grouped-en-light-board-list-1024-restore.png",
+      "sha256": "9ff2010f8217c81ead464e13bc112ab8afd302a6378e5fb2b4986733c03d52bd",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/grouped-en-light-board-list-1440-archive.png",
-      "sha256": "10c67b75bde8a22fb839a3e3ba01c8d55347704c96e938595f1b80a9a85bda64",
+      "path": "issue-62-archive-release/grouped-en-light-board-list-1440-archive.png",
+      "sha256": "9d9f4ae832f346140c926cb17a888d7feda32fe05ecb14fe828b9345e8e8d37a",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/grouped-en-light-board-list-1440-restore.png",
-      "sha256": "7505bb8583300cbcab50807255fc9ba7925b10a567370fe1f39b12d6fbd64e96",
+      "path": "issue-62-archive-release/grouped-en-light-board-list-1440-restore.png",
+      "sha256": "ec79b595fe3e7b6ed64eba17c26de308ed036b91352b7b86900d8a219705a200",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/grouped-en-light-board-preview-1024-archive.png",
-      "sha256": "0be8eea084ac13e5932a5b12c2494b7c73fe0a344c8eac6610b5e63d31517ae7",
+      "path": "issue-62-archive-release/grouped-en-light-board-preview-1024-archive.png",
+      "sha256": "3836ea61b11142e318f5aad207b3c4c796dd4116e7f22aff27e2dc56b3c5ac0d",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/grouped-en-light-board-preview-1024-restore.png",
-      "sha256": "ae6ae5cba82593794566377a0c7e7e2af79f8117df4c0177ad5051701541e977",
+      "path": "issue-62-archive-release/grouped-en-light-board-preview-1024-restore.png",
+      "sha256": "12a39b9c536b4813b8d3fe1f7605e0728db60a23ccec9e1caf23d445b2e79b9e",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/grouped-en-light-board-preview-1440-archive.png",
-      "sha256": "0e0d9c6c1347b486dddbc8c808512fc2ce66dc94eb43b5eb49c8abf42ab181b1",
+      "path": "issue-62-archive-release/grouped-en-light-board-preview-1440-archive.png",
+      "sha256": "cd9008d19c90badc571b685793db0f16ca8b2e939346d461bdda8c3df5821e47",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/grouped-en-light-board-preview-1440-restore.png",
-      "sha256": "35a160a17e1fbd1eaf4c6a06bc36baca8805279b8bc283ca8d3ecdf82ba0a762",
+      "path": "issue-62-archive-release/grouped-en-light-board-preview-1440-restore.png",
+      "sha256": "2cd7e0776198d15cbd0abeae29c317a5f771ece80267a5b2ed0c5072d736fab4",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/grouped-en-light-table-expanded-1024-archive.png",
-      "sha256": "ffadc5a9527276eaaf8b35270a42c34b6413f70942e71fa2de3c55d0923bc2e4",
+      "path": "issue-62-archive-release/grouped-en-light-table-expanded-1024-archive.png",
+      "sha256": "ba4ddf86b25f22077ce2d3d087693380a5e57e7335511d89740bab1ebc9f9346",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/grouped-en-light-table-expanded-1024-restore.png",
-      "sha256": "99c8330853a989c4d4ffc1c92f20d045585c9b8d77edc6dd9bb988f4f308595f",
+      "path": "issue-62-archive-release/grouped-en-light-table-expanded-1024-restore.png",
+      "sha256": "e25c7ac559033cdaac0fc6a8e97efc8f6f0f6eeae9974656584196792bead70f",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/grouped-en-light-table-expanded-1440-archive.png",
-      "sha256": "437a518279b6b697b10fda47f9aee6327ec10496c1a2d04e8016b988ec512ffa",
+      "path": "issue-62-archive-release/grouped-en-light-table-expanded-1440-archive.png",
+      "sha256": "4955398e67e9a07e362d95e56a859cc5d4d4651f9bc4c8ac12f9a8ec395dff6c",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/grouped-en-light-table-expanded-1440-restore.png",
-      "sha256": "3c9262dfb4eaf96cb6c12aae5a0b7d4ee61ad51c057a8bd7c228c0f1f119b20f",
+      "path": "issue-62-archive-release/grouped-en-light-table-expanded-1440-restore.png",
+      "sha256": "194f900871511b74010aad2df95d58b7abe8b93a680566589c948c253a6a0d34",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/grouped-en-light-table-list-1024-archive.png",
-      "sha256": "e6059b34f8cc996c556a106f61e7c0d4057ed6c347196f2abbba8b711965399d",
+      "path": "issue-62-archive-release/grouped-en-light-table-list-1024-archive.png",
+      "sha256": "a51073249e26d884c558f4fe4178b0afa3848386377ce2e872edc67a4c274640",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/grouped-en-light-table-list-1024-restore.png",
-      "sha256": "f9f84203938240692b44b80f60b8811ef8fe2f9b40a2aa18576a799cb75fc0d4",
+      "path": "issue-62-archive-release/grouped-en-light-table-list-1024-restore.png",
+      "sha256": "cd727da683874295c2922a5fcfde8bda3f402fbd57437d2693f31e7be618f9b5",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/grouped-en-light-table-list-1440-archive.png",
-      "sha256": "d39bec5d19e478c0ed8501885343d8f20c2aac6e8bc99ff6ffee3f539f4e4f68",
+      "path": "issue-62-archive-release/grouped-en-light-table-list-1440-archive.png",
+      "sha256": "947a62a64a1bbdc75e02b5ac13fd83b2ac19d543a414a34a504c23b925a0e8f8",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/grouped-en-light-table-list-1440-restore.png",
-      "sha256": "5ad6141aa6ab1deff75f5c784ffbb3d32d5b91777107a06ef266adb5e64dabd0",
+      "path": "issue-62-archive-release/grouped-en-light-table-list-1440-restore.png",
+      "sha256": "20c758d92e226655d089be7093be7eafaf337efb301a9d9a785722d09dfd50b8",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/grouped-en-light-table-preview-1024-archive.png",
-      "sha256": "b53b07050feb7589c9b333edeba832627825979cbbeaf445195cf2b3a4df8b11",
+      "path": "issue-62-archive-release/grouped-en-light-table-preview-1024-archive.png",
+      "sha256": "b8ec3e5a8e1c9351f6f8e69b99190f261680d701a59a819c4f1305336a69d438",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/grouped-en-light-table-preview-1024-restore.png",
-      "sha256": "b16b325b8586075b8f19b1057967b15ada91314e52bf8ffa93ee04d3ecef9d81",
+      "path": "issue-62-archive-release/grouped-en-light-table-preview-1024-restore.png",
+      "sha256": "3dd068acce3ab255da4d5b6147a753de1552fbb26c3bd977caea9449815617a1",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/grouped-en-light-table-preview-1440-archive.png",
-      "sha256": "4582d8671ea04dde019baa37d99f98840aa7311d55e4907153c46eaf745e3943",
+      "path": "issue-62-archive-release/grouped-en-light-table-preview-1440-archive.png",
+      "sha256": "d7e40c08716ffea88f2c8c63a54f9403fa5be3cd3f7b89baad3c6fa656f71b9a",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/grouped-en-light-table-preview-1440-restore.png",
-      "sha256": "6c579f5500ea6358d2b647b00d3330d0de771d6785bf86ab69e4374b62f86ace",
+      "path": "issue-62-archive-release/grouped-en-light-table-preview-1440-restore.png",
+      "sha256": "4a154c300a075b9e0edfd29152f0526d9d88ba7d78083bfe970ca755c952cb5d",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/grouped-ru-dark-board-expanded-1024-archive.png",
-      "sha256": "9e376c0186c8538795b7e668114c47bd715c32d6a7ceeff15df9730f08d42199",
+      "path": "issue-62-archive-release/grouped-ru-dark-board-expanded-1024-archive.png",
+      "sha256": "c1de38632921f06ab8c2caa1c7ef3d8f3491cfe53fed443a2ce32244b5896f62",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/grouped-ru-dark-board-expanded-1024-restore.png",
-      "sha256": "30404806b2e3b5e23df3124e0a7c4dacd182724bcfae56fc35a8058eff9d187d",
+      "path": "issue-62-archive-release/grouped-ru-dark-board-expanded-1024-restore.png",
+      "sha256": "e03abc19787d6bf2b32ca33d4819d5ac6b83ffb542270d5232e425b1dc2f8522",
       "retained": true
     },
     {
-      "path": "work/issue-62-archive-local-release/grouped-ru-dark-board-expanded-1440-archive.png",
-      "sha256": "79ac0ad07ec38dbc00345b063c1214d64a24b424fe8277347d5ae239801ebd8b",
+      "path": "issue-62-archive-release/grouped-ru-dark-board-expanded-1440-archive.png",
+      "sha256": "133c62941affdf7e852268372458ae17fdb6ac1326de1f4526ee89ebb75b2adf",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/grouped-ru-dark-board-expanded-1440-restore.png",
-      "sha256": "4632c5a23f1c75ce0610e476c461d2cfc850dcdb30b4f6ef22e36779e8706597",
+      "path": "issue-62-archive-release/grouped-ru-dark-board-expanded-1440-restore.png",
+      "sha256": "77f3a06b6163ea36ac14458a10be0d775c9d5af1735220a192502e8057874011",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/grouped-ru-dark-board-list-1024-archive.png",
-      "sha256": "75ee1412d5d9414da7e53d88145acec1135a8b61e331c290306ed5bb9c95ec09",
+      "path": "issue-62-archive-release/grouped-ru-dark-board-list-1024-archive.png",
+      "sha256": "f39158021a73018b63c8079c18bf8b9c1dc3f7f484dcda4d6f025a7da93b9911",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/grouped-ru-dark-board-list-1024-restore.png",
-      "sha256": "2d5212c1cf89a7ebcac855e1236d6d0c8874942ff0248bf0f7e627383a38c434",
+      "path": "issue-62-archive-release/grouped-ru-dark-board-list-1024-restore.png",
+      "sha256": "19f11f72ebf240d399b4b4a91dccf91bbe8a3829af7635a185171c91c04a2b9e",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/grouped-ru-dark-board-list-1440-archive.png",
-      "sha256": "f682df5e9f0d4a594a3843257c2be03bf3343d712b984553a47d6f62cf4d4da5",
+      "path": "issue-62-archive-release/grouped-ru-dark-board-list-1440-archive.png",
+      "sha256": "3709df5651615c555d3a47fe7b4586e3a4105fcae202a45ad317b4fae5454a33",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/grouped-ru-dark-board-list-1440-restore.png",
-      "sha256": "3be33f45c70efa87e06c4321e4fe7c1ca72159ba0a82ed5df838f9919042496a",
+      "path": "issue-62-archive-release/grouped-ru-dark-board-list-1440-restore.png",
+      "sha256": "7b60f369743a4c2a7ce91f898aa16495a949f438a0f3bbe76d21891a179844fd",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/grouped-ru-dark-board-preview-1024-archive.png",
-      "sha256": "68002e21b81c3c4e39d464c50bcd9a8843075540cbe61de5885518f12413afa3",
+      "path": "issue-62-archive-release/grouped-ru-dark-board-preview-1024-archive.png",
+      "sha256": "c88fcf26fb9bd955da81d6da29b4661527fce1501c13a7812761dff86b3aa300",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/grouped-ru-dark-board-preview-1024-restore.png",
-      "sha256": "f286e856eeead4248113eb8efc68e0b474e8b9b6e51d0b578dcaad2066b2369f",
+      "path": "issue-62-archive-release/grouped-ru-dark-board-preview-1024-restore.png",
+      "sha256": "9a84752e0917b1a00c1685b76e8799fcc9a6c4b6b6cb1286e87f93e762eed6a6",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/grouped-ru-dark-board-preview-1440-archive.png",
-      "sha256": "5ca9250067a4f83c3317446da184f9d6eda787bdd422c4a41c42ebf7d1253280",
+      "path": "issue-62-archive-release/grouped-ru-dark-board-preview-1440-archive.png",
+      "sha256": "5bef346f448d2813b8ce4f916683928904c2fcbfbf75f419cf87d8b23a51080e",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/grouped-ru-dark-board-preview-1440-restore.png",
-      "sha256": "b6004573c1b0b569838c97c647c40a7926eeeec4c3331e8ca424f523655fb5a6",
+      "path": "issue-62-archive-release/grouped-ru-dark-board-preview-1440-restore.png",
+      "sha256": "ed3fdfda8671fe6ba6129607964d398d4fa2a6bc473a3e5c8c79384d29c8ee44",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/grouped-ru-dark-table-expanded-1024-archive.png",
-      "sha256": "c81c6f26f3ca2e0b1763f74c406364bdebd4c371f6ad33c0b61b07e31c36b86f",
+      "path": "issue-62-archive-release/grouped-ru-dark-table-expanded-1024-archive.png",
+      "sha256": "ccb90b7324b9da555846d7bdfd1817fbb3d0d61d407f29670fa1b0b506dec5b3",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/grouped-ru-dark-table-expanded-1024-restore.png",
-      "sha256": "40ee2720991fe0eb30bb8bf191d52ae51b25928ffa78cbec505ae512017abd26",
+      "path": "issue-62-archive-release/grouped-ru-dark-table-expanded-1024-restore.png",
+      "sha256": "c1ecf100c7ce2a7586659e3ac4c8c7c95c45595e30ef5768fff13f09ce42cd07",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/grouped-ru-dark-table-expanded-1440-archive.png",
-      "sha256": "309bcb30a47d7db201cee50f8e96cc8be6fe780b81c4796ba8b304dbe9a967d6",
+      "path": "issue-62-archive-release/grouped-ru-dark-table-expanded-1440-archive.png",
+      "sha256": "12570446dd3a76564318b49620d9da2cff9820d7ebed07c0bdaa9564249dcdfd",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/grouped-ru-dark-table-expanded-1440-restore.png",
-      "sha256": "507d0a4114dde92fc572f2190da45078b9ed81c031c2328ac1e4be587a12e925",
+      "path": "issue-62-archive-release/grouped-ru-dark-table-expanded-1440-restore.png",
+      "sha256": "fc970010dda070f4d14061e4cb39bcd2d410dec533e6a8ab44c11a5ed3d11a6e",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/grouped-ru-dark-table-list-1024-archive.png",
-      "sha256": "1f933f98bf85940f3b1b4d9102e186de57a4ecfe7f4c14465d4cc212c537a61b",
+      "path": "issue-62-archive-release/grouped-ru-dark-table-list-1024-archive.png",
+      "sha256": "76aa508808d16a040496ca1268d3c887eabf1303420ba6b590488aa213822d41",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/grouped-ru-dark-table-list-1024-restore.png",
-      "sha256": "82498b337551c184452526500cf3bc9d367a450acccfde8b80e5594e86e650fe",
+      "path": "issue-62-archive-release/grouped-ru-dark-table-list-1024-restore.png",
+      "sha256": "31c521e913ed22fb09a44ec3bc472807b40b2c1a9811e38e32a5bdbaa6071b50",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/grouped-ru-dark-table-list-1440-archive.png",
-      "sha256": "de5304de0b1df562bbc4bb86dc8d7fadf1071f9b6269a3515777aae1eede7fa4",
+      "path": "issue-62-archive-release/grouped-ru-dark-table-list-1440-archive.png",
+      "sha256": "b0af2b87fafe3c5781d111816e9d41c698de022eaeb0af8b67511f0bcdd14eb0",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/grouped-ru-dark-table-list-1440-restore.png",
-      "sha256": "145b83d3ba71e63543293e6d1c5ae2a5aa4dbf86fd3fce38739fe34c823cd70a",
+      "path": "issue-62-archive-release/grouped-ru-dark-table-list-1440-restore.png",
+      "sha256": "6569a17ba487a1ea91499fcccb700c4be8b3d92b35133da5ff805e7c19d825df",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/grouped-ru-dark-table-preview-1024-archive.png",
-      "sha256": "8eccec94073f4078a0f85d79c029662976daefe2cf5410c6e732c909115cc7cc",
+      "path": "issue-62-archive-release/grouped-ru-dark-table-preview-1024-archive.png",
+      "sha256": "070b352239a32ef7d66421c5fac8c37b5ddbefd8153c2068e95f1d6cb90e73a2",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/grouped-ru-dark-table-preview-1024-restore.png",
-      "sha256": "694b004a7c0c6c0abb969c45e34a4da3df517985499aa0addcdefd0b3fbf1c89",
+      "path": "issue-62-archive-release/grouped-ru-dark-table-preview-1024-restore.png",
+      "sha256": "5eea8ec011b3e20a2e0da78cb5f3da63a12381050212768ab6f9a74175fe450e",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/grouped-ru-dark-table-preview-1440-archive.png",
-      "sha256": "206913e3c55affe37861ed1654d5a02efd447a03d149a9d96340cfb34ea927c4",
+      "path": "issue-62-archive-release/grouped-ru-dark-table-preview-1440-archive.png",
+      "sha256": "7b22ddc259b234c7cb0ddfdbafaf1b76f6a59e50b9eec308200150d790be6803",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/grouped-ru-dark-table-preview-1440-restore.png",
-      "sha256": "098aa731f00e617c1eb2d6455661c659912545244b148d2da3536d76356ba00d",
+      "path": "issue-62-archive-release/grouped-ru-dark-table-preview-1440-restore.png",
+      "sha256": "b5354a1c02a04a79ee4a647d3b1fba6a59e21da822a8eaf56932cb9d4208a7a0",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/grouped-ru-light-board-expanded-1024-archive.png",
-      "sha256": "fd2c0c5407776935383c678682ec746a7879fcbd352cc3758c9c8e3aafe601a4",
+      "path": "issue-62-archive-release/grouped-ru-light-board-expanded-1024-archive.png",
+      "sha256": "37f0825c6eebfa8a44172fb15ac00a5f48e57eb4f20f95919cb6ac1cc33639ff",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/grouped-ru-light-board-expanded-1024-restore.png",
-      "sha256": "88d34b7970a1085cdb1bdf7e5ce4412b21ef9dc045957ad3a3cb1d571e9f27bc",
+      "path": "issue-62-archive-release/grouped-ru-light-board-expanded-1024-restore.png",
+      "sha256": "d094bf64aa1525db2a5a18fed4721b3aa75d517deca8f8676135f6c76e48c18c",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/grouped-ru-light-board-expanded-1440-archive.png",
-      "sha256": "d48a3b4f8137c663f018078cb850ab382e49da2eed309da61f81eced08de3116",
+      "path": "issue-62-archive-release/grouped-ru-light-board-expanded-1440-archive.png",
+      "sha256": "61e5521d1ca532bfc2ce3e06adccd7461d96e08c7f522ba34d16b23a0b3ee1c6",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/grouped-ru-light-board-expanded-1440-restore.png",
-      "sha256": "b99b9087ad370cdae1dc04438434bde1b8a3edab608643634ebb5f0a9fd6fc70",
+      "path": "issue-62-archive-release/grouped-ru-light-board-expanded-1440-restore.png",
+      "sha256": "49f968b27a29be4f2d7c8c24e6c80b921908e19a283ac45159b2f9343c9a0596",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/grouped-ru-light-board-list-1024-archive.png",
-      "sha256": "10cf7bcd87b4e533db1da505cc1148cfaa8463123200d23e01dc2d6141d3cee5",
+      "path": "issue-62-archive-release/grouped-ru-light-board-list-1024-archive.png",
+      "sha256": "ffb2865e175012e5300c2d56acdcab69994fb0714f0570a559a04baff3f08ccd",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/grouped-ru-light-board-list-1024-restore.png",
-      "sha256": "3520a3bc9f17219b1830360d185e7a9dce40b05683c5110972edcd0ec4bdb590",
+      "path": "issue-62-archive-release/grouped-ru-light-board-list-1024-restore.png",
+      "sha256": "7dd4d1c74a66adbedef1e59738717097766145aaf999b6d8b8a160194ee51e60",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/grouped-ru-light-board-list-1440-archive.png",
-      "sha256": "d1c50d1c8a8f822b9b46180c2c865d96d93f2b72ad93645d542b7c6e4b3f17cc",
+      "path": "issue-62-archive-release/grouped-ru-light-board-list-1440-archive.png",
+      "sha256": "359390338da2455011ddaecc8eac86cfdbeac2ce3453c08b2268eb9ec02cca6f",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/grouped-ru-light-board-list-1440-restore.png",
-      "sha256": "2713c7bbff214f7b4625f264d0c505ba3a27b0483fdc506fca7a8a666bf6830d",
+      "path": "issue-62-archive-release/grouped-ru-light-board-list-1440-restore.png",
+      "sha256": "6a9a5a4c0687854fe43211fb7699c475fb2650087f98a2112a257edc424cff12",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/grouped-ru-light-board-preview-1024-archive.png",
-      "sha256": "8d26356b0597f498c34c1506db9fd98a5d557491649c16410195fe24a28d6f84",
+      "path": "issue-62-archive-release/grouped-ru-light-board-preview-1024-archive.png",
+      "sha256": "973c8f277766985da31700a101ef9092832c0dbd6dbdfa090d4ab2e71754fe01",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/grouped-ru-light-board-preview-1024-restore.png",
-      "sha256": "849499afbf2dbc2d4aebbc19d640ddd20afce5455169c54cf049a4a662b41420",
+      "path": "issue-62-archive-release/grouped-ru-light-board-preview-1024-restore.png",
+      "sha256": "2ef7014d09cf8f0d6643f59311a7bc3a371b1ea5b98f5896796ebe9a4f8943b8",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/grouped-ru-light-board-preview-1440-archive.png",
-      "sha256": "42c10bd91930a90ea2e3a6a6d1a17c35524db627fb860cd5ecf5b62e78a667df",
+      "path": "issue-62-archive-release/grouped-ru-light-board-preview-1440-archive.png",
+      "sha256": "6b4d822b563ec8709f0356eaf859a556af905897a17adcc293a62c47a3d5bb63",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/grouped-ru-light-board-preview-1440-restore.png",
-      "sha256": "c3a3b0b947016e290e0a2c9596b0284d1b164e2908d04d5bfbc09404910b0e2f",
+      "path": "issue-62-archive-release/grouped-ru-light-board-preview-1440-restore.png",
+      "sha256": "001c9e903c927aceed09f40f8be7c1d587e6503ff73f845c401354a10c587bd4",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/grouped-ru-light-table-expanded-1024-archive.png",
-      "sha256": "7396cb00b99cab201530b82987c13898404d3696ef20cd2e0e968f451f634c18",
+      "path": "issue-62-archive-release/grouped-ru-light-table-expanded-1024-archive.png",
+      "sha256": "3ce5116743bcdeb9dc6e3bdd81fda62736a4300f87e1ef6b3b2f120210f13adc",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/grouped-ru-light-table-expanded-1024-restore.png",
-      "sha256": "9a31c7d9383e5576e2f1b02353ac30bf6308db761bd8b7011b8a6b09b9923ec2",
+      "path": "issue-62-archive-release/grouped-ru-light-table-expanded-1024-restore.png",
+      "sha256": "b8689e643c57635e09e3799670fdef23c63151137c50cc4912b6572c6764f57f",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/grouped-ru-light-table-expanded-1440-archive.png",
-      "sha256": "ab82b12bb64d1b1e10f6c414de713dca59ae033b54e8a3d5b90872aacb7a34ec",
+      "path": "issue-62-archive-release/grouped-ru-light-table-expanded-1440-archive.png",
+      "sha256": "103ddb06faf817cf9a9840850ed674af57723e7be28a84f65fd9ac3bb523a836",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/grouped-ru-light-table-expanded-1440-restore.png",
-      "sha256": "0fdf396a3414b107ebb7ab1ae8187b55bff7e30e69a7f0cecfeb85a2fdaf0abe",
+      "path": "issue-62-archive-release/grouped-ru-light-table-expanded-1440-restore.png",
+      "sha256": "6f57b69868f9700ea5bdf2ef360148c2f0224b8b6b3f71254edaa00bfb311070",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/grouped-ru-light-table-list-1024-archive.png",
-      "sha256": "4e4bd1cd9df353d05ad4395e673eaf4790c7f822141359e23dba2c9463ca5918",
+      "path": "issue-62-archive-release/grouped-ru-light-table-list-1024-archive.png",
+      "sha256": "c2240267780edcef62e7c0eb0b4a14986506f8ccbf5eee3f8f046bda6d1e91a2",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/grouped-ru-light-table-list-1024-restore.png",
-      "sha256": "499b350c82df6b2da7f362611150badd24906ddb11e0cf5ca694fcaff2aba64d",
+      "path": "issue-62-archive-release/grouped-ru-light-table-list-1024-restore.png",
+      "sha256": "eeffcc16c0f48e82e3c21fbe3438b7f566b3dba9c9986adfdd551c19c29dc169",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/grouped-ru-light-table-list-1440-archive.png",
-      "sha256": "95614398a193487a22f66810e2777a218c112b46eac8d3ae2c256c3827d42782",
+      "path": "issue-62-archive-release/grouped-ru-light-table-list-1440-archive.png",
+      "sha256": "19fbe9c3b42ce59f6f89223c1f489a849fa54c54b15a551e18ab4e2f738486f6",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/grouped-ru-light-table-list-1440-restore.png",
-      "sha256": "caf63cee5a066b352de6cb8fbb1ad41bcfc7bda640524e0ccbd369aa4a32c522",
+      "path": "issue-62-archive-release/grouped-ru-light-table-list-1440-restore.png",
+      "sha256": "90338dbbb00f12547850fa23b11ff662d875ba2b42a661ecd4ac18303f6705fa",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/grouped-ru-light-table-preview-1024-archive.png",
-      "sha256": "a13c87370bcf3b144d382134025b50990524c8d44de80381d24ca2fb29d28786",
+      "path": "issue-62-archive-release/grouped-ru-light-table-preview-1024-archive.png",
+      "sha256": "142ff710f512a2b5380aa339f0d3441c4074827f48c45a4911ecabb314c059fe",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/grouped-ru-light-table-preview-1024-restore.png",
-      "sha256": "599418aa06de801ebf39d8d846305a8db957e2ba8b5c7dbacc57994521bc68af",
+      "path": "issue-62-archive-release/grouped-ru-light-table-preview-1024-restore.png",
+      "sha256": "98a2756f59aa4efd8c577ea9ea3940e13962025ca5827f0cdcf764fdb04cbd15",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/grouped-ru-light-table-preview-1440-archive.png",
-      "sha256": "21ce116246dc56bbc79e848295b03eeabbbe677422a3ee1451ef869f1afa0530",
+      "path": "issue-62-archive-release/grouped-ru-light-table-preview-1440-archive.png",
+      "sha256": "3dc6d534b525583a0240a3eb65bb94e7cbb81d64830afcdb6aefd5d010cb0504",
       "retained": false
     },
     {
-      "path": "work/issue-62-archive-local-release/grouped-ru-light-table-preview-1440-restore.png",
-      "sha256": "967dcff062389ac594bf99ee39fe198c7701d7dba53082ebe23eb3dfca554129",
+      "path": "issue-62-archive-release/grouped-ru-light-table-preview-1440-restore.png",
+      "sha256": "caafb86a8fef63d07c1c094db0bb24fb7ef60f5fe14e6391c11360835087320a",
       "retained": false
     }
   ]
