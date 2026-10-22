@@ -59,3 +59,16 @@ and document-owned contextual menus. Radix Dialog.Content is deliberately not
 used: its unconditional document-capture dismissal would consume Escape before
 independent editors. The public FocusScope preserves loop/autofocus behavior;
 there are no private Radix APIs or native-event modifications.
+
+## Accepted candidate and handoff
+
+[Verification report](../verification/issue-60-contextual-projects.md) records the
+reviewed implementation, original failures, retained/adapted coverage decisions,
+three-host development/package acceptance at `e6fb69ca` and 601-test three-host
+renewal at `c6deb95b`. No inherited requirement is retired. The original four
+unchanged native-fixture shutdown failures remain explicit broader watchpoints;
+there is no claim that the complete local suite passed.
+
+The GitHub checkpoint owns integration acceptance and the delivered SHA. Renew
+fresh build/static/docs and affected regressions after fast-forwarding the clean
+integration checkout. No release/main merge or next issue is selected.

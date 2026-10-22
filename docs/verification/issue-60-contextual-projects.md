@@ -22,8 +22,8 @@ Local host: macOS 27 arm64; Node 22.21.1, Electron 44.7.0.
   owned-fixture cleanup pass. Files: `work/issue-60-projects-attempt5/`.
 
 These are observed development receipts, not final exact-SHA/hosted acceptance.
-The full local suite, independent Spec/Standards review and three-host native and
-packaged consumer results remain pending at this checkpoint.
+The initial checkpoint preceded the full local suite, independent review and
+hosted acceptance. Their actual receipts and remaining gates are recorded below.
 
 ## Appearance
 
@@ -73,7 +73,8 @@ and actual ContextTools menus), with ordinary dialog Escape passing. Replaced
 only the surface with public Radix FocusScope 1.2.0 inside Dialog Root/Portal/Title
 and moved fallback Escape to window bubble, after existing editor/menu owners.
 All six regression cases then pass. This changes no service or mutation contract.
-Follow-up review and renewed native/platform receipts remain required.
+Follow-up review found zero issues; the renewed native/platform receipts below
+include the repaired surface.
 
 ## Full local suite and test-only renewal
 
@@ -113,3 +114,93 @@ package results at that SHA; renew the changed tests with
 `contextual-project-regressions` after the active run completes. Do not cancel a
 useful running acceptance or replay unchanged passing native consumers solely
 because the regression inventory expanded.
+
+## Hosted native and package acceptance
+
+[Run 39856828141](https://github.com/kornouhovas/workspace/actions/runs/39856828141),
+attempt 1, application `e6fb69caf7cddda3ac20dd8d453865bbf12309c3`, profile
+`contextual-projects`: every selected job succeeded. Downloaded each artifact,
+asserted its SHA/run/attempt/host, inspected reports and representative whole-screen
+captures against the early local matrix and accepted composition.
+
+| Host | Job | Artifact | Regression result |
+| --- | --- | --- | --- |
+| macOS latest | 120097091475 | [12460282154](https://github.com/kornouhovas/workspace/actions/runs/39856828141/artifacts/12460282154) | 945 passed, 7 platform skips, zero failed |
+| Windows latest | 120097091712 | [12459888286](https://github.com/kornouhovas/workspace/actions/runs/39856828141/artifacts/12459888286) | 989 passed, 2 platform skips, zero failed |
+| Windows 2022 | 120097091358 | [12460571370](https://github.com/kornouhovas/workspace/actions/runs/39856828141/artifacts/12460571370) | 989 passed, 2 platform skips, zero failed |
+
+Each host passed:
+
+- Contextual Create/Rename and independent Text/menu Escape journeys in development
+  and packaged applications: 22 per mode on macOS, 20 per mode on Windows (the
+  additional macOS entries record explicit source-observation review). Every mode
+  includes all 12 language/layout/location rename combinations and four creation
+  and Cancel cases; exact project/tab IDs, sentinel bytes and Text values survive.
+- 32 whole-screen EN/RU/light/dark/1024x720/1440x960 Create/Rename captures per mode,
+  64 per host, with the supported layout/visible focus/paths/actions inspected.
+- Original native rename in direct/grouped modes, case-only/mounted-name behavior,
+  collision/rejection, sibling data, exact Finder/Explorer selected-target evidence,
+  restart and all seven interruption/recovery checkpoints per mode in dev/package.
+- Original direct and grouped creation after durable evidence, explicit interrupted
+  recovery, restart persistence, native Reveal acknowledgment and observed exact
+  selected target in dev/package.
+- Package/resource/font/license verification, normal application/backend shutdown,
+  native helper completion and asserted owned-fixture cleanup. Unselected discovery
+  modes in a bounded creation report remain unreached, not accepted scenarios;
+  the separate direct and grouped receipts together cover the required matrix.
+
+The inspected summaries are retained as `inspection.json` beside each downloaded
+artifact in `work/issue-60-projects-ci-{macos,windowslatest,windows2022}/`.
+The test-only `c6deb95b` renewal is
+[run 39858559747](https://github.com/kornouhovas/workspace/actions/runs/39858559747),
+profile `contextual-project-regressions`. Every selected job passed 601 tests,
+zero skipped/failed. Native/package reuse applies only to the reviewed unchanged
+inputs; actual integration checks and delivered SHA are recorded in GitHub.
+
+## Standards
+
+Independent review of the baseline-to-candidate diff found no actionable documented
+violations or maintainability defects. Follow-ups at `e6fb69ca` and `c6deb95b`
+confirm public Radix APIs, explicit runtime dependencies, unchanged typed service/
+filesystem boundaries, retained assertions and honest test-only evidence reuse.
+
+## Spec
+
+Initial review at `dbd439b2` found one P2: capture-phase Escape also dismissed an
+unrelated dialog. The browser-first reproduction, public FocusScope repair and
+six passing ownership regressions resolve it. Independent follow-up at `e6fb69ca`
+found no new correctness defect or scope creep; `c6deb95b` retains every affected
+scenario and makes no claim that the full local suite passed.
+
+Final review findings: Standards **0**, Spec **0**. Hosted renewal and integration
+receipts remain separate from these review conclusions.
+
+## Hosted test-only renewal and delivery handoff
+
+Run `39858559747`, attempt 1, at
+`c6deb95b23202595afb713cc073aa7538d6ed61e` completed successfully. Downloaded
+and checked every provenance artifact and original job log. Each host renewed
+**601 passed / zero skipped / zero failed**, including the repaired category-move
+consumer and original assertion set.
+
+| Host | Job | Provenance artifact |
+| --- | --- | --- |
+| macOS latest | 120103001396 | [12461096870](https://github.com/kornouhovas/workspace/actions/runs/39858559747/artifacts/12461096870) |
+| Windows latest | 120103001285 | [12459748794](https://github.com/kornouhovas/workspace/actions/runs/39858559747/artifacts/12459748794) |
+| Windows 2022 | 120103000941 | [12461351612](https://github.com/kornouhovas/workspace/actions/runs/39858559747/artifacts/12461351612) |
+
+`e6fb69ca` and `c6deb95b` share source tree
+`3527178f3574111ef2ad2ed0649732af53526885`; package manifests/lockfile, build,
+native and original smoke inputs are identical. The latter changes only the
+reviewed test environment, regression routing and documentation. This report's
+final update is documentation only, so it does not replace those actual tested
+SHAs with an untested runtime claim. No failed/unreached scenario is accepted
+through reuse. Normal full routes remain available and the four original local
+native-quit fixture failures remain explicit.
+
+The scoped #60 appearance/behavior/data-preservation/native/package gates are
+satisfied. Follow the authorized fast-forward integration route, renew build,
+type/static/docs and affected regression checks in `new-workspace`, and record
+that checkout's delivered SHA in the GitHub checkpoint before closure. This does
+not accept final #67/#42, Windows 11 manual release gates or an installer change;
+no release or main-branch merge is part of #60.
