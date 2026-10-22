@@ -3,8 +3,9 @@
 Baseline: `90c4fbdb04f1720ecf174fd8b388bb39c0fb36cd` (accepted #61/#62).
 [Plan and coverage selection](../plans/issue-65-project-recovery.md).
 Live acceptance and delivered SHA belong to [#65](https://github.com/kornouhovas/workspace/issues/65).
-This report records local evidence; review, the one full-suite run and hosted
-three-platform acceptance remain pending at the initial candidate commit.
+This report records local evidence. Standards and Spec reviews returned zero
+findings on candidate `34e30292`; the one full-suite run is recorded below.
+Hosted three-platform acceptance remains pending.
 
 ## Behavior and retained guarantees
 
@@ -27,7 +28,7 @@ Back history. Settings/Backup remain reachable without a source.
 
 On Node22.21.1/macOS arm64:
 
-- Production build and regular typechecks pass; lint and docs205 pass.
+- Production build and regular typechecks pass; lint and docs206 pass.
 - First affected eleven-file command:480 pass/1 fail/481 total. The failed inherited
   renderer case correctly required known exclusion guidance during a root outage.
   The presentation policy was repaired without retiring that requirement.
@@ -44,6 +45,11 @@ On Node22.21.1/macOS arm64:
   excluded/mode-inactive retained states. Original session/data-recovery/archive
   consumers remain selected in the hosted profile, rather than being replaced by
   this new consumer.
+
+Local `package:built` and release artifact inspection pass. The packaged recovery
+consumer also passes the same7 journeys/64 captures, three normal app/backend
+shutdowns and asserted owned cleanup (`work/issue-65-recovery-release-local/report.json`).
+This independently renews the packaged boundary before hosted acceptance.
 
 The [local receipt](issue-65-evidence/local-receipt.json) records the base,
 working-tree input hashes, original report digest, every capture digest and
@@ -77,6 +83,35 @@ Retained examples from the64-capture matrix:
 - [Archived editing context, RU/light/1024](issue-65-evidence/archived-editable-ru-light-1024.png)
 - [Excluded retained project, EN/light/1440](issue-65-evidence/excluded-retained-en-light-1440.png)
 - [Mode-inactive project, RU/dark/1024](issue-65-evidence/mode-inactive-retained-ru-dark-1024.png)
+
+## Full-suite result and independent review
+
+Both independent Matt Pocock review axes returned zero findings on
+`90c4fbdb…34e30292`. Standards independently matched all retained local receipt
+input/capture hashes. Spec reviewed the issue, current service ownership and
+selected recovery/session/file/native guarantees; neither review claims CI results.
+
+Exactly one `npm test` ran at `34e30292` with a fresh production build:
+**3388 pass /32 fail /27 skip /3447 total**,226973ms. This is not a full-green
+receipt. The [failure inventory](issue-65-full-suite-failures.json) records every
+name/location, log digest and76 inspected source/driver/fixture/dependency inputs.
+All failed tests are synthetic native fixtures:31 original10000ms normal-quit
+timeouts and the unchanged cleanup-count control whose removal callback was not
+reached. Their input closure changes only two additive Sources translation keys;
+fixture main/quit code, native adapters, deadlines and actions are unchanged.
+Generated service inputs and service code are unchanged; these fixtures do not
+load the modified App/DiscoveryPanel/DesktopShell/dialog/stylesheet. The changed
+recovery, renderer, service/session/archive checks passed in this full run.
+
+An independent follow-up audit verified all32 failure names/counts, the original
+log digest and all76 input hashes, with zero findings. This does not establish
+a unique underlying cause.
+
+The failure set differs from #62, while retaining the same two observed failure
+classes. It remains a broader #67/#42 synthetic-quit/cleanup watchpoint; no unique
+historical root cause, repair or full pass is claimed. No complete-suite retry,
+fixture assertion removal or deadline increase was used. The scoped hosted
+profile still must pass every selected current application/native/package consumer.
 
 ## Failed and diagnostic evidence
 

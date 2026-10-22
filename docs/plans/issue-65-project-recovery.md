@@ -62,6 +62,7 @@ passing receipt or permission to defer an affected failure.
 
 Current: scoped implementation and local behavior/appearance checks pass;
 [verification](../verification/issue-65-project-recovery.md) records actual results
-and retained failures. Standards/Spec review, one full-suite run and hosted
-three-host acceptance remain pending.
+and retained failures. Standards/Spec review returned zero findings. The one full-suite run completed
+with explicit unrelated synthetic-quit/cleanup failures in the report. Hosted
+three-host scoped acceptance remains pending.
 This plan does not claim acceptance. Live checkpoints and delivery SHA belong to #65.
