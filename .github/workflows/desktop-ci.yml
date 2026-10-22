@@ -1100,7 +1100,7 @@ jobs:
 
   focused-multiselect:
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.checks == 'multiselect' }}
-    name: Focused macOS packaged MultiSelect
+    name: Focused macOS Select option contexts
     runs-on: macos-latest
     timeout-minutes: 15
     steps:
@@ -1124,6 +1124,16 @@ jobs:
         run: |
           set -o pipefail
           node --import tsx --test tests/property-editor-driver.test.mjs tests/multi-select-service.test.mjs tests/multi-select-ui.test.tsx tests/multi-select-ipc.test.mjs tests/test-suites.test.mjs 2>&1 | tee work/ci-focused-multiselect/regressions.log
+      - name: Original macOS development MultiSelect command
+        if: ${{ always() && steps.build.outcome == 'success' }}
+        run: npm run smoke:multiselect -- dev
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-focused-multiselect/runtime-dev
+      - name: Shared Single Select development consumer
+        if: ${{ always() && steps.build.outcome == 'success' }}
+        run: npm run smoke:select -- dev
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-focused-multiselect/single-dev
       - name: Package the original failed application route
         id: package
         if: ${{ always() && steps.build.outcome == 'success' }}
@@ -1137,6 +1147,11 @@ jobs:
         run: npm run smoke:multiselect -- release
         env:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-focused-multiselect/runtime
+      - name: Shared Single Select packaged consumer
+        if: ${{ always() && steps.artifact.outcome == 'success' }}
+        run: npm run smoke:select -- release
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-focused-multiselect/single-release
       - name: Preserve original command, regression and exact-SHA evidence
         if: always()
         uses: actions/upload-artifact@v4

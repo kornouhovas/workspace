@@ -1693,3 +1693,41 @@ verification ref was checked at770e07e5; it may be lease-advanced to this review
 driver repair for focused original all-three layouts, keeping the useful Mac
 runtime run on the unchanged task ref3d0a88c3. No ordinary defaults or production
 inputs change.
+
+
+### Layout focus passes; Select consumer context adaptation
+
+39721020706/attempt1 atc5d9f5d8 passes original unfiltered layouts on all3;
+artifact inspection remains next. This is changed-driver original acceptance,
+not an unchanged retry. Original predicate and all negative receipts remain.
+
+39719353774 is complete: Mac layouts302/906, creation crash/direct/grouped, base
+runtime (including rename/category) and Views pass; MultiSelect development then
+fails clicking hidden Select-options summary. Its2 normal quits and asserted
+owned cleanup pass. Native controls95pass/3skip and407 affected UI checks pass.
+Both Windows layout failures/unreached tails remain recorded above. Mac Views
+report independently passes EN/RU layout/lifecycle/filter/grouping/native drags,
+files unchanged,3 normal app/backend exits and owned cleanup.
+
+Retain/adapt the inherited option-management entry in both MultiSelect and Single
+Select drivers: each initial and reopened summary enters existing ContextTools
+and details through enterContextFor. That helper opens closed details without
+retoggling open ones; no shared helper or production change. All option IDs,
+colors/order, hidden usages, sibling isolation, keyboard focus, restart, invalid
+drafts, exact file/byte and native exit assertions remain. The actual original
+application command is the red-capable regression seam, complemented by existing
+property-creator native and Select UI/service/IPC coverage.
+
+Local Single Select development EN/RU passes2checks, normal quit and owned
+cleanup. Local MultiSelect EN completes keyboard/options/color/order/hidden
+usages/sibling/restart/clear/invalid draft/files and1024/1440 captures, then RU
+restart retains the known localmacOS27 normal-quit timeout10s. Forced process
+cleanup and fixture removal are confirmed. Do not relabel that failed run or
+repeat it unchanged for green. Named-host original renewal remains required.
+
+Existing focused multiselect route now independently runs original Macdevelopment
+MultiSelect and shared Single Select before packaging, then both release modes.
+Build/artifact prerequisites, pipefail regression/provenance and always artifacts
+remain. Route60/60 and lint/typecheck pass; Standards0 and Spec0. Focused original
+Mac success/artifact inspection precedes remaining tail acceptance. Application
+inputs stay unchanged; no acceptance or integration is claimed.

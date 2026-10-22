@@ -8,6 +8,7 @@ import { fileURLToPath } from "node:url";
 import { _electron } from "playwright-core";
 import { closeElectron, cleanupOwnedFixture, ownedProcessesStopped } from "./runtime-lifecycle.mjs";
 import { openPropertyCreator } from "./property-editor-driver.mjs";
+import { enterContextFor } from "./runtime-context-tools.mjs";
 import { packagedExecutablePath } from "./runtime-executable.mjs";
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const mode = process.argv[2] ?? "dev";
@@ -83,7 +84,7 @@ try {
     (evidence.creationReadiness ??= []).push(creation);
     const propertyName = await openPropertyCreator(page, { createLabel, propertyNameLabel: en ? "Property name" : "Название свойства" });
     await propertyName.fill("Status"); await propertyName.press("Enter");
-    await page.locator("summary").filter({ hasText: en ? "Select options: Status" : "Опции Select: Status" }).click();
+    await enterContextFor(page,page.locator("summary").filter({ hasText: en ? "Select options: Status" : "Опции Select: Status" }));
     const add = page.getByRole("button", { name: en ? "Add option" : "Добавить опцию", exact: true });
     await add.press("Enter");
     const name = page.getByLabel(en ? "Option name" : "Название опции", { exact: true });
@@ -147,7 +148,7 @@ try {
     await clearingEditor.waitFor({ state: "hidden" });
     await page.waitForFunction(label => document.activeElement?.getAttribute("aria-label") === label, label);
     await query(page, { type: "workspace.updateSelectOption", workspaceId: sibling.workspaceId, propertyId, optionId, name: "Sibling rename", color: "red" });
-    await page.locator("summary").filter({ hasText: en ? "Select options: Status" : "Опции Select: Status" }).click();
+    await enterContextFor(page,page.locator("summary").filter({ hasText: en ? "Select options: Status" : "Опции Select: Status" }));
     await page.getByRole("button", { name: en ? "Show option: Sibling rename" : "Показать опцию: Sibling rename", exact: true }).waitFor();
     assert.deepEqual(await readdir(source), ["Project"]); assert.deepEqual(await readdir(join(source, "Project")), ["keep"]);
     assert.equal(await readFile(join(source, "Project", "keep"), "utf8"), "unchanged");

@@ -550,6 +550,16 @@ test('MultiSelect failure route runs the original macOS packaged command indepen
   const original = job.steps.find(step => step.run === 'npm run smoke:multiselect -- release');
   assert.equal(original.if, "${{ always() && steps.artifact.outcome == 'success' }}");
   assert.equal(original.env.WORKSPACE_SMOKE_EVIDENCE_DIR, 'work/ci-focused-multiselect/runtime');
+  for (const feature of ['multiselect','select']) {
+    const development=job.steps.find(step=>step.run===`npm run smoke:${feature} -- dev`);
+    assert.equal(development.if,"${{ always() && steps.build.outcome == 'success' }}");
+    assert.ok(job.steps.indexOf(development)<job.steps.findIndex(step=>step.id==='package'));
+    assert.ok(development.env.WORKSPACE_SMOKE_EVIDENCE_DIR.startsWith('work/ci-focused-multiselect/'));
+  }
+  const single=job.steps.find(step=>step.run==='npm run smoke:select -- release');
+  assert.equal(single.if,"${{ always() && steps.artifact.outcome == 'success' }}");
+  assert.equal(single.env.WORKSPACE_SMOKE_EVIDENCE_DIR,'work/ci-focused-multiselect/single-release');
+
   const upload = job.steps.find(step => step.uses === 'actions/upload-artifact@v4');
   assert.equal(upload.if, 'always()'); assert.equal(upload.with['if-no-files-found'], 'error');
   for (const field of ['github.sha', 'github.run_id', 'github.run_attempt']) assert.ok(upload.with.name.includes(field));

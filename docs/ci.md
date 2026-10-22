@@ -1310,3 +1310,14 @@ it does not establish unique historical timing. Keep any useful running runtime
 coverage and its ref fixed. Inspect the focused original results before completing
 missing Windows tails; retain independently complete Mac consumers when inputs
 are unchanged.
+
+
+For #69's subsequent macOS development MultiSelect hidden-summary failure,
+`checks: multiselect` renews that exact command plus the shared Single Select
+driver in development and packaged modes on macOS. The two development steps
+run independently after a successful build; packaged consumers retain independent
+artifact gates. Exact provenance, regression logs and all four runtime directories
+are always preserved. Both drivers enter the existing tools/disclosure path for
+initial and reopened option management; data/keyboard/restart/filesystem/shutdown
+assertions remain. Focused success does not replace required Windows consumers
+or the still-unreached properties/archive/recovery/package tails.
