@@ -4,6 +4,7 @@ import type { PropertyDefinition, SelectOption } from "../../contracts/text-prop
 import type { Language } from "../../contracts/settings.js";
 import type { WorkspaceServiceClient } from "../workspace-service-client.js";
 import { translate, type TranslationKey } from "../localization.js";
+import { useDraftGuard } from "./ScalarDrafts.js";
 import { StatusMessage } from "./bb-foundation.js";
 interface Props {
   client: WorkspaceServiceClient; workspaceId: string; sourceId: string; property: PropertyDefinition;
@@ -11,6 +12,7 @@ interface Props {
   onCancel(): void; onCommitted(): void; onObserved?(): Promise<void>;
 }
 export function MetadataRemovalPanel({ client, workspaceId, sourceId, property, optionId, options, language, disabled, onCancel, onCommitted, onObserved }: Props) {
+  const guard = useDraftGuard();
   const t = (key: TranslationKey) => translate(language, key), id = useId();
   const [replacement, setReplacement] = useState<string | null>(null);
   const [preview, setPreview] = useState<MetadataRemovalPreview | null>(null);
@@ -18,6 +20,7 @@ export function MetadataRemovalPanel({ client, workspaceId, sourceId, property, 
   const [error, setError] = useState<TranslationKey | null>(null);
   const sequence = useRef(0), busy = useRef(false), heading = useRef<HTMLHeadingElement>(null), reviewButton = useRef<HTMLButtonElement>(null);
   useEffect(() => { if (error && pending === null) reviewButton.current?.focus(); }, [error, pending]);
+  useEffect(() => guard?.register({ commit: () => Promise.resolve(false), focus: () => heading.current?.focus() }), [guard]);
   const review = async () => {
     if (busy.current || disabled) return;
     const request = ++sequence.current;
@@ -51,7 +54,7 @@ export function MetadataRemovalPanel({ client, workspaceId, sourceId, property, 
     else setError(failure);
   };
   return <section className="metadata-removal" aria-labelledby={`${id}-title`} aria-busy={pending !== null}
-    onKeyDown={event => { if (event.key === "Escape" && !busy.current) { event.preventDefault(); onCancel(); } }}>
+    onKeyDown={event => { if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); if (!busy.current) onCancel(); } }}>
     <h3 id={`${id}-title`} tabIndex={-1} ref={heading}>{t("metadataTitle")}: {property.name}{optionId && ` / ${options.find(o => o.optionId === optionId)?.name ?? preview?.optionName ?? ""}`}</h3>
     <p>{t("metadataScope")}</p><p>{t(optionId ? "metadataOptionPolicy" : "metadataPropertyPolicy")}</p>
     {optionId && <><label htmlFor={`${id}-action`}>{t("metadataAction")}</label>

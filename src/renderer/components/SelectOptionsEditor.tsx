@@ -6,6 +6,7 @@ import { translate, type TranslationKey } from "../localization.js";
 import { useDraftGuard } from "./ScalarDrafts.js";
 import { Hint } from "./Hint.js";
 import { Icon } from "./Icons.js";
+import { MetadataRemovalPanel } from "./MetadataRemovalPanel.js";
 import { StatusMessage } from "./bb-foundation.js";
 
 export type OptionsEditorState = { busy: boolean; failed: boolean };
@@ -20,6 +21,9 @@ export function SelectOptionsEditor({ onStateChange, onRemove, removalOpen, clie
   const t = (key: TranslationKey) => translate(language, key);
   const id = useId();
   const options = snapshot.selectOptions?.filter(option => option.propertyId === property.propertyId) ?? [];
+  const [reviewOption, setReviewOption] = useState<string | null>(null);
+  const reviewTrigger = useRef<HTMLButtonElement | null>(null);
+  const finishReview = () => { setReviewOption(null); window.requestAnimationFrame(() => (reviewTrigger.current?.isConnected ? reviewTrigger.current : add.current)?.focus()); };
   const [draft, setDraft] = useState<{ optionId: string | null; name: string; color: SelectColor; originalName: string; originalColor: SelectColor } | null>(null);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState(false);
@@ -29,7 +33,7 @@ export function SelectOptionsEditor({ onStateChange, onRemove, removalOpen, clie
   const returnFocus = useRef<HTMLButtonElement | null>(null);
   useEffect(() => () => { lifetime.current++; }, []);
   useEffect(() => { if (draft) input.current?.focus(); else { returnFocus.current?.focus(); returnFocus.current = null; } }, [draft?.optionId, draft === null]);
-  useLayoutEffect(() => { onStateChange?.({busy: draft !== null || pending, failed: error}); }, [onStateChange, draft !== null, pending, error]);
+  useLayoutEffect(() => { onStateChange?.({busy: draft !== null || pending || reviewOption !== null, failed: error}); }, [onStateChange, draft !== null, pending, error, reviewOption]);
   useLayoutEffect(() => {
     if (!draft && !pending && !error) return;
     return guard?.register({ commit: () => inFlight.current ?? Promise.resolve(false), focus: () => (input.current ?? add.current)?.focus() });
@@ -64,7 +68,11 @@ export function SelectOptionsEditor({ onStateChange, onRemove, removalOpen, clie
     [optionIds[index], optionIds[index + delta]] = [optionIds[index + delta], optionIds[index]];
     void commit({ type: "workspace.reorderSelectOptions", workspaceId, propertyId: property.propertyId, optionIds });
   };
-  return <details className="select-options" aria-busy={pending}><summary>{t("selectOptions")}: {property.name}</summary>
+  return <>
+    {reviewOption && <MetadataRemovalPanel client={client} workspaceId={workspaceId} sourceId={property.sourceId} property={property} optionId={reviewOption}
+      options={snapshot.selectOptions ?? []} language={language} disabled={disabled} onCancel={finishReview} onCommitted={finishReview}
+      onObserved={async () => { const result = await client.listTextProperties(workspaceId); if (result.ok && result.value.workspaceId === workspaceId && result.value.sourceId === property.sourceId) onCommitted(result.value); }}/>}
+    <details hidden={reviewOption !== null} className="select-options" aria-busy={pending}><summary>{t("selectOptions")}: {property.name}</summary>
     <p>{t("selectPresentationScope")}</p>
     {!options.length && <p>{t("selectOptionsEmpty")}</p>}
     <ul>{options.map((option, index) => <li key={option.optionId} data-color={option.color}>
@@ -74,8 +82,8 @@ export function SelectOptionsEditor({ onStateChange, onRemove, removalOpen, clie
       <Hint label={`${t("selectMoveDown")}: ${option.name}`}><button className="workspace-button workspace-button--secondary" type="button" disabled={disabled || pending || draft !== null || index === options.length - 1} aria-label={`${t("selectMoveDown")}: ${option.name}`} onClick={() => move(index, 1)}><Icon name="down" /></button></Hint>
       <Hint label={`${t(option.hidden ? "selectShow" : "selectHide")}: ${option.name}`}><button className="workspace-button workspace-button--secondary" type="button" disabled={disabled || pending || draft !== null} aria-label={`${t(option.hidden ? "selectShow" : "selectHide")}: ${option.name}`}
         onClick={() => void commit({ type: "workspace.setSelectOptionHidden", workspaceId, propertyId: property.propertyId, optionId: option.optionId, hidden: !option.hidden })}><Icon name={option.hidden ? "show" : "hide"} /></button></Hint>
-      {onRemove && <Hint label={`${t("metadataDeleteOption")}: ${option.name}`}><button type="button" className="workspace-button workspace-button--secondary" disabled={disabled || pending || draft !== null || removalOpen}
-        aria-label={`${t("metadataDeleteOption")}: ${option.name}`} onClick={event => onRemove(option.optionId, event.currentTarget)}><Icon name="delete" /></button></Hint>}
+      {<Hint label={`${t("metadataDeleteOption")}: ${option.name}`}><button type="button" className="workspace-button workspace-button--secondary" disabled={disabled || pending || draft !== null || removalOpen}
+        aria-label={`${t("metadataDeleteOption")}: ${option.name}`} onClick={event => { if (onRemove) onRemove(option.optionId, event.currentTarget); else { reviewTrigger.current = event.currentTarget; setReviewOption(option.optionId); } }}><Icon name="delete" /></button></Hint>}
     </li>)}</ul>
     <button className="workspace-button workspace-button--secondary" ref={add} type="button" disabled={disabled || pending || draft !== null} onClick={() => { returnFocus.current = add.current; setError(false); setDraft({ optionId: null, name: "", color: "default", originalName: "", originalColor: "default" }); }}>{t("selectAddOption")}</button>
     {draft && <form aria-busy={pending} onKeyDown={event => { if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); cancel(); } }} onSubmit={event => {
@@ -98,5 +106,5 @@ export function SelectOptionsEditor({ onStateChange, onRemove, removalOpen, clie
     {pending && !draft && <p role="status">{t("propertySaving")}</p>}
     {error && <StatusMessage kind="error" title={t("selectOptionError")} />}
     {error && !draft && !onStateChange && <button type="button" className="workspace-button workspace-button--secondary" onClick={() => setError(false)}>{t("cancelTextValue")}</button>}
-  </details>;
+  </details></>;
 }

@@ -74,3 +74,24 @@ test('a lost apply response observes actual state and requires a new review with
     await waitFor(() => assert.ok(document.activeElement === screen.getByRole('button', { name: 'Review usages' })));
   } finally { cleanup(); }
 });
+
+test('review owns navigation; pending Escape cannot cancel and failed Apply requires review before leaving', async () => {
+  const {ScalarDrafts,useDraftGuard}=await import('../src/renderer/components/ScalarDrafts.js');
+  let navigated=false, release:((value:unknown)=>void)|undefined;
+  const preview={workspaceId:'w',sourceId:'s',propertyId:'p',optionId:null,replacementOptionId:null,previewToken:'reviewed',projects:[],views:[]};
+  const client={previewMetadataRemoval:async()=>({ok:true,value:preview}),applyMetadataRemoval:async()=>new Promise(resolve=>{release=resolve;})} as unknown as WorkspaceServiceClient;
+  function Navigate(){const guard=useDraftGuard();return <button onClick={()=>guard?.run(()=>{navigated=true;})}>Navigate</button>;}
+  function Harness(){const [open,setOpen]=React.useState(true);return <ScalarDrafts><Navigate/>{open&&<MetadataRemovalPanel client={client} workspaceId="w" sourceId="s" property={{propertyId:'p',sourceId:'s',name:'Notes',propertyType:'text'}} optionId={null} options={[]} language="en" disabled={false} onCancel={()=>setOpen(false)} onCommitted={()=>assert.fail('Failed apply is not success')}/>}</ScalarDrafts>;}
+  const user=userEvent.setup({document});
+  try{
+    render(<Harness/>);await screen.findByText('No saved views are affected.');
+    await user.click(screen.getByRole('button',{name:'Navigate'}));assert.equal(navigated,false);
+    await user.click(screen.getByRole('button',{name:'Confirm deletion'}));await user.keyboard('{Escape}');
+    assert.ok(screen.getByRole('button',{name:'Cancel deletion'}).hasAttribute('disabled'));
+    await user.click(screen.getByRole('button',{name:'Navigate'}));assert.equal(navigated,false);
+    release!({ok:false,error:{code:'storage',message:'Unavailable'}});await screen.findByRole('alert');
+    assert.ok(screen.getByRole('button',{name:'Confirm deletion'}).hasAttribute('disabled'));
+    await user.click(screen.getByRole('button',{name:'Cancel deletion'}));
+    await user.click(screen.getByRole('button',{name:'Navigate'}));assert.equal(navigated,true);
+  }finally{cleanup();}
+});

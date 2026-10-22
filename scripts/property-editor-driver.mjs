@@ -1,11 +1,14 @@
 import { enterContextFor } from "./runtime-context-tools.mjs";
 // Keyboard entry used by runtime acceptance; callers retain their page deadline.
 export async function openPropertyCreator(page, { createLabel, propertyNameLabel }) {
-  const create = page.getByRole("button", { name: createLabel, exact: true, includeHidden: true });
+  const create = page.getByRole("button", { name: /^(Add property|Добавить свойство)$/, includeHidden: true });
   await enterContextFor(page,create);
   const enabled = create.and(page.locator(":enabled"));
   await enabled.focus();
   await enabled.press("Enter");
+  const type = createLabel.includes("MultiSelect") ? "multi_select" : createLabel.includes("Single Select") ? "single_select" : createLabel.includes("Number") ? "number" : createLabel.includes("Date") ? "date" : "text";
+  await page.getByRole("combobox", { name: /^(Property type|Тип свойства)$/ }).selectOption(type);
+  await page.getByRole("combobox", { name: /^(Property type|Тип свойства)$/ }).press("Shift+Tab");
   return page.getByLabel(propertyNameLabel, { exact: true });
 }
 

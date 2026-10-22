@@ -97,23 +97,24 @@ try {
           checks.push({content,language,theme,...size,...geometry,platformFonts});
 
           if (!before) {
-            const labels = language === 'en' ? ['Source tools','Properties','Project archive'] : ['Инструменты источника','Свойства','Архив проектов'];
+            const labels = language === 'en' ? ['Source tools','Add property','Project archive'] : ['Инструменты источника','Добавить свойство','Архив проектов'];
             for (const [index,label] of labels.entries()) {
               const trigger=page.getByRole('button',{name:label,exact:true,includeHidden:true});
               await enterContextFor(page,trigger);
               await trigger.focus(); await trigger.press('Enter');
-              const panel=page.getByRole('dialog',{name:label,exact:true});
+              const panel=page.getByRole('dialog',{name:index===1?(language==='en'?'Properties':'Свойства'):label,exact:true});
               await panel.waitFor();
               const bounds=await panel.boundingBox();
               assert.ok(bounds && bounds.x>=0 && bounds.y>=0 && bounds.x+bounds.width<=size.width && bounds.y+bounds.height<=size.height,JSON.stringify({label,bounds,size}));
               await page.screenshot({path:join(evidence,`${content}-${language}-${theme}-${size.width}-tools-${index}.png`)});
               if(index===1) {
-                await panel.getByRole('button',{name:language==='en'?'Create Text property':'Создать Text-свойство',exact:true}).click();
                 const field=panel.getByRole('textbox',{name:language==='en'?'Property name':'Название свойства',exact:true});
                 await field.fill('Uncommitted draft');
                 await page.screenshot({path:join(evidence,`${content}-${language}-${theme}-${size.width}-property-draft.png`)});
                 await field.press('Escape');
                 assert.equal(await field.count(),0);
+                await page.waitForFunction(label=>document.activeElement?.getAttribute('aria-label')===label,label);
+                continue;
               }
               await page.keyboard.press('Escape');
               assert.equal(await trigger.evaluate(el=>el===document.activeElement),true);

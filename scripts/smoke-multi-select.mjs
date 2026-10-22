@@ -80,11 +80,16 @@ try {
     await query(page, { type: "workspace.activate", workspaceId }); await page.reload();
     const en = language === "en";
     const createLabel = en ? "Create MultiSelect property" : "Создать MultiSelect-свойство";
-    const creation = { language, enabledAtEntry: await page.getByRole("button", { name: createLabel, exact: true, includeHidden:true }).isEnabled() };
+    const creation = { language, enabledAtEntry: await page.getByRole("button", { name: /^(Add property|Добавить свойство)$/, includeHidden:true }).isEnabled() };
     (evidence.creationReadiness ??= []).push(creation);
     const propertyName = await openPropertyCreator(page, { createLabel, propertyNameLabel: en ? "Property name" : "Название свойства" });
     await propertyName.fill("Status"); await propertyName.press("Enter");
-    await enterContextFor(page,page.locator("summary").filter({ hasText: en ? "Select options: Status" : "Опции Select: Status" }));
+    const openOptions = async () => {
+      const rename = page.getByRole("button", { name: en ? "Rename property: Status" : "Переименовать свойство: Status", exact:true, includeHidden:true });
+      await enterContextFor(page,rename); await rename.click();
+      await page.locator(".property-management-popover summary").click();
+    };
+    await openOptions();
     const add = page.getByRole("button", { name: en ? "Add option" : "Добавить опцию", exact: true });
     await add.press("Enter");
     const name = page.getByLabel(en ? "Option name" : "Название опции", { exact: true });
@@ -106,6 +111,7 @@ try {
     await ready.press("Escape"); await editor.waitFor({state:"hidden"});
     await waitForSelectionFocus(page, label);
     assert.equal(await button.evaluate(element => element === document.activeElement), true);
+    await openOptions();
     await hide.click();
     await page.getByRole("button", { name: en ? "Show option: Ready" : "Показать опцию: Ready", exact: true }).waitFor();
     const hidden = await query(page, { type: "workspace.listTextProperties", workspaceId });
@@ -152,7 +158,7 @@ try {
     await clearingEditor.waitFor({ state: "hidden" });
     await page.waitForFunction(label => document.activeElement?.getAttribute("aria-label") === label, label);
     await query(page, { type: "workspace.updateSelectOption", workspaceId: sibling.workspaceId, propertyId, optionId, name: "Sibling rename", color: "red" });
-    await enterContextFor(page,page.locator("summary").filter({ hasText: en ? "Select options: Status" : "Опции Select: Status" }));
+    await openOptions();
     await page.getByRole("button", { name: en ? "Show option: Sibling rename" : "Показать опцию: Sibling rename", exact: true }).waitFor();
     assert.deepEqual(await readdir(source), ["Project"]); assert.deepEqual(await readdir(join(source, "Project")), ["keep"]);
     assert.equal(await readFile(join(source, "Project", "keep"), "utf8"), "unchanged");

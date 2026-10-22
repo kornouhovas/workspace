@@ -221,3 +221,15 @@ test('selection driver and unreached-tail renewal preserve original commands and
   assert.equal(selected.some(value=>/package:built|check:artifact|test:desktop-ux|desktop-ux-checks.mjs selections$/.test(value)),false);
  }
 });
+
+test('property profile runs real metadata safety and contextual Electron consumers and propagates failures',async()=>{
+ const {propertyCommands}=await import('../scripts/desktop-ux-checks.mjs');
+ const text=JSON.stringify(propertyCommands());
+ for(const required of ['property-management-ui.test.tsx','metadata-removal-service.test.mjs','metadata-removal-ipc.test.mjs','smoke-property-management.mjs','smoke-selection-editors.mjs','smoke:views','property-editor-driver.test.mjs'])assert.ok(text.includes(required),required);
+ assert.equal(spawnSync(process.execPath,['scripts/desktop-ux-checks.mjs','properties','--failure-probe'],{encoding:'utf8'}).status,23);
+ const {readFile}=await import('node:fs/promises');const {load}=await import('js-yaml');
+ const workflow=load(await readFile('.github/workflows/desktop-ci.yml','utf8')),job=workflow.jobs['desktop-ux'];
+ assert.ok(workflow.on.workflow_dispatch.inputs.desktop_ux_profile.options.includes('properties'));
+ assert.ok(job.steps.some(step=>step.run==='node scripts/desktop-ux-checks.mjs properties'));
+ for(const step of job.steps.filter(step=>step.run==='npm run test:desktop-ux'||step.name==='Package principal desktop consumers'))assert.ok(step.if.includes("inputs.desktop_ux_profile != 'properties'"));
+});

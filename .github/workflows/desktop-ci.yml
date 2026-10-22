@@ -13,7 +13,7 @@ on:
       desktop_ux_profile:
         description: With desktop-ux, select foundation, grouped Board or project navigation acceptance
         type: choice
-        options: [foundation, board, navigation, navigation-native, scroll-restoration, project-files, project-files-native, coherent, sessions, scalars, selections, selection-native, selection-focus, selection-tail]
+        options: [foundation, board, navigation, navigation-native, scroll-restoration, project-files, project-files-native, coherent, sessions, scalars, selections, properties, selection-native, selection-focus, selection-tail]
         default: foundation
       desktop_ux_failure_probe:
         description: With desktop-ux, deliberately fail a selected check to verify propagation
@@ -311,7 +311,7 @@ jobs:
         if: ${{ inputs.desktop_ux_failure_probe }}
         run: node scripts/desktop-ux-checks.mjs foundation --failure-probe
       - name: Affected UI, services and real Electron flows
-        if: ${{ !inputs.desktop_ux_failure_probe && !inputs.desktop_ux_packaged_only && !inputs.desktop_ux_category_only && inputs.desktop_ux_profile != 'board' && inputs.desktop_ux_profile != 'navigation' && inputs.desktop_ux_profile != 'navigation-native' && inputs.desktop_ux_profile != 'scroll-restoration' && inputs.desktop_ux_profile != 'project-files' && inputs.desktop_ux_profile != 'project-files-native' && inputs.desktop_ux_profile != 'coherent' && inputs.desktop_ux_profile != 'sessions' && inputs.desktop_ux_profile != 'scalars' && inputs.desktop_ux_profile != 'selections' && inputs.desktop_ux_profile != 'selection-native' && inputs.desktop_ux_profile != 'selection-tail' && inputs.desktop_ux_profile != 'selection-focus' }}
+        if: ${{ !inputs.desktop_ux_failure_probe && !inputs.desktop_ux_packaged_only && !inputs.desktop_ux_category_only && inputs.desktop_ux_profile != 'board' && inputs.desktop_ux_profile != 'navigation' && inputs.desktop_ux_profile != 'navigation-native' && inputs.desktop_ux_profile != 'scroll-restoration' && inputs.desktop_ux_profile != 'project-files' && inputs.desktop_ux_profile != 'project-files-native' && inputs.desktop_ux_profile != 'coherent' && inputs.desktop_ux_profile != 'sessions' && inputs.desktop_ux_profile != 'scalars' && inputs.desktop_ux_profile != 'selections' && inputs.desktop_ux_profile != 'selection-native' && inputs.desktop_ux_profile != 'selection-tail' && inputs.desktop_ux_profile != 'selection-focus' && inputs.desktop_ux_profile != 'properties' }}
         run: npm run test:desktop-ux
       - name: Selection driver regression and original native command renewal
         if: ${{ !inputs.desktop_ux_failure_probe && inputs.desktop_ux_profile == 'selection-native' }}
@@ -324,6 +324,9 @@ jobs:
       - name: Unreached selection scalar and saved-view consumers
         if: ${{ !inputs.desktop_ux_failure_probe && inputs.desktop_ux_profile == 'selection-tail' }}
         run: node scripts/desktop-ux-checks.mjs selection-tail
+      - name: Contextual property definitions and reviewed metadata removal
+        if: ${{ !inputs.desktop_ux_failure_probe && inputs.desktop_ux_profile == 'properties' }}
+        run: node scripts/desktop-ux-checks.mjs properties
       - name: Immediate selections, option controls and guarded navigation acceptance
         if: ${{ !inputs.desktop_ux_failure_probe && inputs.desktop_ux_profile == 'selections' }}
         run: node scripts/desktop-ux-checks.mjs selections
@@ -355,13 +358,13 @@ jobs:
         if: ${{ (inputs.desktop_ux_packaged_only || inputs.desktop_ux_category_only) && !inputs.desktop_ux_failure_probe }}
         run: node --import tsx --test tests/runtime-layout.test.mjs tests/runtime-readiness.test.mjs tests/desktop-ux-checks.test.mjs tests/rename-submission-receipt.test.mjs tests/project-category-move-runtime.test.mjs tests/runtime-quit-evidence.test.mjs
       - name: Package shared font and notices
-        if: ${{ !inputs.desktop_ux_failure_probe && inputs.desktop_ux_profile != 'board' && inputs.desktop_ux_profile != 'navigation' && inputs.desktop_ux_profile != 'navigation-native' && inputs.desktop_ux_profile != 'scroll-restoration' && inputs.desktop_ux_profile != 'project-files' && inputs.desktop_ux_profile != 'project-files-native' && inputs.desktop_ux_profile != 'selections' && inputs.desktop_ux_profile != 'selection-native' && inputs.desktop_ux_profile != 'selection-tail' && inputs.desktop_ux_profile != 'selection-focus' }}
+        if: ${{ !inputs.desktop_ux_failure_probe && inputs.desktop_ux_profile != 'board' && inputs.desktop_ux_profile != 'navigation' && inputs.desktop_ux_profile != 'navigation-native' && inputs.desktop_ux_profile != 'scroll-restoration' && inputs.desktop_ux_profile != 'project-files' && inputs.desktop_ux_profile != 'project-files-native' && inputs.desktop_ux_profile != 'selections' && inputs.desktop_ux_profile != 'selection-native' && inputs.desktop_ux_profile != 'selection-tail' && inputs.desktop_ux_profile != 'selection-focus' && inputs.desktop_ux_profile != 'properties' }}
         run: npm run package:built
       - name: Inspect packaged artifact
-        if: ${{ !inputs.desktop_ux_failure_probe && inputs.desktop_ux_profile != 'board' && inputs.desktop_ux_profile != 'navigation' && inputs.desktop_ux_profile != 'navigation-native' && inputs.desktop_ux_profile != 'scroll-restoration' && inputs.desktop_ux_profile != 'project-files' && inputs.desktop_ux_profile != 'project-files-native' && inputs.desktop_ux_profile != 'selections' && inputs.desktop_ux_profile != 'selection-native' && inputs.desktop_ux_profile != 'selection-tail' && inputs.desktop_ux_profile != 'selection-focus' }}
+        if: ${{ !inputs.desktop_ux_failure_probe && inputs.desktop_ux_profile != 'board' && inputs.desktop_ux_profile != 'navigation' && inputs.desktop_ux_profile != 'navigation-native' && inputs.desktop_ux_profile != 'scroll-restoration' && inputs.desktop_ux_profile != 'project-files' && inputs.desktop_ux_profile != 'project-files-native' && inputs.desktop_ux_profile != 'selections' && inputs.desktop_ux_profile != 'selection-native' && inputs.desktop_ux_profile != 'selection-tail' && inputs.desktop_ux_profile != 'selection-focus' && inputs.desktop_ux_profile != 'properties' }}
         run: npm run check:artifact -- release
       - name: Packaged saved-view consumers
-        if: ${{ !inputs.desktop_ux_failure_probe && !inputs.desktop_ux_category_only && inputs.desktop_ux_profile != 'board' && inputs.desktop_ux_profile != 'navigation' && inputs.desktop_ux_profile != 'navigation-native' && inputs.desktop_ux_profile != 'scroll-restoration' && inputs.desktop_ux_profile != 'project-files' && inputs.desktop_ux_profile != 'project-files-native' && inputs.desktop_ux_profile != 'selections' && inputs.desktop_ux_profile != 'selection-native' && inputs.desktop_ux_profile != 'selection-tail' && inputs.desktop_ux_profile != 'selection-focus' }}
+        if: ${{ !inputs.desktop_ux_failure_probe && !inputs.desktop_ux_category_only && inputs.desktop_ux_profile != 'board' && inputs.desktop_ux_profile != 'navigation' && inputs.desktop_ux_profile != 'navigation-native' && inputs.desktop_ux_profile != 'scroll-restoration' && inputs.desktop_ux_profile != 'project-files' && inputs.desktop_ux_profile != 'project-files-native' && inputs.desktop_ux_profile != 'selections' && inputs.desktop_ux_profile != 'selection-native' && inputs.desktop_ux_profile != 'selection-tail' && inputs.desktop_ux_profile != 'selection-focus' && inputs.desktop_ux_profile != 'properties' }}
         run: npm run smoke:views -- release
         env:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-desktop-ux-packaged
@@ -404,6 +407,7 @@ jobs:
           name: desktop-ux-foundation-${{ matrix.os }}
           path: |
             work/ci-desktop-ux
+            work/issue-58-properties-dev
             work/issue-68
             work/issue-53-board
             work/issue-54-navigation

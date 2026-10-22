@@ -1426,3 +1426,14 @@ MultiSelect journey on macOS only. Content dismissal is followed by observation
 of the exact trigger focus before the retained element-identity assertion.
 Passing Windows native receipts and macOS Selection/Select receipts remain at
 `1695c5ff`; no unchanged platform journey is retried to obtain a green verdict.
+
+## Contextual property acceptance
+
+For issue #58, dispatch `checks: desktop-ux`, `desktop_ux_profile: properties`.
+The scoped profile runs property/removal service and IPC checks, affected
+renderer/navigation/selection/layout coverage, native creator readiness, the
+property matrix and existing selection/Select/MultiSelect/Views Electron flows.
+It uses the existing macOS latest, Windows latest and Windows 2022 matrix.
+Property screenshots and the flow report are retained in
+`work/issue-58-properties-dev` with the candidate provenance artifact. No installer
+boundary changes; ordinary/full, packaged and final milestone routes remain.

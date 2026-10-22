@@ -1,6 +1,9 @@
 import type { Language } from "../contracts/settings.js";
 
 const english = {
+  addProperty: "Add property",
+  propertyType: "Property type",
+  propertyTypeText: "Text", propertyTypeNumber: "Number", propertyTypeDate: "Date", propertyTypeSelect: "Single Select", propertyTypeMultiSelect: "MultiSelect",
   backupTitle: "Automatic backups",
   backupPolicy: "At startup if due, then every 24 hours while running. The seven latest automatic copies are kept locally; pre-migration copies are kept separately. Project files are excluded.",
   backupDestination: "Backup folder",
@@ -700,6 +703,9 @@ const english = {
 } as const;
 
 const russian: Record<keyof typeof english, string> = {
+  addProperty: "Добавить свойство",
+  propertyType: "Тип свойства",
+  propertyTypeText: "Текст", propertyTypeNumber: "Число", propertyTypeDate: "Дата", propertyTypeSelect: "Single Select", propertyTypeMultiSelect: "MultiSelect",
   backupTitle: "Автоматические резервные копии",
   backupPolicy: "При запуске, если прошло 24 часа, затем каждые 24 часа работы. Локально хранятся семь последних автоматических копий; копии перед миграцией сохраняются отдельно. Файлы проектов не включены.",
   backupDestination: "Папка резервных копий",

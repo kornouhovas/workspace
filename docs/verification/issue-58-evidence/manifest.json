@@ -1,0 +1,15 @@
+{
+  "baseline": "fba398960b534b56a898930c132066e855f71a45",
+  "main": "080b416c57b2869024ac62363e96b68b40f499c0",
+  "bb": "f135a001e72942cee9118d2693208ec0725e2f18",
+  "host": "macOS 27.0 arm64, Node 22.21.1",
+  "source": "work/issue-58/reviewed-native",
+  "files": {
+    "Table-en-light-1024-review.png": "0fd016a3ebb790fc6ad17af5554ae1237f4f3dc68e9228f5c82d4f002d9de0c8",
+    "Board-ru-dark-1024-review.png": "09fe77485426aeac2b98601583bb9bf1aa4e0077b476ade59e05f76294379833",
+    "Details-en-light-1440-rename.png": "ca9a05f5db7113c2df2caf4dc11f84566ead60c020dec37921bad1b4463c2d09",
+    "Details-ru-dark-1024-review.png": "6b409e557d1ccdf7e3b1d3680755606970c2fa9a02af8e0f3e45c4409026551c",
+    "report.json": "39880b3a5296fd832f9c0ff42733a0f52761e1cc28529ffc439511d5dc7a62f4"
+  },
+  "application_diff_sha256": "c3d8ed6dd27b0cb4978e759432508db636fdbe27069f314bd303d0d6338fcfec"
+}

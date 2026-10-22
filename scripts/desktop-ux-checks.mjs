@@ -143,6 +143,21 @@ export function selectionCommands() {
     ['npm', ['run', 'smoke:views']],
   ];
 }
+// Bounded property-definition/removal acceptance; the existing service owns cleanup.
+export function propertyCommands() {
+  const tests = ['number-properties-ui.test.tsx', 'date-properties-ui.test.tsx', 'property-management-ui.test.tsx', 'metadata-removal-ui.test.tsx', 'metadata-removal-service.test.mjs', 'metadata-removal-ipc.test.mjs',
+    'renderer-app.test.tsx', 'single-select-ui.test.tsx', 'multi-select-ui.test.tsx', 'selection-editors-ui.test.tsx', 'scalar-drafts-ui.test.tsx',
+    'text-properties-service.test.mjs', 'number-properties-service.test.mjs', 'date-properties-service.test.mjs', 'single-select-service.test.mjs', 'multi-select-service.test.mjs',
+    'view-filters-ui.test.tsx', 'view-grouping-ui.test.tsx', 'table-layout-ui.test.tsx', 'board-layout-ui.test.tsx', 'property-editor-driver.test.mjs', 'desktop-ux-checks.test.mjs'];
+  return [
+    ['npm', ['run', 'typecheck']], ['npm', ['run', 'lint']],
+    [process.execPath, ['--import', 'tsx', '--test', ...tests.map(file => `tests/${file}`)]],
+    [process.execPath, ['scripts/smoke-property-management.mjs', 'dev']],
+    [process.execPath, ['scripts/smoke-selection-editors.mjs', 'dev']],
+    ['npm', ['run', 'smoke:select', '--', 'dev']], ['npm', ['run', 'smoke:multiselect', '--', 'dev']],
+    ['npm', ['run', 'smoke:views']],
+  ];
+}
 // Test-driver-only renewal: unchanged application/878+ source tests retain their receipts.
 export function selectionNativeCommands({renewViews = false} = {}) {
   return [
@@ -175,9 +190,9 @@ export function runChecks(commands, run = (command,args)=>spawnSync(command,args
 }
 if(process.argv[1] && resolve(process.argv[1])===fileURLToPath(import.meta.url)) {
   const args=process.argv.slice(2);
-  if(args.some(arg=>!['foundation','board','navigation','project-files','coherent','sessions','scalars','selections','selection-native','selection-focus','selection-tail','--list','--failure-probe','--native-only'].includes(arg)) || !['foundation','board','navigation','project-files','coherent','sessions','scalars','selections','selection-native','selection-focus','selection-tail'].includes(args[0])) throw new Error('Usage: desktop-ux-checks.mjs <foundation|board|navigation|project-files|coherent|sessions|scalars|selections|selection-native|selection-focus|selection-tail> [--list] [--failure-probe]');
+  if(args.some(arg=>!['foundation','board','navigation','project-files','coherent','sessions','scalars','selections','properties','selection-native','selection-focus','selection-tail','--list','--failure-probe','--native-only'].includes(arg)) || !['foundation','board','navigation','project-files','coherent','sessions','scalars','selections','properties','selection-native','selection-focus','selection-tail'].includes(args[0])) throw new Error('Usage: desktop-ux-checks.mjs <foundation|board|navigation|project-files|coherent|sessions|scalars|selections|properties|selection-native|selection-focus|selection-tail> [--list] [--failure-probe]');
   if(args.includes('--native-only') && !['navigation','project-files'].includes(args[0]))throw new Error('--native-only requires navigation or project-files');
-  const commands=args[0]==='selection-focus' ? selectionFocusCommands() : args[0]==='selection-native' ? selectionNativeCommands({renewViews:process.env.WORKSPACE_SELECTION_VIEWS_RENEW==='1'}) : args[0]==='selection-tail' ? selectionTailCommands() : args[0]==='selections' ? selectionCommands() : args[0]==='scalars' ? scalarCommands() : args[0]==='sessions' ? sessionCommands() : args[0]==='coherent' ? coherentCommands() : args[0]==='project-files' ? projectFilesCommands({nativeOnly:args.includes('--native-only')}) : args[0]==='navigation' ? navigationCommands({nativeOnly:args.includes('--native-only')}) : args[0]==='board' ? boardCommands() : foundationCommands({failureProbe:args.includes('--failure-probe')});
+  const commands=args[0]==='properties' ? propertyCommands() : args[0]==='selection-focus' ? selectionFocusCommands() : args[0]==='selection-native' ? selectionNativeCommands({renewViews:process.env.WORKSPACE_SELECTION_VIEWS_RENEW==='1'}) : args[0]==='selection-tail' ? selectionTailCommands() : args[0]==='selections' ? selectionCommands() : args[0]==='scalars' ? scalarCommands() : args[0]==='sessions' ? sessionCommands() : args[0]==='coherent' ? coherentCommands() : args[0]==='project-files' ? projectFilesCommands({nativeOnly:args.includes('--native-only')}) : args[0]==='navigation' ? navigationCommands({nativeOnly:args.includes('--native-only')}) : args[0]==='board' ? boardCommands() : foundationCommands({failureProbe:args.includes('--failure-probe')});
   if(args[0]!=='foundation' && args.includes('--failure-probe')) commands.unshift([process.execPath,['-e','process.exit(23)']]);
   if(args.includes('--list')) console.log(JSON.stringify(commands));
   else process.exitCode=runChecks(commands);

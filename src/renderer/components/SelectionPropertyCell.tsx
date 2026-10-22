@@ -99,7 +99,7 @@ function SelectionMenu({ multiple = false, label, close, canClose, setPending, .
   };
   return <Popover.Content ref={content} className="context-popover selection-popover text-value-editor" align="start" sideOffset={4} aria-label={label}
     onOpenAutoFocus={event => { event.preventDefault(); focus(); }}
-    onEscapeKeyDown={event => { event.preventDefault(); if ((event.target as HTMLElement).closest("form")) return; event.stopPropagation(); dismiss(); }}
+    onEscapeKeyDown={event => { event.preventDefault(); if ((event.target as HTMLElement).closest("form, .metadata-removal")) return; event.stopPropagation(); dismiss(); }}
     onInteractOutside={event => { if (inFlight.current || optionState.busy || optionState.failed || failed.current || content.current?.querySelector("form")) event.preventDefault(); }}>
     {multiple ? <fieldset className="multi-select-editor" disabled={props.disabled || optionState.busy || optionState.failed} aria-busy={pending}>
       <legend className="text-value-label">{label}</legend>

@@ -75,17 +75,17 @@ for (const createLabel of ["Create Single Select property", "Создать Sing
 test(`property creation waits for initial loading before keyboard activation in real Electron: ${createLabel}`, async () => {
   await withPage(async page => {
     page.setDefaultTimeout(5000);
-    await page.setContent(`<button id="create" disabled>${createLabel}</button><div id="editor"></div>`);
-    await page.evaluate(() => {
+    await page.setContent(`<button id="create" disabled>Add property</button><div id="editor"></div>`);
+    await page.evaluate(createLabel => {
       globalThis.fixturePropertyActivations = 0;
       const button = globalThis.document.querySelector("#create");
       button.addEventListener("click", () => {
         globalThis.fixturePropertyActivations++;
-        globalThis.document.querySelector("#editor").innerHTML = '<label for="property-name">Property name</label><input id="property-name">';
+        globalThis.document.querySelector("#editor").innerHTML = `<label for="property-name">Property name</label><input id="property-name"><label for="property-type">Property type</label><select id="property-type"><option value="${createLabel.includes("MultiSelect") ? "multi_select" : createLabel.includes("Single Select") ? "single_select" : createLabel.includes("Number") ? "number" : "date"}">${createLabel}</option></select>`;
         globalThis.document.querySelector("#property-name").focus();
       });
       globalThis.setTimeout(() => { button.disabled = false; }, 500);
-    });
+    }, createLabel);
     const input = await openPropertyCreator(page, { createLabel, propertyNameLabel: "Property name" });
     await input.fill("Tags");
     assert.equal(await input.inputValue(), "Tags");
@@ -96,7 +96,7 @@ test(`property creation waits for initial loading before keyboard activation in 
 
 test("property creation keeps the caller deadline and never activates a still-loading control", async () => {
   await withPage(async page => {
-    await page.setContent('<button disabled>Create MultiSelect property</button>');
+    await page.setContent('<button disabled>Add property</button>');
     await page.evaluate(() => {
       globalThis.fixturePropertyActivations = 0;
       globalThis.document.querySelector("button").addEventListener("click", () => { globalThis.fixturePropertyActivations++; });

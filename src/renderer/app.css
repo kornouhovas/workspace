@@ -871,7 +871,7 @@ p { margin-block: .5rem; }
 .project-file-actions .workspace-button { font-size: 11px; }
 
 /* Ordinary selection menus share the contextual desktop controls on every surface. */
-.selection-popover {
+.selection-popover, .property-management-popover {
   z-index: 60;
   width: min(360px, calc(100vw - 32px));
   max-height: min(520px, var(--radix-popover-content-available-height));
@@ -888,3 +888,17 @@ p { margin-block: .5rem; }
 .selection-popover .select-options ul { display: grid; gap: 8px; padding: 0; list-style: none; }
 .selection-popover .select-options li { display: flex; flex-wrap: wrap; gap: 4px; }
 .selection-popover .select-options .property-authored { flex-basis: 100%; }
+
+/* Contextual property definitions reuse the existing Radix/semantic foundation. */
+.property-management-popover { width: min(400px, calc(100vw - 24px)); max-height: min(640px, var(--radix-popover-content-available-height)); overflow: auto; }
+.property-management-popover .property-form { margin: 0 0 12px; }
+.property-management-popover .metadata-removal, .selection-popover .metadata-removal { padding: 0; margin: 0; border: 0; }
+.property-context-controls { display: flex; flex-direction: column; gap: 6px; }
+.property-control-item { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.property-control-item .property-authored { min-width: 0; overflow-wrap: anywhere; }
+.property-management-popover .metadata-removal .workspace-form-actions,
+.selection-popover .metadata-removal .workspace-form-actions { position: sticky; bottom: 0; padding-block: 6px; background: var(--background); }
+.project-detail-fields td[data-custom-property]::before { display: none; }
+.detail-property-label { display: flex; align-items: start; justify-content: space-between; gap: 6px; min-width: 0; color: var(--muted-foreground); font-size: 12px; }
+.detail-property-label .property-authored { min-width: 0; overflow-wrap: anywhere; }
+.detail-property-label .property-rename { flex-shrink: 0; padding: 3px; }

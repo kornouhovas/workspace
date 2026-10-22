@@ -133,3 +133,12 @@ Session persistence uses the existing #69 composition, Inter assets, local
 icons/Hint and Radix controls. No new upstream code, visual asset or dependency is
 copied. Main's pinned session journeys inform the behavior, with Workspace's
 accepted unique-tab/single-project-area model and SQLite service ownership.
+
+## Issue 58 contextual property management
+
+Property-definition editors and reviewed metadata removal reuse the pinned Radix
+Popover/Portal, existing Inter assets, semantic colors, local icons and Hint.
+Same-surface focus refs and the established draft registry preserve dismissal and
+navigation ownership. The available-height cap and sticky review actions retain
+access at both supported desktop sizes. All new code is local; no additional bb
+source, dependency or notice is introduced.

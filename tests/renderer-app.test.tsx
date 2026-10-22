@@ -1697,7 +1697,7 @@ test("EN/RU Text definition creation and rename preserve failed drafts, keyboard
     } });
     const client = new WorkspaceServiceClient(window.workspace);
     render(<TextPropertiesTable client={client} workspaceId={workspaceId} sourceId={sourceId} projects={[]} language={language} disabled={false} />);
-    const create = await findAction("button",{ name: translate(language, "createTextProperty") });
+    const create = await findAction("button",{ name: translate(language, "addProperty") });
     await waitFor(() => assert.equal((create as HTMLButtonElement).disabled, false));
     create.focus(); await userEvent.keyboard("{Enter}");
     let name = screen.getByRole("textbox", { name: translate(language, "propertyName") });
@@ -1718,13 +1718,13 @@ test("EN/RU Text definition creation and rename preserve failed drafts, keyboard
       finish?.(ok({ snapshot, propertyId, projectId: null }));
     });
     assert.ok(await screen.findByText(translate(language, "propertySaved")));
-    assert.equal(document.activeElement, create);
+    await waitFor(() => assert.equal(document.activeElement, create));
     const renameButton = (await findAction("button",{ name: `${translate(language, "renameProperty")}: ${snapshot.definitions[0].name.trim()}` }));
     assert.equal(within(screen.getByRole("columnheader", {name: /Заметка 📝/})).getByText("Заметка 📝").textContent, "  Заметка 📝  ");
     renameButton.focus(); await userEvent.keyboard("{Enter}");
     name = screen.getByRole("textbox", { name: translate(language, "propertyName") });
     await userEvent.clear(name); await userEvent.type(name, "Cancelled"); await userEvent.keyboard("{Escape}");
-    assert.equal(document.activeElement, renameButton); assert.equal(saves, 2);
+    await waitFor(() => assert.equal(document.activeElement, renameButton)); assert.equal(saves, 2);
     await userEvent.click(renameButton); name = screen.getByRole("textbox", { name: translate(language, "propertyName") });
     await userEvent.clear(name); await userEvent.type(name, "  新しい имя  "); await userEvent.keyboard("{Enter}");
     await act(async () => { finish?.(fail("service_unavailable")); });
@@ -1733,7 +1733,7 @@ test("EN/RU Text definition creation and rename preserve failed drafts, keyboard
     snapshot = { ...snapshot, revision: 2, definitions: [{ ...snapshot.definitions[0], name: "  新しい имя  " }] };
     await act(async () => { finish?.(ok({ snapshot, propertyId, projectId: null })); });
     assert.equal(within(screen.getByRole("columnheader", {name: /新しい имя/})).getByText("新しい имя").textContent, "  新しい имя  ");
-    assert.equal(document.activeElement, (await findAction("button",{ name: `${translate(language, "renameProperty")}: ${snapshot.definitions[0].name.trim()}` })));
+    await waitFor(() => assert.equal(document.activeElement, screen.getByRole("button",{ name: `${translate(language, "renameProperty")}: ${snapshot.definitions[0].name.trim()}` })));
     cleanup(); assert.equal(api.changeListenerCount(), 0);
   }
 });
@@ -1790,7 +1790,7 @@ test("EN/RU default Table creates and renames source-owned Text definitions thro
       });
       const unsubscribe = service.workspaces.subscribe(api.emitChange);
       render(<App />);
-      const create = await findAction("button",{ name: translate(language, "createTextProperty") });
+      const create = await findAction("button",{ name: translate(language, "addProperty") });
       await waitFor(() => assert.equal((create as HTMLButtonElement).disabled, false));
       await userEvent.click(create); await userEvent.type(screen.getByRole("textbox", { name: translate(language, "propertyName") }), "  Real Text  "); await userEvent.keyboard("{Enter}");
       const rename = await findAction("button",{ name: `${translate(language, "renameProperty")}: Real Text` });

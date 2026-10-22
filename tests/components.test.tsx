@@ -12,6 +12,7 @@ Object.assign(globalThis, {
   HTMLElement: browser.HTMLElement,
   Node: browser.Node,
   MutationObserver: browser.MutationObserver,
+  CustomEvent: browser.CustomEvent, Element: browser.Element, NodeFilter: browser.NodeFilter, HTMLInputElement: browser.HTMLInputElement, ResizeObserver: browser.ResizeObserver, getComputedStyle: browser.getComputedStyle.bind(browser), requestAnimationFrame: browser.requestAnimationFrame.bind(browser), cancelAnimationFrame: browser.cancelAnimationFrame.bind(browser),
 });
 Object.defineProperty(globalThis, "navigator", {
   configurable: true,
@@ -257,8 +258,8 @@ test("EN/RU Table without Text definitions retains the authored Name and only Na
     assert.equal(screen.getByText(name, { selector: "td span", normalizer: (text) => text }).textContent, name);
     assert.equal(screen.queryByRole("button", { name: new RegExp(`^${translate(language, "editTextValue")}:`) }), null);
     const user = userEvent.setup({document});
-    await user.click(screen.getByRole("button", {name:translate(language,"propertyTools")}));
-    assert.ok(screen.getByRole("button", { name: translate(language, "createTextProperty") }));
+    await user.click(screen.getByRole("button", {name:translate(language,"addProperty")}));
+    assert.ok(screen.getByRole("combobox", { name: translate(language, "propertyType") }));
     cleanup();
   }
 });

@@ -11,7 +11,7 @@ import type { WorkspaceDesktopApi } from "../src/contracts/desktop-api.js";
 import { TextPropertiesTable } from "../src/renderer/components/TextPropertiesTable.js";
 import { translate } from "../src/renderer/localization.js";
 const browser = new Window();
-Object.assign(globalThis, { window: browser, document: browser.document, HTMLElement: browser.HTMLElement, Node: browser.Node, MutationObserver: browser.MutationObserver });
+Object.assign(globalThis, { window: browser, document: browser.document, HTMLElement: browser.HTMLElement, Node: browser.Node, MutationObserver: browser.MutationObserver, CustomEvent: browser.CustomEvent, Element: browser.Element, NodeFilter: browser.NodeFilter, HTMLInputElement: browser.HTMLInputElement, ResizeObserver: browser.ResizeObserver, getComputedStyle: browser.getComputedStyle.bind(browser), requestAnimationFrame: browser.requestAnimationFrame.bind(browser), cancelAnimationFrame: browser.cancelAnimationFrame.bind(browser) });
 Object.defineProperty(globalThis, "navigator", { configurable: true, value: browser.navigator });
 const { cleanup, render, screen, waitFor } = await import("@testing-library/react");
 const { default: userEvent } = await import("@testing-library/user-event");
@@ -32,9 +32,11 @@ for (const language of ["en", "ru"] as const) {
     const t = (key: Parameters<typeof translate>[1]) => translate(language, key);
     try {
       const mounted = render(<TextPropertiesTable client={client} workspaceId={workspaceId} sourceId={sourceId} projects={projects} language={language} disabled={false} hideReveal />);
-      const create = await findAction("button", { name: language === "en" ? "Create Date property" : "Создать Date-свойство" });
+      const create = await findAction("button", { name: t("addProperty") });
       await waitFor(() => assert.equal(create.hasAttribute("disabled"), false));
       create.focus(); await user.keyboard("{Enter}");
+      await user.selectOptions(screen.getByRole("combobox", { name: t("propertyType") }), "date");
+      await user.click(screen.getByRole("textbox", { name: t("propertyName") }));
       await user.keyboard("Deadline{Enter}");
       const label = `${language === "en" ? "Edit Date value" : "Редактировать Date-значение"}: Project / Deadline`;
       const button = await findAction("button", { name: label });

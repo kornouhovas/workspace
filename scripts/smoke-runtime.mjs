@@ -145,8 +145,8 @@ async function properties(page, workspaceId) {
   return result.value;
 }
 const propertyLabels = {
-  en: { create: "Create Text property", name: "Property name", rename: "Rename property", edit: "Edit Text value", save: "Save value", clear: "Clear value", saved: "Value saved.", absent: "No value", empty: "Empty text" },
-  ru: { create: "Создать Text-свойство", name: "Название свойства", rename: "Переименовать свойство", edit: "Редактировать Text-значение", save: "Сохранить значение", clear: "Очистить значение", saved: "Значение сохранено.", absent: "Нет значения", empty: "Пустой текст" },
+  en: { create: "Add property", name: "Property name", rename: "Rename property", edit: "Edit Text value", save: "Save value", clear: "Clear value", saved: "Value saved.", absent: "No value", empty: "Empty text" },
+  ru: { create: "Добавить свойство", name: "Название свойства", rename: "Переименовать свойство", edit: "Редактировать Text-значение", save: "Сохранить значение", clear: "Очистить значение", saved: "Значение сохранено.", absent: "Нет значения", empty: "Пустой текст" },
 };
 const accessibleName = (name) => name.replace(/\s+/g, " ").trim();
 async function waitForProjectCell(page, name) {

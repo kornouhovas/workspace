@@ -51,7 +51,7 @@ for (const language of ["en", "ru"] as const) {
       const propertyPanel=screen.getByRole('dialog',{name:t('propertyTools')});
       const rename=within(propertyPanel).getByRole('button',{name:`${t('renameProperty')}: Notes`});
       await user.click(rename);
-      const name=await within(propertyPanel).findByRole('textbox',{name:t('propertyName')});
+      const name=await screen.findByRole('textbox',{name:t('propertyName')});
       await user.clear(name);await user.type(name,'Uncommitted name');await user.keyboard('{Escape}');
       await waitFor(()=>assert.ok(document.activeElement===rename));
       assert.equal(query('listTextProperties').value.definitions.find((p:{propertyId:string})=>p.propertyId===propertyId).name,'Notes');

@@ -5,7 +5,7 @@ import { Hint } from "./Hint.js";
 import { Icon } from "./Icons.js";
 import { ContextTools, contextReturnTarget } from "./ContextTools.js";
 import { ViewportProjectRow } from "./ViewportProjectRow.js";
-import { MetadataRemovalPanel } from "./MetadataRemovalPanel.js";
+import { PropertyControls } from "./PropertyControls.js";
 import { GroupAssignment, groupAssignmentMime, readGroupDrop } from "./GroupAssignment.js";
 import type { AssignProjectGroupCommand } from "../../contracts/group-assignment.js";
 import { BoardLayoutControls, useBoardLayout, boardColumnWidth } from "./BoardLayout.js";
@@ -112,10 +112,6 @@ function TextPropertiesContent({ detail, onPreview, viewId, layout = "table", hi
   const backwards = useRef(false);
   const categoryDrafts = useRef(new Map<string, CategoryLabelDraft>());
   const t = (key: TranslationKey) => translate(language, key);
-  const [removal, setRemoval] = useState<{property: import("../../contracts/text-properties.js").PropertyDefinition; optionId: string | null} | null>(null);
-  const removalTrigger = useRef<HTMLElement | null>(null);
-  const removalStatus = useRef<HTMLDivElement>(null);
-  const finishRemoval = () => { setRemoval(null); window.requestAnimationFrame(() => (removalTrigger.current?.isConnected ? removalTrigger.current : removalStatus.current)?.focus()); };
   const [snapshot, setSnapshot] = useState<TextPropertySnapshot | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
@@ -128,35 +124,12 @@ function TextPropertiesContent({ detail, onPreview, viewId, layout = "table", hi
     const target = control && !control.disabled ? control : assignmentStatus.current;
     if (target) { target.focus({preventScroll:true}); assignmentFocus.current = null; }
   }, [grouped, assignmentPending, assignmentOwner, loading]);
-  const [draft, setDraft] = useState<{ propertyId: string | null; name: string; originalName: string; propertyType: "text" | "number" | "date" | "single_select" | "multi_select" } | null>(null);
-  const [pending, setPending] = useState(false);
-  const [message, setMessage] = useState<"propertyValidation" | "propertySaveError" | "propertySaved" | "propertyNewerChange" | null>(null);
+  const [message, setMessage] = useState<"propertySaved" | "propertyNewerChange" | null>(null);
+  const savedRevision = useRef(0);
+  useEffect(() => { if (snapshot && snapshot.revision > savedRevision.current) setMessage(current => current === "propertySaved" ? "propertyNewerChange" : current); }, [snapshot?.revision]);
   const minimumRevision = useRef(0);
   const listVersion = useRef(0);
   const lifetime = useRef(0);
-  const saving = useRef(false);
-  const savedRevision = useRef(0);
-  const trigger = useRef<HTMLButtonElement>(null);
-  const multiSelectTrigger = useRef<HTMLButtonElement>(null);
-  const selectTrigger = useRef<HTMLButtonElement>(null);
-  const dateTrigger = useRef<HTMLButtonElement>(null);
-  const numberTrigger = useRef<HTMLButtonElement>(null);
-  const creationType = useRef<"text" | "number" | "date" | "single_select" | "multi_select">("text");
-  const renameButtons = useRef(new Map<string, HTMLButtonElement>());
-  const focusTarget = useRef<string | null | undefined>(undefined);
-  const input = useRef<HTMLInputElement>(null);
-  useEffect(() => {
-    if (snapshot && snapshot.revision > savedRevision.current) {
-      setMessage((current) => current === "propertySaved" ? "propertyNewerChange" : current);
-    }
-  }, [snapshot?.revision]);
-  useEffect(() => {
-    if (draft) input.current?.focus();
-    else if (focusTarget.current !== undefined) {
-      (focusTarget.current === null ? (creationType.current === "multi_select" ? multiSelectTrigger.current : creationType.current === "single_select" ? selectTrigger.current : creationType.current === "date" ? dateTrigger.current : creationType.current === "number" ? numberTrigger.current : trigger.current) : renameButtons.current.get(focusTarget.current) ?? trigger.current)?.focus();
-      focusTarget.current = undefined;
-    }
-  }, [draft?.propertyId, draft === null]);
   const accepts = (value: TextPropertySnapshot) => value.workspaceId === workspaceId && value.sourceId === sourceId && value.revision >= minimumRevision.current;
   const load = async () => {
     const current = ++listVersion.current;
@@ -228,38 +201,25 @@ function TextPropertiesContent({ detail, onPreview, viewId, layout = "table", hi
     void tableState.save(moveTableRow(tableState.config, rowIds, id, target));
   };
   const tableStyle = viewId ? {width:columns.filter(c=>!c.hidden).reduce((sum,c)=>sum+c.width, hideReveal ? 0 : 48), minWidth:"100%"} : {minWidth:`${fields.length * 14}rem`};
-  const cancel = () => {
-    if (saving.current || !draft) return;
-    focusTarget.current = draft.propertyId;
-    setDraft(null); setMessage(null);
+  const committed = (value: TextPropertySnapshot) => {
+    savedRevision.current = value.revision;
+    setMessage(accepts(value) ? "propertySaved" : "propertyNewerChange");
+    if (accepts(value)) { listVersion.current++; minimumRevision.current = value.revision; setSnapshot(value); setLoading(false); setLoadError(false); }
   };
-  const save = async () => {
-    if (!draft || saving.current || disabled) return;
-    if (!draft.name.trim()) { setMessage("propertyValidation"); input.current?.focus(); return; }
-    const current = lifetime.current;
-    saving.current = true; setPending(true); setMessage(null);
-    try {
-      const result = draft.propertyId === null
-        ? await client.createProperty(workspaceId, draft.name, draft.propertyType)
-        : await client.renameProperty(workspaceId, draft.propertyId, draft.name);
-      if (current !== lifetime.current) return;
-      if (result.ok && result.value.snapshot.workspaceId === workspaceId && result.value.snapshot.sourceId === sourceId) {
-        savedRevision.current = result.value.snapshot.revision;
-        if (accepts(result.value.snapshot)) {
-          // Supersede older lists while preserving an own event-before-response success.
-          listVersion.current++; setLoading(false); setLoadError(false);
-          minimumRevision.current = result.value.snapshot.revision; setSnapshot(result.value.snapshot);
-          setMessage("propertySaved");
-        } else setMessage("propertyNewerChange");
-        focusTarget.current = draft.propertyId; setDraft(null);
-      } else setMessage(!result.ok && result.error.code === "invalid_input" ? "propertyValidation" : "propertySaveError");
-    } catch { if (current === lifetime.current) setMessage("propertySaveError"); }
-    finally {
-      if (current === lifetime.current) { saving.current = false; setPending(false); }
-    }
-  };
+  const propertyCreationTrigger = useRef<HTMLButtonElement>(null);
+  const propertyControl = (property?: TextPropertyDefinition) => <PropertyControls client={client} workspaceId={workspaceId} sourceId={sourceId}
+    fallbackFocus={propertyCreationTrigger} snapshot={snapshot} property={property} language={language} disabled={disabled || loadError || loading} onCommitted={committed} onObserved={load}/>;
+  const categoryHeader = categoryProperty && (onCategoryPropertyCommitted && minimumCategoryPropertyRevision ? <CategoryPropertyHeader client={client} workspaceId={workspaceId} sourceId={sourceId} property={categoryProperty}
+    discoveryRevision={discoveryRevision} minimumDiscoveryRevision={minimumDiscoveryRevision} revision={categoryPropertyRevision} minimumRevision={minimumCategoryPropertyRevision}
+    preservedDraft={categoryDrafts.current.get(categoryProperty.propertyId)} onDraftChange={draft => {
+      if (draft) categoryDrafts.current.set(categoryProperty.propertyId, draft); else categoryDrafts.current.delete(categoryProperty.propertyId);
+    }} onCommitted={onCategoryPropertyCommitted} language={language} disabled={disabled || (minimumDiscoveryRevision !== undefined && minimumDiscoveryRevision.current > discoveryRevision)}/>
+    : <span className="property-authored">{categoryProperty.name ?? t("discoveryCategory")}</span>);
+  const propertyTools = <div className="property-context-controls">{propertyControl()}{categoryHeader}
+    {snapshot?.definitions.map(property => <span key={property.propertyId} className="property-control-item"><span className="property-authored">{property.name}</span>{propertyControl(property)}</span>)}
+  </div>;
   const optionEditor = (property: TextPropertyDefinition): SelectionOptionsEditor => (onStateChange, valuePending) => <SelectOptionsEditor onStateChange={onStateChange}
-    client={client} workspaceId={workspaceId} property={property} snapshot={snapshot!} language={language} disabled={disabled || loadError || draft !== null || valuePending}
+    client={client} workspaceId={workspaceId} property={property} snapshot={snapshot!} language={language} disabled={disabled || loadError || valuePending}
     onCommitted={value => { if (accepts(value)) { listVersion.current++; minimumRevision.current = value.revision; setSnapshot(value); setLoading(false); setLoadError(false); } }} />;
   const saveValue = async (projectId: string, propertyId: string, value: string | null | string[], propertyType: "text" | "number" | "date" | "single_select" | "multi_select") => {
     const current = lifetime.current;
@@ -328,19 +288,11 @@ function TextPropertiesContent({ detail, onPreview, viewId, layout = "table", hi
   const Cell = layout === "board" ? "div" : "td";
   const headers = presentCells(<><Header data-column-id="name" className="board-field-placeholder">{t("projectName")}</Header>
         {categoryProperty && <Header data-column-id={categoryProperty.propertyId} key={categoryProperty.propertyId} aria-label={categoryProperty.name ?? t("discoveryCategory")}>
-          {onCategoryPropertyCommitted && minimumCategoryPropertyRevision ? <CategoryPropertyHeader client={client} workspaceId={workspaceId} sourceId={sourceId} property={categoryProperty}
-            discoveryRevision={discoveryRevision} minimumDiscoveryRevision={minimumDiscoveryRevision} revision={categoryPropertyRevision} minimumRevision={minimumCategoryPropertyRevision}
-            preservedDraft={categoryDrafts.current.get(categoryProperty.propertyId)} onDraftChange={(draft) => {
-              if (draft) categoryDrafts.current.set(categoryProperty.propertyId, draft);
-              else categoryDrafts.current.delete(categoryProperty.propertyId);
-            }} onCommitted={onCategoryPropertyCommitted} language={language} disabled={disabled || (minimumDiscoveryRevision !== undefined && minimumDiscoveryRevision.current > discoveryRevision)} /> : <span className="property-authored">{categoryProperty.name ?? t("discoveryCategory")}</span>}
+          {categoryHeader}
         </Header>}
         {snapshot?.definitions.map((property) => <Header data-column-id={property.propertyId} key={property.propertyId}>
           <span className="property-authored">{property.name}</span>
-<Hint label={`${t("renameProperty")}: ${property.name}`}>
-          <button type="button" ref={(element) => { if (element) renameButtons.current.set(property.propertyId, element); else renameButtons.current.delete(property.propertyId); }}
-            className="workspace-button workspace-button--secondary property-rename" aria-label={`${t("renameProperty")}: ${property.name}`}
-            disabled={disabled || draft !== null} onClick={() => { setMessage(null); setDraft({ propertyId: property.propertyId, name: property.name, originalName: property.name, propertyType: property.propertyType }); }}><Icon name="edit"/></button></Hint>
+{propertyControl(property)}
         </Header>)}
         {!hideReveal && <Header className="board-field-placeholder" style={{width:48}}><span className="sr-only">{t("projectActions")}</span></Header>}
       </>);
@@ -386,14 +338,15 @@ function TextPropertiesContent({ detail, onPreview, viewId, layout = "table", hi
         {categoryProperty && <Cell data-column-id={categoryProperty.propertyId} data-label={categoryProperty.name ?? t("discoveryCategory")} key={categoryProperty.propertyId} className="category-cell" data-color={categories.find(category => category.categoryId === project.categoryId)?.presentation?.color ?? "default"}>{layout === "board" ? <span className="board-category-value">{retained?.categoryName ?? categories.find((category) => category.categoryId === project.categoryId)?.name}</span> : retained?.categoryName ?? categories.find((category) => category.categoryId === project.categoryId)?.name}
 
         </Cell>}
-        {snapshot?.definitions.map((property) => <Cell data-column-id={property.propertyId} key={property.propertyId} data-label={property.name}>
+        {snapshot?.definitions.map((property) => <Cell data-column-id={property.propertyId} key={property.propertyId} data-label={property.name} data-custom-property={detail || undefined}>
+          {detail && <div className="detail-property-label"><span className="property-authored">{property.name}</span>{propertyControl(property)}</div>}
           {property.propertyType === "multi_select" ? <MultiSelectPropertyCell workspaceId={workspaceId} sourceId={sourceId} projectId={project.projectId} propertyId={property.propertyId}
-            revision={snapshot.revision} minimumRevision={minimumRevision} projectName={project.name} propertyName={property.name} language={language} disabled={disabled || loadError || draft !== null}
+            revision={snapshot.revision} minimumRevision={minimumRevision} projectName={project.name} propertyName={property.name} language={language} disabled={disabled || loadError}
             optionsEditor={optionEditor(property)} options={propertyValues.options.get(property.propertyId) ?? []}
             value={propertyValues.multi.get(`${project.projectId}:${property.propertyId}`) ?? []}
             onSave={value => saveValue(project.projectId, property.propertyId, value, property.propertyType)} /> : <TextPropertyCell workspaceId={workspaceId} sourceId={sourceId} projectId={project.projectId} propertyId={property.propertyId}
             revision={snapshot.revision} minimumRevision={minimumRevision}
-            projectName={project.name} propertyName={property.name} language={language} disabled={disabled || loadError || draft !== null}
+            projectName={project.name} propertyName={property.name} language={language} disabled={disabled || loadError}
             optionsEditor={property.propertyType === "single_select" ? optionEditor(property) : undefined} propertyType={property.propertyType} options={propertyValues.options.get(property.propertyId)}
             value={property.propertyType === "single_select" ? propertyValues.select.get(`${project.projectId}:${property.propertyId}`) ?? null : property.propertyType === "number" ? (() => {
               const numeric = propertyValues.number.get(`${project.projectId}:${property.propertyId}`);
@@ -417,23 +370,14 @@ function TextPropertiesContent({ detail, onPreview, viewId, layout = "table", hi
           locatorKey={revealLocator} targetKey={JSON.stringify([revealLocator, retained?.associationState, retained?.resolution])} /></ContextTools></Cell>}
       </>, true)}</ViewportProjectRow>; });
   };
-  const propertyForm = draft && <form className="property-form" onSubmit={(event) => { event.preventDefault(); void save(); }}
-      onKeyDown={(event) => { if (event.key === "Escape") { event.preventDefault(); cancel(); } }}>
-      <label htmlFor="property-name">{t("propertyName")}</label>
-      <input ref={input} id="property-name" className="workspace-input" value={draft.name} disabled={disabled || pending}
-        aria-invalid={message === "propertyValidation"} onChange={(event) => setDraft({ ...draft, name: event.currentTarget.value })} />
-      <div className="workspace-form-actions">
-        <button type="submit" className="workspace-button" disabled={disabled || pending}>{t(pending ? "propertySaving" : "savePropertyName")}</button>
-        <button type="button" className="workspace-button workspace-button--secondary" disabled={pending} onClick={cancel}>{t("cancelRenameWorkspace")}</button>
-      </div>
-    </form>;
   if (detail) return <div className="project-detail-fields" aria-busy={loading}>
     <h3 className="project-properties-heading">{t("propertyTools")}</h3>
+    {propertyControl()}
     {loading && <StatusMessage kind="info" title={t("propertiesLoading")}/>}
     {loadError && <><StatusMessage kind="error" title={t("propertiesLoadError")}/><button type="button" className="workspace-button" onClick={()=>void load()}>{t("propertiesRetry")}</button></>}
     <table className="project-table"><tbody>{rows()}</tbody></table>
   </div>;
-  return <div className="text-properties" aria-busy={pending || loading} onKeyDownCapture={event => { if (event.key === "Tab") backwards.current = event.shiftKey; }}>
+  return <div className="text-properties" aria-busy={loading} onKeyDownCapture={event => { if (event.key === "Tab") backwards.current = event.shiftKey; }}>
     {viewId && <ViewFilters client={client} workspaceId={workspaceId} viewId={viewId} archived={!!hideReveal} language={language}
       showEmpty={projects.length + retainedProjects.length > 0} snapshot={snapshot} categoryProperty={categoryProperty} categories={categories} disabled={disabled || loadError}
       projection={discoveryRevision > 0 && !hideReveal ? {revision:discoveryRevision,projectIds:[...projectById.keys()]} : undefined}
@@ -451,46 +395,13 @@ function TextPropertiesContent({ detail, onPreview, viewId, layout = "table", hi
     {loading && <StatusMessage kind="info" title={t("projectsLoading")} />}
     {loadError && <><StatusMessage kind="error" title={t("propertiesLoadError")} />
       <button type="button" className="workspace-button workspace-button--secondary" disabled={disabled || loading} onClick={() => void load()}>{t("propertiesRetry")}</button></>}
-    <ViewControls><ContextTools label={t("propertyTools")} icon="properties">
-    {layout === "board" && <div className="board-property-controls">{headers}</div>}
-    {snapshot && snapshot.definitions.length === 0 && <p>{t("propertiesEmpty")}</p>}
-    <div className="property-create-controls"><button ref={trigger} type="button" className="workspace-button workspace-button--secondary" disabled={disabled || loading || loadError || draft !== null}
-      onClick={() => { setMessage(null); creationType.current = "text"; setDraft({ propertyId: null, name: "", originalName: "", propertyType: "text" }); }}>{t("createTextProperty")}</button>
-    <button ref={numberTrigger} type="button" className="workspace-button workspace-button--secondary" disabled={disabled || loading || loadError || draft !== null}
-      onClick={() => { setMessage(null); creationType.current = "number"; setDraft({ propertyId: null, name: "", originalName: "", propertyType: "number" }); }}>{t("createNumberProperty")}</button>
-    <button ref={dateTrigger} type="button" className="workspace-button workspace-button--secondary" disabled={disabled || loading || loadError || draft !== null}
-      onClick={() => { setMessage(null); creationType.current = "date"; setDraft({ propertyId: null, name: "", originalName: "", propertyType: "date" }); }}>{t("createDateProperty")}</button>
-    <button ref={selectTrigger} type="button" className="workspace-button workspace-button--secondary" disabled={disabled || loading || loadError || draft !== null}
-      onClick={() => { setMessage(null); creationType.current = "single_select"; setDraft({ propertyId: null, name: "", originalName: "", propertyType: "single_select" }); }}>{t("createSelectProperty")}</button>
-    <button ref={multiSelectTrigger} type="button" className="workspace-button workspace-button--secondary" disabled={disabled || loading || loadError || draft !== null}
-      onClick={() => { setMessage(null); creationType.current = "multi_select"; setDraft({ propertyId: null, name: "", originalName: "", propertyType: "multi_select" }); }}>{t("createMultiSelectProperty")}</button>
-    </div>
-    <div ref={removalStatus} tabIndex={-1}>
-      <details><summary>{t("metadataManagement")}</summary>
-        <ul>{snapshot?.definitions.map(property => <li key={property.propertyId}><span className="property-authored">{property.name}</span>
-
-          <button type="button" className="workspace-button workspace-button--secondary" disabled={disabled || loading || pending || removal !== null}
-            aria-label={`${t("metadataDeleteProperty")}: ${property.name}`} onClick={event => { removalTrigger.current = event.currentTarget; setRemoval({property, optionId:null}); }}>{t("metadataDeleteProperty")}</button>
-        </li>)}</ul>
-      </details>
-    </div>
-    {removal && <MetadataRemovalPanel key={`${removal.property.propertyId}:${removal.optionId}`} client={client} workspaceId={workspaceId} sourceId={sourceId}
-      property={removal.property} optionId={removal.optionId} options={snapshot?.selectOptions ?? []} language={language} disabled={disabled}
-      onCancel={finishRemoval} onCommitted={finishRemoval} onObserved={load} />}
-    {snapshot?.definitions.filter(property => property.propertyType === "single_select" || property.propertyType === "multi_select").map(property => <SelectOptionsEditor onRemove={(optionId, element) => { removalTrigger.current = element; setRemoval({property, optionId}); }} removalOpen={removal !== null} key={property.propertyId}
-      client={client} workspaceId={workspaceId} property={property} snapshot={snapshot} language={language} disabled={disabled || loadError || draft !== null}
-      onCommitted={value => { if (accepts(value)) { listVersion.current++; minimumRevision.current = value.revision; setSnapshot(value); setLoading(false); setLoadError(false); } }} />)}
-    {(draft?.propertyId === null || layout === "board") && propertyForm}
-    </ContextTools></ViewControls>
-    {layout !== "board" && draft?.propertyId != null && propertyForm}
-    {draft?.propertyId && !pending && snapshot?.definitions.find((property) => property.propertyId === draft.propertyId)?.name !== draft.originalName &&
-      <StatusMessage kind="info" title={t("propertyExternalChange")} />}
+    <ViewControls>{layout === "board" ? <ContextTools label={t("propertyTools")} icon="properties">{propertyTools}</ContextTools> : propertyControl()}</ViewControls>
+    {message && <StatusMessage kind="info" title={t(message)}/>}
     {assignmentProperty && layout !== "board" && <p>{t(filesystemAssignment ? "groupAssignmentFilesystemHint" : "groupAssignmentHint")}</p>}
     <div ref={assignmentStatus} tabIndex={-1} aria-label={t("groupAssignmentChoose")}>
     {assignmentPending && <StatusMessage kind="info" title={t("groupAssignmentSaving")}/>}
     {assignmentMessage && <StatusMessage kind={assignmentMessage === "groupAssignmentSaved" ? "info" : "error"} title={t(assignmentMessage)}/>}
     </div>
-    {message && <StatusMessage kind={message === "propertyValidation" || message === "propertySaveError" ? "error" : "info"} title={t(message)} />}
 
     {grouped?.viewId===viewId && grouped?.groups ? <>
       {grouped.groups.length>0 && grouped.groups.every(group=>group.hidden) && <p role="status">{t("groupAllHidden")}</p>}
