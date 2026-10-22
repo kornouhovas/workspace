@@ -9,6 +9,7 @@ import { _electron, chromium } from "playwright-core";
 import { closeElectron, withDeadline } from "./runtime-lifecycle.mjs";
 import { enterContextFor } from "./runtime-context-tools.mjs";
 import { waitForCategoryMoveEditor } from "./runtime-layout.mjs";
+import { prepareRuntimeControlScroll } from "./runtime-control-scroll.mjs";
 
 // Deterministic Ladle presentation and interaction fixtures complement runtime smoke.
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -258,6 +259,7 @@ app.on('window-all-closed', () => app.quit());`);
       }
       if (categoryMoveStory || renameStory || recoveryStory || modeStory || creationStory) {
         for (const button of await page.locator(categoryMoveStory ? ".project-category-move button, .project-card-actions > .context-tools-trigger" : renameStory ? ".project-rename button, .project-card-actions > .context-tools-trigger" : creationStory ? ".project-creation button, .project-reveal button" : recoveryStory ? ".recovery-panel button" : ".workspace-form-actions button, [data-mode-fixture] > button").all()) {
+          await prepareRuntimeControlScroll(page,button);
           await button.evaluate(async (node) => {
             node.scrollIntoView({ block: "center", inline: "nearest", behavior: "instant" });
             await new Promise((done) => globalThis.requestAnimationFrame(() => globalThis.requestAnimationFrame(done)));

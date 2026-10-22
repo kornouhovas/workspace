@@ -1296,3 +1296,17 @@ unreached runtime/package tail after focused success. Strict, coherent, installe
 and appearance receipts retain their actual770e07e5 source only when application,
 build, resource, dependency and execution inputs are proved unchanged. No failed
 or unreached row becomes passing through reuse.
+
+
+For the subsequent #69 loading-history reachability failure in39719353774, use
+`checks: layout-fixtures` for the original unfiltered command on all three hosts.
+Both Windows failures retain608 captures and normal quit. The route serially
+initializes Electron before category-header and actual-hook scroll native tests.
+The new driver uses ordinary keyboard scroll intent at an already-focused button
+in the owning restoring view; it retains loading/focus, zero command activation
+and the original geometry predicate, including an unreachable negative control.
+A controlled actual-story late-notification probe reproduces the reset mechanism;
+it does not establish unique historical timing. Keep any useful running runtime
+coverage and its ref fixed. Inspect the focused original results before completing
+missing Windows tails; retain independently complete Mac consumers when inputs
+are unchanged.

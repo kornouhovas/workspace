@@ -141,7 +141,8 @@ jobs:
           mkdir -p work/ci-all-layouts
           node --input-type=module -e 'import { writeFileSync } from "node:fs"; writeFileSync("work/ci-all-layouts/provenance.json", JSON.stringify({sha:process.env.GITHUB_SHA,run:process.env.GITHUB_RUN_ID,attempt:process.env.GITHUB_RUN_ATTEMPT,platform:process.platform}) + "\n")'
       - run: npm run build:renderer
-      - run: node --test tests/category-header-layout-native.test.mjs
+      - run: node -e "require('electron')"
+      - run: node --test tests/category-header-layout-native.test.mjs tests/view-scroll-native.test.mjs
       - run: npm run build:ladle
       - run: node scripts/smoke-discovery-layouts.mjs
         env:

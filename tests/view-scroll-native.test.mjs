@@ -1,4 +1,4 @@
-/* global document, requestAnimationFrame */
+/* global document, requestAnimationFrame, innerWidth, innerHeight */
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {createRequire} from 'node:module';
@@ -8,7 +8,8 @@ import {join} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {build} from 'esbuild';
 import {_electron} from 'playwright-core';
-import {closeElectron,cleanupOwnedFixture} from '../scripts/runtime-lifecycle.mjs';
+import {closeElectron,cleanupOwnedFixture,withDeadline} from '../scripts/runtime-lifecycle.mjs';
+import {prepareRuntimeControlScroll} from '../scripts/runtime-control-scroll.mjs';
 
 // Real browser geometry and input; no DOM dimension or animation-frame mocks.
 const renderer=`
@@ -78,6 +79,50 @@ test('native scroll restoration retains coordinates, cancels for user input and 
   assert.deepEqual(await coordinates(),keyboardPosition);assert.equal(await editor.inputValue(),'Keep the edited draft');
   await page.getByRole('button',{name:'Restore saved position',exact:true}).click();
   await page.getByRole('button',{name:'Short projection',exact:true}).click();await complete();await frames();assert.deepEqual(await coordinates(),[0,0]);
+ }catch(error){failure=error;}
+ try{if(app){await closeElectron(app);stopped=child.exitCode!==null||child.signalCode!==null;assert.equal(stopped,true);}}catch(error){failure??=error;}
+ try{await cleanupOwnedFixture(profile,{processesStopped:stopped,primaryFailure:failure,record:result=>{cleanup=result;}});}catch(error){failure??=error;}
+ if(failure)throw failure;
+ assert.equal(cleanup.status,'passed');
+});
+
+// Keep the existing coordinate/clamping fixture unchanged. This loading-history
+// scenario adds a focused source control and an offscreen project action.
+const intentRenderer=renderer
+ .replace("const [view,setView]", "const [clicks,setClicks]=useState(0); const [view,setView]")
+ .replace('<output>{view}</output><div id="view"', '<output>{view}</output><output id="clicks">{clicks}</output><div className="saved-view-content" id="view"')
+ .replace('<div aria-busy={busy} style={{height:short?80:1200}}>', '<div aria-busy={busy} style={{height:short?80:1200}}><button id="source" onClick={()=>setClicks(value=>value+1)}>Source tools</button>')
+ .replace('Native project fields</div>', 'Native project fields<button id="target" style={{marginLeft:800}} onClick={()=>setClicks(value=>value+1)}>Project actions</button></div>');
+
+test('native loading-history control inspection keeps keyboard scroll intent through later restoration notifications',async()=>{
+ const profile=await mkdtemp(join(tmpdir(),'workspace-scroll-intent-'));
+ let app,child,failure,stopped=false,cleanup;
+ try{
+  const bundle=await build({stdin:{contents:intentRenderer,loader:'tsx',resolveDir:process.cwd()},bundle:true,write:false,format:'iife',platform:'browser'});
+  app=await _electron.launch({executablePath:createRequire(import.meta.url)('electron'),args:[fileURLToPath(new URL('./fixtures/rename-editor-readiness-electron.cjs',import.meta.url))],env:{...process.env,WORKSPACE_RENAME_EDITOR_PROFILE:profile},timeout:10000});
+  child=app.process();const page=await app.firstWindow();
+  const url=await app.evaluate(()=>globalThis.renameEditorInitialLoad);await page.waitForURL(url,{waitUntil:'load'});
+  await page.setViewportSize({width:420,height:800});
+  await page.setContent('<div id="root"></div>');await page.addScriptTag({content:bundle.outputFiles[0].text});
+  const owner=page.locator('#view'),source=page.locator('#source'),target=page.locator('#target');
+  await page.waitForFunction(()=>document.querySelector('#view')?.dataset.scrollRestoring==='true');
+  await source.focus();
+  await prepareRuntimeControlScroll(page,target);
+  const reachable=()=>withDeadline(target.evaluate(async node=>{
+   // Deliver the real hook's pending mutation/resize restoration after the
+   // scroll, matching the host-dependent ordering observed in the story.
+   const owner=node.closest('.saved-view-content');owner.setAttribute('style',owner.getAttribute('style'));
+   node.scrollIntoView({block:'center',inline:'nearest',behavior:'instant'});
+   await new Promise(done=>requestAnimationFrame(()=>requestAnimationFrame(done)));
+   const rect=node.getBoundingClientRect();return rect.left>=0 && rect.right<=innerWidth && rect.top>=0 && rect.bottom<=innerHeight;
+  }),15000,'Native loading-history control bounds');
+  assert.equal(await reachable(),true,'Pending restoration must not undo ordinary keyboard scroll intent');
+  assert.equal(await owner.getAttribute('data-scroll-restoring'),null);
+  assert.equal(await source.evaluate(node=>node===document.activeElement),true,'Preparation preserves the focused source control');
+  assert.equal(await page.locator('#clicks').textContent(),'0','Arrow navigation activates no command');
+  assert.equal(await owner.locator('[aria-busy]').getAttribute('aria-busy'),'true','Loading fixture is not completed to make the measurement pass');
+  await target.evaluate(node=>{node.style.position='fixed';node.style.left='500px';node.style.marginLeft='0';});
+  assert.equal(await reachable(),false,'The original predicate still rejects a truly unreachable control');
  }catch(error){failure=error;}
  try{if(app){await closeElectron(app);stopped=child.exitCode!==null||child.signalCode!==null;assert.equal(stopped,true);}}catch(error){failure??=error;}
  try{await cleanupOwnedFixture(profile,{processesStopped:stopped,primaryFailure:failure,record:result=>{cleanup=result;}});}catch(error){failure??=error;}

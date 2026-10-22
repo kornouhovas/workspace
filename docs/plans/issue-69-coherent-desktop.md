@@ -1619,3 +1619,77 @@ and Spec0 cover the complete driver/route delta and the final recovery-heading
 change. The new focused choice is documented in docs/ci.md. Hosted original
 all-three success, affected development/package consumers and final ledger audit
 remain gates. Current appearance artifacts retain their actual770e07e5 provenance.
+
+
+### Focused hosted source-context success; remaining tails dispatched
+
+39718705396/attempt1 at3d0a88c3 passes all3 and all exact-SHA artifacts are
+downloaded/inspected. Eachhost:67 native/layout/route checks,255 captures, all
+base-runtime stages true,3 normal app/backend quits and1 failed-startup exit
+check,46 rename and34 category-move normal shutdowns; fixture/process ownership
+confirms cleanup. Original39712591684 failures remain historical negatives.
+
+Full770e07e5..3d0a88c3 review finds unchanged application/migrations/native
+resources/dependencies/build/package/runtime inputs. Same isolated-checkout
+production renderer builds before/after the complete overlay have10 identical
+output hashes. Independent Standards0 confirms this reuse argument and maps
+changed capture consumers to base/creation/rename/category dev+release. Existing
+coherent/installer helper exports remain unchanged. Independent Spec preflight0
+finds no missing criterion/planned coverage, conditional on inspected tails.
+
+39719353774/attempt1 at3d0a88c3 now runs source-runtime/runtime-tails on all3: native
+controls, affected story UI, original unfiltered Ladle, every changed-helper mode
+and all previously unreached properties/archive/recovery/package tails. Refs stay
+fixed during the useful run. Final runtime reports, ledger audit and integration
+remain required; no final acceptance is claimed.
+
+
+### Loading-history scroll-intent failure and controlled reproduction
+
+39719353774/attempt1 at3d0a88c3: both Windows hosts fail unfiltered layouts at
+rename-list-loading-direct-english420 after608 captures. Same-measurement control
+bounds453..483 exceed420; row/table right491. Failure screenshot shows real Source
+tools/history and table horizontal scrollbar. Original normal quit passes both.
+Exact job logs/artifacts retained. Native/route controls and407 affected UI checks
+pass all3. Mac original unfiltered layouts pass, and useful original runtime tails
+continue; do not cancel or advance that task ref. Windows tails remain unreached.
+
+The initial unmodified one-story local probe reached the deliberately unmodified
+whole-matrix count assertion (3 vs906), not the reachability failure; it is not a
+red receipt. Controlled delivery of a real pending useViewScroll mutation after
+scrollIntoView reproduces the exact predicate failure in the actual story:
+scrollLeft0 ->76 ->0. Native regression with the actual hook reproduces it in
+~2s with a no-op driver helper. It keeps loading true. A separate fixture variant
+preserves the original coordinate/clamping regression unchanged.
+
+Ranked hypotheses were pending restoration resetting programmatic scroll, resize
+measurement timing, and popup focus/scroll effects. Immediate native movement
+proves scrolling is possible; controlled actual-hook ordering distinguishes the
+first mechanism. This reproduces a matching mechanism, not a uniquely proved
+clock/order for every historical host failure. Earlier Windows2022 reachability
+negative and changed-diagnostic pass remain retained.
+
+The new driver preparation sends ordinary ArrowRight only when a BUTTON is
+already focused inside the same pending-restoration owner. It preserves focus,
+activates no command, does not complete loading or directly clear app state.
+Original scrollIntoView/two-frame placement and exact geometry predicate remain.
+Native regression passes while a fixed-position unreachable control still fails
+the original predicate. Actual-story controlled probe retains76 after late
+notification and passes its three selected layouts; this is one-English-story
+diagnostic evidence, not full-matrix acceptance. Throwaway probe removed.
+
+Native/header/routes63/63 and lint/typecheck pass. Spec0; Standards found a cold
+concurrent Electron-install prerequisite in the expanded focused native step.
+Serial require('electron') initialization is now guarded before both native files;
+route60/60 passes. Original local rename96/288 remains in progress. Focused original
+unfiltered all-three renewal, independent repair recheck and missing tails remain
+gates; application/build/dependency/resources still unchanged.
+
+
+Local original `node scripts/smoke-discovery-layouts.mjs --rename` now completes
+96states/288captures with normal quit. Standards recheck0 and Spec0; serial
+Electron initialization and guarded native order verified. The task-owned idle
+verification ref was checked at770e07e5; it may be lease-advanced to this reviewed
+driver repair for focused original all-three layouts, keeping the useful Mac
+runtime run on the unchanged task ref3d0a88c3. No ordinary defaults or production
+inputs change.

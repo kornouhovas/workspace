@@ -1252,7 +1252,7 @@ test('shared layout failure renewal retains the unfiltered original command and 
   const job = workflow.jobs['layout-fixtures'];
   assert.deepEqual(job.strategy.matrix.os,['macos-latest','windows-latest','windows-2022']);
   assert.equal(job.strategy['fail-fast'],false);
-  assert.deepEqual(job.steps.filter(step=>step.run && !step.name).map(step=>step.run),['npm ci','npm run build:renderer','node --test tests/category-header-layout-native.test.mjs','npm run build:ladle','node scripts/smoke-discovery-layouts.mjs']);
+  assert.deepEqual(job.steps.filter(step=>step.run && !step.name).map(step=>step.run),['npm ci','npm run build:renderer',`node -e "require('electron')"`,'node --test tests/category-header-layout-native.test.mjs tests/view-scroll-native.test.mjs','npm run build:ladle','node scripts/smoke-discovery-layouts.mjs']);
   assert.ok(job.steps.every(step=>step['continue-on-error']===undefined));
   assert.equal(job.steps.at(-1).if,'always()');
   assert.equal(job.steps.at(-1).with['if-no-files-found'],'error');

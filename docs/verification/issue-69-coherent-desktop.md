@@ -4,9 +4,11 @@ Status: **in progress; not accepted or integrated**. [GitHub #69](https://github
 owns current gates. The [plan](../plans/issue-69-coherent-desktop.md) retains
 scenario decisions, experiments, failures and historical receipts.
 
-Acceptance source: `770e07e5846293309b5357d6f7bc81134772a4c1`, based on
-accepted `86ec7527`. Application changes end at `458be520`; the later delta is
-bounded layout diagnostics and the plan. Required current runs are recorded below.
+Application acceptance source: `770e07e5846293309b5357d6f7bc81134772a4c1`,
+based on accepted `86ec7527`; application changes end at `458be520`. Runtime
+driver renewal source: `3d0a88c31f93d7e3acbf78a3ba6a51084fabf26d`. The complete
+subsequent delta contains tests, drivers, CI routes and documentation. Required
+combined receipts retain their actual source below.
 The plan retains earlier failed/diagnostic receipts; none is relabeled as passing.
 Original assertions, event clocks, endpoints and numerical limits remain intact.
 
@@ -77,19 +79,31 @@ findings. Fixed4x traces show restoration work26.72 ->4.88ms and grouping406.7
 
 ## Acceptance ledger
 
-All current runs below are attempt1 at `770e07e5`. Reports are inspected where
+All runs below are attempt1. Retained application receipts are at `770e07e5`;
+driver renewal is explicitly marked `3d0a88c3`. Reports are inspected where
 marked; pending jobs do not establish acceptance. Historical9face229 strict,
 coherent and installer receipts were renewed after the application repair.
 
 | Boundary | Run | Actual evidence / result |
 | --- | --- | --- |
 | Original unfiltered layout + native regression | [39711258611](https://github.com/kornouhovas/workspace/actions/runs/39711258611) | **All3 pass**, inspected:302states/906captures, normal Electron quit; new production-CSS/fonts native regression passes eachhost. EN/RU, legal120/180px columns at1024/1440px windows, exact Save, zero cancelled writes, focus return and Hint bounds. Old CSS and CSS-only overlap controls fail separately; complete repair passes. |
-| Full broad desktop/package | [39712591684](https://github.com/kornouhovas/workspace/actions/runs/39712591684) | **All3 failed** at the ambiguous global source-root locator in the original development runtime. Common531/531 and lint/typecheck/docs pass; Mac2746pass/27skip; each Windows2843pass/13skip including isolated suites. Prefix creation/native routes pass; later runtime/package rows are unreached. Original logs and artifacts retained. Focused driver repair renewal is pending. |
+| Full broad desktop/package | [39712591684](https://github.com/kornouhovas/workspace/actions/runs/39712591684) | **All3 failed** at the ambiguous global source-root locator in the original development runtime. Common531/531 and lint/typecheck/docs pass; Mac2746pass/27skip; each Windows2843pass/13skip including isolated suites. Prefix creation/native routes pass; later runtime/package rows are unreached. Original logs and artifacts retained. Original-command repair renewal passes below; later tails remain pending. |
+| Original source-context runtime renewal | [39718705396](https://github.com/kornouhovas/workspace/actions/runs/39718705396), `3d0a88c3` | **All3 pass, inspected**:67 native/layout/route regressions and255 captures eachhost. Base stages alltrue,3 normal quits plus failed-startup exit check; rename46 and category move34 normal shutdowns eachhost, owned processes/fixture cleanup confirmed. |
+| Remaining runtime/package renewal | [39719353774](https://github.com/kornouhovas/workspace/actions/runs/39719353774), `3d0a88c3` | **Both Windows hosts failed** original unfiltered layouts after608 captures: loading-history project action remains offscreen420 after programmatic scroll; normal quit passes. Windows runtime tails are unreached. Mac layouts pass and runtime tails continue. Native/route controls and affected407 UI checks pass all3. A reviewed driver scroll-intent repair awaits focused renewal. |
 | Coherent desktop | [39712599909](https://github.com/kornouhovas/workspace/actions/runs/39712599909) | **All3 pass, inspected**. Mac M1 Virtual/kernel25.6.0; Windowslatest/2022 EPYC7763/kernel10.0.26100/10.0.20348. All principal journeys, exact native/external document, dev/package Views normal exits and asserted cleanup. |
 | Strict scale | [39712595815](https://github.com/kornouhovas/workspace/actions/runs/39712595815) | **Both pass, inspected**:32 functional/timing observations,10 memory samples,4 normal app/backend exits and cleanup eachhost. Mac M1 Virtual/kernel23.6.0 max222.2ms, conservative peak941,244,416B. Windows EPYC7763/kernel10.0.26100 max294.1ms, peak870,428,672B. Original300ms limit retained. |
 | Actual Mac DMG | [39712603825](https://github.com/kornouhovas/workspace/actions/runs/39712603825) | **Pass, inspected**, macOS14.8.9arm64: outside-build install, bundled backend, EN/RU, saved IDs/views, isolation, reopen/replacement/data preservation, normal quit and cleanup. SHA256 `e2bff9866343fe81a5810754e132e84d3081c2f7fc5366374c40aa1407a1685e`. |
 | Actual Windows NSIS | [39712607793](https://github.com/kornouhovas/workspace/actions/runs/39712607793) | **Pass, inspected**, Server2025x64/kernel10.0.26100: offline Unicode/space path, bundled backend, EN/RU, persisted IDs/views, independent APPDATA, reinstall/data preservation, uninstall and cleanup. SHA256 `932f2e31af64c32e50bc5f928037bf6ff2f598974d2d330373b17f90854474b2`. This is not Windows11 release acceptance. |
 | Independent review | Cumulative source and subsequent scoped deltas separately reviewed | Standards0 and Spec0; current changed appearance0 material findings. Final acceptance-ledger audit remains required. |
+
+The entire `770e07e5..3d0a88c3` diff leaves application, migrations, native
+resources, dependencies, build/package inputs and relevant execution inputs
+unchanged. Same isolated-checkout production renderer builds before/after the
+complete overlay produce10 byte-identical outputs. Independent Standards audit
+finds0 reuse/mapping gaps. Existing coherent/installer exports are unchanged;
+changed capture consumers are creation, base runtime, rename and category move,
+requiring development and packaged renewal. Successful common/platform/prefix
+reports retain their original770e07e5 receipt; no failed/unreached row is reused.
 
 Regression seams are owner-confirmed: real disposable SQLite/public Workspace
 service, UI user actions and actual Electron/package. Existing107 service checks
@@ -117,8 +131,8 @@ cover their actual hosts. Later local layout passes do not erase these failures.
 Historical native owner-expiry and strict misses remain negative receipts in
 the plan; profiling does not establish one universal cause.
 
-#69 still owns focused original-runtime renewal on all three hosts, every
-unreached development/package tail, and final ledger/integration. The repaired
+#69 still owns every unreached development/package tail and final
+ledger/integration. Focused original-runtime renewal passes on all three hosts. The repaired
 original local command completes base runtime, rename and category move; this
 does not substitute for hosted acceptance. No required failed row is transferred
 to #67. #55 owns persisted sessions; #56–#58 editor/draft refinements; #60 and
