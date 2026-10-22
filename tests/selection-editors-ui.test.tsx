@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import React from 'react';
 import { Window } from 'happy-dom';
+import type { SelectOption, PropertySnapshot } from '../src/contracts/text-properties.js';
 import { MultiSelectPropertyCell } from '../src/renderer/components/MultiSelectPropertyCell.js';
 import { TextPropertyCell } from '../src/renderer/components/TextPropertyCell.js';
 import { ScalarDrafts, useDraftGuard } from '../src/renderer/components/ScalarDrafts.js';
@@ -10,7 +11,7 @@ Object.assign(globalThis,{window:browser,document:browser.document,HTMLElement:b
 Object.defineProperty(globalThis,'navigator',{configurable:true,value:browser.navigator});
 const {render,screen,cleanup,waitFor}=await import('@testing-library/react');
 const {default:userEvent}=await import('@testing-library/user-event');
-const options=['Ready','Done','Hidden'].map((name,index)=>({optionId:name,propertyId:'p',sourceId:'s',name,color:'blue' as const,hidden:index===2,position:index}));
+const options:SelectOption[]=['Ready','Done','Hidden'].map((name,index)=>({optionId:name,propertyId:'p',name,color:'blue' as const,hidden:index===2,position:index}));
 const base={workspaceId:'w',sourceId:'s',projectId:'j',propertyId:'p',projectName:'Atlas',propertyName:'Status',options,revision:1,minimumRevision:{current:1},language:'en' as const,disabled:false};
 function success(){return {ok:true as const,value:{projectId:'j',propertyId:'p',snapshot:{workspaceId:'w',sourceId:'s',revision:2,definitions:[],values:[]}}};}
 function Navigate({onNavigate}:{onNavigate:()=>void}){const guard=useDraftGuard();return <button onClick={()=>guard?.run(onNavigate)}>Navigate</button>;}
@@ -63,4 +64,50 @@ test('Single Select failure blocks navigation without replay; cancellation allow
  await user.click(screen.getByRole('button',{name:'Cancel value edit'}));await waitFor(()=>assert.equal(document.activeElement,trigger));
  await user.click(screen.getByRole('button',{name:'Navigate'}));assert.equal(navigated,true);assert.equal(attempts,1);
  }finally{cleanup();}
+});
+test('a newer source selection received during a delayed response owns the menu after the queue drains',async()=>{
+ const user=userEvent.setup();const calls:string[][]=[];let release:(()=>void)|undefined;
+ const minimumRevision={current:1};
+ const save=async(ids:string[])=>{calls.push(ids);if(calls.length===1)await new Promise<void>(resolve=>{release=resolve;});return success();};
+ try{
+  const view=render(<MultiSelectPropertyCell {...base} minimumRevision={minimumRevision} value={[]} onSave={save}/>);
+  await user.click(screen.getByRole('button',{name:'Edit MultiSelect value: Atlas / Status'}));
+  await user.click(screen.getByRole('checkbox',{name:'Ready'}));
+  minimumRevision.current=3;
+  view.rerender(<MultiSelectPropertyCell {...base} minimumRevision={minimumRevision} revision={3} value={['Done']} onSave={save}/>);
+  release!();
+  await waitFor(()=>assert.equal(screen.queryByText('Saving value…')===null,true));
+  assert.equal((screen.getByRole('checkbox',{name:'Ready'}) as HTMLInputElement).checked,false);
+  assert.equal((screen.getByRole('checkbox',{name:'Done'}) as HTMLInputElement).checked,true);
+  await user.click(screen.getByRole('checkbox',{name:'Ready'}));
+  await waitFor(()=>assert.deepEqual(calls,[['Ready'],['Done','Ready']]));
+ }finally{release?.();cleanup();}
+});
+for(const outcome of ['success','failure'] as const)test(`pending ordinary option ${outcome} owns dismissal and navigation until its response`,async()=>{
+ const {SelectOptionsEditor}=await import('../src/renderer/components/SelectOptionsEditor.js');
+ const {WorkspaceServiceClient}=await import('../src/renderer/workspace-service-client.js');
+ const user=userEvent.setup();let release:(()=>void)|undefined;let navigated=false;
+ const snapshot={workspaceId:'w',sourceId:'s',revision:1,definitions:[],values:[],selectOptions:options};
+ const client=new WorkspaceServiceClient({workspace:async()=>{await new Promise<void>(resolve=>{release=resolve;});return outcome==='success'?{ok:true,value:{propertyId:'p',projectId:null,snapshot:{...snapshot,revision:2,selectOptions:options.map(option=>option.optionId==='Ready'?{...option,hidden:true}:option)}}}:{ok:false,error:{code:'storage',message:'Offline'}};}} as unknown as import('../src/contracts/desktop-api.js').WorkspaceDesktopApi);
+ function Harness(){
+  const [current,setCurrent]=React.useState<PropertySnapshot>(snapshot);
+  return <ScalarDrafts><MultiSelectPropertyCell {...base} value={[]} options={current.selectOptions ?? []} onSave={async()=>success()} optionsEditor={(onStateChange,valuePending)=><SelectOptionsEditor onStateChange={onStateChange} client={client} workspaceId="w" property={{propertyId:'p',sourceId:'s',name:'Status',propertyType:'multi_select'}} snapshot={current} language="en" disabled={valuePending} onCommitted={setCurrent}/>}/><Navigate onNavigate={()=>{navigated=true;}}/></ScalarDrafts>;
+ }
+ try{
+  render(<Harness/>);await user.click(screen.getByRole('button',{name:'Edit MultiSelect value: Atlas / Status'}));
+  await user.click(screen.getByText('Select options: Status'));
+  await user.click(screen.getByRole('button',{name:'Hide option: Ready'}));
+  await user.keyboard('{Escape}');assert.equal(screen.queryByRole('dialog')!==null,true);
+  await user.click(screen.getByRole('button',{name:'Close'}));assert.equal(screen.queryByRole('dialog')!==null,true);
+  await user.click(screen.getByRole('button',{name:'Navigate'}));assert.equal(navigated,false);
+  release!();
+  if(outcome==='success')await waitFor(()=>assert.equal(navigated,true));
+  else{
+   await screen.findByRole('alert');assert.equal(navigated,false);
+   await user.click(screen.getByRole('button',{name:'Navigate'}));assert.equal(navigated,false);
+   assert.equal((screen.getByRole('group',{name:'Edit MultiSelect value: Atlas / Status'}) as HTMLFieldSetElement).disabled,true);
+   await user.click(screen.getByRole('button',{name:'Cancel value edit'}));
+   await user.click(screen.getByRole('button',{name:'Navigate'}));await waitFor(()=>assert.equal(navigated,true));
+  }
+ }finally{release?.();cleanup();}
 });

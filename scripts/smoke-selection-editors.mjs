@@ -88,9 +88,18 @@ try{
         const values=(await window.workspace.workspace({type:'workspace.listTextProperties',workspaceId})).value.multiSelectValues.filter(v=>v.propertyId===propertyId&&v.projectId===projectId);
         return values.length===1&&values[0].optionId===optionId;
        },{workspaceId:one.workspaceId,propertyId,projectId:atlas.projectId,optionId:options[1].optionId});
+       await menu.getByRole("button",{name:en ? "Close" : "Закрыть",exact:true}).and(page.locator(":enabled")).waitFor();
        assert.ok(await menu.isVisible());await capture(`chosen-${stem}`);
        await menu.locator('summary').click();
        await capture(`options-${stem}`);
+       await menu.getByRole('button',{name:en?'Add option':'Добавить опцию',exact:true}).click();
+       const optionName=menu.getByRole('textbox',{name:en?'Option name':'Название опции',exact:true});
+       await optionName.press('Enter');await menu.getByRole('alert').waitFor();
+       await page.getByRole('button',{name:'Independent studio',exact:true}).click();
+       assert.equal(await page.getByRole('button',{name:'Design studio',exact:true}).getAttribute('aria-current'),'page');
+       assert.equal(await optionName.isVisible(),true);await capture(`invalid-options-${stem}`);
+       await optionName.fill('Retained option draft');await optionName.press('Escape');
+       await optionName.waitFor({state:'detached'});assert.equal(await menu.isVisible(),true);
        await menu.getByRole('checkbox',{name:'Done',exact:true}).press('Escape');await menu.waitFor({state:'detached'});
       }
       await page.waitForFunction(label=>document.activeElement?.getAttribute('aria-label')===label,label);

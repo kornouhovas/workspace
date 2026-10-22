@@ -1391,3 +1391,20 @@ values, blocked invalid navigation, correction, normal app/backend exit and
 owned-fixture cleanup. New profile failure probes retain nonzero propagation;
 skipped or unreached commands are not passing evidence. No installer input,
 release or main-branch publication is changed by this profile.
+
+
+## Issue 57 selection editors
+
+Manual `checks: desktop-ux` with `desktop_ux_profile: selections` runs the
+shared Table/Board/details selection and option editors, public Select/MultiSelect
+service/IPC ownership, safe metadata/folder-backed regressions and the scalar
+navigation guard. Native commands inspect open menus across EN/RU, light/dark
+and both supported window sizes, then retain original Select/MultiSelect and
+saved-view/grouping journeys. Failed commands propagate on macOS latest,
+Windows latest and Windows 2022; artifacts include exact-candidate provenance,
+menu screenshots and restart/shutdown receipts.
+
+The bounded profile does not rebuild unchanged packages or installers. Ordinary
+full routes and #67/#42 milestone gates remain intact. See the
+[selection verification report](verification/issue-57-selection-editors.md) for
+local results, retained failures and the GitHub checkpoint for hosted acceptance.

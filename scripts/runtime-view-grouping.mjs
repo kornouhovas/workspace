@@ -68,8 +68,14 @@ export async function exerciseSelectionGrouping({ page, query, workspaceId, lang
   await value.and(page.locator(":enabled")).focus(); await value.press("Enter");
   const editor = page.getByRole("region", { name: "B", exact: true });
   await editor.getByRole("checkbox", { name: "A", exact: true }).uncheck();
-  const save = editor.getByRole("button", { name: en ? "Save value" : "Сохранить значение", exact: true });
-  await save.focus(); await save.press("Enter");
+  await page.waitForFunction(async ({workspaceId,propertyId,projectId,optionId}) => {
+    const result=await window.workspace.workspace({type:"workspace.listTextProperties",workspaceId});
+    const values=result.value.multiSelectValues.filter(value=>value.propertyId===propertyId&&value.projectId===projectId);
+    return values.length===1&&values[0].optionId===optionId;
+  }, {workspaceId,propertyId,projectId,optionId:b.optionId});
+  await editor.getByRole("button",{name:en ? "Close" : "Закрыть",exact:true}).and(page.locator(":enabled")).waitFor();
+  assert.equal(await editor.getByRole("dialog").isVisible(),true);
+  await editor.getByRole("checkbox",{name:"B",exact:true}).press("Escape");
   await page.getByRole("heading", { name: "A (0)", exact: true }).waitFor();
   await page.getByRole("heading", { name: "B (1)", exact: true }).waitFor();
   await call("setMultiSelectValue", { projectId, propertyId, optionIds: [a.optionId, b.optionId] });

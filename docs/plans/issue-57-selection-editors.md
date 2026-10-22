@@ -18,6 +18,7 @@ The issue pre-agrees typed Workspace service with disposable real SQLite/folders
 
 - Adapt `single-select-ui` and `multi-select-ui` and their native smoke drivers: manual Save/cancel-of-uncommitted-set is superseded by immediate choice/toggle. Preserve option lifecycle, failed save, hidden selection, sibling update, keyboard/focus and empty cases.
 - Add `selection-editors-ui` for delayed rapid-toggle serialization and failed-navigation/no-blind-retry behavior; exercise all surfaces/languages through the real Table/Board/details consumer.
+- Adapt `view-grouping-ui` and `runtime-view-grouping`: immediate choices replace manual Save; preserve repeated-project identity and assert MultiSelect retains its original editor until Escape. Run the consumer with the same draft provider as App. Adapt Board wrapping measurement to identify Tags explicitly now that Single Select shares chip markup.
 - Retain existing select service/IPC suites for source/workspace ownership, set validation, persistence and delayed snapshots.
 - Retain scalar drafts/navigation checks for the shared guard; preserve existing safe deletion and folder-backed command suites.
 

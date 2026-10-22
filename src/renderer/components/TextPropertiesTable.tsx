@@ -23,6 +23,7 @@ import { translate, type TranslationKey } from "../localization.js";
 import { CategoryPropertyHeader, type CategoryLabelDraft } from "./CategoryPropertyHeader.js";
 import { ProjectRevealButton } from "./ProjectRevealButton.js";
 import { SelectOptionsEditor } from "./SelectOptionsEditor.js";
+import type { SelectionOptionsEditor } from "./SelectionPropertyCell.js";
 import { MultiSelectPropertyCell } from "./MultiSelectPropertyCell.js";
 import { TextPropertyCell } from "./TextPropertyCell.js";
 import { StatusMessage } from "./bb-foundation.js";
@@ -257,8 +258,8 @@ function TextPropertiesContent({ detail, onPreview, viewId, layout = "table", hi
       if (current === lifetime.current) { saving.current = false; setPending(false); }
     }
   };
-  const optionEditor = (property: TextPropertyDefinition) => <SelectOptionsEditor
-    client={client} workspaceId={workspaceId} property={property} snapshot={snapshot!} language={language} disabled={disabled || loadError || draft !== null}
+  const optionEditor = (property: TextPropertyDefinition): SelectionOptionsEditor => (onStateChange, valuePending) => <SelectOptionsEditor onStateChange={onStateChange}
+    client={client} workspaceId={workspaceId} property={property} snapshot={snapshot!} language={language} disabled={disabled || loadError || draft !== null || valuePending}
     onCommitted={value => { if (accepts(value)) { listVersion.current++; minimumRevision.current = value.revision; setSnapshot(value); setLoading(false); setLoadError(false); } }} />;
   const saveValue = async (projectId: string, propertyId: string, value: string | null | string[], propertyType: "text" | "number" | "date" | "single_select" | "multi_select") => {
     const current = lifetime.current;

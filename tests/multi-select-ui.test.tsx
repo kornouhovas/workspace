@@ -65,7 +65,15 @@ for (const language of ["en", "ru"] as const) for (const surface of ["table", "b
       await user.click(within(menu).getByText(`${t("selectOptions")}: Tags`));
       await user.click(within(menu).getByRole("button",{name:`${t("selectEditOption")}: Done`}));
       const name=within(menu).getByRole("textbox",{name:t("selectOptionName")});
-      await user.clear(name);await user.type(name,"Renamed");await user.keyboard("{Enter}");
+      await user.clear(name);await user.type(name,"Retained option draft");
+      assert.equal((within(menu).getByRole("group",{name:label}) as HTMLFieldSetElement).disabled,true);
+      await user.click(within(menu).getByRole("button",{name:t("closeSelection")}));
+      assert.equal((name as HTMLInputElement).value,"Retained option draft");
+      await user.click(name);await user.keyboard("{Escape}");
+      assert.ok(screen.getByRole("dialog",{name:label}));
+      await user.click(within(menu).getByRole("button",{name:`${t("selectEditOption")}: Done`}));
+      const renamedInput=within(menu).getByRole("textbox",{name:t("selectOptionName")});
+      await user.clear(renamedInput);await user.type(renamedInput,"Renamed");await user.keyboard("{Enter}");
       await waitFor(()=>assert.equal(list(sibling.workspaceId).selectOptions.find((option:{optionId:string})=>option.optionId===done.optionId).name,"Renamed"));
       assert.equal(list(sibling.workspaceId).selectOptions.find((option:{optionId:string})=>option.optionId===ready.optionId).hidden,false);
       await user.click(within(menu).getByRole("button",{name:t("clearTextValue")}));

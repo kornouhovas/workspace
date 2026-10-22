@@ -1,8 +1,7 @@
 import { useEffect, useLayoutEffect, useId, useMemo, useRef, useState } from "react";
 import type { Language, ServiceResult } from "../../contracts/settings.js";
 import type { SelectOption, TextPropertyMutation } from "../../contracts/text-properties.js";
-import { SelectionPropertyCell } from "./SelectionPropertyCell.js";
-import type { ReactNode } from "react";
+import { SelectionPropertyCell, type SelectionOptionsEditor } from "./SelectionPropertyCell.js";
 import { useDraftGuard } from "./ScalarDrafts.js";
 import { formatCalendarDate } from "../date-display.js";
 import { translate, type TranslationKey } from "../localization.js";
@@ -18,7 +17,7 @@ interface Props {
   value: string | null;
   propertyType?: "text" | "number" | "date" | "single_select";
   options?: SelectOption[];
-  optionsEditor?: ReactNode;
+  optionsEditor?: SelectionOptionsEditor;
   revision: number;
   minimumRevision: { current: number };
   language: Language;

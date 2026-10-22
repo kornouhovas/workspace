@@ -41,12 +41,12 @@ export async function exerciseBoardLayout({page, query, rootPath, language, evid
     const text = document.querySelector(".board-content-nowrap .text-value-button");
     return text && getComputedStyle(text).whiteSpace === "nowrap" && getComputedStyle(text).textOverflow === "ellipsis";
   });
-  assert.equal(await page.locator(".board-content-nowrap .multi-select-values").evaluate(el => getComputedStyle(el).flexWrap), "nowrap");
+  assert.equal(await page.locator(`.board-content-nowrap [data-column-id="${tags}"] .multi-select-values`).evaluate(el => getComputedStyle(el).flexWrap), "nowrap");
   await enabled(wrap).press("Space");
-  await page.waitForFunction(() => {
-    const chips = document.querySelector(".board-content-wrap .multi-select-values");
+  await page.waitForFunction(propertyId => {
+    const chips = document.querySelector(`.board-content-wrap [data-column-id="${propertyId}"] .multi-select-values`);
     return chips && getComputedStyle(chips).flexWrap === "wrap";
-  });
+  }, tags);
   await enabled(wrap).press("Space");
   await page.locator(".board-content-nowrap").first().waitFor();
   await closeLayout();

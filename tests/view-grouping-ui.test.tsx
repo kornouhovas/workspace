@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import React from "react";
+import { ScalarDrafts } from "../src/renderer/components/ScalarDrafts.js";
 import { Window } from "happy-dom";
 import { mkdtempSync, mkdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -13,7 +14,8 @@ const browser = new Window();
 Object.assign(globalThis, { window: browser, document: browser.document, HTMLElement: browser.HTMLElement, Element: browser.Element, CustomEvent: browser.CustomEvent, getComputedStyle: browser.getComputedStyle.bind(browser), NodeFilter: browser.NodeFilter, HTMLInputElement: browser.HTMLInputElement, ResizeObserver: browser.ResizeObserver, Node: browser.Node, MutationObserver: browser.MutationObserver });
 Object.defineProperty(globalThis, "navigator", { configurable: true, value: browser.navigator });
 const { TextPropertiesTable } = await import("../src/renderer/components/TextPropertiesTable.js");
-const { cleanup, render, screen, waitFor, within } = await import("@testing-library/react");
+const { cleanup, render: renderComponent, screen, waitFor, within } = await import("@testing-library/react");
+const render = (ui: React.ReactNode) => renderComponent(ui, {wrapper: ScalarDrafts});
 const { default: userEvent } = await import("@testing-library/user-event");
 // @ts-expect-error Built service module intentionally has no declarations.
 const { openSettingsService } = await import("../dist/service/settings.mjs");
@@ -124,7 +126,10 @@ for (const language of ['en','ru'] as const) for (const layout of ['table','boar
       await user.click(within(screen.getByRole('region',{name:'A'})).getByRole('button',{name:`${t('editMultiSelectValue')}: Project / Tags`}));
       const groupA=screen.getByRole('region',{name:'A'});
       await user.click(within(groupA).getByRole('checkbox',{name:'A'}));
-      await user.click(within(groupA).getByRole('button',{name:t('saveTextValue')}));
+      await waitFor(()=>assert.deepEqual(query('listTextProperties').value.multiSelectValues.map((value:{optionId:string})=>value.optionId),[b]));
+      // A successful immediate toggle keeps its original group/editor mounted until dismissal.
+      assert.ok(within(groupA).getByRole('dialog'));
+      await within(groupA).getByRole('checkbox',{name:'B'}).focus();await user.keyboard('{Escape}');
       await screen.findByRole('heading',{name:'A (0)'});await screen.findByRole('heading',{name:'B (1)'});
       assert.deepEqual(query('listTextProperties').value.values,[{projectId,propertyId:textId,value:'Shared'}]);
       command('updateSelectOption',{propertyId,optionId:b,name:'Renamed',color:'blue'});
@@ -180,7 +185,6 @@ for(const language of ['en','ru'] as const) test(`${language} ordinary Single Se
     const empty=screen.getByRole('region',{name:t('groupNoValue')});
     await user.click(within(empty).getByRole('button',{name:`${t('editSelectValue')}: Project / Choice`}));
     await user.selectOptions(within(empty).getByRole('combobox',{name:`${t('editSelectValue')}: Project / Choice`}),optionId);
-    await user.click(within(empty).getByRole('button',{name:t('saveTextValue')}));
     await screen.findByRole('heading',{name:'Option (1)'});await screen.findByRole('heading',{name:`${t('groupNoValue')} (0)`});
     rendered.rerender(<TextPropertiesTable {...props} layout="board"/>);
     await screen.findByRole('heading',{name:'Option (1)'});

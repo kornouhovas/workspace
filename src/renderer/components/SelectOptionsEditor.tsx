@@ -8,12 +8,14 @@ import { Hint } from "./Hint.js";
 import { Icon } from "./Icons.js";
 import { StatusMessage } from "./bb-foundation.js";
 
+export type OptionsEditorState = { busy: boolean; failed: boolean };
 interface Props {
+  onStateChange?(state: OptionsEditorState): void;
   onRemove?(optionId: string, trigger: HTMLButtonElement): void; removalOpen?: boolean;
   client: WorkspaceServiceClient; workspaceId: string; property: PropertyDefinition; snapshot: PropertySnapshot;
   language: Language; disabled: boolean; onCommitted(snapshot: PropertySnapshot): void;
 }
-export function SelectOptionsEditor({ onRemove, removalOpen, client, workspaceId, property, snapshot, language, disabled, onCommitted }: Props) {
+export function SelectOptionsEditor({ onStateChange, onRemove, removalOpen, client, workspaceId, property, snapshot, language, disabled, onCommitted }: Props) {
   const guard = useDraftGuard();
   const t = (key: TranslationKey) => translate(language, key);
   const id = useId();
@@ -22,28 +24,37 @@ export function SelectOptionsEditor({ onRemove, removalOpen, client, workspaceId
   const [pending, setPending] = useState(false);
   const [error, setError] = useState(false);
   const saving = useRef(false), lifetime = useRef(0);
+  const inFlight = useRef<Promise<boolean> | null>(null);
   const input = useRef<HTMLInputElement>(null), add = useRef<HTMLButtonElement>(null);
   const returnFocus = useRef<HTMLButtonElement | null>(null);
   useEffect(() => () => { lifetime.current++; }, []);
   useEffect(() => { if (draft) input.current?.focus(); else { returnFocus.current?.focus(); returnFocus.current = null; } }, [draft?.optionId, draft === null]);
+  useLayoutEffect(() => { onStateChange?.({busy: draft !== null || pending, failed: error}); }, [onStateChange, draft !== null, pending, error]);
   useLayoutEffect(() => {
-    if (!draft && !pending) return;
-    return guard?.register({ commit: async () => false, focus: () => input.current?.focus() });
-  }, [guard, draft !== null, pending]);
+    if (!draft && !pending && !error) return;
+    return guard?.register({ commit: () => inFlight.current ?? Promise.resolve(false), focus: () => (input.current ?? add.current)?.focus() });
+  }, [guard, draft !== null, pending, error]);
   const cancel = () => { if (!saving.current) { setDraft(null); setError(false); } };
-  const commit = async (command: SelectCommand, closeDraft = false) => {
-    if (saving.current || disabled) return;
+  const commit = (command: SelectCommand, closeDraft = false): Promise<boolean> => {
+    if (saving.current || disabled) return Promise.resolve(false);
     const current = lifetime.current;
     saving.current = true; setPending(true); setError(false);
-    try {
-      const result = await client.selectCommand(command);
-      if (current !== lifetime.current) return;
-      if (result.ok && result.value.propertyId === property.propertyId && result.value.snapshot.sourceId === property.sourceId && result.value.snapshot.workspaceId === workspaceId) {
-        onCommitted(result.value.snapshot);
-        if (closeDraft) setDraft(null);
-      } else setError(true);
-    } catch { if (current === lifetime.current) setError(true); }
-    finally { if (current === lifetime.current) { saving.current = false; setPending(false); } }
+    const request = Promise.resolve().then(async () => {
+      try {
+        const result = await client.selectCommand(command);
+        if (current !== lifetime.current) return false;
+        if (result.ok && result.value.propertyId === property.propertyId && result.value.snapshot.sourceId === property.sourceId && result.value.snapshot.workspaceId === workspaceId) {
+          onCommitted(result.value.snapshot);
+          if (closeDraft) setDraft(null);
+          return true;
+        }
+        setError(true);
+      } catch { if (current === lifetime.current) setError(true); }
+      finally { if (current === lifetime.current) { inFlight.current = null; saving.current = false; setPending(false); } }
+      return false;
+    });
+    inFlight.current = request;
+    return request;
   };
   const edit = (option: SelectOption, trigger: HTMLButtonElement) => {
     returnFocus.current = trigger; setError(false); setDraft({ optionId: option.optionId, name: option.name, color: option.color, originalName: option.name, originalColor: option.color });
@@ -53,7 +64,7 @@ export function SelectOptionsEditor({ onRemove, removalOpen, client, workspaceId
     [optionIds[index], optionIds[index + delta]] = [optionIds[index + delta], optionIds[index]];
     void commit({ type: "workspace.reorderSelectOptions", workspaceId, propertyId: property.propertyId, optionIds });
   };
-  return <details className="select-options"><summary>{t("selectOptions")}: {property.name}</summary>
+  return <details className="select-options" aria-busy={pending}><summary>{t("selectOptions")}: {property.name}</summary>
     <p>{t("selectPresentationScope")}</p>
     {!options.length && <p>{t("selectOptionsEmpty")}</p>}
     <ul>{options.map((option, index) => <li key={option.optionId} data-color={option.color}>
@@ -84,6 +95,8 @@ export function SelectOptionsEditor({ onRemove, removalOpen, client, workspaceId
     </form>}
     {draft?.optionId && !pending && options.some(option => option.optionId === draft.optionId && (option.name !== draft.originalName || option.color !== draft.originalColor)) &&
       <StatusMessage kind="info" title={t("selectOptionExternalChange")} />}
+    {pending && !draft && <p role="status">{t("propertySaving")}</p>}
     {error && <StatusMessage kind="error" title={t("selectOptionError")} />}
+    {error && !draft && !onStateChange && <button type="button" className="workspace-button workspace-button--secondary" onClick={() => setError(false)}>{t("cancelTextValue")}</button>}
   </details>;
 }

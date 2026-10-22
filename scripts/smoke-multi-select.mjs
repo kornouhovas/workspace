@@ -102,6 +102,7 @@ try {
     const editor = page.getByRole("group", { name: label, exact: true });
     const ready = editor.getByRole("checkbox", { name: "Ready", exact: true });
     await ready.focus(); await ready.press("Space"); await button.filter({ hasText: "Ready" }).waitFor();
+    await page.getByRole("button",{name:en ? "Close" : "Закрыть",exact:true}).and(page.locator(":enabled")).waitFor();
     await ready.press("Escape"); await editor.waitFor({state:"hidden"});
     assert.equal(await button.evaluate(element => element === document.activeElement), true);
     await hide.click();
@@ -164,6 +165,7 @@ try {
     const remove = page.getByRole("checkbox", { name: en ? "Sibling rename (Hidden)" : "Sibling rename (Скрыта)", exact: true });
     await remove.focus(); await remove.press("Space");
     await page.waitForFunction(async workspaceId=>(await window.workspace.workspace({type:"workspace.listTextProperties",workspaceId})).value.multiSelectValues.length===1,workspaceId);
+    await page.getByRole("button",{name:en ? "Close" : "Закрыть",exact:true}).and(page.locator(":enabled")).waitFor();
     await page.getByRole("group",{name:label,exact:true}).getByRole("checkbox",{name:"Second",exact:true}).press("Escape");
     const remaining = (await query(page, { type: "workspace.listTextProperties", workspaceId })).multiSelectValues;
     assert.equal(remaining.length, 1); assert.equal(remaining[0].optionId, final.selectOptions[0].optionId);
