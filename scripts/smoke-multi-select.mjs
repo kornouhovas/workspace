@@ -1,4 +1,4 @@
-import { observeSelectionBackend, waitForSelectionFocus } from "./selection-editor-driver.mjs";
+import { observeSelectionBackend, waitForSelectionFocus, closeSelectionEditor } from "./selection-editor-driver.mjs";
 /* global window, document, innerWidth */
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";
@@ -42,6 +42,15 @@ async function launch() {
   const page = await app.firstWindow(); page.setDefaultTimeout(15000);
   const pids = await observeSelectionBackend(app, page);
   assert.ok(pids.length > 0); for (const pid of pids) backendPids.add(pid);
+  const traceFocus = () => {
+    const events = []; window.selectionFocusTrace = events;
+    document.addEventListener("focusin",event=>{
+      const element=event.target;
+      events.push({time:performance.now(),tag:element.tagName,label:element.getAttribute("aria-label"),role:element.getAttribute("role"),disabled:element.hasAttribute("disabled")});
+      if(events.length>24)events.shift();
+    });
+  };
+  await page.addInitScript(traceFocus);await page.evaluate(traceFocus);
   launchUnverified = false;
   return { app, page };
 }
@@ -146,7 +155,7 @@ try {
     const reopened = page.getByRole("button", { name: label, exact: true }); await reopened.press("Enter");
     await page.getByRole("button", { name: en ? "Clear value" : "Очистить значение", exact: true }).click();
     await reopened.filter({hasText:en ? "No value" : "Нет значения"}).waitFor();
-    await page.getByRole("button", {name:en ? "Close" : "Закрыть",exact:true}).click();
+    await closeSelectionEditor(page,{label,closeLabel:en ? "Close" : "Закрыть"});
     assert.deepEqual((await query(page, { type: "workspace.listTextProperties", workspaceId })).multiSelectValues, []);
     await reopened.press("Enter");
     const clearingEditor = page.getByRole("group", { name: label, exact: true });
@@ -183,6 +192,7 @@ try {
   failure = error; evidence.status = "failed"; evidence.failure = { name: error.name, message: error.message };
   if (session) try {
     const page = await session.firstWindow();
+    evidence.focusState=await page.evaluate(()=>({trace:window.selectionFocusTrace,active:{tag:document.activeElement?.tagName,label:document.activeElement?.getAttribute("aria-label")},triggers:[...document.querySelectorAll('.text-value-button')].map(button=>({label:button.getAttribute('aria-label'),disabled:button.disabled,expanded:button.getAttribute('aria-expanded')}))})).catch(()=>null);
     await page.screenshot({ path: join(evidenceDirectory, "failure.png"), fullPage: true });
     await writeFile(join(evidenceDirectory, "failure.txt"), await page.locator("body").innerText());
     await close();

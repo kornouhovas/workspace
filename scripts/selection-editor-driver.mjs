@@ -35,3 +35,10 @@ export async function closeGroupingForSelection(page, language = "en") {
     await page.waitForFunction(label => globalThis.document.activeElement?.getAttribute("aria-label") === label && globalThis.document.activeElement?.getAttribute("aria-expanded") === "false", parentLabel);
   }
 }
+
+// Observe both dismissal and its return before reopening the same value menu.
+export async function closeSelectionEditor(page, {label, closeLabel}) {
+  await page.getByRole('button',{name:closeLabel,exact:true}).click();
+  await page.getByRole('group',{name:label,exact:true}).waitFor({state:'hidden'});
+  await waitForSelectionFocus(page,label);
+}

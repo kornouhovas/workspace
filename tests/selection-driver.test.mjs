@@ -105,3 +105,39 @@ for(const language of ['en','ru'])test(`${language} grouping closure completes i
  if(child.exitCode!==null||child.signalCode!==null)await rm(profile,{recursive:true,force:true});
  if(failure)throw failure;
 });
+
+test('closing a selection finishes delayed focus return before reopening the same value editor',async()=>{
+ const {closeSelectionEditor}=await import('../scripts/selection-editor-driver.mjs');
+ const profile=await mkdtemp(join(tmpdir(),'selection-reopen-driver-'));
+ const app=await _electron.launch({executablePath:createRequire(import.meta.url)('electron'),args:[fileURLToPath(new URL('./fixtures/rename-editor-readiness-electron.cjs',import.meta.url))],env:{...process.env,WORKSPACE_RENAME_EDITOR_PROFILE:profile}});
+ const child=app.process();let failure;
+ try{
+  const page=await app.firstWindow();const url=await app.evaluate(()=>globalThis.renameEditorInitialLoad);await page.waitForURL(url);
+  const label='Edit MultiSelect value: Project / Status';
+  await page.setContent(`<button id="trigger" aria-label="${label}">Value</button><div role="group" aria-label="${label}"><button id="close">Close</button></div>`,{waitUntil:'domcontentloaded',timeout:15000});
+  await page.evaluate(()=>{
+   const trigger=document.querySelector('#trigger');
+   globalThis.selectionCloseReturned=false;
+   document.querySelector('#close').addEventListener('click',()=>{
+    document.querySelector('[role="group"]').remove();
+    setTimeout(()=>{trigger.focus();globalThis.selectionCloseReturned=true;},100);
+   });
+   trigger.addEventListener('keydown',event=>{
+    if(event.key!=='Enter')return;
+    const group=document.createElement('div');group.setAttribute('role','group');group.setAttribute('aria-label',trigger.getAttribute('aria-label'));
+    const input=document.createElement('input');input.type='checkbox';input.setAttribute('aria-label','Second');group.append(input);document.body.append(group);
+    input.addEventListener('blur',()=>group.remove());input.focus();
+   });
+   document.querySelector('#close').focus();
+  });
+  page.setDefaultTimeout(1000);
+  await closeSelectionEditor(page,{label,closeLabel:'Close'});
+  await page.locator('#trigger').press('Enter');
+  await page.waitForFunction(()=>globalThis.selectionCloseReturned);
+  assert.equal(await page.getByRole('group',{name:label,exact:true}).count(),1);
+  assert.equal(await page.getByRole('checkbox',{name:'Second',exact:true}).evaluate(input=>document.activeElement===input),true);
+ }catch(error){failure=error;}
+ try{await closeElectron(app);}catch(error){failure??=error;}
+ if(child.exitCode!==null||child.signalCode!==null)await rm(profile,{recursive:true,force:true});
+ if(failure)throw failure;
+});

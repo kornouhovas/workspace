@@ -196,3 +196,32 @@ After both original focused commands pass, renew the entire `properties` profile
 on all three hosts at the repaired SHA; the earlier test-only tail reuse is no
 longer sufficient for this candidate. Exact receipts remain in the issue
 checkpoint. A failed or unreached command remains unresolved.
+
+## MultiSelect reopen sequencing renewal
+
+Full scoped run [39846560532](https://github.com/kornouhovas/workspace/actions/runs/39846560532)
+at `d4c6206a` passes macOS's 287 tests, property smoke, selection-editor smoke and
+original Single Select. Original MultiSelect passes EN, then RU times out at its
+existing 15-second focus-return wait following Clear, Close, immediate reopening
+and Escape. Normal shutdown and owned cleanup pass; Views is unreached. Its
+original screenshot, evidence and logs are retained. Both Windows results must
+be reconciled separately before acceptance.
+
+The unchanged original MultiSelect command passes locally. A controlled native
+reproduction demonstrates that the existing Close-to-reopen gap admits delayed
+focus return from the previous menu, dismissing the newly opened editor. The
+old sequence fails with zero editors instead of one; the revised driver observes
+both actual dismissal and exact initiating trigger focus before reopening once.
+This proves the timing hazard, not the exact historical actor in the hosted
+failure. Failure-only bounded focus history and trigger state remain available
+if the original command fails again. Product values, hidden-option/persistence/
+file assertions, Escape and final focus expectations remain unchanged, with no
+replayed action or widened deadline.
+
+Six native driver regressions, lint, and both local original MultiSelect journeys
+pass with normal quit/cleanup. Both review axes report no findings. Renew the
+failed macOS original command with existing `selection-focus`. Since only the
+MultiSelect driver consumes the new helper, follow focused success with changed
+Windows MultiSelect consumers and unreached macOS Views; app/build/dependency
+inputs and earlier passing property/selection/Single Select receipts remain at
+`d4c6206a`. Exact renewed results belong in the issue checkpoint.
