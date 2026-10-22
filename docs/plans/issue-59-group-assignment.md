@@ -34,3 +34,29 @@ Spec/Standards review, then one full local suite on the completed candidate.
 Record failures and scoped renewal separately. Select an actual three-host CI
 profile for this boundary, inspect provenance/reports, then integrate under the
 owner-authorized route. Wider release/platform gates remain with #67/#42.
+
+## Visual handoff
+
+Composition authority: main `080b416c`, `table-view.tsx` / `board-view.tsx` and
+its project-status-drag journey; component/typography authority: bb `f135a001`,
+retained Inter/Radix/Tailwind foundation. Accepted local comparison: #58's
+`Board-ru-light-1024-review.png` and the inherited grouped Table/Board screens.
+
+`GroupAssignment` retains separate drag, native keyboard destination and clear
+controls. `TextPropertiesTable` owns gesture lifetime, target and actual-query
+feedback. Target outline uses `--ring`, background uses `--accent`; the existing
+`StatusMessage` supplies EN/RU text, borders and typography. The drag hint floats
+inside the viewport with pointer events disabled, avoiding source movement and
+preserving access to destinations. No new bb source or dependency is copied.
+
+Deliberate differences from main remain: ordinary properties use typed metadata
+commands, MultiSelect uses source-occurrence replacement, and assignment is
+separate from row/group ordering. There is no optimistic relocation. The shared
+shell, project area and accepted row/card/group presentation are retained.
+
+Observed correction: inserting/removing feedback during drag moved the source.
+A controlled production-CSS probe measured 47.8125px after removing a prior saved
+message. Retain that message until an actual submission and float the drag hint;
+the native layout regression now proves an identical source bounding box.
+
+Delivery evidence and remaining CI gate: [verification](../verification/issue-59-group-assignment.md).

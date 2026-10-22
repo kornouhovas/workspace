@@ -61,6 +61,13 @@ for(const layout of ["table","board"] as const) test(`${layout} cancelled assign
   fireEvent.dragEnd(source,{dataTransfer:f.dataTransfer});
   fireEvent.drop(target,{dataTransfer:f.dataTransfer});
   assert.equal(f.assignments(),0);
+  await userEvent.setup({document}).selectOptions(screen.getByLabelText("Change group: Alpha"),"42");
+  await screen.findByText("Group value saved. Filters may hide the project from this view.");
+  const next=screen.getByRole("button",{name:"Drag to change group: Alpha"});
+  await waitFor(()=>assert.equal((next as HTMLButtonElement).disabled,false));
+  fireEvent.dragStart(next,{dataTransfer:f.dataTransfer});
+  assert.ok(screen.getByText("Group value saved. Filters may hide the project from this view."),"Starting a gesture retains the previous status and its occupied space");
+  fireEvent.dragEnd(next,{dataTransfer:f.dataTransfer});
  }finally{f.close();}
 });
 for(const layout of ["table","board"] as const) test(`${layout} active invalid draft blocks assignment until explicitly cancelled`,async()=>{

@@ -1,4 +1,4 @@
-/* global window, document, innerWidth */
+/* global window, document, innerWidth, DataTransfer */
 import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
 import {mkdtemp,mkdir,realpath,writeFile,readFile} from 'node:fs/promises';
@@ -34,9 +34,23 @@ try{
  const projects=(await call('applyDiscovery',{previewToken:(await call('previewDiscovery')).previewToken})).projects;
  const propertyId=(await call('createProperty',{name:'Stage',propertyType:'single_select'})).propertyId;
  const option=async(name,color)=>(await call('createSelectOption',{propertyId,name,color})).snapshot.selectOptions.find(o=>o.propertyId===propertyId&&o.name===name).optionId;
- const todo=await option('To do','blue');await option('Review','green');
+ const todo=await option('To do','blue'),review=await option('Review','green');
  for(const project of projects)await call('setSelectValue',{projectId:project.projectId,propertyId,optionId:todo});
  await call('setViewGrouping',{viewId,config:{propertyId,settings:[]}});
+ // Real CSS regression: a previous accepted result keeps its geometry when
+ // the next gesture begins. This controlled DOM event supplies layout evidence;
+ // the original all-type helper and matrix below retain actual native pointers.
+ await page.reload();
+ const selector=page.getByLabel('Изменить группу: Brand refresh',{exact:true}).and(page.locator(':enabled'));
+ await selector.selectOption(JSON.stringify(review));
+ await page.getByRole('region',{name:'Review',exact:true}).getByLabel('Изменить группу: Brand refresh',{exact:true}).and(page.locator(':enabled')).selectOption(JSON.stringify(todo));
+ await page.getByText('Значение группы сохранено. Фильтры могут скрыть проект в этом представлении.',{exact:true}).waitFor();
+ const handle=page.getByRole('button',{name:'Перетащить для изменения группы: Brand refresh',exact:true}).and(page.locator(':enabled'));
+ const before=await handle.boundingBox();
+ await handle.dispatchEvent('dragstart',{dataTransfer:await page.evaluateHandle(()=>new DataTransfer())});
+ await page.getByText('Выберите группу назначения. Escape отменяет перетаскивание.',{exact:true}).waitFor();
+ const after=await handle.boundingBox();assert.deepEqual(after,before,'Starting another gesture must not move its source');
+ await handle.dispatchEvent('dragend');report.checks.push({controlledLayout:true,sourceStable:true,before,after});
  for(const language of ['en','ru']){
   await setInterfaceLanguage(page,language);
   for(const theme of ['light','dark']){

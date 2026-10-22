@@ -386,7 +386,7 @@ function TextPropertiesContent({ detail, onPreview, viewId, layout = "table", hi
           {viewId && assignmentProperty && grouped?.groups && (() => {
             const origin = grouped.groups.find(group => group.key === groupKey && group.projectIds.includes(project.projectId));
             return origin ? <GroupAssignment command={{type:"workspace.assignProjectGroup",workspaceId,viewId,propertyId:assignmentProperty.propertyId,projectId:project.projectId,fromKey:origin.key,toKey:origin.key,archived:!!hideReveal}}
-              groups={grouped.groups} projectName={project.name} language={language} disabled={assignmentBusy} onDragBegin={(command, trigger) => { activeDrag.current = {command, trigger}; setDraggingAssignment(true); setAssignmentMessage(null); }} onDragFinish={finishDrag} controlRef={element => {
+              groups={grouped.groups} projectName={project.name} language={language} disabled={assignmentBusy} onDragBegin={(command, trigger) => { activeDrag.current = {command, trigger}; setDraggingAssignment(true); }} onDragFinish={finishDrag} controlRef={element => {
                 if (element) assignmentControls.current.set(`${origin.key}:${project.projectId}`, element);
                 else assignmentControls.current.delete(`${origin.key}:${project.projectId}`);
               }} onAssign={command => void assign(command)}/> : null;
