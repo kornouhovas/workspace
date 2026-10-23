@@ -523,6 +523,10 @@ function SourceObservationPreview({ language, state }: { language: Language; sta
       override async getViewFilter(workspaceId: string, viewId: string) { return { ok: true as const, value: { workspaceId, viewId, config: { search: "", rules: [] } } }; }
       override async queryView(workspaceId: string, viewId: string, archived: boolean) { return { ok: true as const, value: { workspaceId, viewId, archived, projectIds: [...list.projects, ...list.retainedProjects].map(p => p.projectId) } }; }
       override async listProjects() { return { ok: true as const, value: list }; }
+      override async listArchivedProjects(workspaceId: string) { return { ok: true as const, value: {
+        workspaceId, sourceId: list.sourceId, revision: list.revision, relativePath: null, projects: [] } }; }
+      override async listProjectArchiveOperations(workspaceId: string) { return { ok: true as const, value: {
+        workspaceId, sourceId: list.sourceId, operations: [] } }; }
       override async listTextProperties() { return { ok: true as const, value: { workspaceId: textStoryIds.workspaceId, sourceId: textStoryIds.sourceId, revision: 7,
         definitions: [{ propertyId: textStoryIds.propertyId, sourceId: textStoryIds.sourceId, propertyType: "text" as const, name: "Notes" }],
         values: [{ projectId: project.projectId, propertyId: textStoryIds.propertyId, value: "  Exact authored 日本語\n" + "long-text-".repeat(24) + "  " }] } }; }

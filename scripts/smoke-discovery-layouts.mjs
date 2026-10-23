@@ -68,7 +68,7 @@ app.on('window-all-closed', () => app.quit());`);
   for (const state of categoryMoveStates) for (const language of ["english", "russian"]) {
     assert.ok(categoryMoveStories.some((name) => name.endsWith(`--category-move-${state}-${language}`)), `Missing category move ${state} ${language}`);
   }
-  const selectedStories = process.argv.includes("--remaining-after-operations") ? stories.filter(name => !/--(applied-|category-move-|creation-|rename-)/.test(name)) : process.argv.includes("--remaining-after-category-move") ? stories.filter(name => !name.includes("--applied-") && !name.includes("--category-move-")) : process.argv.includes("--applied") ? stories.filter(name => name.includes("--applied-")) : process.argv.includes("--remaining-after-applied") ? stories.filter(name => !name.includes("--applied-")) : process.argv.includes("--category-move") ? categoryMoveStories : process.argv.includes("--rename") ? stories.filter((name) => name.includes("--rename-")) : process.argv.includes("--mode-changes") ? stories.filter((name) => name.includes("--mode-")) : process.argv.includes("--creation") ? stories.filter((name) => name.includes("--creation-")) : stories;
+  const selectedStories = process.argv.includes("--source-observation") ? stories.filter(name => name.includes("--source-")) : process.argv.includes("--remaining-after-operations") ? stories.filter(name => !/--(applied-|category-move-|creation-|rename-)/.test(name)) : process.argv.includes("--remaining-after-category-move") ? stories.filter(name => !name.includes("--applied-") && !name.includes("--category-move-")) : process.argv.includes("--applied") ? stories.filter(name => name.includes("--applied-")) : process.argv.includes("--remaining-after-applied") ? stories.filter(name => !name.includes("--applied-")) : process.argv.includes("--category-move") ? categoryMoveStories : process.argv.includes("--rename") ? stories.filter((name) => name.includes("--rename-")) : process.argv.includes("--mode-changes") ? stories.filter((name) => name.includes("--mode-")) : process.argv.includes("--creation") ? stories.filter((name) => name.includes("--creation-")) : stories;
   results.selection = process.argv.includes("--remaining-after-operations") ? "remaining-after-operations" : process.argv.includes("--remaining-after-category-move") ? "remaining-after-category-move" : process.argv.includes("--applied") ? "applied" : process.argv.includes("--remaining-after-applied") ? "remaining-after-applied" : process.argv.slice(2).join(" ") || "all";
   results.selectedStoryCount = selectedStories.length;
   results.totalStoryCount = stories.length;
@@ -90,9 +90,9 @@ app.on('window-all-closed', () => app.quit());`);
       assert.equal(await page.getByRole('alert').filter({visible:true}).count(), 0, 'Applied fixtures must render the intended healthy state');
       assert.equal(await page.getByRole('button',{name:/^(Reload properties|Перезагрузить свойства)$/,exact:true}).filter({visible:true}).count(), 0, 'Applied property snapshot must be current');
     }
-    if (categoryMoveStory || renameStory) {
+    if (categoryMoveStory || renameStory || sourceStory) {
       await page.locator('.project-archive[aria-busy="false"]').waitFor({state:'attached'});
-      assert.equal(await page.locator('.project-archive > [role="alert"]').count(), 0, 'Operation fixtures must not contain unrelated archive errors');
+      assert.equal(await page.locator('.project-archive > [role="alert"]').count(), 0, 'Composed fixtures must not contain unrelated archive errors');
     }
     const categoryMoveRoot = page.locator("[data-category-move-fixture]");
     const categoryMoveState = categoryMoveStory ? await categoryMoveRoot.getAttribute("data-category-move-fixture") : null;

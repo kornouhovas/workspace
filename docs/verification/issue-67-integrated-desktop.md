@@ -337,3 +337,18 @@ reports. Only after inspected Applied, category-move and creation/rename success
 integrated-runtime selects the116 remaining states and all packaged journeys.
 Ordinary integrated-desktop still selects all302 states. No required state is
 retired and no failed receipt is reclassified as passing.
+
+
+## Remaining composed-source fixture health
+
+Local116-state complement passes348 captures and normal shutdown. Its source
+appearance is subsequently rejected: SourceObservationPreview is the last composed
+DiscoveryWorkspace fixture without archive reads. A narrowed14-state source command
+with the archive-only health guard is red1 before current archive reads and green42
+captures afterwards. Intentional source refresh/error/degraded assertions remain.
+[Raw observations and acceptance limit](issue-67-evidence/source-fixture-local.json).
+Inspected healthy EN1024 source capture has no unrelated error; all four composed
+App/DiscoveryWorkspace fixtures now provide archive reads. Both reviews report0
+findings; typecheck/lint and renderer10-file byte-equivalence pass. Source states
+remain in the final hosted116-state complement; the348-capture geometry result
+alone does not establish healthy appearance.

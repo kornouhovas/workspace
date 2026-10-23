@@ -39,5 +39,11 @@
     "fileCount": 10,
     "head": "ffcb8cf0",
     "workingTree": "Portal-aware category/creation/rename fixture preparation; shared helper imported only by stories/tests. Production renderer remains byte-identical."
+  },
+  "sourceFixtureRenewal": {
+    "equal": true,
+    "fileCount": 10,
+    "head": "53c4805b",
+    "workingTree": "SourceObservationPreview archive mocks only; production output byte-identical."
   }
 }
