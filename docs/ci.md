@@ -1746,3 +1746,14 @@ contextual-project release journey on all three hosts. Tracing remains disabled;
 the original command runs only after successful prerequisites. No full suite,
 Ladle or unrelated package journey is replayed. Inspect original reports before
 renewing missing tails; the independent Mac category-entry failure remains open.
+
+
+For Mac tail39965141240's missing Move action in Board preview, select
+`checks: integrated-category-entry-profile`. It packages/inspects only macOS
+latest and runs the original release category command with diagnostic Playwright
+snapshots/screenshots. WORKSPACE_CATEGORY_ENTRY_TRACE=1 is opt-in, marks its
+report diagnostic and disables source capture. Start/stop are bounded before
+original normal shutdown/cleanup; capture failure preserves scenario failure.
+Ordinary aggregate acceptance explicitly pins this flag to0. This diagnostic
+route cannot accept categories or start missing tails; retain passing30a7
+project-entry receipts and prior unchanged production inputs at their actual SHA.

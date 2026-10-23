@@ -11,7 +11,7 @@ test('integrated package acceptance propagates a failed journey and records unre
   const evidence = await mkdtemp(join(tmpdir(), 'workspace-integration-probe-'));
   try {
     const result = spawnSync(process.execPath, ['scripts/integrated-desktop.mjs', '--failure-probe'], {
-      env: { ...process.env, WORKSPACE_SMOKE_EVIDENCE_DIR: evidence, WORKSPACE_PERFORMANCE_ROOT: 'another-candidate', WORKSPACE_REVEAL_TRACE: '1', WORKSPACE_ARCHIVE_ENTRY_TRACE:'1' }, encoding: 'utf8',
+      env: { ...process.env, WORKSPACE_SMOKE_EVIDENCE_DIR: evidence, WORKSPACE_PERFORMANCE_ROOT: 'another-candidate', WORKSPACE_REVEAL_TRACE: '1', WORKSPACE_ARCHIVE_ENTRY_TRACE:'1', WORKSPACE_CATEGORY_ENTRY_TRACE:'1' }, encoding: 'utf8',
     });
     assert.equal(result.status, 23, result.stderr);
     const report = JSON.parse(await readFile(join(evidence, 'report.json'), 'utf8'));
@@ -25,6 +25,7 @@ test('integrated package acceptance propagates a failed journey and records unre
     assert.equal(childEnvironment.performanceRoot, resolve('.'));
     assert.equal(childEnvironment.revealTrace, '0');
     assert.equal(childEnvironment.archiveEntryTrace, '0');
+    assert.equal(childEnvironment.categoryEntryTrace, '0');
   } finally { await rm(evidence, { recursive: true, force: true }); }
 });
 
@@ -185,4 +186,20 @@ test('project entry repair renews the changed original packaged consumer on all 
   assert.equal(commands.some(command=>/test:all|smoke-discovery-layouts|integrated-desktop.mjs/.test(command)),false);
   const upload=job.steps.find(step=>step.uses?.startsWith('actions/upload-artifact'));
   assert.equal(upload.if,'always()');assert.equal(upload.with['if-no-files-found'],'error');
+});
+
+
+test('category entry trace is a Mac-only diagnostic without acceptance tails',async()=>{
+ const workflow=load(await readFile('.github/workflows/desktop-ci.yml','utf8'));
+ assert.ok(workflow.on.workflow_dispatch.inputs.checks.options.includes('integrated-category-entry-profile'));
+ const context={github:{event_name:'workflow_dispatch'},inputs:{checks:'integrated-category-entry-profile'}};
+ const enabled=job=>runInNewContext(job.if.slice(3,-2),context);
+ const job=workflow.jobs['integrated-category-entry-profile'];assert.equal(enabled(job),true);assert.equal(enabled(workflow.jobs.common),false);assert.equal(enabled(workflow.jobs['integrated-missing-tails']),false);
+ assert.equal(job['runs-on'],'macos-latest');
+ const commands=job.steps.filter(step=>step.run).map(step=>step.run);
+ assert.ok(commands.includes('npm run package:built'));assert.ok(commands.includes('npm run check:artifact -- release'));
+ const original=job.steps.find(step=>step.run?.includes('node scripts/smoke-contextual-categories.mjs release'));
+ assert.ok(original.run.includes('set -o pipefail'));assert.equal(original.env.WORKSPACE_CATEGORY_ENTRY_TRACE,'1');assert.equal(original.if,undefined);
+ assert.equal(commands.some(command=>/test:all|smoke-discovery-layouts|integrated-desktop.mjs/.test(command)),false);
+ const upload=job.steps.find(step=>step.uses?.startsWith('actions/upload-artifact'));assert.equal(upload.if,'always()');assert.equal(upload.with['if-no-files-found'],'error');
 });

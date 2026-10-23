@@ -719,3 +719,30 @@ does not uniquely prove the historical hosted cause. [Raw receipt](issue-67-evid
 Use integrated-project-entry-repair to renew this changed original release
 consumer on all three hosts before any missing-tail continuation. Mac categories
 requires independent diagnosis; its failed entry is not accepted by this repair.
+
+
+## Project renewal and unresolved category diagnostic
+
+Focused39967363906 at30a7 passes the changed original project command on all
+three hosts. Artifacts12506614659Mac/12506354987Winlatest/12507058213Win2022
+are inspected:20checks and32captures per host, including collision/Cancel,
+identity/metadata and normal quit/backend exit/owned cleanup. [Raw reports](issue-67-evidence/project-entry-renewal-30a7.json).
+This renews project entry, not the independent category failure or local negative.
+
+Six minimized local Board/list→preview cycles pass42diagnostic transitions and
+96captures without reproducing the hosted missing-control failure. The local
+full diagnostic reaches a different existing source-changed guard while selecting
+a return category. Neither result identifies the hosted cause. The new optional
+Playwright trace keeps action/DOM/screenshots on the disposable fixture, disables
+source capture, records finite phase and failure screenshot, and stops under3s
+before the original normal-shutdown path. Start also has3s, failure PNG2s; no
+product assertion or shutdown deadline changes. Local recorded ZIP integrity
+passes with111before/after actions,287DOM snapshots and65screencast frames; the
+original command remains failed with normal shutdown and cleanup. [Receipt](issue-67-evidence/category-entry-diagnostic-control.json).
+
+Tracing defaults off and the aggregate runner pins it to0; a real exit23 child
+probe goes red before that pin, green after. Routing74/74, typecheck/lint/docs
+and both reviews pass. integrated-category-entry-profile runs only the original
+Mac release category command with diagnostic1. It cannot provide ordinary
+acceptance or start the missing13-row tails. Those remain behind inspection and
+passing focused original-category renewal under the failed-Actions loop.
