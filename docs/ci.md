@@ -1608,3 +1608,19 @@ data recovery, archive and Views tail. Other successful inspected merged receipt
 retain their actual6de2c383 provenance; application/build inputs are unchanged by
 this driver-only repair. Exact visible canonical-source identity, original
 caller deadlines, screenshots, restart and shutdown/cleanup gates remain required.
+
+## Recovery settings acceptance
+
+For #66, `checks: desktop-ux` with `desktop_ux_profile: recovery-settings`
+selects recovery/App/dialog interactions, real SQLite backup/session/recovery,
+settings/version/artifact checks and development recovery/session/shell journeys
+on macOS latest, Windows latest and Windows 2022. The route packages the candidate
+and repeats the actual recovery and session consumers in release mode. Recovery
+captures cover Backup, About, review, invalid restoration, unavailable source and
+startup failure; EN/RU, light/dark, 1024x720 and 1440x960 are retained separately.
+Startup database failure uses a disposable corrupt database and must preserve its
+bytes. The original 360px stress and data-preservation assertions remain present.
+An unavailable backend shows matching-version instructions; no replacement is
+attempted until its service can open. All normal-exit and owned-cleanup gates
+remain mandatory. Installer and strict scale milestones retain their separately
+owned acceptance because no installer/native/storage/performance path is changed.

@@ -170,3 +170,13 @@ reassociation review; its embedded heading supplies the accessible dialog label.
 The source-outage sizing correction is scoped to the vertical project host.
 No new upstream source, asset or runtime dependency is copied; notices and
 renderer/service isolation remain unchanged. See the [handoff](plans/issue-65-project-recovery.md).
+
+## Issue 66 recovery settings and About
+
+Backup/recovery extends the accepted settings cards with the existing shared
+operation dialog, local semantic tokens, Inter assets and Radix focus lifecycle.
+About embeds the actual package version, THIRD_PARTY_NOTICES and the complete
+bb MIT, Drizzle Apache 2.0 and Inter OFL notices from their canonical build inputs.
+No additional upstream module, asset or runtime dependency is copied. The
+packaged canonical notices and source provenance remain required independently
+of their in-app presentation.

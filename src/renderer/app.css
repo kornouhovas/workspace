@@ -944,3 +944,20 @@ p { margin-block: .5rem; }
 .project-operation-dialog .category-options__list li { padding: 8px 0; }
 .project-operation-dialog.project-category-move { margin: 0; }
 .project-operation-dialog .category-move-review { border: 0; padding: 0; }
+
+/* Recovery extends the accepted settings card; long paths never widen it. */
+.data-recovery .workspace-settings { gap: 14px; }
+.data-recovery > .workspace-settings > button, .recovery-automatic > button { justify-self: start; }
+.recovery-automatic { border-bottom: 1px solid var(--border); padding-bottom: 20px; }
+.data-recovery button:disabled { cursor: default; opacity: .5; }
+
+.recovery-candidate { overflow-wrap: anywhere; font-weight: 500; }
+
+.about-panel { display: grid; gap: 16px; min-width: 0; }
+.about-panel details { border-top: 1px solid var(--border); padding-top: 12px; min-width: 0; }
+.about-panel summary { cursor: pointer; font-weight: 500; }
+.about-notice { white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; font-size: 12px; line-height: 1.65; color: var(--muted-foreground); }
+
+.project-operation-dialog [aria-label] .recovery-candidate { font-size: 12px; }
+
+.recovery-review { display: grid; gap: 12px; }

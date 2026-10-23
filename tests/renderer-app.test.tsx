@@ -4033,3 +4033,14 @@ test("Sources settings invalidates reviews on source changes and ignores older s
   await act(async () => api.emitChange({ type: "workspace.sourceChanged", source: { sourceId: active.sourceId, workspaceIds: [active.workspaceId], canonicalRoot: active.canonicalRoot, sourceAvailable: false } }));
   await waitFor(() => assert.equal(apply.disabled, true));
 });
+
+test("startup failure reaches recovery settings and returns focus without a working backend", async () => {
+  mockApi({ backend: "unavailable" });
+  render(<App />);
+  const entry = await screen.findByRole("button", { name: "Backup and recovery" });
+  await userEvent.click(entry);
+  assert.ok(await screen.findByText(translate("en", "dataStartupRecovery")));
+  assert.equal(screen.queryByRole("button", { name: translate("en", "dataExport") }), null);
+  await userEvent.click(screen.getByRole("button", { name: "Back to workspace" }));
+  await waitFor(() => assert.ok(document.activeElement === entry));
+});

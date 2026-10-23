@@ -13,7 +13,7 @@ on:
       desktop_ux_profile:
         description: With desktop-ux, select foundation, grouped Board or project navigation acceptance
         type: choice
-        options: [foundation, filesystem-assignment-recovery-renewal, filesystem-assignment-integration, retained-recovery, contextual-categories, contextual-archive, contextual-archive-native, board, contextual-projects, contextual-project-regressions, filesystem-assignment-reveal-repair, filesystem-assignment-tail, filesystem-assignment-repair, filesystem-assignment, group-assignment, navigation, navigation-native, scroll-restoration, project-files, project-files-native, coherent, sessions, scalars, selections, properties, property-repair, property-tail, property-renewal, selection-native, selection-focus, selection-tail]
+        options: [foundation, recovery-settings, filesystem-assignment-recovery-renewal, filesystem-assignment-integration, retained-recovery, contextual-categories, contextual-archive, contextual-archive-native, board, contextual-projects, contextual-project-regressions, filesystem-assignment-reveal-repair, filesystem-assignment-tail, filesystem-assignment-repair, filesystem-assignment, group-assignment, navigation, navigation-native, scroll-restoration, project-files, project-files-native, coherent, sessions, scalars, selections, properties, property-repair, property-tail, property-renewal, selection-native, selection-focus, selection-tail]
         default: foundation
       desktop_ux_failure_probe:
         description: With desktop-ux, deliberately fail a selected check to verify propagation
@@ -311,7 +311,7 @@ jobs:
         if: ${{ inputs.desktop_ux_failure_probe }}
         run: node scripts/desktop-ux-checks.mjs foundation --failure-probe
       - name: Affected UI, services and real Electron flows
-        if: ${{ !inputs.desktop_ux_failure_probe && !inputs.desktop_ux_packaged_only && !inputs.desktop_ux_category_only && inputs.desktop_ux_profile != 'board' && inputs.desktop_ux_profile != 'navigation' && inputs.desktop_ux_profile != 'navigation-native' && inputs.desktop_ux_profile != 'scroll-restoration' && inputs.desktop_ux_profile != 'project-files' && inputs.desktop_ux_profile != 'project-files-native' && inputs.desktop_ux_profile != 'coherent' && inputs.desktop_ux_profile != 'sessions' && inputs.desktop_ux_profile != 'scalars' && inputs.desktop_ux_profile != 'selections' && inputs.desktop_ux_profile != 'selection-native' && inputs.desktop_ux_profile != 'selection-tail' && inputs.desktop_ux_profile != 'selection-focus' && inputs.desktop_ux_profile != 'contextual-project-regressions' && inputs.desktop_ux_profile != 'contextual-projects' && inputs.desktop_ux_profile != 'contextual-categories' && inputs.desktop_ux_profile != 'retained-recovery' && inputs.desktop_ux_profile != 'filesystem-assignment-integration' && inputs.desktop_ux_profile != 'filesystem-assignment-recovery-renewal' && inputs.desktop_ux_profile != 'contextual-archive' && inputs.desktop_ux_profile != 'contextual-archive-native' && inputs.desktop_ux_profile != 'filesystem-assignment-reveal-repair' && inputs.desktop_ux_profile != 'filesystem-assignment-tail' && inputs.desktop_ux_profile != 'filesystem-assignment-repair' && inputs.desktop_ux_profile != 'filesystem-assignment' && inputs.desktop_ux_profile != 'group-assignment' && inputs.desktop_ux_profile != 'properties' && inputs.desktop_ux_profile != 'property-repair' && inputs.desktop_ux_profile != 'property-tail' && inputs.desktop_ux_profile != 'property-renewal' }}
+        if: ${{ !inputs.desktop_ux_failure_probe && !inputs.desktop_ux_packaged_only && !inputs.desktop_ux_category_only && inputs.desktop_ux_profile != 'recovery-settings' && inputs.desktop_ux_profile != 'board' && inputs.desktop_ux_profile != 'navigation' && inputs.desktop_ux_profile != 'navigation-native' && inputs.desktop_ux_profile != 'scroll-restoration' && inputs.desktop_ux_profile != 'project-files' && inputs.desktop_ux_profile != 'project-files-native' && inputs.desktop_ux_profile != 'coherent' && inputs.desktop_ux_profile != 'sessions' && inputs.desktop_ux_profile != 'scalars' && inputs.desktop_ux_profile != 'selections' && inputs.desktop_ux_profile != 'selection-native' && inputs.desktop_ux_profile != 'selection-tail' && inputs.desktop_ux_profile != 'selection-focus' && inputs.desktop_ux_profile != 'contextual-project-regressions' && inputs.desktop_ux_profile != 'contextual-projects' && inputs.desktop_ux_profile != 'contextual-categories' && inputs.desktop_ux_profile != 'retained-recovery' && inputs.desktop_ux_profile != 'filesystem-assignment-integration' && inputs.desktop_ux_profile != 'filesystem-assignment-recovery-renewal' && inputs.desktop_ux_profile != 'contextual-archive' && inputs.desktop_ux_profile != 'contextual-archive-native' && inputs.desktop_ux_profile != 'filesystem-assignment-reveal-repair' && inputs.desktop_ux_profile != 'filesystem-assignment-tail' && inputs.desktop_ux_profile != 'filesystem-assignment-repair' && inputs.desktop_ux_profile != 'filesystem-assignment' && inputs.desktop_ux_profile != 'group-assignment' && inputs.desktop_ux_profile != 'properties' && inputs.desktop_ux_profile != 'property-repair' && inputs.desktop_ux_profile != 'property-tail' && inputs.desktop_ux_profile != 'property-renewal' }}
         run: npm run test:desktop-ux
       - name: Renew changed filesystem assignment and unreached native tails
         if: ${{ !inputs.desktop_ux_failure_probe && inputs.desktop_ux_profile == 'filesystem-assignment-tail' }}
@@ -397,6 +397,9 @@ jobs:
       - name: Scalar drafts and guarded navigation acceptance
         if: ${{ !inputs.desktop_ux_failure_probe && inputs.desktop_ux_profile == 'scalars' }}
         run: node scripts/desktop-ux-checks.mjs scalars
+      - name: Recovery settings, notices and current-session return
+        if: ${{ !inputs.desktop_ux_failure_probe && inputs.desktop_ux_profile == 'recovery-settings' }}
+        run: node scripts/desktop-ux-checks.mjs recovery-settings
       - name: Workspace session migration, recovery and real restart acceptance
         if: ${{ !inputs.desktop_ux_failure_probe && inputs.desktop_ux_profile == 'sessions' }}
         run: node scripts/desktop-ux-checks.mjs sessions
@@ -439,6 +442,12 @@ jobs:
           node scripts/smoke-scalar-drafts.mjs release
           WORKSPACE_SMOKE_EVIDENCE_DIR=work/issue-56-scalars-number-release npm run smoke:number -- release
           WORKSPACE_SMOKE_EVIDENCE_DIR=work/issue-56-scalars-date-release npm run smoke:date -- release
+      - name: Packaged recovery settings and restored session
+        if: ${{ !inputs.desktop_ux_failure_probe && inputs.desktop_ux_profile == 'recovery-settings' }}
+        shell: bash
+        run: |
+          WORKSPACE_SMOKE_EVIDENCE_DIR=work/issue-66-recovery-release npm run smoke:data-recovery -- release
+          WORKSPACE_SMOKE_EVIDENCE_DIR=work/issue-66-sessions-release node scripts/smoke-workspace-sessions.mjs release
       - name: Packaged workspace session restart and recovery
         if: ${{ !inputs.desktop_ux_failure_probe && inputs.desktop_ux_profile == 'sessions' }}
         run: node scripts/smoke-workspace-sessions.mjs release
@@ -471,6 +480,8 @@ jobs:
           name: desktop-ux-foundation-${{ matrix.os }}
           path: |
             work/ci-desktop-ux
+            work/issue-66-*
+            work/issue-37-data-runtime
             work/issue-65-*
             work/issue-62-archive-*
             work/issue-22-project-archive-runtime

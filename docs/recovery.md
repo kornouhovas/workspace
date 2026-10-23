@@ -1,6 +1,6 @@
 # Export and restore application data
 
-Open **Application data** on the main screen. The workflow is available even when
+Open **Settings → Backup and recovery → Application data** on the main screen. The workflow is available even when
 there are no workspaces. Choose **Export application data** and save the JSON file
 through the system download dialog. Keep it somewhere separate from the application's
 working database. It contains local paths and metadata; treat it as private data.
@@ -13,7 +13,7 @@ Back up project folders separately with your usual file backup tool.
 To restore:
 
 1. Export current application data first if you may need it later.
-2. Choose the exported JSON file under **Application data** (maximum 64 MiB).
+2. Choose the exported JSON file under **Settings → Backup and recovery → Application data** (maximum 64 MiB).
 3. Review **Replace all application data?** and confirm, or cancel with the button
    or Escape. Confirmation replaces all application metadata; it does not merge.
 4. After success the screen reloads. Check workspaces, views and language. A missing
@@ -55,7 +55,7 @@ is local, outside selected project sources. These copies protect metadata agains
 application failures; use a separate disk backup against device loss. Files contain
 private local paths and metadata and are neither encrypted nor signed.
 
-Open **Application data → Automatic backups** to see the destination and the latest
+Open **Settings → Backup and recovery → Automatic backups** to see the destination and the latest
 verified snapshot, create a copy or retry, and select a saved copy. **Review restore
 from backup** opens the same replacement confirmation as a manual export. Cancel or
 Escape preserves current data. A damaged snapshot is excluded from selection and an
@@ -77,7 +77,7 @@ back its migration transaction; the last pre-migration snapshot remains untouche
 Do not delete the database or WAL/SHM files. Correct a reported disk/permission failure
 before restarting. For a migration failure, close the failed version and reopen with
 the previous application version. If restoration is necessary, choose the corresponding
-`pre-migration-*.json` in **Application data** and confirm replacement there. Reopening
+`pre-migration-*.json` in **Settings → Backup and recovery → Application data** and confirm replacement there. Reopening
 and restoring with a matching older schema are tested with disposable real databases.
 A snapshot from an older schema is deliberately rejected by the newer version's import;
 there is no implicit downgrade or execution of SQL supplied by the snapshot.

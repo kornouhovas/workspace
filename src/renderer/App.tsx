@@ -3,6 +3,8 @@ import { WorkspaceSessionProvider } from "./components/WorkspaceSession.js";
 import { createNavigationMemory, type NavigationMemory } from "./components/ProjectNavigation.js";
 import { SourceSettings } from "./components/SourceSettings.js";
 import { DesktopShell, AppearanceControl, shellLabels } from "./components/DesktopShell.js";
+import { AboutPanel } from "./components/AboutPanel.js";
+import { StartupRecovery, RecoverySettingsEntry } from "./components/StartupRecovery.js";
 import { DataRecoveryPanel } from "./components/DataRecoveryPanel.js";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { BackendStatus } from "../contracts/desktop-api.js";
@@ -660,8 +662,8 @@ function WorkspaceApp() {
               )}
 </> : <><p>{t("createWorkspaceDescription")}</p><button type="button" className="workspace-button" disabled={busy !== null} onClick={() => { back(); void pickRoot(); }}>{t("addWorkspaceAction")}</button></>}</> : unavailableSettings,
         sources: settingsAvailable ? <SourceSettings key={backendGeneration} client={client} language={language} activeSourceId={activeWorkspace?.sourceId} disabled={dataLocked} onPendingChange={setSourceSettingsPending} /> : unavailableSettings,
-        backup: settingsAvailable ? <DataRecoveryPanel key={backendGeneration} client={client} language={language} onRestored={() => window.location.reload()} onLock={setDataLocked} /> : unavailableSettings,
-        about: <><h2>Workspace</h2><p>{shellLabels[language].aboutDescription}</p><p>bb · MIT · Copyright (c) 2026 Michael Yong</p></>,
+        backup: backend.state === "ready" ? <DataRecoveryPanel key={backendGeneration} client={client} language={language} onRestored={() => window.location.reload()} onLock={setDataLocked} /> : <StartupRecovery language={language} diagnostic={backend.diagnostic} />,
+        about: <AboutPanel language={language} />,
       })}>
     <main data-ready={viewState === "ready"} className="workspace-screen" aria-label={t("appTitle")}>
       {!activeWorkspace && <header className="workspace-header"><h1>{t("appTitle")}</h1></header>}
@@ -672,6 +674,7 @@ function WorkspaceApp() {
       {viewState === "unavailable" && (
         <StatusMessage kind="error" title={t("unavailableTitle")}>
           {t(backend.diagnostic?.code === "BACKUP_FAILED" ? "backupStartupFailed" : backend.diagnostic?.code === "MIGRATION_FAILED" ? "backupMigrationFailed" : "unavailableDescription")}
+          <RecoverySettingsEntry language={language} />
         </StatusMessage>
       )}
       {viewState === "load-error" && (

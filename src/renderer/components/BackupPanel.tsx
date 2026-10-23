@@ -5,7 +5,7 @@ import type { WorkspaceServiceClient } from "../workspace-service-client.js";
 import { translate } from "../localization.js";
 
 export function BackupPanel({ client, language, disabled, onSelect, onSelecting }: {
-  client: WorkspaceServiceClient; language: Language; disabled: boolean; onSelect(content: string): void; onSelecting(pending: boolean): void;
+  client: WorkspaceServiceClient; language: Language; disabled: boolean; onSelect(content: string, name: string): void; onSelecting(pending: boolean): void;
 }) {
   const t = (key: Parameters<typeof translate>[1]) => translate(language, key);
   const [status, setStatus] = useState<BackupStatus | null>(null);
@@ -50,27 +50,27 @@ export function BackupPanel({ client, language, disabled, onSelect, onSelecting 
       if (!mounted.current) return;
       onSelecting(false);
       if (!result.ok || !("content" in result.value)) setError(true);
-      else onSelect(result.value.content);
+      else onSelect(result.value.content, selected);
     } catch { if (mounted.current) { onSelecting(false); setError(true); } }
     finally { if (mounted.current) setBusy(false); }
   }
-  return <section className="workspace-settings" aria-label={t("backupTitle")}>
+  return <section className="workspace-settings recovery-automatic" aria-label={t("backupTitle")}>
     <h3>{t("backupTitle")}</h3>
     <p>{t("backupPolicy")}</p>
     {status && <p className="backup-destination">{t("backupDestination")}: {status.destination}</p>}
     {(error || status?.state === "failed") && <p role="alert">{t("backupFailed")}</p>}
     {!status && !error && <p role="status">{t("backupLoading")}</p>}
     {status && <p role="status">{status.snapshots.length ? `${t("backupLatest")}: ${new Date(status.snapshots[0].createdAt).toLocaleString(language)}` : t("backupEmpty")}</p>}
-    <button type="button" disabled={disabled || busy} onClick={() => void create()}>{t("backupNow")}</button>
+    <button className="workspace-button workspace-button--secondary" type="button" disabled={disabled || busy} onClick={() => void create()}>{t("backupNow")}</button>
     <label className="bb-label" htmlFor="backup-selection">{t("backupSelect")}</label>
-    <select id="backup-selection" disabled={disabled || busy || !status?.snapshots.length} value={selected} onChange={event => setSelected(event.currentTarget.value)}>
+    <select className="bb-select" id="backup-selection" disabled={disabled || busy || !status?.snapshots.length} value={selected} onChange={event => setSelected(event.currentTarget.value)}>
       <option value="">{t("backupSelect")}</option>
       {status?.snapshots.map(item => <option key={item.id} value={item.id}>
         {new Date(item.createdAt).toLocaleString(language)} — {t(item.kind === "automatic" ? "backupAutomatic" : "backupMigration")}
       </option>)}
     </select>
     <p>{t("backupOlder")}</p>
-    <button type="button" disabled={disabled || busy || !selected || !status?.snapshots.some(item => item.id === selected)} onClick={() => void choose()}>{t("backupReview")}</button>
+    <button className="workspace-button workspace-button--secondary" type="button" disabled={disabled || busy || !selected || !status?.snapshots.some(item => item.id === selected)} onClick={() => void choose()}>{t("backupReview")}</button>
     {busy && <p role="status">{t("dataBusy")}</p>}
   </section>;
 }

@@ -2,7 +2,7 @@ import { openSettingsSection } from "./runtime-settings.mjs";
 /* global window, document, innerWidth */
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";
-import { mkdir, mkdtemp, readFile, realpath, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, realpath, writeFile, rename } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -17,7 +17,7 @@ const fixture = await realpath(await mkdtemp(join(tmpdir(), "data-recovery-runti
 const dataDirectory = join(fixture, "app-data");
 const evidenceDirectory = resolve(process.env.WORKSPACE_SMOKE_EVIDENCE_DIR ?? "work/issue-37-data-runtime");
 await mkdir(evidenceDirectory, { recursive: true });
-const evidence = { issue: 37, mode, platform: process.platform, sha: process.env.GITHUB_SHA ?? null, checks: [], shutdowns: [], cleanup: null, status: "running" };
+const evidence = { issue: 66, mode, platform: process.platform, sha: process.env.GITHUB_SHA ?? null, checks: [], shutdowns: [], cleanup: null, status: "running" };
 const children = new Set(), backendPids = new Set();
 let session, failure, launchUnverified = false;
 const quitEvents = new WeakMap();
@@ -28,7 +28,7 @@ async function pressEnabled(page, button) {
   await enabled.focus();
   await enabled.press("Enter");
 }
-async function launch() {
+async function launch(expectedState = "ready") {
   launchUnverified = true;
   const app = await _electron.launch({ executablePath, args: mode === "dev" ? [root] : [], cwd: root,
     env: { ...process.env, WORKSPACE_USER_DATA_DIR: dataDirectory }, timeout: 30000 });
@@ -44,8 +44,9 @@ async function launch() {
   });
   const page = await app.firstWindow(); page.setDefaultTimeout(15000);
   const pids = await app.evaluate(({ app }) => app.getAppMetrics().filter(m => m.type === "Utility" && m.serviceName?.includes("Node")).map(m => m.pid));
-  assert.ok(pids.length > 0); for (const pid of pids) backendPids.add(pid);
-  await page.waitForFunction(async () => (await window.workspace.getBackendStatus()).state === "ready");
+  if (expectedState === "ready") assert.ok(pids.length > 0); for (const pid of pids) backendPids.add(pid);
+  await page.waitForFunction(async state => (await window.workspace.getBackendStatus()).state === state, expectedState);
+  if (expectedState === "ready") await page.locator("main[data-ready=true]").waitFor();
   launchUnverified = false;
   return { app, page };
 }
@@ -72,6 +73,18 @@ async function close() {
 }
 try {
   let { app, page } = await launch();
+  const productVersion = JSON.parse(await readFile(join(root, "package.json"), "utf8")).version;
+  async function captureSettings(language, state) {
+    for (const theme of ["light", "dark"]) {
+      await page.emulateMedia({ colorScheme: theme });
+      await page.waitForFunction(theme => document.documentElement.dataset.theme === theme, theme);
+      for (const [width, height] of [[1024, 720], [1440, 960]]) {
+        await page.setViewportSize({ width, height });
+        assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+        await page.screenshot({ path: join(evidenceDirectory, `${language}-${theme}-${width}-${state}.png`) });
+      }
+    }
+  }
   for (const language of ["en", "ru"]) {
     const en = language === "en", source = join(fixture, language);
     await mkdir(source); await mkdir(join(source, "Project"));
@@ -88,8 +101,13 @@ try {
     await page.evaluate(language => window.workspace.settings({ type: "settings.setLanguage", language }), language);
     await page.reload();
     await openSettingsSection(page, "backup");
-    const title = () => page.locator("#data-title");
-    await title().click();
+    await captureSettings(language, "backup");
+    await openSettingsSection(page, "about");
+    assert.ok((await page.locator(".about-panel").innerText()).includes(productVersion));
+    await page.locator(".about-panel").getByText("bb — MIT", { exact: true }).click();
+    assert.ok((await page.locator(".about-panel").innerText()).includes('THE SOFTWARE IS PROVIDED "AS IS"'));
+    await captureSettings(language, "about");
+    await openSettingsSection(page, "backup");
     const exportButton = page.getByRole("button", { name: en ? "Export application data" : "Экспортировать данные приложения", exact: true });
     const exportPath = join(fixture, `export-${language}.json`);
     const download = app.evaluate(({ session }, path) => new Promise(resolve => {
@@ -120,25 +138,45 @@ try {
     await confirm().focus(); await page.keyboard.press("Escape");
     await input().waitFor({ state: "visible" }); assert.equal(await input().evaluate(el => document.activeElement === el), true);
     await input().setInputFiles({ name: "invalid.json", mimeType: "application/json", buffer: Buffer.from("{invalid") });
-    await pressEnabled(page, confirm()); await page.locator(".data-recovery [role='alert']").waitFor();
+    await pressEnabled(page, confirm()); await page.getByRole("dialog").getByRole("alert").waitFor();
+    await captureSettings(language, "invalid-restore");
     await pressEnabled(page, cancel());
     assert.equal((await query(page, { type: "workspace.listTextProperties", workspaceId })).values[0].value, "Changed since snapshot");
     await pressEnabled(page, reviewBackup); await confirm().waitFor({ state: "visible" });
+    await captureSettings(language, "review");
     for (const width of [360, 1024, 1440]) {
       await page.setViewportSize({ width, height: 900 });
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
       await page.screenshot({ path: join(evidenceDirectory, `${language}-${width}-confirm.png`), fullPage: true });
     }
-    await pressEnabled(page, confirm());
-    await page.waitForFunction(() => !document.querySelector("details.data-recovery")?.open);
+    await Promise.all([page.waitForEvent("load"), pressEnabled(page, confirm())]);
+    await page.locator("main[data-ready=true]").waitFor();
     assert.equal((await page.evaluate(() => window.workspace.settings({ type: "settings.load" }))).value.language, language);
     assert.equal((await query(page, { type: "workspace.listTextProperties", workspaceId })).values[0].value, "Restored exact notes");
     assert.equal(await readFile(join(source, "Project", "keep"), "utf8"), "separate project bytes");
     await close(); ({ app, page } = await launch());
+    await rename(source, `${source}-offline`);
+    await page.reload();
+    await page.locator("main[data-ready=true]").waitFor();
+    await openSettingsSection(page, "backup");
+    await page.getByRole("button", { name: en ? "Export application data" : "Экспортировать данные приложения", exact: true }).waitFor();
+    await captureSettings(language, "source-unavailable");
+    await rename(`${source}-offline`, source);
     assert.equal((await query(page, { type: "workspace.listTextProperties", workspaceId })).values[0].value, "Restored exact notes");
     evidence.checks.push({ language, actualDownload: true, backupStatus: true, backupCreate: true, backupSelectionRestore: true, keyboardCancel: true, invalidPreserves: true, restore: true, restart: true, projectFilesSeparate: true, widths: [360, 1024, 1440] });
   }
-  await close(); evidence.status = "passed";
+  await close();
+  const corrupt = "Disposable invalid database; never delete or replace current user data.";
+  await writeFile(join(dataDirectory, "workspace.sqlite"), corrupt);
+  ({ app, page } = await launch("unavailable"));
+  await page.getByRole("button", { name: "Backup and recovery", exact: true }).click();
+  await page.getByText(/The application-data service is unavailable/).waitFor();
+  assert.equal(await page.getByRole("button", { name: "Replace application data", exact: true }).count(), 0);
+  await captureSettings("en", "startup-unavailable");
+  await close();
+  assert.equal(await readFile(join(dataDirectory, "workspace.sqlite"), "utf8"), corrupt);
+  evidence.startupFailurePreserves = true;
+  evidence.status = "passed";
 
 } catch (error) {
   failure = error; evidence.status = "failed"; evidence.failure = { name: error.name, message: error.message };

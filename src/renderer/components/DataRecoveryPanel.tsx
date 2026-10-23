@@ -1,3 +1,4 @@
+import { ProjectOperationDialog } from "./ProjectOperationDialog.js";
 import { BackupPanel } from "./BackupPanel.js";
 import { useEffect, useRef, useState } from "react";
 import type { WorkspaceServiceClient } from "../workspace-service-client.js";
@@ -17,21 +18,24 @@ export function DataRecoveryPanel({ client, language, onRestored, onLock }: {
   const confirm = useRef<HTMLButtonElement>(null);
   const mounted = useRef(true);
   const returnFocus = useRef(false);
+  const restoreTrigger = useRef<HTMLElement | null>(null);
+  const [candidateName, setCandidateName] = useState("");
   useEffect(() => {
     mounted.current = true;
     return () => { mounted.current = false; onLock(false); };
   }, [onLock]);
   useEffect(() => {
     if (content !== null) confirm.current?.focus();
-    else if (returnFocus.current) { returnFocus.current = false; input.current?.focus(); }
+    else if (returnFocus.current) { returnFocus.current = false; (restoreTrigger.current ?? input.current)?.focus(); }
   }, [content]);
   function cancel() {
-    if (busy) return;
+    if (busy || unknown) return;
     returnFocus.current = true; setContent(null); onLock(false);
     if (input.current) { input.current.value = ""; }
   }
   async function select(file: File | undefined) {
     if (!file) return;
+    restoreTrigger.current = input.current; setCandidateName(file.name);
     setMessage(null); setBusy(true); onLock(true);
     try {
       if (file.size > maxExportBytes) throw new Error("Too large");
@@ -65,27 +69,30 @@ export function DataRecoveryPanel({ client, language, onRestored, onLock }: {
         // A transport failure may have occurred after commit. Never replay it.
         if (result.error.code === "service_unavailable") { setUnknown(true); setMessage("dataUnknown"); }
         else setMessage("dataError");
-      } else if ("restored" in result.value) { onRestored(); }
+      } else if ("restored" in result.value && result.value.restored === true) { onRestored(); }
       else { setUnknown(true); setMessage("dataUnknown"); }
     } catch { if (mounted.current) { setUnknown(true); setMessage("dataUnknown"); } }
     finally { if (mounted.current) setBusy(false); }
   }
-  return <details className="data-recovery">
-    <summary id="data-title">{t("dataTitle")}</summary>
+  return <section className="data-recovery" aria-labelledby="data-title">
+    <h2 id="data-title">{t("dataTitle")}</h2>
     <div className="workspace-settings">
     <p>{t("dataScope")}</p>
-    <BackupPanel client={client} language={language} disabled={busy || content !== null} onSelecting={pending => { setBusy(pending); onLock(pending); }} onSelect={value => { setMessage(null); setContent(value); onLock(true); }} />
-    <button type="button" disabled={busy || content !== null} onClick={() => void download()}>{t("dataExport")}</button>
+    <BackupPanel client={client} language={language} disabled={busy || content !== null} onSelecting={pending => { if (pending) restoreTrigger.current = document.activeElement as HTMLElement; setBusy(pending); onLock(pending); }} onSelect={(value, name) => { setCandidateName(name); setMessage(null); setContent(value); onLock(true); }} />
+    <button type="button" className="workspace-button workspace-button--secondary" disabled={busy || content !== null} onClick={() => void download()}>{t("dataExport")}</button>
     <label className="bb-label" htmlFor="data-file">{t("dataFile")}</label>
-    <input ref={input} id="data-file" type="file" accept=".json,application/json" disabled={busy || content !== null} onChange={event => void select(event.currentTarget.files?.[0])} />
-    {content !== null && <div role="group" aria-label={t("dataConfirmTitle")} onKeyDown={event => { if (event.key === "Escape" && !unknown) { event.preventDefault(); cancel(); } }}>
-      <p>{t("dataConfirmTitle")}</p><p>{t("dataReplace")}</p>
-      <button ref={confirm} type="button" disabled={busy || unknown} onClick={() => void restore()}>{t("dataConfirm")}</button>
-      <button type="button" disabled={busy || unknown} onClick={cancel}>{t("dataCancel")}</button>
-      {unknown && <button type="button" onClick={onRestored}>{t("dataReload")}</button>}
-    </div>}
-    {busy && <p role="status">{t("dataBusy")}</p>}
-    {message && <p role={message === "dataExported" ? "status" : "alert"}>{t(message)}</p>}
+    <input className="bb-input" ref={input} id="data-file" type="file" accept=".json,application/json" disabled={busy || content !== null} onChange={event => void select(event.currentTarget.files?.[0])} />
+    <ProjectOperationDialog open={content !== null} title={t("dataConfirmTitle")} onClose={cancel} className="recovery-dialog">{content !== null && <div className="recovery-review" role="group" aria-label={t("dataConfirmTitle")} onKeyDown={event => { if (event.key === "Escape" && !unknown) { event.preventDefault(); cancel(); } }}>
+      <p className="recovery-candidate">{candidateName}</p><p>{t("dataReplace")}</p>
+      <div className="workspace-form-actions"><button className="workspace-button" ref={confirm} type="button" disabled={busy || unknown} onClick={() => void restore()}>{t("dataConfirm")}</button>
+      <button className="workspace-button workspace-button--secondary" type="button" disabled={busy || unknown} onClick={cancel}>{t("dataCancel")}</button>
+      {unknown && <button className="workspace-button workspace-button--secondary" type="button" onClick={onRestored}>{t("dataReload")}</button>}
+      </div>
+      {busy && <p role="status">{t("dataBusy")}</p>}
+      {message && <p role="alert">{t(message)}</p>}
+    </div>}</ProjectOperationDialog>
+    {busy && content === null && <p role="status">{t("dataBusy")}</p>}
+    {message && content === null && <p role={message === "dataExported" ? "status" : "alert"}>{t(message)}</p>}
     </div>
-  </details>;
+  </section>;
 }

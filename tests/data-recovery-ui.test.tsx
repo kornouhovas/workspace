@@ -1,12 +1,12 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { Window } from "happy-dom";
-import { DataRecoveryPanel } from "../src/renderer/components/DataRecoveryPanel.js";
 import type { WorkspaceServiceClient } from "../src/renderer/workspace-service-client.js";
 import { translate } from "../src/renderer/localization.js";
 const browser=new Window();
-Object.assign(globalThis,{window:browser,document:browser.document,HTMLElement:browser.HTMLElement,Node:browser.Node,MutationObserver:browser.MutationObserver});
+Object.assign(globalThis,{window:browser,document:browser.document,HTMLElement:browser.HTMLElement,Node:browser.Node,MutationObserver:browser.MutationObserver, CustomEvent:browser.CustomEvent, getComputedStyle:browser.getComputedStyle.bind(browser), HTMLInputElement:browser.HTMLInputElement});
 Object.defineProperty(globalThis,"navigator",{configurable:true,value:browser.navigator});
+const { DataRecoveryPanel } = await import("../src/renderer/components/DataRecoveryPanel.js");
 const {render,screen,cleanup,waitFor}=await import("@testing-library/react");
 const {default:userEvent}=await import("@testing-library/user-event");
 for(const language of ["en","ru"] as const) test(`${language} file confirmation, keyboard cancel, pending and failure preserve state`,{timeout:10000},async()=>{
@@ -15,7 +15,6 @@ for(const language of ["en","ru"] as const) test(`${language} file confirmation,
  const t=(key:Parameters<typeof translate>[1])=>translate(language,key),user=userEvent.setup({document});
  try{
   render(<DataRecoveryPanel client={client} language={language} onRestored={()=>{reloaded++;}} onLock={v=>{locked=v;}}/>);
-  await user.click(screen.getByText(t("dataTitle")));
   assert.ok(screen.getByText(t("dataScope")));
   await user.upload(screen.getByLabelText(t("dataFile")),new File(['snapshot'],"export.json",{type:"application/json"}) as unknown as File);
   await screen.findByText(t("dataReplace"));assert.equal(locked,true);assert.equal(restores,0);
@@ -33,7 +32,6 @@ test('unknown transport outcome disables replay and offers reload',{timeout:1000
  const user=userEvent.setup({document});
  try{
   render(<DataRecoveryPanel client={client} language="en" onRestored={()=>{reloaded++;}} onLock={()=>{}}/>);
-  await user.click(screen.getByText(translate("en","dataTitle")));
   await user.upload(screen.getByLabelText(translate('en','dataFile')),new File(['data'],'export.json',{type:'application/json'}) as unknown as File);
   await user.click(await screen.findByRole('button',{name:translate('en','dataConfirm')}));
   await screen.findByText(translate('en','dataUnknown'));
@@ -48,7 +46,6 @@ test('pending restore disables actions and a late success after unmount cannot r
  const user=userEvent.setup({document});
  try{
   const view=render(<DataRecoveryPanel client={client} language="en" onRestored={()=>{reloads++;}} onLock={v=>{locked=v;}}/>);
-  await user.click(screen.getByText(translate('en','dataTitle')));
   await user.upload(screen.getByLabelText(translate('en','dataFile')),new File(['data'],'export.json',{type:'application/json'}));
   await user.click(await screen.findByRole('button',{name:translate('en','dataConfirm')}));
   assert.ok(screen.getByText(translate('en','dataBusy')));
@@ -70,7 +67,6 @@ for (const language of ["en", "ru"] as const) test(`${language} verified backup 
   const t=(key:Parameters<typeof translate>[1])=>translate(language,key),user=userEvent.setup({document});
   try {
     render(<DataRecoveryPanel client={client} language={language} onRestored={()=>{}} onLock={v=>{locked=v;}}/>);
-    await user.click(screen.getByText(t("dataTitle")));
     await screen.findByText(`${t("backupDestination")}: /temporary/backups`);
     assert.ok(screen.getByText(t("backupPolicy")));
     await user.click(screen.getByRole('button',{name:t("backupNow")}));
@@ -115,7 +111,6 @@ test('reading a backup locks external file selection until the confirmed candida
   const user=userEvent.setup({document});
   try {
     render(<DataRecoveryPanel client={client} language="en" onRestored={()=>{}} onLock={value=>{locked=value;}}/>);
-    await user.click(screen.getByText(translate('en','dataTitle')));
     await waitFor(()=>assert.equal((screen.getByLabelText(translate('en','backupSelect')) as HTMLSelectElement).disabled,false));
     await user.selectOptions(screen.getByLabelText(translate('en','backupSelect')),id);
     await user.click(screen.getByRole('button',{name:translate('en','backupReview')}));
@@ -125,4 +120,70 @@ test('reading a backup locks external file selection until the confirmed candida
     await screen.findByText(translate('en','dataReplace'));assert.equal(locked,true);
     await user.keyboard('{Escape}');await waitFor(()=>assert.equal(locked,false));
   } finally {cleanup();}
+});
+
+for (const language of ["en", "ru"] as const) test(`${language} recovery category exposes operations directly and returns focus to the reviewed backup`, async () => {
+  const id = "automatic-1792300000000-00000000-0000-4000-8000-000000000000.json";
+  const client = {
+    backups: async () => ({ ok: true, value: { backups: { state: "ready", destination: "/temporary/backups", snapshots: [{ id, createdAt: 1792300000000, kind: "automatic" }] } } }),
+    exportBackup: async () => ({ ok: true, value: { content: "reviewed snapshot" } }),
+  } as unknown as WorkspaceServiceClient;
+  const t = (key: Parameters<typeof translate>[1]) => translate(language, key), user = userEvent.setup({ document });
+  try {
+    render(<DataRecoveryPanel client={client} language={language} onRestored={() => {}} onLock={() => {}} />);
+    assert.ok(document.querySelector("details") === null, "Recovery operations are visible without a second disclosure");
+    const selection = await screen.findByLabelText(t("backupSelect"));
+    await waitFor(() => assert.equal((selection as HTMLSelectElement).disabled, false));
+    await user.selectOptions(selection, id);
+    const review = screen.getByRole("button", { name: t("backupReview") });
+    await user.click(review);
+    await screen.findByText(t("dataReplace"));
+    await user.keyboard("{Escape}");
+    await waitFor(() => assert.equal(document.activeElement, review));
+  } finally { cleanup(); }
+});
+
+test('startup recovery explains failed migrations without issuing unavailable service operations', async () => {
+  const { StartupRecovery } = await import('../src/renderer/components/StartupRecovery.js');
+  for (const language of ['en', 'ru'] as const) {
+    try {
+      render(<StartupRecovery language={language} diagnostic={{ stage: 'service_open', code: 'MIGRATION_FAILED' }} />);
+      assert.ok(screen.getByText(translate(language, 'backupMigrationFailed')));
+      assert.equal(screen.queryAllByRole('button').length, 0);
+      assert.ok(screen.getByText(translate(language, 'dataScope')));
+    } finally { cleanup(); }
+  }
+});
+
+test('About shows supplied build version and complete bundled license notices in both languages', async () => {
+  const { AboutPanel } = await import('../src/renderer/components/AboutPanel.js');
+  for (const language of ['en', 'ru'] as const) {
+    try {
+      render(<AboutPanel language={language} info={{ version: '0.1.0', notices: [{ title: 'bb — MIT', content: 'Copyright (c) 2026 Michael Yong\nPermission is hereby granted' }] }} />);
+      assert.ok(screen.getByText(/0\.1\.0/));
+      await userEvent.setup({ document }).click(screen.getByText('bb — MIT'));
+      assert.match(document.body.textContent!, /Copyright \(c\) 2026 Michael Yong/);
+      assert.match(document.body.textContent!, /Permission is hereby granted/);
+    } finally { cleanup(); }
+  }
+});
+
+test('an unconfirmed restore result cannot claim success or unlock the dialog with Escape', async () => {
+  let restored = 0, locked = false;
+  const client = {
+    backups: async () => ({ ok: true, value: { backups: { state: 'ready', destination: '/temporary/backups', snapshots: [] } } }),
+    restoreData: async () => ({ ok: true, value: { restored: false } }),
+  } as unknown as WorkspaceServiceClient;
+  const user = userEvent.setup({ document });
+  try {
+    render(<DataRecoveryPanel client={client} language="en" onRestored={() => { restored++; }} onLock={value => { locked = value; }} />);
+    await user.upload(screen.getByLabelText(translate('en', 'dataFile')), new File(['snapshot'], 'export.json', { type: 'application/json' }));
+    await user.click(await screen.findByRole('button', { name: translate('en', 'dataConfirm') }));
+    await screen.findByText(translate('en', 'dataUnknown'));
+    await user.keyboard('{Escape}');
+    assert.equal(restored, 0);
+    assert.equal(locked, true);
+    assert.ok(screen.getByRole('dialog'));
+    assert.equal((screen.getByRole('button', { name: translate('en', 'dataCancel') }) as HTMLButtonElement).disabled, true);
+  } finally { cleanup(); }
 });
