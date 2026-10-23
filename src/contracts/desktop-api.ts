@@ -24,7 +24,7 @@ import type { CategoryPropertySnapshot, WorkspaceRenameCategoryPropertyCommand, 
 export type BackendStatus = { state: "starting" | "ready" | "unavailable"; message?: string; diagnostic?: import("./startup-diagnostic.js").StartupDiagnostic };
 export type SettingsRequest = SettingsQuery | SettingsCommand;
 export type WorkspaceRequest = WorkspaceQuery | WorkspaceCommand;
-export type WorkspaceResponse = import("./workspace-sessions.js").WorkspaceSessionSnapshot | import("./project-files.js").ProjectFilesResult | import("./project-files.js").ProjectFileResult | SourceSettingsList | MetadataRemovalPreview | MetadataRemovalResult | BoardLayoutSnapshot | TableLayoutSnapshot | ViewGroupingSnapshot | ViewFilterPayload | ViewSnapshot | ArchivePayload | CategoryRemovalPayload | CategoryOptionsPayload | ProjectCategoryMoveResult | ProjectCategoryMoveList | ProjectCategoryMoveRecoveryPreview | ProjectRenameResult | ProjectRenameList | ProjectRenameRecoveryPreview | ProjectRevealResult | ProjectCreationResult | ProjectCreationList | ProjectCreationRecoveryPreview | WorkspaceSourceObservationSnapshot | ProjectRecoveryPreview | CategoryPropertySnapshot | TextPropertySnapshot | TextPropertyMutation | ProjectList | DiscoveryPreview | WorkspaceLoad | WorkspaceCreated | ActiveWorkspace | WorkspaceSourceState;
+export type WorkspaceResponse = import("./source-association.js").SourceAssociationPreview | import("./source-association.js").SourceAssociationResult | import("./workspace-sessions.js").WorkspaceSessionSnapshot | import("./project-files.js").ProjectFilesResult | import("./project-files.js").ProjectFileResult | SourceSettingsList | MetadataRemovalPreview | MetadataRemovalResult | BoardLayoutSnapshot | TableLayoutSnapshot | ViewGroupingSnapshot | ViewFilterPayload | ViewSnapshot | ArchivePayload | CategoryRemovalPayload | CategoryOptionsPayload | ProjectCategoryMoveResult | ProjectCategoryMoveList | ProjectCategoryMoveRecoveryPreview | ProjectRenameResult | ProjectRenameList | ProjectRenameRecoveryPreview | ProjectRevealResult | ProjectCreationResult | ProjectCreationList | ProjectCreationRecoveryPreview | WorkspaceSourceObservationSnapshot | ProjectRecoveryPreview | CategoryPropertySnapshot | TextPropertySnapshot | TextPropertyMutation | ProjectList | DiscoveryPreview | WorkspaceLoad | WorkspaceCreated | ActiveWorkspace | WorkspaceSourceState;
 export type RootPickerResult =
   | { outcome: "selected"; path: string }
   | { outcome: "cancelled" }
@@ -97,6 +97,8 @@ export interface WorkspaceDesktopApi {
   workspace(input: WorkspaceApplyDiscoveryCommand): Promise<ServiceResult<ProjectList>>;
   workspace(input: WorkspaceListProjectsQuery): Promise<ServiceResult<ProjectList>>;
   workspace(input: WorkspacePreviewDiscoveryQuery): Promise<ServiceResult<DiscoveryPreview>>;
+  workspace(input: import("./source-association.js").SourceAssociationQuery): Promise<ServiceResult<import("./source-association.js").SourceAssociationPreview>>;
+  workspace(input: import("./source-association.js").SourceAssociationCommand): Promise<ServiceResult<import("./source-association.js").SourceAssociationResult>>;
   workspace(input: WorkspaceListSourcesQuery): Promise<ServiceResult<SourceSettingsList>>;
   workspace(input: WorkspaceLoadQuery): Promise<ServiceResult<WorkspaceLoad>>;
   workspace(input: WorkspaceCreateCommand): Promise<ServiceResult<WorkspaceCreated>>;

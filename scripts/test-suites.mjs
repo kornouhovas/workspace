@@ -8,6 +8,7 @@ import { fileURLToPath } from 'node:url';
 // open SQLite, touch real project folders or launch processes stay platform tests.
 const common = new Set([
   'components.test.tsx',
+  'source-association-ui.test.tsx',
   'project-files-ui.test.tsx',
   'external-file-evidence.test.mjs',
   'context-tools.test.tsx',

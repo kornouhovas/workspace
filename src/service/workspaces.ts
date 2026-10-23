@@ -1,3 +1,6 @@
+import { createSourceAssociationService } from "./source-association.js";
+import { observeFolder } from "./folder-evidence.js";
+import { associationReason, continuityRecords, discoveryIdentityState, sourceIdentity, storedEvidence } from "./source-identity.js";
 import { createWorkspaceSessionService } from "./workspace-sessions.js";
 import { createProjectFilesService } from "./project-files.js";
 import type { SourceSettingsList } from "../contracts/workspaces.js";
@@ -74,6 +77,7 @@ const nativeFilesystem: WorkspaceFilesystem = {
 };
 
 export interface WorkspaceService {
+  sourceAssociationRequest(input: unknown): ServiceResult<import("../contracts/source-association.js").SourceAssociationPreview | import("../contracts/source-association.js").SourceAssociationResult>;
   sessionRequest(input: unknown): ServiceResult<import("../contracts/workspace-sessions.js").WorkspaceSessionSnapshot>;
   listSources(input: unknown): ServiceResult<SourceSettingsList>;
   metadataRemovalRequest(input: unknown): ServiceResult<import("../contracts/metadata-removal.js").MetadataRemovalPreview | import("../contracts/metadata-removal.js").MetadataRemovalResult>;
@@ -163,10 +167,11 @@ export interface WorkspaceService {
     | { ok: false; error: { code: "invalid_input" | "storage"; message: string } };
 }
 
-export function createWorkspaceService(db: Database, filesystem = nativeFilesystem, observerDependencies?: ObserverDependencies, projectFilesystem?: ProjectFilesystem, projectRenameNative?: ProjectRenameNative): WorkspaceService {
+export function createWorkspaceService(db: Database, filesystem = nativeFilesystem, observerDependencies?: ObserverDependencies, projectFilesystem?: ProjectFilesystem, projectRenameNative?: ProjectRenameNative, scope: string = randomUUID()): WorkspaceService {
   const previewTokens = new Map<string, {
     preview: DiscoveryPreview;
     snapshot: DiscoverySnapshot;
+    evidence: ReturnType<typeof scanEvidence>;
     source: typeof schema.sources.$inferSelect;
     projects: typeof schema.projects.$inferSelect[];
     categories: typeof schema.categories.$inferSelect[];
@@ -266,7 +271,16 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
   }, projectFilesystem);
   const reveal = createProjectRevealService(db, projectFilesystem);
   const files = createProjectFilesService(reveal.authorizeProject);
+  const association = createSourceAssociationService(db, scope, observeFolder, (sourceId, revision) => {
+    association.invalidate(sourceId);
+    invalidateSourceReviews(sourceId);
+    observationVersions.set(sourceId, (observationVersions.get(sourceId) ?? 0) + 1);
+    observationCache.delete(sourceId);
+    publish([{type:"workspace.projectsChanged",sourceId,revision,workspaceIds:sourceState(sourceId,{canonicalRoot:"",sourceAvailable:false}).workspaceIds}]);
+    observer.request(sourceId);
+  });
   const service: WorkspaceService = {
+    sourceAssociationRequest: input => isRecord(input) && input.type === "workspace.previewSourceAssociation" ? association.preview(input) : isRecord(input) && input.type === "workspace.cancelSourceAssociation" ? association.cancel(input) : association.apply(input),
     boardLayoutRequest: createBoardLayoutService(db),
     tableLayoutRequest: createTableLayoutService(db),
     assignProjectGroup: input => assignProjectGroup(service, input),
@@ -362,7 +376,7 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
       finally {
         for (const timer of subscriptionTimers) timer.cancel();
         subscriptionTimers.clear(); observationEvents.clear(); observationCache.clear(); observationVersions.clear();
-        listeners.clear(); observed.clear(); previewTokens.clear(); archive.close(); archiveMutations.close(); recovery.close(); creation.close(); rename.close(); categoryMove.close(); categoryOptions.close(); categoryRemoval.close(); reveal.close();
+        listeners.clear(); observed.clear(); previewTokens.clear(); association.close(); archive.close(); archiveMutations.close(); recovery.close(); creation.close(); rename.close(); categoryMove.close(); categoryOptions.close(); categoryRemoval.close(); reveal.close();
       }
     },
     previewDiscovery(input) {
@@ -396,15 +410,18 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
         }
         let snapshot = scan.snapshot;
         let state = scan.state;
-        if (snapshot && (!reliableIdentity(snapshot.root.identity) || (source.appliedRootIdentity !== null &&
-          !sameIdentity(JSON.parse(source.appliedRootIdentity), snapshot.root.identity)))) {
+        const identity = sourceIdentity(source, scan, scope);
+        const freshSource = source.appliedRootIdentity === null && source.discoveryMode === null;
+        if (snapshot && (identity.state !== "verified" && !(freshSource && identity.state === "review_required" && identity.observation.ok))) {
           snapshot = null;
-          state = "root_identity_conflict";
+          state = discoveryIdentityState(identity.state);
         }
+        const evidence = snapshot ? scanEvidence(source, scan) : null;
+        if (snapshot && !evidence) { snapshot = null; state = "identity_unverified"; }
         if (!snapshot) invalidateSourceReviews(source.id);
         const projects = readProjects(source.id);
         const categories = readCategories(source.id);
-        const interpretation = snapshot ? planDiscovery(scan, categories, projects, readReservations(source.id)) : null;
+        const interpretation = snapshot ? planDiscovery(scan, continuityRecords(source, scan, categories, scope), continuityRecords(source, scan, projects, scope), readReservations(source.id)) : null;
         const interpreted = interpretation?.entries ?? [];
         const property = db.select().from(schema.categoryProperties).where(eq(schema.categoryProperties.sourceId, source.id)).get();
         if (snapshot) state = interpreted.some((entry) => entry.reason === null) ? "ready" : "empty";
@@ -418,7 +435,7 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
           previewToken: snapshot ? randomUUID() : null,
         };
         // Keep the reviewed draft/configuration independent of the caller's response object.
-        if (snapshot && interpretation) previewTokens.set(workspaceId, { preview: structuredClone(preview), snapshot, source, projects, categories, interpretation: structuredClone(interpretation), reservations: readReservations(source.id) });
+        if (snapshot && interpretation) previewTokens.set(workspaceId, { preview: structuredClone(preview), snapshot, evidence, source, projects, categories, interpretation: structuredClone(interpretation), reservations: readReservations(source.id) });
         return { ok: true, value: preview };
       } catch { return storageFailure(); }
     },
@@ -456,17 +473,17 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
         const scanner = mode === "grouped" ? scanGroupedSource : scanDirectSource;
         const scan = scanner(source.canonicalRoot, source.archiveRelativePath, token.preview.effectiveExcludedRelativePaths);
         if (!scan.snapshot || JSON.stringify(scan.snapshot) !== JSON.stringify(token.snapshot) ||
-          !reliableIdentity(scan.snapshot.root.identity)) return stale();
-        const planned = planDiscovery(scan, token.categories, token.projects, readReservations(source.id));
+          !reliableIdentity(scan.snapshot.root.identity) || JSON.stringify(scanEvidence(source, scan)) !== JSON.stringify(token.evidence)) return stale();
+        const planned = planDiscovery(scan, continuityRecords(source, scan, token.categories, scope), continuityRecords(source, scan, token.projects, scope), readReservations(source.id));
         const interpretation = planned.projects;
         if (JSON.stringify(planned) !== JSON.stringify(token.interpretation)) return stale();
         const changed = source.discoveryMode !== mode ||
           source.excludedRelativePaths !== JSON.stringify(token.preview.excludedRelativePaths) ||
-          source.appliedRootIdentity !== JSON.stringify(scan.snapshot.root.identity) ||
+          source.appliedRootIdentity === null ||
           interpretation.additions.length > 0 ||
-          interpretation.retained.some((row, index) => row.associationState !== token.projects[index].associationState || !!row.modeInactive !== token.projects[index].modeInactive) ||
+          interpretation.retained.some((row, index) => canUpdateAssociation(token.projects[index]) && (row.associationState !== token.projects[index].associationState || !!row.modeInactive !== token.projects[index].modeInactive)) ||
           planned.categories.additions.length > 0 ||
-          planned.categories.retained.some((row, index) => row.associationState !== token.categories[index].associationState || !!row.modeInactive !== token.categories[index].modeInactive);
+          planned.categories.retained.some((row, index) => canUpdateAssociation(token.categories[index]) && (row.associationState !== token.categories[index].associationState || !!row.modeInactive !== token.categories[index].modeInactive));
         if (changed && !Number.isSafeInteger(source.discoveryRevision + 1)) return storageFailure();
         const committedEvent: WorkspaceChangeEvent = { type: "workspace.projectsChanged", sourceId: source.id,
           workspaceIds: sourceState(source.id, { canonicalRoot: source.canonicalRoot, sourceAvailable: true }).workspaceIds,
@@ -479,11 +496,11 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
           if (hasUnfinishedProjectRelocation(db, source.id)) throw new StalePreview();
           // Revalidate again inside the transaction, before making any persistent change.
           const beforeWrites = scanner(source.canonicalRoot, source.archiveRelativePath, token.preview.effectiveExcludedRelativePaths);
-          if (!beforeWrites.snapshot || JSON.stringify(beforeWrites.snapshot) !== JSON.stringify(token.snapshot)) throw new StalePreview();
+          if (!beforeWrites.snapshot || JSON.stringify(beforeWrites.snapshot) !== JSON.stringify(token.snapshot) || JSON.stringify(scanEvidence(source, beforeWrites)) !== JSON.stringify(token.evidence)) throw new StalePreview();
           const changedProjects = interpretation.retained.filter((row, index) =>
-            row.associationState !== token.projects[index].associationState || !!row.modeInactive !== token.projects[index].modeInactive);
+            canUpdateAssociation(token.projects[index]) && (row.associationState !== token.projects[index].associationState || !!row.modeInactive !== token.projects[index].modeInactive));
           const changedCategories = planned.categories.retained.filter((row, index) =>
-            row.associationState !== token.categories[index].associationState || !!row.modeInactive !== token.categories[index].modeInactive);
+            canUpdateAssociation(token.categories[index]) && (row.associationState !== token.categories[index].associationState || !!row.modeInactive !== token.categories[index].modeInactive));
           const writeProject = (row: typeof changedProjects[number]) => tx.update(schema.projects)
             .set({ associationState: row.associationState, modeInactive: !!row.modeInactive }).where(eq(schema.projects.id, row.id)).run();
           // Retire incompatible projects before categories and source configuration.
@@ -492,10 +509,12 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
             tx.update(schema.categories).set({ associationState: row.associationState, modeInactive: !!row.modeInactive })
               .where(eq(schema.categories.id, row.id)).run();
           }
-          const expectedSource = { ...source, discoveryMode: mode, discoveryRevision: source.discoveryRevision + (changed ? 1 : 0),
-            excludedRelativePaths: JSON.stringify(token.preview.excludedRelativePaths), appliedRootIdentity: JSON.stringify(scan.snapshot!.root.identity) };
+          const rootEvidence = token.evidence?.[0].observation;
+          if (!rootEvidence?.ok) throw new StalePreview();
+          const expectedSource = { ...source, durableEvidence: JSON.stringify(rootEvidence.evidence), discoveryMode: mode, discoveryRevision: source.discoveryRevision + (changed ? 1 : 0),
+            excludedRelativePaths: JSON.stringify(token.preview.excludedRelativePaths), appliedRootIdentity: source.appliedRootIdentity ?? JSON.stringify(scan.snapshot!.root.identity) };
           if (changed) tx.update(schema.sources).set({ discoveryMode: mode, discoveryRevision: expectedSource.discoveryRevision,
-            excludedRelativePaths: expectedSource.excludedRelativePaths, appliedRootIdentity: expectedSource.appliedRootIdentity,
+            excludedRelativePaths: expectedSource.excludedRelativePaths, appliedRootIdentity: expectedSource.appliedRootIdentity, durableEvidence: expectedSource.durableEvidence,
           }).where(eq(schema.sources.id, source.id)).run();
           const insertedCategories: typeof schema.categories.$inferSelect[] = [];
           if (mode === "grouped") {
@@ -503,7 +522,7 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
               tx.update(schema.categories).set({ associationState: row.associationState, modeInactive: false }).where(eq(schema.categories.id, row.id)).run();
             }
             for (const row of planned.categories.additions) {
-              const inserted = { id: randomUUID(), sourceId: source.id, ...row, associationState: "active" as const, modeInactive: false };
+              const inserted = { id: randomUUID(), sourceId: source.id, ...row, durableEvidence: enrollEvidence(source, row.relativePath), associationState: "active" as const, modeInactive: false };
               tx.insert(schema.categories).values(inserted).run(); insertedCategories.push(inserted);
             }
             if (!tx.select().from(schema.categoryProperties).where(eq(schema.categoryProperties.sourceId, source.id)).get()) {
@@ -517,20 +536,20 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
             const category = mode === "grouped" ? categories.find((category) => !category.modeInactive && category.relativePath === row.relativePath.split("/")[0] && category.associationState === "active") : null;
             if (mode === "grouped" && !category) throw new Error("Missing required category");
             const inserted = { id: randomUUID(), sourceId: source.id, ...row,
-              categoryId: category?.id ?? null, associationState: "active" as const, modeInactive: false };
+              categoryId: category?.id ?? null, durableEvidence: enrollEvidence(source, row.relativePath), associationState: "active" as const, modeInactive: false };
             tx.insert(schema.projects).values(inserted).run(); insertedProjects.push(inserted);
           }
           const expectedProjects = [...token.projects.map((row) => {
-            const target = interpretation.retained.find((target) => target.id === row.id)!;
+            const target = canUpdateAssociation(row) ? interpretation.retained.find((target) => target.id === row.id)! : row;
             return { ...row, associationState: target.associationState, modeInactive: !!target.modeInactive };
           }), ...insertedProjects].sort((a, b) => a.id.localeCompare(b.id));
           const expectedCategories = [...token.categories.map((row) => {
-            const target = planned.categories.retained.find((target) => target.id === row.id)!;
+            const target = canUpdateAssociation(row) ? planned.categories.retained.find((target) => target.id === row.id)! : row;
             return { ...row, associationState: target.associationState, modeInactive: !!target.modeInactive };
           }), ...insertedCategories].sort((a, b) => a.id.localeCompare(b.id));
           // Observed changes during persistence roll back all DB writes. This is not a filesystem lock.
           const recheck = scanner(source.canonicalRoot, source.archiveRelativePath, token.preview.effectiveExcludedRelativePaths);
-          if (!recheck.snapshot || JSON.stringify(recheck.snapshot) !== JSON.stringify(token.snapshot)) throw new StalePreview();
+          if (!recheck.snapshot || JSON.stringify(recheck.snapshot) !== JSON.stringify(token.snapshot) || JSON.stringify(scanEvidence(source, recheck)) !== JSON.stringify(token.evidence)) throw new StalePreview();
           if (discoverySourceState(workspaceSource(workspaceId)) !== discoverySourceState(expectedSource) ||
             !sameAssociations(readProjects(source.id), expectedProjects) ||
             !sameAssociations(readCategories(source.id), expectedCategories) ||
@@ -573,7 +592,7 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
       observationVersions.set(source.sourceId, observationVersion);
       const state = normalizeSource(db, source.sourceId, source.canonicalRoot, filesystem, observe);
       const configured = workspaceSource(input.workspaceId)!;
-      const reconciled = state.sourceAvailable ? reconcileSource(db, configured, observedScan) : { changed: false, scan: null };
+      const reconciled = state.sourceAvailable ? reconcileSource(db, configured, observedScan, scope) : { changed: false, scan: null };
       if (!state.sourceAvailable || reconciled.scan && !reconciled.scan.snapshot) invalidateSourceReviews(source.sourceId);
       if (reconciled.changed) pendingProjectEvents.push({ type: "workspace.projectsChanged", sourceId: source.sourceId,
         revision: configured.discoveryRevision + 1, workspaceIds: sourceState(source.sourceId, state).workspaceIds });
@@ -787,6 +806,35 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
   function readProjects(sourceId: string) {
     return db.select().from(schema.projects).where(eq(schema.projects.sourceId, sourceId)).orderBy(asc(schema.projects.id)).all();
   }
+  function canUpdateAssociation(row: {durableEvidence: string | null}) {
+    return storedEvidence(row.durableEvidence)?.scope === scope;
+  }
+  function scanEvidence(source: typeof schema.sources.$inferSelect, scan: DiscoveryScan) {
+    if (!scan.snapshot) return null;
+    const identity = sourceIdentity(source, scan, scope);
+    const fresh = source.appliedRootIdentity === null && source.discoveryMode === null && source.durableEvidence === null;
+    const root = identity.observation;
+    if (!root.ok || (identity.state !== "verified" && !(fresh && identity.state === "review_required")) ||
+      !sameIdentity(root.mount, scan.snapshot.root.identity)) return null;
+    const observations = [{relativePath:"",observation:root}];
+    const aliases = new Set([JSON.stringify([root.evidence.provider,root.evidence.volume,root.evidence.serial,root.evidence.fileId])]);
+    for (const entry of scan.entries.filter(entry => entry.reason === null)) {
+      const observed = observeFolder(join(source.canonicalRoot, entry.relativePath), scope);
+      const child = scan.snapshot.children.find(child => child.relativePath === entry.relativePath);
+      if (!observed.ok || child?.kind !== "directory" || !sameIdentity(observed.mount, child.identity) ||
+        root.evidence.volume !== observed.evidence.volume || root.evidence.serial !== observed.evidence.serial) return null;
+      const key = JSON.stringify([observed.evidence.provider,observed.evidence.volume,observed.evidence.serial,observed.evidence.fileId]);
+      if (aliases.has(key)) return null;
+      aliases.add(key); observations.push({relativePath:entry.relativePath,observation:observed});
+    }
+    if (JSON.stringify(observeFolder(source.canonicalRoot, scope)) !== JSON.stringify(root)) return null;
+    return observations;
+  }
+  function enrollEvidence(source: typeof schema.sources.$inferSelect, relativePath: string) {
+    const root = observeFolder(source.canonicalRoot, scope), child = observeFolder(join(source.canonicalRoot, relativePath), scope);
+    if (!root.ok || !child.ok || root.evidence.volume !== child.evidence.volume || root.evidence.serial !== child.evidence.serial) throw new StalePreview();
+    return JSON.stringify(child.evidence);
+  }
   function readReservations(sourceId: string) {
     return readProjectReservations(db, sourceId);
   }
@@ -806,11 +854,11 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
     const property = db.select().from(schema.categoryProperties).where(eq(schema.categoryProperties.sourceId, source.id)).get();
     if (mode === "grouped" && !property) throw new Error("Invalid category property configuration");
     let state = currentScan.state;
-    if (currentScan.snapshot && (!reliableIdentity(currentScan.snapshot.root.identity) || source.appliedRootIdentity &&
-      !sameIdentity(JSON.parse(source.appliedRootIdentity), currentScan.snapshot.root.identity))) state = "root_identity_conflict";
-    const verified = currentScan.snapshot && state !== "root_identity_conflict";
+    const identity = sourceIdentity(source, currentScan, scope);
+    if (currentScan.snapshot && identity.state !== "verified") state = discoveryIdentityState(identity.state);
+    const verified = currentScan.snapshot && identity.state === "verified";
     if (!verified) invalidateSourceReviews(source.id);
-    const planned = verified ? planDiscovery(currentScan, categories, projects, readReservations(source.id)) : null;
+    const planned = verified ? planDiscovery(currentScan, continuityRecords(source, currentScan, categories, scope), continuityRecords(source, currentScan, projects, scope), readReservations(source.id)) : null;
     const interpretation = planned?.projects;
     const archivedIds = new Set(db.select().from(schema.projectArchives).where(eq(schema.projectArchives.sourceId, source.id)).all().map(a => a.projectId));
     const projection = projects.filter(row => !archivedIds.has(row.id)).map((row) => {
@@ -818,12 +866,13 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
       if (!row.modeInactive && row.associationState === "active" && (mode === "grouped" ? !category || row.relativePath.split("/").length !== 2 || row.relativePath.split("/")[0] !== category.relativePath : row.categoryId !== null)) {
         throw new Error("Invalid required category");
       }
-      return { projectId: row.id, relativePath: row.relativePath, name: row.relativePath.split("/").at(-1)!, categoryId: row.categoryId,
+      const reason = verified ? associationReason(source,currentScan,row,scope) : identity.state;
+      return { ...(reason && reason !== "verified" ? {identityReason:reason} : {}), projectId: row.id, relativePath: row.relativePath, name: row.relativePath.split("/").at(-1)!, categoryId: row.categoryId,
         categoryName: categories.find((category) => category.id === row.categoryId)?.relativePath ?? null,
         retentionReason: row.modeInactive ? "mode_change" as const : null,
         associationState: row.associationState, resolution: row.modeInactive
           ? modeRetainedResolution(verified ? currentScan : { ...currentScan, snapshot: null }, row, JSON.parse(source.excludedRelativePaths), source.archiveRelativePath)
-          : interpretation?.retained.find((observed) => observed.id === row.id)?.associationState ?? null };
+          : reason === "folder_changed" || reason === "different_volume" ? "replaced" : reason && reason !== "verified" ? "unresolved" : verified ? interpretation?.retained.find((observed) => observed.id === row.id)?.associationState ?? "unresolved" : "unresolved" };
     }).sort((a, b) => a.relativePath < b.relativePath ? -1 : a.relativePath > b.relativePath ? 1 : 0);
     const presentations = db.select().from(schema.categoryPresentation).where(eq(schema.categoryPresentation.workspaceId, workspaceId)).all();
     const active = projection.filter((row) => row.retentionReason === null && row.associationState === "active" && (row.resolution === "active" || row.resolution === null));
@@ -841,7 +890,7 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
 
   function sourceObservationKey(source: typeof schema.sources.$inferSelect) {
     return JSON.stringify([source.canonicalRoot, source.discoveryMode, source.discoveryRevision,
-      source.excludedRelativePaths, source.archiveRelativePath, source.appliedRootIdentity]);
+      source.excludedRelativePaths, source.archiveRelativePath, source.appliedRootIdentity, source.durableEvidence, source.evidenceGeneration]);
   }
   function sourceObservation(current: typeof schema.sources.$inferSelect, scan: DiscoveryScan, projection: ProjectList): SourceObservation {
     const targets = scan.snapshot ? [scan.snapshot.root, ...scan.snapshot.children.filter((child) =>
@@ -915,13 +964,14 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
         // Publish the authoritative selection/list before source observations.
         const events: WorkspaceChangeEvent[] = snapshot ? [{ type: "workspace.listChanged", snapshot }] : [];
         for (const event of pendingProjectEvents) {
-          if (event.type === "workspace.projectsChanged") invalidateSourceReviews(event.sourceId);
+          if (event.type === "workspace.projectsChanged") { association.invalidate(event.sourceId); invalidateSourceReviews(event.sourceId); }
           events.push(event);
         }
         for (const source of sources) {
           const previous = observed.get(source.sourceId);
           observed.set(source.sourceId, { canonicalRoot: source.canonicalRoot, sourceAvailable: source.sourceAvailable });
           if (!previous || previous.canonicalRoot !== source.canonicalRoot || previous.sourceAvailable !== source.sourceAvailable) {
+            association.invalidate(source.sourceId);
             invalidateSourceReviews(source.sourceId);
             events.push({ type: "workspace.sourceChanged", source });
           }
@@ -939,6 +989,52 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
     } catch { return storageFailure(); }
   }
 
+  // ADR 0009 rollout: #72 must convert each consumer before this gate is removed.
+  const blocked = () => ({ok:false as const,error:{code:"identity_update_required" as const,message:"Folder action awaits safety update. Retained metadata remains available."}});
+  type OperationTable = "project_creation_operations" | "project_rename_operations" | "project_category_move_operations" |
+    "project_archive_operations" | "category_folder_operations" | "category_removal_operations";
+  function terminalRetry<R>(table: OperationTable, original: (input: unknown) => ServiceResult<R>) {
+    return (input: unknown): ServiceResult<R> => {
+      try {
+        const request: unknown = structuredClone(input);
+        if (!isRecord(request) || !isUuid(request.operationId)) return blocked();
+        const receipt = db.get<{stage:string}>(sql`SELECT stage FROM ${sql.identifier(table)} WHERE operation_id=${request.operationId}`);
+        // The original consumer validates exact payload/ownership and returns its immutable receipt before any effect path.
+        return receipt && (receipt.stage === "completed" || receipt.stage === "failed" || table === "category_removal_operations" && receipt.stage === "abandoned") ? original(request) : blocked();
+      } catch { return blocked(); }
+    };
+  }
+  const blockedAsync = async () => blocked();
+  Object.assign(service, {
+    previewProjectArchive: blocked,
+    applyProjectArchive: terminalRetry("project_archive_operations", archiveMutations.applyProjectArchive),
+    previewProjectArchiveRecovery: blocked,
+    recoverProjectArchive: blocked,
+    previewArchiveLocation: blocked,
+    applyArchiveLocation: blocked,
+    previewCategoryRemovalRecovery: blocked,
+    recoverCategoryRemoval: blocked,
+    applyCategoryRemoval: terminalRetry("category_removal_operations", categoryRemoval.applyCategoryRemoval),
+    previewCategoryRemoval: blocked,
+    previewCategoryFolder: blocked,
+    applyCategoryFolder: terminalRetry("category_folder_operations", categoryOptions.applyCategoryFolder),
+    previewCategoryFolderRecovery: blocked,
+    recoverCategoryFolder: blocked,
+    moveProjectCategory: terminalRetry("project_category_move_operations", categoryMove.moveProjectCategory),
+    previewProjectCategoryMoveRecovery: blocked,
+    recoverProjectCategoryMove: blocked,
+    renameProject: terminalRetry("project_rename_operations", rename.renameProject),
+    previewProjectRenameRecovery: blocked,
+    recoverProjectRename: blocked,
+    listProjectFiles: blocked,
+    projectFileCommand: blockedAsync,
+    revealProject: blockedAsync,
+    createProject: terminalRetry("project_creation_operations", creation.createProject),
+    previewProjectCreationRecovery: blocked,
+    recoverProjectCreation: blocked,
+    previewProjectRecovery: blocked,
+    reassociateProject: blocked,
+  } satisfies Partial<WorkspaceService>);
   const observer = createSourceObserver((sourceId): SourceObservation | Promise<SourceObservation> => {
     const workspaceId = sourceState(sourceId, { canonicalRoot: "", sourceAvailable: false }).workspaceIds[0];
     if (!workspaceId) throw new Error("Source no longer referenced");
@@ -976,6 +1072,7 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
   }, (sourceId, observation, observationRevision, automaticUpdates) => {
     const workspaceIds = sourceState(sourceId, { canonicalRoot: "", sourceAvailable: false }).workspaceIds;
     if (!workspaceIds.length) return;
+    association.invalidate(sourceId);
     invalidateSourceReviews(sourceId);
     const event: Extract<WorkspaceChangeEvent, { type: "workspace.sourceObserved" }> = {
       type: "workspace.sourceObserved", sourceId, workspaceIds, observationRevision, state: observation.state, automaticUpdates,
@@ -1003,7 +1100,7 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
     reorder: (input) => run(() => service.reorder(input), returnedSnapshot),
     remove: (input) => {
       const result = run(() => service.remove(input), returnedSnapshot);
-      if (result.ok && isRecord(input) && typeof input.workspaceId === "string") { previewTokens.delete(input.workspaceId); archive.removeWorkspace(input.workspaceId); archiveMutations.removeWorkspace(input.workspaceId); recovery.removeWorkspace(input.workspaceId); creation.removeWorkspace(input.workspaceId); rename.removeWorkspace(input.workspaceId); categoryMove.removeWorkspace(input.workspaceId); }
+      if (result.ok && isRecord(input) && typeof input.workspaceId === "string") { association.removeWorkspace(input.workspaceId); previewTokens.delete(input.workspaceId); archive.removeWorkspace(input.workspaceId); archiveMutations.removeWorkspace(input.workspaceId); recovery.removeWorkspace(input.workspaceId); creation.removeWorkspace(input.workspaceId); rename.removeWorkspace(input.workspaceId); categoryMove.removeWorkspace(input.workspaceId); }
       return result;
     },
     activate: (input) => run(() => service.activate(input), activationSnapshot),
@@ -1119,8 +1216,8 @@ function workspacePayload(input: unknown, type: string, keys: string[]): input i
 
 function discoverySourceState(source: typeof schema.sources.$inferSelect | undefined): string {
   if (!source) return "missing";
-  const { id, canonicalRoot, discoveryMode, discoveryRevision, excludedRelativePaths, archiveRelativePath, appliedRootIdentity } = source;
-  return JSON.stringify({ id, canonicalRoot, discoveryMode, discoveryRevision, excludedRelativePaths, archiveRelativePath, appliedRootIdentity });
+  const { id, canonicalRoot, discoveryMode, discoveryRevision, excludedRelativePaths, archiveRelativePath, appliedRootIdentity, durableEvidence, evidenceGeneration } = source;
+  return JSON.stringify({ id, canonicalRoot, discoveryMode, discoveryRevision, excludedRelativePaths, archiveRelativePath, appliedRootIdentity, durableEvidence, evidenceGeneration });
 }
 
 function sameAssociations(a: object[], b: object[]) {

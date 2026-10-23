@@ -1,3 +1,4 @@
+import { validateEvidence } from "./folder-evidence.js";
 import { isWorkspaceSessionState } from "../contracts/workspace-sessions.js";
 import { validateSnapshotRelations } from "./data-recovery-invariants.js";
 import { validExclusions, validArchive } from "./discovery.js";
@@ -48,6 +49,27 @@ function validate(db: Database.Database) {
       for (const row of db.prepare(`SELECT ${quote(column.name)} AS value FROM ${quote(table.name)} WHERE ${quote(column.name)} IS NOT NULL`).all() as { value: string }[]) {
         const identity = JSON.parse(row.value);
         if (!identity || typeof identity.dev !== "string" || typeof identity.ino !== "string" || typeof identity.birthtimeNs !== "string") throw new Error("Invalid filesystem identity");
+      }
+    }
+  }
+  for (const table of ["sources", "categories", "projects"]) {
+    const columns = db.prepare(`PRAGMA table_info(${quote(table)})`).all() as {name:string}[];
+    if (!columns.some(column => column.name === "durable_evidence")) continue;
+    for (const row of db.prepare(`SELECT durable_evidence FROM ${quote(table)} WHERE durable_evidence IS NOT NULL`).all() as {durable_evidence:string}[]) {
+      if (!validateEvidence(JSON.parse(row.durable_evidence))) throw new Error("Unsupported durable folder evidence");
+    }
+  }
+  if ((db.prepare("PRAGMA table_info(sources)").all() as {name:string}[]).some(c => c.name === "durable_evidence")) {
+    const roots = new Map((db.prepare("SELECT id,durable_evidence FROM sources").all() as {id:string;durable_evidence:string|null}[])
+      .map(row => [row.id,row.durable_evidence ? JSON.parse(row.durable_evidence) as import("./folder-evidence.js").FolderEvidence : null]));
+    for (const table of ["projects","categories"]) {
+      const owners = new Set<string>();
+      for (const row of db.prepare(`SELECT source_id,durable_evidence,association_state FROM ${quote(table)} WHERE durable_evidence IS NOT NULL`).all() as {source_id:string;durable_evidence:string;association_state:string}[]) {
+        const evidence = JSON.parse(row.durable_evidence) as import("./folder-evidence.js").FolderEvidence;
+        const root = roots.get(row.source_id);
+        if (!root || evidence.provider !== root.provider || evidence.volume !== root.volume || evidence.serial !== root.serial) throw new Error("Conflicting durable volume ownership");
+        const key = JSON.stringify([row.source_id,evidence.provider,evidence.volume,evidence.serial,evidence.fileId]);
+        if (row.association_state !== "replaced") {if (owners.has(key)) throw new Error("Duplicate durable folder ownership"); owners.add(key);}
       }
     }
   }

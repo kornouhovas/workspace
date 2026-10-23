@@ -238,7 +238,7 @@ test('pre-filter migration preserves populated view selection, identities and pr
     const views = service.handleCommand({ type: 'workspace.createView', workspaceId, name: 'Board', kind: 'board' });
     service.close();
     const db = new Database(path);
-    try { db.exec('DROP TRIGGER initialize_workspace_session; DROP TRIGGER remove_view_session_preview; DROP TABLE workspace_sessions; ALTER TABLE views DROP COLUMN board_config; ALTER TABLE views DROP COLUMN table_config; ALTER TABLE views DROP COLUMN grouping_config; ALTER TABLE views DROP COLUMN filter_config; DELETE FROM __drizzle_migrations WHERE created_at >= 1791504019000'); } finally { db.close(); }
+    try { db.exec('ALTER TABLE sources DROP COLUMN durable_evidence; ALTER TABLE sources DROP COLUMN evidence_generation; ALTER TABLE categories DROP COLUMN durable_evidence; ALTER TABLE projects DROP COLUMN durable_evidence; DROP TRIGGER initialize_workspace_session; DROP TRIGGER remove_view_session_preview; DROP TABLE workspace_sessions; ALTER TABLE views DROP COLUMN board_config; ALTER TABLE views DROP COLUMN table_config; ALTER TABLE views DROP COLUMN grouping_config; ALTER TABLE views DROP COLUMN filter_config; DELETE FROM __drizzle_migrations WHERE created_at >= 1791504019000'); } finally { db.close(); }
     service = openSettingsService(path);
     assert.deepEqual(service.handleQuery({ type: 'workspace.listTextProperties', workspaceId }), before);
     assert.deepEqual(service.handleQuery({ type: 'workspace.listViews', workspaceId }), views);

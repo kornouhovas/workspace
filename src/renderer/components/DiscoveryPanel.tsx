@@ -48,6 +48,7 @@ interface PanelProps {
 const stateLabels: Record<DiscoveryPreview["state"], TranslationKey> = {
   ready: "discoveryReady", empty: "discoveryEmpty", unavailable: "discoveryUnavailable",
   unreadable: "discoveryUnreadable", root_identity_conflict: "discoveryRootConflict", changed: "discoveryChanged",
+  association_review_required: "associationReviewRequired", different_volume: "associationDifferentVolume", identity_unverified: "associationUnverified",
 };
 const reasonLabels = {
   manual: "discoveryManual", link: "discoveryLink", hidden: "discoveryHidden",

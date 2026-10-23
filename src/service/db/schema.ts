@@ -19,6 +19,8 @@ export const sources = sqliteTable("sources", {
   excludedRelativePaths: text("excluded_relative_paths").notNull().default("[]"),
   archiveRelativePath: text("archive_relative_path"),
   appliedRootIdentity: text("applied_root_identity"),
+  durableEvidence: text("durable_evidence"),
+  evidenceGeneration: integer("evidence_generation").notNull().default(0),
 });
 
 export const workspaces = sqliteTable("workspaces", {
@@ -57,6 +59,7 @@ export const categories = sqliteTable("categories", {
   sourceId: text("source_id").notNull().references(() => sources.id),
   relativePath: text("relative_path").notNull(),
   nativeIdentity: text("native_identity").notNull(),
+  durableEvidence: text("durable_evidence"),
   associationState: text("association_state", { enum: ["active", "excluded", "missing", "unresolved", "replaced"] }).notNull(),
 }, (table) => [unique("categories_id_source").on(table.id, table.sourceId)]);
 
@@ -73,6 +76,7 @@ export const projects = sqliteTable("projects", {
   sourceId: text("source_id").notNull().references(() => sources.id),
   relativePath: text("relative_path").notNull(),
   nativeIdentity: text("native_identity").notNull(),
+  durableEvidence: text("durable_evidence"),
   associationState: text("association_state", { enum: ["active", "excluded", "missing", "unresolved", "replaced"] }).notNull(),
 }, (table) => [unique("projects_id_source").on(table.id, table.sourceId)]);
 

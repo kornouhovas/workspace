@@ -16,7 +16,7 @@ export type SettingsCommand = {
   language: Language;
 } | { type: "settings.setAppearance"; appearance: Appearance };
 
-export type ServiceErrorCode = "invalid_input" | "filesystem" | "storage" | "service_unavailable" | "stale_preview";
+export type ServiceErrorCode = "invalid_input" | "filesystem" | "storage" | "service_unavailable" | "stale_preview" | "identity_update_required";
 
 export interface ServiceError {
   code: ServiceErrorCode;

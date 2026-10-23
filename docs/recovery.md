@@ -94,3 +94,31 @@ On resuming, Workspace reads current project properties and checks current folde
 availability; a retained tab does not recreate a missing folder or its contents.
 Back/Forward navigation and closed-tab/scroll memory belong to the current app
 run and are not restored from a backup.
+
+## Durable source associations (issue 71)
+
+The identity migration preserves the old folder observations and retained project
+metadata without inferring a historical volume. In **Settings → Sources**, open a
+source and choose **Review folder association**. Select each category/project
+mapping explicitly, preview its impact, and confirm ownership of the retained
+data. Root-only confirmation leaves descendants unverified. Cancel revokes the
+backend review. Missing, excluded, archived and mode-inactive records are retained;
+this flow does not move folders, merge sources or override enrolled volume/folder
+mismatches. An interrupted operation retains its reservations and needs its own
+supported recovery path.
+
+A backend-owned installation anchor lives beside the working database and is
+excluded from every SQLite export and backup. The optional `localAuthority`
+envelope notice records this exclusion; older version-1 envelopes remain readable.
+Restore does not replace that anchor. A copied database, missing/corrupt anchor or
+another installation requires reviewed enrollment even when sufficient folder
+and volume evidence still matches. Unknown evidence is blocked while retained
+names and values remain readable; an unsupported or contradictory export is
+rejected before replacement.
+
+During the ADR 0009 rollout, identity-sensitive folder actions return
+`identity_update_required` until their individual consumers are converted under
+issue 72. Retained properties, views and operation history remain available.
+Original terminal-operation retries validate their immutable request and return
+the recorded receipt without filesystem/native effects. Source association does
+not authorize an unfinished legacy operation or release its reservations.

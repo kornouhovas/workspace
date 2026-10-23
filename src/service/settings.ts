@@ -1,3 +1,4 @@
+import { installationScope } from "./installation-scope.js";
 import type { SourceSettingsList } from "../contracts/workspaces.js";
 import { protectMigration } from "./migration-backup.js";
 import { createAutomaticBackups } from "./automatic-backups.js";
@@ -56,8 +57,8 @@ export interface SettingsService {
   recoverProjectRename(input: unknown): ServiceResult<ProjectRenameResult>;
   projectFileCommand(input: unknown, native?: NativeProjectReveal): Promise<ServiceResult<import("../contracts/project-files.js").ProjectFileResult>>;
   revealProject(input: unknown, native?: NativeProjectReveal): Promise<ServiceResult<ProjectRevealResult>>;
-  handleQuery(input: unknown): ServiceResult<import("../contracts/workspace-sessions.js").WorkspaceSessionSnapshot | import("../contracts/project-files.js").ProjectFilesResult | SourceSettingsList | DataRecoveryPayload | MetadataRemovalPreview | MetadataRemovalResult | BoardLayoutSnapshot | TableLayoutSnapshot | ViewGroupingSnapshot | ViewFilterPayload | ViewSnapshot | ArchivePayload | CategoryRemovalPayload | CategoryOptionsPayload | ProjectCategoryMoveResult | ProjectCategoryMoveList | ProjectCategoryMoveRecoveryPreview | ProjectRenameResult | ProjectRenameList | ProjectRenameRecoveryPreview | ProjectCreationResult | ProjectCreationList | ProjectCreationRecoveryPreview | WorkspaceSourceObservationSnapshot | ProjectRecoveryPreview | TextPropertySnapshot | Settings | WorkspaceLoad | DiscoveryPreview | ProjectList>;
-  handleCommand(input: unknown): ServiceResult<import("../contracts/workspace-sessions.js").WorkspaceSessionSnapshot | DataRecoveryPayload | MetadataRemovalPreview | MetadataRemovalResult | BoardLayoutSnapshot | TableLayoutSnapshot | ViewGroupingSnapshot | ViewFilterPayload | ViewSnapshot | ArchivePayload | CategoryRemovalPayload | CategoryOptionsPayload | ProjectCategoryMoveResult | ProjectRenameResult | ProjectCreationResult | CategoryPropertySnapshot | TextPropertyMutation | Settings | WorkspaceCreated | ActiveWorkspace | WorkspaceLoad | WorkspaceSourceState | ProjectList>;
+  handleQuery(input: unknown): ServiceResult<import("../contracts/source-association.js").SourceAssociationPreview | import("../contracts/source-association.js").SourceAssociationResult | import("../contracts/workspace-sessions.js").WorkspaceSessionSnapshot | import("../contracts/project-files.js").ProjectFilesResult | SourceSettingsList | DataRecoveryPayload | MetadataRemovalPreview | MetadataRemovalResult | BoardLayoutSnapshot | TableLayoutSnapshot | ViewGroupingSnapshot | ViewFilterPayload | ViewSnapshot | ArchivePayload | CategoryRemovalPayload | CategoryOptionsPayload | ProjectCategoryMoveResult | ProjectCategoryMoveList | ProjectCategoryMoveRecoveryPreview | ProjectRenameResult | ProjectRenameList | ProjectRenameRecoveryPreview | ProjectCreationResult | ProjectCreationList | ProjectCreationRecoveryPreview | WorkspaceSourceObservationSnapshot | ProjectRecoveryPreview | TextPropertySnapshot | Settings | WorkspaceLoad | DiscoveryPreview | ProjectList>;
+  handleCommand(input: unknown): ServiceResult<import("../contracts/source-association.js").SourceAssociationPreview | import("../contracts/source-association.js").SourceAssociationResult | import("../contracts/workspace-sessions.js").WorkspaceSessionSnapshot | DataRecoveryPayload | MetadataRemovalPreview | MetadataRemovalResult | BoardLayoutSnapshot | TableLayoutSnapshot | ViewGroupingSnapshot | ViewFilterPayload | ViewSnapshot | ArchivePayload | CategoryRemovalPayload | CategoryOptionsPayload | ProjectCategoryMoveResult | ProjectRenameResult | ProjectCreationResult | CategoryPropertySnapshot | TextPropertyMutation | Settings | WorkspaceCreated | ActiveWorkspace | WorkspaceLoad | WorkspaceSourceState | ProjectList>;
   workspaces: WorkspaceService;
   close(): void;
 }
@@ -111,8 +112,9 @@ export function openSettingsService(
     return { language: isLanguage(language) ? language : "en",
       appearance: supportedAppearances.includes(appearance as Appearance) ? appearance as Appearance : "system" };
   };
+  const scope = installationScope(dirname(databasePath));
   const backups = createAutomaticBackups(sqlite, databasePath);
-  let workspaces = createWorkspaceService(db, workspaceFilesystem, observerDependencies, projectFilesystem, projectRenameNative);
+  let workspaces = createWorkspaceService(db, workspaceFilesystem, observerDependencies, projectFilesystem, projectRenameNative, scope);
   return {
     get workspaces() { return workspaces; },
     moveProjectCategory: (...args) => workspaces.moveProjectCategory(...args),
@@ -128,6 +130,7 @@ export function openSettingsService(
     projectFileCommand: (...args) => workspaces.projectFileCommand(...args),
     revealProject: (...args) => workspaces.revealProject(...args),
     handleQuery(input) {
+      if (isRecord(input) && input.type === "workspace.previewSourceAssociation") return workspaces.sourceAssociationRequest(input);
       if (isRecord(input) && input.type === "workspace.getSession") return workspaces.sessionRequest(input);
       if (isRecord(input) && input.type === "workspace.listProjectFiles") return workspaces.listProjectFiles(input);
       if (isRecord(input) && typeof input.type === "string" && ["data.backups", "data.backupExport"].includes(input.type)) return backups.request(input);
@@ -182,13 +185,14 @@ export function openSettingsService(
     },
 
     handleCommand(input) {
+      if (isRecord(input) && ["workspace.applySourceAssociation", "workspace.cancelSourceAssociation"].includes(String(input.type))) return workspaces.sourceAssociationRequest(input);
       if (isRecord(input) && input.type === "workspace.setSession") return workspaces.sessionRequest(input);
       if (isRecord(input) && input.type === "data.backupNow") return backups.request(input);
       if (isRecord(input) && input.type === "data.restore") {
         const result = dataRecovery(sqlite, input);
         if (result.ok) {
           workspaces.close();
-          workspaces = createWorkspaceService(db, workspaceFilesystem, observerDependencies, projectFilesystem, projectRenameNative);
+          workspaces = createWorkspaceService(db, workspaceFilesystem, observerDependencies, projectFilesystem, projectRenameNative, scope);
         }
         return result;
       }

@@ -1,3 +1,4 @@
+import { SourceAssociationPanel } from "./SourceAssociationPanel.js";
 import { useEffect, useRef, useState } from "react";
 import type { Language } from "../../contracts/settings.js";
 import type { SourceSettingsSummary } from "../../contracts/workspaces.js";
@@ -123,6 +124,7 @@ function SourceOperations({ client, source, language, disabled, onCommitted, onP
   return <>
     <SourceRefresh language={language} pending={refreshing} error={refreshError} degraded={degraded} unavailable={!source.sourceAvailable}
       disabled={disabled || discoveryPending || archivePending} onRefresh={() => void refresh()} />
+    <SourceAssociationPanel client={client} workspaceId={workspaceId} language={language} disabled={disabled || refreshing} invalidation={invalidation} onCommitted={onCommitted} />
     <DiscoveryController client={client} workspaceId={workspaceId} sourceId={source.sourceId} minimumRevision={minimumRevision}
       observationVersion={observationVersion} invalidation={invalidation} language={language} disabled={disabled || refreshing || archivePending}
       onPendingChange={setDiscoveryPending} onApplied={onCommitted} />

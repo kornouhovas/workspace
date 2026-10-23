@@ -18,7 +18,7 @@ import type { ServiceResult } from "./settings.js";
 import type { CategoryPropertySnapshot, ProjectList, DiscoveryPreview, ActiveWorkspace, WorkspaceCreated, WorkspaceLoad, WorkspaceSourceObservationSnapshot, WorkspaceSourceState, WorkspaceChangeEvent } from "./workspaces.js";
 import type { Settings } from "./settings.js";
 
-export type ServicePayload = import("./workspace-sessions.js").WorkspaceSessionSnapshot | import("./project-files.js").ProjectFilesResult | import("./project-files.js").ProjectFileResult | import("./data-recovery.js").DataRecoveryPayload | MetadataRemovalPreview | MetadataRemovalResult | BoardLayoutSnapshot | TableLayoutSnapshot | ViewGroupingSnapshot | ViewFilterPayload | ViewSnapshot | ArchivePayload | CategoryRemovalPayload | CategoryOptionsPayload | ProjectCategoryMoveResult | ProjectCategoryMoveList | ProjectCategoryMoveRecoveryPreview | ProjectRenameResult | ProjectRenameList | ProjectRenameRecoveryPreview | ProjectRevealResult | ProjectCreationResult | ProjectCreationOperation | ProjectCreationList | ProjectCreationRecoveryPreview | WorkspaceSourceObservationSnapshot | ProjectRecoveryPreview | CategoryPropertySnapshot | TextPropertySnapshot | TextPropertyMutation | ProjectList | DiscoveryPreview | Settings | WorkspaceLoad | WorkspaceCreated | ActiveWorkspace | WorkspaceSourceState;
+export type ServicePayload = import("./source-association.js").SourceAssociationPreview | import("./source-association.js").SourceAssociationResult | import("./workspace-sessions.js").WorkspaceSessionSnapshot | import("./project-files.js").ProjectFilesResult | import("./project-files.js").ProjectFileResult | import("./data-recovery.js").DataRecoveryPayload | MetadataRemovalPreview | MetadataRemovalResult | BoardLayoutSnapshot | TableLayoutSnapshot | ViewGroupingSnapshot | ViewFilterPayload | ViewSnapshot | ArchivePayload | CategoryRemovalPayload | CategoryOptionsPayload | ProjectCategoryMoveResult | ProjectCategoryMoveList | ProjectCategoryMoveRecoveryPreview | ProjectRenameResult | ProjectRenameList | ProjectRenameRecoveryPreview | ProjectRevealResult | ProjectCreationResult | ProjectCreationOperation | ProjectCreationList | ProjectCreationRecoveryPreview | WorkspaceSourceObservationSnapshot | ProjectRecoveryPreview | CategoryPropertySnapshot | TextPropertySnapshot | TextPropertyMutation | ProjectList | DiscoveryPreview | Settings | WorkspaceLoad | WorkspaceCreated | ActiveWorkspace | WorkspaceSourceState;
 
 export type ServiceRequest = {
   id: number;
@@ -50,7 +50,7 @@ export function isServiceResponse(value: unknown): value is ServiceResponse {
   const error = result.error;
   return result.ok === false && exact(result, ["ok", "error"]) &&
     record(error) && exact(error, ["code", "message"]) &&
-    ["invalid_input", "filesystem", "storage", "service_unavailable", "stale_preview"].includes(typeof error.code === "string" ? error.code : "") &&
+    ["invalid_input", "filesystem", "storage", "service_unavailable", "stale_preview", "identity_update_required"].includes(typeof error.code === "string" ? error.code : "") &&
     typeof error.message === "string";
 }
 
@@ -63,7 +63,7 @@ export function isWorkspaceChangeEvent(value: unknown): value is WorkspaceChange
     return exact(value, ["type", "sourceId", "workspaceIds", "observationRevision", "state", "automaticUpdates"]) &&
       uuid(value.sourceId) && ids(value.workspaceIds) && value.workspaceIds.length > 0 &&
       typeof value.observationRevision === "number" && Number.isSafeInteger(value.observationRevision) && value.observationRevision > 0 &&
-      ["ready", "empty", "unavailable", "unreadable", "root_identity_conflict", "changed"].includes(typeof value.state === "string" ? value.state : "") &&
+      ["ready", "empty", "unavailable", "unreadable", "root_identity_conflict", "changed", "association_review_required", "different_volume", "identity_unverified"].includes(typeof value.state === "string" ? value.state : "") &&
       (value.automaticUpdates === "active" || value.automaticUpdates === "degraded");
   }
   if (value.type === "workspace.projectsChanged" || value.type === "workspace.propertiesChanged" || value.type === "workspace.categoryPropertyChanged") {

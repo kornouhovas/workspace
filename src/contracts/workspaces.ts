@@ -69,8 +69,8 @@ export type WorkspaceSourceObservationSnapshot = { observation: WorkspaceSourceO
 export type WorkspaceGetSourceObservationQuery = { type: "workspace.getSourceObservation"; workspaceId: string };
 
 import type { ViewGroupingQuery, ViewGroupingCommand } from "./view-grouping.js";
-export type WorkspaceQuery = import("./workspace-sessions.js").WorkspaceSessionQuery | import("./project-files.js").ProjectFilesQuery | WorkspaceListSourcesQuery | import("./metadata-removal.js").PreviewMetadataRemoval | BoardLayoutQuery | TableLayoutQuery | ViewGroupingQuery | ViewFilterQuery | ViewQuery | ArchiveQuery | CategoryRemovalQuery | CategoryOptionsQuery | WorkspaceListProjectCategoryMovesQuery | WorkspaceGetProjectCategoryMoveQuery | WorkspacePreviewProjectCategoryMoveRecoveryQuery | WorkspaceListProjectRenamesQuery | WorkspaceGetProjectRenameQuery | WorkspacePreviewProjectRenameRecoveryQuery | WorkspaceListProjectCreationsQuery | WorkspaceGetProjectCreationQuery | WorkspacePreviewProjectCreationRecoveryQuery | WorkspaceGetSourceObservationQuery | WorkspacePreviewProjectRecoveryQuery | WorkspaceListTextPropertiesQuery | WorkspaceLoadQuery | WorkspacePreviewDiscoveryQuery | WorkspaceListProjectsQuery;
-export type WorkspaceCommand = import("./workspace-sessions.js").WorkspaceSessionCommand | import("./project-files.js").ProjectFileCommand | import("./metadata-removal.js").ApplyMetadataRemoval | import("./group-assignment.js").AssignProjectGroupCommand | BoardLayoutCommand | TableLayoutCommand | ViewGroupingCommand | ViewFilterCommand | ViewCommand | SelectCommand | ArchiveCommand | CategoryRemovalCommand | CategoryOptionsCommand | WorkspaceMoveProjectCategoryCommand | WorkspaceRecoverProjectCategoryMoveCommand | WorkspaceRenameProjectCommand | WorkspaceRecoverProjectRenameCommand | WorkspaceRevealProjectCommand | WorkspaceCreateProjectCommand | WorkspaceRecoverProjectCreationCommand | WorkspaceReassociateProjectCommand | WorkspaceRenameCategoryPropertyCommand | WorkspaceSetDateValueCommand | WorkspaceSetNumberValueCommand | WorkspaceSetTextValueCommand | WorkspaceCreatePropertyCommand | WorkspaceRenamePropertyCommand | WorkspaceCreateCommand | WorkspaceActivateCommand | WorkspaceRenameCommand | WorkspaceReorderCommand | WorkspaceRemoveCommand | WorkspaceRefreshSourceCommand | WorkspaceApplyDiscoveryCommand;
+export type WorkspaceQuery = import("./source-association.js").SourceAssociationQuery | import("./workspace-sessions.js").WorkspaceSessionQuery | import("./project-files.js").ProjectFilesQuery | WorkspaceListSourcesQuery | import("./metadata-removal.js").PreviewMetadataRemoval | BoardLayoutQuery | TableLayoutQuery | ViewGroupingQuery | ViewFilterQuery | ViewQuery | ArchiveQuery | CategoryRemovalQuery | CategoryOptionsQuery | WorkspaceListProjectCategoryMovesQuery | WorkspaceGetProjectCategoryMoveQuery | WorkspacePreviewProjectCategoryMoveRecoveryQuery | WorkspaceListProjectRenamesQuery | WorkspaceGetProjectRenameQuery | WorkspacePreviewProjectRenameRecoveryQuery | WorkspaceListProjectCreationsQuery | WorkspaceGetProjectCreationQuery | WorkspacePreviewProjectCreationRecoveryQuery | WorkspaceGetSourceObservationQuery | WorkspacePreviewProjectRecoveryQuery | WorkspaceListTextPropertiesQuery | WorkspaceLoadQuery | WorkspacePreviewDiscoveryQuery | WorkspaceListProjectsQuery;
+export type WorkspaceCommand = import("./source-association.js").SourceAssociationCommand | import("./workspace-sessions.js").WorkspaceSessionCommand | import("./project-files.js").ProjectFileCommand | import("./metadata-removal.js").ApplyMetadataRemoval | import("./group-assignment.js").AssignProjectGroupCommand | BoardLayoutCommand | TableLayoutCommand | ViewGroupingCommand | ViewFilterCommand | ViewCommand | SelectCommand | ArchiveCommand | CategoryRemovalCommand | CategoryOptionsCommand | WorkspaceMoveProjectCategoryCommand | WorkspaceRecoverProjectCategoryMoveCommand | WorkspaceRenameProjectCommand | WorkspaceRecoverProjectRenameCommand | WorkspaceRevealProjectCommand | WorkspaceCreateProjectCommand | WorkspaceRecoverProjectCreationCommand | WorkspaceReassociateProjectCommand | WorkspaceRenameCategoryPropertyCommand | WorkspaceSetDateValueCommand | WorkspaceSetNumberValueCommand | WorkspaceSetTextValueCommand | WorkspaceCreatePropertyCommand | WorkspaceRenamePropertyCommand | WorkspaceCreateCommand | WorkspaceActivateCommand | WorkspaceRenameCommand | WorkspaceReorderCommand | WorkspaceRemoveCommand | WorkspaceRefreshSourceCommand | WorkspaceApplyDiscoveryCommand;
 
 export interface WorkspaceSummary {
   workspaceId: string;
@@ -129,7 +129,7 @@ export interface DiscoveryPreview {
   effectiveExcludedRelativePaths: string[];
   inactiveExcludedRelativePaths: string[];
   entries: DiscoveryEntry[];
-  state: "ready" | "empty" | "unavailable" | "unreadable" | "root_identity_conflict" | "changed";
+  state: "ready" | "empty" | "unavailable" | "unreadable" | "root_identity_conflict" | "changed" | "association_review_required" | "different_volume" | "identity_unverified";
   previewToken: string | null;
 }
 export interface DiscoveryProjectEffects {
@@ -171,6 +171,7 @@ export interface ProjectSummary {
 }
 export type ProjectAssociationState = "active" | "excluded" | "missing" | "unresolved" | "replaced";
 export interface ProjectAssociationSummary extends ProjectSummary {
+  identityReason?: import("./source-association.js").FolderIdentityReason;
   retentionReason?: "mode_change" | null;
   associationState: ProjectAssociationState;
   // Null means the source scan could not safely establish individual resolution.

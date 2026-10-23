@@ -169,6 +169,13 @@
       "when": 1791504023000,
       "tag": "0023_workspace_sessions",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1791504024000,
+      "tag": "0024_durable_folder_evidence",
+      "breakpoints": true
     }
   ]
 }

@@ -1,3 +1,4 @@
+import { SourceAssociationPanel } from "./SourceAssociationPanel.js";
 import { useEffect, useRef, useState } from "react";
 import type { ProjectRecoveryPreview, ProjectRecoveryTargetStatus } from "../../contracts/project-recovery.js";
 import type { ProjectAssociationSummary, ProjectList } from "../../contracts/workspaces.js";
@@ -13,6 +14,7 @@ const conflicts: Record<Exclude<ProjectRecoveryTargetStatus, "selectable">, Tran
 const sourceStates = {
   ready: "discoveryReady", empty: "discoveryEmpty", unavailable: "discoveryUnavailable", unreadable: "discoveryUnreadable",
   root_identity_conflict: "discoveryRootConflict", changed: "discoveryChanged",
+  association_review_required: "associationReviewRequired", different_volume: "associationDifferentVolume", identity_unverified: "associationUnverified",
 } as const;
 
 export function ProjectRecoveryPanel({ language, project, preview, selectedPath, loading, pending, error, stale, uncertain,
@@ -77,6 +79,7 @@ export function ProjectRecoveryController({ client, workspaceId, sourceId, proje
   onCommitted(value: ProjectList, observedVersion: number): void; onReload(): void; onClose(): void;
   onPendingChange?(pending: boolean): void;
 }) {
+  const [sourceReview, setSourceReview] = useState(false);
   const [preview, setPreview] = useState<ProjectRecoveryPreview | null>(null);
   const [selectedPath, setSelectedPath] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -97,6 +100,7 @@ export function ProjectRecoveryController({ client, workspaceId, sourceId, proje
       if (current !== version.current) return;
       if (result.ok && result.value.workspaceId === workspaceId && result.value.sourceId === sourceId &&
         result.value.projectId === project.projectId && result.value.revision >= minimumRevision.current) setPreview(result.value);
+      else if (!result.ok && result.error.code === "identity_update_required") setSourceReview(true);
       else setError(true);
     } catch { if (current === version.current) setError(true); }
     finally { if (current === version.current) setLoading(false); }
@@ -145,7 +149,9 @@ export function ProjectRecoveryController({ client, workspaceId, sourceId, proje
       if (current === version.current && lifetime === sourceLifetime.current) { setUncertain(true); setPreview(null); setSelectedPath(null); onReload(); }
     } finally { if (current === version.current && lifetime === sourceLifetime.current) { saving.current = false; setPending(false); onPendingChange?.(false); } }
   };
-  return <ProjectRecoveryPanel language={language} project={project} preview={preview} selectedPath={selectedPath} loading={loading} pending={pending}
+  if (sourceReview) return <><SourceAssociationPanel client={client} workspaceId={workspaceId} language={language} disabled={disabled} invalidation={invalidation} onCommitted={onReload} />
+    <button type="button" className="workspace-button workspace-button--secondary" onClick={onClose}>{translate(language,"cancelRenameWorkspace")}</button></>;
+  return <><SourceAssociationPanel client={client} workspaceId={workspaceId} language={language} disabled={disabled} invalidation={invalidation} onCommitted={onReload} /><ProjectRecoveryPanel language={language} project={project} preview={preview} selectedPath={selectedPath} loading={loading} pending={pending}
     error={error} stale={stale || disabled} uncertain={uncertain} onSelect={setSelectedPath} onConfirm={() => void confirm()}
-    onRefresh={() => { if (!disabled) void request(); }} onCancel={() => { if (!saving.current) { version.current++; onClose(); } }} />;
+    onRefresh={() => { if (!disabled) void request(); }} onCancel={() => { if (!saving.current) { version.current++; onClose(); } }} /></>;
 }

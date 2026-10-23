@@ -19,6 +19,15 @@ import type { RootPickerResult } from "../contracts/desktop-api.js";
 import { isWorkspaceChangeEvent } from "../contracts/service-protocol.js";
 
 export class WorkspaceServiceClient {
+  previewSourceAssociation(workspaceId: string, mappings: import("../contracts/source-association.js").FolderMapping[]) {
+    return this.api.workspace({type:"workspace.previewSourceAssociation",workspaceId,mappings});
+  }
+  cancelSourceAssociation(workspaceId: string, previewToken: string) {
+    return this.api.workspace({type:"workspace.cancelSourceAssociation",workspaceId,previewToken});
+  }
+  applySourceAssociation(workspaceId: string, previewToken: string) {
+    return this.api.workspace({type:"workspace.applySourceAssociation",workspaceId,previewToken});
+  }
   getSession(workspaceId: string) { return this.api.workspace({ type: "workspace.getSession", workspaceId }); }
   setSession(workspaceId: string, epoch: string, expectedRevision: number, state: import("../contracts/workspace-sessions.js").WorkspaceSessionState) {
     return this.api.workspace({ type: "workspace.setSession", workspaceId, epoch, expectedRevision, state });

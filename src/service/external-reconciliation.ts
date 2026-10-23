@@ -1,3 +1,4 @@
+import { continuityRecords, discoveryIdentityState, sourceIdentity } from "./source-identity.js";
 import { hasUnfinishedProjectRelocation, readProjectReservations } from "./project-rename-reservations.js";
 import { randomUUID } from "node:crypto";
 import { asc, eq } from "drizzle-orm";
@@ -175,22 +176,20 @@ function groupedMappings(scan: DiscoveryScan, projects: Project[], categories: C
 
 // Caller owns post-commit publication. Reconciliation never enrolls projects,
 // persists observed missing states, changes authored metadata or writes files.
-export function reconcileSource(db: Database, source: Source, observedScan?: DiscoveryScan): { changed: boolean; scan: DiscoveryScan | null } {
+export function reconcileSource(db: Database, source: Source, observedScan?: DiscoveryScan, scope = ""): { changed: boolean; scan: DiscoveryScan | null } {
   if (source.discoveryMode !== "direct" && source.discoveryMode !== "grouped") return { changed: false, scan: null };
   const grouped = source.discoveryMode === "grouped";
   const exclusions: unknown = JSON.parse(source.excludedRelativePaths);
   if (!validExclusions(exclusions, "grouped") || !validArchive(source.archiveRelativePath) || !Number.isSafeInteger(source.discoveryRevision) ||
     source.discoveryRevision < 0 || source.appliedRootIdentity === null) throw new Error("Invalid configured source");
-  const appliedRoot: NativeIdentity = JSON.parse(source.appliedRootIdentity);
   const readReservations = () => readProjectReservations(db, source.id);
   const reservations = readReservations();
   const scanSource = () => reserveProjectPlacements((grouped ? scanGroupedSource : scanDirectSource)(source.canonicalRoot,
     source.archiveRelativePath, projectExclusions(exclusions, grouped ? "grouped" : "direct").effective), reservations);
   const scan = observedScan ? reserveProjectPlacements(observedScan, reservations) : scanSource();
   if (!scan.snapshot) return { changed: false, scan };
-  if (!reliableIdentity(appliedRoot) || !reliableIdentity(scan.snapshot.root.identity) || !sameIdentity(appliedRoot, scan.snapshot.root.identity)) {
-    return { changed: false, scan: { state: "root_identity_conflict", entries: [], snapshot: null } };
-  }
+  const identity = sourceIdentity(source, scan, scope);
+  if (identity.state !== "verified") return {changed:false,scan:{state:discoveryIdentityState(identity.state),entries:[],snapshot:null}};
   // Observe topology but leave source locators untouched until relocation resolution.
   if (hasUnfinishedProjectRelocation(db, source.id)) return { changed: false, scan };
   const readSource = () => db.select().from(schema.sources).where(eq(schema.sources.id, source.id)).get();
@@ -204,12 +203,12 @@ export function reconcileSource(db: Database, source: Source, observedScan?: Dis
     !row.modeInactive && (grouped ? row.relativePath.split("/").length !== 2 || !categories.some((category) => category.id === row.categoryId &&
       (row.associationState !== "active" || !category.modeInactive && category.associationState === "active" && row.relativePath.split("/")[0] === category.relativePath)) :
       row.categoryId !== null || !isChildName(row.relativePath)))) throw new Error("Invalid configured associations");
-  const mapping = grouped ? groupedMappings(scan, records, categories, exclusions, source.archiveRelativePath) : null;
-  const mappings = mapping?.projects ?? new Map([...directMappings(scan, records, exclusions, source.archiveRelativePath)]
+  const mapping = grouped ? groupedMappings(scan, continuityRecords(source, scan, records, scope), continuityRecords(source, scan, categories, scope), exclusions, source.archiveRelativePath) : null;
+  const mappings = mapping?.projects ?? new Map([...directMappings(scan, continuityRecords(source, scan, records, scope), exclusions, source.archiveRelativePath)]
     .map(([id, relativePath]) => [id, { relativePath, categoryId: null }]));
   const categoryMappings = mapping?.categories ?? new Map<string, string>();
   const insertedCategories: Category[] = (mapping?.needed ?? []).map((child) => ({ modeInactive: false, id: randomUUID(), sourceId: source.id,
-    relativePath: child.relativePath, nativeIdentity: JSON.stringify(child.identity), associationState: "active" }));
+    relativePath: child.relativePath, nativeIdentity: JSON.stringify(child.identity), durableEvidence: null, associationState: "active" }));
   for (const target of mappings.values()) if (target.categoryId === null && grouped) {
     target.categoryId = insertedCategories.find((row) => row.relativePath === target.relativePath.split("/")[0])!.id;
   }

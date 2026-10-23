@@ -90,7 +90,7 @@ export function createCategoryOptionsService(db: Database, committed: (sourceId:
         tx.update(schema.categories).set({ relativePath: row.requestedRelativePath }).where(eq(schema.categories.id, row.categoryId)).run();
         for (const member of b.members) tx.update(schema.projects).set({ relativePath: row.requestedRelativePath + member.relativePath.slice(row.originalRelativePath!.length), modeInactive: member.modeInactive }).where(eq(schema.projects.id, member.id)).run();
       } else {
-        tx.insert(schema.categories).values({ id: row.categoryId, sourceId: b.source.id, relativePath: row.requestedRelativePath, nativeIdentity: row.nativeIdentity!, associationState: "active", modeInactive: false }).run();
+        tx.insert(schema.categories).values({ id: row.categoryId, sourceId: b.source.id, relativePath: row.requestedRelativePath, nativeIdentity: row.nativeIdentity!, associationState: "active", durableEvidence: null, modeInactive: false }).run();
         for (const project of b.additions) tx.insert(schema.projects).values({ ...project, categoryId: row.categoryId }).run();
       }
       tx.update(schema.sources).set({ discoveryRevision: revision }).where(eq(schema.sources.id, b.source.id)).run();
@@ -133,7 +133,7 @@ export function createCategoryOptionsService(db: Database, committed: (sourceId:
         for (const candidate of candidates) {
           const child = observed.snapshot!.children.find(c => c.kind === "directory" && c.relativePath === candidate.relativePath);
           if (!child || child.kind !== "directory" || !reliableIdentity(child.identity)) return failure();
-          additions.push({ id: randomUUID(), sourceId: source.id, relativePath: candidate.relativePath, nativeIdentity: JSON.stringify(child.identity), categoryId: null, associationState: "active", modeInactive: false });
+          additions.push({ id: randomUUID(), sourceId: source.id, relativePath: candidate.relativePath, nativeIdentity: JSON.stringify(child.identity), categoryId: null, associationState: "active", durableEvidence: null, modeInactive: false });
         }
         const proposed = [{ relativePath: input.name, nativeIdentity: associationIdentity }, ...additions];
         if (proposed.some(c => records.some(r => filesystemAlias(r.relativePath) === filesystemAlias(c.relativePath) || same(JSON.parse(r.nativeIdentity), JSON.parse(c.nativeIdentity))))) return failure();

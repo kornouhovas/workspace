@@ -125,7 +125,7 @@ test('pre-grouping upgrade preserves populated views, filters, selection and sca
     const filter={search:'Alpha',rules:[]};f.command('setViewFilter',{viewId,config:filter});
     // Remove only the newest schema boundary; reopening reapplies its real migration.
     const db=new Database(f.path);
-    try{db.exec('DROP TRIGGER initialize_workspace_session; DROP TRIGGER remove_view_session_preview; DROP TABLE workspace_sessions; ALTER TABLE views DROP COLUMN board_config; ALTER TABLE views DROP COLUMN table_config; ALTER TABLE views DROP COLUMN grouping_config; DELETE FROM __drizzle_migrations WHERE created_at>=1791504020000');}finally{db.close();}
+    try{db.exec('ALTER TABLE sources DROP COLUMN durable_evidence; ALTER TABLE sources DROP COLUMN evidence_generation; ALTER TABLE categories DROP COLUMN durable_evidence; ALTER TABLE projects DROP COLUMN durable_evidence; DROP TRIGGER initialize_workspace_session; DROP TRIGGER remove_view_session_preview; DROP TABLE workspace_sessions; ALTER TABLE views DROP COLUMN board_config; ALTER TABLE views DROP COLUMN table_config; ALTER TABLE views DROP COLUMN grouping_config; DELETE FROM __drizzle_migrations WHERE created_at>=1791504020000');}finally{db.close();}
     f.reopen();
     assert.deepEqual(f.query('listViews'),views);
     assert.deepEqual(f.query('listTextProperties'),properties);

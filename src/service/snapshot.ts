@@ -5,7 +5,7 @@ const digest = (image: Buffer) => createHash("sha256").update(image).digest("hex
 
 export function encodeSnapshot(sqlite: Database.Database): string {
   const image = sqlite.serialize();
-  const content = JSON.stringify({ format: "workspace-application-data", version: 1, checksum: digest(image), database: image.toString("base64") });
+  const content = JSON.stringify({ format: "workspace-application-data", version: 1, localAuthority: "installation anchor excluded; restore never replaces local authority", checksum: digest(image), database: image.toString("base64") });
   if (Buffer.byteLength(content) > maxExportBytes) throw new Error("Snapshot exceeds size limit");
   return content;
 }
@@ -14,7 +14,8 @@ export function encodeSnapshot(sqlite: Database.Database): string {
 export function openSnapshot(content: string): Database.Database {
   if (Buffer.byteLength(content) > maxExportBytes) throw new Error("Snapshot exceeds size limit");
   const envelope = JSON.parse(content);
-  if (!envelope || Array.isArray(envelope) || Object.keys(envelope).sort().join() !== "checksum,database,format,version" ||
+  if (!envelope || Array.isArray(envelope) || !["checksum,database,format,version", "checksum,database,format,localAuthority,version"].includes(Object.keys(envelope).sort().join()) ||
+    (Object.hasOwn(envelope, "localAuthority") && envelope.localAuthority !== "installation anchor excluded; restore never replaces local authority") ||
     envelope.format !== "workspace-application-data" || envelope.version !== 1 || typeof envelope.database !== "string") throw new Error("Invalid format");
   const image = Buffer.from(envelope.database, "base64");
   if (image.toString("base64") !== envelope.database || digest(image) !== envelope.checksum) throw new Error("Invalid checksum");
