@@ -312,3 +312,28 @@ inspected success by the complement excluding Applied and category-move.
 The local complement already reaches the next previously unreached failure,
 creation-collision-english, after72 captures; its fixture readiness repair is next.
 No passed full suite, installed candidate or accepted product behavior is retired.
+
+
+## Creation and rename fixture renewal
+
+[Category focused39924395020](https://github.com/kornouhovas/workspace/actions/runs/39924395020)
+atffcb8cf0 passes150 captures and normal shutdown on each host. Downloaded all
+artifacts and inspected representative RU1024 recovery-dialog captures across
+hosts; unrelated archive error is absent. [Hosted receipt](issue-67-evidence/hosted-category-layouts.json).
+
+Creation's narrowed command reproduces the portal failure: readyfalse, input
+outside main/in dialog, untouched empty value. Body-based preparation restores
+all36 creation/reveal states/108 captures. Rename's narrowed command likewise
+fails readiness before portal-aware input/review/status lookup and observation.
+A separate archive health guard is red1 before current archive reads are supplied.
+The final rename command passes all96 states/288 captures, retaining original
+interactions/mutation counts, geometry and normal shutdown.
+[Local red/green receipts](issue-67-evidence/operation-fixture-local.json).
+Targeted creation UI94/94 and rename UI203/203 pass, routing68/68/typecheck/lint
+pass. Renderer rebuild again produces the same10 production files byte-for-byte.
+
+Use integrated-operation-layout for hosted creation/rename renewal with separate
+reports. Only after inspected Applied, category-move and creation/rename successes,
+integrated-runtime selects the116 remaining states and all packaged journeys.
+Ordinary integrated-desktop still selects all302 states. No required state is
+retired and no failed receipt is reclassified as passing.

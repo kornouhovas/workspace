@@ -694,7 +694,7 @@ function CreationPreview({ language, state }: { language: Language; state: Creat
     let opened = false, submitted = false, reloaded = false;
     let submitTimer: ReturnType<typeof setTimeout> | undefined;
     const observer = new MutationObserver(() => {
-      const target = root.current; if (!target) return;
+      const target = root.current?.ownerDocument.body; if (!target) return;
       if (["unconfigured", "no-category", "unavailable"].includes(state)) { setPrepared(true); observer.disconnect(); return; }
       if (state.startsWith("reveal-")) {
         if (!submitted) { submitted = true; target.querySelector<HTMLButtonElement>(".project-reveal button")?.click(); }
@@ -731,7 +731,8 @@ function CreationPreview({ language, state }: { language: Language; state: Creat
       }
       if (!state.startsWith("success-list") && target.querySelector(".project-creation .bb-status")) { setPrepared(true); observer.disconnect(); }
     });
-    observer.observe(root.current!, { childList: true, subtree: true, attributes: true });
+    // Creation forms and their feedback are rendered through a body portal.
+    observer.observe(root.current!.ownerDocument.body, { childList: true, subtree: true, attributes: true });
     // Ensure the same preparation also runs if the first effect's list is already settled.
     root.current?.setAttribute("data-preparing", "true");
     return () => { observer.disconnect(); clearTimeout(submitTimer); };
@@ -829,6 +830,10 @@ function RenamePreview({ language, mode, state }: { language: Language; mode: Di
       override async getViewFilter(workspaceId: string, viewId: string) { return { ok: true as const, value: { workspaceId, viewId, config: { search: "", rules: [] } } }; }
       override async queryView(workspaceId: string, viewId: string, archived: boolean) { return { ok: true as const, value: { workspaceId, viewId, archived, projectIds: [...projects.projects, ...projects.retainedProjects].map(p => p.projectId) } }; }
       override async listProjects() { return { ok: true as const, value: projects }; }
+      override async listArchivedProjects(workspaceId: string) { return { ok: true as const, value: {
+        workspaceId, sourceId: projects.sourceId, revision: projects.revision, relativePath: null, projects: [] } }; }
+      override async listProjectArchiveOperations(workspaceId: string) { return { ok: true as const, value: {
+        workspaceId, sourceId: projects.sourceId, operations: [] } }; }
       override async listProjectCreations() { return { ok: true as const, value: { ...textStoryIds, operations: [] } }; }
       override async listTextProperties() { return { ok: true as const, value: { ...textStoryIds, revision: 1,
         definitions: [{ propertyId: textStoryIds.propertyId, sourceId: textStoryIds.sourceId, name: longPropertyName, propertyType: "text" as const }],
@@ -892,8 +897,8 @@ function RenamePreview({ language, mode, state }: { language: Language; mode: Di
           const button = target.querySelector<HTMLButtonElement>(".rename-operations div > button");
           if (button && !button.disabled) { opened = true; button.click(); } return;
         }
-        if (state === "kept-original" && submitted && [...target.querySelectorAll(".project-rename .bb-status")].some((node) => node.textContent === translate(language, "renameKeptOriginal"))) { done(); return; }
-        const review = target.querySelector(".rename-review"); if (!review) return;
+        if (state === "kept-original" && submitted && [...target.ownerDocument.querySelectorAll(".project-rename .bb-status")].some((node) => node.textContent === translate(language, "renameKeptOriginal"))) { done(); return; }
+        const review = target.ownerDocument.querySelector(".rename-review"); if (!review) return;
         if (state === "review-loading" && review.getAttribute("aria-busy") === "true" || state === "review-error" && review.querySelector("[role=alert]")) { done(); return; }
         if (state === "review-stale") {
           if (!observed && review.querySelector(".rename-placements")) { observed = true; fixture.observe(); }
@@ -907,13 +912,13 @@ function RenamePreview({ language, mode, state }: { language: Language; mode: Di
             [...review.querySelectorAll<HTMLButtonElement>("button")].find((button) => button.textContent === translate(language, action))?.click();
           }
           const key = state === "kept-original" ? "renameKeptOriginal" : state === "recovery-pending" ? "renamePending" : "renameUncertain";
-          if ([...target.querySelectorAll(".project-rename .bb-status")].some((node) => node.textContent === translate(language, key))) done();
+          if ([...target.ownerDocument.querySelectorAll(".project-rename .bb-status")].some((node) => node.textContent === translate(language, key))) done();
           return;
         }
         if (review.querySelector(".rename-placements")) done(); return;
       }
       if (!opened) { opened = openStoryProjectAction(target, translate(language, "renameProject")); return; }
-      const input = target.querySelector<HTMLInputElement>("#project-rename-name");
+      const input = target.ownerDocument.querySelector<HTMLInputElement>(".project-operation-dialog.project-rename #project-rename-name");
       if (input && !authored) {
         authored = true;
         if (state !== "unchanged") {
@@ -926,7 +931,7 @@ function RenamePreview({ language, mode, state }: { language: Language; mode: Di
       }
       const keys = { pending: "renamePending", saved: "renameSaved", unchanged: "renameUnchanged", invalid: "renameInvalid", collision: "renameCollision", stale: "renameStale", unavailable: "renameUnavailable", unknown: "renameUncertain" } as const;
       const key = keys[state as keyof typeof keys];
-      if (submitted && key && [...target.querySelectorAll(".project-rename .bb-status")].some((node) => node.textContent === translate(language, key))) done();
+      if (submitted && key && [...target.ownerDocument.querySelectorAll(".project-rename .bb-status")].some((node) => node.textContent === translate(language, key))) done();
     };
     // Wait for committed renders and their passive effects before interacting.
     // Initial discovery/list invalidation must settle before a recovery review.
@@ -936,7 +941,8 @@ function RenamePreview({ language, mode, state }: { language: Language; mode: Di
       frame = requestAnimationFrame(() => { frame = requestAnimationFrame(() => { frame = null; prepare(); }); });
     };
     const observer = new MutationObserver(schedule);
-    observer.observe(root.current!, { childList: true, subtree: true, attributes: true }); schedule();
+    // Rename forms and recovery reviews are portaled outside main.
+    observer.observe(root.current!.ownerDocument.body, { childList: true, subtree: true, attributes: true }); schedule();
     return () => { observer.disconnect(); if (frame !== null) cancelAnimationFrame(frame); clearTimeout(submitTimer); };
   }, [fixture, language, state]);
   return <main ref={root} className="app-shell" lang={language} data-rename-fixture={state} data-rename-mode={mode} data-fixture-ready={prepared}

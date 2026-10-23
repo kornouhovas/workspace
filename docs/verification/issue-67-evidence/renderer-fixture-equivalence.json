@@ -33,5 +33,11 @@
     "fileCount": 10,
     "head": "52a6177756256aab41255c3291a6924f7c911ef1",
     "workingTree": "Adds current archive mock reads; build:renderer outputs still match original production build byte-for-byte."
+  },
+  "operationFixtureRenewal": {
+    "equal": true,
+    "fileCount": 10,
+    "head": "ffcb8cf0",
+    "workingTree": "Portal-aware category/creation/rename fixture preparation; shared helper imported only by stories/tests. Production renderer remains byte-identical."
   }
 }
