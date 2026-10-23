@@ -1,0 +1,60 @@
+{
+  "mac-install-a222": {
+    "version": "0.1.0",
+    "platform": "darwin",
+    "arch": "arm64",
+    "kernel": "23.6.0",
+    "sha": "a222d2b561c324e32bf1708fbea5e62624e52d64",
+    "run": "39942643346",
+    "attempt": "1",
+    "stages": [
+      "verified DMG installed outside build directory",
+      "installed bundled backend create/quit, EN/RU keyboard and isolation",
+      "same installation reopens saved identities, views and language",
+      "app replacement preserves application data"
+    ],
+    "dmgSha256": "1dd7900ccc63ae3254d01603c1cc7b23bced65b73b571db37ea3eb57315b2a84",
+    "macos": "14.8.9",
+    "status": "passed",
+    "cleanup": {
+      "status": "passed",
+      "asserted": true,
+      "processesStopped": true,
+      "maxRetries": 5,
+      "retryDelay": 100
+    }
+  },
+  "win-install-a222": {
+    "version": "0.1.0",
+    "platform": "win32",
+    "arch": "x64",
+    "kernel": "10.0.26100",
+    "sha": "a222d2b561c324e32bf1708fbea5e62624e52d64",
+    "run": "39942908192",
+    "attempt": "1",
+    "stages": [
+      "offline NSIS installed in Unicode/space path; x64, version, unsigned status and notices verified",
+      "bundled backend/SQLite create, keyboard EN/RU, isolation and normal quit",
+      "same installation reopens persisted workspace/source/view identities and language",
+      "same-candidate manual reinstall preserves external application data",
+      "normal APPDATA location creates/reopens independently of Unicode fixture data and development"
+    ],
+    "installerSha256": "2a2d974f38aa75aa626e5a6b25c1b95f5c3eb63044f04975ef716d60613d2e99",
+    "windows": "Microsoft Windows Server 2025 Datacenter",
+    "executable": {
+      "signature": "NotSigned",
+      "name": "Workspace",
+      "file": "0.1.0",
+      "product": "0.1.0.0"
+    },
+    "status": "passed",
+    "uninstall": "passed",
+    "cleanup": {
+      "status": "passed",
+      "asserted": true,
+      "processesStopped": true,
+      "maxRetries": 5,
+      "retryDelay": 100
+    }
+  }
+}

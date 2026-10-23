@@ -168,3 +168,21 @@ test('filesystem stress renewal omits inspected workspace and ordinary assignmen
   assert.equal(selected.some(step=>/smoke:workspaces|smoke:shell|smoke-group-assignment.mjs 2>&1|test:all|smoke-discovery-layouts/.test(step.run)),false);
   context.success=()=>false;assert.equal(enabled(original),false);
 });
+
+test('project entry repair renews the changed original packaged consumer on all hosts',async()=>{
+  const workflow=load(await readFile('.github/workflows/desktop-ci.yml','utf8'));
+  assert.ok(workflow.on.workflow_dispatch.inputs.checks.options.includes('integrated-project-entry-repair'));
+  const context={github:{event_name:'workflow_dispatch'},inputs:{checks:'integrated-project-entry-repair'}};
+  const enabled=job=>runInNewContext(job.if.slice(3,-2),context);
+  const job=workflow.jobs['integrated-project-entry-repair'];assert.equal(enabled(job),true);assert.equal(enabled(workflow.jobs.common),false);
+  assert.deepEqual(job.strategy.matrix.os,['macos-latest','windows-latest','windows-2022']);
+  const commands=job.steps.filter(step=>step.run).map(step=>step.run);
+  assert.ok(commands.includes('node --test tests/project-context-driver.test.mjs'));
+  assert.ok(commands.includes('npm run package:built'));assert.ok(commands.includes('npm run check:artifact -- release'));
+  const original=job.steps.find(step=>step.run?.includes('node scripts/smoke-contextual-projects.mjs release'));
+  assert.ok(original.run.includes('set -o pipefail'));assert.equal(original.if,undefined);
+  assert.equal(original.env.WORKSPACE_ARCHIVE_ENTRY_TRACE,'0');assert.equal(original.env.WORKSPACE_REVEAL_TRACE,'0');
+  assert.equal(commands.some(command=>/test:all|smoke-discovery-layouts|integrated-desktop.mjs/.test(command)),false);
+  const upload=job.steps.find(step=>step.uses?.startsWith('actions/upload-artifact'));
+  assert.equal(upload.if,'always()');assert.equal(upload.with['if-no-files-found'],'error');
+});

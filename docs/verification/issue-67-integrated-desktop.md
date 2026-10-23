@@ -4,6 +4,51 @@ Status: **in progress; not accepted**. Issue and live checkpoints:
 https://github.com/kornouhovas/workspace/issues/67.
 [Scenario/retention map](../plans/issue-67-integrated-desktop.md).
 
+## Latest consolidated receipts (production A222)
+
+The [hosted ledger](issue-67-evidence/hosted-ledger-a222-through-8f32.json)
+retains actual reports and SHAs through harness8f32; source/build/dependency/native/
+migration inputs remain identical to productionA222. These are combined receipts,
+not a complete passing run at8f32.
+
+- Broad39944358198: complete regression inventory and302Ladle states/906captures
+  pass on all three hosts. Mac3447pass/3474total27skip; each Windows3544pass/
+  3557total13skip across its three serial batches. Windows latest passes all31
+  packaged journeys and strict44/44 with tracing off. Direct/grouped Table drag
+  274.1/237.4ms, preview172.2/186.2ms, complete tree671.5/2997.3ms; peak conservative
+  process-memory sample900415488bytes. Approved preview endpoints remain300/5000ms
+  from one opening event; all other interaction limits remain300ms.
+- [Archive renewal39942111999](issue-67-evidence/archive-renewal-a222.json): original
+  dev/release archive/Views and24contextual journeys/192captures per mode pass on
+  all three hosts. No postA222 product change invalidates these original receipts.
+- [Actual installers](issue-67-evidence/installers-a222.json): DMG39942643346 on
+  macOS14.8.9arm64 and NSIS39942908192 on WindowsServer2025 pass external install,
+  persisted identity/reopen/replacement, bundled backend/isolation/notices/version
+  and cleanup. Windows Server does not establish Windows11 acceptance.
+- Focused39960693209 at9e3: workspace and ordinary assignment pass all three hosts.
+  FS-only39963985819 at8f32 now passes all three original release consumers,
+  including360px stress,96supported-size appearance captures, collision/identity/
+  metadata checks, equal controlled bounds, normal quit/backend exit/owned cleanup.
+- Partial tails39965141240 at8f32: Mac passes sources, Board, navigation, keyboard,
+  files, scalars, selections, properties and projects, then fails categories before
+  the move control exists in Board preview. Windows2022 fails its first projects
+  rename entry; later rows are unreached. Both failed journeys retain normal quit,
+  backend exit and cleanup. Passing prefixes remain at their actual SHA.
+
+Current Winlatest sourceA222 captures were separately inspected in88 selected
+whole-window EN-light/RU-dark variants across principal and late surfaces. Table,
+preview/tree, expanded/tree and settings were compared with accepted#69 captures:
+composition and foundation remain; Add property/edit controls are intentional#58
+additions. These sampled comparisons complement the complete capture inventory;
+they do not supply missing platform or behavioral acceptance.
+
+Local Darwin27 fresh full candidate remains3446pass/1fail/27skip3474total:
+original10000ms native Electron shutdown. Thirty narrow controls and74sampled
+lifecycle cases pass; one explicitly diagnostic full-context run reproduces18
+failures/20samples. Unsymbolicated native stacks do not establish a unique cause.
+No deadline relaxation, full-suite retry-to-green or acceptance waiver is applied.
+Windows11/System-theme and remaining native/package/strict gates remain open.
+
 ## Candidate and execution
 
 Base `5799532c4966e026b96b6b18718f5a8e8171bf6b` includes accepted #66.
@@ -654,3 +699,23 @@ consumer and its native adapter/routing checks on all three hosts. It retains
 package/resource prerequisites and skips already inspected workspace/ordinary
 passes. After its artifacts pass, missing tails use23Mac/15Windows2022 rows,
 excluding the current source's inspected archive/Views receipts from39942111999.
+
+
+## Contextual project keyboard entry preparation
+
+Windows2022 tail39965141240 leaves Project actions focused on Rename without
+opening the rename dialog. A native control reproduces the missing enablement
+precondition: Enter on the initially disabled button is lost, while waiting for
+the current enabled control opens one dialog with exactly one activation. A
+permanently disabled control keeps the caller timeout and receives no activation.
+Only contextual-project rename entry uses this adapter; shared context tools and
+application behavior remain unchanged. Original collision, review, identity,
+metadata, Cancel and appearance assertions are retained.
+
+Native1/1 and routing73/73 pass after the red controls. The local original command
+reaches the dialog but then observes the existing source-changed review guard
+instead of its expected collision; it remains negative. The controlled pattern
+does not uniquely prove the historical hosted cause. [Raw receipt](issue-67-evidence/project-context-entry-control.json).
+Use integrated-project-entry-repair to renew this changed original release
+consumer on all three hosts before any missing-tail continuation. Mac categories
+requires independent diagnosis; its failed entry is not accepted by this repair.

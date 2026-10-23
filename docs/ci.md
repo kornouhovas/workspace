@@ -1737,3 +1737,12 @@ filesystem assignment on all three hosts. Workspace and ordinary-assignment
 receipts remain at9e3; they are not replayed. Only the filesystem appearance
 caller supplies the real sidebar preparation; original Views keeps its default
 viewport behavior. Inspect passing original reports before missing-tail dispatch.
+
+
+For run39965141240's Windows2022 contextual-project entry failure, select
+`checks: integrated-project-entry-repair`. It runs the disabled/enabled keyboard
+control and routing checks, package/resource prerequisites and only the original
+contextual-project release journey on all three hosts. Tracing remains disabled;
+the original command runs only after successful prerequisites. No full suite,
+Ladle or unrelated package journey is replayed. Inspect original reports before
+renewing missing tails; the independent Mac category-entry failure remains open.
