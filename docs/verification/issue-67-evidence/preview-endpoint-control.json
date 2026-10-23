@@ -1,0 +1,19 @@
+{
+  "ownerDecision": "Preview <=300ms to current usable properties and visible loading/ready tree; full tree <=5000ms from same event; all identity checks retained.",
+  "before": "Preview must become usable before file delivery (native control failed before presented endpoint)",
+  "targetedNative": {
+    "passed": 2,
+    "failed": 0,
+    "normalQuit": true,
+    "logSha256": "38249f21b108b845495587dc4ee6f6f310a911055c367747c155eada711d98ea"
+  },
+  "fullReadinessFile": {
+    "tests": 22,
+    "passed": 19,
+    "failed": 3,
+    "failureClass": "Unchanged activation/readonly-inspection/editor-preparation controls time out on local Mac27 normal quit after node-exit; forced process cleanup stopped. No unchanged retry.",
+    "logSha256": "efa1fda6315ba157ab24e4fb3ca205a3578bb475fb64c4d7e44eea51cd2648fe"
+  },
+  "focusedRoutes": 74,
+  "lint": "passed"
+}

@@ -433,3 +433,23 @@ negative is unchanged. A required owner question is pending about new preview
 budget: completed properties/visible tree loading versus the fully loaded tree.
 No endpoint or limit is changed while that definition is unresolved. Filter/group/
 edit300ms requirements remain unchanged. Continue independent archive diagnosis.
+
+
+## Owner-approved preview endpoints
+
+The owner confirms preview<=300ms to current usable properties and visible tree
+loading/ready presentation; the fully loaded tree must complete<=5,000ms from the
+same opening event, retaining all identity checks. The accepted spec records this.
+Only the new preview observation uses the presented endpoint. Existing fully ready
+observer defaults, expand/edit and filter/group/drag limits remain unchanged. The
+driver records two separate clocks from one event; it does not reset the start.
+
+Native control is red before the presented endpoint, green after: current ID/value
+and enabled visible field must precede preview; file delivery is explicitly held
+until afterwards and then checked by the original ready endpoint. Targeted old/new
+native controls2/2 pass normal quit, routes/probe74/74 and lint/docs pass. The full
+readiness file retains19pass/3old-control normal-quit failures on local Mac27, not a
+green22 result; no unchanged file retry. [Receipt](issue-67-evidence/preview-endpoint-control.json).
+The old provisional fully-loaded-preview300ms negatives remain historical; renewed
+strict evidence must satisfy the newly confirmed two endpoints. The direct filtered
+Table drag344.1ms negative remains under its unchanged300ms requirement.

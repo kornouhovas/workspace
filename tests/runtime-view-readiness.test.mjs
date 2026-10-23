@@ -40,6 +40,38 @@ test('project timing waits for asynchronously mounted fields and tree before com
   });
 });
 
+test('preview timing admits current properties and visible loading before the separate tree endpoint', async () => {
+  await withPage(async page => {
+    await page.setContent('<button id="open">Preview</button><main class="saved-view-content"></main>');
+    await page.evaluate(() => {
+      document.querySelector('#open').onclick = () => {
+        globalThis.__workspacePerformanceStarted = performance.now();
+        const area=document.createElement('section');area.className='project-area';
+        area.innerHTML='<div class="project-detail-fields" aria-busy="false"><div data-project-id="old"><button class="text-value-button" disabled>Old value</button></div></div><section class="project-files"><p role="status">Loading files…</p></section>';
+        document.body.append(area);
+        setTimeout(()=>area.querySelector('[data-project-id]').setAttribute('data-project-id','project'),60);
+        setTimeout(()=>{const value=area.querySelector('.text-value-button');value.textContent='Committed value';value.disabled=false;},120);
+        globalThis.completeProjectFiles=()=>{area.querySelector('.project-files').innerHTML='<button role="treeitem">preserved.txt</button>';};
+      };
+    });
+    await page.getByRole('button',{name:'Preview',exact:true}).press('Enter');
+    let timer;
+    try {
+      const preview=await Promise.race([waitForRuntimeProject(page,'project',false,'Committed value','presented'),
+        new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error('Preview must become usable before file delivery')),1500);})]);
+      const measured=await readRuntimeInteraction(page,preview);
+      assert.ok(measured.ms>=120,'Preview must contain current identity and values');
+      assert.equal(await page.getByRole('status').textContent(),'Loading files…');
+      assert.equal(await page.getByRole('button',{name:'Committed value',exact:true}).isEnabled(),true);
+      assert.equal(await page.getByRole('treeitem').count(),0);
+      await page.evaluate(()=>globalThis.completeProjectFiles());
+      const loaded=await waitForRuntimeProject(page,'project',false,'Committed value');
+      assert.ok((await readRuntimeInteraction(page,loaded)).ms>=measured.ms);
+      assert.equal(await page.getByRole('treeitem').textContent(),'preserved.txt');
+    } finally {clearTimeout(timer);}
+  });
+});
+
 async function withPage(run) {
   const profile = await mkdtemp(join(tmpdir(), "runtime-view-readiness-"));
   const app = await _electron.launch({ executablePath: createRequire(import.meta.url)("electron"),

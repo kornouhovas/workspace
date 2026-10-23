@@ -50,20 +50,25 @@ export async function readRuntimeInteraction(page, { observationStartedAt, first
 }
 
 // Expanded projects hide the view; verify their own fields, tree and selected tab.
-export async function waitForRuntimeProject(page, projectId, expanded, text) {
-  const handle = await page.waitForFunction(async ({ projectId, expanded, text }) => {
+export async function waitForRuntimeProject(page, projectId, expanded, text, fileState = 'ready') {
+  assert.ok(['ready','presented'].includes(fileState), 'Choose a project tree readiness endpoint');
+  const handle = await page.waitForFunction(async ({ projectId, expanded, text, fileState }) => {
     const observationStartedAt = performance.now();
     const deadline = observationStartedAt + 30000;
     const usable = () => {
       const area = document.querySelector('.project-area');
       const view = document.querySelector('.saved-view-content');
       const tab = document.querySelector(`[data-project-tab="${projectId}"][aria-selected="true"]`);
+      const files = area?.querySelector('.project-files');
+      const presented = fileState === 'presented' && files && [...files.querySelectorAll('[role="status"], [role="treeitem"]')].some(node =>
+        node.checkVisibility() && (node.getAttribute('role') === 'treeitem' || ['Loading files…','Загрузка файлов…'].includes(node.textContent.trim())));
       return !!area && !!view && view.hidden === expanded && (!expanded || !!tab) &&
         area.querySelector('.project-detail-fields[aria-busy="false"]') &&
         area.querySelector(`.project-detail-fields [data-project-id="${projectId}"]`) &&
-        !area.querySelector('[aria-busy="true"]') &&
-        area.querySelector('.project-files [role="treeitem"]') &&
-        (text === null || [...area.querySelectorAll('.text-value-button')].some(element => element.textContent.trim() === text));
+        (fileState === 'presented' ? !area.querySelector('.project-detail-fields [aria-busy="true"]') && presented :
+          !area.querySelector('[aria-busy="true"]') && area.querySelector('.project-files [role="treeitem"]')) &&
+        (text === null || [...area.querySelectorAll('.text-value-button')].some(element => element.textContent.trim() === text &&
+          (fileState !== 'presented' || !element.disabled && element.checkVisibility())));
     };
     // An async predicate is a truthy Promise before it resolves. Poll internally
     // so Playwright never accepts a Promise that later resolves to false.
@@ -77,7 +82,7 @@ export async function waitForRuntimeProject(page, projectId, expanded, text) {
       if (!usable()) continue;
       return { observationStartedAt, firstPaintedAt, paintedAt: performance.now() };
     }
-  }, { projectId, expanded, text });
+  }, { projectId, expanded, text, fileState });
   try { return await handle.jsonValue(); }
   finally { await handle.dispose(); }
 }

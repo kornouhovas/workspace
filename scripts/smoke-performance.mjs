@@ -327,8 +327,12 @@ try {
       await preview.scrollIntoViewIfNeeded();
       const previewProfiler = profileFilters ? await startInteractionProfile() : undefined;
       await startUiTiming(preview, "keydown"); await preview.press("Enter");
-      lastReadyTiming = await waitForRuntimeProject(page, p.projectId, false, "Accepted board");
+      lastReadyTiming = await waitForRuntimeProject(page, p.projectId, false, "Accepted board", 'presented');
       await recordUi(source.mode, "project preview");
+      // Both clocks start at the same opening event. Files retain every current
+      // identity check and must finish under the separately approved 5s budget.
+      lastReadyTiming = await waitForRuntimeProject(page, p.projectId, false, "Accepted board");
+      await recordUi(source.mode, "project tree load", report.limits.scan);
       if (previewProfiler) await stopInteractionProfile(previewProfiler, `${source.mode}-project-preview`);
       const expand = page.getByRole("button", { name: "Expand project", exact: true });
       await startUiTiming(expand, "keydown"); await expand.press("Enter");
