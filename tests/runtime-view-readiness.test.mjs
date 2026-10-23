@@ -7,6 +7,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { _electron } from "playwright-core";
+import { build } from "esbuild";
 import { closeElectron } from "../scripts/runtime-lifecycle.mjs";
 import { usableRuntimeViewProjection } from "../scripts/runtime-view-readiness.mjs";
 import { activateRuntimeView, setRuntimeViewLanguage } from "../scripts/runtime-view-controls.mjs";
@@ -101,6 +102,67 @@ test('archive editor preparation waits for the focused committed control without
     assert.equal(await page.evaluate(()=>globalThis.editorActivations),1);
   });
 });
+
+test('scalar draft recovers keyboard focus after temporary source unavailability without stealing another control', async () => {
+  const bundle = await scalarFocusFixture();
+  await withPage(async page => {
+    await page.setContent('<div id="root"></div>');
+    await page.addScriptTag({content:bundle.outputFiles[0].text});
+    const editor=await openArchiveTextEditor(page,'Edit Text value: Atlas / Notes','Retained draft');
+    await page.evaluate(()=>globalThis.setEditorDisabled(true));
+    await page.waitForFunction(()=>document.querySelector('textarea')?.disabled && document.activeElement===document.body);
+    await page.evaluate(()=>globalThis.setEditorDisabled(false));
+    await page.waitForFunction(()=>!document.querySelector('textarea')?.disabled && document.activeElement===document.querySelector('textarea'),{},{timeout:1500});
+    await page.keyboard.type(' continued');
+    assert.equal(await editor.inputValue(),'Retained draft continued');
+    assert.deepEqual(await page.evaluate(()=>globalThis.savedValues),[]);
+    await page.evaluate(()=>globalThis.setEditorDisabled(true));
+    await page.getByRole('button',{name:'Independent action',exact:true}).click();
+    await page.evaluate(()=>globalThis.setEditorDisabled(false));
+    await editor.waitFor({state:'visible'});
+    await page.waitForFunction(()=>!document.querySelector('textarea')?.disabled);
+    assert.equal(await page.getByRole('button',{name:'Independent action',exact:true}).evaluate(node=>node===document.activeElement),true);
+    await page.getByRole('button',{name:'Save value',exact:true}).click();
+    await page.waitForFunction(()=>globalThis.savedValues.length===1);
+    assert.deepEqual(await page.evaluate(()=>globalThis.savedValues),['Retained draft continued']);
+  });
+});
+
+test('source refresh returns focus to the previously focused scalar among retained invalid drafts', async () => {
+  const bundle=await scalarFocusFixture();
+  await withPage(async page=>{
+    await page.setContent('<div id="root"></div>');await page.addScriptTag({content:bundle.outputFiles[0].text});
+    await page.getByRole('button',{name:'Edit Number value: Atlas / First',exact:true}).click();
+    const first=page.getByRole('textbox',{name:'Edit Number value: Atlas / First',exact:true});
+    await first.fill('1/0');await first.press('Enter');
+    await page.waitForFunction(()=>document.querySelector('input')?.getAttribute('aria-invalid')==='true');
+    await page.getByRole('button',{name:'Edit Number value: Atlas / Second',exact:true}).click();
+    const second=page.getByRole('textbox',{name:'Edit Number value: Atlas / Second',exact:true});
+    await second.fill('42');
+    await page.evaluate(()=>globalThis.setEditorDisabled(true));
+    await page.waitForFunction(()=>[...document.querySelectorAll('input')].every(node=>node.disabled)&&document.activeElement===document.body);
+    await page.evaluate(()=>globalThis.setEditorDisabled(false));
+    await page.waitForFunction(()=>!document.querySelectorAll('input')[1]?.disabled);
+    await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+    assert.equal(await second.evaluate(node=>node===document.activeElement),true,'Restore the editor that owned focus, not the first retained draft');
+    assert.equal(await first.inputValue(),'1/0');assert.equal(await second.inputValue(),'42');
+  });
+});
+
+async function scalarFocusFixture() {
+  return build({bundle:true,write:false,format:'iife',platform:'browser',jsx:'automatic',
+    stdin:{resolveDir:process.cwd(),loader:'tsx',contents:`
+      import React,{useState} from 'react';
+      import {createRoot} from 'react-dom/client';
+      import {TextPropertyCell} from './src/renderer/components/TextPropertyCell.tsx';
+      globalThis.savedValues=[];
+      function Example(){const [disabled,setDisabled]=useState(false);globalThis.setEditorDisabled=setDisabled;
+        return <><TextPropertyCell workspaceId="w" sourceId="s" projectId="p" propertyId="f" projectName="Atlas" propertyName="Notes" value="Previous" revision={0} minimumRevision={{current:0}} language="en" disabled={disabled}
+          onSave={async value=>{globalThis.savedValues.push(value);return {ok:true,value:{projectId:'p',propertyId:'f',snapshot:{workspaceId:'w',sourceId:'s',revision:1}}};}}/>{['First','Second'].map(name=><TextPropertyCell key={name} workspaceId="w" sourceId="s" projectId="p" propertyId={name} propertyType="number" projectName="Atlas" propertyName={name} value={null} revision={0} minimumRevision={{current:0}} language="en" disabled={disabled}
+          onSave={async value=>name==='First'?{ok:false,error:{code:'invalid_input',message:'Invalid number'}}:{ok:true,value:{projectId:'p',propertyId:name,snapshot:{workspaceId:'w',sourceId:'s',revision:1}}}}/>)}<button>Independent action</button></>;}
+      createRoot(document.getElementById('root')).render(<Example/>);
+    `}});
+}
 
 async function withPage(run) {
   const profile = await mkdtemp(join(tmpdir(), "runtime-view-readiness-"));

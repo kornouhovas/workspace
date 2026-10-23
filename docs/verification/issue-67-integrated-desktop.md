@@ -491,3 +491,46 @@ refinement and is identified separately. [Source and check receipt](issue-67-evi
 Next renew ordinary uninstrumented dev/release archive on all three hosts, then
 renew broad integration and installer evidence. Windows11 remains unavailable;
 no acceptance, integration or closure is claimed.
+
+
+## Candidate085 ordinary renewal and installation
+
+Ordinary archive39938129849 at08504f86 passes Windows latest development and
+release24 journeys/192 captures each, plus original archive and Views consumers.
+Mac development and Windows2022 development fail at direct/EN/Table/expanded
+editor readiness: one textarea remains but focus is BODY. The existing15s
+deadline rejects this state; normal quit, backend exit and owned cleanup pass.
+Their release/tail commands are unreached, not passing. [Raw reports and artifacts](issue-67-evidence/archive-renewal-085.json).
+The local traced full24/192 pass does not override these hosted negatives.
+Diagnostic39939563035 observes this new focus boundary without changing the
+candidate or supplying acceptance. Broad acceptance remains behind this gate.
+
+Actual installation renewal passes on the same08504f86 candidate: macOS14.8.9
+arm64 DMG39938129249/artifact12495300240 verifies external installation,
+EN/RU keyboard/isolation, persisted identities and replacement preserving data.
+[DMG receipt](issue-67-evidence/macos-install-renewal-085.json). NSIS39938351550/
+artifact12494728592 verifies Unicode/space installation, notices/version, bundled
+SQLite/backend, keyboard/isolation, persisted reopen/reinstall, independent normal
+APPDATA, normal quit, uninstall and cleanup. [NSIS receipt](issue-67-evidence/windows-install-renewal-085.json).
+The NSIS host is WindowsServer2025, not Windows11. Neither installer result accepts
+the still-open archive, strict scale, broad integration or real Windows11 gates.
+
+
+## Disabled scalar focus repair
+
+Diagnostic39939563035 at08504f86 passes Windows2022 release; five other jobs
+fail. Windows development/release traces show textarea focus followed22–39ms
+later by disabling and focusout to BODY. The scalar effect did not react to
+reenabling. A real React TextPropertyCell in Electron reproduces this loss before
+the repair; reenabling now restores the draft's own focus when BODY still owns
+focus. Ordinary opening/pending behavior is retained. A second native control
+goes red for two retained invalid drafts and green with actual editor ownership;
+an independently chosen control keeps focus. No write occurs before Save.
+
+Both native controls pass, affected UI/routing141/141, typecheck/lint and a fresh
+build pass. The original development archive24 journeys/192 captures passes with
+normal quit/backend exit/cleanup. Both review axes report0 remaining findings.
+The normal three-host candidate still needs renewal. Mac diagnostic failures
+instead show keydown without click and no textarea; that activation boundary
+remains unresolved, and this focus repair does not claim to fix it. [Source,
+trace and check receipt](issue-67-evidence/scalar-disabled-focus-repair.json).

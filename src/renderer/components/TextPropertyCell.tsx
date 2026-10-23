@@ -76,6 +76,8 @@ function EditingTextPropertyCell(props: Props & { restoreFocus: {current:boolean
   const currentDraft = useRef(draft); currentDraft.current = draft;
   const [calendar, setCalendar] = useState(false);
   const lifetime = useRef(0);
+  const previouslyDisabled = useRef(disabled);
+  const editorOwnedFocus = useRef(false);
   const editing = draft !== null;
   useLayoutEffect(() => { onState(current => ({ ...current, editing, pending })); }, [editing, pending, onState]);
   useEffect(() => { closed.current = false; failed.current = false; restoreFocus.current = true; originalValue.current = value; setDraft((date ? value : displayValue) ?? ""); setMessage(null); }, [openToken]);
@@ -85,8 +87,14 @@ function EditingTextPropertyCell(props: Props & { restoreFocus: {current:boolean
     }
   }, [revision]);
   useEffect(() => {
-    if (editing && !pending && restoreFocus.current) editor.current?.focus();
-  }, [editing, pending]);
+    // A source refresh can disable the focused editor and leave focus on BODY.
+    // Resume that draft when available, without overriding another chosen control.
+    const resumed = previouslyDisabled.current && !disabled;
+    previouslyDisabled.current = disabled;
+    const resumeOwnFocus = editorOwnedFocus.current && document.activeElement === document.body;
+    if (resumed) editorOwnedFocus.current = false;
+    if (editing && !pending && !disabled && restoreFocus.current && (!resumed || resumeOwnFocus)) editor.current?.focus();
+  }, [editing, pending, disabled]);
   useEffect(() => () => { lifetime.current++; }, []);
   const cancel = () => {
     if (inFlight.current) return;
@@ -130,7 +138,10 @@ function EditingTextPropertyCell(props: Props & { restoreFocus: {current:boolean
     return guard?.register({ commit: () => latestCommit.current(), focus: () => { restoreFocus.current = true; editor.current?.focus(); } });
   }, [guard, editing]);
   return <>
-    {editing && <div className="text-value-editor" onBlur={event => {
+    {editing && <div className="text-value-editor" onFocus={event => {
+      if (event.target === editor.current) editorOwnedFocus.current = true;
+    }} onBlur={event => {
+      if (event.target === editor.current && !editor.current?.disabled) editorOwnedFocus.current = false;
       if (!event.currentTarget.contains(event.relatedTarget as Node | null)) void commit();
     }} onKeyDown={(event) => {
       if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); if (calendar) setCalendar(false); else cancel(); }
