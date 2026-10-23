@@ -1094,7 +1094,19 @@ test('performance readiness repair retains the original strict command after reg
   assert.equal(workflow.on.workflow_dispatch.inputs.diagnostic_only.default, false);
   assert.ok(workflow.concurrency.group.includes("inputs.diagnostic_only && format('-diagnostic-{0}', inputs.platform)"));
   const diagnosticGuard=job.steps.find(step=>step.name==='Require a selected diagnostic profile');
-  assert.equal(diagnosticGuard.if,'${{ inputs.diagnostic_only || inputs.profile_backend || inputs.profile_unthrottled }}');
+  for (const [selected, expected] of [[null,false],['diagnostic_only',true],['profile_backend',true],['profile_unthrottled',true],['profile_projects',true]]) {
+    const inputs={diagnostic_only:false,profile_backend:false,profile_unthrottled:false,profile_projects:false};
+    if(selected)inputs[selected]=true;
+    assert.equal(runInNewContext(diagnosticGuard.if.slice(3,-2),{inputs}),expected);
+  }
+  assert.equal(workflow.on.workflow_dispatch.inputs.profile_projects.default,false);
+  assert.equal(diagnosticGuard.env.PROFILE_PROJECTS,'${{ inputs.profile_projects }}');
+  assert.equal(diagnosticGuard.env.DIAGNOSTIC_ONLY,'${{ inputs.diagnostic_only }}');
+  const diagnosticSource=diagnosticGuard.run.match(/^node -e "(.*)"$/)[1];
+  for(const [diagnostic,filters,valid] of [['false','true',false],['true','false',false],['true','true',true]]) {
+    const run=()=>runInNewContext(diagnosticSource,{process:{env:{PROFILE_PROJECTS:'true',DIAGNOSTIC_ONLY:diagnostic,PROFILE_FILTERS:filters}}});
+    if(valid)assert.doesNotThrow(run);else assert.throws(run,/Project profiling requires isolated diagnostic renderer profiles/);
+  }
   assert.equal(workflow.on.workflow_dispatch.inputs.profile_unthrottled.default,false);
   assert.equal(diagnosticGuard.env.PROFILE_UNTHROTTLED,'${{ inputs.profile_unthrottled }}');
   assert.ok(diagnosticGuard.run.includes("Scheduling diagnostics require renderer profiles"));

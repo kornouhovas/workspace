@@ -91,3 +91,13 @@ test('phase wrappers execute at module scope in the real bundled backend',async(
     assert.equal(await readFile(output,'utf8'),'');
   }finally{await rm(directory,{recursive:true,force:true});}
 });
+
+test('project preview diagnostics retain only command timing and preserve the public reply',()=>{
+  const reply={private:'project names and paths'},records=[];
+  const service=observePerformanceService({handleQuery(){return reply;},close(){}},batch=>records.push(...batch));
+  assert.equal(service.handleQuery({type:'workspace.listProjectFiles',workspaceId:'private workspace',projectId:'private project',relativePath:'private path'}),reply);
+  service.close();
+  assert.equal(records.length,1);
+  assert.equal(records[0].type,'workspace.listProjectFiles');
+  assert.equal(JSON.stringify(records).includes('private'),false);
+});

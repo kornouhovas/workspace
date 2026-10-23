@@ -1683,3 +1683,12 @@ their artifacts are inspected, `integrated-runtime` excludes only the already
 renewed Applied, category-move, creation and rename families (116 states remain). Ordinary
 `integrated-desktop` retains the entire layout inventory. This adds a checks
 choice without exceeding the existing workflow-dispatch input limit.
+
+
+For #67's strict preview/drag misses, `performance.yml` supports
+`diagnostic_only: true`, `profile_filters: true`, `profile_projects: true` and
+`profile_backend: true`, with `platform: windows-latest`. This omits baseline and
+strict acceptance reruns. Preview CPU/timeline profiles and bounded payload-free
+IPC/backend observations are diagnostic only. Project profiling defaults off and
+rejects use without both isolated diagnostic mode and renderer profiling.
+Normal `--enforce --project-flows` limits and clocks remain unchanged.

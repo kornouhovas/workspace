@@ -387,3 +387,20 @@ The separate macOS editor-entry failure still requires hosted renewal; the focus
 repair is not claimed as its proven cause. Strict scale requires separate diagnosis.
 Earlier renderer/installer/unchanged-package receipts retain their actual pre-fix
 inputs and do not establish repaired-candidate acceptance.
+
+
+## Isolated project-performance profiling
+
+The Windows strict negative above is retained. Ranked diagnostic hypotheses are
+backend filesystem/source validation, renderer work, and readiness-observation
+latency. The existing isolated performance profile now optionally includes project
+flows and captures preview CPU/timeline plus fixed-type file/project/archive read
+timings. It does not record payloads or alter production resources; backend
+instrumentation changes only its disposable copy. Project-profile selection
+requires diagnostic-only and renderer profiling, defaults off, and cannot run the
+strict acceptance step. Strict limits/observer semantics are unchanged.
+The file-read observation control is red before the added allowlist entry and
+green after; updated route guards execute actual valid/rejected combinations.
+Focused74/74 and lint pass; both reviews0remaining findings. These test-only
+probe/route changes follow the focus-fix full-suite pass and renew only affected
+consumers. No instrumented result will establish performance acceptance.

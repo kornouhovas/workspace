@@ -325,9 +325,11 @@ try {
     if (report.projectFlows) {
       const preview = page.getByRole("button", { name: "Preview project: External rename", exact: true });
       await preview.scrollIntoViewIfNeeded();
+      const previewProfiler = profileFilters ? await startInteractionProfile() : undefined;
       await startUiTiming(preview, "keydown"); await preview.press("Enter");
       lastReadyTiming = await waitForRuntimeProject(page, p.projectId, false, "Accepted board");
       await recordUi(source.mode, "project preview");
+      if (previewProfiler) await stopInteractionProfile(previewProfiler, `${source.mode}-project-preview`);
       const expand = page.getByRole("button", { name: "Expand project", exact: true });
       await startUiTiming(expand, "keydown"); await expand.press("Enter");
       lastReadyTiming = await waitForRuntimeProject(page, p.projectId, true, "Accepted board");

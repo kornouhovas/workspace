@@ -8,7 +8,7 @@ import { extractAll } from '@electron/asar';
 // service results/errors and flush bounded, payload-free observations on close.
 export function observePerformanceService(service, writeBatch, records=[]) {
   const observed=new Set(['workspace.setViewGrouping','workspace.queryView','workspace.getViewGrouping','workspace.getTableLayout',
-    'workspace.assignProjectGroup','workspace.setViewFilter','workspace.setTextValue','workspace.refreshSource','workspace.listTextProperties']);
+    'workspace.assignProjectGroup','workspace.setViewFilter','workspace.setTextValue','workspace.refreshSource','workspace.listTextProperties','workspace.listProjectFiles','workspace.listProjects','workspace.listArchivedProjects']);
   const invoke=(method,input)=>{
     if(!observed.has(input?.type)) return service[method](input);
     const started=Date.now(),clock=performance.now(),cpu=process.cpuUsage();

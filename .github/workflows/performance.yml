@@ -26,6 +26,10 @@ on:
         description: Profile first Table filter and Board filter/grouping separately from strict acceptance
         type: boolean
         default: false
+      profile_projects:
+        description: Include project-area flows in the isolated diagnostic profile only
+        type: boolean
+        default: false
       profile_unthrottled:
         description: Disable frame throttling in the separate renderer diagnostic only
         type: boolean
@@ -58,10 +62,12 @@ jobs:
           node-version: 22.21.1
           cache: npm
       - name: Require a selected diagnostic profile
-        if: ${{ inputs.diagnostic_only || inputs.profile_backend || inputs.profile_unthrottled }}
+        if: ${{ inputs.diagnostic_only || inputs.profile_backend || inputs.profile_unthrottled || inputs.profile_projects }}
         shell: bash
-        run: node -e "if (process.env.PROFILE_UNTHROTTLED === 'true' && process.env.PROFILE_FILTERS !== 'true') throw new Error('Scheduling diagnostics require renderer profiles'); if (process.env.PROFILE_BACKEND === 'true' && process.env.PROFILE_FILTERS !== 'true') throw new Error('Backend diagnostics require renderer profiles'); if (process.env.READINESS_ONLY === 'true') throw new Error('Select one diagnostic mode'); if (process.env.PROFILE_FILTERS !== 'true' && process.env.PROFILE_SERVICE !== 'true') throw new Error('Select a diagnostic profile')"
+        run: node -e "if (process.env.PROFILE_PROJECTS === 'true' && (process.env.DIAGNOSTIC_ONLY !== 'true' || process.env.PROFILE_FILTERS !== 'true')) throw new Error('Project profiling requires isolated diagnostic renderer profiles'); if (process.env.PROFILE_UNTHROTTLED === 'true' && process.env.PROFILE_FILTERS !== 'true') throw new Error('Scheduling diagnostics require renderer profiles'); if (process.env.PROFILE_BACKEND === 'true' && process.env.PROFILE_FILTERS !== 'true') throw new Error('Backend diagnostics require renderer profiles'); if (process.env.READINESS_ONLY === 'true') throw new Error('Select one diagnostic mode'); if (process.env.PROFILE_FILTERS !== 'true' && process.env.PROFILE_SERVICE !== 'true') throw new Error('Select a diagnostic profile')"
         env:
+          PROFILE_PROJECTS: ${{ inputs.profile_projects }}
+          DIAGNOSTIC_ONLY: ${{ inputs.diagnostic_only }}
           PROFILE_UNTHROTTLED: ${{ inputs.profile_unthrottled }}
           PROFILE_BACKEND: ${{ inputs.profile_backend }}
           READINESS_ONLY: ${{ inputs.readiness_only }}
@@ -114,7 +120,7 @@ jobs:
         run: |
           set -o pipefail
           mkdir -p work/ci-performance/profile
-          node scripts/smoke-performance.mjs --profile-filters ${{ inputs.profile_unthrottled && '--profile-unthrottled' || '' }} ${{ inputs.profile_backend && '--profile-backend' || '' }} 2>&1 | tee work/ci-performance/profile/runtime.log
+          node scripts/smoke-performance.mjs --profile-filters ${{ inputs.profile_projects && '--project-flows' || '' }} ${{ inputs.profile_unthrottled && '--profile-unthrottled' || '' }} ${{ inputs.profile_backend && '--profile-backend' || '' }} 2>&1 | tee work/ci-performance/profile/runtime.log
         env:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-performance/profile
       - name: Verify clipped view readiness before the original measurement
