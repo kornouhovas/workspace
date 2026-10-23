@@ -153,3 +153,8 @@ verified pre-migration snapshots are protected from automatic cleanup (including
 success). Older-schema recovery uses the matching app version and existing explicit
 restore; see [recovery](recovery.md#automatic-backups-and-updates). For this issue the
 owner explicitly authorized normal publication to the currently public repository.
+
+
+## Issue 70 durable folder evidence
+
+On 2026-10-23 the owner accepted [ADR 0009](adr/0009-durable-folder-evidence.md): durable volume/folder evidence is separate from current-mount authorization; legacy and scope-unverified associations need explicit review; staged backend capability gates protect filesystem consumers. The accepted design preserves retained metadata and immutable operation history, including the documented availability limits for insufficient evidence and unprovable unfinished journals. This is a design decision, not an implemented storage change or authorization to repair live data. The [handoff plan](plans/issue-70-durable-identity.md) assigns implementation and verification to #71/#72.

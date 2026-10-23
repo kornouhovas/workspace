@@ -2,7 +2,7 @@
 
 Issue: [#70](https://github.com/kornouhovas/workspace/issues/70). Base: verified `new-workspace` `24400d164516b54161aa3cbf995049fcf9af328d`. Task branch: `codex/issue-70-durable-identity`. Native blockers are empty, no native parent exists, and textual blockers are None. The issue is independently executable; #47/#7 are related specifications and #67 is a separate final gate. No other owner/issue-70 checkout was found at start.
 
-Outcome: reviewable [ADR 0009](../adr/0009-durable-folder-evidence.md), explicit migration/recovery scenarios and implementable boundaries for [#71](https://github.com/kornouhovas/workspace/issues/71) and [#72](https://github.com/kornouhovas/workspace/issues/72). This is documentation only: no schema, runtime or live-data repair. Owner acceptance is required before closing #70 or beginning #71. The scoped requirements in #70 govern; its D66–D82 reference is not a claim those decisions already approve a volume schema.
+Outcome: owner-accepted [ADR 0009](../adr/0009-durable-folder-evidence.md), explicit migration/recovery scenarios and implementable boundaries for [#71](https://github.com/kornouhovas/workspace/issues/71) and [#72](https://github.com/kornouhovas/workspace/issues/72). This is documentation only: no schema, runtime or live-data repair. The owner accepted ADR 0009 on 2026-10-23 in the implementation conversation. This settles the design prerequisite; it does not start #71. The scoped requirements in #70 govern; its D66–D82 reference is not a claim those decisions already approve a volume schema.
 
 ## Scenario inventory and acceptance mapping
 
@@ -13,7 +13,7 @@ Outcome: reviewable [ADR 0009](../adr/0009-durable-folder-evidence.md), explicit
 | Same policy at every boundary | ADR rollout table, backend capability gate, token generation, old/new journals | #71 gate/read paths; #72 conversion/enablement |
 | Conflict/unavailable recovery journey | ADR EN/RU state table and Sources/project review steps, retained data and operation guidance | #71 UI; #72 operation UI |
 | Preserve containment, identities/data, no markers | No filesystem effects in #70; retain/extend existing public-boundary safety coverage below | Both |
-| Accepted design and actionable handoff | This plan and ADR, independent Standards/Spec review, owner decision | #70; acceptance pending |
+| Accepted design and actionable handoff | This plan and ADR, independent Standards/Spec review, owner decision | #70; accepted 2026-10-23 |
 
 ## Required implementation scenarios
 
@@ -46,7 +46,7 @@ Each row is a required observable check or explicitly retained limitation, not a
 | Actual native adapter in Node/Electron, dev/package on supported hosts | Evidence provider/loading/resources verified; normal exit/owned cleanup; no renderer Node/db exposure | #71 adapter, #72 native consumer renewal |
 | EN/RU recovery at narrow/wide layouts | Reason, impact, explicit mapping/Cancel, preserved values and pending-operation guidance visible; appearance separate from behavior | #71/#72 |
 
-No cross-machine portability, reliable detection of indistinguishable cloned volumes, source relocation/merge, unsupported-provider fallback, or manual release of unprovable journal reservations is promised by this design. These are explicit limits for owner review, not passing scenarios.
+No cross-machine portability, reliable detection of indistinguishable cloned volumes, source relocation/merge, unsupported-provider fallback, or manual release of unprovable journal reservations is promised by this design. These are owner-accepted limits, not passing runtime scenarios.
 
 ## Coverage retention and execution seams
 
@@ -64,7 +64,7 @@ Retain create/rename/category-move/category-removal/archive journal, abrupt-proc
 - [x] Independent Standards and Spec review: Standards 0 findings; Spec found an undefined machine-scope anchor, repaired with its lifecycle, scope-unverified enrollment and paired restore scenarios. Focused re-review confirmed 0 remaining findings.
 - [x] Documentation verification: `npm run check:docs` passed (214 Markdown files); both local anchor references and qualified runtime paths were checked; `git diff --check` passed.
 - [x] Reviewed proposal and observed documentation verification recorded in the task commit (see GitHub checkpoint for SHA).
-- [ ] Owner accepts ADR, including its deliberate availability limits.
+- [x] Owner accepted ADR, including its deliberate availability limits, on 2026-10-23.
 - [ ] Integrate accepted document through the authorized `new-workspace` route and record delivered SHA.
 
 Current execution/acceptance updates belong in the [GitHub checkpoint](https://github.com/kornouhovas/workspace/issues/70#issuecomment-6368976358). Runtime/type/full-suite/appearance checks are not applicable to this documentation-only change under the project boundary-based verification policy. No new runtime/platform verification is claimed.

@@ -22,7 +22,7 @@ These documents are written for the new implementation. The previous documentati
 | [Releases](releases.md) | Versions, changelog and future distribution |
 | [Reuse](reuse.md) | bb reference, attribution and adaptation rules |
 | [ADRs](adr/) | Significant accepted tradeoffs |
-| [Durable folder evidence proposal](adr/0009-durable-folder-evidence.md) | Issue #70: pending owner acceptance; #71/#72 migration and safety handoff |
+| [Durable folder evidence](adr/0009-durable-folder-evidence.md) | Issue #70: accepted design; #71/#72 migration and safety handoff |
 | [Plans](plans/README.md) | Bounded implementation plans |
 
 Product discovery is ongoing. Accepted decisions may be implemented only within the authorized implementation scope; proposed details remain questions. A roadmap entry does not prove that code exists.
