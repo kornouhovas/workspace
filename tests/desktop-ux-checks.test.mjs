@@ -440,3 +440,19 @@ test('retained recovery selects real identity/session and UI seams with native r
  assert.deepEqual(Array.from(runInNewContext(job.strategy.matrix.os.slice(3,-2),{fromJSON:JSON.parse,inputs:{desktop_ux_profile:'retained-recovery'}})),['macos-latest','windows-latest','windows-2022']);
  for(const name of ['Affected UI, services and real Electron flows','Package shared font and notices','Inspect packaged artifact','Packaged saved-view consumers'])assert.ok(job.steps.find(step=>step.name===name).if.includes("inputs.desktop_ux_profile != 'retained-recovery'"),name);
 });
+
+test('integrated assignment and retained recovery renew both boundaries once on all hosts',async()=>{
+ const {filesystemAssignmentIntegrationCommands}=await import('../scripts/desktop-ux-checks.mjs');
+ const commands=filesystemAssignmentIntegrationCommands(),text=JSON.stringify(commands);
+ const testCommands=commands.filter(([,args])=>args.includes('--test'));
+ assert.equal(testCommands.length,1);
+ const files=testCommands[0][1].filter(arg=>arg.startsWith('tests/'));assert.equal(files.length,new Set(files).size);
+ for(const name of ['group-assignment-ui.test.tsx','project-recovery-ui.test.tsx','renderer-app.test.tsx','--filesystem','--rename','--category-move','smoke-retained-recovery.mjs','smoke-workspace-sessions.mjs','package:built','check:artifact','smoke:data-recovery','smoke:archive','smoke:views'])assert.ok(text.includes(name),name);
+ assert.equal(spawnSync(process.execPath,['scripts/desktop-ux-checks.mjs','filesystem-assignment-integration','--failure-probe'],{encoding:'utf8'}).status,23);
+ const {readFile}=await import('node:fs/promises'),{load}=await import('js-yaml'),{runInNewContext}=await import('node:vm');
+ const workflow=load(await readFile('.github/workflows/desktop-ci.yml','utf8')),job=workflow.jobs['desktop-ux'];
+ assert.ok(workflow.on.workflow_dispatch.inputs.desktop_ux_profile.options.includes('filesystem-assignment-integration'));
+ assert.ok(job.steps.some(step=>step.run==='node scripts/desktop-ux-checks.mjs filesystem-assignment-integration'));
+ assert.deepEqual(Array.from(runInNewContext(job.strategy.matrix.os.slice(3,-2),{fromJSON:JSON.parse,inputs:{desktop_ux_profile:'filesystem-assignment-integration'}})),['macos-latest','windows-latest','windows-2022']);
+ for(const name of ['Affected UI, services and real Electron flows','Package shared font and notices','Inspect packaged artifact','Packaged saved-view consumers'])assert.ok(job.steps.find(step=>step.name===name).if.includes("inputs.desktop_ux_profile != 'filesystem-assignment-integration'"),name);
+});

@@ -137,3 +137,23 @@ SHA and its actual checks will be recorded in the closing GitHub checkpoint.
 The retained failed runs above and full-suite inventory remain negative evidence;
 Windows cold timing cause and wider #67/#42/package/installer/release gates remain
 separate. No full local suite was retried.
+
+## Integration with accepted issue 65
+
+Before delivery, integration advanced independently to accepted #65 at
+`1bd363de`. Merge `b8759247` retains both implementations: `sourceAvailable` and
+retained recovery coexist with filesystem receipt/history entry. Both review axes
+found no conflict-resolution defects; routing32, typecheck, lint and build pass.
+The separate issue receipts above remain their actual pre-merge evidence.
+Shared renderer/CSS inputs changed, so merged acceptance is pending and cannot
+inherit the pre-merge platform verdict. The combined
+`filesystem-assignment-integration` route unions affected test files once and
+renews both issues' development/native/package consumers on all three hosts.
+No full local suite retry is selected; the affected boundary is explicitly
+expanded to both accepted UI slices and all their native/package consumers.
+
+Combined local acceptance: 1407/1407 affected tests, zero skips/failures (80.03s),
+33/33 route tests, lint and208-file documentation links pass. The new route
+regression was red before implementation and green after; both independent
+reviews found no route/spec defects. The application build at merged `b8759247`
+passed; subsequent changes are CI/test/documentation only.

@@ -1590,3 +1590,12 @@ host and selected profile. An earlier failed or diagnostic local report is retai
 as such; it never supplies normal shutdown or restart acceptance. Ordinary/full,
 installer and release defaults remain unchanged. Final #67/#42 acceptance must
 include this recovery scope and its retained product guarantees.
+
+For integrating #63 with accepted retained recovery #65, select
+`filesystem-assignment-integration`. It runs the union of both affected test
+inventories once, followed by every original assignment and retained-recovery
+native consumer, including development/package recovery, sessions, archive,
+data recovery, navigation and packaged Views. Packaging and resource inspection
+remain serial. All three hosts and both issue artifact destinations are retained.
+This renews the combined renderer/CSS inputs; the earlier separate issue receipts
+do not substitute for merged-candidate acceptance.

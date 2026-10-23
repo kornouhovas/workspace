@@ -19,3 +19,11 @@ Public seams are prescribed by #63: Workspace service with disposable real SQLit
 ## Verification selection
 
 Use Matt Pocock TDD at the prescribed seams; focused interaction/service checks and regular typechecks. Inspect whole screens early at 1024x720 and 1440x960 in EN/RU/light/dark; compare the accepted Table/Board composition and source-history/recovery surfaces separately from behavior. Run independent Spec/Standards review and repair findings before one final full local suite. Preserve inherited known failures explicitly. A three-host scoped CI route must include all-type Views consumers and original filesystem/recovery consumers in affected modes. Reuse unchanged package/installer evidence only with explicit input provenance. Integration follows successful issue acceptance; #67/#42 gates remain separate.
+
+## Concurrent integration
+
+Accepted #65 advanced `new-workspace` to `1bd363de` during #63 native acceptance.
+Merge preserves both slices and undergoes independent conflict-resolution review.
+Renew the combined assignment/retained-recovery affected tests and every native/
+package consumer on all three hosts through `filesystem-assignment-integration`.
+Earlier separate-issue receipts do not accept the changed renderer/CSS inputs.
