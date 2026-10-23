@@ -1,0 +1,204 @@
+{
+  "run": 39930886286,
+  "attempt": 1,
+  "sha": "c33e84a721b759287054cc63f200eb1c727ac483",
+  "artifact": 12490479849,
+  "diagnostic": true,
+  "acceptance": false,
+  "status": "diagnostic",
+  "previews": [
+    {
+      "source": "direct",
+      "diagnosticMs": 416.79999999998836,
+      "backend": [
+        {
+          "type": "workspace.listTextProperties",
+          "started": 1792747279821,
+          "finished": 1792747279830,
+          "durationMs": 8.688099999999395,
+          "cpuMicroseconds": {
+            "user": 0,
+            "system": 0
+          }
+        },
+        {
+          "type": "internal.scanDirectSource",
+          "started": 1792747279846,
+          "finished": 1792747279981,
+          "durationMs": 134.38580000000002,
+          "cpuMicroseconds": {
+            "user": 32000,
+            "system": 94000
+          }
+        },
+        {
+          "type": "internal.scanDirectSource",
+          "started": 1792747280008,
+          "finished": 1792747280127,
+          "durationMs": 118.92439999999988,
+          "cpuMicroseconds": {
+            "user": 0,
+            "system": 93000
+          }
+        },
+        {
+          "type": "workspace.listProjectFiles",
+          "started": 1792747279832,
+          "finished": 1792747280150,
+          "durationMs": 318.2662,
+          "cpuMicroseconds": {
+            "user": 63000,
+            "system": 234000
+          }
+        }
+      ],
+      "rendererTopSelfMs": [
+        [
+          "(idle)",
+          314.5
+        ],
+        [
+          "(program)",
+          154.8
+        ],
+        [
+          "",
+          5.6
+        ],
+        [
+          "(garbage collector)",
+          5.3
+        ],
+        [
+          "el",
+          4.4
+        ],
+        [
+          "Su",
+          3.5
+        ]
+      ]
+    },
+    {
+      "source": "grouped",
+      "diagnosticMs": 1739,
+      "backend": [
+        {
+          "type": "workspace.listTextProperties",
+          "started": 1792747303518,
+          "finished": 1792747303531,
+          "durationMs": 12.91939999999886,
+          "cpuMicroseconds": {
+            "user": 32000,
+            "system": 0
+          }
+        },
+        {
+          "type": "internal.scanGroupedSource",
+          "started": 1792747303549,
+          "finished": 1792747304427,
+          "durationMs": 878.3572000000004,
+          "cpuMicroseconds": {
+            "user": 219000,
+            "system": 1203000
+          }
+        },
+        {
+          "type": "internal.scanGroupedSource",
+          "started": 1792747304462,
+          "finished": 1792747305137,
+          "durationMs": 675.0623999999989,
+          "cpuMicroseconds": {
+            "user": 141000,
+            "system": 515000
+          }
+        },
+        {
+          "type": "workspace.listProjectFiles",
+          "started": 1792747303533,
+          "finished": 1792747305165,
+          "durationMs": 1631.3500000000004,
+          "cpuMicroseconds": {
+            "user": 421000,
+            "system": 1750000
+          }
+        },
+        {
+          "type": "internal.reconcileSource",
+          "started": 1792747305167,
+          "finished": 1792747305181,
+          "durationMs": 13.810499999999593,
+          "cpuMicroseconds": {
+            "user": 16000,
+            "system": 0
+          }
+        }
+      ],
+      "rendererTopSelfMs": [
+        [
+          "(idle)",
+          1545.5
+        ],
+        [
+          "(program)",
+          250.7
+        ],
+        [
+          "",
+          6.7
+        ],
+        [
+          "belongsToDisplayNoneOrAriaHiddenOrNonSlotted",
+          6.4
+        ],
+        [
+          "(garbage collector)",
+          5.2
+        ],
+        [
+          "ip",
+          5.2
+        ]
+      ]
+    }
+  ],
+  "rawSha256": {
+    "grouped-project-preview.cpuprofile": "f85f18e61357cc5a12186176263f2772426c3d154f0677f1f40c64638fb8e60c",
+    "grouped-table-edit.trace.json": "1ad25447eab703ec88f402f30587de10eaf56d1c3e32a97fa7c218b1a8adf1ab",
+    "grouped-board-edit.cpuprofile": "877a1e44ca080b4f0148a32ad3779e456509f14290376704748058865d8c53e5",
+    "report.json": "cc1b904f5fb4090c45c826918fb790ec4fbe4e3c8d02bc23c50d3e7557f7b84b",
+    "direct-board-en.png": "dd3288d062fb806e7284d644c527d7c9791d7dd568764959d0b3d5344465ad8d",
+    "grouped-project-preview.trace.json": "2f26ec855f6540b8ba0699ac6007c26fd92999d515701377acafde36352b5666",
+    "grouped-table-en.png": "5e9f35ac4d761b858a4b2aa6efb02ed8ac9fbc1dfa7a5d7aa8c0dd7371832e83",
+    "grouped-table-edit.cpuprofile": "a27bbc3e08b7ad52b103374e4a3fcdfe3d3267fb07932bbe0e2effeb069e7b98",
+    "grouped-board-edit.trace.json": "251edf179d2ab7a300369b3887c074c6022aec6760f4c3a7d323c3bc2f51123b",
+    "direct-project-preview.cpuprofile": "637d86e559d5dfed282d5125497f01aa1e5bc7700aa9b3355b0351cd2e05283e",
+    "grouped-table-filter-0.trace.json": "659e8a0978537b21e6f60d6c0a20bb6957c5df8653e40b9b375e6b4cbac8e67d",
+    "direct-board-filter-1.cpuprofile": "149ab0ff67b69be3f5b5ad372579ebff09bff5a0877390a9617fc2c2d75f591b",
+    "backend-requests.jsonl": "b00c2cfe5632eea335aff1482b69a1c44d96ff4849a4714f291bb8db4030f54b",
+    "grouped-board-filter-1.cpuprofile": "634e311fbdde6aa77e1bbfc7af2b0fef3173e017fe3214651f77d97d1786b48c",
+    "direct-table-filter-0.trace.json": "d3b0f3224abedb3586f23a90b5704638c12120f77f96528e0100ee6396726c03",
+    "direct-table-en.png": "e22a5d8bd62f72deec9082c8aa6083c977a6ea672d5cad8a04dbf0a468deaa46",
+    "grouped-board-grouping-assignment.trace.json": "37db7fadfc6f740fa27b6b0f93f0b46475f147dcaa39f298a8c1942f8e267b7d",
+    "grouped-table-grouping-assignment.cpuprofile": "b8ce05c69eb3d36ce101fc39b225480e8917abda715e3a512fa446c5f47badf8",
+    "direct-ru-narrow.png": "e06d18e55bfd039699debe4f567815dc6a064806edbe4a6920485b3397f02ced",
+    "direct-board-edit.trace.json": "b3d231c8f2d09b58b39f479432ebd95cb41491a36bd4c8b7ea3ea9b480fed528",
+    "direct-table-edit.cpuprofile": "f930192b411f77c669dfeb88cd16f7ca4e2fda80e81e6419ed32ce6de8b55f93",
+    "direct-table-grouping-assignment.cpuprofile": "40d6425a2ff1d94d0d345a886f65d6de0023dba12447e4127b0cc9ec40c259a2",
+    "direct-board-grouping-assignment.trace.json": "0118ee104c68635572543c45c9369bb06ee12f6353ae51af3bff081ba06850cf",
+    "grouped-ru-narrow.png": "141bc9c3d5810a0ef0c0df3796e9ac349a01e9b4e062c63e68632e5c4c2a8a92",
+    "runtime.log": "77baca44236f360a2969640ad2f2397c24dc2aa435d59ad1f5fecf6540692bde",
+    "direct-table-filter-0.cpuprofile": "04a64fb1afce046c9e7ff2e8819974c090bc1f4293fb3e24f412fa95413e2e05",
+    "grouped-board-filter-1.trace.json": "2d815d7db8a96187fdbe4985a6eff7a5288b4e25370813fa24599edfad78e052",
+    "direct-board-filter-1.trace.json": "ec552158525df0f438a5822d5109b131683ce8fce4d8096154343d7ed113cc0d",
+    "grouped-table-filter-0.cpuprofile": "e04cb36d6db083fb959655ae75b8336cd42cde245650d0744a11f7ba6a1e652a",
+    "direct-project-preview.trace.json": "ed8ced3d7da61e062ebf781d2c033723f20791a2573d54071edf0c61ecbd7afa",
+    "direct-table-grouping-assignment.trace.json": "53831ad05581167b7b7127ba2f5685fb7aa7f68dc3fdfd0f3bc35bfd7bc210e7",
+    "direct-board-grouping-assignment.cpuprofile": "a64a1c8b3de75ab059deb913ecb11c1c49a01b2804f1b55266fba8596c97b3a1",
+    "direct-board-edit.cpuprofile": "064fdcbc9f391e5d5f98ae59ed0dfe72edbb485efcbdff7a7730cf649e378b9e",
+    "grouped-board-en.png": "3d60b1231b4e55ccd2e23702c408a60c5ae2d008bf1bd64b5b50f68fda9e353a",
+    "direct-table-edit.trace.json": "bed843600e51ce4b236ecc3ec61f54dcb5a0c76d9b32d2e814e9a3431ecbd57f",
+    "grouped-board-grouping-assignment.cpuprofile": "fcaec9c94f8b33f12c307c867af38507c8baf7a5ac82ae769a244e455b029d07",
+    "grouped-table-grouping-assignment.trace.json": "448c88ba2e0ad2b2165521dfd4955965ea6118c7b57effe36ef0a294bf140cec"
+  }
+}

@@ -404,3 +404,32 @@ green after; updated route guards execute actual valid/rejected combinations.
 Focused74/74 and lint pass; both reviews0remaining findings. These test-only
 probe/route changes follow the focus-fix full-suite pass and renew only affected
 consumers. No instrumented result will establish performance acceptance.
+
+
+## Archive entry trace and performance cause
+
+Archive renewal39930880419 atc33e84a7 passes dev/release on Windowslatest and dev
+on Windows2022. Macdev and Windows2022release fail after editing archived preview:
+the service still contains `Archived table list` instead of the newly filled
+`Archived table preview`. [Separate receipts](issue-67-evidence/archive-renewal-c33.json).
+This is not claimed as fixed by the completed-operation focus repair. A local
+12-cycle preview control with unique saved values and4× diagnostic CPU throttling
+passes; it does not reproduce or accept the hosted failure.
+
+An explicit diagnostic-only archive route records a128-event ring of focus/input/
+disabled/editor-length state and focus-call stacks. It preserves original actions,
+assertions, deadlines, native cleanup and one initial entry-control activation.
+Local traced focus-only command passes normal quit/cleanup; observed records are
+bounded and contain neither known authored note nor edited value. Review identified
+an ambient-flag leak; the actual child probe is red before pinning acceptance
+`WORKSPACE_ARCHIVE_ENTRY_TRACE=0`, then routing68/68 and lint pass. Dedicated
+profile jobs alone use1. Both review axes have0remaining findings.
+
+[Performance diagnostic39930886286](issue-67-evidence/project-performance-profile.json)
+atc33e84a7 proves preview waits for the file-list backend, not busy renderer work.
+Grouped listProjectFiles1631.4ms includes two full scans878.4+675.1ms, with renderer
+idle1545.5ms; direct list318.3ms includes scans134.4+118.9ms. The original strict
+negative is unchanged. A required owner question is pending about new preview
+budget: completed properties/visible tree loading versus the fully loaded tree.
+No endpoint or limit is changed while that definition is unresolved. Filter/group/
+edit300ms requirements remain unchanged. Continue independent archive diagnosis.

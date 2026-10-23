@@ -11,7 +11,7 @@ test('integrated package acceptance propagates a failed journey and records unre
   const evidence = await mkdtemp(join(tmpdir(), 'workspace-integration-probe-'));
   try {
     const result = spawnSync(process.execPath, ['scripts/integrated-desktop.mjs', '--failure-probe'], {
-      env: { ...process.env, WORKSPACE_SMOKE_EVIDENCE_DIR: evidence, WORKSPACE_PERFORMANCE_ROOT: 'another-candidate', WORKSPACE_REVEAL_TRACE: '1' }, encoding: 'utf8',
+      env: { ...process.env, WORKSPACE_SMOKE_EVIDENCE_DIR: evidence, WORKSPACE_PERFORMANCE_ROOT: 'another-candidate', WORKSPACE_REVEAL_TRACE: '1', WORKSPACE_ARCHIVE_ENTRY_TRACE:'1' }, encoding: 'utf8',
     });
     assert.equal(result.status, 23, result.stderr);
     const report = JSON.parse(await readFile(join(evidence, 'report.json'), 'utf8'));
@@ -24,6 +24,7 @@ test('integrated package acceptance propagates a failed journey and records unre
     const childEnvironment = JSON.parse((await readFile(join(evidence, 'failure-probe/runtime.log'), 'utf8')).trim());
     assert.equal(childEnvironment.performanceRoot, resolve('.'));
     assert.equal(childEnvironment.revealTrace, '0');
+    assert.equal(childEnvironment.archiveEntryTrace, '0');
   } finally { await rm(evidence, { recursive: true, force: true }); }
 });
 
@@ -68,6 +69,15 @@ test('registered desktop dispatch isolates integrated acceptance and retains ord
   const operations = selected('integrated-operation-layout');
   for (const flag of ['creation', 'rename']) assert.ok(operations.includes('node scripts/smoke-discovery-layouts.mjs --' + flag));
   assert.ok(!operations.some(command => /test:all|package:built|node scripts\/integrated-desktop/.test(command)));
+  assert.ok(workflow.on.workflow_dispatch.inputs.checks.options.includes('integrated-archive-profile'));
+  const archiveProfile=workflow.jobs['archive-entry-profile'];
+  assert.equal(enabled(archiveProfile,'workflow_dispatch','integrated-archive-profile'),true);
+  assert.equal(enabled(archiveProfile,'workflow_dispatch','full'),false);
+  assert.equal(enabled(workflow.jobs.common,'workflow_dispatch','integrated-archive-profile'),false);
+  assert.deepEqual(archiveProfile.strategy.matrix.mode,['dev','release']);
+  assert.deepEqual(archiveProfile.strategy.matrix.os,['macos-latest','windows-latest','windows-2022']);
+  assert.equal(archiveProfile.env.WORKSPACE_ARCHIVE_ENTRY_TRACE,'1');
+  assert.ok(!archiveProfile.steps.some(step=>/test:all|smoke-performance|smoke-discovery-layouts/.test(step.run??'')));
   const tail = selected('integrated-runtime');
   assert.ok(tail.includes('node scripts/smoke-discovery-layouts.mjs --remaining-after-operations'));
   assert.ok(!tail.some(command => command.includes('test:all')));

@@ -66,7 +66,7 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
     const packageSha256 = asar ? sha256(readFileSync(asar)) : null;
     const bundle = executable && (process.platform === 'darwin' ? resolve(executable, '../../..') : dirname(executable));
     const packageInventory = bundle ? packageFiles(bundle) : null;
-    const selected = diagnostic ? [{ id: 'failure-probe', args: ['-e', 'console.log(JSON.stringify({performanceRoot:process.env.WORKSPACE_PERFORMANCE_ROOT,revealTrace:process.env.WORKSPACE_REVEAL_TRACE}));process.exit(23)'] }, ...integratedJourneys] : integratedJourneys.slice(start);
+    const selected = diagnostic ? [{ id: 'failure-probe', args: ['-e', 'console.log(JSON.stringify({performanceRoot:process.env.WORKSPACE_PERFORMANCE_ROOT,revealTrace:process.env.WORKSPACE_REVEAL_TRACE,archiveEntryTrace:process.env.WORKSPACE_ARCHIVE_ENTRY_TRACE}));process.exit(23)'] }, ...integratedJourneys] : integratedJourneys.slice(start);
     const report = {
       issue: 67, sha: git(['rev-parse', 'HEAD']), run: process.env.GITHUB_RUN_ID ?? null,
       attempt: process.env.GITHUB_RUN_ATTEMPT ?? null, diagnostic, mode: 'release',
@@ -91,7 +91,7 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
         try {
           result = spawnSync(process.execPath, row.args, { cwd: root, stdio: ['ignore', fd, fd],
             env: { ...process.env, GITHUB_SHA: report.sha, WORKSPACE_SMOKE_MODE: 'release', WORKSPACE_SMOKE_EVIDENCE_DIR: output,
-              WORKSPACE_PERFORMANCE_ROOT: root, WORKSPACE_REVEAL_TRACE: '0' } });
+              WORKSPACE_PERFORMANCE_ROOT: root, WORKSPACE_REVEAL_TRACE: '0', WORKSPACE_ARCHIVE_ENTRY_TRACE: '0' } });
         } finally { closeSync(fd); }
         row.finishedAt = new Date().toISOString(); row.exitCode = result.status; row.signal = result.signal;
         row.logSha256 = sha256(readFileSync(join(output, 'runtime.log')));

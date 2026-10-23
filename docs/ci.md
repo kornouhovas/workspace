@@ -1692,3 +1692,13 @@ strict acceptance reruns. Preview CPU/timeline profiles and bounded payload-free
 IPC/backend observations are diagnostic only. Project profiling defaults off and
 rejects use without both isolated diagnostic mode and renderer profiling.
 Normal `--enforce --project-flows` limits and clocks remain unchanged.
+
+
+For the unresolved archived-editor entry/save race in #67, use
+`checks: integrated-archive-profile`. Its six diagnostic jobs run the original
+archive command in dev/release on all three hosts. They retain the original
+assertions/nonzero failures and record only bounded focus/input/disabled state,
+lengths and focus-call stacks, never authored values. Receipts explicitly mark
+diagnostic execution. Ordinary integrated acceptance pins
+`WORKSPACE_ARCHIVE_ENTRY_TRACE=0`; the diagnostic job alone sets it to1.
+These observations cannot replace normal archive acceptance.
