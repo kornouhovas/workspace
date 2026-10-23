@@ -746,3 +746,33 @@ and both reviews pass. integrated-category-entry-profile runs only the original
 Mac release category command with diagnostic1. It cannot provide ordinary
 acceptance or start the missing13-row tails. Those remain behind inspection and
 passing focused original-category renewal under the failed-Actions loop.
+
+
+## Category diagnostic sampling
+
+Hosted39968597489 at7e57 completes22checks/64captures with diagnostic1, normal
+quit/backend exit/cleanup. Artifact12508465900 is inspected; the valid trace
+contains1419before/after actions,3320DOM snapshots and744screencast frames.
+[Raw report](issue-67-evidence/category-entry-traced-host.json). It does not
+reproduce the missing Move control, establish a cause, or accept ordinary
+categories. Heavy observation may change timing.
+
+The same focused selector now samples three isolated Mac trials using a lighter
+events mode. A64-entry ring records only observer-ready, project-area count
+changes and native preview pointer/mouse/click time, coordinates, trust and
+enabled/connected/busy state. It records no authored values and requests no
+geometry/layout work. Missing installation fails the diagnostic. Collection has
+2s before unchanged normal shutdown; ordinary mode0 and heavy mode1 remain.
+The first local light diagnostic observes all five trusted pointer/mouse/click
+events and project-area appearance, then fails later at RUBoardpreview move
+dialog detachment; that is not the hosted missing-control failure. Normal quit
+and cleanup pass. Both earlier negatives remain. Bounded sampling supplies
+diagnosis only; original-category acceptance and missing tails remain blocked.
+
+
+Final local observer validation explicitly records observer-ready and trusted
+events across preview/close transitions; the diagnostic completes22checks/64
+captures with normal quit/cleanup. Its earlier later-dialog negative is retained.
+[Both event receipts](issue-67-evidence/category-entry-event-controls.json).
+Routing74/74, type/lint/docs and both review axes pass. These are instrument
+validation and bounded reproduction sampling, never renewed ordinary categories.

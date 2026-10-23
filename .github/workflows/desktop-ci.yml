@@ -2932,7 +2932,11 @@ jobs:
 
   integrated-category-entry-profile:
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.checks == 'integrated-category-entry-profile' }}
-    name: Contextual category entry diagnostic (macos-latest)
+    name: Contextual category entry diagnostic (macos-latest, trial ${{ matrix.trial }})
+    strategy:
+      fail-fast: false
+      matrix:
+        trial: [1, 2, 3]
     runs-on: macos-latest
     timeout-minutes: 20
     steps:
@@ -2945,7 +2949,9 @@ jobs:
         shell: bash
         run: |
           mkdir -p work/issue-67-category-entry
-          node --input-type=module -e 'import {writeFileSync} from "node:fs";import os from "node:os";writeFileSync("work/issue-67-category-entry/provenance.json",JSON.stringify({sha:process.env.GITHUB_SHA,run:process.env.GITHUB_RUN_ID,attempt:process.env.GITHUB_RUN_ATTEMPT,platform:process.platform,kernel:os.release(),diagnostic:true})+"\n")'
+          node --input-type=module -e 'import {writeFileSync} from "node:fs";import os from "node:os";writeFileSync("work/issue-67-category-entry/provenance.json",JSON.stringify({sha:process.env.GITHUB_SHA,run:process.env.GITHUB_RUN_ID,attempt:process.env.GITHUB_RUN_ATTEMPT,platform:process.platform,kernel:os.release(),diagnostic:true,trial:process.env.CATEGORY_DIAGNOSTIC_TRIAL})+"\n")'
+        env:
+          CATEGORY_DIAGNOSTIC_TRIAL: ${{ matrix.trial }}
       - run: npm ci
       - run: npm run typecheck
       - run: npm run lint
@@ -2954,20 +2960,20 @@ jobs:
       - run: npm run build
       - run: npm run package:built
       - run: npm run check:artifact -- release
-      - name: Original category command with diagnostic Playwright snapshots
+      - name: Original category command with finite native event observation
         shell: bash
         run: |
           set -o pipefail
           node scripts/smoke-contextual-categories.mjs release 2>&1 | tee work/issue-67-category-entry/original.log
         env:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/issue-67-category-entry/original
-          WORKSPACE_CATEGORY_ENTRY_TRACE: '1'
+          WORKSPACE_CATEGORY_ENTRY_TRACE: 'events'
           WORKSPACE_ARCHIVE_ENTRY_TRACE: '0'
           WORKSPACE_REVEAL_TRACE: '0'
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: issue-67-category-entry-macos-latest-${{ github.sha }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
+          name: issue-67-category-entry-macos-latest-trial-${{ matrix.trial }}-${{ github.sha }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
           path: work/issue-67-category-entry/
           if-no-files-found: error
           retention-days: 14

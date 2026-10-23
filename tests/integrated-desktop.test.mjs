@@ -195,11 +195,11 @@ test('category entry trace is a Mac-only diagnostic without acceptance tails',as
  const context={github:{event_name:'workflow_dispatch'},inputs:{checks:'integrated-category-entry-profile'}};
  const enabled=job=>runInNewContext(job.if.slice(3,-2),context);
  const job=workflow.jobs['integrated-category-entry-profile'];assert.equal(enabled(job),true);assert.equal(enabled(workflow.jobs.common),false);assert.equal(enabled(workflow.jobs['integrated-missing-tails']),false);
- assert.equal(job['runs-on'],'macos-latest');
+ assert.equal(job['runs-on'],'macos-latest');assert.deepEqual(job.strategy.matrix.trial,[1,2,3]);
  const commands=job.steps.filter(step=>step.run).map(step=>step.run);
  assert.ok(commands.includes('npm run package:built'));assert.ok(commands.includes('npm run check:artifact -- release'));
  const original=job.steps.find(step=>step.run?.includes('node scripts/smoke-contextual-categories.mjs release'));
- assert.ok(original.run.includes('set -o pipefail'));assert.equal(original.env.WORKSPACE_CATEGORY_ENTRY_TRACE,'1');assert.equal(original.if,undefined);
+ assert.ok(original.run.includes('set -o pipefail'));assert.equal(original.env.WORKSPACE_CATEGORY_ENTRY_TRACE,'events');assert.equal(original.if,undefined);
  assert.equal(commands.some(command=>/test:all|smoke-discovery-layouts|integrated-desktop.mjs/.test(command)),false);
  const upload=job.steps.find(step=>step.uses?.startsWith('actions/upload-artifact'));assert.equal(upload.if,'always()');assert.equal(upload.with['if-no-files-found'],'error');
 });

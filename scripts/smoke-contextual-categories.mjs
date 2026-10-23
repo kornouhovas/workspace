@@ -9,19 +9,31 @@ import {closeElectron,cleanupOwnedFixture,ownedProcessesStopped,withDeadline} fr
 import {setInterfaceLanguage,openSettingsSection,returnToWorkspace} from './runtime-settings.mjs';
 import {packagedExecutablePath} from './runtime-executable.mjs';
 import {enterContextFor} from './runtime-context-tools.mjs';
-const diagnostic=process.env.WORKSPACE_CATEGORY_ENTRY_TRACE==='1';
+const diagnosticMode=process.env.WORKSPACE_CATEGORY_ENTRY_TRACE??'0';
+const diagnostic=diagnosticMode==='1'||diagnosticMode==='events';
 const mode=process.argv[2]??'dev';assert.ok(['dev','release'].includes(mode));
 const root=resolve(import.meta.dirname,'..'), evidence=resolve(process.env.WORKSPACE_SMOKE_EVIDENCE_DIR??`work/issue-61-categories-${mode}`);
 await mkdir(evidence,{recursive:true});
 const fixture=await realpath(await mkdtemp(join(tmpdir(),'workspace-contextual-categories-')));
-const report={issue:61,mode,diagnostic,sha:process.env.GITHUB_SHA??null,run:process.env.GITHUB_RUN_ID??null,attempt:process.env.GITHUB_RUN_ATTEMPT??null,platform:process.platform,kernel:release(),checks:[],screens:[],shutdowns:[],status:'running'};
+const report={issue:61,mode,diagnostic,diagnosticMode,sha:process.env.GITHUB_SHA??null,run:process.env.GITHUB_RUN_ID??null,attempt:process.env.GITHUB_RUN_ATTEMPT??null,platform:process.platform,kernel:release(),checks:[],screens:[],shutdowns:[],status:'running'};
 const parents=new Set(),backends=new Set();let app,page,failure,launchUnverified=false;
 const query=async input=>{const result=await page.evaluate(input=>window.workspace.workspace(input),input);assert.equal(result.ok,true,JSON.stringify(result));return result.value;};
 try {
  launchUnverified=true;
  app=await _electron.launch({executablePath:mode==='dev'?createRequire(import.meta.url)('electron'):packagedExecutablePath(root,process.platform,process.arch),args:mode==='dev'?[root]:[],cwd:root,env:{...process.env,WORKSPACE_USER_DATA_DIR:join(fixture,'data')}});
  parents.add(app.process());
- if(diagnostic)await withDeadline(app.context().tracing.start({screenshots:true,snapshots:true,sources:false}),3000,'Category diagnostic trace start');
+ if(diagnosticMode==='1')await withDeadline(app.context().tracing.start({screenshots:true,snapshots:true,sources:false}),3000,'Category diagnostic trace start');
+ if(diagnosticMode==='events')await app.context().addInitScript(()=>{
+  const events=[];globalThis.__workspaceCategoryEntryEvents=events;
+  const record=(type,extra={})=>{events.push({type,ms:Math.round(performance.now()),areas:document.querySelectorAll('.project-area').length,...extra});if(events.length>64)events.shift();};
+  for(const type of ['pointerdown','mousedown','pointerup','mouseup','click'])globalThis.addEventListener(type,event=>{
+   const button=event.target instanceof globalThis.Element?event.target.closest('.project-preview-trigger'):null;
+   if(button)record(type,{trusted:event.isTrusted,enabled:!button.matches(':disabled'),connected:button.isConnected,busy:document.querySelector('.text-properties')?.getAttribute('aria-busy')??null,x:event.clientX,y:event.clientY});
+  },true);
+  record('observer-ready');
+  let areas=0;
+  new globalThis.MutationObserver(()=>{const next=document.querySelectorAll('.project-area').length;if(next!==areas){areas=next;record('project-area-change');}}).observe(document,{childList:true,subtree:true});
+ });
  page=await app.firstWindow();page.setDefaultTimeout(15000);
  await page.waitForFunction(async()=>(await window.workspace.getBackendStatus()).state==='ready');
  for(const pid of await app.evaluate(({app})=>app.getAppMetrics().filter(m=>m.type==='Utility'&&m.serviceName?.includes('Node')).map(m=>m.pid)))backends.add(pid);
@@ -119,7 +131,8 @@ try {
  if(diagnostic&&page)try{await page.screenshot({path:join(evidence,'failure.png'),timeout:2000});}catch(captureError){report.captureError=captureError.name;}
 }
 finally {
- if(diagnostic&&app)try{await withDeadline(app.context().tracing.stop({path:join(evidence,'trace.zip')}),3000,'Category diagnostic trace stop');report.trace={status:'recorded',file:'trace.zip'};}catch(traceError){failure??=traceError;report.status='failed';report.trace={status:'failed',error:traceError.name};}
+ if(diagnosticMode==='events'&&page)try{report.trace={status:'recorded',mode:'events',events:await withDeadline(page.evaluate(()=>{const events=globalThis.__workspaceCategoryEntryEvents;if(!Array.isArray(events))throw new Error('Category event observer was not installed');return events;}),2000,'Category event receipt')};}catch(traceError){failure??=traceError;report.status='failed';report.trace={status:'failed',mode:'events',error:traceError.name};}
+ if(diagnosticMode==='1'&&app)try{await withDeadline(app.context().tracing.stop({path:join(evidence,'trace.zip')}),3000,'Category diagnostic trace stop');report.trace={status:'recorded',file:'trace.zip'};}catch(traceError){failure??=traceError;report.status='failed';report.trace={status:'failed',error:traceError.name};}
  try{if(app){await closeElectron(app);app=undefined;assert.equal(await ownedProcessesStopped(parents,backends),true);report.shutdowns.push({normalQuit:true,backendsExited:true});}}catch(error){failure??=error;report.status='failed';report.shutdownError=String(error);}
  try{await cleanupOwnedFixture(fixture,{processesStopped:ownedProcessesStopped(parents,backends,{launchUnverified}),primaryFailure:failure,record:async cleanup=>{report.cleanup=cleanup;await writeFile(join(evidence,'report.json'),JSON.stringify(report,null,2));}});}catch(error){failure??=error;report.status='failed';report.cleanupError=String(error);}
  await writeFile(join(evidence,'report.json'),JSON.stringify(report,null,2));

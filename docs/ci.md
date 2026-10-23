@@ -1757,3 +1757,14 @@ original normal shutdown/cleanup; capture failure preserves scenario failure.
 Ordinary aggregate acceptance explicitly pins this flag to0. This diagnostic
 route cannot accept categories or start missing tails; retain passing30a7
 project-entry receipts and prior unchanged production inputs at their actual SHA.
+
+
+After the heavy traced category diagnostic passes without reproducing the
+missing control, the same selector runs exactly three isolated Mac diagnostic
+trials with WORKSPACE_CATEGORY_ENTRY_TRACE=events. This observes a64-entry ring
+of trusted preview pointer/mouse events and project-area count changes, with no
+DOM snapshots or authored values. The observer records installation and fails
+closed if absent; collection has2s before unchanged normal shutdown. Trial
+identity is retained in provenance/artifact names. These bounded samples seek
+a reproduction; passing them cannot clear the historical category gate or
+unblock acceptance tails. Mode1 remains available for original heavy trace.
