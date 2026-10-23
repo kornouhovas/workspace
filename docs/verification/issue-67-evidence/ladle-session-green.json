@@ -1,0 +1,181 @@
+{
+  "browser": "Electron",
+  "capture": "full-page",
+  "fixture": "production components with typed disposable Ladle data",
+  "screenshots": [
+    {
+      "story": "bb-foundation--applied-empty-english",
+      "width": 1440,
+      "height": 960,
+      "screenshot": "bb-foundation--applied-empty-english-1440x960.png",
+      "capture": "full-page",
+      "layout": {
+        "overflow": false,
+        "overflowDetails": [],
+        "clippedControls": [],
+        "elements": [],
+        "wrapped": true
+      }
+    },
+    {
+      "story": "bb-foundation--applied-empty-english",
+      "width": 1024,
+      "height": 720,
+      "screenshot": "bb-foundation--applied-empty-english-1024x720.png",
+      "capture": "full-page",
+      "layout": {
+        "overflow": false,
+        "overflowDetails": [],
+        "clippedControls": [],
+        "elements": [],
+        "wrapped": true
+      }
+    },
+    {
+      "story": "bb-foundation--applied-empty-english",
+      "width": 420,
+      "height": 800,
+      "screenshot": "bb-foundation--applied-empty-english-420x800.png",
+      "capture": "full-page",
+      "layout": {
+        "overflow": false,
+        "overflowDetails": [],
+        "clippedControls": [],
+        "elements": [],
+        "wrapped": true
+      }
+    },
+    {
+      "story": "bb-foundation--applied-empty-russian",
+      "width": 1440,
+      "height": 960,
+      "screenshot": "bb-foundation--applied-empty-russian-1440x960.png",
+      "capture": "full-page",
+      "layout": {
+        "overflow": false,
+        "overflowDetails": [],
+        "clippedControls": [],
+        "elements": [],
+        "wrapped": true
+      }
+    },
+    {
+      "story": "bb-foundation--applied-empty-russian",
+      "width": 1024,
+      "height": 720,
+      "screenshot": "bb-foundation--applied-empty-russian-1024x720.png",
+      "capture": "full-page",
+      "layout": {
+        "overflow": false,
+        "overflowDetails": [],
+        "clippedControls": [],
+        "elements": [],
+        "wrapped": true
+      }
+    },
+    {
+      "story": "bb-foundation--applied-empty-russian",
+      "width": 420,
+      "height": 800,
+      "screenshot": "bb-foundation--applied-empty-russian-420x800.png",
+      "capture": "full-page",
+      "layout": {
+        "overflow": false,
+        "overflowDetails": [],
+        "clippedControls": [],
+        "elements": [],
+        "wrapped": true
+      }
+    },
+    {
+      "story": "bb-foundation--applied-table-english",
+      "width": 1440,
+      "height": 960,
+      "screenshot": "bb-foundation--applied-table-english-1440x960.png",
+      "capture": "full-page",
+      "layout": {
+        "overflow": false,
+        "overflowDetails": [],
+        "clippedControls": [],
+        "elements": [],
+        "wrapped": true
+      }
+    },
+    {
+      "story": "bb-foundation--applied-table-english",
+      "width": 1024,
+      "height": 720,
+      "screenshot": "bb-foundation--applied-table-english-1024x720.png",
+      "capture": "full-page",
+      "layout": {
+        "overflow": false,
+        "overflowDetails": [],
+        "clippedControls": [],
+        "elements": [],
+        "wrapped": true
+      }
+    },
+    {
+      "story": "bb-foundation--applied-table-english",
+      "width": 420,
+      "height": 800,
+      "screenshot": "bb-foundation--applied-table-english-420x800.png",
+      "capture": "full-page",
+      "layout": {
+        "overflow": false,
+        "overflowDetails": [],
+        "clippedControls": [],
+        "elements": [],
+        "wrapped": true
+      }
+    },
+    {
+      "story": "bb-foundation--applied-table-russian",
+      "width": 1440,
+      "height": 960,
+      "screenshot": "bb-foundation--applied-table-russian-1440x960.png",
+      "capture": "full-page",
+      "layout": {
+        "overflow": false,
+        "overflowDetails": [],
+        "clippedControls": [],
+        "elements": [],
+        "wrapped": true
+      }
+    },
+    {
+      "story": "bb-foundation--applied-table-russian",
+      "width": 1024,
+      "height": 720,
+      "screenshot": "bb-foundation--applied-table-russian-1024x720.png",
+      "capture": "full-page",
+      "layout": {
+        "overflow": false,
+        "overflowDetails": [],
+        "clippedControls": [],
+        "elements": [],
+        "wrapped": true
+      }
+    },
+    {
+      "story": "bb-foundation--applied-table-russian",
+      "width": 420,
+      "height": 800,
+      "screenshot": "bb-foundation--applied-table-russian-420x800.png",
+      "capture": "full-page",
+      "layout": {
+        "overflow": false,
+        "overflowDetails": [],
+        "clippedControls": [],
+        "elements": [],
+        "wrapped": true
+      }
+    }
+  ],
+  "featurePassed": true,
+  "shutdownPassed": true,
+  "selection": "applied",
+  "selectedStoryCount": 4,
+  "totalStoryCount": 302,
+  "completedStories": 4
+}

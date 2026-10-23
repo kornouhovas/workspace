@@ -60,12 +60,18 @@ app.on('window-all-closed', () => app.quit());`);
   assert.equal(stories.filter((name) => name.includes("--creation-")).length, 36, "Expected all eighteen EN/RU creation and Reveal states");
   assert.equal(stories.filter((name) => name.includes("--rename-")).length, 96, "Expected all 24 direct/grouped EN/RU rename states");
   const categoryMoveStories = stories.filter((name) => name.includes("--category-move-"));
+  for (const state of ["applied-table", "applied-empty"]) for (const language of ["english", "russian"]) {
+    assert.ok(stories.some(name => name.endsWith(`--${state}-${language}`)), `Missing Applied ${state} ${language}`);
+  }
   // Require the behavior matrix by name, without a total story-count target.
   const categoryMoveStates = ["editing", "pending", "saved", "unchanged", "collision", "stale", "unavailable", "rejected", "unknown", "list-loading", "list-empty", "list-error", "interrupted", "uncertain", "recovery-original", "recovery-destination", "recovery-blocked", "review-stale", "review-loading", "review-error", "recovery-pending", "recovery-unknown", "kept-original", "retained", "direct"];
   for (const state of categoryMoveStates) for (const language of ["english", "russian"]) {
     assert.ok(categoryMoveStories.some((name) => name.endsWith(`--category-move-${state}-${language}`)), `Missing category move ${state} ${language}`);
   }
-  const selectedStories = process.argv.includes("--category-move") ? categoryMoveStories : process.argv.includes("--rename") ? stories.filter((name) => name.includes("--rename-")) : process.argv.includes("--mode-changes") ? stories.filter((name) => name.includes("--mode-")) : process.argv.includes("--creation") ? stories.filter((name) => name.includes("--creation-")) : stories;
+  const selectedStories = process.argv.includes("--applied") ? stories.filter(name => name.includes("--applied-")) : process.argv.includes("--remaining-after-applied") ? stories.filter(name => !name.includes("--applied-")) : process.argv.includes("--category-move") ? categoryMoveStories : process.argv.includes("--rename") ? stories.filter((name) => name.includes("--rename-")) : process.argv.includes("--mode-changes") ? stories.filter((name) => name.includes("--mode-")) : process.argv.includes("--creation") ? stories.filter((name) => name.includes("--creation-")) : stories;
+  results.selection = process.argv.includes("--applied") ? "applied" : process.argv.includes("--remaining-after-applied") ? "remaining-after-applied" : process.argv.slice(2).join(" ") || "all";
+  results.selectedStoryCount = selectedStories.length;
+  results.totalStoryCount = stories.length;
   for (const story of selectedStories) {
     results.currentStory = story;
     await page.goto(`${url}/?story=${story}&mode=preview`);

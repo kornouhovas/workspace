@@ -1,0 +1,169 @@
+{
+  "run": "39912972260",
+  "attempt": 1,
+  "sha": "77d936baeec18f2da0930b8cfa1f3c6b23967060",
+  "status": "failed",
+  "receipts": [
+    {
+      "artifactName": "issue-67-windows-latest-77d936baeec18f2da0930b8cfa1f3c6b23967060-run-39912972260-attempt-1",
+      "provenance": {
+        "sha": "77d936baeec18f2da0930b8cfa1f3c6b23967060",
+        "run": "39912972260",
+        "attempt": "1",
+        "platform": "win32",
+        "arch": "x64",
+        "kernel": "10.0.26100",
+        "cpu": "AMD EPYC 9V74 80-Core Processor                "
+      },
+      "tapBatches": {
+        "tests": [
+          51,
+          14,
+          3482
+        ],
+        "pass": [
+          51,
+          14,
+          3467
+        ],
+        "fail": [
+          0,
+          0,
+          2
+        ],
+        "skipped": [
+          0,
+          0,
+          13
+        ],
+        "cancelled": [
+          0,
+          0,
+          0
+        ]
+      },
+      "aggregate": {
+        "tests": 3547,
+        "pass": 3532,
+        "fail": 2,
+        "skipped": 13,
+        "cancelled": 0
+      },
+      "logSha256": "e2fa0c432a3536493089835cb68429ef5c11e5a33092c536ce76af9f21bf4c2b",
+      "failures": [
+        [
+          "2783",
+          "ordinary CI runs common checks once and retains all three platform acceptance routes"
+        ],
+        [
+          "2785",
+          "manual failed-check scope runs only the Windows observer and macOS rename routes"
+        ]
+      ]
+    },
+    {
+      "artifactName": "issue-67-windows-2022-77d936baeec18f2da0930b8cfa1f3c6b23967060-run-39912972260-attempt-1",
+      "provenance": {
+        "sha": "77d936baeec18f2da0930b8cfa1f3c6b23967060",
+        "run": "39912972260",
+        "attempt": "1",
+        "platform": "win32",
+        "arch": "x64",
+        "kernel": "10.0.20348",
+        "cpu": "AMD EPYC 7763 64-Core Processor                "
+      },
+      "tapBatches": {
+        "tests": [
+          51,
+          14,
+          3482
+        ],
+        "pass": [
+          51,
+          14,
+          3467
+        ],
+        "fail": [
+          0,
+          0,
+          2
+        ],
+        "skipped": [
+          0,
+          0,
+          13
+        ],
+        "cancelled": [
+          0,
+          0,
+          0
+        ]
+      },
+      "aggregate": {
+        "tests": 3547,
+        "pass": 3532,
+        "fail": 2,
+        "skipped": 13,
+        "cancelled": 0
+      },
+      "logSha256": "201ec524b1edbb74cac3ba442ba4b40c6f08bc789cb29f924b302b29302b1511",
+      "failures": [
+        [
+          "2783",
+          "ordinary CI runs common checks once and retains all three platform acceptance routes"
+        ],
+        [
+          "2785",
+          "manual failed-check scope runs only the Windows observer and macOS rename routes"
+        ]
+      ]
+    },
+    {
+      "artifactName": "issue-67-macos-latest-77d936baeec18f2da0930b8cfa1f3c6b23967060-run-39912972260-attempt-1",
+      "provenance": {
+        "sha": "77d936baeec18f2da0930b8cfa1f3c6b23967060",
+        "run": "39912972260",
+        "attempt": "1",
+        "platform": "darwin",
+        "arch": "arm64",
+        "kernel": "25.6.0",
+        "cpu": "Apple M1 (Virtual)"
+      },
+      "tapBatches": {
+        "tests": [
+          3464
+        ],
+        "pass": [
+          3435
+        ],
+        "fail": [
+          2
+        ],
+        "skipped": [
+          27
+        ],
+        "cancelled": [
+          0
+        ]
+      },
+      "aggregate": {
+        "tests": 3464,
+        "pass": 3435,
+        "fail": 2,
+        "skipped": 27,
+        "cancelled": 0
+      },
+      "logSha256": "eca56afb39e776fc510d000852884e75257e34026fe6f45877c97ac2df0b53d0",
+      "failures": [
+        [
+          "2858",
+          "ordinary CI runs common checks once and retains all three platform acceptance routes"
+        ],
+        [
+          "2860",
+          "manual failed-check scope runs only the Windows observer and macOS rename routes"
+        ]
+      ]
+    }
+  ]
+}

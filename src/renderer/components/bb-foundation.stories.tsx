@@ -8,6 +8,7 @@ import type { ProjectCategoryMoveOperation, ProjectCategoryMoveResult, ProjectCa
 import type { ProjectRevealResult } from "../../contracts/project-reveal.js";
 import { useEffect, useRef, useState } from "react";
 import type { Language, ServiceResult } from "../../contracts/settings.js";
+import { defaultWorkspaceSession, type WorkspaceSessionSnapshot } from "../../contracts/workspace-sessions.js";
 import type { WorkspaceDesktopApi, WorkspaceRequest, WorkspaceResponse } from "../../contracts/desktop-api.js";
 import type { ActiveWorkspace, CategoryPropertySnapshot, DiscoveryPreview, ProjectList, DiscoveryMode, WorkspaceChangeEvent, WorkspaceLoad } from "../../contracts/workspaces.js";
 import { App } from "../App.js";
@@ -80,6 +81,7 @@ function WorkspacePreview({ language, state = "management" }: {
     if (state === "empty") records = [];
     let selected = records[0]?.workspaceId;
     const listeners = new Set<(event: WorkspaceChangeEvent) => void>();
+    const sessions = new Map<string, WorkspaceSessionSnapshot>();
     const snapshot = (): WorkspaceLoad => ({
       workspaces: records.map(({ workspaceId, name }) => ({ workspaceId, name })),
       activeWorkspace: records.find((record) => record.workspaceId === selected) ?? null,
@@ -87,6 +89,21 @@ function WorkspacePreview({ language, state = "management" }: {
     const failure: ServiceResult<never> = { ok: false, error: { code: "storage", message: "Preview storage failure" } };
     const workspace = async (input: WorkspaceRequest): Promise<ServiceResult<WorkspaceResponse>> => {
       if (input.type === "workspace.load") return { ok: true, value: snapshot() };
+      if (input.type === "workspace.getSession" || input.type === "workspace.setSession") {
+        const record = records.find(record => record.workspaceId === input.workspaceId);
+        if (!record) return { ok: false, error: { code: "invalid_input", message: "Unknown preview workspace" } };
+        const current = sessions.get(input.workspaceId) ?? { workspaceId: input.workspaceId, activeViewId: record.viewId,
+          epoch: "00000000-0000-4000-8000-000000000067", revision: 0, state: defaultWorkspaceSession() };
+        if (input.type === "workspace.setSession") {
+          if (input.epoch !== current.epoch || input.expectedRevision !== current.revision) return { ok: false,
+            error: { code: "stale_preview", message: "Preview session changed" } };
+          const next = { ...current, revision: current.revision + 1, state: input.state };
+          sessions.set(input.workspaceId, next);
+          return { ok: true, value: next };
+        }
+        sessions.set(input.workspaceId, current);
+        return { ok: true, value: current };
+      }
       if (input.type === "workspace.getBoardLayout" || input.type === "workspace.setBoardLayout") return { ok: true, value: { workspaceId: input.workspaceId, viewId: input.viewId, config: input.type === "workspace.setBoardLayout" ? input.config : { widths: [], properties: [], wrap: true } } };
       if (input.type === "workspace.getTableLayout" || input.type === "workspace.setTableLayout") return { ok: true, value: { workspaceId: input.workspaceId, viewId: input.viewId, config: input.type === "workspace.setTableLayout" ? input.config : { columns: [], rowOrder: [] } } };
       if (input.type === "workspace.getViewGrouping" || input.type === "workspace.setViewGrouping") return { ok: true, value: { workspaceId: input.workspaceId, viewId: input.viewId, config: input.type === "workspace.setViewGrouping" ? input.config : { propertyId: null, settings: [] } } };

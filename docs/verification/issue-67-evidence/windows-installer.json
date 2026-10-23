@@ -1,0 +1,33 @@
+{
+  "version": "0.1.0",
+  "platform": "win32",
+  "arch": "x64",
+  "kernel": "10.0.26100",
+  "sha": "6bf1fbcdeda7f5876909ec2dbd71153b5469155e",
+  "run": "39915980187",
+  "attempt": "1",
+  "stages": [
+    "offline NSIS installed in Unicode/space path; x64, version, unsigned status and notices verified",
+    "bundled backend/SQLite create, keyboard EN/RU, isolation and normal quit",
+    "same installation reopens persisted workspace/source/view identities and language",
+    "same-candidate manual reinstall preserves external application data",
+    "normal APPDATA location creates/reopens independently of Unicode fixture data and development"
+  ],
+  "installerSha256": "48c264dd4369fb451c78548e3339cfcadfe646cca57ed144ddcac348979352dc",
+  "windows": "Microsoft Windows Server 2025 Datacenter",
+  "executable": {
+    "signature": "NotSigned",
+    "name": "Workspace",
+    "file": "0.1.0",
+    "product": "0.1.0.0"
+  },
+  "status": "passed",
+  "uninstall": "passed",
+  "cleanup": {
+    "status": "passed",
+    "asserted": true,
+    "processesStopped": true,
+    "maxRetries": 5,
+    "retryDelay": 100
+  }
+}

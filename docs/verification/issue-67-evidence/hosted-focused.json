@@ -1,0 +1,79 @@
+{
+  "run": "39915219571",
+  "attempt": 1,
+  "status": "passed",
+  "receipts": [
+    {
+      "provenance": {
+        "sha": "6bf1fbcdeda7f5876909ec2dbd71153b5469155e",
+        "run": "39915219571",
+        "attempt": "1",
+        "platform": "darwin",
+        "arch": "arm64",
+        "kernel": "25.6.0",
+        "cpu": "Apple M1 (Virtual)"
+      },
+      "artifactName": "issue-67-macos-latest-6bf1fbcdeda7f5876909ec2dbd71153b5469155e-run-39915219571-attempt-1",
+      "logs": {
+        "original-regressions.log": "19f4d8d6a38a9c1100392795ae4aa2280e692d22be966738f0a3b160e7892a84",
+        "repair-regressions.log": "214d2f219ea699e9a01051085646f0c8a2c5d94a5bb0d3ff196cf31134d268dc",
+        "project-timing-regression.log": "99493ebe3f8ae2d323058005785ade2f6c03ecc63c2a4974c644bdf21acb322e"
+      },
+      "counts": {
+        "original": 73,
+        "repair": 40,
+        "native": 1,
+        "failed": 0,
+        "skipped": 0
+      }
+    },
+    {
+      "provenance": {
+        "sha": "6bf1fbcdeda7f5876909ec2dbd71153b5469155e",
+        "run": "39915219571",
+        "attempt": "1",
+        "platform": "win32",
+        "arch": "x64",
+        "kernel": "10.0.20348",
+        "cpu": "AMD EPYC 7763 64-Core Processor                "
+      },
+      "artifactName": "issue-67-windows-2022-6bf1fbcdeda7f5876909ec2dbd71153b5469155e-run-39915219571-attempt-1",
+      "logs": {
+        "original-regressions.log": "61c505f1295f1fc20219cfba6ae9296bb448b31ed5475457715ae8756bfcadc3",
+        "repair-regressions.log": "0c9390b1ac9dee23c8b01f29db23c520d3bb56a7de73926f6393b4878620ed1b",
+        "project-timing-regression.log": "ca47f5f5448a6f1e15c3f3336fad37bc0d686fec69840784772989eaf5708aea"
+      },
+      "counts": {
+        "original": 73,
+        "repair": 40,
+        "native": 1,
+        "failed": 0,
+        "skipped": 0
+      }
+    },
+    {
+      "provenance": {
+        "sha": "6bf1fbcdeda7f5876909ec2dbd71153b5469155e",
+        "run": "39915219571",
+        "attempt": "1",
+        "platform": "win32",
+        "arch": "x64",
+        "kernel": "10.0.26100",
+        "cpu": "AMD EPYC 7763 64-Core Processor                "
+      },
+      "artifactName": "issue-67-windows-latest-6bf1fbcdeda7f5876909ec2dbd71153b5469155e-run-39915219571-attempt-1",
+      "logs": {
+        "original-regressions.log": "24f80b3e82bf62fe7d7df57bab583eb46e7e228c601342c2666000b3e7f48128",
+        "repair-regressions.log": "702b7ac6080e9f422268c32d4d64fce51177172588eb370de3fbb9896c0be827",
+        "project-timing-regression.log": "c32701b24a1b6428be90e1e4f71968bd53d303e3cdcc50cb4ba68d95a70add99"
+      },
+      "counts": {
+        "original": 73,
+        "repair": 40,
+        "native": 1,
+        "failed": 0,
+        "skipped": 0
+      }
+    }
+  ]
+}

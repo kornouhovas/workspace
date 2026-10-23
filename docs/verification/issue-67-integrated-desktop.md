@@ -182,3 +182,79 @@ unchanged. Both preview/expanded delayed-identity controls pass; complete native
 readiness file21/21 passes with normal shutdown. Minimal actual App now records
 55.0ms event-to-paint with normal quit/cleanup. Renew the original complete strict
 command on the repaired harness; that small fixture does not prove scale.
+
+## Hosted full-suite and focused renewal receipts
+
+Full run [39912972260](https://github.com/kornouhovas/workspace/actions/runs/39912972260),
+attempt1, exact77d936ba: all three hosts fail only the two stale registry assertions.
+Mac3435pass/2fail/27skip; each Windows3532pass/2fail/13skip, aggregating its two
+isolated native batches and ordinary batch. All artifacts were downloaded and
+inspected:12484410537 (Mac),12483799316 (Windowslatest),12484372429 (Windows2022).
+[Per-host provenance, batches, failures and log digests](issue-67-evidence/hosted-full-suite.json)
+retain the actual tested input. These failed full runs are never relabeled green.
+
+Focused run [39915219571](https://github.com/kornouhovas/workspace/actions/runs/39915219571),
+attempt1, exact**6bf1fbcdeda7f5876909ec2dbd71153b5469155e** passes all three hosts:
+original73/73, repair40/40 and new native timing1/1 each; no failures or skips.
+Artifacts12483998685 (Mac),12483619892 (Windowslatest),12484533904 (Windows2022)
+are downloaded/inspected. [Receipt digests](issue-67-evidence/hosted-focused.json).
+Independent cumulative repair review:Standards0/Spec0 after repairs. Unchanged
+passing full-suite scenarios retain77 provenance; newly changed consumers renew.
+
+Actual Windows NSIS run
+[39915980187](https://github.com/kornouhovas/workspace/actions/runs/39915980187),
+attempt1 at6bf1fbcd, passes. Artifact12485067606 is downloaded/inspected:
+original policy/registry73/73 and installed-keyboard driver2/2, actual offline
+Unicode/space-path installation, bundled backend/SQLite, version/notices/isolation,
+EN/RU keyboard, reopen/reinstall with retained IDs/views and independent APPDATA,
+uninstall and asserted normal owned cleanup. [Installer receipt](issue-67-evidence/windows-installer.json).
+Installer SHA256 `48c264dd4369fb451c78548e3339cfcadfe646cca57ed144ddcac348979352dc`.
+Actual OS is **Microsoft Windows Server2025 Datacenter**, kernel10.0.26100;
+this does not satisfy Windows11. [Mac installer receipt](issue-67-evidence/macos-installer.json)
+retains its actual77d936ba provenance because installation/production inputs did
+not change in the test-only repair.
+
+## Local scale shutdown negative and bounded control
+
+The repaired strict driver at6bf1fbcd passes all20 measured direct observations:
+startup4522.2ms; preview235.5ms, expand50.9ms, expanded edit49.3ms, return62.3ms;
+all original interactions also meet300ms. All five direct memory observations
+pass, conservative maximum977289216B. It then fails the unchanged10s ordinary
+quit after before-quit/will-quit/quit/node-exit events; parent exit occurs only
+after forced SIGKILL. Owned cleanup passes but normal quit/backend-exit acceptance
+does not. Grouped/reopen scenarios remain unreached.
+[Raw scale receipt](issue-67-evidence/local-scale-shutdown-failure.json).
+No unchanged strict retry is used to seek a green result.
+
+A separate six-launch packaged control using the unchanged1000/20/10 fixture
+passes all six normal quits (159–244ms) while each window is unfocused.
+[Control receipt](issue-67-evidence/packaged-quit-control.json).
+Together with the earlier standalone controls, this rules out an unconditional
+launch/quit failure, but does not uniquely explain the intermittent long-journey
+macOS27/inspector shutdown. Preserve the negative; supported-host strict acceptance
+still needs its own complete original receipts.
+
+## Ladle session-fixture repair
+
+Runtime run [39915975323](https://github.com/kornouhovas/workspace/actions/runs/39915975323)
+at6bf1fbcd fails all three hosts in the first `applied-empty-english` story:
+zero layout captures, visible workspace-session error and normal Electron quit.
+The WorkspacePreview mock predates #55 and rejects required `getSession` and
+`setSession`, so this is a fixture failure before the intended state is rendered.
+The real backend's session regressions and packaged session/recovery journeys
+remain separately covered.
+
+The repaired fixture provides independent workspace snapshots, shared contract
+defaults, epoch/revision rejection and exact acknowledged revisions. All four
+Applied Table/empty EN/RU states are renewed at1440/1024/420, retaining geometry,
+wrapping, original caller deadlines and normal shutdown. Narrowed original command
+is red before the repair and passes12 captures afterwards. A named-case guard
+rejects even a single missing Applied metadata entry with featurePassedfalse and
+normal quit; metadata is restored byte-for-byte after the negative control.
+The complement remains mandatory; no failed/unreached state is retired.
+
+[Renderer equivalence](issue-67-evidence/renderer-fixture-equivalence.json) confirms
+all10 production outputs are byte-identical before/after the `.stories.tsx` repair.
+New focused `integrated-layout` precedes the unexecuted complementary inventory
+and all package/scale journeys via `integrated-runtime`. Reviewed unchanged
+full-suite/installer evidence remains at its actual earlier sources.

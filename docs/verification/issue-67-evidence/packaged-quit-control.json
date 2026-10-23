@@ -1,0 +1,163 @@
+{
+  "fixture": "/private/var/folders/9b/gg5177qd7_z9mq1g3rh0x4bc0000gn/T/issue67-package-quit-7tHKGV",
+  "rows": [
+    {
+      "index": 0,
+      "stdout": "[issue67-quit]before-quit\n[issue67-quit]before-quit\n[issue67-quit]will-quit\n[issue67-quit]node-exit\n[issue67-quit]quit\n",
+      "stderr": "Debugger ending on ws://127.0.0.1:50753/4bb8fb0c-3bcd-4767-9a93-12b48234f3ff\nFor help, see: https://nodejs.org/learn/getting-started/debugging\n",
+      "events": [
+        {
+          "event": "parent-exit",
+          "code": 0,
+          "signal": null
+        },
+        {
+          "event": "protocol-close"
+        }
+      ],
+      "native": {
+        "focused": false,
+        "backends": [
+          40774
+        ]
+      },
+      "passed": true,
+      "quitMs": 195,
+      "exitCode": 0,
+      "signalCode": null
+    },
+    {
+      "index": 1,
+      "stdout": "[issue67-quit]before-quit\n[issue67-quit]before-quit\n[issue67-quit]will-quit\n[issue67-quit]node-exit\n[issue67-quit]quit\n",
+      "stderr": "Debugger ending on ws://127.0.0.1:50759/9088e60f-fd5d-4d2f-8543-ea9ea906b364\nFor help, see: https://nodejs.org/learn/getting-started/debugging\n",
+      "events": [
+        {
+          "event": "parent-exit",
+          "code": 0,
+          "signal": null
+        },
+        {
+          "event": "protocol-close"
+        }
+      ],
+      "native": {
+        "focused": false,
+        "backends": [
+          40781
+        ]
+      },
+      "passed": true,
+      "quitMs": 244,
+      "exitCode": 0,
+      "signalCode": null
+    },
+    {
+      "index": 2,
+      "stdout": "[issue67-quit]before-quit\n[issue67-quit]before-quit\n[issue67-quit]will-quit\n[issue67-quit]node-exit\n[issue67-quit]quit\n",
+      "stderr": "Debugger ending on ws://127.0.0.1:50767/44251f4f-5fe7-48ae-a0e6-2ffc918099f0\nFor help, see: https://nodejs.org/learn/getting-started/debugging\n",
+      "events": [
+        {
+          "event": "parent-exit",
+          "code": 0,
+          "signal": null
+        },
+        {
+          "event": "protocol-close"
+        }
+      ],
+      "native": {
+        "focused": false,
+        "backends": [
+          40788
+        ]
+      },
+      "passed": true,
+      "quitMs": 197,
+      "exitCode": 0,
+      "signalCode": null
+    },
+    {
+      "index": 3,
+      "stdout": "[issue67-quit]before-quit\n[issue67-quit]before-quit\n[issue67-quit]will-quit\n[issue67-quit]node-exit\n[issue67-quit]quit\n",
+      "stderr": "Debugger ending on ws://127.0.0.1:50776/00d1c11a-165a-42c4-877d-be16cf58736b\nFor help, see: https://nodejs.org/learn/getting-started/debugging\n",
+      "events": [
+        {
+          "event": "parent-exit",
+          "code": 0,
+          "signal": null
+        },
+        {
+          "event": "protocol-close"
+        }
+      ],
+      "native": {
+        "focused": false,
+        "backends": [
+          40794
+        ]
+      },
+      "passed": true,
+      "quitMs": 196,
+      "exitCode": 0,
+      "signalCode": null
+    },
+    {
+      "index": 4,
+      "stdout": "[issue67-quit]before-quit\n[issue67-quit]before-quit\n[issue67-quit]will-quit\n[issue67-quit]node-exit\n[issue67-quit]quit\n",
+      "stderr": "Debugger ending on ws://127.0.0.1:50783/e6246cbe-0914-4fc3-ad8e-8c273b5d5661\nFor help, see: https://nodejs.org/learn/getting-started/debugging\n",
+      "events": [
+        {
+          "event": "parent-exit",
+          "code": 0,
+          "signal": null
+        },
+        {
+          "event": "protocol-close"
+        }
+      ],
+      "native": {
+        "focused": false,
+        "backends": [
+          40800
+        ]
+      },
+      "passed": true,
+      "quitMs": 179,
+      "exitCode": 0,
+      "signalCode": null
+    },
+    {
+      "index": 5,
+      "stdout": "[issue67-quit]before-quit\n[issue67-quit]before-quit\n[issue67-quit]will-quit\n[issue67-quit]node-exit\n[issue67-quit]quit\n",
+      "stderr": "Debugger ending on ws://127.0.0.1:50795/d39a6389-8562-4ebf-840f-db8472d23184\nFor help, see: https://nodejs.org/learn/getting-started/debugging\n",
+      "events": [
+        {
+          "event": "parent-exit",
+          "code": 0,
+          "signal": null
+        },
+        {
+          "event": "protocol-close"
+        }
+      ],
+      "native": {
+        "focused": false,
+        "backends": [
+          40807
+        ]
+      },
+      "passed": true,
+      "quitMs": 159,
+      "exitCode": 0,
+      "signalCode": null
+    }
+  ],
+  "stopped": true,
+  "cleanup": {
+    "status": "passed",
+    "asserted": true,
+    "processesStopped": true,
+    "maxRetries": 5,
+    "retryDelay": 100
+  }
+}

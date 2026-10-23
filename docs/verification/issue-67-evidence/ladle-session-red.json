@@ -1,0 +1,12 @@
+{
+  "browser": "Electron",
+  "capture": "full-page",
+  "fixture": "production components with typed disposable Ladle data",
+  "screenshots": [],
+  "featurePassed": false,
+  "shutdownPassed": true,
+  "currentStory": "bb-foundation--applied-empty-english",
+  "error": "locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('.discovery-panel, .table-view') to be visible\u001b[22m\n",
+  "failureGeometry": [],
+  "failureCapture": "saved"
+}

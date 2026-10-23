@@ -35,6 +35,19 @@ selection changes ordinary full defaults. Earlier full runs remain failed;
 their passing unchanged cases retain their actual source provenance. The Windows
 installer still requires its unexecuted original driver and actual NSIS flow.
 
+For run39915975323's first Applied Ladle state failure, use
+`checks: integrated-layout`. It renews all four required Applied Table/empty
+EN/RU states at all three sizes on all three hosts. The preview mock now implements
+the current workspace-session query/write boundary; production renderer output is
+byte-identical. Missing any named Applied state fails closed, including when the
+remaining selection would otherwise be nonempty. After inspected focused success,
+`integrated-runtime` selects `--remaining-after-applied` for the unexecuted
+complement, followed by package/resources and every original/new packaged journey
+and strict scale. Ordinary `integrated-desktop` still selects the complete layout
+inventory. Preserve each report's selection/counts; a focused family is not the
+complete inventory. This fixture-only repair does not replay the full suites or
+unchanged successful installer receipts.
+
 Read when selecting or diagnosing a CI route, changing CI scheduling, or checking exact-SHA acceptance. [Development](development.md#verification) owns verification policy; [.github/workflows/desktop-ci.yml](../.github/workflows/desktop-ci.yml) owns the inherited desktop routes.
 [macos-install.yml](../.github/workflows/macos-install.yml) adds macOS 14 arm64 DMG
 build/install/reopen/replacement acceptance on push, pull requests and manual dispatch.

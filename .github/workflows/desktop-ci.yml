@@ -8,7 +8,7 @@ on:
       checks:
         description: Full acceptance or a selected focused failure route
         type: choice
-        options: [full, integrated-desktop, integrated-regressions, integrated-runtime, desktop-ux, layout-fixtures, source-inventory, observer-cancellation, observer-workflow, native-owner-controls, native-lifecycle, project-files-windows, project-files-windows-trace, failed, readiness, windows-release, issue22-failures, creation-shutdown, raw-rename, issue24-failures, category-fixture, issue24-startup, multiselect, etw-controls, app-fixture, property-fixture, runtime-observation, view-fixtures, number, windows-property-fixture, rename-authoring, rename-fixture, viewport-runtime, workspace-root-runtime, archive-contexts, creation-ownership, desktop-shell, shell-runtime, views-readiness, view-contexts, workspace-sidebar, workspace-setup, workspace-setup-readiness, select-readiness, source-fixture, source-runtime]
+        options: [full, integrated-desktop, integrated-regressions, integrated-layout, integrated-runtime, desktop-ux, layout-fixtures, source-inventory, observer-cancellation, observer-workflow, native-owner-controls, native-lifecycle, project-files-windows, project-files-windows-trace, failed, readiness, windows-release, issue22-failures, creation-shutdown, raw-rename, issue24-failures, category-fixture, issue24-startup, multiselect, etw-controls, app-fixture, property-fixture, runtime-observation, view-fixtures, number, windows-property-fixture, rename-authoring, rename-fixture, viewport-runtime, workspace-root-runtime, archive-contexts, creation-ownership, desktop-shell, shell-runtime, views-readiness, view-contexts, workspace-sidebar, workspace-setup, workspace-setup-readiness, select-readiness, source-fixture, source-runtime]
         default: full
       desktop_ux_profile:
         description: With desktop-ux, select foundation, grouped Board or project navigation acceptance
@@ -806,7 +806,7 @@ jobs:
           if-no-files-found: error
 
   common:
-    if: ${{ github.event_name != 'workflow_dispatch' || (inputs.checks != 'failed' && inputs.checks != 'readiness' && inputs.checks != 'windows-release' && inputs.checks != 'issue22-failures' && inputs.checks != 'creation-shutdown' && inputs.checks != 'raw-rename' && inputs.checks != 'issue24-failures' && inputs.checks != 'category-fixture' && inputs.checks != 'issue24-startup' && inputs.checks != 'multiselect' && inputs.checks != 'etw-controls' && inputs.checks != 'app-fixture' && inputs.checks != 'property-fixture' && inputs.checks != 'runtime-observation' && inputs.checks != 'view-fixtures' && inputs.checks != 'number' && inputs.checks != 'windows-property-fixture' && inputs.checks != 'rename-authoring' && inputs.checks != 'rename-fixture' && inputs.checks != 'viewport-runtime' && inputs.checks != 'workspace-root-runtime' && inputs.checks != 'archive-contexts' && inputs.checks != 'creation-ownership' && inputs.checks != 'desktop-shell' && inputs.checks != 'shell-runtime' && inputs.checks != 'views-readiness' && inputs.checks != 'view-contexts' && inputs.checks != 'workspace-sidebar' && inputs.checks != 'workspace-setup' && inputs.checks != 'workspace-setup-readiness' && inputs.checks != 'select-readiness' && inputs.checks != 'source-fixture' && inputs.checks != 'source-runtime' && inputs.checks != 'desktop-ux' && inputs.checks != 'layout-fixtures' && inputs.checks != 'source-inventory' && inputs.checks != 'observer-cancellation' && inputs.checks != 'observer-workflow' && inputs.checks != 'native-owner-controls' && inputs.checks != 'native-lifecycle' && inputs.checks != 'project-files-windows' && inputs.checks != 'project-files-windows-trace' && inputs.checks != 'integrated-desktop' && inputs.checks != 'integrated-regressions' && inputs.checks != 'integrated-runtime') }}
+    if: ${{ github.event_name != 'workflow_dispatch' || (inputs.checks != 'failed' && inputs.checks != 'readiness' && inputs.checks != 'windows-release' && inputs.checks != 'issue22-failures' && inputs.checks != 'creation-shutdown' && inputs.checks != 'raw-rename' && inputs.checks != 'issue24-failures' && inputs.checks != 'category-fixture' && inputs.checks != 'issue24-startup' && inputs.checks != 'multiselect' && inputs.checks != 'etw-controls' && inputs.checks != 'app-fixture' && inputs.checks != 'property-fixture' && inputs.checks != 'runtime-observation' && inputs.checks != 'view-fixtures' && inputs.checks != 'number' && inputs.checks != 'windows-property-fixture' && inputs.checks != 'rename-authoring' && inputs.checks != 'rename-fixture' && inputs.checks != 'viewport-runtime' && inputs.checks != 'workspace-root-runtime' && inputs.checks != 'archive-contexts' && inputs.checks != 'creation-ownership' && inputs.checks != 'desktop-shell' && inputs.checks != 'shell-runtime' && inputs.checks != 'views-readiness' && inputs.checks != 'view-contexts' && inputs.checks != 'workspace-sidebar' && inputs.checks != 'workspace-setup' && inputs.checks != 'workspace-setup-readiness' && inputs.checks != 'select-readiness' && inputs.checks != 'source-fixture' && inputs.checks != 'source-runtime' && inputs.checks != 'desktop-ux' && inputs.checks != 'layout-fixtures' && inputs.checks != 'source-inventory' && inputs.checks != 'observer-cancellation' && inputs.checks != 'observer-workflow' && inputs.checks != 'native-owner-controls' && inputs.checks != 'native-lifecycle' && inputs.checks != 'project-files-windows' && inputs.checks != 'project-files-windows-trace' && inputs.checks != 'integrated-desktop' && inputs.checks != 'integrated-regressions' && inputs.checks != 'integrated-runtime' && inputs.checks != 'integrated-layout') }}
     name: Common tests and static checks
     runs-on: macos-latest
     steps:
@@ -2790,7 +2790,7 @@ jobs:
           if-no-files-found: error
 
   integrated-desktop:
-    if: ${{ github.event_name == 'workflow_dispatch' && (inputs.checks == 'integrated-desktop' || inputs.checks == 'integrated-regressions' || inputs.checks == 'integrated-runtime') }}
+    if: ${{ github.event_name == 'workflow_dispatch' && (inputs.checks == 'integrated-desktop' || inputs.checks == 'integrated-regressions' || inputs.checks == 'integrated-runtime' || inputs.checks == 'integrated-layout') }}
     name: Complete candidate (${{ matrix.os }})
     strategy:
       fail-fast: false
@@ -2830,17 +2830,27 @@ jobs:
           node --test --test-name-pattern="project timing waits" tests/runtime-view-readiness.test.mjs 2>&1 | tee work/issue-67-ci/project-timing-regression.log
       - run: npm run build:ladle
         if: ${{ inputs.checks != 'integrated-regressions' }}
-      - name: Retained long-content, loading, pending and recovery layout inventory
-        if: ${{ inputs.checks != 'integrated-regressions' }}
+      - name: Focused Applied workspace session fixture renewal
+        if: ${{ inputs.checks == 'integrated-layout' }}
+        run: node scripts/smoke-discovery-layouts.mjs --applied
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/issue-67-ci/layouts
+      - name: Retained full layout inventory
+        if: ${{ inputs.checks == 'integrated-desktop' }}
         run: node scripts/smoke-discovery-layouts.mjs
         env:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/issue-67-ci/layouts
+      - name: Previously unreached layout states after Applied renewal
+        if: ${{ inputs.checks == 'integrated-runtime' }}
+        run: node scripts/smoke-discovery-layouts.mjs --remaining-after-applied
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/issue-67-ci/layouts
       - run: npm run package:built
-        if: ${{ inputs.checks != 'integrated-regressions' }}
+        if: ${{ inputs.checks == 'integrated-desktop' || inputs.checks == 'integrated-runtime' }}
       - run: npm run check:artifact -- release
-        if: ${{ inputs.checks != 'integrated-regressions' }}
+        if: ${{ inputs.checks == 'integrated-desktop' || inputs.checks == 'integrated-runtime' }}
       - name: Every principal and late UI journey on the unchanged package, then strict scale
-        if: ${{ inputs.checks != 'integrated-regressions' }}
+        if: ${{ inputs.checks == 'integrated-desktop' || inputs.checks == 'integrated-runtime' }}
         shell: bash
         run: |
           set -o pipefail
