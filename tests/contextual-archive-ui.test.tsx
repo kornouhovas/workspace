@@ -152,3 +152,43 @@ for (const language of ["en", "ru"] as const) test(`${language}: contextual reco
   await waitFor(() => assert.equal(document.activeElement, origin));
   origin.remove();
 });
+
+for (const language of ["en", "ru"] as const) test(`${language}: completed restore retains visible focus when the archived row refresh arrives after Done`, async () => {
+  const { act } = await import("@testing-library/react");
+  const project = { projectId: "p", categoryId: null, name: "Project", relativePath: "Archive/Project", originalRelativePath: "Project" };
+  let applied = false, publish!: () => void;
+  const refreshed = new Promise<void>(resolve => { publish = resolve; });
+  const api = { workspace: async (input: Record<string, unknown>) => {
+    if (input.type === "workspace.listArchivedProjects") {
+      if (applied) await refreshed;
+      return { ok: true, value: { workspaceId: "w", sourceId: "s", relativePath: "Archive", revision: applied ? 2 : 1, projects: applied ? [] : [project] } };
+    }
+    if (input.type === "workspace.listProjectArchiveOperations") return { ok: true, value: { workspaceId: "w", sourceId: "s", operations: [] } };
+    if (input.type === "workspace.getTableLayout") return { ok: true, value: { workspaceId: "w", viewId: "v", config: { columns: [], rowOrder: [] } } };
+    if (input.type === "workspace.getViewFilter") return { ok: true, value: { workspaceId: "w", viewId: "v", config: { search: "", rules: [] } } };
+    if (input.type === "workspace.getViewGrouping") return { ok: true, value: { workspaceId: "w", viewId: "v", config: { propertyId: null, settings: [] } } };
+    if (input.type === "workspace.queryView") return { ok: true, value: { workspaceId: "w", viewId: "v", archived: true, projectIds: ["p"] } };
+    if (input.type === "workspace.listTextProperties") return { ok: true, value: { workspaceId: "w", sourceId: "s", revision: 1, definitions: [], values: [] } };
+    if (input.type === "workspace.previewProjectArchive") return { ok: true, value: { workspaceId: "w", sourceId: "s", projectId: "p", action: "restore", originalRelativePath: "Archive/Project", requestedRelativePath: "Project", revision: 1, missingParents: [], blockers: [], previewToken: "token" } };
+    if (input.type === "workspace.applyProjectArchive") {
+      applied = true;
+      return { ok: true, value: { operation: { operationId: input.operationId, sourceId: "s", projectId: "p", action: "restore", originalRelativePath: "Archive/Project", requestedRelativePath: "Project", stage: "completed", problem: null, completedRevision: 2 } } };
+    }
+    throw new Error(`Unexpected request: ${input.type}`);
+  }, onWorkspaceChange: () => () => {} } as unknown as WorkspaceDesktopApi;
+  const t = (key: Parameters<typeof translate>[1]) => translate(language, key);
+  render(<ProjectArchivePanel client={new WorkspaceServiceClient(api)} workspaceId="w" sourceId="s" projects={[]} viewId="v" language={language} disabled={false} revision={1} invalidation={0} onCommitted={() => {}} onViewChange={() => {}} />);
+  await userEvent.click(screen.getByRole("button", { name: t("archiveArchived") }));
+  const menu = await screen.findByRole("button", { name: `${t("projectActions")}: Project` });
+  await userEvent.click(menu);
+  await userEvent.click(await screen.findByRole("button", { name: `${t("archiveRestoreApply")}: Project` }));
+  const dialog = await screen.findByRole("dialog", { name: t("archiveRestoreApply") });
+  await userEvent.click(within(dialog).getByRole("button", { name: t("archiveRestoreReview") }));
+  await userEvent.click(await within(dialog).findByRole("button", { name: t("archiveRestoreApply") }));
+  await within(dialog).findByText(t("archiveCompleted"));
+  await userEvent.click(within(dialog).getByRole("button", { name: t("archiveDone") }));
+  await act(async () => { publish(); });
+  await screen.findByText(t("archiveEmpty"));
+  assert.notEqual(document.activeElement, document.body, "Completed restore must keep focus after its row disappears");
+  assert.equal(document.activeElement?.closest('[hidden]'), null);
+});

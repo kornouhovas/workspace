@@ -1,0 +1,74 @@
+{
+  "run": 39925247784,
+  "attempt": 1,
+  "sha": "53c4805ba81610ea222ae4ed58f40fbd3038e29a",
+  "status": "passed",
+  "receipts": [
+    {
+      "artifact": "issue-67-macos-latest-53c4805ba81610ea222ae4ed58f40fbd3038e29a-run-39925247784-attempt-1",
+      "family": "creation",
+      "reportSha256": "9827e37fa6f4186cfb6f46ef8284ff15e3dbac5caab222a335510add5ff5175d",
+      "selection": "--creation",
+      "selectedStoryCount": 36,
+      "captures": 108,
+      "featurePassed": true,
+      "shutdownPassed": true,
+      "appearance": "Inspected representative EN/RU1024 dialog; intended collision error retained, unrelated archive error absent."
+    },
+    {
+      "artifact": "issue-67-macos-latest-53c4805ba81610ea222ae4ed58f40fbd3038e29a-run-39925247784-attempt-1",
+      "family": "rename",
+      "reportSha256": "7da00e66436d38d97b8ab72c85264466913ed118df4a01bbb588be811f49f672",
+      "selection": "--rename",
+      "selectedStoryCount": 96,
+      "captures": 288,
+      "featurePassed": true,
+      "shutdownPassed": true,
+      "appearance": "Inspected representative EN/RU1024 dialog; intended collision error retained, unrelated archive error absent."
+    },
+    {
+      "artifact": "issue-67-windows-latest-53c4805ba81610ea222ae4ed58f40fbd3038e29a-run-39925247784-attempt-1",
+      "family": "creation",
+      "reportSha256": "9827e37fa6f4186cfb6f46ef8284ff15e3dbac5caab222a335510add5ff5175d",
+      "selection": "--creation",
+      "selectedStoryCount": 36,
+      "captures": 108,
+      "featurePassed": true,
+      "shutdownPassed": true,
+      "appearance": "Inspected representative EN/RU1024 dialog; intended collision error retained, unrelated archive error absent."
+    },
+    {
+      "artifact": "issue-67-windows-latest-53c4805ba81610ea222ae4ed58f40fbd3038e29a-run-39925247784-attempt-1",
+      "family": "rename",
+      "reportSha256": "7da00e66436d38d97b8ab72c85264466913ed118df4a01bbb588be811f49f672",
+      "selection": "--rename",
+      "selectedStoryCount": 96,
+      "captures": 288,
+      "featurePassed": true,
+      "shutdownPassed": true,
+      "appearance": "Inspected representative EN/RU1024 dialog; intended collision error retained, unrelated archive error absent."
+    },
+    {
+      "artifact": "issue-67-windows-2022-53c4805ba81610ea222ae4ed58f40fbd3038e29a-run-39925247784-attempt-1",
+      "family": "creation",
+      "reportSha256": "9827e37fa6f4186cfb6f46ef8284ff15e3dbac5caab222a335510add5ff5175d",
+      "selection": "--creation",
+      "selectedStoryCount": 36,
+      "captures": 108,
+      "featurePassed": true,
+      "shutdownPassed": true,
+      "appearance": "Inspected representative EN/RU1024 dialog; intended collision error retained, unrelated archive error absent."
+    },
+    {
+      "artifact": "issue-67-windows-2022-53c4805ba81610ea222ae4ed58f40fbd3038e29a-run-39925247784-attempt-1",
+      "family": "rename",
+      "reportSha256": "7da00e66436d38d97b8ab72c85264466913ed118df4a01bbb588be811f49f672",
+      "selection": "--rename",
+      "selectedStoryCount": 96,
+      "captures": 288,
+      "featurePassed": true,
+      "shutdownPassed": true,
+      "appearance": "Inspected representative EN/RU1024 dialog; intended collision error retained, unrelated archive error absent."
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "head": "61dffe60862e0a9828fe9a1e51fec0ea048b1f31",
+  "workingTree": "Completed archive focus repair and EN/RU delayed-list regression",
+  "command": "npm run test:all",
+  "exitCode": 0,
+  "tests": 3467,
+  "passed": 3440,
+  "failed": 0,
+  "skipped": 27,
+  "durationMs": 159875.51775,
+  "logSha256": "ba2cdb6012f4beb4060915f4dda391a6178e5e9120dff3926f79329dccfa4248",
+  "inputManifest": "focus-fix-tested-inputs.json",
+  "uiRegression": {
+    "red": 2,
+    "greenSuite": 20,
+    "redLogSha256": "3c04014a02b8d5d39f4e38cf3b3636c484a7c69f4c1b4e1ca770b955ed18f105",
+    "greenLogSha256": "6f06431e7ccb17c497a7c93aa56660fc8243ea227ed1e05898d44679f508816c"
+  }
+}

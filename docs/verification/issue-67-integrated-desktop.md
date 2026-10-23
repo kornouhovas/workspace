@@ -8,8 +8,10 @@ https://github.com/kornouhovas/workspace/issues/67.
 
 Base `5799532c4966e026b96b6b18718f5a8e8171bf6b` includes accepted #66.
 Task branch `codex/issue-67-integrated-desktop`. This change adds acceptance
-infrastructure; application, schema, native resources, runtime dependencies and
-installer inputs remain unchanged. Existing principal UI journeys now explicitly
+infrastructure and repairs completed-operation focus in the archive panel.
+Schema, native resources and runtime dependencies remain unchanged. Earlier
+fixture-only renderer/package equivalence receipts are historical; the focus
+repair requires renewed application/package acceptance. Existing principal UI journeys now explicitly
 select development or the packaged executable. Development remains the default.
 No assertion, deadline, identity/data-preservation or cleanup gate is relaxed.
 
@@ -352,3 +354,36 @@ App/DiscoveryWorkspace fixtures now provide archive reads. Both reviews report0
 findings; typecheck/lint and renderer10-file byte-equivalence pass. Source states
 remain in the final hosted116-state complement; the348-capture geometry result
 alone does not establish healthy appearance.
+
+
+## Completed-operation focus race
+
+Runtime39926161171 at61dffe60 passes the remaining116 Ladle states and package
+verification on every host. Windows2022 passes15 journeys before archive-contexts
+fails focus after grouped/RU/Table/list Restore; macOS fails archived Text entry
+in grouped/RU/Table/preview after19 completed context cases. Both retain normal
+quit/backend exit/owned cleanup. [Separate raw failures](issue-67-evidence/hosted-archive-failures.json).
+Windowslatest passes all30 preceding packaged journeys, then strictscale misses
+three300ms limits: direct filtered Table drag344.1ms, direct preview754.1ms,
+grouped preview3433.4ms. Startup/scan, all memory samples (maximum882864128B),
+four normal quits and cleanup pass. [Raw scale negative](issue-67-evidence/hosted-windows-scale-failure.json).
+No failed/unreached row is accepted or retired.
+
+The focus failure is causally reproduced through the real archive panel's public
+UI in both languages: hold the archived-list refresh, complete Restore and select
+Done, then release the empty list. Done had focused the still-connected origin
+row; the delayed refresh removes it and focus falls to BODY. Both regressions are
+red before the repair. Completed operations now focus a stable visible owner;
+ordinary cancellation retains origin focus. Pending/unknown/data guards are
+unchanged. Both review axes report0findings.
+
+[Full local suite](issue-67-evidence/focus-fix-full-suite.json) passes3440/3467,
+zero failures,27 skips,159875.5ms on the freshly built focus-repair candidate.
+[Exact tested inputs](issue-67-evidence/focus-fix-tested-inputs.json).
+Archive UI20/20, typecheck/lint/docs, fresh package/resources and the original
+24-context/192-capture packaged archive journey pass with normal cleanup.
+[Original native command receipt](issue-67-evidence/focus-fix-archive-native.json).
+The separate macOS editor-entry failure still requires hosted renewal; the focus
+repair is not claimed as its proven cause. Strict scale requires separate diagnosis.
+Earlier renderer/installer/unchanged-package receipts retain their actual pre-fix
+inputs and do not establish repaired-candidate acceptance.

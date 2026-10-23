@@ -94,7 +94,9 @@ function ArchiveContent({ request, onRequestClosed, onRestoreFocus, onPreview, o
     epoch.current++; setReview(null); setLocationReview(null); setRecovery(null); setMessage(null);
     if (contextual) { setContextual(null); onRequestClosed?.(); }
     const target = returnFocus.current;
-    if (target?.isConnected && !target.disabled && !target.closest("[hidden]")) target.focus();
+    // A completed archive/restore removes its origin row when the list catches
+    // up. Return to a stable owner even if that row is still connected for now.
+    if (message !== "archiveCompleted" && target?.isConnected && !target.disabled && !target.closest("[hidden]")) target.focus();
     else if (section.current && !section.current.closest("[hidden]")) section.current.focus();
     else if (onRestoreFocus) onRestoreFocus();
     else section.current?.focus();

@@ -1,0 +1,86 @@
+{
+  "windows-2022": {
+    "sha": "61dffe60862e0a9828fe9a1e51fec0ea048b1f31",
+    "run": "39926161171",
+    "attempt": "1",
+    "platform": "win32",
+    "kernel": "10.0.20348",
+    "phase": {
+      "discoveryMode": "grouped",
+      "language": "ru",
+      "layout": "table",
+      "location": "list",
+      "step": "archived-editor"
+    },
+    "status": "failed",
+    "failure": {
+      "name": "AssertionError",
+      "message": "Completed operation returns to a visible focus owner\n\ntrue !== false\n"
+    },
+    "failedInterface": {
+      "state": "ready",
+      "diagnostic": null,
+      "interfaceReady": "true",
+      "activeTag": "BODY",
+      "textareas": 0
+    },
+    "shutdowns": [
+      {
+        "normalQuit": true,
+        "backendsExited": true
+      }
+    ],
+    "cleanup": {
+      "status": "passed",
+      "asserted": true,
+      "processesStopped": true,
+      "maxRetries": 5,
+      "retryDelay": 100
+    },
+    "checks": 18,
+    "captures": 152,
+    "reportSha256": "103af2cdb9b49dffb1c7fb6295c0f371108976e28fa7381b1128bc4e2d83b609"
+  },
+  "macos-latest": {
+    "sha": "61dffe60862e0a9828fe9a1e51fec0ea048b1f31",
+    "run": "39926161171",
+    "attempt": "1",
+    "platform": "darwin",
+    "kernel": "25.6.0",
+    "phase": {
+      "discoveryMode": "grouped",
+      "language": "ru",
+      "layout": "table",
+      "location": "preview",
+      "step": "archived-editor"
+    },
+    "status": "failed",
+    "failure": {
+      "name": "TimeoutError",
+      "message": "locator.fill: Timeout 15000ms exceeded.\nCall log:\n  - waiting for locator('.project-area').getByRole('textbox', { name: '\u0420\u0435\u0434\u0430\u043a\u0442\u0438\u0440\u043e\u0432\u0430\u0442\u044c Text-\u0437\u043d\u0430\u0447\u0435\u043d\u0438\u0435: Brand refresh / Notes', exact: true })\n"
+    },
+    "failedInterface": {
+      "state": "ready",
+      "diagnostic": null,
+      "interfaceReady": "true",
+      "activeTag": "BUTTON",
+      "textareas": 0
+    },
+    "shutdowns": [
+      {
+        "normalQuit": true,
+        "backendsExited": true
+      }
+    ],
+    "cleanup": {
+      "status": "passed",
+      "asserted": true,
+      "processesStopped": true,
+      "maxRetries": 5,
+      "retryDelay": 100
+    },
+    "checks": 19,
+    "captures": 156,
+    "reportSha256": "d024bd19423b1a7584fe3cdf62651d0948b0d949e43756ee34d1a315b760b3c5"
+  }
+}
