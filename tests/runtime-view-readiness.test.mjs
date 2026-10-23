@@ -12,6 +12,7 @@ import { closeElectron } from "../scripts/runtime-lifecycle.mjs";
 import { usableRuntimeViewProjection } from "../scripts/runtime-view-readiness.mjs";
 import { activateRuntimeView, setRuntimeViewLanguage } from "../scripts/runtime-view-controls.mjs";
 import { openArchiveTextEditor } from "../scripts/archive-editor-driver.mjs";
+import { installArchiveEntryTrace } from "../scripts/archive-entry-trace.mjs";
 import { readRuntimeInteraction, waitForRuntimeProjection, waitForRuntimeProject } from "../scripts/runtime-performance-timing.mjs";
 
 test('project timing waits for asynchronously mounted fields and tree before committed paint', async () => {
@@ -100,6 +101,20 @@ test('archive editor preparation waits for the focused committed control without
     assert.equal(await input.inputValue(),'New authored value');
     assert.equal(await input.evaluate(node=>node===document.activeElement),true);
     assert.equal(await page.evaluate(()=>globalThis.editorActivations),1);
+  });
+});
+
+test('archive entry diagnostic observes DOM changes when installed before the document element', async () => {
+  await withPage(async page=>{
+    const errors=[];page.on('pageerror',error=>errors.push(error.message));
+    await page.addInitScript(installArchiveEntryTrace);
+    await page.goto('data:text/html,'+encodeURIComponent('<div class="project-area"><textarea>Private draft</textarea></div>'));
+    await page.evaluate(()=>{document.querySelector('textarea').disabled=true;});
+    await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(resolve)));
+    assert.deepEqual(errors,[],'Document-start installation must attach its observer');
+    const events=await page.evaluate(()=>globalThis.__workspaceArchiveEntryTrace);
+    assert.ok(events.some(event=>event.type==='state' && event.editors.some(editor=>editor.disabled)));
+    assert.equal(JSON.stringify(events).includes('Private draft'),false);
   });
 });
 

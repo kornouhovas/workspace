@@ -15,7 +15,7 @@ export function installArchiveEntryTrace() {
   });
   const record = (type, target, extra = {}) => {
     const current = state(), at = performance.now();
-    const event = { type, at, wallTime: Date.now(), tag: target?.tagName, className: target?.className, ...current, ...extra };
+    const event = { type, at, wallTime: Date.now(), tag: target?.tagName, className: target?.className, disabled: target?.disabled, ...current, ...extra };
     records.push(event);
     if (records.length > 128) records.shift();
     if (current.editors.length || target?.classList?.contains('text-value-button')) lastEditorAt = at;
@@ -37,7 +37,8 @@ export function installArchiveEntryTrace() {
     const next = JSON.stringify(state());
     if (next !== previous) { previous = next; record('state', null); }
   });
-  observer.observe(document.documentElement, { subtree: true, childList: true, attributes: true });
+  // Init scripts run before documentElement exists; Document is already a Node.
+  observer.observe(document, { subtree: true, childList: true, attributes: true });
 }
 
 

@@ -534,3 +534,17 @@ The normal three-host candidate still needs renewal. Mac diagnostic failures
 instead show keydown without click and no textarea; that activation boundary
 remains unresolved, and this focus repair does not claim to fix it. [Source,
 trace and check receipt](issue-67-evidence/scalar-disabled-focus-repair.json).
+
+
+## Document-start diagnostic attachment
+
+The Mac keydown-without-click case remains unresolved. A native control proves
+that the trace's init script attempts observation before documentElement exists,
+throwing a not-a-Node exception after installing event listeners. Consequently
+earlier traces contain real focus/input events but lack reliable mutation-state
+coverage. The observer now attaches to Document and records target disabled state
+as boolean metadata. The native control is red before, green after; routing108/108,
+lint and both reviews pass. The traced original development focus-only journey
+passes normal quit/cleanup with actual state events. [Receipt](issue-67-evidence/archive-trace-document-control.json).
+This repairs diagnostic coverage only; renew the explicit diagnostic route to
+distinguish Mac activation loss before claiming or choosing a product repair.
