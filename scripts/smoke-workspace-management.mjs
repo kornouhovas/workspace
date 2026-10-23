@@ -1,5 +1,6 @@
 import { enterContextFor } from "./runtime-context-tools.mjs";
 import { applyReviewedDiscovery } from "./workspace-management-driver.mjs";
+import { activateWorkspaceFixture } from "./workspace-activation-driver.mjs";
 /* global window, document */
 import assert from "node:assert/strict";
 import { runtimeSmokeLaunch } from "./runtime-executable.mjs";
@@ -103,13 +104,13 @@ try {
   assert.deepEqual(reused.projects, before.projects);
   assert.equal(await page.getByRole("button", { name: /^(Set up later|Настроить позже)$/ }).count(), 0);
   // Target an inactive workspace: real listChanged precedes the activate reply.
-  await query({ type: "workspace.activate", workspaceId:first.workspaceId });
+  await activateWorkspaceFixture(page, first);
   await actions().nth(1).press("Enter");
   await page.getByRole("group", { name: /^(Workspace actions|Действия с рабочим пространством):/ }).getByRole("button", { name: /^(Rename workspace|Переименовать рабочее пространство)$/ }).press("Enter");
   const renameInput = page.getByRole("textbox", { name: /^(Workspace name|Название рабочего пространства)$/ });
   await renameInput.waitFor(); assert.equal(await renameInput.inputValue(), "Workspace");
   await renameInput.press("Escape"); await returnToWorkspace(page);
-  await query({ type: "workspace.activate", workspaceId:first.workspaceId });
+  await activateWorkspaceFixture(page, first);
   await actions().nth(1).press("Enter");
   await page.getByRole("group", { name: /^(Workspace actions|Действия с рабочим пространством):/ }).getByRole("button", { name: /^(Settings|Настройки)$/ }).press("Enter");
   await page.getByRole("tab", { name: /^(Workspaces|Рабочие пространства)$/ }).waitFor();

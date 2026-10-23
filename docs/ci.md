@@ -1702,3 +1702,15 @@ lengths and focus-call stacks, never authored values. Receipts explicitly mark
 diagnostic execution. Ordinary integrated acceptance pins
 `WORKSPACE_ARCHIVE_ENTRY_TRACE=0`; the diagnostic job alone sets it to1.
 These observations cannot replace normal archive acceptance.
+
+
+For #67's Mac packaged workspace-management failure at39944358198, select
+`checks: integrated-workspaces`. It reuses the three-host sidebar job, renews
+related renderer/service and exact selected-identity readiness checks, packages
+and inspects resources, then runs the original workspace-management command in
+release mode with tracing disabled. The original command requires successful
+readiness/package/resource prerequisites. The historical workspace-sidebar
+selector retains its development shell/management behavior. No full tests, Ladle
+or unrelated journey is replayed by this focused gate. After artifact inspection,
+renew only missing native tails under the test-only evidence policy; retain
+passing full/layout/installer receipts at their actual A222 SHA.

@@ -84,3 +84,27 @@ test('registered desktop dispatch isolates integrated acceptance and retains ord
   assert.ok(tail.includes('npm run package:built'));
   assert.ok(tail.some(command => command.includes('node scripts/integrated-desktop.mjs')));
 });
+
+test('packaged workspace renewal selects the original failed consumer without repeating full acceptance',async()=>{
+  const workflow=load(await readFile('.github/workflows/desktop-ci.yml','utf8'));
+  assert.ok(workflow.on.workflow_dispatch.inputs.checks.options.includes('integrated-workspaces'));
+  const context={github:{event_name:'workflow_dispatch'},inputs:{checks:'integrated-workspaces'},steps:{build:{outcome:'success'}},cancelled:()=>false,success:()=>true};
+  const enabled=step=>!step.if||runInNewContext(step.if.slice(3,-2),context);
+  const job=workflow.jobs['focused-workspace-sidebar'];
+  assert.equal(enabled(job),true);assert.equal(enabled(workflow.jobs.common),false);assert.equal(enabled(workflow.jobs['integrated-desktop']),false);
+  assert.deepEqual(job.strategy.matrix.os,['macos-latest','windows-latest','windows-2022']);
+  const selected=job.steps.filter(step=>step.run&&enabled(step));
+  assert.ok(selected.some(step=>step.run==='npm run package:built'));
+  assert.ok(selected.some(step=>step.run==='npm run check:artifact -- release'));
+  assert.ok(selected.some(step=>step.run.includes('workspace activation preparation waits')));
+  const original=selected.find(step=>step.run.includes('npm run smoke:workspaces'));
+  assert.ok(original.run.includes('set -o pipefail'));
+  assert.equal(runInNewContext(original.env.WORKSPACE_SMOKE_MODE.slice(3,-2),context),'release');
+  assert.equal(selected.some(step=>/test:all|smoke-discovery-layouts|npm run smoke:shell/.test(step.run)),false);
+  context.success=()=>false;
+  assert.equal(enabled(original),false,'A failed readiness/package/resource prerequisite prevents native renewal');
+  context.inputs.checks='workspace-sidebar';
+  const ordinary=job.steps.filter(step=>step.run&&enabled(step));
+  assert.ok(ordinary.some(step=>step.run.includes('npm run smoke:shell')));
+  assert.equal(ordinary.some(step=>step.run==='npm run package:built'),false);
+});

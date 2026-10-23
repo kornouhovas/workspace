@@ -570,3 +570,26 @@ dev focus-only journey pass with normal quit/cleanup; both reviews0 findings.
 Renew ordinary uninstrumented three-host archive before broad/strict/installer
 acceptance. Earlier8bf local packaged24/192 passes remain historical; production
 input changed again and those results are not relabelled as current.
+
+
+## Workspace fixture activation handoff
+
+Broad39944358198 atA222 passes Mac full inventory3447/3474 with27skips,
+all302Ladle states/906captures, package/resources, foundation and shell. Its
+workspace-management journey then cannot find the inactive workspace Settings
+menu after a fixture activation reply. A native control goes red when preparation
+returns at that reply, before the exact selected UI identity/session enablement.
+The helper now observes both through the existing workspace readiness boundary,
+issuing one activation only; inactive Rename/Settings, duplicate IDs, restart,
+cancellation and project-byte assertions remain unchanged. This proves a missing
+precondition, not a unique cause for every historical nondelivery.
+
+Native1/1 and routing92/92 pass, as do typecheck/lint. The original journey on a
+fresh package of unchanged A222 production passes with stopped processes/owned
+cleanup. An earlier local release control used the older package and is not used
+as current-candidate acceptance. Both reviews0findings after requiring successful
+readiness/package/resource prerequisites before the new focused native command.
+[Source and check receipt](issue-67-evidence/workspace-activation-control.json).
+The focused integrated-workspaces route renews all three release hosts; ordinary
+sidebar/full defaults remain intact. Production/build/dependency inputs are
+unchanged by this repair, so passing A222 evidence retains its actual provenance.

@@ -13,6 +13,7 @@ import { usableRuntimeViewProjection } from "../scripts/runtime-view-readiness.m
 import { activateRuntimeView, setRuntimeViewLanguage } from "../scripts/runtime-view-controls.mjs";
 import { openArchiveTextEditor } from "../scripts/archive-editor-driver.mjs";
 import { installArchiveEntryTrace } from "../scripts/archive-entry-trace.mjs";
+import { activateWorkspaceFixture } from "../scripts/workspace-activation-driver.mjs";
 import { readRuntimeInteraction, waitForRuntimeProjection, waitForRuntimeProject } from "../scripts/runtime-performance-timing.mjs";
 
 test('project timing waits for asynchronously mounted fields and tree before committed paint', async () => {
@@ -101,6 +102,28 @@ test('archive editor preparation waits for the focused committed control without
     assert.equal(await input.inputValue(),'New authored value');
     assert.equal(await input.evaluate(node=>node===document.activeElement),true);
     assert.equal(await page.evaluate(()=>globalThis.editorActivations),1);
+  });
+});
+
+test('workspace activation preparation waits for selected identity and session controls after the backend reply', async () => {
+  await withPage(async page=>{
+    await page.setContent('<div class="sidebar-workspace-row"><button data-workspace-id="old" aria-current="page">Workspace</button></div><div class="sidebar-workspace-row"><button data-workspace-id="target">Workspace</button></div><button id="deliver">Deliver selection</button><button id="ready">Finish session</button>');
+    await page.evaluate(()=>{
+      globalThis.activations=[];
+      globalThis.workspace={workspace:async input=>{globalThis.activations.push(input);return {ok:true,value:{activeWorkspace:{workspaceId:input.workspaceId}}};}};
+      document.querySelector('#deliver').onclick=()=>{document.querySelector('[data-workspace-id="old"]').removeAttribute('aria-current');const current=document.querySelector('[data-workspace-id="target"]');current.setAttribute('aria-current','page');current.disabled=true;};
+      document.querySelector('#ready').onclick=()=>{document.querySelector('[data-workspace-id="target"]').disabled=false;};
+    });
+    let prepared=false;
+    const preparing=activateWorkspaceFixture(page,{workspaceId:'target',name:'Workspace'}).then(()=>{prepared=true;});
+    await page.waitForFunction(()=>globalThis.activations.length===1);
+    await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+    assert.equal(prepared,false,'A backend activation reply cannot establish the selected UI identity');
+    await page.getByRole('button',{name:'Deliver selection',exact:true}).click();
+    await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+    assert.equal(prepared,false,'Selected identity must also finish session preparation');
+    await page.getByRole('button',{name:'Finish session',exact:true}).click();await preparing;
+    assert.deepEqual(await page.evaluate(()=>globalThis.activations),[{type:'workspace.activate',workspaceId:'target'}]);
   });
 });
 
