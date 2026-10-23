@@ -65,6 +65,6 @@ Retain create/rename/category-move/category-removal/archive journal, abrupt-proc
 - [x] Documentation verification: `npm run check:docs` passed (214 Markdown files); both local anchor references and qualified runtime paths were checked; `git diff --check` passed.
 - [x] Reviewed proposal and observed documentation verification recorded in the task commit (see GitHub checkpoint for SHA).
 - [x] Owner accepted ADR, including its deliberate availability limits, on 2026-10-23.
-- [ ] Integrate accepted document through the authorized `new-workspace` route and record delivered SHA.
+- [x] Accepted document integrated into `new-workspace` at `e690f8a7`; integrated `npm run check:docs` (214 files) and `git diff --check` passed. Final delivered SHA and publication receipt belong in the GitHub checkpoint.
 
 Current execution/acceptance updates belong in the [GitHub checkpoint](https://github.com/kornouhovas/workspace/issues/70#issuecomment-6368976358). Runtime/type/full-suite/appearance checks are not applicable to this documentation-only change under the project boundary-based verification policy. No new runtime/platform verification is claimed.
