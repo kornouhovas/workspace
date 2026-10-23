@@ -1,0 +1,30 @@
+{
+  "command": "npm test",
+  "candidate": "a0b6a7a75aa4edf65e4b850192367fea678df195",
+  "node": "22.21.1",
+  "platform": "darwin-arm64",
+  "kernel": "27.0.0",
+  "logPath": "/tmp/issue66-full.log",
+  "logSha256": "18417111c44c5fb95f6c5f5edcbecbb393c5554f82c019f991d3d10c00c50399",
+  "counts": {
+    "tests": 3459,
+    "pass": 3430,
+    "fail": 2,
+    "skipped": 27
+  },
+  "failures": [
+    {
+      "test": "native category label editing fits legal narrow Table columns and retains keyboard cancel, exact save and focus",
+      "location": "category-header-layout-native.test.mjs:34:1",
+      "error": "Electron shutdown timed out after 10000ms",
+      "shutdown": true
+    },
+    {
+      "test": "property creation waits for initial loading before keyboard activation in real Electron: Create MultiSelect property",
+      "location": "property-editor-driver.test.mjs:75:1",
+      "error": "Electron shutdown timed out after 10000ms",
+      "shutdown": true
+    }
+  ],
+  "classification": "Unchanged synthetic category/property fixtures and lifecycle. Known timing-class watchpoints retained by accepted #63 and owned by final #67/#42. Full invocation remains failed; no deadline/assertion removal or full-suite retry."
+}

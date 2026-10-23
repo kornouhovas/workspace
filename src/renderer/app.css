@@ -960,4 +960,4 @@ p { margin-block: .5rem; }
 
 .project-operation-dialog [aria-label] .recovery-candidate { font-size: 12px; }
 
-.recovery-review { display: grid; gap: 12px; }
+.data-restore-review { display: grid; gap: 12px; }

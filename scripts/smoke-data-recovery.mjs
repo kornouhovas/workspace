@@ -81,6 +81,15 @@ try {
       for (const [width, height] of [[1024, 720], [1440, 960]]) {
         await page.setViewportSize({ width, height });
         assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+        if (["review", "invalid-restore"].includes(state)) {
+          const layout = await page.getByRole("dialog").evaluate(dialog => {
+            const candidate = dialog.querySelector(".recovery-candidate").getBoundingClientRect();
+            const description = dialog.querySelector(".recovery-candidate + p").getBoundingClientRect();
+            const actions = dialog.querySelector(".workspace-form-actions").getBoundingClientRect();
+            return { aligned: Math.abs(candidate.x - description.x) < 1, stacked: description.y >= candidate.bottom && actions.y >= description.bottom };
+          });
+          assert.deepEqual(layout, { aligned: true, stacked: true }, "Restore review is one readable vertical sequence");
+        }
         await page.screenshot({ path: join(evidenceDirectory, `${language}-${theme}-${width}-${state}.png`) });
       }
     }

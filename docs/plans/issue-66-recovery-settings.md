@@ -41,3 +41,24 @@ Implementation and acceptance pending. Select the affected route after the actua
 - First native attempt failed because an inherited `details.open` predicate became vacuously true when the disclosure was replaced. The current driver waits for the actual load event and ready App, retaining original restore/data assertions. A subsequent attempt reached all EN/RU restore/restart/project-byte checks but failed the final 10-second ordinary quit; it remains a negative receipt. A readiness hypothesis adds actual App readiness before native interactions/quit; acceptance is pending that invocation, not a claim that causation is established.
 - Review now uses the existing shared operation dialog, keeping failure/pending feedback within its focus scope. The inherited DOM fixture now installs browser globals before loading Radix; assertions and deadlines are retained. Native error selectors follow the portalled dialog rather than its former settings-card parent.
 - Selected route: `desktop-ux/recovery-settings`, all three existing hosts, development/release recovery and session consumers; unchanged installer and scale milestones remain separately owned. No schema, native command, dependency or installer source changes.
+
+## Candidate review and local broad result
+
+Application candidate `a0b6a7a7` has independent Standards0/Spec0 findings. One
+fresh-build `npm test` completed3430pass/2fail/27skip; both unchanged synthetic
+native quit deadlines remain negative broader watchpoints, with no full retry.
+See the [verification report](../verification/issue-66-recovery-settings.md) and
+[failure inventory](../verification/issue-66-full-suite-failures.json). All scoped
+checks passed. Final dev/release and hosted route acceptance remain pending.
+
+## Appearance repair
+
+Final inspection rejected the initial dialog's two-column arrangement caused by
+an inherited `.recovery-review` class collision. The native geometry assertion
+reproduced both alignment/stacking failures against the old packaged candidate.
+The new wrapper alone is `.data-restore-review`; old project recovery CSS matches
+baseline exactly. Focused recovery/project-recovery/dialog75/75 and typecheck/build
+pass. Independent repair review has no implementation findings; the report now
+records the rejected appearance and pending repaired-candidate provenance. Renew
+both native modes, affected renderer/route consumers and hosted acceptance. Other
+passing broad checks retain their actual a0b6a7a7 provenance; no full-green claim.

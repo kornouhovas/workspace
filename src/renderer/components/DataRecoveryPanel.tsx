@@ -82,7 +82,7 @@ export function DataRecoveryPanel({ client, language, onRestored, onLock }: {
     <button type="button" className="workspace-button workspace-button--secondary" disabled={busy || content !== null} onClick={() => void download()}>{t("dataExport")}</button>
     <label className="bb-label" htmlFor="data-file">{t("dataFile")}</label>
     <input className="bb-input" ref={input} id="data-file" type="file" accept=".json,application/json" disabled={busy || content !== null} onChange={event => void select(event.currentTarget.files?.[0])} />
-    <ProjectOperationDialog open={content !== null} title={t("dataConfirmTitle")} onClose={cancel} className="recovery-dialog">{content !== null && <div className="recovery-review" role="group" aria-label={t("dataConfirmTitle")} onKeyDown={event => { if (event.key === "Escape" && !unknown) { event.preventDefault(); cancel(); } }}>
+    <ProjectOperationDialog open={content !== null} title={t("dataConfirmTitle")} onClose={cancel} className="recovery-dialog">{content !== null && <div className="data-restore-review" role="group" aria-label={t("dataConfirmTitle")} onKeyDown={event => { if (event.key === "Escape" && !unknown) { event.preventDefault(); cancel(); } }}>
       <p className="recovery-candidate">{candidateName}</p><p>{t("dataReplace")}</p>
       <div className="workspace-form-actions"><button className="workspace-button" ref={confirm} type="button" disabled={busy || unknown} onClick={() => void restore()}>{t("dataConfirm")}</button>
       <button className="workspace-button workspace-button--secondary" type="button" disabled={busy || unknown} onClick={cancel}>{t("dataCancel")}</button>
