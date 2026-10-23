@@ -34,6 +34,27 @@ test('unknown integration selections fail before launching an application', () =
   assert.match(result.stderr, /Unknown integrated journey/);
 });
 
+test('missing-tail selection excludes renewed consumers and cannot claim complete package acceptance',async()=>{
+  const selection=spawnSync(process.execPath,['scripts/integrated-desktop.mjs','--list','--from=sources','--exclude=assignment,filesystem-assignment'],{encoding:'utf8'});
+  assert.equal(selection.status,0,selection.stderr);
+  const ids=JSON.parse(selection.stdout).map(row=>row.id);
+  assert.equal(ids.length,26);assert.equal(ids[0],'sources');assert.equal(ids.at(-1),'strict-scale');
+  assert.equal(ids.some(id=>['workspaces','assignment','filesystem-assignment'].includes(id)),false);
+  for(const args of [['--exclude=missing'],['--from=strict-scale','--exclude=strict-scale']]){
+    const invalid=spawnSync(process.execPath,['scripts/integrated-desktop.mjs',...args],{encoding:'utf8'});
+    assert.notEqual(invalid.status,0);assert.match(invalid.stderr,/Unknown integrated journey|Empty integrated selection/);
+  }
+  const evidence=await mkdtemp(join(tmpdir(),'workspace-tail-probe-'));
+  try{
+    const result=spawnSync(process.execPath,['scripts/integrated-desktop.mjs','--from=sources','--exclude=assignment,filesystem-assignment','--failure-probe'],{env:{...process.env,WORKSPACE_SMOKE_EVIDENCE_DIR:evidence},encoding:'utf8'});
+    assert.equal(result.status,23,result.stderr);
+    const report=JSON.parse(await readFile(join(evidence,'report.json'),'utf8'));
+    assert.equal(report.completeSelection,false);assert.equal(report.status,'failed');assert.equal(report.diagnostic,true);
+    assert.deepEqual(report.excludedJourneys,['foundation','shell','workspaces','assignment','filesystem-assignment']);
+    assert.equal(report.journeys.length,27);assert.ok(report.journeys.slice(1).every(row=>row.status==='unreached'));
+  }finally{await rm(evidence,{recursive:true,force:true});}
+});
+
 test('registered desktop dispatch isolates integrated acceptance and retains ordinary full defaults', async () => {
   const workflow = load(await readFile('.github/workflows/desktop-ci.yml', 'utf8'));
   assert.ok(workflow.on.workflow_dispatch.inputs.checks.options.includes('integrated-desktop'));
@@ -109,4 +130,20 @@ test('packaged fixture renewal selects workspace and assignment consumers withou
   const ordinary=job.steps.filter(step=>step.run&&enabled(step));
   assert.ok(ordinary.some(step=>step.run.includes('npm run smoke:shell')));
   assert.equal(ordinary.some(step=>step.run==='npm run package:built'),false);
+});
+
+test('missing-tail route renews only unreached Mac and Windows2022 package journeys',async()=>{
+  const workflow=load(await readFile('.github/workflows/desktop-ci.yml','utf8'));
+  assert.ok(workflow.on.workflow_dispatch.inputs.checks.options.includes('integrated-missing-tails'));
+  const context={github:{event_name:'workflow_dispatch'},inputs:{checks:'integrated-missing-tails'}};
+  const enabled=job=>runInNewContext(job.if.slice(3,-2),context);
+  const job=workflow.jobs['integrated-missing-tails'];
+  assert.equal(enabled(job),true);assert.equal(enabled(workflow.jobs.common),false);assert.equal(enabled(workflow.jobs['integrated-desktop']),false);
+  assert.deepEqual(job.strategy.matrix.include,[{os:'macos-latest',from:'sources',exclude:'assignment,filesystem-assignment'},{os:'windows-2022',from:'projects',exclude:''}]);
+  const commands=job.steps.filter(step=>step.run).map(step=>step.run);
+  assert.equal(commands.some(command=>/test:all|smoke-discovery-layouts/.test(command)),false);
+  assert.ok(commands.includes('npm run package:built'));assert.ok(commands.includes('npm run check:artifact -- release'));
+  assert.ok(commands.some(command=>command.includes('set -o pipefail')&&command.includes('--exclude=')&&command.includes('node scripts/integrated-desktop.mjs')));
+  const upload=job.steps.find(step=>step.uses?.startsWith('actions/upload-artifact'));
+  assert.equal(upload.if,'always()');assert.equal(upload.with['if-no-files-found'],'error');
 });

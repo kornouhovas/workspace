@@ -1,0 +1,25 @@
+{
+  "purpose": "Renew only missing native tails after inspected focused repairs",
+  "base": "a222d2b561c324e32bf1708fbea5e62624e52d64",
+  "mac": {
+    "from": "sources",
+    "exclude": [
+      "assignment",
+      "filesystem-assignment"
+    ],
+    "selected": 26
+  },
+  "windows2022": {
+    "from": "projects",
+    "exclude": [],
+    "selected": 18
+  },
+  "checks": {
+    "selectionRed": "/tmp/issue67-tail-selection-red.log",
+    "routeRed": "/tmp/issue67-tail-route-red.log",
+    "green": "94/94 routing/probe tests; /tmp/issue67-missing-tail-final-routes.log",
+    "lint": "passed",
+    "review": "standards0/spec0"
+  },
+  "contract": "Default31 unchanged. Unknown/empty selections fail before application access. Omitted rows are recorded, subsets remainpartial and realexit23 probe retains unreached rows. No tail dispatch until focused command artifacts pass."
+}

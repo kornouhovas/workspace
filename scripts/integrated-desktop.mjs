@@ -52,11 +52,16 @@ function packageFiles(directory, prefix = '') {
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const args = process.argv.slice(2);
-  if (args.some(arg => !['--list', '--failure-probe'].includes(arg) && !arg.startsWith('--from='))) throw new Error('Expected --list, --from=<journey> or --failure-probe');
+  if (args.some(arg => !['--list', '--failure-probe'].includes(arg) && !arg.startsWith('--from=') && !arg.startsWith('--exclude='))) throw new Error('Expected --list, --from=<journey>, --exclude=<journeys> or --failure-probe');
   const from = args.find(arg => arg.startsWith('--from='))?.slice(7);
   const start = from === undefined ? 0 : integratedJourneys.findIndex(row => row.id === from);
   if (start < 0) throw new Error(`Unknown integrated journey: ${from}`);
-  if (args.includes('--list')) console.log(JSON.stringify(integratedJourneys, null, 2));
+  const excluded=args.find(arg=>arg.startsWith('--exclude='))?.slice(10).split(',')??[];
+  for(const id of excluded)if(!integratedJourneys.some(row=>row.id===id))throw new Error(`Unknown integrated journey: ${id}`);
+  const selectedJourneys=integratedJourneys.slice(start).filter(row=>!excluded.includes(row.id));
+  if(!selectedJourneys.length)throw new Error('Empty integrated selection');
+  const excludedJourneys=integratedJourneys.filter(row=>!selectedJourneys.includes(row)).map(row=>row.id);
+  if (args.includes('--list')) console.log(JSON.stringify(selectedJourneys, null, 2));
   else {
     const diagnostic = args.includes('--failure-probe');
     const evidence = resolve(process.env.WORKSPACE_SMOKE_EVIDENCE_DIR ?? 'work/issue-67-integrated');
@@ -66,13 +71,13 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
     const packageSha256 = asar ? sha256(readFileSync(asar)) : null;
     const bundle = executable && (process.platform === 'darwin' ? resolve(executable, '../../..') : dirname(executable));
     const packageInventory = bundle ? packageFiles(bundle) : null;
-    const selected = diagnostic ? [{ id: 'failure-probe', args: ['-e', 'console.log(JSON.stringify({performanceRoot:process.env.WORKSPACE_PERFORMANCE_ROOT,revealTrace:process.env.WORKSPACE_REVEAL_TRACE,archiveEntryTrace:process.env.WORKSPACE_ARCHIVE_ENTRY_TRACE}));process.exit(23)'] }, ...integratedJourneys] : integratedJourneys.slice(start);
+    const selected = diagnostic ? [{ id: 'failure-probe', args: ['-e', 'console.log(JSON.stringify({performanceRoot:process.env.WORKSPACE_PERFORMANCE_ROOT,revealTrace:process.env.WORKSPACE_REVEAL_TRACE,archiveEntryTrace:process.env.WORKSPACE_ARCHIVE_ENTRY_TRACE}));process.exit(23)'] }, ...selectedJourneys] : selectedJourneys;
     const report = {
       issue: 67, sha: git(['rev-parse', 'HEAD']), run: process.env.GITHUB_RUN_ID ?? null,
       attempt: process.env.GITHUB_RUN_ATTEMPT ?? null, diagnostic, mode: 'release',
       platform: process.platform, arch: arch(), kernel: release(), cpu: cpus()[0]?.model,
       hostMemoryBytes: totalmem(), node: process.version, executable, packageSha256, packageInventory,
-      completeSelection: !diagnostic && start === 0, excludedJourneys: integratedJourneys.slice(0, start).map(row => row.id),
+      completeSelection: !diagnostic && excludedJourneys.length === 0, excludedJourneys,
       sourceDiffSha256: sha256(execFileSync('git', ['diff', 'HEAD', '--binary'], { cwd: root })),
       harness: Object.fromEntries(readdirSync(join(root, 'scripts')).filter(name => name.endsWith('.mjs')).sort()
         .map(name => [name, sha256(readFileSync(join(root, 'scripts', name)))])),

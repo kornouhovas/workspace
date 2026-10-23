@@ -620,3 +620,13 @@ inputs, not these smoke drivers. Existing dragRuntimeGroup implementation is
 unchanged; its new export has no top-level side effect. Reuse passing A222
 full/layout/installer/unaffected journeys at their original SHA; renew the changed
 consumers and missing tails only after focused artifact inspection.
+
+
+## Missing-tail selection control
+
+Unknown exclusions and empty selections fail before application access. Default
+selection remains all31. A real exit23 probe proves that the26-row Mac subset
+records its five exclusions and unreached consumers without complete acceptance.
+Routing/probe94/94 and lint pass; both review axes0 findings. [Receipt](issue-67-evidence/missing-tail-selection-control.json).
+The bounded tail route is ready but remains behind focused original-command
+success and artifact inspection. It does not accept excluded rows or Win11.

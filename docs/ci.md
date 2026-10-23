@@ -1716,3 +1716,14 @@ selector retains its development shell/management behavior. No full tests, Ladle
 or unrelated journey is replayed by this focused gate. After artifact inspection,
 renew only missing native tails under the test-only evidence policy; retain
 passing full/layout/installer receipts at their actual A222 SHA.
+
+
+After the #67 focused repair artifacts pass and are inspected, select
+`checks: integrated-missing-tails`. It renews Mac from sources excluding the
+separately renewed ordinary/filesystem assignment consumers (26 journeys), and
+Windows2022 from projects (18 journeys). Windows latest retains its complete
+A222 run39944358198. The route omits full tests and Ladle, builds/packages each
+host, and retains the original serial commands, strict scale, complete package
+inventory guards and mandatory artifacts. Reports explicitly remain partial and
+list every omitted row; the acceptance ledger must supply inspected passing
+receipts for those rows at their actual SHA.
