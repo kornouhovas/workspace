@@ -139,11 +139,32 @@ test('missing-tail route renews only unreached Mac and Windows2022 package journ
   const enabled=job=>runInNewContext(job.if.slice(3,-2),context);
   const job=workflow.jobs['integrated-missing-tails'];
   assert.equal(enabled(job),true);assert.equal(enabled(workflow.jobs.common),false);assert.equal(enabled(workflow.jobs['integrated-desktop']),false);
-  assert.deepEqual(job.strategy.matrix.include,[{os:'macos-latest',from:'sources',exclude:'assignment,filesystem-assignment'},{os:'windows-2022',from:'projects',exclude:''}]);
+  assert.deepEqual(job.strategy.matrix.include,[{os:'macos-latest',from:'sources',exclude:'assignment,filesystem-assignment,archive-contexts,original-views,original-project-archive'},{os:'windows-2022',from:'projects',exclude:'archive-contexts,original-views,original-project-archive'}]);
+  for(const row of job.strategy.matrix.include){
+    const result=spawnSync(process.execPath,['scripts/integrated-desktop.mjs','--list','--from='+row.from,'--exclude='+row.exclude],{encoding:'utf8'});
+    assert.equal(result.status,0,result.stderr);const ids=JSON.parse(result.stdout).map(journey=>journey.id);
+    assert.equal(ids.length,row.os==='macos-latest'?23:15);assert.equal(ids.at(-1),'strict-scale');
+    assert.equal(ids.some(id=>['archive-contexts','original-views','original-project-archive'].includes(id)),false);
+  }
   const commands=job.steps.filter(step=>step.run).map(step=>step.run);
   assert.equal(commands.some(command=>/test:all|smoke-discovery-layouts/.test(command)),false);
   assert.ok(commands.includes('npm run package:built'));assert.ok(commands.includes('npm run check:artifact -- release'));
   assert.ok(commands.some(command=>command.includes('set -o pipefail')&&command.includes('--exclude=')&&command.includes('node scripts/integrated-desktop.mjs')));
   const upload=job.steps.find(step=>step.uses?.startsWith('actions/upload-artifact'));
   assert.equal(upload.if,'always()');assert.equal(upload.with['if-no-files-found'],'error');
+});
+
+test('filesystem stress renewal omits inspected workspace and ordinary assignment consumers',async()=>{
+  const workflow=load(await readFile('.github/workflows/desktop-ci.yml','utf8'));
+  assert.ok(workflow.on.workflow_dispatch.inputs.checks.options.includes('integrated-filesystem-repair'));
+  const context={github:{event_name:'workflow_dispatch'},inputs:{checks:'integrated-filesystem-repair'},steps:{build:{outcome:'success'}},success:()=>true,cancelled:()=>false};
+  const enabled=step=>!step.if||runInNewContext(step.if.slice(3,-2),context);
+  const job=workflow.jobs['focused-workspace-sidebar'];assert.equal(enabled(job),true);assert.equal(enabled(workflow.jobs.common),false);
+  const selected=job.steps.filter(step=>step.run&&enabled(step));
+  assert.ok(selected.some(step=>step.run.includes('retained 360px collision captures')));
+  const original=selected.find(step=>step.run.includes('node scripts/smoke-group-assignment.mjs --filesystem'));
+  assert.ok(original&&original.run.includes('set -o pipefail'));assert.equal(original.env.WORKSPACE_SMOKE_MODE,'release');
+  assert.ok(selected.some(step=>step.run==='npm run package:built'));assert.ok(selected.some(step=>step.run==='npm run check:artifact -- release'));
+  assert.equal(selected.some(step=>/smoke:workspaces|smoke:shell|smoke-group-assignment.mjs 2>&1|test:all|smoke-discovery-layouts/.test(step.run)),false);
+  context.success=()=>false;assert.equal(enabled(original),false);
 });

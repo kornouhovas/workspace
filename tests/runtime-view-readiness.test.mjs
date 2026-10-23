@@ -15,6 +15,7 @@ import { openArchiveTextEditor } from "../scripts/archive-editor-driver.mjs";
 import { installArchiveEntryTrace } from "../scripts/archive-entry-trace.mjs";
 import { activateWorkspaceFixture } from "../scripts/workspace-activation-driver.mjs";
 import { waitForDragHandleBounds } from "../scripts/runtime-group-drag.mjs";
+import { setRuntimeCaptureViewport } from "../scripts/runtime-settings.mjs";
 import { readRuntimeInteraction, waitForRuntimeProjection, waitForRuntimeProject } from "../scripts/runtime-performance-timing.mjs";
 
 test('project timing waits for asynchronously mounted fields and tree before committed paint', async () => {
@@ -103,6 +104,19 @@ test('archive editor preparation waits for the focused committed control without
     assert.equal(await input.inputValue(),'New authored value');
     assert.equal(await input.evaluate(node=>node===document.activeElement),true);
     assert.equal(await page.evaluate(()=>globalThis.editorActivations),1);
+  });
+});
+
+test('retained 360px collision captures collapse the real sidebar and restore supported desktop layouts',async()=>{
+  await withPage(async page=>{
+    await page.setContent('<style>.panel{margin-left:220px}.collapsed .panel{margin-left:0}</style><div class="desktop-shell"><button aria-label="Collapse sidebar" aria-expanded="true"></button><div class="panel">Current owned control</div></div>');
+    await page.evaluate(()=>{const button=document.querySelector('button');button.onclick=()=>{const collapsed=button.getAttribute('aria-expanded')==='true';button.setAttribute('aria-expanded',String(!collapsed));button.setAttribute('aria-label',collapsed?'Restore sidebar':'Collapse sidebar');document.querySelector('.desktop-shell').classList.toggle('collapsed',collapsed);};});
+    for(const width of [360,1024,420,1440]){
+      await setRuntimeCaptureViewport(page,{width,height:800});
+      const stress=width===360||width===420;
+      assert.equal(await page.getByRole('button',{name:stress?'Restore sidebar':'Collapse sidebar',exact:true}).isVisible(),true);
+      assert.equal(await page.locator('.panel').evaluate(node=>node.getBoundingClientRect().left),stress?8:228);
+    }
   });
 });
 

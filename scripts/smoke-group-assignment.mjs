@@ -10,7 +10,7 @@ import {exerciseFolderGroupAssignment} from './runtime-folder-group-assignment.m
 import {exerciseGroupAssignment} from './runtime-group-assignment.mjs';
 import {waitForDragHandleBounds} from './runtime-group-drag.mjs';
 import {closeElectron,cleanupOwnedFixture,ownedProcessesStopped} from './runtime-lifecycle.mjs';
-import {setInterfaceLanguage,openSettingsSection,returnToWorkspace} from './runtime-settings.mjs';
+import {setInterfaceLanguage,openSettingsSection,returnToWorkspace,setRuntimeCaptureViewport} from './runtime-settings.mjs';
 const filesystem=process.argv.includes('--filesystem');
 const root=resolve(import.meta.dirname,'..'),evidence=resolve(process.env.WORKSPACE_SMOKE_EVIDENCE_DIR??(filesystem?'work/issue-63-assignment':'work/issue-59-assignment'));
 await mkdir(evidence,{recursive:true});
@@ -31,7 +31,7 @@ try{
   const source=join(fixture,language);await mkdir(join(source,'Alpha'),{recursive:true});await mkdir(join(source,'Beta'));await writeFile(join(source,'Alpha','keep.txt'),'unchanged');
   report.checks.push({language,...await exerciseGroupAssignment({page,query,rootPath:source,language,evidenceDirectory:evidence})});
   assert.equal(await readFile(join(source,'Alpha','keep.txt'),'utf8'),'unchanged');
-  if(filesystem)report.checks.push({language,folder:await exerciseFolderGroupAssignment({page,query,rootPath:join(fixture,`${language}-folders`),language,evidenceDirectory:evidence,onCollision:async({layout,call,project,kind,toKey,relativePath})=>{
+  if(filesystem)report.checks.push({language,folder:await exerciseFolderGroupAssignment({page,query,rootPath:join(fixture,`${language}-folders`),language,evidenceDirectory:evidence,prepareViewport:setRuntimeCaptureViewport,onCollision:async({layout,call,project,kind,toKey,relativePath})=>{
    const en=language==='en', selector=()=>page.locator(`[data-project-id="${project.projectId}"]`).getByLabel(`${en?'Change group':'Изменить группу'}: Target`,{exact:true}).and(page.locator(':enabled'));
    for(const theme of ['light','dark']){
     await openSettingsSection(page,'appearance');await page.getByRole('radio',{name:theme==='light'?/^(Light|Светлая)$/:/^(Dark|Тёмная)$/}).click();await returnToWorkspace(page);

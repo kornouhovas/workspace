@@ -8,7 +8,7 @@ on:
       checks:
         description: Full acceptance or a selected focused failure route
         type: choice
-        options: [full, integrated-desktop, integrated-regressions, integrated-layout, integrated-category-layout, integrated-operation-layout, integrated-archive-profile, integrated-fixture-repairs, integrated-missing-tails, integrated-runtime, desktop-ux, layout-fixtures, source-inventory, observer-cancellation, observer-workflow, native-owner-controls, native-lifecycle, project-files-windows, project-files-windows-trace, failed, readiness, windows-release, issue22-failures, creation-shutdown, raw-rename, issue24-failures, category-fixture, issue24-startup, multiselect, etw-controls, app-fixture, property-fixture, runtime-observation, view-fixtures, number, windows-property-fixture, rename-authoring, rename-fixture, viewport-runtime, workspace-root-runtime, archive-contexts, creation-ownership, desktop-shell, shell-runtime, views-readiness, view-contexts, workspace-sidebar, workspace-setup, workspace-setup-readiness, select-readiness, source-fixture, source-runtime]
+        options: [full, integrated-desktop, integrated-regressions, integrated-layout, integrated-category-layout, integrated-operation-layout, integrated-archive-profile, integrated-fixture-repairs, integrated-filesystem-repair, integrated-missing-tails, integrated-runtime, desktop-ux, layout-fixtures, source-inventory, observer-cancellation, observer-workflow, native-owner-controls, native-lifecycle, project-files-windows, project-files-windows-trace, failed, readiness, windows-release, issue22-failures, creation-shutdown, raw-rename, issue24-failures, category-fixture, issue24-startup, multiselect, etw-controls, app-fixture, property-fixture, runtime-observation, view-fixtures, number, windows-property-fixture, rename-authoring, rename-fixture, viewport-runtime, workspace-root-runtime, archive-contexts, creation-ownership, desktop-shell, shell-runtime, views-readiness, view-contexts, workspace-sidebar, workspace-setup, workspace-setup-readiness, select-readiness, source-fixture, source-runtime]
         default: full
       desktop_ux_profile:
         description: With desktop-ux, select foundation, grouped Board or project navigation acceptance
@@ -806,7 +806,7 @@ jobs:
           if-no-files-found: error
 
   common:
-    if: ${{ github.event_name != 'workflow_dispatch' || (inputs.checks != 'failed' && inputs.checks != 'readiness' && inputs.checks != 'windows-release' && inputs.checks != 'issue22-failures' && inputs.checks != 'creation-shutdown' && inputs.checks != 'raw-rename' && inputs.checks != 'issue24-failures' && inputs.checks != 'category-fixture' && inputs.checks != 'issue24-startup' && inputs.checks != 'multiselect' && inputs.checks != 'etw-controls' && inputs.checks != 'app-fixture' && inputs.checks != 'property-fixture' && inputs.checks != 'runtime-observation' && inputs.checks != 'view-fixtures' && inputs.checks != 'number' && inputs.checks != 'windows-property-fixture' && inputs.checks != 'rename-authoring' && inputs.checks != 'rename-fixture' && inputs.checks != 'viewport-runtime' && inputs.checks != 'workspace-root-runtime' && inputs.checks != 'archive-contexts' && inputs.checks != 'creation-ownership' && inputs.checks != 'desktop-shell' && inputs.checks != 'shell-runtime' && inputs.checks != 'views-readiness' && inputs.checks != 'view-contexts' && inputs.checks != 'workspace-sidebar' && inputs.checks != 'workspace-setup' && inputs.checks != 'workspace-setup-readiness' && inputs.checks != 'select-readiness' && inputs.checks != 'source-fixture' && inputs.checks != 'source-runtime' && inputs.checks != 'desktop-ux' && inputs.checks != 'layout-fixtures' && inputs.checks != 'source-inventory' && inputs.checks != 'observer-cancellation' && inputs.checks != 'observer-workflow' && inputs.checks != 'native-owner-controls' && inputs.checks != 'native-lifecycle' && inputs.checks != 'project-files-windows' && inputs.checks != 'project-files-windows-trace' && inputs.checks != 'integrated-desktop' && inputs.checks != 'integrated-regressions' && inputs.checks != 'integrated-runtime' && inputs.checks != 'integrated-layout' && inputs.checks != 'integrated-category-layout' && inputs.checks != 'integrated-operation-layout' && inputs.checks != 'integrated-archive-profile' && inputs.checks != 'integrated-fixture-repairs' && inputs.checks != 'integrated-missing-tails') }}
+    if: ${{ github.event_name != 'workflow_dispatch' || (inputs.checks != 'failed' && inputs.checks != 'readiness' && inputs.checks != 'windows-release' && inputs.checks != 'issue22-failures' && inputs.checks != 'creation-shutdown' && inputs.checks != 'raw-rename' && inputs.checks != 'issue24-failures' && inputs.checks != 'category-fixture' && inputs.checks != 'issue24-startup' && inputs.checks != 'multiselect' && inputs.checks != 'etw-controls' && inputs.checks != 'app-fixture' && inputs.checks != 'property-fixture' && inputs.checks != 'runtime-observation' && inputs.checks != 'view-fixtures' && inputs.checks != 'number' && inputs.checks != 'windows-property-fixture' && inputs.checks != 'rename-authoring' && inputs.checks != 'rename-fixture' && inputs.checks != 'viewport-runtime' && inputs.checks != 'workspace-root-runtime' && inputs.checks != 'archive-contexts' && inputs.checks != 'creation-ownership' && inputs.checks != 'desktop-shell' && inputs.checks != 'shell-runtime' && inputs.checks != 'views-readiness' && inputs.checks != 'view-contexts' && inputs.checks != 'workspace-sidebar' && inputs.checks != 'workspace-setup' && inputs.checks != 'workspace-setup-readiness' && inputs.checks != 'select-readiness' && inputs.checks != 'source-fixture' && inputs.checks != 'source-runtime' && inputs.checks != 'desktop-ux' && inputs.checks != 'layout-fixtures' && inputs.checks != 'source-inventory' && inputs.checks != 'observer-cancellation' && inputs.checks != 'observer-workflow' && inputs.checks != 'native-owner-controls' && inputs.checks != 'native-lifecycle' && inputs.checks != 'project-files-windows' && inputs.checks != 'project-files-windows-trace' && inputs.checks != 'integrated-desktop' && inputs.checks != 'integrated-regressions' && inputs.checks != 'integrated-runtime' && inputs.checks != 'integrated-layout' && inputs.checks != 'integrated-category-layout' && inputs.checks != 'integrated-operation-layout' && inputs.checks != 'integrated-archive-profile' && inputs.checks != 'integrated-fixture-repairs' && inputs.checks != 'integrated-filesystem-repair' && inputs.checks != 'integrated-missing-tails') }}
     name: Common tests and static checks
     runs-on: macos-latest
     steps:
@@ -914,14 +914,14 @@ jobs:
           if-no-files-found: error
 
   focused-workspace-sidebar:
-    if: ${{ github.event_name == 'workflow_dispatch' && (inputs.checks == 'workspace-sidebar' || inputs.checks == 'integrated-fixture-repairs') }}
-    name: ${{ inputs.checks == 'integrated-fixture-repairs' && 'Packaged fixture preparation' || 'Original sidebar workspace switching' }} (${{ matrix.os }})
+    if: ${{ github.event_name == 'workflow_dispatch' && (inputs.checks == 'workspace-sidebar' || inputs.checks == 'integrated-fixture-repairs' || inputs.checks == 'integrated-filesystem-repair') }}
+    name: ${{ (inputs.checks == 'integrated-fixture-repairs' || inputs.checks == 'integrated-filesystem-repair') && 'Packaged fixture preparation' || 'Original sidebar workspace switching' }} (${{ matrix.os }})
     strategy:
       fail-fast: false
       matrix:
         os: [macos-latest, windows-latest, windows-2022]
     runs-on: ${{ matrix.os }}
-    timeout-minutes: ${{ inputs.checks == 'integrated-fixture-repairs' && 30 || 15 }}
+    timeout-minutes: ${{ (inputs.checks == 'integrated-fixture-repairs' || inputs.checks == 'integrated-filesystem-repair') && 30 || 15 }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -938,10 +938,18 @@ jobs:
           node --input-type=module -e 'import { writeFileSync } from "node:fs"; writeFileSync("work/ci-workspace-sidebar/provenance.json", JSON.stringify({sha:process.env.GITHUB_SHA,run:process.env.GITHUB_RUN_ID,attempt:process.env.GITHUB_RUN_ATTEMPT,platform:process.platform}) + "\n")'
           npm run build 2>&1 | tee work/ci-workspace-sidebar/build.log
       - name: Related workspace routing and ownership regressions
+        if: ${{ inputs.checks != 'integrated-filesystem-repair' }}
         shell: bash
         run: |
           set -o pipefail
           node --import tsx --test tests/renderer-app.test.tsx tests/workspaces-service.test.mjs tests/test-suites.test.mjs tests/windows-product-diagnostics.test.mjs 2>&1 | tee work/ci-workspace-sidebar/regressions.log
+      - name: Filesystem stress adapter and routing controls
+        if: ${{ inputs.checks == 'integrated-filesystem-repair' && success() }}
+        shell: bash
+        run: |
+          set -o pipefail
+          node --test tests/integrated-desktop.test.mjs tests/test-suites.test.mjs 2>&1 | tee work/ci-workspace-sidebar/routes.log
+          node --test --test-name-pattern="retained 360px collision captures" tests/runtime-view-readiness.test.mjs 2>&1 | tee work/ci-workspace-sidebar/readiness.log
       - name: Current workspace and drag bounds readiness controls
         if: ${{ inputs.checks == 'integrated-fixture-repairs' && success() }}
         shell: bash
@@ -955,9 +963,9 @@ jobs:
           set -o pipefail
           node --test tests/runtime-group-drag.test.mjs 2>&1 | tee work/ci-workspace-sidebar/drag.log
       - run: npm run package:built
-        if: ${{ inputs.checks == 'integrated-fixture-repairs' && success() }}
+        if: ${{ (inputs.checks == 'integrated-fixture-repairs' || inputs.checks == 'integrated-filesystem-repair') && success() }}
       - run: npm run check:artifact -- release
-        if: ${{ inputs.checks == 'integrated-fixture-repairs' && success() }}
+        if: ${{ (inputs.checks == 'integrated-fixture-repairs' || inputs.checks == 'integrated-filesystem-repair') && success() }}
       - name: Original failed desktop shell journey
         if: ${{ !cancelled() && steps.build.outcome == 'success' && inputs.checks == 'workspace-sidebar' }}
         shell: bash
@@ -989,7 +997,7 @@ jobs:
           WORKSPACE_ARCHIVE_ENTRY_TRACE: '0'
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-workspace-sidebar/assignment
       - name: Filesystem assignment original packaged consumer
-        if: ${{ inputs.checks == 'integrated-fixture-repairs' && success() }}
+        if: ${{ (inputs.checks == 'integrated-fixture-repairs' || inputs.checks == 'integrated-filesystem-repair') && success() }}
         shell: bash
         run: |
           set -o pipefail
@@ -2931,10 +2939,10 @@ jobs:
         include:
           - os: macos-latest
             from: sources
-            exclude: assignment,filesystem-assignment
+            exclude: assignment,filesystem-assignment,archive-contexts,original-views,original-project-archive
           - os: windows-2022
             from: projects
-            exclude: ''
+            exclude: archive-contexts,original-views,original-project-archive
     runs-on: ${{ matrix.os }}
     timeout-minutes: 90
     steps:

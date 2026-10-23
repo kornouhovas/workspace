@@ -53,12 +53,12 @@ export async function waitForWorkspaceNavigation(page) {
   });
 }
 
-// Retained 420px stress captures use the accepted shell's real hide/restore action.
+// Retained 360px/420px stress captures use the shell's real hide/restore action.
 // Required desktop captures keep their expanded sidebar.
 export async function setRuntimeCaptureViewport(page, size) {
   const collapse = page.getByRole('button', {name:/^(Collapse sidebar|Свернуть боковую панель)$/});
   const restore = page.getByRole('button', {name:/^(Restore sidebar|Восстановить боковую панель)$/});
-  if(size.width === 420) {
+  if(size.width === 360 || size.width === 420) {
     // Keep the real toggle reachable before a clamped source popup can cover
     // the sidebar in the below-minimum stress viewport. Keyboard activation
     // also preserves an open nonmodal tools surface (no outside pointerdown).

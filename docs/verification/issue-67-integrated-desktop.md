@@ -625,8 +625,32 @@ consumers and missing tails only after focused artifact inspection.
 ## Missing-tail selection control
 
 Unknown exclusions and empty selections fail before application access. Default
-selection remains all31. A real exit23 probe proves that the26-row Mac subset
+selection remains all31. A real exit23 probe proves that a26-row subset example
 records its five exclusions and unreached consumers without complete acceptance.
 Routing/probe94/94 and lint pass; both review axes0 findings. [Receipt](issue-67-evidence/missing-tail-selection-control.json).
 The bounded tail route is ready but remains behind focused original-command
 success and artifact inspection. It does not accept excluded rows or Win11.
+
+
+## Retained360px filesystem collision capture
+
+Focused39960693209 at9e3 passes workspace and ordinary assignment on all three
+hosts; both Windows filesystem consumers pass. Mac filesystem then fails exact
+control visibility at the original15s bound in a360px stress capture. Its
+[unmodified failure capture](issue-67-evidence/narrow-collision-failure.png) retains
+a220px expanded sidebar and a large collision notice. The native adapter control
+is red before the real sidebar collapse is prepared for360px, green after, also
+checking unchanged420px behavior and1024/1440 restoration.
+
+Only the filesystem appearance caller supplies shell-aware preparation; the
+folder helper default remains the original plain viewport call for Views. All
+visibility/overflow/identity/bytes checks remain. Native1/1, routes95/95, typecheck,
+lint and both reviews pass. Local original again fails earlier in the unchanged
+pointer postcondition; the stress slice is unreached, not passing evidence.
+[Source and check receipt](issue-67-evidence/narrow-filesystem-control.json).
+
+The next focused selector integrated-filesystem-repair runs only this release
+consumer and its native adapter/routing checks on all three hosts. It retains
+package/resource prerequisites and skips already inspected workspace/ordinary
+passes. After its artifacts pass, missing tails use23Mac/15Windows2022 rows,
+excluding the current source's inspected archive/Views receipts from39942111999.

@@ -1720,10 +1720,20 @@ passing full/layout/installer receipts at their actual A222 SHA.
 
 After the #67 focused repair artifacts pass and are inspected, select
 `checks: integrated-missing-tails`. It renews Mac from sources excluding the
-separately renewed ordinary/filesystem assignment consumers (26 journeys), and
-Windows2022 from projects (18 journeys). Windows latest retains its complete
+separately renewed ordinary/filesystem assignment and A222 archive/Views
+consumers (23 journeys), and Windows2022 from projects excluding those same
+archive/Views consumers (15 journeys). Windows latest retains its complete
 A222 run39944358198. The route omits full tests and Ladle, builds/packages each
 host, and retains the original serial commands, strict scale, complete package
 inventory guards and mandatory artifacts. Reports explicitly remain partial and
 list every omitted row; the acceptance ledger must supply inspected passing
 receipts for those rows at their actual SHA.
+
+
+For focused9e3 run39960693209's Mac360px collision visibility failure, select
+`checks: integrated-filesystem-repair`. It renews the native360/420 shell posture
+and supported-size restoration control, package/resources and original release
+filesystem assignment on all three hosts. Workspace and ordinary-assignment
+receipts remain at9e3; they are not replayed. Only the filesystem appearance
+caller supplies the real sidebar preparation; original Views keeps its default
+viewport behavior. Inspect passing original reports before missing-tail dispatch.
