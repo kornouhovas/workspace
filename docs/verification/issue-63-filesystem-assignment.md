@@ -22,7 +22,7 @@ Inspected current EN light Table 1024, RU light Board 1024 and RU dark Board 144
 
 Standards review had zero findings. Spec review identified missing real Name-history and explicit focus-return assertions; both were added, then the expanded native route passed. The affected-boundary profile passed 967 tests with zero skips; renewed typecheck/lint pass. One complete `npm run test:all` on `de5c346e` finished: **3384 passed / 26 failed / 27 skipped / 3437 total**, 210.327s. [Failure inventory and full-log digest](issue-63-full-suite-failures.json) retain all exact names. Twenty-five failures are original 10-second synthetic Electron shutdown deadlines; one is the existing rename-readiness cleanup-control assertion. The failed files and their synthetic fixture/driver/lifecycle boundaries are unchanged from the accepted baseline and do not load this changed UI. Failure membership varies from #62 (nine additional names, with other prior failures absent); the timing cause is not established. No test/deadline was removed or raised and no full-suite retry was used. These remain explicit broader #67/#42 harness watchpoints. All changed assignment/dialog consumers passed; this is not a full-suite-green claim.
 
-The Spec repair was independently re-reviewed with zero remaining findings. Local Markdown links (206 files) and diff checks pass. The selected three-host native acceptance subsequently passed as recorded below. Integrated verification is pending and will be recorded in GitHub #63. This is not a full-suite-green or release claim. Package, installer, release and final #67/#42 gates remain separate.
+The Spec repair was independently re-reviewed with zero remaining findings. Local Markdown links (206 files) and diff checks pass. The selected three-host native acceptance subsequently passed as recorded below. See GitHub #63 for integration and delivered-SHA verification. This is not a full-suite-green or release claim. Package, installer, release and final #67/#42 gates remain separate.
 
 ## Exact-SHA CI failure and renewal
 
@@ -100,7 +100,7 @@ as run `39875400508`, attempt 1 at `d39a95ab`, all three supported hosts. It ren
 assignment, original Views, rename and category-move consumers with the current
 visibility helper; unchanged service/UI receipts retain their original SHA.
 
-## Accepted evidence ledger
+## Pre-merge evidence ledger
 
 Application/service/schema/native/dependency/build inputs are byte-identical
 between the initial platform test candidate `5aeeb1b2` and native candidate
@@ -132,8 +132,7 @@ assert source-stable geometry and zero replay/collision effects.
 Independent Standards and Spec reviews cover the implementation and both
 subsequent test/CI repairs with zero unresolved findings. Documentation-only
 receipt updates have separate link/diff checks and inherit these runtime inputs;
-their delivered SHA is not described as platform-tested. Integration/delivered
-SHA and its actual checks will be recorded in the closing GitHub checkpoint.
+their delivered SHA is not described as platform-tested. For integration/delivered SHA and its actual checks, see GitHub #63.
 The retained failed runs above and full-suite inventory remain negative evidence;
 Windows cold timing cause and wider #67/#42/package/installer/release gates remain
 separate. No full local suite was retried.
@@ -145,8 +144,8 @@ Before delivery, integration advanced independently to accepted #65 at
 retained recovery coexist with filesystem receipt/history entry. Both review axes
 found no conflict-resolution defects; routing32, typecheck, lint and build pass.
 The separate issue receipts above remain their actual pre-merge evidence.
-Shared renderer/CSS inputs changed, so merged acceptance is pending and cannot
-inherit the pre-merge platform verdict. The combined
+Shared renderer/CSS inputs changed, requiring fresh merged acceptance rather than
+inheritance of the pre-merge platform verdict. The combined
 `filesystem-assignment-integration` route unions affected test files once and
 renews both issues' development/native/package consumers on all three hosts.
 No full local suite retry is selected; the affected boundary is explicitly
@@ -180,3 +179,38 @@ retain other successful merged receipts only after artifact inspection.
 Original repaired development recovery also passes locally:7 journeys/64 captures,
 three normal application/backend shutdowns and asserted owned cleanup, evidence
 `work/issue-63-recovery-ready-dev`. This does not substitute for hosted renewal.
+
+## Final merged acceptance ledger
+
+The final repair changes only the recovery smoke/readiness/test/CI/documentation
+closure; complete diff6de2c383..f7920e8c leaves application, service, schema,
+native resources, dependencies/lockfile and build/package inputs unchanged.
+Package files contain dist/package.json plus the unchanged native/license
+resources; the smoke helpers are not application package inputs. Preserve all
+failed conclusions above. The following current coverage accepts the merged
+assignment/recovery boundary under the shared evidence-reuse policy.
+
+| Required boundary | SHA / run / attempt | Inspected passing evidence |
+| --- | --- | --- |
+| Combined affected tests | `6de2c383` / `39877009892` / 1 | macOS1407, Windows1398 each; zero skips/failures |
+| Assignment13/96 + original Views6, rename/category recovery, all three hosts | `6de2c383` / `39877009892` / 1 | macOS artifact12468559484, Windows latest12469931746, Windows2022 12469014533; actual normal exits/owned cleanup |
+| Development sessions/data/archive/navigation, all hosts | Same merged run/SHA | Passed; same three artifacts; dev recovery superseded by renewal below |
+| Windows release sessions/data/archive/Views | Same merged run/SHA | Passed on both hosts; same Windows artifacts |
+| Changed regression + recovery dev/release, macOS | `f7920e8c` / `39879308713` / 1 |35 checks, zero skips; recovery7 journeys/64 captures and3 normal app/backend shutdowns per mode; artifact12469429453 |
+| Same changed regression/recovery, Windows latest | Same renewal run/SHA | Same counts and cleanup; artifact12469434276 |
+| Same changed regression/recovery, Windows2022 | Same renewal run/SHA | Same counts and cleanup; artifact12469263359 |
+| Missing macOS release sessions/data/archive/Views | Same renewal run/SHA |3/2/12/6 checks, package resource inspection, normal shutdown/cleanup; artifact12469429453 |
+
+All three recovery-renewal jobs passed and their exact-SHA reports/logs were
+inspected. Each owns disposable fixtures, verifies restart/current source identity,
+and asserts full cleanup. Windows merged rename selection agrees with independent
+UI Automation. Merged whole-window macOS RU/light/1024 Board category history,
+Windows latest EN/dark/1440 Table Name history and Windows2022 RU/dark/1024
+packaged recovery review were compared with the accepted main/bb/#59/#65 mapping:
+working composition, compact status/history entry, source overlay containment and
+recovery focus/dialog wrapping remain intact. Local links208 and diff checks
+cover this documentation-only receipt update; its SHA inherits runtime evidence
+instead of claiming new platform execution. Both implementation/merge and every
+driver/route repair have independent Standards/Spec review with no unresolved
+findings. The full-suite negative inventory and unproved historical cold timing
+cause remain explicit; #67/#42 and installer/release gates remain separate.
