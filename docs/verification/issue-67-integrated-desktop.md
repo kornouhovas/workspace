@@ -776,3 +776,28 @@ captures with normal quit/cleanup. Its earlier later-dialog negative is retained
 [Both event receipts](issue-67-evidence/category-entry-event-controls.json).
 Routing74/74, type/lint/docs and both review axes pass. These are instrument
 validation and bounded reproduction sampling, never renewed ordinary categories.
+
+
+## Hosted light diagnostic result
+
+Run39969757636 atbcf2 completes three isolated Mac event trials. Artifacts
+12508202942/12509355160/12508657415 are inspected, including observer-ready,
+64-entry bound, normal quit/backend exit/owned cleanup. Trials1/3 pass diagnostic
+22checks/64captures. Trial2 fails later at RUBoard/list return-move dialog
+detachment with the explicit source-changed guard; its ring contains only the
+observer-ready event because it has not reached a preview in that document.
+[Raw three-trial receipts](issue-67-evidence/category-entry-event-hosts.json) and
+[unmodified later failure capture](issue-67-evidence/category-return-stale-diagnostic.png).
+
+This is not the original ENBoard/preview missing Move action. The source-changed
+return failure and the historical missing-control failure remain distinct.
+Heavy trace, six minimized local cycles and three lighter hosted trials do not
+establish a reproducible loop for that original symptom. No product repair or
+ordinary-category acceptance is inferred from passing diagnostics. A stable
+reproduction/capture that distinguishes missing preview input from a later session
+or project-context change is still needed before choosing its repair.
+
+All useful runs have finished. The candidate and raw evidence are committed on
+the task branch. Remaining ordinary categories, missing package/strict tails,
+local Darwin27 shutdown and actual Windows11/System-theme gates remain open;
+#67 is unaccepted and has not been integrated or released.
