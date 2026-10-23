@@ -453,3 +453,17 @@ green22 result; no unchanged file retry. [Receipt](issue-67-evidence/preview-end
 The old provisional fully-loaded-preview300ms negatives remain historical; renewed
 strict evidence must satisfy the newly confirmed two endpoints. The direct filtered
 Table drag344.1ms negative remains under its unchanged300ms requirement.
+
+
+## Editor-window trace refinement
+
+Diagnostic39933803877 at96b59f28 reproduces the old-value failure in Windows2022dev
+and Windowslatestrelease; four other OS/mode jobs pass. The global128-event ring
+is overwritten by subsequent restore-dialog captures before the final assertion,
+so those observations do not establish a cause. The refined trace keeps an
+independent128-event editor window and64-command setTextValue metadata ring
+(length/time/outcome only), preserving exact handler replies/Promises/errors.
+The local traced original focus-only command passes normal quit/cleanup with exactly
+two expected public writes (fixture setup and one edit), no replay, bounded rings
+and no known authored text. Both reviews0findings; focused74/74/lint/docs pass.
+This is diagnostic instrumentation only, not a product repair or acceptance pass.

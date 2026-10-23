@@ -8,7 +8,7 @@ import {_electron} from 'playwright-core';
 import {closeElectron,cleanupOwnedFixture,ownedProcessesStopped,withDeadline} from './runtime-lifecycle.mjs';
 import {setInterfaceLanguage,openSettingsSection,returnToWorkspace} from './runtime-settings.mjs';
 import {packagedExecutablePath} from './runtime-executable.mjs';
-import {installArchiveEntryTrace} from './archive-entry-trace.mjs';
+import {installArchiveEntryTrace,installArchiveCommandTrace} from './archive-entry-trace.mjs';
 import {openArchiveTextEditor,exerciseArchiveEditorEntry} from './archive-editor-driver.mjs';
 import {waitForRuntimeInterface} from './runtime-startup.mjs';
 import {enterContextFor} from './runtime-context-tools.mjs';
@@ -21,13 +21,13 @@ const fixture=await realpath(await mkdtemp(join(tmpdir(),'workspace-contextual-a
 const report={issue:62,mode,focusOnly,diagnostic:entryTrace,phase:'startup',sha:process.env.GITHUB_SHA??null,run:process.env.GITHUB_RUN_ID??null,attempt:process.env.GITHUB_RUN_ATTEMPT??null,platform:process.platform,kernel:release(),checks:[],screens:[],shutdowns:[],status:'running'};
 const parents=new Set(),backends=new Set();let app,page,failure,launchUnverified=false;
 const query=async input=>{const result=await page.evaluate(input=>window.workspace.workspace(input),input);assert.equal(result.ok,true,JSON.stringify(result));return result.value;};
-async function captureEntryTrace(){if(entryTrace&&page)try{report.editorEntryTrace=await withDeadline(page.evaluate(()=>globalThis.__workspaceArchiveEntryTrace??[]),1000,'Archive editor trace');}catch{report.editorEntryTrace={unavailable:true};}}
+async function captureEntryTrace(){if(entryTrace&&page)try{report.editorEntryTrace=await withDeadline(page.evaluate(()=>globalThis.__workspaceArchiveEntryTrace??[]),1000,'Archive editor trace');report.editorFieldTrace=await withDeadline(page.evaluate(()=>globalThis.__workspaceArchiveEditorTrace??[]),1000,'Archive field trace');report.editorCommandTrace=await withDeadline(app.evaluate(()=>globalThis.__workspaceArchiveCommandTrace??[]),1000,'Archive command trace');}catch{report.editorEntryTrace={unavailable:true};}}
 async function close(){if(!app)return;const shutdown={normalQuit:false,backendsExited:false};report.shutdowns.push(shutdown);await closeElectron(app);shutdown.normalQuit=true;app=undefined;assert.equal(await ownedProcessesStopped(parents,backends),true);shutdown.backendsExited=true;}
 try {
  launchUnverified=true;
  app=await _electron.launch({executablePath:mode==='dev'?createRequire(import.meta.url)('electron'):packagedExecutablePath(root,process.platform,process.arch),args:[root],cwd:root,env:{...process.env,WORKSPACE_USER_DATA_DIR:join(fixture,'data')}});
  parents.add(app.process());page=await app.firstWindow();page.setDefaultTimeout(15000);
- if(entryTrace){await page.addInitScript(installArchiveEntryTrace);await page.evaluate(installArchiveEntryTrace);}
+ if(entryTrace){await page.addInitScript(installArchiveEntryTrace);await page.evaluate(installArchiveEntryTrace);await app.evaluate(installArchiveCommandTrace);}
  await waitForRuntimeInterface(page,status=>{report.startup=status;});
  for(const pid of await app.evaluate(({app})=>app.getAppMetrics().filter(m=>m.type==='Utility'&&m.serviceName?.includes('Node')).map(m=>m.pid)))backends.add(pid);
  assert.ok(backends.size);launchUnverified=false;
