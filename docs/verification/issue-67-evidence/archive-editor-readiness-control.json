@@ -1,0 +1,82 @@
+{
+  "status": "focused local verification; hosted renewal pending",
+  "base": "74fa5477c66f0d2469da107164b6851a2c77f4e5",
+  "sources": {
+    "scripts/archive-editor-driver.mjs": "c3e8f5d60136a7201487bdc711311fd7033589171a11abb752580fabd4fc1cf7",
+    "scripts/smoke-contextual-archive.mjs": "84e40ecf6faf2db4e50acd02222833a43338a32d54dc772cc88c34e89d5fabc8",
+    "tests/runtime-view-readiness.test.mjs": "a545d0a479bb91c5400dc8b22741742dfea813d6b02f96b270ad010ccdb85531"
+  },
+  "diagnosticRun": 39935314046,
+  "observed": "Failed Mac release and Windows latest dev editor windows have no new input event; setTextValue receives prior value length. No observed backend rollback. This does not establish a unique cause for every historical failure.",
+  "repair": "Wait for current connected visible enabled focused editor through committed frames, then fill once and check current value before Save. Host deadline bounds observation and typing together. No mutation replay or deadline expansion.",
+  "checks": {
+    "red": "/tmp/issue67-editor-focus-handoff-red.log",
+    "green": "/tmp/issue67-editor-host-deadline-native.log",
+    "routes": "74/74; /tmp/issue67-editor-host-deadline-routes.log",
+    "lint": "passed; /tmp/issue67-editor-host-deadline-lint.log",
+    "docs": "212 files checked"
+  },
+  "finalPackagedFocus": {
+    "issue": 62,
+    "mode": "release",
+    "focusOnly": true,
+    "diagnostic": false,
+    "phase": {
+      "discoveryMode": "direct",
+      "language": "en",
+      "layout": "table",
+      "location": "list",
+      "step": "archived-editor"
+    },
+    "sha": null,
+    "run": null,
+    "attempt": null,
+    "platform": "darwin",
+    "kernel": "27.0.0",
+    "checks": [
+      {
+        "discoveryMode": "direct",
+        "language": "en",
+        "layout": "table",
+        "location": "list",
+        "cancel": true,
+        "archiveRestore": true,
+        "identity": true,
+        "metadata": true,
+        "files": true,
+        "retainedTab": false
+      }
+    ],
+    "screens": [],
+    "shutdowns": [
+      {
+        "normalQuit": true,
+        "backendsExited": true
+      }
+    ],
+    "status": "passed",
+    "startup": {
+      "state": "ready"
+    },
+    "editorEntryControl": {
+      "activations": 1,
+      "focus": true,
+      "noDataMutation": true
+    },
+    "reloadedStartup": {
+      "state": "ready"
+    },
+    "cleanup": {
+      "status": "passed",
+      "asserted": true,
+      "processesStopped": true,
+      "maxRetries": 5,
+      "retryDelay": 100
+    }
+  },
+  "earlierFullPackagedArchive": {
+    "status": "24 journeys / 192 captures passed with normal quit and cleanup",
+    "qualification": "Before final host-deadline refinement; not exact final helper evidence",
+    "report": "work/issue-67-archive-ready-typing/report.json"
+  }
+}

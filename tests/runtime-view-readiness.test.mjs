@@ -1,4 +1,4 @@
-/* global document */
+/* global document, requestAnimationFrame */
 import assert from "node:assert/strict";
 import test from "node:test";
 import { createRequire } from "node:module";
@@ -10,6 +10,7 @@ import { _electron } from "playwright-core";
 import { closeElectron } from "../scripts/runtime-lifecycle.mjs";
 import { usableRuntimeViewProjection } from "../scripts/runtime-view-readiness.mjs";
 import { activateRuntimeView, setRuntimeViewLanguage } from "../scripts/runtime-view-controls.mjs";
+import { openArchiveTextEditor } from "../scripts/archive-editor-driver.mjs";
 import { readRuntimeInteraction, waitForRuntimeProjection, waitForRuntimeProject } from "../scripts/runtime-performance-timing.mjs";
 
 test('project timing waits for asynchronously mounted fields and tree before committed paint', async () => {
@@ -69,6 +70,35 @@ test('preview timing admits current properties and visible loading before the se
       assert.ok((await readRuntimeInteraction(page,loaded)).ms>=measured.ms);
       assert.equal(await page.getByRole('treeitem').textContent(),'preserved.txt');
     } finally {clearTimeout(timer);}
+  });
+});
+
+test('archive editor preparation waits for the focused committed control without repeating activation', async () => {
+  await withPage(async page => {
+    await page.setContent('<button aria-label="Edit archived value">Edit</button><div id="host"></div>');
+    await page.evaluate(() => {
+      globalThis.editorActivations=0;
+      const button=document.querySelector('button');
+      button.onkeyup=()=>{button.dataset.keyup='true';};
+      button.onclick=()=>{
+        globalThis.editorActivations++;
+        const input=document.createElement('textarea');input.setAttribute('aria-label','Edit archived value');input.value='Previous';
+        document.querySelector('#host').append(input);
+        globalThis.releaseEditorFocus=()=>input.focus();
+      };
+    });
+    let prepared=false;
+    const preparing=openArchiveTextEditor(page,'Edit archived value');
+    void preparing.then(()=>{prepared=true;},()=>{});
+    await page.locator('button[data-keyup="true"]').waitFor();
+    await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>requestAnimationFrame(()=>requestAnimationFrame(resolve))))));
+    assert.equal(prepared,false,'An exposed textbox is not yet the focused committed editor');
+    await page.evaluate(()=>globalThis.releaseEditorFocus());
+    const input=await preparing;
+    await input.fill('New authored value');
+    assert.equal(await input.inputValue(),'New authored value');
+    assert.equal(await input.evaluate(node=>node===document.activeElement),true);
+    assert.equal(await page.evaluate(()=>globalThis.editorActivations),1);
   });
 });
 

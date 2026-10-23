@@ -467,3 +467,27 @@ The local traced original focus-only command passes normal quit/cleanup with exa
 two expected public writes (fixture setup and one edit), no replay, bounded rings
 and no known authored text. Both reviews0findings; focused74/74/lint/docs pass.
 This is diagnostic instrumentation only, not a product repair or acceptance pass.
+
+
+## Archive editor typing preparation
+
+Diagnostic39935314046 at74fa5477 reproduces old-value saves in Mac release and
+Windows latest dev; four other jobs pass. The independent editor window records
+no new input event in either failed edit. The successful setTextValue command
+receives the previous value length; no backend rollback is observed. This narrows
+the failed boundary without proving a unique cause for every historical failure.
+
+A native browser control is red when editor preparation returns before the
+textarea owns focus. It is green after waiting for the current connected, visible,
+enabled, focused control through committed frames. The driver types once, checks
+the current value before Save, and retains the original final restored-value
+assertion. Observation and typing share the existing15s deadline with a host
+timeout; no action or mutation is replayed. Both review axes report0 findings.
+
+The exact final helper passes the packaged original focus journey, normal quit
+and owned cleanup; routing/probe74/74, lint and docs pass. An earlier full original
+archive run passes24 journeys/192 captures before the final host-deadline
+refinement and is identified separately. [Source and check receipt](issue-67-evidence/archive-editor-readiness-control.json).
+Next renew ordinary uninstrumented dev/release archive on all three hosts, then
+renew broad integration and installer evidence. Windows11 remains unavailable;
+no acceptance, integration or closure is claimed.

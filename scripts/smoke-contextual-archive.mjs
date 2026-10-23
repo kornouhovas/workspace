@@ -99,8 +99,7 @@ try {
     if(location==='list')await page.getByRole('button',{name:en?'Archived':'Архив',exact:true}).click();
     const editLabel=`${en?'Edit Text value':'Редактировать Text-значение'}: Brand refresh / Notes`;
     report.phase={discoveryMode,language,layout,location,step:'archived-editor'};
-    const editor=await openArchiveTextEditor(scope,editLabel);
-    await editor.fill(`Archived ${layout} ${location}`);
+    await openArchiveTextEditor(scope,editLabel,`Archived ${layout} ${location}`);
     await scope.getByRole('button',{name:en?'Save value':'Сохранить значение',exact:true}).click();
     await scope.getByRole('button',{name:editLabel,exact:true}).waitFor();
     for(const theme of (focusOnly ? [] : ['light','dark'])) {
