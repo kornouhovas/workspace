@@ -9,7 +9,7 @@ export function createInitialCategoryMoveReviewRefresh(language: Language) {
   let reopen: HTMLButtonElement | null = null;
   return (root: HTMLElement) => {
     const list = root.querySelector(".category-move-operations");
-    const review = root.querySelector(".category-move-review");
+    const review = root.ownerDocument.querySelector(".category-move-review");
     if (reopen) {
       if (review) return true;
       if (!showCategoryMoveStoryHistory(root)) return true;

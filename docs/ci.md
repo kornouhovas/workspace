@@ -40,8 +40,8 @@ For run39915975323's first Applied Ladle state failure, use
 EN/RU states at all three sizes on all three hosts. The preview mock now implements
 the current workspace-session query/write boundary; production renderer output is
 byte-identical. Missing any named Applied state fails closed, including when the
-remaining selection would otherwise be nonempty. After inspected focused success,
-`integrated-runtime` selects `--remaining-after-applied` for the unexecuted
+remaining selection would otherwise be nonempty. After inspected Applied and category-move focused successes,
+`integrated-runtime` selects `--remaining-after-category-move` for the unexecuted
 complement, followed by package/resources and every original/new packaged journey
 and strict scale. Ordinary `integrated-desktop` still selects the complete layout
 inventory. Preserve each report's selection/counts; a focused family is not the
@@ -1672,3 +1672,11 @@ An unavailable backend shows matching-version instructions; no replacement is
 attempted until its service can open. All normal-exit and owned-cleanup gates
 remain mandatory. Installer and strict scale milestones retain their separately
 owned acceptance because no installer/native/storage/performance path is changed.
+
+For the category-move portal/archive fixture repair in #67, use
+`checks: integrated-category-layout` first. It renews all50 EN/RU category-move
+states/150 captures on all three hosts, without full tests or package journeys.
+After its passing artifacts are inspected, `integrated-runtime` excludes only
+the already renewed Applied and category-move families. Ordinary
+`integrated-desktop` retains the entire layout inventory. This adds a checks
+choice without exceeding the existing workflow-dispatch input limit.

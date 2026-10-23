@@ -1090,6 +1090,10 @@ function CategoryMovePreview({ language, state }: { language: Language; state: C
       override async getViewFilter(workspaceId: string, viewId: string) { return { ok: true as const, value: { workspaceId, viewId, config: { search: "", rules: [] } } }; }
       override async queryView(workspaceId: string, viewId: string, archived: boolean) { return { ok: true as const, value: { workspaceId, viewId, archived, projectIds: [...projects.projects, ...projects.retainedProjects].map(p => p.projectId) } }; }
       override async listProjects() { return { ok: true as const, value: projects }; }
+      override async listArchivedProjects(workspaceId: string) { return { ok: true as const, value: {
+        workspaceId, sourceId: projects.sourceId, revision: projects.revision, relativePath: null, projects: [] } }; }
+      override async listProjectArchiveOperations(workspaceId: string) { return { ok: true as const, value: {
+        workspaceId, sourceId: projects.sourceId, operations: [] } }; }
       override async listProjectCreations() { return { ok: true as const, value: { ...textStoryIds, operations: [] } }; }
       override async listTextProperties() { return { ok: true as const, value: { ...textStoryIds, revision: 1,
         definitions: [{ propertyId: textStoryIds.propertyId, sourceId: textStoryIds.sourceId, name: longPropertyName, propertyType: "text" as const }],
@@ -1155,9 +1159,9 @@ function CategoryMovePreview({ language, state }: { language: Language; state: C
           const button = target.querySelector<HTMLButtonElement>(".category-move-operations > div > button:last-of-type");
           if (button && !button.disabled) { opened = true; button.click(); } return;
         }
-        if (state === "kept-original" && submitted && [...target.querySelectorAll(".project-category-move .bb-status")].some((node) => node.textContent === translate(language, "moveCategoryKeptOriginal"))) { done(); return; }
+        if (state === "kept-original" && submitted && [...target.ownerDocument.querySelectorAll(".project-category-move .bb-status")].some((node) => node.textContent === translate(language, "moveCategoryKeptOriginal"))) { done(); return; }
         if (state !== "review-stale" && !submitted && refreshInitialReview(target)) return;
-        const review = target.querySelector(".category-move-review"); if (!review) return;
+        const review = target.ownerDocument.querySelector(".category-move-review"); if (!review) return;
         if (state === "review-loading" && review.getAttribute("aria-busy") === "true" || state === "review-error" && review.querySelector("[role=alert]")) { done(); return; }
         if (state === "review-stale") {
           if (!observed && review.querySelector(".category-move-placements")) { observed = true; fixture.observe(); }
@@ -1171,13 +1175,13 @@ function CategoryMovePreview({ language, state }: { language: Language; state: C
             [...review.querySelectorAll<HTMLButtonElement>("button")].find((button) => button.textContent === translate(language, action))?.click();
           }
           const key = state === "kept-original" ? "moveCategoryKeptOriginal" : state === "recovery-pending" ? "moveCategoryPending" : "moveCategoryUncertain";
-          if ([...target.querySelectorAll(".project-category-move .bb-status")].some((node) => node.textContent === translate(language, key))) done();
+          if ([...target.ownerDocument.querySelectorAll(".project-category-move .bb-status")].some((node) => node.textContent === translate(language, key))) done();
           return;
         }
         if (review.querySelector(".category-move-placements")) done(); return;
       }
       if (!opened) { opened = openCategoryMoveStoryAction(target, language); return; }
-      const input = target.querySelector<HTMLSelectElement>("#project-category-move-destination");
+      const input = target.ownerDocument.querySelector<HTMLSelectElement>(".project-operation-dialog.project-category-move #project-category-move-destination");
       if (input && !authored) {
         authored = true;
         if (state !== "unchanged") {
@@ -1190,7 +1194,7 @@ function CategoryMovePreview({ language, state }: { language: Language; state: C
       }
       const keys = { pending: "moveCategoryPending", saved: "moveCategorySaved", unchanged: "moveCategoryUnchanged", rejected: "moveCategoryFailed", collision: "moveCategoryCollision", stale: "moveCategoryStale", unavailable: "moveCategoryUnavailable", unknown: "moveCategoryUncertain" } as const;
       const key = keys[state as keyof typeof keys];
-      if (submitted && key && [...target.querySelectorAll(".project-category-move .bb-status")].some((node) => node.textContent === translate(language, key))) done();
+      if (submitted && key && [...target.ownerDocument.querySelectorAll(".project-category-move .bb-status")].some((node) => node.textContent === translate(language, key))) done();
     };
     // Wait for committed renders and their passive effects before interacting.
     // Initial discovery/list invalidation must settle before a recovery review.
@@ -1200,7 +1204,8 @@ function CategoryMovePreview({ language, state }: { language: Language; state: C
       frame = requestAnimationFrame(() => { frame = requestAnimationFrame(() => { frame = null; prepare(); }); });
     };
     const observer = new MutationObserver(schedule);
-    observer.observe(root.current!, { childList: true, subtree: true, attributes: true }); schedule();
+    // Operation forms are portaled outside the fixture main. Observe their commits too.
+    observer.observe(root.current!.ownerDocument.body, { childList: true, subtree: true, attributes: true }); schedule();
     return () => { observer.disconnect(); if (frame !== null) cancelAnimationFrame(frame); clearTimeout(submitTimer); };
   }, [fixture, language, state]);
   return <main ref={root} className="app-shell" lang={language} data-category-move-fixture={state} data-fixture-ready={prepared}

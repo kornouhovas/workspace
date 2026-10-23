@@ -288,3 +288,27 @@ The integrated runner now requires this journey against the same pinned package.
 The owner confirms there is currently no Windows11 machine/VM/runner. Windows11
 and real Windows System-theme evidence remain unresolved mandatory acceptance
 gates; hosted Windows Server cannot satisfy them. Issue67 remains in progress.
+
+
+## Category-move fixture portal renewal
+
+[Healthy Applied renewal39922602291](https://github.com/kornouhovas/workspace/actions/runs/39922602291)
+atcc6fc32c passes12 captures on each host. Downloaded and inspected receipts
+are retained in [the healthy receipt](issue-67-evidence/hosted-healthy-applied.json).
+
+Runtime39923120745 atcc6fc32c fails all three hosts after30 captures in
+category-move-collision-english. Normal shutdown passes; package/native/scale
+consumers remain unreached. Local category-move reproduces the same15s timeout.
+The minimal DOM probe shows moveCalls0 and the destination input in the dialog
+outside the fixture main. Accepted operation forms are portaled; the old fixture
+queries/observer were scoped to main. Portal-aware preparation and recovery-review
+lookup restore all50 states/150 captures, retaining mutation counts/focus/Escape.
+The same family's unrelated archive error is separately red before adding current
+archive reads and green afterwards. [Local receipt](issue-67-evidence/category-fixture-local.json).
+The targeted category UI suite passes213/213; routing68/68, typecheck/lint pass.
+
+The focused hosted route is integrated-category-layout, followed only after
+inspected success by the complement excluding Applied and category-move.
+The local complement already reaches the next previously unreached failure,
+creation-collision-english, after72 captures; its fixture readiness repair is next.
+No passed full suite, installed candidate or accepted product behavior is retired.

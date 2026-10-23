@@ -1,0 +1,38 @@
+{
+  "run": 39922602291,
+  "attempt": 1,
+  "sha": "cc6fc32c20929c72d9557a30fb26a93ec40fabf8",
+  "status": "passed",
+  "receipts": [
+    {
+      "artifactDirectory": "work/issue-67-ci/layout-healthy-cc/windows/issue-67-windows-latest-cc6fc32c20929c72d9557a30fb26a93ec40fabf8-run-39922602291-attempt-1",
+      "reportSha256": "18a7e44ef7a0408410d61e8fcae324c8ebaf479fc58c9c6f00c8c98e003c53c0",
+      "selection": "applied",
+      "selectedStoryCount": 4,
+      "captures": 12,
+      "featurePassed": true,
+      "shutdownPassed": true,
+      "appearance": "Inspected representative complete EN/RU1024 captures; no unintended archive error banner."
+    },
+    {
+      "artifactDirectory": "work/issue-67-ci/layout-healthy-cc/windows/issue-67-windows-2022-cc6fc32c20929c72d9557a30fb26a93ec40fabf8-run-39922602291-attempt-1",
+      "reportSha256": "18a7e44ef7a0408410d61e8fcae324c8ebaf479fc58c9c6f00c8c98e003c53c0",
+      "selection": "applied",
+      "selectedStoryCount": 4,
+      "captures": 12,
+      "featurePassed": true,
+      "shutdownPassed": true,
+      "appearance": "Inspected representative complete EN/RU1024 captures; no unintended archive error banner."
+    },
+    {
+      "artifactDirectory": "work/issue-67-ci/layout-healthy-cc/mac",
+      "reportSha256": "18a7e44ef7a0408410d61e8fcae324c8ebaf479fc58c9c6f00c8c98e003c53c0",
+      "selection": "applied",
+      "selectedStoryCount": 4,
+      "captures": 12,
+      "featurePassed": true,
+      "shutdownPassed": true,
+      "appearance": "Inspected representative complete EN/RU1024 captures; no unintended archive error banner."
+    }
+  ]
+}

@@ -40,7 +40,7 @@ test('registered desktop dispatch isolates integrated acceptance and retains ord
   const enabled = (job, event, checks) => runInNewContext(job.if.slice(3, -2), {
     github: { event_name: event }, inputs: { checks },
   });
-  for (const checks of ['integrated-desktop', 'integrated-regressions', 'integrated-layout', 'integrated-runtime']) {
+  for (const checks of ['integrated-desktop', 'integrated-regressions', 'integrated-layout', 'integrated-category-layout', 'integrated-runtime']) {
     assert.equal(enabled(integrated, 'workflow_dispatch', checks), true);
     assert.equal(enabled(workflow.jobs.common, 'workflow_dispatch', checks), false);
   }
@@ -62,8 +62,11 @@ test('registered desktop dispatch isolates integrated acceptance and retains ord
   const layouts = selected('integrated-layout');
   assert.ok(layouts.includes('node scripts/smoke-discovery-layouts.mjs --applied'));
   assert.ok(!layouts.some(command => /test:all|package:built|node scripts\/integrated-desktop/.test(command)));
+  const categoryLayouts = selected('integrated-category-layout');
+  assert.ok(categoryLayouts.includes('node scripts/smoke-discovery-layouts.mjs --category-move'));
+  assert.ok(!categoryLayouts.some(command => /test:all|package:built|node scripts\/integrated-desktop/.test(command)));
   const tail = selected('integrated-runtime');
-  assert.ok(tail.includes('node scripts/smoke-discovery-layouts.mjs --remaining-after-applied'));
+  assert.ok(tail.includes('node scripts/smoke-discovery-layouts.mjs --remaining-after-category-move'));
   assert.ok(!tail.some(command => command.includes('test:all')));
   assert.ok(tail.includes('npm run package:built'));
   assert.ok(tail.some(command => command.includes('node scripts/integrated-desktop.mjs')));
