@@ -181,7 +181,7 @@ export function contextualArchiveCommands({nativeOnly=false}={}) {
   return [
     ['npm', ['run', 'typecheck']], ['npm', ['run', 'lint']],
     [process.execPath, ['--import', 'tsx', '--test', ...tests.map(file => `tests/${file}`)]],
-    [process.execPath, ['--test', '--test-name-pattern=archive editor preparation|scalar draft recovers keyboard|source refresh returns focus', 'tests/runtime-view-readiness.test.mjs']],
+    [process.execPath, ['--test', '--test-name-pattern=archive editor preparation|scalar draft recovers keyboard|new scalar editor receives|source refresh returns focus', 'tests/runtime-view-readiness.test.mjs']],
     ...native('dev'), ['npm', ['run', 'package:built']], ['npm', ['run', 'check:artifact', '--', 'release']],
     ...native('release'),
   ];

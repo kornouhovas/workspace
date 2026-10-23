@@ -77,22 +77,22 @@ function EditingTextPropertyCell(props: Props & { restoreFocus: {current:boolean
   const [calendar, setCalendar] = useState(false);
   const lifetime = useRef(0);
   const previouslyDisabled = useRef(disabled);
-  const editorOwnedFocus = useRef(false);
+  const editorFocusIntent = useRef(true);
   const editing = draft !== null;
   useLayoutEffect(() => { onState(current => ({ ...current, editing, pending })); }, [editing, pending, onState]);
-  useEffect(() => { closed.current = false; failed.current = false; restoreFocus.current = true; originalValue.current = value; setDraft((date ? value : displayValue) ?? ""); setMessage(null); }, [openToken]);
+  useEffect(() => { closed.current = false; failed.current = false; restoreFocus.current = true; editorFocusIntent.current = true; originalValue.current = value; setDraft((date ? value : displayValue) ?? ""); setMessage(null); }, [openToken]);
   useEffect(() => {
     if (revision > savedRevision.current) {
       setMessage((current) => current === "textValueSaved" ? "textValueNewerChange" : current);
     }
   }, [revision]);
   useEffect(() => {
-    // A source refresh can disable the focused editor and leave focus on BODY.
+    // A source refresh can interrupt opening or disable the focused editor.
     // Resume that draft when available, without overriding another chosen control.
     const resumed = previouslyDisabled.current && !disabled;
     previouslyDisabled.current = disabled;
-    const resumeOwnFocus = editorOwnedFocus.current && document.activeElement === document.body;
-    if (resumed) editorOwnedFocus.current = false;
+    const resumeOwnFocus = editorFocusIntent.current && document.activeElement === document.body;
+    if (resumed) editorFocusIntent.current = false;
     if (editing && !pending && !disabled && restoreFocus.current && (!resumed || resumeOwnFocus)) editor.current?.focus();
   }, [editing, pending, disabled]);
   useEffect(() => () => { lifetime.current++; }, []);
@@ -139,9 +139,9 @@ function EditingTextPropertyCell(props: Props & { restoreFocus: {current:boolean
   }, [guard, editing]);
   return <>
     {editing && <div className="text-value-editor" onFocus={event => {
-      if (event.target === editor.current) editorOwnedFocus.current = true;
+      if (event.target === editor.current) editorFocusIntent.current = true;
     }} onBlur={event => {
-      if (event.target === editor.current && !editor.current?.disabled) editorOwnedFocus.current = false;
+      if (event.target === editor.current && !editor.current?.disabled) editorFocusIntent.current = false;
       if (!event.currentTarget.contains(event.relatedTarget as Node | null)) void commit();
     }} onKeyDown={(event) => {
       if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); if (calendar) setCalendar(false); else cancel(); }

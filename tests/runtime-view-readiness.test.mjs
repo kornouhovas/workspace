@@ -143,6 +143,21 @@ test('scalar draft recovers keyboard focus after temporary source unavailability
   });
 });
 
+test('new scalar editor receives its requested focus after source unavailability interrupts opening', async () => {
+  const bundle=await scalarFocusFixture();
+  await withPage(async page=>{
+    await page.setContent('<div id="root"></div>');await page.addScriptTag({content:bundle.outputFiles[0].text});
+    await page.evaluate(()=>{globalThis.disableOnEditorEntry=true;});
+    await page.getByRole('button',{name:'Edit Text value: Atlas / Notes',exact:true}).click();
+    await page.waitForFunction(()=>document.querySelector('textarea')?.disabled && document.activeElement===document.body);
+    await page.evaluate(()=>globalThis.setEditorDisabled(false));
+    await page.waitForFunction(()=>!document.querySelector('textarea')?.disabled && document.activeElement===document.querySelector('textarea'),{},{timeout:1500});
+    await page.keyboard.press('ControlOrMeta+A');await page.keyboard.type('Newly opened value');
+    assert.equal(await page.getByRole('textbox',{name:'Edit Text value: Atlas / Notes',exact:true}).inputValue(),'Newly opened value');
+    assert.deepEqual(await page.evaluate(()=>globalThis.savedValues),[]);
+  });
+});
+
 test('source refresh returns focus to the previously focused scalar among retained invalid drafts', async () => {
   const bundle=await scalarFocusFixture();
   await withPage(async page=>{
@@ -172,9 +187,9 @@ async function scalarFocusFixture() {
       import {TextPropertyCell} from './src/renderer/components/TextPropertyCell.tsx';
       globalThis.savedValues=[];
       function Example(){const [disabled,setDisabled]=useState(false);globalThis.setEditorDisabled=setDisabled;
-        return <><TextPropertyCell workspaceId="w" sourceId="s" projectId="p" propertyId="f" projectName="Atlas" propertyName="Notes" value="Previous" revision={0} minimumRevision={{current:0}} language="en" disabled={disabled}
+        return <div onClick={event=>{if(globalThis.disableOnEditorEntry && event.target.classList.contains('text-value-button'))setDisabled(true);}}><TextPropertyCell workspaceId="w" sourceId="s" projectId="p" propertyId="f" projectName="Atlas" propertyName="Notes" value="Previous" revision={0} minimumRevision={{current:0}} language="en" disabled={disabled}
           onSave={async value=>{globalThis.savedValues.push(value);return {ok:true,value:{projectId:'p',propertyId:'f',snapshot:{workspaceId:'w',sourceId:'s',revision:1}}};}}/>{['First','Second'].map(name=><TextPropertyCell key={name} workspaceId="w" sourceId="s" projectId="p" propertyId={name} propertyType="number" projectName="Atlas" propertyName={name} value={null} revision={0} minimumRevision={{current:0}} language="en" disabled={disabled}
-          onSave={async value=>name==='First'?{ok:false,error:{code:'invalid_input',message:'Invalid number'}}:{ok:true,value:{projectId:'p',propertyId:name,snapshot:{workspaceId:'w',sourceId:'s',revision:1}}}}/>)}<button>Independent action</button></>;}
+          onSave={async value=>name==='First'?{ok:false,error:{code:'invalid_input',message:'Invalid number'}}:{ok:true,value:{projectId:'p',propertyId:name,snapshot:{workspaceId:'w',sourceId:'s',revision:1}}}}/>)}<button>Independent action</button></div>;}
       createRoot(document.getElementById('root')).render(<Example/>);
     `}});
 }

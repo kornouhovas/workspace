@@ -548,3 +548,25 @@ lint and both reviews pass. The traced original development focus-only journey
 passes normal quit/cleanup with actual state events. [Receipt](issue-67-evidence/archive-trace-document-control.json).
 This repairs diagnostic coverage only; renew the explicit diagnostic route to
 distinguish Mac activation loss before claiming or choosing a product repair.
+
+
+## Opening interrupted before initial focus
+
+Diagnostic39941120241 at8bfad860 passes Mac dev/release, Windows latest dev
+and Windows2022 release. Both remaining failures click an enabled value button,
+then mount a disabled textarea before its first focus; it reenables8–12ms later
+with BODY still active. Prior ownership alone cannot restore a request that has
+not yet reached focus. New editor activation now establishes focus intent, while
+ordinary blur, multiple-draft ownership and independent-control protections remain.
+
+The real React/Electron control is red at reenabled focus before this repair,
+then all three focus controls pass. A first capture-phase fixture prevented
+activation entirely and is not counted as that reproduction; the retained
+bubble-phase fixture reproduces a disabled editor mounted by the same click.
+Keyboard selection makes the authored-value assertion independent of initial
+caret placement. UI/routing141/141, typecheck/lint, renderer build and original
+dev focus-only journey pass with normal quit/cleanup; both reviews0 findings.
+[Source, trace and check receipt](issue-67-evidence/scalar-opening-disabled-focus-repair.json).
+Renew ordinary uninstrumented three-host archive before broad/strict/installer
+acceptance. Earlier8bf local packaged24/192 passes remain historical; production
+input changed again and those results are not relabelled as current.
