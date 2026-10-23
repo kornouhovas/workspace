@@ -258,3 +258,33 @@ all10 production outputs are byte-identical before/after the `.stories.tsx` repa
 New focused `integrated-layout` precedes the unexecuted complementary inventory
 and all package/scale journeys via `integrated-runtime`. Reviewed unchanged
 full-suite/installer evidence remains at its actual earlier sources.
+
+
+## Applied appearance rejection and keyboard coverage
+
+Run39918520639 at52a61777 passed four Applied stories/12 captures on each
+host, with normal shutdown. Image inspection subsequently rejected intended
+appearance: the fixture displayed an archive error. Those receipts establish
+geometry only and are explicitly reclassified in
+[the hosted receipt](issue-67-evidence/hosted-applied-layouts.json).
+The public archive reads were absent; returning revision0 also correctly triggers
+the production stale-snapshot guard against project revision1. The fixture now
+provides both archive reads and a current revision. The layout driver waits for
+archive and property loading to finish and rejects visible alerts/retry controls.
+The narrowed original command was red with one visible alert before this repair
+and green with12 captures afterwards. Hosted healthy-state renewal remains required.
+
+The new packaged keyboard journey covers EN1024×720 and RU1440×960 using Tab,
+roving arrows, Enter/Escape and native keyboard typeahead. Public service calls
+prepare disposable data and observe committed assignment; no pointer or DOM focus
+setter drives the journey. It checks widths, Text cancellation, invalid Number
+navigation protection, unique project tabs/reorder/close/reopen/return, distinct
+native assignment transitions in both languages, contextual Escape, rename Cancel
+with preserved bytes, and settings Back. The local receipt records zero pointerdowns,
+normal shutdown and both transitions. [Receipt](issue-67-evidence/keyboard-local.json)
+and [exact tested control](issue-67-evidence/keyboard-local-control.mjs.txt).
+The integrated runner now requires this journey against the same pinned package.
+
+The owner confirms there is currently no Windows11 machine/VM/runner. Windows11
+and real Windows System-theme evidence remain unresolved mandatory acceptance
+gates; hosted Windows Server cannot satisfy them. Issue67 remains in progress.

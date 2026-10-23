@@ -27,5 +27,11 @@
   },
   "comparisonHead": "6bf1fbcdeda7f5876909ec2dbd71153b5469155e",
   "initialRendererBuildSource": "5799532c4966e026b96b6b18718f5a8e8171bf6b",
-  "productionSourceDiff": "No src production, dependency or renderer build-input changes from initial renderer build through comparison head; the only later src change is the Ladle .stories.tsx fixture."
+  "productionSourceDiff": "No src production, dependency or renderer build-input changes from initial renderer build through comparison head; the only later src change is the Ladle .stories.tsx fixture.",
+  "archiveFixtureRenewal": {
+    "equal": true,
+    "fileCount": 10,
+    "head": "52a6177756256aab41255c3291a6924f7c911ef1",
+    "workingTree": "Adds current archive mock reads; build:renderer outputs still match original production build byte-for-byte."
+  }
 }

@@ -17,6 +17,7 @@ export const integratedJourneys = [
   journey('sources', 'smoke-source-settings'),
   journey('board', 'smoke-board'),
   journey('navigation', 'smoke-project-navigation'),
+  journey('keyboard', 'smoke-keyboard-journey'),
   journey('files', 'smoke-project-files'),
   journey('scalars', 'smoke-scalar-drafts', 'release'),
   journey('selections', 'smoke-selection-editors', 'release'),

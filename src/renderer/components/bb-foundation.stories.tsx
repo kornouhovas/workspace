@@ -113,6 +113,10 @@ function WorkspacePreview({ language, state = "management" }: {
       if (input.type === "workspace.listProjectCategoryMoves") return { ok: true, value: { workspaceId: input.workspaceId, sourceId: records[0].sourceId, operations: [] } };
       if (input.type === "workspace.listProjectRenames") return { ok: true, value: { workspaceId: input.workspaceId, sourceId: records[0].sourceId, operations: [] } };
       if (input.type === "workspace.listProjectCreations") return { ok: true, value: { workspaceId: input.workspaceId, sourceId: records[0].sourceId, operations: [] } };
+      if (input.type === "workspace.listArchivedProjects") return { ok: true, value: { workspaceId: input.workspaceId,
+        sourceId: records[0].sourceId, revision: state.startsWith("applied") ? 1 : 0, relativePath: null, projects: [] } };
+      if (input.type === "workspace.listProjectArchiveOperations") return { ok: true, value: { workspaceId: input.workspaceId,
+        sourceId: records[0].sourceId, operations: [] } };
       if (input.type === "workspace.listProjects") return { ok: true, value: {
         workspaceId: input.workspaceId, sourceId: records[0].sourceId, revision: state.startsWith("applied") ? 1 : 0,
         mode: state.startsWith("applied") ? "direct" : null, categories: [], categoryProperty: null, categoryPropertyRevision: 0,

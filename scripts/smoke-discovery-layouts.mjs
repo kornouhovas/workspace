@@ -84,6 +84,12 @@ app.on('window-all-closed', () => app.quit());`);
     const categoryStory = story.includes("--category-") && !categoryMoveStory;
     const textStory = story.includes("--text-");
     await page.locator(categoryMoveStory ? "[data-category-move-fixture][data-fixture-ready=true]" : renameStory ? "[data-rename-fixture][data-fixture-ready=true]" : creationStory ? "[data-creation-fixture][data-fixture-ready=true]" : modeStory ? "[data-mode-fixture]" : sourceStory ? "[data-source-fixture]" : recoveryStory ? "[data-recovery-fixture]" : categoryStory ? "[data-category-fixture][data-fixture-ready=true]" : textStory ? "[data-text-fixture][data-fixture-ready=true]" : ".discovery-panel, .table-view").waitFor();
+    if (story.includes('--applied-')) {
+      await page.locator('.text-properties[aria-busy="false"]').waitFor();
+      await page.locator('.project-archive[aria-busy="false"]').waitFor({state:'attached'});
+      assert.equal(await page.getByRole('alert').filter({visible:true}).count(), 0, 'Applied fixtures must render the intended healthy state');
+      assert.equal(await page.getByRole('button',{name:/^(Reload properties|Перезагрузить свойства)$/,exact:true}).filter({visible:true}).count(), 0, 'Applied property snapshot must be current');
+    }
     const categoryMoveRoot = page.locator("[data-category-move-fixture]");
     const categoryMoveState = categoryMoveStory ? await categoryMoveRoot.getAttribute("data-category-move-fixture") : null;
     const categoryMoveLanguage = categoryMoveStory ? await categoryMoveRoot.getAttribute("lang") : null;
