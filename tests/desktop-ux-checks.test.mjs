@@ -456,3 +456,18 @@ test('integrated assignment and retained recovery renew both boundaries once on 
  assert.deepEqual(Array.from(runInNewContext(job.strategy.matrix.os.slice(3,-2),{fromJSON:JSON.parse,inputs:{desktop_ux_profile:'filesystem-assignment-integration'}})),['macos-latest','windows-latest','windows-2022']);
  for(const name of ['Affected UI, services and real Electron flows','Package shared font and notices','Inspect packaged artifact','Packaged saved-view consumers'])assert.ok(job.steps.find(step=>step.name===name).if.includes("inputs.desktop_ux_profile != 'filesystem-assignment-integration'"),name);
 });
+
+test('recovery driver renewal covers both modes on all hosts and only missing macOS release tails',async()=>{
+ const {filesystemAssignmentRecoveryRenewalCommands:commands}=await import('../scripts/desktop-ux-checks.mjs');
+ for(const platform of ['darwin','win32']){
+  const list=commands(platform),text=JSON.stringify(list);
+  assert.deepEqual(list.filter(([,args])=>args.includes('scripts/smoke-retained-recovery.mjs')).map(([,args])=>args.at(-1)),['dev','release']);
+  for(const name of ['runtime-project-visibility.test.mjs','desktop-ux-checks.test.mjs','package:built','check:artifact'])assert.ok(text.includes(name),name);
+  for(const name of ['smoke-workspace-sessions.mjs','smoke:data-recovery','smoke:archive','smoke:views'])assert.equal(text.includes(name),platform==='darwin',name);
+ }
+ assert.equal(spawnSync(process.execPath,['scripts/desktop-ux-checks.mjs','filesystem-assignment-recovery-renewal','--failure-probe'],{encoding:'utf8'}).status,23);
+ const {readFile}=await import('node:fs/promises'),{load}=await import('js-yaml');
+ const workflow=load(await readFile('.github/workflows/desktop-ci.yml','utf8'));
+ assert.ok(workflow.on.workflow_dispatch.inputs.desktop_ux_profile.options.includes('filesystem-assignment-recovery-renewal'));
+ assert.ok(workflow.jobs['desktop-ux'].steps.some(step=>step.run==='node scripts/desktop-ux-checks.mjs filesystem-assignment-recovery-renewal'));
+});

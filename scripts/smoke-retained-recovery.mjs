@@ -9,6 +9,7 @@ import {closeElectron,cleanupOwnedFixture,ownedProcessesStopped,withDeadline} fr
 import {setInterfaceLanguage,openSettingsSection,returnToWorkspace} from './runtime-settings.mjs';
 import {waitForRuntimeInterface} from './runtime-startup.mjs';
 import {packagedExecutablePath} from './runtime-executable.mjs';
+import {waitForRuntimeRecoverySource} from './runtime-recovery-readiness.mjs';
 import {enterContextFor} from './runtime-context-tools.mjs';
 const mode=process.argv[2]??'dev';assert.ok(['dev','release'].includes(mode));
 const root=resolve(import.meta.dirname,'..'),evidence=resolve(process.env.WORKSPACE_SMOKE_EVIDENCE_DIR??`work/issue-65-recovery-${mode}`);
@@ -88,7 +89,7 @@ try{
   }
   await area.getByRole('button',{name:en?'Source settings':'Настройки источника',exact:true}).click();
   await page.getByRole('tab',{name:en?'Sources':'Источники',selected:true,exact:true}).waitFor();
-  assert.ok((await page.locator('.settings-page:not([hidden])').textContent()).includes(source));
+  await waitForRuntimeRecoverySource(page,source);
   await returnToWorkspace(page);await page.getByRole('tab',{name:'Brand refresh',selected:true,exact:true}).waitFor();
  }
  report.checks.push('EN/RU light/dark both supported sizes: preview/expanded missing/review, Escape/focus, source settings and return');

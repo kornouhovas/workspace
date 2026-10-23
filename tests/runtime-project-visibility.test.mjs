@@ -7,6 +7,7 @@ import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {_electron} from 'playwright-core';
+import {waitForRuntimeRecoverySource} from '../scripts/runtime-recovery-readiness.mjs';
 import {waitForRuntimeProjectPath,scrollRuntimeControlIntoView,showRuntimeProject} from '../scripts/runtime-project-visibility.mjs';
 
 test('runtime path readiness awaits false async reads and binds the committed workspace/project/path', async () => {
@@ -68,6 +69,14 @@ test('runtime path readiness awaits false async reads and binds the committed wo
     });
     await showRuntimeProject(page,'Target','project','C');
     assert.equal(await page.locator('#current').evaluate(element=>element.getBoundingClientRect().bottom<=innerHeight),true);
+
+    // A selected Sources tab precedes the asynchronous source list response.
+    await page.setContent('<div role="tab" aria-selected="true">Sources</div><section class="settings-page"><p>Loading</p></section>');
+    await page.evaluate(() => {
+      setTimeout(() => { document.querySelector('.settings-page').innerHTML='<button aria-label="/owned/source">/owned/source</button>'; }, 100);
+    });
+    await waitForRuntimeRecoverySource(page, '/owned/source');
+    assert.equal(await page.getByRole('button', {name:'/owned/source', exact:true}).isVisible(), true);
 
   } catch (error) {primary = error;}
   try {await app.close(); await rm(profile, {recursive: true, force: true});}

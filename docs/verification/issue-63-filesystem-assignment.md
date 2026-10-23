@@ -157,3 +157,26 @@ Combined local acceptance: 1407/1407 affected tests, zero skips/failures (80.03s
 regression was red before implementation and green after; both independent
 reviews found no route/spec defects. The application build at merged `b8759247`
 passed; subsequent changes are CI/test/documentation only.
+
+Merged run39877009892 attempt1 at6de2c383: macOS passed1407 affected tests,
+assignment/Views/rename/category and all development recovery/session/data/archive/
+navigation consumers, plus package/resource inspection. Packaged recovery then
+failed its immediate source-path text assertion after the selected Sources tab;
+artifact12468559484 preserves the failure and normal exit/owned cleanup. Its
+failure screenshot already shows the exact source root after asynchronous loading.
+No missing release tail is counted passing. Windows2022 passed1398 affected tests
+and the complete combined route with dev/release recovery7 journeys/64 captures
+each, sessions3, data recovery2, archive12 and Views6, package resources and cleanup.
+
+A controlled native delayed-source-list regression reproduces the same driver
+assumption: Sources selected before its async root exists. Old immediate includes
+assertion is red; awaiting the exact visible canonical-root control is green.
+The repair changes only smoke-driver/readiness/test/CI/docs inputs, not application,
+service, native, schema, dependency or build/package inputs. It proves this controlled
+race, consistent with the original receipt; it does not claim changed product logic.
+Both independent repair reviews are clear;34 route tests/type/lint pass. Renew
+changed recovery driver dev/release on all hosts and missing macOS release tail;
+retain other successful merged receipts only after artifact inspection.
+Original repaired development recovery also passes locally:7 journeys/64 captures,
+three normal application/backend shutdowns and asserted owned cleanup, evidence
+`work/issue-63-recovery-ready-dev`. This does not substitute for hosted renewal.

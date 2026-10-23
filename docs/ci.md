@@ -1599,3 +1599,12 @@ data recovery, navigation and packaged Views. Packaging and resource inspection
 remain serial. All three hosts and both issue artifact destinations are retained.
 This renews the combined renderer/CSS inputs; the earlier separate issue receipts
 do not substitute for merged-candidate acceptance.
+
+For merged run39877009892's packaged Sources-readiness failure, select
+`filesystem-assignment-recovery-renewal`: the controlled delayed-list regression
+and original retained-recovery driver run in development and packaged modes on
+all three hosts. Only macOS additionally runs its unreached release sessions,
+data recovery, archive and Views tail. Other successful inspected merged receipts
+retain their actual6de2c383 provenance; application/build inputs are unchanged by
+this driver-only repair. Exact visible canonical-source identity, original
+caller deadlines, screenshots, restart and shutdown/cleanup gates remain required.
