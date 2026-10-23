@@ -12,9 +12,10 @@ import type { ProjectRecoveryPreview } from "../src/contracts/project-recovery.j
 
 const browser = new Window({ url: "http://localhost" });
 Object.assign(globalThis, { window: browser, document: browser.document, HTMLElement: browser.HTMLElement,
-  Node: browser.Node, MutationObserver: browser.MutationObserver });
+  Node: browser.Node, Element: browser.Element, CustomEvent: browser.CustomEvent, getComputedStyle: browser.getComputedStyle.bind(browser), NodeFilter: browser.NodeFilter, HTMLInputElement: browser.HTMLInputElement,
+  requestAnimationFrame: browser.requestAnimationFrame.bind(browser), cancelAnimationFrame: browser.cancelAnimationFrame.bind(browser), MutationObserver: browser.MutationObserver });
 Object.defineProperty(globalThis, "navigator", { configurable: true, value: browser.navigator });
-const { render, screen, cleanup, waitFor, act } = await import("@testing-library/react");
+const { render, screen, cleanup, waitFor, act, within } = await import("@testing-library/react");
 const { default: userEvent } = await import("@testing-library/user-event");
 test.afterEach(() => cleanup());
 const retained: ProjectAssociationSummary = { projectId: "project", name: "Original authored name", relativePath: "Original authored name", categoryId: null, categoryName: null,
@@ -134,7 +135,7 @@ for (const language of ["en", "ru"] as const) {
       const input = await screen.findByRole("textbox", { name: `${t("editTextValue")}: ${retained.name} / Notes` });
       assert.equal((input as HTMLTextAreaElement).value, "Exact authored Text");
       await userEvent.keyboard("{Escape}");
-      assert.equal(document.activeElement, edit);
+      assert.equal(document.activeElement === edit, true);
       assert.equal(client.previews, 0);
       cleanup();
     }
@@ -147,11 +148,11 @@ for (const language of ["en", "ru"] as const) {
     assert.equal(screen.queryByRole("button", { name: `${t("recoveryLocate")}: Excluded` }), null);
     locate.focus(); await userEvent.keyboard("{Enter}");
     const title = await screen.findByRole("heading", { name: t("recoveryTitle") });
-    assert.equal(document.activeElement, title);
+    assert.equal(document.activeElement === title, true);
     await screen.findByRole("radio", { name: "Target authored name" });
     assert.equal(client.saves, 0);
     await userEvent.keyboard("{Escape}");
-    assert.equal(client.saves, 0); assert.equal(document.activeElement, locate);
+    assert.equal(client.saves, 0); assert.equal(document.activeElement === locate, true);
     await userEvent.keyboard("{Enter}");
     const target = await screen.findByRole("radio", { name: "Target authored name" });
     assert.equal((screen.getByRole("radio", { name: new RegExp("Occupied") }) as HTMLInputElement).disabled, true);
@@ -164,7 +165,7 @@ for (const language of ["en", "ru"] as const) {
     await screen.findByText(t("recoverySaved"));
     assert.equal(client.saves, 1);
     assert.ok(screen.getByRole("button", { name: `${t("editTextValue")}: Target authored name / Notes` }).textContent?.includes("Exact authored Text"));
-    assert.equal(document.activeElement, screen.getByRole("heading", { name: "Table" }));
+    assert.equal(document.activeElement === screen.getByRole("heading", { name: "Table" }), true);
     cleanup();
   });
   test(`${language}: pending prevents duplicate submission/cancel; stale requires refresh and explicit reselection`, async () => {
@@ -263,7 +264,7 @@ for (const language of ["en", "ru"] as const) {
     confirm.focus(); await userEvent.keyboard("{Enter}");
     await screen.findByText(t("recoverySaved"));
     assert.equal(client.saves, 2); assert.equal(client.previews, 2);
-    assert.equal(document.activeElement, screen.getByRole("heading", { name: "Table" }));
+    assert.equal(document.activeElement === screen.getByRole("heading", { name: "Table" }), true);
     assert.ok(screen.getByRole("button", { name: `${t("editTextValue")}: Target authored name / Notes` }).textContent?.includes("Exact authored Text"));
     cleanup();
   });
@@ -466,7 +467,7 @@ for (const language of ["en", "ru"] as const) {
       selectedPath: null as string | null, loading: false, pending: false, error: false, stale: false, uncertain: false,
       onSelect: (value: string) => { selected = value; }, onConfirm: () => { confirms++; }, onCancel: () => { cancels++; }, onRefresh: () => {} };
     const view = render(<ProjectRecoveryPanel {...props} />);
-    assert.equal(document.activeElement, screen.getByRole("heading", { name: t("recoveryTitle") }));
+    assert.equal(document.activeElement === screen.getByRole("heading", { name: t("recoveryTitle") }), true);
     const radios = screen.getAllByRole("radio") as HTMLInputElement[];
     assert.equal(radios[0].value, path);
     for (let index = 0; index < statuses.length; index++) {
@@ -499,7 +500,7 @@ for (const language of ["en", "ru"] as const) {
     await act(async () => client.emit({ type: "workspace.sourceObserved", sourceId: "source", workspaceIds: ["workspace"], observationRevision: 2, state: "ready", automaticUpdates: "degraded" }));
     await screen.findByText(t("recoveryStale"));
     assert.equal(screen.queryByRole("radio") === null, true);
-    assert.equal(document.activeElement, screen.getByRole("button", { name: t("discoveryRefresh") }));
+    assert.equal(document.activeElement === screen.getByRole("button", { name: t("discoveryRefresh") }), true);
     assert.equal(document.querySelector("textarea"), editor); assert.equal(editor.value, "Unsaved observation draft");
     await userEvent.keyboard("{Enter}");
     const refreshed = await screen.findByRole("radio", { name: "Target authored name" }) as HTMLInputElement;
@@ -547,3 +548,130 @@ for (const language of ["en", "ru"] as const) {
     cleanup(); assert.equal(client.listeners.size, 0);
   });
 }
+
+for (const language of ["en", "ru"] as const) test(`${language}: expanded retained project opens recovery and Cancel returns to its visible origin`, async () => {
+  const client = new RecoveryClient();
+  const t = (key: Parameters<typeof translate>[1]) => translate(language, key);
+  const user = userEvent.setup({ document });
+  render(<DiscoveryWorkspace client={client} workspaceId="workspace" sourceId="source" language={language} disabled={false} />);
+  await user.click(await screen.findByRole("button", { name: `${language === "en" ? "Preview project" : "Открыть предпросмотр проекта"}: ${retained.name}` }));
+  await user.click(screen.getByRole("button", { name: language === "en" ? "Expand project" : "Развернуть проект" }));
+  const area = screen.getByRole("region", { name: `${language === "en" ? "Project" : "Проект"}: ${retained.name}` });
+  const locate = await within(area).findByRole("button", { name: `${t("recoveryLocate")}: ${retained.name}` });
+  await user.click(locate);
+  const dialog = await screen.findByRole("dialog", { name: t("recoveryTitle") });
+  await within(dialog).findByRole("radio", { name: "Target authored name" });
+  await user.click(within(dialog).getByRole("button", { name: t("cancelRenameWorkspace") }));
+  await waitFor(() => assert.equal(screen.queryByRole("dialog", { name: t("recoveryTitle") }), null));
+  await waitFor(() => assert.equal(document.activeElement === locate, true));
+  assert.ok(screen.getByRole("tab", { name: retained.name, selected: true }));
+  assert.equal(client.saves, 0);
+});
+
+for (const language of ["en", "ru"] as const) test(`${language}: source outage takes precedence over persisted missing state in a retained tab`, async () => {
+  const client = new RecoveryClient();
+  client.projects = { ...initial, state: "unavailable", retainedProjects: [{ ...retained, associationState: "missing", resolution: null }], retainedCount: 1 };
+  const t = (key: Parameters<typeof translate>[1]) => translate(language, key);
+  const user = userEvent.setup({ document });
+  render(<DiscoveryWorkspace client={client} workspaceId="workspace" sourceId="source" language={language} disabled={false} />);
+  await user.click(await screen.findByRole("button", { name: `${language === "en" ? "Preview project" : "Открыть предпросмотр проекта"}: ${retained.name}` }));
+  await user.click(screen.getByRole("button", { name: language === "en" ? "Expand project" : "Развернуть проект" }));
+  const area = screen.getByRole("region", { name: `${language === "en" ? "Project" : "Проект"}: ${retained.name}` });
+  assert.ok(within(area).getByText(t("discoveryUnavailable")));
+  assert.equal(within(area).queryByText(t("projectMissing")), null);
+  assert.equal(within(area).queryByRole("button", { name: `${t("recoveryLocate")}: ${retained.name}` }), null);
+  assert.equal((within(area).getByRole("button", { name: language === "en" ? "Refresh files" : "Обновить файлы" }) as HTMLButtonElement).disabled, true);
+  assert.ok(screen.getByRole("tab", { name: retained.name, selected: true }));
+  assert.equal(client.saves, 0);
+});
+
+for (const language of ["en", "ru"] as const) test(`${language}: retained project reaches Sources and returns without losing its tab`, async () => {
+  const { DesktopShell, shellLabels } = await import("../src/renderer/components/DesktopShell.js");
+  const client = new RecoveryClient();
+  const user = userEvent.setup({ document });
+  const data = { workspaces: [{ workspaceId: "workspace", name: "One" }], activeWorkspace: { workspaceId: "workspace", sourceId: "source", viewId: "view", name: "One", canonicalRoot: "/fixture", sourceAvailable: false } };
+  render(<DesktopShell language={language} data={data} busy={false} locked={false} onActivate={() => {}} renderPanels={() => ({ general: null, appearance: null, workspaces: null, sources: <p>Current source settings</p>, backup: <p>Application data recovery</p>, about: null })}>
+    <DiscoveryWorkspace client={client} workspaceId="workspace" sourceId="source" language={language} disabled={false} />
+  </DesktopShell>);
+  await user.click(await screen.findByRole("button", { name: `${language === "en" ? "Preview project" : "Открыть предпросмотр проекта"}: ${retained.name}` }));
+  await user.click(screen.getByRole("button", { name: language === "en" ? "Expand project" : "Развернуть проект" }));
+  const area = screen.getByRole("region", { name: `${language === "en" ? "Project" : "Проект"}: ${retained.name}` });
+  const settings = within(area).getByRole("button", { name: language === "en" ? "Source settings" : "Настройки источника" });
+  await user.click(settings);
+  assert.ok(await screen.findByText("Current source settings"));
+  assert.ok(screen.getByRole("tab", { name: shellLabels[language].sources, selected: true }));
+  await user.click(screen.getByRole("button", { name: shellLabels[language].back }));
+  await waitFor(() => assert.equal(document.activeElement === settings, true));
+  assert.ok(screen.getByRole("tab", { name: retained.name, selected: true }));
+  assert.equal(client.saves, 0);
+});
+
+for (const pending of [false, true]) test(`switching a retained project dismisses its delayed ${pending ? "command" : "preview"} without reactivating old content`, async () => {
+  const client = new RecoveryClient();
+  const read = deferred<ServiceResult<ProjectRecoveryPreview>>();
+  const response = deferred<ServiceResult<ProjectList>>();
+  if (pending) client.handler = () => response.promise;
+  else client.previewHandler = () => read.promise;
+  const user = userEvent.setup({ document });
+  render(<DiscoveryWorkspace client={client} workspaceId="workspace" sourceId="source" language="en" disabled={false} />);
+  await user.click(await screen.findByRole("button", { name: "Preview project: Excluded" }));
+  await user.click(screen.getByRole("button", { name: "Expand project" }));
+  await user.click(screen.getByRole("tab", { name: "Table" }));
+  await user.click(screen.getByRole("button", { name: `Preview project: ${retained.name}` }));
+  await user.click(screen.getByRole("button", { name: "Expand project" }));
+  await user.click(within(screen.getByRole("region", { name: `Project: ${retained.name}` })).getByRole("button", { name: `${translate("en", "recoveryLocate")}: ${retained.name}` }));
+  await screen.findByRole("dialog", { name: translate("en", "recoveryTitle") });
+  if (pending) {
+    await user.click(await screen.findByRole("radio", { name: "Target authored name" }));
+    await user.click(screen.getByRole("button", { name: translate("en", "recoveryConfirm") }));
+    await user.keyboard("{Escape}");
+    assert.ok(screen.getByRole("dialog", { name: translate("en", "recoveryTitle") }));
+  }
+  await user.click(screen.getByRole("tab", { name: "Excluded" }));
+  await waitFor(() => assert.equal(Boolean(screen.queryByRole("dialog", { name: translate("en", "recoveryTitle") })), false));
+  await act(async () => { if (pending) response.resolve({ ok: true, value: committed }); else read.resolve({ ok: true, value: preview }); });
+  assert.ok(screen.getByRole("tab", { name: "Excluded", selected: true }));
+  assert.equal(screen.queryByRole("radio", { name: "Target authored name" }), null);
+  if (pending) assert.ok(screen.getByText(translate("en", "recoveryUncertain")));
+  assert.equal(client.saves, pending ? 1 : 0);
+});
+
+test("opening application settings dismisses a delayed project review and keeps backup recovery reachable", async () => {
+  const { DesktopShell } = await import("../src/renderer/components/DesktopShell.js");
+  const client = new RecoveryClient(), read = deferred<ServiceResult<ProjectRecoveryPreview>>();
+  client.previewHandler = () => read.promise;
+  const user = userEvent.setup({ document });
+  render(<DesktopShell language="en" data={{workspaces:[{workspaceId:"workspace",name:"One"}],activeWorkspace:{workspaceId:"workspace",sourceId:"source",viewId:"view",name:"One",canonicalRoot:"/fixture",sourceAvailable:false}}} busy={false} locked={false} onActivate={() => {}} renderPanels={() => ({general:null,appearance:null,workspaces:null,sources:null,backup:<p>Application data recovery</p>,about:null})}>
+    <DiscoveryWorkspace client={client} workspaceId="workspace" sourceId="source" language="en" disabled={false}/>
+  </DesktopShell>);
+  await user.click(await screen.findByRole("button", {name:`Preview project: ${retained.name}`}));
+  await user.click(screen.getByRole("button", {name:"Expand project"}));
+  await user.click(within(screen.getByRole("region",{name:`Project: ${retained.name}`})).getByRole("button",{name:`${translate("en","recoveryLocate")}: ${retained.name}`}));
+  await screen.findByRole("dialog", {name:translate("en","recoveryTitle")});
+  await user.click(screen.getByRole("button",{name:"Settings"}));
+  await waitFor(() => assert.equal(Boolean(screen.queryByRole("dialog",{name:translate("en","recoveryTitle")})),false));
+  await act(async () => read.resolve({ok:true,value:preview}));
+  await user.click(screen.getByRole("tab",{name:"Backup and recovery"}));
+  assert.ok(screen.getByText("Application data recovery"));
+  await user.click(screen.getByRole("button",{name:"Back to workspace"}));
+  assert.ok(screen.getByRole("tab",{name:retained.name,selected:true}));
+  assert.equal(client.saves,0);
+});
+
+test("expanded project reports a failed availability read and retries without closing its tab", async () => {
+  const client = new RecoveryClient(), user = userEvent.setup({document});
+  render(<DiscoveryWorkspace client={client} workspaceId="workspace" sourceId="source" language="en" disabled={false}/>);
+  await user.click(await screen.findByRole("button",{name:`Preview project: ${retained.name}`}));
+  await user.click(screen.getByRole("button",{name:"Expand project"}));
+  const area=screen.getByRole("region",{name:`Project: ${retained.name}`});
+  const response=deferred<ServiceResult<ProjectList>>();client.listHandler=()=>response.promise;
+  await user.click(within(area).getByRole("button",{name:translate("en","refreshSourceAction")}));
+  assert.ok(within(area).getByText(translate("en","projectsLoading")));
+  await act(async()=>response.resolve({ok:false,error:{code:"service_unavailable",message:"delayed read failed"}}));
+  assert.ok(await within(area).findByText(translate("en","projectsError")));
+  client.listHandler=null;
+  await user.click(within(area).getByRole("button",{name:translate("en","refreshSourceAction")}));
+  await waitFor(()=>assert.equal(Boolean(within(area).queryByText(translate("en","projectsError"))),false));
+  assert.ok(screen.getByRole("tab",{name:retained.name,selected:true}));
+  assert.equal(client.saves,0);
+});

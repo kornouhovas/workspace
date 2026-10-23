@@ -1,0 +1,3576 @@
+{
+  "issue": 65,
+  "sha": "aef7ab775e68c22208e528dec5fe4c0645619e67",
+  "run": "39873458782",
+  "attempt": 1,
+  "url": "https://github.com/kornouhovas/workspace/actions/runs/39873458782",
+  "profile": "retained-recovery",
+  "status": "passed",
+  "logSha256": "f88832a5d6044b335305a8141345fdef874520df01e73068de6363eb127de5a0",
+  "hosts": [
+    {
+      "host": "macos-latest",
+      "platform": "darwin",
+      "jobId": 120153223884,
+      "jobUrl": "https://github.com/kornouhovas/workspace/actions/runs/39873458782/job/120153223884",
+      "tests": {
+        "pass": 935,
+        "fail": 0,
+        "skip": 0
+      },
+      "packageResources": "verified 0.1.0",
+      "artifact": {
+        "id": 12468170171,
+        "name": "desktop-ux-foundation-macos-latest",
+        "size_in_bytes": 18830554,
+        "digest": "sha256:4ed7c655bde4d2d1c4335de0e935e4714fbed47b4e36992146e83f712dc82866"
+      },
+      "reports": [
+        {
+          "path": "issue-22-project-archive-runtime/evidence.json",
+          "sha256": "08d15be0e56ccbbf8bbfe65855f0e7e9f71449baeb3d1fd688f66ff9e98e94b5",
+          "checks": 12,
+          "status": "passed",
+          "shutdowns": 5,
+          "cleanup": {
+            "status": "passed",
+            "asserted": true,
+            "processesStopped": true,
+            "maxRetries": 5,
+            "retryDelay": 100
+          }
+        },
+        {
+          "path": "issue-27-views-runtime/evidence.json",
+          "sha256": "b5447be3ffd9add250095bc8b3bfd4aa577e67f582e6fd294a43e05976c19104",
+          "checks": 6,
+          "status": "passed",
+          "shutdowns": 3,
+          "cleanup": {
+            "status": "passed",
+            "asserted": true,
+            "processesStopped": true,
+            "maxRetries": 5,
+            "retryDelay": 100
+          }
+        },
+        {
+          "path": "issue-37-data-runtime/evidence.json",
+          "sha256": "2a900fffbd3e21655a4731ffb41fe4420498145bd07da0fb1a5f14dc7ceb1852",
+          "checks": 2,
+          "status": "passed",
+          "shutdowns": 3,
+          "cleanup": {
+            "status": "passed",
+            "asserted": true,
+            "processesStopped": true,
+            "maxRetries": 5,
+            "retryDelay": 100
+          }
+        },
+        {
+          "path": "issue-54-navigation/report.json",
+          "sha256": "eeee270e7d70ca5ee7f4f010dfe19ec50743f2a93d2c049caf132c331abb7974",
+          "checks": 8,
+          "status": "passed",
+          "shutdowns": 0,
+          "cleanup": {
+            "status": "passed",
+            "asserted": true,
+            "processesStopped": true,
+            "maxRetries": 5,
+            "retryDelay": 100
+          }
+        },
+        {
+          "path": "issue-55-sessions-dev/report.json",
+          "sha256": "9dc9b0a69c96194c9839d4c39da6efcfc71420912ee05238b56879cff1efc123",
+          "checks": 3,
+          "status": "passed",
+          "shutdowns": 3,
+          "cleanup": {
+            "status": "passed",
+            "asserted": true,
+            "processesStopped": true,
+            "maxRetries": 5,
+            "retryDelay": 100
+          }
+        },
+        {
+          "path": "issue-55-sessions-release/report.json",
+          "sha256": "fbae09984916a137d1b82f038a7dff384b60abf59602ae8a22b2c310ed9f018d",
+          "checks": 3,
+          "status": "passed",
+          "shutdowns": 3,
+          "cleanup": {
+            "status": "passed",
+            "asserted": true,
+            "processesStopped": true,
+            "maxRetries": 5,
+            "retryDelay": 100
+          }
+        },
+        {
+          "path": "issue-65-archive-dev/evidence.json",
+          "sha256": "8f448b7cd95d1ebcf601684dadb28152b4f36aaf87d8d65031c639e8ff8518eb",
+          "checks": 12,
+          "status": "passed",
+          "shutdowns": 5,
+          "cleanup": {
+            "status": "passed",
+            "asserted": true,
+            "processesStopped": true,
+            "maxRetries": 5,
+            "retryDelay": 100
+          }
+        },
+        {
+          "path": "issue-65-archive-release/evidence.json",
+          "sha256": "08d15be0e56ccbbf8bbfe65855f0e7e9f71449baeb3d1fd688f66ff9e98e94b5",
+          "checks": 12,
+          "status": "passed",
+          "shutdowns": 5,
+          "cleanup": {
+            "status": "passed",
+            "asserted": true,
+            "processesStopped": true,
+            "maxRetries": 5,
+            "retryDelay": 100
+          }
+        },
+        {
+          "path": "issue-65-recovery-dev/report.json",
+          "sha256": "8e79ee5f22f6de271ea5d8ac8d00828b2dc0772769faa1b28c735dcef839a939",
+          "checks": 7,
+          "status": "passed",
+          "shutdowns": 3,
+          "cleanup": {
+            "status": "passed",
+            "asserted": true,
+            "processesStopped": true,
+            "maxRetries": 5,
+            "retryDelay": 100
+          },
+          "captures": [
+            {
+              "path": "issue-65-recovery-dev/en-light-1024-expanded-missing.png",
+              "sha256": "95b5235b26f04a103261293ea010863cfda7c9953b64c42df0724d26f51587d8",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/en-light-1024-expanded-review.png",
+              "sha256": "39223d77c49c98de0355143d152213f5eff69f2fed4ef4e01dd1c5f9799cdc86",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/en-light-1024-preview-missing.png",
+              "sha256": "8fd98aaa592e9e8ac962fb7128fe05ff6d4245d368d14d8d95c30099f347cddc",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/en-light-1024-preview-review.png",
+              "sha256": "ec729334f5bf9e89f5df53fe8731a11db9b8d29fc137b12e94bc81b846314a72",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/en-light-1440-expanded-missing.png",
+              "sha256": "65ee10bef7835b50ac5c94104ff4e5bc8257b1add4a7bb32c90fcd9dd615178f",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/en-light-1440-expanded-review.png",
+              "sha256": "700b49d917ffcd366b2f8123f51cd0c7d30af82056bd23707af9a4cc93524b53",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/en-light-1440-preview-missing.png",
+              "sha256": "559ea3627f883e35783b510cdd5f6e3b2da92b2104d10ca8173fe0a91d8f2957",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/en-light-1440-preview-review.png",
+              "sha256": "09219aad00380cf623db62d0abb2fd62ef58ce3c97199f9c0f83f94c1feb4a88",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/en-dark-1024-expanded-missing.png",
+              "sha256": "fe8a2749b9ea6567616b6dc1e22428ff596ca6a81c6b5787064d92b160d6470d",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/en-dark-1024-expanded-review.png",
+              "sha256": "dc1079d70d5992319a5684e94869f53e2e4ccff0ba732fd05c4c429e6bc18c1d",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/en-dark-1024-preview-missing.png",
+              "sha256": "f651c5e379aa3efae0e078dcbe50162cb3a111c185628f3b0d33efc54f04624c",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/en-dark-1024-preview-review.png",
+              "sha256": "4bed1d93efffcf1b1a6be301385147ca81dd738d2ee586ca357928079bda05e1",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/en-dark-1440-expanded-missing.png",
+              "sha256": "2eca3dbfdc7032a9f121629e0cad66edb23a2ca1115b01a1571b3d9532b23c71",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/en-dark-1440-expanded-review.png",
+              "sha256": "dbea26e6b8feaa2b8503c6ed7260c4044922d909a70663d47fe1168c5454cacd",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/en-dark-1440-preview-missing.png",
+              "sha256": "f4f8df33bee63f9b432e5d6b3abe6755e5f9c20fd624ffabeb4ef62b259c9ba5",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/en-dark-1440-preview-review.png",
+              "sha256": "ff53b00b109398ac6d6a460c203625944f463535ae9d6f43b939f914337a84d4",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/ru-light-1024-expanded-missing.png",
+              "sha256": "dc3c1966cbdcd634183aaceb890618b1f097cec1a97c822cde98307bf7254d5e",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/ru-light-1024-expanded-review.png",
+              "sha256": "b96e7db4cd4ec695860ca3defdc3a091df65c74fb799bc3937388616b923f11a",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/ru-light-1024-preview-missing.png",
+              "sha256": "36617d7f58e05a5fd8099bb78c3f2f5209f041d5a84cd228962b0f6cb96bb512",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/ru-light-1024-preview-review.png",
+              "sha256": "2b53422755962340d616cb1458232cb0c13f68d2ec5fc016c9932ede16dd1ab7",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/ru-light-1440-expanded-missing.png",
+              "sha256": "ad4c976609ccea303c4174594bf19b16084253ad5ff26ebe469972355b58ed84",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/ru-light-1440-expanded-review.png",
+              "sha256": "640578552173d33e0196d51aa88c0e69d9e9908bcd1213554671eb26f96bae27",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/ru-light-1440-preview-missing.png",
+              "sha256": "5054b0c8a175d5b7c3b9c79d0adc04745fc0c8d7435f6b03585c8d83365f2dc9",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/ru-light-1440-preview-review.png",
+              "sha256": "88d6f0f2c2ed2de6ebe9439d0648acc87fc388b7dac981df90eb3b0e1da6325f",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/ru-dark-1024-expanded-missing.png",
+              "sha256": "b2006fdb2e58c7e03ffc7161e7462716911a08091d0c1a2b08be32bdcbacd1fe",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/ru-dark-1024-expanded-review.png",
+              "sha256": "c9256a3c97aa7886ac3c2604b27c27578825826209869fe013a15f5cf9b0f478",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/ru-dark-1024-preview-missing.png",
+              "sha256": "166276162fc2683c0b7490d67664d34ffeb85ba4dcdfb072fa4791eb3f725d65",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/ru-dark-1024-preview-review.png",
+              "sha256": "2092a714fd2ecc09e402276e66c32725f8a49ba93ae5bb941938905d7d5507d1",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/ru-dark-1440-expanded-missing.png",
+              "sha256": "e4966831d9c94998441d873aa1c6c54dd6b8b110aee9b48a8e971475ec8e168a",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/ru-dark-1440-expanded-review.png",
+              "sha256": "923be143d6483c4f587cee1901b60113c11c60b9c19eeef631a8f003584e0b69",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/ru-dark-1440-preview-missing.png",
+              "sha256": "07917fa8018339ec13b493e2121b22ad66fbd1b24bb9c0d9a86d765ed1e5c916",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/ru-dark-1440-preview-review.png",
+              "sha256": "f0135d7131fe710693bb18d631c3fcf2c935949fd6eed194787edcc7b1b53f62",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/archived-editable-en-light-1024.png",
+              "sha256": "c105e12fbca81d4c962d76b548599a184bff380ac2151a672e221f147a823d06",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/archived-editable-en-light-1440.png",
+              "sha256": "2b72bd8cf6775a619a8868e12b9383f19120fb467f4329d3ffc0038c7e0c930f",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/archived-editable-en-dark-1024.png",
+              "sha256": "105fb5ed0c85638659e1ed4015a722c30286cd87109c1506ca558d0f40aef5ea",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/archived-editable-en-dark-1440.png",
+              "sha256": "2c08a7eaf8af27a3c1f0a27c5ffdc19862afa8fe6d160450539b3561b6457985",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/archived-editable-ru-light-1024.png",
+              "sha256": "72410a222ac13a41b6e2f2dec55ef72c86eb70c18660a376385c831ed44c1ee8",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/archived-editable-ru-light-1440.png",
+              "sha256": "7bef6be2c7c82bab3575ef38133f8846f42805431c1c6e82513fbc1039901549",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/archived-editable-ru-dark-1024.png",
+              "sha256": "604ad2d6b31dbe73cd7206360919468e71d4df75e5ac656c1f85c55dd3ff620f",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/archived-editable-ru-dark-1440.png",
+              "sha256": "ed77e7ebb1f3699810aa5f7f4e0bc367ac6d581fd7f88d09b36160e6079e0655",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/source-unavailable-en-light-1024.png",
+              "sha256": "9b790de0df17b21d8da495b7ae5a38006fcbef96262a0a3cedbe4217ce1d7a08",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/source-unavailable-en-light-1440.png",
+              "sha256": "c8a9eb3e907dd0ccc59ee98582d812173cde88e0a72e1bb731129f5343edd200",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/source-unavailable-en-dark-1024.png",
+              "sha256": "3c050678be47047e1699c71ad3ded45006220f28fa07e0e7313912a65672db5b",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/source-unavailable-en-dark-1440.png",
+              "sha256": "28769c008a69fd2016a58a8f3bcb89062b853b219328318fc1ed64bbe712439b",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/source-unavailable-ru-light-1024.png",
+              "sha256": "4e9e1119b34711fff26b5e0290cd6f460b28cf9aad3f65a8b4d7b6b8caf30c51",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/source-unavailable-ru-light-1440.png",
+              "sha256": "9e3cca128f855e45225447ece092dda67621586b6bab0f3d447916cba4ff9846",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/source-unavailable-ru-dark-1024.png",
+              "sha256": "b4773406daac30d0441b4e7d814ae46c2784917066b7ecfeae5eb3a8fc598911",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/source-unavailable-ru-dark-1440.png",
+              "sha256": "a9ce982f7022e29040b4b4a9bbfd40100795670f05f5aa035ad2fa1b495a0310",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/excluded-retained-en-light-1024.png",
+              "sha256": "7e97a0bcd216f4dd03370b69a96c07db5dfa3cba8c0e5f712568d4868e09265a",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/excluded-retained-en-light-1440.png",
+              "sha256": "81ec2f964e19a51f7385769dcf415a8d73ff3c519b1e22c043b72fc5025ea59c",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/excluded-retained-en-dark-1024.png",
+              "sha256": "ae576c85971da8b7ce7c1e467e1cb916b5756c2b6cf6dd1d943f32d4066b42b0",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/excluded-retained-en-dark-1440.png",
+              "sha256": "f785319868cc0f82f0bc897be8ce9564458dc8a8f2720c0a5420d107e3e79840",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/excluded-retained-ru-light-1024.png",
+              "sha256": "26f47f04458ce97e8daf91e08bd5be5a31e09af998c2fa93542e544e7686e715",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/excluded-retained-ru-light-1440.png",
+              "sha256": "11097b84efd4c57a6e0b1ca4003c62ddcd78eb1a002a521f32406ed7b2454bcd",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/excluded-retained-ru-dark-1024.png",
+              "sha256": "81ef92111282f022e5605ac32e000bd02445f2e4bfb88d2676e85a8f0e155fdc",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/excluded-retained-ru-dark-1440.png",
+              "sha256": "91f1e6f90e4ec6f13d6e72ac6a1d2b863f7c40c12a1445149f0d3cb399520c47",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/mode-inactive-retained-en-light-1024.png",
+              "sha256": "4120e5fa946af22e93bc75866fb23a35a608b36bdb4e8602f6745cc8801c0736",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/mode-inactive-retained-en-light-1440.png",
+              "sha256": "0f370945f65934f68f8ddf46632e05dbb60fd0505fa22db07fceaa1942140ad5",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/mode-inactive-retained-en-dark-1024.png",
+              "sha256": "78d19cddfdb512a2106c6a87406a2dd72c4ff0d35c308401cf3703c8833f4347",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/mode-inactive-retained-en-dark-1440.png",
+              "sha256": "dd3f130282ef2ba1144ea5ba564df28f33ec35ad01dedfa26e4b5a4cdd5b979d",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/mode-inactive-retained-ru-light-1024.png",
+              "sha256": "d84b9c80a94ebe02754a90fa38f66b9dc05b6f1c3c79f25fcd785233f01bfd3c",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/mode-inactive-retained-ru-light-1440.png",
+              "sha256": "404462b34240d578a7afab899f9268fbcda9a1f435522eb97929d09e93d3f639",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/mode-inactive-retained-ru-dark-1024.png",
+              "sha256": "0b1d07c2b1d15f1df01943c2fd87384401367cc298e927528db4333d6831fd8f",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/mode-inactive-retained-ru-dark-1440.png",
+              "sha256": "35e6f0576371ec92a35543b4c877733894ce1cf15bdce4f390a4c704e8ab2d57",
+              "dimensions": [
+                1440,
+                960
+              ]
+            }
+          ]
+        },
+        {
+          "path": "issue-65-recovery-release/report.json",
+          "sha256": "3a3fb6f56d8da16f7a033070732aef5066332a42dc902625144d7956b8c923da",
+          "checks": 7,
+          "status": "passed",
+          "shutdowns": 3,
+          "cleanup": {
+            "status": "passed",
+            "asserted": true,
+            "processesStopped": true,
+            "maxRetries": 5,
+            "retryDelay": 100
+          },
+          "captures": [
+            {
+              "path": "issue-65-recovery-release/en-light-1024-expanded-missing.png",
+              "sha256": "95b5235b26f04a103261293ea010863cfda7c9953b64c42df0724d26f51587d8",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/en-light-1024-expanded-review.png",
+              "sha256": "39223d77c49c98de0355143d152213f5eff69f2fed4ef4e01dd1c5f9799cdc86",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/en-light-1024-preview-missing.png",
+              "sha256": "8fd98aaa592e9e8ac962fb7128fe05ff6d4245d368d14d8d95c30099f347cddc",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/en-light-1024-preview-review.png",
+              "sha256": "ec729334f5bf9e89f5df53fe8731a11db9b8d29fc137b12e94bc81b846314a72",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/en-light-1440-expanded-missing.png",
+              "sha256": "65ee10bef7835b50ac5c94104ff4e5bc8257b1add4a7bb32c90fcd9dd615178f",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/en-light-1440-expanded-review.png",
+              "sha256": "700b49d917ffcd366b2f8123f51cd0c7d30af82056bd23707af9a4cc93524b53",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/en-light-1440-preview-missing.png",
+              "sha256": "559ea3627f883e35783b510cdd5f6e3b2da92b2104d10ca8173fe0a91d8f2957",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/en-light-1440-preview-review.png",
+              "sha256": "09219aad00380cf623db62d0abb2fd62ef58ce3c97199f9c0f83f94c1feb4a88",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/en-dark-1024-expanded-missing.png",
+              "sha256": "fe8a2749b9ea6567616b6dc1e22428ff596ca6a81c6b5787064d92b160d6470d",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/en-dark-1024-expanded-review.png",
+              "sha256": "dc1079d70d5992319a5684e94869f53e2e4ccff0ba732fd05c4c429e6bc18c1d",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/en-dark-1024-preview-missing.png",
+              "sha256": "f651c5e379aa3efae0e078dcbe50162cb3a111c185628f3b0d33efc54f04624c",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/en-dark-1024-preview-review.png",
+              "sha256": "4bed1d93efffcf1b1a6be301385147ca81dd738d2ee586ca357928079bda05e1",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/en-dark-1440-expanded-missing.png",
+              "sha256": "2eca3dbfdc7032a9f121629e0cad66edb23a2ca1115b01a1571b3d9532b23c71",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/en-dark-1440-expanded-review.png",
+              "sha256": "dbea26e6b8feaa2b8503c6ed7260c4044922d909a70663d47fe1168c5454cacd",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/en-dark-1440-preview-missing.png",
+              "sha256": "f4f8df33bee63f9b432e5d6b3abe6755e5f9c20fd624ffabeb4ef62b259c9ba5",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/en-dark-1440-preview-review.png",
+              "sha256": "ff53b00b109398ac6d6a460c203625944f463535ae9d6f43b939f914337a84d4",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/ru-light-1024-expanded-missing.png",
+              "sha256": "dc3c1966cbdcd634183aaceb890618b1f097cec1a97c822cde98307bf7254d5e",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/ru-light-1024-expanded-review.png",
+              "sha256": "b96e7db4cd4ec695860ca3defdc3a091df65c74fb799bc3937388616b923f11a",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/ru-light-1024-preview-missing.png",
+              "sha256": "36617d7f58e05a5fd8099bb78c3f2f5209f041d5a84cd228962b0f6cb96bb512",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/ru-light-1024-preview-review.png",
+              "sha256": "2b53422755962340d616cb1458232cb0c13f68d2ec5fc016c9932ede16dd1ab7",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/ru-light-1440-expanded-missing.png",
+              "sha256": "ad4c976609ccea303c4174594bf19b16084253ad5ff26ebe469972355b58ed84",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/ru-light-1440-expanded-review.png",
+              "sha256": "640578552173d33e0196d51aa88c0e69d9e9908bcd1213554671eb26f96bae27",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/ru-light-1440-preview-missing.png",
+              "sha256": "5054b0c8a175d5b7c3b9c79d0adc04745fc0c8d7435f6b03585c8d83365f2dc9",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/ru-light-1440-preview-review.png",
+              "sha256": "88d6f0f2c2ed2de6ebe9439d0648acc87fc388b7dac981df90eb3b0e1da6325f",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/ru-dark-1024-expanded-missing.png",
+              "sha256": "b2006fdb2e58c7e03ffc7161e7462716911a08091d0c1a2b08be32bdcbacd1fe",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/ru-dark-1024-expanded-review.png",
+              "sha256": "c9256a3c97aa7886ac3c2604b27c27578825826209869fe013a15f5cf9b0f478",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/ru-dark-1024-preview-missing.png",
+              "sha256": "166276162fc2683c0b7490d67664d34ffeb85ba4dcdfb072fa4791eb3f725d65",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/ru-dark-1024-preview-review.png",
+              "sha256": "2092a714fd2ecc09e402276e66c32725f8a49ba93ae5bb941938905d7d5507d1",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/ru-dark-1440-expanded-missing.png",
+              "sha256": "e4966831d9c94998441d873aa1c6c54dd6b8b110aee9b48a8e971475ec8e168a",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/ru-dark-1440-expanded-review.png",
+              "sha256": "923be143d6483c4f587cee1901b60113c11c60b9c19eeef631a8f003584e0b69",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/ru-dark-1440-preview-missing.png",
+              "sha256": "07917fa8018339ec13b493e2121b22ad66fbd1b24bb9c0d9a86d765ed1e5c916",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/ru-dark-1440-preview-review.png",
+              "sha256": "f0135d7131fe710693bb18d631c3fcf2c935949fd6eed194787edcc7b1b53f62",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/archived-editable-en-light-1024.png",
+              "sha256": "c105e12fbca81d4c962d76b548599a184bff380ac2151a672e221f147a823d06",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/archived-editable-en-light-1440.png",
+              "sha256": "2b72bd8cf6775a619a8868e12b9383f19120fb467f4329d3ffc0038c7e0c930f",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/archived-editable-en-dark-1024.png",
+              "sha256": "105fb5ed0c85638659e1ed4015a722c30286cd87109c1506ca558d0f40aef5ea",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/archived-editable-en-dark-1440.png",
+              "sha256": "2c08a7eaf8af27a3c1f0a27c5ffdc19862afa8fe6d160450539b3561b6457985",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/archived-editable-ru-light-1024.png",
+              "sha256": "72410a222ac13a41b6e2f2dec55ef72c86eb70c18660a376385c831ed44c1ee8",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/archived-editable-ru-light-1440.png",
+              "sha256": "7bef6be2c7c82bab3575ef38133f8846f42805431c1c6e82513fbc1039901549",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/archived-editable-ru-dark-1024.png",
+              "sha256": "604ad2d6b31dbe73cd7206360919468e71d4df75e5ac656c1f85c55dd3ff620f",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/archived-editable-ru-dark-1440.png",
+              "sha256": "ed77e7ebb1f3699810aa5f7f4e0bc367ac6d581fd7f88d09b36160e6079e0655",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/source-unavailable-en-light-1024.png",
+              "sha256": "9b790de0df17b21d8da495b7ae5a38006fcbef96262a0a3cedbe4217ce1d7a08",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/source-unavailable-en-light-1440.png",
+              "sha256": "c8a9eb3e907dd0ccc59ee98582d812173cde88e0a72e1bb731129f5343edd200",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/source-unavailable-en-dark-1024.png",
+              "sha256": "3c050678be47047e1699c71ad3ded45006220f28fa07e0e7313912a65672db5b",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/source-unavailable-en-dark-1440.png",
+              "sha256": "28769c008a69fd2016a58a8f3bcb89062b853b219328318fc1ed64bbe712439b",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/source-unavailable-ru-light-1024.png",
+              "sha256": "4e9e1119b34711fff26b5e0290cd6f460b28cf9aad3f65a8b4d7b6b8caf30c51",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/source-unavailable-ru-light-1440.png",
+              "sha256": "9e3cca128f855e45225447ece092dda67621586b6bab0f3d447916cba4ff9846",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/source-unavailable-ru-dark-1024.png",
+              "sha256": "b4773406daac30d0441b4e7d814ae46c2784917066b7ecfeae5eb3a8fc598911",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/source-unavailable-ru-dark-1440.png",
+              "sha256": "a9ce982f7022e29040b4b4a9bbfd40100795670f05f5aa035ad2fa1b495a0310",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/excluded-retained-en-light-1024.png",
+              "sha256": "7e97a0bcd216f4dd03370b69a96c07db5dfa3cba8c0e5f712568d4868e09265a",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/excluded-retained-en-light-1440.png",
+              "sha256": "81ec2f964e19a51f7385769dcf415a8d73ff3c519b1e22c043b72fc5025ea59c",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/excluded-retained-en-dark-1024.png",
+              "sha256": "ae576c85971da8b7ce7c1e467e1cb916b5756c2b6cf6dd1d943f32d4066b42b0",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/excluded-retained-en-dark-1440.png",
+              "sha256": "f785319868cc0f82f0bc897be8ce9564458dc8a8f2720c0a5420d107e3e79840",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/excluded-retained-ru-light-1024.png",
+              "sha256": "26f47f04458ce97e8daf91e08bd5be5a31e09af998c2fa93542e544e7686e715",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/excluded-retained-ru-light-1440.png",
+              "sha256": "11097b84efd4c57a6e0b1ca4003c62ddcd78eb1a002a521f32406ed7b2454bcd",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/excluded-retained-ru-dark-1024.png",
+              "sha256": "81ef92111282f022e5605ac32e000bd02445f2e4bfb88d2676e85a8f0e155fdc",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/excluded-retained-ru-dark-1440.png",
+              "sha256": "91f1e6f90e4ec6f13d6e72ac6a1d2b863f7c40c12a1445149f0d3cb399520c47",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/mode-inactive-retained-en-light-1024.png",
+              "sha256": "4120e5fa946af22e93bc75866fb23a35a608b36bdb4e8602f6745cc8801c0736",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/mode-inactive-retained-en-light-1440.png",
+              "sha256": "0f370945f65934f68f8ddf46632e05dbb60fd0505fa22db07fceaa1942140ad5",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/mode-inactive-retained-en-dark-1024.png",
+              "sha256": "78d19cddfdb512a2106c6a87406a2dd72c4ff0d35c308401cf3703c8833f4347",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/mode-inactive-retained-en-dark-1440.png",
+              "sha256": "dd3f130282ef2ba1144ea5ba564df28f33ec35ad01dedfa26e4b5a4cdd5b979d",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/mode-inactive-retained-ru-light-1024.png",
+              "sha256": "d84b9c80a94ebe02754a90fa38f66b9dc05b6f1c3c79f25fcd785233f01bfd3c",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/mode-inactive-retained-ru-light-1440.png",
+              "sha256": "404462b34240d578a7afab899f9268fbcda9a1f435522eb97929d09e93d3f639",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/mode-inactive-retained-ru-dark-1024.png",
+              "sha256": "0b1d07c2b1d15f1df01943c2fd87384401367cc298e927528db4333d6831fd8f",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/mode-inactive-retained-ru-dark-1440.png",
+              "sha256": "35e6f0576371ec92a35543b4c877733894ce1cf15bdce4f390a4c704e8ab2d57",
+              "dimensions": [
+                1440,
+                960
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "host": "windows-2022",
+      "platform": "win32",
+      "jobId": 120153224141,
+      "jobUrl": "https://github.com/kornouhovas/workspace/actions/runs/39873458782/job/120153224141",
+      "tests": {
+        "pass": 934,
+        "fail": 0,
+        "skip": 0
+      },
+      "packageResources": "verified 0.1.0",
+      "artifact": {
+        "id": 12467582003,
+        "name": "desktop-ux-foundation-windows-2022",
+        "size_in_bytes": 17928908,
+        "digest": "sha256:3b9f617b989e8ca59e562a0da71453e220f177178228d55c7edcdc0d63b4f015"
+      },
+      "reports": [
+        {
+          "path": "issue-22-project-archive-runtime/evidence.json",
+          "sha256": "ef2b5de0700313564eb01c3d78eab40220e52254ef60a6d85ad1f0039dd4fbb1",
+          "checks": 12,
+          "status": "passed",
+          "shutdowns": 5,
+          "cleanup": {
+            "status": "passed",
+            "asserted": true,
+            "processesStopped": true,
+            "maxRetries": 5,
+            "retryDelay": 100
+          }
+        },
+        {
+          "path": "issue-27-views-runtime/evidence.json",
+          "sha256": "6deb25924aa47ecdfd4e6f2c09c7397032f7cd8cb89dd35ff1b527d176f76d84",
+          "checks": 6,
+          "status": "passed",
+          "shutdowns": 3,
+          "cleanup": {
+            "status": "passed",
+            "asserted": true,
+            "processesStopped": true,
+            "maxRetries": 5,
+            "retryDelay": 100
+          }
+        },
+        {
+          "path": "issue-37-data-runtime/evidence.json",
+          "sha256": "1aa9faa8d9d205ee0509afa941d9698967a6acdb13e584553897ff0a9593999b",
+          "checks": 2,
+          "status": "passed",
+          "shutdowns": 3,
+          "cleanup": {
+            "status": "passed",
+            "asserted": true,
+            "processesStopped": true,
+            "maxRetries": 5,
+            "retryDelay": 100
+          }
+        },
+        {
+          "path": "issue-54-navigation/report.json",
+          "sha256": "e7b7bb34203bdf25f6aa28ba6f3234fcb3541338b282526b69af99189a0d5d7f",
+          "checks": 8,
+          "status": "passed",
+          "shutdowns": 0,
+          "cleanup": {
+            "status": "passed",
+            "asserted": true,
+            "processesStopped": true,
+            "maxRetries": 5,
+            "retryDelay": 100
+          }
+        },
+        {
+          "path": "issue-55-sessions-dev/report.json",
+          "sha256": "6d73df8f17cfd64030e69331bd47ef6f089696b216354d4a9f8cf03fea48d3d6",
+          "checks": 3,
+          "status": "passed",
+          "shutdowns": 3,
+          "cleanup": {
+            "status": "passed",
+            "asserted": true,
+            "processesStopped": true,
+            "maxRetries": 5,
+            "retryDelay": 100
+          }
+        },
+        {
+          "path": "issue-55-sessions-release/report.json",
+          "sha256": "2df3072cfa5ae6ac78a8e7f267b99fdaf51708b3f0ed6ee6303825a44a30934f",
+          "checks": 3,
+          "status": "passed",
+          "shutdowns": 3,
+          "cleanup": {
+            "status": "passed",
+            "asserted": true,
+            "processesStopped": true,
+            "maxRetries": 5,
+            "retryDelay": 100
+          }
+        },
+        {
+          "path": "issue-65-archive-dev/evidence.json",
+          "sha256": "b84d06dfa335ba756e356efa7c691e29397ee612ccbfb339853e81313441b16c",
+          "checks": 12,
+          "status": "passed",
+          "shutdowns": 5,
+          "cleanup": {
+            "status": "passed",
+            "asserted": true,
+            "processesStopped": true,
+            "maxRetries": 5,
+            "retryDelay": 100
+          }
+        },
+        {
+          "path": "issue-65-archive-release/evidence.json",
+          "sha256": "ef2b5de0700313564eb01c3d78eab40220e52254ef60a6d85ad1f0039dd4fbb1",
+          "checks": 12,
+          "status": "passed",
+          "shutdowns": 5,
+          "cleanup": {
+            "status": "passed",
+            "asserted": true,
+            "processesStopped": true,
+            "maxRetries": 5,
+            "retryDelay": 100
+          }
+        },
+        {
+          "path": "issue-65-recovery-dev/report.json",
+          "sha256": "2f6824db055f6d92694dd7d93e302e8c9243ed0890cb53ed69b4165e6cb199a4",
+          "checks": 7,
+          "status": "passed",
+          "shutdowns": 3,
+          "cleanup": {
+            "status": "passed",
+            "asserted": true,
+            "processesStopped": true,
+            "maxRetries": 5,
+            "retryDelay": 100
+          },
+          "captures": [
+            {
+              "path": "issue-65-recovery-dev/en-light-1024-expanded-missing.png",
+              "sha256": "ff549a94b0142626d6c53ee0848058045a8526f9d3feb10b028fb2937e040118",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/en-light-1024-expanded-review.png",
+              "sha256": "9fa429e757905674eb816da58ae5dde362fe8642dd79da8150fe149d393f61be",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/en-light-1024-preview-missing.png",
+              "sha256": "e920c24e7f6fcfe79ee9662d54dbf8ef40ee93193cbcfa2e4184408d199357ca",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/en-light-1024-preview-review.png",
+              "sha256": "51077f28bdc894991c087ace7afe0f209c93a5427a72b43cea1b1d6a4802d88a",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/en-light-1440-expanded-missing.png",
+              "sha256": "ba279d814023ad1a5ecd75a5bc8bcc462f768c93821ecf61e8073f3df25559e1",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/en-light-1440-expanded-review.png",
+              "sha256": "fc58d0b0207d6be55733d30a65c205fb3d759edf05fe099c47304c448c8c089b",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/en-light-1440-preview-missing.png",
+              "sha256": "edb0fedd1db96e1f67da7ecc85ebe7f9d7451175e6d507881201179db3955e24",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/en-light-1440-preview-review.png",
+              "sha256": "0e9a4714add9dd619b22e96657417d882f80daab7ac363edd6f1483c3cba0346",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/en-dark-1024-expanded-missing.png",
+              "sha256": "4f4448d0abc0a9e4b8a92d0a1d42475b8293bc38a46b49e68e9397256fab48b5",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/en-dark-1024-expanded-review.png",
+              "sha256": "437455274eb2c6935be34858ad6c03b69b5b34c6c7b636847c5aa828d6861ebe",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/en-dark-1024-preview-missing.png",
+              "sha256": "ea2136086f85b6d1b5b891dd4768aef02f0fcd9c3750b20021c6793f905d4cef",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/en-dark-1024-preview-review.png",
+              "sha256": "916641b41d17017e0ea02dfaa0c00ff4365b07ac5ca23f707d4fe2f8be2478f8",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/en-dark-1440-expanded-missing.png",
+              "sha256": "2d342c367881637e8976f59956d1f613228a3b0577425876b4f122a2795e2c80",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/en-dark-1440-expanded-review.png",
+              "sha256": "c7a0cfeeeffe2cba281185cb13db5644ccc1b1fc29e192323faa445c3ea9b8ec",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/en-dark-1440-preview-missing.png",
+              "sha256": "6da4aa13f37064e0a34d7dbb4d0fb567efbf298fe3954cb48277d8634310c249",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/en-dark-1440-preview-review.png",
+              "sha256": "2f68d5e2013587759d1da236c61f8ec44e5426af875b296c4e17ccab5a025b72",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/ru-light-1024-expanded-missing.png",
+              "sha256": "95b0fe68f4dad95fc9ff220459354b9c01bc69203852c672fcb8812b468993eb",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/ru-light-1024-expanded-review.png",
+              "sha256": "767e6656760bd46920224aada4d073d248db3c89e6c8751b77c358574010b319",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/ru-light-1024-preview-missing.png",
+              "sha256": "8a6aab1e2ce00138d487e20a6ab64c6f537d1e5e739e00f33bf75cf93bd2ad28",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/ru-light-1024-preview-review.png",
+              "sha256": "d747e1a7bd8d3b4008bfc1166e4d9676ce6f0c17f6a1fb15d0c3af6689659968",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/ru-light-1440-expanded-missing.png",
+              "sha256": "7318352390a99a2404e6c7435d4df4a584af81f6e7b39872c50f2a3cf513eab8",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/ru-light-1440-expanded-review.png",
+              "sha256": "ab00c8e9b35f73e2fcb6c91b948f36fe49988e0109625ad91c7d87e5209f3c9e",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/ru-light-1440-preview-missing.png",
+              "sha256": "cab40ae49b37e1d25596bcc1c30d255577832284ba75ba01238e01764a0dc45f",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/ru-light-1440-preview-review.png",
+              "sha256": "777c2ad5475206a489285564d7f3b76df415d25a2f0c8b554b81f559c5390a88",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/ru-dark-1024-expanded-missing.png",
+              "sha256": "6ce4262567b29d314ba03924ea09805f9781047962759d82d10eca38664afbbd",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/ru-dark-1024-expanded-review.png",
+              "sha256": "e89e99372bbb62fe29d6e4accbe95de624451843e423aff8885156e6547f28d6",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/ru-dark-1024-preview-missing.png",
+              "sha256": "28496ab7f390506035223c028885b53f50c37d87e96e9a96b022e78c4bd39403",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/ru-dark-1024-preview-review.png",
+              "sha256": "466faf97131a396ac25148bfa9e789d6800a34fd2e19686051b0a701b00ee40a",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/ru-dark-1440-expanded-missing.png",
+              "sha256": "f653d05b5e4eaefbd3fbb482485e9c2e1c9ad878cf5befb703312e05efadb516",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/ru-dark-1440-expanded-review.png",
+              "sha256": "f019fa7d8f9e51bce1f592504dbe505b4409929788c1bd39d64dd707355049e6",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/ru-dark-1440-preview-missing.png",
+              "sha256": "c1ddd586fd7b8c7d9844d10b8bc537df15329ef62851ae393033cd43ad52c297",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/ru-dark-1440-preview-review.png",
+              "sha256": "d2288242e45952ce3569e54abc7644957bba1914381efeca21762ea5be2beb24",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/archived-editable-en-light-1024.png",
+              "sha256": "d725d31ebb7608261ff52d6fa98ec6c6035ea8ae59b9f68995a27c1b268f3ffd",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/archived-editable-en-light-1440.png",
+              "sha256": "336682af2b0d5a31ae69ed8f86722522fcd373b3f08dd48db6d9a196a901ce24",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/archived-editable-en-dark-1024.png",
+              "sha256": "46ad254b7faa55964dcda06b95e779c3a3d7a80f6ef3b63cfa3c3351c6f7109e",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/archived-editable-en-dark-1440.png",
+              "sha256": "ce59aaa18f4f7c81bcc6edc107bb8c8b4bf67771d2f3c25232f31de12c21586d",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/archived-editable-ru-light-1024.png",
+              "sha256": "38d103572d5dddfdb703a1e8658325ba7ec1789487e1b569cea678371c2f0a99",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/archived-editable-ru-light-1440.png",
+              "sha256": "7da7b38eb7c86be0425ee1effa3d22777081776c80dfe561f1a9d0b1602b5a52",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/archived-editable-ru-dark-1024.png",
+              "sha256": "6294caf5828857f5e45635fd710beaa55a572ec68a497f1eba2709afac7f8e22",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/archived-editable-ru-dark-1440.png",
+              "sha256": "8466832a3a2192dc2bddf6f7e14ce41fc0ad3b4c8a35bfb914e904da0f1a0f7a",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/source-unavailable-en-light-1024.png",
+              "sha256": "b40720386749fe69ac07f03325a543460ad6fd2ca704d13c92c234a0bd50b527",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/source-unavailable-en-light-1440.png",
+              "sha256": "af5f06aa13ab7f0e07b2e171241f8d50ca1457c76d8afd1648011f1d2961a2b6",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/source-unavailable-en-dark-1024.png",
+              "sha256": "4a242582114d359aabddae19793157051c9f7de9e1491cb8b8f5529f9753b005",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/source-unavailable-en-dark-1440.png",
+              "sha256": "63a245157ed7bce01ca5bf34e2f3c5256b5118a44c54a515aa1d20bc217e21ce",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/source-unavailable-ru-light-1024.png",
+              "sha256": "0f21df45d26fb311a372d698f7a69891875e3e366085e7dccb0288b224d117ea",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/source-unavailable-ru-light-1440.png",
+              "sha256": "6d30c7be96b341284d0b882a953d2ab28900be9b59dc4a4486ad5cd304c68300",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/source-unavailable-ru-dark-1024.png",
+              "sha256": "56cebae76bd7f93f23f55b38cf55163fd8a3774d18cc32a76a5c4f9a8ff1c39b",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/source-unavailable-ru-dark-1440.png",
+              "sha256": "3a94bcbeb304d30e739f3c2563ccf3206f9891856a0ff75dc01f3f2909e7ab7d",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/excluded-retained-en-light-1024.png",
+              "sha256": "885511ea2cb13c845a974e499434ae64f6e3fe73860043e9c1bef5e9fce3260f",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/excluded-retained-en-light-1440.png",
+              "sha256": "29401ab875ec20e0d1715857d03f7edffc7acb13c8fdae7428b70708b58343c6",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/excluded-retained-en-dark-1024.png",
+              "sha256": "0443ba3bf3ea7d508c15822d2b90d45a3e9587b5e873752056bfd72f5b7bc5ee",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/excluded-retained-en-dark-1440.png",
+              "sha256": "2881c93eb88586f9106550bf67da9bd9553b3cac4714578dfb52ef313722f1e3",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/excluded-retained-ru-light-1024.png",
+              "sha256": "bf2a5519d3a845cd832562b87b2acbf232c08c6652cd3099d439d8efa491f83a",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/excluded-retained-ru-light-1440.png",
+              "sha256": "fab8a23010da07259de2754ca848567a54beb337a0dc739ce8ccbad568130a2c",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/excluded-retained-ru-dark-1024.png",
+              "sha256": "875acb6760e5a0559e117daec3a111f84f1e38106c3bdcf59b704f996e1cc1af",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/excluded-retained-ru-dark-1440.png",
+              "sha256": "9bf3ed611144fc062c749f18c6c8d856e38b293f899b563a89c7e276928b1633",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/mode-inactive-retained-en-light-1024.png",
+              "sha256": "bbd4a16e4bfface59695df62860360642038058b17f8b6c098e98ff636ca994b",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/mode-inactive-retained-en-light-1440.png",
+              "sha256": "af439f6b23ee5bf6332c02ec0557b9e0655001b85d08ecca2d66f82f10d8d315",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/mode-inactive-retained-en-dark-1024.png",
+              "sha256": "080d609a566541f9e61af6902fff92669ca533a24c4fdf8788b30b10811bcb39",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/mode-inactive-retained-en-dark-1440.png",
+              "sha256": "da965abca4945609096b1555e512a2d2b324fd61c837ad9af8d9f1c22deabba0",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/mode-inactive-retained-ru-light-1024.png",
+              "sha256": "a3c810f206f9d018eb97d41d1fe36ee83152fdd45d5a19e4857e439e910f52dc",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/mode-inactive-retained-ru-light-1440.png",
+              "sha256": "4f32fd11548ae257ade5604cc4ab5021af304cca6fb0bbd8bc2500839e334151",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/mode-inactive-retained-ru-dark-1024.png",
+              "sha256": "b34e270fdb466e616567a11f768719ea6e1152235659dfb20ba4c7a81d12ac31",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/mode-inactive-retained-ru-dark-1440.png",
+              "sha256": "60c94f9f47f83a4d1fa06392b502d10cf54c08a182e696306fc5f75b891c89cf",
+              "dimensions": [
+                1440,
+                960
+              ]
+            }
+          ]
+        },
+        {
+          "path": "issue-65-recovery-release/report.json",
+          "sha256": "0e9f1efc7aaa34080565067a0ca55c0ee0e8e072c07e7c898df2e41a6ab223bb",
+          "checks": 7,
+          "status": "passed",
+          "shutdowns": 3,
+          "cleanup": {
+            "status": "passed",
+            "asserted": true,
+            "processesStopped": true,
+            "maxRetries": 5,
+            "retryDelay": 100
+          },
+          "captures": [
+            {
+              "path": "issue-65-recovery-release/en-light-1024-expanded-missing.png",
+              "sha256": "ff549a94b0142626d6c53ee0848058045a8526f9d3feb10b028fb2937e040118",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/en-light-1024-expanded-review.png",
+              "sha256": "9fa429e757905674eb816da58ae5dde362fe8642dd79da8150fe149d393f61be",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/en-light-1024-preview-missing.png",
+              "sha256": "e920c24e7f6fcfe79ee9662d54dbf8ef40ee93193cbcfa2e4184408d199357ca",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/en-light-1024-preview-review.png",
+              "sha256": "51077f28bdc894991c087ace7afe0f209c93a5427a72b43cea1b1d6a4802d88a",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/en-light-1440-expanded-missing.png",
+              "sha256": "ba279d814023ad1a5ecd75a5bc8bcc462f768c93821ecf61e8073f3df25559e1",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/en-light-1440-expanded-review.png",
+              "sha256": "fc58d0b0207d6be55733d30a65c205fb3d759edf05fe099c47304c448c8c089b",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/en-light-1440-preview-missing.png",
+              "sha256": "edb0fedd1db96e1f67da7ecc85ebe7f9d7451175e6d507881201179db3955e24",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/en-light-1440-preview-review.png",
+              "sha256": "0e9a4714add9dd619b22e96657417d882f80daab7ac363edd6f1483c3cba0346",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/en-dark-1024-expanded-missing.png",
+              "sha256": "4f4448d0abc0a9e4b8a92d0a1d42475b8293bc38a46b49e68e9397256fab48b5",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/en-dark-1024-expanded-review.png",
+              "sha256": "437455274eb2c6935be34858ad6c03b69b5b34c6c7b636847c5aa828d6861ebe",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/en-dark-1024-preview-missing.png",
+              "sha256": "ea2136086f85b6d1b5b891dd4768aef02f0fcd9c3750b20021c6793f905d4cef",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/en-dark-1024-preview-review.png",
+              "sha256": "916641b41d17017e0ea02dfaa0c00ff4365b07ac5ca23f707d4fe2f8be2478f8",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/en-dark-1440-expanded-missing.png",
+              "sha256": "2d342c367881637e8976f59956d1f613228a3b0577425876b4f122a2795e2c80",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/en-dark-1440-expanded-review.png",
+              "sha256": "c7a0cfeeeffe2cba281185cb13db5644ccc1b1fc29e192323faa445c3ea9b8ec",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/en-dark-1440-preview-missing.png",
+              "sha256": "6da4aa13f37064e0a34d7dbb4d0fb567efbf298fe3954cb48277d8634310c249",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/en-dark-1440-preview-review.png",
+              "sha256": "2f68d5e2013587759d1da236c61f8ec44e5426af875b296c4e17ccab5a025b72",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/ru-light-1024-expanded-missing.png",
+              "sha256": "95b0fe68f4dad95fc9ff220459354b9c01bc69203852c672fcb8812b468993eb",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/ru-light-1024-expanded-review.png",
+              "sha256": "767e6656760bd46920224aada4d073d248db3c89e6c8751b77c358574010b319",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/ru-light-1024-preview-missing.png",
+              "sha256": "8a6aab1e2ce00138d487e20a6ab64c6f537d1e5e739e00f33bf75cf93bd2ad28",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/ru-light-1024-preview-review.png",
+              "sha256": "d747e1a7bd8d3b4008bfc1166e4d9676ce6f0c17f6a1fb15d0c3af6689659968",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/ru-light-1440-expanded-missing.png",
+              "sha256": "7318352390a99a2404e6c7435d4df4a584af81f6e7b39872c50f2a3cf513eab8",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/ru-light-1440-expanded-review.png",
+              "sha256": "ab00c8e9b35f73e2fcb6c91b948f36fe49988e0109625ad91c7d87e5209f3c9e",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/ru-light-1440-preview-missing.png",
+              "sha256": "cab40ae49b37e1d25596bcc1c30d255577832284ba75ba01238e01764a0dc45f",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/ru-light-1440-preview-review.png",
+              "sha256": "777c2ad5475206a489285564d7f3b76df415d25a2f0c8b554b81f559c5390a88",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/ru-dark-1024-expanded-missing.png",
+              "sha256": "6ce4262567b29d314ba03924ea09805f9781047962759d82d10eca38664afbbd",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/ru-dark-1024-expanded-review.png",
+              "sha256": "e89e99372bbb62fe29d6e4accbe95de624451843e423aff8885156e6547f28d6",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/ru-dark-1024-preview-missing.png",
+              "sha256": "28496ab7f390506035223c028885b53f50c37d87e96e9a96b022e78c4bd39403",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/ru-dark-1024-preview-review.png",
+              "sha256": "466faf97131a396ac25148bfa9e789d6800a34fd2e19686051b0a701b00ee40a",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/ru-dark-1440-expanded-missing.png",
+              "sha256": "f653d05b5e4eaefbd3fbb482485e9c2e1c9ad878cf5befb703312e05efadb516",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/ru-dark-1440-expanded-review.png",
+              "sha256": "d76f0f9796b88cacbd813cb3764f9963697887803bbd364713227cb48bb304ad",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/ru-dark-1440-preview-missing.png",
+              "sha256": "c1ddd586fd7b8c7d9844d10b8bc537df15329ef62851ae393033cd43ad52c297",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/ru-dark-1440-preview-review.png",
+              "sha256": "d2288242e45952ce3569e54abc7644957bba1914381efeca21762ea5be2beb24",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/archived-editable-en-light-1024.png",
+              "sha256": "d725d31ebb7608261ff52d6fa98ec6c6035ea8ae59b9f68995a27c1b268f3ffd",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/archived-editable-en-light-1440.png",
+              "sha256": "336682af2b0d5a31ae69ed8f86722522fcd373b3f08dd48db6d9a196a901ce24",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/archived-editable-en-dark-1024.png",
+              "sha256": "46ad254b7faa55964dcda06b95e779c3a3d7a80f6ef3b63cfa3c3351c6f7109e",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/archived-editable-en-dark-1440.png",
+              "sha256": "ce59aaa18f4f7c81bcc6edc107bb8c8b4bf67771d2f3c25232f31de12c21586d",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/archived-editable-ru-light-1024.png",
+              "sha256": "38d103572d5dddfdb703a1e8658325ba7ec1789487e1b569cea678371c2f0a99",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/archived-editable-ru-light-1440.png",
+              "sha256": "7da7b38eb7c86be0425ee1effa3d22777081776c80dfe561f1a9d0b1602b5a52",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/archived-editable-ru-dark-1024.png",
+              "sha256": "6294caf5828857f5e45635fd710beaa55a572ec68a497f1eba2709afac7f8e22",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/archived-editable-ru-dark-1440.png",
+              "sha256": "8466832a3a2192dc2bddf6f7e14ce41fc0ad3b4c8a35bfb914e904da0f1a0f7a",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/source-unavailable-en-light-1024.png",
+              "sha256": "b40720386749fe69ac07f03325a543460ad6fd2ca704d13c92c234a0bd50b527",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/source-unavailable-en-light-1440.png",
+              "sha256": "af5f06aa13ab7f0e07b2e171241f8d50ca1457c76d8afd1648011f1d2961a2b6",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/source-unavailable-en-dark-1024.png",
+              "sha256": "4a242582114d359aabddae19793157051c9f7de9e1491cb8b8f5529f9753b005",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/source-unavailable-en-dark-1440.png",
+              "sha256": "63a245157ed7bce01ca5bf34e2f3c5256b5118a44c54a515aa1d20bc217e21ce",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/source-unavailable-ru-light-1024.png",
+              "sha256": "0f21df45d26fb311a372d698f7a69891875e3e366085e7dccb0288b224d117ea",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/source-unavailable-ru-light-1440.png",
+              "sha256": "6d30c7be96b341284d0b882a953d2ab28900be9b59dc4a4486ad5cd304c68300",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/source-unavailable-ru-dark-1024.png",
+              "sha256": "56cebae76bd7f93f23f55b38cf55163fd8a3774d18cc32a76a5c4f9a8ff1c39b",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/source-unavailable-ru-dark-1440.png",
+              "sha256": "3a94bcbeb304d30e739f3c2563ccf3206f9891856a0ff75dc01f3f2909e7ab7d",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/excluded-retained-en-light-1024.png",
+              "sha256": "885511ea2cb13c845a974e499434ae64f6e3fe73860043e9c1bef5e9fce3260f",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/excluded-retained-en-light-1440.png",
+              "sha256": "29401ab875ec20e0d1715857d03f7edffc7acb13c8fdae7428b70708b58343c6",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/excluded-retained-en-dark-1024.png",
+              "sha256": "0443ba3bf3ea7d508c15822d2b90d45a3e9587b5e873752056bfd72f5b7bc5ee",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/excluded-retained-en-dark-1440.png",
+              "sha256": "2881c93eb88586f9106550bf67da9bd9553b3cac4714578dfb52ef313722f1e3",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/excluded-retained-ru-light-1024.png",
+              "sha256": "bf2a5519d3a845cd832562b87b2acbf232c08c6652cd3099d439d8efa491f83a",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/excluded-retained-ru-light-1440.png",
+              "sha256": "fab8a23010da07259de2754ca848567a54beb337a0dc739ce8ccbad568130a2c",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/excluded-retained-ru-dark-1024.png",
+              "sha256": "875acb6760e5a0559e117daec3a111f84f1e38106c3bdcf59b704f996e1cc1af",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/excluded-retained-ru-dark-1440.png",
+              "sha256": "9bf3ed611144fc062c749f18c6c8d856e38b293f899b563a89c7e276928b1633",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/mode-inactive-retained-en-light-1024.png",
+              "sha256": "bbd4a16e4bfface59695df62860360642038058b17f8b6c098e98ff636ca994b",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/mode-inactive-retained-en-light-1440.png",
+              "sha256": "af439f6b23ee5bf6332c02ec0557b9e0655001b85d08ecca2d66f82f10d8d315",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/mode-inactive-retained-en-dark-1024.png",
+              "sha256": "080d609a566541f9e61af6902fff92669ca533a24c4fdf8788b30b10811bcb39",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/mode-inactive-retained-en-dark-1440.png",
+              "sha256": "da965abca4945609096b1555e512a2d2b324fd61c837ad9af8d9f1c22deabba0",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/mode-inactive-retained-ru-light-1024.png",
+              "sha256": "a3c810f206f9d018eb97d41d1fe36ee83152fdd45d5a19e4857e439e910f52dc",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/mode-inactive-retained-ru-light-1440.png",
+              "sha256": "4f32fd11548ae257ade5604cc4ab5021af304cca6fb0bbd8bc2500839e334151",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/mode-inactive-retained-ru-dark-1024.png",
+              "sha256": "b34e270fdb466e616567a11f768719ea6e1152235659dfb20ba4c7a81d12ac31",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/mode-inactive-retained-ru-dark-1440.png",
+              "sha256": "60c94f9f47f83a4d1fa06392b502d10cf54c08a182e696306fc5f75b891c89cf",
+              "dimensions": [
+                1440,
+                960
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "host": "windows-latest",
+      "platform": "win32",
+      "jobId": 120153224241,
+      "jobUrl": "https://github.com/kornouhovas/workspace/actions/runs/39873458782/job/120153224241",
+      "tests": {
+        "pass": 934,
+        "fail": 0,
+        "skip": 0
+      },
+      "packageResources": "verified 0.1.0",
+      "artifact": {
+        "id": 12466799509,
+        "name": "desktop-ux-foundation-windows-latest",
+        "size_in_bytes": 17987712,
+        "digest": "sha256:721cc5b5ef7f37e0ca216849608df5f27fac4b56c6ac83d62621685d6945e828"
+      },
+      "reports": [
+        {
+          "path": "issue-22-project-archive-runtime/evidence.json",
+          "sha256": "ef2b5de0700313564eb01c3d78eab40220e52254ef60a6d85ad1f0039dd4fbb1",
+          "checks": 12,
+          "status": "passed",
+          "shutdowns": 5,
+          "cleanup": {
+            "status": "passed",
+            "asserted": true,
+            "processesStopped": true,
+            "maxRetries": 5,
+            "retryDelay": 100
+          }
+        },
+        {
+          "path": "issue-27-views-runtime/evidence.json",
+          "sha256": "6deb25924aa47ecdfd4e6f2c09c7397032f7cd8cb89dd35ff1b527d176f76d84",
+          "checks": 6,
+          "status": "passed",
+          "shutdowns": 3,
+          "cleanup": {
+            "status": "passed",
+            "asserted": true,
+            "processesStopped": true,
+            "maxRetries": 5,
+            "retryDelay": 100
+          }
+        },
+        {
+          "path": "issue-37-data-runtime/evidence.json",
+          "sha256": "1aa9faa8d9d205ee0509afa941d9698967a6acdb13e584553897ff0a9593999b",
+          "checks": 2,
+          "status": "passed",
+          "shutdowns": 3,
+          "cleanup": {
+            "status": "passed",
+            "asserted": true,
+            "processesStopped": true,
+            "maxRetries": 5,
+            "retryDelay": 100
+          }
+        },
+        {
+          "path": "issue-54-navigation/report.json",
+          "sha256": "e7b7bb34203bdf25f6aa28ba6f3234fcb3541338b282526b69af99189a0d5d7f",
+          "checks": 8,
+          "status": "passed",
+          "shutdowns": 0,
+          "cleanup": {
+            "status": "passed",
+            "asserted": true,
+            "processesStopped": true,
+            "maxRetries": 5,
+            "retryDelay": 100
+          }
+        },
+        {
+          "path": "issue-55-sessions-dev/report.json",
+          "sha256": "a03bb035a9e4338a111eda74dd7bc4d3b6b4328750edaafa1ae7d4e2e08760d5",
+          "checks": 3,
+          "status": "passed",
+          "shutdowns": 3,
+          "cleanup": {
+            "status": "passed",
+            "asserted": true,
+            "processesStopped": true,
+            "maxRetries": 5,
+            "retryDelay": 100
+          }
+        },
+        {
+          "path": "issue-55-sessions-release/report.json",
+          "sha256": "b373c17a112f01d8380d950e739c8e9a53b2e8f9f3105e696c253ab9f263cc10",
+          "checks": 3,
+          "status": "passed",
+          "shutdowns": 3,
+          "cleanup": {
+            "status": "passed",
+            "asserted": true,
+            "processesStopped": true,
+            "maxRetries": 5,
+            "retryDelay": 100
+          }
+        },
+        {
+          "path": "issue-65-archive-dev/evidence.json",
+          "sha256": "b84d06dfa335ba756e356efa7c691e29397ee612ccbfb339853e81313441b16c",
+          "checks": 12,
+          "status": "passed",
+          "shutdowns": 5,
+          "cleanup": {
+            "status": "passed",
+            "asserted": true,
+            "processesStopped": true,
+            "maxRetries": 5,
+            "retryDelay": 100
+          }
+        },
+        {
+          "path": "issue-65-archive-release/evidence.json",
+          "sha256": "ef2b5de0700313564eb01c3d78eab40220e52254ef60a6d85ad1f0039dd4fbb1",
+          "checks": 12,
+          "status": "passed",
+          "shutdowns": 5,
+          "cleanup": {
+            "status": "passed",
+            "asserted": true,
+            "processesStopped": true,
+            "maxRetries": 5,
+            "retryDelay": 100
+          }
+        },
+        {
+          "path": "issue-65-recovery-dev/report.json",
+          "sha256": "e18949d68f6b8b9873f712e3fb8b17a87e9264e697ef1c2346e52418e7e7b10d",
+          "checks": 7,
+          "status": "passed",
+          "shutdowns": 3,
+          "cleanup": {
+            "status": "passed",
+            "asserted": true,
+            "processesStopped": true,
+            "maxRetries": 5,
+            "retryDelay": 100
+          },
+          "captures": [
+            {
+              "path": "issue-65-recovery-dev/en-light-1024-expanded-missing.png",
+              "sha256": "ff549a94b0142626d6c53ee0848058045a8526f9d3feb10b028fb2937e040118",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/en-light-1024-expanded-review.png",
+              "sha256": "9fa429e757905674eb816da58ae5dde362fe8642dd79da8150fe149d393f61be",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/en-light-1024-preview-missing.png",
+              "sha256": "acaaff8b70ee39e7516b6bd1f6d706edbfbb136104e741f8f170bdaa758cb253",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/en-light-1024-preview-review.png",
+              "sha256": "b58692c785db0dc3dcf9d2cc3cfded69e5656f564147a952b4fec136dbf6da3c",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/en-light-1440-expanded-missing.png",
+              "sha256": "ba279d814023ad1a5ecd75a5bc8bcc462f768c93821ecf61e8073f3df25559e1",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/en-light-1440-expanded-review.png",
+              "sha256": "fc58d0b0207d6be55733d30a65c205fb3d759edf05fe099c47304c448c8c089b",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/en-light-1440-preview-missing.png",
+              "sha256": "edb0fedd1db96e1f67da7ecc85ebe7f9d7451175e6d507881201179db3955e24",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/en-light-1440-preview-review.png",
+              "sha256": "0e9a4714add9dd619b22e96657417d882f80daab7ac363edd6f1483c3cba0346",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/en-dark-1024-expanded-missing.png",
+              "sha256": "4f4448d0abc0a9e4b8a92d0a1d42475b8293bc38a46b49e68e9397256fab48b5",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/en-dark-1024-expanded-review.png",
+              "sha256": "437455274eb2c6935be34858ad6c03b69b5b34c6c7b636847c5aa828d6861ebe",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/en-dark-1024-preview-missing.png",
+              "sha256": "883f702679f1fe8843ec99e16f848145afe2d463a93893cbb1a6829747a04e6d",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/en-dark-1024-preview-review.png",
+              "sha256": "4874a4c2fb52e5bef7bc3183571de401f8149b5684f9b5c3af5a58af077ec625",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/en-dark-1440-expanded-missing.png",
+              "sha256": "2d342c367881637e8976f59956d1f613228a3b0577425876b4f122a2795e2c80",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/en-dark-1440-expanded-review.png",
+              "sha256": "c7a0cfeeeffe2cba281185cb13db5644ccc1b1fc29e192323faa445c3ea9b8ec",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/en-dark-1440-preview-missing.png",
+              "sha256": "6da4aa13f37064e0a34d7dbb4d0fb567efbf298fe3954cb48277d8634310c249",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/en-dark-1440-preview-review.png",
+              "sha256": "2f68d5e2013587759d1da236c61f8ec44e5426af875b296c4e17ccab5a025b72",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/ru-light-1024-expanded-missing.png",
+              "sha256": "95b0fe68f4dad95fc9ff220459354b9c01bc69203852c672fcb8812b468993eb",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/ru-light-1024-expanded-review.png",
+              "sha256": "767e6656760bd46920224aada4d073d248db3c89e6c8751b77c358574010b319",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/ru-light-1024-preview-missing.png",
+              "sha256": "fb1b31088a8430fd8794d1547dcc1ace2c065a8348d9a1499a4d79d9bc2fc141",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/ru-light-1024-preview-review.png",
+              "sha256": "d9c6b74f8376d8027f4df0f15327abc9a9cd0027634b73dc3ffb309f045914d1",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/ru-light-1440-expanded-missing.png",
+              "sha256": "7318352390a99a2404e6c7435d4df4a584af81f6e7b39872c50f2a3cf513eab8",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/ru-light-1440-expanded-review.png",
+              "sha256": "ab00c8e9b35f73e2fcb6c91b948f36fe49988e0109625ad91c7d87e5209f3c9e",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/ru-light-1440-preview-missing.png",
+              "sha256": "cab40ae49b37e1d25596bcc1c30d255577832284ba75ba01238e01764a0dc45f",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/ru-light-1440-preview-review.png",
+              "sha256": "777c2ad5475206a489285564d7f3b76df415d25a2f0c8b554b81f559c5390a88",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/ru-dark-1024-expanded-missing.png",
+              "sha256": "6ce4262567b29d314ba03924ea09805f9781047962759d82d10eca38664afbbd",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/ru-dark-1024-expanded-review.png",
+              "sha256": "e89e99372bbb62fe29d6e4accbe95de624451843e423aff8885156e6547f28d6",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/ru-dark-1024-preview-missing.png",
+              "sha256": "c03e1a07af4f69afba51c755702b5ee6f21774de4f70ab5772d64a8d22d71d55",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/ru-dark-1024-preview-review.png",
+              "sha256": "3015a247159390be66815434e24db07c2cd36cecc5a7e2e062bfa986880bbccb",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/ru-dark-1440-expanded-missing.png",
+              "sha256": "f653d05b5e4eaefbd3fbb482485e9c2e1c9ad878cf5befb703312e05efadb516",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/ru-dark-1440-expanded-review.png",
+              "sha256": "f019fa7d8f9e51bce1f592504dbe505b4409929788c1bd39d64dd707355049e6",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/ru-dark-1440-preview-missing.png",
+              "sha256": "c1ddd586fd7b8c7d9844d10b8bc537df15329ef62851ae393033cd43ad52c297",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/ru-dark-1440-preview-review.png",
+              "sha256": "d2288242e45952ce3569e54abc7644957bba1914381efeca21762ea5be2beb24",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/archived-editable-en-light-1024.png",
+              "sha256": "d725d31ebb7608261ff52d6fa98ec6c6035ea8ae59b9f68995a27c1b268f3ffd",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/archived-editable-en-light-1440.png",
+              "sha256": "336682af2b0d5a31ae69ed8f86722522fcd373b3f08dd48db6d9a196a901ce24",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/archived-editable-en-dark-1024.png",
+              "sha256": "46ad254b7faa55964dcda06b95e779c3a3d7a80f6ef3b63cfa3c3351c6f7109e",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/archived-editable-en-dark-1440.png",
+              "sha256": "ce59aaa18f4f7c81bcc6edc107bb8c8b4bf67771d2f3c25232f31de12c21586d",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/archived-editable-ru-light-1024.png",
+              "sha256": "38d103572d5dddfdb703a1e8658325ba7ec1789487e1b569cea678371c2f0a99",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/archived-editable-ru-light-1440.png",
+              "sha256": "7da7b38eb7c86be0425ee1effa3d22777081776c80dfe561f1a9d0b1602b5a52",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/archived-editable-ru-dark-1024.png",
+              "sha256": "6294caf5828857f5e45635fd710beaa55a572ec68a497f1eba2709afac7f8e22",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/archived-editable-ru-dark-1440.png",
+              "sha256": "8466832a3a2192dc2bddf6f7e14ce41fc0ad3b4c8a35bfb914e904da0f1a0f7a",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/source-unavailable-en-light-1024.png",
+              "sha256": "b40720386749fe69ac07f03325a543460ad6fd2ca704d13c92c234a0bd50b527",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/source-unavailable-en-light-1440.png",
+              "sha256": "af5f06aa13ab7f0e07b2e171241f8d50ca1457c76d8afd1648011f1d2961a2b6",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/source-unavailable-en-dark-1024.png",
+              "sha256": "4a242582114d359aabddae19793157051c9f7de9e1491cb8b8f5529f9753b005",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/source-unavailable-en-dark-1440.png",
+              "sha256": "63a245157ed7bce01ca5bf34e2f3c5256b5118a44c54a515aa1d20bc217e21ce",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/source-unavailable-ru-light-1024.png",
+              "sha256": "0f21df45d26fb311a372d698f7a69891875e3e366085e7dccb0288b224d117ea",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/source-unavailable-ru-light-1440.png",
+              "sha256": "6d30c7be96b341284d0b882a953d2ab28900be9b59dc4a4486ad5cd304c68300",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/source-unavailable-ru-dark-1024.png",
+              "sha256": "56cebae76bd7f93f23f55b38cf55163fd8a3774d18cc32a76a5c4f9a8ff1c39b",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/source-unavailable-ru-dark-1440.png",
+              "sha256": "3a94bcbeb304d30e739f3c2563ccf3206f9891856a0ff75dc01f3f2909e7ab7d",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/excluded-retained-en-light-1024.png",
+              "sha256": "885511ea2cb13c845a974e499434ae64f6e3fe73860043e9c1bef5e9fce3260f",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/excluded-retained-en-light-1440.png",
+              "sha256": "29401ab875ec20e0d1715857d03f7edffc7acb13c8fdae7428b70708b58343c6",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/excluded-retained-en-dark-1024.png",
+              "sha256": "0443ba3bf3ea7d508c15822d2b90d45a3e9587b5e873752056bfd72f5b7bc5ee",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/excluded-retained-en-dark-1440.png",
+              "sha256": "2881c93eb88586f9106550bf67da9bd9553b3cac4714578dfb52ef313722f1e3",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/excluded-retained-ru-light-1024.png",
+              "sha256": "bf2a5519d3a845cd832562b87b2acbf232c08c6652cd3099d439d8efa491f83a",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/excluded-retained-ru-light-1440.png",
+              "sha256": "fab8a23010da07259de2754ca848567a54beb337a0dc739ce8ccbad568130a2c",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/excluded-retained-ru-dark-1024.png",
+              "sha256": "875acb6760e5a0559e117daec3a111f84f1e38106c3bdcf59b704f996e1cc1af",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/excluded-retained-ru-dark-1440.png",
+              "sha256": "9bf3ed611144fc062c749f18c6c8d856e38b293f899b563a89c7e276928b1633",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/mode-inactive-retained-en-light-1024.png",
+              "sha256": "bbd4a16e4bfface59695df62860360642038058b17f8b6c098e98ff636ca994b",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/mode-inactive-retained-en-light-1440.png",
+              "sha256": "af439f6b23ee5bf6332c02ec0557b9e0655001b85d08ecca2d66f82f10d8d315",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/mode-inactive-retained-en-dark-1024.png",
+              "sha256": "080d609a566541f9e61af6902fff92669ca533a24c4fdf8788b30b10811bcb39",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/mode-inactive-retained-en-dark-1440.png",
+              "sha256": "da965abca4945609096b1555e512a2d2b324fd61c837ad9af8d9f1c22deabba0",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/mode-inactive-retained-ru-light-1024.png",
+              "sha256": "a3c810f206f9d018eb97d41d1fe36ee83152fdd45d5a19e4857e439e910f52dc",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/mode-inactive-retained-ru-light-1440.png",
+              "sha256": "4f32fd11548ae257ade5604cc4ab5021af304cca6fb0bbd8bc2500839e334151",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/mode-inactive-retained-ru-dark-1024.png",
+              "sha256": "b34e270fdb466e616567a11f768719ea6e1152235659dfb20ba4c7a81d12ac31",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-dev/mode-inactive-retained-ru-dark-1440.png",
+              "sha256": "60c94f9f47f83a4d1fa06392b502d10cf54c08a182e696306fc5f75b891c89cf",
+              "dimensions": [
+                1440,
+                960
+              ]
+            }
+          ]
+        },
+        {
+          "path": "issue-65-recovery-release/report.json",
+          "sha256": "e89822c1306fa20c283b83992428639ef9bc2d7b159700329ea2f551f5502656",
+          "checks": 7,
+          "status": "passed",
+          "shutdowns": 3,
+          "cleanup": {
+            "status": "passed",
+            "asserted": true,
+            "processesStopped": true,
+            "maxRetries": 5,
+            "retryDelay": 100
+          },
+          "captures": [
+            {
+              "path": "issue-65-recovery-release/en-light-1024-expanded-missing.png",
+              "sha256": "ff549a94b0142626d6c53ee0848058045a8526f9d3feb10b028fb2937e040118",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/en-light-1024-expanded-review.png",
+              "sha256": "9fa429e757905674eb816da58ae5dde362fe8642dd79da8150fe149d393f61be",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/en-light-1024-preview-missing.png",
+              "sha256": "acaaff8b70ee39e7516b6bd1f6d706edbfbb136104e741f8f170bdaa758cb253",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/en-light-1024-preview-review.png",
+              "sha256": "b58692c785db0dc3dcf9d2cc3cfded69e5656f564147a952b4fec136dbf6da3c",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/en-light-1440-expanded-missing.png",
+              "sha256": "ba279d814023ad1a5ecd75a5bc8bcc462f768c93821ecf61e8073f3df25559e1",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/en-light-1440-expanded-review.png",
+              "sha256": "fc58d0b0207d6be55733d30a65c205fb3d759edf05fe099c47304c448c8c089b",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/en-light-1440-preview-missing.png",
+              "sha256": "edb0fedd1db96e1f67da7ecc85ebe7f9d7451175e6d507881201179db3955e24",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/en-light-1440-preview-review.png",
+              "sha256": "0e9a4714add9dd619b22e96657417d882f80daab7ac363edd6f1483c3cba0346",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/en-dark-1024-expanded-missing.png",
+              "sha256": "4f4448d0abc0a9e4b8a92d0a1d42475b8293bc38a46b49e68e9397256fab48b5",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/en-dark-1024-expanded-review.png",
+              "sha256": "437455274eb2c6935be34858ad6c03b69b5b34c6c7b636847c5aa828d6861ebe",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/en-dark-1024-preview-missing.png",
+              "sha256": "883f702679f1fe8843ec99e16f848145afe2d463a93893cbb1a6829747a04e6d",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/en-dark-1024-preview-review.png",
+              "sha256": "4874a4c2fb52e5bef7bc3183571de401f8149b5684f9b5c3af5a58af077ec625",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/en-dark-1440-expanded-missing.png",
+              "sha256": "2d342c367881637e8976f59956d1f613228a3b0577425876b4f122a2795e2c80",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/en-dark-1440-expanded-review.png",
+              "sha256": "c7a0cfeeeffe2cba281185cb13db5644ccc1b1fc29e192323faa445c3ea9b8ec",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/en-dark-1440-preview-missing.png",
+              "sha256": "6da4aa13f37064e0a34d7dbb4d0fb567efbf298fe3954cb48277d8634310c249",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/en-dark-1440-preview-review.png",
+              "sha256": "2f68d5e2013587759d1da236c61f8ec44e5426af875b296c4e17ccab5a025b72",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/ru-light-1024-expanded-missing.png",
+              "sha256": "95b0fe68f4dad95fc9ff220459354b9c01bc69203852c672fcb8812b468993eb",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/ru-light-1024-expanded-review.png",
+              "sha256": "767e6656760bd46920224aada4d073d248db3c89e6c8751b77c358574010b319",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/ru-light-1024-preview-missing.png",
+              "sha256": "fb1b31088a8430fd8794d1547dcc1ace2c065a8348d9a1499a4d79d9bc2fc141",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/ru-light-1024-preview-review.png",
+              "sha256": "d9c6b74f8376d8027f4df0f15327abc9a9cd0027634b73dc3ffb309f045914d1",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/ru-light-1440-expanded-missing.png",
+              "sha256": "7318352390a99a2404e6c7435d4df4a584af81f6e7b39872c50f2a3cf513eab8",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/ru-light-1440-expanded-review.png",
+              "sha256": "ab00c8e9b35f73e2fcb6c91b948f36fe49988e0109625ad91c7d87e5209f3c9e",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/ru-light-1440-preview-missing.png",
+              "sha256": "cab40ae49b37e1d25596bcc1c30d255577832284ba75ba01238e01764a0dc45f",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/ru-light-1440-preview-review.png",
+              "sha256": "777c2ad5475206a489285564d7f3b76df415d25a2f0c8b554b81f559c5390a88",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/ru-dark-1024-expanded-missing.png",
+              "sha256": "6ce4262567b29d314ba03924ea09805f9781047962759d82d10eca38664afbbd",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/ru-dark-1024-expanded-review.png",
+              "sha256": "e89e99372bbb62fe29d6e4accbe95de624451843e423aff8885156e6547f28d6",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/ru-dark-1024-preview-missing.png",
+              "sha256": "c03e1a07af4f69afba51c755702b5ee6f21774de4f70ab5772d64a8d22d71d55",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/ru-dark-1024-preview-review.png",
+              "sha256": "3015a247159390be66815434e24db07c2cd36cecc5a7e2e062bfa986880bbccb",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/ru-dark-1440-expanded-missing.png",
+              "sha256": "f653d05b5e4eaefbd3fbb482485e9c2e1c9ad878cf5befb703312e05efadb516",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/ru-dark-1440-expanded-review.png",
+              "sha256": "d76f0f9796b88cacbd813cb3764f9963697887803bbd364713227cb48bb304ad",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/ru-dark-1440-preview-missing.png",
+              "sha256": "c1ddd586fd7b8c7d9844d10b8bc537df15329ef62851ae393033cd43ad52c297",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/ru-dark-1440-preview-review.png",
+              "sha256": "d2288242e45952ce3569e54abc7644957bba1914381efeca21762ea5be2beb24",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/archived-editable-en-light-1024.png",
+              "sha256": "d725d31ebb7608261ff52d6fa98ec6c6035ea8ae59b9f68995a27c1b268f3ffd",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/archived-editable-en-light-1440.png",
+              "sha256": "336682af2b0d5a31ae69ed8f86722522fcd373b3f08dd48db6d9a196a901ce24",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/archived-editable-en-dark-1024.png",
+              "sha256": "46ad254b7faa55964dcda06b95e779c3a3d7a80f6ef3b63cfa3c3351c6f7109e",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/archived-editable-en-dark-1440.png",
+              "sha256": "ce59aaa18f4f7c81bcc6edc107bb8c8b4bf67771d2f3c25232f31de12c21586d",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/archived-editable-ru-light-1024.png",
+              "sha256": "38d103572d5dddfdb703a1e8658325ba7ec1789487e1b569cea678371c2f0a99",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/archived-editable-ru-light-1440.png",
+              "sha256": "7da7b38eb7c86be0425ee1effa3d22777081776c80dfe561f1a9d0b1602b5a52",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/archived-editable-ru-dark-1024.png",
+              "sha256": "6294caf5828857f5e45635fd710beaa55a572ec68a497f1eba2709afac7f8e22",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/archived-editable-ru-dark-1440.png",
+              "sha256": "8466832a3a2192dc2bddf6f7e14ce41fc0ad3b4c8a35bfb914e904da0f1a0f7a",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/source-unavailable-en-light-1024.png",
+              "sha256": "b40720386749fe69ac07f03325a543460ad6fd2ca704d13c92c234a0bd50b527",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/source-unavailable-en-light-1440.png",
+              "sha256": "af5f06aa13ab7f0e07b2e171241f8d50ca1457c76d8afd1648011f1d2961a2b6",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/source-unavailable-en-dark-1024.png",
+              "sha256": "4a242582114d359aabddae19793157051c9f7de9e1491cb8b8f5529f9753b005",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/source-unavailable-en-dark-1440.png",
+              "sha256": "63a245157ed7bce01ca5bf34e2f3c5256b5118a44c54a515aa1d20bc217e21ce",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/source-unavailable-ru-light-1024.png",
+              "sha256": "0f21df45d26fb311a372d698f7a69891875e3e366085e7dccb0288b224d117ea",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/source-unavailable-ru-light-1440.png",
+              "sha256": "6d30c7be96b341284d0b882a953d2ab28900be9b59dc4a4486ad5cd304c68300",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/source-unavailable-ru-dark-1024.png",
+              "sha256": "56cebae76bd7f93f23f55b38cf55163fd8a3774d18cc32a76a5c4f9a8ff1c39b",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/source-unavailable-ru-dark-1440.png",
+              "sha256": "3a94bcbeb304d30e739f3c2563ccf3206f9891856a0ff75dc01f3f2909e7ab7d",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/excluded-retained-en-light-1024.png",
+              "sha256": "885511ea2cb13c845a974e499434ae64f6e3fe73860043e9c1bef5e9fce3260f",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/excluded-retained-en-light-1440.png",
+              "sha256": "29401ab875ec20e0d1715857d03f7edffc7acb13c8fdae7428b70708b58343c6",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/excluded-retained-en-dark-1024.png",
+              "sha256": "0443ba3bf3ea7d508c15822d2b90d45a3e9587b5e873752056bfd72f5b7bc5ee",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/excluded-retained-en-dark-1440.png",
+              "sha256": "2881c93eb88586f9106550bf67da9bd9553b3cac4714578dfb52ef313722f1e3",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/excluded-retained-ru-light-1024.png",
+              "sha256": "bf2a5519d3a845cd832562b87b2acbf232c08c6652cd3099d439d8efa491f83a",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/excluded-retained-ru-light-1440.png",
+              "sha256": "fab8a23010da07259de2754ca848567a54beb337a0dc739ce8ccbad568130a2c",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/excluded-retained-ru-dark-1024.png",
+              "sha256": "875acb6760e5a0559e117daec3a111f84f1e38106c3bdcf59b704f996e1cc1af",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/excluded-retained-ru-dark-1440.png",
+              "sha256": "9bf3ed611144fc062c749f18c6c8d856e38b293f899b563a89c7e276928b1633",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/mode-inactive-retained-en-light-1024.png",
+              "sha256": "bbd4a16e4bfface59695df62860360642038058b17f8b6c098e98ff636ca994b",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/mode-inactive-retained-en-light-1440.png",
+              "sha256": "af439f6b23ee5bf6332c02ec0557b9e0655001b85d08ecca2d66f82f10d8d315",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/mode-inactive-retained-en-dark-1024.png",
+              "sha256": "080d609a566541f9e61af6902fff92669ca533a24c4fdf8788b30b10811bcb39",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/mode-inactive-retained-en-dark-1440.png",
+              "sha256": "da965abca4945609096b1555e512a2d2b324fd61c837ad9af8d9f1c22deabba0",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/mode-inactive-retained-ru-light-1024.png",
+              "sha256": "a3c810f206f9d018eb97d41d1fe36ee83152fdd45d5a19e4857e439e910f52dc",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/mode-inactive-retained-ru-light-1440.png",
+              "sha256": "4f32fd11548ae257ade5604cc4ab5021af304cca6fb0bbd8bc2500839e334151",
+              "dimensions": [
+                1440,
+                960
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/mode-inactive-retained-ru-dark-1024.png",
+              "sha256": "b34e270fdb466e616567a11f768719ea6e1152235659dfb20ba4c7a81d12ac31",
+              "dimensions": [
+                1024,
+                720
+              ]
+            },
+            {
+              "path": "issue-65-recovery-release/mode-inactive-retained-ru-dark-1440.png",
+              "sha256": "60c94f9f47f83a4d1fa06392b502d10cf54c08a182e696306fc5f75b891c89cf",
+              "dimensions": [
+                1440,
+                960
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -798,6 +798,10 @@ p { margin-block: .5rem; }
 .workspace-controls { flex: 1; }
 .workspace-content { height: 100%; display: flex; flex-direction: column; }
 .project-navigation { height: 100%; display: flex; flex-direction: column; align-items: stretch; flex-wrap: nowrap; overflow: hidden; }
+/* The daily toolbar's horizontal 100% basis must not become a full-height
+   outage banner inside the vertical project host. Keep retained content usable. */
+.project-navigation > .source-refresh { flex: 0 0 auto; max-height: 30%; overflow: auto; }
+.project-navigation > .source-refresh:not(.source-refresh--quiet) > div:first-child { flex: 1 1 24rem; }
 .project-navigation > .views-panel { flex: 0 0 auto; min-width: 0; }
 .project-navigation > .project-work-body { flex: 1; min-height: 0; display: grid; gap: 0; overflow: hidden; }
 .saved-view-content { min-width: 0; min-height: 0; overflow: auto; display: flex; align-content: start; align-items: center; flex-wrap: wrap; gap: 6px; }

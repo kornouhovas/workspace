@@ -1,0 +1,668 @@
+{
+  "command": "npm test",
+  "candidate": "34e30292f63347643b31a4448bf86ea31e9e3e2a",
+  "node": "22.21.1",
+  "host": "macOS arm64",
+  "logPath": "work/issue-65-full-suite/npm-test.log",
+  "logSha256": "4fa8e59eb855f655948a4288f1b7c826a9d8788a1fa4076162acca0bf409e4b7",
+  "counts": {
+    "total": 3447,
+    "passed": 3388,
+    "failed": 32,
+    "skipped": 27
+  },
+  "failures": [
+    {
+      "test": "property creation waits for initial loading before keyboard activation in real Electron: Create Single Select property",
+      "location": "tests/property-editor-driver.test.mjs:75:1",
+      "kind": "synthetic_quit_timeout",
+      "alsoFailedInIssue62": true
+    },
+    {
+      "test": "property creation waits for initial loading before keyboard activation in real Electron: Create Number property",
+      "location": "tests/property-editor-driver.test.mjs:75:1",
+      "kind": "synthetic_quit_timeout",
+      "alsoFailedInIssue62": false
+    },
+    {
+      "test": "property creation waits for initial loading before keyboard activation in real Electron: \u0421\u043e\u0437\u0434\u0430\u0442\u044c Number-\u0441\u0432\u043e\u0439\u0441\u0442\u0432\u043e",
+      "location": "tests/property-editor-driver.test.mjs:75:1",
+      "kind": "synthetic_quit_timeout",
+      "alsoFailedInIssue62": true
+    },
+    {
+      "test": "property creation waits for initial loading before keyboard activation in real Electron: Create Date property",
+      "location": "tests/property-editor-driver.test.mjs:75:1",
+      "kind": "synthetic_quit_timeout",
+      "alsoFailedInIssue62": true
+    },
+    {
+      "test": "property creation waits for initial loading before keyboard activation in real Electron: \u0421\u043e\u0437\u0434\u0430\u0442\u044c Date-\u0441\u0432\u043e\u0439\u0441\u0442\u0432\u043e",
+      "location": "tests/property-editor-driver.test.mjs:75:1",
+      "kind": "synthetic_quit_timeout",
+      "alsoFailedInIssue62": true
+    },
+    {
+      "test": "property creation keeps the caller deadline and never activates a still-loading control",
+      "location": "tests/property-editor-driver.test.mjs:97:1",
+      "kind": "synthetic_quit_timeout",
+      "alsoFailedInIssue62": true
+    },
+    {
+      "test": "creation input readiness observes delayed app-owned focus without taking it",
+      "location": "tests/property-editor-driver.test.mjs:113:1",
+      "kind": "synthetic_quit_timeout",
+      "alsoFailedInIssue62": true
+    },
+    {
+      "test": "installed workspace keyboard creation waits for the asynchronous folder selection",
+      "location": "tests/property-editor-driver.test.mjs:131:1",
+      "kind": "synthetic_quit_timeout",
+      "alsoFailedInIssue62": true
+    },
+    {
+      "test": "installed workspace keyboard driver retains its deadline when automatic creation never completes",
+      "location": "tests/property-editor-driver.test.mjs:167:1",
+      "kind": "synthetic_quit_timeout",
+      "alsoFailedInIssue62": false
+    },
+    {
+      "test": "keyboard discovery Apply retains its caller deadline when no reviewed preview becomes available",
+      "location": "tests/property-editor-driver.test.mjs:199:1",
+      "kind": "synthetic_quit_timeout",
+      "alsoFailedInIssue62": false
+    },
+    {
+      "test": "fixture cleanup errors retain a failed control's primary error and fail a successful control",
+      "location": "tests/rename-editor-readiness.test.mjs:114:1",
+      "kind": "cleanup_control_count",
+      "alsoFailedInIssue62": true
+    },
+    {
+      "test": "real Electron operands reject absent, hidden, disabled, unfocused and wrong-label editors",
+      "location": "tests/rename-editor-readiness.test.mjs:140:1",
+      "kind": "synthetic_quit_timeout",
+      "alsoFailedInIssue62": true
+    },
+    {
+      "test": "already-ready editor passes immediately with strict finite operands",
+      "location": "tests/rename-editor-readiness.test.mjs:182:1",
+      "kind": "synthetic_quit_timeout",
+      "alsoFailedInIssue62": true
+    },
+    {
+      "test": "runtime activation supports current tabs and the immutable baseline select with one action each",
+      "location": "tests/runtime-view-readiness.test.mjs:125:1",
+      "kind": "synthetic_quit_timeout",
+      "alsoFailedInIssue62": false
+    },
+    {
+      "test": "event-to-paint timing includes delayed committed work and excludes later driver observation",
+      "location": "tests/runtime-view-readiness.test.mjs:154:1",
+      "kind": "synthetic_quit_timeout",
+      "alsoFailedInIssue62": true
+    },
+    {
+      "test": "projection readiness rechecks fields invalidated during the first frame pair",
+      "location": "tests/runtime-view-readiness.test.mjs:207:1",
+      "kind": "synthetic_quit_timeout",
+      "alsoFailedInIssue62": false
+    },
+    {
+      "test": "readiness stabilization completes in the renderer before delayed driver result delivery",
+      "location": "tests/runtime-view-readiness.test.mjs:231:1",
+      "kind": "synthetic_quit_timeout",
+      "alsoFailedInIssue62": true
+    },
+    {
+      "test": "runtime language selection preserves current settings navigation and the immutable inline select",
+      "location": "tests/runtime-view-readiness.test.mjs:250:1",
+      "kind": "synthetic_quit_timeout",
+      "alsoFailedInIssue62": true
+    },
+    {
+      "test": "filter reset waits for enabled Save before its single keyboard action and full projection",
+      "location": "tests/runtime-view-readiness.test.mjs:310:1",
+      "kind": "synthetic_quit_timeout",
+      "alsoFailedInIssue62": true
+    },
+    {
+      "test": "explicit scheduling diagnostics record original native throttling and leave default observation unchanged",
+      "location": "tests/runtime-view-readiness.test.mjs:380:1",
+      "kind": "synthetic_quit_timeout",
+      "alsoFailedInIssue62": false
+    },
+    {
+      "test": "workspace readiness uses the visible exact selected identity when the old title is hidden",
+      "location": "tests/runtime-workspace-identity.test.mjs:14:1",
+      "kind": "synthetic_quit_timeout",
+      "alsoFailedInIssue62": false
+    },
+    {
+      "test": "source-root readiness and stress capture preserve localized context ownership with a duplicate retained settings path",
+      "location": "tests/runtime-workspace-identity.test.mjs:50:1",
+      "kind": "synthetic_quit_timeout",
+      "alsoFailedInIssue62": false
+    },
+    {
+      "test": "native layout measurement retains operation overflow and supported-window toolbar checks during below-minimum stress",
+      "location": "tests/runtime-workspace-identity.test.mjs:92:1",
+      "kind": "synthetic_quit_timeout",
+      "alsoFailedInIssue62": false
+    },
+    {
+      "test": "one removal gesture completes when a chosen hidden checkbox disappears during that gesture",
+      "location": "tests/selection-driver.test.mjs:14:1",
+      "kind": "synthetic_quit_timeout",
+      "alsoFailedInIssue62": false
+    },
+    {
+      "test": "Board layout closure waits for nested focus return before the next editor owns input",
+      "location": "tests/selection-driver.test.mjs:34:1",
+      "kind": "synthetic_quit_timeout",
+      "alsoFailedInIssue62": true
+    },
+    {
+      "test": "selection dismissal waits for asynchronous focus return to its exact trigger",
+      "location": "tests/selection-driver.test.mjs:62:1",
+      "kind": "synthetic_quit_timeout",
+      "alsoFailedInIssue62": false
+    },
+    {
+      "test": "en grouping closure completes its delayed focus return before the next selection opens",
+      "location": "tests/selection-driver.test.mjs:80:35",
+      "kind": "synthetic_quit_timeout",
+      "alsoFailedInIssue62": false
+    },
+    {
+      "test": "ru grouping closure completes its delayed focus return before the next selection opens",
+      "location": "tests/selection-driver.test.mjs:80:35",
+      "kind": "synthetic_quit_timeout",
+      "alsoFailedInIssue62": true
+    },
+    {
+      "test": "closing a selection finishes delayed focus return before reopening the same value editor",
+      "location": "tests/selection-driver.test.mjs:109:1",
+      "kind": "synthetic_quit_timeout",
+      "alsoFailedInIssue62": true
+    },
+    {
+      "test": "view actions dismiss the actual owning tools before a delayed grouping focus return in EN/RU",
+      "location": "tests/view-actions-native.test.mjs:37:1",
+      "kind": "synthetic_quit_timeout",
+      "alsoFailedInIssue62": false
+    },
+    {
+      "test": "native scroll restoration retains coordinates, cancels for user input and view changes, and clamps a shorter projection",
+      "location": "tests/view-scroll-native.test.mjs:43:1",
+      "kind": "synthetic_quit_timeout",
+      "alsoFailedInIssue62": true
+    },
+    {
+      "test": "native loading-history control inspection keeps keyboard scroll intent through later restoration notifications",
+      "location": "tests/view-scroll-native.test.mjs:97:1",
+      "kind": "synthetic_quit_timeout",
+      "alsoFailedInIssue62": true
+    }
+  ],
+  "inputs": [
+    {
+      "path": "package-lock.json",
+      "sha256": "576929a2b2b47a48a505d5a2df52f82dbdc38d9ccf18895d966cf1b7bc4d1502",
+      "baseSha256": "576929a2b2b47a48a505d5a2df52f82dbdc38d9ccf18895d966cf1b7bc4d1502",
+      "unchanged": true
+    },
+    {
+      "path": "package.json",
+      "sha256": "4c9ff1fbb7b023c8e2b02fbb25ef92b3b4229ec4f06498bfb5b0699e783b1590",
+      "baseSha256": "4c9ff1fbb7b023c8e2b02fbb25ef92b3b4229ec4f06498bfb5b0699e783b1590",
+      "unchanged": true
+    },
+    {
+      "path": "scripts/board-layout-driver.mjs",
+      "sha256": "37d92851948d436950c524706d4d8e0db286984fb8b3dfb7636ad726c53f3f07",
+      "baseSha256": "37d92851948d436950c524706d4d8e0db286984fb8b3dfb7636ad726c53f3f07",
+      "unchanged": true
+    },
+    {
+      "path": "scripts/file-manager-evidence.mjs",
+      "sha256": "3ca909852125ce4e673aa4d2606cb1554c2cb775d13b71731ba6f23d837417c5",
+      "baseSha256": "3ca909852125ce4e673aa4d2606cb1554c2cb775d13b71731ba6f23d837417c5",
+      "unchanged": true
+    },
+    {
+      "path": "scripts/native-bridge-evidence.mjs",
+      "sha256": "d8a61d4959a2561163e13ea5a109863d96c9e341230b85ccc894a92829340bb3",
+      "baseSha256": "d8a61d4959a2561163e13ea5a109863d96c9e341230b85ccc894a92829340bb3",
+      "unchanged": true
+    },
+    {
+      "path": "scripts/native-reveal-receipt.mjs",
+      "sha256": "13f494fca206de5b20b1f6e689a9dcdf9d9df469938046c18e39e5a118a1338f",
+      "baseSha256": "13f494fca206de5b20b1f6e689a9dcdf9d9df469938046c18e39e5a118a1338f",
+      "unchanged": true
+    },
+    {
+      "path": "scripts/performance-fixture.mjs",
+      "sha256": "3dc232706cb02f02f87f3596709bb7166ed7194a298c409a9307418233007d20",
+      "baseSha256": "3dc232706cb02f02f87f3596709bb7166ed7194a298c409a9307418233007d20",
+      "unchanged": true
+    },
+    {
+      "path": "scripts/property-editor-driver.mjs",
+      "sha256": "837e8107ad445552f900de87ac3f809d04207b41d2df186dd14885a6ab95cb4b",
+      "baseSha256": "837e8107ad445552f900de87ac3f809d04207b41d2df186dd14885a6ab95cb4b",
+      "unchanged": true
+    },
+    {
+      "path": "scripts/rename-editor-readiness.mjs",
+      "sha256": "56587e454c95088d0325c244d202e77f6b35a50c6831f90dca3693516fb3bddd",
+      "baseSha256": "56587e454c95088d0325c244d202e77f6b35a50c6831f90dca3693516fb3bddd",
+      "unchanged": true
+    },
+    {
+      "path": "scripts/rename-runtime-startup.mjs",
+      "sha256": "2d5242ce46eabc600fe7e303ad49124ba0bfdef938e07f9e29087a9d2910e677",
+      "baseSha256": "2d5242ce46eabc600fe7e303ad49124ba0bfdef938e07f9e29087a9d2910e677",
+      "unchanged": true
+    },
+    {
+      "path": "scripts/rename-submission-receipt.mjs",
+      "sha256": "7133a00cfdf2a401d51e4f5bedf84af63f434310d6c6105c0b05f83b88c4c9a4",
+      "baseSha256": "7133a00cfdf2a401d51e4f5bedf84af63f434310d6c6105c0b05f83b88c4c9a4",
+      "unchanged": true
+    },
+    {
+      "path": "scripts/runtime-context-tools.mjs",
+      "sha256": "5025b7e887acb84a0a01f51d97b924907905fa818e193584d0e55f2262e14a80",
+      "baseSha256": "5025b7e887acb84a0a01f51d97b924907905fa818e193584d0e55f2262e14a80",
+      "unchanged": true
+    },
+    {
+      "path": "scripts/runtime-control-scroll.mjs",
+      "sha256": "c2694e81002976c2590a9618ecb22d73019ac1de71646d33bead3eb4ce271c6e",
+      "baseSha256": "c2694e81002976c2590a9618ecb22d73019ac1de71646d33bead3eb4ce271c6e",
+      "unchanged": true
+    },
+    {
+      "path": "scripts/runtime-evidence.mjs",
+      "sha256": "54ebc36f83cb9e0f7062db2446f56188d8636c250e27dbb3efd1a98056476f12",
+      "baseSha256": "54ebc36f83cb9e0f7062db2446f56188d8636c250e27dbb3efd1a98056476f12",
+      "unchanged": true
+    },
+    {
+      "path": "scripts/runtime-executable.mjs",
+      "sha256": "a2851e6172a15d87b08c734e55fe806ed23dd201817ffe1f4ad43489d5558b1b",
+      "baseSha256": "a2851e6172a15d87b08c734e55fe806ed23dd201817ffe1f4ad43489d5558b1b",
+      "unchanged": true
+    },
+    {
+      "path": "scripts/runtime-layout.mjs",
+      "sha256": "5770956ca694da4754dfe7bdeb80a6b55df73e7531ebd490c60a15fd463784a6",
+      "baseSha256": "5770956ca694da4754dfe7bdeb80a6b55df73e7531ebd490c60a15fd463784a6",
+      "unchanged": true
+    },
+    {
+      "path": "scripts/runtime-lifecycle.mjs",
+      "sha256": "ab6aac78d7d6bc704e58ddddb648df682ff800e6005ceb96a8992cab975fd4c1",
+      "baseSha256": "ab6aac78d7d6bc704e58ddddb648df682ff800e6005ceb96a8992cab975fd4c1",
+      "unchanged": true
+    },
+    {
+      "path": "scripts/runtime-performance-backend-profile.mjs",
+      "sha256": "f6d4b97077c25c0aed929c10d32dd6a808a993f6c2f734f542666bfb7e2ef512",
+      "baseSha256": "f6d4b97077c25c0aed929c10d32dd6a808a993f6c2f734f542666bfb7e2ef512",
+      "unchanged": true
+    },
+    {
+      "path": "scripts/runtime-performance-probe.mjs",
+      "sha256": "5bc8d0a5aa4c13d09e5c57633eb5a9f3c0970271f6da1001bb998b3d72528db2",
+      "baseSha256": "5bc8d0a5aa4c13d09e5c57633eb5a9f3c0970271f6da1001bb998b3d72528db2",
+      "unchanged": true
+    },
+    {
+      "path": "scripts/runtime-performance-queries.mjs",
+      "sha256": "e7c4cd3ea3bcf484ed1f3305bb2458f0230110c384b074fe12bbcfca70c009c4",
+      "baseSha256": "e7c4cd3ea3bcf484ed1f3305bb2458f0230110c384b074fe12bbcfca70c009c4",
+      "unchanged": true
+    },
+    {
+      "path": "scripts/runtime-performance-timing.mjs",
+      "sha256": "93b41a523d4314f1f5b21fce6399c12ca6775d7a9f8b795565a3edb48219f3e1",
+      "baseSha256": "93b41a523d4314f1f5b21fce6399c12ca6775d7a9f8b795565a3edb48219f3e1",
+      "unchanged": true
+    },
+    {
+      "path": "scripts/runtime-presentation-controls.mjs",
+      "sha256": "a0947cc5f7cc2157db7fbe455595a3687b22478fc819487139ee09bb0e247515",
+      "baseSha256": "a0947cc5f7cc2157db7fbe455595a3687b22478fc819487139ee09bb0e247515",
+      "unchanged": true
+    },
+    {
+      "path": "scripts/runtime-project-visibility.mjs",
+      "sha256": "9e8dce496e21f4e74bcd5d9bd7361f1003300ac9c4c00018171c57314a46dd6f",
+      "baseSha256": "9e8dce496e21f4e74bcd5d9bd7361f1003300ac9c4c00018171c57314a46dd6f",
+      "unchanged": true
+    },
+    {
+      "path": "scripts/runtime-settings.mjs",
+      "sha256": "5a3ba3079cf1b14bb4a24f0f2a146a64cc17f0f67ffd7452841e1a652f5a5ace",
+      "baseSha256": "5a3ba3079cf1b14bb4a24f0f2a146a64cc17f0f67ffd7452841e1a652f5a5ace",
+      "unchanged": true
+    },
+    {
+      "path": "scripts/runtime-startup.mjs",
+      "sha256": "948c5cc507e000614c8abf706909347769a55934ec6626010bea9e583504036a",
+      "baseSha256": "948c5cc507e000614c8abf706909347769a55934ec6626010bea9e583504036a",
+      "unchanged": true
+    },
+    {
+      "path": "scripts/runtime-view-actions.mjs",
+      "sha256": "32daac7007c67e8416640373b6916ad54fb8175f2f4e0e1b1db8778f79f34b4a",
+      "baseSha256": "32daac7007c67e8416640373b6916ad54fb8175f2f4e0e1b1db8778f79f34b4a",
+      "unchanged": true
+    },
+    {
+      "path": "scripts/runtime-view-controls.mjs",
+      "sha256": "a3865ef30b37ef46451660db27507d23536d4cdd50d2ed1529eb03d373c02d41",
+      "baseSha256": "a3865ef30b37ef46451660db27507d23536d4cdd50d2ed1529eb03d373c02d41",
+      "unchanged": true
+    },
+    {
+      "path": "scripts/runtime-view-readiness.mjs",
+      "sha256": "5092327201962bfd7f3f8c054958ff5e76f69dea615319ce408c02cd5433dc16",
+      "baseSha256": "5092327201962bfd7f3f8c054958ff5e76f69dea615319ce408c02cd5433dc16",
+      "unchanged": true
+    },
+    {
+      "path": "scripts/selection-editor-driver.mjs",
+      "sha256": "17925e07779e5eb6a89838ab5845859cce399252fd7589f41bba1633605369fb",
+      "baseSha256": "17925e07779e5eb6a89838ab5845859cce399252fd7589f41bba1633605369fb",
+      "unchanged": true
+    },
+    {
+      "path": "scripts/smoke-performance.mjs",
+      "sha256": "09019fc434e56a6e48508b43bb7008d8f55d73faea0258097cd9d5d95557d78f",
+      "baseSha256": "09019fc434e56a6e48508b43bb7008d8f55d73faea0258097cd9d5d95557d78f",
+      "unchanged": true
+    },
+    {
+      "path": "scripts/smoke-project-rename-ui.mjs",
+      "sha256": "14669ddcaac1cc9ef66664703560b667e11a90c71ce704eb07004ba6305fdc76",
+      "baseSha256": "14669ddcaac1cc9ef66664703560b667e11a90c71ce704eb07004ba6305fdc76",
+      "unchanged": true
+    },
+    {
+      "path": "scripts/windows-selection-diagnostics.ps1",
+      "sha256": "0961731bfccfdc7d61dded1645cf8c4e1f675772e7c317b160bf5f73215297fc",
+      "baseSha256": "0961731bfccfdc7d61dded1645cf8c4e1f675772e7c317b160bf5f73215297fc",
+      "unchanged": true
+    },
+    {
+      "path": "scripts/workspace-install-driver.mjs",
+      "sha256": "5bdba8e21cd51c3386c7c8f4b2da79b0fa9cfb71bd68a28c0aad20bf50db2f6d",
+      "baseSha256": "5bdba8e21cd51c3386c7c8f4b2da79b0fa9cfb71bd68a28c0aad20bf50db2f6d",
+      "unchanged": true
+    },
+    {
+      "path": "scripts/workspace-management-driver.mjs",
+      "sha256": "9b6fdc44a3ac5f9fab2a6eb9a06ae8e46db03b7ffe79d210199231c905930674",
+      "baseSha256": "9b6fdc44a3ac5f9fab2a6eb9a06ae8e46db03b7ffe79d210199231c905930674",
+      "unchanged": true
+    },
+    {
+      "path": "src/contracts/board-layout.ts",
+      "sha256": "a894675375cdf7b040d55315316f26c7e750ca38b51d543d4819a04f6189cd9d",
+      "baseSha256": "a894675375cdf7b040d55315316f26c7e750ca38b51d543d4819a04f6189cd9d",
+      "unchanged": true
+    },
+    {
+      "path": "src/contracts/category-options.ts",
+      "sha256": "83546194b204785e2ae23e939d621b7135f5381e8875a3a6e6ffae07bcd93d96",
+      "baseSha256": "83546194b204785e2ae23e939d621b7135f5381e8875a3a6e6ffae07bcd93d96",
+      "unchanged": true
+    },
+    {
+      "path": "src/contracts/category-removal.ts",
+      "sha256": "9676111446ff2805e9b6a21f6d39c725413c17c1f13dd64049ce7100b903003e",
+      "baseSha256": "9676111446ff2805e9b6a21f6d39c725413c17c1f13dd64049ce7100b903003e",
+      "unchanged": true
+    },
+    {
+      "path": "src/contracts/data-recovery.ts",
+      "sha256": "55f2eb228ed25da4cf31e924c6a657cc6fa6b2416109cb3a26cd40dcd27b4509",
+      "baseSha256": "55f2eb228ed25da4cf31e924c6a657cc6fa6b2416109cb3a26cd40dcd27b4509",
+      "unchanged": true
+    },
+    {
+      "path": "src/contracts/desktop-api.ts",
+      "sha256": "40d8604489a9ab97cdf11f3bbfc714dfe442255e5a0d70e0463c798d09410bfe",
+      "baseSha256": "40d8604489a9ab97cdf11f3bbfc714dfe442255e5a0d70e0463c798d09410bfe",
+      "unchanged": true
+    },
+    {
+      "path": "src/contracts/group-assignment.ts",
+      "sha256": "55f959a2aae46396572025793465645aaa13a74305fc6a766df9d27a4a6ae536",
+      "baseSha256": "55f959a2aae46396572025793465645aaa13a74305fc6a766df9d27a4a6ae536",
+      "unchanged": true
+    },
+    {
+      "path": "src/contracts/metadata-removal.ts",
+      "sha256": "40376612162fac4a1d942c20a99eb58e5ddc236c970ac8835c7c09981ddf0c74",
+      "baseSha256": "40376612162fac4a1d942c20a99eb58e5ddc236c970ac8835c7c09981ddf0c74",
+      "unchanged": true
+    },
+    {
+      "path": "src/contracts/project-archive.ts",
+      "sha256": "0824a068a01d231bb6567289c0212ba35bdb6cceb9e4d93467137dae11db1070",
+      "baseSha256": "0824a068a01d231bb6567289c0212ba35bdb6cceb9e4d93467137dae11db1070",
+      "unchanged": true
+    },
+    {
+      "path": "src/contracts/project-category-move.ts",
+      "sha256": "b4b9240c997c80e6d786157c93494002d10b71b1a2b603c23331a0a500d63115",
+      "baseSha256": "b4b9240c997c80e6d786157c93494002d10b71b1a2b603c23331a0a500d63115",
+      "unchanged": true
+    },
+    {
+      "path": "src/contracts/project-creation.ts",
+      "sha256": "288cd81e2e76a07da87f4eb94d8d255880999b71cbf914fd23458e64917cbfa7",
+      "baseSha256": "288cd81e2e76a07da87f4eb94d8d255880999b71cbf914fd23458e64917cbfa7",
+      "unchanged": true
+    },
+    {
+      "path": "src/contracts/project-files.ts",
+      "sha256": "540824a5ebbccb8d1c7347f3215ddc4d107703ef97a350e13b832a60c723ed04",
+      "baseSha256": "540824a5ebbccb8d1c7347f3215ddc4d107703ef97a350e13b832a60c723ed04",
+      "unchanged": true
+    },
+    {
+      "path": "src/contracts/project-recovery.ts",
+      "sha256": "0fe9ebd427564e9d18a4c081295bb230bc8763b6ca6499a8753a4520a55ce5e2",
+      "baseSha256": "0fe9ebd427564e9d18a4c081295bb230bc8763b6ca6499a8753a4520a55ce5e2",
+      "unchanged": true
+    },
+    {
+      "path": "src/contracts/project-rename.ts",
+      "sha256": "7d51f7338d0e5876fa52306c910567d80e87713f40e2fec86738e5f1be354771",
+      "baseSha256": "7d51f7338d0e5876fa52306c910567d80e87713f40e2fec86738e5f1be354771",
+      "unchanged": true
+    },
+    {
+      "path": "src/contracts/project-reveal.ts",
+      "sha256": "267d634f7a1b5dc3eef1f2f8c8270b6b992ffd22e8afcdc2f4fbbc397888b62c",
+      "baseSha256": "267d634f7a1b5dc3eef1f2f8c8270b6b992ffd22e8afcdc2f4fbbc397888b62c",
+      "unchanged": true
+    },
+    {
+      "path": "src/contracts/service-protocol.ts",
+      "sha256": "15ec488dd7ba73fd6e7b5f135780f773be693140df909c365965f9fbbf768f2a",
+      "baseSha256": "15ec488dd7ba73fd6e7b5f135780f773be693140df909c365965f9fbbf768f2a",
+      "unchanged": true
+    },
+    {
+      "path": "src/contracts/settings.ts",
+      "sha256": "e99f39879a0439024168748fa8f16b6b088a2baa1412d797ca174625ad119be5",
+      "baseSha256": "e99f39879a0439024168748fa8f16b6b088a2baa1412d797ca174625ad119be5",
+      "unchanged": true
+    },
+    {
+      "path": "src/contracts/startup-diagnostic.ts",
+      "sha256": "a3976787fe86000f1d65eea7c96479863bf7fa65aaf0591146031a52c49351a3",
+      "baseSha256": "a3976787fe86000f1d65eea7c96479863bf7fa65aaf0591146031a52c49351a3",
+      "unchanged": true
+    },
+    {
+      "path": "src/contracts/table-layout.ts",
+      "sha256": "e390bd9b811512e75efbc628612fc6f571826a3bf1d67f4489634b16494967eb",
+      "baseSha256": "e390bd9b811512e75efbc628612fc6f571826a3bf1d67f4489634b16494967eb",
+      "unchanged": true
+    },
+    {
+      "path": "src/contracts/text-properties.ts",
+      "sha256": "bea63395b0bd487a4904e633cbe429289552851123620c55c92d28c88bd8cd7e",
+      "baseSha256": "bea63395b0bd487a4904e633cbe429289552851123620c55c92d28c88bd8cd7e",
+      "unchanged": true
+    },
+    {
+      "path": "src/contracts/view-filters.ts",
+      "sha256": "9f3969c0e3f95ef32bc2552fe72e95fdcac2d28c2c4c2b9cf64b9f746c32db21",
+      "baseSha256": "9f3969c0e3f95ef32bc2552fe72e95fdcac2d28c2c4c2b9cf64b9f746c32db21",
+      "unchanged": true
+    },
+    {
+      "path": "src/contracts/view-grouping.ts",
+      "sha256": "aae7d4495cb0e0dced89934e37bd5f63d57680188e529e26e570f45e189b2905",
+      "baseSha256": "aae7d4495cb0e0dced89934e37bd5f63d57680188e529e26e570f45e189b2905",
+      "unchanged": true
+    },
+    {
+      "path": "src/contracts/views.ts",
+      "sha256": "6fdc6e8e0c78146ca577e4fab492b226aca7aa8b71e15834366182095921f091",
+      "baseSha256": "6fdc6e8e0c78146ca577e4fab492b226aca7aa8b71e15834366182095921f091",
+      "unchanged": true
+    },
+    {
+      "path": "src/contracts/workspace-sessions.ts",
+      "sha256": "fe49d8643d8ea07e5c0a58d0517770ce7cd58067c985f2f0e9a42423b27edd07",
+      "baseSha256": "fe49d8643d8ea07e5c0a58d0517770ce7cd58067c985f2f0e9a42423b27edd07",
+      "unchanged": true
+    },
+    {
+      "path": "src/contracts/workspaces.ts",
+      "sha256": "d82e99d812db0b7fed9fd60037a96091aca1d857dc233111fb1755f19d86e310",
+      "baseSha256": "d82e99d812db0b7fed9fd60037a96091aca1d857dc233111fb1755f19d86e310",
+      "unchanged": true
+    },
+    {
+      "path": "src/renderer/components/ContextTools.tsx",
+      "sha256": "9cc055483d98dabfe3a038d83601900d64710d3cc0859d429ef25adc981adc08",
+      "baseSha256": "9cc055483d98dabfe3a038d83601900d64710d3cc0859d429ef25adc981adc08",
+      "unchanged": true
+    },
+    {
+      "path": "src/renderer/components/DailyControls.tsx",
+      "sha256": "580c4d50acf7e5d488c31527c26d646b76ed6af7559cd06ed7fe4415d2a6380d",
+      "baseSha256": "580c4d50acf7e5d488c31527c26d646b76ed6af7559cd06ed7fe4415d2a6380d",
+      "unchanged": true
+    },
+    {
+      "path": "src/renderer/components/Hint.tsx",
+      "sha256": "13cc818939b5d5ee528dc7bbdb37b68827df0903f4dfa89a9cb3e8e327bfc103",
+      "baseSha256": "13cc818939b5d5ee528dc7bbdb37b68827df0903f4dfa89a9cb3e8e327bfc103",
+      "unchanged": true
+    },
+    {
+      "path": "src/renderer/components/Icons.tsx",
+      "sha256": "6490e22ba862f6f4589190d42802f34ca17514a0c53f9e2eb59d33a2e7f80a32",
+      "baseSha256": "6490e22ba862f6f4589190d42802f34ca17514a0c53f9e2eb59d33a2e7f80a32",
+      "unchanged": true
+    },
+    {
+      "path": "src/renderer/components/ScalarDrafts.tsx",
+      "sha256": "b376d1b44e4d24001b45b8c5ea61af4f0e934826be38542f8239a75d1248b22d",
+      "baseSha256": "b376d1b44e4d24001b45b8c5ea61af4f0e934826be38542f8239a75d1248b22d",
+      "unchanged": true
+    },
+    {
+      "path": "src/renderer/components/ViewsPanel.tsx",
+      "sha256": "47550aeff2ef0040b2e18aa9e570ea5cd33c2b9a9cd185ec45b3e75b1cf654a0",
+      "baseSha256": "47550aeff2ef0040b2e18aa9e570ea5cd33c2b9a9cd185ec45b3e75b1cf654a0",
+      "unchanged": true
+    },
+    {
+      "path": "src/renderer/components/bb-foundation.tsx",
+      "sha256": "230317bb67b0d4601e6a6eb31ff3b9ef6e9974d7b27585a31cf92795ec37b5f3",
+      "baseSha256": "230317bb67b0d4601e6a6eb31ff3b9ef6e9974d7b27585a31cf92795ec37b5f3",
+      "unchanged": true
+    },
+    {
+      "path": "src/renderer/components/useViewScroll.ts",
+      "sha256": "017f6998cdfa0b3d7883aebe5bb2520629c18c91aa00fe7bc3ff5d143513806a",
+      "baseSha256": "017f6998cdfa0b3d7883aebe5bb2520629c18c91aa00fe7bc3ff5d143513806a",
+      "unchanged": true
+    },
+    {
+      "path": "src/renderer/localization.ts",
+      "sha256": "94651b814f04a8d2f8daa1e5d5bdf433232019411d0dc727d0c0c5d81e8cc1c2",
+      "baseSha256": "cd449ec622e6ce67d9ca94b7180b244fce5e74c29da3e7f72fb24fbb10ff3b4d",
+      "unchanged": false
+    },
+    {
+      "path": "src/renderer/workspace-service-client.ts",
+      "sha256": "a6c9a310105d18e71404f0326633b90fe1f350b901523fcaaedd9d8a7e423039",
+      "baseSha256": "a6c9a310105d18e71404f0326633b90fe1f350b901523fcaaedd9d8a7e423039",
+      "unchanged": true
+    },
+    {
+      "path": "tests/fixtures/rename-editor-readiness-electron.cjs",
+      "sha256": "3c2260608a74e6a999c2834a15220c99ff197e93d75c95bb8f9b86ed5624cc21",
+      "baseSha256": "3c2260608a74e6a999c2834a15220c99ff197e93d75c95bb8f9b86ed5624cc21",
+      "unchanged": true
+    },
+    {
+      "path": "tests/property-editor-driver.test.mjs",
+      "sha256": "d9f8eaf77848a65fdbd2f8c5ddf6650b57d5207ce1d4d7b63a68a20dc62cd69e",
+      "baseSha256": "d9f8eaf77848a65fdbd2f8c5ddf6650b57d5207ce1d4d7b63a68a20dc62cd69e",
+      "unchanged": true
+    },
+    {
+      "path": "tests/rename-editor-readiness.test.mjs",
+      "sha256": "e53b0dd3bab691dcafdef9dbbb90592b72402bb5b62abd81b5e79186aca46e96",
+      "baseSha256": "e53b0dd3bab691dcafdef9dbbb90592b72402bb5b62abd81b5e79186aca46e96",
+      "unchanged": true
+    },
+    {
+      "path": "tests/runtime-view-readiness.test.mjs",
+      "sha256": "1fe0f53b6f83faa4f8cc83b556c615741704e698a43e446ab0d76a20b3936922",
+      "baseSha256": "1fe0f53b6f83faa4f8cc83b556c615741704e698a43e446ab0d76a20b3936922",
+      "unchanged": true
+    },
+    {
+      "path": "tests/runtime-workspace-identity.test.mjs",
+      "sha256": "a8840229f6af3aea65ff4b3eec44d215752a2d6480b6a7775dc7d724bf2f55a4",
+      "baseSha256": "a8840229f6af3aea65ff4b3eec44d215752a2d6480b6a7775dc7d724bf2f55a4",
+      "unchanged": true
+    },
+    {
+      "path": "tests/selection-driver.test.mjs",
+      "sha256": "70d911dab4e0ad266df0e81aa037b2ffd53f0c37c48eaf20e2acc026b9e278ac",
+      "baseSha256": "70d911dab4e0ad266df0e81aa037b2ffd53f0c37c48eaf20e2acc026b9e278ac",
+      "unchanged": true
+    },
+    {
+      "path": "tests/view-actions-native.test.mjs",
+      "sha256": "df9ef4aca7db2e309126a38491c0cfdc06fa2076ff13d08d2c950fb5a7b9ed1c",
+      "baseSha256": "df9ef4aca7db2e309126a38491c0cfdc06fa2076ff13d08d2c950fb5a7b9ed1c",
+      "unchanged": true
+    },
+    {
+      "path": "tests/view-scroll-native.test.mjs",
+      "sha256": "53a59ba532ec685ba7588c9b0c2ea14e67891666f723c1ff1fd17ab674d27809",
+      "baseSha256": "53a59ba532ec685ba7588c9b0c2ea14e67891666f723c1ff1fd17ab674d27809",
+      "unchanged": true
+    }
+  ],
+  "reviewedInputDelta": "Only src/renderer/localization.ts differs in the fixture import closure: two additive contextual Sources labels. Synthetic main/quit fixture, native adapters, driver actions and asserted native quit deadline are unchanged. No changed application root, DiscoveryPanel, DesktopShell, ProjectOperationDialog or stylesheet is loaded by these failing fixtures.",
+  "ownership": "Broader synthetic quit/cleanup watchpoint retained under #67/#42 as in #62; no full-green or repair claim."
+}

@@ -1570,3 +1570,23 @@ explicitly uses `WORKSPACE_REVEAL_TRACE=0`; only the following original native
 diagnostic receives trace=1, and a third strict native step uses trace=0. This
 prevents diagnostic output from changing strict finite-protocol assertions.
 The passed macOS focused receipt remains at its actual SHA.
+
+## Retained project recovery
+
+For #65, `checks: desktop-ux` with `desktop_ux_profile: retained-recovery`
+selects current recovery/reconciliation/mode/session/backup/archive/file service
+contracts and affected renderer/navigation/dialog consumers on macOS latest,
+Windows latest and Windows 2022. Native development and packaged consumers
+exercise retained missing/excluded/mode-inactive/archived/source-outage contexts,
+explicit reassociation, verified external rename, current files/values and restart.
+Original sessions, data recovery and archive journeys remain; development project
+navigation and packaged Views renew related consumers. Packages retain resource
+and license inspection. Commands run serially and propagate failures.
+
+`work/issue-65-*` contains whole-window EN/RU, light/dark, both-size captures,
+current token/identity checks, source-outage geometry, normal application/backend
+shutdown and asserted owned-fixture cleanup. Provenance records SHA/run/attempt,
+host and selected profile. An earlier failed or diagnostic local report is retained
+as such; it never supplies normal shutdown or restart acceptance. Ordinary/full,
+installer and release defaults remain unchanged. Final #67/#42 acceptance must
+include this recovery scope and its retained product guarantees.

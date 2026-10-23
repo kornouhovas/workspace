@@ -1,0 +1,374 @@
+{
+  "base": "90c4fbdb04f1720ecf174fd8b388bb39c0fb36cd",
+  "workingTree": true,
+  "node": "22.21.1",
+  "platform": "darwin",
+  "kernel": "27.0.0",
+  "command": "node scripts/smoke-retained-recovery.mjs dev",
+  "reportSha256": "53ac958de8c53d311bef06b4fc8a310fbeb92001f47488f615080676eb2ae797",
+  "status": "passed",
+  "checks": [
+    "restart revalidates missing availability and preserves unique ordered tabs without cached files",
+    "EN/RU light/dark both supported sizes: preview/expanded missing/review, Escape/focus, source settings and return",
+    "explicit contained current review preserves logical identity, ordinary values and old bytes; fresh target tree replaces old content",
+    "verified external rename refreshes the same retained project and tree",
+    "archived retained context keeps ordinary editing and disables filesystem access; reviewed restore preserves identity",
+    "root outage/restart retains tabs without mass missing; Sources and Backup remain reachable; reconnect revalidates files",
+    "current exclusions and mode inactivity remain distinct retained states with preserved ordinary values"
+  ],
+  "shutdowns": [
+    {
+      "normalQuit": true,
+      "backendsExited": true
+    },
+    {
+      "normalQuit": true,
+      "backendsExited": true
+    },
+    {
+      "normalQuit": true,
+      "backendsExited": true
+    }
+  ],
+  "cleanup": {
+    "status": "passed",
+    "asserted": true,
+    "processesStopped": true,
+    "maxRetries": 5,
+    "retryDelay": 100
+  },
+  "inputs": {
+    "src/renderer/App.tsx": "66ca9999e4162cb80e0d1320c1b98bb230e764c1d13e07fbba955316b0a1c5bc",
+    "src/renderer/app.css": "21bb2aef938a62fb27685fcf2e2cb425a5bcf2c0305e3f6b5d6c7a5a6c195aa8",
+    "src/renderer/components/DesktopShell.tsx": "788d3495ecb2f700eee8faaa60d3bfe0b2543341ab0e565ae0c4a13d34145dd1",
+    "src/renderer/components/DiscoveryPanel.tsx": "7b1fbed4b6c3e96171b7bbea8203addf826676297579e61913bd81db66a8e764",
+    "src/renderer/components/ProjectOperationDialog.tsx": "3557bd61aca2b31c7c7abdc9353b417970382ab6b7d3419e2476bb2bc2233024",
+    "src/renderer/components/TextPropertiesTable.tsx": "64de23aca491db3dcfba4c1fb975bec405e17fdbe2c5d6f789c68eb86f11552c",
+    "src/renderer/components/SettingsNavigation.ts": "d88ea8a93780fd93130d819403652108c4f88f36e1288f25e7e2cfa9b6170da8",
+    "src/renderer/components/project-availability.ts": "da3dbdf077a666b0dc610619798cc1c8a961f4ed65804ccb57a2115e5f0f1284",
+    "src/renderer/localization.ts": "94651b814f04a8d2f8daa1e5d5bdf433232019411d0dc727d0c0c5d81e8cc1c2",
+    "scripts/smoke-retained-recovery.mjs": "2c438d313900c04731a456d94b9212d7b434d11cf52e2f7f4b98278895efa242"
+  },
+  "captures": [
+    {
+      "name": "en-light-1024-expanded-missing.png",
+      "sha256": "bbff8cea8d7adf354871aa14a31492d2314299b67429d979a52f6785c598b531",
+      "retained": false
+    },
+    {
+      "name": "en-light-1024-expanded-review.png",
+      "sha256": "b619bc7f4d7c71ddf8f31b3a9f6a16c4d24dfac863307ecff2ecd7d9bc104e84",
+      "retained": false
+    },
+    {
+      "name": "en-light-1024-preview-missing.png",
+      "sha256": "00c1121496f2be6b5e995b75ab79d30423b0b5c130d8f031986eab69d31902c9",
+      "retained": true
+    },
+    {
+      "name": "en-light-1024-preview-review.png",
+      "sha256": "b17a92aaec786aa662437ad570d120d48b869832dcbf1d5432d2401e0fb68aa0",
+      "retained": false
+    },
+    {
+      "name": "en-light-1440-expanded-missing.png",
+      "sha256": "802cc4a8170aa14d1a58fb4cf13e22422373c3e0009599a17614c5af21238171",
+      "retained": false
+    },
+    {
+      "name": "en-light-1440-expanded-review.png",
+      "sha256": "ea59a64bf964e9a5b23c841e6d37433e0627dfa85b8fb12e639459738b828801",
+      "retained": false
+    },
+    {
+      "name": "en-light-1440-preview-missing.png",
+      "sha256": "24b582a1aa27fe99045838892a0495cf0abe52573cfc205a7b1228080ebe15f0",
+      "retained": false
+    },
+    {
+      "name": "en-light-1440-preview-review.png",
+      "sha256": "39953203b463d3271c34e6bc96ed05055352bd824939b7f81d9648be2b82d63f",
+      "retained": false
+    },
+    {
+      "name": "en-dark-1024-expanded-missing.png",
+      "sha256": "f4baef4ba89f87af16f0720ed1ca4f58ac1017a35bbd78bf8295f335ad9bc487",
+      "retained": false
+    },
+    {
+      "name": "en-dark-1024-expanded-review.png",
+      "sha256": "e1941a56df02dcacddf8ac38e059589a78f84b660169755e1bb42cd0f2fb8536",
+      "retained": false
+    },
+    {
+      "name": "en-dark-1024-preview-missing.png",
+      "sha256": "6327ee22ec1d41d4ddcbac6244be405f6306d18203af4b44046c6fa6bde9a82b",
+      "retained": false
+    },
+    {
+      "name": "en-dark-1024-preview-review.png",
+      "sha256": "57997be1f3ab451f947a9026a914e8542f8f8ca64a36330ae5a1fc50196bac1a",
+      "retained": false
+    },
+    {
+      "name": "en-dark-1440-expanded-missing.png",
+      "sha256": "4f3488f722a9bb62a6a12b5c9422e62df3de5450be2d90154cfc2f0dd04eefff",
+      "retained": false
+    },
+    {
+      "name": "en-dark-1440-expanded-review.png",
+      "sha256": "4303764e7a3f76494c5a3f26d33f673a0009b100ebddf243dde3774f44b269ca",
+      "retained": false
+    },
+    {
+      "name": "en-dark-1440-preview-missing.png",
+      "sha256": "c7fe55153504b7748b83f6f44335bf96d6ba6e1a0ddcdca17b5d9b6b08c173df",
+      "retained": false
+    },
+    {
+      "name": "en-dark-1440-preview-review.png",
+      "sha256": "381a21b069f485ee26f0a760cb56740ff2d62a486089a02b2c1b86c9241f6270",
+      "retained": false
+    },
+    {
+      "name": "ru-light-1024-expanded-missing.png",
+      "sha256": "17a7431e14511bd2e11cd129bee7635f98b27a671dc7245c6bef0aa5b2623082",
+      "retained": false
+    },
+    {
+      "name": "ru-light-1024-expanded-review.png",
+      "sha256": "2f8f36a1fadd47ef4adc0ebe8b56bc04216076ed274bc7533e0042b6b574b750",
+      "retained": false
+    },
+    {
+      "name": "ru-light-1024-preview-missing.png",
+      "sha256": "56f937dd4a20f0e3a96c48236e0b7d1c549ee707305e93a3e5de08d892f60f14",
+      "retained": false
+    },
+    {
+      "name": "ru-light-1024-preview-review.png",
+      "sha256": "c91d067f769b84a3c9acb816231ab9f8dd00d552e288ed26961dbaba165bf2bc",
+      "retained": false
+    },
+    {
+      "name": "ru-light-1440-expanded-missing.png",
+      "sha256": "9ac098ae38f7a8b45718497cce32677f1e3030dd65b861d00c0e037a499421d4",
+      "retained": false
+    },
+    {
+      "name": "ru-light-1440-expanded-review.png",
+      "sha256": "3353c0a364b5e3814a45c1e2f312b8f494762766b3ac7a82572a2e6ab8ad651f",
+      "retained": false
+    },
+    {
+      "name": "ru-light-1440-preview-missing.png",
+      "sha256": "7f8b1446980dc901869ae391178ad7fa6abd94ec7d9673c1486b70748147d2c3",
+      "retained": false
+    },
+    {
+      "name": "ru-light-1440-preview-review.png",
+      "sha256": "aaf66f78c166a60745793bea8bdc0a2fc94e51da8138c41da9bc0ce24ce318c1",
+      "retained": false
+    },
+    {
+      "name": "ru-dark-1024-expanded-missing.png",
+      "sha256": "7892ba23d40993701aee733f77fc1cd351fa7b4407402f7d46fb613811e60b6a",
+      "retained": false
+    },
+    {
+      "name": "ru-dark-1024-expanded-review.png",
+      "sha256": "fc40c224425ac5eb0bd1ae7ee8951b0f5f95b3162e12660d830a5d7b7c438c5b",
+      "retained": false
+    },
+    {
+      "name": "ru-dark-1024-preview-missing.png",
+      "sha256": "d14d2dcaa3330d73415a2d11fd1c08d9720e848e953befbf1d88cc11b9338873",
+      "retained": false
+    },
+    {
+      "name": "ru-dark-1024-preview-review.png",
+      "sha256": "1984d132f1b9c5170c67d9c9bde343ffadf4a5294b95b86f2e382b89440dc894",
+      "retained": true
+    },
+    {
+      "name": "ru-dark-1440-expanded-missing.png",
+      "sha256": "4ce023b15b05818af5e202c028070756aa4d54978be0e394e7c8eeaa77d66360",
+      "retained": false
+    },
+    {
+      "name": "ru-dark-1440-expanded-review.png",
+      "sha256": "937af85806d2dc1a8493908bd9ec085aa8734e4977104db61d065bd7e9125146",
+      "retained": false
+    },
+    {
+      "name": "ru-dark-1440-preview-missing.png",
+      "sha256": "9bc2c63137e5d629359bd1040d42cc2f9b02a4780f39f3e05ec1212c15947b6e",
+      "retained": false
+    },
+    {
+      "name": "ru-dark-1440-preview-review.png",
+      "sha256": "161f9689abfa6335b2598ba278770e71ddf6fc5f7e2a7c923a88d28a644fefdb",
+      "retained": false
+    },
+    {
+      "name": "archived-editable-en-light-1024.png",
+      "sha256": "db54b41b6d63fadb770f5c8d665fea1f048a7af3162403f7b30a6d3c72fdb315",
+      "retained": false
+    },
+    {
+      "name": "archived-editable-en-light-1440.png",
+      "sha256": "d526d3efae47cb9301dd82707cf2d1e9b547fefc687a62c73d59945663317e5c",
+      "retained": false
+    },
+    {
+      "name": "archived-editable-en-dark-1024.png",
+      "sha256": "7d2b3dc9886a518c3fb2e337b0ddb4000bc2bd72560badaf0b060c0e9e2cedef",
+      "retained": false
+    },
+    {
+      "name": "archived-editable-en-dark-1440.png",
+      "sha256": "6f03ba2cff99c92957bb4d9f5f21684fff913a85563bfa4fa30b5757cb3e18e6",
+      "retained": false
+    },
+    {
+      "name": "archived-editable-ru-light-1024.png",
+      "sha256": "2ab6c25c8713aadfdca8150edebd4e83f80368dc7a549c53723c37a66877008d",
+      "retained": true
+    },
+    {
+      "name": "archived-editable-ru-light-1440.png",
+      "sha256": "3433bd221552d011f84f7b7791ac4d0fb374a0aa4f029e05330c040235a6fd24",
+      "retained": false
+    },
+    {
+      "name": "archived-editable-ru-dark-1024.png",
+      "sha256": "492f5b563d39299ba19a7f53dac7154bc571a4ec72e59b5a8c54b7dfd0d481e8",
+      "retained": false
+    },
+    {
+      "name": "archived-editable-ru-dark-1440.png",
+      "sha256": "e02af683433eeabe2f242cf87311f51e4d6f5523e7bc448973c3dda0ebf38269",
+      "retained": false
+    },
+    {
+      "name": "source-unavailable-en-light-1024.png",
+      "sha256": "7edf999162366e00c8a6846c06f224354070b791f623f0711f77c196f837a225",
+      "retained": false
+    },
+    {
+      "name": "source-unavailable-en-light-1440.png",
+      "sha256": "94db38430aafd336ce786c65e72bd594a976efc5da7813b7e26da7e4a381b635",
+      "retained": false
+    },
+    {
+      "name": "source-unavailable-en-dark-1024.png",
+      "sha256": "11480def6b1daa66c7e4925f79e0ec38af8b7e6ac84ab643f061644dbf106c72",
+      "retained": false
+    },
+    {
+      "name": "source-unavailable-en-dark-1440.png",
+      "sha256": "ff5b9f694f5dc6a3ec6547af4c67b98e99a7f346f8a3d1fce96dc10fdc9cc672",
+      "retained": true
+    },
+    {
+      "name": "source-unavailable-ru-light-1024.png",
+      "sha256": "4680e6c2a3f85d79b1da886c5eeb631046184b7ade5405a18da546e73c852268",
+      "retained": false
+    },
+    {
+      "name": "source-unavailable-ru-light-1440.png",
+      "sha256": "182188d771da2f69a162ae7655feb3d8e1c30bf578c49e9b842b004d40d063d6",
+      "retained": false
+    },
+    {
+      "name": "source-unavailable-ru-dark-1024.png",
+      "sha256": "fbb32207a90f1da8b036e65b45491e52ac9e636c6e0b54d296472732ac3e9132",
+      "retained": false
+    },
+    {
+      "name": "source-unavailable-ru-dark-1440.png",
+      "sha256": "65f40110e706194642c76c435a8a464e302e4a0b6ae9f3309164b5febb9516dd",
+      "retained": false
+    },
+    {
+      "name": "excluded-retained-en-light-1024.png",
+      "sha256": "539d752043622f34dc855f3fb954b9ea9c3fea8f5f018da3ae04b4e9ebd7fae8",
+      "retained": false
+    },
+    {
+      "name": "excluded-retained-en-light-1440.png",
+      "sha256": "9b9f4dbf813ed0ea38880505ffa3d0981d8347670693e8511885d8375b4b4ca3",
+      "retained": true
+    },
+    {
+      "name": "excluded-retained-en-dark-1024.png",
+      "sha256": "16777f1e296db168258c37af855c750ec7a5c9a65c315c553c81c40875505bd5",
+      "retained": false
+    },
+    {
+      "name": "excluded-retained-en-dark-1440.png",
+      "sha256": "072e0205d71b6691c69f9bbe24c426e70343d5ebf54362556ab482822d4a76d9",
+      "retained": false
+    },
+    {
+      "name": "excluded-retained-ru-light-1024.png",
+      "sha256": "d752b6c8941557dde1c061709f732b55ff26d5ac727a8984167e44a4f4699ee1",
+      "retained": false
+    },
+    {
+      "name": "excluded-retained-ru-light-1440.png",
+      "sha256": "a10104d93d145fd9ad44fa6251dcf8306362e3ef7d1f6fb50528e3a2ab54818f",
+      "retained": false
+    },
+    {
+      "name": "excluded-retained-ru-dark-1024.png",
+      "sha256": "df0448279578777b8d5a6fe9d9465ce6425080b6b296f2a684edc6c3e4e9a7b9",
+      "retained": false
+    },
+    {
+      "name": "excluded-retained-ru-dark-1440.png",
+      "sha256": "f90c65186f320dacc678875f935bb31617246e33dab6ca9e774b818669f1eb24",
+      "retained": false
+    },
+    {
+      "name": "mode-inactive-retained-en-light-1024.png",
+      "sha256": "255161522cd0d76a23146401a4f7512f042e634df3cae4c978477d915608fe14",
+      "retained": false
+    },
+    {
+      "name": "mode-inactive-retained-en-light-1440.png",
+      "sha256": "256c5feab990fe9af8fe64bd112994953c2b3577bce8cdbe7b6dbbf9fca16eef",
+      "retained": false
+    },
+    {
+      "name": "mode-inactive-retained-en-dark-1024.png",
+      "sha256": "72a88f9b9a770eacf9641470459d681cce5ba2a42a35f9a88bc40cafcc192bbc",
+      "retained": false
+    },
+    {
+      "name": "mode-inactive-retained-en-dark-1440.png",
+      "sha256": "bacba80c79f287deb9345da78d905c0ff320735c776d31583405e4a48bc01e8e",
+      "retained": false
+    },
+    {
+      "name": "mode-inactive-retained-ru-light-1024.png",
+      "sha256": "8276a1444fb6feb10bc36502d34d5a317f51419275d6c649d6e5627b9483df86",
+      "retained": false
+    },
+    {
+      "name": "mode-inactive-retained-ru-light-1440.png",
+      "sha256": "67715a52089e0cfd1d00a27f3a561f8f53d112a4ed7fd809606eda304f413148",
+      "retained": false
+    },
+    {
+      "name": "mode-inactive-retained-ru-dark-1024.png",
+      "sha256": "90d9ffdc50d1d13883508274f2201a1b63341f707706843aeecb87ee915f2ea3",
+      "retained": true
+    },
+    {
+      "name": "mode-inactive-retained-ru-dark-1440.png",
+      "sha256": "410c5356f4722fa90828a52bb9a747822648f27438a459bb46bcf7b1f97e35d7",
+      "retained": false
+    }
+  ]
+}

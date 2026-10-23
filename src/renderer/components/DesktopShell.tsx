@@ -1,3 +1,4 @@
+import { SettingsNavigationContext, type RecoverySettingsSection } from "./SettingsNavigation.js";
 import { useDraftGuard } from "./ScalarDrafts.js";
 import { useWorkspaceSession } from "./WorkspaceSession.js";
 import { AreaResize } from "./AreaResize.js";
@@ -108,10 +109,13 @@ export function DesktopShell({ language, data, busy, locked, onCreate, onManage,
       onEmptyWorkspaceShown();
     } else (previousFocus.current?.isConnected ? previousFocus.current : settingsButton.current)?.focus({ preventScroll: true });
   }, [open, busy, onEmptyWorkspaceShown]);
-  const enter = () => transition(() => {
+  const openSettings = (next: Section) => transition(() => {
+    if (locked || historyPending) return;
+    setSection(next);
     previousFocus.current = document.activeElement instanceof HTMLElement ? document.activeElement : settingsButton.current;
     changedPage.current = true; setOpen(true);
   });
+  const enter = () => openSettings(section);
   const back = () => { changedPage.current = true; setOpen(false); };
   const previousCount = useRef(data?.workspaces.length ?? 0);
   useEffect(() => {
@@ -132,7 +136,7 @@ export function DesktopShell({ language, data, busy, locked, onCreate, onManage,
     }
   };
   const panels = renderPanels(back);
-  return <Tabs.Root className={`desktop-shell bg-background text-foreground${collapsed?" desktop-shell--collapsed":""}`} style={{"--sidebar-width":`${sidebarWidth}px`} as React.CSSProperties} orientation="vertical" activationMode="manual" value={section} onValueChange={value => setSection(value as Section)}>
+  return <SettingsNavigationContext.Provider value={{ open: (next: RecoverySettingsSection) => openSettings(next), workspaceVisible: !open }}><Tabs.Root className={`desktop-shell bg-background text-foreground${collapsed?" desktop-shell--collapsed":""}`} style={{"--sidebar-width":`${sidebarWidth}px`} as React.CSSProperties} orientation="vertical" activationMode="manual" value={section} onValueChange={value => setSection(value as Section)}>
     <aside className="desktop-sidebar" aria-label={open ? l.settings : l.workspaces}>
       <div className="sidebar-navigation"><div className="desktop-brand">Workspace</div>{!collapsed && navigationControls}</div>
       {historyError && <p role="status">{n.destination}</p>}
@@ -183,5 +187,5 @@ export function DesktopShell({ language, data, busy, locked, onCreate, onManage,
         </Tabs.Content>)}
       </div>
     </div>
-  </Tabs.Root>;
+  </Tabs.Root></SettingsNavigationContext.Provider>;
 }

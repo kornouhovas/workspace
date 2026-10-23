@@ -1,3 +1,5 @@
+import { retainedProjectAvailability } from "./project-availability.js";
+import { useSettingsNavigation } from "./SettingsNavigation.js";
 import { ScalarDrafts } from "./ScalarDrafts.js";
 import { useWorkspaceSession, WorkspaceSessionGate } from "./WorkspaceSession.js";
 import { ProjectFiles } from "./ProjectFiles.js";
@@ -17,6 +19,7 @@ import { CategoryOptionsPanel } from "./CategoryOptionsPanel.js";
 import { ProjectCategoryMovePanel } from "./ProjectCategoryMovePanel.js";
 import { ProjectRenamePanel } from "./ProjectRenamePanel.js";
 import { ProjectCreationPanel } from "./ProjectCreationPanel.js";
+import { ProjectOperationDialog } from "./ProjectOperationDialog.js";
 import { ProjectRecoveryController } from "./ProjectRecoveryPanel.js";
 import { TextPropertiesTable } from "./TextPropertiesTable.js";
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
@@ -258,11 +261,13 @@ export function DiscoveryController({ client, workspaceId, sourceId, minimumRevi
 export function DiscoveryWorkspace(props: Parameters<typeof DiscoveryWorkspaceContent>[0]) {
   return <ScalarDrafts><WorkspaceSessionGate language={props.language}><DiscoveryWorkspaceContent {...props}/></WorkspaceSessionGate></ScalarDrafts>;
 }
-function DiscoveryWorkspaceContent({ memory, client, workspaceId, sourceId, refreshVersion = 0, onSourceState, onRecoveryPending, language, disabled, sourcePath, sourceStatus }: {
+function DiscoveryWorkspaceContent({ memory, client, workspaceId, sourceId, refreshVersion = 0, onSourceState, onRecoveryPending, language, disabled, sourcePath, sourceStatus, onRefreshSource }: {
+  onRefreshSource?(): void;
   memory?: NavigationMemory; sourceStatus?: ReactNode; sourcePath?: string; client: WorkspaceServiceClient; workspaceId: string; sourceId: string; refreshVersion?: number;
   onSourceState?(workspaceId: string, state: ProjectList["state"]): void; language: Language; disabled: boolean;
   onRecoveryPending?(pending: boolean): void;
 }) {
+  const settingsNavigation = useSettingsNavigation();
   const [view, setView] = useState<WorkspaceView | null>(null);
   const navigation = useProjectNavigation(view?.viewId,memory);
   const labels = navigationLabels[language];
@@ -301,6 +306,9 @@ function DiscoveryWorkspaceContent({ memory, client, workspaceId, sourceId, refr
   const committedCategoryLabel = useRef<{ property: NonNullable<ProjectList["categoryProperty"]>; revision: number } | null>(null);
   const [recoveryProject, setRecoveryProject] = useState<ProjectAssociationSummary | null>(null);
   const [recoverySaved, setRecoverySaved] = useState(false);
+  const [recoveryUncertain, setRecoveryUncertain] = useState(false);
+  const recoveryOrigin = useRef<string | null>(null);
+  const recoverySaving = useRef(false);
   const [renameProject, setRenameProject] = useState<Pick<ProjectAssociationSummary, "projectId" | "name" | "relativePath" | "categoryId"> | null>(null);
   const [categoryMoveProject, setCategoryMoveProject] = useState<Pick<ProjectAssociationSummary, "projectId" | "name" | "relativePath" | "categoryId"> | null>(null);
   const [categoryMoveBlocked, setCategoryMoveBlocked] = useState(false);
@@ -318,7 +326,8 @@ function DiscoveryWorkspaceContent({ memory, client, workspaceId, sourceId, refr
   const restoreRecoveryFocus = useRef(false);
   useEffect(() => {
     if (!recoveryProject && restoreRecoveryFocus.current) {
-      (recoveryTrigger.current?.isConnected ? recoveryTrigger.current : tableHeading.current)?.focus();
+      const trigger = recoveryTrigger.current;
+      (trigger?.isConnected && !trigger.disabled && !trigger.closest("[hidden]") ? trigger : workBody.current?.querySelector<HTMLElement>(".project-area-header button:not(:disabled)") ?? tableHeading.current)?.focus();
       restoreRecoveryFocus.current = false;
     }
   }, [recoveryProject]);
@@ -446,14 +455,32 @@ function DiscoveryWorkspaceContent({ memory, client, workspaceId, sourceId, refr
     void load();
   }, [refreshVersion]);
   useEffect(() => { if (projects) onSourceState?.(workspaceId, projects.state); }, [projects?.state, workspaceId, onSourceState]);
+  const sourceAvailable = !!projects && ["ready", "empty"].includes(projects.state);
   const selectedId = navigation.expanded ?? navigation.preview;
+  useEffect(() => {
+    if (!recoveryProject || recoveryOrigin.current === selectedId && settingsNavigation?.workspaceVisible !== false) return;
+    if (recoverySaving.current) setRecoveryUncertain(true);
+    restoreRecoveryFocus.current = false;
+    setRecoveryProject(null);
+  }, [selectedId, recoveryProject, settingsNavigation?.workspaceVisible]);
+  const locate = (project: ProjectAssociationSummary, trigger: HTMLButtonElement) => {
+    recoveryOrigin.current = selectedId;
+    recoveryTrigger.current = trigger;
+    setRecoverySaved(false); setRecoveryUncertain(false); setRecoveryProject(project);
+  };
+  const closeRecovery = () => {
+    restoreRecoveryFocus.current = true; setRecoveryProject(null);
+  };
   const selectedProject = [...(projects?.projects ?? []), ...(projects?.retainedProjects ?? []),...(archiveSnapshot?.projects ?? [])].find(project=>project.projectId===selectedId);
+  const selectedRetained = projects?.retainedProjects.find(project => project.projectId === selectedId);
+  const selectedAvailability = selectedRetained ? retainedProjectAvailability(selectedRetained, sourceAvailable) : null;
   const knownNames = useRef(memory?.names ?? new Map<string,string>());
   for(const project of [...(projects?.projects ?? []),...(projects?.retainedProjects ?? []),...(archiveSnapshot?.projects ?? [])]) knownNames.current.set(project.projectId,project.name);
   const projectName = (id:string)=>knownNames.current.get(id) ?? id;
   return <DailyControlsSurface><ManagementSurface><div className={`daily-workspace project-navigation${navigation.expanded ? " project-navigation--expanded" : ""}`}>
 
     {sourceStatus}
+    {recoveryUncertain && <StatusMessage kind="error" title={t("recoveryUncertain")} />}
     <ViewsPanel onWillLoad={scroll.suspend} projectActive={!!navigation.expanded} onSelectView={()=>{saveScroll();navigation.selectView();}}
       projectTabs={<ProjectTabs session={navigation} language={language} name={projectName} disabled={disabled}/>}
       tools={<><DailyControlsTarget hidden={!!navigation.expanded}/>{projects?.configured && <ViewToolsTarget label={t("viewSettings")} hidden={showArchived && !archiveHasProjects} />}</>} panelId={`${showArchived ? "archived" : "active"}-view-panel-${workspaceId}`} client={client} workspaceId={workspaceId} language={language} onChange={next=>{setView(next);scroll.resume();}}
@@ -499,10 +526,11 @@ function DiscoveryWorkspaceContent({ memory, client, workspaceId, sourceId, refr
       onRestoreFocus={() => tableHeading.current?.focus()} onBlockedChange={setCategoryMoveBlocked} onCompleted={() => void load()}
       onClose={(focus = true) => { restoreCategoryMoveFocus.current = focus; setCategoryMoveProject(null); }} />
     </div>
-    {recoveryProject && <ProjectRecoveryController client={client} workspaceId={workspaceId} sourceId={sourceId}
+    {recoveryProject && <ProjectOperationDialog open labelledBy="recovery-title" title={t("recoveryTitle")} onClose={() => { if (!recoverySaving.current) closeRecovery(); }}>
+    <ProjectRecoveryController client={client} workspaceId={workspaceId} sourceId={sourceId}
       project={recoveryProject} minimumRevision={minimumRevision} observationVersion={observationVersion} sourceLifetime={sourceLifetime} invalidation={invalidation} observation={observation} language={language} disabled={disabled}
-      onPendingChange={onRecoveryPending}
-      onReload={() => void load()} onClose={() => { restoreRecoveryFocus.current = true; setRecoveryProject(null); }}
+      onPendingChange={pending => { recoverySaving.current = pending; onRecoveryPending?.(pending); }}
+      onReload={() => void load()} onClose={closeRecovery}
       onCommitted={(value, observedVersion) => {
         setRecoverySaved(true);
         // Live observations advance synchronously, before recovery's effects.
@@ -515,7 +543,7 @@ function DiscoveryWorkspaceContent({ memory, client, workspaceId, sourceId, refr
         if (updated.mode !== "grouped") updated.categoryProperty = null;
         committedProjects.current = updated; setProjects(updated); setLoading(false); setError(false);
         if (updated.categoryPropertyRevision < minimumCategoryPropertyRevision.current) void load();
-      }} />}
+      }} /></ProjectOperationDialog>}
     {recoverySaved && <StatusMessage kind="info" title={t("recoverySaved")} />}
     <ProjectArchivePanel request={archiveRequest} onRequestClosed={() => setArchiveRequest(null)}
       onRestoreFocus={() => workBody.current?.querySelector<HTMLElement>(".project-area-header button:not(:disabled)")?.focus()}
@@ -545,7 +573,7 @@ function DiscoveryWorkspaceContent({ memory, client, workspaceId, sourceId, refr
         {projects.categories.length > 0 ? <ul>{projects.categories.filter(c => showHiddenCategories || !c.presentation?.hidden).map((category) => <li key={category.categoryId}><span className="category-chip" data-color={category.presentation?.color ?? "default"}>{category.name}</span></li>)}</ul>
           : <p>{t("savedCategoriesEmpty")}</p>}
       </details>}
-      {view && projects?.configured && <TextPropertiesTable key={view.viewId} onPreview={(id,trigger)=>navigation.show(id,trigger)} viewId={view.viewId} layout={view.kind} sourceLifetime={sourceLifetime} discoveryRevision={projects?.revision ?? 0} minimumDiscoveryRevision={minimumRevision} categoryPropertyRevision={projects?.categoryPropertyRevision ?? 0} minimumCategoryPropertyRevision={minimumCategoryPropertyRevision}
+      {view && projects?.configured && <TextPropertiesTable sourceAvailable={sourceAvailable} key={view.viewId} onPreview={(id,trigger)=>navigation.show(id,trigger)} viewId={view.viewId} layout={view.kind} sourceLifetime={sourceLifetime} discoveryRevision={projects?.revision ?? 0} minimumDiscoveryRevision={minimumRevision} categoryPropertyRevision={projects?.categoryPropertyRevision ?? 0} minimumCategoryPropertyRevision={minimumCategoryPropertyRevision}
         onFilesystemAssignmentDetails={kind => { setAssignmentHistory(kind); setSourceToolsOpen(true); }}
         onFilesystemAssignmentObserved={() => { setInvalidation(value => value + 1); void load(); }}
         onCategoryPropertyCommitted={commitLabel} categoryProperty={projects?.categoryProperty ?? null} categories={projects?.categories ?? []} client={client} workspaceId={workspaceId} sourceId={sourceId}
@@ -554,12 +582,10 @@ function DiscoveryWorkspaceContent({ memory, client, workspaceId, sourceId, refr
         categoryMoveDisabled={archiveBlocked || categoryOptionsBlocked || creationBlocked || discoveryPending || loading || error || categoryMoveBlocked || categoryMoveProject !== null || renameBlocked || renameProject !== null || recoveryProject !== null || !projects?.configured ||
           !["ready", "empty"].includes(projects?.state ?? "") || (projects?.revision ?? -1) < minimumRevision.current}
         onMoveCategory={projects?.mode === "grouped" ? (project, trigger) => { categoryMoveTrigger.current = trigger; setCategoryMoveProject(project); } : undefined}
-        onArchive={(project, action, trigger) => setArchiveRequest({project, action, trigger})} archiveDisabled={!archiveSnapshot?.relativePath || archiveBlocked || categoryOptionsBlocked || creationBlocked || discoveryPending || loading || error || renameBlocked || renameProject !== null || categoryMoveBlocked || categoryMoveProject !== null || recoveryProject !== null || projects.state === "unavailable"}
+        onArchive={(project, action, trigger) => setArchiveRequest({project, action, trigger})} archiveDisabled={!archiveSnapshot?.relativePath || archiveBlocked || categoryOptionsBlocked || creationBlocked || discoveryPending || loading || error || renameBlocked || renameProject !== null || categoryMoveBlocked || categoryMoveProject !== null || recoveryProject !== null || !sourceAvailable}
         onRename={(project, trigger) => { renameTrigger.current = trigger; setRenameProject(project); }}
         locateDisabled={archiveBlocked || categoryOptionsBlocked || creationBlocked || discoveryPending || recoveryProject !== null || renameBlocked || renameProject !== null || categoryMoveProject !== null || categoryMoveBlocked}
-        onLocate={projects?.configured ? (project, trigger) => {
-          recoveryTrigger.current = trigger; setRecoverySaved(false); setRecoveryProject(project);
-        } : undefined}
+        onLocate={projects?.configured ? locate : undefined}
         projects={projects?.projects ?? []} retainedProjects={projects?.retainedProjects ?? []} language={language} disabled={disabled} />}
     </section></ViewControlsScope>
     </div>
@@ -575,18 +601,32 @@ function DiscoveryWorkspaceContent({ memory, client, workspaceId, sourceId, refr
           </div>
         </header>
         <div className="project-area-scroll">
-          {selectedProject ? <><p className="project-area-path">{selectedProject.relativePath}</p>
-            <TextPropertiesTable key={selectedId} detail hideReveal={"originalRelativePath" in selectedProject} client={client} workspaceId={workspaceId} sourceId={sourceId} projects={[selectedProject]}
+          {selectedProject && <p className="project-area-path">{selectedProject.relativePath}</p>}
+          {loading && <StatusMessage kind="info" title={t("projectsLoading")} />}
+          {error && <StatusMessage kind="error" title={t("projectsError")} />}
+          {projects && !sourceAvailable && <StatusMessage kind="info" title={t(stateLabels[projects.state])} />}
+          {selectedProject && "originalRelativePath" in selectedProject && <StatusMessage kind="info" title={t("archiveArchived")} />}
+          {selectedAvailability?.label && <StatusMessage kind="info" title={t(selectedAvailability.label)} />}
+          {selectedAvailability?.excluded && <StatusMessage kind="info" title={t("projectExcluded")} />}
+          {(!sourceAvailable || selectedAvailability || error || selectedProject && "originalRelativePath" in selectedProject || !selectedProject) && <div className="workspace-form-actions project-status-actions">
+          {selectedRetained && selectedAvailability?.canLocate && <button type="button" className="workspace-button workspace-button--secondary" disabled={disabled || loading || error || archiveBlocked || categoryOptionsBlocked || creationBlocked || discoveryPending || recoveryProject !== null || renameBlocked || renameProject !== null || categoryMoveProject !== null || categoryMoveBlocked}
+            aria-label={`${t("recoveryLocate")}: ${selectedRetained.name}`} onClick={event => locate(selectedRetained, event.currentTarget)}>{t("recoveryLocate")}</button>}
+            <button type="button" className="workspace-button workspace-button--secondary" disabled={disabled || loading || recoveryProject !== null} onClick={() => { if (onRefreshSource) onRefreshSource(); else void load(); }}>{t(loading ? "refreshingSource" : "refreshSourceAction")}</button>
+            {settingsNavigation && <button type="button" className="workspace-button workspace-button--secondary" disabled={disabled || recoveryProject !== null} onClick={() => settingsNavigation.open("sources")}>{t("recoverySourceSettings")}</button>}
+          </div>}
+          {selectedProject ? <>
+            <TextPropertiesTable sourceAvailable={sourceAvailable} key={selectedId} detail hideReveal={"originalRelativePath" in selectedProject} client={client} workspaceId={workspaceId} sourceId={sourceId} projects={[selectedProject]}
               retainedProjects={projects?.retainedProjects.filter(project=>project.projectId===selectedId)} categories={projects?.categories} categoryProperty={projects?.categoryProperty}
               language={language} disabled={disabled || loading || error}
+              locateDisabled={archiveBlocked || categoryOptionsBlocked || creationBlocked || discoveryPending || recoveryProject !== null || renameBlocked || renameProject !== null || categoryMoveProject !== null || categoryMoveBlocked}
               discoveryRevision={projects?.revision} minimumDiscoveryRevision={minimumRevision} sourceLifetime={sourceLifetime}
-              renameDisabled={archiveBlocked || categoryOptionsBlocked || creationBlocked || discoveryPending || loading || error || renameBlocked || renameProject !== null || recoveryProject !== null || categoryMoveProject !== null || categoryMoveBlocked || !projects?.configured || projects.state === "unavailable"}
-              onArchive={(project, action, trigger) => setArchiveRequest({project, action, trigger})} archiveDisabled={!archiveSnapshot?.relativePath || archiveBlocked || categoryOptionsBlocked || creationBlocked || discoveryPending || loading || error || renameBlocked || renameProject !== null || categoryMoveBlocked || categoryMoveProject !== null || recoveryProject !== null || projects?.state === "unavailable"}
+              renameDisabled={archiveBlocked || categoryOptionsBlocked || creationBlocked || discoveryPending || loading || error || renameBlocked || renameProject !== null || recoveryProject !== null || categoryMoveProject !== null || categoryMoveBlocked || !projects?.configured || !sourceAvailable}
+              onArchive={(project, action, trigger) => setArchiveRequest({project, action, trigger})} archiveDisabled={!archiveSnapshot?.relativePath || archiveBlocked || categoryOptionsBlocked || creationBlocked || discoveryPending || loading || error || renameBlocked || renameProject !== null || categoryMoveBlocked || categoryMoveProject !== null || recoveryProject !== null || !sourceAvailable}
               categoryMoveDisabled={archiveBlocked || categoryOptionsBlocked || creationBlocked || discoveryPending || loading || error || categoryMoveBlocked || categoryMoveProject !== null || renameBlocked || renameProject !== null || recoveryProject !== null || !projects?.configured || !["ready", "empty"].includes(projects?.state ?? "") || (projects?.revision ?? -1) < minimumRevision.current}
               onMoveCategory={projects?.mode === "grouped" ? (project, trigger) => { categoryMoveTrigger.current = trigger; setCategoryMoveProject(project); } : undefined}
               onRename={(project, trigger) => { renameTrigger.current = trigger; setRenameProject(project); }}/>
             <ProjectFiles key={`${workspaceId}:${selectedId}:${selectedProject.relativePath}:${sourceLifetime.current}:${invalidation}:${observationVersion}`}
-              client={client} workspaceId={workspaceId} projectId={selectedId} language={language} disabled={disabled || loading || error}/></> : <StatusMessage kind="info" title={labels.unavailable}/>}
+              client={client} workspaceId={workspaceId} projectId={selectedId} language={language} disabled={disabled || loading || error || !sourceAvailable || "originalRelativePath" in selectedProject || "resolution" in selectedProject && (selectedProject.resolution !== "active" || selectedProject.retentionReason === "mode_change")}/></> : <StatusMessage kind="info" title={labels.unavailable}/>}
         </div>
       </section>
     </>}
