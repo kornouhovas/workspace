@@ -33,7 +33,7 @@ Owner confirmed all three TDD seams on 2026-10-23: renderer interaction, public 
 
 ## Verification status
 
-Implementation and acceptance pending. Select the affected route after the actual diff is known. Run typecheck and focused files during implementation; complete candidate review and one final broad local suite. Record exact SHA/host/command/results and inspect actual screenshots separately from behavior. CI/integration checkpoints belong to the GitHub issue. This plan does not claim acceptance or authorize a release.
+Scoped implementation and acceptance complete on repaired candidate `052f6787`: independent review, affected checks, actual local dev/release recovery/session/resource checks and inspected three-host CI run `39892142679` attempt1. See the verification report below for the separately retained broad local negative and exact evidence. Delivery/integration SHA belongs to the GitHub issue checkpoint. This does not authorize a release.
 
 ## In-progress observations
 
@@ -62,3 +62,15 @@ pass. Independent repair review has no implementation findings; the report now
 records the rejected appearance and pending repaired-candidate provenance. Renew
 both native modes, affected renderer/route consumers and hosted acceptance. Other
 passing broad checks retain their actual a0b6a7a7 provenance; no full-green claim.
+
+## Scoped acceptance complete
+
+Repaired candidate `052f6787` passed real local and hosted geometry, recovery,
+startup/source outage, session, notices/version and package consumers. Inspected
+CI `39892142679` attempt1: macOS252/252; each Windows251/251, all zero skips.
+Artifacts12475835884/12474948341/12475960442 retain exact SHA/report provenance.
+Appearance and retained behavior are recorded separately in the verification
+report. Broader synthetic shutdown watchpoints remain with67/42; no release or
+main merge. Integrate through the existing owner-authorized route and record the
+delivered SHA in GitHub. Later report-only files retain unchanged application,
+service/schema/native/dependency/build/package inputs from the tested candidate.

@@ -87,9 +87,72 @@ and sizes. Initial candidate dev/release recovery, session and artifact-resource
 also passed, but their old dialog images remain rejected as described above.
 New-candidate dev/release geometry and hosted receipts remain pending below.
 
-## Remaining acceptance
+## Selected acceptance route
 
-Run and inspect final dev/release recovery/screens/resources, then the actual
-three-host `desktop-ux/recovery-settings` route. Retain exact tested/delivered SHA
-and artifact provenance in the issue checkpoint. Installer, strict scale,
+Final dev/release recovery/screens/resources and the actual three-host
+`desktop-ux/recovery-settings` receipts are recorded below. Exact tested/delivered
+SHA and artifact provenance belong to the issue checkpoint. Installer, strict scale,
 Windows11 desktop and final #67/#42 release gates remain separately owned.
+
+## Repaired local candidate receipt
+
+Candidate **052f6787624ae3b8dfb6cb73226286f6a81d041c**, same host/Node as above:
+
+- Actual development and rebuilt packaged recovery consumers pass. Each mode
+  retains50 screenshots, EN/RU Backup/About/review/invalid restore/source outage,
+  light/dark and both supported sizes, plus original360px stress and default
+  English startup-unavailable captures. Startup cannot read a failed database's
+  saved language; both-language instruction variants have renderer coverage.
+- The new real geometry assertion passes on every review/error theme/size.
+  Inspected repaired Russian dark1024 review: candidate, warning and actions are
+  one readable vertical sequence with no inherited project-recovery columns.
+- Each recovery mode has4 normal app/backend shutdowns and asserted cleanup;
+  restore, real download, invalid protection, restart, separate project bytes,
+  source outage and unchanged corrupt disposable startup bytes pass.
+- Rebuilt packaged session consumer passes3 normal shutdowns, actual restored
+  session/current files/missing project/sibling independence and cleanup. Actual
+  ASAR/resource/font/version/license check passes for0.1.0.
+- [Local provenance and screenshot hashes](issue-66-evidence/local-receipt.json)
+  retain the actual source SHA/mode. Selected screenshots are adjacent. These
+  replace the rejected initial dialog appearance, without relabeling old results.
+
+The complete source change after a0b6a7a7 is confined to the new review class and
+its scoped CSS plus the native driver geometry assertion and evidence/prose.
+Service/schema/native/dependency/build configuration and unrelated component/
+fixture/lifecycle inputs match. Renewed recovery/project-recovery/dialog/native
+consumers cover the changed boundary; other passing broad results retain their
+actual earlier provenance under the approved bounded-UI policy.
+
+## Hosted acceptance
+
+[Run39892142679, attempt1](https://github.com/kornouhovas/workspace/actions/runs/39892142679)
+completed successfully for the exact repaired candidate **052f6787624ae3b8dfb6cb73226286f6a81d041c**.
+All three artifacts were downloaded and inspected. The
+[hosted receipt](issue-66-evidence/hosted-receipt.json) records job/artifact IDs,
+exact provenance, log/report hashes, actual kernels, counts and cleanup.
+
+| Host | Focused tests | Artifact |
+| --- | --- | --- |
+| macOS latest, Darwin25.6.0 arm64 |252/252, zero skips |12475835884 |
+| Windows2022, kernel10.0.20348 |251/251, zero skips |12474948341 |
+| Windows latest, kernel10.0.26100 |251/251, zero skips |12475960442 |
+
+Every host passes type/lint, backup/recovery/session/renderer/dialog/version/
+artifact checks, actual dev recovery/session/shell, rebuilt package/resource
+inspection, original packaged Views6 journeys and packaged recovery/session.
+Per host: recovery dev/release each has50 captures and4 normal shutdowns;
+sessions dev/release each has16 captures and3 normal shutdowns; Views has3 normal
+shutdowns. All owned process/fixture cleanup is asserted. Recovery also preserves
+corrupt startup database bytes and exercises source outage without replacing
+project files. The exact repaired dialog geometry passes in both languages,
+themes and supported sizes. Inspected hosted macOS Russian dark review,
+Windows2022 Russian dark invalid dialog and Windows latest English light About
+against the same accepted settings composition; wrapping, error/focus/selected
+states and real version/full notices are consistent.
+
+This completes #66's scoped acceptance. The one broad local invocation remains
+negative as recorded above; its unchanged synthetic timing watchpoints and all
+final #67/#42, installer, strict scale and actual Windows11 release gates remain
+separately owned. No main merge or release is claimed. Integration/delivered SHA
+is recorded in the GitHub checkpoint; report-only follow-up files do not change
+any tested application/build/package input.

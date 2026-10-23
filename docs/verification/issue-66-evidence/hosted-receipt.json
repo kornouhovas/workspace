@@ -1,0 +1,332 @@
+{
+  "candidate": "052f6787624ae3b8dfb6cb73226286f6a81d041c",
+  "run": 39892142679,
+  "attempt": 1,
+  "conclusion": "success",
+  "hosts": [
+    {
+      "host": "macos-latest",
+      "job": 120214149389,
+      "artifact": 12475835884,
+      "artifactName": "desktop-ux-foundation-macos-latest",
+      "provenance": {
+        "sha": "052f6787624ae3b8dfb6cb73226286f6a81d041c",
+        "run": "39892142679",
+        "attempt": "1",
+        "platform": "darwin",
+        "profile": "recovery-settings",
+        "navigationOnly": false
+      },
+      "logSha256": "d6ebd82b11898baf3d3da0059c4126a8d18af84b2e131534b221fb05a439c26f",
+      "testSummary": {
+        "tests": 252,
+        "pass": 252,
+        "fail": 0,
+        "skipped": 0
+      },
+      "receipts": [
+        {
+          "file": "issue-37-data-runtime/evidence.json",
+          "sha256": "bb2d27781d0e90063de543f1e969a41e3b9ac22a7a36e6802c0b83e5aea48f3a",
+          "status": "passed",
+          "checks": 2,
+          "normalShutdowns": 4,
+          "screens": 50,
+          "kernel": null,
+          "cpu": null,
+          "cleanup": {
+            "status": "passed",
+            "asserted": true,
+            "processesStopped": true,
+            "maxRetries": 5,
+            "retryDelay": 100
+          }
+        },
+        {
+          "file": "issue-66-recovery-release/evidence.json",
+          "sha256": "48a2b59bb1f86d94dce25cc8580135525482870a3ec2c23d219669d0ed2dfe08",
+          "status": "passed",
+          "checks": 2,
+          "normalShutdowns": 4,
+          "screens": 50,
+          "kernel": null,
+          "cpu": null,
+          "cleanup": {
+            "status": "passed",
+            "asserted": true,
+            "processesStopped": true,
+            "maxRetries": 5,
+            "retryDelay": 100
+          }
+        },
+        {
+          "file": "issue-55-sessions-dev/report.json",
+          "sha256": "83395954241f1c7fb446dd76d0d79a9bdead60cd17419d79fbb40ee33518d4d0",
+          "status": "passed",
+          "checks": 3,
+          "normalShutdowns": 3,
+          "screens": 16,
+          "kernel": "25.6.0",
+          "cpu": "Apple M1 (Virtual)",
+          "cleanup": {
+            "status": "passed",
+            "asserted": true,
+            "processesStopped": true,
+            "maxRetries": 5,
+            "retryDelay": 100
+          }
+        },
+        {
+          "file": "issue-66-sessions-release/report.json",
+          "sha256": "c562e95cdb6e56089ac9f6f56f3b1cb86daa4c603ee5354c46980cfbfa61942e",
+          "status": "passed",
+          "checks": 3,
+          "normalShutdowns": 3,
+          "screens": 16,
+          "kernel": "25.6.0",
+          "cpu": "Apple M1 (Virtual)",
+          "cleanup": {
+            "status": "passed",
+            "asserted": true,
+            "processesStopped": true,
+            "maxRetries": 5,
+            "retryDelay": 100
+          }
+        },
+        {
+          "file": "ci-desktop-ux-packaged/evidence.json",
+          "sha256": "a5bd6e59dbfad5167ebc96bef7fb4946f2a558754fa8eca5c9df1a25f5d387a3",
+          "status": "passed",
+          "checks": 6,
+          "normalShutdowns": 3,
+          "screens": 122,
+          "kernel": null,
+          "cpu": null,
+          "cleanup": {
+            "status": "passed",
+            "asserted": true,
+            "processesStopped": true,
+            "maxRetries": 5,
+            "retryDelay": 100
+          }
+        }
+      ]
+    },
+    {
+      "host": "windows-2022",
+      "job": 120214149617,
+      "artifact": 12474948341,
+      "artifactName": "desktop-ux-foundation-windows-2022",
+      "provenance": {
+        "sha": "052f6787624ae3b8dfb6cb73226286f6a81d041c",
+        "run": "39892142679",
+        "attempt": "1",
+        "platform": "win32",
+        "profile": "recovery-settings",
+        "navigationOnly": false
+      },
+      "logSha256": "655d77493d77d5d1d96dbfa3a8cc89591eacf990403f83aa15efe4bcdfbd1945",
+      "testSummary": {
+        "tests": 251,
+        "pass": 251,
+        "fail": 0,
+        "skipped": 0
+      },
+      "receipts": [
+        {
+          "file": "issue-37-data-runtime/evidence.json",
+          "sha256": "ba5e895eca3e20490c7c2c7aaee09e6c81efccc70a0cdd35089be71b8c499f08",
+          "status": "passed",
+          "checks": 2,
+          "normalShutdowns": 4,
+          "screens": 50,
+          "kernel": null,
+          "cpu": null,
+          "cleanup": {
+            "status": "passed",
+            "asserted": true,
+            "processesStopped": true,
+            "maxRetries": 5,
+            "retryDelay": 100
+          }
+        },
+        {
+          "file": "issue-66-recovery-release/evidence.json",
+          "sha256": "99835ec92500b274a48dfe7d8f79c080d8884ef0b883309d34f692b92c8ee171",
+          "status": "passed",
+          "checks": 2,
+          "normalShutdowns": 4,
+          "screens": 50,
+          "kernel": null,
+          "cpu": null,
+          "cleanup": {
+            "status": "passed",
+            "asserted": true,
+            "processesStopped": true,
+            "maxRetries": 5,
+            "retryDelay": 100
+          }
+        },
+        {
+          "file": "issue-55-sessions-dev/report.json",
+          "sha256": "b03ad0ad721934cc97575c7b0c507c0cdff8cfd90045603154a1818a018b231d",
+          "status": "passed",
+          "checks": 3,
+          "normalShutdowns": 3,
+          "screens": 16,
+          "kernel": "10.0.20348",
+          "cpu": "AMD EPYC 7763 64-Core Processor                ",
+          "cleanup": {
+            "status": "passed",
+            "asserted": true,
+            "processesStopped": true,
+            "maxRetries": 5,
+            "retryDelay": 100
+          }
+        },
+        {
+          "file": "issue-66-sessions-release/report.json",
+          "sha256": "914da26752adf3ced0fee071c6d248ebabf909df9796338b26aecbe1715eb92a",
+          "status": "passed",
+          "checks": 3,
+          "normalShutdowns": 3,
+          "screens": 16,
+          "kernel": "10.0.20348",
+          "cpu": "AMD EPYC 7763 64-Core Processor                ",
+          "cleanup": {
+            "status": "passed",
+            "asserted": true,
+            "processesStopped": true,
+            "maxRetries": 5,
+            "retryDelay": 100
+          }
+        },
+        {
+          "file": "ci-desktop-ux-packaged/evidence.json",
+          "sha256": "2d033de416d886092b24ba8d3d9dadaf286d1333ec2a69737320bc0f0326cd3c",
+          "status": "passed",
+          "checks": 6,
+          "normalShutdowns": 3,
+          "screens": 122,
+          "kernel": null,
+          "cpu": null,
+          "cleanup": {
+            "status": "passed",
+            "asserted": true,
+            "processesStopped": true,
+            "maxRetries": 5,
+            "retryDelay": 100
+          }
+        }
+      ]
+    },
+    {
+      "host": "windows-latest",
+      "job": 120214149701,
+      "artifact": 12475960442,
+      "artifactName": "desktop-ux-foundation-windows-latest",
+      "provenance": {
+        "sha": "052f6787624ae3b8dfb6cb73226286f6a81d041c",
+        "run": "39892142679",
+        "attempt": "1",
+        "platform": "win32",
+        "profile": "recovery-settings",
+        "navigationOnly": false
+      },
+      "logSha256": "22eec9deba6b0994622aad7223a855185d35fc8c5af22a4ee8b514a3cef47100",
+      "testSummary": {
+        "tests": 251,
+        "pass": 251,
+        "fail": 0,
+        "skipped": 0
+      },
+      "receipts": [
+        {
+          "file": "issue-37-data-runtime/evidence.json",
+          "sha256": "ba5e895eca3e20490c7c2c7aaee09e6c81efccc70a0cdd35089be71b8c499f08",
+          "status": "passed",
+          "checks": 2,
+          "normalShutdowns": 4,
+          "screens": 50,
+          "kernel": null,
+          "cpu": null,
+          "cleanup": {
+            "status": "passed",
+            "asserted": true,
+            "processesStopped": true,
+            "maxRetries": 5,
+            "retryDelay": 100
+          }
+        },
+        {
+          "file": "issue-66-recovery-release/evidence.json",
+          "sha256": "99835ec92500b274a48dfe7d8f79c080d8884ef0b883309d34f692b92c8ee171",
+          "status": "passed",
+          "checks": 2,
+          "normalShutdowns": 4,
+          "screens": 50,
+          "kernel": null,
+          "cpu": null,
+          "cleanup": {
+            "status": "passed",
+            "asserted": true,
+            "processesStopped": true,
+            "maxRetries": 5,
+            "retryDelay": 100
+          }
+        },
+        {
+          "file": "issue-55-sessions-dev/report.json",
+          "sha256": "2633e459b5a9d42a4bcbe4e643c013b1cff113713b30671a410d9e2ef403903e",
+          "status": "passed",
+          "checks": 3,
+          "normalShutdowns": 3,
+          "screens": 16,
+          "kernel": "10.0.26100",
+          "cpu": "AMD EPYC 7763 64-Core Processor                ",
+          "cleanup": {
+            "status": "passed",
+            "asserted": true,
+            "processesStopped": true,
+            "maxRetries": 5,
+            "retryDelay": 100
+          }
+        },
+        {
+          "file": "issue-66-sessions-release/report.json",
+          "sha256": "8e6bb5769acb23894460794f568d98057a5815564ba026b8332ae2af15f7137f",
+          "status": "passed",
+          "checks": 3,
+          "normalShutdowns": 3,
+          "screens": 16,
+          "kernel": "10.0.26100",
+          "cpu": "AMD EPYC 7763 64-Core Processor                ",
+          "cleanup": {
+            "status": "passed",
+            "asserted": true,
+            "processesStopped": true,
+            "maxRetries": 5,
+            "retryDelay": 100
+          }
+        },
+        {
+          "file": "ci-desktop-ux-packaged/evidence.json",
+          "sha256": "2d033de416d886092b24ba8d3d9dadaf286d1333ec2a69737320bc0f0326cd3c",
+          "status": "passed",
+          "checks": 6,
+          "normalShutdowns": 3,
+          "screens": 122,
+          "kernel": null,
+          "cpu": null,
+          "cleanup": {
+            "status": "passed",
+            "asserted": true,
+            "processesStopped": true,
+            "maxRetries": 5,
+            "retryDelay": 100
+          }
+        }
+      ]
+    }
+  ]
+}

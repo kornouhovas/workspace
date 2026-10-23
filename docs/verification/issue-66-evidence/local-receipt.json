@@ -1,0 +1,82 @@
+{
+  "candidate": "052f6787624ae3b8dfb6cb73226286f6a81d041c",
+  "platform": "darwin-arm64",
+  "kernel": "27.0.0",
+  "node": "22.21.1",
+  "screens": [
+    {
+      "file": "en-light-1440-about.png",
+      "source": "work/issue-66/repaired-dev/en-light-1440-about.png",
+      "sha256": "a7f80d955442a552d9630a6060234c1f71ad7a45a48596c57002ec9d1462648d",
+      "mode": "dev"
+    },
+    {
+      "file": "ru-dark-1024-review.png",
+      "source": "work/issue-66/repaired-dev/ru-dark-1024-review.png",
+      "sha256": "6e49c94b22cae60d973453ccc6f1490c25ba10b3e3ae3fd6d66420be83002053",
+      "mode": "dev"
+    },
+    {
+      "file": "en-light-1024-startup-unavailable.png",
+      "source": "work/issue-66/repaired-dev/en-light-1024-startup-unavailable.png",
+      "sha256": "504ea3beb148c9c07c3ff89ccc5cfcdd4c3539ed7e5f276066750bc0ba895e3c",
+      "mode": "dev"
+    },
+    {
+      "file": "en-dark-1440-invalid-restore.png",
+      "source": "work/issue-66/repaired-dev/en-dark-1440-invalid-restore.png",
+      "sha256": "2afff238acfaa3de004eab315419537aa2ca1c4f9defaae42202597e4ef07f89",
+      "mode": "dev"
+    },
+    {
+      "file": "ru-light-1440-backup.png",
+      "source": "work/issue-66/repaired-dev/ru-light-1440-backup.png",
+      "sha256": "32ab8c2ea7d272624e6389ce492cf531f454a3c3acefd6724f1bbdae1eb8632b",
+      "mode": "dev"
+    }
+  ],
+  "receipts": {
+    "recovery-dev": {
+      "source": "work/issue-66/repaired-dev/evidence.json",
+      "status": "passed",
+      "candidate": "052f6787624ae3b8dfb6cb73226286f6a81d041c",
+      "shutdowns": 4,
+      "cleanup": {
+        "status": "passed",
+        "asserted": true,
+        "processesStopped": true,
+        "maxRetries": 5,
+        "retryDelay": 100
+      },
+      "screens": 50
+    },
+    "recovery-release": {
+      "source": "work/issue-66/repaired-release/evidence.json",
+      "status": "passed",
+      "candidate": "052f6787624ae3b8dfb6cb73226286f6a81d041c",
+      "shutdowns": 4,
+      "cleanup": {
+        "status": "passed",
+        "asserted": true,
+        "processesStopped": true,
+        "maxRetries": 5,
+        "retryDelay": 100
+      },
+      "screens": 50
+    },
+    "session-release": {
+      "source": "work/issue-66/repaired-session-release/report.json",
+      "status": "passed",
+      "candidate": "052f6787624ae3b8dfb6cb73226286f6a81d041c",
+      "shutdowns": 3,
+      "cleanup": {
+        "status": "passed",
+        "asserted": true,
+        "processesStopped": true,
+        "maxRetries": 5,
+        "retryDelay": 100
+      },
+      "screens": 16
+    }
+  }
+}
