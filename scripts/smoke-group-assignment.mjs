@@ -1,6 +1,6 @@
 /* global window, document, innerWidth, DataTransfer */
 import assert from 'node:assert/strict';
-import {createRequire} from 'node:module';
+import {runtimeSmokeLaunch} from './runtime-executable.mjs';
 import {mkdtemp,mkdir,realpath,writeFile,readFile} from 'node:fs/promises';
 import {tmpdir,release,cpus} from 'node:os';
 import {join,resolve} from 'node:path';
@@ -20,7 +20,7 @@ const query=async(_page,input)=>{console.info(`Assignment command: ${input.type}
 async function close(){if(!app)return;const shutdown={normalQuit:false,backendsExited:false};report.shutdowns.push(shutdown);await closeElectron(app);shutdown.normalQuit=true;app=undefined;assert.equal(await ownedProcessesStopped(parents,backends),true);shutdown.backendsExited=true;}
 try{
  launchUnverified=true;
- app=await _electron.launch({executablePath:createRequire(import.meta.url)('electron'),args:[root],cwd:root,env:{...process.env,WORKSPACE_USER_DATA_DIR:join(fixture,'data')}});
+ app=await _electron.launch({...runtimeSmokeLaunch(root),cwd:root,env:{...process.env,WORKSPACE_USER_DATA_DIR:join(fixture,'data')}});
  parents.add(app.process());page=await app.firstWindow();page.setDefaultTimeout(15000);
  await page.waitForFunction(async()=>(await window.workspace.getBackendStatus()).state==='ready');
  for(const pid of await app.evaluate(({app})=>app.getAppMetrics().filter(m=>m.type==='Utility'&&m.serviceName?.includes('Node')).map(m=>m.pid)))backends.add(pid);

@@ -2,7 +2,7 @@ import { enterContextFor } from "./runtime-context-tools.mjs";
 import { applyReviewedDiscovery } from "./workspace-management-driver.mjs";
 /* global window, document */
 import assert from "node:assert/strict";
-import { createRequire } from "node:module";
+import { runtimeSmokeLaunch } from "./runtime-executable.mjs";
 import { mkdtemp, mkdir, realpath, writeFile, readFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
@@ -23,7 +23,7 @@ const unwrap = result => { assert.equal(result.ok, true, JSON.stringify(result))
 const query = input => page.evaluate(input => window.workspace.workspace(input), input).then(unwrap);
 async function launch() {
   launchUnverified = true;
-  app = await _electron.launch({ executablePath: createRequire(import.meta.url)("electron"), args: [root], cwd: root,
+  app = await _electron.launch({ ...runtimeSmokeLaunch(root), cwd: root,
     env: { ...process.env, WORKSPACE_USER_DATA_DIR: data }, timeout: 30000 });
   parents.add(app.process()); page = await app.firstWindow(); page.setDefaultTimeout(15000);
   await page.waitForFunction(async () => (await window.workspace.getBackendStatus()).state === "ready");

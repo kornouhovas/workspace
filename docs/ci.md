@@ -1,5 +1,28 @@
 # CI checks and diagnostic routes
 
+## Final integrated desktop acceptance
+
+For #67, manually dispatch `integrated-desktop.yml` on the reviewed candidate.
+It runs the complete current suite, retained Ladle state inventory and resource
+inspection, then `scripts/integrated-desktop.mjs` against one unchanged package
+on macOS latest, Windows latest and Windows 2022. Principal journeys explicitly
+set `WORKSPACE_SMOKE_MODE=release`; existing positional release-mode journeys and
+original native/crash/recovery consumers remain. The last journey enforces the
+original strict #41 scale limits. A failure stops subsequent package consumers;
+the manifest marks them unreached and retains the nonzero exit. No skipped or
+unreached row supplies acceptance. Raw logs/captures and host/SHA/run/attempt,
+all harness digests, app.asar hashes and before/after full package inventories
+are retained. `--from=<journey>` renews a bounded tail; excluded journeys remain
+explicit and a successful tail is `partial`, never complete acceptance.
+
+Run `macos-install.yml` separately for actual DMG and NSIS installation on the
+same source candidate. These routes retain their actual package hashes; they do
+not claim to install the exact binary from a different job. Windows Server is
+still not Windows 11. This route does not publish a release, close #42 or waive
+supported-host, appearance comparison or strict-performance gates. Ordinary CI
+defaults remain unchanged. `--failure-probe` deliberately produces a failed,
+diagnostic-only receipt and cannot establish package acceptance.
+
 Read when selecting or diagnosing a CI route, changing CI scheduling, or checking exact-SHA acceptance. [Development](development.md#verification) owns verification policy; [.github/workflows/desktop-ci.yml](../.github/workflows/desktop-ci.yml) owns the inherited desktop routes.
 [macos-install.yml](../.github/workflows/macos-install.yml) adds macOS 14 arm64 DMG
 build/install/reopen/replacement acceptance on push, pull requests and manual dispatch.

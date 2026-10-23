@@ -1,6 +1,6 @@
 /* global window, document */
 import assert from 'node:assert/strict';
-import { createRequire } from 'node:module';
+import { runtimeSmokeLaunch } from './runtime-executable.mjs';
 import { mkdtemp, mkdir, realpath, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
@@ -18,7 +18,7 @@ for (const name of ['Brand refresh', 'Customer portal', 'Release checklist']) aw
 const parents = new Set(), backends = new Set(), checks = [], stateChecks = [];
 let app, page, cdp, failure;
 try {
-  app = await _electron.launch({executablePath:createRequire(import.meta.url)('electron'),args:[root],cwd:root,env:{...process.env,WORKSPACE_USER_DATA_DIR:join(fixture,'data')}});
+  app = await _electron.launch({...runtimeSmokeLaunch(root),cwd:root,env:{...process.env,WORKSPACE_USER_DATA_DIR:join(fixture,'data')}});
   parents.add(app.process());
   page = await app.firstWindow(); page.setDefaultTimeout(15000);
   cdp=await page.context().newCDPSession(page);
