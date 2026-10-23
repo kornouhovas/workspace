@@ -10,7 +10,35 @@ import { _electron } from "playwright-core";
 import { closeElectron } from "../scripts/runtime-lifecycle.mjs";
 import { usableRuntimeViewProjection } from "../scripts/runtime-view-readiness.mjs";
 import { activateRuntimeView, setRuntimeViewLanguage } from "../scripts/runtime-view-controls.mjs";
-import { readRuntimeInteraction, waitForRuntimeProjection } from "../scripts/runtime-performance-timing.mjs";
+import { readRuntimeInteraction, waitForRuntimeProjection, waitForRuntimeProject } from "../scripts/runtime-performance-timing.mjs";
+
+test('project timing waits for asynchronously mounted fields and tree before committed paint', async () => {
+  await withPage(async page => {
+    for (const expanded of [false, true]) {
+      await page.setContent('<button id="open">Preview</button><main class="saved-view-content"></main>');
+      await page.evaluate(expanded => {
+        document.querySelector('#open').onclick = () => {
+          globalThis.__workspacePerformanceStarted = performance.now();
+          const area = document.createElement('section'); area.className = 'project-area';
+          area.innerHTML = '<div class="project-detail-fields" aria-busy="false"><div data-project-id="wrong-project"><button class="text-value-button">Committed value</button></div></div><div class="project-files"><button role="treeitem">preserved.txt</button></div>';
+          document.body.append(area);
+          document.querySelector('.saved-view-content').hidden = expanded;
+          setTimeout(() => {
+            area.querySelector('[data-project-id]').setAttribute('data-project-id', 'project');
+            const tab = document.createElement('button'); tab.setAttribute('data-project-tab', 'project'); tab.setAttribute('aria-selected', 'true');
+            document.body.append(tab);
+          }, 60);
+        };
+      }, expanded);
+      await page.getByRole('button', { name: 'Preview', exact: true }).press('Enter');
+      const timing = await waitForRuntimeProject(page, 'project', expanded, 'Committed value');
+      assert.ok(Number.isFinite(timing.paintedAt), 'An async false readiness result must not complete the timing observation');
+      const measurement = await readRuntimeInteraction(page, timing);
+      assert.ok(measurement.ms >= 60, 'Ready paint must include the current project identity and selected expanded tab');
+      assert.equal(await page.locator('.project-files [role="treeitem"]').textContent(), 'preserved.txt');
+    }
+  });
+});
 
 async function withPage(run) {
   const profile = await mkdtemp(join(tmpdir(), "runtime-view-readiness-"));

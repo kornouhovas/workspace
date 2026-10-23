@@ -125,3 +125,60 @@ with the intentional #58 property-creation/editor controls. Settings and late
 reviews retain the accepted bb foundation and scoped #66 dialog stacking. No
 material mismatch was observed in these inspected variants. The full remaining
 state/control inventory and final hosted candidate still require their receipts.
+
+## Complete local suite and first hosted installer
+
+Reviewed source **77d936baeec18f2da0930b8cfa1f3c6b23967060**:
+one complete `npm run test:all`, exit1, **3435pass/2fail/27skip/3464total**,
+180865.6ms. No synthetic native shutdown fails in this run. Only the old literal
+common-condition and dispatch-option assertions in `test-suites.test.mjs` fail.
+[Raw inventory/log digest](issue-67-evidence/local-full-suite.json) and
+[446 tested input hashes](issue-67-evidence/tested-inputs.json) preserve this
+negative. The focused original Windows installer command reproduces71pass/2fail.
+
+The adapted common test evaluates every registered dispatch choice and both
+ordinary push/PR events; the option inventory includes the approved routes.
+No product/safety assertion is retired. Local focused Windows policy/registry/
+launcher/routing command passes113/113, zero skips. Hosted focused renewal precedes
+runtime/installer tails. Complete suite reuse is limited to unchanged passing
+inputs; no new full run or retroactive full-green claim is made.
+
+Actual DMG run [39913465917](https://github.com/kornouhovas/workspace/actions/runs/39913465917),
+attempt1, exact77d936ba, passes. Downloaded artifact12484161287 is inspected:
+macOS14.8.9arm64/kernel23.6.0, actual outside-build installation, bundled backend,
+EN/RU/isolation, retained identities/views/language, replacement/data preservation
+and normal owned cleanup. DMG SHA256
+`4bd4a7461be0a667af6ade753e60db7e047f2f1582707b1d4117465698ec22a4`.
+Initial Mac run39912976237 is cancelled and supplies no acceptance. Windows
+run39912980483 fails the two static registry assertions before actual installation;
+artifact12483344640 retains its policy log. Windows installation remains pending.
+
+Actual local macOS27 OS appearance passes both directions through System Events,
+Electron nativeTheme and renderer, with System selected and Playwright's light
+override explicitly disabled. [Receipt](issue-67-evidence/macos-native-system-theme.json),
+[Light](issue-67-evidence/native-light.png), [Dark](issue-67-evidence/native-dark.png)
+and [exact control source](issue-67-evidence/macos-native-system-theme-control.mjs.txt)
+are retained. Original appearance is restored; normal quit/cleanup pass. Initial
+control without disabling emulation fails dark, as expected from the pinned
+Playwright code. This accepts only the observed Mac transition, not Windows.
+
+## Project-scale timing repair
+
+The local final-tail runner passes the original creation crash matrix and both
+direct/grouped native creation routes. Strict scale then passes its first14 direct
+measurements (startup4936.7ms, original interactions64.4–125.6ms, scan378.0ms;
+conservative process peak880820224B) but fails before recording preview because
+the new asynchronous readiness callback resolves to `false`, not timestamps.
+Normal quit/backend exit pass. Grouped and later project measurements are
+unreached; this is not strict acceptance.
+
+Minimal actual-App reproduction observes a real event timestamp but readiness
+`false`. A new real-Electron regression is red against the original helper.
+The repaired exported project observer polls internally until the current project
+identity, fields, tree, requested expanded state and selected tab survive both
+paint stages. The original finite-clock assertion,30s readiness deadline and300ms
+acceptance limit remain unchanged. Existing list-projection/timing exports are
+unchanged. Both preview/expanded delayed-identity controls pass; complete native
+readiness file21/21 passes with normal shutdown. Minimal actual App now records
+55.0ms event-to-paint with normal quit/cleanup. Renew the original complete strict
+command on the repaired harness; that small fixture does not prove scale.

@@ -1,0 +1,18 @@
+{
+  "editorCount": 1,
+  "values": [
+    {
+      "projectId": "c09e870c-b598-4de3-8194-098a552647d2",
+      "propertyId": "fcacfc3d-1bad-44a3-8a4f-5d73a272d5a7",
+      "value": "Original"
+    }
+  ],
+  "stopped": true,
+  "cleanup": {
+    "status": "passed",
+    "asserted": true,
+    "processesStopped": true,
+    "maxRetries": 5,
+    "retryDelay": 100
+  }
+}

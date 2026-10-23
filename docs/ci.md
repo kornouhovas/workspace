@@ -24,6 +24,17 @@ supported-host, appearance comparison or strict-performance gates. Ordinary CI
 defaults remain unchanged. `--failure-probe` deliberately produces a failed,
 diagnostic-only receipt and cannot establish package acceptance.
 
+For the initial #67 registry failures on `77d936ba`, use
+`checks: integrated-regressions`: all three hosts run the exact failed
+Windows-distribution/registry command, repaired routing/launcher controls and the
+new actual-Electron project-timing regression. It does not replay the full suite,
+layout inventory or packages. Inspect its original/repair/native reports first.
+Then `checks: integrated-runtime` runs the previously unreached Ladle state
+inventory, package/resources and all packaged journeys/strict scale. Neither
+selection changes ordinary full defaults. Earlier full runs remain failed;
+their passing unchanged cases retain their actual source provenance. The Windows
+installer still requires its unexecuted original driver and actual NSIS flow.
+
 Read when selecting or diagnosing a CI route, changing CI scheduling, or checking exact-SHA acceptance. [Development](development.md#verification) owns verification policy; [.github/workflows/desktop-ci.yml](../.github/workflows/desktop-ci.yml) owns the inherited desktop routes.
 [macos-install.yml](../.github/workflows/macos-install.yml) adds macOS 14 arm64 DMG
 build/install/reopen/replacement acceptance on push, pull requests and manual dispatch.

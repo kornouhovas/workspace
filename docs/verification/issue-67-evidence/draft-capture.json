@@ -1,0 +1,19 @@
+{
+  "editorCount": 0,
+  "values": [
+    {
+      "projectId": "75e3bb3b-8d1a-4089-b4bc-8c740cdf83fc",
+      "propertyId": "090d694c-d652-4fd9-b54b-420f4c17adf0",
+      "value": "Unsubmitted screenshot draft"
+    }
+  ],
+  "error": "Original capture helper must retain the active draft\n\n0 !== 1\n",
+  "stopped": true,
+  "cleanup": {
+    "status": "passed",
+    "asserted": true,
+    "processesStopped": true,
+    "maxRetries": 5,
+    "retryDelay": 100
+  }
+}

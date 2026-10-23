@@ -1,0 +1,39 @@
+import assert from 'node:assert/strict';
+import {_electron} from 'playwright-core';
+import {execFile} from 'node:child_process';
+import {promisify} from 'node:util';
+import {mkdtemp,mkdir,writeFile} from 'node:fs/promises';
+import {tmpdir,release} from 'node:os';
+import {join,resolve} from 'node:path';
+import {openSettingsSection} from '../../scripts/runtime-settings.mjs';
+import {packagedExecutablePath} from '../../scripts/runtime-executable.mjs';
+import {closeElectron,cleanupOwnedFixture,ownedProcessesStopped} from '../../scripts/runtime-lifecycle.mjs';
+assert.equal(process.platform,'darwin','This receipt requires actual macOS');
+const run=promisify(execFile),root=resolve('.'),evidence=resolve('work/issue-67-system-theme-unemulated');await mkdir(evidence,{recursive:true});
+const script=source=>run('/usr/bin/osascript',['-e',source],{timeout:10000}).then(r=>r.stdout.trim());
+const readTheme=()=>script('tell application "System Events" to get dark mode of appearance preferences');
+const original=await readTheme();assert.ok(['true','false'].includes(original));
+const fixture=await mkdtemp(join(tmpdir(),'issue67-system-theme-')),report={platform:process.platform,kernel:release(),original,checks:[],status:'running'},parents=new Set(),backends=new Set();let app,failure;
+try{
+ app=await _electron.launch({executablePath:packagedExecutablePath(root,process.platform,process.arch),args:[],env:{...process.env,WORKSPACE_USER_DATA_DIR:join(fixture,'data')}});parents.add(app.process());
+ const page=await app.firstWindow();page.setDefaultTimeout(15000);await page.locator('.workspace-screen[data-ready="true"]').waitFor();await page.emulateMedia({colorScheme:null});
+ assert.equal(await app.evaluate(({app})=>app.isPackaged),true);
+ for(const pid of await app.evaluate(({app})=>app.getAppMetrics().filter(m=>m.type==='Utility'&&m.serviceName?.includes('Node')).map(m=>m.pid)))backends.add(pid);
+ await openSettingsSection(page,'appearance');await page.getByRole('radio',{name:'System',exact:true}).click();
+ for(const dark of [false,true]){
+  await script(`tell application "System Events" to set dark mode of appearance preferences to ${dark}`);
+  assert.equal(await readTheme(),String(dark));
+  await page.waitForFunction(dark=>document.documentElement.dataset.theme===(dark?'dark':'light'),dark);
+  const nativeDark=await app.evaluate(({nativeTheme})=>nativeTheme.shouldUseDarkColors);assert.equal(nativeDark,dark);
+  await page.screenshot({path:join(evidence,dark?'native-dark.png':'native-light.png')});report.checks.push({osDark:dark,nativeDark,rendererTheme:await page.locator('html').getAttribute('data-theme')});
+ }
+ report.status='passed';
+}catch(error){failure=error;report.status='failed';report.error=error.stack;}
+finally{
+ try{await script(`tell application "System Events" to set dark mode of appearance preferences to ${original}`);report.restored=(await readTheme())===original;assert.equal(report.restored,true);}catch(error){failure??=error;report.restoreError=error.message;}
+ try{if(app)await closeElectron(app);report.normalQuit=true;}catch(error){failure??=error;report.normalQuit=false;report.quitError=error.message;}
+ const stopped=ownedProcessesStopped(parents,backends);report.stopped=stopped;
+ try{await cleanupOwnedFixture(fixture,{processesStopped:stopped,primaryFailure:undefined,record:r=>report.cleanup=r});}catch(error){failure??=error;}
+ if(failure)report.status='failed';await writeFile(join(evidence,'report.json'),JSON.stringify(report,null,2));
+}
+if(failure)throw failure;

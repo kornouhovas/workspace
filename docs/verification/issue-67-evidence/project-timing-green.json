@@ -1,0 +1,29 @@
+{
+  "timing": {
+    "observationStartedAt": 504.10000002384186,
+    "firstPaintedAt": 527.4000000357628,
+    "paintedAt": 544
+  },
+  "event": {
+    "started": 489,
+    "now": 546.4000000357628
+  },
+  "measurement": {
+    "ms": 55,
+    "observationStartMs": 15.100000023841858,
+    "initialReadinessMs": 23.30000001192093,
+    "firstPaintedMs": 38.40000003576279,
+    "stabilizationMs": 16.599999964237213,
+    "observedMs": 58,
+    "paintedMs": 55,
+    "driverObservationDelayMs": 3
+  },
+  "stopped": true,
+  "cleanup": {
+    "status": "passed",
+    "asserted": true,
+    "processesStopped": true,
+    "maxRetries": 5,
+    "retryDelay": 100
+  }
+}

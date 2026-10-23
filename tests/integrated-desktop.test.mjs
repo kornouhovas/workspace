@@ -40,8 +40,10 @@ test('registered desktop dispatch isolates integrated acceptance and retains ord
   const enabled = (job, event, checks) => runInNewContext(job.if.slice(3, -2), {
     github: { event_name: event }, inputs: { checks },
   });
-  assert.equal(enabled(integrated, 'workflow_dispatch', 'integrated-desktop'), true);
-  assert.equal(enabled(workflow.jobs.common, 'workflow_dispatch', 'integrated-desktop'), false);
+  for (const checks of ['integrated-desktop', 'integrated-regressions', 'integrated-runtime']) {
+    assert.equal(enabled(integrated, 'workflow_dispatch', checks), true);
+    assert.equal(enabled(workflow.jobs.common, 'workflow_dispatch', checks), false);
+  }
   for (const event of ['push', 'pull_request', 'workflow_dispatch']) {
     assert.equal(enabled(integrated, event, 'full'), false);
     assert.equal(enabled(workflow.jobs.common, event, 'full'), true);
@@ -53,4 +55,12 @@ test('registered desktop dispatch isolates integrated acceptance and retains ord
   const upload = integrated.steps.find(step => step.uses?.startsWith('actions/upload-artifact'));
   assert.equal(upload.if, 'always()');
   assert.equal(upload.with['if-no-files-found'], 'error');
+  const selected = checks => integrated.steps.filter(step => step.run && (!step.if || runInNewContext(step.if.slice(3, -2), { inputs: { checks } }))).map(step => step.run);
+  const focused = selected('integrated-regressions');
+  assert.ok(focused.some(command => command.includes('node --test tests/windows-install.test.mjs tests/test-suites.test.mjs')));
+  assert.ok(!focused.some(command => /test:all|package:built|smoke-discovery-layouts|node scripts\/integrated-desktop/.test(command)));
+  const tail = selected('integrated-runtime');
+  assert.ok(!tail.some(command => command.includes('test:all')));
+  assert.ok(tail.includes('npm run package:built'));
+  assert.ok(tail.some(command => command.includes('node scripts/integrated-desktop.mjs')));
 });
