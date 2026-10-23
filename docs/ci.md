@@ -1705,10 +1705,12 @@ These observations cannot replace normal archive acceptance.
 
 
 For #67's Mac packaged workspace-management failure at39944358198, select
-`checks: integrated-workspaces`. It reuses the three-host sidebar job, renews
-related renderer/service and exact selected-identity readiness checks, packages
-and inspects resources, then runs the original workspace-management command in
-release mode with tracing disabled. The original command requires successful
+`checks: integrated-fixture-repairs`. It reuses the three-host sidebar job, renews
+related renderer/service, exact selected-identity and current drag-bounds readiness
+checks plus the original real pointer control, packages and inspects resources,
+then runs original workspace-management and ordinary/filesystem assignment
+commands in release mode with tracing disabled. The assignment control also
+renews Windows2022 run39944358198's missing before rectangle. Every original command requires successful
 readiness/package/resource prerequisites. The historical workspace-sidebar
 selector retains its development shell/management behavior. No full tests, Ladle
 or unrelated journey is replayed by this focused gate. After artifact inspection,

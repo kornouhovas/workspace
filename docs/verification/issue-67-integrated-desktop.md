@@ -590,6 +590,33 @@ cleanup. An earlier local release control used the older package and is not used
 as current-candidate acceptance. Both reviews0findings after requiring successful
 readiness/package/resource prerequisites before the new focused native command.
 [Source and check receipt](issue-67-evidence/workspace-activation-control.json).
-The focused integrated-workspaces route renews all three release hosts; ordinary
+The focused integrated-fixture-repairs route renews all three release hosts; ordinary
 sidebar/full defaults remain intact. Production/build/dependency inputs are
 unchanged by this repair, so passing A222 evidence retains its actual provenance.
+
+
+## Controlled drag geometry preparation
+
+Windows2022 broad39944358198 atA222 passes twelve journeys, then the filesystem
+assignment control compares a missing before rectangle with a valid after
+rectangle. The new read-only preparation observes positive stable current bounds
+through2+2frames, reacquiring a replaced handle under one host-enforced15s
+deadline. It performs no gesture. Original after equality, single dragstart,
+native pointer matrix and identity/byte assertions remain unchanged.
+
+Native replacement/hidden-deadline control is red before, green after; original
+real pointer control1/1, routes92/92, typecheck/lint and both reviews pass. The
+local ordinary original fails earlier in an unchanged pointer postcondition;
+filesystem is unreached. These remain negatives, not repair acceptance. [Receipt](issue-67-evidence/drag-bounds-control.json).
+The unpublished focused selector is now integrated-fixture-repairs, renewing
+workspace and both ordinary/filesystem assignment consumers in one three-host
+release job. It retains successful prerequisites and separate reports; the older
+workspace-sidebar development profile and15min outer bound remain unchanged.
+The union's30min CI allowance does not alter native/scenario deadlines.
+
+Production source, migrations, native resources, dependencies, package manifests
+and build/version inputs have no diff fromA222. Packaging includes dist/package
+inputs, not these smoke drivers. Existing dragRuntimeGroup implementation is
+unchanged; its new export has no top-level side effect. Reuse passing A222
+full/layout/installer/unaffected journeys at their original SHA; renew the changed
+consumers and missing tails only after focused artifact inspection.

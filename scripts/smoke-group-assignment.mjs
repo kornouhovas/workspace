@@ -8,6 +8,7 @@ import {_electron} from 'playwright-core';
 import {showRuntimeProject} from './runtime-project-visibility.mjs';
 import {exerciseFolderGroupAssignment} from './runtime-folder-group-assignment.mjs';
 import {exerciseGroupAssignment} from './runtime-group-assignment.mjs';
+import {waitForDragHandleBounds} from './runtime-group-drag.mjs';
 import {closeElectron,cleanupOwnedFixture,ownedProcessesStopped} from './runtime-lifecycle.mjs';
 import {setInterfaceLanguage,openSettingsSection,returnToWorkspace} from './runtime-settings.mjs';
 const filesystem=process.argv.includes('--filesystem');
@@ -73,7 +74,7 @@ try{
  await page.getByRole('region',{name:'Review',exact:true}).getByLabel('Изменить группу: Brand refresh',{exact:true}).and(page.locator(':enabled')).selectOption(JSON.stringify(todo));
  await page.getByText('Значение группы сохранено. Фильтры могут скрыть проект в этом представлении.',{exact:true}).waitFor();
  const handle=page.getByRole('button',{name:'Перетащить для изменения группы: Brand refresh',exact:true}).and(page.locator(':enabled'));
- const before=await handle.boundingBox();
+ const before=await waitForDragHandleBounds(handle);
  await handle.dispatchEvent('dragstart',{dataTransfer:await page.evaluateHandle(()=>new DataTransfer())});
  await page.getByText('Выберите группу назначения. Escape отменяет перетаскивание.',{exact:true}).waitFor();
  const after=await handle.boundingBox();assert.deepEqual(after,before,'Starting another gesture must not move its source');

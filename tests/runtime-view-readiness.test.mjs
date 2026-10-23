@@ -14,6 +14,7 @@ import { activateRuntimeView, setRuntimeViewLanguage } from "../scripts/runtime-
 import { openArchiveTextEditor } from "../scripts/archive-editor-driver.mjs";
 import { installArchiveEntryTrace } from "../scripts/archive-entry-trace.mjs";
 import { activateWorkspaceFixture } from "../scripts/workspace-activation-driver.mjs";
+import { waitForDragHandleBounds } from "../scripts/runtime-group-drag.mjs";
 import { readRuntimeInteraction, waitForRuntimeProjection, waitForRuntimeProject } from "../scripts/runtime-performance-timing.mjs";
 
 test('project timing waits for asynchronously mounted fields and tree before committed paint', async () => {
@@ -102,6 +103,29 @@ test('archive editor preparation waits for the focused committed control without
     assert.equal(await input.inputValue(),'New authored value');
     assert.equal(await input.evaluate(node=>node===document.activeElement),true);
     assert.equal(await page.evaluate(()=>globalThis.editorActivations),1);
+  });
+});
+
+test('group drag geometry preparation waits for the presented replacement handle without beginning a gesture', async () => {
+  await withPage(async page=>{
+    await page.setContent('<button aria-label="Drag source" hidden>Previous projection</button>');
+    await page.evaluate(()=>{
+      globalThis.dragStarts=0;document.addEventListener('dragstart',()=>globalThis.dragStarts++);
+      globalThis.presentHandle=()=>{
+        document.querySelector('button').remove();const button=document.createElement('button');button.setAttribute('aria-label','Drag source');button.textContent='Current projection';
+        button.style.cssText='position:fixed;left:40px;top:50px;width:26px;height:26px;box-sizing:border-box';document.body.append(button);
+      };
+    });
+    let prepared=false;
+    const handle=page.getByRole('button',{name:'Drag source',exact:true,includeHidden:true});
+    const preparing=waitForDragHandleBounds(handle).then(value=>{prepared=true;return value;});
+    await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+    assert.equal(prepared,false,'Missing geometry cannot establish the before-gesture snapshot');
+    await page.evaluate(()=>globalThis.presentHandle());
+    assert.deepEqual(await preparing,{x:40,y:50,width:26,height:26});
+    assert.equal(await page.evaluate(()=>globalThis.dragStarts),0);
+    await handle.evaluate(element=>{element.hidden=true;});
+    await assert.rejects(waitForDragHandleBounds(handle,30),/Drag handle/);
   });
 });
 

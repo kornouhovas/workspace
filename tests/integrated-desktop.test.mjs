@@ -85,10 +85,10 @@ test('registered desktop dispatch isolates integrated acceptance and retains ord
   assert.ok(tail.some(command => command.includes('node scripts/integrated-desktop.mjs')));
 });
 
-test('packaged workspace renewal selects the original failed consumer without repeating full acceptance',async()=>{
+test('packaged fixture renewal selects workspace and assignment consumers without repeating full acceptance',async()=>{
   const workflow=load(await readFile('.github/workflows/desktop-ci.yml','utf8'));
-  assert.ok(workflow.on.workflow_dispatch.inputs.checks.options.includes('integrated-workspaces'));
-  const context={github:{event_name:'workflow_dispatch'},inputs:{checks:'integrated-workspaces'},steps:{build:{outcome:'success'}},cancelled:()=>false,success:()=>true};
+  assert.ok(workflow.on.workflow_dispatch.inputs.checks.options.includes('integrated-fixture-repairs'));
+  const context={github:{event_name:'workflow_dispatch'},inputs:{checks:'integrated-fixture-repairs'},steps:{build:{outcome:'success'}},cancelled:()=>false,success:()=>true};
   const enabled=step=>!step.if||runInNewContext(step.if.slice(3,-2),context);
   const job=workflow.jobs['focused-workspace-sidebar'];
   assert.equal(enabled(job),true);assert.equal(enabled(workflow.jobs.common),false);assert.equal(enabled(workflow.jobs['integrated-desktop']),false);
@@ -96,13 +96,15 @@ test('packaged workspace renewal selects the original failed consumer without re
   const selected=job.steps.filter(step=>step.run&&enabled(step));
   assert.ok(selected.some(step=>step.run==='npm run package:built'));
   assert.ok(selected.some(step=>step.run==='npm run check:artifact -- release'));
-  assert.ok(selected.some(step=>step.run.includes('workspace activation preparation waits')));
+  assert.ok(selected.some(step=>step.run.includes('workspace activation preparation waits')&&step.run.includes('group drag geometry preparation waits')));
+  for(const command of ['node scripts/smoke-group-assignment.mjs 2>&1','node scripts/smoke-group-assignment.mjs --filesystem 2>&1'])assert.ok(selected.some(step=>step.run.includes(command)&&step.run.includes('set -o pipefail')));
   const original=selected.find(step=>step.run.includes('npm run smoke:workspaces'));
   assert.ok(original.run.includes('set -o pipefail'));
   assert.equal(runInNewContext(original.env.WORKSPACE_SMOKE_MODE.slice(3,-2),context),'release');
   assert.equal(selected.some(step=>/test:all|smoke-discovery-layouts|npm run smoke:shell/.test(step.run)),false);
   context.success=()=>false;
   assert.equal(enabled(original),false,'A failed readiness/package/resource prerequisite prevents native renewal');
+  assert.equal(job.steps.some(step=>step.run&&/node scripts\/smoke-group-assignment/.test(step.run)&&enabled(step)),false);
   context.inputs.checks='workspace-sidebar';
   const ordinary=job.steps.filter(step=>step.run&&enabled(step));
   assert.ok(ordinary.some(step=>step.run.includes('npm run smoke:shell')));
