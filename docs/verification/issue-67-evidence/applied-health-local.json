@@ -1,0 +1,35 @@
+{
+  "head": "52a6177756256aab41255c3291a6924f7c911ef1",
+  "workingTree": "archive read-contract repair and health guards",
+  "command": "node scripts/smoke-discovery-layouts.mjs --applied",
+  "cases": {
+    "missingArchiveReads": {
+      "featurePassed": false,
+      "shutdownPassed": true,
+      "captures": 0,
+      "error": "Applied fixtures must render the intended healthy state\n\n1 !== 0\n",
+      "reportSha256": "5d682d0be360b07d551b1fa85408ffa0b2a357561195395d701cd741e84dfdb4"
+    },
+    "staleArchiveRevision": {
+      "featurePassed": false,
+      "shutdownPassed": true,
+      "captures": 0,
+      "error": "Applied fixtures must render the intended healthy state\n\n1 !== 0\n",
+      "reportSha256": "fd7423ae52d039d01453fa39b9d3163eff0a0a71ac4408350058aa9f2abfd2ad"
+    },
+    "hiddenReadinessGuard": {
+      "featurePassed": false,
+      "shutdownPassed": true,
+      "captures": 0,
+      "error": "locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('.project-archive[aria-busy=\"false\"]') to be visible\u001b[22m\n\u001b[2m    33 \u00d7 locator resolved to hidden <section tabindex=\"-1\" aria-busy=\"false\" class=\"project-archive\" aria-label=\"Project archive\">\u2026</section>\u001b[22m\n",
+      "reportSha256": "bec5a3d67619747405a05ed249d786b86cec917653a8d91fd9b40b238ed040fe"
+    },
+    "currentArchiveHealthy": {
+      "featurePassed": true,
+      "shutdownPassed": true,
+      "captures": 12,
+      "error": null,
+      "reportSha256": "18a7e44ef7a0408410d61e8fcae324c8ebaf479fc58c9c6f00c8c98e003c53c0"
+    }
+  }
+}

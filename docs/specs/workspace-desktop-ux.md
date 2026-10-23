@@ -472,6 +472,11 @@ ship applicable license notices; do not import unrelated chat/mobile machinery.
   and full scan <=5,000 ms, relevant filter/group/edit interaction <=300 ms, and
   the approved conservative process-memory limit of 1,000,000,000 bytes. Include
   the new project-area/editor flows without weakening established measurements.
+  For project preview, require current usable properties and visible file-tree
+  loading (or ready contents) within300ms. From that same opening event, require
+  the fully loaded tree within5,000ms, retaining every filesystem identity check.
+  Record these two endpoints separately; existing filter/group/edit limits stay
+  unchanged. This preview criterion was confirmed by the owner during #67.
   Record actual OS/hardware, raw samples and limitations; hosted Windows Server
   evidence does not become Windows 11 evidence.
 

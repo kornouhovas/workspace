@@ -1,0 +1,1561 @@
+{
+  "diagnosticRun": 39939563035,
+  "status": "not acceptance; Windows2022release passes, five other diagnostic jobs fail",
+  "reports": {
+    "entry-win2022-085": {
+      "sha": "08504f86528ff2c1f7e230ecc0fc58340952efe5",
+      "run": "39939563035",
+      "attempt": "1",
+      "phase": {
+        "discoveryMode": "direct",
+        "language": "en",
+        "layout": "board",
+        "location": "expanded",
+        "step": "archived-editor"
+      },
+      "failure": {
+        "name": "Error",
+        "message": "Archived editor readiness timed out after 14999.998400000004ms"
+      },
+      "failedInterface": {
+        "state": "ready",
+        "diagnostic": null,
+        "interfaceReady": "true",
+        "activeTag": "BODY",
+        "textareas": 1
+      },
+      "cleanup": {
+        "status": "passed",
+        "asserted": true,
+        "processesStopped": true,
+        "maxRetries": 5,
+        "retryDelay": 100
+      },
+      "shutdowns": [
+        {
+          "normalQuit": true,
+          "backendsExited": true
+        }
+      ],
+      "tail": [
+        {
+          "type": "focus-call",
+          "at": 8379,
+          "wallTime": 1792751554114,
+          "tag": "BUTTON",
+          "className": "workspace-button workspace-button--secondary icon-button",
+          "activeTag": "BUTTON",
+          "activeClass": "workspace-button workspace-button--secondary",
+          "fieldsBusy": "false",
+          "editors": [],
+          "stack": [
+            "    at HTMLElement.focus (<anonymous>:28:41)",
+            "    at onRestoreFocus (file:///D:/a/workspace/workspace/dist/renderer/assets/index-BsPRhqCI.js:49:357602)",
+            "    at Ce (file:///D:/a/workspace/workspace/dist/renderer/assets/index-BsPRhqCI.js:49:255893)",
+            "    at zf (file:///D:/a/workspace/workspace/dist/renderer/assets/index-BsPRhqCI.js:8:139264)",
+            "    at file:///D:/a/workspace/workspace/dist/renderer/assets/index-BsPRhqCI.js:8:143996"
+          ]
+        },
+        {
+          "type": "focusout",
+          "at": 8379,
+          "wallTime": 1792751554114,
+          "tag": "BUTTON",
+          "className": "workspace-button workspace-button--secondary",
+          "activeTag": "BODY",
+          "activeClass": "",
+          "fieldsBusy": "false",
+          "editors": []
+        },
+        {
+          "type": "focusin",
+          "at": 8379.100000000093,
+          "wallTime": 1792751554114,
+          "tag": "BUTTON",
+          "className": "workspace-button workspace-button--secondary icon-button",
+          "activeTag": "BUTTON",
+          "activeClass": "workspace-button workspace-button--secondary icon-button",
+          "fieldsBusy": "false",
+          "editors": []
+        },
+        {
+          "type": "focusout",
+          "at": 8396.70000000007,
+          "wallTime": 1792751554131,
+          "tag": "BUTTON",
+          "className": "workspace-button workspace-button--secondary icon-button",
+          "activeTag": "BODY",
+          "activeClass": "",
+          "fieldsBusy": "false",
+          "editors": []
+        },
+        {
+          "type": "focusin",
+          "at": 8396.900000000023,
+          "wallTime": 1792751554132,
+          "tag": "BUTTON",
+          "className": "text-value-button",
+          "activeTag": "BUTTON",
+          "activeClass": "text-value-button",
+          "fieldsBusy": "false",
+          "editors": []
+        },
+        {
+          "type": "keydown",
+          "at": 8401.20000000007,
+          "wallTime": 1792751554136,
+          "tag": "BUTTON",
+          "className": "text-value-button",
+          "activeTag": "BUTTON",
+          "activeClass": "text-value-button",
+          "fieldsBusy": "false",
+          "editors": [],
+          "key": "Enter"
+        },
+        {
+          "type": "click",
+          "at": 8401.300000000047,
+          "wallTime": 1792751554136,
+          "tag": "BUTTON",
+          "className": "text-value-button",
+          "activeTag": "BUTTON",
+          "activeClass": "text-value-button",
+          "fieldsBusy": "false",
+          "editors": []
+        },
+        {
+          "type": "focusout",
+          "at": 8401.70000000007,
+          "wallTime": 1792751554136,
+          "tag": "BUTTON",
+          "className": "text-value-button",
+          "activeTag": "BODY",
+          "activeClass": "",
+          "fieldsBusy": "false",
+          "editors": []
+        },
+        {
+          "type": "focus-call",
+          "at": 8403,
+          "wallTime": 1792751554138,
+          "tag": "BUTTON",
+          "className": "text-value-button",
+          "activeTag": "BODY",
+          "activeClass": "",
+          "fieldsBusy": "false",
+          "editors": [
+            {
+              "disabled": false,
+              "length": 22,
+              "focused": false
+            }
+          ],
+          "stack": [
+            "    at HTMLElement.focus (<anonymous>:28:41)",
+            "    at rf (file:///D:/a/workspace/workspace/dist/renderer/assets/index-BsPRhqCI.js:8:131623)",
+            "    at ef (file:///D:/a/workspace/workspace/dist/renderer/assets/index-BsPRhqCI.js:8:130372)",
+            "    at $d (file:///D:/a/workspace/workspace/dist/renderer/assets/index-BsPRhqCI.js:8:129850)",
+            "    at Nd (file:///D:/a/workspace/workspace/dist/renderer/assets/index-BsPRhqCI.js:8:125249)"
+          ]
+        },
+        {
+          "type": "focus-call",
+          "at": 8403.100000000093,
+          "wallTime": 1792751554138,
+          "tag": "TEXTAREA",
+          "className": "workspace-input",
+          "activeTag": "BODY",
+          "activeClass": "",
+          "fieldsBusy": "false",
+          "editors": [
+            {
+              "disabled": false,
+              "length": 22,
+              "focused": false
+            }
+          ],
+          "stack": [
+            "    at HTMLElement.focus (<anonymous>:28:41)",
+            "    at file:///D:/a/workspace/workspace/dist/renderer/assets/index-BsPRhqCI.js:49:208248",
+            "    at fl (file:///D:/a/workspace/workspace/dist/renderer/assets/index-BsPRhqCI.js:8:95227)",
+            "    at Nu (file:///D:/a/workspace/workspace/dist/renderer/assets/index-BsPRhqCI.js:8:118519)",
+            "    at Mu (file:///D:/a/workspace/workspace/dist/renderer/assets/index-BsPRhqCI.js:8:118292)"
+          ]
+        },
+        {
+          "type": "focusin",
+          "at": 8403.300000000047,
+          "wallTime": 1792751554138,
+          "tag": "TEXTAREA",
+          "className": "workspace-input",
+          "activeTag": "TEXTAREA",
+          "activeClass": "workspace-input",
+          "fieldsBusy": "false",
+          "editors": [
+            {
+              "disabled": false,
+              "length": 22,
+              "focused": true
+            }
+          ]
+        },
+        {
+          "type": "focusout",
+          "at": 8442.800000000047,
+          "wallTime": 1792751554177,
+          "tag": "TEXTAREA",
+          "className": "workspace-input",
+          "activeTag": "BODY",
+          "activeClass": "",
+          "fieldsBusy": "false",
+          "editors": [
+            {
+              "disabled": true,
+              "length": 22,
+              "focused": false
+            }
+          ]
+        }
+      ]
+    },
+    "entry-winlatest-dev-085": {
+      "sha": "08504f86528ff2c1f7e230ecc0fc58340952efe5",
+      "run": "39939563035",
+      "attempt": "1",
+      "phase": {
+        "discoveryMode": "direct",
+        "language": "en",
+        "layout": "board",
+        "location": "expanded",
+        "step": "archived-editor"
+      },
+      "failure": {
+        "name": "Error",
+        "message": "Archived editor readiness timed out after 14999.998000000003ms"
+      },
+      "failedInterface": {
+        "state": "ready",
+        "diagnostic": null,
+        "interfaceReady": "true",
+        "activeTag": "BODY",
+        "textareas": 1
+      },
+      "cleanup": {
+        "status": "passed",
+        "asserted": true,
+        "processesStopped": true,
+        "maxRetries": 5,
+        "retryDelay": 100
+      },
+      "shutdowns": [
+        {
+          "normalQuit": true,
+          "backendsExited": true
+        }
+      ],
+      "tail": [
+        {
+          "type": "focus-call",
+          "at": 10179,
+          "wallTime": 1792751659059,
+          "tag": "BUTTON",
+          "className": "workspace-button workspace-button--secondary icon-button",
+          "activeTag": "BUTTON",
+          "activeClass": "workspace-button workspace-button--secondary",
+          "fieldsBusy": "false",
+          "editors": [],
+          "stack": [
+            "    at HTMLElement.focus (<anonymous>:28:41)",
+            "    at onRestoreFocus (file:///D:/a/workspace/workspace/dist/renderer/assets/index-BsPRhqCI.js:49:357602)",
+            "    at Ce (file:///D:/a/workspace/workspace/dist/renderer/assets/index-BsPRhqCI.js:49:255893)",
+            "    at zf (file:///D:/a/workspace/workspace/dist/renderer/assets/index-BsPRhqCI.js:8:139264)",
+            "    at file:///D:/a/workspace/workspace/dist/renderer/assets/index-BsPRhqCI.js:8:143996"
+          ]
+        },
+        {
+          "type": "focusout",
+          "at": 10179.200000000012,
+          "wallTime": 1792751659059,
+          "tag": "BUTTON",
+          "className": "workspace-button workspace-button--secondary",
+          "activeTag": "BODY",
+          "activeClass": "",
+          "fieldsBusy": "false",
+          "editors": []
+        },
+        {
+          "type": "focusin",
+          "at": 10179.299999999988,
+          "wallTime": 1792751659059,
+          "tag": "BUTTON",
+          "className": "workspace-button workspace-button--secondary icon-button",
+          "activeTag": "BUTTON",
+          "activeClass": "workspace-button workspace-button--secondary icon-button",
+          "fieldsBusy": "false",
+          "editors": []
+        },
+        {
+          "type": "focusout",
+          "at": 10202.299999999988,
+          "wallTime": 1792751659082,
+          "tag": "BUTTON",
+          "className": "workspace-button workspace-button--secondary icon-button",
+          "activeTag": "BODY",
+          "activeClass": "",
+          "fieldsBusy": "false",
+          "editors": []
+        },
+        {
+          "type": "focusin",
+          "at": 10202.5,
+          "wallTime": 1792751659083,
+          "tag": "BUTTON",
+          "className": "text-value-button",
+          "activeTag": "BUTTON",
+          "activeClass": "text-value-button",
+          "fieldsBusy": "false",
+          "editors": []
+        },
+        {
+          "type": "keydown",
+          "at": 10209.099999999977,
+          "wallTime": 1792751659089,
+          "tag": "BUTTON",
+          "className": "text-value-button",
+          "activeTag": "BUTTON",
+          "activeClass": "text-value-button",
+          "fieldsBusy": "false",
+          "editors": [],
+          "key": "Enter"
+        },
+        {
+          "type": "click",
+          "at": 10209.200000000012,
+          "wallTime": 1792751659089,
+          "tag": "BUTTON",
+          "className": "text-value-button",
+          "activeTag": "BUTTON",
+          "activeClass": "text-value-button",
+          "fieldsBusy": "false",
+          "editors": []
+        },
+        {
+          "type": "focusout",
+          "at": 10209.5,
+          "wallTime": 1792751659090,
+          "tag": "BUTTON",
+          "className": "text-value-button",
+          "activeTag": "BODY",
+          "activeClass": "",
+          "fieldsBusy": "false",
+          "editors": []
+        },
+        {
+          "type": "focus-call",
+          "at": 10210.900000000023,
+          "wallTime": 1792751659091,
+          "tag": "BUTTON",
+          "className": "text-value-button",
+          "activeTag": "BODY",
+          "activeClass": "",
+          "fieldsBusy": "false",
+          "editors": [
+            {
+              "disabled": false,
+              "length": 22,
+              "focused": false
+            }
+          ],
+          "stack": [
+            "    at HTMLElement.focus (<anonymous>:28:41)",
+            "    at rf (file:///D:/a/workspace/workspace/dist/renderer/assets/index-BsPRhqCI.js:8:131623)",
+            "    at ef (file:///D:/a/workspace/workspace/dist/renderer/assets/index-BsPRhqCI.js:8:130372)",
+            "    at $d (file:///D:/a/workspace/workspace/dist/renderer/assets/index-BsPRhqCI.js:8:129850)",
+            "    at Nd (file:///D:/a/workspace/workspace/dist/renderer/assets/index-BsPRhqCI.js:8:125249)"
+          ]
+        },
+        {
+          "type": "focus-call",
+          "at": 10211,
+          "wallTime": 1792751659091,
+          "tag": "TEXTAREA",
+          "className": "workspace-input",
+          "activeTag": "BODY",
+          "activeClass": "",
+          "fieldsBusy": "false",
+          "editors": [
+            {
+              "disabled": false,
+              "length": 22,
+              "focused": false
+            }
+          ],
+          "stack": [
+            "    at HTMLElement.focus (<anonymous>:28:41)",
+            "    at file:///D:/a/workspace/workspace/dist/renderer/assets/index-BsPRhqCI.js:49:208248",
+            "    at fl (file:///D:/a/workspace/workspace/dist/renderer/assets/index-BsPRhqCI.js:8:95227)",
+            "    at Nu (file:///D:/a/workspace/workspace/dist/renderer/assets/index-BsPRhqCI.js:8:118519)",
+            "    at Mu (file:///D:/a/workspace/workspace/dist/renderer/assets/index-BsPRhqCI.js:8:118292)"
+          ]
+        },
+        {
+          "type": "focusin",
+          "at": 10211.299999999988,
+          "wallTime": 1792751659091,
+          "tag": "TEXTAREA",
+          "className": "workspace-input",
+          "activeTag": "TEXTAREA",
+          "activeClass": "workspace-input",
+          "fieldsBusy": "false",
+          "editors": [
+            {
+              "disabled": false,
+              "length": 22,
+              "focused": true
+            }
+          ]
+        },
+        {
+          "type": "focusout",
+          "at": 10233.400000000023,
+          "wallTime": 1792751659113,
+          "tag": "TEXTAREA",
+          "className": "workspace-input",
+          "activeTag": "BODY",
+          "activeClass": "",
+          "fieldsBusy": "false",
+          "editors": [
+            {
+              "disabled": true,
+              "length": 22,
+              "focused": false
+            }
+          ]
+        }
+      ]
+    },
+    "entry-winlatest-release-085": {
+      "sha": "08504f86528ff2c1f7e230ecc0fc58340952efe5",
+      "run": "39939563035",
+      "attempt": "1",
+      "phase": {
+        "discoveryMode": "direct",
+        "language": "en",
+        "layout": "table",
+        "location": "expanded",
+        "step": "archived-editor"
+      },
+      "failure": {
+        "name": "Error",
+        "message": "Archived editor readiness timed out after 14999.998400000002ms"
+      },
+      "failedInterface": {
+        "state": "ready",
+        "diagnostic": null,
+        "interfaceReady": "true",
+        "activeTag": "BODY",
+        "textareas": 1
+      },
+      "cleanup": {
+        "status": "passed",
+        "asserted": true,
+        "processesStopped": true,
+        "maxRetries": 5,
+        "retryDelay": 100
+      },
+      "shutdowns": [
+        {
+          "normalQuit": true,
+          "backendsExited": true
+        }
+      ],
+      "tail": [
+        {
+          "type": "focus-call",
+          "at": 10252.200000000012,
+          "wallTime": 1792751695504,
+          "tag": "BUTTON",
+          "className": "workspace-button workspace-button--secondary icon-button",
+          "activeTag": "BUTTON",
+          "activeClass": "workspace-button workspace-button--secondary",
+          "fieldsBusy": "false",
+          "editors": [],
+          "stack": [
+            "    at HTMLElement.focus (<anonymous>:28:41)",
+            "    at onRestoreFocus (file:///D:/a/workspace/workspace/release/win-unpacked/resources/app.asar/dist/renderer/assets/index-BsPRhqCI.js:49:357602)",
+            "    at Ce (file:///D:/a/workspace/workspace/release/win-unpacked/resources/app.asar/dist/renderer/assets/index-BsPRhqCI.js:49:255893)",
+            "    at zf (file:///D:/a/workspace/workspace/release/win-unpacked/resources/app.asar/dist/renderer/assets/index-BsPRhqCI.js:8:139264)",
+            "    at file:///D:/a/workspace/workspace/release/win-unpacked/resources/app.asar/dist/renderer/assets/index-BsPRhqCI.js:8:143996"
+          ]
+        },
+        {
+          "type": "focusout",
+          "at": 10252.200000000012,
+          "wallTime": 1792751695504,
+          "tag": "BUTTON",
+          "className": "workspace-button workspace-button--secondary",
+          "activeTag": "BODY",
+          "activeClass": "",
+          "fieldsBusy": "false",
+          "editors": []
+        },
+        {
+          "type": "focusin",
+          "at": 10252.299999999988,
+          "wallTime": 1792751695504,
+          "tag": "BUTTON",
+          "className": "workspace-button workspace-button--secondary icon-button",
+          "activeTag": "BUTTON",
+          "activeClass": "workspace-button workspace-button--secondary icon-button",
+          "fieldsBusy": "false",
+          "editors": []
+        },
+        {
+          "type": "focusout",
+          "at": 10274.900000000023,
+          "wallTime": 1792751695527,
+          "tag": "BUTTON",
+          "className": "workspace-button workspace-button--secondary icon-button",
+          "activeTag": "BODY",
+          "activeClass": "",
+          "fieldsBusy": "false",
+          "editors": []
+        },
+        {
+          "type": "focusin",
+          "at": 10275.200000000012,
+          "wallTime": 1792751695527,
+          "tag": "BUTTON",
+          "className": "text-value-button",
+          "activeTag": "BUTTON",
+          "activeClass": "text-value-button",
+          "fieldsBusy": "false",
+          "editors": []
+        },
+        {
+          "type": "keydown",
+          "at": 10281.900000000023,
+          "wallTime": 1792751695534,
+          "tag": "BUTTON",
+          "className": "text-value-button",
+          "activeTag": "BUTTON",
+          "activeClass": "text-value-button",
+          "fieldsBusy": "false",
+          "editors": [],
+          "key": "Enter"
+        },
+        {
+          "type": "click",
+          "at": 10282.099999999977,
+          "wallTime": 1792751695534,
+          "tag": "BUTTON",
+          "className": "text-value-button",
+          "activeTag": "BUTTON",
+          "activeClass": "text-value-button",
+          "fieldsBusy": "false",
+          "editors": []
+        },
+        {
+          "type": "focusout",
+          "at": 10282.5,
+          "wallTime": 1792751695534,
+          "tag": "BUTTON",
+          "className": "text-value-button",
+          "activeTag": "BODY",
+          "activeClass": "",
+          "fieldsBusy": "false",
+          "editors": []
+        },
+        {
+          "type": "focus-call",
+          "at": 10283.900000000023,
+          "wallTime": 1792751695536,
+          "tag": "BUTTON",
+          "className": "text-value-button",
+          "activeTag": "BODY",
+          "activeClass": "",
+          "fieldsBusy": "false",
+          "editors": [
+            {
+              "disabled": false,
+              "length": 22,
+              "focused": false
+            }
+          ],
+          "stack": [
+            "    at HTMLElement.focus (<anonymous>:28:41)",
+            "    at rf (file:///D:/a/workspace/workspace/release/win-unpacked/resources/app.asar/dist/renderer/assets/index-BsPRhqCI.js:8:131623)",
+            "    at ef (file:///D:/a/workspace/workspace/release/win-unpacked/resources/app.asar/dist/renderer/assets/index-BsPRhqCI.js:8:130372)",
+            "    at $d (file:///D:/a/workspace/workspace/release/win-unpacked/resources/app.asar/dist/renderer/assets/index-BsPRhqCI.js:8:129850)",
+            "    at Nd (file:///D:/a/workspace/workspace/release/win-unpacked/resources/app.asar/dist/renderer/assets/index-BsPRhqCI.js:8:125249)"
+          ]
+        },
+        {
+          "type": "focus-call",
+          "at": 10284,
+          "wallTime": 1792751695536,
+          "tag": "TEXTAREA",
+          "className": "workspace-input",
+          "activeTag": "BODY",
+          "activeClass": "",
+          "fieldsBusy": "false",
+          "editors": [
+            {
+              "disabled": false,
+              "length": 22,
+              "focused": false
+            }
+          ],
+          "stack": [
+            "    at HTMLElement.focus (<anonymous>:28:41)",
+            "    at file:///D:/a/workspace/workspace/release/win-unpacked/resources/app.asar/dist/renderer/assets/index-BsPRhqCI.js:49:208248",
+            "    at fl (file:///D:/a/workspace/workspace/release/win-unpacked/resources/app.asar/dist/renderer/assets/index-BsPRhqCI.js:8:95227)",
+            "    at Nu (file:///D:/a/workspace/workspace/release/win-unpacked/resources/app.asar/dist/renderer/assets/index-BsPRhqCI.js:8:118519)",
+            "    at Mu (file:///D:/a/workspace/workspace/release/win-unpacked/resources/app.asar/dist/renderer/assets/index-BsPRhqCI.js:8:118292)"
+          ]
+        },
+        {
+          "type": "focusin",
+          "at": 10284.299999999988,
+          "wallTime": 1792751695536,
+          "tag": "TEXTAREA",
+          "className": "workspace-input",
+          "activeTag": "TEXTAREA",
+          "activeClass": "workspace-input",
+          "fieldsBusy": "false",
+          "editors": [
+            {
+              "disabled": false,
+              "length": 22,
+              "focused": true
+            }
+          ]
+        },
+        {
+          "type": "focusout",
+          "at": 10311.099999999977,
+          "wallTime": 1792751695563,
+          "tag": "TEXTAREA",
+          "className": "workspace-input",
+          "activeTag": "BODY",
+          "activeClass": "",
+          "fieldsBusy": "false",
+          "editors": [
+            {
+              "disabled": true,
+              "length": 22,
+              "focused": false
+            }
+          ]
+        }
+      ]
+    },
+    "entry-mac-dev-085": {
+      "sha": "08504f86528ff2c1f7e230ecc0fc58340952efe5",
+      "run": "39939563035",
+      "attempt": "1",
+      "phase": {
+        "discoveryMode": "grouped",
+        "language": "en",
+        "layout": "board",
+        "location": "preview",
+        "step": "archived-editor"
+      },
+      "failure": {
+        "name": "Error",
+        "message": "Archived editor readiness timed out after 14999.999416000006ms"
+      },
+      "failedInterface": {
+        "state": "ready",
+        "diagnostic": null,
+        "interfaceReady": "true",
+        "activeTag": "BUTTON",
+        "textareas": 0
+      },
+      "cleanup": {
+        "status": "passed",
+        "asserted": true,
+        "processesStopped": true,
+        "maxRetries": 5,
+        "retryDelay": 100
+      },
+      "shutdowns": [
+        {
+          "normalQuit": true,
+          "backendsExited": true
+        }
+      ],
+      "tail": [
+        {
+          "type": "focusout",
+          "at": 7471.400000000023,
+          "wallTime": 1792751599160,
+          "tag": "BUTTON",
+          "className": "workspace-button workspace-button--secondary",
+          "activeTag": "BODY",
+          "activeClass": "",
+          "fieldsBusy": "false",
+          "editors": []
+        },
+        {
+          "type": "focus-call",
+          "at": 7489.799999999988,
+          "wallTime": 1792751599178,
+          "tag": "DIV",
+          "className": "project-operation-dialog project-archive-dialog",
+          "activeTag": "BODY",
+          "activeClass": "",
+          "fieldsBusy": "false",
+          "editors": [],
+          "stack": [
+            "    at HTMLElement.focus (<anonymous>:28:41)",
+            "    at Ee (file:///Users/runner/work/workspace/workspace/dist/renderer/assets/index-Cay98WYT.js:49:257179)",
+            "    at De (file:///Users/runner/work/workspace/workspace/dist/renderer/assets/index-Cay98WYT.js:49:257669)"
+          ]
+        },
+        {
+          "type": "focusin",
+          "at": 7490.299999999988,
+          "wallTime": 1792751599179,
+          "tag": "DIV",
+          "className": "project-operation-dialog project-archive-dialog",
+          "activeTag": "DIV",
+          "activeClass": "project-operation-dialog project-archive-dialog",
+          "fieldsBusy": "false",
+          "editors": []
+        },
+        {
+          "type": "focusout",
+          "at": 7557.5,
+          "wallTime": 1792751599246,
+          "tag": "DIV",
+          "className": "project-operation-dialog project-archive-dialog",
+          "activeTag": "BODY",
+          "activeClass": "",
+          "fieldsBusy": "false",
+          "editors": []
+        },
+        {
+          "type": "focusin",
+          "at": 7557.599999999977,
+          "wallTime": 1792751599246,
+          "tag": "BUTTON",
+          "className": "workspace-button workspace-button--secondary",
+          "activeTag": "BUTTON",
+          "activeClass": "workspace-button workspace-button--secondary",
+          "fieldsBusy": "false",
+          "editors": []
+        },
+        {
+          "type": "click",
+          "at": 7557.700000000012,
+          "wallTime": 1792751599246,
+          "tag": "BUTTON",
+          "className": "workspace-button workspace-button--secondary",
+          "activeTag": "BUTTON",
+          "activeClass": "workspace-button workspace-button--secondary",
+          "fieldsBusy": "false",
+          "editors": []
+        },
+        {
+          "type": "focus-call",
+          "at": 7557.900000000023,
+          "wallTime": 1792751599246,
+          "tag": "SECTION",
+          "className": "project-archive",
+          "activeTag": "BUTTON",
+          "activeClass": "workspace-button workspace-button--secondary",
+          "fieldsBusy": "false",
+          "editors": [],
+          "stack": [
+            "    at HTMLElement.focus (<anonymous>:28:41)",
+            "    at Ce (file:///Users/runner/work/workspace/workspace/dist/renderer/assets/index-Cay98WYT.js:49:255883)",
+            "    at zf (file:///Users/runner/work/workspace/workspace/dist/renderer/assets/index-Cay98WYT.js:8:139264)",
+            "    at file:///Users/runner/work/workspace/workspace/dist/renderer/assets/index-Cay98WYT.js:8:143996",
+            "    at fn (file:///Users/runner/work/workspace/workspace/dist/renderer/assets/index-Cay98WYT.js:8:15178)"
+          ]
+        },
+        {
+          "type": "focusout",
+          "at": 7557.900000000023,
+          "wallTime": 1792751599246,
+          "tag": "BUTTON",
+          "className": "workspace-button workspace-button--secondary",
+          "activeTag": "BODY",
+          "activeClass": "",
+          "fieldsBusy": "false",
+          "editors": []
+        },
+        {
+          "type": "focusin",
+          "at": 7557.900000000023,
+          "wallTime": 1792751599247,
+          "tag": "SECTION",
+          "className": "project-archive",
+          "activeTag": "SECTION",
+          "activeClass": "project-archive",
+          "fieldsBusy": "false",
+          "editors": []
+        },
+        {
+          "type": "focusout",
+          "at": 7592.200000000012,
+          "wallTime": 1792751599281,
+          "tag": "SECTION",
+          "className": "project-archive",
+          "activeTag": "BODY",
+          "activeClass": "",
+          "fieldsBusy": "false",
+          "editors": []
+        },
+        {
+          "type": "focusin",
+          "at": 7593.400000000023,
+          "wallTime": 1792751599282,
+          "tag": "BUTTON",
+          "className": "text-value-button",
+          "activeTag": "BUTTON",
+          "activeClass": "text-value-button",
+          "fieldsBusy": "false",
+          "editors": []
+        },
+        {
+          "type": "keydown",
+          "at": 7610.599999999977,
+          "wallTime": 1792751599299,
+          "tag": "BUTTON",
+          "className": "text-value-button",
+          "activeTag": "BUTTON",
+          "activeClass": "text-value-button",
+          "fieldsBusy": "false",
+          "editors": [],
+          "key": "Enter"
+        }
+      ]
+    },
+    "entry-mac-release-085": {
+      "sha": "08504f86528ff2c1f7e230ecc0fc58340952efe5",
+      "run": "39939563035",
+      "attempt": "1",
+      "phase": {
+        "discoveryMode": "grouped",
+        "language": "en",
+        "layout": "board",
+        "location": "preview",
+        "step": "archived-editor"
+      },
+      "failure": {
+        "name": "Error",
+        "message": "Archived editor readiness timed out after 14999.999584000005ms"
+      },
+      "failedInterface": {
+        "state": "ready",
+        "diagnostic": null,
+        "interfaceReady": "true",
+        "activeTag": "BUTTON",
+        "textareas": 0
+      },
+      "cleanup": {
+        "status": "passed",
+        "asserted": true,
+        "processesStopped": true,
+        "maxRetries": 5,
+        "retryDelay": 100
+      },
+      "shutdowns": [
+        {
+          "normalQuit": true,
+          "backendsExited": true
+        }
+      ],
+      "tail": [
+        {
+          "type": "focusout",
+          "at": 6968.399999999965,
+          "wallTime": 1792751599395,
+          "tag": "BUTTON",
+          "className": "workspace-button workspace-button--secondary",
+          "activeTag": "BODY",
+          "activeClass": "",
+          "fieldsBusy": "false",
+          "editors": []
+        },
+        {
+          "type": "focus-call",
+          "at": 6991.499999999942,
+          "wallTime": 1792751599418,
+          "tag": "DIV",
+          "className": "project-operation-dialog project-archive-dialog",
+          "activeTag": "BODY",
+          "activeClass": "",
+          "fieldsBusy": "false",
+          "editors": [],
+          "stack": [
+            "    at HTMLElement.focus (<anonymous>:28:41)",
+            "    at Ee (file:///Users/runner/work/workspace/workspace/release/mac-arm64/Workspace.app/Contents/Resources/app.asar/dist/renderer/assets/index-Cay98WYT.js:49:257179)",
+            "    at De (file:///Users/runner/work/workspace/workspace/release/mac-arm64/Workspace.app/Contents/Resources/app.asar/dist/renderer/assets/index-Cay98WYT.js:49:257669)"
+          ]
+        },
+        {
+          "type": "focusin",
+          "at": 6991.700000000012,
+          "wallTime": 1792751599419,
+          "tag": "DIV",
+          "className": "project-operation-dialog project-archive-dialog",
+          "activeTag": "DIV",
+          "activeClass": "project-operation-dialog project-archive-dialog",
+          "fieldsBusy": "false",
+          "editors": []
+        },
+        {
+          "type": "focusout",
+          "at": 7056.200000000012,
+          "wallTime": 1792751599483,
+          "tag": "DIV",
+          "className": "project-operation-dialog project-archive-dialog",
+          "activeTag": "BODY",
+          "activeClass": "",
+          "fieldsBusy": "false",
+          "editors": []
+        },
+        {
+          "type": "focusin",
+          "at": 7056.299999999988,
+          "wallTime": 1792751599483,
+          "tag": "BUTTON",
+          "className": "workspace-button workspace-button--secondary",
+          "activeTag": "BUTTON",
+          "activeClass": "workspace-button workspace-button--secondary",
+          "fieldsBusy": "false",
+          "editors": []
+        },
+        {
+          "type": "click",
+          "at": 7056.799999999988,
+          "wallTime": 1792751599484,
+          "tag": "BUTTON",
+          "className": "workspace-button workspace-button--secondary",
+          "activeTag": "BUTTON",
+          "activeClass": "workspace-button workspace-button--secondary",
+          "fieldsBusy": "false",
+          "editors": []
+        },
+        {
+          "type": "focus-call",
+          "at": 7056.999999999942,
+          "wallTime": 1792751599484,
+          "tag": "SECTION",
+          "className": "project-archive",
+          "activeTag": "BUTTON",
+          "activeClass": "workspace-button workspace-button--secondary",
+          "fieldsBusy": "false",
+          "editors": [],
+          "stack": [
+            "    at HTMLElement.focus (<anonymous>:28:41)",
+            "    at Ce (file:///Users/runner/work/workspace/workspace/release/mac-arm64/Workspace.app/Contents/Resources/app.asar/dist/renderer/assets/index-Cay98WYT.js:49:255883)",
+            "    at zf (file:///Users/runner/work/workspace/workspace/release/mac-arm64/Workspace.app/Contents/Resources/app.asar/dist/renderer/assets/index-Cay98WYT.js:8:139264)",
+            "    at file:///Users/runner/work/workspace/workspace/release/mac-arm64/Workspace.app/Contents/Resources/app.asar/dist/renderer/assets/index-Cay98WYT.js:8:143996",
+            "    at fn (file:///Users/runner/work/workspace/workspace/release/mac-arm64/Workspace.app/Contents/Resources/app.asar/dist/renderer/assets/index-Cay98WYT.js:8:15178)"
+          ]
+        },
+        {
+          "type": "focusout",
+          "at": 7056.999999999942,
+          "wallTime": 1792751599484,
+          "tag": "BUTTON",
+          "className": "workspace-button workspace-button--secondary",
+          "activeTag": "BODY",
+          "activeClass": "",
+          "fieldsBusy": "false",
+          "editors": []
+        },
+        {
+          "type": "focusin",
+          "at": 7057.399999999965,
+          "wallTime": 1792751599484,
+          "tag": "SECTION",
+          "className": "project-archive",
+          "activeTag": "SECTION",
+          "activeClass": "project-archive",
+          "fieldsBusy": "false",
+          "editors": []
+        },
+        {
+          "type": "focusout",
+          "at": 7088.399999999965,
+          "wallTime": 1792751599515,
+          "tag": "SECTION",
+          "className": "project-archive",
+          "activeTag": "BODY",
+          "activeClass": "",
+          "fieldsBusy": "false",
+          "editors": []
+        },
+        {
+          "type": "focusin",
+          "at": 7088.700000000012,
+          "wallTime": 1792751599516,
+          "tag": "BUTTON",
+          "className": "text-value-button",
+          "activeTag": "BUTTON",
+          "activeClass": "text-value-button",
+          "fieldsBusy": "false",
+          "editors": []
+        },
+        {
+          "type": "keydown",
+          "at": 7102.100000000035,
+          "wallTime": 1792751599529,
+          "tag": "BUTTON",
+          "className": "text-value-button",
+          "activeTag": "BUTTON",
+          "activeClass": "text-value-button",
+          "fieldsBusy": "false",
+          "editors": [],
+          "key": "Enter"
+        }
+      ]
+    }
+  },
+  "finding": "Windows editor receives focus then native disabling emits focusout to BODY. Scalar focus effect does not react to reenable. Mac failures have keydown but no click and no textarea; this is a separate unresolved activation boundary.",
+  "checks": {
+    "nativeRed": "/tmp/issue67-scalar-disabled-focus-red.log",
+    "ownershipRed": "/tmp/issue67-scalar-focus-owner-red.log",
+    "nativeGreen": "2/2; /tmp/issue67-scalar-focus-owner-green.log",
+    "regressions": "141/141; /tmp/issue67-scalar-focus-final-regressions.log",
+    "typecheck": "passed",
+    "lint": "passed",
+    "originalDev": {
+      "issue": 62,
+      "mode": "dev",
+      "focusOnly": false,
+      "diagnostic": false,
+      "phase": {
+        "discoveryMode": "grouped",
+        "language": "ru",
+        "layout": "board",
+        "location": "expanded",
+        "step": "archived-editor"
+      },
+      "sha": null,
+      "run": null,
+      "attempt": null,
+      "platform": "darwin",
+      "kernel": "27.0.0",
+      "checks": [
+        {
+          "discoveryMode": "direct",
+          "language": "en",
+          "layout": "table",
+          "location": "list",
+          "cancel": true,
+          "archiveRestore": true,
+          "identity": true,
+          "metadata": true,
+          "files": true,
+          "retainedTab": false
+        },
+        {
+          "discoveryMode": "direct",
+          "language": "en",
+          "layout": "table",
+          "location": "preview",
+          "cancel": true,
+          "archiveRestore": true,
+          "identity": true,
+          "metadata": true,
+          "files": true,
+          "retainedTab": false
+        },
+        {
+          "discoveryMode": "direct",
+          "language": "en",
+          "layout": "table",
+          "location": "expanded",
+          "cancel": true,
+          "archiveRestore": true,
+          "identity": true,
+          "metadata": true,
+          "files": true,
+          "retainedTab": true
+        },
+        {
+          "discoveryMode": "direct",
+          "language": "en",
+          "layout": "board",
+          "location": "list",
+          "cancel": true,
+          "archiveRestore": true,
+          "identity": true,
+          "metadata": true,
+          "files": true,
+          "retainedTab": false
+        },
+        {
+          "discoveryMode": "direct",
+          "language": "en",
+          "layout": "board",
+          "location": "preview",
+          "cancel": true,
+          "archiveRestore": true,
+          "identity": true,
+          "metadata": true,
+          "files": true,
+          "retainedTab": false
+        },
+        {
+          "discoveryMode": "direct",
+          "language": "en",
+          "layout": "board",
+          "location": "expanded",
+          "cancel": true,
+          "archiveRestore": true,
+          "identity": true,
+          "metadata": true,
+          "files": true,
+          "retainedTab": true
+        },
+        {
+          "discoveryMode": "direct",
+          "language": "ru",
+          "layout": "table",
+          "location": "list",
+          "cancel": true,
+          "archiveRestore": true,
+          "identity": true,
+          "metadata": true,
+          "files": true,
+          "retainedTab": false
+        },
+        {
+          "discoveryMode": "direct",
+          "language": "ru",
+          "layout": "table",
+          "location": "preview",
+          "cancel": true,
+          "archiveRestore": true,
+          "identity": true,
+          "metadata": true,
+          "files": true,
+          "retainedTab": false
+        },
+        {
+          "discoveryMode": "direct",
+          "language": "ru",
+          "layout": "table",
+          "location": "expanded",
+          "cancel": true,
+          "archiveRestore": true,
+          "identity": true,
+          "metadata": true,
+          "files": true,
+          "retainedTab": true
+        },
+        {
+          "discoveryMode": "direct",
+          "language": "ru",
+          "layout": "board",
+          "location": "list",
+          "cancel": true,
+          "archiveRestore": true,
+          "identity": true,
+          "metadata": true,
+          "files": true,
+          "retainedTab": false
+        },
+        {
+          "discoveryMode": "direct",
+          "language": "ru",
+          "layout": "board",
+          "location": "preview",
+          "cancel": true,
+          "archiveRestore": true,
+          "identity": true,
+          "metadata": true,
+          "files": true,
+          "retainedTab": false
+        },
+        {
+          "discoveryMode": "direct",
+          "language": "ru",
+          "layout": "board",
+          "location": "expanded",
+          "cancel": true,
+          "archiveRestore": true,
+          "identity": true,
+          "metadata": true,
+          "files": true,
+          "retainedTab": true
+        },
+        {
+          "discoveryMode": "grouped",
+          "language": "en",
+          "layout": "table",
+          "location": "list",
+          "cancel": true,
+          "archiveRestore": true,
+          "identity": true,
+          "metadata": true,
+          "files": true,
+          "retainedTab": false
+        },
+        {
+          "discoveryMode": "grouped",
+          "language": "en",
+          "layout": "table",
+          "location": "preview",
+          "cancel": true,
+          "archiveRestore": true,
+          "identity": true,
+          "metadata": true,
+          "files": true,
+          "retainedTab": false
+        },
+        {
+          "discoveryMode": "grouped",
+          "language": "en",
+          "layout": "table",
+          "location": "expanded",
+          "cancel": true,
+          "archiveRestore": true,
+          "identity": true,
+          "metadata": true,
+          "files": true,
+          "retainedTab": true
+        },
+        {
+          "discoveryMode": "grouped",
+          "language": "en",
+          "layout": "board",
+          "location": "list",
+          "cancel": true,
+          "archiveRestore": true,
+          "identity": true,
+          "metadata": true,
+          "files": true,
+          "retainedTab": false
+        },
+        {
+          "discoveryMode": "grouped",
+          "language": "en",
+          "layout": "board",
+          "location": "preview",
+          "cancel": true,
+          "archiveRestore": true,
+          "identity": true,
+          "metadata": true,
+          "files": true,
+          "retainedTab": false
+        },
+        {
+          "discoveryMode": "grouped",
+          "language": "en",
+          "layout": "board",
+          "location": "expanded",
+          "cancel": true,
+          "archiveRestore": true,
+          "identity": true,
+          "metadata": true,
+          "files": true,
+          "retainedTab": true
+        },
+        {
+          "discoveryMode": "grouped",
+          "language": "ru",
+          "layout": "table",
+          "location": "list",
+          "cancel": true,
+          "archiveRestore": true,
+          "identity": true,
+          "metadata": true,
+          "files": true,
+          "retainedTab": false
+        },
+        {
+          "discoveryMode": "grouped",
+          "language": "ru",
+          "layout": "table",
+          "location": "preview",
+          "cancel": true,
+          "archiveRestore": true,
+          "identity": true,
+          "metadata": true,
+          "files": true,
+          "retainedTab": false
+        },
+        {
+          "discoveryMode": "grouped",
+          "language": "ru",
+          "layout": "table",
+          "location": "expanded",
+          "cancel": true,
+          "archiveRestore": true,
+          "identity": true,
+          "metadata": true,
+          "files": true,
+          "retainedTab": true
+        },
+        {
+          "discoveryMode": "grouped",
+          "language": "ru",
+          "layout": "board",
+          "location": "list",
+          "cancel": true,
+          "archiveRestore": true,
+          "identity": true,
+          "metadata": true,
+          "files": true,
+          "retainedTab": false
+        },
+        {
+          "discoveryMode": "grouped",
+          "language": "ru",
+          "layout": "board",
+          "location": "preview",
+          "cancel": true,
+          "archiveRestore": true,
+          "identity": true,
+          "metadata": true,
+          "files": true,
+          "retainedTab": false
+        },
+        {
+          "discoveryMode": "grouped",
+          "language": "ru",
+          "layout": "board",
+          "location": "expanded",
+          "cancel": true,
+          "archiveRestore": true,
+          "identity": true,
+          "metadata": true,
+          "files": true,
+          "retainedTab": true
+        }
+      ],
+      "screens": [
+        "direct-en-light-table-list-1024-archive",
+        "direct-en-light-table-list-1440-archive",
+        "direct-en-dark-table-list-1024-archive",
+        "direct-en-dark-table-list-1440-archive",
+        "direct-en-light-table-list-1024-restore",
+        "direct-en-light-table-list-1440-restore",
+        "direct-en-dark-table-list-1024-restore",
+        "direct-en-dark-table-list-1440-restore",
+        "direct-en-light-table-preview-1024-archive",
+        "direct-en-light-table-preview-1440-archive",
+        "direct-en-dark-table-preview-1024-archive",
+        "direct-en-dark-table-preview-1440-archive",
+        "direct-en-light-table-preview-1024-restore",
+        "direct-en-light-table-preview-1440-restore",
+        "direct-en-dark-table-preview-1024-restore",
+        "direct-en-dark-table-preview-1440-restore",
+        "direct-en-light-table-expanded-1024-archive",
+        "direct-en-light-table-expanded-1440-archive",
+        "direct-en-dark-table-expanded-1024-archive",
+        "direct-en-dark-table-expanded-1440-archive",
+        "direct-en-light-table-expanded-1024-restore",
+        "direct-en-light-table-expanded-1440-restore",
+        "direct-en-dark-table-expanded-1024-restore",
+        "direct-en-dark-table-expanded-1440-restore",
+        "direct-en-light-board-list-1024-archive",
+        "direct-en-light-board-list-1440-archive",
+        "direct-en-dark-board-list-1024-archive",
+        "direct-en-dark-board-list-1440-archive",
+        "direct-en-light-board-list-1024-restore",
+        "direct-en-light-board-list-1440-restore",
+        "direct-en-dark-board-list-1024-restore",
+        "direct-en-dark-board-list-1440-restore",
+        "direct-en-light-board-preview-1024-archive",
+        "direct-en-light-board-preview-1440-archive",
+        "direct-en-dark-board-preview-1024-archive",
+        "direct-en-dark-board-preview-1440-archive",
+        "direct-en-light-board-preview-1024-restore",
+        "direct-en-light-board-preview-1440-restore",
+        "direct-en-dark-board-preview-1024-restore",
+        "direct-en-dark-board-preview-1440-restore",
+        "direct-en-light-board-expanded-1024-archive",
+        "direct-en-light-board-expanded-1440-archive",
+        "direct-en-dark-board-expanded-1024-archive",
+        "direct-en-dark-board-expanded-1440-archive",
+        "direct-en-light-board-expanded-1024-restore",
+        "direct-en-light-board-expanded-1440-restore",
+        "direct-en-dark-board-expanded-1024-restore",
+        "direct-en-dark-board-expanded-1440-restore",
+        "direct-ru-light-table-list-1024-archive",
+        "direct-ru-light-table-list-1440-archive",
+        "direct-ru-dark-table-list-1024-archive",
+        "direct-ru-dark-table-list-1440-archive",
+        "direct-ru-light-table-list-1024-restore",
+        "direct-ru-light-table-list-1440-restore",
+        "direct-ru-dark-table-list-1024-restore",
+        "direct-ru-dark-table-list-1440-restore",
+        "direct-ru-light-table-preview-1024-archive",
+        "direct-ru-light-table-preview-1440-archive",
+        "direct-ru-dark-table-preview-1024-archive",
+        "direct-ru-dark-table-preview-1440-archive",
+        "direct-ru-light-table-preview-1024-restore",
+        "direct-ru-light-table-preview-1440-restore",
+        "direct-ru-dark-table-preview-1024-restore",
+        "direct-ru-dark-table-preview-1440-restore",
+        "direct-ru-light-table-expanded-1024-archive",
+        "direct-ru-light-table-expanded-1440-archive",
+        "direct-ru-dark-table-expanded-1024-archive",
+        "direct-ru-dark-table-expanded-1440-archive",
+        "direct-ru-light-table-expanded-1024-restore",
+        "direct-ru-light-table-expanded-1440-restore",
+        "direct-ru-dark-table-expanded-1024-restore",
+        "direct-ru-dark-table-expanded-1440-restore",
+        "direct-ru-light-board-list-1024-archive",
+        "direct-ru-light-board-list-1440-archive",
+        "direct-ru-dark-board-list-1024-archive",
+        "direct-ru-dark-board-list-1440-archive",
+        "direct-ru-light-board-list-1024-restore",
+        "direct-ru-light-board-list-1440-restore",
+        "direct-ru-dark-board-list-1024-restore",
+        "direct-ru-dark-board-list-1440-restore",
+        "direct-ru-light-board-preview-1024-archive",
+        "direct-ru-light-board-preview-1440-archive",
+        "direct-ru-dark-board-preview-1024-archive",
+        "direct-ru-dark-board-preview-1440-archive",
+        "direct-ru-light-board-preview-1024-restore",
+        "direct-ru-light-board-preview-1440-restore",
+        "direct-ru-dark-board-preview-1024-restore",
+        "direct-ru-dark-board-preview-1440-restore",
+        "direct-ru-light-board-expanded-1024-archive",
+        "direct-ru-light-board-expanded-1440-archive",
+        "direct-ru-dark-board-expanded-1024-archive",
+        "direct-ru-dark-board-expanded-1440-archive",
+        "direct-ru-light-board-expanded-1024-restore",
+        "direct-ru-light-board-expanded-1440-restore",
+        "direct-ru-dark-board-expanded-1024-restore",
+        "direct-ru-dark-board-expanded-1440-restore",
+        "grouped-en-light-table-list-1024-archive",
+        "grouped-en-light-table-list-1440-archive",
+        "grouped-en-dark-table-list-1024-archive",
+        "grouped-en-dark-table-list-1440-archive",
+        "grouped-en-light-table-list-1024-restore",
+        "grouped-en-light-table-list-1440-restore",
+        "grouped-en-dark-table-list-1024-restore",
+        "grouped-en-dark-table-list-1440-restore",
+        "grouped-en-light-table-preview-1024-archive",
+        "grouped-en-light-table-preview-1440-archive",
+        "grouped-en-dark-table-preview-1024-archive",
+        "grouped-en-dark-table-preview-1440-archive",
+        "grouped-en-light-table-preview-1024-restore",
+        "grouped-en-light-table-preview-1440-restore",
+        "grouped-en-dark-table-preview-1024-restore",
+        "grouped-en-dark-table-preview-1440-restore",
+        "grouped-en-light-table-expanded-1024-archive",
+        "grouped-en-light-table-expanded-1440-archive",
+        "grouped-en-dark-table-expanded-1024-archive",
+        "grouped-en-dark-table-expanded-1440-archive",
+        "grouped-en-light-table-expanded-1024-restore",
+        "grouped-en-light-table-expanded-1440-restore",
+        "grouped-en-dark-table-expanded-1024-restore",
+        "grouped-en-dark-table-expanded-1440-restore",
+        "grouped-en-light-board-list-1024-archive",
+        "grouped-en-light-board-list-1440-archive",
+        "grouped-en-dark-board-list-1024-archive",
+        "grouped-en-dark-board-list-1440-archive",
+        "grouped-en-light-board-list-1024-restore",
+        "grouped-en-light-board-list-1440-restore",
+        "grouped-en-dark-board-list-1024-restore",
+        "grouped-en-dark-board-list-1440-restore",
+        "grouped-en-light-board-preview-1024-archive",
+        "grouped-en-light-board-preview-1440-archive",
+        "grouped-en-dark-board-preview-1024-archive",
+        "grouped-en-dark-board-preview-1440-archive",
+        "grouped-en-light-board-preview-1024-restore",
+        "grouped-en-light-board-preview-1440-restore",
+        "grouped-en-dark-board-preview-1024-restore",
+        "grouped-en-dark-board-preview-1440-restore",
+        "grouped-en-light-board-expanded-1024-archive",
+        "grouped-en-light-board-expanded-1440-archive",
+        "grouped-en-dark-board-expanded-1024-archive",
+        "grouped-en-dark-board-expanded-1440-archive",
+        "grouped-en-light-board-expanded-1024-restore",
+        "grouped-en-light-board-expanded-1440-restore",
+        "grouped-en-dark-board-expanded-1024-restore",
+        "grouped-en-dark-board-expanded-1440-restore",
+        "grouped-ru-light-table-list-1024-archive",
+        "grouped-ru-light-table-list-1440-archive",
+        "grouped-ru-dark-table-list-1024-archive",
+        "grouped-ru-dark-table-list-1440-archive",
+        "grouped-ru-light-table-list-1024-restore",
+        "grouped-ru-light-table-list-1440-restore",
+        "grouped-ru-dark-table-list-1024-restore",
+        "grouped-ru-dark-table-list-1440-restore",
+        "grouped-ru-light-table-preview-1024-archive",
+        "grouped-ru-light-table-preview-1440-archive",
+        "grouped-ru-dark-table-preview-1024-archive",
+        "grouped-ru-dark-table-preview-1440-archive",
+        "grouped-ru-light-table-preview-1024-restore",
+        "grouped-ru-light-table-preview-1440-restore",
+        "grouped-ru-dark-table-preview-1024-restore",
+        "grouped-ru-dark-table-preview-1440-restore",
+        "grouped-ru-light-table-expanded-1024-archive",
+        "grouped-ru-light-table-expanded-1440-archive",
+        "grouped-ru-dark-table-expanded-1024-archive",
+        "grouped-ru-dark-table-expanded-1440-archive",
+        "grouped-ru-light-table-expanded-1024-restore",
+        "grouped-ru-light-table-expanded-1440-restore",
+        "grouped-ru-dark-table-expanded-1024-restore",
+        "grouped-ru-dark-table-expanded-1440-restore",
+        "grouped-ru-light-board-list-1024-archive",
+        "grouped-ru-light-board-list-1440-archive",
+        "grouped-ru-dark-board-list-1024-archive",
+        "grouped-ru-dark-board-list-1440-archive",
+        "grouped-ru-light-board-list-1024-restore",
+        "grouped-ru-light-board-list-1440-restore",
+        "grouped-ru-dark-board-list-1024-restore",
+        "grouped-ru-dark-board-list-1440-restore",
+        "grouped-ru-light-board-preview-1024-archive",
+        "grouped-ru-light-board-preview-1440-archive",
+        "grouped-ru-dark-board-preview-1024-archive",
+        "grouped-ru-dark-board-preview-1440-archive",
+        "grouped-ru-light-board-preview-1024-restore",
+        "grouped-ru-light-board-preview-1440-restore",
+        "grouped-ru-dark-board-preview-1024-restore",
+        "grouped-ru-dark-board-preview-1440-restore",
+        "grouped-ru-light-board-expanded-1024-archive",
+        "grouped-ru-light-board-expanded-1440-archive",
+        "grouped-ru-dark-board-expanded-1024-archive",
+        "grouped-ru-dark-board-expanded-1440-archive",
+        "grouped-ru-light-board-expanded-1024-restore",
+        "grouped-ru-light-board-expanded-1440-restore",
+        "grouped-ru-dark-board-expanded-1024-restore",
+        "grouped-ru-dark-board-expanded-1440-restore"
+      ],
+      "shutdowns": [
+        {
+          "normalQuit": true,
+          "backendsExited": true
+        }
+      ],
+      "status": "passed",
+      "startup": {
+        "state": "ready"
+      },
+      "editorEntryControl": {
+        "activations": 1,
+        "focus": true,
+        "noDataMutation": true
+      },
+      "reloadedStartup": {
+        "state": "ready"
+      },
+      "cleanup": {
+        "status": "passed",
+        "asserted": true,
+        "processesStopped": true,
+        "maxRetries": 5,
+        "retryDelay": 100
+      }
+    }
+  },
+  "sources": {
+    "src/renderer/components/TextPropertyCell.tsx": "16b1976d20d7e35e9f4cb2292f7fca30d2c69fcbeaadf88ad29c5a59857c2a71",
+    "tests/runtime-view-readiness.test.mjs": "4479ff795f5d2fa808d9951c6f5629c03d2bc23435b4bd29f480597b8b07524e",
+    "scripts/desktop-ux-checks.mjs": "10a80d12a25b36a81388839fa6e0f874be402fb8fba674e61e6c17257ce368dc"
+  }
+}

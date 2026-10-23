@@ -1,0 +1,52 @@
+{
+  "creationPortalRed": {
+    "featurePassed": false,
+    "shutdownPassed": true,
+    "captures": 6,
+    "story": "bb-foundation--creation-collision-english",
+    "error": "locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-creation-fixture][data-fixture-ready=true]') to be visible\u001b[22m\n",
+    "probe": {
+      "ready": "false",
+      "inputInRoot": false,
+      "inputInDialog": true,
+      "value": ""
+    },
+    "reportSha256": "51b28ccc13126455de6e635a404d4811d8109f0e5565e4a28820fd88d59f15cc"
+  },
+  "creationGreen": {
+    "featurePassed": true,
+    "shutdownPassed": true,
+    "captures": 108,
+    "story": null,
+    "error": null,
+    "probe": null,
+    "reportSha256": "9827e37fa6f4186cfb6f46ef8284ff15e3dbac5caab222a335510add5ff5175d"
+  },
+  "renamePortalRed": {
+    "featurePassed": false,
+    "shutdownPassed": true,
+    "captures": 0,
+    "story": "bb-foundation--rename-collision-direct-english",
+    "error": "locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-rename-fixture][data-fixture-ready=true]') to be visible\u001b[22m\n",
+    "probe": null,
+    "reportSha256": "34362d5a7bab6aa0f63145ec3f5bde895af08f20eaa7bd5013ba9afc6b38ed1d"
+  },
+  "renameArchiveRed": {
+    "featurePassed": false,
+    "shutdownPassed": true,
+    "captures": 0,
+    "story": "bb-foundation--rename-collision-direct-english",
+    "error": "Operation fixtures must not contain unrelated archive errors\n\n1 !== 0\n",
+    "probe": null,
+    "reportSha256": "1152b61260c6390fa8ccab0cfe81ba6afcefcfa8eeaf28cfc5f96f89e12f29a7"
+  },
+  "renameGreen": {
+    "featurePassed": true,
+    "shutdownPassed": true,
+    "captures": 288,
+    "story": null,
+    "error": null,
+    "probe": null,
+    "reportSha256": "7da00e66436d38d97b8ab72c85264466913ed118df4a01bbb588be811f49f672"
+  }
+}

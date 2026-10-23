@@ -1,0 +1,292 @@
+{
+  "run": 39968597489,
+  "artifact": 12508465900,
+  "report": {
+    "issue": 61,
+    "mode": "release",
+    "diagnostic": true,
+    "sha": "7e57eecb9aa89c4ffbffc59cce1b909513b97f52",
+    "run": "39968597489",
+    "attempt": "1",
+    "platform": "darwin",
+    "kernel": "25.6.0",
+    "checks": [
+      {
+        "language": "en",
+        "layout": "table",
+        "location": "list",
+        "cancelNoEffect": true,
+        "identity": true,
+        "metadata": true,
+        "move": true,
+        "return": true
+      },
+      {
+        "language": "en",
+        "layout": "table",
+        "location": "preview",
+        "cancelNoEffect": true,
+        "identity": true,
+        "metadata": true,
+        "move": true,
+        "return": true
+      },
+      {
+        "language": "en",
+        "layout": "table",
+        "location": "expanded",
+        "cancelNoEffect": true,
+        "identity": true,
+        "metadata": true,
+        "move": true,
+        "return": true
+      },
+      {
+        "language": "en",
+        "layout": "board",
+        "location": "list",
+        "cancelNoEffect": true,
+        "identity": true,
+        "metadata": true,
+        "move": true,
+        "return": true
+      },
+      {
+        "language": "en",
+        "layout": "board",
+        "location": "preview",
+        "cancelNoEffect": true,
+        "identity": true,
+        "metadata": true,
+        "move": true,
+        "return": true
+      },
+      {
+        "language": "en",
+        "layout": "board",
+        "location": "expanded",
+        "cancelNoEffect": true,
+        "identity": true,
+        "metadata": true,
+        "move": true,
+        "return": true
+      },
+      {
+        "language": "en",
+        "labelOnly": true,
+        "foldersUnchanged": true
+      },
+      {
+        "language": "en",
+        "theme": "light",
+        "reviewKind": "rename",
+        "cancelNoEffect": true
+      },
+      {
+        "language": "en",
+        "theme": "light",
+        "reviewKind": "removal",
+        "cancelNoEffect": true
+      },
+      {
+        "language": "en",
+        "theme": "dark",
+        "reviewKind": "rename",
+        "cancelNoEffect": true
+      },
+      {
+        "language": "en",
+        "theme": "dark",
+        "reviewKind": "removal",
+        "cancelNoEffect": true
+      },
+      {
+        "language": "ru",
+        "layout": "table",
+        "location": "list",
+        "cancelNoEffect": true,
+        "identity": true,
+        "metadata": true,
+        "move": true,
+        "return": true
+      },
+      {
+        "language": "ru",
+        "layout": "table",
+        "location": "preview",
+        "cancelNoEffect": true,
+        "identity": true,
+        "metadata": true,
+        "move": true,
+        "return": true
+      },
+      {
+        "language": "ru",
+        "layout": "table",
+        "location": "expanded",
+        "cancelNoEffect": true,
+        "identity": true,
+        "metadata": true,
+        "move": true,
+        "return": true
+      },
+      {
+        "language": "ru",
+        "layout": "board",
+        "location": "list",
+        "cancelNoEffect": true,
+        "identity": true,
+        "metadata": true,
+        "move": true,
+        "return": true
+      },
+      {
+        "language": "ru",
+        "layout": "board",
+        "location": "preview",
+        "cancelNoEffect": true,
+        "identity": true,
+        "metadata": true,
+        "move": true,
+        "return": true
+      },
+      {
+        "language": "ru",
+        "layout": "board",
+        "location": "expanded",
+        "cancelNoEffect": true,
+        "identity": true,
+        "metadata": true,
+        "move": true,
+        "return": true
+      },
+      {
+        "language": "ru",
+        "labelOnly": true,
+        "foldersUnchanged": true
+      },
+      {
+        "language": "ru",
+        "theme": "light",
+        "reviewKind": "rename",
+        "cancelNoEffect": true
+      },
+      {
+        "language": "ru",
+        "theme": "light",
+        "reviewKind": "removal",
+        "cancelNoEffect": true
+      },
+      {
+        "language": "ru",
+        "theme": "dark",
+        "reviewKind": "rename",
+        "cancelNoEffect": true
+      },
+      {
+        "language": "ru",
+        "theme": "dark",
+        "reviewKind": "removal",
+        "cancelNoEffect": true
+      }
+    ],
+    "screens": [
+      "en-light-table-list-1024",
+      "en-light-table-list-1440",
+      "en-dark-table-list-1024",
+      "en-dark-table-list-1440",
+      "en-light-table-preview-1024",
+      "en-light-table-preview-1440",
+      "en-dark-table-preview-1024",
+      "en-dark-table-preview-1440",
+      "en-light-table-expanded-1024",
+      "en-light-table-expanded-1440",
+      "en-dark-table-expanded-1024",
+      "en-dark-table-expanded-1440",
+      "en-light-board-list-1024",
+      "en-light-board-list-1440",
+      "en-dark-board-list-1024",
+      "en-dark-board-list-1440",
+      "en-light-board-preview-1024",
+      "en-light-board-preview-1440",
+      "en-dark-board-preview-1024",
+      "en-dark-board-preview-1440",
+      "en-light-board-expanded-1024",
+      "en-light-board-expanded-1440",
+      "en-dark-board-expanded-1024",
+      "en-dark-board-expanded-1440",
+      "en-light-rename-1024",
+      "en-light-rename-1440",
+      "en-light-removal-1024",
+      "en-light-removal-1440",
+      "en-dark-rename-1024",
+      "en-dark-rename-1440",
+      "en-dark-removal-1024",
+      "en-dark-removal-1440",
+      "ru-light-table-list-1024",
+      "ru-light-table-list-1440",
+      "ru-dark-table-list-1024",
+      "ru-dark-table-list-1440",
+      "ru-light-table-preview-1024",
+      "ru-light-table-preview-1440",
+      "ru-dark-table-preview-1024",
+      "ru-dark-table-preview-1440",
+      "ru-light-table-expanded-1024",
+      "ru-light-table-expanded-1440",
+      "ru-dark-table-expanded-1024",
+      "ru-dark-table-expanded-1440",
+      "ru-light-board-list-1024",
+      "ru-light-board-list-1440",
+      "ru-dark-board-list-1024",
+      "ru-dark-board-list-1440",
+      "ru-light-board-preview-1024",
+      "ru-light-board-preview-1440",
+      "ru-dark-board-preview-1024",
+      "ru-dark-board-preview-1440",
+      "ru-light-board-expanded-1024",
+      "ru-light-board-expanded-1440",
+      "ru-dark-board-expanded-1024",
+      "ru-dark-board-expanded-1440",
+      "ru-light-rename-1024",
+      "ru-light-rename-1440",
+      "ru-light-removal-1024",
+      "ru-light-removal-1440",
+      "ru-dark-rename-1024",
+      "ru-dark-rename-1440",
+      "ru-dark-removal-1024",
+      "ru-dark-removal-1440"
+    ],
+    "shutdowns": [
+      {
+        "normalQuit": true,
+        "backendsExited": true
+      }
+    ],
+    "status": "passed",
+    "phase": {
+      "language": "ru",
+      "layout": "board",
+      "location": "expanded",
+      "step": "open-context"
+    },
+    "trace": {
+      "status": "recorded",
+      "file": "trace.zip"
+    },
+    "cleanup": {
+      "status": "passed",
+      "asserted": true,
+      "processesStopped": true,
+      "maxRetries": 5,
+      "retryDelay": 100
+    }
+  },
+  "traceIntegrity": "verified",
+  "traceCounts": {
+    "before": 1419,
+    "after": 1419,
+    "frameSnapshots": 3320,
+    "screencastFrames": 744
+  },
+  "interpretation": "Diagnostic pass; historical missing Move control not reproduced, ordinary category gate remains failed"
+}

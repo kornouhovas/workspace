@@ -1,0 +1,1915 @@
+{
+  "red": "Native document-start control fails: observe parameter is not a Node",
+  "green": "Native1/1; routes108/108; lint/docs pass; both review axes0findings",
+  "original": {
+    "issue": 62,
+    "mode": "dev",
+    "focusOnly": true,
+    "diagnostic": true,
+    "phase": {
+      "discoveryMode": "direct",
+      "language": "en",
+      "layout": "table",
+      "location": "list",
+      "step": "archived-editor"
+    },
+    "sha": null,
+    "run": null,
+    "attempt": null,
+    "platform": "darwin",
+    "kernel": "27.0.0",
+    "checks": [
+      {
+        "discoveryMode": "direct",
+        "language": "en",
+        "layout": "table",
+        "location": "list",
+        "cancel": true,
+        "archiveRestore": true,
+        "identity": true,
+        "metadata": true,
+        "files": true,
+        "retainedTab": false
+      }
+    ],
+    "screens": [],
+    "shutdowns": [
+      {
+        "normalQuit": true,
+        "backendsExited": true
+      }
+    ],
+    "status": "passed",
+    "startup": {
+      "state": "ready"
+    },
+    "editorEntryControl": {
+      "activations": 1,
+      "focus": true,
+      "noDataMutation": true
+    },
+    "reloadedStartup": {
+      "state": "ready"
+    },
+    "editorEntryTrace": [
+      {
+        "type": "state",
+        "at": 8.899999976158142,
+        "wallTime": 1792752192924,
+        "editors": []
+      },
+      {
+        "type": "state",
+        "at": 9.100000023841858,
+        "wallTime": 1792752192924,
+        "activeTag": "BODY",
+        "activeClass": "",
+        "editors": []
+      },
+      {
+        "type": "focusin",
+        "at": 121.30000001192093,
+        "wallTime": 1792752193036,
+        "tag": "BUTTON",
+        "className": "workspace-button workspace-button--secondary context-tools-trigger icon-button",
+        "disabled": false,
+        "activeTag": "BUTTON",
+        "activeClass": "workspace-button workspace-button--secondary context-tools-trigger icon-button",
+        "editors": []
+      },
+      {
+        "type": "state",
+        "at": 122,
+        "wallTime": 1792752193037,
+        "activeTag": "BUTTON",
+        "activeClass": "workspace-button workspace-button--secondary context-tools-trigger icon-button",
+        "editors": []
+      },
+      {
+        "type": "click",
+        "at": 122.30000001192093,
+        "wallTime": 1792752193037,
+        "tag": "svg",
+        "className": {},
+        "activeTag": "BUTTON",
+        "activeClass": "workspace-button workspace-button--secondary context-tools-trigger icon-button",
+        "editors": []
+      },
+      {
+        "type": "focus-call",
+        "at": 123.5,
+        "wallTime": 1792752193038,
+        "tag": "BUTTON",
+        "className": "",
+        "disabled": false,
+        "activeTag": "BUTTON",
+        "activeClass": "workspace-button workspace-button--secondary context-tools-trigger icon-button",
+        "editors": [],
+        "stack": [
+          "    at HTMLElement.focus (<anonymous>:28:41)",
+          "    at file:///Users/aleksandersk/Documents/programming/Projects/project_folder/.worktrees/issue-67-integrated-desktop/dist/renderer/assets/index-C-xVYy64.js:49:131647",
+          "    at fl (file:///Users/aleksandersk/Documents/programming/Projects/project_folder/.worktrees/issue-67-integrated-desktop/dist/renderer/assets/index-C-xVYy64.js:8:95230)",
+          "    at Nu (file:///Users/aleksandersk/Documents/programming/Projects/project_folder/.worktrees/issue-67-integrated-desktop/dist/renderer/assets/index-C-xVYy64.js:8:118522)",
+          "    at Mu (file:///Users/aleksandersk/Documents/programming/Projects/project_folder/.worktrees/issue-67-integrated-desktop/dist/renderer/assets/index-C-xVYy64.js:8:118295)"
+        ]
+      },
+      {
+        "type": "focusout",
+        "at": 123.60000002384186,
+        "wallTime": 1792752193038,
+        "tag": "BUTTON",
+        "className": "workspace-button workspace-button--secondary context-tools-trigger icon-button",
+        "disabled": false,
+        "activeTag": "BODY",
+        "activeClass": "",
+        "editors": []
+      },
+      {
+        "type": "focusin",
+        "at": 123.60000002384186,
+        "wallTime": 1792752193038,
+        "tag": "BUTTON",
+        "className": "",
+        "disabled": false,
+        "activeTag": "BUTTON",
+        "activeClass": "",
+        "editors": []
+      },
+      {
+        "type": "state",
+        "at": 124.10000002384186,
+        "wallTime": 1792752193039,
+        "activeTag": "BUTTON",
+        "activeClass": "",
+        "editors": []
+      },
+      {
+        "type": "focusout",
+        "at": 140,
+        "wallTime": 1792752193055,
+        "tag": "BUTTON",
+        "className": "",
+        "disabled": false,
+        "activeTag": "BODY",
+        "activeClass": "",
+        "editors": []
+      },
+      {
+        "type": "focusin",
+        "at": 140.19999998807907,
+        "wallTime": 1792752193055,
+        "tag": "BUTTON",
+        "className": "workspace-button workspace-button--secondary",
+        "disabled": false,
+        "activeTag": "BUTTON",
+        "activeClass": "workspace-button workspace-button--secondary",
+        "editors": []
+      },
+      {
+        "type": "state",
+        "at": 140.69999998807907,
+        "wallTime": 1792752193055,
+        "activeTag": "BUTTON",
+        "activeClass": "workspace-button workspace-button--secondary",
+        "editors": []
+      },
+      {
+        "type": "keydown",
+        "at": 141.80000001192093,
+        "wallTime": 1792752193057,
+        "tag": "BUTTON",
+        "className": "workspace-button workspace-button--secondary",
+        "disabled": false,
+        "activeTag": "BUTTON",
+        "activeClass": "workspace-button workspace-button--secondary",
+        "editors": [],
+        "key": "Enter"
+      },
+      {
+        "type": "click",
+        "at": 142.19999998807907,
+        "wallTime": 1792752193057,
+        "tag": "BUTTON",
+        "className": "workspace-button workspace-button--secondary",
+        "disabled": false,
+        "activeTag": "BUTTON",
+        "activeClass": "workspace-button workspace-button--secondary",
+        "editors": []
+      },
+      {
+        "type": "focus-call",
+        "at": 146.80000001192093,
+        "wallTime": 1792752193062,
+        "tag": "BUTTON",
+        "className": "workspace-button workspace-button--secondary",
+        "disabled": false,
+        "activeTag": "BUTTON",
+        "activeClass": "workspace-button workspace-button--secondary",
+        "editors": [],
+        "stack": [
+          "    at HTMLElement.focus (<anonymous>:28:41)",
+          "    at Object.onMountAutoFocus [as current] (file:///Users/aleksandersk/Documents/programming/Projects/project_folder/.worktrees/issue-67-integrated-desktop/dist/renderer/assets/index-C-xVYy64.js:49:252883)",
+          "    at HTMLDivElement.<anonymous> (file:///Users/aleksandersk/Documents/programming/Projects/project_folder/.worktrees/issue-67-integrated-desktop/dist/renderer/assets/index-C-xVYy64.js:49:246190)",
+          "    at file:///Users/aleksandersk/Documents/programming/Projects/project_folder/.worktrees/issue-67-integrated-desktop/dist/renderer/assets/index-C-xVYy64.js:49:247619",
+          "    at fl (file:///Users/aleksandersk/Documents/programming/Projects/project_folder/.worktrees/issue-67-integrated-desktop/dist/renderer/assets/index-C-xVYy64.js:8:95230)"
+        ]
+      },
+      {
+        "type": "focusout",
+        "at": 146.89999997615814,
+        "wallTime": 1792752193062,
+        "tag": "BUTTON",
+        "className": "workspace-button workspace-button--secondary",
+        "disabled": true,
+        "activeTag": "BODY",
+        "activeClass": "",
+        "editors": []
+      },
+      {
+        "type": "focusin",
+        "at": 148.19999998807907,
+        "wallTime": 1792752193063,
+        "tag": "BUTTON",
+        "className": "workspace-button workspace-button--secondary",
+        "disabled": false,
+        "activeTag": "BUTTON",
+        "activeClass": "workspace-button workspace-button--secondary",
+        "editors": []
+      },
+      {
+        "type": "click",
+        "at": 171.30000001192093,
+        "wallTime": 1792752193086,
+        "tag": "BUTTON",
+        "className": "workspace-button workspace-button--secondary",
+        "disabled": false,
+        "activeTag": "BUTTON",
+        "activeClass": "workspace-button workspace-button--secondary",
+        "editors": []
+      },
+      {
+        "type": "focusout",
+        "at": 203.30000001192093,
+        "wallTime": 1792752193118,
+        "tag": "BUTTON",
+        "className": "workspace-button workspace-button--secondary",
+        "disabled": false,
+        "activeTag": "BODY",
+        "activeClass": "",
+        "editors": []
+      },
+      {
+        "type": "focusin",
+        "at": 203.60000002384186,
+        "wallTime": 1792752193118,
+        "tag": "BUTTON",
+        "className": "workspace-button workspace-button--secondary",
+        "disabled": false,
+        "activeTag": "BUTTON",
+        "activeClass": "workspace-button workspace-button--secondary",
+        "editors": []
+      },
+      {
+        "type": "keydown",
+        "at": 204.30000001192093,
+        "wallTime": 1792752193119,
+        "tag": "BUTTON",
+        "className": "workspace-button workspace-button--secondary",
+        "disabled": false,
+        "activeTag": "BUTTON",
+        "activeClass": "workspace-button workspace-button--secondary",
+        "editors": [],
+        "key": "Escape"
+      },
+      {
+        "type": "focus-call",
+        "at": 204.60000002384186,
+        "wallTime": 1792752193119,
+        "tag": "BUTTON",
+        "className": "workspace-button workspace-button--secondary context-tools-trigger icon-button",
+        "disabled": false,
+        "activeTag": "BUTTON",
+        "activeClass": "workspace-button workspace-button--secondary",
+        "editors": [],
+        "stack": [
+          "    at HTMLElement.focus (<anonymous>:28:41)",
+          "    at Ce (file:///Users/aleksandersk/Documents/programming/Projects/project_folder/.worktrees/issue-67-integrated-desktop/dist/renderer/assets/index-C-xVYy64.js:49:256076)",
+          "    at t (file:///Users/aleksandersk/Documents/programming/Projects/project_folder/.worktrees/issue-67-integrated-desktop/dist/renderer/assets/index-C-xVYy64.js:49:252527)"
+        ]
+      },
+      {
+        "type": "focusout",
+        "at": 204.69999998807907,
+        "wallTime": 1792752193119,
+        "tag": "BUTTON",
+        "className": "workspace-button workspace-button--secondary",
+        "disabled": false,
+        "activeTag": "BODY",
+        "activeClass": "",
+        "editors": []
+      },
+      {
+        "type": "focusin",
+        "at": 204.69999998807907,
+        "wallTime": 1792752193119,
+        "tag": "BUTTON",
+        "className": "workspace-button workspace-button--secondary context-tools-trigger icon-button",
+        "disabled": false,
+        "activeTag": "BUTTON",
+        "activeClass": "workspace-button workspace-button--secondary context-tools-trigger icon-button",
+        "editors": []
+      },
+      {
+        "type": "state",
+        "at": 207.69999998807907,
+        "wallTime": 1792752193122,
+        "activeTag": "BUTTON",
+        "activeClass": "workspace-button workspace-button--secondary context-tools-trigger icon-button",
+        "editors": []
+      },
+      {
+        "type": "click",
+        "at": 245.80000001192093,
+        "wallTime": 1792752193161,
+        "tag": "svg",
+        "className": {},
+        "activeTag": "BUTTON",
+        "activeClass": "workspace-button workspace-button--secondary context-tools-trigger icon-button",
+        "editors": []
+      },
+      {
+        "type": "focus-call",
+        "at": 246.39999997615814,
+        "wallTime": 1792752193161,
+        "tag": "BUTTON",
+        "className": "",
+        "disabled": false,
+        "activeTag": "BUTTON",
+        "activeClass": "workspace-button workspace-button--secondary context-tools-trigger icon-button",
+        "editors": [],
+        "stack": [
+          "    at HTMLElement.focus (<anonymous>:28:41)",
+          "    at file:///Users/aleksandersk/Documents/programming/Projects/project_folder/.worktrees/issue-67-integrated-desktop/dist/renderer/assets/index-C-xVYy64.js:49:131647",
+          "    at fl (file:///Users/aleksandersk/Documents/programming/Projects/project_folder/.worktrees/issue-67-integrated-desktop/dist/renderer/assets/index-C-xVYy64.js:8:95230)",
+          "    at Nu (file:///Users/aleksandersk/Documents/programming/Projects/project_folder/.worktrees/issue-67-integrated-desktop/dist/renderer/assets/index-C-xVYy64.js:8:118522)",
+          "    at Mu (file:///Users/aleksandersk/Documents/programming/Projects/project_folder/.worktrees/issue-67-integrated-desktop/dist/renderer/assets/index-C-xVYy64.js:8:118295)"
+        ]
+      },
+      {
+        "type": "focusout",
+        "at": 246.39999997615814,
+        "wallTime": 1792752193161,
+        "tag": "BUTTON",
+        "className": "workspace-button workspace-button--secondary context-tools-trigger icon-button",
+        "disabled": false,
+        "activeTag": "BODY",
+        "activeClass": "",
+        "editors": []
+      },
+      {
+        "type": "focusin",
+        "at": 246.5,
+        "wallTime": 1792752193161,
+        "tag": "BUTTON",
+        "className": "",
+        "disabled": false,
+        "activeTag": "BUTTON",
+        "activeClass": "",
+        "editors": []
+      },
+      {
+        "type": "state",
+        "at": 246.69999998807907,
+        "wallTime": 1792752193161,
+        "activeTag": "BUTTON",
+        "activeClass": "",
+        "editors": []
+      },
+      {
+        "type": "focusout",
+        "at": 261.69999998807907,
+        "wallTime": 1792752193176,
+        "tag": "BUTTON",
+        "className": "",
+        "disabled": false,
+        "activeTag": "BODY",
+        "activeClass": "",
+        "editors": []
+      },
+      {
+        "type": "focusin",
+        "at": 261.80000001192093,
+        "wallTime": 1792752193177,
+        "tag": "BUTTON",
+        "className": "workspace-button workspace-button--secondary",
+        "disabled": false,
+        "activeTag": "BUTTON",
+        "activeClass": "workspace-button workspace-button--secondary",
+        "editors": []
+      },
+      {
+        "type": "state",
+        "at": 262.19999998807907,
+        "wallTime": 1792752193177,
+        "activeTag": "BUTTON",
+        "activeClass": "workspace-button workspace-button--secondary",
+        "editors": []
+      },
+      {
+        "type": "keydown",
+        "at": 262.89999997615814,
+        "wallTime": 1792752193178,
+        "tag": "BUTTON",
+        "className": "workspace-button workspace-button--secondary",
+        "disabled": false,
+        "activeTag": "BUTTON",
+        "activeClass": "workspace-button workspace-button--secondary",
+        "editors": [],
+        "key": "Enter"
+      },
+      {
+        "type": "click",
+        "at": 263,
+        "wallTime": 1792752193178,
+        "tag": "BUTTON",
+        "className": "workspace-button workspace-button--secondary",
+        "disabled": false,
+        "activeTag": "BUTTON",
+        "activeClass": "workspace-button workspace-button--secondary",
+        "editors": []
+      },
+      {
+        "type": "focus-call",
+        "at": 266,
+        "wallTime": 1792752193181,
+        "tag": "BUTTON",
+        "className": "workspace-button workspace-button--secondary",
+        "disabled": false,
+        "activeTag": "BUTTON",
+        "activeClass": "workspace-button workspace-button--secondary",
+        "editors": [],
+        "stack": [
+          "    at HTMLElement.focus (<anonymous>:28:41)",
+          "    at Object.onMountAutoFocus [as current] (file:///Users/aleksandersk/Documents/programming/Projects/project_folder/.worktrees/issue-67-integrated-desktop/dist/renderer/assets/index-C-xVYy64.js:49:252883)",
+          "    at HTMLDivElement.<anonymous> (file:///Users/aleksandersk/Documents/programming/Projects/project_folder/.worktrees/issue-67-integrated-desktop/dist/renderer/assets/index-C-xVYy64.js:49:246190)",
+          "    at file:///Users/aleksandersk/Documents/programming/Projects/project_folder/.worktrees/issue-67-integrated-desktop/dist/renderer/assets/index-C-xVYy64.js:49:247619",
+          "    at fl (file:///Users/aleksandersk/Documents/programming/Projects/project_folder/.worktrees/issue-67-integrated-desktop/dist/renderer/assets/index-C-xVYy64.js:8:95230)"
+        ]
+      },
+      {
+        "type": "focusout",
+        "at": 266.10000002384186,
+        "wallTime": 1792752193181,
+        "tag": "BUTTON",
+        "className": "workspace-button workspace-button--secondary",
+        "disabled": true,
+        "activeTag": "BODY",
+        "activeClass": "",
+        "editors": []
+      },
+      {
+        "type": "focusin",
+        "at": 266.5,
+        "wallTime": 1792752193181,
+        "tag": "BUTTON",
+        "className": "workspace-button workspace-button--secondary",
+        "disabled": false,
+        "activeTag": "BUTTON",
+        "activeClass": "workspace-button workspace-button--secondary",
+        "editors": []
+      },
+      {
+        "type": "click",
+        "at": 287.80000001192093,
+        "wallTime": 1792752193202,
+        "tag": "BUTTON",
+        "className": "workspace-button workspace-button--secondary",
+        "disabled": false,
+        "activeTag": "BUTTON",
+        "activeClass": "workspace-button workspace-button--secondary",
+        "editors": []
+      },
+      {
+        "type": "focusout",
+        "at": 322.10000002384186,
+        "wallTime": 1792752193237,
+        "tag": "BUTTON",
+        "className": "workspace-button workspace-button--secondary",
+        "disabled": false,
+        "activeTag": "BODY",
+        "activeClass": "",
+        "editors": []
+      },
+      {
+        "type": "focusin",
+        "at": 322.10000002384186,
+        "wallTime": 1792752193237,
+        "tag": "BUTTON",
+        "className": "workspace-button workspace-button--secondary",
+        "disabled": false,
+        "activeTag": "BUTTON",
+        "activeClass": "workspace-button workspace-button--secondary",
+        "editors": []
+      },
+      {
+        "type": "click",
+        "at": 322.30000001192093,
+        "wallTime": 1792752193237,
+        "tag": "BUTTON",
+        "className": "workspace-button workspace-button--secondary",
+        "disabled": false,
+        "activeTag": "BUTTON",
+        "activeClass": "workspace-button workspace-button--secondary",
+        "editors": []
+      },
+      {
+        "type": "focusout",
+        "at": 326.30000001192093,
+        "wallTime": 1792752193241,
+        "tag": "BUTTON",
+        "className": "workspace-button workspace-button--secondary",
+        "disabled": true,
+        "activeTag": "BODY",
+        "activeClass": "",
+        "editors": []
+      },
+      {
+        "type": "focus-call",
+        "at": 355.60000002384186,
+        "wallTime": 1792752193270,
+        "tag": "DIV",
+        "className": "project-operation-dialog project-archive-dialog",
+        "activeTag": "BODY",
+        "activeClass": "",
+        "editors": [],
+        "stack": [
+          "    at HTMLElement.focus (<anonymous>:28:41)",
+          "    at Ee (file:///Users/aleksandersk/Documents/programming/Projects/project_folder/.worktrees/issue-67-integrated-desktop/dist/renderer/assets/index-C-xVYy64.js:49:257430)",
+          "    at De (file:///Users/aleksandersk/Documents/programming/Projects/project_folder/.worktrees/issue-67-integrated-desktop/dist/renderer/assets/index-C-xVYy64.js:49:257920)"
+        ]
+      },
+      {
+        "type": "focusin",
+        "at": 355.69999998807907,
+        "wallTime": 1792752193270,
+        "tag": "DIV",
+        "className": "project-operation-dialog project-archive-dialog",
+        "activeTag": "DIV",
+        "activeClass": "project-operation-dialog project-archive-dialog",
+        "editors": []
+      },
+      {
+        "type": "state",
+        "at": 357.39999997615814,
+        "wallTime": 1792752193272,
+        "activeTag": "DIV",
+        "activeClass": "project-operation-dialog project-archive-dialog",
+        "editors": []
+      },
+      {
+        "type": "focusout",
+        "at": 388.39999997615814,
+        "wallTime": 1792752193303,
+        "tag": "DIV",
+        "className": "project-operation-dialog project-archive-dialog",
+        "activeTag": "BODY",
+        "activeClass": "",
+        "editors": []
+      },
+      {
+        "type": "focusin",
+        "at": 388.5,
+        "wallTime": 1792752193303,
+        "tag": "BUTTON",
+        "className": "workspace-button workspace-button--secondary",
+        "disabled": false,
+        "activeTag": "BUTTON",
+        "activeClass": "workspace-button workspace-button--secondary",
+        "editors": []
+      },
+      {
+        "type": "click",
+        "at": 388.60000002384186,
+        "wallTime": 1792752193303,
+        "tag": "BUTTON",
+        "className": "workspace-button workspace-button--secondary",
+        "disabled": false,
+        "activeTag": "BUTTON",
+        "activeClass": "workspace-button workspace-button--secondary",
+        "editors": []
+      },
+      {
+        "type": "focus-call",
+        "at": 388.69999998807907,
+        "wallTime": 1792752193303,
+        "tag": "SECTION",
+        "className": "project-archive",
+        "activeTag": "BUTTON",
+        "activeClass": "workspace-button workspace-button--secondary",
+        "editors": [],
+        "stack": [
+          "    at HTMLElement.focus (<anonymous>:28:41)",
+          "    at Ce (file:///Users/aleksandersk/Documents/programming/Projects/project_folder/.worktrees/issue-67-integrated-desktop/dist/renderer/assets/index-C-xVYy64.js:49:256136)",
+          "    at zf (file:///Users/aleksandersk/Documents/programming/Projects/project_folder/.worktrees/issue-67-integrated-desktop/dist/renderer/assets/index-C-xVYy64.js:8:139267)",
+          "    at file:///Users/aleksandersk/Documents/programming/Projects/project_folder/.worktrees/issue-67-integrated-desktop/dist/renderer/assets/index-C-xVYy64.js:8:143999",
+          "    at fn (file:///Users/aleksandersk/Documents/programming/Projects/project_folder/.worktrees/issue-67-integrated-desktop/dist/renderer/assets/index-C-xVYy64.js:8:15178)"
+        ]
+      },
+      {
+        "type": "focusout",
+        "at": 388.69999998807907,
+        "wallTime": 1792752193303,
+        "tag": "BUTTON",
+        "className": "workspace-button workspace-button--secondary",
+        "disabled": false,
+        "activeTag": "BODY",
+        "activeClass": "",
+        "editors": []
+      },
+      {
+        "type": "focusin",
+        "at": 388.69999998807907,
+        "wallTime": 1792752193303,
+        "tag": "SECTION",
+        "className": "project-archive",
+        "activeTag": "SECTION",
+        "activeClass": "project-archive",
+        "editors": []
+      },
+      {
+        "type": "state",
+        "at": 390.69999998807907,
+        "wallTime": 1792752193305,
+        "activeTag": "SECTION",
+        "activeClass": "project-archive",
+        "editors": []
+      },
+      {
+        "type": "focusout",
+        "at": 428.19999998807907,
+        "wallTime": 1792752193343,
+        "tag": "SECTION",
+        "className": "project-archive",
+        "activeTag": "BODY",
+        "activeClass": "",
+        "editors": []
+      },
+      {
+        "type": "focusin",
+        "at": 428.30000001192093,
+        "wallTime": 1792752193343,
+        "tag": "BUTTON",
+        "className": "workspace-button workspace-button--secondary",
+        "disabled": false,
+        "activeTag": "BUTTON",
+        "activeClass": "workspace-button workspace-button--secondary",
+        "editors": []
+      },
+      {
+        "type": "click",
+        "at": 428.39999997615814,
+        "wallTime": 1792752193343,
+        "tag": "BUTTON",
+        "className": "workspace-button workspace-button--secondary",
+        "disabled": false,
+        "activeTag": "BUTTON",
+        "activeClass": "workspace-button workspace-button--secondary",
+        "editors": []
+      },
+      {
+        "type": "state",
+        "at": 431.89999997615814,
+        "wallTime": 1792752193347,
+        "activeTag": "BUTTON",
+        "activeClass": "workspace-button workspace-button--secondary",
+        "editors": []
+      },
+      {
+        "type": "focusout",
+        "at": 444.30000001192093,
+        "wallTime": 1792752193359,
+        "tag": "BUTTON",
+        "className": "workspace-button workspace-button--secondary",
+        "disabled": false,
+        "activeTag": "BODY",
+        "activeClass": "",
+        "editors": []
+      },
+      {
+        "type": "focusin",
+        "at": 444.39999997615814,
+        "wallTime": 1792752193359,
+        "tag": "BUTTON",
+        "className": "text-value-button",
+        "disabled": false,
+        "activeTag": "BUTTON",
+        "activeClass": "text-value-button",
+        "editors": []
+      },
+      {
+        "type": "keydown",
+        "at": 449.30000001192093,
+        "wallTime": 1792752193364,
+        "tag": "BUTTON",
+        "className": "text-value-button",
+        "disabled": false,
+        "activeTag": "BUTTON",
+        "activeClass": "text-value-button",
+        "editors": [],
+        "key": "Enter"
+      },
+      {
+        "type": "click",
+        "at": 449.5,
+        "wallTime": 1792752193364,
+        "tag": "BUTTON",
+        "className": "text-value-button",
+        "disabled": false,
+        "activeTag": "BUTTON",
+        "activeClass": "text-value-button",
+        "editors": []
+      },
+      {
+        "type": "focusout",
+        "at": 450.39999997615814,
+        "wallTime": 1792752193365,
+        "tag": "BUTTON",
+        "className": "text-value-button",
+        "disabled": false,
+        "activeTag": "BODY",
+        "activeClass": "",
+        "editors": []
+      },
+      {
+        "type": "focus-call",
+        "at": 451.69999998807907,
+        "wallTime": 1792752193366,
+        "tag": "BUTTON",
+        "className": "text-value-button",
+        "disabled": false,
+        "activeTag": "BODY",
+        "activeClass": "",
+        "editors": [],
+        "stack": [
+          "    at HTMLElement.focus (<anonymous>:28:41)",
+          "    at rf (file:///Users/aleksandersk/Documents/programming/Projects/project_folder/.worktrees/issue-67-integrated-desktop/dist/renderer/assets/index-C-xVYy64.js:8:131626)",
+          "    at ef (file:///Users/aleksandersk/Documents/programming/Projects/project_folder/.worktrees/issue-67-integrated-desktop/dist/renderer/assets/index-C-xVYy64.js:8:130375)",
+          "    at $d (file:///Users/aleksandersk/Documents/programming/Projects/project_folder/.worktrees/issue-67-integrated-desktop/dist/renderer/assets/index-C-xVYy64.js:8:129853)",
+          "    at Nd (file:///Users/aleksandersk/Documents/programming/Projects/project_folder/.worktrees/issue-67-integrated-desktop/dist/renderer/assets/index-C-xVYy64.js:8:125252)"
+        ]
+      },
+      {
+        "type": "focus-call",
+        "at": 452,
+        "wallTime": 1792752193367,
+        "tag": "TEXTAREA",
+        "className": "workspace-input",
+        "disabled": false,
+        "activeTag": "BODY",
+        "activeClass": "",
+        "editors": [],
+        "stack": [
+          "    at HTMLElement.focus (<anonymous>:28:41)",
+          "    at file:///Users/aleksandersk/Documents/programming/Projects/project_folder/.worktrees/issue-67-integrated-desktop/dist/renderer/assets/index-C-xVYy64.js:49:208387",
+          "    at fl (file:///Users/aleksandersk/Documents/programming/Projects/project_folder/.worktrees/issue-67-integrated-desktop/dist/renderer/assets/index-C-xVYy64.js:8:95230)",
+          "    at Nu (file:///Users/aleksandersk/Documents/programming/Projects/project_folder/.worktrees/issue-67-integrated-desktop/dist/renderer/assets/index-C-xVYy64.js:8:118522)",
+          "    at Mu (file:///Users/aleksandersk/Documents/programming/Projects/project_folder/.worktrees/issue-67-integrated-desktop/dist/renderer/assets/index-C-xVYy64.js:8:118295)"
+        ]
+      },
+      {
+        "type": "focusin",
+        "at": 452.19999998807907,
+        "wallTime": 1792752193367,
+        "tag": "TEXTAREA",
+        "className": "workspace-input",
+        "disabled": false,
+        "activeTag": "TEXTAREA",
+        "activeClass": "workspace-input",
+        "editors": []
+      },
+      {
+        "type": "state",
+        "at": 453.30000001192093,
+        "wallTime": 1792752193368,
+        "activeTag": "TEXTAREA",
+        "activeClass": "workspace-input",
+        "editors": []
+      },
+      {
+        "type": "input",
+        "at": 489.89999997615814,
+        "wallTime": 1792752193405,
+        "tag": "TEXTAREA",
+        "className": "workspace-input",
+        "disabled": false,
+        "activeTag": "TEXTAREA",
+        "activeClass": "workspace-input",
+        "editors": []
+      },
+      {
+        "type": "focusout",
+        "at": 512.3999999761581,
+        "wallTime": 1792752193427,
+        "tag": "TEXTAREA",
+        "className": "workspace-input",
+        "disabled": false,
+        "activeTag": "BODY",
+        "activeClass": "",
+        "editors": []
+      },
+      {
+        "type": "focusin",
+        "at": 512.5,
+        "wallTime": 1792752193427,
+        "tag": "BUTTON",
+        "className": "workspace-button",
+        "disabled": false,
+        "activeTag": "BUTTON",
+        "activeClass": "workspace-button",
+        "editors": []
+      },
+      {
+        "type": "click",
+        "at": 512.8000000119209,
+        "wallTime": 1792752193428,
+        "tag": "BUTTON",
+        "className": "workspace-button",
+        "disabled": false,
+        "activeTag": "BUTTON",
+        "activeClass": "workspace-button",
+        "editors": []
+      },
+      {
+        "type": "state",
+        "at": 513.3000000119209,
+        "wallTime": 1792752193428,
+        "activeTag": "BUTTON",
+        "activeClass": "workspace-button",
+        "editors": []
+      },
+      {
+        "type": "focusout",
+        "at": 519.1999999880791,
+        "wallTime": 1792752193434,
+        "tag": "BUTTON",
+        "className": "workspace-button",
+        "disabled": true,
+        "activeTag": "BODY",
+        "activeClass": "",
+        "editors": []
+      },
+      {
+        "type": "focus-call",
+        "at": 520.3000000119209,
+        "wallTime": 1792752193435,
+        "tag": "BUTTON",
+        "className": "text-value-button",
+        "disabled": false,
+        "activeTag": "BODY",
+        "activeClass": "",
+        "editors": [],
+        "stack": [
+          "    at HTMLElement.focus (<anonymous>:28:41)",
+          "    at file:///Users/aleksandersk/Documents/programming/Projects/project_folder/.worktrees/issue-67-integrated-desktop/dist/renderer/assets/index-C-xVYy64.js:49:206484",
+          "    at fl (file:///Users/aleksandersk/Documents/programming/Projects/project_folder/.worktrees/issue-67-integrated-desktop/dist/renderer/assets/index-C-xVYy64.js:8:95230)",
+          "    at su (file:///Users/aleksandersk/Documents/programming/Projects/project_folder/.worktrees/issue-67-integrated-desktop/dist/renderer/assets/index-C-xVYy64.js:8:104721)",
+          "    at Du (file:///Users/aleksandersk/Documents/programming/Projects/project_folder/.worktrees/issue-67-integrated-desktop/dist/renderer/assets/index-C-xVYy64.js:8:116041)"
+        ]
+      },
+      {
+        "type": "focusin",
+        "at": 520.6999999880791,
+        "wallTime": 1792752193435,
+        "tag": "BUTTON",
+        "className": "text-value-button",
+        "disabled": false,
+        "activeTag": "BUTTON",
+        "activeClass": "text-value-button",
+        "editors": []
+      },
+      {
+        "type": "state",
+        "at": 520.8999999761581,
+        "wallTime": 1792752193436,
+        "activeTag": "BUTTON",
+        "activeClass": "text-value-button",
+        "editors": []
+      },
+      {
+        "type": "focusout",
+        "at": 561.3999999761581,
+        "wallTime": 1792752193476,
+        "tag": "BUTTON",
+        "className": "text-value-button",
+        "disabled": false,
+        "activeTag": "BODY",
+        "activeClass": "",
+        "editors": []
+      },
+      {
+        "type": "focusin",
+        "at": 561.5,
+        "wallTime": 1792752193476,
+        "tag": "BUTTON",
+        "className": "workspace-button workspace-button--secondary context-tools-trigger icon-button",
+        "disabled": false,
+        "activeTag": "BUTTON",
+        "activeClass": "workspace-button workspace-button--secondary context-tools-trigger icon-button",
+        "editors": []
+      },
+      {
+        "type": "state",
+        "at": 561.8999999761581,
+        "wallTime": 1792752193477,
+        "activeTag": "BUTTON",
+        "activeClass": "workspace-button workspace-button--secondary context-tools-trigger icon-button",
+        "editors": []
+      },
+      {
+        "type": "click",
+        "at": 562,
+        "wallTime": 1792752193477,
+        "tag": "svg",
+        "className": {},
+        "activeTag": "BUTTON",
+        "activeClass": "workspace-button workspace-button--secondary context-tools-trigger icon-button",
+        "editors": []
+      },
+      {
+        "type": "focus-call",
+        "at": 562.5,
+        "wallTime": 1792752193477,
+        "tag": "BUTTON",
+        "className": "workspace-button workspace-button--secondary",
+        "disabled": false,
+        "activeTag": "BUTTON",
+        "activeClass": "workspace-button workspace-button--secondary context-tools-trigger icon-button",
+        "editors": [],
+        "stack": [
+          "    at HTMLElement.focus (<anonymous>:28:41)",
+          "    at file:///Users/aleksandersk/Documents/programming/Projects/project_folder/.worktrees/issue-67-integrated-desktop/dist/renderer/assets/index-C-xVYy64.js:49:131647",
+          "    at fl (file:///Users/aleksandersk/Documents/programming/Projects/project_folder/.worktrees/issue-67-integrated-desktop/dist/renderer/assets/index-C-xVYy64.js:8:95230)",
+          "    at Nu (file:///Users/aleksandersk/Documents/programming/Projects/project_folder/.worktrees/issue-67-integrated-desktop/dist/renderer/assets/index-C-xVYy64.js:8:118522)",
+          "    at Mu (file:///Users/aleksandersk/Documents/programming/Projects/project_folder/.worktrees/issue-67-integrated-desktop/dist/renderer/assets/index-C-xVYy64.js:8:118295)"
+        ]
+      },
+      {
+        "type": "focusout",
+        "at": 562.5,
+        "wallTime": 1792752193477,
+        "tag": "BUTTON",
+        "className": "workspace-button workspace-button--secondary context-tools-trigger icon-button",
+        "disabled": false,
+        "activeTag": "BODY",
+        "activeClass": "",
+        "editors": []
+      },
+      {
+        "type": "focusin",
+        "at": 562.6000000238419,
+        "wallTime": 1792752193477,
+        "tag": "BUTTON",
+        "className": "workspace-button workspace-button--secondary",
+        "disabled": false,
+        "activeTag": "BUTTON",
+        "activeClass": "workspace-button workspace-button--secondary",
+        "editors": []
+      },
+      {
+        "type": "state",
+        "at": 562.8000000119209,
+        "wallTime": 1792752193477,
+        "activeTag": "BUTTON",
+        "activeClass": "workspace-button workspace-button--secondary",
+        "editors": []
+      },
+      {
+        "type": "keydown",
+        "at": 577.8999999761581,
+        "wallTime": 1792752193493,
+        "tag": "BUTTON",
+        "className": "workspace-button workspace-button--secondary",
+        "disabled": false,
+        "activeTag": "BUTTON",
+        "activeClass": "workspace-button workspace-button--secondary",
+        "editors": [],
+        "key": "Enter"
+      },
+      {
+        "type": "click",
+        "at": 578.1000000238419,
+        "wallTime": 1792752193493,
+        "tag": "BUTTON",
+        "className": "workspace-button workspace-button--secondary",
+        "disabled": false,
+        "activeTag": "BUTTON",
+        "activeClass": "workspace-button workspace-button--secondary",
+        "editors": []
+      },
+      {
+        "type": "focus-call",
+        "at": 581.1000000238419,
+        "wallTime": 1792752193496,
+        "tag": "INPUT",
+        "className": "bb-input",
+        "disabled": false,
+        "activeTag": "BUTTON",
+        "activeClass": "workspace-button workspace-button--secondary",
+        "editors": [],
+        "stack": [
+          "    at HTMLElement.focus (<anonymous>:28:41)",
+          "    at Object.onMountAutoFocus [as current] (file:///Users/aleksandersk/Documents/programming/Projects/project_folder/.worktrees/issue-67-integrated-desktop/dist/renderer/assets/index-C-xVYy64.js:49:252883)",
+          "    at HTMLDivElement.<anonymous> (file:///Users/aleksandersk/Documents/programming/Projects/project_folder/.worktrees/issue-67-integrated-desktop/dist/renderer/assets/index-C-xVYy64.js:49:246190)",
+          "    at file:///Users/aleksandersk/Documents/programming/Projects/project_folder/.worktrees/issue-67-integrated-desktop/dist/renderer/assets/index-C-xVYy64.js:49:247619",
+          "    at fl (file:///Users/aleksandersk/Documents/programming/Projects/project_folder/.worktrees/issue-67-integrated-desktop/dist/renderer/assets/index-C-xVYy64.js:8:95230)"
+        ]
+      },
+      {
+        "type": "focusout",
+        "at": 581.1999999880791,
+        "wallTime": 1792752193496,
+        "tag": "BUTTON",
+        "className": "workspace-button workspace-button--secondary",
+        "disabled": false,
+        "activeTag": "BODY",
+        "activeClass": "",
+        "editors": []
+      },
+      {
+        "type": "focusin",
+        "at": 581.8000000119209,
+        "wallTime": 1792752193497,
+        "tag": "INPUT",
+        "className": "bb-input",
+        "disabled": false,
+        "activeTag": "INPUT",
+        "activeClass": "bb-input",
+        "editors": []
+      },
+      {
+        "type": "state",
+        "at": 582.1000000238419,
+        "wallTime": 1792752193497,
+        "activeTag": "INPUT",
+        "activeClass": "bb-input",
+        "editors": []
+      },
+      {
+        "type": "focusout",
+        "at": 603.8999999761581,
+        "wallTime": 1792752193519,
+        "tag": "INPUT",
+        "className": "bb-input",
+        "disabled": false,
+        "activeTag": "BODY",
+        "activeClass": "",
+        "editors": []
+      },
+      {
+        "type": "focusin",
+        "at": 604.1000000238419,
+        "wallTime": 1792752193519,
+        "tag": "BUTTON",
+        "className": "workspace-button workspace-button--secondary",
+        "disabled": false,
+        "activeTag": "BUTTON",
+        "activeClass": "workspace-button workspace-button--secondary",
+        "editors": []
+      },
+      {
+        "type": "click",
+        "at": 604.1000000238419,
+        "wallTime": 1792752193519,
+        "tag": "BUTTON",
+        "className": "workspace-button workspace-button--secondary",
+        "disabled": false,
+        "activeTag": "BUTTON",
+        "activeClass": "workspace-button workspace-button--secondary",
+        "editors": []
+      },
+      {
+        "type": "state",
+        "at": 605.1000000238419,
+        "wallTime": 1792752193520,
+        "activeTag": "BUTTON",
+        "activeClass": "workspace-button workspace-button--secondary",
+        "editors": []
+      },
+      {
+        "type": "focusout",
+        "at": 654.3000000119209,
+        "wallTime": 1792752193569,
+        "tag": "BUTTON",
+        "className": "workspace-button workspace-button--secondary",
+        "disabled": false,
+        "activeTag": "BODY",
+        "activeClass": "",
+        "editors": []
+      },
+      {
+        "type": "focusin",
+        "at": 654.3000000119209,
+        "wallTime": 1792752193569,
+        "tag": "BUTTON",
+        "className": "workspace-button workspace-button--secondary",
+        "disabled": false,
+        "activeTag": "BUTTON",
+        "activeClass": "workspace-button workspace-button--secondary",
+        "editors": []
+      },
+      {
+        "type": "click",
+        "at": 654.3999999761581,
+        "wallTime": 1792752193569,
+        "tag": "BUTTON",
+        "className": "workspace-button workspace-button--secondary",
+        "disabled": false,
+        "activeTag": "BUTTON",
+        "activeClass": "workspace-button workspace-button--secondary",
+        "editors": []
+      },
+      {
+        "type": "focusout",
+        "at": 659.6999999880791,
+        "wallTime": 1792752193574,
+        "tag": "BUTTON",
+        "className": "workspace-button workspace-button--secondary",
+        "disabled": true,
+        "activeTag": "BODY",
+        "activeClass": "",
+        "editors": []
+      },
+      {
+        "type": "focus-call",
+        "at": 669.8999999761581,
+        "wallTime": 1792752193585,
+        "tag": "DIV",
+        "className": "project-operation-dialog project-archive-dialog",
+        "activeTag": "BODY",
+        "activeClass": "",
+        "editors": [],
+        "stack": [
+          "    at HTMLElement.focus (<anonymous>:28:41)",
+          "    at Ee (file:///Users/aleksandersk/Documents/programming/Projects/project_folder/.worktrees/issue-67-integrated-desktop/dist/renderer/assets/index-C-xVYy64.js:49:257430)",
+          "    at De (file:///Users/aleksandersk/Documents/programming/Projects/project_folder/.worktrees/issue-67-integrated-desktop/dist/renderer/assets/index-C-xVYy64.js:49:257920)"
+        ]
+      },
+      {
+        "type": "focusin",
+        "at": 669.8999999761581,
+        "wallTime": 1792752193585,
+        "tag": "DIV",
+        "className": "project-operation-dialog project-archive-dialog",
+        "activeTag": "DIV",
+        "activeClass": "project-operation-dialog project-archive-dialog",
+        "editors": []
+      },
+      {
+        "type": "state",
+        "at": 671.6999999880791,
+        "wallTime": 1792752193586,
+        "activeTag": "DIV",
+        "activeClass": "project-operation-dialog project-archive-dialog",
+        "editors": []
+      },
+      {
+        "type": "focusout",
+        "at": 703.6000000238419,
+        "wallTime": 1792752193618,
+        "tag": "DIV",
+        "className": "project-operation-dialog project-archive-dialog",
+        "activeTag": "BODY",
+        "activeClass": "",
+        "editors": []
+      },
+      {
+        "type": "focusin",
+        "at": 703.6000000238419,
+        "wallTime": 1792752193618,
+        "tag": "BUTTON",
+        "className": "workspace-button workspace-button--secondary",
+        "disabled": false,
+        "activeTag": "BUTTON",
+        "activeClass": "workspace-button workspace-button--secondary",
+        "editors": []
+      },
+      {
+        "type": "click",
+        "at": 703.8000000119209,
+        "wallTime": 1792752193618,
+        "tag": "BUTTON",
+        "className": "workspace-button workspace-button--secondary",
+        "disabled": false,
+        "activeTag": "BUTTON",
+        "activeClass": "workspace-button workspace-button--secondary",
+        "editors": []
+      },
+      {
+        "type": "focus-call",
+        "at": 703.8999999761581,
+        "wallTime": 1792752193619,
+        "tag": "SECTION",
+        "className": "project-archive",
+        "activeTag": "BUTTON",
+        "activeClass": "workspace-button workspace-button--secondary",
+        "editors": [],
+        "stack": [
+          "    at HTMLElement.focus (<anonymous>:28:41)",
+          "    at Ce (file:///Users/aleksandersk/Documents/programming/Projects/project_folder/.worktrees/issue-67-integrated-desktop/dist/renderer/assets/index-C-xVYy64.js:49:256136)",
+          "    at zf (file:///Users/aleksandersk/Documents/programming/Projects/project_folder/.worktrees/issue-67-integrated-desktop/dist/renderer/assets/index-C-xVYy64.js:8:139267)",
+          "    at file:///Users/aleksandersk/Documents/programming/Projects/project_folder/.worktrees/issue-67-integrated-desktop/dist/renderer/assets/index-C-xVYy64.js:8:143999",
+          "    at fn (file:///Users/aleksandersk/Documents/programming/Projects/project_folder/.worktrees/issue-67-integrated-desktop/dist/renderer/assets/index-C-xVYy64.js:8:15178)"
+        ]
+      },
+      {
+        "type": "focusout",
+        "at": 703.8999999761581,
+        "wallTime": 1792752193619,
+        "tag": "BUTTON",
+        "className": "workspace-button workspace-button--secondary",
+        "disabled": false,
+        "activeTag": "BODY",
+        "activeClass": "",
+        "editors": []
+      },
+      {
+        "type": "focusin",
+        "at": 703.8999999761581,
+        "wallTime": 1792752193619,
+        "tag": "SECTION",
+        "className": "project-archive",
+        "activeTag": "SECTION",
+        "activeClass": "project-archive",
+        "editors": []
+      },
+      {
+        "type": "state",
+        "at": 705.3999999761581,
+        "wallTime": 1792752193620,
+        "activeTag": "SECTION",
+        "activeClass": "project-archive",
+        "editors": []
+      },
+      {
+        "type": "focusout",
+        "at": 745.1000000238419,
+        "wallTime": 1792752193660,
+        "tag": "SECTION",
+        "className": "project-archive",
+        "activeTag": "BODY",
+        "activeClass": "",
+        "editors": []
+      },
+      {
+        "type": "focusin",
+        "at": 745.1999999880791,
+        "wallTime": 1792752193660,
+        "tag": "BUTTON",
+        "className": "workspace-button workspace-button--secondary",
+        "disabled": false,
+        "activeTag": "BUTTON",
+        "activeClass": "workspace-button workspace-button--secondary",
+        "editors": []
+      },
+      {
+        "type": "click",
+        "at": 745.3000000119209,
+        "wallTime": 1792752193660,
+        "tag": "BUTTON",
+        "className": "workspace-button workspace-button--secondary",
+        "disabled": false,
+        "activeTag": "BUTTON",
+        "activeClass": "workspace-button workspace-button--secondary",
+        "editors": []
+      },
+      {
+        "type": "state",
+        "at": 746.5,
+        "wallTime": 1792752193661,
+        "activeTag": "BUTTON",
+        "activeClass": "workspace-button workspace-button--secondary",
+        "editors": []
+      }
+    ],
+    "editorFieldTrace": [
+      {
+        "type": "focusin",
+        "at": 444.39999997615814,
+        "wallTime": 1792752193359,
+        "tag": "BUTTON",
+        "className": "text-value-button",
+        "disabled": false,
+        "activeTag": "BUTTON",
+        "activeClass": "text-value-button",
+        "editors": []
+      },
+      {
+        "type": "keydown",
+        "at": 449.30000001192093,
+        "wallTime": 1792752193364,
+        "tag": "BUTTON",
+        "className": "text-value-button",
+        "disabled": false,
+        "activeTag": "BUTTON",
+        "activeClass": "text-value-button",
+        "editors": [],
+        "key": "Enter"
+      },
+      {
+        "type": "click",
+        "at": 449.5,
+        "wallTime": 1792752193364,
+        "tag": "BUTTON",
+        "className": "text-value-button",
+        "disabled": false,
+        "activeTag": "BUTTON",
+        "activeClass": "text-value-button",
+        "editors": []
+      },
+      {
+        "type": "focusout",
+        "at": 450.39999997615814,
+        "wallTime": 1792752193365,
+        "tag": "BUTTON",
+        "className": "text-value-button",
+        "disabled": false,
+        "activeTag": "BODY",
+        "activeClass": "",
+        "editors": []
+      },
+      {
+        "type": "focus-call",
+        "at": 451.69999998807907,
+        "wallTime": 1792752193366,
+        "tag": "BUTTON",
+        "className": "text-value-button",
+        "disabled": false,
+        "activeTag": "BODY",
+        "activeClass": "",
+        "editors": [],
+        "stack": [
+          "    at HTMLElement.focus (<anonymous>:28:41)",
+          "    at rf (file:///Users/aleksandersk/Documents/programming/Projects/project_folder/.worktrees/issue-67-integrated-desktop/dist/renderer/assets/index-C-xVYy64.js:8:131626)",
+          "    at ef (file:///Users/aleksandersk/Documents/programming/Projects/project_folder/.worktrees/issue-67-integrated-desktop/dist/renderer/assets/index-C-xVYy64.js:8:130375)",
+          "    at $d (file:///Users/aleksandersk/Documents/programming/Projects/project_folder/.worktrees/issue-67-integrated-desktop/dist/renderer/assets/index-C-xVYy64.js:8:129853)",
+          "    at Nd (file:///Users/aleksandersk/Documents/programming/Projects/project_folder/.worktrees/issue-67-integrated-desktop/dist/renderer/assets/index-C-xVYy64.js:8:125252)"
+        ]
+      },
+      {
+        "type": "focus-call",
+        "at": 452,
+        "wallTime": 1792752193367,
+        "tag": "TEXTAREA",
+        "className": "workspace-input",
+        "disabled": false,
+        "activeTag": "BODY",
+        "activeClass": "",
+        "editors": [],
+        "stack": [
+          "    at HTMLElement.focus (<anonymous>:28:41)",
+          "    at file:///Users/aleksandersk/Documents/programming/Projects/project_folder/.worktrees/issue-67-integrated-desktop/dist/renderer/assets/index-C-xVYy64.js:49:208387",
+          "    at fl (file:///Users/aleksandersk/Documents/programming/Projects/project_folder/.worktrees/issue-67-integrated-desktop/dist/renderer/assets/index-C-xVYy64.js:8:95230)",
+          "    at Nu (file:///Users/aleksandersk/Documents/programming/Projects/project_folder/.worktrees/issue-67-integrated-desktop/dist/renderer/assets/index-C-xVYy64.js:8:118522)",
+          "    at Mu (file:///Users/aleksandersk/Documents/programming/Projects/project_folder/.worktrees/issue-67-integrated-desktop/dist/renderer/assets/index-C-xVYy64.js:8:118295)"
+        ]
+      },
+      {
+        "type": "focusin",
+        "at": 452.19999998807907,
+        "wallTime": 1792752193367,
+        "tag": "TEXTAREA",
+        "className": "workspace-input",
+        "disabled": false,
+        "activeTag": "TEXTAREA",
+        "activeClass": "workspace-input",
+        "editors": []
+      },
+      {
+        "type": "state",
+        "at": 453.30000001192093,
+        "wallTime": 1792752193368,
+        "activeTag": "TEXTAREA",
+        "activeClass": "workspace-input",
+        "editors": []
+      },
+      {
+        "type": "input",
+        "at": 489.89999997615814,
+        "wallTime": 1792752193405,
+        "tag": "TEXTAREA",
+        "className": "workspace-input",
+        "disabled": false,
+        "activeTag": "TEXTAREA",
+        "activeClass": "workspace-input",
+        "editors": []
+      },
+      {
+        "type": "focusout",
+        "at": 512.3999999761581,
+        "wallTime": 1792752193427,
+        "tag": "TEXTAREA",
+        "className": "workspace-input",
+        "disabled": false,
+        "activeTag": "BODY",
+        "activeClass": "",
+        "editors": []
+      },
+      {
+        "type": "focusin",
+        "at": 512.5,
+        "wallTime": 1792752193427,
+        "tag": "BUTTON",
+        "className": "workspace-button",
+        "disabled": false,
+        "activeTag": "BUTTON",
+        "activeClass": "workspace-button",
+        "editors": []
+      },
+      {
+        "type": "click",
+        "at": 512.8000000119209,
+        "wallTime": 1792752193428,
+        "tag": "BUTTON",
+        "className": "workspace-button",
+        "disabled": false,
+        "activeTag": "BUTTON",
+        "activeClass": "workspace-button",
+        "editors": []
+      },
+      {
+        "type": "state",
+        "at": 513.3000000119209,
+        "wallTime": 1792752193428,
+        "activeTag": "BUTTON",
+        "activeClass": "workspace-button",
+        "editors": []
+      },
+      {
+        "type": "focusout",
+        "at": 519.1999999880791,
+        "wallTime": 1792752193434,
+        "tag": "BUTTON",
+        "className": "workspace-button",
+        "disabled": true,
+        "activeTag": "BODY",
+        "activeClass": "",
+        "editors": []
+      },
+      {
+        "type": "focus-call",
+        "at": 520.3000000119209,
+        "wallTime": 1792752193435,
+        "tag": "BUTTON",
+        "className": "text-value-button",
+        "disabled": false,
+        "activeTag": "BODY",
+        "activeClass": "",
+        "editors": [],
+        "stack": [
+          "    at HTMLElement.focus (<anonymous>:28:41)",
+          "    at file:///Users/aleksandersk/Documents/programming/Projects/project_folder/.worktrees/issue-67-integrated-desktop/dist/renderer/assets/index-C-xVYy64.js:49:206484",
+          "    at fl (file:///Users/aleksandersk/Documents/programming/Projects/project_folder/.worktrees/issue-67-integrated-desktop/dist/renderer/assets/index-C-xVYy64.js:8:95230)",
+          "    at su (file:///Users/aleksandersk/Documents/programming/Projects/project_folder/.worktrees/issue-67-integrated-desktop/dist/renderer/assets/index-C-xVYy64.js:8:104721)",
+          "    at Du (file:///Users/aleksandersk/Documents/programming/Projects/project_folder/.worktrees/issue-67-integrated-desktop/dist/renderer/assets/index-C-xVYy64.js:8:116041)"
+        ]
+      },
+      {
+        "type": "focusin",
+        "at": 520.6999999880791,
+        "wallTime": 1792752193435,
+        "tag": "BUTTON",
+        "className": "text-value-button",
+        "disabled": false,
+        "activeTag": "BUTTON",
+        "activeClass": "text-value-button",
+        "editors": []
+      },
+      {
+        "type": "state",
+        "at": 520.8999999761581,
+        "wallTime": 1792752193436,
+        "activeTag": "BUTTON",
+        "activeClass": "text-value-button",
+        "editors": []
+      },
+      {
+        "type": "focusout",
+        "at": 561.3999999761581,
+        "wallTime": 1792752193476,
+        "tag": "BUTTON",
+        "className": "text-value-button",
+        "disabled": false,
+        "activeTag": "BODY",
+        "activeClass": "",
+        "editors": []
+      },
+      {
+        "type": "focusin",
+        "at": 561.5,
+        "wallTime": 1792752193476,
+        "tag": "BUTTON",
+        "className": "workspace-button workspace-button--secondary context-tools-trigger icon-button",
+        "disabled": false,
+        "activeTag": "BUTTON",
+        "activeClass": "workspace-button workspace-button--secondary context-tools-trigger icon-button",
+        "editors": []
+      },
+      {
+        "type": "state",
+        "at": 561.8999999761581,
+        "wallTime": 1792752193477,
+        "activeTag": "BUTTON",
+        "activeClass": "workspace-button workspace-button--secondary context-tools-trigger icon-button",
+        "editors": []
+      },
+      {
+        "type": "click",
+        "at": 562,
+        "wallTime": 1792752193477,
+        "tag": "svg",
+        "className": {},
+        "activeTag": "BUTTON",
+        "activeClass": "workspace-button workspace-button--secondary context-tools-trigger icon-button",
+        "editors": []
+      },
+      {
+        "type": "focus-call",
+        "at": 562.5,
+        "wallTime": 1792752193477,
+        "tag": "BUTTON",
+        "className": "workspace-button workspace-button--secondary",
+        "disabled": false,
+        "activeTag": "BUTTON",
+        "activeClass": "workspace-button workspace-button--secondary context-tools-trigger icon-button",
+        "editors": [],
+        "stack": [
+          "    at HTMLElement.focus (<anonymous>:28:41)",
+          "    at file:///Users/aleksandersk/Documents/programming/Projects/project_folder/.worktrees/issue-67-integrated-desktop/dist/renderer/assets/index-C-xVYy64.js:49:131647",
+          "    at fl (file:///Users/aleksandersk/Documents/programming/Projects/project_folder/.worktrees/issue-67-integrated-desktop/dist/renderer/assets/index-C-xVYy64.js:8:95230)",
+          "    at Nu (file:///Users/aleksandersk/Documents/programming/Projects/project_folder/.worktrees/issue-67-integrated-desktop/dist/renderer/assets/index-C-xVYy64.js:8:118522)",
+          "    at Mu (file:///Users/aleksandersk/Documents/programming/Projects/project_folder/.worktrees/issue-67-integrated-desktop/dist/renderer/assets/index-C-xVYy64.js:8:118295)"
+        ]
+      },
+      {
+        "type": "focusout",
+        "at": 562.5,
+        "wallTime": 1792752193477,
+        "tag": "BUTTON",
+        "className": "workspace-button workspace-button--secondary context-tools-trigger icon-button",
+        "disabled": false,
+        "activeTag": "BODY",
+        "activeClass": "",
+        "editors": []
+      },
+      {
+        "type": "focusin",
+        "at": 562.6000000238419,
+        "wallTime": 1792752193477,
+        "tag": "BUTTON",
+        "className": "workspace-button workspace-button--secondary",
+        "disabled": false,
+        "activeTag": "BUTTON",
+        "activeClass": "workspace-button workspace-button--secondary",
+        "editors": []
+      },
+      {
+        "type": "state",
+        "at": 562.8000000119209,
+        "wallTime": 1792752193477,
+        "activeTag": "BUTTON",
+        "activeClass": "workspace-button workspace-button--secondary",
+        "editors": []
+      },
+      {
+        "type": "keydown",
+        "at": 577.8999999761581,
+        "wallTime": 1792752193493,
+        "tag": "BUTTON",
+        "className": "workspace-button workspace-button--secondary",
+        "disabled": false,
+        "activeTag": "BUTTON",
+        "activeClass": "workspace-button workspace-button--secondary",
+        "editors": [],
+        "key": "Enter"
+      },
+      {
+        "type": "click",
+        "at": 578.1000000238419,
+        "wallTime": 1792752193493,
+        "tag": "BUTTON",
+        "className": "workspace-button workspace-button--secondary",
+        "disabled": false,
+        "activeTag": "BUTTON",
+        "activeClass": "workspace-button workspace-button--secondary",
+        "editors": []
+      },
+      {
+        "type": "focus-call",
+        "at": 581.1000000238419,
+        "wallTime": 1792752193496,
+        "tag": "INPUT",
+        "className": "bb-input",
+        "disabled": false,
+        "activeTag": "BUTTON",
+        "activeClass": "workspace-button workspace-button--secondary",
+        "editors": [],
+        "stack": [
+          "    at HTMLElement.focus (<anonymous>:28:41)",
+          "    at Object.onMountAutoFocus [as current] (file:///Users/aleksandersk/Documents/programming/Projects/project_folder/.worktrees/issue-67-integrated-desktop/dist/renderer/assets/index-C-xVYy64.js:49:252883)",
+          "    at HTMLDivElement.<anonymous> (file:///Users/aleksandersk/Documents/programming/Projects/project_folder/.worktrees/issue-67-integrated-desktop/dist/renderer/assets/index-C-xVYy64.js:49:246190)",
+          "    at file:///Users/aleksandersk/Documents/programming/Projects/project_folder/.worktrees/issue-67-integrated-desktop/dist/renderer/assets/index-C-xVYy64.js:49:247619",
+          "    at fl (file:///Users/aleksandersk/Documents/programming/Projects/project_folder/.worktrees/issue-67-integrated-desktop/dist/renderer/assets/index-C-xVYy64.js:8:95230)"
+        ]
+      },
+      {
+        "type": "focusout",
+        "at": 581.1999999880791,
+        "wallTime": 1792752193496,
+        "tag": "BUTTON",
+        "className": "workspace-button workspace-button--secondary",
+        "disabled": false,
+        "activeTag": "BODY",
+        "activeClass": "",
+        "editors": []
+      },
+      {
+        "type": "focusin",
+        "at": 581.8000000119209,
+        "wallTime": 1792752193497,
+        "tag": "INPUT",
+        "className": "bb-input",
+        "disabled": false,
+        "activeTag": "INPUT",
+        "activeClass": "bb-input",
+        "editors": []
+      },
+      {
+        "type": "state",
+        "at": 582.1000000238419,
+        "wallTime": 1792752193497,
+        "activeTag": "INPUT",
+        "activeClass": "bb-input",
+        "editors": []
+      },
+      {
+        "type": "focusout",
+        "at": 603.8999999761581,
+        "wallTime": 1792752193519,
+        "tag": "INPUT",
+        "className": "bb-input",
+        "disabled": false,
+        "activeTag": "BODY",
+        "activeClass": "",
+        "editors": []
+      },
+      {
+        "type": "focusin",
+        "at": 604.1000000238419,
+        "wallTime": 1792752193519,
+        "tag": "BUTTON",
+        "className": "workspace-button workspace-button--secondary",
+        "disabled": false,
+        "activeTag": "BUTTON",
+        "activeClass": "workspace-button workspace-button--secondary",
+        "editors": []
+      },
+      {
+        "type": "click",
+        "at": 604.1000000238419,
+        "wallTime": 1792752193519,
+        "tag": "BUTTON",
+        "className": "workspace-button workspace-button--secondary",
+        "disabled": false,
+        "activeTag": "BUTTON",
+        "activeClass": "workspace-button workspace-button--secondary",
+        "editors": []
+      },
+      {
+        "type": "state",
+        "at": 605.1000000238419,
+        "wallTime": 1792752193520,
+        "activeTag": "BUTTON",
+        "activeClass": "workspace-button workspace-button--secondary",
+        "editors": []
+      },
+      {
+        "type": "focusout",
+        "at": 654.3000000119209,
+        "wallTime": 1792752193569,
+        "tag": "BUTTON",
+        "className": "workspace-button workspace-button--secondary",
+        "disabled": false,
+        "activeTag": "BODY",
+        "activeClass": "",
+        "editors": []
+      },
+      {
+        "type": "focusin",
+        "at": 654.3000000119209,
+        "wallTime": 1792752193569,
+        "tag": "BUTTON",
+        "className": "workspace-button workspace-button--secondary",
+        "disabled": false,
+        "activeTag": "BUTTON",
+        "activeClass": "workspace-button workspace-button--secondary",
+        "editors": []
+      },
+      {
+        "type": "click",
+        "at": 654.3999999761581,
+        "wallTime": 1792752193569,
+        "tag": "BUTTON",
+        "className": "workspace-button workspace-button--secondary",
+        "disabled": false,
+        "activeTag": "BUTTON",
+        "activeClass": "workspace-button workspace-button--secondary",
+        "editors": []
+      },
+      {
+        "type": "focusout",
+        "at": 659.6999999880791,
+        "wallTime": 1792752193574,
+        "tag": "BUTTON",
+        "className": "workspace-button workspace-button--secondary",
+        "disabled": true,
+        "activeTag": "BODY",
+        "activeClass": "",
+        "editors": []
+      },
+      {
+        "type": "focus-call",
+        "at": 669.8999999761581,
+        "wallTime": 1792752193585,
+        "tag": "DIV",
+        "className": "project-operation-dialog project-archive-dialog",
+        "activeTag": "BODY",
+        "activeClass": "",
+        "editors": [],
+        "stack": [
+          "    at HTMLElement.focus (<anonymous>:28:41)",
+          "    at Ee (file:///Users/aleksandersk/Documents/programming/Projects/project_folder/.worktrees/issue-67-integrated-desktop/dist/renderer/assets/index-C-xVYy64.js:49:257430)",
+          "    at De (file:///Users/aleksandersk/Documents/programming/Projects/project_folder/.worktrees/issue-67-integrated-desktop/dist/renderer/assets/index-C-xVYy64.js:49:257920)"
+        ]
+      },
+      {
+        "type": "focusin",
+        "at": 669.8999999761581,
+        "wallTime": 1792752193585,
+        "tag": "DIV",
+        "className": "project-operation-dialog project-archive-dialog",
+        "activeTag": "DIV",
+        "activeClass": "project-operation-dialog project-archive-dialog",
+        "editors": []
+      },
+      {
+        "type": "state",
+        "at": 671.6999999880791,
+        "wallTime": 1792752193586,
+        "activeTag": "DIV",
+        "activeClass": "project-operation-dialog project-archive-dialog",
+        "editors": []
+      },
+      {
+        "type": "focusout",
+        "at": 703.6000000238419,
+        "wallTime": 1792752193618,
+        "tag": "DIV",
+        "className": "project-operation-dialog project-archive-dialog",
+        "activeTag": "BODY",
+        "activeClass": "",
+        "editors": []
+      },
+      {
+        "type": "focusin",
+        "at": 703.6000000238419,
+        "wallTime": 1792752193618,
+        "tag": "BUTTON",
+        "className": "workspace-button workspace-button--secondary",
+        "disabled": false,
+        "activeTag": "BUTTON",
+        "activeClass": "workspace-button workspace-button--secondary",
+        "editors": []
+      },
+      {
+        "type": "click",
+        "at": 703.8000000119209,
+        "wallTime": 1792752193618,
+        "tag": "BUTTON",
+        "className": "workspace-button workspace-button--secondary",
+        "disabled": false,
+        "activeTag": "BUTTON",
+        "activeClass": "workspace-button workspace-button--secondary",
+        "editors": []
+      },
+      {
+        "type": "focus-call",
+        "at": 703.8999999761581,
+        "wallTime": 1792752193619,
+        "tag": "SECTION",
+        "className": "project-archive",
+        "activeTag": "BUTTON",
+        "activeClass": "workspace-button workspace-button--secondary",
+        "editors": [],
+        "stack": [
+          "    at HTMLElement.focus (<anonymous>:28:41)",
+          "    at Ce (file:///Users/aleksandersk/Documents/programming/Projects/project_folder/.worktrees/issue-67-integrated-desktop/dist/renderer/assets/index-C-xVYy64.js:49:256136)",
+          "    at zf (file:///Users/aleksandersk/Documents/programming/Projects/project_folder/.worktrees/issue-67-integrated-desktop/dist/renderer/assets/index-C-xVYy64.js:8:139267)",
+          "    at file:///Users/aleksandersk/Documents/programming/Projects/project_folder/.worktrees/issue-67-integrated-desktop/dist/renderer/assets/index-C-xVYy64.js:8:143999",
+          "    at fn (file:///Users/aleksandersk/Documents/programming/Projects/project_folder/.worktrees/issue-67-integrated-desktop/dist/renderer/assets/index-C-xVYy64.js:8:15178)"
+        ]
+      },
+      {
+        "type": "focusout",
+        "at": 703.8999999761581,
+        "wallTime": 1792752193619,
+        "tag": "BUTTON",
+        "className": "workspace-button workspace-button--secondary",
+        "disabled": false,
+        "activeTag": "BODY",
+        "activeClass": "",
+        "editors": []
+      },
+      {
+        "type": "focusin",
+        "at": 703.8999999761581,
+        "wallTime": 1792752193619,
+        "tag": "SECTION",
+        "className": "project-archive",
+        "activeTag": "SECTION",
+        "activeClass": "project-archive",
+        "editors": []
+      },
+      {
+        "type": "state",
+        "at": 705.3999999761581,
+        "wallTime": 1792752193620,
+        "activeTag": "SECTION",
+        "activeClass": "project-archive",
+        "editors": []
+      },
+      {
+        "type": "focusout",
+        "at": 745.1000000238419,
+        "wallTime": 1792752193660,
+        "tag": "SECTION",
+        "className": "project-archive",
+        "activeTag": "BODY",
+        "activeClass": "",
+        "editors": []
+      },
+      {
+        "type": "focusin",
+        "at": 745.1999999880791,
+        "wallTime": 1792752193660,
+        "tag": "BUTTON",
+        "className": "workspace-button workspace-button--secondary",
+        "disabled": false,
+        "activeTag": "BUTTON",
+        "activeClass": "workspace-button workspace-button--secondary",
+        "editors": []
+      },
+      {
+        "type": "click",
+        "at": 745.3000000119209,
+        "wallTime": 1792752193660,
+        "tag": "BUTTON",
+        "className": "workspace-button workspace-button--secondary",
+        "disabled": false,
+        "activeTag": "BUTTON",
+        "activeClass": "workspace-button workspace-button--secondary",
+        "editors": []
+      },
+      {
+        "type": "state",
+        "at": 746.5,
+        "wallTime": 1792752193661,
+        "activeTag": "BUTTON",
+        "activeClass": "workspace-button workspace-button--secondary",
+        "editors": []
+      }
+    ],
+    "editorCommandTrace": [
+      {
+        "type": "workspace.setTextValue",
+        "started": 1792752192898,
+        "length": 20,
+        "finished": 1792752192901,
+        "ok": true
+      },
+      {
+        "type": "workspace.setTextValue",
+        "started": 1792752193428,
+        "length": 19,
+        "finished": 1792752193430,
+        "ok": true
+      }
+    ],
+    "cleanup": {
+      "status": "passed",
+      "asserted": true,
+      "processesStopped": true,
+      "maxRetries": 5,
+      "retryDelay": 100
+    }
+  }
+}

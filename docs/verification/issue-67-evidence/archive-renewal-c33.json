@@ -1,0 +1,160 @@
+{
+  "run": 39930880419,
+  "attempt": 1,
+  "sha": "c33e84a721b759287054cc63f200eb1c727ac483",
+  "status": "failed",
+  "receipts": {
+    "macos-latest": [
+      {
+        "mode": "dev",
+        "status": "failed",
+        "phase": {
+          "discoveryMode": "direct",
+          "language": "ru",
+          "layout": "table",
+          "location": "preview",
+          "step": "archived-editor"
+        },
+        "failure": {
+          "name": "AssertionError",
+          "message": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'Archived table list'\n- 'Archived table preview'\n                  ^\n"
+        },
+        "checks": 7,
+        "captures": 64,
+        "shutdowns": [
+          {
+            "normalQuit": true,
+            "backendsExited": true
+          }
+        ],
+        "cleanup": {
+          "status": "passed",
+          "asserted": true,
+          "processesStopped": true,
+          "maxRetries": 5,
+          "retryDelay": 100
+        },
+        "reportSha256": "f822047ef3bc8ae99509c670fc2e6fdb5a8539f523fc32a5f29a2b48ed58aba1"
+      }
+    ],
+    "windows-2022": [
+      {
+        "mode": "dev",
+        "status": "passed",
+        "phase": {
+          "discoveryMode": "grouped",
+          "language": "ru",
+          "layout": "board",
+          "location": "expanded",
+          "step": "archived-editor"
+        },
+        "failure": null,
+        "checks": 24,
+        "captures": 192,
+        "shutdowns": [
+          {
+            "normalQuit": true,
+            "backendsExited": true
+          }
+        ],
+        "cleanup": {
+          "status": "passed",
+          "asserted": true,
+          "processesStopped": true,
+          "maxRetries": 5,
+          "retryDelay": 100
+        },
+        "reportSha256": "1dcf8c64c962cb5f6f204073c1b82f9704f07441c74566affc9cadc22ed1555d"
+      },
+      {
+        "mode": "release",
+        "status": "failed",
+        "phase": {
+          "discoveryMode": "direct",
+          "language": "en",
+          "layout": "table",
+          "location": "preview",
+          "step": "archived-editor"
+        },
+        "failure": {
+          "name": "AssertionError",
+          "message": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'Archived table list'\n- 'Archived table preview'\n                  ^\n"
+        },
+        "checks": 1,
+        "captures": 16,
+        "shutdowns": [
+          {
+            "normalQuit": true,
+            "backendsExited": true
+          }
+        ],
+        "cleanup": {
+          "status": "passed",
+          "asserted": true,
+          "processesStopped": true,
+          "maxRetries": 5,
+          "retryDelay": 100
+        },
+        "reportSha256": "e46a130aaebbe0d3ca5c7893dae0cb737cbf4038c8762b0adffca50ff4441ecd"
+      }
+    ],
+    "windows-latest": [
+      {
+        "mode": "dev",
+        "status": "passed",
+        "phase": {
+          "discoveryMode": "grouped",
+          "language": "ru",
+          "layout": "board",
+          "location": "expanded",
+          "step": "archived-editor"
+        },
+        "failure": null,
+        "checks": 24,
+        "captures": 192,
+        "shutdowns": [
+          {
+            "normalQuit": true,
+            "backendsExited": true
+          }
+        ],
+        "cleanup": {
+          "status": "passed",
+          "asserted": true,
+          "processesStopped": true,
+          "maxRetries": 5,
+          "retryDelay": 100
+        },
+        "reportSha256": "f5ca00a29b2934c1d8ca7e918e078a305b0e3f42586a75fd580875bf3b510940"
+      },
+      {
+        "mode": "release",
+        "status": "passed",
+        "phase": {
+          "discoveryMode": "grouped",
+          "language": "ru",
+          "layout": "board",
+          "location": "expanded",
+          "step": "archived-editor"
+        },
+        "failure": null,
+        "checks": 24,
+        "captures": 192,
+        "shutdowns": [
+          {
+            "normalQuit": true,
+            "backendsExited": true
+          }
+        ],
+        "cleanup": {
+          "status": "passed",
+          "asserted": true,
+          "processesStopped": true,
+          "maxRetries": 5,
+          "retryDelay": 100
+        },
+        "reportSha256": "f01e85ee7497ed7746a2d7bff908d720cd9e18986ca91df041cfe3b1ade44ec7"
+      }
+    ]
+  }
+}

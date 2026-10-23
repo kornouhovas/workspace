@@ -8,7 +8,7 @@ import {_electron} from 'playwright-core';
 import {closeElectron,cleanupOwnedFixture,ownedProcessesStopped} from './runtime-lifecycle.mjs';
 import {setInterfaceLanguage,openSettingsSection,returnToWorkspace} from './runtime-settings.mjs';
 import {packagedExecutablePath} from './runtime-executable.mjs';
-import {enterContextFor} from './runtime-context-tools.mjs';
+import {activateProjectContextAction} from './project-context-driver.mjs';
 const mode=process.argv[2]??'dev';assert.ok(['dev','release'].includes(mode));
 const root=resolve(import.meta.dirname,'..'), evidence=resolve(process.env.WORKSPACE_SMOKE_EVIDENCE_DIR??`work/issue-60-projects-${mode}`);
 await mkdir(evidence,{recursive:true});
@@ -63,7 +63,7 @@ try {
     const scope=location==='list'?page.locator('.saved-view-content'):page.locator('.project-area');
     const renameLabel=en?'Rename project folder':'Переименовать папку проекта';
     const rename=scope.getByRole('button',{name:`${renameLabel}: ${name}`,exact:true,includeHidden:true});
-    await enterContextFor(page,rename);await rename.press('Enter');
+    await activateProjectContextAction(page,rename);
     dialog=page.getByRole('dialog',{name:renameLabel,exact:true});
     let input=dialog.getByRole('textbox');
     const reviewCurrent=dialog.getByRole('button',{name:en?'Review current project name':'Проверить текущее имя проекта',exact:true});
@@ -84,7 +84,7 @@ try {
     await fillReviewed('Customer portal');await input.press('Enter');
     await dialog.getByText(en?'This folder name or identity is occupied or reserved. Choose another name.':'Это имя или идентификатор папки занят или зарезервирован. Выберите другое имя.',{exact:true}).waitFor();
     await dialog.getByRole('button',{name:cancelLabel,exact:true}).click();
-    await enterContextFor(page,rename);await rename.press('Enter');
+    await activateProjectContextAction(page,rename);
     dialog=page.getByRole('dialog',{name:renameLabel,exact:true});
     assert.equal((await call('listProjects')).projects.find(p=>p.projectId===project.projectId).name,name);
     input=dialog.getByRole('textbox');
@@ -109,7 +109,7 @@ try {
      const stem=`${language}-${theme}-${layout}-${size.width}-create`;await page.screenshot({path:join(evidence,`${stem}.png`)});report.screens.push(stem);
      await dialog.getByRole('textbox').press('Escape');await dialog.waitFor({state:'detached'});
      const renameLabel=en?'Rename project folder':'Переименовать папку проекта';
-     const rename=page.getByRole('button',{name:`${renameLabel}: ${name}`,exact:true,includeHidden:true});await enterContextFor(page,rename);await rename.press('Enter');
+     const rename=page.getByRole('button',{name:`${renameLabel}: ${name}`,exact:true,includeHidden:true});await activateProjectContextAction(page,rename);
      dialog=page.getByRole('dialog',{name:renameLabel,exact:true});await dialog.getByRole('textbox').fill('Campaign design');
      const renameStem=`${language}-${theme}-${layout}-${size.width}-rename`;await page.screenshot({path:join(evidence,`${renameStem}.png`)});report.screens.push(renameStem);
      await dialog.getByRole('textbox').press('Escape');await dialog.waitFor({state:'detached'});

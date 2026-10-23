@@ -1,0 +1,63 @@
+{
+  "portalRed": {
+    "featurePassed": false,
+    "shutdownPassed": true,
+    "captures": 0,
+    "story": "bb-foundation--category-move-collision-english",
+    "error": "locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-category-move-fixture][data-fixture-ready=true]') to be visible\u001b[22m\n",
+    "probe": null,
+    "reportSha256": "20441acd952df51839bf7c41ace968a66381115e4cf8d1be2910c412475948d1"
+  },
+  "portalProbe": {
+    "featurePassed": false,
+    "shutdownPassed": true,
+    "captures": 0,
+    "story": "bb-foundation--category-move-collision-english",
+    "error": "locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-category-move-fixture][data-fixture-ready=true]') to be visible\u001b[22m\n",
+    "probe": {
+      "rootReady": "false",
+      "moveCalls": "0",
+      "inputInFixture": false,
+      "inputInDialog": true,
+      "inputValue": "move-original-category",
+      "statuses": []
+    },
+    "reportSha256": "fd48c27dc04b8569939ec528623d1e4c8f8bbd740cf1dfeb91bef8472b151c4f"
+  },
+  "recoveryReviewRed": {
+    "featurePassed": false,
+    "shutdownPassed": true,
+    "captures": 24,
+    "story": "bb-foundation--category-move-kept-original-english",
+    "error": "locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-category-move-fixture][data-fixture-ready=true]') to be visible\u001b[22m\n",
+    "probe": null,
+    "reportSha256": "de6a7f15b5f2d3c7e5dc88aa214a124912ecb75c4171041ee160a884fd42821d"
+  },
+  "portalGreen": {
+    "featurePassed": true,
+    "shutdownPassed": true,
+    "captures": 150,
+    "story": null,
+    "error": null,
+    "probe": null,
+    "reportSha256": "c8342bc5b28240895ca685ae44a8cddbdcb3e9b09eb52c8299ba2b398abd13b7"
+  },
+  "archiveRed": {
+    "featurePassed": false,
+    "shutdownPassed": true,
+    "captures": 0,
+    "story": "bb-foundation--category-move-collision-english",
+    "error": "Category fixtures must not contain unrelated archive errors\n\n1 !== 0\n",
+    "probe": null,
+    "reportSha256": "1f1864a57a099be7c79b0b3f2d081856072d29ccf298ad2cc0f9f1af8949fbc5"
+  },
+  "healthyGreen": {
+    "featurePassed": true,
+    "shutdownPassed": true,
+    "captures": 150,
+    "story": null,
+    "error": null,
+    "probe": null,
+    "reportSha256": "c8342bc5b28240895ca685ae44a8cddbdcb3e9b09eb52c8299ba2b398abd13b7"
+  }
+}

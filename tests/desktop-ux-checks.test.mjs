@@ -339,6 +339,7 @@ test('contextual archive runs original recovery/restart and both native modes on
  }
  assert.ok(JSON.stringify(commands).includes('project-archive-crash.test.mjs'));
  assert.ok(JSON.stringify(commands).includes('workspace-sessions-service.test.mjs'));
+ assert.ok(commands.some(([command,args])=>command===process.execPath && args.includes('tests/runtime-view-readiness.test.mjs') && args.some(arg=>arg.includes('source refresh returns focus'))));
  assert.equal(spawnSync(process.execPath,['scripts/desktop-ux-checks.mjs','contextual-archive','--failure-probe'],{encoding:'utf8'}).status,23);
  const {readFile}=await import('node:fs/promises');const {load}=await import('js-yaml');const {runInNewContext}=await import('node:vm');
  const workflow=load(await readFile('.github/workflows/desktop-ci.yml','utf8'));

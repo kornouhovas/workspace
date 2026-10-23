@@ -1,0 +1,223 @@
+{
+  "base": "a222d2b561c324e32bf1708fbea5e62624e52d64",
+  "run": 39944358198,
+  "artifact": 12498602349,
+  "host": "macos-latest / Darwin25.6",
+  "observed": {
+    "issue": 49,
+    "sha": "a222d2b561c324e32bf1708fbea5e62624e52d64",
+    "platform": "darwin",
+    "checks": [
+      {
+        "cancelledPickerCreatesNothing": true,
+        "automaticNameAndDefaultTable": true
+      },
+      {
+        "language": "en",
+        "theme": "light",
+        "size": {
+          "width": 1024,
+          "height": 720
+        },
+        "contextualSettings": true
+      },
+      {
+        "language": "en",
+        "theme": "light",
+        "size": {
+          "width": 1440,
+          "height": 960
+        },
+        "contextualSettings": true
+      },
+      {
+        "language": "en",
+        "theme": "dark",
+        "size": {
+          "width": 1024,
+          "height": 720
+        },
+        "contextualSettings": true
+      },
+      {
+        "language": "en",
+        "theme": "dark",
+        "size": {
+          "width": 1440,
+          "height": 960
+        },
+        "contextualSettings": true
+      },
+      {
+        "language": "ru",
+        "theme": "light",
+        "size": {
+          "width": 1024,
+          "height": 720
+        },
+        "contextualSettings": true
+      },
+      {
+        "language": "ru",
+        "theme": "light",
+        "size": {
+          "width": 1440,
+          "height": 960
+        },
+        "contextualSettings": true
+      },
+      {
+        "language": "ru",
+        "theme": "dark",
+        "size": {
+          "width": 1024,
+          "height": 720
+        },
+        "contextualSettings": true
+      },
+      {
+        "language": "ru",
+        "theme": "dark",
+        "size": {
+          "width": 1440,
+          "height": 960
+        },
+        "contextualSettings": true
+      }
+    ],
+    "stopped": true,
+    "cleanup": {
+      "status": "passed",
+      "asserted": true,
+      "processesStopped": true,
+      "maxRetries": 5,
+      "retryDelay": 100
+    },
+    "status": "failed",
+    "error": "locator.press: Timeout 15000ms exceeded.\nCall log:\n  - waiting for getByRole('group', { name: /^(Workspace actions|\u0414\u0435\u0439\u0441\u0442\u0432\u0438\u044f \u0441 \u0440\u0430\u0431\u043e\u0447\u0438\u043c \u043f\u0440\u043e\u0441\u0442\u0440\u0430\u043d\u0441\u0442\u0432\u043e\u043c):/ }).getByRole('button', { name: /^(Settings|\u041d\u0430\u0441\u0442\u0440\u043e\u0439\u043a\u0438)$/ })\n"
+  },
+  "finding": "The original fixture activation call advances on backend reply alone; selected UI identity and session-enabled controls are not yet guaranteed. The native control proves this missing precondition, not a unique historical cause.",
+  "checks": {
+    "red": "/tmp/issue67-workspace-activation-red.log; true!=false before selected identity delivered",
+    "green": "Native1/1; /tmp/issue67-workspace-activation-green.log",
+    "routes": "92/92; /tmp/issue67-workspace-route-prerequisites.log",
+    "typecheck": "passed",
+    "lint": "passed",
+    "review": "standards0/spec0",
+    "originalCurrentPackage": {
+      "issue": 49,
+      "sha": null,
+      "platform": "darwin",
+      "checks": [
+        {
+          "cancelledPickerCreatesNothing": true,
+          "automaticNameAndDefaultTable": true
+        },
+        {
+          "language": "en",
+          "theme": "light",
+          "size": {
+            "width": 1024,
+            "height": 720
+          },
+          "contextualSettings": true
+        },
+        {
+          "language": "en",
+          "theme": "light",
+          "size": {
+            "width": 1440,
+            "height": 960
+          },
+          "contextualSettings": true
+        },
+        {
+          "language": "en",
+          "theme": "dark",
+          "size": {
+            "width": 1024,
+            "height": 720
+          },
+          "contextualSettings": true
+        },
+        {
+          "language": "en",
+          "theme": "dark",
+          "size": {
+            "width": 1440,
+            "height": 960
+          },
+          "contextualSettings": true
+        },
+        {
+          "language": "ru",
+          "theme": "light",
+          "size": {
+            "width": 1024,
+            "height": 720
+          },
+          "contextualSettings": true
+        },
+        {
+          "language": "ru",
+          "theme": "light",
+          "size": {
+            "width": 1440,
+            "height": 960
+          },
+          "contextualSettings": true
+        },
+        {
+          "language": "ru",
+          "theme": "dark",
+          "size": {
+            "width": 1024,
+            "height": 720
+          },
+          "contextualSettings": true
+        },
+        {
+          "language": "ru",
+          "theme": "dark",
+          "size": {
+            "width": 1440,
+            "height": 960
+          },
+          "contextualSettings": true
+        },
+        {
+          "postponementAndCancelRetainWorkspace": true,
+          "configuredReuse": true,
+          "duplicateNamesDistinctIds": true,
+          "renameAndReorder": true
+        },
+        {
+          "postponementAndCancelRetainWorkspace": true,
+          "configuredReuse": true,
+          "duplicateNamesDistinctIds": true,
+          "renameReorderRestart": true,
+          "removalPreservesFilesAndOrphanSource": true
+        }
+      ],
+      "stopped": true,
+      "cleanup": {
+        "status": "passed",
+        "asserted": true,
+        "processesStopped": true,
+        "maxRetries": 5,
+        "retryDelay": 100
+      },
+      "status": "passed"
+    }
+  },
+  "commandEnvironment": {
+    "WORKSPACE_SMOKE_MODE": "release"
+  },
+  "localPackageSha256": "25f0710b5dcb32fca8c26c43269822cb04b3a9435562604d917aef95f38acca4",
+  "sources": {
+    "scripts/workspace-activation-driver.mjs": "f53ee4b695c6e0e6431382cbbf9c5dcbe3df28dbfa6058c2e86610de4f7b57a8",
+    "scripts/smoke-workspace-management.mjs": "652b809c15950212b11f60c36b5ae5b568133b69ee053482079c11e0a6ef0cd8",
+    "tests/runtime-view-readiness.test.mjs": "d2f8933a75c2264cea051260b8d4786f0b9e6ca4392f4e89be3cecc684f8adf4",
+    ".github/workflows/desktop-ci.yml": "618d556a22df78b2e509c8370c7e4833a6d5a40cdac5841ae457cd25e5f2911c"
+  }
+}

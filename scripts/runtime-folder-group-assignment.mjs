@@ -6,7 +6,7 @@ import { mkdir, readdir, writeFile, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
 
-export async function exerciseFolderGroupAssignment({page,query,rootPath,language,evidenceDirectory,onCollision}) {
+export async function exerciseFolderGroupAssignment({page,query,rootPath,language,evidenceDirectory,onCollision,prepareViewport=(page,size)=>page.setViewportSize(size)}) {
   const en=language==='en',checks=[];
   await mkdir(rootPath);
   for(const layout of ['table','board']) {
@@ -59,7 +59,7 @@ export async function exerciseFolderGroupAssignment({page,query,rootPath,languag
       await showRuntimeProject(page,'Target',project.projectId,'C');
     }
     for(const width of [360,1440]) {
-      await page.setViewportSize({width,height:width===1440?960:720});
+      await prepareViewport(page,{width,height:width===1440?960:720});
       await showRuntimeProject(page, 'Target', project.projectId);
       await scrollRuntimeControlIntoView(region('C').getByLabel(change('Target'),{exact:true}));
       assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);

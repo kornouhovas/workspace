@@ -1,0 +1,72 @@
+{
+  "issue": 67,
+  "sha": "52a6177756256aab41255c3291a6924f7c911ef1",
+  "run": null,
+  "attempt": null,
+  "platform": "darwin",
+  "kernel": "27.0.0",
+  "status": "passed",
+  "checks": [
+    "en: Tab/roving navigation, widths, draft Escape/guard, unique tabs/reorder/close/reopen/return, native group assignment, operation Escape and settings Back",
+    "ru: Tab/roving navigation, widths, draft Escape/guard, unique tabs/reorder/close/reopen/return, native group assignment, operation Escape and settings Back"
+  ],
+  "languages": [
+    "en",
+    "ru"
+  ],
+  "steps": [
+    "en sidebar and preview widths",
+    "en draft Escape and invalid navigation guard",
+    "en tabs expand, reorder, close, reopen and return",
+    "en contextual operation Escape and settings Back",
+    "ru sidebar and preview widths",
+    "ru draft Escape and invalid navigation guard",
+    "ru tabs expand, reorder, close, reopen and return",
+    "ru contextual operation Escape and settings Back"
+  ],
+  "captures": [
+    {
+      "language": "en",
+      "width": 1024,
+      "height": 720,
+      "path": "en-daily.png"
+    },
+    {
+      "language": "ru",
+      "width": 1440,
+      "height": 960,
+      "path": "ru-daily.png"
+    }
+  ],
+  "assignmentTransitions": [
+    {
+      "language": "en",
+      "to": "Ready"
+    },
+    {
+      "language": "ru",
+      "from": "Ready",
+      "to": "Backlog"
+    }
+  ],
+  "harnessSha256": "cfb3d3935d0754ba60c943107be9f305751fd6ed53fde488fb387d7afe72ec7b",
+  "packageAsarSha256": "ee9c3847f706aa2f9a824efe980b60b3da5718aef8ad43866fc9cf343f504a86",
+  "languageChoice": {
+    "value": "ru",
+    "focused": true
+  },
+  "keyboard": {
+    "pointerdowns": 0,
+    "keyCount": 1087
+  },
+  "normalQuit": true,
+  "launchUnverified": false,
+  "stopped": true,
+  "cleanup": {
+    "status": "passed",
+    "asserted": true,
+    "processesStopped": true,
+    "maxRetries": 5,
+    "retryDelay": 100
+  }
+}

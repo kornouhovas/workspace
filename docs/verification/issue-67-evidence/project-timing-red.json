@@ -1,0 +1,16 @@
+{
+  "timing": false,
+  "event": {
+    "started": 407.4000000357628,
+    "now": 423.9000000357628
+  },
+  "error": "AssertionError [ERR_ASSERTION]: A fresh measured event and completed paint must precede observation\n    at readRuntimeInteraction (file:///Users/aleksandersk/Documents/programming/Projects/project_folder/.worktrees/issue-67-integrated-desktop/scripts/runtime-performance-timing.mjs:46:10)\n    at async file:///Users/aleksandersk/Documents/programming/Projects/project_folder/.worktrees/issue-67-integrated-desktop/work/issue-67-diagnosis/project-timing.mjs:25:21",
+  "stopped": true,
+  "cleanup": {
+    "status": "passed",
+    "asserted": true,
+    "processesStopped": true,
+    "maxRetries": 5,
+    "retryDelay": 100
+  }
+}

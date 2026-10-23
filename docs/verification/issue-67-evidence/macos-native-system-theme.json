@@ -1,0 +1,33 @@
+{
+  "platform": "darwin",
+  "kernel": "27.0.0",
+  "original": "true",
+  "checks": [
+    {
+      "osDark": false,
+      "nativeDark": false,
+      "rendererTheme": "light"
+    },
+    {
+      "osDark": true,
+      "nativeDark": true,
+      "rendererTheme": "dark"
+    }
+  ],
+  "status": "passed",
+  "restored": true,
+  "normalQuit": true,
+  "stopped": true,
+  "cleanup": {
+    "status": "passed",
+    "asserted": true,
+    "processesStopped": true,
+    "maxRetries": 5,
+    "retryDelay": 100
+  },
+  "sha": "77d936baeec18f2da0930b8cfa1f3c6b23967060",
+  "packageAsarSha256": "ee9c3847f706aa2f9a824efe980b60b3da5718aef8ad43866fc9cf343f504a86",
+  "controlScriptSha256": "e8c5112f98044df68189ee4122c31feb3ede8173d08a513878e6c19a8c61278d",
+  "sourceReceiptSha256": "e4752c18bd074dba4e8252c6bc361354314a3a385d28fbed21954ca7ad723a59",
+  "emulation": "Playwright colorScheme explicitly null; actual System Events OS appearance writes, nativeTheme and renderer observed independently. Original OS setting restored."
+}

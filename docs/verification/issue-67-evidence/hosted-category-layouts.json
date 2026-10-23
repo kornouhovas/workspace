@@ -1,0 +1,38 @@
+{
+  "run": 39924395020,
+  "attempt": 1,
+  "sha": "ffcb8cf0e625832941fab4961358c54164f1ffde",
+  "status": "passed",
+  "receipts": [
+    {
+      "artifact": "issue-67-windows-2022-ffcb8cf0e625832941fab4961358c54164f1ffde-run-39924395020-attempt-1",
+      "reportSha256": "c8342bc5b28240895ca685ae44a8cddbdcb3e9b09eb52c8299ba2b398abd13b7",
+      "selection": "--category-move",
+      "selectedStoryCount": 50,
+      "captures": 150,
+      "featurePassed": true,
+      "shutdownPassed": true,
+      "appearance": "Representative Russian1024 recovery dialog inspected; no unrelated archive error."
+    },
+    {
+      "artifact": "issue-67-macos-latest-ffcb8cf0e625832941fab4961358c54164f1ffde-run-39924395020-attempt-1",
+      "reportSha256": "c8342bc5b28240895ca685ae44a8cddbdcb3e9b09eb52c8299ba2b398abd13b7",
+      "selection": "--category-move",
+      "selectedStoryCount": 50,
+      "captures": 150,
+      "featurePassed": true,
+      "shutdownPassed": true,
+      "appearance": "Representative Russian1024 recovery dialog inspected; no unrelated archive error."
+    },
+    {
+      "artifact": "issue-67-windows-latest-ffcb8cf0e625832941fab4961358c54164f1ffde-run-39924395020-attempt-1",
+      "reportSha256": "c8342bc5b28240895ca685ae44a8cddbdcb3e9b09eb52c8299ba2b398abd13b7",
+      "selection": "--category-move",
+      "selectedStoryCount": 50,
+      "captures": 150,
+      "featurePassed": true,
+      "shutdownPassed": true,
+      "appearance": "Representative Russian1024 recovery dialog inspected; no unrelated archive error."
+    }
+  ]
+}

@@ -5,7 +5,7 @@ import { instrumentPerformanceBackend, inspectPerformanceBackendBatches } from "
 import { installPerformanceCommandProbe, inspectPerformanceWindow } from "./runtime-performance-probe.mjs";
 import { openGroupingControls, closeGroupingControls } from "./runtime-presentation-controls.mjs";
 import { activateRuntimeView, setRuntimeViewLanguage, pressRuntimeFilterSave } from "./runtime-view-controls.mjs";
-import { readRuntimeInteraction, waitForRuntimeProjection } from "./runtime-performance-timing.mjs";
+import { readRuntimeInteraction, waitForRuntimeProjection, waitForRuntimeProject } from "./runtime-performance-timing.mjs";
 /* global window, document, DataTransfer */
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
@@ -31,7 +31,7 @@ const evidence = resolve(process.env.WORKSPACE_SMOKE_EVIDENCE_DIR ?? "work/issue
 await mkdir(evidence, { recursive: true });
 const fixture = await realpath(await mkdtemp(join(tmpdir(), "workspace-performance-")));
 const sha = execFileSync("git", ["rev-parse", "HEAD"], { cwd: root, encoding: "utf8" }).trim();
-const report = { issue: 41, sha, run: process.env.GITHUB_RUN_ID, attempt: process.env.GITHUB_RUN_ATTEMPT, diagnostic: profileFilters,
+const report = { issue: 41, sha, run: process.env.GITHUB_RUN_ID, attempt: process.env.GITHUB_RUN_ATTEMPT, diagnostic: profileFilters, projectFlows: process.argv.includes('--project-flows'),
   sourceDiffSha256: createHash("sha256").update(execFileSync("git", ["diff", "HEAD", "--binary"], {cwd:root})).digest("hex"),
   harnessSha256: createHash("sha256").update(await readFile(fileURLToPath(import.meta.url))).digest("hex"),
   platform: process.platform, arch: process.arch, kernel: release(), cpu: cpus()[0]?.model, hostMemoryBytes: totalmem(),
@@ -130,6 +130,7 @@ async function ready(ids, endpoint) {
     throw error;
   }
 }
+
 async function memory(scenario) {
   const metrics = await app.evaluate(({ app }) => app.getAppMetrics().map(m => ({ type: m.type, serviceName: m.serviceName,
     workingSetKiB: m.memory.workingSetSize, peakWorkingSetKiB: m.memory.peakWorkingSetSize, cumulativeCpuSeconds: m.cpu.cumulativeCPUUsage })));
@@ -318,6 +319,47 @@ try {
     assert.equal(refreshed.projects.find(row => row.projectId === p.projectId).relativePath, renamed);
     assert.equal(await readFile(join(source.root, renamed, "preserved.txt"), "utf8"), "Keep project contents.\n");
     assert.equal((await command("listTextProperties")).values.find(v => v.projectId === p.projectId && v.propertyId === source.properties[0].propertyId).value, "Accepted board");
+    // Final #67 adds actual project-area/editor flows at the unchanged 1000/20/10
+    // scale, with the original event-to-committed-paint 300ms limit.
+    // Keep the immutable pre-desktop-UX #41 baseline's original inventory intact.
+    if (report.projectFlows) {
+      const preview = page.getByRole("button", { name: "Preview project: External rename", exact: true });
+      await preview.scrollIntoViewIfNeeded();
+      const previewProfiler = profileFilters ? await startInteractionProfile() : undefined;
+      await startUiTiming(preview, "keydown"); await preview.press("Enter");
+      lastReadyTiming = await waitForRuntimeProject(page, p.projectId, false, "Accepted board", 'presented');
+      await recordUi(source.mode, "project preview");
+      // Both clocks start at the same opening event. Files retain every current
+      // identity check and must finish under the separately approved 5s budget.
+      lastReadyTiming = await waitForRuntimeProject(page, p.projectId, false, "Accepted board");
+      await recordUi(source.mode, "project tree load", report.limits.scan);
+      if (previewProfiler) await stopInteractionProfile(previewProfiler, `${source.mode}-project-preview`);
+      const expand = page.getByRole("button", { name: "Expand project", exact: true });
+      await startUiTiming(expand, "keydown"); await expand.press("Enter");
+      lastReadyTiming = await waitForRuntimeProject(page, p.projectId, true, "Accepted board");
+      await recordUi(source.mode, "project expand");
+      const detail = page.locator('.project-detail-fields');
+      const detailText = detail.getByRole("button", { name: "Edit Text value: External rename / text 0", exact: true });
+      await detailText.press("Enter");
+      await detail.locator('textarea').fill("Scale project editor");
+      const saveDetail = detail.getByRole("button", { name: "Save value", exact: true });
+      await saveDetail.focus();
+      await startUiTiming(saveDetail, "keydown"); await saveDetail.press("Enter");
+      lastReadyTiming = await waitForRuntimeProject(page, p.projectId, true, "Scale project editor");
+      await recordUi(source.mode, "expanded project edit");
+      assert.equal((await command("listTextProperties")).values.find(v => v.projectId === p.projectId && v.propertyId === source.properties[0].propertyId).value, "Scale project editor");
+      await memory(`${source.mode} expanded project`);
+      // Cancel a real draft and restore the original retained-value assertion.
+      await detailText.press("Enter"); await detail.locator('textarea').fill("Cancelled scale draft");
+      await detail.locator('textarea').press("Escape");
+      await detailText.press("Enter"); await detail.locator('textarea').fill("Accepted board");
+      await saveDetail.press("Enter"); lastReadyTiming = await waitForRuntimeProject(page, p.projectId, true, "Accepted board");
+      const returnRight = page.getByRole("button", { name: "Return project to the right", exact: true });
+      await startUiTiming(returnRight, "keydown"); await returnRight.press("Enter");
+      await ready(activeIds); await recordUi(source.mode, "project return");
+      assert.equal(await page.locator(`[data-project-tab="${p.projectId}"]`).count(), 0);
+      await page.getByRole("button", { name: "Close preview", exact: true }).press("Enter");
+    }
     await setRuntimeViewLanguage(page, "ru"); await page.setViewportSize({ width: 720, height: 900 });
     await page.waitForFunction(() => document.documentElement.lang === "ru");
     const last = source.projects.at(-1), lastRow = page.locator(`[data-project-id="${last.projectId}"]`);

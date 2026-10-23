@@ -1,4 +1,4 @@
-/* global document */
+/* global document, requestAnimationFrame */
 import assert from "node:assert/strict";
 import test from "node:test";
 import { createRequire } from "node:module";
@@ -7,10 +7,253 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { _electron } from "playwright-core";
+import { build } from "esbuild";
 import { closeElectron } from "../scripts/runtime-lifecycle.mjs";
 import { usableRuntimeViewProjection } from "../scripts/runtime-view-readiness.mjs";
 import { activateRuntimeView, setRuntimeViewLanguage } from "../scripts/runtime-view-controls.mjs";
-import { readRuntimeInteraction, waitForRuntimeProjection } from "../scripts/runtime-performance-timing.mjs";
+import { openArchiveTextEditor } from "../scripts/archive-editor-driver.mjs";
+import { installArchiveEntryTrace } from "../scripts/archive-entry-trace.mjs";
+import { activateWorkspaceFixture } from "../scripts/workspace-activation-driver.mjs";
+import { waitForDragHandleBounds } from "../scripts/runtime-group-drag.mjs";
+import { setRuntimeCaptureViewport } from "../scripts/runtime-settings.mjs";
+import { readRuntimeInteraction, waitForRuntimeProjection, waitForRuntimeProject } from "../scripts/runtime-performance-timing.mjs";
+
+test('project timing waits for asynchronously mounted fields and tree before committed paint', async () => {
+  await withPage(async page => {
+    for (const expanded of [false, true]) {
+      await page.setContent('<button id="open">Preview</button><main class="saved-view-content"></main>');
+      await page.evaluate(expanded => {
+        document.querySelector('#open').onclick = () => {
+          globalThis.__workspacePerformanceStarted = performance.now();
+          const area = document.createElement('section'); area.className = 'project-area';
+          area.innerHTML = '<div class="project-detail-fields" aria-busy="false"><div data-project-id="wrong-project"><button class="text-value-button">Committed value</button></div></div><div class="project-files"><button role="treeitem">preserved.txt</button></div>';
+          document.body.append(area);
+          document.querySelector('.saved-view-content').hidden = expanded;
+          setTimeout(() => {
+            area.querySelector('[data-project-id]').setAttribute('data-project-id', 'project');
+            const tab = document.createElement('button'); tab.setAttribute('data-project-tab', 'project'); tab.setAttribute('aria-selected', 'true');
+            document.body.append(tab);
+          }, 60);
+        };
+      }, expanded);
+      await page.getByRole('button', { name: 'Preview', exact: true }).press('Enter');
+      const timing = await waitForRuntimeProject(page, 'project', expanded, 'Committed value');
+      assert.ok(Number.isFinite(timing.paintedAt), 'An async false readiness result must not complete the timing observation');
+      const measurement = await readRuntimeInteraction(page, timing);
+      assert.ok(measurement.ms >= 60, 'Ready paint must include the current project identity and selected expanded tab');
+      assert.equal(await page.locator('.project-files [role="treeitem"]').textContent(), 'preserved.txt');
+    }
+  });
+});
+
+test('preview timing admits current properties and visible loading before the separate tree endpoint', async () => {
+  await withPage(async page => {
+    await page.setContent('<button id="open">Preview</button><main class="saved-view-content"></main>');
+    await page.evaluate(() => {
+      document.querySelector('#open').onclick = () => {
+        globalThis.__workspacePerformanceStarted = performance.now();
+        const area=document.createElement('section');area.className='project-area';
+        area.innerHTML='<div class="project-detail-fields" aria-busy="false"><div data-project-id="old"><button class="text-value-button" disabled>Old value</button></div></div><section class="project-files"><p role="status">Loading files…</p></section>';
+        document.body.append(area);
+        setTimeout(()=>area.querySelector('[data-project-id]').setAttribute('data-project-id','project'),60);
+        setTimeout(()=>{const value=area.querySelector('.text-value-button');value.textContent='Committed value';value.disabled=false;},120);
+        globalThis.completeProjectFiles=()=>{area.querySelector('.project-files').innerHTML='<button role="treeitem">preserved.txt</button>';};
+      };
+    });
+    await page.getByRole('button',{name:'Preview',exact:true}).press('Enter');
+    let timer;
+    try {
+      const preview=await Promise.race([waitForRuntimeProject(page,'project',false,'Committed value','presented'),
+        new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error('Preview must become usable before file delivery')),1500);})]);
+      const measured=await readRuntimeInteraction(page,preview);
+      assert.ok(measured.ms>=120,'Preview must contain current identity and values');
+      assert.equal(await page.getByRole('status').textContent(),'Loading files…');
+      assert.equal(await page.getByRole('button',{name:'Committed value',exact:true}).isEnabled(),true);
+      assert.equal(await page.getByRole('treeitem').count(),0);
+      await page.evaluate(()=>globalThis.completeProjectFiles());
+      const loaded=await waitForRuntimeProject(page,'project',false,'Committed value');
+      assert.ok((await readRuntimeInteraction(page,loaded)).ms>=measured.ms);
+      assert.equal(await page.getByRole('treeitem').textContent(),'preserved.txt');
+    } finally {clearTimeout(timer);}
+  });
+});
+
+test('archive editor preparation waits for the focused committed control without repeating activation', async () => {
+  await withPage(async page => {
+    await page.setContent('<button aria-label="Edit archived value">Edit</button><div id="host"></div>');
+    await page.evaluate(() => {
+      globalThis.editorActivations=0;
+      const button=document.querySelector('button');
+      button.onkeyup=()=>{button.dataset.keyup='true';};
+      button.onclick=()=>{
+        globalThis.editorActivations++;
+        const input=document.createElement('textarea');input.setAttribute('aria-label','Edit archived value');input.value='Previous';
+        document.querySelector('#host').append(input);
+        globalThis.releaseEditorFocus=()=>input.focus();
+      };
+    });
+    let prepared=false;
+    const preparing=openArchiveTextEditor(page,'Edit archived value');
+    void preparing.then(()=>{prepared=true;},()=>{});
+    await page.locator('button[data-keyup="true"]').waitFor();
+    await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>requestAnimationFrame(()=>requestAnimationFrame(resolve))))));
+    assert.equal(prepared,false,'An exposed textbox is not yet the focused committed editor');
+    await page.evaluate(()=>globalThis.releaseEditorFocus());
+    const input=await preparing;
+    await input.fill('New authored value');
+    assert.equal(await input.inputValue(),'New authored value');
+    assert.equal(await input.evaluate(node=>node===document.activeElement),true);
+    assert.equal(await page.evaluate(()=>globalThis.editorActivations),1);
+  });
+});
+
+test('retained 360px collision captures collapse the real sidebar and restore supported desktop layouts',async()=>{
+  await withPage(async page=>{
+    await page.setContent('<style>.panel{margin-left:220px}.collapsed .panel{margin-left:0}</style><div class="desktop-shell"><button aria-label="Collapse sidebar" aria-expanded="true"></button><div class="panel">Current owned control</div></div>');
+    await page.evaluate(()=>{const button=document.querySelector('button');button.onclick=()=>{const collapsed=button.getAttribute('aria-expanded')==='true';button.setAttribute('aria-expanded',String(!collapsed));button.setAttribute('aria-label',collapsed?'Restore sidebar':'Collapse sidebar');document.querySelector('.desktop-shell').classList.toggle('collapsed',collapsed);};});
+    for(const width of [360,1024,420,1440]){
+      await setRuntimeCaptureViewport(page,{width,height:800});
+      const stress=width===360||width===420;
+      assert.equal(await page.getByRole('button',{name:stress?'Restore sidebar':'Collapse sidebar',exact:true}).isVisible(),true);
+      assert.equal(await page.locator('.panel').evaluate(node=>node.getBoundingClientRect().left),stress?8:228);
+    }
+  });
+});
+
+test('group drag geometry preparation waits for the presented replacement handle without beginning a gesture', async () => {
+  await withPage(async page=>{
+    await page.setContent('<button aria-label="Drag source" hidden>Previous projection</button>');
+    await page.evaluate(()=>{
+      globalThis.dragStarts=0;document.addEventListener('dragstart',()=>globalThis.dragStarts++);
+      globalThis.presentHandle=()=>{
+        document.querySelector('button').remove();const button=document.createElement('button');button.setAttribute('aria-label','Drag source');button.textContent='Current projection';
+        button.style.cssText='position:fixed;left:40px;top:50px;width:26px;height:26px;box-sizing:border-box';document.body.append(button);
+      };
+    });
+    let prepared=false;
+    const handle=page.getByRole('button',{name:'Drag source',exact:true,includeHidden:true});
+    const preparing=waitForDragHandleBounds(handle).then(value=>{prepared=true;return value;});
+    await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+    assert.equal(prepared,false,'Missing geometry cannot establish the before-gesture snapshot');
+    await page.evaluate(()=>globalThis.presentHandle());
+    assert.deepEqual(await preparing,{x:40,y:50,width:26,height:26});
+    assert.equal(await page.evaluate(()=>globalThis.dragStarts),0);
+    await handle.evaluate(element=>{element.hidden=true;});
+    await assert.rejects(waitForDragHandleBounds(handle,30),/Drag handle/);
+  });
+});
+
+test('workspace activation preparation waits for selected identity and session controls after the backend reply', async () => {
+  await withPage(async page=>{
+    await page.setContent('<div class="sidebar-workspace-row"><button data-workspace-id="old" aria-current="page">Workspace</button></div><div class="sidebar-workspace-row"><button data-workspace-id="target">Workspace</button></div><button id="deliver">Deliver selection</button><button id="ready">Finish session</button>');
+    await page.evaluate(()=>{
+      globalThis.activations=[];
+      globalThis.workspace={workspace:async input=>{globalThis.activations.push(input);return {ok:true,value:{activeWorkspace:{workspaceId:input.workspaceId}}};}};
+      document.querySelector('#deliver').onclick=()=>{document.querySelector('[data-workspace-id="old"]').removeAttribute('aria-current');const current=document.querySelector('[data-workspace-id="target"]');current.setAttribute('aria-current','page');current.disabled=true;};
+      document.querySelector('#ready').onclick=()=>{document.querySelector('[data-workspace-id="target"]').disabled=false;};
+    });
+    let prepared=false;
+    const preparing=activateWorkspaceFixture(page,{workspaceId:'target',name:'Workspace'}).then(()=>{prepared=true;});
+    await page.waitForFunction(()=>globalThis.activations.length===1);
+    await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+    assert.equal(prepared,false,'A backend activation reply cannot establish the selected UI identity');
+    await page.getByRole('button',{name:'Deliver selection',exact:true}).click();
+    await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+    assert.equal(prepared,false,'Selected identity must also finish session preparation');
+    await page.getByRole('button',{name:'Finish session',exact:true}).click();await preparing;
+    assert.deepEqual(await page.evaluate(()=>globalThis.activations),[{type:'workspace.activate',workspaceId:'target'}]);
+  });
+});
+
+test('archive entry diagnostic observes DOM changes when installed before the document element', async () => {
+  await withPage(async page=>{
+    const errors=[];page.on('pageerror',error=>errors.push(error.message));
+    await page.addInitScript(installArchiveEntryTrace);
+    await page.goto('data:text/html,'+encodeURIComponent('<div class="project-area"><textarea>Private draft</textarea></div>'));
+    await page.evaluate(()=>{document.querySelector('textarea').disabled=true;});
+    await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(resolve)));
+    assert.deepEqual(errors,[],'Document-start installation must attach its observer');
+    const events=await page.evaluate(()=>globalThis.__workspaceArchiveEntryTrace);
+    assert.ok(events.some(event=>event.type==='state' && event.editors.some(editor=>editor.disabled)));
+    assert.equal(JSON.stringify(events).includes('Private draft'),false);
+  });
+});
+
+test('scalar draft recovers keyboard focus after temporary source unavailability without stealing another control', async () => {
+  const bundle = await scalarFocusFixture();
+  await withPage(async page => {
+    await page.setContent('<div id="root"></div>');
+    await page.addScriptTag({content:bundle.outputFiles[0].text});
+    const editor=await openArchiveTextEditor(page,'Edit Text value: Atlas / Notes','Retained draft');
+    await page.evaluate(()=>globalThis.setEditorDisabled(true));
+    await page.waitForFunction(()=>document.querySelector('textarea')?.disabled && document.activeElement===document.body);
+    await page.evaluate(()=>globalThis.setEditorDisabled(false));
+    await page.waitForFunction(()=>!document.querySelector('textarea')?.disabled && document.activeElement===document.querySelector('textarea'),{},{timeout:1500});
+    await page.keyboard.type(' continued');
+    assert.equal(await editor.inputValue(),'Retained draft continued');
+    assert.deepEqual(await page.evaluate(()=>globalThis.savedValues),[]);
+    await page.evaluate(()=>globalThis.setEditorDisabled(true));
+    await page.getByRole('button',{name:'Independent action',exact:true}).click();
+    await page.evaluate(()=>globalThis.setEditorDisabled(false));
+    await editor.waitFor({state:'visible'});
+    await page.waitForFunction(()=>!document.querySelector('textarea')?.disabled);
+    assert.equal(await page.getByRole('button',{name:'Independent action',exact:true}).evaluate(node=>node===document.activeElement),true);
+    await page.getByRole('button',{name:'Save value',exact:true}).click();
+    await page.waitForFunction(()=>globalThis.savedValues.length===1);
+    assert.deepEqual(await page.evaluate(()=>globalThis.savedValues),['Retained draft continued']);
+  });
+});
+
+test('new scalar editor receives its requested focus after source unavailability interrupts opening', async () => {
+  const bundle=await scalarFocusFixture();
+  await withPage(async page=>{
+    await page.setContent('<div id="root"></div>');await page.addScriptTag({content:bundle.outputFiles[0].text});
+    await page.evaluate(()=>{globalThis.disableOnEditorEntry=true;});
+    await page.getByRole('button',{name:'Edit Text value: Atlas / Notes',exact:true}).click();
+    await page.waitForFunction(()=>document.querySelector('textarea')?.disabled && document.activeElement===document.body);
+    await page.evaluate(()=>globalThis.setEditorDisabled(false));
+    await page.waitForFunction(()=>!document.querySelector('textarea')?.disabled && document.activeElement===document.querySelector('textarea'),{},{timeout:1500});
+    await page.keyboard.press('ControlOrMeta+A');await page.keyboard.type('Newly opened value');
+    assert.equal(await page.getByRole('textbox',{name:'Edit Text value: Atlas / Notes',exact:true}).inputValue(),'Newly opened value');
+    assert.deepEqual(await page.evaluate(()=>globalThis.savedValues),[]);
+  });
+});
+
+test('source refresh returns focus to the previously focused scalar among retained invalid drafts', async () => {
+  const bundle=await scalarFocusFixture();
+  await withPage(async page=>{
+    await page.setContent('<div id="root"></div>');await page.addScriptTag({content:bundle.outputFiles[0].text});
+    await page.getByRole('button',{name:'Edit Number value: Atlas / First',exact:true}).click();
+    const first=page.getByRole('textbox',{name:'Edit Number value: Atlas / First',exact:true});
+    await first.fill('1/0');await first.press('Enter');
+    await page.waitForFunction(()=>document.querySelector('input')?.getAttribute('aria-invalid')==='true');
+    await page.getByRole('button',{name:'Edit Number value: Atlas / Second',exact:true}).click();
+    const second=page.getByRole('textbox',{name:'Edit Number value: Atlas / Second',exact:true});
+    await second.fill('42');
+    await page.evaluate(()=>globalThis.setEditorDisabled(true));
+    await page.waitForFunction(()=>[...document.querySelectorAll('input')].every(node=>node.disabled)&&document.activeElement===document.body);
+    await page.evaluate(()=>globalThis.setEditorDisabled(false));
+    await page.waitForFunction(()=>!document.querySelectorAll('input')[1]?.disabled);
+    await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+    assert.equal(await second.evaluate(node=>node===document.activeElement),true,'Restore the editor that owned focus, not the first retained draft');
+    assert.equal(await first.inputValue(),'1/0');assert.equal(await second.inputValue(),'42');
+  });
+});
+
+async function scalarFocusFixture() {
+  return build({bundle:true,write:false,format:'iife',platform:'browser',jsx:'automatic',
+    stdin:{resolveDir:process.cwd(),loader:'tsx',contents:`
+      import React,{useState} from 'react';
+      import {createRoot} from 'react-dom/client';
+      import {TextPropertyCell} from './src/renderer/components/TextPropertyCell.tsx';
+      globalThis.savedValues=[];
+      function Example(){const [disabled,setDisabled]=useState(false);globalThis.setEditorDisabled=setDisabled;
+        return <div onClick={event=>{if(globalThis.disableOnEditorEntry && event.target.classList.contains('text-value-button'))setDisabled(true);}}><TextPropertyCell workspaceId="w" sourceId="s" projectId="p" propertyId="f" projectName="Atlas" propertyName="Notes" value="Previous" revision={0} minimumRevision={{current:0}} language="en" disabled={disabled}
+          onSave={async value=>{globalThis.savedValues.push(value);return {ok:true,value:{projectId:'p',propertyId:'f',snapshot:{workspaceId:'w',sourceId:'s',revision:1}}};}}/>{['First','Second'].map(name=><TextPropertyCell key={name} workspaceId="w" sourceId="s" projectId="p" propertyId={name} propertyType="number" projectName="Atlas" propertyName={name} value={null} revision={0} minimumRevision={{current:0}} language="en" disabled={disabled}
+          onSave={async value=>name==='First'?{ok:false,error:{code:'invalid_input',message:'Invalid number'}}:{ok:true,value:{projectId:'p',propertyId:name,snapshot:{workspaceId:'w',sourceId:'s',revision:1}}}}/>)}<button>Independent action</button></div>;}
+      createRoot(document.getElementById('root')).render(<Example/>);
+    `}});
+}
 
 async function withPage(run) {
   const profile = await mkdtemp(join(tmpdir(), "runtime-view-readiness-"));

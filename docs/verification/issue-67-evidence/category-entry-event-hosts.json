@@ -1,0 +1,1064 @@
+{
+  "run": 39969757636,
+  "sha": "bcf2cac6ca28491d5a1d26f5cbcac2fa1c0a60ce",
+  "diagnostic": true,
+  "artifacts": {
+    "1": 12508202942,
+    "2": 12509355160,
+    "3": 12508657415
+  },
+  "trials": {
+    "1": {
+      "issue": 61,
+      "mode": "release",
+      "diagnostic": true,
+      "diagnosticMode": "events",
+      "sha": "bcf2cac6ca28491d5a1d26f5cbcac2fa1c0a60ce",
+      "run": "39969757636",
+      "attempt": "1",
+      "platform": "darwin",
+      "kernel": "25.6.0",
+      "checks": [
+        {
+          "language": "en",
+          "layout": "table",
+          "location": "list",
+          "cancelNoEffect": true,
+          "identity": true,
+          "metadata": true,
+          "move": true,
+          "return": true
+        },
+        {
+          "language": "en",
+          "layout": "table",
+          "location": "preview",
+          "cancelNoEffect": true,
+          "identity": true,
+          "metadata": true,
+          "move": true,
+          "return": true
+        },
+        {
+          "language": "en",
+          "layout": "table",
+          "location": "expanded",
+          "cancelNoEffect": true,
+          "identity": true,
+          "metadata": true,
+          "move": true,
+          "return": true
+        },
+        {
+          "language": "en",
+          "layout": "board",
+          "location": "list",
+          "cancelNoEffect": true,
+          "identity": true,
+          "metadata": true,
+          "move": true,
+          "return": true
+        },
+        {
+          "language": "en",
+          "layout": "board",
+          "location": "preview",
+          "cancelNoEffect": true,
+          "identity": true,
+          "metadata": true,
+          "move": true,
+          "return": true
+        },
+        {
+          "language": "en",
+          "layout": "board",
+          "location": "expanded",
+          "cancelNoEffect": true,
+          "identity": true,
+          "metadata": true,
+          "move": true,
+          "return": true
+        },
+        {
+          "language": "en",
+          "labelOnly": true,
+          "foldersUnchanged": true
+        },
+        {
+          "language": "en",
+          "theme": "light",
+          "reviewKind": "rename",
+          "cancelNoEffect": true
+        },
+        {
+          "language": "en",
+          "theme": "light",
+          "reviewKind": "removal",
+          "cancelNoEffect": true
+        },
+        {
+          "language": "en",
+          "theme": "dark",
+          "reviewKind": "rename",
+          "cancelNoEffect": true
+        },
+        {
+          "language": "en",
+          "theme": "dark",
+          "reviewKind": "removal",
+          "cancelNoEffect": true
+        },
+        {
+          "language": "ru",
+          "layout": "table",
+          "location": "list",
+          "cancelNoEffect": true,
+          "identity": true,
+          "metadata": true,
+          "move": true,
+          "return": true
+        },
+        {
+          "language": "ru",
+          "layout": "table",
+          "location": "preview",
+          "cancelNoEffect": true,
+          "identity": true,
+          "metadata": true,
+          "move": true,
+          "return": true
+        },
+        {
+          "language": "ru",
+          "layout": "table",
+          "location": "expanded",
+          "cancelNoEffect": true,
+          "identity": true,
+          "metadata": true,
+          "move": true,
+          "return": true
+        },
+        {
+          "language": "ru",
+          "layout": "board",
+          "location": "list",
+          "cancelNoEffect": true,
+          "identity": true,
+          "metadata": true,
+          "move": true,
+          "return": true
+        },
+        {
+          "language": "ru",
+          "layout": "board",
+          "location": "preview",
+          "cancelNoEffect": true,
+          "identity": true,
+          "metadata": true,
+          "move": true,
+          "return": true
+        },
+        {
+          "language": "ru",
+          "layout": "board",
+          "location": "expanded",
+          "cancelNoEffect": true,
+          "identity": true,
+          "metadata": true,
+          "move": true,
+          "return": true
+        },
+        {
+          "language": "ru",
+          "labelOnly": true,
+          "foldersUnchanged": true
+        },
+        {
+          "language": "ru",
+          "theme": "light",
+          "reviewKind": "rename",
+          "cancelNoEffect": true
+        },
+        {
+          "language": "ru",
+          "theme": "light",
+          "reviewKind": "removal",
+          "cancelNoEffect": true
+        },
+        {
+          "language": "ru",
+          "theme": "dark",
+          "reviewKind": "rename",
+          "cancelNoEffect": true
+        },
+        {
+          "language": "ru",
+          "theme": "dark",
+          "reviewKind": "removal",
+          "cancelNoEffect": true
+        }
+      ],
+      "screens": [
+        "en-light-table-list-1024",
+        "en-light-table-list-1440",
+        "en-dark-table-list-1024",
+        "en-dark-table-list-1440",
+        "en-light-table-preview-1024",
+        "en-light-table-preview-1440",
+        "en-dark-table-preview-1024",
+        "en-dark-table-preview-1440",
+        "en-light-table-expanded-1024",
+        "en-light-table-expanded-1440",
+        "en-dark-table-expanded-1024",
+        "en-dark-table-expanded-1440",
+        "en-light-board-list-1024",
+        "en-light-board-list-1440",
+        "en-dark-board-list-1024",
+        "en-dark-board-list-1440",
+        "en-light-board-preview-1024",
+        "en-light-board-preview-1440",
+        "en-dark-board-preview-1024",
+        "en-dark-board-preview-1440",
+        "en-light-board-expanded-1024",
+        "en-light-board-expanded-1440",
+        "en-dark-board-expanded-1024",
+        "en-dark-board-expanded-1440",
+        "en-light-rename-1024",
+        "en-light-rename-1440",
+        "en-light-removal-1024",
+        "en-light-removal-1440",
+        "en-dark-rename-1024",
+        "en-dark-rename-1440",
+        "en-dark-removal-1024",
+        "en-dark-removal-1440",
+        "ru-light-table-list-1024",
+        "ru-light-table-list-1440",
+        "ru-dark-table-list-1024",
+        "ru-dark-table-list-1440",
+        "ru-light-table-preview-1024",
+        "ru-light-table-preview-1440",
+        "ru-dark-table-preview-1024",
+        "ru-dark-table-preview-1440",
+        "ru-light-table-expanded-1024",
+        "ru-light-table-expanded-1440",
+        "ru-dark-table-expanded-1024",
+        "ru-dark-table-expanded-1440",
+        "ru-light-board-list-1024",
+        "ru-light-board-list-1440",
+        "ru-dark-board-list-1024",
+        "ru-dark-board-list-1440",
+        "ru-light-board-preview-1024",
+        "ru-light-board-preview-1440",
+        "ru-dark-board-preview-1024",
+        "ru-dark-board-preview-1440",
+        "ru-light-board-expanded-1024",
+        "ru-light-board-expanded-1440",
+        "ru-dark-board-expanded-1024",
+        "ru-dark-board-expanded-1440",
+        "ru-light-rename-1024",
+        "ru-light-rename-1440",
+        "ru-light-removal-1024",
+        "ru-light-removal-1440",
+        "ru-dark-rename-1024",
+        "ru-dark-rename-1440",
+        "ru-dark-removal-1024",
+        "ru-dark-removal-1440"
+      ],
+      "shutdowns": [
+        {
+          "normalQuit": true,
+          "backendsExited": true
+        }
+      ],
+      "status": "passed",
+      "phase": {
+        "language": "ru",
+        "layout": "board",
+        "location": "expanded",
+        "step": "open-context"
+      },
+      "trace": {
+        "status": "recorded",
+        "mode": "events",
+        "events": [
+          {
+            "type": "observer-ready",
+            "ms": 28,
+            "areas": 0
+          },
+          {
+            "type": "pointerdown",
+            "ms": 2316,
+            "areas": 0,
+            "trusted": true,
+            "enabled": true,
+            "connected": true,
+            "busy": "false",
+            "x": 292.8500061035156,
+            "y": 174.05999755859375
+          },
+          {
+            "type": "mousedown",
+            "ms": 2316,
+            "areas": 0,
+            "trusted": true,
+            "enabled": true,
+            "connected": true,
+            "busy": "false",
+            "x": 292,
+            "y": 174
+          },
+          {
+            "type": "pointerup",
+            "ms": 2317,
+            "areas": 0,
+            "trusted": true,
+            "enabled": true,
+            "connected": true,
+            "busy": "false",
+            "x": 292.8500061035156,
+            "y": 174.05999755859375
+          },
+          {
+            "type": "mouseup",
+            "ms": 2317,
+            "areas": 0,
+            "trusted": true,
+            "enabled": true,
+            "connected": true,
+            "busy": "false",
+            "x": 292,
+            "y": 174
+          },
+          {
+            "type": "click",
+            "ms": 2317,
+            "areas": 0,
+            "trusted": true,
+            "enabled": true,
+            "connected": true,
+            "busy": "false",
+            "x": 292,
+            "y": 174
+          },
+          {
+            "type": "project-area-change",
+            "ms": 2320,
+            "areas": 1
+          },
+          {
+            "type": "project-area-change",
+            "ms": 4391,
+            "areas": 0
+          },
+          {
+            "type": "pointerdown",
+            "ms": 4439,
+            "areas": 0,
+            "trusted": true,
+            "enabled": true,
+            "connected": true,
+            "busy": "false",
+            "x": 292.8500061035156,
+            "y": 174.05999755859375
+          },
+          {
+            "type": "mousedown",
+            "ms": 4439,
+            "areas": 0,
+            "trusted": true,
+            "enabled": true,
+            "connected": true,
+            "busy": "false",
+            "x": 292,
+            "y": 174
+          },
+          {
+            "type": "pointerup",
+            "ms": 4439,
+            "areas": 0,
+            "trusted": true,
+            "enabled": true,
+            "connected": true,
+            "busy": "false",
+            "x": 292.8500061035156,
+            "y": 174.05999755859375
+          },
+          {
+            "type": "mouseup",
+            "ms": 4440,
+            "areas": 0,
+            "trusted": true,
+            "enabled": true,
+            "connected": true,
+            "busy": "false",
+            "x": 292,
+            "y": 174
+          },
+          {
+            "type": "click",
+            "ms": 4440,
+            "areas": 0,
+            "trusted": true,
+            "enabled": true,
+            "connected": true,
+            "busy": "false",
+            "x": 292,
+            "y": 174
+          },
+          {
+            "type": "project-area-change",
+            "ms": 4450,
+            "areas": 1
+          },
+          {
+            "type": "project-area-change",
+            "ms": 6771,
+            "areas": 0
+          }
+        ]
+      },
+      "cleanup": {
+        "status": "passed",
+        "asserted": true,
+        "processesStopped": true,
+        "maxRetries": 5,
+        "retryDelay": 100
+      }
+    },
+    "2": {
+      "issue": 61,
+      "mode": "release",
+      "diagnostic": true,
+      "diagnosticMode": "events",
+      "sha": "bcf2cac6ca28491d5a1d26f5cbcac2fa1c0a60ce",
+      "run": "39969757636",
+      "attempt": "1",
+      "platform": "darwin",
+      "kernel": "25.6.0",
+      "checks": [
+        {
+          "language": "en",
+          "layout": "table",
+          "location": "list",
+          "cancelNoEffect": true,
+          "identity": true,
+          "metadata": true,
+          "move": true,
+          "return": true
+        },
+        {
+          "language": "en",
+          "layout": "table",
+          "location": "preview",
+          "cancelNoEffect": true,
+          "identity": true,
+          "metadata": true,
+          "move": true,
+          "return": true
+        },
+        {
+          "language": "en",
+          "layout": "table",
+          "location": "expanded",
+          "cancelNoEffect": true,
+          "identity": true,
+          "metadata": true,
+          "move": true,
+          "return": true
+        },
+        {
+          "language": "en",
+          "layout": "board",
+          "location": "list",
+          "cancelNoEffect": true,
+          "identity": true,
+          "metadata": true,
+          "move": true,
+          "return": true
+        },
+        {
+          "language": "en",
+          "layout": "board",
+          "location": "preview",
+          "cancelNoEffect": true,
+          "identity": true,
+          "metadata": true,
+          "move": true,
+          "return": true
+        },
+        {
+          "language": "en",
+          "layout": "board",
+          "location": "expanded",
+          "cancelNoEffect": true,
+          "identity": true,
+          "metadata": true,
+          "move": true,
+          "return": true
+        },
+        {
+          "language": "en",
+          "labelOnly": true,
+          "foldersUnchanged": true
+        },
+        {
+          "language": "en",
+          "theme": "light",
+          "reviewKind": "rename",
+          "cancelNoEffect": true
+        },
+        {
+          "language": "en",
+          "theme": "light",
+          "reviewKind": "removal",
+          "cancelNoEffect": true
+        },
+        {
+          "language": "en",
+          "theme": "dark",
+          "reviewKind": "rename",
+          "cancelNoEffect": true
+        },
+        {
+          "language": "en",
+          "theme": "dark",
+          "reviewKind": "removal",
+          "cancelNoEffect": true
+        },
+        {
+          "language": "ru",
+          "layout": "table",
+          "location": "list",
+          "cancelNoEffect": true,
+          "identity": true,
+          "metadata": true,
+          "move": true,
+          "return": true
+        },
+        {
+          "language": "ru",
+          "layout": "table",
+          "location": "preview",
+          "cancelNoEffect": true,
+          "identity": true,
+          "metadata": true,
+          "move": true,
+          "return": true
+        },
+        {
+          "language": "ru",
+          "layout": "table",
+          "location": "expanded",
+          "cancelNoEffect": true,
+          "identity": true,
+          "metadata": true,
+          "move": true,
+          "return": true
+        }
+      ],
+      "screens": [
+        "en-light-table-list-1024",
+        "en-light-table-list-1440",
+        "en-dark-table-list-1024",
+        "en-dark-table-list-1440",
+        "en-light-table-preview-1024",
+        "en-light-table-preview-1440",
+        "en-dark-table-preview-1024",
+        "en-dark-table-preview-1440",
+        "en-light-table-expanded-1024",
+        "en-light-table-expanded-1440",
+        "en-dark-table-expanded-1024",
+        "en-dark-table-expanded-1440",
+        "en-light-board-list-1024",
+        "en-light-board-list-1440",
+        "en-dark-board-list-1024",
+        "en-dark-board-list-1440",
+        "en-light-board-preview-1024",
+        "en-light-board-preview-1440",
+        "en-dark-board-preview-1024",
+        "en-dark-board-preview-1440",
+        "en-light-board-expanded-1024",
+        "en-light-board-expanded-1440",
+        "en-dark-board-expanded-1024",
+        "en-dark-board-expanded-1440",
+        "en-light-rename-1024",
+        "en-light-rename-1440",
+        "en-light-removal-1024",
+        "en-light-removal-1440",
+        "en-dark-rename-1024",
+        "en-dark-rename-1440",
+        "en-dark-removal-1024",
+        "en-dark-removal-1440",
+        "ru-light-table-list-1024",
+        "ru-light-table-list-1440",
+        "ru-dark-table-list-1024",
+        "ru-dark-table-list-1440",
+        "ru-light-table-preview-1024",
+        "ru-light-table-preview-1440",
+        "ru-dark-table-preview-1024",
+        "ru-dark-table-preview-1440",
+        "ru-light-table-expanded-1024",
+        "ru-light-table-expanded-1440",
+        "ru-dark-table-expanded-1024",
+        "ru-dark-table-expanded-1440",
+        "ru-light-board-list-1024",
+        "ru-light-board-list-1440",
+        "ru-dark-board-list-1024",
+        "ru-dark-board-list-1440"
+      ],
+      "shutdowns": [
+        {
+          "normalQuit": true,
+          "backendsExited": true
+        }
+      ],
+      "status": "failed",
+      "phase": {
+        "language": "ru",
+        "layout": "board",
+        "location": "list",
+        "step": "open-context"
+      },
+      "error": "locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n  - waiting for getByRole('dialog', { name: '\u041f\u0435\u0440\u0435\u043c\u0435\u0441\u0442\u0438\u0442\u044c \u043f\u0440\u043e\u0435\u043a\u0442 \u0432 \u043a\u0430\u0442\u0435\u0433\u043e\u0440\u0438\u044e', exact: true }) to be detached\n    34 \u00d7 locator resolved to visible <div role=\"dialog\" tabindex=\"-1\" aria-labelledby=\"_r_r_\" class=\"project-operation-dialog project-category-move\">\u2026</div>\n\n    at /Users/runner/work/workspace/workspace/scripts/smoke-contextual-categories.mjs:83:137",
+      "trace": {
+        "status": "recorded",
+        "mode": "events",
+        "events": [
+          {
+            "type": "observer-ready",
+            "ms": 18,
+            "areas": 0
+          }
+        ]
+      },
+      "cleanup": {
+        "status": "passed",
+        "asserted": true,
+        "processesStopped": true,
+        "maxRetries": 5,
+        "retryDelay": 100
+      },
+      "cleanupError": "TimeoutError: locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n  - waiting for getByRole('dialog', { name: '\u041f\u0435\u0440\u0435\u043c\u0435\u0441\u0442\u0438\u0442\u044c \u043f\u0440\u043e\u0435\u043a\u0442 \u0432 \u043a\u0430\u0442\u0435\u0433\u043e\u0440\u0438\u044e', exact: true }) to be detached\n    34 \u00d7 locator resolved to visible <div role=\"dialog\" tabindex=\"-1\" aria-labelledby=\"_r_r_\" class=\"project-operation-dialog project-category-move\">\u2026</div>\n"
+    },
+    "3": {
+      "issue": 61,
+      "mode": "release",
+      "diagnostic": true,
+      "diagnosticMode": "events",
+      "sha": "bcf2cac6ca28491d5a1d26f5cbcac2fa1c0a60ce",
+      "run": "39969757636",
+      "attempt": "1",
+      "platform": "darwin",
+      "kernel": "25.6.0",
+      "checks": [
+        {
+          "language": "en",
+          "layout": "table",
+          "location": "list",
+          "cancelNoEffect": true,
+          "identity": true,
+          "metadata": true,
+          "move": true,
+          "return": true
+        },
+        {
+          "language": "en",
+          "layout": "table",
+          "location": "preview",
+          "cancelNoEffect": true,
+          "identity": true,
+          "metadata": true,
+          "move": true,
+          "return": true
+        },
+        {
+          "language": "en",
+          "layout": "table",
+          "location": "expanded",
+          "cancelNoEffect": true,
+          "identity": true,
+          "metadata": true,
+          "move": true,
+          "return": true
+        },
+        {
+          "language": "en",
+          "layout": "board",
+          "location": "list",
+          "cancelNoEffect": true,
+          "identity": true,
+          "metadata": true,
+          "move": true,
+          "return": true
+        },
+        {
+          "language": "en",
+          "layout": "board",
+          "location": "preview",
+          "cancelNoEffect": true,
+          "identity": true,
+          "metadata": true,
+          "move": true,
+          "return": true
+        },
+        {
+          "language": "en",
+          "layout": "board",
+          "location": "expanded",
+          "cancelNoEffect": true,
+          "identity": true,
+          "metadata": true,
+          "move": true,
+          "return": true
+        },
+        {
+          "language": "en",
+          "labelOnly": true,
+          "foldersUnchanged": true
+        },
+        {
+          "language": "en",
+          "theme": "light",
+          "reviewKind": "rename",
+          "cancelNoEffect": true
+        },
+        {
+          "language": "en",
+          "theme": "light",
+          "reviewKind": "removal",
+          "cancelNoEffect": true
+        },
+        {
+          "language": "en",
+          "theme": "dark",
+          "reviewKind": "rename",
+          "cancelNoEffect": true
+        },
+        {
+          "language": "en",
+          "theme": "dark",
+          "reviewKind": "removal",
+          "cancelNoEffect": true
+        },
+        {
+          "language": "ru",
+          "layout": "table",
+          "location": "list",
+          "cancelNoEffect": true,
+          "identity": true,
+          "metadata": true,
+          "move": true,
+          "return": true
+        },
+        {
+          "language": "ru",
+          "layout": "table",
+          "location": "preview",
+          "cancelNoEffect": true,
+          "identity": true,
+          "metadata": true,
+          "move": true,
+          "return": true
+        },
+        {
+          "language": "ru",
+          "layout": "table",
+          "location": "expanded",
+          "cancelNoEffect": true,
+          "identity": true,
+          "metadata": true,
+          "move": true,
+          "return": true
+        },
+        {
+          "language": "ru",
+          "layout": "board",
+          "location": "list",
+          "cancelNoEffect": true,
+          "identity": true,
+          "metadata": true,
+          "move": true,
+          "return": true
+        },
+        {
+          "language": "ru",
+          "layout": "board",
+          "location": "preview",
+          "cancelNoEffect": true,
+          "identity": true,
+          "metadata": true,
+          "move": true,
+          "return": true
+        },
+        {
+          "language": "ru",
+          "layout": "board",
+          "location": "expanded",
+          "cancelNoEffect": true,
+          "identity": true,
+          "metadata": true,
+          "move": true,
+          "return": true
+        },
+        {
+          "language": "ru",
+          "labelOnly": true,
+          "foldersUnchanged": true
+        },
+        {
+          "language": "ru",
+          "theme": "light",
+          "reviewKind": "rename",
+          "cancelNoEffect": true
+        },
+        {
+          "language": "ru",
+          "theme": "light",
+          "reviewKind": "removal",
+          "cancelNoEffect": true
+        },
+        {
+          "language": "ru",
+          "theme": "dark",
+          "reviewKind": "rename",
+          "cancelNoEffect": true
+        },
+        {
+          "language": "ru",
+          "theme": "dark",
+          "reviewKind": "removal",
+          "cancelNoEffect": true
+        }
+      ],
+      "screens": [
+        "en-light-table-list-1024",
+        "en-light-table-list-1440",
+        "en-dark-table-list-1024",
+        "en-dark-table-list-1440",
+        "en-light-table-preview-1024",
+        "en-light-table-preview-1440",
+        "en-dark-table-preview-1024",
+        "en-dark-table-preview-1440",
+        "en-light-table-expanded-1024",
+        "en-light-table-expanded-1440",
+        "en-dark-table-expanded-1024",
+        "en-dark-table-expanded-1440",
+        "en-light-board-list-1024",
+        "en-light-board-list-1440",
+        "en-dark-board-list-1024",
+        "en-dark-board-list-1440",
+        "en-light-board-preview-1024",
+        "en-light-board-preview-1440",
+        "en-dark-board-preview-1024",
+        "en-dark-board-preview-1440",
+        "en-light-board-expanded-1024",
+        "en-light-board-expanded-1440",
+        "en-dark-board-expanded-1024",
+        "en-dark-board-expanded-1440",
+        "en-light-rename-1024",
+        "en-light-rename-1440",
+        "en-light-removal-1024",
+        "en-light-removal-1440",
+        "en-dark-rename-1024",
+        "en-dark-rename-1440",
+        "en-dark-removal-1024",
+        "en-dark-removal-1440",
+        "ru-light-table-list-1024",
+        "ru-light-table-list-1440",
+        "ru-dark-table-list-1024",
+        "ru-dark-table-list-1440",
+        "ru-light-table-preview-1024",
+        "ru-light-table-preview-1440",
+        "ru-dark-table-preview-1024",
+        "ru-dark-table-preview-1440",
+        "ru-light-table-expanded-1024",
+        "ru-light-table-expanded-1440",
+        "ru-dark-table-expanded-1024",
+        "ru-dark-table-expanded-1440",
+        "ru-light-board-list-1024",
+        "ru-light-board-list-1440",
+        "ru-dark-board-list-1024",
+        "ru-dark-board-list-1440",
+        "ru-light-board-preview-1024",
+        "ru-light-board-preview-1440",
+        "ru-dark-board-preview-1024",
+        "ru-dark-board-preview-1440",
+        "ru-light-board-expanded-1024",
+        "ru-light-board-expanded-1440",
+        "ru-dark-board-expanded-1024",
+        "ru-dark-board-expanded-1440",
+        "ru-light-rename-1024",
+        "ru-light-rename-1440",
+        "ru-light-removal-1024",
+        "ru-light-removal-1440",
+        "ru-dark-rename-1024",
+        "ru-dark-rename-1440",
+        "ru-dark-removal-1024",
+        "ru-dark-removal-1440"
+      ],
+      "shutdowns": [
+        {
+          "normalQuit": true,
+          "backendsExited": true
+        }
+      ],
+      "status": "passed",
+      "phase": {
+        "language": "ru",
+        "layout": "board",
+        "location": "expanded",
+        "step": "open-context"
+      },
+      "trace": {
+        "status": "recorded",
+        "mode": "events",
+        "events": [
+          {
+            "type": "observer-ready",
+            "ms": 23,
+            "areas": 0
+          },
+          {
+            "type": "pointerdown",
+            "ms": 2539,
+            "areas": 0,
+            "trusted": true,
+            "enabled": true,
+            "connected": true,
+            "busy": "false",
+            "x": 292.8500061035156,
+            "y": 174.05999755859375
+          },
+          {
+            "type": "mousedown",
+            "ms": 2539,
+            "areas": 0,
+            "trusted": true,
+            "enabled": true,
+            "connected": true,
+            "busy": "false",
+            "x": 292,
+            "y": 174
+          },
+          {
+            "type": "pointerup",
+            "ms": 2540,
+            "areas": 0,
+            "trusted": true,
+            "enabled": true,
+            "connected": true,
+            "busy": "false",
+            "x": 292.8500061035156,
+            "y": 174.05999755859375
+          },
+          {
+            "type": "mouseup",
+            "ms": 2540,
+            "areas": 0,
+            "trusted": true,
+            "enabled": true,
+            "connected": true,
+            "busy": "false",
+            "x": 292,
+            "y": 174
+          },
+          {
+            "type": "click",
+            "ms": 2540,
+            "areas": 0,
+            "trusted": true,
+            "enabled": true,
+            "connected": true,
+            "busy": "false",
+            "x": 292,
+            "y": 174
+          },
+          {
+            "type": "project-area-change",
+            "ms": 2548,
+            "areas": 1
+          },
+          {
+            "type": "project-area-change",
+            "ms": 4960,
+            "areas": 0
+          },
+          {
+            "type": "pointerdown",
+            "ms": 5016,
+            "areas": 0,
+            "trusted": true,
+            "enabled": true,
+            "connected": true,
+            "busy": "false",
+            "x": 292.8500061035156,
+            "y": 174.05999755859375
+          },
+          {
+            "type": "mousedown",
+            "ms": 5017,
+            "areas": 0,
+            "trusted": true,
+            "enabled": true,
+            "connected": true,
+            "busy": "false",
+            "x": 292,
+            "y": 174
+          },
+          {
+            "type": "pointerup",
+            "ms": 5017,
+            "areas": 0,
+            "trusted": true,
+            "enabled": true,
+            "connected": true,
+            "busy": "false",
+            "x": 292.8500061035156,
+            "y": 174.05999755859375
+          },
+          {
+            "type": "mouseup",
+            "ms": 5017,
+            "areas": 0,
+            "trusted": true,
+            "enabled": true,
+            "connected": true,
+            "busy": "false",
+            "x": 292,
+            "y": 174
+          },
+          {
+            "type": "click",
+            "ms": 5017,
+            "areas": 0,
+            "trusted": true,
+            "enabled": true,
+            "connected": true,
+            "busy": "false",
+            "x": 292,
+            "y": 174
+          },
+          {
+            "type": "project-area-change",
+            "ms": 5021,
+            "areas": 1
+          },
+          {
+            "type": "project-area-change",
+            "ms": 7719,
+            "areas": 0
+          }
+        ]
+      },
+      "cleanup": {
+        "status": "passed",
+        "asserted": true,
+        "processesStopped": true,
+        "maxRetries": 5,
+        "retryDelay": 100
+      }
+    }
+  },
+  "interpretation": "Trials1/3 pass diagnostics; trial2 fails later at RU Board list return-move dialog detachment with source-changed guard. Historical missing Move control in EN Board preview is not reproduced or accepted. No speculative product fix chosen."
+}

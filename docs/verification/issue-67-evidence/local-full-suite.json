@@ -1,0 +1,28 @@
+{
+  "sha": "77d936baeec18f2da0930b8cfa1f3c6b23967060",
+  "command": "npm run test:all",
+  "exitCode": 1,
+  "platform": "Darwin 27.0.0 arm64",
+  "node": "22.21.1",
+  "counts": {
+    "tests": 3464,
+    "pass": 3435,
+    "fail": 2,
+    "skipped": 27,
+    "cancelled": 0
+  },
+  "durationMs": 180865.588834,
+  "logSha256": "86a55e9df469ef44853cdb0780e29d634622ec7c968024177261f936b553e921",
+  "inputManifestSha256": "b02a6a9bc0be2c265a61ade522c6ed6299f6527825ae17fb5c83347aac652a05",
+  "failures": [
+    [
+      "2858",
+      "ordinary CI runs common checks once and retains all three platform acceptance routes"
+    ],
+    [
+      "2860",
+      "manual failed-check scope runs only the Windows observer and macOS rename routes"
+    ]
+  ],
+  "classification": "Only two unchanged literal CI registry/condition assertions failed. No native shutdown failure occurred in this full run. This is not a full-green receipt."
+}

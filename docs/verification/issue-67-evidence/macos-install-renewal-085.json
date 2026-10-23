@@ -1,0 +1,25 @@
+{
+  "version": "0.1.0",
+  "platform": "darwin",
+  "arch": "arm64",
+  "kernel": "23.6.0",
+  "sha": "08504f86528ff2c1f7e230ecc0fc58340952efe5",
+  "run": "39938129249",
+  "attempt": "1",
+  "stages": [
+    "verified DMG installed outside build directory",
+    "installed bundled backend create/quit, EN/RU keyboard and isolation",
+    "same installation reopens saved identities, views and language",
+    "app replacement preserves application data"
+  ],
+  "dmgSha256": "9b86355de5fb55e5adca29860467cf02a24122695f4f14ad6b73efd07402c900",
+  "macos": "14.8.9",
+  "status": "passed",
+  "cleanup": {
+    "status": "passed",
+    "asserted": true,
+    "processesStopped": true,
+    "maxRetries": 5,
+    "retryDelay": 100
+  }
+}

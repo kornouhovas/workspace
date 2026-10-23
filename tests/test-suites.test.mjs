@@ -42,7 +42,17 @@ test('suite CLI lists the selected real files and rejects unknown invocations', 
 test('ordinary CI runs common checks once and retains all three platform acceptance routes', () => {
   const workflow = load(readFileSync('.github/workflows/desktop-ci.yml', 'utf8'));
   const { common, verify } = workflow.jobs;
-  assert.equal(common.if, "${{ github.event_name != 'workflow_dispatch' || (inputs.checks != 'failed' && inputs.checks != 'readiness' && inputs.checks != 'windows-release' && inputs.checks != 'issue22-failures' && inputs.checks != 'creation-shutdown' && inputs.checks != 'raw-rename' && inputs.checks != 'issue24-failures' && inputs.checks != 'category-fixture' && inputs.checks != 'issue24-startup' && inputs.checks != 'multiselect' && inputs.checks != 'etw-controls' && inputs.checks != 'app-fixture' && inputs.checks != 'property-fixture' && inputs.checks != 'runtime-observation' && inputs.checks != 'view-fixtures' && inputs.checks != 'number' && inputs.checks != 'windows-property-fixture' && inputs.checks != 'rename-authoring' && inputs.checks != 'rename-fixture' && inputs.checks != 'viewport-runtime' && inputs.checks != 'workspace-root-runtime' && inputs.checks != 'archive-contexts' && inputs.checks != 'creation-ownership' && inputs.checks != 'desktop-shell' && inputs.checks != 'shell-runtime' && inputs.checks != 'views-readiness' && inputs.checks != 'view-contexts' && inputs.checks != 'workspace-sidebar' && inputs.checks != 'workspace-setup' && inputs.checks != 'workspace-setup-readiness' && inputs.checks != 'select-readiness' && inputs.checks != 'source-fixture' && inputs.checks != 'source-runtime' && inputs.checks != 'desktop-ux' && inputs.checks != 'layout-fixtures' && inputs.checks != 'source-inventory' && inputs.checks != 'observer-cancellation' && inputs.checks != 'observer-workflow' && inputs.checks != 'native-owner-controls' && inputs.checks != 'native-lifecycle' && inputs.checks != 'project-files-windows' && inputs.checks != 'project-files-windows-trace') }}");
+  // Evaluate scheduling behavior instead of freezing the expression text.
+  // Every focused dispatch must stay outside ordinary common/platform acceptance.
+  const enabled = (event, checks) => runInNewContext(common.if.slice(3, -2), {
+    github: { event_name: event }, inputs: { checks },
+  });
+  for (const event of ['push', 'pull_request']) {
+    for (const checks of [undefined, ...workflow.on.workflow_dispatch.inputs.checks.options]) assert.equal(enabled(event, checks), true);
+  }
+  for (const checks of workflow.on.workflow_dispatch.inputs.checks.options) {
+    assert.equal(enabled('workflow_dispatch', checks), checks === 'full', checks);
+  }
   assert.equal(common.strategy, undefined);
   assert.deepEqual(common.steps.filter(step => step.run).map(step => step.run), [
     'npm ci', 'npm run lint', 'npm run typecheck', 'npm run check:docs', 'npm run test:common',
@@ -83,7 +93,7 @@ test('investigation jobs run only with explicit manual diagnostic inputs', () =>
 test('manual failed-check scope runs only the Windows observer and macOS rename routes', () => {
   const workflow = load(readFileSync('.github/workflows/desktop-ci.yml', 'utf8'));
   assert.equal(workflow.on.workflow_dispatch.inputs.checks.default, 'full');
-  assert.deepEqual(workflow.on.workflow_dispatch.inputs.checks.options, ['full', 'desktop-ux', 'layout-fixtures', 'source-inventory', 'observer-cancellation', 'observer-workflow', 'native-owner-controls', 'native-lifecycle', 'project-files-windows', 'project-files-windows-trace', 'failed', 'readiness', 'windows-release', 'issue22-failures', 'creation-shutdown', 'raw-rename', 'issue24-failures', 'category-fixture', 'issue24-startup', 'multiselect', 'etw-controls', 'app-fixture', 'property-fixture', 'runtime-observation', 'view-fixtures', 'number', 'windows-property-fixture', 'rename-authoring', 'rename-fixture', 'viewport-runtime', 'workspace-root-runtime', 'archive-contexts', 'creation-ownership', 'desktop-shell', 'shell-runtime', 'views-readiness', 'view-contexts', 'workspace-sidebar', 'workspace-setup', 'workspace-setup-readiness', 'select-readiness', 'source-fixture', 'source-runtime']);
+  assert.deepEqual(workflow.on.workflow_dispatch.inputs.checks.options, ['full', 'integrated-desktop', 'integrated-regressions', 'integrated-layout', 'integrated-category-layout', 'integrated-operation-layout', 'integrated-archive-profile', 'integrated-fixture-repairs', 'integrated-filesystem-repair', 'integrated-project-entry-repair', 'integrated-category-entry-profile', 'integrated-missing-tails', 'integrated-runtime', 'desktop-ux', 'layout-fixtures', 'source-inventory', 'observer-cancellation', 'observer-workflow', 'native-owner-controls', 'native-lifecycle', 'project-files-windows', 'project-files-windows-trace', 'failed', 'readiness', 'windows-release', 'issue22-failures', 'creation-shutdown', 'raw-rename', 'issue24-failures', 'category-fixture', 'issue24-startup', 'multiselect', 'etw-controls', 'app-fixture', 'property-fixture', 'runtime-observation', 'view-fixtures', 'number', 'windows-property-fixture', 'rename-authoring', 'rename-fixture', 'viewport-runtime', 'workspace-root-runtime', 'archive-contexts', 'creation-ownership', 'desktop-shell', 'shell-runtime', 'views-readiness', 'view-contexts', 'workspace-sidebar', 'workspace-setup', 'workspace-setup-readiness', 'select-readiness', 'source-fixture', 'source-runtime']);
   const enabled = (job, event, checks) => runInNewContext(job.if.slice(3, -2), { github: { event_name: event }, inputs: { checks } });
   for (const event of ['push', 'pull_request', 'workflow_dispatch']) for (const checks of [undefined, 'full', 'failed']) {
     const focused = event === 'workflow_dispatch' && checks === 'failed';
@@ -1084,7 +1094,19 @@ test('performance readiness repair retains the original strict command after reg
   assert.equal(workflow.on.workflow_dispatch.inputs.diagnostic_only.default, false);
   assert.ok(workflow.concurrency.group.includes("inputs.diagnostic_only && format('-diagnostic-{0}', inputs.platform)"));
   const diagnosticGuard=job.steps.find(step=>step.name==='Require a selected diagnostic profile');
-  assert.equal(diagnosticGuard.if,'${{ inputs.diagnostic_only || inputs.profile_backend || inputs.profile_unthrottled }}');
+  for (const [selected, expected] of [[null,false],['diagnostic_only',true],['profile_backend',true],['profile_unthrottled',true],['profile_projects',true]]) {
+    const inputs={diagnostic_only:false,profile_backend:false,profile_unthrottled:false,profile_projects:false};
+    if(selected)inputs[selected]=true;
+    assert.equal(runInNewContext(diagnosticGuard.if.slice(3,-2),{inputs}),expected);
+  }
+  assert.equal(workflow.on.workflow_dispatch.inputs.profile_projects.default,false);
+  assert.equal(diagnosticGuard.env.PROFILE_PROJECTS,'${{ inputs.profile_projects }}');
+  assert.equal(diagnosticGuard.env.DIAGNOSTIC_ONLY,'${{ inputs.diagnostic_only }}');
+  const diagnosticSource=diagnosticGuard.run.match(/^node -e "(.*)"$/)[1];
+  for(const [diagnostic,filters,valid] of [['false','true',false],['true','false',false],['true','true',true]]) {
+    const run=()=>runInNewContext(diagnosticSource,{process:{env:{PROFILE_PROJECTS:'true',DIAGNOSTIC_ONLY:diagnostic,PROFILE_FILTERS:filters}}});
+    if(valid)assert.doesNotThrow(run);else assert.throws(run,/Project profiling requires isolated diagnostic renderer profiles/);
+  }
   assert.equal(workflow.on.workflow_dispatch.inputs.profile_unthrottled.default,false);
   assert.equal(diagnosticGuard.env.PROFILE_UNTHROTTLED,'${{ inputs.profile_unthrottled }}');
   assert.ok(diagnosticGuard.run.includes("Scheduling diagnostics require renderer profiles"));

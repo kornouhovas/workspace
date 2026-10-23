@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import {execFile} from 'node:child_process';
 import {promisify} from 'node:util';
-import {createRequire} from 'node:module';
+import {runtimeSmokeLaunch} from './runtime-executable.mjs';
 import {mkdtemp,mkdir,realpath,writeFile,readFile,rm} from 'node:fs/promises';
 import {tmpdir,release,cpus} from 'node:os';
 import {basename,join,resolve} from 'node:path';
@@ -24,7 +24,7 @@ const nativeEventProblems=[];
 let app,page,failure,launchUnverified=false,native,external,externalBefore,nativeEvents;
 try {
  launchUnverified=true;
- app=await _electron.launch({executablePath:createRequire(import.meta.url)('electron'),args:[root],cwd:root,env:{...process.env,WORKSPACE_USER_DATA_DIR:join(fixture,'data')}});
+ app=await _electron.launch({...runtimeSmokeLaunch(root),cwd:root,env:{...process.env,WORKSPACE_USER_DATA_DIR:join(fixture,'data')}});
  parents.add(app.process());page=await app.firstWindow();page.setDefaultTimeout(15000);
  try{await withDeadline(app.evaluate(()=>{
   globalThis.fileNativeEvents=[];

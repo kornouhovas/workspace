@@ -60,12 +60,18 @@ app.on('window-all-closed', () => app.quit());`);
   assert.equal(stories.filter((name) => name.includes("--creation-")).length, 36, "Expected all eighteen EN/RU creation and Reveal states");
   assert.equal(stories.filter((name) => name.includes("--rename-")).length, 96, "Expected all 24 direct/grouped EN/RU rename states");
   const categoryMoveStories = stories.filter((name) => name.includes("--category-move-"));
+  for (const state of ["applied-table", "applied-empty"]) for (const language of ["english", "russian"]) {
+    assert.ok(stories.some(name => name.endsWith(`--${state}-${language}`)), `Missing Applied ${state} ${language}`);
+  }
   // Require the behavior matrix by name, without a total story-count target.
   const categoryMoveStates = ["editing", "pending", "saved", "unchanged", "collision", "stale", "unavailable", "rejected", "unknown", "list-loading", "list-empty", "list-error", "interrupted", "uncertain", "recovery-original", "recovery-destination", "recovery-blocked", "review-stale", "review-loading", "review-error", "recovery-pending", "recovery-unknown", "kept-original", "retained", "direct"];
   for (const state of categoryMoveStates) for (const language of ["english", "russian"]) {
     assert.ok(categoryMoveStories.some((name) => name.endsWith(`--category-move-${state}-${language}`)), `Missing category move ${state} ${language}`);
   }
-  const selectedStories = process.argv.includes("--category-move") ? categoryMoveStories : process.argv.includes("--rename") ? stories.filter((name) => name.includes("--rename-")) : process.argv.includes("--mode-changes") ? stories.filter((name) => name.includes("--mode-")) : process.argv.includes("--creation") ? stories.filter((name) => name.includes("--creation-")) : stories;
+  const selectedStories = process.argv.includes("--source-observation") ? stories.filter(name => name.includes("--source-")) : process.argv.includes("--remaining-after-operations") ? stories.filter(name => !/--(applied-|category-move-|creation-|rename-)/.test(name)) : process.argv.includes("--remaining-after-category-move") ? stories.filter(name => !name.includes("--applied-") && !name.includes("--category-move-")) : process.argv.includes("--applied") ? stories.filter(name => name.includes("--applied-")) : process.argv.includes("--remaining-after-applied") ? stories.filter(name => !name.includes("--applied-")) : process.argv.includes("--category-move") ? categoryMoveStories : process.argv.includes("--rename") ? stories.filter((name) => name.includes("--rename-")) : process.argv.includes("--mode-changes") ? stories.filter((name) => name.includes("--mode-")) : process.argv.includes("--creation") ? stories.filter((name) => name.includes("--creation-")) : stories;
+  results.selection = process.argv.includes("--remaining-after-operations") ? "remaining-after-operations" : process.argv.includes("--remaining-after-category-move") ? "remaining-after-category-move" : process.argv.includes("--applied") ? "applied" : process.argv.includes("--remaining-after-applied") ? "remaining-after-applied" : process.argv.slice(2).join(" ") || "all";
+  results.selectedStoryCount = selectedStories.length;
+  results.totalStoryCount = stories.length;
   for (const story of selectedStories) {
     results.currentStory = story;
     await page.goto(`${url}/?story=${story}&mode=preview`);
@@ -78,6 +84,16 @@ app.on('window-all-closed', () => app.quit());`);
     const categoryStory = story.includes("--category-") && !categoryMoveStory;
     const textStory = story.includes("--text-");
     await page.locator(categoryMoveStory ? "[data-category-move-fixture][data-fixture-ready=true]" : renameStory ? "[data-rename-fixture][data-fixture-ready=true]" : creationStory ? "[data-creation-fixture][data-fixture-ready=true]" : modeStory ? "[data-mode-fixture]" : sourceStory ? "[data-source-fixture]" : recoveryStory ? "[data-recovery-fixture]" : categoryStory ? "[data-category-fixture][data-fixture-ready=true]" : textStory ? "[data-text-fixture][data-fixture-ready=true]" : ".discovery-panel, .table-view").waitFor();
+    if (story.includes('--applied-')) {
+      await page.locator('.text-properties[aria-busy="false"]').waitFor();
+      await page.locator('.project-archive[aria-busy="false"]').waitFor({state:'attached'});
+      assert.equal(await page.getByRole('alert').filter({visible:true}).count(), 0, 'Applied fixtures must render the intended healthy state');
+      assert.equal(await page.getByRole('button',{name:/^(Reload properties|Перезагрузить свойства)$/,exact:true}).filter({visible:true}).count(), 0, 'Applied property snapshot must be current');
+    }
+    if (categoryMoveStory || renameStory || sourceStory) {
+      await page.locator('.project-archive[aria-busy="false"]').waitFor({state:'attached'});
+      assert.equal(await page.locator('.project-archive > [role="alert"]').count(), 0, 'Composed fixtures must not contain unrelated archive errors');
+    }
     const categoryMoveRoot = page.locator("[data-category-move-fixture]");
     const categoryMoveState = categoryMoveStory ? await categoryMoveRoot.getAttribute("data-category-move-fixture") : null;
     const categoryMoveLanguage = categoryMoveStory ? await categoryMoveRoot.getAttribute("lang") : null;

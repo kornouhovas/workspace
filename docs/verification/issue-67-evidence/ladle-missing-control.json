@@ -1,0 +1,11 @@
+{
+  "browser": "Electron",
+  "capture": "full-page",
+  "fixture": "production components with typed disposable Ladle data",
+  "screenshots": [],
+  "featurePassed": false,
+  "shutdownPassed": true,
+  "error": "Missing Applied applied-empty english",
+  "failureGeometry": [],
+  "failureCapture": "saved"
+}

@@ -1,0 +1,662 @@
+{
+  "issue": 41,
+  "sha": "6bf1fbcdeda7f5876909ec2dbd71153b5469155e",
+  "diagnostic": false,
+  "projectFlows": true,
+  "sourceDiffSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "harnessSha256": "1fd70148e58aad17999cdd15e103f25087f6cc30c4dff5d0a9190713a94aa362",
+  "platform": "darwin",
+  "arch": "arm64",
+  "kernel": "27.0.0",
+  "cpu": "Apple M1 Pro",
+  "hostMemoryBytes": 17179869184,
+  "storage": "local temporary directory; physical SSD characteristics not independently verified",
+  "dataset": {
+    "projectsPerSource": 1000,
+    "propertiesPerSource": 20,
+    "viewsPerWorkspace": 10,
+    "filledFraction": 0.25
+  },
+  "limits": {
+    "startup": 5000,
+    "scan": 5000,
+    "interaction": 300,
+    "memoryBytes": 1000000000
+  },
+  "measurements": [
+    {
+      "source": "direct",
+      "scenario": "saved-view startup",
+      "ms": 4522.1782079999975,
+      "limit": 5000,
+      "passed": true
+    },
+    {
+      "source": "direct",
+      "scenario": "table filter 0",
+      "ms": 68.59999996423721,
+      "observationStartMs": 43.89999997615814,
+      "initialReadinessMs": 6.100000023841858,
+      "firstPaintedMs": 50,
+      "stabilizationMs": 18.599999964237213,
+      "observedMs": 72,
+      "paintedMs": 68.59999996423721,
+      "driverObservationDelayMs": 3.400000035762787,
+      "limit": 300,
+      "passed": true,
+      "clock": "renderer event through committed paint"
+    },
+    {
+      "source": "direct",
+      "scenario": "table filter 1",
+      "ms": 80.80000001192093,
+      "observationStartMs": 17,
+      "initialReadinessMs": 50.5,
+      "firstPaintedMs": 67.5,
+      "stabilizationMs": 13.300000011920929,
+      "observedMs": 83.30000001192093,
+      "paintedMs": 80.80000001192093,
+      "driverObservationDelayMs": 2.5,
+      "limit": 300,
+      "passed": true,
+      "clock": "renderer event through committed paint"
+    },
+    {
+      "source": "direct",
+      "scenario": "table filter 2",
+      "ms": 62.30000001192093,
+      "observationStartMs": 40,
+      "initialReadinessMs": 5.600000023841858,
+      "firstPaintedMs": 45.60000002384186,
+      "stabilizationMs": 16.69999998807907,
+      "observedMs": 65,
+      "paintedMs": 62.30000001192093,
+      "driverObservationDelayMs": 2.699999988079071,
+      "limit": 300,
+      "passed": true,
+      "clock": "renderer event through committed paint"
+    },
+    {
+      "source": "direct",
+      "scenario": "table grouping",
+      "ms": 116,
+      "observationStartMs": 13,
+      "initialReadinessMs": 84.39999997615814,
+      "firstPaintedMs": 97.39999997615814,
+      "stabilizationMs": 18.600000023841858,
+      "observedMs": 121.89999997615814,
+      "paintedMs": 116,
+      "driverObservationDelayMs": 5.899999976158142,
+      "limit": 300,
+      "passed": true,
+      "clock": "renderer event through committed paint"
+    },
+    {
+      "source": "direct",
+      "scenario": "table filtered group drag",
+      "ms": 124.59999996423721,
+      "observationStartMs": 30.19999998807907,
+      "initialReadinessMs": 77.80000001192093,
+      "firstPaintedMs": 108,
+      "stabilizationMs": 16.599999964237213,
+      "observedMs": 134.5,
+      "paintedMs": 124.59999996423721,
+      "driverObservationDelayMs": 9.900000035762787,
+      "limit": 300,
+      "passed": true,
+      "clock": "renderer event through committed paint"
+    },
+    {
+      "source": "direct",
+      "scenario": "table edit",
+      "ms": 106.10000002384186,
+      "observationStartMs": 26.399999976158142,
+      "initialReadinessMs": 63.10000002384186,
+      "firstPaintedMs": 89.5,
+      "stabilizationMs": 16.600000023841858,
+      "observedMs": 112,
+      "paintedMs": 106.10000002384186,
+      "driverObservationDelayMs": 5.899999976158142,
+      "limit": 300,
+      "passed": true,
+      "clock": "renderer event through committed paint"
+    },
+    {
+      "source": "direct",
+      "scenario": "board filter 0",
+      "ms": 73.70000004768372,
+      "observationStartMs": 35.200000047683716,
+      "initialReadinessMs": 21.099999964237213,
+      "firstPaintedMs": 56.30000001192093,
+      "stabilizationMs": 17.400000035762787,
+      "observedMs": 76.10000002384186,
+      "paintedMs": 73.70000004768372,
+      "driverObservationDelayMs": 2.399999976158142,
+      "limit": 300,
+      "passed": true,
+      "clock": "renderer event through committed paint"
+    },
+    {
+      "source": "direct",
+      "scenario": "board filter 1",
+      "ms": 68.60000002384186,
+      "observationStartMs": 14.699999988079071,
+      "initialReadinessMs": 37.5,
+      "firstPaintedMs": 52.19999998807907,
+      "stabilizationMs": 16.400000035762787,
+      "observedMs": 70.89999997615814,
+      "paintedMs": 68.60000002384186,
+      "driverObservationDelayMs": 2.299999952316284,
+      "limit": 300,
+      "passed": true,
+      "clock": "renderer event through committed paint"
+    },
+    {
+      "source": "direct",
+      "scenario": "board filter 2",
+      "ms": 67.40000003576279,
+      "observationStartMs": 34.60000002384186,
+      "initialReadinessMs": 15.800000011920929,
+      "firstPaintedMs": 50.40000003576279,
+      "stabilizationMs": 17,
+      "observedMs": 70.5,
+      "paintedMs": 67.40000003576279,
+      "driverObservationDelayMs": 3.099999964237213,
+      "limit": 300,
+      "passed": true,
+      "clock": "renderer event through committed paint"
+    },
+    {
+      "source": "direct",
+      "scenario": "board grouping",
+      "ms": 64.80000001192093,
+      "observationStartMs": 2.399999976158142,
+      "initialReadinessMs": 44.200000047683716,
+      "firstPaintedMs": 46.60000002384186,
+      "stabilizationMs": 18.19999998807907,
+      "observedMs": 69.19999998807907,
+      "paintedMs": 64.80000001192093,
+      "driverObservationDelayMs": 4.399999976158142,
+      "limit": 300,
+      "passed": true,
+      "clock": "renderer event through committed paint"
+    },
+    {
+      "source": "direct",
+      "scenario": "board filtered group drag",
+      "ms": 85.19999998807907,
+      "observationStartMs": 9.5,
+      "initialReadinessMs": 59.19999998807907,
+      "firstPaintedMs": 68.69999998807907,
+      "stabilizationMs": 16.5,
+      "observedMs": 93.10000002384186,
+      "paintedMs": 85.19999998807907,
+      "driverObservationDelayMs": 7.900000035762787,
+      "limit": 300,
+      "passed": true,
+      "clock": "renderer event through committed paint"
+    },
+    {
+      "source": "direct",
+      "scenario": "board edit",
+      "ms": 86.19999998807907,
+      "observationStartMs": 44.30000001192093,
+      "initialReadinessMs": 25.099999964237213,
+      "firstPaintedMs": 69.39999997615814,
+      "stabilizationMs": 16.80000001192093,
+      "observedMs": 92,
+      "paintedMs": 86.19999998807907,
+      "driverObservationDelayMs": 5.800000011920929,
+      "limit": 300,
+      "passed": true,
+      "clock": "renderer event through committed paint"
+    },
+    {
+      "source": "direct",
+      "scenario": "external-change full scan and refresh",
+      "ms": 387.39999997615814,
+      "observationStartMs": 34.5,
+      "initialReadinessMs": 294.5999999642372,
+      "firstPaintedMs": 329.0999999642372,
+      "stabilizationMs": 58.30000001192093,
+      "observedMs": 399.0999999642372,
+      "paintedMs": 387.39999997615814,
+      "driverObservationDelayMs": 11.699999988079071,
+      "limit": 5000,
+      "passed": true,
+      "clock": "renderer event through committed paint"
+    },
+    {
+      "source": "direct",
+      "scenario": "project preview",
+      "ms": 235.5,
+      "observationStartMs": 30.399999976158142,
+      "initialReadinessMs": 187.80000001192093,
+      "firstPaintedMs": 218.19999998807907,
+      "stabilizationMs": 17.30000001192093,
+      "observedMs": 237.89999997615814,
+      "paintedMs": 235.5,
+      "driverObservationDelayMs": 2.399999976158142,
+      "limit": 300,
+      "passed": true,
+      "clock": "renderer event through committed paint"
+    },
+    {
+      "source": "direct",
+      "scenario": "project expand",
+      "ms": 50.89999997615814,
+      "observationStartMs": 25.599999964237213,
+      "initialReadinessMs": 8.900000035762787,
+      "firstPaintedMs": 34.5,
+      "stabilizationMs": 16.399999976158142,
+      "observedMs": 53.5,
+      "paintedMs": 50.89999997615814,
+      "driverObservationDelayMs": 2.600000023841858,
+      "limit": 300,
+      "passed": true,
+      "clock": "renderer event through committed paint"
+    },
+    {
+      "source": "direct",
+      "scenario": "expanded project edit",
+      "ms": 49.30000001192093,
+      "observationStartMs": 4.5,
+      "initialReadinessMs": 36.10000002384186,
+      "firstPaintedMs": 40.60000002384186,
+      "stabilizationMs": 8.699999988079071,
+      "observedMs": 56.90000003576279,
+      "paintedMs": 49.30000001192093,
+      "driverObservationDelayMs": 7.600000023841858,
+      "limit": 300,
+      "passed": true,
+      "clock": "renderer event through committed paint"
+    },
+    {
+      "source": "direct",
+      "scenario": "project return",
+      "ms": 62.30000001192093,
+      "observationStartMs": 43.80000001192093,
+      "initialReadinessMs": 2.400000035762787,
+      "firstPaintedMs": 46.200000047683716,
+      "stabilizationMs": 16.099999964237213,
+      "observedMs": 64.70000004768372,
+      "paintedMs": 62.30000001192093,
+      "driverObservationDelayMs": 2.400000035762787,
+      "limit": 300,
+      "passed": true,
+      "clock": "renderer event through committed paint"
+    },
+    {
+      "source": "direct",
+      "scenario": "RU refresh after scalar blur",
+      "ms": 164,
+      "observationStartMs": 53.30000001192093,
+      "initialReadinessMs": 96.40000003576279,
+      "firstPaintedMs": 149.70000004768372,
+      "stabilizationMs": 14.299999952316284,
+      "observedMs": 166.4000000357628,
+      "paintedMs": 164,
+      "driverObservationDelayMs": 2.400000035762787,
+      "limit": 5000,
+      "passed": true,
+      "clock": "renderer event through committed paint"
+    },
+    {
+      "source": "direct",
+      "scenario": "RU external refresh with offscreen draft",
+      "ms": 124.01045800000429,
+      "limit": 5000,
+      "passed": true
+    }
+  ],
+  "memory": [
+    {
+      "scenario": "direct startup",
+      "bytes": 612712448,
+      "peakUpperBoundBytes": 636010496,
+      "processes": [
+        {
+          "type": "Browser",
+          "workingSetKiB": 149888,
+          "peakWorkingSetKiB": 163376,
+          "cumulativeCpuSeconds": 0.50315
+        },
+        {
+          "type": "GPU",
+          "serviceName": "GPU",
+          "workingSetKiB": 84624,
+          "peakWorkingSetKiB": 88992,
+          "cumulativeCpuSeconds": 0.274264
+        },
+        {
+          "type": "Utility",
+          "serviceName": "network.mojom.NetworkService",
+          "workingSetKiB": 42240,
+          "peakWorkingSetKiB": 46656,
+          "cumulativeCpuSeconds": 0.084413
+        },
+        {
+          "type": "Utility",
+          "serviceName": "node.mojom.NodeService",
+          "workingSetKiB": 128752,
+          "peakWorkingSetKiB": 129232,
+          "cumulativeCpuSeconds": 1.037534
+        },
+        {
+          "type": "Tab",
+          "workingSetKiB": 192848,
+          "peakWorkingSetKiB": 192848,
+          "cumulativeCpuSeconds": 0.585332
+        }
+      ],
+      "dom": {
+        "rows": 1000,
+        "loadedRows": 14,
+        "nodes": 5896
+      },
+      "passed": true
+    },
+    {
+      "scenario": "direct table grouped",
+      "bytes": 748437504,
+      "peakUpperBoundBytes": 764411904,
+      "processes": [
+        {
+          "type": "Browser",
+          "workingSetKiB": 154048,
+          "peakWorkingSetKiB": 163376,
+          "cumulativeCpuSeconds": 0.726057
+        },
+        {
+          "type": "GPU",
+          "serviceName": "GPU",
+          "workingSetKiB": 98768,
+          "peakWorkingSetKiB": 99936,
+          "cumulativeCpuSeconds": 0.500035
+        },
+        {
+          "type": "Utility",
+          "serviceName": "network.mojom.NetworkService",
+          "workingSetKiB": 41840,
+          "peakWorkingSetKiB": 46656,
+          "cumulativeCpuSeconds": 0.084413
+        },
+        {
+          "type": "Utility",
+          "serviceName": "node.mojom.NodeService",
+          "workingSetKiB": 141168,
+          "peakWorkingSetKiB": 141216,
+          "cumulativeCpuSeconds": 1.159784
+        },
+        {
+          "type": "Tab",
+          "workingSetKiB": 295072,
+          "peakWorkingSetKiB": 295312,
+          "cumulativeCpuSeconds": 1.805009
+        }
+      ],
+      "dom": {
+        "rows": 100,
+        "loadedRows": 7,
+        "nodes": 3455
+      },
+      "passed": true
+    },
+    {
+      "scenario": "direct board grouped",
+      "bytes": 827916288,
+      "peakUpperBoundBytes": 870612992,
+      "processes": [
+        {
+          "type": "Browser",
+          "workingSetKiB": 155648,
+          "peakWorkingSetKiB": 169840,
+          "cumulativeCpuSeconds": 1.111572
+        },
+        {
+          "type": "GPU",
+          "serviceName": "GPU",
+          "workingSetKiB": 104560,
+          "peakWorkingSetKiB": 118752,
+          "cumulativeCpuSeconds": 0.82279
+        },
+        {
+          "type": "Utility",
+          "serviceName": "network.mojom.NetworkService",
+          "workingSetKiB": 41904,
+          "peakWorkingSetKiB": 46656,
+          "cumulativeCpuSeconds": 0.08446
+        },
+        {
+          "type": "Utility",
+          "serviceName": "node.mojom.NodeService",
+          "workingSetKiB": 142912,
+          "peakWorkingSetKiB": 144944,
+          "cumulativeCpuSeconds": 1.432472
+        },
+        {
+          "type": "Tab",
+          "workingSetKiB": 363488,
+          "peakWorkingSetKiB": 370016,
+          "cumulativeCpuSeconds": 3.650062
+        }
+      ],
+      "dom": {
+        "rows": 100,
+        "loadedRows": 3,
+        "nodes": 2010
+      },
+      "passed": true
+    },
+    {
+      "scenario": "direct expanded project",
+      "bytes": 910655488,
+      "peakUpperBoundBytes": 941539328,
+      "processes": [
+        {
+          "type": "Browser",
+          "workingSetKiB": 163904,
+          "peakWorkingSetKiB": 169856,
+          "cumulativeCpuSeconds": 1.46871
+        },
+        {
+          "type": "GPU",
+          "serviceName": "GPU",
+          "workingSetKiB": 107936,
+          "peakWorkingSetKiB": 119360,
+          "cumulativeCpuSeconds": 1.060999
+        },
+        {
+          "type": "Utility",
+          "serviceName": "network.mojom.NetworkService",
+          "workingSetKiB": 41904,
+          "peakWorkingSetKiB": 46656,
+          "cumulativeCpuSeconds": 0.08454
+        },
+        {
+          "type": "Utility",
+          "serviceName": "node.mojom.NodeService",
+          "workingSetKiB": 191456,
+          "peakWorkingSetKiB": 193280,
+          "cumulativeCpuSeconds": 2.371408
+        },
+        {
+          "type": "Tab",
+          "workingSetKiB": 384112,
+          "peakWorkingSetKiB": 390320,
+          "cumulativeCpuSeconds": 5.059711
+        }
+      ],
+      "dom": {
+        "rows": 1001,
+        "loadedRows": 2,
+        "nodes": 3811
+      },
+      "passed": true
+    },
+    {
+      "scenario": "direct final",
+      "bytes": 953073664,
+      "peakUpperBoundBytes": 977289216,
+      "processes": [
+        {
+          "type": "Browser",
+          "workingSetKiB": 164480,
+          "peakWorkingSetKiB": 169856,
+          "cumulativeCpuSeconds": 1.603843
+        },
+        {
+          "type": "GPU",
+          "serviceName": "GPU",
+          "workingSetKiB": 112064,
+          "peakWorkingSetKiB": 119360,
+          "cumulativeCpuSeconds": 1.223151
+        },
+        {
+          "type": "Utility",
+          "serviceName": "network.mojom.NetworkService",
+          "workingSetKiB": 41840,
+          "peakWorkingSetKiB": 46656,
+          "cumulativeCpuSeconds": 0.08454
+        },
+        {
+          "type": "Utility",
+          "serviceName": "node.mojom.NodeService",
+          "workingSetKiB": 193040,
+          "peakWorkingSetKiB": 193920,
+          "cumulativeCpuSeconds": 2.629117
+        },
+        {
+          "type": "Tab",
+          "workingSetKiB": 419312,
+          "peakWorkingSetKiB": 424592,
+          "cumulativeCpuSeconds": 6.210197
+        }
+      ],
+      "dom": {
+        "rows": 1000,
+        "loadedRows": 3,
+        "nodes": 3717
+      },
+      "passed": true
+    }
+  ],
+  "shutdowns": [
+    {
+      "normalQuit": false,
+      "backendExited": false,
+      "error": "Electron shutdown timed out after 10000ms",
+      "forcedCleanup": {
+        "status": "passed",
+        "processStopped": true
+      }
+    }
+  ],
+  "status": "failed",
+  "artifactSha256": "ee9c3847f706aa2f9a824efe980b60b3da5718aef8ad43866fc9cf343f504a86",
+  "lifecycle": [
+    {
+      "source": "direct",
+      "events": [
+        {
+          "event": "before-quit"
+        },
+        {
+          "event": "before-quit"
+        },
+        {
+          "event": "will-quit"
+        },
+        {
+          "event": "quit"
+        },
+        {
+          "event": "node-exit"
+        },
+        {
+          "event": "parent-exit",
+          "code": null,
+          "signal": "SIGKILL"
+        },
+        {
+          "event": "protocol-close"
+        }
+      ]
+    }
+  ],
+  "startupPhases": [
+    {
+      "source": "direct",
+      "connectedMs": 3503.437791999997,
+      "firstWindowMs": 4119.250874999998,
+      "usableMs": 4522.406167000001
+    }
+  ],
+  "preparations": [
+    {
+      "source": "direct",
+      "scenario": "table filter 0 controls presentation",
+      "ms": 251.49845799999457
+    },
+    {
+      "source": "direct",
+      "scenario": "table filter 1 controls presentation",
+      "ms": 158.42716599999403
+    },
+    {
+      "source": "direct",
+      "scenario": "table filter 2 controls presentation",
+      "ms": 217.21516699999484
+    },
+    {
+      "source": "direct",
+      "scenario": "table grouping controls presentation",
+      "ms": 138.10179099999368
+    },
+    {
+      "source": "direct",
+      "scenario": "table edit controls presentation",
+      "ms": 220.99124999999913
+    },
+    {
+      "source": "direct",
+      "scenario": "board filter 0 controls presentation",
+      "ms": 185.06379200000083
+    },
+    {
+      "source": "direct",
+      "scenario": "board filter 1 controls presentation",
+      "ms": 114.17770900000323
+    },
+    {
+      "source": "direct",
+      "scenario": "board filter 2 controls presentation",
+      "ms": 164.57587500000227
+    },
+    {
+      "source": "direct",
+      "scenario": "board grouping controls presentation",
+      "ms": 105.82612499999959
+    },
+    {
+      "source": "direct",
+      "scenario": "board edit controls presentation",
+      "ms": 224.72708299999795
+    }
+  ],
+  "scenarioFailures": [
+    {
+      "source": "direct",
+      "error": "Error: Electron shutdown timed out after 10000ms\n    at Timeout.<anonymous> (file:///Users/aleksandersk/Documents/programming/Projects/project_folder/.worktrees/issue-67-integrated-desktop/scripts/runtime-lifecycle.mjs:11:41)\n    at listOnTimeout (node:internal/timers:588:17)\n    at process.processTimers (node:internal/timers:523:7)"
+    }
+  ],
+  "error": "Error: Electron shutdown timed out after 10000ms\n    at Timeout.<anonymous> (file:///Users/aleksandersk/Documents/programming/Projects/project_folder/.worktrees/issue-67-integrated-desktop/scripts/runtime-lifecycle.mjs:11:41)\n    at listOnTimeout (node:internal/timers:588:17)\n    at process.processTimers (node:internal/timers:523:7)",
+  "cleanup": {
+    "status": "passed",
+    "asserted": true,
+    "processesStopped": true,
+    "maxRetries": 5,
+    "retryDelay": 100
+  },
+  "logSha256": "a7144e8f941af2a3b96a0add829aa0292c38aac1b0f6c08c61691e999e5514f2"
+}

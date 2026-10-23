@@ -1,0 +1,477 @@
+{
+  "diagnosticRun": 39941120241,
+  "result": "4pass/2fail; diagnostic only",
+  "finding": "Both failures mount the editor disabled immediately after a successful click. It never receives focus before reenable. Preserve the explicit opening focus request, not only prior focused ownership.",
+  "reports": {
+    "entry-win-release-8bf": {
+      "sha": "8bfad8608f9a2b5c6f385397461568b7705e6cc1",
+      "run": "39941120241",
+      "attempt": "1",
+      "phase": {
+        "discoveryMode": "direct",
+        "language": "ru",
+        "layout": "table",
+        "location": "expanded",
+        "step": "archived-editor"
+      },
+      "failure": {
+        "name": "Error",
+        "message": "Archived editor readiness timed out after 14999.999599999996ms"
+      },
+      "failedInterface": {
+        "state": "ready",
+        "diagnostic": null,
+        "interfaceReady": "true",
+        "activeTag": "BODY",
+        "textareas": 1
+      },
+      "cleanup": {
+        "status": "passed",
+        "asserted": true,
+        "processesStopped": true,
+        "maxRetries": 5,
+        "retryDelay": 100
+      },
+      "shutdowns": [
+        {
+          "normalQuit": true,
+          "backendsExited": true
+        }
+      ],
+      "tail": [
+        {
+          "type": "focusout",
+          "at": 9074.400000000023,
+          "wallTime": 1792752404123,
+          "tag": "BUTTON",
+          "className": "workspace-button workspace-button--secondary",
+          "disabled": false,
+          "activeTag": "BODY",
+          "activeClass": "",
+          "fieldsBusy": "false",
+          "editors": []
+        },
+        {
+          "type": "focusin",
+          "at": 9074.5,
+          "wallTime": 1792752404123,
+          "tag": "BUTTON",
+          "className": "workspace-button workspace-button--secondary icon-button",
+          "disabled": false,
+          "activeTag": "BUTTON",
+          "activeClass": "workspace-button workspace-button--secondary icon-button",
+          "fieldsBusy": "false",
+          "editors": []
+        },
+        {
+          "type": "state",
+          "at": 9077.600000000035,
+          "wallTime": 1792752404126,
+          "activeTag": "BUTTON",
+          "activeClass": "workspace-button workspace-button--secondary icon-button",
+          "fieldsBusy": "false",
+          "editors": []
+        },
+        {
+          "type": "focusout",
+          "at": 9092.5,
+          "wallTime": 1792752404141,
+          "tag": "BUTTON",
+          "className": "workspace-button workspace-button--secondary icon-button",
+          "disabled": false,
+          "activeTag": "BODY",
+          "activeClass": "",
+          "fieldsBusy": "false",
+          "editors": []
+        },
+        {
+          "type": "focusin",
+          "at": 9092.700000000012,
+          "wallTime": 1792752404141,
+          "tag": "BUTTON",
+          "className": "text-value-button",
+          "disabled": false,
+          "activeTag": "BUTTON",
+          "activeClass": "text-value-button",
+          "fieldsBusy": "false",
+          "editors": []
+        },
+        {
+          "type": "state",
+          "at": 9093,
+          "wallTime": 1792752404141,
+          "activeTag": "BUTTON",
+          "activeClass": "text-value-button",
+          "fieldsBusy": "false",
+          "editors": []
+        },
+        {
+          "type": "keydown",
+          "at": 9098.900000000023,
+          "wallTime": 1792752404147,
+          "tag": "BUTTON",
+          "className": "text-value-button",
+          "disabled": false,
+          "activeTag": "BUTTON",
+          "activeClass": "text-value-button",
+          "fieldsBusy": "false",
+          "editors": [],
+          "key": "Enter"
+        },
+        {
+          "type": "click",
+          "at": 9099,
+          "wallTime": 1792752404147,
+          "tag": "BUTTON",
+          "className": "text-value-button",
+          "disabled": false,
+          "activeTag": "BUTTON",
+          "activeClass": "text-value-button",
+          "fieldsBusy": "false",
+          "editors": []
+        },
+        {
+          "type": "focusout",
+          "at": 9101.800000000047,
+          "wallTime": 1792752404150,
+          "tag": "BUTTON",
+          "className": "text-value-button",
+          "disabled": true,
+          "activeTag": "BODY",
+          "activeClass": "",
+          "fieldsBusy": "false",
+          "editors": []
+        },
+        {
+          "type": "focus-call",
+          "at": 9103.600000000035,
+          "wallTime": 1792752404152,
+          "tag": "BUTTON",
+          "className": "text-value-button",
+          "disabled": true,
+          "activeTag": "BODY",
+          "activeClass": "",
+          "fieldsBusy": "false",
+          "editors": [
+            {
+              "disabled": true,
+              "length": 22,
+              "focused": false
+            }
+          ],
+          "stack": [
+            "    at HTMLElement.focus (<anonymous>:28:41)",
+            "    at rf (file:///D:/a/workspace/workspace/release/win-unpacked/resources/app.asar/dist/renderer/assets/index-CJ-Ul7Rw.js:8:131626)",
+            "    at ef (file:///D:/a/workspace/workspace/release/win-unpacked/resources/app.asar/dist/renderer/assets/index-CJ-Ul7Rw.js:8:130375)",
+            "    at $d (file:///D:/a/workspace/workspace/release/win-unpacked/resources/app.asar/dist/renderer/assets/index-CJ-Ul7Rw.js:8:129853)",
+            "    at Nd (file:///D:/a/workspace/workspace/release/win-unpacked/resources/app.asar/dist/renderer/assets/index-CJ-Ul7Rw.js:8:125252)"
+          ]
+        },
+        {
+          "type": "state",
+          "at": 9104.800000000047,
+          "wallTime": 1792752404153,
+          "activeTag": "BODY",
+          "activeClass": "",
+          "fieldsBusy": "false",
+          "editors": [
+            {
+              "disabled": true,
+              "length": 22,
+              "focused": false
+            }
+          ]
+        },
+        {
+          "type": "state",
+          "at": 9108.5,
+          "wallTime": 1792752404157,
+          "activeTag": "BODY",
+          "activeClass": "",
+          "fieldsBusy": "false",
+          "editors": [
+            {
+              "disabled": false,
+              "length": 22,
+              "focused": false
+            }
+          ]
+        }
+      ]
+    },
+    "entry-win2022-dev-8bf": {
+      "sha": "8bfad8608f9a2b5c6f385397461568b7705e6cc1",
+      "run": "39941120241",
+      "attempt": "1",
+      "phase": {
+        "discoveryMode": "grouped",
+        "language": "ru",
+        "layout": "table",
+        "location": "preview",
+        "step": "archived-editor"
+      },
+      "failure": {
+        "name": "Error",
+        "message": "Archived editor readiness timed out after 14999.9991ms"
+      },
+      "failedInterface": {
+        "state": "ready",
+        "diagnostic": null,
+        "interfaceReady": "true",
+        "activeTag": "BODY",
+        "textareas": 1
+      },
+      "cleanup": {
+        "status": "passed",
+        "asserted": true,
+        "processesStopped": true,
+        "maxRetries": 5,
+        "retryDelay": 100
+      },
+      "shutdowns": [
+        {
+          "normalQuit": true,
+          "backendsExited": true
+        }
+      ],
+      "tail": [
+        {
+          "type": "focus-call",
+          "at": 6441.799999999988,
+          "wallTime": 1792752476166,
+          "tag": "SECTION",
+          "className": "project-archive",
+          "activeTag": "BUTTON",
+          "activeClass": "workspace-button workspace-button--secondary",
+          "fieldsBusy": "false",
+          "editors": [],
+          "stack": [
+            "    at HTMLElement.focus (<anonymous>:28:41)",
+            "    at Ce (file:///D:/a/workspace/workspace/dist/renderer/assets/index-CJ-Ul7Rw.js:49:256136)",
+            "    at zf (file:///D:/a/workspace/workspace/dist/renderer/assets/index-CJ-Ul7Rw.js:8:139267)",
+            "    at file:///D:/a/workspace/workspace/dist/renderer/assets/index-CJ-Ul7Rw.js:8:143999",
+            "    at fn (file:///D:/a/workspace/workspace/dist/renderer/assets/index-CJ-Ul7Rw.js:8:15178)"
+          ]
+        },
+        {
+          "type": "focusout",
+          "at": 6441.899999999965,
+          "wallTime": 1792752476166,
+          "tag": "BUTTON",
+          "className": "workspace-button workspace-button--secondary",
+          "disabled": false,
+          "activeTag": "BODY",
+          "activeClass": "",
+          "fieldsBusy": "false",
+          "editors": []
+        },
+        {
+          "type": "focusin",
+          "at": 6441.899999999965,
+          "wallTime": 1792752476166,
+          "tag": "SECTION",
+          "className": "project-archive",
+          "activeTag": "SECTION",
+          "activeClass": "project-archive",
+          "fieldsBusy": "false",
+          "editors": []
+        },
+        {
+          "type": "state",
+          "at": 6447.599999999977,
+          "wallTime": 1792752476172,
+          "activeTag": "SECTION",
+          "activeClass": "project-archive",
+          "fieldsBusy": "false",
+          "editors": []
+        },
+        {
+          "type": "focusout",
+          "at": 6468.799999999988,
+          "wallTime": 1792752476193,
+          "tag": "SECTION",
+          "className": "project-archive",
+          "activeTag": "BODY",
+          "activeClass": "",
+          "fieldsBusy": "false",
+          "editors": []
+        },
+        {
+          "type": "focusin",
+          "at": 6469.099999999977,
+          "wallTime": 1792752476193,
+          "tag": "BUTTON",
+          "className": "text-value-button",
+          "disabled": false,
+          "activeTag": "BUTTON",
+          "activeClass": "text-value-button",
+          "fieldsBusy": "false",
+          "editors": []
+        },
+        {
+          "type": "keydown",
+          "at": 6477.700000000012,
+          "wallTime": 1792752476202,
+          "tag": "BUTTON",
+          "className": "text-value-button",
+          "disabled": false,
+          "activeTag": "BUTTON",
+          "activeClass": "text-value-button",
+          "fieldsBusy": "false",
+          "editors": [],
+          "key": "Enter"
+        },
+        {
+          "type": "click",
+          "at": 6477.899999999965,
+          "wallTime": 1792752476202,
+          "tag": "BUTTON",
+          "className": "text-value-button",
+          "disabled": false,
+          "activeTag": "BUTTON",
+          "activeClass": "text-value-button",
+          "fieldsBusy": "false",
+          "editors": []
+        },
+        {
+          "type": "focusout",
+          "at": 6482.099999999977,
+          "wallTime": 1792752476206,
+          "tag": "BUTTON",
+          "className": "text-value-button",
+          "disabled": true,
+          "activeTag": "BODY",
+          "activeClass": "",
+          "fieldsBusy": "false",
+          "editors": []
+        },
+        {
+          "type": "focus-call",
+          "at": 6485.099999999977,
+          "wallTime": 1792752476209,
+          "tag": "BUTTON",
+          "className": "text-value-button",
+          "disabled": true,
+          "activeTag": "BODY",
+          "activeClass": "",
+          "fieldsBusy": "false",
+          "editors": [
+            {
+              "disabled": true,
+              "length": 19,
+              "focused": false
+            }
+          ],
+          "stack": [
+            "    at HTMLElement.focus (<anonymous>:28:41)",
+            "    at rf (file:///D:/a/workspace/workspace/dist/renderer/assets/index-CJ-Ul7Rw.js:8:131626)",
+            "    at ef (file:///D:/a/workspace/workspace/dist/renderer/assets/index-CJ-Ul7Rw.js:8:130375)",
+            "    at $d (file:///D:/a/workspace/workspace/dist/renderer/assets/index-CJ-Ul7Rw.js:8:129853)",
+            "    at Nd (file:///D:/a/workspace/workspace/dist/renderer/assets/index-CJ-Ul7Rw.js:8:125252)"
+          ]
+        },
+        {
+          "type": "state",
+          "at": 6487.399999999965,
+          "wallTime": 1792752476212,
+          "activeTag": "BODY",
+          "activeClass": "",
+          "fieldsBusy": "false",
+          "editors": [
+            {
+              "disabled": true,
+              "length": 19,
+              "focused": false
+            }
+          ]
+        },
+        {
+          "type": "state",
+          "at": 6496.899999999965,
+          "wallTime": 1792752476221,
+          "activeTag": "BODY",
+          "activeClass": "",
+          "fieldsBusy": "false",
+          "editors": [
+            {
+              "disabled": false,
+              "length": 19,
+              "focused": false
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "checks": {
+    "red": "/tmp/issue67-scalar-opening-disabled-correct-red.log; timeout waiting reenabled focus",
+    "green": "3/3; /tmp/issue67-scalar-opening-disabled-final-green.log",
+    "regressions": "141/141; /tmp/issue67-scalar-opening-disabled-regressions.log",
+    "typecheck": "passed",
+    "lint": "passed",
+    "review": "standards0/spec0",
+    "originalFocus": {
+      "issue": 62,
+      "mode": "dev",
+      "focusOnly": true,
+      "diagnostic": false,
+      "phase": {
+        "discoveryMode": "direct",
+        "language": "en",
+        "layout": "table",
+        "location": "list",
+        "step": "archived-editor"
+      },
+      "sha": null,
+      "run": null,
+      "attempt": null,
+      "platform": "darwin",
+      "kernel": "27.0.0",
+      "checks": [
+        {
+          "discoveryMode": "direct",
+          "language": "en",
+          "layout": "table",
+          "location": "list",
+          "cancel": true,
+          "archiveRestore": true,
+          "identity": true,
+          "metadata": true,
+          "files": true,
+          "retainedTab": false
+        }
+      ],
+      "screens": [],
+      "shutdowns": [
+        {
+          "normalQuit": true,
+          "backendsExited": true
+        }
+      ],
+      "status": "passed",
+      "startup": {
+        "state": "ready"
+      },
+      "editorEntryControl": {
+        "activations": 1,
+        "focus": true,
+        "noDataMutation": true
+      },
+      "reloadedStartup": {
+        "state": "ready"
+      },
+      "cleanup": {
+        "status": "passed",
+        "asserted": true,
+        "processesStopped": true,
+        "maxRetries": 5,
+        "retryDelay": 100
+      }
+    }
+  },
+  "sources": {
+    "src/renderer/components/TextPropertyCell.tsx": "be841748636a7f065f13b76cf98cabbc73fefb0c59d334877535ca9ba64465c7",
+    "tests/runtime-view-readiness.test.mjs": "a61696aaf4afa161baf3a4360b2fedcfe427389b94bae9c13ce3ce536ff83444",
+    "scripts/desktop-ux-checks.mjs": "0a9aaec7f2962dc0066ca156d9d926b0fe7322844cadc1b2b8b687c11e69eea2"
+  }
+}

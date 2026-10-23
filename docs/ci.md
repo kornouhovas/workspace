@@ -1,5 +1,53 @@
 # CI checks and diagnostic routes
 
+## Final integrated desktop acceptance
+
+For #67, dispatch the registered `desktop-ci.yml` with `checks: integrated-desktop`
+on the reviewed candidate.
+It runs the complete current suite, retained Ladle state inventory and resource
+inspection, then `scripts/integrated-desktop.mjs` against one unchanged package
+on macOS latest, Windows latest and Windows 2022. Principal journeys explicitly
+set `WORKSPACE_SMOKE_MODE=release`; existing positional release-mode journeys and
+original native/crash/recovery consumers remain. The last journey enforces the
+original strict #41 scale limits. A failure stops subsequent package consumers;
+the manifest marks them unreached and retains the nonzero exit. No skipped or
+unreached row supplies acceptance. Raw logs/captures and host/SHA/run/attempt,
+all harness digests, app.asar hashes and before/after full package inventories
+are retained. `--from=<journey>` renews a bounded tail; excluded journeys remain
+explicit and a successful tail is `partial`, never complete acceptance.
+
+Run `macos-install.yml` separately for actual DMG and NSIS installation on the
+same source candidate. These routes retain their actual package hashes; they do
+not claim to install the exact binary from a different job. Windows Server is
+still not Windows 11. This route does not publish a release, close #42 or waive
+supported-host, appearance comparison or strict-performance gates. Ordinary CI
+defaults remain unchanged. `--failure-probe` deliberately produces a failed,
+diagnostic-only receipt and cannot establish package acceptance.
+
+For the initial #67 registry failures on `77d936ba`, use
+`checks: integrated-regressions`: all three hosts run the exact failed
+Windows-distribution/registry command, repaired routing/launcher controls and the
+new actual-Electron project-timing regression. It does not replay the full suite,
+layout inventory or packages. Inspect its original/repair/native reports first.
+Then `checks: integrated-runtime` runs the previously unreached Ladle state
+inventory, package/resources and all packaged journeys/strict scale. Neither
+selection changes ordinary full defaults. Earlier full runs remain failed;
+their passing unchanged cases retain their actual source provenance. The Windows
+installer still requires its unexecuted original driver and actual NSIS flow.
+
+For run39915975323's first Applied Ladle state failure, use
+`checks: integrated-layout`. It renews all four required Applied Table/empty
+EN/RU states at all three sizes on all three hosts. The preview mock now implements
+the current workspace-session query/write boundary; production renderer output is
+byte-identical. Missing any named Applied state fails closed, including when the
+remaining selection would otherwise be nonempty. After inspected Applied, category-move and creation/rename focused successes,
+`integrated-runtime` selects `--remaining-after-operations` for the unexecuted
+complement, followed by package/resources and every original/new packaged journey
+and strict scale. Ordinary `integrated-desktop` still selects the complete layout
+inventory. Preserve each report's selection/counts; a focused family is not the
+complete inventory. This fixture-only repair does not replay the full suites or
+unchanged successful installer receipts.
+
 Read when selecting or diagnosing a CI route, changing CI scheduling, or checking exact-SHA acceptance. [Development](development.md#verification) owns verification policy; [.github/workflows/desktop-ci.yml](../.github/workflows/desktop-ci.yml) owns the inherited desktop routes.
 [macos-install.yml](../.github/workflows/macos-install.yml) adds macOS 14 arm64 DMG
 build/install/reopen/replacement acceptance on push, pull requests and manual dispatch.
@@ -1624,3 +1672,99 @@ An unavailable backend shows matching-version instructions; no replacement is
 attempted until its service can open. All normal-exit and owned-cleanup gates
 remain mandatory. Installer and strict scale milestones retain their separately
 owned acceptance because no installer/native/storage/performance path is changed.
+
+For the category-move portal/archive fixture repair in #67, use
+`checks: integrated-category-layout` first. It renews all50 EN/RU category-move
+states/150 captures on all three hosts, without full tests or package journeys.
+After its passing artifacts are inspected, renew the creation/rename fixtures
+with `checks: integrated-operation-layout`. This runs36 creation/reveal and96
+rename states, retaining separate reports. After all three focused gates pass and
+their artifacts are inspected, `integrated-runtime` excludes only the already
+renewed Applied, category-move, creation and rename families (116 states remain). Ordinary
+`integrated-desktop` retains the entire layout inventory. This adds a checks
+choice without exceeding the existing workflow-dispatch input limit.
+
+
+For #67's strict preview/drag misses, `performance.yml` supports
+`diagnostic_only: true`, `profile_filters: true`, `profile_projects: true` and
+`profile_backend: true`, with `platform: windows-latest`. This omits baseline and
+strict acceptance reruns. Preview CPU/timeline profiles and bounded payload-free
+IPC/backend observations are diagnostic only. Project profiling defaults off and
+rejects use without both isolated diagnostic mode and renderer profiling.
+Normal `--enforce --project-flows` limits and clocks remain unchanged.
+
+
+For the unresolved archived-editor entry/save race in #67, use
+`checks: integrated-archive-profile`. Its six diagnostic jobs run the original
+archive command in dev/release on all three hosts. They retain the original
+assertions/nonzero failures and record only bounded focus/input/disabled state,
+lengths and focus-call stacks, never authored values. Receipts explicitly mark
+diagnostic execution. Ordinary integrated acceptance pins
+`WORKSPACE_ARCHIVE_ENTRY_TRACE=0`; the diagnostic job alone sets it to1.
+These observations cannot replace normal archive acceptance.
+
+
+For #67's Mac packaged workspace-management failure at39944358198, select
+`checks: integrated-fixture-repairs`. It reuses the three-host sidebar job, renews
+related renderer/service, exact selected-identity and current drag-bounds readiness
+checks plus the original real pointer control, packages and inspects resources,
+then runs original workspace-management and ordinary/filesystem assignment
+commands in release mode with tracing disabled. The assignment control also
+renews Windows2022 run39944358198's missing before rectangle. Every original command requires successful
+readiness/package/resource prerequisites. The historical workspace-sidebar
+selector retains its development shell/management behavior. No full tests, Ladle
+or unrelated journey is replayed by this focused gate. After artifact inspection,
+renew only missing native tails under the test-only evidence policy; retain
+passing full/layout/installer receipts at their actual A222 SHA.
+
+
+After the #67 focused repair artifacts pass and are inspected, select
+`checks: integrated-missing-tails`. It renews Mac from sources excluding the
+separately renewed ordinary/filesystem assignment and A222 archive/Views
+consumers (23 journeys), and Windows2022 from projects excluding those same
+archive/Views consumers (15 journeys). Windows latest retains its complete
+A222 run39944358198. The route omits full tests and Ladle, builds/packages each
+host, and retains the original serial commands, strict scale, complete package
+inventory guards and mandatory artifacts. Reports explicitly remain partial and
+list every omitted row; the acceptance ledger must supply inspected passing
+receipts for those rows at their actual SHA.
+
+
+For focused9e3 run39960693209's Mac360px collision visibility failure, select
+`checks: integrated-filesystem-repair`. It renews the native360/420 shell posture
+and supported-size restoration control, package/resources and original release
+filesystem assignment on all three hosts. Workspace and ordinary-assignment
+receipts remain at9e3; they are not replayed. Only the filesystem appearance
+caller supplies the real sidebar preparation; original Views keeps its default
+viewport behavior. Inspect passing original reports before missing-tail dispatch.
+
+
+For run39965141240's Windows2022 contextual-project entry failure, select
+`checks: integrated-project-entry-repair`. It runs the disabled/enabled keyboard
+control and routing checks, package/resource prerequisites and only the original
+contextual-project release journey on all three hosts. Tracing remains disabled;
+the original command runs only after successful prerequisites. No full suite,
+Ladle or unrelated package journey is replayed. Inspect original reports before
+renewing missing tails; the independent Mac category-entry failure remains open.
+
+
+For Mac tail39965141240's missing Move action in Board preview, select
+`checks: integrated-category-entry-profile`. It packages/inspects only macOS
+latest and runs the original release category command with diagnostic Playwright
+snapshots/screenshots. WORKSPACE_CATEGORY_ENTRY_TRACE=1 is opt-in, marks its
+report diagnostic and disables source capture. Start/stop are bounded before
+original normal shutdown/cleanup; capture failure preserves scenario failure.
+Ordinary aggregate acceptance explicitly pins this flag to0. This diagnostic
+route cannot accept categories or start missing tails; retain passing30a7
+project-entry receipts and prior unchanged production inputs at their actual SHA.
+
+
+After the heavy traced category diagnostic passes without reproducing the
+missing control, the same selector runs exactly three isolated Mac diagnostic
+trials with WORKSPACE_CATEGORY_ENTRY_TRACE=events. This observes a64-entry ring
+of trusted preview pointer/mouse events and project-area count changes, with no
+DOM snapshots or authored values. The observer records installation and fails
+closed if absent; collection has2s before unchanged normal shutdown. Trial
+identity is retained in provenance/artifact names. These bounded samples seek
+a reproduction; passing them cannot clear the historical category gate or
+unblock acceptance tails. Mode1 remains available for original heavy trace.

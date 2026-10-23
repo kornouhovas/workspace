@@ -213,13 +213,15 @@ async function applyFolders(page, language = "en") {
   await page.getByRole("button", { name: discoveryLabels[language].apply, exact: true }).press("Enter");
   await page.locator(".discovery-panel").waitFor({ state: "detached" });
 }
-async function captureDiscovery(page, language, state) {
+async function captureDiscovery(page, language, state, { beforeCapture, afterCapture } = {}) {
   for (const size of [{ width: 1440, height: 960 }, { width: 1024, height: 720 }, { width: 420, height: 800 }]) {
     await setRuntimeCaptureViewport(page,size);
+    await beforeCapture?.();
     const { controls, ...overflow } = await measureDiscoveryLayout(page);
     observations.push({ layout: { language, state, width: size.width, ...overflow, controls } });
     if (evidenceDirectory) await page.screenshot({ path: join(evidenceDirectory, `${mode}-${language}-${size.width}-${state}.png`), fullPage: true });
     assert.deepEqual(overflow, { document: false, clippedControls: [], elements: [] }, `${language} discovery ${state} ${size.width} overflow`);
+    await afterCapture?.();
   }
   // Resume the actual runtime journey at a supported desktop size after the
   // standalone narrow presentation capture; keep the same open review/draft.
@@ -539,14 +541,22 @@ try {
     await page.waitForFunction((lang) => globalThis.document.documentElement.lang === lang && !globalThis.document.querySelector("#interface-language")?.disabled, language);
     await captureDiscovery(page, language, "applied-table");
     const valueLabel = `${propertyLabels[language].edit}: ${projectName} / ${propertyName}`;
-    await showProjectRow(page, projectName);
-    await page.getByRole("button", { name: accessibleName(valueLabel), exact: true }).press("Enter");
     const textEditor = page.getByRole("textbox", { name: accessibleName(valueLabel), exact: true });
-    assert.equal(await textEditor.inputValue(), authoredValue);
-    await textEditor.fill("  Unsaved screenshot draft 日本語  ");
-    await captureDiscovery(page, language, "text-editing");
-    await textEditor.press("Escape");
-    assert.equal(await page.getByRole("button", { name: accessibleName(valueLabel), exact: true }).textContent(), authoredValue);
+    // Sidebar capture controls legitimately blur/commit valid drafts under #56.
+    // Prepare the viewport first; open and cancel a real draft independently at
+    // each size so the capture itself never saves the purportedly unsaved text.
+    await captureDiscovery(page, language, "text-editing", {
+      beforeCapture: async () => {
+        await showProjectRow(page, projectName);
+        await page.getByRole("button", { name: accessibleName(valueLabel), exact: true }).press("Enter");
+        assert.equal(await textEditor.inputValue(), authoredValue);
+        await textEditor.fill("  Unsaved screenshot draft 日本語  ");
+      },
+      afterCapture: async () => {
+        await textEditor.press("Escape");
+        assert.equal(await page.getByRole("button", { name: accessibleName(valueLabel), exact: true }).textContent(), authoredValue);
+      },
+    });
     await previewFolders(page, language);
     await captureDiscovery(page, language, "preview");
     await page.getByRole("button", { name: discoveryLabels[language].cancel, exact: true }).press("Enter");

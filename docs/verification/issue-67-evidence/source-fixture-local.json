@@ -1,0 +1,30 @@
+{
+  "remainderGeometry": {
+    "featurePassed": true,
+    "shutdownPassed": true,
+    "captures": 348,
+    "selection": "remaining-after-operations",
+    "story": null,
+    "error": null,
+    "reportSha256": "870b0f42414c6d9d63686401fe92e637ef6db5a8f7994af3059fce86ce2f9bdd",
+    "acceptanceLimit": "Geometry/interactions only: source-observation captures had unrelated archive errors. The affected14 states are renewed separately and remain in final hosted116-state remainder."
+  },
+  "sourceArchiveRed": {
+    "featurePassed": false,
+    "shutdownPassed": true,
+    "captures": 0,
+    "selection": "--source-observation",
+    "story": "bb-foundation--source-available-english",
+    "error": "Operation fixtures must not contain unrelated archive errors\n\n1 !== 0\n",
+    "reportSha256": "ef06096b053c700d88150d5b8db0715d8f90849c186e1af5b9bf46591d837b90"
+  },
+  "sourceHealthy": {
+    "featurePassed": true,
+    "shutdownPassed": true,
+    "captures": 42,
+    "selection": "--source-observation",
+    "story": null,
+    "error": null,
+    "reportSha256": "b09187328c4b2a6473992eb652f73339d9dc73196822b7be4e0ca0ecac958d68"
+  }
+}

@@ -1,0 +1,276 @@
+{
+  "run": 39960693209,
+  "source": "9e3fa29f96cbee720efb1c8a0e6098e1247542a1",
+  "artifact": 12504722590,
+  "observed": {
+    "issue": 63,
+    "sha": "9e3fa29f96cbee720efb1c8a0e6098e1247542a1",
+    "run": "39960693209",
+    "attempt": "1",
+    "platform": "darwin",
+    "kernel": "25.6.0",
+    "cpu": "Apple M1 (Virtual)",
+    "checks": [
+      {
+        "language": "en",
+        "checks": [
+          {
+            "type": "text",
+            "layout": "table",
+            "pointer": true,
+            "keyboardClear": true,
+            "focusRestored": true,
+            "reload": true,
+            "widths": [
+              360,
+              1440
+            ]
+          },
+          {
+            "type": "text",
+            "layout": "board",
+            "pointer": true,
+            "keyboardClear": true,
+            "focusRestored": true,
+            "reload": true,
+            "widths": [
+              360,
+              1440
+            ]
+          },
+          {
+            "type": "number",
+            "layout": "table",
+            "pointer": true,
+            "keyboardClear": true,
+            "focusRestored": true,
+            "reload": true,
+            "widths": [
+              360,
+              1440
+            ]
+          },
+          {
+            "type": "number",
+            "layout": "board",
+            "pointer": true,
+            "keyboardClear": true,
+            "focusRestored": true,
+            "reload": true,
+            "widths": [
+              360,
+              1440
+            ]
+          },
+          {
+            "type": "date",
+            "layout": "table",
+            "pointer": true,
+            "keyboardClear": true,
+            "focusRestored": true,
+            "reload": true,
+            "widths": [
+              360,
+              1440
+            ]
+          },
+          {
+            "type": "date",
+            "layout": "board",
+            "pointer": true,
+            "keyboardClear": true,
+            "focusRestored": true,
+            "reload": true,
+            "widths": [
+              360,
+              1440
+            ]
+          },
+          {
+            "type": "single_select",
+            "layout": "table",
+            "pointer": true,
+            "keyboardClear": true,
+            "focusRestored": true,
+            "reload": true,
+            "widths": [
+              360,
+              1440
+            ]
+          },
+          {
+            "type": "single_select",
+            "layout": "board",
+            "pointer": true,
+            "keyboardClear": true,
+            "focusRestored": true,
+            "reload": true,
+            "widths": [
+              360,
+              1440
+            ]
+          },
+          {
+            "type": "multi_select",
+            "layout": "table",
+            "pointerSource": "B",
+            "preservedOtherMembership": true,
+            "keyboardMerge": true,
+            "clearAll": true,
+            "emptyAssignment": true,
+            "reload": true,
+            "widths": [
+              360,
+              1440
+            ]
+          },
+          {
+            "type": "multi_select",
+            "layout": "board",
+            "pointerSource": "B",
+            "preservedOtherMembership": true,
+            "keyboardMerge": true,
+            "clearAll": true,
+            "emptyAssignment": true,
+            "reload": true,
+            "widths": [
+              360,
+              1440
+            ]
+          }
+        ],
+        "filesUnchanged": true
+      },
+      {
+        "language": "en",
+        "layout": "table",
+        "kind": "category",
+        "detailsHistory": true,
+        "keyboardReturn": true,
+        "collisionNoEffect": true
+      },
+      {
+        "language": "en",
+        "layout": "table",
+        "kind": "name",
+        "detailsHistory": true,
+        "keyboardReturn": true,
+        "collisionNoEffect": true
+      },
+      {
+        "language": "en",
+        "layout": "board",
+        "kind": "category",
+        "detailsHistory": true,
+        "keyboardReturn": true,
+        "collisionNoEffect": true
+      },
+      {
+        "language": "en",
+        "layout": "board",
+        "kind": "name",
+        "detailsHistory": true,
+        "keyboardReturn": true,
+        "collisionNoEffect": true
+      }
+    ],
+    "screens": [
+      "en-light-table-1024-filesystem-category-collision",
+      "en-light-table-1024-filesystem-category-history",
+      "en-light-table-1440-filesystem-category-collision",
+      "en-light-table-1440-filesystem-category-history",
+      "en-dark-table-1024-filesystem-category-collision",
+      "en-dark-table-1024-filesystem-category-history",
+      "en-dark-table-1440-filesystem-category-collision",
+      "en-dark-table-1440-filesystem-category-history",
+      "en-light-table-1024-filesystem-name-collision",
+      "en-light-table-1024-filesystem-name-history",
+      "en-light-table-1440-filesystem-name-collision",
+      "en-light-table-1440-filesystem-name-history",
+      "en-dark-table-1024-filesystem-name-collision",
+      "en-dark-table-1024-filesystem-name-history",
+      "en-dark-table-1440-filesystem-name-collision",
+      "en-dark-table-1440-filesystem-name-history",
+      "en-light-board-1024-filesystem-category-collision",
+      "en-light-board-1024-filesystem-category-history",
+      "en-light-board-1440-filesystem-category-collision",
+      "en-light-board-1440-filesystem-category-history",
+      "en-dark-board-1024-filesystem-category-collision",
+      "en-dark-board-1024-filesystem-category-history",
+      "en-dark-board-1440-filesystem-category-collision",
+      "en-dark-board-1440-filesystem-category-history",
+      "en-light-board-1024-filesystem-name-collision",
+      "en-light-board-1024-filesystem-name-history",
+      "en-light-board-1440-filesystem-name-collision",
+      "en-light-board-1440-filesystem-name-history",
+      "en-dark-board-1024-filesystem-name-collision",
+      "en-dark-board-1024-filesystem-name-history",
+      "en-dark-board-1440-filesystem-name-collision",
+      "en-dark-board-1440-filesystem-name-history"
+    ],
+    "shutdowns": [
+      {
+        "normalQuit": true,
+        "backendsExited": true
+      }
+    ],
+    "status": "failed",
+    "failure": {
+      "name": "Error",
+      "message": "Runtime control visibility timed out after 14999.881791ms"
+    },
+    "cleanup": {
+      "status": "passed",
+      "asserted": true,
+      "processesStopped": true,
+      "maxRetries": 5,
+      "retryDelay": 100
+    }
+  },
+  "boundary": "Below-minimum360px collision capture still has220px expanded sidebar and oversized notice; exact control viewport visibility fails at existing15s bound. Adopt real shell stress posture, not altered CSS/assertions.",
+  "repair": "Filesystem appearance caller supplies shell-aware viewport preparation; folder helper default remains plain viewport for Views. Extend existing420px shell stress preparation to360px and retain supported-size restoration.",
+  "checks": {
+    "red": "/tmp/issue67-narrow-filesystem-red.log",
+    "green": "Native1/1; /tmp/issue67-narrow-filesystem-green.log",
+    "routing": "95/95; /tmp/issue67-narrow-filesystem-final-routes.log",
+    "typecheck": "passed",
+    "lint": "passed",
+    "review": "standards0/spec0"
+  },
+  "negativeLocalOriginal": {
+    "issue": 63,
+    "sha": null,
+    "run": null,
+    "attempt": null,
+    "platform": "darwin",
+    "kernel": "27.0.0",
+    "cpu": "Apple M1 Pro",
+    "checks": [],
+    "screens": [],
+    "shutdowns": [
+      {
+        "normalQuit": true,
+        "backendsExited": true
+      }
+    ],
+    "status": "failed",
+    "failure": {
+      "name": "TimeoutError",
+      "message": "page.waitForFunction: Timeout 15000ms exceeded."
+    },
+    "cleanup": {
+      "status": "passed",
+      "asserted": true,
+      "processesStopped": true,
+      "maxRetries": 5,
+      "retryDelay": 100
+    }
+  },
+  "qualification": "Local unchanged pointer postcondition fails before the repaired stress slice; not current filesystem acceptance. Hosted original FS-only renewal required.",
+  "sources": {
+    "scripts/runtime-settings.mjs": "7b61325e8b50c7dd95691671474082fb8e81ba59dd5c8ca65ac1145695ca1efa",
+    "scripts/runtime-folder-group-assignment.mjs": "1cc30d8546adcec3806191b7184d45a7173b5c6a9bc43150a7f377ee8e36e919",
+    "scripts/smoke-group-assignment.mjs": "b642beef6232317185686659364e2c31073287ceed3378ebd66eb225e2ad7e1e",
+    ".github/workflows/desktop-ci.yml": "9c63d0324dbf6f71ba0ba1e194119b287e7d2582c5bfd51f9b6a972d5b0ff2c7"
+  }
+}

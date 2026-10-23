@@ -1,0 +1,72 @@
+{
+  "base": "a222d2b561c324e32bf1708fbea5e62624e52d64",
+  "run": 39944358198,
+  "artifact": 12498523703,
+  "observed": {
+    "failure": {
+      "name": "AssertionError",
+      "message": "Starting another gesture must not move its source\n+ actual - expected\n\n+ {\n+   height: 26,\n+   width: 26,\n+   x: 345.875,\n+   y: 235.8125\n+ }\n- null\n"
+    },
+    "cleanup": {
+      "status": "passed",
+      "asserted": true,
+      "processesStopped": true,
+      "maxRetries": 5,
+      "retryDelay": 100
+    },
+    "shutdowns": [
+      {
+        "normalQuit": true,
+        "backendsExited": true
+      }
+    ],
+    "platform": "win32",
+    "kernel": "10.0.20348"
+  },
+  "finding": "The controlled before-gesture snapshot is null, so comparison with the later valid rectangle does not establish CSS stability. Await positive stable current bounds without performing a gesture.",
+  "checks": {
+    "red": "/tmp/issue67-drag-bounds-red.log; old observer returns null",
+    "nativeGreen": "1/1 including replacement geometry and hidden-handle30ms host deadline; /tmp/issue67-drag-bounds-final-native.log",
+    "originalNativePointer": "1/1; /tmp/issue67-drag-bounds-original-native.log",
+    "routes": "92/92; /tmp/issue67-fixture-repair-guards.log",
+    "typecheck": "passed",
+    "lint": "passed",
+    "review": "standards0/spec0"
+  },
+  "negativeLocalOriginal": {
+    "issue": 59,
+    "sha": null,
+    "run": null,
+    "attempt": null,
+    "platform": "darwin",
+    "kernel": "27.0.0",
+    "cpu": "Apple M1 Pro",
+    "checks": [],
+    "screens": [],
+    "shutdowns": [
+      {
+        "normalQuit": true,
+        "backendsExited": true
+      }
+    ],
+    "status": "failed",
+    "failure": {
+      "name": "TimeoutError",
+      "message": "page.waitForFunction: Timeout 15000ms exceeded."
+    },
+    "cleanup": {
+      "status": "passed",
+      "asserted": true,
+      "processesStopped": true,
+      "maxRetries": 5,
+      "retryDelay": 100
+    }
+  },
+  "negativeQualification": "Local ordinary consumer fails in unchanged native pointer postcondition before the repaired geometry control. Filesystem invocation is unreached. Neither is current repair acceptance.",
+  "sources": {
+    "scripts/runtime-group-drag.mjs": "5e26059280132ec797be052fbd16f515624c81d8503e08d3df7c3f3ed0537dac",
+    "scripts/smoke-group-assignment.mjs": "a5a0ff3c61c8de61782a2a9b98ad1a52bc19e9614138beea577b98818ff556e3",
+    "tests/runtime-view-readiness.test.mjs": "af9436a5d5e557bea41882ade82de12a62fb33057d6d25e426ba26e03bf3b31f",
+    ".github/workflows/desktop-ci.yml": "20abaa4c8793bcf2c6e77a92a57cdda32cdc3607f30cb7bf1bc4edf8429cf766"
+  }
+}

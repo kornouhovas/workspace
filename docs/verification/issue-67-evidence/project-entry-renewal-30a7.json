@@ -1,0 +1,647 @@
+{
+  "mac": {
+    "issue": 60,
+    "mode": "release",
+    "sha": "30a7a8911f023e64df19e473b55d8f65f135ec91",
+    "run": "39967363906",
+    "attempt": "1",
+    "platform": "darwin",
+    "kernel": "25.6.0",
+    "checks": [
+      {
+        "language": "en",
+        "layout": "table",
+        "independentEditorEscape": true,
+        "independentMenuEscape": true
+      },
+      {
+        "language": "en",
+        "layout": "table",
+        "create": true,
+        "cancelNoEffect": true
+      },
+      {
+        "language": "en",
+        "layout": "table",
+        "location": "list",
+        "rename": true,
+        "collisionPreserved": true,
+        "identity": true,
+        "metadata": true
+      },
+      {
+        "language": "en",
+        "layout": "table",
+        "location": "preview",
+        "rename": true,
+        "collisionPreserved": true,
+        "identity": true,
+        "metadata": true
+      },
+      {
+        "language": "en",
+        "layout": "table",
+        "location": "expanded",
+        "rename": true,
+        "collisionPreserved": true,
+        "identity": true,
+        "metadata": true
+      },
+      {
+        "language": "en",
+        "layout": "board",
+        "independentEditorEscape": true,
+        "independentMenuEscape": true
+      },
+      {
+        "language": "en",
+        "layout": "board",
+        "create": true,
+        "cancelNoEffect": true
+      },
+      {
+        "language": "en",
+        "layout": "board",
+        "location": "list",
+        "rename": true,
+        "collisionPreserved": true,
+        "identity": true,
+        "metadata": true
+      },
+      {
+        "language": "en",
+        "layout": "board",
+        "location": "preview",
+        "rename": true,
+        "collisionPreserved": true,
+        "identity": true,
+        "metadata": true
+      },
+      {
+        "language": "en",
+        "layout": "board",
+        "location": "expanded",
+        "rename": true,
+        "collisionPreserved": true,
+        "identity": true,
+        "metadata": true
+      },
+      {
+        "language": "ru",
+        "layout": "table",
+        "independentEditorEscape": true,
+        "independentMenuEscape": true
+      },
+      {
+        "language": "ru",
+        "layout": "table",
+        "create": true,
+        "cancelNoEffect": true
+      },
+      {
+        "language": "ru",
+        "layout": "table",
+        "location": "list",
+        "rename": true,
+        "collisionPreserved": true,
+        "identity": true,
+        "metadata": true
+      },
+      {
+        "language": "ru",
+        "layout": "table",
+        "location": "preview",
+        "rename": true,
+        "collisionPreserved": true,
+        "identity": true,
+        "metadata": true
+      },
+      {
+        "language": "ru",
+        "layout": "table",
+        "location": "expanded",
+        "rename": true,
+        "collisionPreserved": true,
+        "identity": true,
+        "metadata": true
+      },
+      {
+        "language": "ru",
+        "layout": "board",
+        "independentEditorEscape": true,
+        "independentMenuEscape": true
+      },
+      {
+        "language": "ru",
+        "layout": "board",
+        "create": true,
+        "cancelNoEffect": true
+      },
+      {
+        "language": "ru",
+        "layout": "board",
+        "location": "list",
+        "rename": true,
+        "collisionPreserved": true,
+        "identity": true,
+        "metadata": true
+      },
+      {
+        "language": "ru",
+        "layout": "board",
+        "location": "preview",
+        "rename": true,
+        "collisionPreserved": true,
+        "identity": true,
+        "metadata": true
+      },
+      {
+        "language": "ru",
+        "layout": "board",
+        "location": "expanded",
+        "rename": true,
+        "collisionPreserved": true,
+        "identity": true,
+        "metadata": true
+      }
+    ],
+    "screens": [
+      "en-light-table-1024-create",
+      "en-light-table-1024-rename",
+      "en-light-table-1440-create",
+      "en-light-table-1440-rename",
+      "en-dark-table-1024-create",
+      "en-dark-table-1024-rename",
+      "en-dark-table-1440-create",
+      "en-dark-table-1440-rename",
+      "en-light-board-1024-create",
+      "en-light-board-1024-rename",
+      "en-light-board-1440-create",
+      "en-light-board-1440-rename",
+      "en-dark-board-1024-create",
+      "en-dark-board-1024-rename",
+      "en-dark-board-1440-create",
+      "en-dark-board-1440-rename",
+      "ru-light-table-1024-create",
+      "ru-light-table-1024-rename",
+      "ru-light-table-1440-create",
+      "ru-light-table-1440-rename",
+      "ru-dark-table-1024-create",
+      "ru-dark-table-1024-rename",
+      "ru-dark-table-1440-create",
+      "ru-dark-table-1440-rename",
+      "ru-light-board-1024-create",
+      "ru-light-board-1024-rename",
+      "ru-light-board-1440-create",
+      "ru-light-board-1440-rename",
+      "ru-dark-board-1024-create",
+      "ru-dark-board-1024-rename",
+      "ru-dark-board-1440-create",
+      "ru-dark-board-1440-rename"
+    ],
+    "shutdowns": [
+      {
+        "normalQuit": true,
+        "backendsExited": true
+      }
+    ],
+    "status": "passed",
+    "cleanup": {
+      "status": "passed",
+      "asserted": true,
+      "processesStopped": true,
+      "maxRetries": 5,
+      "retryDelay": 100
+    }
+  },
+  "winlatest": {
+    "issue": 60,
+    "mode": "release",
+    "sha": "30a7a8911f023e64df19e473b55d8f65f135ec91",
+    "run": "39967363906",
+    "attempt": "1",
+    "platform": "win32",
+    "kernel": "10.0.26100",
+    "checks": [
+      {
+        "language": "en",
+        "layout": "table",
+        "independentEditorEscape": true,
+        "independentMenuEscape": true
+      },
+      {
+        "language": "en",
+        "layout": "table",
+        "create": true,
+        "cancelNoEffect": true
+      },
+      {
+        "language": "en",
+        "layout": "table",
+        "location": "list",
+        "rename": true,
+        "collisionPreserved": true,
+        "identity": true,
+        "metadata": true
+      },
+      {
+        "language": "en",
+        "layout": "table",
+        "location": "preview",
+        "rename": true,
+        "collisionPreserved": true,
+        "identity": true,
+        "metadata": true
+      },
+      {
+        "language": "en",
+        "layout": "table",
+        "location": "expanded",
+        "rename": true,
+        "collisionPreserved": true,
+        "identity": true,
+        "metadata": true
+      },
+      {
+        "language": "en",
+        "layout": "board",
+        "independentEditorEscape": true,
+        "independentMenuEscape": true
+      },
+      {
+        "language": "en",
+        "layout": "board",
+        "create": true,
+        "cancelNoEffect": true
+      },
+      {
+        "language": "en",
+        "layout": "board",
+        "location": "list",
+        "rename": true,
+        "collisionPreserved": true,
+        "identity": true,
+        "metadata": true
+      },
+      {
+        "language": "en",
+        "layout": "board",
+        "location": "preview",
+        "rename": true,
+        "collisionPreserved": true,
+        "identity": true,
+        "metadata": true
+      },
+      {
+        "language": "en",
+        "layout": "board",
+        "location": "expanded",
+        "rename": true,
+        "collisionPreserved": true,
+        "identity": true,
+        "metadata": true
+      },
+      {
+        "language": "ru",
+        "layout": "table",
+        "independentEditorEscape": true,
+        "independentMenuEscape": true
+      },
+      {
+        "language": "ru",
+        "layout": "table",
+        "create": true,
+        "cancelNoEffect": true
+      },
+      {
+        "language": "ru",
+        "layout": "table",
+        "location": "list",
+        "rename": true,
+        "collisionPreserved": true,
+        "identity": true,
+        "metadata": true
+      },
+      {
+        "language": "ru",
+        "layout": "table",
+        "location": "preview",
+        "rename": true,
+        "collisionPreserved": true,
+        "identity": true,
+        "metadata": true
+      },
+      {
+        "language": "ru",
+        "layout": "table",
+        "location": "expanded",
+        "rename": true,
+        "collisionPreserved": true,
+        "identity": true,
+        "metadata": true
+      },
+      {
+        "language": "ru",
+        "layout": "board",
+        "independentEditorEscape": true,
+        "independentMenuEscape": true
+      },
+      {
+        "language": "ru",
+        "layout": "board",
+        "create": true,
+        "cancelNoEffect": true
+      },
+      {
+        "language": "ru",
+        "layout": "board",
+        "location": "list",
+        "rename": true,
+        "collisionPreserved": true,
+        "identity": true,
+        "metadata": true
+      },
+      {
+        "language": "ru",
+        "layout": "board",
+        "location": "preview",
+        "rename": true,
+        "collisionPreserved": true,
+        "identity": true,
+        "metadata": true
+      },
+      {
+        "language": "ru",
+        "layout": "board",
+        "location": "expanded",
+        "rename": true,
+        "collisionPreserved": true,
+        "identity": true,
+        "metadata": true
+      }
+    ],
+    "screens": [
+      "en-light-table-1024-create",
+      "en-light-table-1024-rename",
+      "en-light-table-1440-create",
+      "en-light-table-1440-rename",
+      "en-dark-table-1024-create",
+      "en-dark-table-1024-rename",
+      "en-dark-table-1440-create",
+      "en-dark-table-1440-rename",
+      "en-light-board-1024-create",
+      "en-light-board-1024-rename",
+      "en-light-board-1440-create",
+      "en-light-board-1440-rename",
+      "en-dark-board-1024-create",
+      "en-dark-board-1024-rename",
+      "en-dark-board-1440-create",
+      "en-dark-board-1440-rename",
+      "ru-light-table-1024-create",
+      "ru-light-table-1024-rename",
+      "ru-light-table-1440-create",
+      "ru-light-table-1440-rename",
+      "ru-dark-table-1024-create",
+      "ru-dark-table-1024-rename",
+      "ru-dark-table-1440-create",
+      "ru-dark-table-1440-rename",
+      "ru-light-board-1024-create",
+      "ru-light-board-1024-rename",
+      "ru-light-board-1440-create",
+      "ru-light-board-1440-rename",
+      "ru-dark-board-1024-create",
+      "ru-dark-board-1024-rename",
+      "ru-dark-board-1440-create",
+      "ru-dark-board-1440-rename"
+    ],
+    "shutdowns": [
+      {
+        "normalQuit": true,
+        "backendsExited": true
+      }
+    ],
+    "status": "passed",
+    "cleanup": {
+      "status": "passed",
+      "asserted": true,
+      "processesStopped": true,
+      "maxRetries": 5,
+      "retryDelay": 100
+    }
+  },
+  "win2022": {
+    "issue": 60,
+    "mode": "release",
+    "sha": "30a7a8911f023e64df19e473b55d8f65f135ec91",
+    "run": "39967363906",
+    "attempt": "1",
+    "platform": "win32",
+    "kernel": "10.0.20348",
+    "checks": [
+      {
+        "language": "en",
+        "layout": "table",
+        "independentEditorEscape": true,
+        "independentMenuEscape": true
+      },
+      {
+        "language": "en",
+        "layout": "table",
+        "create": true,
+        "cancelNoEffect": true
+      },
+      {
+        "language": "en",
+        "layout": "table",
+        "location": "list",
+        "rename": true,
+        "collisionPreserved": true,
+        "identity": true,
+        "metadata": true
+      },
+      {
+        "language": "en",
+        "layout": "table",
+        "location": "preview",
+        "rename": true,
+        "collisionPreserved": true,
+        "identity": true,
+        "metadata": true
+      },
+      {
+        "language": "en",
+        "layout": "table",
+        "location": "expanded",
+        "rename": true,
+        "collisionPreserved": true,
+        "identity": true,
+        "metadata": true
+      },
+      {
+        "language": "en",
+        "layout": "board",
+        "independentEditorEscape": true,
+        "independentMenuEscape": true
+      },
+      {
+        "language": "en",
+        "layout": "board",
+        "create": true,
+        "cancelNoEffect": true
+      },
+      {
+        "language": "en",
+        "layout": "board",
+        "location": "list",
+        "rename": true,
+        "collisionPreserved": true,
+        "identity": true,
+        "metadata": true
+      },
+      {
+        "language": "en",
+        "layout": "board",
+        "location": "preview",
+        "rename": true,
+        "collisionPreserved": true,
+        "identity": true,
+        "metadata": true
+      },
+      {
+        "language": "en",
+        "layout": "board",
+        "location": "expanded",
+        "rename": true,
+        "collisionPreserved": true,
+        "identity": true,
+        "metadata": true
+      },
+      {
+        "language": "ru",
+        "layout": "table",
+        "independentEditorEscape": true,
+        "independentMenuEscape": true
+      },
+      {
+        "language": "ru",
+        "layout": "table",
+        "create": true,
+        "cancelNoEffect": true
+      },
+      {
+        "language": "ru",
+        "layout": "table",
+        "location": "list",
+        "rename": true,
+        "collisionPreserved": true,
+        "identity": true,
+        "metadata": true
+      },
+      {
+        "language": "ru",
+        "layout": "table",
+        "location": "preview",
+        "rename": true,
+        "collisionPreserved": true,
+        "identity": true,
+        "metadata": true
+      },
+      {
+        "language": "ru",
+        "layout": "table",
+        "location": "expanded",
+        "rename": true,
+        "collisionPreserved": true,
+        "identity": true,
+        "metadata": true
+      },
+      {
+        "language": "ru",
+        "layout": "board",
+        "independentEditorEscape": true,
+        "independentMenuEscape": true
+      },
+      {
+        "language": "ru",
+        "layout": "board",
+        "create": true,
+        "cancelNoEffect": true
+      },
+      {
+        "language": "ru",
+        "layout": "board",
+        "location": "list",
+        "rename": true,
+        "collisionPreserved": true,
+        "identity": true,
+        "metadata": true
+      },
+      {
+        "language": "ru",
+        "layout": "board",
+        "location": "preview",
+        "rename": true,
+        "collisionPreserved": true,
+        "identity": true,
+        "metadata": true
+      },
+      {
+        "language": "ru",
+        "layout": "board",
+        "location": "expanded",
+        "rename": true,
+        "collisionPreserved": true,
+        "identity": true,
+        "metadata": true
+      }
+    ],
+    "screens": [
+      "en-light-table-1024-create",
+      "en-light-table-1024-rename",
+      "en-light-table-1440-create",
+      "en-light-table-1440-rename",
+      "en-dark-table-1024-create",
+      "en-dark-table-1024-rename",
+      "en-dark-table-1440-create",
+      "en-dark-table-1440-rename",
+      "en-light-board-1024-create",
+      "en-light-board-1024-rename",
+      "en-light-board-1440-create",
+      "en-light-board-1440-rename",
+      "en-dark-board-1024-create",
+      "en-dark-board-1024-rename",
+      "en-dark-board-1440-create",
+      "en-dark-board-1440-rename",
+      "ru-light-table-1024-create",
+      "ru-light-table-1024-rename",
+      "ru-light-table-1440-create",
+      "ru-light-table-1440-rename",
+      "ru-dark-table-1024-create",
+      "ru-dark-table-1024-rename",
+      "ru-dark-table-1440-create",
+      "ru-dark-table-1440-rename",
+      "ru-light-board-1024-create",
+      "ru-light-board-1024-rename",
+      "ru-light-board-1440-create",
+      "ru-light-board-1440-rename",
+      "ru-dark-board-1024-create",
+      "ru-dark-board-1024-rename",
+      "ru-dark-board-1440-create",
+      "ru-dark-board-1440-rename"
+    ],
+    "shutdowns": [
+      {
+        "normalQuit": true,
+        "backendsExited": true
+      }
+    ],
+    "status": "passed",
+    "cleanup": {
+      "status": "passed",
+      "asserted": true,
+      "processesStopped": true,
+      "maxRetries": 5,
+      "retryDelay": 100
+    }
+  }
+}
