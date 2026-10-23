@@ -22,6 +22,10 @@ Keep historical failures and actual SHA/run/attempt/host/artifact provenance.
 
 All inherited current requirements are retained. Existing development-only principal
 journeys will also run against the package; this adapts execution, not assertions.
+The original runtime's screenshot draft scenario is adapted to #56's accepted
+valid-draft blur commit: prepare sidebar/viewport before opening each draft,
+capture and Escape-cancel separately at each size. Original authored-value and
+no-save assertions remain, now repeated at all three capture sizes.
 
 | Rows | Implementation owners | Observable final-candidate checks |
 | --- | --- | --- |

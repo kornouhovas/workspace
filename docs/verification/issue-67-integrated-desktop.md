@@ -76,3 +76,52 @@ The owner reports no available actual Windows11 host/VM/runner. Windows Server
 CI cannot satisfy that supported-desktop acceptance requirement. Keep #67 open;
 do not integrate as accepted, publish a release or close #47/#7/#42 while required
 gates remain unresolved.
+
+## Review repairs and retained runtime draft scenario
+
+Initial independent Standards review found two implementation issues: ambient
+`WORKSPACE_PERFORMANCE_ROOT` could redirect strict scale to another package, and
+the development launcher lookup had made a common test perform Electron's lazy
+native installation. The runner now pins the task performance root and disables
+diagnostic native tracing. An actual child failure probe observes these values;
+it fails against the original forwarding and passes after the repair. The actual
+development lookup is moved to a platform test; common path/validation tests stay
+pure. Initial Spec review identified actual OS System switching as an open gate,
+without other implementation findings.
+
+The dispatch-only new workflow was also replaced before use: GitHub requires a
+manually triggered workflow to exist on its default branch. The final job lives in
+registered `desktop-ci.yml` under `checks: integrated-desktop`; routing controls
+fail before this repair and pass afterwards, preserving ordinary full defaults.
+See [GitHub manual-workflow requirements](https://docs.github.com/en/actions/how-tos/manage-workflow-runs/manually-run-a-workflow).
+Focused launcher/integration/route checks after repair:40/40, zero skips.
+
+The preliminary tail passes scalars, selection/property editors, ordinary and
+filesystem assignment, contextual projects/categories/archive, retained recovery,
+sessions, data recovery and all seven original feature consumers. It then fails
+the original base runtime while Escape targets a vanished Text editor after
+its 420px screenshot. This is separate from the unresolved native-quit failure.
+
+Minimal actual-App reproduction: original viewport helper presses Collapse
+sidebar while the draft is active, causing the accepted #56 valid-draft blur
+commit. It observes zero editor and persisted `Unsubmitted screenshot draft`.
+Control changing only viewport without the sidebar press retains one editor and
+the original persisted value. Both controls have normal exit/owned cleanup. This
+distinguishes focus-driven commit from viewport remount or source refresh.
+
+The adapted original driver prepares each viewport first, opens and fills the
+real draft, captures, Escape-cancels and verifies the original value independently
+at each size. It preserves all screenshot/overflow/deadline/value assertions;
+product blur behavior is unchanged. The ordinary base command already includes
+separate rename/category native fixtures, so the integrated runner does not replay
+those successful consumers a second time. Original-command renewal and final
+candidate evidence remain separately recorded in GitHub.
+
+Preparatory appearance inspection reviewed all40 principal variants (five surfaces
+by both sizes/languages/themes) plus24 restoration/property-review/missing-preview
+variants, using contact sheets and selected full-resolution captures. Table1440
+matches the accepted #69 composition. Preview/expanded retain its boundaries/tree,
+with the intentional #58 property-creation/editor controls. Settings and late
+reviews retain the accepted bb foundation and scoped #66 dialog stacking. No
+material mismatch was observed in these inspected variants. The full remaining
+state/control inventory and final hosted candidate still require their receipts.

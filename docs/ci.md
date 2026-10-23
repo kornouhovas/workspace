@@ -2,7 +2,8 @@
 
 ## Final integrated desktop acceptance
 
-For #67, manually dispatch `integrated-desktop.yml` on the reviewed candidate.
+For #67, dispatch the registered `desktop-ci.yml` with `checks: integrated-desktop`
+on the reviewed candidate.
 It runs the complete current suite, retained Ladle state inventory and resource
 inspection, then `scripts/integrated-desktop.mjs` against one unchanged package
 on macOS latest, Windows latest and Windows 2022. Principal journeys explicitly

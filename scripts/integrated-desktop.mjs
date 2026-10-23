@@ -32,8 +32,8 @@ export const integratedJourneys = [
   ...['views', 'multi-select', 'single-select', 'date-properties', 'number-properties', 'project-archive', 'category-options']
     .map(script => journey(`original-${script}`, `smoke-${script}`, 'release')),
   journey('original-base', 'smoke-runtime', 'release'),
-  journey('original-rename', 'smoke-runtime', 'release', '--rename'),
-  journey('original-category-move', 'smoke-runtime', 'release', '--category-move'),
+  // The ordinary runtime command itself requires base + rename + category move
+  // with separate fixtures/receipts. Do not replay its successful native tails.
   journey('original-creation-crash', 'smoke-runtime', 'release', '--creation', '--skip-native'),
   ...['direct', 'grouped'].map(mode => journey(`original-creation-${mode}`, 'smoke-runtime', 'release', '--creation', `--discovery-mode=${mode}`, '--checkpoint=after_evidence')),
   journey('strict-scale', 'smoke-performance', '--enforce', '--project-flows'),
@@ -65,7 +65,7 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
     const packageSha256 = asar ? sha256(readFileSync(asar)) : null;
     const bundle = executable && (process.platform === 'darwin' ? resolve(executable, '../../..') : dirname(executable));
     const packageInventory = bundle ? packageFiles(bundle) : null;
-    const selected = diagnostic ? [{ id: 'failure-probe', args: ['-e', 'process.exit(23)'] }, ...integratedJourneys] : integratedJourneys.slice(start);
+    const selected = diagnostic ? [{ id: 'failure-probe', args: ['-e', 'console.log(JSON.stringify({performanceRoot:process.env.WORKSPACE_PERFORMANCE_ROOT,revealTrace:process.env.WORKSPACE_REVEAL_TRACE}));process.exit(23)'] }, ...integratedJourneys] : integratedJourneys.slice(start);
     const report = {
       issue: 67, sha: git(['rev-parse', 'HEAD']), run: process.env.GITHUB_RUN_ID ?? null,
       attempt: process.env.GITHUB_RUN_ATTEMPT ?? null, diagnostic, mode: 'release',
@@ -89,7 +89,8 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
         let result;
         try {
           result = spawnSync(process.execPath, row.args, { cwd: root, stdio: ['ignore', fd, fd],
-            env: { ...process.env, GITHUB_SHA: report.sha, WORKSPACE_SMOKE_MODE: 'release', WORKSPACE_SMOKE_EVIDENCE_DIR: output } });
+            env: { ...process.env, GITHUB_SHA: report.sha, WORKSPACE_SMOKE_MODE: 'release', WORKSPACE_SMOKE_EVIDENCE_DIR: output,
+              WORKSPACE_PERFORMANCE_ROOT: root, WORKSPACE_REVEAL_TRACE: '0' } });
         } finally { closeSync(fd); }
         row.finishedAt = new Date().toISOString(); row.exitCode = result.status; row.signal = result.signal;
         row.logSha256 = sha256(readFileSync(join(output, 'runtime.log')));

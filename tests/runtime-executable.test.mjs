@@ -23,8 +23,5 @@ test("principal UI journeys select the actual package without development argume
       executablePath: packagedExecutablePath(root, process.platform, process.arch), args: [],
     });
   } else assert.throws(() => runtimeSmokeLaunch(root, "release"), /Unsupported desktop platform/);
-  const development = runtimeSmokeLaunch(root, "dev");
-  assert.deepEqual(development.args, [root]);
-  assert.ok(development.executablePath.includes("Electron") || development.executablePath.includes("electron"));
   assert.throws(() => runtimeSmokeLaunch(root, "relese"), /Unsupported smoke mode/);
 });

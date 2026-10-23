@@ -8,7 +8,7 @@ on:
       checks:
         description: Full acceptance or a selected focused failure route
         type: choice
-        options: [full, desktop-ux, layout-fixtures, source-inventory, observer-cancellation, observer-workflow, native-owner-controls, native-lifecycle, project-files-windows, project-files-windows-trace, failed, readiness, windows-release, issue22-failures, creation-shutdown, raw-rename, issue24-failures, category-fixture, issue24-startup, multiselect, etw-controls, app-fixture, property-fixture, runtime-observation, view-fixtures, number, windows-property-fixture, rename-authoring, rename-fixture, viewport-runtime, workspace-root-runtime, archive-contexts, creation-ownership, desktop-shell, shell-runtime, views-readiness, view-contexts, workspace-sidebar, workspace-setup, workspace-setup-readiness, select-readiness, source-fixture, source-runtime]
+        options: [full, integrated-desktop, desktop-ux, layout-fixtures, source-inventory, observer-cancellation, observer-workflow, native-owner-controls, native-lifecycle, project-files-windows, project-files-windows-trace, failed, readiness, windows-release, issue22-failures, creation-shutdown, raw-rename, issue24-failures, category-fixture, issue24-startup, multiselect, etw-controls, app-fixture, property-fixture, runtime-observation, view-fixtures, number, windows-property-fixture, rename-authoring, rename-fixture, viewport-runtime, workspace-root-runtime, archive-contexts, creation-ownership, desktop-shell, shell-runtime, views-readiness, view-contexts, workspace-sidebar, workspace-setup, workspace-setup-readiness, select-readiness, source-fixture, source-runtime]
         default: full
       desktop_ux_profile:
         description: With desktop-ux, select foundation, grouped Board or project navigation acceptance
@@ -806,7 +806,7 @@ jobs:
           if-no-files-found: error
 
   common:
-    if: ${{ github.event_name != 'workflow_dispatch' || (inputs.checks != 'failed' && inputs.checks != 'readiness' && inputs.checks != 'windows-release' && inputs.checks != 'issue22-failures' && inputs.checks != 'creation-shutdown' && inputs.checks != 'raw-rename' && inputs.checks != 'issue24-failures' && inputs.checks != 'category-fixture' && inputs.checks != 'issue24-startup' && inputs.checks != 'multiselect' && inputs.checks != 'etw-controls' && inputs.checks != 'app-fixture' && inputs.checks != 'property-fixture' && inputs.checks != 'runtime-observation' && inputs.checks != 'view-fixtures' && inputs.checks != 'number' && inputs.checks != 'windows-property-fixture' && inputs.checks != 'rename-authoring' && inputs.checks != 'rename-fixture' && inputs.checks != 'viewport-runtime' && inputs.checks != 'workspace-root-runtime' && inputs.checks != 'archive-contexts' && inputs.checks != 'creation-ownership' && inputs.checks != 'desktop-shell' && inputs.checks != 'shell-runtime' && inputs.checks != 'views-readiness' && inputs.checks != 'view-contexts' && inputs.checks != 'workspace-sidebar' && inputs.checks != 'workspace-setup' && inputs.checks != 'workspace-setup-readiness' && inputs.checks != 'select-readiness' && inputs.checks != 'source-fixture' && inputs.checks != 'source-runtime' && inputs.checks != 'desktop-ux' && inputs.checks != 'layout-fixtures' && inputs.checks != 'source-inventory' && inputs.checks != 'observer-cancellation' && inputs.checks != 'observer-workflow' && inputs.checks != 'native-owner-controls' && inputs.checks != 'native-lifecycle' && inputs.checks != 'project-files-windows' && inputs.checks != 'project-files-windows-trace') }}
+    if: ${{ github.event_name != 'workflow_dispatch' || (inputs.checks != 'failed' && inputs.checks != 'readiness' && inputs.checks != 'windows-release' && inputs.checks != 'issue22-failures' && inputs.checks != 'creation-shutdown' && inputs.checks != 'raw-rename' && inputs.checks != 'issue24-failures' && inputs.checks != 'category-fixture' && inputs.checks != 'issue24-startup' && inputs.checks != 'multiselect' && inputs.checks != 'etw-controls' && inputs.checks != 'app-fixture' && inputs.checks != 'property-fixture' && inputs.checks != 'runtime-observation' && inputs.checks != 'view-fixtures' && inputs.checks != 'number' && inputs.checks != 'windows-property-fixture' && inputs.checks != 'rename-authoring' && inputs.checks != 'rename-fixture' && inputs.checks != 'viewport-runtime' && inputs.checks != 'workspace-root-runtime' && inputs.checks != 'archive-contexts' && inputs.checks != 'creation-ownership' && inputs.checks != 'desktop-shell' && inputs.checks != 'shell-runtime' && inputs.checks != 'views-readiness' && inputs.checks != 'view-contexts' && inputs.checks != 'workspace-sidebar' && inputs.checks != 'workspace-setup' && inputs.checks != 'workspace-setup-readiness' && inputs.checks != 'select-readiness' && inputs.checks != 'source-fixture' && inputs.checks != 'source-runtime' && inputs.checks != 'desktop-ux' && inputs.checks != 'layout-fixtures' && inputs.checks != 'source-inventory' && inputs.checks != 'observer-cancellation' && inputs.checks != 'observer-workflow' && inputs.checks != 'native-owner-controls' && inputs.checks != 'native-lifecycle' && inputs.checks != 'project-files-windows' && inputs.checks != 'project-files-windows-trace' && inputs.checks != 'integrated-desktop') }}
     name: Common tests and static checks
     runs-on: macos-latest
     steps:
@@ -2788,3 +2788,56 @@ jobs:
           name: issue-69-creation-ownership-${{ matrix.os }}-${{ github.sha }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
           path: work/ci-creation-ownership/
           if-no-files-found: error
+
+  integrated-desktop:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.checks == 'integrated-desktop' }}
+    name: Complete candidate (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest, windows-2022]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.21.1
+          cache: npm
+      - run: npm ci
+      - name: Record exact source, run and actual host
+        shell: bash
+        run: |
+          mkdir -p work/issue-67-ci
+          node --input-type=module -e 'import {writeFileSync} from "node:fs";import os from "node:os";writeFileSync("work/issue-67-ci/provenance.json",JSON.stringify({sha:process.env.GITHUB_SHA,run:process.env.GITHUB_RUN_ID,attempt:process.env.GITHUB_RUN_ATTEMPT,platform:process.platform,arch:process.arch,kernel:os.release(),cpu:os.cpus()[0]?.model})+"\n")'
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm run check:docs
+      - run: npm run build
+      - name: Complete current regression inventory
+        shell: bash
+        run: |
+          set -o pipefail
+          npm run test:all 2>&1 | tee work/issue-67-ci/full-suite.log
+      - run: npm run build:ladle
+      - name: Retained long-content, loading, pending and recovery layout inventory
+        run: node scripts/smoke-discovery-layouts.mjs
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/issue-67-ci/layouts
+      - run: npm run package:built
+      - run: npm run check:artifact -- release
+      - name: Every principal and late UI journey on the unchanged package, then strict scale
+        shell: bash
+        run: |
+          set -o pipefail
+          node scripts/integrated-desktop.mjs 2>&1 | tee work/issue-67-ci/integrated.log
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/issue-67-ci/packaged
+      - name: Preserve actual failures, unreached stages and candidate evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-67-${{ matrix.os }}-${{ github.sha }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
+          path: work/issue-67-ci/
+          if-no-files-found: error
+          retention-days: 14
