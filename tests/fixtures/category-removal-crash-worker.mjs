@@ -1,9 +1,10 @@
+import {openSettingsService} from "../../dist/service/settings.mjs";
 import { openUnconvertedEngineFixture } from "../support/unconverted-command-engines.mjs";
 const openEngineService = (...args) => openUnconvertedEngineFixture(...args).engines;
 import { renameNoReplace } from "../../dist/service/project-rename-filesystem.mjs";
 import { nativeProjectFilesystem } from "../../src/service/project-filesystem.ts";
 import Database from "better-sqlite3";
-const [database, workspaceId, categoryId, destinationCategoryId, operationId, phase] = process.argv.slice(2);
+const [database, workspaceId, categoryId, destinationCategoryId, operationId, phase,policy] = process.argv.slice(2);
 const sql = new Database(database);
 const filesystem = { ...nativeProjectFilesystem, inspect(path) {
   const row = sql.prepare("SELECT stage FROM category_removal_operations WHERE operation_id = ?").get(operationId);
@@ -25,7 +26,7 @@ const native = (from, to) => {
   return result;
 };
 const observer = { watch() { return { close() {} }; }, schedule() { return { cancel() {} }; } };
-const service = openEngineService(database, undefined, undefined, observer, filesystem, native);
+const service = (policy==="application"?openSettingsService:openEngineService)(database, undefined, undefined, observer, filesystem, native);
 const preview = service.handleQuery({ type: "workspace.previewCategoryRemoval", workspaceId, categoryId, destinationCategoryId });
 if (!preview.ok) throw new Error("Crash fixture preview failed");
 service.handleCommand({ type: "workspace.applyCategoryRemoval", workspaceId, operationId, previewToken: preview.value.previewToken });

@@ -1,3 +1,4 @@
+import {parseRemovalAuthorization} from "./category-removal-authorization.js";
 import {parseCategoryFolderAuthorization} from "./category-folder-authorization.js";
 import {validateEvidence} from "./folder-evidence.js";
 import { asc, eq } from "drizzle-orm";
@@ -73,12 +74,15 @@ export function readProjectReservations(db: Reader, sourceId: string) {
     return [...categories,...members];
   });
   const removals = readCategoryRemovalReservations(db, sourceId).flatMap(row => {
-    const binding = JSON.parse(row.binding) as { members: { id: string; relativePath: string; nativeIdentity: string }[] };
-    return [{ ...row, operationKind: "category_removal" as const, projectId: row.categoryId, relativePath: row.originalRelativePath },
-      ...binding.members.flatMap(p => [p.relativePath, `${row.requestedRelativePath}/${p.relativePath.split("/").at(-1)}`].map(relativePath =>
-        ({ ...row, operationKind: "category_removal" as const, projectId: p.id, relativePath, nativeIdentity: p.nativeIdentity })))];
+    const binding = JSON.parse(row.binding);
+    const authority=binding.authorization ? parseRemovalAuthorization(JSON.stringify(binding.authorization),binding) : null;
+    if(binding.authorization && !authority)throw new Error("Invalid category removal reservation");
+    return [{ ...row, operationKind: "category_removal" as const, projectId: row.categoryId, relativePath: row.originalRelativePath,durableEvidence:authority ? JSON.stringify(authority.category.evidence) : null },
+      ...binding.members.flatMap((p:{id:string;relativePath:string;nativeIdentity:string}) => [p.relativePath, `${row.requestedRelativePath}/${p.relativePath.split("/").at(-1)}`].map(relativePath =>
+        ({ ...row, operationKind: "category_removal" as const, projectId: p.id, relativePath, nativeIdentity: p.nativeIdentity,
+          durableEvidence:authority ? JSON.stringify(authority.projects.find(project=>project.id===p.id)!.observation.evidence) : null })))];
   });
-  return [...durableCreations, ...relocations, ...categoryFolders, ...removals.map(row=>({...row,durableEvidence:null as string|null}))];
+  return [...durableCreations, ...relocations, ...categoryFolders, ...removals];
 }
 
 export function readCategoryFolderReservations(db: Reader, sourceId: string) {

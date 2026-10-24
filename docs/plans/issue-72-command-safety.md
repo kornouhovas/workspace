@@ -343,3 +343,39 @@ CI evidence reuse, the affected build/artifact consumers then passed53/53.
 Typecheck, lint, docs217 and diff check passed on the resulting slice. The
 failed broad receipt remains diagnostic; this records the bounded renewal,
 not an unexecuted final whole-issue suite.
+
+## Seventh local milestone: fresh category removal
+
+Fresh production category-removal Preview/Apply now stores versioned full
+root/category/destination/member authorization inside the already immutable batch
+binding; no schema migration is needed for this additive JSON form. Original raw
+identities, member/request IDs and old engine fixtures remain intact. Every child
+move must match the parent batch full proof and pinned mount frame at its own
+context boundary. Fresh inventory checks affected proof uniqueness across eligible
+unowned branches. Saved peer source roots veto by locator subtree or retained
+physical evidence, including stale locators. Reservations carry full affected
+proofs outside the original paths. Matching backup restore is retained; malformed
+versions, role mismatches, substitutions and future generations are rejected.
+
+Each move and nonrecursive empty-directory cleanup retains the existing stages.
+Final SQL writes are followed by independent destination/member/full-inventory,
+root and removed-path checks; a late filesystem change rolls back metadata and
+completion while preserving cleanup intent. Tokens are consumed after a matching
+request, including failed revalidation; property revisions remain independent.
+Original retries, startup and status remain read-only. Recovery is still backend
+gated pending separately reviewed attestations and old/new evidence handling.
+
+Public red/green controls reproduced and repaired peer sources appearing after
+Preview, durable aliases in unrelated branches, a modeled mount change immediately
+after the child-attempt INSERT, retained peer-root physical ownership at a stale
+locator, malformed proof restore, and relocation after terminal SQL UPDATE.
+Read-only Spec/Standards repair follow-ups found no residual concrete issue in
+inspected fresh-operation repairs; recovery/whole-issue acceptance excluded.
+
+Observed Node22.21.1/macOS arm64: fresh full build, typecheck and lint pass;
+affected removal/move/source/backup/recovery/compiled IPC set142 checks:141 pass,
+one existing skip, zero fail/cancel. Eighteen new public removal checks include
+six separate production process exits at batch intent, child intent/effect/record,
+cleanup intent/effect, retaining the legacy crash matrix. UI and build/artifact
+consumers271/271 pass. These are focused intermediate results, not the final
+whole-issue suite or macOS/Windows Electron/package acceptance.

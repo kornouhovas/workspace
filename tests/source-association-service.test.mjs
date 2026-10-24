@@ -197,7 +197,7 @@ test('every unconverted direct service and native entry point fails closed witho
  fixture(f=>{
   discover(f);
   const names=['previewProjectArchive','applyProjectArchive','previewProjectArchiveRecovery','recoverProjectArchive',
-   'previewCategoryRemovalRecovery','recoverCategoryRemoval','applyCategoryRemoval','previewCategoryRemoval',
+   'previewCategoryRemovalRecovery','recoverCategoryRemoval',
    'listProjectFiles',
    ];
   const before=readdirSync(f.root);let dispatches=0;

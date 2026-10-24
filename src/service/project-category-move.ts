@@ -1,4 +1,5 @@
 import {sameAuthorizationRoot,parseFilesystemAuthorization,parseFolderObservation,type FilesystemAuthorization,type FilesystemAuthorizer,type VerifiedFolder} from "./filesystem-authorization.js";
+import {parseRemovalAuthorization} from "./category-removal-authorization.js";
 import {storedEvidence} from "./source-identity.js";
 import {sameDurableFolder,durableOwnershipKey} from "./folder-evidence.js";
 import { randomUUID } from "node:crypto";
@@ -112,6 +113,17 @@ export function createProjectCategoryMoveService(db: Database, integration: {
     if(authorizer && (!execution.original || !execution.destination || !execution.target || (!project.durableEvidence && !execution.legacyAttested) ||
       project.durableEvidence && !sameDurableFolder(JSON.parse(project.durableEvidence),execution.target!.evidence)))fail("ownership_uncertain");
     if(authorizer && !sameAuthorizationRoot(execution.original!,execution.destination!))fail("filesystem_changed");
+    if(authorizer) {
+      const owner=categoryRemovalOwner(db,row);
+      if(owner) {
+        const parent=db.select().from(schema.categoryRemovalOperations).where(eq(schema.categoryRemovalOperations.operationId,owner)).get()!;
+        const binding=JSON.parse(parent.binding),auth=parseRemovalAuthorization(binding.authorization?JSON.stringify(binding.authorization):null,binding);
+        const member=auth?.projects.find(p=>p.id===row.projectId)?.observation;
+        const sameProof=(a:VerifiedFolder,b:VerifiedFolder)=>sameDurableFolder(a.evidence,b.evidence)&&sameIdentity(a.mount,b.mount);
+        if(!auth || !member || !auth.destination || !sameAuthorizationRoot(auth.root,execution.original!) ||
+          !sameProof(auth.category,execution.original!.parent) || !sameProof(auth.destination,execution.destination!.parent) || !sameProof(member,execution.target!))fail("filesystem_changed");
+      }
+    }
     for (const [id, path, identity,binding] of [[row.originalCategoryId, row.originalParentRelativePath, row.originalParentIdentity,execution.original],
       [row.destinationCategoryId, row.destinationParentRelativePath, row.destinationParentIdentity,execution.destination]] as const) {
       const category = db.select().from(schema.categories).where(eq(schema.categories.id, id)).get();

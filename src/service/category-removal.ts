@@ -1,14 +1,18 @@
 import { randomUUID } from "node:crypto";
-import { join } from "node:path";
+import { isDeepStrictEqual } from "node:util";
+import { join, sep } from "node:path";
 import { and, asc, desc, eq, inArray } from "drizzle-orm";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import { isCategoryRemovalRequest, type CategoryRemovalPreview, type CategoryRemovalResult, type CategoryRemovalLookup, type CategoryRemovalList, type CategoryRemovalOperation, type CategoryRemovalRecoveryPreview } from "../contracts/category-removal.js";
 import type { ServiceResult } from "../contracts/settings.js";
-import { isChildName, validArchive, validExclusions } from "./discovery.js";
+import { isChildName, validArchive, validExclusions, scanGroupedSource, projectExclusions, sameIdentity } from "./discovery.js";
 import { filesystemAlias } from "./path-alias.js";
 import { assertCreationDestinationFree, filesystemCode, filesystemProblem, nativeProjectFilesystem, validProjectBasename, verifyCreationDirectory, type ProjectFilesystem } from "./project-filesystem.js";
 import { readProjectReservations } from "./project-rename-reservations.js";
 import type { createProjectCategoryMoveService } from "./project-category-move.js";
+import {parseRemovalAuthorization, type RemovalAuthorization} from "./category-removal-authorization.js";
+import {type FilesystemAuthorizer, type VerifiedFolder} from "./filesystem-authorization.js";
+import {sameDurableFolder, durableOwnershipKey} from "./folder-evidence.js";
 import * as schema from "./db/schema.js";
 
 type Database = BetterSQLite3Database<typeof schema>;
@@ -16,12 +20,13 @@ type Source = typeof schema.sources.$inferSelect;
 type Category = typeof schema.categories.$inferSelect;
 type Project = typeof schema.projects.$inferSelect;
 type Operation = typeof schema.categoryRemovalOperations.$inferSelect;
-type Binding = { source: Source; category: Category; destination: Category | null; members: Project[] };
+type Binding = { authorization?: RemovalAuthorization; source: Source; category: Category; destination: Category | null; members: Project[] };
 class RemovalFailure extends Error { constructor(readonly problem: string) { super(problem); } }
-const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
+const same = isDeepStrictEqual;
+const policy = (source: Source) => ({...source,propertyRevision:0,categoryPropertyRevision:0});
 export function createCategoryRemovalService(db: Database, moves: ReturnType<typeof createProjectCategoryMoveService>,
   committed: (sourceId: string, revision: number, workspaceIds: string[]) => void,
-  filesystem: ProjectFilesystem = nativeProjectFilesystem) {
+  filesystem: ProjectFilesystem = nativeProjectFilesystem, authorizer?: FilesystemAuthorizer) {
   const reviews = new Map<string, { preview: CategoryRemovalPreview; binding: Binding; fingerprint: string }>();
   const recoveryReviews = new Map<string, { sourceId: string; token: string; fingerprint: string; actions: ("retry_remaining" | "abandon")[] }>();
   const sourceFor = (workspaceId: string) => db.select().from(schema.workspaces).innerJoin(schema.sources, eq(schema.workspaces.sourceId, schema.sources.id))
@@ -29,26 +34,115 @@ export function createCategoryRemovalService(db: Database, moves: ReturnType<typ
   const operationFor = (id: string) => db.select().from(schema.categoryRemovalOperations).where(eq(schema.categoryRemovalOperations.operationId, id)).get();
   const stale = (): ServiceResult<never> => ({ ok: false, error: { code: "stale_preview", message: "Refresh and explicitly review the current category removal." } });
   const storage = (): ServiceResult<never> => ({ ok: false, error: { code: "storage", message: "Category removal state could not be read or saved." } });
+  function authority(binding: Binding): RemovalAuthorization | null {
+    if (!authorizer) return null;
+    const value = parseRemovalAuthorization(binding.authorization ? JSON.stringify(binding.authorization) : null, binding);
+    if (!value) throw new RemovalFailure("ownership_uncertain");
+    return value;
+  }
+  function capture(binding: Binding): RemovalAuthorization | undefined {
+    if (!authorizer) return undefined;
+    const root = authorizer.capture(binding.source, "", binding.source.durableEvidence);
+    for(const c of [binding.category,...(binding.destination?[binding.destination]:[])])authorizer.capture(binding.source,c.relativePath,c.durableEvidence);
+    const observe = (relativePath: string, evidence: string | null) => {
+      if (!evidence) throw new RemovalFailure("ownership_uncertain");
+      return authorizer.observe(join(binding.source.canonicalRoot, relativePath), root.root,
+        filesystem.inspect(join(binding.source.canonicalRoot, relativePath)).identity, JSON.parse(evidence));
+    };
+    const authorization:RemovalAuthorization={version: 1, root, category: observe(binding.category.relativePath, binding.category.durableEvidence),
+      destination: binding.destination ? observe(binding.destination.relativePath, binding.destination.durableEvidence) : null,
+      projects: binding.members.map(p => ({id:p.id, observation:observe(p.relativePath,p.durableEvidence)}))};
+    verifyPeerRoots({...binding,authorization});
+    return authorization;
+  }
+  function verifyPeerRoots(binding: Binding) {
+    const removed=filesystemAlias(join(binding.source.canonicalRoot,binding.category.relativePath));
+    for(const peer of db.select().from(schema.sources).all().filter(s=>s.id!==binding.source.id)) {
+      const path=filesystemAlias(peer.canonicalRoot);
+      if(path===removed || path.startsWith(removed+sep))throw new RemovalFailure("native_conflict");
+      const auth=binding.authorization;
+      const saved=peer.durableEvidence?JSON.parse(peer.durableEvidence):null,native=peer.appliedRootIdentity?JSON.parse(peer.appliedRootIdentity):null;
+      for(const proof of auth?[auth.category,...(auth.destination?[auth.destination]:[]),...auth.projects.map(p=>p.observation)]:[]) {
+        if(saved ? durableOwnershipKey(saved)===durableOwnershipKey(proof.evidence) : native && native.ino===proof.mount.ino && native.birthtimeNs===proof.mount.birthtimeNs)throw new RemovalFailure("native_conflict");
+      }
+    }
+  }
+  function verifyDirectory(binding: Binding, relativePath: string, legacyIdentity: string) {
+    const auth = authority(binding), path=join(binding.source.canonicalRoot,relativePath);
+    let expected: VerifiedFolder | undefined;
+    if(auth) {
+      verifyPeerRoots(binding);
+      authorizer!.verify(auth.root,binding.source,"",binding.source.durableEvidence);
+      expected = relativePath === "" ? auth.root.root : relativePath === binding.category.relativePath ? auth.category :
+        relativePath === binding.destination?.relativePath ? auth.destination! : auth.projects.find(p=>{
+          const member=binding.members.find(m=>m.id===p.id)!;
+          return relativePath===member.relativePath || relativePath===`${binding.destination?.relativePath}/${member.relativePath.split("/").at(-1)}`;
+        })?.observation;
+      if(!expected)throw new RemovalFailure("ownership_uncertain");
+      authorizer!.observe(path,auth.root.root,expected.mount,expected.evidence);
+    }
+    verifyCreationDirectory(filesystem,path,expected?.mount ?? JSON.parse(legacyIdentity));
+  }
+  function verifyInventory(binding: Binding, categoryMissing=false) {
+    const auth=authority(binding);
+    if(!auth)return;
+    verifyDirectory(binding,"",binding.source.appliedRootIdentity!);
+    const source=binding.source,scan=scanGroupedSource(source.canonicalRoot,source.archiveRelativePath,projectExclusions(JSON.parse(source.excludedRelativePaths),"grouped").effective);
+    if(!scan.snapshot || !sameIdentity(scan.snapshot.root.identity,auth.root.root.mount))throw new RemovalFailure("filesystem_changed");
+    const owners=new Map<string,VerifiedFolder[]>();
+    owners.set(durableOwnershipKey(auth.root.root.evidence),[auth.root.root]);
+    for(const entry of scan.entries.filter(e=>e.reason===null)) {
+      const node=scan.snapshot.children.find(c=>c.relativePath===entry.relativePath);
+      if(node?.kind!=="directory")continue;
+      try {
+        const proof=authorizer!.observe(join(source.canonicalRoot,entry.relativePath),auth.root.root,node.identity),key=durableOwnershipKey(proof.evidence);
+        owners.set(key,[...(owners.get(key)??[]),proof]);
+      }catch{/* An unavailable unrelated folder grants no authority. */}
+    }
+    for(const expected of [auth.root.root,...(categoryMissing?[]:[auth.category]),...(auth.destination?[auth.destination]:[]),...auth.projects.map(p=>p.observation)]) {
+      const matches=owners.get(durableOwnershipKey(expected.evidence));
+      if(matches?.length!==1 || !sameDurableFolder(matches[0].evidence,expected.evidence) || !sameIdentity(matches[0].mount,expected.mount))throw new RemovalFailure("filesystem_changed");
+    }
+    verifyDirectory(binding,"",source.appliedRootIdentity!);
+  }
   function topology(binding: Binding) {
+    verifyInventory(binding);
     const { source, category, destination } = binding;
-    verifyCreationDirectory(filesystem, source.canonicalRoot, JSON.parse(source.appliedRootIdentity!));
+    verifyDirectory(binding, "", source.appliedRootIdentity!);
+    const proofs=new Map<string,VerifiedFolder>();
+    const auth=authority(binding);
+    if(auth)proofs.set("",auth.root.root);
     const result = ["", category.relativePath, ...(destination ? [destination.relativePath] : [])].map(relativePath => {
       const path = join(source.canonicalRoot, relativePath);
       let entry: ReturnType<ProjectFilesystem["inspect"]>;
       try { entry = filesystem.inspect(path); }
       catch (error) { if (relativePath === category.relativePath && filesystemCode(error) === "ENOENT") return { relativePath, entry: null, children: [] }; throw error; }
       const expected = relativePath === "" ? source.appliedRootIdentity! : relativePath === category.relativePath ? category.nativeIdentity : destination!.nativeIdentity;
-      verifyCreationDirectory(filesystem, path, JSON.parse(expected));
+      verifyDirectory(binding, relativePath, expected);
       if (entry.kind !== "directory") throw new RemovalFailure("filesystem_changed");
-      return { relativePath, entry, children: filesystem.names(path).sort().map(name => ({ name, ...filesystem.inspect(join(path, name)) })) };
+      return { relativePath, entry, children: filesystem.names(path).sort().map(name => {
+        const child=filesystem.inspect(join(path,name));
+        const childPath=[relativePath,name].filter(Boolean).join("/");
+        const proof=auth && child.kind==="directory" ? authorizer!.observe(join(path,name),auth.root.root,child.identity) : null;
+        if(proof)proofs.set(childPath,proof);
+        return {name,...child,...(proof?{proof}:{})};
+      }) };
     });
-    verifyCreationDirectory(filesystem, source.canonicalRoot, JSON.parse(source.appliedRootIdentity!));
+    if(auth) {
+      const keys=new Set<string>();
+      for(const proof of proofs.values()) {
+        const key=durableOwnershipKey(proof.evidence);
+        if(keys.has(key))throw new RemovalFailure("native_conflict");
+        keys.add(key);
+      }
+    }
+    verifyDirectory(binding, "", source.appliedRootIdentity!);
     return result;
   }
   function fingerprint(binding: Binding, workspaceId: string, operation?: Operation) {
     let observed: unknown;
     try { observed = topology(binding); } catch { observed = "unavailable"; }
-    return JSON.stringify({ source: sourceFor(workspaceId), categories: db.select().from(schema.categories).where(eq(schema.categories.sourceId, binding.source.id)).orderBy(asc(schema.categories.id)).all(),
+    return JSON.stringify({ roots: db.select().from(schema.sources).orderBy(asc(schema.sources.id)).all().map(policy), source: sourceFor(workspaceId) ? policy(sourceFor(workspaceId)!) : null, categories: db.select().from(schema.categories).where(eq(schema.categories.sourceId, binding.source.id)).orderBy(asc(schema.categories.id)).all(),
       projects: db.select().from(schema.projects).where(eq(schema.projects.sourceId, binding.source.id)).orderBy(asc(schema.projects.id)).all(),
       reservations: readProjectReservations(db, binding.source.id), observed, operation,
       attempts: operation ? db.select().from(schema.categoryRemovalAttempts).where(eq(schema.categoryRemovalAttempts.removalId, operation.operationId)).orderBy(asc(schema.categoryRemovalAttempts.moveId)).all() : [] });
@@ -85,7 +179,8 @@ export function createCategoryRemovalService(db: Database, moves: ReturnType<typ
       if (!source || source.discoveryMode !== "grouped" || !source.appliedRootIdentity || readProjectReservations(db, source.id).length) return invalid();
       const exclusions: unknown = JSON.parse(source.excludedRelativePaths);
       if (!validExclusions(exclusions, "grouped") || !validArchive(source.archiveRelativePath)) return invalid();
-      verifyCreationDirectory(filesystem, source.canonicalRoot, JSON.parse(source.appliedRootIdentity));
+      if(authorizer)authorizer.capture(source,"",source.durableEvidence);
+      else verifyCreationDirectory(filesystem, source.canonicalRoot, JSON.parse(source.appliedRootIdentity));
       const categories = db.select().from(schema.categories).where(eq(schema.categories.sourceId, source.id)).all();
       const category = categories.find(c => c.id === input.categoryId);
       const destination = categories.find(c => c.id === input.destinationCategoryId);
@@ -96,10 +191,13 @@ export function createCategoryRemovalService(db: Database, moves: ReturnType<typ
           exclusions.some(p => filesystemAlias(c.id === category.id ? p.split("/")[0] : p) === filesystemAlias(c.relativePath)) ||
           source.archiveRelativePath && filesystemAlias(c.id === category.id ? source.archiveRelativePath.split("/")[0] : source.archiveRelativePath) === filesystemAlias(c.relativePath)) return invalid();
         if (filesystem.names(source.canonicalRoot).filter(n => filesystemAlias(n) === filesystemAlias(c.relativePath)).join() !== c.relativePath) return invalid();
-        verifyCreationDirectory(filesystem, join(source.canonicalRoot, c.relativePath), JSON.parse(c.nativeIdentity));
+        if(authorizer)authorizer.capture(source,c.relativePath,c.durableEvidence);
+        else verifyCreationDirectory(filesystem,join(source.canonicalRoot,c.relativePath),JSON.parse(c.nativeIdentity));
         filesystem.assertAccessible?.(join(source.canonicalRoot, c.relativePath));
       }
-      const initialTopology = topology({ source, category, destination: destination ?? null, members: [] });
+      const provisional: Binding={source,category,destination:destination??null,members:[]};
+      provisional.authorization=capture(provisional);
+      const initialTopology = topology(provisional);
       const sourceProjects = db.select().from(schema.projects).where(eq(schema.projects.sourceId, source.id)).all();
       const occupiedPaths = new Set(sourceProjects.map(p => filesystemAlias(p.relativePath)));
       const members = sourceProjects.filter(p => p.categoryId === category.id).sort((a, b) => a.relativePath.localeCompare(b.relativePath));
@@ -117,7 +215,8 @@ export function createCategoryRemovalService(db: Database, moves: ReturnType<typ
         try {
           if (p.sourceId !== source.id || p.modeInactive || p.associationState !== "active" || parts.length !== 2 ||
             parts[0] !== category.relativePath || !names.includes(name)) throw new Error("Unavailable project");
-          verifyCreationDirectory(filesystem, join(source.canonicalRoot, p.relativePath), JSON.parse(p.nativeIdentity));
+          if(authorizer)authorizer.observe(join(source.canonicalRoot,p.relativePath),provisional.authorization!.root.root,filesystem.inspect(join(source.canonicalRoot,p.relativePath)).identity,JSON.parse(p.durableEvidence!));
+          else verifyCreationDirectory(filesystem, join(source.canonicalRoot, p.relativePath), JSON.parse(p.nativeIdentity));
         } catch { blockers.push({ relativePath: p.relativePath, problem: "project_unavailable" }); }
         const requested = projects[index].requestedRelativePath;
         if (destinationNames.has(filesystemAlias(name)) || occupiedPaths.has(filesystemAlias(requested)) || plannedCounts.get(filesystemAlias(requested))! > 1) {
@@ -126,12 +225,14 @@ export function createCategoryRemovalService(db: Database, moves: ReturnType<typ
         if (exclusions.some(p => filesystemAlias(p) === filesystemAlias(requested))) blockers.push({ relativePath: requested, problem: "excluded" });
         if (source.archiveRelativePath && filesystemAlias(source.archiveRelativePath.split("/").slice(0, 2).join("/")) === filesystemAlias(requested)) blockers.push({ relativePath: requested, problem: "archive" });
       }
-      verifyCreationDirectory(filesystem, source.canonicalRoot, JSON.parse(source.appliedRootIdentity));
+      if(authorizer)authorizer.capture(source,"",source.durableEvidence);
+      else verifyCreationDirectory(filesystem, source.canonicalRoot, JSON.parse(source.appliedRootIdentity));
       const preview: CategoryRemovalPreview = { workspaceId: input.workspaceId, sourceId: source.id, categoryId: category.id,
         destinationCategoryId: destination?.id ?? null, originalRelativePath: category.relativePath, destinationRelativePath: destination?.relativePath ?? null,
         revision: source.discoveryRevision, projects, blockers, previewToken: randomUUID() };
       const binding: Binding = { source, category, destination: destination ?? null, members };
-      if (!same(initialTopology, topology(binding)) || !same(sourceFor(input.workspaceId), source)) return stale();
+      binding.authorization=capture(binding);
+      if (!same(initialTopology, topology(binding)) || !same(policy(sourceFor(input.workspaceId)!), policy(source))) return stale();
       const reviewFingerprint = fingerprint(binding, input.workspaceId);
       reviews.set(input.workspaceId, { preview, binding, fingerprint: reviewFingerprint });
       return { ok: true, value: preview };
@@ -141,21 +242,22 @@ export function createCategoryRemovalService(db: Database, moves: ReturnType<typ
     const b: Binding = JSON.parse(row.binding), source = sourceFor(workspaceId), view = operationView(row);
     if (!source || source.id !== row.sourceId || source.canonicalRoot !== b.source.canonicalRoot || source.discoveryMode !== "grouped" ||
       source.appliedRootIdentity !== b.source.appliedRootIdentity || source.excludedRelativePaths !== b.source.excludedRelativePaths || source.archiveRelativePath !== b.source.archiveRelativePath ||
-      source.discoveryRevision !== b.source.discoveryRevision + view.projects.filter(p => p.outcome === "completed").length) throw new RemovalFailure("stale_configuration");
+      !same(policy(source),policy({...b.source,discoveryRevision:b.source.discoveryRevision+view.projects.filter(p=>p.outcome==="completed").length}))) throw new RemovalFailure("stale_configuration");
     for (const c of [b.category, ...(b.destination ? [b.destination] : [])]) {
       if (!same(db.select().from(schema.categories).where(eq(schema.categories.id, c.id)).get(), c)) throw new RemovalFailure("category_unavailable");
     }
     const attempts = db.select().from(schema.categoryRemovalAttempts).where(eq(schema.categoryRemovalAttempts.removalId, row.operationId)).all();
     if (readProjectReservations(db, row.sourceId).some(r => !(r.operationKind === "category_removal" && r.operationId === row.operationId) &&
       !(r.operationKind === "category_move" && attempts.some(a => a.moveId === r.operationId)))) throw new RemovalFailure("reserved_destination");
-    verifyCreationDirectory(filesystem, source.canonicalRoot, JSON.parse(source.appliedRootIdentity!));
+    verifyDirectory(b, "", source.appliedRootIdentity!);
     const rootNames = filesystem.names(source.canonicalRoot);
     const originalPath = join(source.canonicalRoot, b.category.relativePath);
     const originalMissing = !rootNames.some(n => filesystemAlias(n) === filesystemAlias(b.category.relativePath));
     if (originalMissing && row.stage !== "cleanup_intent") throw new RemovalFailure("category_unavailable");
+    verifyInventory(b,originalMissing);
     for (const c of [...(originalMissing ? [] : [b.category]), ...(b.destination ? [b.destination] : [])]) {
       if (rootNames.filter(n => filesystemAlias(n) === filesystemAlias(c.relativePath)).join() !== c.relativePath) throw new RemovalFailure("filesystem_changed");
-      verifyCreationDirectory(filesystem, join(source.canonicalRoot, c.relativePath), JSON.parse(c.nativeIdentity));
+      verifyDirectory(b,c.relativePath,c.nativeIdentity);
       filesystem.assertAccessible?.(join(source.canonicalRoot, c.relativePath));
     }
     const records = db.select().from(schema.projects).where(eq(schema.projects.sourceId, source.id)).all();
@@ -172,13 +274,13 @@ export function createCategoryRemovalService(db: Database, moves: ReturnType<typ
         if (!recovery.ok || !recovery.value.actions.some(a => a === "retry_original" || a === "complete_destination")) throw new RemovalFailure("ownership_uncertain");
       } else {
         const path = completed ? outcome.requestedRelativePath : p.relativePath;
-        verifyCreationDirectory(filesystem, join(source.canonicalRoot, path), JSON.parse(p.nativeIdentity));
+        verifyDirectory(b,path,p.nativeIdentity);
         filesystem.assertAccessible?.(join(source.canonicalRoot, path));
         if (!completed) assertCreationDestinationFree(filesystem, join(source.canonicalRoot, b.destination!.relativePath), p.relativePath.split("/").at(-1)!);
         else if (!originalMissing) assertCreationDestinationFree(filesystem, originalPath, p.relativePath.split("/").at(-1)!);
       }
     }
-    verifyCreationDirectory(filesystem, source.canonicalRoot, JSON.parse(source.appliedRootIdentity!));
+    verifyDirectory(b, "", source.appliedRootIdentity!);
     if (row.stage === "cleanup_intent" && view.projects.some(p => p.outcome !== "completed")) throw new RemovalFailure("ownership_uncertain");
     return { binding: b, source, originalMissing, view, records };
   }
@@ -225,8 +327,8 @@ export function createCategoryRemovalService(db: Database, moves: ReturnType<typ
         if (filesystem.names(join(inspected.source.canonicalRoot, row.originalRelativePath)).length) throw new RemovalFailure("unexpected_entry");
         if (!filesystem.removeEmptyDirectory) throw new RemovalFailure("unsupported");
         // Deliberately nonrecursive: a late arrival makes the OS reject cleanup.
-        verifyCreationDirectory(filesystem, inspected.source.canonicalRoot, JSON.parse(inspected.source.appliedRootIdentity!));
-        verifyCreationDirectory(filesystem, join(inspected.source.canonicalRoot, row.originalRelativePath), JSON.parse(row.nativeIdentity));
+        verifyDirectory(inspected.binding,"",inspected.source.appliedRootIdentity!);
+        verifyDirectory(inspected.binding,row.originalRelativePath,row.nativeIdentity);
         filesystem.removeEmptyDirectory(join(inspected.source.canonicalRoot, row.originalRelativePath));
       }
       const revision = inspected.source.discoveryRevision + 1;
@@ -237,9 +339,14 @@ export function createCategoryRemovalService(db: Database, moves: ReturnType<typ
         tx.update(schema.categories).set({ associationState: "missing" }).where(eq(schema.categories.id, row.categoryId)).run();
         tx.update(schema.sources).set({ discoveryRevision: revision }).where(eq(schema.sources.id, row.sourceId)).run();
         tx.update(schema.categoryRemovalOperations).set({ stage: "completed", problem: null, completedRevision: revision }).where(eq(schema.categoryRemovalOperations.operationId, row.operationId)).run();
-        verifyCreationDirectory(filesystem, current.source.canonicalRoot, JSON.parse(current.source.appliedRootIdentity!));
+        verifyDirectory(current.binding,"",current.source.appliedRootIdentity!);
         assertCreationDestinationFree(filesystem, current.source.canonicalRoot, row.originalRelativePath);
-        if (!same(sourceFor(workspaceId), { ...current.source, discoveryRevision: revision }) ||
+        verifyInventory(current.binding,true);
+        if(current.binding.destination)verifyDirectory(current.binding,current.binding.destination.relativePath,current.binding.destination.nativeIdentity);
+        for(const member of current.binding.members)verifyDirectory(current.binding,`${current.binding.destination!.relativePath}/${member.relativePath.split("/").at(-1)}`,member.nativeIdentity);
+        verifyDirectory(current.binding,"",current.source.appliedRootIdentity!);
+        assertCreationDestinationFree(filesystem,current.source.canonicalRoot,row.originalRelativePath);
+        if (!same(policy(sourceFor(workspaceId)!), policy({ ...current.source, discoveryRevision: revision })) ||
           !same(db.select().from(schema.categories).where(eq(schema.categories.id, row.categoryId)).get(), { ...current.binding.category, associationState: "missing" }) ||
           !same(db.select().from(schema.projects).where(eq(schema.projects.sourceId, row.sourceId)).all(), current.records)) throw new RemovalFailure("storage_error");
       }, { behavior: "immediate" });
@@ -266,7 +373,9 @@ export function createCategoryRemovalService(db: Database, moves: ReturnType<typ
       if (!source) return invalid();
       if (prior) return prior.sourceId === source.id && prior.workspaceId === input.workspaceId && prior.previewToken === input.previewToken ? result(prior) : invalid();
       const review = reviews.get(input.workspaceId);
-      if (!review || review.preview.previewToken !== input.previewToken || review.preview.blockers.length ||
+      if (!review || review.preview.previewToken !== input.previewToken) return stale();
+      reviews.delete(input.workspaceId);
+      if (review.preview.blockers.length ||
         fingerprint(review.binding, input.workspaceId) !== review.fingerprint) return stale();
       const row: Operation = { operationId: input.operationId, workspaceId: input.workspaceId, sourceId: source.id,
         categoryId: review.binding.category.id, destinationCategoryId: review.binding.destination?.id ?? null,
