@@ -10,13 +10,13 @@ import {migrate} from 'drizzle-orm/better-sqlite3/migrator';
 import {nativeProjectFilesystem} from '../src/service/project-filesystem.ts';
 import {openSettingsService} from '../dist/service/settings.mjs';
 
-for(const kind of ['creation','rename'])test(`real 0023 grouped ${kind} upgrade permits only explicitly attested exact-parent recovery`,()=>{
+for(const kind of ['creation','rename','category_move'])test(`real 0023 grouped ${kind} upgrade permits only explicitly attested exact-parent recovery`,()=>{
  const directory=realpathSync.native(mkdtempSync(join(tmpdir(),'legacy-operation-'))),root=join(directory,'source'),databasePath=join(directory,'data','settings.sqlite'),migrations=join(directory,'migrations');
  mkdirSync(join(root,'Category'),{recursive:true});mkdirSync(join(directory,'data'));mkdirSync(join(migrations,'meta'),{recursive:true});
  const journal=JSON.parse(readFileSync('src/service/db/migrations/meta/_journal.json','utf8'));journal.entries=journal.entries.slice(0,24);
  for(const entry of journal.entries)copyFileSync(`src/service/db/migrations/${entry.tag}.sql`,join(migrations,`${entry.tag}.sql`));
  writeFileSync(join(migrations,'meta/_journal.json'),JSON.stringify(journal));
- const sql=new Database(databasePath),workspaceId=randomUUID(),sourceId=randomUUID(),categoryId=randomUUID(),projectId=randomUUID(),operationId=randomUUID();
+ const sql=new Database(databasePath),workspaceId=randomUUID(),sourceId=randomUUID(),categoryId=randomUUID(),destinationId=randomUUID(),projectId=randomUUID(),operationId=randomUUID();
  const identity=path=>JSON.stringify(nativeProjectFilesystem.inspect(path).identity);
  let service;
  try {
@@ -28,6 +28,10 @@ for(const kind of ['creation','rename'])test(`real 0023 grouped ${kind} upgrade 
   sql.prepare("INSERT INTO views (id,workspace_id,name,kind) VALUES (?,?,'Table','table')").run(randomUUID(),workspaceId);
   sql.prepare("INSERT INTO categories (id,source_id,relative_path,native_identity,association_state) VALUES (?,?,'Category',?,'active')").run(categoryId,sourceId,parentIdentity);
   sql.prepare("INSERT INTO category_properties VALUES (?,?,'Folder category')").run(randomUUID(),sourceId);
+  if(kind==='category_move') {
+   mkdirSync(join(root,'Destination'));
+   sql.prepare("INSERT INTO categories (id,source_id,relative_path,native_identity,association_state) VALUES (?,?,'Destination',?,'active')").run(destinationId,sourceId,identity(join(root,'Destination')));
+  }
   if(kind==='creation') {
    sql.prepare(`INSERT INTO project_creation_operations (operation_id,source_id,initiating_workspace_id,project_id,name,mode,expected_revision,category_id,canonical_root,parent_relative_path,relative_path,root_identity,parent_identity,excluded_relative_paths,stage) VALUES (?,?,?,?,'Recovered','grouped',1,?,?,'Category','Category/Recovered',?,?,'[]','intent')`)
     .run(operationId,sourceId,workspaceId,projectId,categoryId,root,rootIdentity,parentIdentity);
@@ -37,31 +41,34 @@ for(const kind of ['creation','rename'])test(`real 0023 grouped ${kind} upgrade 
    sql.prepare("INSERT INTO projects (id,source_id,relative_path,native_identity,category_id,association_state) VALUES (?,?,'Category/Original',?,?,'active')").run(projectId,sourceId,nativeIdentity,categoryId);
    sql.prepare("INSERT INTO property_definitions VALUES (?,?,'Notes','text',0)").run(propertyId,sourceId);
    sql.prepare('INSERT INTO text_property_values VALUES (?,?,?,?)').run(projectId,propertyId,sourceId,'exact legacy value');
-   sql.prepare(`INSERT INTO project_rename_operations (operation_id,source_id,initiating_workspace_id,project_id,original_name,name,mode,expected_revision,category_id,canonical_root,parent_relative_path,original_relative_path,requested_relative_path,root_identity,parent_identity,native_identity,excluded_relative_paths,stage,last_verified_placement,last_verified_identity) VALUES (?,?,?,?,'Original','Renamed','grouped',1,?,?,'Category','Category/Original','Category/Renamed',?,?,?,'[]','intent','original',?)`)
+   if(kind==='rename') sql.prepare(`INSERT INTO project_rename_operations (operation_id,source_id,initiating_workspace_id,project_id,original_name,name,mode,expected_revision,category_id,canonical_root,parent_relative_path,original_relative_path,requested_relative_path,root_identity,parent_identity,native_identity,excluded_relative_paths,stage,last_verified_placement,last_verified_identity) VALUES (?,?,?,?,'Original','Renamed','grouped',1,?,?,'Category','Category/Original','Category/Renamed',?,?,?,'[]','intent','original',?)`)
     .run(operationId,sourceId,workspaceId,projectId,categoryId,root,rootIdentity,parentIdentity,nativeIdentity,nativeIdentity);
+   else sql.prepare(`INSERT INTO project_category_move_operations (operation_id,source_id,initiating_workspace_id,project_id,name,expected_revision,original_category_id,destination_category_id,canonical_root,original_parent_relative_path,destination_parent_relative_path,original_relative_path,requested_relative_path,root_identity,original_parent_identity,destination_parent_identity,native_identity,excluded_relative_paths,stage,last_verified_placement,last_verified_identity) VALUES (?,?,?,?,'Original',1,?,?,?,'Category','Destination','Category/Original','Destination/Original',?,?,?,?,'[]','intent','original',?)`)
+    .run(operationId,sourceId,workspaceId,projectId,categoryId,destinationId,root,rootIdentity,parentIdentity,identity(join(root,'Destination')),nativeIdentity,nativeIdentity);
   }
   const table=`project_${kind}_operations`,before=sql.prepare(`SELECT * FROM ${table}`).get();
   service=openSettingsService(databasePath);
   const query=input=>service.handleQuery({workspaceId,...input}),command=input=>service.handleCommand({workspaceId,...input});
-  assert.deepEqual(sql.prepare(`SELECT * FROM ${table}`).get(),{...before,authorization:null,...(kind==='creation'?{destination_evidence:null}:{project_evidence:null})});
+  assert.deepEqual(sql.prepare(`SELECT * FROM ${table}`).get(),{...before,...(kind!=='category_move'?{authorization:null}:{}),...(kind==='creation'?{destination_evidence:null}:kind==='rename'?{project_evidence:null}:{original_authorization:null,destination_authorization:null,project_evidence:null})});
   const binding=query({type:'workspace.previewSourceAssociation',mappings:[]}).value;assert.ok(binding.previewToken);
   assert.equal(command({type:'workspace.applySourceAssociation',previewToken:binding.previewToken}).ok,true);
   const mapping={kind:'category',id:categoryId,relativePath:'Category'};
   assert.equal(query({type:'workspace.previewSourceAssociation',mappings:[mapping]}).value.previewToken,null);
-  const method=kind==='creation'?'ProjectCreation':'ProjectRename';
+  const method=kind==='creation'?'ProjectCreation':kind==='rename'?'ProjectRename':'ProjectCategoryMove';
   const review=query({type:`workspace.preview${method}Recovery`,operationId});assert.equal(review.ok,true,JSON.stringify(review));
   assert.ok(review.value.previewToken,JSON.stringify(review));
   const result=command({type:`workspace.recover${method}`,operationId,previewToken:review.value.previewToken,action:kind==='creation'?'retry_missing':'retry_original'});
   assert.equal(result.ok,true,JSON.stringify(result));assert.equal(result.value.outcome,'completed',JSON.stringify(result));assert.equal(result.value.project.projectId,projectId);
-  assert.equal(sql.prepare('SELECT durable_evidence FROM categories').get().durable_evidence,null);
-  const parentReview=query({type:'workspace.previewSourceAssociation',mappings:[mapping]}).value;assert.ok(parentReview.previewToken,JSON.stringify(parentReview));
+  assert.ok(sql.prepare('SELECT durable_evidence FROM categories').all().every(row=>row.durable_evidence===null));
+  const targetMapping=kind==='category_move'?{kind:'category',id:destinationId,relativePath:'Destination'}:mapping;
+  const parentReview=query({type:'workspace.previewSourceAssociation',mappings:[targetMapping]}).value;assert.ok(parentReview.previewToken,JSON.stringify(parentReview));
   assert.equal(command({type:'workspace.applySourceAssociation',previewToken:parentReview.previewToken}).ok,true);
   assert.equal(query({type:'workspace.listProjects'}).value.projects[0].projectId,projectId);
-  if(kind==='rename') {
-   assert.equal(readFileSync(join(root,'Category/Renamed/sentinel'),'utf8'),'preserved');
+  if(kind!=='creation') {
+   assert.equal(readFileSync(join(root,kind==='rename'?'Category/Renamed/sentinel':'Destination/Original/sentinel'),'utf8'),'preserved');
    assert.equal(query({type:'workspace.listTextProperties'}).value.values[0].value,'exact legacy value');
   }
-  assert.equal(sql.prepare(`SELECT authorization FROM ${table}`).get().authorization,null);
+  assert.equal(sql.prepare(`SELECT ${kind==='category_move'?'original_authorization':'authorization'} AS authority FROM ${table}`).get().authority,null);
   assert.equal(sql.prepare(`SELECT count(*) n FROM project_${kind}_attestations`).get().n,1);
  }finally{service?.close();sql.close();rmSync(directory,{recursive:true,force:true});}
 });

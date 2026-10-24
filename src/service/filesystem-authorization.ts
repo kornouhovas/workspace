@@ -29,6 +29,9 @@ export function parseFilesystemAuthorization(value:string|null): FilesystemAutho
       && parseFolderObservation(v.root) && parseFolderObservation(v.parent) && sameVolumeEvidence(v.root,v.parent) && v.root.evidence.scope===v.parent.evidence.scope ? v : null;
   } catch {return null;}
 }
+export function sameAuthorizationRoot(a:FilesystemAuthorization,b:FilesystemAuthorization):boolean {
+  return a.generation===b.generation && sameDurableFolder(a.root.evidence,b.root.evidence) && sameIdentity(a.root.mount,b.root.mount);
+}
 /** Durable continuity admits an earlier mount; an execution snapshot never does. */
 export function createFilesystemAuthorization(scope:string, read:EvidenceReader, db:BetterSQLite3Database<typeof schema>) {
   function capture(source:{canonicalRoot:string;durableEvidence:string|null;evidenceGeneration:number},parentRelativePath:string,parentEvidence:string|null,legacy?:LegacyParents):FilesystemAuthorization {

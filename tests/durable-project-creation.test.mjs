@@ -146,6 +146,7 @@ test('restore rejects malformed and contradictory creation authorization while r
   db=>db.exec("UPDATE project_creation_operations SET destination_evidence=json_set(destination_evidence,'$.mount.dev','999')"),
   db=>db.exec("UPDATE project_creation_operations SET authorization=json_set(authorization,'$.version',2)"),
   db=>db.exec("UPDATE project_creation_operations SET destination_evidence=NULL"),
+  db=>db.exec("UPDATE sources SET evidence_generation='invalid'"),
  ]) {
   const rejected=f.send({type:'data.restore',content:alteredSnapshot(content,mutate)});assert.equal(rejected.ok,false,JSON.stringify(rejected));
   assert.equal(f.query({type:'workspace.listProjects'}).value.projects[0].projectId,projectId);
@@ -165,6 +166,7 @@ test('restore binds each attestation to immutable operation request and root evi
  for(const mutate of [
   db=>db.exec("UPDATE project_creation_attestations SET journal=json_set(journal,'$.name','Changed request')"),
   db=>db.exec("UPDATE project_creation_attestations SET journal=json_remove(journal,'$.rootIdentity')"),
+  db=>db.exec("UPDATE project_creation_attestations SET journal=json_set(journal,'$.destinationEvidence','{}')"),
   db=>db.exec("UPDATE project_creation_attestations SET destination_evidence=json_set(destination_evidence,'$.evidence.created','999999999999999999')"),
  ]) assert.equal(f.send({type:'data.restore',content:alteredSnapshot(exported.value.content,mutate)}).ok,false);
  assert.equal(f.send({type:'data.restore',content:exported.value.content}).ok,true);

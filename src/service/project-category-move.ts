@@ -1,3 +1,6 @@
+import {sameAuthorizationRoot,parseFilesystemAuthorization,parseFolderObservation,type FilesystemAuthorization,type FilesystemAuthorizer,type VerifiedFolder} from "./filesystem-authorization.js";
+import {storedEvidence} from "./source-identity.js";
+import {sameDurableFolder,durableOwnershipKey} from "./folder-evidence.js";
 import { randomUUID } from "node:crypto";
 import { join } from "node:path";
 import { eq } from "drizzle-orm";
@@ -42,9 +45,12 @@ export function createProjectCategoryMoveService(db: Database, integration: {
   committed(sourceId: string, revision: number, workspaceIds: string[]): void;
   settled(sourceId: string): void;
 }, filesystem: ProjectFilesystem = nativeProjectFilesystem,
-  native: (from: string, to: string) => ProjectRenameFilesystemResult = renameNoReplace) {
-  type Execution = { workspaceId: string; revision: number };
-  const executionFor = (row: Operation): Execution => ({ workspaceId: row.initiatingWorkspaceId, revision: row.expectedRevision });
+  native: (from: string, to: string) => ProjectRenameFilesystemResult = renameNoReplace, authorizer?:FilesystemAuthorizer) {
+  type Execution = { workspaceId: string; revision: number; original?:FilesystemAuthorization; destination?:FilesystemAuthorization; target?:VerifiedFolder; legacyAttested?:boolean;problem?:ProjectCategoryMoveProblem };
+  const executionFor = (row: Operation): Execution => ({ workspaceId: row.initiatingWorkspaceId, revision: row.expectedRevision,
+    original:parseFilesystemAuthorization(row.originalAuthorization) ?? undefined,destination:parseFilesystemAuthorization(row.destinationAuthorization) ?? undefined,
+    target:row.projectEvidence ? parseFolderObservation(JSON.parse(row.projectEvidence)) ?? undefined : undefined });
+  const expectedTarget=(row:Operation,execution:Execution)=>authorizer ? execution.target?.mount ?? fail("ownership_uncertain") : JSON.parse(row.nativeIdentity) as NativeIdentity;
   const reviews = new Map<string, { row: Operation; execution: Execution; inspected: ReturnType<typeof inspectRecovery>; token: string }>();
   const reviewKey = (workspaceId: string, operationId: string) => `${workspaceId}:${operationId}`;
   function invalidateSource(sourceId: string) {
@@ -62,7 +68,7 @@ export function createProjectCategoryMoveService(db: Database, integration: {
   const storage = () => ({ ok: false as const, error: { code: "storage" as const, message: "Category move history could not be read." } });
   const rejected = (problem: ProjectCategoryMoveProblem): ServiceResult<ProjectCategoryMoveResult> =>
     ({ ok: true, value: { outcome: "rejected", problem, operation: null } });
-  const fail = (problem: ProjectCategoryMoveProblem): never => { throw new MoveFailure(problem); };
+  const fail: (problem: ProjectCategoryMoveProblem) => never = (problem) => { throw new MoveFailure(problem); };
   const operationFor = (id: string) => db.select().from(schema.projectCategoryMoveOperations)
     .where(eq(schema.projectCategoryMoveOperations.operationId, id)).get();
   const sourceFor = (workspaceId: string) => db.select().from(schema.workspaces)
@@ -78,7 +84,7 @@ export function createProjectCategoryMoveService(db: Database, integration: {
     if (archive && filesystemAlias(parent) === filesystemAlias(archive[0]) &&
       (archive.length === 1 || filesystemAlias(parts[1]) === filesystemAlias(archive[1]))) fail("archive");
   }
-  function reservations(row: Operation) {
+  function reservations(row: Operation,execution=executionFor(row)) {
     const removalOwner = categoryRemovalOwner(db, row);
     if (readProjectReservations(db, row.sourceId)
       .some((op) => !(op.operationKind === "category_move" && op.operationId === row.operationId) &&
@@ -90,10 +96,12 @@ export function createProjectCategoryMoveService(db: Database, integration: {
     for (const record of records) {
       if (paths.some((path) => filesystemAlias(path) === filesystemAlias(record.relativePath))) fail("reserved_destination");
       const other: NativeIdentity = JSON.parse(record.nativeIdentity);
-      if (other.dev === evidence.dev && other.ino === evidence.ino) fail("native_conflict");
+      if (other.ino===evidence.ino && (other.dev===evidence.dev || record.durableEvidence===null && other.birthtimeNs===evidence.birthtimeNs))fail("native_conflict");
+      if(execution.target && record.durableEvidence && durableOwnershipKey(JSON.parse(record.durableEvidence))===durableOwnershipKey(execution.target.evidence))fail("native_conflict");
     }
   }
   function context(row: Operation, completed = false, execution = executionFor(row)) {
+    if(execution.problem)fail(execution.problem);
     const source = sourceFor(execution.workspaceId);
     if (!source || source.id !== row.sourceId || source.canonicalRoot !== row.canonicalRoot || source.discoveryMode !== "grouped" ||
       source.discoveryRevision !== execution.revision + (completed ? 1 : 0) || source.appliedRootIdentity !== row.rootIdentity ||
@@ -101,19 +109,31 @@ export function createProjectCategoryMoveService(db: Database, integration: {
     const project = db.select().from(schema.projects).where(eq(schema.projects.id, row.projectId)).get();
     if (!project || project.sourceId !== row.sourceId || project.relativePath !== (completed ? row.requestedRelativePath : row.originalRelativePath) || project.nativeIdentity !== row.nativeIdentity ||
       project.categoryId !== (completed ? row.destinationCategoryId : row.originalCategoryId) || project.associationState !== "active" || project.modeInactive) fail("project_unavailable");
-    for (const [id, path, identity] of [[row.originalCategoryId, row.originalParentRelativePath, row.originalParentIdentity],
-      [row.destinationCategoryId, row.destinationParentRelativePath, row.destinationParentIdentity]]) {
+    if(authorizer && (!execution.original || !execution.destination || !execution.target || (!project.durableEvidence && !execution.legacyAttested) ||
+      project.durableEvidence && !sameDurableFolder(JSON.parse(project.durableEvidence),execution.target!.evidence)))fail("ownership_uncertain");
+    if(authorizer && !sameAuthorizationRoot(execution.original!,execution.destination!))fail("filesystem_changed");
+    for (const [id, path, identity,binding] of [[row.originalCategoryId, row.originalParentRelativePath, row.originalParentIdentity,execution.original],
+      [row.destinationCategoryId, row.destinationParentRelativePath, row.destinationParentIdentity,execution.destination]] as const) {
       const category = db.select().from(schema.categories).where(eq(schema.categories.id, id)).get();
       if (!category || category.sourceId !== row.sourceId || category.relativePath !== path || category.nativeIdentity !== identity ||
         category.associationState !== "active" || category.modeInactive) fail("category_unavailable");
+      if(authorizer)authorizer.verify(binding!,source,path,category.durableEvidence,execution.legacyAttested ? {root:JSON.parse(row.rootIdentity),parent:JSON.parse(identity)} : undefined);
     }
-    policy(row, row.originalRelativePath); policy(row, row.requestedRelativePath); reservations(row);
+    if(authorizer && execution.legacyAttested && !sameIdentity(JSON.parse(row.nativeIdentity),execution.target!.mount))fail("ownership_uncertain");
+    policy(row, row.originalRelativePath); policy(row, row.requestedRelativePath); reservations(row,execution);
+  }
+  function parentBindings(row:Operation,execution:Execution) {
+    return ([[row.originalParentRelativePath,row.originalParentIdentity,execution.original],
+      [row.destinationParentRelativePath,row.destinationParentIdentity,execution.destination]] as const).map(([parentRelativePath,parentIdentity,binding])=>({
+      ...row,parentRelativePath,parentIdentity:authorizer ? JSON.stringify(binding!.parent.mount) : parentIdentity,
+      rootIdentity:authorizer ? JSON.stringify(binding!.root.mount) : row.rootIdentity,
+    }));
   }
   function parents(row: Operation, completed = false, execution = executionFor(row)) {
     context(row, completed, execution);
-    for (const [parentRelativePath, parentIdentity] of [[row.originalParentRelativePath, row.originalParentIdentity],
-      [row.destinationParentRelativePath, row.destinationParentIdentity]]) {
-      const parent = verifyCreationParents(filesystem, { ...row, parentRelativePath, parentIdentity });
+    for (const binding of parentBindings(row,execution)) {
+      const {parentRelativePath}=binding;
+      const parent = verifyCreationParents(filesystem, binding);
       filesystem.assertAccessible?.(row.canonicalRoot); filesystem.assertAccessible?.(parent);
       const names = filesystem.names(row.canonicalRoot);
       if (!names.includes(parentRelativePath)) fail("filesystem_changed");
@@ -127,11 +147,11 @@ export function createProjectCategoryMoveService(db: Database, integration: {
     const path = join(row.canonicalRoot, relativePath);
     if (!filesystem.names(parent).includes(row.name)) fail("filesystem_changed");
     if (filesystem.names(parent).some((name) => name !== row.name && filesystemAlias(name) === filesystemAlias(row.name))) fail("occupied");
-    verifyCreationDirectory(filesystem, path, JSON.parse(row.nativeIdentity));
+    verifyCreationDirectory(filesystem, path, expectedTarget(row,execution));
+    if(authorizer)authorizer.observe(path,execution.original!.root,execution.target!.mount,execution.target!.evidence);
     filesystem.assertAccessible?.(path);
     // Recheck both ancestors after observing the project; no filesystem lock is implied.
-    for (const [parentRelativePath, parentIdentity] of [[row.originalParentRelativePath, row.originalParentIdentity],
-      [row.destinationParentRelativePath, row.destinationParentIdentity]]) verifyCreationParents(filesystem, { ...row, parentRelativePath, parentIdentity });
+    for(const binding of parentBindings(row,execution))verifyCreationParents(filesystem,binding);
     parents(row, completed, execution);
   }
   function destinationFree(row: Operation, execution = executionFor(row)) {
@@ -164,7 +184,7 @@ export function createProjectCategoryMoveService(db: Database, integration: {
     const receipt = db.transaction((tx) => {
       uniqueDestination(row, false, execution);
       if (!unchangedOperation(row)) fail("filesystem_changed");
-      tx.update(schema.projects).set({ categoryId: row.destinationCategoryId, relativePath: row.requestedRelativePath })
+      tx.update(schema.projects).set({ categoryId: row.destinationCategoryId, relativePath: row.requestedRelativePath, ...(execution.target ? {durableEvidence:JSON.stringify(execution.target.evidence)} : {}) })
         .where(eq(schema.projects.id, row.projectId)).run();
       tx.update(schema.sources).set({ discoveryRevision: revision }).where(eq(schema.sources.id, row.sourceId)).run();
       tx.update(schema.projectCategoryMoveOperations).set({ stage: "completed", resultKind: "completed", completedRevision: revision, problem: null })
@@ -204,7 +224,15 @@ export function createProjectCategoryMoveService(db: Database, integration: {
       }
       const name = project.relativePath.split("/").at(-1)!;
       if (!validProjectBasename(name, filesystem.platform) || project.relativePath !== `${original!.relativePath}/${name}`) return rejected("project_unavailable");
-      const row: Operation = { operationId: request.operationId, sourceId: source.id, initiatingWorkspaceId: request.workspaceId,
+      phase="filesystem";
+      const fromBinding=authorizer ? authorizer.capture(source,original!.relativePath,original!.durableEvidence) : null;
+      const toBinding=authorizer ? authorizer.capture(source,destination!.relativePath,destination!.durableEvidence) : null;
+      const saved=storedEvidence(project.durableEvidence);
+      if(authorizer && !saved)return rejected("ownership_uncertain");
+      const observed=authorizer ? filesystem.inspect(join(source.canonicalRoot,project.relativePath)) : null;
+      const target=authorizer && fromBinding ? authorizer.observe(join(source.canonicalRoot,project.relativePath),fromBinding.root,observed!.identity,saved!) : null;
+      const row: Operation = { originalAuthorization:fromBinding ? JSON.stringify(fromBinding) : null,
+        destinationAuthorization:toBinding ? JSON.stringify(toBinding) : null,projectEvidence:target ? JSON.stringify(target) : null, operationId: request.operationId, sourceId: source.id, initiatingWorkspaceId: request.workspaceId,
         projectId: project.id, name, expectedRevision: request.expectedRevision, originalCategoryId: original!.id, destinationCategoryId: destination!.id,
         canonicalRoot: source.canonicalRoot, originalParentRelativePath: original!.relativePath, destinationParentRelativePath: destination!.relativePath,
         originalRelativePath: project.relativePath, requestedRelativePath: `${destination!.relativePath}/${name}`,
@@ -265,6 +293,41 @@ export function createProjectCategoryMoveService(db: Database, integration: {
       }
     }
   }
+  function recoveryExecution(row:Operation,workspaceId:string,revision:number):Execution {
+    const execution:Execution={workspaceId,revision};
+    if(!authorizer)return execution;
+    try {
+      const source=sourceFor(workspaceId);
+      if(!source)fail("stale_configuration");
+      const original=parseFilesystemAuthorization(row.originalAuthorization),destination=parseFilesystemAuthorization(row.destinationAuthorization);
+      const target=row.projectEvidence ? parseFolderObservation(JSON.parse(row.projectEvidence)) : null;
+      execution.legacyAttested=row.originalAuthorization===null && row.destinationAuthorization===null && row.projectEvidence===null;
+      if(!execution.legacyAttested && (!original || !destination || !target))fail("ownership_uncertain");
+      const bindings:FilesystemAuthorization[]=[];
+      for(const [id,path,identity,saved] of [[row.originalCategoryId,row.originalParentRelativePath,row.originalParentIdentity,original],
+        [row.destinationCategoryId,row.destinationParentRelativePath,row.destinationParentIdentity,destination]] as const) {
+        const category=db.select().from(schema.categories).where(eq(schema.categories.id,id)).get();
+        if(!category || category.sourceId!==source.id)fail("category_unavailable");
+        const current=authorizer.capture(source,path,category.durableEvidence,execution.legacyAttested ? {root:JSON.parse(row.rootIdentity),parent:JSON.parse(identity)} : undefined);
+        if(saved && (!sameDurableFolder(saved.root.evidence,current.root.evidence) || !sameDurableFolder(saved.parent.evidence,current.parent.evidence)))fail("filesystem_changed");
+        bindings.push(current);
+      }
+      [execution.original,execution.destination]=bindings;
+      if(!sameAuthorizationRoot(execution.original!,execution.destination!))fail("filesystem_changed");
+      const matches:VerifiedFolder[]=[];
+      for(const path of new Set([row.originalRelativePath,row.requestedRelativePath])) {
+        let entry;
+        try{entry=filesystem.inspect(join(row.canonicalRoot,path));}catch(error){if(filesystemCode(error)==="ENOENT")continue;throw error;}
+        if(entry.kind!=="directory" || execution.legacyAttested && !sameIdentity(entry.identity,JSON.parse(row.nativeIdentity)))continue;
+        const observed=authorizer.observe(join(row.canonicalRoot,path),execution.original!.root,entry.identity);
+        if(target && !sameDurableFolder(target.evidence,observed.evidence))continue;
+        matches.push(observed);
+      }
+      if(matches.length!==1)fail(matches.length ? "native_conflict" : "destination_missing");
+      execution.target=matches[0];
+    }catch(error){execution.problem=problemFor(error,"filesystem");}
+    return execution;
+  }
   function inspectRecovery(row: Operation, execution: Execution) {
     const preview: ProjectCategoryMoveRecoveryPreview = { workspaceId: execution.workspaceId, sourceId: row.sourceId,
       operation: operationView(row), revision: execution.revision, originalState: "unavailable", destinationState: "unavailable",
@@ -285,7 +348,7 @@ export function createProjectCategoryMoveService(db: Database, integration: {
           const entry = filesystem.inspect(join(row.canonicalRoot, path));
           identity = entry.identity;
           if (entry.kind === "link") state = "link";
-          else if (entry.kind !== "directory" || !reliableIdentity(identity) || !sameIdentity(identity, JSON.parse(row.nativeIdentity))) state = "replaced";
+          else if (entry.kind !== "directory" || !reliableIdentity(identity) || !sameIdentity(identity, expectedTarget(row,execution))) state = "replaced";
           else {
             placement(row, path, false, execution);
             state = "matching";
@@ -325,7 +388,7 @@ export function createProjectCategoryMoveService(db: Database, integration: {
     try {
       const source = sourceFor(input.workspaceId), row = operationFor(input.operationId);
       if (!source || !row || source.id !== row.sourceId) return invalid();
-      const execution = { workspaceId: input.workspaceId, revision: source.discoveryRevision };
+      const execution = recoveryExecution(row,input.workspaceId,source.discoveryRevision);
       const inspected = inspectRecovery(row, execution);
       if (inspected.preview.actions.length) {
         const token = randomUUID();
@@ -346,10 +409,23 @@ export function createProjectCategoryMoveService(db: Database, integration: {
       const source = sourceFor(request.workspaceId);
       row = operationFor(request.operationId);
       if (!source || !row || source.id !== row.sourceId) return invalid();
-      if (!unchangedOperation(review.row) || source.discoveryRevision !== review.execution.revision ||
+      const currentExecution=recoveryExecution(row,request.workspaceId,source.discoveryRevision);
+      if (JSON.stringify(currentExecution)!==JSON.stringify(review.execution) || !unchangedOperation(review.row) || source.discoveryRevision !== review.execution.revision ||
         JSON.stringify(inspectRecovery(row, review.execution)) !== JSON.stringify(review.inspected)) return stale();
       const execution = review.execution;
       if (request.action !== "keep_original" && !Number.isSafeInteger(execution.revision + 1)) return stale();
+      if(authorizer) {
+        const bound=row;
+        db.transaction(tx=>{
+          const match=review.inspected.observations.find(observed=>observed.state==="matching");
+          if(!match)fail("ownership_uncertain");
+          placement(bound,match.path,false,execution);
+          if(!unchangedOperation(bound))fail("filesystem_changed");
+          tx.insert(schema.projectCategoryMoveAttestations).values({id:randomUUID(),operationId:bound.operationId,journal:JSON.stringify(bound),
+            originalAuthorization:JSON.stringify(execution.original),destinationAuthorization:JSON.stringify(execution.destination),projectEvidence:JSON.stringify(execution.target)}).run();
+          placement(bound,match.path,false,execution);
+        },{behavior:"immediate"});
+      }
       integration.invalidateSourceReviews(row.sourceId);
       accepted = true;
       if (request.action === "keep_original") {

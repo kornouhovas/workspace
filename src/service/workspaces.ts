@@ -260,7 +260,7 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
       publish([{ type: "workspace.projectsChanged", sourceId, revision, workspaceIds }]);
       observer.request(sourceId);
     },
-  }, projectFilesystem, projectRenameNative);
+  }, projectFilesystem, projectRenameNative, createFilesystemAuthorization(scope,readFolderEvidence,db));
   const categoryOptions = createCategoryOptionsService(db, (sourceId, revision, workspaceIds, presentation) => {
     if (presentation) { publish([{ type: "workspace.categoryPresentationChanged", sourceId, workspaceIds }]); return; }
     invalidateSourceReviews(sourceId);
@@ -1014,9 +1014,9 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
     applyCategoryFolder: terminalRetry("category_folder_operations", categoryOptions.applyCategoryFolder),
     previewCategoryFolderRecovery: blocked,
     recoverCategoryFolder: blocked,
-    moveProjectCategory: terminalRetry("project_category_move_operations", categoryMove.moveProjectCategory),
-    previewProjectCategoryMoveRecovery: blocked,
-    recoverProjectCategoryMove: blocked,
+    moveProjectCategory: categoryMove.moveProjectCategory,
+    previewProjectCategoryMoveRecovery: categoryMove.previewProjectCategoryMoveRecovery,
+    recoverProjectCategoryMove: categoryMove.recoverProjectCategoryMove,
     renameProject: rename.renameProject,
     previewProjectRenameRecovery: rename.previewProjectRenameRecovery,
     recoverProjectRename: rename.recoverProjectRename,

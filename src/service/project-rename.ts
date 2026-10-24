@@ -472,8 +472,8 @@ export function createProjectRenameService(db: Database, integration: {
       const authorization=authorizer ? authorizer.capture(source,parentRelativePath,category ? category.durableEvidence : source.durableEvidence) : null;
       const saved=storedEvidence(project.durableEvidence);
       if(authorizer && !saved) return rejected("ownership_uncertain");
-      const current=filesystem.inspect(join(source.canonicalRoot,project.relativePath));
-      const target=authorizer && authorization ? authorizer.observe(join(source.canonicalRoot,project.relativePath),authorization.root,current.identity,saved!) : null;
+      const current=authorizer ? filesystem.inspect(join(source.canonicalRoot,project.relativePath)) : null;
+      const target=authorizer && authorization ? authorizer.observe(join(source.canonicalRoot,project.relativePath),authorization.root,current!.identity,saved!) : null;
       const row: Operation = {
         authorization:authorization ? JSON.stringify(authorization) : null, projectEvidence:target ? JSON.stringify(target) : null,
         operationId: request.operationId, initiatingWorkspaceId: request.workspaceId, sourceId: source.id, projectId: project.id,

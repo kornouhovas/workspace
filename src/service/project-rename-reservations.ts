@@ -42,13 +42,15 @@ export function readProjectReservations(db: Reader, sourceId: string) {
   }
   const creationProofs=db.select().from(schema.projectCreationAttestations).all();
   const renameProofs=db.select().from(schema.projectRenameAttestations).all();
+  const moveProofs=db.select().from(schema.projectCategoryMoveAttestations).all();
   const durableCreations=creations.flatMap(row=>{
     const proofs=[row.destinationEvidence,...creationProofs.filter(proof=>proof.operationId===row.operationId).map(proof=>proof.destinationEvidence)].filter((proof):proof is string=>proof!==null);
     return (proofs.length ? proofs : [null]).map(proof=>({...row,durableEvidence:evidence(proof)}));
   });
   const relocations = readProjectRelocationReservations(db, sourceId).flatMap<ReturnType<typeof readProjectRelocationReservations>[number] & {durableEvidence:string|null}>(row=>{
-    if(row.operationKind!=="rename")return [{...row,durableEvidence:null as string|null}];
-    const proofs=[row.projectEvidence,...renameProofs.filter(proof=>proof.operationId===row.operationId).map(proof=>proof.projectEvidence)].filter((proof):proof is string=>proof!==null);
+    if(row.operationKind!=="rename" && row.operationKind!=="category_move")return [{...row,durableEvidence:null as string|null}];
+    const attestations=row.operationKind==="rename" ? renameProofs : moveProofs;
+    const proofs=[row.projectEvidence,...attestations.filter(proof=>proof.operationId===row.operationId).map(proof=>proof.projectEvidence)].filter((proof):proof is string=>proof!==null);
     return (proofs.length ? proofs : [null]).map(proof=>({...row,durableEvidence:evidence(proof)}));
   }).flatMap((row) =>
     [...new Set([row.originalRelativePath, row.requestedRelativePath, ...(row.operationKind === "rename" ? [row.stagingRelativePath] : [])])]

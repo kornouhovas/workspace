@@ -1,5 +1,5 @@
 import {sameIdentity} from "./discovery.js";
-import {parseFilesystemAuthorization, parseFolderObservation} from "./filesystem-authorization.js";
+import {sameAuthorizationRoot,parseFilesystemAuthorization, parseFolderObservation} from "./filesystem-authorization.js";
 import { durableOwnershipKey, sameDurableFolder, validateEvidence } from "./folder-evidence.js";
 import { isWorkspaceSessionState } from "../contracts/workspace-sessions.js";
 import { validateSnapshotRelations } from "./data-recovery-invariants.js";
@@ -17,6 +17,12 @@ type SchemaEntry = { type: string; name: string; sql: string };
 const quote = (name: string) => `"${name.replaceAll('"', '""')}"`;
 function schema(db: Database.Database): SchemaEntry[] {
   return db.prepare("SELECT type, name, sql FROM sqlite_schema WHERE name NOT LIKE 'sqlite_%' AND sql IS NOT NULL ORDER BY type, name").all() as SchemaEntry[];
+}
+/** An attestation may precede new evidence, but cannot contradict any evidence
+ * that its immutable journal snapshot already says was recorded. */
+function recordedEvidenceRetained(snapshot:Record<string,unknown>,current:Record<string,unknown>,fields:readonly string[]):boolean {
+  return fields.every(field=>Object.hasOwn(snapshot,field) && (snapshot[field]===null ||
+    snapshot[field]===current[field.replace(/[A-Z]/g,letter=>"_"+letter.toLowerCase())]));
 }
 function validate(db: Database.Database) {
   if (db.pragma("integrity_check", { simple: true }) !== "ok" || (db.pragma("foreign_key_check") as unknown[]).length) throw new Error("Invalid SQLite data");
@@ -62,6 +68,9 @@ function validate(db: Database.Database) {
     }
   }
   if ((db.prepare("PRAGMA table_info(sources)").all() as {name:string}[]).some(c => c.name === "durable_evidence")) {
+    for(const row of db.prepare("SELECT evidence_generation FROM sources").all() as {evidence_generation:unknown}[]) {
+      if(typeof row.evidence_generation!=="number" || !Number.isSafeInteger(row.evidence_generation) || row.evidence_generation<0)throw new Error("Invalid source evidence generation");
+    }
     const roots = new Map((db.prepare("SELECT id,durable_evidence FROM sources").all() as {id:string;durable_evidence:string|null}[])
       .map(row => [row.id,row.durable_evidence ? JSON.parse(row.durable_evidence) as import("./folder-evidence.js").FolderEvidence : null]));
     const rootOwners=new Set<string>();
@@ -91,7 +100,7 @@ function validate(db: Database.Database) {
       if(!binding || !current || !journal || journal.operationId!==row.operation_id ||
         !["intent","evidence_recorded","uncertain"].includes(journal.stage) ||
         immutableFields.some(field=>!Object.hasOwn(journal,field) || journal[field]!==current[field.replace(/[A-Z]/g,letter=>"_"+letter.toLowerCase())]) ||
-        journal.nativeIdentity!==null && journal.nativeIdentity!==current.native_identity ||
+        !recordedEvidenceRetained(journal,current,["nativeIdentity","destinationEvidence"]) ||
         row.destination_evidence!==null && (!destination || destination.evidence.scope!==binding.root.evidence.scope ||
           destination.evidence.provider!==binding.root.evidence.provider || destination.evidence.volume!==binding.root.evidence.volume || destination.evidence.serial!==binding.root.evidence.serial))throw new Error("Invalid creation attestation");
       const recordedDestination=current.destination_evidence ? parseFolderObservation(JSON.parse(current.destination_evidence as string)) : null;
@@ -127,13 +136,42 @@ function validate(db: Database.Database) {
       const row=rows.find(row=>row.operation_id===proof.operation_id), journal=JSON.parse(proof.journal);
       const binding=parseFilesystemAuthorization(proof.authorization), target=parseFolderObservation(JSON.parse(proof.project_evidence));
       if(!row || !journal || !binding || !target || !volumeMatch(binding,target) ||
-        !["intent","staged","destination_recorded","uncertain"].includes(journal.stage) || immutableFields.some(field=>!Object.hasOwn(journal,field) ||
+        !["intent","staged","destination_recorded","uncertain"].includes(journal.stage) || !recordedEvidenceRetained(journal,row,["stagedIdentity","destinationIdentity","lastVerifiedIdentity"]) || immutableFields.some(field=>!Object.hasOwn(journal,field) ||
           journal[field]!==row[field.replace(/[A-Z]/g,letter=>"_"+letter.toLowerCase())]))throw new Error("Invalid rename attestation");
       const original=parseFilesystemAuthorization(journal.authorization), saved=journal.projectEvidence ? parseFolderObservation(JSON.parse(journal.projectEvidence)) : null;
       if(journal.authorization!==null && (!original || !saved || !sameDurableFolder(original.root.evidence,binding.root.evidence) ||
         !sameDurableFolder(original.parent.evidence,binding.parent.evidence) || !sameDurableFolder(saved.evidence,target.evidence)) ||
         journal.authorization===null && (!sameIdentity(JSON.parse(journal.rootIdentity),binding.root.mount) ||
           !sameIdentity(JSON.parse(journal.parentIdentity),binding.parent.mount) || !sameIdentity(JSON.parse(journal.nativeIdentity),target.mount)))throw new Error("Conflicting rename attestation");
+    }
+  }
+  if ((db.prepare("PRAGMA table_info(project_category_move_operations)").all() as {name:string}[]).some(c=>c.name==="original_authorization")) {
+    const rows=db.prepare("SELECT * FROM project_category_move_operations").all() as Record<string,unknown>[];
+    function parseMoveProof(from:string|null,to:string|null,project:string|null) {
+      const original=parseFilesystemAuthorization(from), destination=parseFilesystemAuthorization(to), target=project ? parseFolderObservation(JSON.parse(project)) : null;
+      if(!original || !destination || !target || !sameAuthorizationRoot(original,destination) ||
+        target.evidence.provider!==original.root.evidence.provider || target.evidence.volume!==original.root.evidence.volume ||
+        target.evidence.serial!==original.root.evidence.serial || target.evidence.scope!==original.root.evidence.scope)throw new Error("Invalid category move authorization");
+      return {original,destination,target};
+    }
+    for(const row of rows)if(row.original_authorization!==null || row.destination_authorization!==null || row.project_evidence!==null)
+      parseMoveProof(row.original_authorization as string|null,row.destination_authorization as string|null,row.project_evidence as string|null);
+    const fields=["operationId","sourceId","initiatingWorkspaceId","projectId","name","expectedRevision","originalCategoryId","destinationCategoryId",
+      "canonicalRoot","originalParentRelativePath","destinationParentRelativePath","originalRelativePath","requestedRelativePath","rootIdentity",
+      "originalParentIdentity","destinationParentIdentity","nativeIdentity","excludedRelativePaths","archiveRelativePath","originalAuthorization","destinationAuthorization","projectEvidence"];
+    for(const proof of db.prepare("SELECT * FROM project_category_move_attestations").all() as Record<string,string>[]) {
+      const row=rows.find(row=>row.operation_id===proof.operation_id), journal=JSON.parse(proof.journal);
+      const current=parseMoveProof(proof.original_authorization,proof.destination_authorization,proof.project_evidence);
+      if(!row || !journal || !["intent","destination_recorded","uncertain"].includes(journal.stage) || !recordedEvidenceRetained(journal,row,["destinationIdentity","lastVerifiedIdentity"]) || fields.some(field=>!Object.hasOwn(journal,field) ||
+        journal[field]!==row[field.replace(/[A-Z]/g,letter=>"_"+letter.toLowerCase())]))throw new Error("Invalid category move attestation");
+      if(journal.originalAuthorization===null && journal.destinationAuthorization===null && journal.projectEvidence===null) {
+        if(!sameIdentity(JSON.parse(journal.rootIdentity),current.original.root.mount) || !sameIdentity(JSON.parse(journal.originalParentIdentity),current.original.parent.mount) ||
+          !sameIdentity(JSON.parse(journal.destinationParentIdentity),current.destination.parent.mount) || !sameIdentity(JSON.parse(journal.nativeIdentity),current.target.mount))throw new Error("Conflicting legacy category move attestation");
+      }else {
+        const old=parseMoveProof(journal.originalAuthorization,journal.destinationAuthorization,journal.projectEvidence);
+        if(!sameDurableFolder(old.original.root.evidence,current.original.root.evidence) || !sameDurableFolder(old.original.parent.evidence,current.original.parent.evidence) ||
+          !sameDurableFolder(old.destination.parent.evidence,current.destination.parent.evidence) || !sameDurableFolder(old.target.evidence,current.target.evidence))throw new Error("Conflicting category move attestation");
+      }
     }
   }
   // These ownership constraints predate their SQL equivalents.

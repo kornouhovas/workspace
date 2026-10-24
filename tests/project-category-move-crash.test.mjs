@@ -7,6 +7,7 @@ import { randomUUID } from "node:crypto";
 import test from "node:test";
 import { openUnconvertedEngineFixture } from "./support/unconverted-command-engines.mjs";
 const openEngineService = (...args) => openUnconvertedEngineFixture(...args).engines;
+import { openSettingsService } from "../dist/service/settings.mjs";
 import { nativeProjectFilesystem } from "../src/service/project-filesystem.ts";
 
 const dependencies = { watch() { return { close() {} }; }, schedule() { return { cancel() {} }; } };
@@ -14,7 +15,7 @@ async function terminateAt(f, checkpoint) {
   const marker = join(f.directory, "cleanup");
   const reached = await new Promise((resolve, reject) => {
     const child = fork("tests/fixtures/project-category-move-crash-worker.mjs",
-      [f.databasePath, checkpoint, JSON.stringify(f.request), marker], { execArgv: ["--import","tsx"], stdio: ["ignore", "ignore", "pipe", "ipc"] });
+      [f.databasePath, checkpoint, JSON.stringify(f.request), marker, f.production ? "production" : "legacy"], { execArgv: ["--import","tsx"], stdio: ["ignore", "ignore", "pipe", "ipc"] });
     let acknowledged, stderr = "", failure;
     child.stderr.on("data", (data) => { stderr = (stderr + data).slice(-16000); });
     const timer = setTimeout(() => { failure = new Error(`Checkpoint timeout ${checkpoint}: ${stderr}`); child.kill("SIGKILL"); }, 10000);
@@ -35,7 +36,7 @@ async function terminateAt(f, checkpoint) {
   assert.equal(fs.existsSync(marker), false, "parent termination prevents finally cleanup");
   return reached;
 }
-async function fixture(checkpoint, run) {
+async function fixture(checkpoint, run, production = false) {
   const directory = fs.realpathSync.native(fs.mkdtempSync(join(tmpdir(), "category-move-crash-")));
   const root = join(directory, "root"), databasePath = join(directory, "workspace.sqlite");
   const original = join(root, "Original", "Project 日本語"), destination = join(root, "Destination", "Project 日本語");
@@ -43,7 +44,7 @@ async function fixture(checkpoint, run) {
   fs.writeFileSync(join(original, "sentinel"), "  Authored 日本語\n");
   const identity = nativeProjectFilesystem.inspect(original).identity;
   let service;
-  const open = () => service = openEngineService(databasePath, undefined, undefined, dependencies);
+  const open = () => service = (production ? openSettingsService : openEngineService)(databasePath, undefined, undefined, dependencies);
   try {
     open();
     const workspace = service.workspaces.create({ type: "workspace.create", name: "Origin", rootPath: root }).value;
@@ -60,7 +61,7 @@ async function fixture(checkpoint, run) {
     const other = service.workspaces.create({ type: "workspace.create", name: "Other", rootPath: otherRoot }).value;
     const request = { type: "workspace.moveProjectCategory", workspaceId: workspace.workspaceId, projectId: project.projectId,
       operationId: randomUUID(), destinationCategoryId: category.categoryId, expectedRevision: applied.revision };
-    const f = { directory, root, databasePath, original, destination, identity, workspace, sibling, other, project, category, request, values, load: service.handleQuery({ type: "workspace.load" }),
+    const f = { production, directory, root, databasePath, original, destination, identity, workspace, sibling, other, project, category, request, values, load: service.handleQuery({ type: "workspace.load" }),
       get service() { return service; }, query, command, open,
       status: (workspaceId = f.sibling.workspaceId) => query("getProjectCategoryMove", { workspaceId, operationId: request.operationId }) };
     service.close();
@@ -86,8 +87,10 @@ function recover(f, action, workspaceId = f.sibling.workspaceId) {
   assert.ok(preview.actions.includes(action), JSON.stringify(preview));
   return f.command("recoverProjectCategoryMove", { workspaceId, operationId: f.request.operationId, previewToken: preview.previewToken, action });
 }
+for (const production of [false, true]) {
+const policy = production ? "production durable" : "legacy engine";
 for (const checkpoint of ["intent", "native_effect", "destination_evidence", "commit"]) {
-  test(`abrupt parent termination at ${checkpoint}: restart never replays and sibling recovery preserves identity and values`, async () => fixture(checkpoint, (f) => {
+  test(`${policy}: abrupt parent termination at ${checkpoint}: restart never replays and sibling recovery preserves identity and values`, async () => fixture(checkpoint, (f) => {
     const stage = { intent: "intent", native_effect: "intent", destination_evidence: "destination_recorded", commit: "completed" }[checkpoint];
     const crashed = f.status();
     assert.deepEqual(f.service.handleQuery({ type: "workspace.load" }), f.load);
@@ -126,10 +129,10 @@ for (const checkpoint of ["intent", "native_effect", "destination_evidence", "co
       const project = f.query("listProjects", { workspaceId }).value.projects[0];
       assert.equal(project.categoryId, f.category.categoryId); assert.equal(project.relativePath, "Destination/Project 日本語");
     }
-  }));
+  }, production));
 }
 
-test("interrupted move retains initiating workspace history through final removal and source reuse", async () => fixture("destination_evidence", (f) => {
+test(`${policy}: interrupted move retains initiating workspace history through final removal and source reuse`, async () => fixture("destination_evidence", (f) => {
   const stale = review(f, f.workspace.workspaceId);
   assert.equal(f.command("remove").ok, true);
   assert.equal(f.command("recoverProjectCategoryMove", { operationId: f.request.operationId, previewToken: stale.previewToken, action: "complete_destination" }).ok, false);
@@ -142,12 +145,14 @@ test("interrupted move retains initiating workspace history through final remova
   assert.equal(result.value.operation.initiatingWorkspaceId, f.workspace.workspaceId);
   // Keep fixture final queries under the current same-source authorization.
   f.sibling = reused;
-}));
+}, production));
 
-test("intent interruption can explicitly keep the original after restart", async () => fixture("intent", (f) => {
+test(`${policy}: intent interruption can explicitly keep the original after restart`, async () => fixture("intent", (f) => {
   const result = recover(f, "keep_original");
   assert.equal(result.value.outcome, "rejected"); assert.equal(result.value.problem, "kept_original");
   assert.equal(f.query("listProjects").value.revision, f.request.expectedRevision);
   assert.equal(f.query("listProjects").value.projects[0].categoryId, f.project.categoryId);
   assert.deepEqual(f.service.moveProjectCategory(f.request), result);
-}));
+}, production));
+
+}

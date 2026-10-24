@@ -124,7 +124,7 @@ async function fixture(run, options = {}) {
 }
 function assertPublic(value, f) {
   const encoded = JSON.stringify(value);
-  for (const forbidden of [f.directory, "stagingRelativePath", ".workspace-rename-", "stagedIdentity", "nativeIdentity", "rootIdentity", "parentIdentity", "originalParentIdentity", "destinationParentIdentity", "projectIdentity", "stack", "private failure"]) {
+  for (const forbidden of [f.directory, "stagingRelativePath", ".workspace-rename-", "stagedIdentity", "nativeIdentity", "rootIdentity", "parentIdentity", "originalParentIdentity", "destinationParentIdentity", "projectIdentity", "originalAuthorization", "destinationAuthorization", "projectEvidence", "stack", "private failure"]) {
     assert.equal(encoded.includes(forbidden), false, forbidden);
   }
 }
@@ -314,13 +314,16 @@ for (const boundary of ["pre-intent", "unfinished-original", "unfinished-destina
   }));
 }
 
-test("compiled production entry denies unconverted category moves without effects", () => fixture(async (f) => {
+test("compiled production entry moves enrolled project and preserves its public identity", () => fixture(async (f) => {
   const result = await f.client.moveProjectCategory(f.request());
-  assert.equal(result.ok, false);assert.equal(result.error.code,"identity_update_required");
-  assert.equal(fs.readFileSync(join(f.root, "Category/Original/sentinel"), "utf8"), "  Original\n");
-  assert.equal(fs.existsSync(join(f.root,"Destination/Original")),false);
-  assert.equal((await f.client.listProjects(f.one.workspaceId)).value.revision,f.list.revision);
-  assert.deepEqual(f.nativeTargets,[]);assert.deepEqual(f.events,[]);
+  assert.equal(result.ok, true, JSON.stringify(result));assert.equal(result.value.outcome,"completed");
+  assert.equal(result.value.project.projectId,f.project.projectId);
+  assert.equal(result.value.project.categoryId,f.destination.categoryId);
+  assert.equal(fs.readFileSync(join(f.root, "Destination/Original/sentinel"), "utf8"), "  Original\n");
+  assert.equal(fs.existsSync(join(f.root,"Category/Original")),false);
+  assert.equal((await f.client.listProjects(f.one.workspaceId)).value.revision,f.list.revision+1);
+  assertPublic(result,f);
+  assert.deepEqual(f.nativeTargets,[]);assert.equal(f.events.length,1);
 }, { productionDefault: true }));
 
 for (const delivered of [false, true]) {

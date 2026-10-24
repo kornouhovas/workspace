@@ -145,7 +145,7 @@ test("populated 0000–0009 upgrade and reopen retain creation/rename receipts, 
     const after = records(f.sql);
     for (const [table, rows] of Object.entries(before)) if (table !== "__drizzle_migrations") assert.deepEqual(after[table], withIdentityMigrationDefaults(table, table === "views" ? rows.map(row => ({ ...row, position: 0, filter_config: '{"search":"","rules":[]}', grouping_config: '{"propertyId":null,"settings":[]}', board_config: '{"widths":[],"properties":[],"wrap":true}', table_config: '{"columns":[],"rowOrder":[]}' })) : rows), table);
     assert.deepEqual(after.__drizzle_migrations.slice(0, 10), before.__drizzle_migrations);
-    assert.equal(after.__drizzle_migrations.length, 27); assert.deepEqual(after.project_category_move_operations, []);
+    assert.equal(after.__drizzle_migrations.length, 28); assert.deepEqual(after.project_category_move_operations, []);
     assert.deepEqual(f.sql.pragma("foreign_key_check"), []);
     assert.deepEqual(fs.readFileSync(join(f.root, "Original category", "Original", "sentinel")), Buffer.from([0, 255, 42]));
   }
@@ -305,7 +305,7 @@ test("unfinished moves reserve requested placements against both original and de
     f.sql.exec("BEGIN");
     try {
       f.insert(candidate, true);
-      assert.deepEqual(f.sql.prepare("SELECT * FROM project_category_move_operations WHERE operation_id = ?").get(candidate.operation_id), candidate);
+      assert.deepEqual(f.sql.prepare("SELECT * FROM project_category_move_operations WHERE operation_id = ?").get(candidate.operation_id), withIdentityMigrationDefaults("project_category_move_operations",[candidate])[0]);
     } finally { f.sql.exec("ROLLBACK"); }
   }
 }));

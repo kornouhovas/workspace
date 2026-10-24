@@ -73,7 +73,7 @@ test('legacy dev control requires explicit root and separate project enrollment,
 test('fresh and legacy sources cannot dispatch unconverted filesystem consumers',()=>fixture(f=>{
   discover(f);
   const initial=readdirSync(f.root);
-  const denied=f.command({type:'workspace.moveProjectCategory',operationId:'00000000-0000-4000-8000-000000000001',expectedRevision:1,destinationCategoryId:'00000000-0000-4000-8000-000000000002',projectId:f.query({type:'workspace.listProjects'}).value.projects[0].projectId});
+  const denied=f.query({type:'workspace.previewProjectArchive',action:'archive',name:null,createParent:false,projectId:f.query({type:'workspace.listProjects'}).value.projects[0].projectId});
   assert.equal(denied.ok,false);
   assert.match(denied.error.message,/safety update/);
   assert.deepEqual(readdirSync(f.root),initial);
@@ -198,7 +198,7 @@ test('every unconverted direct service and native entry point fails closed witho
   discover(f);
   const names=['previewProjectArchive','applyProjectArchive','previewProjectArchiveRecovery','recoverProjectArchive','previewArchiveLocation','applyArchiveLocation',
    'previewCategoryRemovalRecovery','recoverCategoryRemoval','applyCategoryRemoval','previewCategoryRemoval','previewCategoryFolder','applyCategoryFolder','previewCategoryFolderRecovery','recoverCategoryFolder',
-   'moveProjectCategory','previewProjectCategoryMoveRecovery','recoverProjectCategoryMove','listProjectFiles',
+   'listProjectFiles',
    'previewProjectRecovery','reassociateProject'];
   const before=readdirSync(f.root);let dispatches=0;
   for(const name of names){const result=f.service.workspaces[name]({type:`workspace.${name}`,workspaceId:f.workspaceId},()=>{dispatches++;});assert.equal(result.ok,false,name);assert.match(result.error.message,/safety update/,name);}
@@ -245,7 +245,7 @@ test('valid IPC requests cannot bypass the gate and association cancellation rev
   {type:'workspace.openProjectFile',projectId,relativePath:'keep.txt'},
   {type:'workspace.revealProjectFile',projectId,relativePath:'keep.txt'},
   {type:'workspace.listProjectFiles',projectId,relativePath:''},
-  {type:'workspace.moveProjectCategory',operationId:'20000000-0000-4000-8000-000000000002',expectedRevision:current.revision,projectId,destinationCategoryId:'20000000-0000-4000-8000-000000000003'},
+  {type:'workspace.previewProjectArchive',projectId,action:'archive',name:null,createParent:false},
  ]){const denied=await send(input);assert.equal(denied.ok,false,JSON.stringify(input));assert.equal(denied.error.code,'identity_update_required');}
  assert.equal(port.sent.some(m=>m.type==='project.reveal.native'),false);assert.deepEqual(readdirSync(f.root),['Project']);
  const review=await send({type:'workspace.previewSourceAssociation',mappings:[]});assert.equal(review.ok,true);

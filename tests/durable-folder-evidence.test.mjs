@@ -98,3 +98,11 @@ for(const link of [false,true])test(`evidence route resolution rejects an in-fli
   assert.equal(swapped,true);assert.equal(observed.ok,false,JSON.stringify(observed));if(!link)assert.equal(observed.reason,'changed');
  }finally{fs.realpathSync=original;syncBuiltinESMExports();rmSync(root,{recursive:true,force:true});}
 });
+
+test('NTFS evidence requires a nonzero volume GUID with the actual GUID component layout',()=>{
+ const slash=String.fromCharCode(92),prefix=`${slash}${slash}?${slash}Volume{`;
+ const evidence={version:1,provider:'ntfs',scope:'installation-test',volume:`${prefix}aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee}${slash}`,serial:'1',fileId:'1234567890abcdef1234567890abcdef',created:'1'};
+ assert.equal(validateEvidence(evidence),true);
+ for(const guid of ['00000000-0000-0000-0000-000000000000','------------------------------------','aaaaaaaaa-bbb-cccc-dddd-eeeeeeeeeeee'])
+  assert.equal(validateEvidence({...evidence,volume:`${prefix}${guid}}${slash}`}),false,guid);
+});

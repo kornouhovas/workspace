@@ -189,6 +189,9 @@ export const projectRenameAttestations = sqliteTable("project_rename_attestation
 
 // Migration 0010 guards immutable two-parent bindings, evidence and retained history.
 export const projectCategoryMoveOperations = sqliteTable("project_category_move_operations", {
+  originalAuthorization: text("original_authorization"),
+  destinationAuthorization: text("destination_authorization"),
+  projectEvidence: text("project_evidence"),
   operationId: text("operation_id").primaryKey(),
   sourceId: text("source_id").notNull().references(() => sources.id),
   initiatingWorkspaceId: text("initiating_workspace_id").notNull(),
@@ -223,6 +226,15 @@ export const projectCategoryMoveOperations = sqliteTable("project_category_move_
   foreignKey({ columns: [table.originalCategoryId, table.sourceId], foreignColumns: [categories.id, categories.sourceId] }),
   foreignKey({ columns: [table.destinationCategoryId, table.sourceId], foreignColumns: [categories.id, categories.sourceId] }),
 ]);
+
+export const projectCategoryMoveAttestations = sqliteTable("project_category_move_attestations", {
+  id: text("id").primaryKey(),
+  operationId: text("operation_id").notNull().references(() => projectCategoryMoveOperations.operationId),
+  journal: text("journal").notNull(),
+  originalAuthorization: text("original_authorization").notNull(),
+  destinationAuthorization: text("destination_authorization").notNull(),
+  projectEvidence: text("project_evidence").notNull(),
+});
 
 export const categoryFolderOperations = sqliteTable("category_folder_operations", {
   operationId: text("operation_id").primaryKey(), sourceId: text("source_id").notNull().references(() => sources.id),

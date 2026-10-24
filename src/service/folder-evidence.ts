@@ -28,7 +28,8 @@ export function validateEvidence(value: unknown): value is FolderEvidence {
     typeof v.fileId !== "string" || typeof v.created !== "string" || !/^[1-9][0-9]*$/.test(v.created)) return false;
   return v.provider === "apfs" ? /^[a-f0-9]{32}$/.test(v.volume) && /[1-9a-f]/.test(v.volume) &&
     v.serial === "" && /^[1-9][0-9]*$/.test(v.fileId) : v.provider === "ntfs" &&
-    /^\\\\\?\\Volume\{[a-f0-9-]{36}\}\\$/i.test(v.volume) && /^[1-9][0-9]*$/.test(v.serial) &&
+    /^\\\\\?\\Volume\{[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}\}\\$/i.test(v.volume) &&
+    /[1-9a-f]/i.test(v.volume.slice(v.volume.indexOf("{") + 1, v.volume.indexOf("}"))) && /^[1-9][0-9]*$/.test(v.serial) &&
     /^[a-f0-9]{32}$/.test(v.fileId) && /[1-9a-f]/.test(v.fileId);
 }
 /** Physical ownership veto key; NTFS GUID letter casing cannot name another volume. */

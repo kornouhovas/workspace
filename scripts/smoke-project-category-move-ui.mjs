@@ -160,7 +160,12 @@ export function expectedRuntimeCategoryRow(before, binding, operationId, outcome
   for (const category of [original, destination]) assert.deepEqual(JSON.parse(category.native_identity), inventoryEntry(tree, category.relative_path).identity);
   assert.deepEqual(JSON.parse(project.native_identity), inventoryEntry(tree, project.relative_path).identity);
   assert.equal(binding.originalCategoryId === binding.destinationCategoryId, outcome === "unchanged");
-  return { operation_id: operationId, source_id: binding.sourceId, initiating_workspace_id: binding.workspaceId,
+  const root={ok:true,evidence:JSON.parse(source.durable_evidence),mount:JSON.parse(source.applied_root_identity)};
+  const parent=category=>({ok:true,evidence:JSON.parse(category.durable_evidence),mount:JSON.parse(category.native_identity)});
+  const authorization=category=>JSON.stringify({version:1,generation:source.evidence_generation,root,parent:parent(category)});
+  return { original_authorization:authorization(original),destination_authorization:authorization(destination),
+    project_evidence:JSON.stringify({ok:true,evidence:JSON.parse(project.durable_evidence),mount:JSON.parse(project.native_identity)}),
+    operation_id: operationId, source_id: binding.sourceId, initiating_workspace_id: binding.workspaceId,
     project_id: binding.projectId, name: binding.name, expected_revision: binding.expectedRevision,
     original_category_id: binding.originalCategoryId, destination_category_id: binding.destinationCategoryId,
     canonical_root: source.canonical_root, original_parent_relative_path: binding.originalParent, destination_parent_relative_path: binding.destinationParent,

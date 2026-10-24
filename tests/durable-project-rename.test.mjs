@@ -135,6 +135,7 @@ test('restored rename attestations must bind the immutable request, durable pare
   const exported=f.send({type:'data.export'});assert.equal(exported.ok,true,JSON.stringify(exported));
   for(const mutate of [
    db=>db.exec("UPDATE project_rename_attestations SET journal=json_set(journal,'$.name','Changed')"),
+   db=>db.exec("UPDATE project_rename_attestations SET journal=json_set(journal,'$.stagedIdentity','{}')"),
    db=>db.exec("UPDATE project_rename_attestations SET project_evidence=json_set(project_evidence,'$.evidence.created','999999999999999999')"),
    db=>db.exec("UPDATE project_rename_attestations SET authorization=json_set(authorization,'$.parent.evidence.created','999999999999999999')"),
   ])assert.equal(f.send({type:'data.restore',content:alteredSnapshot(exported.value.content,mutate)}).ok,false);

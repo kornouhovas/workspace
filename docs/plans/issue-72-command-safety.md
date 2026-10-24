@@ -127,3 +127,46 @@ adoption. Narrow follow-up found no remaining concrete veto defect. This is stil
 not whole-issue or platform acceptance: move/category/archive/restore, native/file
 consumers, final full suite, native Electron/Windows/package/CI and integration
 remain outstanding. No push, main merge, release or owner live-data repair.
+
+### Third slice: two-parent category moves
+
+Production moves and explicit recovery now pin both parent authorizations to one
+source generation and root/mount snapshot. Migration0027 adds immutable nullable
+original/destination authorization and project evidence, plus append-only recovery
+attestations. Cross-run recovery renews mounts while preserving original durable
+proofs and journal bytes. Authentic0023 grouped moves retain exact legacy triples
+and operation-only parent consent. Scoped pending moves remain reserved after
+anchor loss and root-only rebinding. Metadata IDs, property values, native
+no-replace behavior, original retries and the compound-removal child exception
+remain intact.
+
+Coverage decisions: replace the obsolete production move-denial expectation with
+an actual compiled production IPC move and private-proof non-disclosure. Move the
+remaining blanket denial checks to archive/native/file/category boundaries.
+Retain legacy engine/crash checks and add a separate production crash matrix,
+including forced parent termination before native effect, after native effect,
+after destination evidence and after commit. Restore the deferred production
+`keep_original` oracle with a genuinely delayed pre-settlement scan and sibling
+projections; the late scan cannot reintroduce ambiguity/degraded state.
+
+Backup controls reject inconsistent two-parent roots, missing/future proofs,
+mutated attestation requests and contradictions in previously recorded native
+history. Shared creation/rename history-retention controls went red before the
+validator repair. Invalid source-generation text and malformed NTFS GUIDs also
+went red before their narrow validation repairs. Existing schema/default/rewind
+fixtures explicitly cover migration0027; no new skips or blanket retirements.
+
+Observed Node22.21.1/macOS arm64: typecheck, lint and fresh build passed; affected
+public/engine/backup/runtime set225/225, transport/source/fixture set60/60 and
+production plus legacy crash matrix12/12 passed. The expanded durable move set
+passed23/23, including created/volume/scope substitutions for root, both parents
+and project with no native dispatch. Migration renewal766 tests:765 passed, one
+existing skip, zero failures/cancellations. That run precedes only the additional
+crash/substitution test coverage, whose affected checks passed separately.
+Standards/Spec reviews found no concrete remaining defect in the move slice.
+
+This is not whole-issue acceptance. Category folder/removal, archive/restore,
+project reassociation and native/file consumers remain gated. Final review/full
+suite and actual macOS/Windows Electron/package/CI evidence remain outstanding;
+modeled remounts and Node-native process crashes do not establish Windows or
+Electron acceptance. No feature push or integration has occurred.
