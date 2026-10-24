@@ -1804,3 +1804,11 @@ application behavior, so this renewal includes the complete three-host suite and
 all original development/package Sources consumers, rather than substituting
 focused successes for full acceptance. Retain81a3381d's passing macOS receipt and
 original failing Windows receipts at their actual provenance.
+
+
+A further sharing-policy review after passing40093275559 added evidence-layer
+native-child avoidance and route-substitution controls. `source-access-repair`
+therefore also renews `discovery-canonicalization.test.mjs` on both Windows hosts,
+retaining source-level native root checks. Passing earlier full receipts do not
+waive this finding; inspect the repaired focused gate before the next full
+source-access renewal. The original ordinary/full selection is unchanged.

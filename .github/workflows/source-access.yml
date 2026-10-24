@@ -85,7 +85,7 @@ jobs:
         run: |
           mkdir -p work/ci-source-access-repair
           set -o pipefail
-          node --import tsx --test tests/durable-folder-evidence.test.mjs tests/source-association-service.test.mjs tests/source-identity-upgrade.test.mjs tests/text-properties-service.test.mjs tests/windows-rename-diagnostics.test.mjs 2>&1 | tee work/ci-source-access-repair/original.log
+          node --import tsx --test tests/durable-folder-evidence.test.mjs tests/discovery-canonicalization.test.mjs tests/source-association-service.test.mjs tests/source-identity-upgrade.test.mjs tests/text-properties-service.test.mjs tests/windows-rename-diagnostics.test.mjs 2>&1 | tee work/ci-source-access-repair/original.log
       - name: Preserve original result
         if: always()
         uses: actions/upload-artifact@v4

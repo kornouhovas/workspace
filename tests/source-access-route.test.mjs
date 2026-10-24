@@ -54,7 +54,7 @@ test('Windows renewal runs only original failed families and propagates failure'
  assert.deepEqual(job.strategy.matrix.os,['windows-latest','windows-2022']);
  assert.equal(job.strategy['fail-fast'],false);
  const step=job.steps.find(step=>step.name==='Original failed Windows families');
- for(const file of ['durable-folder-evidence','source-association-service','source-identity-upgrade','text-properties-service','windows-rename-diagnostics'])assert.ok(step.run.includes(`tests/${file}.test.mjs`));
+ for(const file of ['durable-folder-evidence','discovery-canonicalization','source-association-service','source-identity-upgrade','text-properties-service','windows-rename-diagnostics'])assert.ok(step.run.includes(`tests/${file}.test.mjs`));
  assert.ok(!step.run.includes('test:all'));
  const probe=step.run.replace(/node --import tsx --test[^\n]*? 2>&1/,'node -e "process.exit(23)" 2>&1').replace('tee work/ci-source-access-repair/original.log','cat');
  assert.equal(spawnSync('bash',['-c',probe],{encoding:'utf8'}).status,23);

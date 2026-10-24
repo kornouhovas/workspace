@@ -41,8 +41,12 @@ export function sameDurableFolder(a: FolderEvidence, b: FolderEvidence, includeS
 }
 export function observeFolder(path: string, scope: string): FolderObservation {
   try {
+    // Match discovery's Windows route policy: native realpath briefly opens a
+    // descendant without DELETE sharing. Canonical roots remain established by
+    // the source boundary; legacy resolution still rejects redirected routes.
+    const routeRealpath = process.platform === "win32" ? realpathSync : realpathSync.native;
     const before = lstatSync(path, { bigint: true });
-    if (!before.isDirectory() || realpathSync.native(path) !== path) return {ok: false, reason: "changed"};
+    if (!before.isDirectory() || routeRealpath(path) !== path) return {ok: false, reason: "changed"};
     if (before.ino <= 0n || before.birthtimeNs <= 0n) return {ok:false,reason:"missing_attributes"};
     if (process.platform !== "darwin" && process.platform !== "win32") return {ok: false, reason: "unsupported"};
     if (!native) {
@@ -61,7 +65,7 @@ export function observeFolder(path: string, scope: string): FolderObservation {
     if (!validateEvidence(evidence)) return {ok: false, reason: "missing_attributes"};
     const after = lstatSync(path, {bigint: true});
     if (!after.isDirectory() || before.dev !== after.dev || before.ino !== after.ino || before.birthtimeNs !== after.birthtimeNs ||
-      realpathSync.native(path) !== path) return {ok: false, reason: "changed"};
+      routeRealpath(path) !== path) return {ok: false, reason: "changed"};
     return {ok: true, evidence, mount: {dev: after.dev.toString(), ino: after.ino.toString(), birthtimeNs: after.birthtimeNs.toString()}};
   } catch (error) {
     const code = (error as NodeJS.ErrnoException).code;

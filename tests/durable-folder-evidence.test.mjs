@@ -2,7 +2,7 @@ import {rootOwnershipConflict} from '../src/service/source-identity.ts';
 import fs from 'node:fs';
 import {syncBuiltinESMExports} from 'node:module';
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, rmSync, realpathSync, symlinkSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, rmSync, realpathSync, renameSync, symlinkSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
@@ -59,4 +59,42 @@ test('native evidence supports long Unicode category and project descendants on 
   const alias=join(category,'Alias');symlinkSync(project,alias,process.platform==='win32'?'junction':'dir');
   assert.equal(observeFolder(alias,'installation-test').ok,false,'Long-path support never authorizes a link');
  }finally{rmSync(root,{recursive:true,force:true});}
+});
+
+test('evidence route checks retain Windows non-exclusive realpath policy',()=>{
+ const root=realpathSync.native(mkdtempSync(join(tmpdir(),'workspace-evidence-sharing-'))),child=join(root,'Project');mkdirSync(child);
+ const original=fs.realpathSync.native;let childNativeCalls=0;
+ try{
+  fs.realpathSync.native=(path,...args)=>{if(path===child)childNativeCalls++;return original(path,...args);};
+  const observed=observeFolder(child,'installation-test');assert.equal(observed.ok,true,JSON.stringify(observed));
+  assert.equal(childNativeCalls,process.platform==='win32'?0:2,'Windows evidence must not reopen descendants through native realpath');
+ }finally{fs.realpathSync.native=original;rmSync(root,{recursive:true,force:true});}
+});
+
+// Model the Windows route policy on every host, while the preceding actual-host
+// controls retain sufficient native evidence coverage. A foreign host's adapter
+// cannot supply NTFS evidence; that finite failure still must not open the child.
+test('Windows evidence avoids native descendant opens even when provider evidence is unavailable',()=>{
+ const root=realpathSync.native(mkdtempSync(join(tmpdir(),'workspace-evidence-route-'))),child=join(root,'Project');mkdirSync(child);
+ const platform=Object.getOwnPropertyDescriptor(process,'platform'),host=process.platform,original=fs.realpathSync,originalNative=original.native;
+ let childNativeCalls=0,legacyCalls=0;
+ const replacement=(path,...args)=>{if(path===child)legacyCalls++;return original(path,...args);};
+ replacement.native=(path,...args)=>{if(path===child){childNativeCalls++;throw new Error('Native descendant open would contend with external rename');}return originalNative(path,...args);};
+ try{
+  Object.defineProperty(process,'platform',{value:'win32'});fs.realpathSync=replacement;syncBuiltinESMExports();
+  const observed=observeFolder(child,'installation-test');
+  assert.equal(childNativeCalls,0,'Windows evidence must not enter the non-DELETE-sharing native realpath API');
+  assert.ok(legacyCalls>0);if(host==='win32')assert.equal(observed.ok,true,JSON.stringify(observed));
+ }finally{fs.realpathSync=original;syncBuiltinESMExports();Object.defineProperty(process,'platform',platform);rmSync(root,{recursive:true,force:true});}
+});
+
+for(const link of [false,true])test(`evidence route resolution rejects an in-flight ${link?'link':'folder identity'} substitution`,()=>{
+ const root=realpathSync.native(mkdtempSync(join(tmpdir(),'workspace-evidence-route-swap-'))),child=join(root,'Project'),external=join(root,'External');mkdirSync(child);mkdirSync(external);
+ const original=fs.realpathSync,originalNative=original.native;let swapped=false;
+ const wrap=resolve=>(path,...args)=>{const resolved=resolve(path,...args);if(path===child&&!swapped){swapped=true;renameSync(child,join(root,'Held'));if(link)symlinkSync(external,child,process.platform==='win32'?'junction':'dir');else mkdirSync(child);}return resolved;};
+ const replacement=wrap(original);replacement.native=wrap(originalNative);
+ try{
+  fs.realpathSync=replacement;syncBuiltinESMExports();const observed=observeFolder(child,'installation-test');
+  assert.equal(swapped,true);assert.equal(observed.ok,false,JSON.stringify(observed));if(!link)assert.equal(observed.reason,'changed');
+ }finally{fs.realpathSync=original;syncBuiltinESMExports();rmSync(root,{recursive:true,force:true});}
 });

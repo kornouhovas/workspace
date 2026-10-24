@@ -159,8 +159,9 @@ Runner kernel25.6.0; release app.asar SHA256:
 `09b75935cac00aabf9762ef5a2b856d590f769c33efe39d6512eab1395e64c96`.
 This clean-host success does not change the failed local macOS27 receipts.
 
-Both Windows latest and Windows2022 completed3553 tests:3506 passed,33 failed,
-0 cancelled,14 existing skips. Failures match in five files. Seven native/binding/
+Both Windows latest and Windows2022 main batches completed3553 tests:3506
+passed,33 failed,0 cancelled,14 existing skips. Two preceding isolated batches
+added65 passing tests, so each full Windows command totalled3618 tests/3571 passed. Failures match in five files. Seven native/binding/
 upgrade controls expose8.3 temp paths from legacy `realpathSync`; fixtures now
 prepare their canonical paths through `realpathSync.native`, matching production.
 Old-row preservation and strict native rejection assertions remain unchanged.
@@ -215,3 +216,42 @@ A renewed complete three-host source-access route is required for this applicati
 adapter repair, including previously unreached Windows production dev and packaged
 Sources. Earlier receipts retain their original SHAs. Acceptance stays open until
 that result and all required artifacts are inspected.
+
+
+## Sharing-policy review before acceptance
+
+[Run40093275559/1](https://github.com/kornouhovas/workspace/actions/runs/40093275559)
+at2bc9a52f passed all three hosts and production dev/package Sources, with normal
+exit/cleanup. Inspected complete log batches: macOS3536 tests/3509 passed/27 existing
+skips; each Windows host3620 tests/3606 passed/14 existing skips, including isolated
+51+14 batches before the3555-test main batch. All failures/cancellations were zero.
+Reports pin SHA/run/attempt/kernel and actual package hashes. Earlier Windows
+checkpoint counts described only main batches; the isolated65 passes must also
+be included when reporting full-command totals.
+
+Acceptance nevertheless remains open: further call-path review found that new
+folder evidence still called Windows `realpathSync.native` on descendants, an API
+exposure deliberately avoided by discovery. The [pinned Node/libuv source](https://raw.githubusercontent.com/nodejs/node/v22.21.1/deps/uv/src/win/fs.c)
+and the retained Windows differential in [issue17 evidence](issue-17-create-reveal.md)
+document native child opens conflicting with parent rename. This is a concrete
+sharing-policy regression, not claimed as a cause of any current CI failure.
+Green finite runs do not establish absence of that temporary handle exposure.
+
+The evidence adapter now uses the same non-exclusive Windows route resolver as
+discovery before/after the native observation. Source/scanner native ROOT
+canonicalization, exact resolved-route equality, before/after lstat, namespaced
+native operands, reparse and sufficient-volume checks remain. A portable policy
+control went red with1 unwanted native child open, then green after the repair.
+Actual-host native evidence/call counters and paired link/identity substitution
+during resolution supplement scanner root/containment controls. Local20/20 targeted
+and stable130-test affected renewal127 passed/3 existing skips. This is not actual
+Windows acceptance for the new change.
+
+Independent Spec review found no remaining root/link/alias defect in the repair.
+One reviewer attempt overlapped an artifact-producing build and returned provider
+unavailable failures; that attempt is invalid build-overlap evidence, not a native
+provider flake or acceptance. Stable post-build renewal is recorded separately.
+Focused Windows renewal now includes discovery-canonicalization alongside the
+original five files. After it passes and artifacts are inspected, renew the complete
+trace-free candidate again before integration. No old receipt is relabelled as
+execution of this sharing-policy repair.
