@@ -76,3 +76,35 @@ Windows native compilation/runtime, packaged Node/Electron loading, all remainin
 required platform scenarios, final independent review and exact-SHA CI/integration
 remain open. The existing owner-authorized integration route remains conditional on acceptance;
 #71 closure and integration into `new-workspace` are not ready.
+
+
+## Continuation: discovery and preservation repairs
+
+The resumed implementation adds complete observed-display caching (availability
+stays at the last accepted observation until Refresh, while independent metadata
+stays current), durable evidence for background-created needed categories, and
+transactional durable/mount revalidation. Historical native and durable-ID aliases
+remain conflict inputs even after root device renumbering; they cannot authorize
+continuity or the dormant direct-project/category role exception. Verified records
+cannot use source enrollment to bypass gated relocation/reassociation. Root-only
+review rejects duplicate root/descendant durable IDs. Apply verifies exact expected
+association/source state and rolls back unexpected trigger changes.
+
+Observed focused safety receipt: **42/42 passed**, macOS arm64, Node 22.21.1:
+
+```sh
+node --import tsx --test tests/source-association-service.test.mjs tests/observed-projects-service.test.mjs tests/durable-folder-evidence.test.mjs tests/installation-scope.test.mjs tests/source-identity-upgrade.test.mjs tests/source-association-ui.test.tsx
+```
+
+This includes paired direct/grouped historical conflicts with root device
+renumbering, genuine role history versus contradictory creation evidence, needed
+category restart/volume/unsupported/duplicate-ID/transaction-change cases, verified
+mapping rejection and trigger-induced state-change rollback. The private typed
+evidence-reader dependency is backend factory injection only; no renderer/request
+field can select a provider. Production defaults remain the fixed native adapter.
+
+Inherited fixture reconciliation remains in progress. An earlier resumed receipt
+passed **577/577** creation/rename/move/Reveal engine, association and observed-read
+scenarios. Subsequent ownership repairs renew affected checks separately; this is
+not a complete-candidate full-suite receipt. Earlier broad failures and pending
+Windows/package/CI gates above remain unresolved.

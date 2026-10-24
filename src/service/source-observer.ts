@@ -15,6 +15,7 @@ export interface SourceObservation {
   targets: WatchTarget[];
   // Internal read evidence, never a filesystem command's authorization.
   scan?: DiscoveryScan;
+  projection?: import("../contracts/workspaces.js").ProjectList;
   sourceKey?: string;
 }
 export interface ObserverDependencies {

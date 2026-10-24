@@ -1,4 +1,6 @@
-import { continuityRecords, discoveryIdentityState, sourceIdentity } from "./source-identity.js";
+import { storedEvidence } from "./source-identity.js";
+import { observeFolder, sameDurableFolder } from "./folder-evidence.js";
+import { continuityRecords, discoveryEvidence, sameVolumeEvidence, discoveryIdentityState, sourceIdentity, type EvidenceReader } from "./source-identity.js";
 import { hasUnfinishedProjectRelocation, readProjectReservations } from "./project-rename-reservations.js";
 import { randomUUID } from "node:crypto";
 import { asc, eq } from "drizzle-orm";
@@ -11,9 +13,9 @@ type Database = BetterSQLite3Database<typeof schema>;
 type Source = typeof schema.sources.$inferSelect;
 type Project = typeof schema.projects.$inferSelect;
 type Category = typeof schema.categories.$inferSelect;
-type Association = Project | Category;
-function storedIdentity(row: Association): NativeIdentity {
-  const value = JSON.parse(row.nativeIdentity);
+type Association = (Project | Category) & { originalNativeIdentity?: string; historicalNativeIdentity?: string; ownershipNativeIdentities?: string[] };
+function storedIdentity(row: Association, historical = false): NativeIdentity {
+  const value = JSON.parse(historical ? row.historicalNativeIdentity ?? row.nativeIdentity : row.nativeIdentity);
   if (!value || typeof value.dev !== "string" || typeof value.ino !== "string" || typeof value.birthtimeNs !== "string") {
     throw new Error("Invalid stored native evidence");
   }
@@ -46,7 +48,8 @@ function indexCandidates(scan: DiscoveryScan, directories: DirectoryObservation[
 // reserve placement, while sufficient unchanged native evidence identifies a move.
 function directMappings(scan: DiscoveryScan, records: Project[], exclusions: string[], archive: string | null) {
   const directories = scan.snapshot!.children.filter((child): child is DirectoryObservation => child.kind === "directory");
-  const identities = records.map(storedIdentity);
+  const identities = records.map(row => storedIdentity(row));
+  const ownership = records.map((row:Association) => [storedIdentity(row), storedIdentity(row, true), ...(row.ownershipNativeIdentities??[]).map(value=>JSON.parse(value) as NativeIdentity)]);
   const candidatesByIdentity = indexCandidates(scan, directories);
   const mappings = new Map<string, string>();
   for (const [index, row] of records.entries()) {
@@ -60,7 +63,7 @@ function directMappings(scan: DiscoveryScan, records: Project[], exclusions: str
     // explicit recovery's historical-evidence exception remains path-local.
     if (target.relativePath === row.relativePath) continue;
     if (directories.some((child) => child !== target && nativeAlias(child.identity, target.identity)) ||
-      identities.some((identity, other) => other !== index && nativeAlias(identity, target.identity))) continue;
+      ownership.some((identities, other) => other !== index && identities.some(identity => nativeAlias(identity, target.identity)))) continue;
     mappings.set(row.id, target.relativePath);
   }
   // Removing a blocked owner can block its predecessors too. Keep only complete
@@ -80,7 +83,7 @@ interface Placement { relativePath: string; categoryId: string | null }
 
 function groupedMappings(scan: DiscoveryScan, projects: Project[], categories: Category[], exclusions: string[], archive: string | null) {
   const directories = scan.snapshot!.children.filter((child): child is DirectoryObservation => child.kind === "directory");
-  const evidence = [...categories, ...projects].map((row) => ({ row, identity: storedIdentity(row) }));
+  const evidence = [...categories, ...projects].flatMap((row:Association) => [storedIdentity(row), storedIdentity(row, true), ...(row.ownershipNativeIdentities??[]).map(value=>JSON.parse(value) as NativeIdentity)].map(identity => ({row, identity})));
   // Keep every alias, including historical and insufficient birth evidence.
   // The index narrows comparisons; it never chooses an owner or authorizes a move.
   const directoryAliases = indexNativeAliases(directories, child => child.identity);
@@ -95,15 +98,22 @@ function groupedMappings(scan: DiscoveryScan, projects: Project[], categories: C
   // history remains legitimate after the category moves; its old project locator
   // must stay dormant. Same-role reservations and reused/ambiguous evidence still
   // block reconciliation, and a new category has no owner for this exception.
-  const categoryRoleHistory = (row: Association, identity: NativeIdentity, owner?: Association) =>
-    owner !== undefined && !("categoryId" in owner) && !owner.modeInactive && owner.associationState === "active" &&
-    "categoryId" in row && row.categoryId === null && isChildName(row.relativePath) && row.sourceId === owner.sourceId &&
-    row.modeInactive && (row.associationState === "active" || row.associationState === "excluded") &&
-    reliableIdentity(identity) && sameIdentity(identity, storedIdentity(owner));
+  const categoryRoleHistory = (row: Association, owner?: Association) => {
+    if (!owner || "categoryId" in owner || owner.modeInactive || owner.associationState !== "active" ||
+      !("categoryId" in row) || row.categoryId !== null || !isChildName(row.relativePath) || row.sourceId !== owner.sourceId ||
+      !row.modeInactive || !["active","excluded"].includes(row.associationState)) return false;
+    // Alias projections may veto adoption, never prove legitimate role history.
+    if (row.durableEvidence !== null) {
+      const old = storedEvidence(row.durableEvidence), current = storedEvidence(owner.durableEvidence);
+      return !!old && !!current && sameDurableFolder(old,current);
+    }
+    const old = JSON.parse(row.originalNativeIdentity ?? row.nativeIdentity) as NativeIdentity;
+    return reliableIdentity(old) && sameIdentity(old,storedIdentity(owner));
+  };
   const conflict = (child: DirectoryObservation, owner?: Association, continuous = false) =>
     directoryAliases(child.identity).some((other) => other !== child) ||
-    evidenceAliases(child.identity).some(({ row, identity }) => row.id !== owner?.id &&
-      !(continuous && row.associationState === "replaced") && !categoryRoleHistory(row, identity, owner));
+    evidenceAliases(child.identity).some(({ row }) => row.id !== owner?.id &&
+      !(continuous && row.associationState === "replaced") && !categoryRoleHistory(row, owner));
   // The same-path recovery exception is continuous only. Cross-path matching
   // still rejects competing same-role records and ambiguous native evidence.
   const candidate = (row: Association) => {
@@ -176,7 +186,7 @@ function groupedMappings(scan: DiscoveryScan, projects: Project[], categories: C
 
 // Caller owns post-commit publication. Reconciliation never enrolls projects,
 // persists observed missing states, changes authored metadata or writes files.
-export function reconcileSource(db: Database, source: Source, observedScan?: DiscoveryScan, scope = ""): { changed: boolean; scan: DiscoveryScan | null } {
+export function reconcileSource(db: Database, source: Source, observedScan?: DiscoveryScan, scope = "", reader: EvidenceReader = observeFolder): { changed: boolean; scan: DiscoveryScan | null } {
   if (source.discoveryMode !== "direct" && source.discoveryMode !== "grouped") return { changed: false, scan: null };
   const grouped = source.discoveryMode === "grouped";
   const exclusions: unknown = JSON.parse(source.excludedRelativePaths);
@@ -186,10 +196,20 @@ export function reconcileSource(db: Database, source: Source, observedScan?: Dis
   const reservations = readReservations();
   const scanSource = () => reserveProjectPlacements((grouped ? scanGroupedSource : scanDirectSource)(source.canonicalRoot,
     source.archiveRelativePath, projectExclusions(exclusions, grouped ? "grouped" : "direct").effective), reservations);
-  const scan = observedScan ? reserveProjectPlacements(observedScan, reservations) : scanSource();
+  let scan = observedScan ? reserveProjectPlacements(observedScan, reservations) : scanSource();
   if (!scan.snapshot) return { changed: false, scan };
-  const identity = sourceIdentity(source, scan, scope);
+  const identity = sourceIdentity(source, scan, scope, reader);
   if (identity.state !== "verified") return {changed:false,scan:{state:discoveryIdentityState(identity.state),entries:[],snapshot:null}};
+  const evidence = discoveryEvidence(source,scan,scope,reader);
+  const rootEvidence=evidence.get("")!;
+  if(!rootEvidence.ok || !identity.observation.ok || JSON.stringify(rootEvidence)!==JSON.stringify(identity.observation))
+    return {changed:false,scan:{state:"changed",entries:[],snapshot:null}};
+  const eligible = (path:string) => {
+    const child=evidence.get(path);
+    const parent=path.includes("/")?evidence.get(path.split("/")[0]):rootEvidence;
+    return !!child && !!parent && sameVolumeEvidence(rootEvidence,child) && sameVolumeEvidence(rootEvidence,parent);
+  };
+  scan={...scan,entries:scan.entries.map(entry=>entry.reason===null&&!eligible(entry.relativePath)?{...entry,reason:"unresolved"}:entry)};
   // Observe topology but leave source locators untouched until relocation resolution.
   if (hasUnfinishedProjectRelocation(db, source.id)) return { changed: false, scan };
   const readSource = () => db.select().from(schema.sources).where(eq(schema.sources.id, source.id)).get();
@@ -203,12 +223,12 @@ export function reconcileSource(db: Database, source: Source, observedScan?: Dis
     !row.modeInactive && (grouped ? row.relativePath.split("/").length !== 2 || !categories.some((category) => category.id === row.categoryId &&
       (row.associationState !== "active" || !category.modeInactive && category.associationState === "active" && row.relativePath.split("/")[0] === category.relativePath)) :
       row.categoryId !== null || !isChildName(row.relativePath)))) throw new Error("Invalid configured associations");
-  const mapping = grouped ? groupedMappings(scan, continuityRecords(source, scan, records, scope), continuityRecords(source, scan, categories, scope), exclusions, source.archiveRelativePath) : null;
-  const mappings = mapping?.projects ?? new Map([...directMappings(scan, continuityRecords(source, scan, records, scope), exclusions, source.archiveRelativePath)]
+  const mapping = grouped ? groupedMappings(scan, continuityRecords(source, scan, records, scope, reader), continuityRecords(source, scan, categories, scope, reader), exclusions, source.archiveRelativePath) : null;
+  const mappings = mapping?.projects ?? new Map([...directMappings(scan, continuityRecords(source, scan, records, scope, reader), exclusions, source.archiveRelativePath)]
     .map(([id, relativePath]) => [id, { relativePath, categoryId: null }]));
   const categoryMappings = mapping?.categories ?? new Map<string, string>();
   const insertedCategories: Category[] = (mapping?.needed ?? []).map((child) => ({ modeInactive: false, id: randomUUID(), sourceId: source.id,
-    relativePath: child.relativePath, nativeIdentity: JSON.stringify(child.identity), durableEvidence: null, associationState: "active" }));
+    relativePath: child.relativePath, nativeIdentity: JSON.stringify(child.identity), durableEvidence: JSON.stringify((evidence.get(child.relativePath) as Extract<import("./folder-evidence.js").FolderObservation,{ok:true}>).evidence), associationState: "active" }));
   for (const target of mappings.values()) if (target.categoryId === null && grouped) {
     target.categoryId = insertedCategories.find((row) => row.relativePath === target.relativePath.split("/")[0])!.id;
   }
@@ -217,7 +237,9 @@ export function reconcileSource(db: Database, source: Source, observedScan?: Dis
   const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
   const verifyScan = () => {
     const current = scanSource();
-    if (!current.snapshot || !same(current.snapshot, scan.snapshot)) throw new Error("Reconciliation observation changed");
+    if (!current.snapshot || !same(current.snapshot, scan.snapshot) ||
+      sourceIdentity(source,current,scope,reader).state!=="verified" ||
+      !same([...discoveryEvidence(source,current,scope,reader)],[...evidence])) throw new Error("Reconciliation observation changed");
   };
   db.transaction((tx) => {
     if (!same(readSource(), source) || !same(readProjects(), records) || !same(readCategories(), categories) || !same(readProperty(), property) || !same(readReservations(), reservations)) throw new Error("Reconciliation configuration changed");

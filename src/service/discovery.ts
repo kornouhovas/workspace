@@ -273,6 +273,9 @@ export interface ProjectAssociation {
   sourceId: string;
   relativePath: string;
   nativeIdentity: string;
+  /** Conflict evidence only; never authority for continuity. */
+  historicalNativeIdentity?: string;
+  ownershipNativeIdentities?: string[];
   associationState: ProjectAssociationState;
 }
 export function reliableIdentity(value: NativeIdentity): boolean {
@@ -282,8 +285,8 @@ export function reliableIdentity(value: NativeIdentity): boolean {
 export function sameIdentity(a: NativeIdentity, b: NativeIdentity): boolean {
   return a.dev === b.dev && a.ino === b.ino && a.birthtimeNs === b.birthtimeNs;
 }
-function storedIdentity(row: ProjectAssociation): NativeIdentity {
-  const value = JSON.parse(row.nativeIdentity) as NativeIdentity;
+function storedIdentity(row: ProjectAssociation, historical = false): NativeIdentity {
+  const value = JSON.parse(historical ? row.historicalNativeIdentity ?? row.nativeIdentity : row.nativeIdentity) as NativeIdentity;
   if (!value || typeof value.dev !== "string" || typeof value.ino !== "string" || typeof value.birthtimeNs !== "string") {
     throw new Error("Invalid stored native identity");
   }
@@ -322,8 +325,11 @@ export function interpretProjects(scan: DiscoveryScan, records: ProjectAssociati
     bucket.push(row); retainedByPath.set(row.relativePath, bucket);
   }
   records.forEach((row, index) => {
-    const identity = identities[index], key = alias(identity), bucket = recordsByAlias.get(key) ?? [];
-    bucket.push({row, identity}); recordsByAlias.set(key, bucket);
+    const current = identities[index], historical = storedIdentity(row, true);
+    for (const identity of [current, historical, ...(row.ownershipNativeIdentities ?? []).map(value=>JSON.parse(value) as NativeIdentity)]) {
+      const key = alias(identity), bucket = recordsByAlias.get(key) ?? [];
+      bucket.push({row, identity}); recordsByAlias.set(key, bucket);
+    }
   });
   for (const row of retained.filter((row) => row.associationState !== "replaced")) {
     const child = childrenByPath.get(row.relativePath);
@@ -351,7 +357,7 @@ export function interpretProjects(scan: DiscoveryScan, records: ProjectAssociati
       reliableIdentity(storedIdentity(current)) && sameIdentity(storedIdentity(current), child.identity);
     const collision = reservations.some((row) => !(row.associationState === "replaced" && continuouslyMatching) &&
       (row.relativePath === child.relativePath ||
-      (storedIdentity(row).dev === child.identity.dev && storedIdentity(row).ino === child.identity.ino))) ||
+      ([storedIdentity(row), storedIdentity(row, true), ...(row.ownershipNativeIdentities ?? []).map(value=>JSON.parse(value) as NativeIdentity)].some(identity => identity.dev === child.identity.dev && identity.ino === child.identity.ino)))) ||
       (recordsByAlias.get(alias(child.identity)) ?? []).some(({row, identity}) => row.id !== current?.id &&
       // Retired evidence alone cannot invalidate a continuously matching active
       // or excluded association established by recovery. New discovery stays conservative.

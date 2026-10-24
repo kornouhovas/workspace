@@ -1,6 +1,7 @@
+import { createWorkspacePublisher } from "./workspace-publication.js";
 import { createSourceAssociationService } from "./source-association.js";
 import { observeFolder } from "./folder-evidence.js";
-import { associationReason, continuityRecords, discoveryIdentityState, sourceIdentity, storedEvidence } from "./source-identity.js";
+import { associationReason, continuityRecords, discoveryIdentityState, sourceIdentity, storedEvidence, type EvidenceReader } from "./source-identity.js";
 import { createWorkspaceSessionService } from "./workspace-sessions.js";
 import { createProjectFilesService } from "./project-files.js";
 import type { SourceSettingsList } from "../contracts/workspaces.js";
@@ -167,7 +168,7 @@ export interface WorkspaceService {
     | { ok: false; error: { code: "invalid_input" | "storage"; message: string } };
 }
 
-export function createWorkspaceService(db: Database, filesystem = nativeFilesystem, observerDependencies?: ObserverDependencies, projectFilesystem?: ProjectFilesystem, projectRenameNative?: ProjectRenameNative, scope: string = randomUUID()): WorkspaceService {
+export function createWorkspaceService(db: Database, filesystem = nativeFilesystem, observerDependencies?: ObserverDependencies, projectFilesystem?: ProjectFilesystem, projectRenameNative?: ProjectRenameNative, scope: string = randomUUID(), readFolderEvidence: EvidenceReader = observeFolder): WorkspaceService {
   const previewTokens = new Map<string, {
     preview: DiscoveryPreview;
     snapshot: DiscoverySnapshot;
@@ -179,6 +180,7 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
     reservations: ReturnType<typeof readReservations>;
   }>();
   const listeners = new Set<(event: WorkspaceChangeEvent) => void>();
+  const publish = createWorkspacePublisher(listeners);
   const observationEvents = new Map<string, Extract<WorkspaceChangeEvent, { type: "workspace.sourceObserved" }>>();
   const subscriptionTimers = new Set<{ cancel(): void }>();
   const observed = new Map<string, { canonicalRoot: string; sourceAvailable: boolean }>();
@@ -271,7 +273,7 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
   }, projectFilesystem);
   const reveal = createProjectRevealService(db, projectFilesystem);
   const files = createProjectFilesService(reveal.authorizeProject);
-  const association = createSourceAssociationService(db, scope, observeFolder, (sourceId, revision) => {
+  const association = createSourceAssociationService(db, scope, readFolderEvidence, (sourceId, revision) => {
     association.invalidate(sourceId);
     invalidateSourceReviews(sourceId);
     observationVersions.set(sourceId, (observationVersions.get(sourceId) ?? 0) + 1);
@@ -410,7 +412,7 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
         }
         let snapshot = scan.snapshot;
         let state = scan.state;
-        const identity = sourceIdentity(source, scan, scope);
+        const identity = sourceIdentity(source, scan, scope, readFolderEvidence);
         const freshSource = source.appliedRootIdentity === null && source.discoveryMode === null;
         if (snapshot && (identity.state !== "verified" && !(freshSource && identity.state === "review_required" && identity.observation.ok))) {
           snapshot = null;
@@ -421,7 +423,7 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
         if (!snapshot) invalidateSourceReviews(source.id);
         const projects = readProjects(source.id);
         const categories = readCategories(source.id);
-        const interpretation = snapshot ? planDiscovery(scan, continuityRecords(source, scan, categories, scope), continuityRecords(source, scan, projects, scope), readReservations(source.id)) : null;
+        const interpretation = snapshot ? planDiscovery(scan, continuityRecords(source, scan, categories, scope, readFolderEvidence), continuityRecords(source, scan, projects, scope, readFolderEvidence), readReservations(source.id)) : null;
         const interpreted = interpretation?.entries ?? [];
         const property = db.select().from(schema.categoryProperties).where(eq(schema.categoryProperties.sourceId, source.id)).get();
         if (snapshot) state = interpreted.some((entry) => entry.reason === null) ? "ready" : "empty";
@@ -447,8 +449,8 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
         const source = workspaceSource(input.workspaceId as string);
         if (!source) return invalid("Choose a saved workspace.");
         const observation = input.observed === true ? observationCache.get(source.id) : undefined;
-        const scan = observation?.sourceKey === sourceObservationKey(source) ? observation.scan : undefined;
-        return { ok: true, value: projectList(input.workspaceId as string, source, scan) };
+        const accepted = observation?.sourceKey === sourceObservationKey(source) ? observation : undefined;
+        return { ok: true, value: projectList(input.workspaceId as string, source, accepted?.scan, accepted?.projection) };
       } catch { return storageFailure(); }
     },
     applyDiscovery(input) {
@@ -474,7 +476,7 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
         const scan = scanner(source.canonicalRoot, source.archiveRelativePath, token.preview.effectiveExcludedRelativePaths);
         if (!scan.snapshot || JSON.stringify(scan.snapshot) !== JSON.stringify(token.snapshot) ||
           !reliableIdentity(scan.snapshot.root.identity) || JSON.stringify(scanEvidence(source, scan)) !== JSON.stringify(token.evidence)) return stale();
-        const planned = planDiscovery(scan, continuityRecords(source, scan, token.categories, scope), continuityRecords(source, scan, token.projects, scope), readReservations(source.id));
+        const planned = planDiscovery(scan, continuityRecords(source, scan, token.categories, scope, readFolderEvidence), continuityRecords(source, scan, token.projects, scope, readFolderEvidence), readReservations(source.id));
         const interpretation = planned.projects;
         if (JSON.stringify(planned) !== JSON.stringify(token.interpretation)) return stale();
         const changed = source.discoveryMode !== mode ||
@@ -592,7 +594,7 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
       observationVersions.set(source.sourceId, observationVersion);
       const state = normalizeSource(db, source.sourceId, source.canonicalRoot, filesystem, observe);
       const configured = workspaceSource(input.workspaceId)!;
-      const reconciled = state.sourceAvailable ? reconcileSource(db, configured, observedScan, scope) : { changed: false, scan: null };
+      const reconciled = state.sourceAvailable ? reconcileSource(db, configured, observedScan, scope, readFolderEvidence) : { changed: false, scan: null };
       if (!state.sourceAvailable || reconciled.scan && !reconciled.scan.snapshot) invalidateSourceReviews(source.sourceId);
       if (reconciled.changed) pendingProjectEvents.push({ type: "workspace.projectsChanged", sourceId: source.sourceId,
         revision: configured.discoveryRevision + 1, workspaceIds: sourceState(source.sourceId, state).workspaceIds });
@@ -811,7 +813,7 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
   }
   function scanEvidence(source: typeof schema.sources.$inferSelect, scan: DiscoveryScan) {
     if (!scan.snapshot) return null;
-    const identity = sourceIdentity(source, scan, scope);
+    const identity = sourceIdentity(source, scan, scope, readFolderEvidence);
     const fresh = source.appliedRootIdentity === null && source.discoveryMode === null && source.durableEvidence === null;
     const root = identity.observation;
     if (!root.ok || (identity.state !== "verified" && !(fresh && identity.state === "review_required")) ||
@@ -819,7 +821,7 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
     const observations = [{relativePath:"",observation:root}];
     const aliases = new Set([JSON.stringify([root.evidence.provider,root.evidence.volume,root.evidence.serial,root.evidence.fileId])]);
     for (const entry of scan.entries.filter(entry => entry.reason === null)) {
-      const observed = observeFolder(join(source.canonicalRoot, entry.relativePath), scope);
+      const observed = readFolderEvidence(join(source.canonicalRoot, entry.relativePath), scope);
       const child = scan.snapshot.children.find(child => child.relativePath === entry.relativePath);
       if (!observed.ok || child?.kind !== "directory" || !sameIdentity(observed.mount, child.identity) ||
         root.evidence.volume !== observed.evidence.volume || root.evidence.serial !== observed.evidence.serial) return null;
@@ -827,11 +829,11 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
       if (aliases.has(key)) return null;
       aliases.add(key); observations.push({relativePath:entry.relativePath,observation:observed});
     }
-    if (JSON.stringify(observeFolder(source.canonicalRoot, scope)) !== JSON.stringify(root)) return null;
+    if (JSON.stringify(readFolderEvidence(source.canonicalRoot, scope)) !== JSON.stringify(root)) return null;
     return observations;
   }
   function enrollEvidence(source: typeof schema.sources.$inferSelect, relativePath: string) {
-    const root = observeFolder(source.canonicalRoot, scope), child = observeFolder(join(source.canonicalRoot, relativePath), scope);
+    const root = readFolderEvidence(source.canonicalRoot, scope), child = readFolderEvidence(join(source.canonicalRoot, relativePath), scope);
     if (!root.ok || !child.ok || root.evidence.volume !== child.evidence.volume || root.evidence.serial !== child.evidence.serial) throw new StalePreview();
     return JSON.stringify(child.evidence);
   }
@@ -842,7 +844,7 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
     return db.select().from(schema.categories).where(eq(schema.categories.sourceId, sourceId)).orderBy(asc(schema.categories.id)).all();
   }
   function projectList(workspaceId: string, source: typeof schema.sources.$inferSelect,
-    observedScan?: DiscoveryScan): ProjectList {
+    observedScan?: DiscoveryScan, displayed?: ProjectList): ProjectList {
     const mode = source.discoveryMode;
     if (!validExclusions(JSON.parse(source.excludedRelativePaths), "grouped") || !validArchive(source.archiveRelativePath) ||
       !Number.isSafeInteger(source.discoveryRevision) || source.discoveryRevision < 0 ||
@@ -853,24 +855,25 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
     const categories = readCategories(source.id);
     const property = db.select().from(schema.categoryProperties).where(eq(schema.categoryProperties.sourceId, source.id)).get();
     if (mode === "grouped" && !property) throw new Error("Invalid category property configuration");
-    let state = currentScan.state;
-    const identity = sourceIdentity(source, currentScan, scope);
-    if (currentScan.snapshot && identity.state !== "verified") state = discoveryIdentityState(identity.state);
-    const verified = currentScan.snapshot && identity.state === "verified";
+    let state = displayed?.state ?? currentScan.state;
+    const identity = displayed ? null : sourceIdentity(source, currentScan, scope, readFolderEvidence);
+    if (currentScan.snapshot && identity && identity.state !== "verified") state = discoveryIdentityState(identity.state);
+    const verified = !!currentScan.snapshot && (displayed ? ["ready","empty"].includes(displayed.state) : identity?.state === "verified");
     if (!verified) invalidateSourceReviews(source.id);
-    const planned = verified ? planDiscovery(currentScan, continuityRecords(source, currentScan, categories, scope), continuityRecords(source, currentScan, projects, scope), readReservations(source.id)) : null;
+    const planned = verified && !displayed ? planDiscovery(currentScan, continuityRecords(source, currentScan, categories, scope, readFolderEvidence), continuityRecords(source, currentScan, projects, scope, readFolderEvidence), readReservations(source.id)) : null;
     const interpretation = planned?.projects;
     const archivedIds = new Set(db.select().from(schema.projectArchives).where(eq(schema.projectArchives.sourceId, source.id)).all().map(a => a.projectId));
+    const displayedRows = new Map([...(displayed?.projects ?? []), ...(displayed?.retainedProjects ?? [])].map(row => [row.projectId,row]));
     const projection = projects.filter(row => !archivedIds.has(row.id)).map((row) => {
       const category = categories.find((category) => category.id === row.categoryId && !category.modeInactive && category.associationState === "active");
       if (!row.modeInactive && row.associationState === "active" && (mode === "grouped" ? !category || row.relativePath.split("/").length !== 2 || row.relativePath.split("/")[0] !== category.relativePath : row.categoryId !== null)) {
         throw new Error("Invalid required category");
       }
-      const reason = verified ? associationReason(source,currentScan,row,scope) : identity.state;
+      const reason = displayed ? displayedRows.get(row.id)?.identityReason ?? null : verified ? associationReason(source,currentScan,row,scope,readFolderEvidence) : identity?.state;
       return { ...(reason && reason !== "verified" ? {identityReason:reason} : {}), projectId: row.id, relativePath: row.relativePath, name: row.relativePath.split("/").at(-1)!, categoryId: row.categoryId,
         categoryName: categories.find((category) => category.id === row.categoryId)?.relativePath ?? null,
         retentionReason: row.modeInactive ? "mode_change" as const : null,
-        associationState: row.associationState, resolution: row.modeInactive
+        associationState: row.associationState, resolution: displayed ? displayedRows.get(row.id)?.resolution ?? "unresolved" : row.modeInactive
           ? modeRetainedResolution(verified ? currentScan : { ...currentScan, snapshot: null }, row, JSON.parse(source.excludedRelativePaths), source.archiveRelativePath)
           : reason === "folder_changed" || reason === "different_volume" ? "replaced" : reason && reason !== "verified" ? "unresolved" : verified ? interpretation?.retained.find((observed) => observed.id === row.id)?.associationState ?? "unresolved" : "unresolved" };
     }).sort((a, b) => a.relativePath < b.relativePath ? -1 : a.relativePath > b.relativePath ? 1 : 0);
@@ -879,7 +882,7 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
     const retainedProjects = projection.filter((row) => !active.includes(row));
     return { workspaceId, sourceId: source.id, revision: source.discoveryRevision, configured: mode !== null, mode,
       categories: categories.filter((row) => mode === "grouped" && !row.modeInactive && row.associationState === "active" &&
-        (!planned || planned.categories.retained.find((observed) => observed.id === row.id)?.associationState === "active")).map((row) => ({
+        (displayed ? displayed.categories.some(category => category.categoryId === row.id) : !planned || planned.categories.retained.find((observed) => observed.id === row.id)?.associationState === "active")).map((row) => ({
         categoryId: row.id, relativePath: row.relativePath, name: row.relativePath,
         ...(presentations.find(p => p.categoryId === row.id) ? { presentation: (() => { const p = presentations.find(p => p.categoryId === row.id)!; return { categoryId: row.id, color: p.color, hidden: p.hidden, position: p.position }; })() } : {}),
       })).sort((a, b) => (a.presentation?.position ?? Number.MAX_SAFE_INTEGER) - (b.presentation?.position ?? Number.MAX_SAFE_INTEGER) || (a.relativePath < b.relativePath ? -1 : a.relativePath > b.relativePath ? 1 : 0)),
@@ -903,7 +906,7 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
     // Timestamp changes help validate scans, but have no semantic observation revision.
     const topology = scan.snapshot?.children.map((child) => child.kind === "excluded" ? child :
       { relativePath: child.relativePath, kind: child.kind, identity: child.identity });
-    return { state: projection.state, targets, scan, sourceKey: sourceObservationKey(current),
+    return { state: projection.state, targets, scan, projection:structuredClone(projection), sourceKey: sourceObservationKey(current),
       signature: JSON.stringify([topology, projection.projects, projection.retainedProjects, projection.categories]) };
   }
 
@@ -912,23 +915,6 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
       .where(eq(schema.workspaces.sourceId, sourceId))
       .orderBy(asc(schema.workspaces.position), asc(schema.workspaces.id)).all();
     return { sourceId, workspaceIds: references.map((row) => row.workspaceId), ...state };
-  }
-
-  const notificationQueue: WorkspaceChangeEvent[] = [];
-  let publishing = false;
-  function publish(events: WorkspaceChangeEvent[]) {
-    notificationQueue.push(...events);
-    if (publishing) return;
-    publishing = true;
-    try {
-      let event: WorkspaceChangeEvent | undefined;
-      while ((event = notificationQueue.shift())) {
-        for (const listener of [...listeners]) {
-          // Subscriber failure cannot change the result of a committed command.
-          try { listener(event); } catch { /* The remaining subscribers still receive the change. */ }
-        }
-      }
-    } finally { publishing = false; }
   }
 
   function returnedSnapshot(result: ReturnType<WorkspaceService["rename"]>): WorkspaceLoad | undefined {

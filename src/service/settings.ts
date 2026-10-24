@@ -1,3 +1,4 @@
+import type { EvidenceReader } from "./source-identity.js";
 import { installationScope } from "./installation-scope.js";
 import type { SourceSettingsList } from "../contracts/workspaces.js";
 import { protectMigration } from "./migration-backup.js";
@@ -86,6 +87,7 @@ export function openSettingsService(
   observerDependencies?: ObserverDependencies,
   projectFilesystem?: ProjectFilesystem,
   projectRenameNative?: ProjectRenameNative,
+  evidenceReader?: EvidenceReader,
 ): SettingsService {
   mkdirSync(dirname(databasePath), { recursive: true });
   const sqlite = new Database(databasePath);
@@ -114,7 +116,7 @@ export function openSettingsService(
   };
   const scope = installationScope(dirname(databasePath));
   const backups = createAutomaticBackups(sqlite, databasePath);
-  let workspaces = createWorkspaceService(db, workspaceFilesystem, observerDependencies, projectFilesystem, projectRenameNative, scope);
+  let workspaces = createWorkspaceService(db, workspaceFilesystem, observerDependencies, projectFilesystem, projectRenameNative, scope, evidenceReader);
   return {
     get workspaces() { return workspaces; },
     moveProjectCategory: (...args) => workspaces.moveProjectCategory(...args),
@@ -192,7 +194,7 @@ export function openSettingsService(
         const result = dataRecovery(sqlite, input);
         if (result.ok) {
           workspaces.close();
-          workspaces = createWorkspaceService(db, workspaceFilesystem, observerDependencies, projectFilesystem, projectRenameNative, scope);
+          workspaces = createWorkspaceService(db, workspaceFilesystem, observerDependencies, projectFilesystem, projectRenameNative, scope, evidenceReader);
         }
         return result;
       }

@@ -31,7 +31,7 @@ export function createSourceAssociationService(db: Database, scope: string, read
     const siblings = db.select().from(schema.workspaces).where(eq(schema.workspaces.sourceId, source.id)).orderBy(asc(schema.workspaces.id)).all();
     return {workspace, source, categories, projects, archives, reservations, siblings};
   }
-  function inspect(workspaceId: string, mappings: FolderMapping[]) {
+  function inspect(workspaceId: string, mappings: FolderMapping[], afterEnrollment = false) {
     const data = read(workspaceId), {source} = data;
     const mode = source.discoveryMode ?? "direct";
     if (mode !== "direct" && mode !== "grouped") throw new StaleBinding();
@@ -71,6 +71,7 @@ export function createSourceAssociationService(db: Database, scope: string, read
         return reliableIdentity(old) && reliableIdentity(current) && sameIdentity(old,current);
       } catch {return false;}
     };
+    const verifiedParents = new Set<string>();
     const candidates = rows.map(({kind, row}) => {
       const mapping = mappings.find(m => m.kind === kind && m.id === row.id);
       const path = mapping?.relativePath ?? row.relativePath;
@@ -87,9 +88,10 @@ export function createSourceAssociationService(db: Database, scope: string, read
         counts.get(key(observed)!) === 1 && child?.kind === "directory" && sameIdentity(child.identity, observed.mount) &&
         !rows.some(other => other.row.id !== row.id && !dormantRoleHistory(other,kind,row) && (other.row.relativePath === path || sameOwnership(other.row, observed))) &&
         !data.reservations.some(r => r.relativePath === path || r.relativePath.startsWith(`${path}/`) || path.startsWith(`${r.relativePath}/`)));
-      return {kind, id:row.id, relativePath:path, savedPath:row.relativePath, eligible, selected:!!mapping, reason:observed?.ok && root.observation.ok && (observed.evidence.provider !== root.observation.evidence.provider || observed.evidence.volume !== root.observation.evidence.volume || observed.evidence.serial !== root.observation.evidence.serial) ? "different_volume" as const : oldState as import("../contracts/source-association.js").FolderIdentityReason};
+      if (kind === "category" && eligible && oldState === "verified" && path === row.relativePath) verifiedParents.add(row.id);
+      return {kind, id:row.id, relativePath:path, savedPath:row.relativePath, eligible:eligible && (oldState !== "verified" || afterEnrollment && path === row.relativePath), selected:!!mapping, reason:observed?.ok && root.observation.ok && (observed.evidence.provider !== root.observation.evidence.provider || observed.evidence.volume !== root.observation.evidence.volume || observed.evidence.serial !== root.observation.evidence.serial) ? "different_volume" as const : oldState as import("../contracts/source-association.js").FolderIdentityReason};
     });
-    let valid = !!rootEligible && mappings.every(m => candidates.some(c => c.kind === m.kind && c.id === m.id && c.eligible));
+    let valid = !!rootEligible && counts.get(key(root.observation)!) === 1 && mappings.every(m => candidates.some(c => c.kind === m.kind && c.id === m.id && c.eligible));
     // A legacy parent requires its own explicit mapping; root consent never enrolls it implicitly.
     for (const mapping of mappings) {
       if (mapping.kind === "project" && mode === "grouped") {
@@ -101,7 +103,7 @@ export function createSourceAssociationService(db: Database, scope: string, read
         if (!parent || mapping.relativePath.split("/")[0] !== parentPath || (!selectedParent &&
           (!parentObserved?.ok || !root.observation.ok || parentObserved.evidence.volume !== root.observation.evidence.volume ||
             parentObserved.evidence.serial !== root.observation.evidence.serial ||
-            !candidates.some(c => c.kind === "category" && c.id === parent.id && c.eligible) ||
+            !verifiedParents.has(parent.id) ||
             identityState(parent.durableEvidence, parentObserved, scope) !== "verified"))) valid = false;
       }
       evidence.push({mapping, observation: observations.get(mapping.relativePath) ?? {ok:false,reason:"missing_attributes"}});
@@ -175,8 +177,16 @@ export function createSourceAssociationService(db: Database, scope: string, read
           for (const project of movedProjects) db.update(schema.projects).set({associationState:project.associationState}).where(eq(schema.projects.id, project.id)).run();
           db.update(schema.sources).set({durableEvidence:JSON.stringify(root.evidence), evidenceGeneration:source.evidenceGeneration + 1,
             discoveryRevision:source.discoveryRevision + 1}).where(eq(schema.sources.id, source.id)).run();
-          const after = inspect(saved.workspaceId, saved.preview.mappings);
-          if (!after.valid || !equal(after.scan, saved.scan) || !equal(after.evidence, saved.evidence)) throw new StaleBinding();
+          const after = inspect(saved.workspaceId, saved.preview.mappings, true);
+          const expectedRows = <T extends {id:string;relativePath:string;durableEvidence:string|null}>(rows:T[],kind:"project"|"category") => rows.map(row => {
+            const accepted=current.evidence.find(item=>item.mapping?.kind===kind&&item.mapping.id===row.id);
+            return accepted?.mapping && accepted.observation.ok
+              ? {...row,relativePath:accepted.mapping.relativePath,durableEvidence:JSON.stringify(accepted.observation.evidence)} : row;
+          });
+          const expected = {...current.data,
+            source:{...source,durableEvidence:JSON.stringify(root.evidence),evidenceGeneration:source.evidenceGeneration+1,discoveryRevision:source.discoveryRevision+1},
+            projects:expectedRows(current.data.projects,"project"),categories:expectedRows(current.data.categories,"category")};
+          if (!after.valid || !equal(after.data,expected) || !equal(after.scan, saved.scan) || !equal(after.evidence, saved.evidence)) throw new StaleBinding();
           return {...source,evidenceGeneration:source.evidenceGeneration + 1,discoveryRevision:source.discoveryRevision + 1};
         });
         committed(source.id, source.discoveryRevision);

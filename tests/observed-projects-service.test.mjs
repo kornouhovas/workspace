@@ -27,8 +27,8 @@ test("explicit observed project reads reuse the last complete source observation
   const observed = f.unwrap(f.query({observed:true}));
   assert.deepEqual(observed,before,"Displayed state explicitly remains the last validated observation");
   assert.ok(f.unwrap(f.query()).retainedProjects.some(p=>p.projectId===project.projectId));
-  const denied = f.unwrap(f.command("renameProject",{projectId:project.projectId,operationId:randomUUID(),name:"Unauthorized",expectedRevision:before.revision}));
-  assert.equal(denied.outcome,"rejected");
+  const denied = f.command("renameProject",{projectId:project.projectId,operationId:randomUUID(),name:"Unauthorized",expectedRevision:before.revision});
+  assert.equal(denied.ok,false);assert.equal(denied.error.code,"identity_update_required");
   f.unwrap(f.command("refreshSource"));
   const refreshed = f.unwrap(f.query({observed:true}));
   assert.equal(refreshed.projects.find(p=>p.projectId===project.projectId).name,"External");

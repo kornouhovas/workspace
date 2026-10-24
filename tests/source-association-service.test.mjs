@@ -5,12 +5,13 @@ import { join } from 'node:path';
 import test from 'node:test';
 import Database from 'better-sqlite3';
 import { openSettingsService } from '../dist/service/settings.mjs';
+import { observeFolder } from '../src/service/folder-evidence.ts';
 
-function fixture(run, mode = "direct") {
+function fixture(run, mode = "direct", reader = observeFolder) {
   const directory = realpathSync(mkdtempSync(join(tmpdir(), 'workspace-association-')));
   const root = join(directory,'source'), dbPath = join(directory,'data','settings.sqlite');
   mkdirSync(join(root,mode==='grouped'?'Category/Project':'Project'),{recursive:true});
-  let service = openSettingsService(dbPath);
+  let service = openSettingsService(dbPath,undefined,undefined,undefined,undefined,undefined,reader);
   const created = service.handleCommand({type:'workspace.create', name:'Workspace',rootPath:root});
   assert.equal(created.ok,true,JSON.stringify(created));
   const workspaceId = created.value.workspaceId;
@@ -19,7 +20,7 @@ function fixture(run, mode = "direct") {
   const sql = new Database(dbPath);
   const cleanup=()=>{sql.close();service.close();rmSync(directory,{recursive:true,force:true});};
   let result;
-  try {result=run({root,dbPath,sql,query,command,workspaceId,mode,get service(){return service;},restart(){service.close();service=openSettingsService(dbPath);}});}
+  try {result=run({root,dbPath,sql,query,command,workspaceId,mode,get service(){return service;},restart(){service.close();service=openSettingsService(dbPath,undefined,undefined,undefined,undefined,undefined,reader);}});}
   catch(error){cleanup();throw error;}
   if(result instanceof Promise)return result.finally(cleanup);
   cleanup();
@@ -307,4 +308,148 @@ test('stable retained-project reads and independent property edits do not revoke
  assert.equal(f.query({type:'workspace.listProjects'}).ok,true);
  assert.equal(f.command({type:'workspace.createProperty',name:'Independent during root review',propertyType:'text'}).ok,true);
  assert.equal(f.command({type:'workspace.applySourceAssociation',previewToken:preview.previewToken}).ok,true);
+}));
+
+test('background reconciliation enrolls a needed category with durable evidence while preserving project ownership',()=>fixture(f=>{
+ const original=discover(f),projectId=original.projects[0].projectId;
+ mkdirSync(join(f.root,'Needed'));renameSync(join(f.root,'Category','Project'),join(f.root,'Needed','Moved'));
+ assert.equal(f.command({type:'workspace.refreshSource'}).ok,true);
+ const current=f.query({type:'workspace.listProjects'}).value;
+ assert.equal(current.projects[0].projectId,projectId);assert.equal(current.projects[0].relativePath,'Needed/Moved');
+ const category=current.categories.find(c=>c.relativePath==='Needed');assert.ok(category);assert.equal(current.projects[0].categoryId,category.categoryId);
+ assert.ok(f.sql.prepare('SELECT durable_evidence FROM categories WHERE id=?').get(category.categoryId).durable_evidence);
+ f.restart();assert.equal(f.query({type:'workspace.listProjects'}).value.projects[0].projectId,projectId);
+},'grouped'));
+
+
+for(const renumbered of [false,true]) test(`background reconciliation cannot discard a legacy historical ownership conflict (renumbered=${renumbered})`,()=>fixture(f=>{
+ const original=discover(f),id=original.projects[0].projectId;
+ const row=f.sql.prepare('SELECT * FROM projects WHERE id=?').get(id);
+ f.sql.prepare("INSERT INTO projects (id,source_id,relative_path,native_identity,association_state) VALUES (?,?,?,?, 'replaced')")
+  .run('10000000-0000-4000-8000-000000000001',row.source_id,'Historical',JSON.stringify({...JSON.parse(row.native_identity),birthtimeNs:String(BigInt(JSON.parse(row.native_identity).birthtimeNs)+1n)}));
+ if(renumbered){
+  f.sql.prepare("UPDATE sources SET applied_root_identity=json_set(applied_root_identity,'$.dev','999')").run();
+  f.sql.prepare("UPDATE projects SET native_identity=json_set(native_identity,'$.dev','999')").run();
+ }
+ renameSync(join(f.root,'Project'),join(f.root,'Moved'));
+ assert.equal(f.command({type:'workspace.refreshSource'}).ok,true);
+ assert.equal(f.sql.prepare('SELECT relative_path FROM projects WHERE id=?').get(id).relative_path,'Project');
+ assert.equal(f.query({type:'workspace.listProjects'}).value.projects.length,0);
+}));
+
+
+test('source binding cannot relocate an already verified record',()=>fixture(f=>{
+ const original=discover(f),id=original.projects[0].projectId;
+ renameSync(join(f.root,'Project'),join(f.root,'Moved'));
+ const review=f.query({type:'workspace.previewSourceAssociation',mappings:[{kind:'project',id,relativePath:'Moved'}]}).value;
+ assert.equal(review.previewToken,null);
+ assert.equal(review.candidates.find(c=>c.id===id).eligible,false);
+ assert.equal(f.sql.prepare('SELECT relative_path FROM projects WHERE id=?').get(id).relative_path,'Project');
+}));
+
+
+for(const renumbered of [false,true]) test(`grouped reconciliation retains historical category conflicts (renumbered=${renumbered})`,()=>fixture(f=>{
+ const original=discover(f),id=original.projects[0].projectId;
+ const category=f.sql.prepare('SELECT * FROM categories').get();
+ f.sql.prepare("INSERT INTO categories (id,source_id,relative_path,native_identity,association_state) VALUES (?,?,?,?, 'replaced')")
+  .run('10000000-0000-4000-8000-000000000002',category.source_id,'Historical',category.native_identity);
+ if(renumbered){
+  f.sql.prepare("UPDATE sources SET applied_root_identity=json_set(applied_root_identity,'$.dev','999')").run();
+  for(const table of ['categories','projects'])f.sql.prepare(`UPDATE ${table} SET native_identity=json_set(native_identity,'$.dev','999')`).run();
+ }
+ renameSync(join(f.root,'Category'),join(f.root,'Moved'));
+ assert.equal(f.command({type:'workspace.refreshSource'}).ok,true);
+ assert.equal(f.sql.prepare('SELECT relative_path FROM categories WHERE id=?').get(category.id).relative_path,'Category');
+ assert.equal(f.sql.prepare('SELECT relative_path FROM projects WHERE id=?').get(id).relative_path,'Category/Project');
+},'grouped'));
+
+test('matching stale role triples cannot excuse a current creation-time conflict',()=>fixture(f=>{
+ mkdirSync(join(f.root,'Project','Nested'));
+ discover(f);
+ const preview=f.query({type:'workspace.previewDiscovery',mode:'grouped'}).value;
+ assert.equal(f.command({type:'workspace.applyDiscovery',previewToken:preview.previewToken}).ok,true);
+ for(const table of ['categories','projects'])f.sql.prepare(`UPDATE ${table} SET native_identity=json_set(native_identity,'$.birthtimeNs','1') WHERE relative_path='Project'`).run();
+ f.sql.prepare('UPDATE projects SET durable_evidence=NULL WHERE mode_inactive=1').run();
+ const before=f.sql.prepare('SELECT * FROM categories').all();
+ renameSync(join(f.root,'Project'),join(f.root,'Moved'));
+ assert.equal(f.command({type:'workspace.refreshSource'}).ok,true);
+ assert.deepEqual(f.sql.prepare('SELECT * FROM categories').all(),before);
+}));
+
+for(const failure of ['different_volume','unsupported','changed_during_commit','duplicate_folder_id']) test(`needed-category adoption rejects ${failure} evidence without partial state`,()=>{
+ let moved=false,calls=0;
+ const reader=(path,scope)=>{
+  const observed=observeFolder(path,scope);
+  if(!moved || !path.endsWith('/Needed'))return observed;
+  if(failure==='unsupported')return {ok:false,reason:'unsupported'};
+  if(failure==='duplicate_folder_id' && observed.ok){const root=observeFolder(path.slice(0,-'/Needed'.length),scope);return root.ok?{...observed,evidence:root.evidence}:root;}
+  if(observed.ok && (failure==='different_volume'||failure==='changed_during_commit'&&++calls>=3))return {...observed,evidence:{...observed.evidence,volume:'1234567890abcdef1234567890abcdef'}};
+  return observed;
+ };
+ fixture(f=>{
+  discover(f);
+  mkdirSync(join(f.root,'Needed'));renameSync(join(f.root,'Category','Project'),join(f.root,'Needed','Moved'));moved=true;
+  const before=f.sql.prepare('SELECT * FROM projects').all(),categories=f.sql.prepare('SELECT * FROM categories').all(),source=f.sql.prepare('SELECT * FROM sources').all();
+  const result=f.command({type:'workspace.refreshSource'});
+  assert.equal(result.ok,failure!=='changed_during_commit',JSON.stringify(result));
+  assert.deepEqual(f.sql.prepare('SELECT * FROM projects').all(),before);
+  assert.deepEqual(f.sql.prepare('SELECT * FROM categories').all(),categories);
+  assert.deepEqual(f.sql.prepare('SELECT * FROM sources').all(),source);
+ },'grouped',reader);
+});
+
+
+test('binding rolls back unexpected association-state changes inside the transaction',()=>fixture(f=>{
+ const original=discover(f),id=original.projects[0].projectId;
+ f.sql.prepare('UPDATE projects SET durable_evidence=NULL').run();
+ const preview=f.query({type:'workspace.previewSourceAssociation',mappings:[{kind:'project',id,relativePath:'Project'}]}).value;
+ f.sql.exec("CREATE TRIGGER injected_state_change AFTER UPDATE OF durable_evidence ON projects BEGIN UPDATE projects SET association_state='missing' WHERE id=NEW.id; END");
+ const before=f.sql.prepare('SELECT * FROM projects').all();
+ assert.equal(f.command({type:'workspace.applySourceAssociation',previewToken:preview.previewToken}).ok,false);
+ assert.deepEqual(f.sql.prepare('SELECT * FROM projects').all(),before);
+}));
+
+
+test('durable alias veto cannot prove dormant role history when creation evidence differs',()=>fixture(f=>{
+ mkdirSync(join(f.root,'Project','Nested'));discover(f);
+ const preview=f.query({type:'workspace.previewDiscovery',mode:'grouped'}).value;
+ assert.equal(f.command({type:'workspace.applyDiscovery',previewToken:preview.previewToken}).ok,true);
+ const dormant=f.sql.prepare('SELECT * FROM projects WHERE mode_inactive=1').get();
+ const evidence=JSON.parse(dormant.durable_evidence);
+ f.sql.prepare("UPDATE projects SET durable_evidence=?,native_identity=json_set(native_identity,'$.dev','999','$.birthtimeNs','1') WHERE id=?")
+  .run(JSON.stringify({...evidence,created:String(BigInt(evidence.created)+1n)}),dormant.id);
+ const before=f.sql.prepare('SELECT * FROM categories').all();
+ renameSync(join(f.root,'Project'),join(f.root,'Moved'));
+ assert.equal(f.command({type:'workspace.refreshSource'}).ok,true);
+ assert.deepEqual(f.sql.prepare('SELECT * FROM categories').all(),before);
+}));
+
+
+test('root-only review cannot accept duplicate root and descendant durable IDs',()=>{
+ let duplicate=false;
+ fixture(f=>{
+  discover(f);f.sql.prepare('UPDATE sources SET durable_evidence=NULL').run();duplicate=true;
+  const preview=f.query({type:'workspace.previewSourceAssociation',mappings:[]});
+  assert.equal(preview.ok,true);assert.equal(preview.value.previewToken,null);
+  assert.equal(f.sql.prepare('SELECT durable_evidence FROM sources').get().durable_evidence,null);
+ },'direct',(path,scope)=>{
+  const current=observeFolder(path,scope);
+  if(!duplicate||!path.endsWith('/Project')||!current.ok)return current;
+  const root=observeFolder(path.slice(0,-'/Project'.length),scope);
+  return root.ok?{...current,evidence:root.evidence}:root;
+ });
+});
+
+
+test('legacy dormant role needs current proof after device renumbering; blocker aliases cannot authorize it',()=>fixture(f=>{
+ mkdirSync(join(f.root,'Project','Nested'));discover(f);
+ const preview=f.query({type:'workspace.previewDiscovery',mode:'grouped'}).value;
+ assert.equal(f.command({type:'workspace.applyDiscovery',previewToken:preview.previewToken}).ok,true);
+ f.sql.prepare('UPDATE projects SET durable_evidence=NULL WHERE mode_inactive=1').run();
+ f.sql.prepare("UPDATE sources SET applied_root_identity=json_set(applied_root_identity,'$.dev','999')").run();
+ for(const table of ['categories','projects'])f.sql.prepare(`UPDATE ${table} SET native_identity=json_set(native_identity,'$.dev','999')`).run();
+ const before=f.sql.prepare('SELECT * FROM categories').all();
+ renameSync(join(f.root,'Project'),join(f.root,'Moved'));
+ assert.equal(f.command({type:'workspace.refreshSource'}).ok,true);
+ assert.deepEqual(f.sql.prepare('SELECT * FROM categories').all(),before);
 }));
