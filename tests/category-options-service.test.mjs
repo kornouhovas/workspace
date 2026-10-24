@@ -7,6 +7,7 @@ import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import test from "node:test";
 import { renameNoReplace } from "../dist/service/project-rename-filesystem.mjs";
+import {openSettingsService} from "../dist/service/settings.mjs";
 import { openUnconvertedEngineFixture } from "./support/unconverted-command-engines.mjs";
 import { projectMetadataRecords, bindFixtureFolders } from "./support/identity-migration-fixtures.mjs";
 const openEngineService = (...args) => openUnconvertedEngineFixture(...args).engines;
@@ -18,7 +19,7 @@ function fixture(run, options = {}) {
   fs.mkdirSync(root); fs.mkdirSync(join(root, "Original")); fs.mkdirSync(join(root, "Original", "Project"));
   fs.writeFileSync(join(root, "Original", "Project", "sentinel"), "exact bytes\n");
   let service;
-  const open = () => service = openEngineService(database, undefined, undefined, observer, options.filesystem, options.native);
+  const open = () => service = (options.production ? openSettingsService : openEngineService)(database, undefined, undefined, observer, options.filesystem, options.native);
   try {
     open();
     const workspace = service.workspaces.create({ type: "workspace.create", name: "Primary", rootPath: root }).value;
@@ -27,7 +28,7 @@ function fixture(run, options = {}) {
     const command = (type, rest = {}) => service.handleCommand({ type, workspaceId: workspace.workspaceId, ...rest });
     const preview = query("workspace.previewDiscovery", { mode: "grouped" }).value;
     const initial = command("workspace.applyDiscovery", { previewToken: preview.previewToken }).value;
-    run({ root, directory, database, query, command, initial, workspace, sibling, get application(){return service.application;},
+    run({ root, directory, database, query, command, initial, workspace, sibling, get application(){return service.application??service;},
       restart() { service.close(); open(); } });
   } finally { service?.close(); fs.rmSync(directory, { recursive: true, force: true }); }
 }
@@ -171,10 +172,10 @@ test("a replaced category destination is never adopted by recovery", () => fixtu
   assert.equal(fs.readFileSync(join(f.directory, "retained-real-folder", "Project", "sentinel"), "utf8"), "exact bytes\n");
 }, { native(from, to) { assert.equal(renameNoReplace(from, to), "renamed"); throw new Error("Interrupted"); } }));
 
-for (const phase of ["intent", "effect", "recorded"]) {
-  test(`abrupt process exit at ${phase} retains explicit recoverable category state`, () => fixture(f => {
+for (const production of [false,true])for (const phase of ["intent", "effect", "recorded"]) {
+  test(`${production?"production durable":"legacy engine"}: abrupt process exit at ${phase} retains explicit recoverable category state`, () => fixture(f => {
     const operationId = randomUUID(), project = f.initial.projects[0];
-    const child = spawnSync(process.execPath, ["--import", "tsx", "tests/fixtures/category-options-crash-worker.mjs", f.database, f.workspace.workspaceId, project.categoryId, operationId, phase], { encoding: "utf8", timeout: 15000 });
+    const child = spawnSync(process.execPath, ["--import", "tsx", "tests/fixtures/category-options-crash-worker.mjs", f.database, f.workspace.workspaceId, project.categoryId, operationId, phase,production?"production":"legacy"], { encoding: "utf8", timeout: 15000 });
     assert.equal(child.status, 71, child.stderr);
     f.restart();
     const before = f.query("workspace.listCategoryFolderOperations").value.operations;
@@ -191,7 +192,7 @@ for (const phase of ["intent", "effect", "recorded"]) {
     const projects = f.query("workspace.listProjects").value;
     assert.equal(projects.projects[0].projectId, project.projectId);
     assert.equal(projects.projects[0].relativePath, phase === "intent" ? "Original/Project" : "Crash target/Project");
-  }));
+  },{production}));
 }
 
 test("closed storage produces normalized query errors instead of escaping the service boundary", () => {

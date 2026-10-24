@@ -45,6 +45,7 @@ const packagedFiles = [
     "dist/service/db/migrations/0025_creation_authorization.sql",
     "dist/service/db/migrations/0026_rename_authorization.sql",
     "dist/service/db/migrations/0027_category_move_authorization.sql",
+    "dist/service/db/migrations/0028_category_folder_authorization.sql",
   "dist/service/db/migrations/meta/_journal.json",
 ];
 

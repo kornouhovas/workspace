@@ -266,7 +266,10 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
     invalidateSourceReviews(sourceId);
     publish([{ type: "workspace.projectsChanged", sourceId, revision, workspaceIds }]);
     observer.request(sourceId);
-  }, projectFilesystem, projectRenameNative);
+  }, projectFilesystem, projectRenameNative, createFilesystemAuthorization(scope,readFolderEvidence,db),sourceId=>{
+    invalidateSourceReviews(sourceId);observationCache.delete(sourceId);
+    observationVersions.set(sourceId,(observationVersions.get(sourceId)??0)+1);observer.request(sourceId);
+  });
   const categoryRemoval = createCategoryRemovalService(db, categoryMove, (sourceId, revision, workspaceIds) => {
     invalidateSourceReviews(sourceId);
     publish([{ type: "workspace.projectsChanged", sourceId, revision, workspaceIds }]);
@@ -1010,10 +1013,10 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
     recoverCategoryRemoval: blocked,
     applyCategoryRemoval: terminalRetry("category_removal_operations", categoryRemoval.applyCategoryRemoval),
     previewCategoryRemoval: blocked,
-    previewCategoryFolder: blocked,
-    applyCategoryFolder: terminalRetry("category_folder_operations", categoryOptions.applyCategoryFolder),
-    previewCategoryFolderRecovery: blocked,
-    recoverCategoryFolder: blocked,
+    previewCategoryFolder: categoryOptions.previewCategoryFolder,
+    applyCategoryFolder: categoryOptions.applyCategoryFolder,
+    previewCategoryFolderRecovery: categoryOptions.previewCategoryFolderRecovery,
+    recoverCategoryFolder: categoryOptions.recoverCategoryFolder,
     moveProjectCategory: categoryMove.moveProjectCategory,
     previewProjectCategoryMoveRecovery: categoryMove.previewProjectCategoryMoveRecovery,
     recoverProjectCategoryMove: categoryMove.recoverProjectCategoryMove,

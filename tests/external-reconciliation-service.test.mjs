@@ -802,7 +802,7 @@ test("grouped persisted missing project requires explicit T07 recovery after ref
 }));
 
 test("populated migrations 0000–0006 reopen with reconciled grouped locators and all metadata intact", () => groupedFixture((f) => {
-  assert.equal(f.sqlite.prepare("SELECT COUNT(*) AS count FROM __drizzle_migrations").get().count, 28);
+  assert.equal(f.sqlite.prepare("SELECT COUNT(*) AS count FROM __drizzle_migrations").get().count, 29);
   fs.mkdirSync(join(f.root, "Needed"));
   fs.renameSync(join(f.root, "Category/Project"), join(f.root, "Needed/Moved"));
   f.events.length = 0; assert.equal(f.refresh().ok, true);

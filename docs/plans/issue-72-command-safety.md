@@ -286,3 +286,60 @@ the production API, asserts the still-gated archive-effect boundary, and retains
 its explicit legacy archive/restore engine arrangement. All9 affected metadata,
 ordering/grouping/filter/session scenarios passed on renewal; no skip/retirement.
 The same run renews the preceding same-scan project-recovery root-proof repair.
+
+### Sixth slice: category-folder operations
+
+Production category create/associate/rename and explicit recovery now bind the
+current root, category and every affected member to sufficient full proofs and
+pinned mounts. Migration0028 adds nullable immutable authorization, append-once
+destination evidence and separate append-only attestations. Creation enrolls only
+the new empty category; association lists/enrolls only the reviewed children;
+rename preserves IDs, raw native history, values and contents. Full current
+inventories veto duplicate IDs including unowned branches, live/historical owners
+and relocation of saved source roots. Repeated checks compare both full proofs
+and mounts, including an empty category after the native effect.
+
+Recovery never replays a category rename. New-policy journals reacquire mounts
+through explicit review while retaining original full identities and scope.
+Legacy root/category/member triples must match exactly including dev before a
+separate attestation; authentic0023 SQL upgrades prove success and changed-dev
+refusal. Unrecorded creation targets are not adopted. Same-revision settlement
+clears observation cache/version so old ambiguity cannot restore itself. Impact
+snapshot projection is read-only comparison; full proofs and fresh mounts supply
+authority. Legacy nullable-field hydration uses semantic object comparison while
+identity/binding strings remain byte-exact.
+
+Public red/green controls and independent review repaired stale-token reuse after
+an observed remount, contradictory raw association backup evidence, post-SQL
+`keep_original` reservation release, full-proof changes between inventories,
+empty-category mount changes after effect, and impossible attestation generations.
+Matching original-operation retries remain read-only; wrong tokens do not consume
+another review. Property-only edits remain independent. Scope loss followed by
+root-only binding cannot bless scoped pending operations. Pending category and
+member durable/coarse legacy proofs reserve moved objects outside recorded paths.
+
+Coverage decisions: retain legacy engine/crash scenarios; add separate production
+process-exit checkpoints at intent, native effect and destination recording, plus
+real old-schema upgrades and matching restore. Replace remaining category-folder
+blanket gates with production checks; keep category removal/archive/native/file
+gates. Two inherited rename/Name-group drop assertions now verify actual fresh
+missing-target and occupied-owner refusals instead of obsolete rollout gates.
+No requirement or failed scenario is newly skipped/blanket-retired.
+
+Latest fresh build/typecheck/lint and affected public/legacy/category/UI/source/
+observer/compiled Name-drop set145/145 passed before the final host-separator
+consistency adjustment. Read-only Standards/Spec narrow follow-ups report no
+remaining concrete finding in inspected repairs. The migration inventory includes
+0028, exact NULL defaults, empty attestations and historical rewind cleanup;
+its full focused renewal follows. This remains intermediate issue work: category
+removal, archive/restore effects, native/file consumers and final platform/full-suite
+acceptance remain outstanding.
+
+The final focused migration run after that adjustment executed873 checks:
+871 passed, one existing skip, and one stale build-smoke expectation failed
+(last migration index27 instead of28). Only that test literal was repaired;
+application, migration and generated build inputs remained unchanged. Under
+CI evidence reuse, the affected build/artifact consumers then passed53/53.
+Typecheck, lint, docs217 and diff check passed on the resulting slice. The
+failed broad receipt remains diagnostic; this records the bounded renewal,
+not an unexecuted final whole-issue suite.

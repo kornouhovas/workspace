@@ -1,3 +1,4 @@
+import {parseCategoryFolderAuthorization} from "./category-folder-authorization.js";
 import {validateEvidence} from "./folder-evidence.js";
 import { asc, eq } from "drizzle-orm";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
@@ -56,16 +57,28 @@ export function readProjectReservations(db: Reader, sourceId: string) {
     [...new Set([row.originalRelativePath, row.requestedRelativePath, ...(row.operationKind === "rename" ? [row.stagingRelativePath] : [])])]
       .filter((relativePath): relativePath is string => relativePath !== null)
       .map((relativePath) => ({ ...row, relativePath })));
-  const categoryFolders = readCategoryFolderReservations(db, sourceId).flatMap(row =>
-    [...new Set([row.originalRelativePath, row.requestedRelativePath])].filter((p): p is string => p !== null)
-      .map(relativePath => ({ ...row, operationKind: "category_folder" as const, projectId: row.categoryId, relativePath })));
+  const folderAttestations=db.select().from(schema.categoryFolderAttestations).all();
+  const categoryFolders = readCategoryFolderReservations(db, sourceId).flatMap(row => {
+    const binding=JSON.parse(row.binding) as {members:{id:string;relativePath:string;nativeIdentity:string}[];additions:{id:string;relativePath:string;nativeIdentity:string}[]};
+    const authorities=[row.authorization,...folderAttestations.filter(p=>p.operationId===row.operationId).map(p=>p.authorization)]
+      .filter((value):value is string=>value!==null).map(value=>{const parsed=parseCategoryFolderAuthorization(value);if(!parsed)throw new Error("Invalid category reservation");return parsed;});
+    const categoryProofs=[row.destinationEvidence,...authorities.filter(a=>a.category).map(a=>JSON.stringify(a.category)),...folderAttestations.filter(p=>p.operationId===row.operationId).map(p=>p.destinationEvidence)].filter((p):p is string=>p!==null);
+    const categories=[...new Set([row.originalRelativePath,row.requestedRelativePath])].filter((p):p is string=>p!==null).flatMap(relativePath=>
+      (categoryProofs.length?categoryProofs:[null]).map(proof=>({...row,operationKind:"category_folder" as const,projectId:row.categoryId,relativePath,durableEvidence:evidence(proof)})));
+    const members=[...binding.members,...binding.additions].flatMap(project=>{
+      const paths=[...new Set([project.relativePath,...(row.originalRelativePath?[row.requestedRelativePath+project.relativePath.slice(row.originalRelativePath.length)]:[])])];
+      const proofs=authorities.flatMap(a=>a.projects.filter(p=>p.id===project.id).map(p=>JSON.stringify(p.observation)));
+      return paths.flatMap(relativePath=>(proofs.length?proofs:[null]).map(proof=>({...row,operationKind:"category_folder" as const,projectId:project.id,relativePath,nativeIdentity:project.nativeIdentity,durableEvidence:evidence(proof)})));
+    });
+    return [...categories,...members];
+  });
   const removals = readCategoryRemovalReservations(db, sourceId).flatMap(row => {
     const binding = JSON.parse(row.binding) as { members: { id: string; relativePath: string; nativeIdentity: string }[] };
     return [{ ...row, operationKind: "category_removal" as const, projectId: row.categoryId, relativePath: row.originalRelativePath },
       ...binding.members.flatMap(p => [p.relativePath, `${row.requestedRelativePath}/${p.relativePath.split("/").at(-1)}`].map(relativePath =>
         ({ ...row, operationKind: "category_removal" as const, projectId: p.id, relativePath, nativeIdentity: p.nativeIdentity })))];
   });
-  return [...durableCreations, ...relocations, ...categoryFolders.map(row=>({...row,durableEvidence:null as string|null})), ...removals.map(row=>({...row,durableEvidence:null as string|null}))];
+  return [...durableCreations, ...relocations, ...categoryFolders, ...removals.map(row=>({...row,durableEvidence:null as string|null}))];
 }
 
 export function readCategoryFolderReservations(db: Reader, sourceId: string) {

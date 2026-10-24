@@ -1,3 +1,4 @@
+import {categoryAuthorizationMatchesBinding,parseCategoryFolderAuthorization,type CategoryFolderBindingRow} from "./category-folder-authorization.js";
 import {sameIdentity} from "./discovery.js";
 import {sameAuthorizationRoot,parseFilesystemAuthorization, parseFolderObservation} from "./filesystem-authorization.js";
 import { durableOwnershipKey, sameDurableFolder, validateEvidence } from "./folder-evidence.js";
@@ -172,6 +173,39 @@ function validate(db: Database.Database) {
         if(!sameDurableFolder(old.original.root.evidence,current.original.root.evidence) || !sameDurableFolder(old.original.parent.evidence,current.original.parent.evidence) ||
           !sameDurableFolder(old.destination.parent.evidence,current.destination.parent.evidence) || !sameDurableFolder(old.target.evidence,current.target.evidence))throw new Error("Conflicting category move attestation");
       }
+    }
+  }
+  if ((db.prepare("PRAGMA table_info(category_folder_operations)").all() as {name:string}[]).some(c=>c.name==="authorization")) {
+    const rows=db.prepare("SELECT * FROM category_folder_operations").all() as Record<string,unknown>[];
+    const generations=new Map((db.prepare("SELECT id,evidence_generation FROM sources").all() as {id:string;evidence_generation:number}[]).map(source=>[source.id,source.evidence_generation]));
+    const validGeneration=(authority:NonNullable<ReturnType<typeof parseCategoryFolderAuthorization>>,sourceId:string)=>authority.binding.generation<=generations.get(sourceId)!;
+    const descriptor=(row:Record<string,unknown>):CategoryFolderBindingRow=>({sourceId:row.source_id as string,categoryId:row.category_id as string,
+      action:row.action as string,binding:row.binding as string,nativeIdentity:row.native_identity as string|null,originalRelativePath:row.original_relative_path as string|null,requestedRelativePath:row.requested_relative_path as string});
+    const target=(value:unknown)=>typeof value==="string"?parseFolderObservation(JSON.parse(value)):null;
+    const volume=(authority:NonNullable<ReturnType<typeof parseCategoryFolderAuthorization>>,destination:NonNullable<ReturnType<typeof target>>)=>
+      ["provider","volume","serial","scope"].every(key=>authority.binding.root.evidence[key as keyof typeof destination.evidence]===destination.evidence[key as keyof typeof destination.evidence]);
+    for(const row of rows) {
+      const authority=parseCategoryFolderAuthorization(row.authorization as string|null),destination=target(row.destination_evidence);
+      if(row.authorization===null) {if(row.destination_evidence!==null)throw new Error("Legacy category evidence was rewritten");continue;}
+      if(!authority || !validGeneration(authority,row.source_id as string) || !categoryAuthorizationMatchesBinding(authority,descriptor(row)) ||
+        ["destination_recorded","completed"].includes(row.stage as string) && !destination ||
+        row.destination_evidence!==null && (!destination || !volume(authority,destination) || authority.category && !sameDurableFolder(authority.category.evidence,destination.evidence)) ||
+        row.action==="create" && row.native_identity!==null && (!destination || !sameIdentity(JSON.parse(row.native_identity as string),destination.mount)))throw new Error("Invalid category folder authorization");
+    }
+    const fields=["operationId","sourceId","workspaceId","previewToken","categoryId","action","originalRelativePath","requestedRelativePath","binding","authorization"];
+    for(const proof of db.prepare("SELECT * FROM category_folder_attestations").all() as Record<string,string|null>[]) {
+      const row=rows.find(row=>row.operation_id===proof.operation_id),journal=JSON.parse(proof.journal!),authority=parseCategoryFolderAuthorization(proof.authorization),destination=target(proof.destination_evidence);
+      if(!row || !journal || !authority || !validGeneration(authority,row.source_id as string) || !["intent","destination_recorded"].includes(journal.stage) ||
+        fields.some(field=>!Object.hasOwn(journal,field) || journal[field]!==row[field.replace(/[A-Z]/g,letter=>"_"+letter.toLowerCase())]) ||
+        !recordedEvidenceRetained(journal,row,["nativeIdentity","destinationEvidence"]) ||
+        !categoryAuthorizationMatchesBinding(authority,descriptor(row),row.authorization===null?"legacy_review":"renewed_review") ||
+        proof.destination_evidence!==null && (!destination || !volume(authority,destination)))throw new Error("Invalid category folder attestation");
+      const original=parseCategoryFolderAuthorization(row.authorization as string|null),recorded=target(row.destination_evidence);
+      if(original && (authority.binding.generation<original.binding.generation || !sameDurableFolder(original.binding.root.evidence,authority.binding.root.evidence) ||
+        (original.category===null ? authority.category!==null : !authority.category || !sameDurableFolder(original.category.evidence,authority.category.evidence)) ||
+        original.projects.some(project=>!authority.projects.some(current=>current.id===project.id && sameDurableFolder(project.observation.evidence,current.observation.evidence)))) ||
+        recorded && destination && !sameDurableFolder(recorded.evidence,destination.evidence) ||
+        row.authorization===null && row.action==="create" && (row.native_identity===null ? destination!==null : !destination || !sameIdentity(JSON.parse(row.native_identity as string),destination.mount)))throw new Error("Conflicting category folder attestation");
     }
   }
   // These ownership constraints predate their SQL equivalents.

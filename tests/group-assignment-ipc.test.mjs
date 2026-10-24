@@ -38,7 +38,7 @@ test('built backend routes group assignment and rejects malformed and stale drop
     assert.deepEqual(command('listTextProperties'),actual);
     command('setViewGrouping',{viewId,config:{propertyId:'name',settings:[]}});
     const collision=command('assignProjectGroup',{...drop,propertyId:'name',fromKey:JSON.stringify(a.name),toKey:JSON.stringify(b.name)});
-    assert.equal(collision.ok,false);assert.equal(collision.error.code,'identity_update_required');
+    assert.equal(collision.ok,true,JSON.stringify(collision));assert.equal(collision.value.filesystem.outcome,'rejected');assert.equal(collision.value.filesystem.problem,'reserved_destination');
     assert.deepEqual(readdirSync(root).sort(),['Alpha','Beta']);assert.deepEqual(command('listTextProperties'),actual);
     assert.equal(command('assignProjectGroup',{...drop,propertyId:'name',fromKey:JSON.stringify(a.name),toKey:'null'}).ok,false);
 

@@ -242,8 +242,13 @@ export const categoryFolderOperations = sqliteTable("category_folder_operations"
   action: text("action", { enum: ["create", "associate", "rename"] }).notNull(),
   originalRelativePath: text("original_relative_path"), requestedRelativePath: text("requested_relative_path").notNull(),
   binding: text("binding").notNull(), nativeIdentity: text("native_identity"),
+  authorization: text("authorization"), destinationEvidence: text("destination_evidence"),
   stage: text("stage", { enum: ["intent", "destination_recorded", "completed", "failed"] }).notNull(),
   problem: text("problem"), completedRevision: integer("completed_revision"),
+});
+export const categoryFolderAttestations = sqliteTable("category_folder_attestations", {
+  id: text("id").primaryKey(), operationId: text("operation_id").notNull().references(() => categoryFolderOperations.operationId),
+  journal: text("journal").notNull(), authorization: text("authorization").notNull(), destinationEvidence: text("destination_evidence"),
 });
 export const categoryPresentation = sqliteTable("category_presentation", {
   workspaceId: text("workspace_id").notNull().references(() => workspaces.id, { onDelete: "cascade" }),
