@@ -2,11 +2,11 @@
 
 ## Status and accepted foundation
 
-This branch contains a runnable local desktop application with settings, workspace management, reviewed direct/grouped project discovery and configured mode changes, persisted required grouped categories, shared Text, Number and Date properties, external reconciliation and explicit folder reassociation, recoverable project creation, Table Name editing with explicit status/recovery, Table category editing with explicit move status/recovery and trusted native Reveal. The service persists canonical sources, named workspaces, an ordered collection of Table/Board views per workspace and the active workspace/view selection in SQLite.
+This branch contains a runnable local desktop application with settings, workspace management, reviewed direct/grouped discovery, durable source continuity, explicit source-folder enrollment, persisted grouped categories and shared metadata. Journaled folder-operation engines and their UI surfaces remain implemented, but their public execution is gated during the issue71 rollout described below. The service persists canonical sources, named workspaces, an ordered collection of Table/Board views per workspace and the active workspace/view selection in SQLite.
 
 Workspace names, order and active selection survive restart. Rename/reorder/remove validate IDs and commit snapshots transactionally. Removal deletes only the workspace and its owned views, retains the source even after its last reference, and never deletes external files. Active removal selects the first remaining configuration and its saved selected view; final removal clears selection.
 
-The desktop includes a native directory picker, EN/RU direct/grouped preview/exclusions/Apply and editable project names with source-owned Text/Number/Date columns and required grouped categories in the default Table. The service persists source-owned exclusions/configuration and logical project records. Reviewed source-wide custom property and ordinary option deletion is implemented below; general source-wide property hiding/reordering remain future work. Name/category group assignment invokes the existing filesystem commands as described below. Implemented filtering, grouping and per-view Table presentation controls are described below. Source archive/restore is described below. SQLite with Drizzle is the selected persistence foundation.
+The desktop includes a native directory picker, EN/RU direct/grouped preview/exclusions/Apply and project rows with source-owned Text/Number/Date columns and required grouped categories in the default Table. The service persists source-owned exclusions/configuration and logical project records. Reviewed source-wide custom property and ordinary option deletion is implemented below; general source-wide property hiding/reordering remain future work. Name/category group assignment retains its command wiring, but currently receives the backend capability denial until #72 converts those consumers. Implemented filtering, grouping and per-view Table presentation controls are described below. Source archive/restore is described below. SQLite with Drizzle is the selected persistence foundation.
 
 The product uses selected bb architecture and UI foundations while retaining its own folder/project domain. Adopt useful modules deliberately, with provenance and boundary tests; do not assume a whole bb package is independent of its chat/session model.
 
@@ -29,6 +29,50 @@ The runtime uses Electron `utilityProcess` with message ports, React with Vite, 
 
 The renderer uses a narrow preload/service boundary. It cannot directly read SQLite, call Node filesystem APIs or hold host credentials. Electron uses context isolation, disabled renderer Node integration and sandboxing. Future filesystem mutations must check the selected source and current destination state.
 
+## Implemented source-access correction (issue 71)
+
+[ADR0009](adr/0009-durable-folder-evidence.md) governs the active identity policy.
+The private `folder-evidence` adapter loads the fixed packaged N-API module for
+APFS volume UUID/persistent file ID/creation or NTFS volume GUID/handle serial/full
+128-bit ID/creation. Node and Electron use the same provider contract. Unknown,
+partial, unavailable or unsupported evidence never falls back to a legacy triple.
+Windows native operands use extended-length namespacing without changing stored
+locators. Evidence route checks use Windows legacy realpath to avoid native child
+opens without DELETE sharing; source/scanner native root canonicalization,
+resolved-route equality, before/after stat and native reparse/volume checks remain.
+
+Migration0024 adds nullable source/project/category evidence and source evidence
+generation, retaining original triples and all logical IDs/history. The backend's
+installation anchor is outside SQLite and every backup. Durable continuity uses
+sufficient matching volume/folder/creation/scope evidence; current dev/ino/birth
+observations remain separate and exact within a scan/review/transaction. A changed
+device number alone does not replace an enrolled record. Accepted observed-display
+snapshots cache availability until Refresh while independent metadata stays current.
+
+`workspace.previewSourceAssociation`, `workspace.applySourceAssociation` and
+`workspace.cancelSourceAssociation` implement reviewed one-to-one legacy or matching
+scope-unverified enrollment. Root-only consent never enrolls descendants. Tokens
+bind mappings, ownership, configuration, reservations, generation and fresh durable
+AND mount observations; before/inside/after transaction checks reject stale state
+or roll back unexpected writes. Known durable mismatches and whole-source
+relocation cannot be overridden. Global root/folder aliases veto conflicting
+ownership; historical native evidence can veto adoption but cannot authorize it.
+
+Until #72 converts each consumer, the public service returns
+`identity_update_required` for identity-sensitive filesystem/native/file effects
+and unfinished recovery/retries, including creation, rename, move, category folder
+operations, archive/restore, reassociation and native Open/Reveal. Exact immutable
+terminal original retries remain read-only receipts. Metadata, properties, saved
+views and scalar group assignment remain available; uncertain journals and their
+reservations remain intact. The detailed operation sections below describe
+retained engine contracts and future conversion obligations, not current public
+execution availability. Explicit test-only engine fixtures retain their safety
+coverage and are excluded from shipped packages.
+
+See the [scenario inventory](plans/issue-71-source-access.md) and
+[scoped verification receipts](verification/issue-71-source-access.md). This rollout
+does not accept final desktop/release milestones or authorize repair of live data.
+
 ## Implemented change notifications
 
 The service publishes workspace-list snapshots after successful mutations and source-state events after changed availability or committed locator observations. Source events carry source ID, canonical root, availability and the actual referencing workspace IDs. Load/create/activate and the real refresh-source command observe folder state using the existing canonicalization/access rules; unchanged observations and failed transactions do not publish committed changes. Source availability and observation status are runtime state, separate from persisted discovery revisions.
@@ -39,11 +83,11 @@ Validated event envelopes are separate from responses on utilityProcess message 
 
 The service scanner reads only immediate source entries. Ordinary files do not become projects. Symlinks/junctions are excluded without opening their targets; dot-prefixed directories, case-insensitive Windows service directory names ($RECYCLE.BIN and System Volume Information), and the child containing a validated persisted archive designation are automatic exclusions. Archive designation is nullable and is not guessed from names. Invalid designation or unsafe root identity blocks Apply.
 
-Source records own direct mode, revision, saved exact child-name exclusions, nullable archive path and applied root evidence (migration 0003). Project records own opaque UUIDs, source ID, relative path, lossless dev/ino/birth-time evidence and association state (migration 0004). Same-source workspaces share those records; each workspace retains its own Table view. Removing the final workspace preserves the source configuration and projects for later reuse.
+Source records own mode, revision, exclusions, archive path and retained applied root mount evidence (migration0003). Projects own opaque UUIDs, source ID, relative path, retained mount triples and association state (migration0004). Migration0024 adds independent nullable durable evidence for sources/projects/categories and source evidence generation; old mount triples are not continuity authority. Same-source workspaces share those records; each workspace retains its own Table view. Removing the final workspace preserves the source configuration and projects for later reuse.
 
 Preview performs no persistent writes. One service-memory token per workspace binds source ownership, revision, root identity, draft exclusions and the complete interpretation snapshot; newer previews, removal, service close/restart invalidate owned tokens. Apply accepts no submitted project list. It rescans and revalidates the reviewed state, commits configuration and associations atomically, and publishes only committed changes. Stale previews require refresh and explicit re-Apply. Unavailable/unreadable roots keep saved projects rather than marking every association missing.
 
-Discovery Apply reuses a continuously matching same-path association under the same verified root with sufficient unchanged dev/ino/birth-time evidence and no conflict. Mutable modification/change timestamps assist scan stability checks but are not durable identity. Reliable changed evidence produces a new logical project ID while retaining the replaced record; insufficient, conflicting, missing or reused evidence remains unresolved. Exclusion retains records and continuous re-inclusion can reuse IDs. Missing/unresolved records do not automatically reattach, and only the separate reconciliation path considers unique cross-path evidence for stored active records. The UI exposes retained metadata and explicit reassociation controls, described below.
+Discovery Apply reuses a continuous association only under a verified root with sufficient matching durable evidence and fresh current-mount checks, without ownership conflict. Mutable modification/change timestamps assist scan stability but are not durable identity. Known replacement, legacy-unverified, insufficient, conflicting, missing or reused evidence remains retained/unresolved; it never transfers old metadata to a new folder automatically. Exclusion retains records and continuous re-inclusion can reuse IDs. Missing/unresolved records do not automatically reattach, and only the separate reconciliation path considers unique cross-path evidence for stored active records. The UI exposes retained metadata and explicit reassociation controls, described below.
 
 Repeated observations and pre-commit checks detect observed changes without providing a filesystem lock or atomic filesystem/database coordination. Later changes and indistinguishable evidence reuse remain a boundary of this local identity strategy.
 
@@ -79,7 +123,7 @@ Migration 0007 adds mode_inactive to project/category associations, defaulting t
 
 Mode inactivity preserves UUIDs, paths, native evidence, prior association states and category references. Projects remain retained and Text-editable; discovery, Refresh, startup and watch hints cannot reactivate them. Returning to the previous mode still requires explicit project recovery, including reviewed own-historical-path recovery. Explicit successful reassociation clears inactivity only on the chosen project and preserves its exact values. Changing folder role never transfers project values or merges project/category identities, and depth changes do not authorize cross-path matching.
 
-Category history and the category-property UUID/label/revision survive direct mode, whose ProjectList exposes no active category/property. Explicit grouped Apply may resume a dormant previously active/excluded category only after unchanged same-category path, native evidence and source-root checks. Missing, unresolved, replaced and conflicting history remains unavailable; project recovery cannot repair that category. External category reconciliation permits only the bounded legitimate role overlap with exact reliable evidence from a same-source dormant, previously active/excluded direct-role project. Same-role aliases, insufficient/reused evidence and incompatible birthtime still block matching. The dormant project itself stays unchanged.
+Category history and the category-property UUID/label/revision survive direct mode, whose ProjectList exposes no active category/property. Explicit grouped Apply may resume a dormant previously active/excluded category only after unchanged same-category path, sufficient durable evidence and fresh mount/source-root checks. Legacy or scope-unverified history requires its own explicit enrollment. Missing, unresolved, replaced and conflicting history remains unavailable; project recovery cannot repair that category. External category reconciliation permits only the bounded legitimate role overlap with exact reliable evidence from a same-source dormant, previously active/excluded direct-role project. Same-role aliases, insufficient/reused evidence and incompatible birthtime still block matching. The dormant project itself stays unchanged.
 
 Authored exclusions persist at one or two components. Effective exclusions are computed for the reviewed target mode, and inactive paths remain visible. Two-component exclusions are inactive in direct mode and never expand to their parent. A one-component exclusion applies literally to a direct project or grouped category subtree, with its target scope explained before Apply. Archive designation and containment policy are preserved.
 

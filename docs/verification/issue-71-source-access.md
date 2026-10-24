@@ -1,9 +1,13 @@
-# Issue 71: Implementation candidate, acceptance still open
+# Issue 71: Verified source-access correction
 
 Issue: https://github.com/kornouhovas/workspace/issues/71.
 Branch: `codex/issue-71-source-access`; integration baseline `649b2347`.
-No owner database or project folders were repaired. This report records observed
-local evidence, not Windows, integration or release acceptance.
+No owner database or project folders were repaired. Scoped implementation acceptance
+passed at `c2d5e9a5a9c4a67480793db2a61b09b850942308` in
+[run40095852338/1](https://github.com/kornouhovas/workspace/actions/runs/40095852338).
+Delivery is recorded in the issue checkpoint. Historical open/failed checkpoints
+below retain their original provenance; they are not the current acceptance state.
+Final desktop/release and the local macOS27 shutdown limitation remain separate.
 
 ## Implemented boundaries
 
@@ -255,3 +259,51 @@ Focused Windows renewal now includes discovery-canonicalization alongside the
 original five files. After it passes and artifacts are inspected, renew the complete
 trace-free candidate again before integration. No old receipt is relabelled as
 execution of this sharing-policy repair.
+
+
+## Final scoped acceptance
+
+The unchanged reviewed source `c2d5e9a5a9c4a67480793db2a61b09b850942308` passed
+[40095852338/1](https://github.com/kornouhovas/workspace/actions/runs/40095852338)
+on every selected host. Every original complete-suite batch and all six production
+dev/package Sources reports were downloaded and inspected. There were no failures
+or cancellations; existing platform skips remain explicit.
+
+| Host | Full-command tests | Passed | Existing skips | Actual kernel |
+| --- | ---: | ---: | ---: | --- |
+| macOS latest | 3540 | 3513 | 27 | 25.6.0 |
+| Windows latest | 3624 | 3610 | 14 | 10.0.26100 |
+| Windows2022 | 3624 | 3610 | 14 | 10.0.20348 |
+
+Each Windows total includes isolated51+14 batches and the3559-test main batch.
+The dedicated local migration command was also renewed on this source:
+723 tests/722 passed/one existing skip, zero failures/cancellations
+(`/tmp/issue71-migrations-c2d5.log`). Focused sharing-policy run40095473250 had
+126 passed/one existing skip on each Windows host before the complete renewal.
+
+All hosts built and inspected the same candidate before production Sources ran
+in release mode. Actual app.asar SHA256 values:
+
+- macOS: `47c776db0b2d8332e67d026505c17098f5026afd29ee0990cf3141f6cbdea45a`
+- Windows latest: `372f16fbd73db7038f53f9ca37811debe9330151d155c9b6132bf53c44d59c49`
+- Windows2022: `c1ebaea1e69f81009b7c86af9dc1352f205578042acae3bffd5a8939de6f203e`
+
+Reports pin source SHA/run/attempt/mode/kernel and confirm normal process exit plus
+asserted owned cleanup. All48 screenshot files have the expected language/theme/
+1024x720 or1440x960 state and dimensions. Actual packaged Windows RU/light/narrow,
+Mac EN/dark/wide and Windows2022 EN/dark/wide captures were visually inspected;
+paths/names remain authored, content wraps, and controls are scroll-reachable.
+Preview/Cancel/explicit mappings/Apply, retained logical ID and native denial pass.
+Windows CI runs on Windows Server; no Windows11 manual or release claim is made.
+
+Independent Standards and Spec follow-ups accepted the final sharing repair and
+negative controls. No temporary diagnostic code or provider-selection flag remains.
+This completes #71's scoped criteria. Unconverted identity-sensitive effects remain
+gated until #72, and the exact deferred keep-original late-observer settlement
+scenario remains listed in the plan. Local macOS27 shutdown failures stay recorded;
+passing clean-host receipts do not claim that independent limitation was repaired.
+
+A subsequent documentation-only receipt commit changes architecture/status and
+this report, with documentation checks. Application, native, migration, dependency,
+build and package inputs remain byte-identical to the runtime-tested source. The
+issue checkpoint records the actual delivered SHA and integration verification.

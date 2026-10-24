@@ -22,19 +22,19 @@ Retain existing containment, ownership, non-overwrite, journals, reservation, SQ
 
 Progress and exact verification receipts belong in the GitHub checkpoint. Unexecuted requirements remain open.
 
-Implementation and verification checkpoint: [observed candidate evidence](../verification/issue-71-source-access.md). Acceptance remains open.
+Implementation and scoped acceptance are complete at runtime-tested `c2d5e9a5`.
+[Final receipts](../verification/issue-71-source-access.md#final-scoped-acceptance)
+record all three hosts; current delivery SHA/state belongs to the GitHub checkpoint.
 
 
-## Continuation gates
+## Acceptance and delivery
 
-The candidate is not accepted. Read the verification checkpoint and GitHub issue
-comments before continuing. Fixture reconciliation and focused native repair are
-complete. The final Windows repair passed110/111 tests with one existing skip on
-both hosts in40092827817; temporary traces are removed. Next: renew the complete
-three-host candidate, inspect every full/dev/package receipt and then apply the
-conditional integration route. No earlier diagnostic failure is relabelled passed.
-
-
+The final trace-free source passed full run40095852338 on macOS latest, Windows
+latest and Windows2022, including production dev/package Sources, resources,
+normal shutdown and owned cleanup. Dedicated migrations and final Standards/Spec
+review passed. Earlier failed receipts retain their actual provenance. Delivery
+uses the owner-authorized integration route and is recorded in the issue checkpoint;
+no release, main merge or live-data repair is part of this issue.
 
 ### Inherited scenario decisions during continuation
 
