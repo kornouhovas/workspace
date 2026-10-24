@@ -542,3 +542,55 @@ service/metadata/legacy/crash/UI/compiled-IPC set161/161 passes. No migration SQ
 schema changed since the verified ninth slice. Full-suite and supported-platform
 acceptance remain unexecuted. Next: legacy archive recovery and designated
 archived binding; native Reveal/files; final review/full/platform/CI gates.
+
+### Eleventh slice: legacy archive/restore recovery
+
+Authentic0023 archive/restore journals now obtain a first per-operation consent
+only when the current enrolled root and every recorded project/category/parent
+native tuple match exactly, including dev. Native objects have an exact known
+shape. Original absent/NULL durable fields remain distinct from malformed,
+unknown or retained new-policy authority: deleting a new journal's authorization
+cannot turn it into legacy. The root-only review grants no descendant authority.
+Only the selected project/category enroll inside the attestation transaction;
+raw original bindings, native strings, IDs and recorded native parent slots
+remain unchanged. Unrelated categories remain unbound.
+
+Further explicit attempts validate the ordered, contiguous sidecar chain and
+renew identical full evidence/current scope on a fresh mount. The first legacy
+attestation preserves its exact tuple proof; later frames use that accepted full
+proof rather than silently rerunning old equality. Source scope loss remains
+reserved even after root-only binding. Reservations validate/retain attested
+physical project evidence beyond recorded paths. Unknown sidecars never disappear
+into a legacy fallback. Exclusively created parent slots may append full proof
+only when their original plan was missing; preexisting native-only slots are not
+rewritten. Matching backups retain those mixed old/new histories, while unknown
+policy/native shapes, consistently rewritten original history, contradictory
+parent scope and broken sequences are rejected.
+
+Spec review reproduced a stale reserved projection after legacy Keep original.
+A settlement callback now clears the observation cache, advances the in-flight
+observation version and requests a new observation; an observed-list test verifies
+immediate visibility after selected enrollment. Another public red/green test
+closes missing-authorization downgrade. Exact native-shape red/green coverage
+rejects extra unknown fields. Follow-up Spec/Standards reviews found no residual
+concrete defect in those inspected repairs.
+
+Real historical SQLite checks cover direct archive/restore, grouped selected-only
+enrollment and preserved category ID, independent dev999 root/each archive-parent/
+project/category refusals, first consent then modeled dev777 renewal, missing
+parents, cached projection settlement, matching/malformed backup history and
+post-consent scope loss. Compiled production IPC independently executes the old
+journal with IDs/token only, rejects injected proof/replay, and exposes no private
+authority. Add this historical boundary to `test:migrations`. No supported-platform
+or full-suite acceptance is inferred from these disposable/process tests.
+
+Fresh build/typecheck/lint and targeted results, followed by the frozen-source
+migration renewal, are recorded in the checkpoint. Designated binding of legacy
+or scope-unverified completed archived records remains separate work; ordinary
+source association still cannot reactivate archives. Native Reveal/files and
+final whole-issue review/full/macOS/Windows/Electron/package/CI gates remain.
+
+Eleventh-slice renewal: Node22.21.1 fresh build/typecheck/lint/docs217/diff
+pass; targeted set144/144 passes, including both compiled production IPC routes.
+Frozen-source `test:migrations`962 checks:961 pass,one existing skip,zero
+failures/cancellations. No new skips or migration SQL changes were introduced.

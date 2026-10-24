@@ -134,15 +134,44 @@ export function archiveRenewalMatches(original:ArchiveBindingSnapshot,current:Ar
 }
 
 /** Sidecars carry renewed observations, never a rewritten original request. */
-export function parseArchiveAttestation(proof:Pick<typeof import('./db/schema.js').projectArchiveAttestations.$inferSelect,'journal'|'binding'|'parents'>,
- row:typeof import('./db/schema.js').projectArchiveOperations.$inferSelect):{binding:ArchiveBindingSnapshot;parents:ArchiveParent[]}|null {
+export function parseArchiveAttestation(proof:Pick<typeof import('./db/schema.js').projectArchiveAttestations.$inferSelect,'journal'|'binding'|'parents'|'sequence'>,
+ row:typeof import('./db/schema.js').projectArchiveOperations.$inferSelect,prior?:{binding:ArchiveBindingSnapshot;parents:ArchiveParent[];sequence:number}):{binding:ArchiveBindingSnapshot;parents:ArchiveParent[];sequence:number}|null {
  try {
   const journal=JSON.parse(proof.journal),binding=JSON.parse(proof.binding),parents=parseArchiveParents(JSON.parse(proof.parents),true);
   const fields=['operationId','sourceId','workspaceId','projectId','action','originalRelativePath','requestedRelativePath','nativeIdentity','binding','previewToken'] as const;
-  const recorded=parseArchiveParents(JSON.parse(journal.parents),true),current=parseArchiveParents(JSON.parse(row.parents),true);
-  if(!['intent','destination_recorded'].includes(journal.stage) || fields.some(field=>!Object.hasOwn(journal,field)||journal[field]!==row[field]) ||
-   !parseArchiveBindingAuthorization(binding,row) || !parents || !recorded || !current || !archiveParentPathsMatch(parents,row.requestedRelativePath) ||
-   !archiveRenewalMatches(JSON.parse(row.binding),binding,parents,recorded) || recorded.some((parent,index)=>parent.identity!==null&&!isDeepStrictEqual(parent,current[index])))return null;
-  return {binding,parents};
+  const original=JSON.parse(row.binding),legacy=!Object.hasOwn(original,"authorization");
+  const recorded=parseArchiveParents(JSON.parse(journal.parents),!legacy),current=parseArchiveParents(JSON.parse(row.parents),!legacy);
+  const auth=parseArchiveBindingAuthorization(binding,row);
+  const known=recorded?.map((parent,index)=>parent.identity!==null && !parent.observation && prior?.parents[index]?.observation?{...prior.parents[index],path:parent.path}:parent);
+  if(!Number.isSafeInteger(proof.sequence) || proof.sequence!==(prior?prior.sequence+1:0) || !['intent','destination_recorded'].includes(journal.stage) || fields.some(field=>!Object.hasOwn(journal,field)||journal[field]!==row[field]) ||
+   !auth || !parents || !recorded || !current || !archiveParentPathsMatch(parents,row.requestedRelativePath) || !uniqueArchiveProofs(auth,[binding.sourceParents,current]) ||
+   legacy&&current.some((parent,index)=>parent.observation!=null&&original.destinationParents[index].identity!==null) ||
+   !(prior?archiveRenewalMatches(prior.binding,binding,parents,known!):legacy?legacyArchiveRenewalMatches(original,binding,parents,recorded):archiveRenewalMatches(original,binding,parents,recorded)) || recorded.some((parent,index)=>parent.identity!==null&&!isDeepStrictEqual(parent,current[index])))return null;
+  return {binding,parents,sequence:proof.sequence};
  }catch{return null;}
+}
+
+/** First consent for old journals proves every recorded native tuple exactly. */
+export function legacyArchiveRenewalMatches(original:ArchiveBindingSnapshot,current:ArchiveBindingSnapshot,parents:ArchiveParent[],recorded:ArchiveParent[]):boolean {
+ try {
+  if(Object.hasOwn(original,'authorization') || original.source.durableEvidence!=null || original.project.durableEvidence!=null || original.category?.durableEvidence!=null || original.archive?.authorization!=null)return false;
+  const native=(value:string)=>{const identity=JSON.parse(value);if(!parseArchiveParents([{path:'Role',identity}],false))throw new Error('Invalid legacy identity');return identity;};
+  const auth=parseArchiveBindingAuthorization(current);
+  if(!auth || original.source.evidenceGeneration!==undefined && (!Number.isSafeInteger(original.source.evidenceGeneration) || original.source.evidenceGeneration<0 || original.source.evidenceGeneration>auth.root.generation) || !sameIdentity(native(original.source.appliedRootIdentity!),auth.root.root.mount) || !sameIdentity(native(original.project.nativeIdentity),auth.project.mount))return false;
+  const evidenceMatches=(saved:string|null|undefined,proof:VerifiedFolder)=>saved==null || sameDurableFolder(JSON.parse(saved),proof.evidence);
+  if(!evidenceMatches(original.source.durableEvidence,auth.root.root) || !evidenceMatches(original.project.durableEvidence,auth.project))return false;
+  const policy=(source:ArchiveBindingSnapshot['source'])=>({...source,durableEvidence:null,evidenceGeneration:0,discoveryRevision:0,propertyRevision:0,categoryPropertyRevision:0});
+  const record=(value:ArchiveBindingSnapshot['project']|ArchiveBindingSnapshot['category'])=>value?{...value,durableEvidence:null}:null;
+  const archive=(value:ArchiveBindingSnapshot['archive'])=>value?{...value,authorization:value.authorization??null}:null;
+  if(!isDeepStrictEqual(policy(original.source),policy(current.source)) || !isDeepStrictEqual(record(original.project),record(current.project)) ||
+   !isDeepStrictEqual(record(original.category),record(current.category)) || !isDeepStrictEqual(archive(original.archive),current.archive) ||
+   ['mode','createParent','categoryName'].some(field=>!isDeepStrictEqual(original[field as keyof ArchiveBindingSnapshot],current[field as keyof ArchiveBindingSnapshot])))return false;
+  if(original.category && (!sameIdentity(native(original.category.nativeIdentity),auth.originalParent.mount) || !evidenceMatches(original.category.durableEvidence,auth.originalParent)))return false;
+  if(original.archive && !sameIdentity(native(original.archive.parentIdentity),auth.originalParent.mount))return false;
+  const sameRoles=(old:ArchiveParent[],fresh:ArchiveParent[])=>!!parseArchiveParents(old,false)&&!!parseArchiveParents(fresh,true)&&old.length===fresh.length && old.every((parent,index)=>{
+   const next=fresh[index];return parent.path===next.path && (parent.identity===null ? next.identity===null : !!next.observation&&sameIdentity(parent.identity,next.observation.mount)&&
+    (parent.observation==null || sameDurableFolder(parent.observation.evidence,next.observation.evidence)));
+  });
+  return sameRoles(original.sourceParents,current.sourceParents) && sameRoles(original.destinationParents,current.destinationParents) && sameRoles(recorded,parents) && uniqueArchiveProofs(auth,[current.sourceParents,parents]);
+ }catch{return false;}
 }

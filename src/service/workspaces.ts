@@ -217,6 +217,11 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
   }
   const archiveMutations = createProjectArchiveMutations(db, {
     invalidateSourceReviews,
+    settled(sourceId) {
+      observationCache.delete(sourceId);
+      observationVersions.set(sourceId,(observationVersions.get(sourceId)??0)+1);
+      observer.request(sourceId);
+    },
     committed(sourceId, revision, workspaceIds) {
       publish([{ type: "workspace.projectsChanged", sourceId, revision, workspaceIds }]);
       observer.request(sourceId);

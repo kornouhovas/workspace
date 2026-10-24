@@ -1,4 +1,4 @@
-import {parseArchiveBindingAuthorization} from "./archive-authorization.js";
+import {parseArchiveAttestation,parseArchiveBindingAuthorization} from "./archive-authorization.js";
 import {parseRemovalAuthorization} from "./category-removal-authorization.js";
 import {parseCategoryFolderAuthorization} from "./category-folder-authorization.js";
 import {validateEvidence} from "./folder-evidence.js";
@@ -52,11 +52,21 @@ export function readProjectReservations(db: Reader, sourceId: string) {
   });
   const relocations = readProjectRelocationReservations(db, sourceId).flatMap<ReturnType<typeof readProjectRelocationReservations>[number] & {durableEvidence:string|null}>(row=>{
     if(row.operationKind==="project_archive") {
-      const binding=JSON.parse(row.binding);
-      if(!Object.hasOwn(binding,"authorization"))return [{...row,durableEvidence:null as string|null}];
-      const auth=parseArchiveBindingAuthorization(binding,row);
-      if(!auth)throw new Error("Invalid archive reservation");
-      return [{...row,durableEvidence:JSON.stringify(auth.project.evidence)}];
+      const binding=JSON.parse(row.binding),proofs:string[]=[];
+      if(Object.hasOwn(binding,"authorization")) {
+        const auth=parseArchiveBindingAuthorization(binding,row);
+        if(!auth)throw new Error("Invalid archive reservation");
+        proofs.push(JSON.stringify(auth.project.evidence));
+      }
+      const attestations=db.select().from(schema.projectArchiveAttestations).where(eq(schema.projectArchiveAttestations.operationId,row.operationId)).orderBy(asc(schema.projectArchiveAttestations.sequence)).all();
+      let prior:NonNullable<ReturnType<typeof parseArchiveAttestation>>|undefined;
+      const source=db.select().from(schema.sources).where(eq(schema.sources.id,row.sourceId)).get();
+      for(const proof of attestations) {
+        const parsed=parseArchiveAttestation(proof,row,prior);
+        if(!parsed || !source || parsed.binding.authorization!.root.generation>source.evidenceGeneration)throw new Error("Invalid archive reservation attestation");
+        prior=parsed;proofs.push(JSON.stringify(parsed.binding.authorization!.project.evidence));
+      }
+      return (proofs.length?proofs:[null]).map(durableEvidence=>({...row,attestations,durableEvidence}));
     }
     const attestations=row.operationKind==="rename" ? renameProofs : moveProofs;
     const proofs=[row.projectEvidence,...attestations.filter(proof=>proof.operationId===row.operationId).map(proof=>proof.projectEvidence)].filter((proof):proof is string=>proof!==null);

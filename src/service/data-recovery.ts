@@ -249,18 +249,21 @@ function validate(db: Database.Database) {
         parents.some((parent,index)=>binding.destinationParents[index].identity!==null &&
           (!sameIdentity(parent.identity!,binding.destinationParents[index].identity) || binding.destinationParents[index].observation && JSON.stringify(parent.observation)!==JSON.stringify(binding.destinationParents[index].observation))) ||
         ["destination_recorded","completed"].includes(row.stage as string)&&parents.some(parent=>parent.identity===null))throw new Error("Invalid archive operation binding");
-      if(!Object.hasOwn(binding,"authorization") && parents.some(parent=>parent.observation!=null))throw new Error("Partial legacy archive authorization");
+      if(!Object.hasOwn(binding,"authorization") && parents.some((parent,index)=>parent.observation!=null &&
+        (binding.destinationParents[index].identity!==null || !db.prepare("SELECT 1 FROM project_archive_attestations WHERE operation_id=?").get(row.operation_id))))throw new Error("Partial legacy archive authorization");
       if(Object.hasOwn(binding,"authorization")) {
         const auth=parseArchiveBindingAuthorization(binding,descriptor(row)),source=db.prepare("SELECT evidence_generation FROM sources WHERE id=?").get(row.source_id) as {evidence_generation:number}|undefined;
         if(!auth || !source || auth.root.generation>source.evidence_generation || !uniqueArchiveProofs(auth,[binding.sourceParents,parents]))throw new Error("Invalid archive operation authorization");
       }
     }
+    const archiveProofs=new Map<string,NonNullable<ReturnType<typeof parseArchiveAttestation>>>();
     for(const proof of db.prepare("SELECT * FROM project_archive_attestations ORDER BY operation_id,sequence").all() as Record<string,unknown>[]) {
       const row=db.prepare("SELECT * FROM project_archive_operations WHERE operation_id=?").get(proof.operation_id) as Record<string,unknown>|undefined;
       const source=row?db.prepare("SELECT evidence_generation FROM sources WHERE id=?").get(row.source_id) as {evidence_generation:number}|undefined:undefined;
       const mapped=row?Object.fromEntries(Object.entries(row).map(([key,value])=>[key.replace(/_([a-z])/g,(_,letter:string)=>letter.toUpperCase()),value])):null;
-      const parsed=mapped?parseArchiveAttestation(proof as unknown as Parameters<typeof parseArchiveAttestation>[0],mapped as unknown as Parameters<typeof parseArchiveAttestation>[1]):null;
+      const parsed=mapped?parseArchiveAttestation(proof as unknown as Parameters<typeof parseArchiveAttestation>[0],mapped as unknown as Parameters<typeof parseArchiveAttestation>[1],archiveProofs.get(proof.operation_id as string)):null;
       if(!parsed || !source || parsed.binding.authorization!.root.generation>source.evidence_generation)throw new Error("Invalid archive attestation");
+      archiveProofs.set(proof.operation_id as string,parsed);
     }
     for(const row of db.prepare("SELECT * FROM project_archives").all() as Record<string,unknown>[]) {
       const auth=parseArchiveAuthorization(row.authorization as string|null),parents=parseArchiveParents(JSON.parse(row.parents as string),row.authorization!==null);

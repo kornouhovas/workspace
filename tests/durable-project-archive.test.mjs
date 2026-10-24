@@ -317,3 +317,11 @@ test('compiled production IPC settles archive recovery with IDs/token only and k
   assert.doesNotMatch(JSON.stringify(result),/"(?:authorization|binding|mount|evidence|scope)":/);assert.equal(readFileSync(join(f.root,'Cold/Archive/Project/sentinel'),'utf8'),'exact contents');
  }finally{parent.emit('message',{data:{type:'shutdown'}});}
 },{native(from,to){assert.equal(renameNoReplace(from,to),'renamed');throw new Error('lost response');}}));
+
+test('removing new-policy archive authorization cannot reclassify the journal as legacy',()=>fixture(f=>{
+ const pending=f.apply(f.review('archive').value),operationId=pending.value.operation.operationId;
+ const trigger=f.sql.prepare("SELECT sql FROM sqlite_schema WHERE name='project_archive_operation_binding'").get().sql;
+ f.sql.exec('DROP TRIGGER project_archive_operation_binding');f.sql.exec("UPDATE project_archive_operations SET binding=json_remove(binding,'$.authorization')");f.sql.exec(trigger);
+ const review=f.query({type:'workspace.previewProjectArchiveRecovery',operationId});assert.ok(!review.ok || review.value.previewToken===null,JSON.stringify(review));assert.equal(f.sql.prepare('SELECT count(*) n FROM project_archive_attestations').get().n,0);
+ assert.equal(readFileSync(join(f.root,'Project/sentinel'),'utf8'),'exact contents');assert.equal(f.query({type:'workspace.listProjectArchiveOperations'}).value.operations.length,1);
+},{native(){return 'occupied';}}));
