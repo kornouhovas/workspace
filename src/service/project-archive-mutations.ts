@@ -1,3 +1,8 @@
+import {isDeepStrictEqual} from "node:util";
+import {parseArchiveAuthorization,parseArchiveParents,parseArchiveBindingAuthorization,type ArchiveAuthorization,type ArchiveParent} from "./archive-authorization.js";
+import {type VerifiedFolder,type FilesystemAuthorizer,type FilesystemAuthorization} from "./filesystem-authorization.js";
+import {storedEvidence} from "./source-identity.js";
+import {durableOwnershipKey,sameDurableFolder} from "./folder-evidence.js";
 import { randomUUID } from "node:crypto";
 import { join } from "node:path";
 import { eq } from "drizzle-orm";
@@ -8,7 +13,7 @@ import { isArchiveRequest, type ProjectArchivePreview, type ProjectArchiveOperat
 import { nativeProjectFilesystem, verifyCreationDirectory, validProjectBasename, filesystemCode, assertCreationDestinationFree, type ProjectFilesystem } from "./project-filesystem.js";
 import { readProjectReservations } from "./project-rename-reservations.js";
 import { filesystemAlias } from "./path-alias.js";
-import { reliableIdentity, sameIdentity, type NativeIdentity } from "./discovery.js";
+import { scanDirectSource,scanGroupedSource,projectExclusions,reliableIdentity, sameIdentity, type NativeIdentity } from "./discovery.js";
 import { renameNoReplace } from "./project-rename-filesystem.js";
 import type { ProjectRenameNative } from "./project-rename.js";
 
@@ -16,9 +21,10 @@ type Database = BetterSQLite3Database<typeof schema>;
 type Source = typeof schema.sources.$inferSelect;
 type Project = typeof schema.projects.$inferSelect;
 type Archive = typeof schema.projectArchives.$inferSelect;
+type Category = typeof schema.categories.$inferSelect;
 type Operation = typeof schema.projectArchiveOperations.$inferSelect;
-type Parent = { path: string; identity: NativeIdentity | null };
-type Binding = { source: Source; project: Project; archive: Archive | null; category: typeof schema.categories.$inferSelect | null;
+type Parent = ArchiveParent;
+type Binding = { authorization?:ArchiveAuthorization; source: Source; project: Project; archive: Archive | null; category: typeof schema.categories.$inferSelect | null;
   sourceParents: Parent[]; destinationParents: Parent[]; createParent: boolean; mode: "direct" | "grouped"; categoryName: string | null };
 class ArchiveFailure extends Error {}
 const fail = (reason: string): never => { throw new ArchiveFailure(reason); };
@@ -31,7 +37,7 @@ const view = (r: Operation): ProjectArchiveOperation => ({ operationId: r.operat
 export function createProjectArchiveMutations(db: Database, integration: {
   invalidateSourceReviews(sourceId: string): void;
   committed(sourceId: string, revision: number, workspaceIds: string[]): void;
-}, filesystem: ProjectFilesystem = nativeProjectFilesystem, native: ProjectRenameNative = renameNoReplace) {
+}, filesystem: ProjectFilesystem = nativeProjectFilesystem, native: ProjectRenameNative = renameNoReplace,authorizer?:FilesystemAuthorizer) {
   const reviews = new Map<string, { sourceId: string; workspaceId: string; token: string; preview: ProjectArchivePreview; binding: Binding }>();
   const recoveryReviews = new Map<string, { sourceId: string; token: string; fingerprint: string }>();
   const sourceFor = (id: string) => db.select().from(schema.workspaces).innerJoin(schema.sources, eq(schema.workspaces.sourceId, schema.sources.id))
@@ -39,22 +45,116 @@ export function createProjectArchiveMutations(db: Database, integration: {
   const operationFor = (id: string) => db.select().from(schema.projectArchiveOperations).where(eq(schema.projectArchiveOperations.operationId, id)).get();
   const projectFor = (id: string) => db.select().from(schema.projects).where(eq(schema.projects.id, id)).get();
   const archiveFor = (id: string) => db.select().from(schema.projectArchives).where(eq(schema.projectArchives.projectId, id)).get() ?? null;
-  const eqJSON = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
-  function root(source: Source) {
+  const eqJSON = isDeepStrictEqual;
+  const sourcePolicy=(source:Source)=>({...source,propertyRevision:0,categoryPropertyRevision:0});
+  function authority(binding:Binding):ArchiveAuthorization|undefined {
+    if(!authorizer)return undefined;
+    const value=parseArchiveBindingAuthorization(binding);
+    if(!value)fail("ownership_uncertain");
+    return value!;
+  }
+  function verifyPeerRoots(binding:Binding,original:string,requested:string,recorded:Parent[]=binding.destinationParents) {
+    const auth=authority(binding);
+    if(!auth)return;
+    const key=(path:string)=>filesystemAlias(path.replaceAll("\\","/"));
+    const rootKey=key(binding.source.canonicalRoot),from=key(join(binding.source.canonicalRoot,original)),to=key(join(binding.source.canonicalRoot,requested));
+    const archiveKey=key(join(binding.source.canonicalRoot,binding.source.archiveRelativePath!));
+    // Existing parents are observed, not reassigned or relocated. Only new
+    // restore parents and archive destination containers need peer ownership vetoes.
+    const protectedParents=binding.archive
+      ? recorded.filter(parent=>binding.destinationParents.some(planned=>planned.path===parent.path && planned.identity===null))
+      : recorded;
+    const proofs=[auth.project,...protectedParents.flatMap(p=>p.observation?[p.observation]:[])];
+    for(const peer of db.select().from(schema.sources).all().filter(source=>source.id!==binding.source.id)) {
+      const saved=peer.durableEvidence?JSON.parse(peer.durableEvidence):null,native=peer.appliedRootIdentity?JSON.parse(peer.appliedRootIdentity):null;
+      if(proofs.some(proof=>saved ? durableOwnershipKey(saved)===durableOwnershipKey(proof.evidence) : native && native.ino===proof.mount.ino && native.birthtimeNs===proof.mount.birthtimeNs))fail("native_conflict");
+      const locator=key(peer.canonicalRoot),properAncestor=rootKey.startsWith(locator+"/");
+      const movedRoot=locator===from || locator.startsWith(from+"/") || locator===to || locator.startsWith(to+"/");
+      const archiveDestination=!binding.archive && (to.startsWith(locator+"/") || locator===archiveKey || locator.startsWith(archiveKey+"/"));
+      const newParent=protectedParents.some(parent=>locator===key(join(binding.source.canonicalRoot,parent.path)));
+      if(locator===rootKey || !properAncestor && (movedRoot || archiveDestination || newParent))fail("owned_location");
+    }
+  }
+  function verifyNamespace(binding:Binding,original:string,requested:string,recorded:Parent[]=binding.destinationParents,completionCategoryId?:string|null) {
+    const auth=authority(binding);if(!auth)return;
+    const folders=new Map<string,VerifiedFolder>([["",auth.root.root]]);
+    const put=(path:string,proof:VerifiedFolder)=>{
+      const before=folders.get(path);
+      if(before && (!sameDurableFolder(before.evidence,proof.evidence) || !sameIdentity(before.mount,proof.mount)))fail("filesystem_changed");
+      folders.set(path,proof);
+    };
+    for(const parent of [...binding.sourceParents,...recorded])if(parent.observation) {
+      authorizer!.observe(join(binding.source.canonicalRoot,parent.path),auth.root.root,parent.observation.mount,parent.observation.evidence);
+      put(parent.path,parent.observation);
+    }
+    const scan=(base:string,relative:string,expected:VerifiedFolder,archive:string|null,exclusions:string[])=>{
+      const observed=(binding.mode==="grouped"?scanGroupedSource:scanDirectSource)(base,archive,exclusions);
+      if(!observed.snapshot || !sameIdentity(observed.snapshot.root.identity,expected.mount))fail("filesystem_changed");
+      for(const entry of observed.entries.filter(e=>e.reason===null)) {
+        const child=observed.snapshot!.children.find(c=>c.relativePath===entry.relativePath);
+        if(child?.kind!=="directory")continue;
+        let proof:VerifiedFolder;
+        try{proof=authorizer!.observe(join(base,entry.relativePath),auth.root.root,child.identity);}catch{continue;}
+        put([relative,entry.relativePath].filter(Boolean).join("/"),proof);
+      }
+    };
+    root(binding.source,auth.root);
+    scan(binding.source.canonicalRoot,"",auth.root.root,binding.source.archiveRelativePath,projectExclusions(JSON.parse(binding.source.excludedRelativePaths),binding.mode).effective);
+    const archive=folders.get(binding.source.archiveRelativePath!);
+    if(archive)scan(join(binding.source.canonicalRoot,binding.source.archiveRelativePath!),binding.source.archiveRelativePath!,archive,null,[]);
+    for(const path of new Set([original,requested])) {
+      let entry;try{entry=filesystem.inspect(join(binding.source.canonicalRoot,path));}catch(error){if(filesystemCode(error)==="ENOENT")continue;throw error;}
+      if(entry.kind==="directory")put(path,authorizer!.observe(join(binding.source.canonicalRoot,path),auth.root.root,entry.identity));
+    }
+    const keys=new Map<string,VerifiedFolder[]>();
+    for(const proof of folders.values()) {const key=durableOwnershipKey(proof.evidence);keys.set(key,[...(keys.get(key)??[]),proof]);}
+    for(const expected of [auth.root.root,auth.project,...binding.sourceParents.flatMap(p=>p.observation?[p.observation]:[]),...recorded.flatMap(p=>p.observation?[p.observation]:[])]) {
+      const found=keys.get(durableOwnershipKey(expected.evidence));
+      if(found?.length!==1 || !sameDurableFolder(found[0].evidence,expected.evidence) || !sameIdentity(found[0].mount,expected.mount))fail("native_conflict");
+    }
+    const parents=[...binding.sourceParents,...recorded];
+    const records=[...db.select().from(schema.categories).where(eq(schema.categories.sourceId,binding.source.id)).all(),
+      ...db.select().from(schema.projects).where(eq(schema.projects.sourceId,binding.source.id)).all().filter(p=>p.id!==binding.project.id)];
+    for(const record of records) {
+      const saved=storedEvidence(record.durableEvidence),native:NativeIdentity=JSON.parse(record.nativeIdentity);
+      if(record.durableEvidence!==null&&!saved)fail("ownership_uncertain");
+      const allowed=(parent:Parent)=>{
+        if("categoryId" in record || record.relativePath!==parent.path)return false;
+        const same=!!parent.observation && !!saved && sameDurableFolder(saved,parent.observation.evidence);
+        if(same && (record.id===binding.category?.id || record.id===completionCategoryId))return true;
+        const recreated=!!parent.observation && explicitlyRecreatedParent(binding.source.id,binding.project.categoryId,parent.path,parent.identity!,parent.observation,auth.root);
+        if(recreated && (record.id===binding.category?.id || same && !record.modeInactive && record.associationState==="active"))return true;
+        return record.id===binding.category?.id && !!binding.archive && binding.createParent && parent.path===parentPath(requested) &&
+          binding.destinationParents.some(planned=>planned.path===parent.path&&planned.identity===null);
+      };
+      for(const parent of parents)if(filesystemAlias(record.relativePath)===filesystemAlias(parent.path) && !allowed(parent))fail("reserved_destination");
+      if(record.associationState!=="replaced" && filesystemAlias(record.relativePath)===filesystemAlias(requested))fail("reserved_destination");
+      for(const proof of [auth.root.root,auth.project,...parents.flatMap(p=>p.observation?[p.observation]:[])]) {
+        const conflict=saved ? durableOwnershipKey(saved)===durableOwnershipKey(proof.evidence) : native.ino===proof.mount.ino&&(native.dev===proof.mount.dev||native.birthtimeNs===proof.mount.birthtimeNs);
+        if(conflict && !parents.some(parent=>parent.observation && sameDurableFolder(parent.observation.evidence,proof.evidence) && allowed(parent)))fail("native_conflict");
+      }
+    }
+    root(binding.source,auth.root);
+  }
+  function root(source: Source,frame?:FilesystemAuthorization) {
     if (!source.appliedRootIdentity) fail("unconfigured");
-    verifyCreationDirectory(filesystem, source.canonicalRoot, JSON.parse(source.appliedRootIdentity!));
+    if(authorizer) {
+      if(!frame)fail("ownership_uncertain");
+      authorizer.verify(frame!,source,"",source.durableEvidence);
+    }
+    verifyCreationDirectory(filesystem, source.canonicalRoot, frame?.root.mount??JSON.parse(source.appliedRootIdentity!));
     filesystem.assertAccessible?.(source.canonicalRoot);
   }
   function validPath(path: string) {
     return path.split("/").every(p => validProjectBasename(p, filesystem.platform) && !p.startsWith(".") && !/^(\$RECYCLE.BIN|System Volume Information)$/i.test(p));
   }
-  function parents(source: Source, path: string): Parent[] {
-    root(source);
+  function parents(source: Source, path: string,frame?:FilesystemAuthorization): Parent[] {
+    root(source,frame);
     const parts = path.split("/").slice(0, -1), entries: Parent[] = [];
     let parent = source.canonicalRoot, missing = false;
     for (let i = 0; i < parts.length; i++) {
       const relative = parts.slice(0, i + 1).join("/");
-      if (missing) { entries.push({ path: relative, identity: null }); continue; }
+      if (missing) { entries.push({ path: relative, identity: null,...(authorizer?{observation:null}:{}) }); continue; }
       const names = filesystem.names(parent);
       if (names.some(n => n !== parts[i] && filesystemAlias(n) === filesystemAlias(parts[i]))) fail("occupied");
       const path = join(parent, parts[i]);
@@ -63,31 +163,35 @@ export function createProjectArchiveMutations(db: Database, integration: {
         if (entry.kind !== "directory" || !reliableIdentity(entry.identity) || filesystem.realpath(path) !== path) fail("unsafe_parent");
         verifyCreationDirectory(filesystem, path, entry.identity);
         filesystem.assertAccessible?.(path);
-        entries.push({ path: relative, identity: entry.identity }); parent = path;
-      } catch (e) { if (filesystemCode(e) !== "ENOENT") throw e; missing = true; entries.push({ path: relative, identity: null }); }
+        entries.push({ path: relative, identity: entry.identity,...(authorizer?{observation:authorizer.observe(path,frame!.root,entry.identity)}:{}) }); parent = path;
+      } catch (e) { if (filesystemCode(e) !== "ENOENT") throw e; missing = true; entries.push({ path: relative, identity: null,...(authorizer?{observation:null}:{}) }); }
     }
-    root(source); return entries;
+    root(source,frame); return entries;
   }
-  function verifyParents(source: Source, entries: Parent[]) {
-    root(source);
+  function verifyParents(source: Source, entries: Parent[],frame?:FilesystemAuthorization) {
+    root(source,frame);
+    if(!parseArchiveParents(entries,!!authorizer))fail("unsafe_parent");
     for (const entry of entries) {
       if (!entry.identity) fail("missing_parent");
       const path = join(source.canonicalRoot, entry.path);
-      verifyCreationDirectory(filesystem, path, entry.identity!);
+      if(authorizer)authorizer.observe(path,frame!.root,entry.observation!.mount,entry.observation!.evidence);
+      verifyCreationDirectory(filesystem, path, entry.observation?.mount??entry.identity!);
       filesystem.assertAccessible?.(path);
     }
-    root(source);
+    root(source,frame);
   }
-  function verifyProject(source: Source, path: string, entries: Parent[], identity: string) {
-    verifyParents(source, entries);
-    verifyCreationDirectory(filesystem, join(source.canonicalRoot, path), JSON.parse(identity));
-    verifyParents(source, entries);
+  function verifyProject(source: Source, path: string, entries: Parent[], identity: string,auth?:ArchiveAuthorization) {
+    if(authorizer&&!auth)fail("ownership_uncertain");
+    verifyParents(source, entries,auth?.root);
+    verifyCreationDirectory(filesystem, join(source.canonicalRoot, path), auth?.project.mount??JSON.parse(identity));
+    if(authorizer)authorizer.observe(join(source.canonicalRoot,path),auth!.root.root,auth!.project.mount,auth!.project.evidence);
+    verifyParents(source, entries,auth?.root);
   }
   const parentPath = (path: string) => path.split("/").slice(0, -1).join("/");
-  function free(source: Source, path: string, entries: Parent[]) {
-    verifyParents(source, entries);
+  function free(source: Source, path: string, entries: Parent[],frame?:FilesystemAuthorization) {
+    verifyParents(source, entries,frame);
     assertCreationDestinationFree(filesystem, join(source.canonicalRoot, parentPath(path)), path.split("/").at(-1)!);
-    verifyParents(source, entries);
+    verifyParents(source, entries,frame);
   }
   function policy(source: Source, path: string) {
     const exclusions: string[] = JSON.parse(source.excludedRelativePaths);
@@ -95,21 +199,24 @@ export function createProjectArchiveMutations(db: Database, integration: {
     if (exclusions.some(p => alias === filesystemAlias(p) || alias.startsWith(`${filesystemAlias(p)}/`))) fail("excluded");
     if (source.archiveRelativePath && (alias === filesystemAlias(source.archiveRelativePath) || alias.startsWith(`${filesystemAlias(source.archiveRelativePath)}/`))) fail("archive");
   }
-  function explicitlyRecreatedParent(sourceId: string, categoryId: string | null, path: string, identity: NativeIdentity) {
+  function explicitlyRecreatedParent(sourceId: string, categoryId: string | null, path: string, identity: NativeIdentity,proof?:VerifiedFolder,frame?:FilesystemAuthorization) {
     if (!categoryId) return false;
     return db.select().from(schema.projectArchiveOperations).where(eq(schema.projectArchiveOperations.sourceId, sourceId)).all().some(row => {
       if (row.action !== "restore" || row.stage !== "completed" || parentPath(row.requestedRelativePath) !== path) return false;
       const binding: Binding = JSON.parse(row.binding), recorded: Parent[] = JSON.parse(row.parents);
+      const reviewed=binding.authorization?parseArchiveAuthorization(JSON.stringify(binding.authorization)):null;
       const parent = recorded.at(-1);
       return binding.project.categoryId === categoryId && binding.createParent && binding.destinationParents.at(-1)?.identity === null &&
-        parent?.path === path && !!parent.identity && sameIdentity(parent.identity, identity);
+        parent?.path === path && !!parent.identity && (authorizer ? !!proof && !!parent.observation && !!reviewed &&
+          sameDurableFolder(parent.observation.evidence,proof.evidence) && sameDurableFolder(reviewed.root.root.evidence,frame!.root.evidence) : sameIdentity(parent.identity, identity));
     });
   }
   function inspect(input: Extract<import("../contracts/project-archive.js").ArchiveQuery, { type: "workspace.previewProjectArchive" }>) {
     const source = sourceFor(input.workspaceId), project = projectFor(input.projectId);
     if (!source || !project || project.sourceId !== source.id || !source.discoveryMode || !source.archiveRelativePath || !validPath(source.archiveRelativePath)) return null;
     if (source.discoveryMode !== "direct" && source.discoveryMode !== "grouped") return null;
-    root(source);
+    const frame=authorizer?.capture(source,"",source.durableEvidence);
+    root(source,frame);
     const archive = archiveFor(project.id), category = project.categoryId ? db.select().from(schema.categories).where(eq(schema.categories.id, project.categoryId)).get() ?? null : null;
     if (input.action === "archive" && (archive || project.modeInactive || project.associationState !== "active" || input.name !== null || input.createParent)) return null;
     if (input.action === "restore" && (!archive || (input.name !== null && !validProjectBasename(input.name, filesystem.platform)))) return null;
@@ -118,41 +225,77 @@ export function createProjectArchiveMutations(db: Database, integration: {
     const destination = input.action === "archive" ? `${source.archiveRelativePath}/${project.relativePath}`
       : [...restoreOriginal.split("/").slice(0, -1), input.name ?? restoreOriginal.split("/").at(-1)!].join("/");
     if (!validPath(original) || !validPath(destination)) return null;
-    const sourceParents = parents(source, original), destinationParents = parents(source, destination);
-    verifyProject(source, original, sourceParents, project.nativeIdentity);
+    const sourceParents = parents(source, original,frame), destinationParents = parents(source, destination,frame);
+    let auth:ArchiveAuthorization|undefined;
+    if(authorizer) {
+      const saved=storedEvidence(project.durableEvidence);
+      if(!saved)fail("ownership_uncertain");
+      const target=authorizer.observe(join(source.canonicalRoot,original),frame!.root,filesystem.inspect(join(source.canonicalRoot,original)).identity,saved!);
+      const recorded=archive?.authorization?parseArchiveAuthorization(archive.authorization):null;
+      if(archive?.authorization && !recorded)fail("ownership_uncertain");
+      if(recorded && (!sameDurableFolder(recorded.root.root.evidence,frame!.root.evidence) || !sameDurableFolder(recorded.project.evidence,target.evidence)))fail("filesystem_changed");
+      let originalParent=sourceParents.at(-1)?.observation??frame!.root;
+      if(archive) {
+        if(recorded)originalParent=recorded.originalParent;
+        else if(archive.mode==="grouped") {
+          const evidence=category?storedEvidence(category.durableEvidence):null;
+          if(!evidence)fail("ownership_uncertain");
+          originalParent={ok:true,evidence:evidence!,mount:JSON.parse(archive.parentIdentity)};
+        }else originalParent={...frame!.root,mount:JSON.parse(archive.parentIdentity)};
+        const recordedParents=parseArchiveParents(JSON.parse(archive.parents),!!recorded);
+        if(!recordedParents || recordedParents.length!==sourceParents.length)fail("unsafe_parent");
+        for(const [index,parent] of recordedParents!.entries()) {
+          const now=sourceParents[index];
+          if(parent.path!==now.path || !parent.identity || (recorded ? !sameDurableFolder(parent.observation!.evidence,now.observation!.evidence) : !sameIdentity(parent.identity,now.identity!)))fail("parent_replaced");
+        }
+      }
+      auth={version:1,root:frame!,project:target,originalParent};
+      if(!parseArchiveAuthorization(JSON.stringify(auth)))fail("ownership_uncertain");
+    }
+    verifyProject(source, original, sourceParents, project.nativeIdentity,auth);
     const blockers: string[] = [];
     if (readProjectReservations(db, source.id).length) blockers.push("busy");
     const mode = archive?.mode ?? source.discoveryMode;
     if (input.action === "restore" && source.discoveryMode !== mode) blockers.push("incompatible_mode");
     if (input.action === "archive") {
       policy(source, original);
-      if (category && (category.modeInactive || category.associationState !== "active" || !sourceParents[0]?.identity || !sameIdentity(sourceParents[0].identity, JSON.parse(category.nativeIdentity)))) blockers.push("category_unavailable");
+      if (category && (category.modeInactive || category.associationState !== "active" || !sourceParents[0]?.identity || !(auth ? category.durableEvidence && sameDurableFolder(sourceParents[0].observation!.evidence,JSON.parse(category.durableEvidence)) : sameIdentity(sourceParents[0].identity, JSON.parse(category.nativeIdentity))))) blockers.push("category_unavailable");
     } else {
       policy(source, destination);
-      verifyParents(source, JSON.parse(archive!.parents));
+      if(!authorizer)verifyParents(source, JSON.parse(archive!.parents));
       const existingParent = destinationParents.at(-1)?.identity;
-      if (existingParent && !sameIdentity(existingParent, JSON.parse(archive!.parentIdentity)) &&
-        !explicitlyRecreatedParent(source.id, project.categoryId, parentPath(destination), existingParent)) blockers.push("parent_replaced");
+      if (existingParent && !(auth ? sameDurableFolder((destinationParents.at(-1)?.observation??auth.root.root).evidence,auth.originalParent.evidence) : sameIdentity(existingParent, JSON.parse(archive!.parentIdentity))) &&
+        !explicitlyRecreatedParent(source.id, project.categoryId, parentPath(destination), existingParent,destinationParents.at(-1)?.observation??undefined,frame)) blockers.push("parent_replaced");
     }
     const missingParents = destinationParents.filter(p => !p.identity).map(p => p.path);
     if (input.action === "restore" && missingParents.length && !input.createParent) blockers.push("missing_parent");
     if (!missingParents.length) {
-      try { free(source, destination, destinationParents); } catch (e) { blockers.push(problem(e)); }
+      try { free(source, destination, destinationParents,frame); } catch (e) { blockers.push(problem(e)); }
     }
     const others = db.select().from(schema.projects).where(eq(schema.projects.sourceId, source.id)).all();
     if (others.some(p => p.id !== project.id && p.associationState !== "replaced" && filesystemAlias(p.relativePath) === filesystemAlias(destination))) blockers.push("reserved_destination");
     const allArchives = db.select().from(schema.projectArchives).where(eq(schema.projectArchives.sourceId, source.id)).all();
     // Unrelated archived branches may be unavailable. Only their common
     // designation ancestors authorize reuse of this archive root.
-    for (const existing of allArchives) verifyParents(source, (JSON.parse(existing.parents) as Parent[]).filter(parent =>
-      source.archiveRelativePath === parent.path || source.archiveRelativePath!.startsWith(`${parent.path}/`)));
+    for (const existing of allArchives) {
+      const recorded=parseArchiveParents(JSON.parse(existing.parents),!!existing.authorization);
+      if(!recorded || existing.authorization && !parseArchiveAuthorization(existing.authorization))fail("unsafe_parent");
+      const common=recorded!.filter(parent=>source.archiveRelativePath===parent.path || source.archiveRelativePath!.startsWith(parent.path+"/"));
+      const observed=authorizer ? common.map(parent=>{
+        const path=join(source.canonicalRoot,parent.path),entry=filesystem.inspect(path);
+        if(!parent.identity || !parent.observation && !sameIdentity(parent.identity,entry.identity))fail("parent_replaced");
+        return {path:parent.path,identity:entry.identity,observation:authorizer.observe(path,frame!.root,entry.identity,parent.observation?.evidence)};
+      }) : common;
+      verifyParents(source,observed,frame);
+    }
     if (others.some(p => p.id !== project.id && p.associationState !== "replaced" && (() => {
       const identity = JSON.parse(p.nativeIdentity), current = JSON.parse(project.nativeIdentity);
       return identity.dev === current.dev && identity.ino === current.ino;
     })())) blockers.push("native_conflict");
     if (allArchives.some(p => p.projectId !== project.id && filesystemAlias(p.relativePath) === filesystemAlias(destination))) blockers.push("reserved_destination");
-    const binding: Binding = { source, project, archive, category, sourceParents, destinationParents, createParent: input.createParent,
+    const binding: Binding = { ...(auth?{authorization:auth}:{}),source, project, archive, category, sourceParents, destinationParents, createParent: input.createParent,
       mode, categoryName: archive?.categoryName ?? category?.relativePath ?? null };
+    authority(binding);verifyPeerRoots(binding,original,destination);verifyNamespace(binding,original,destination);
     const preview: ProjectArchivePreview = { workspaceId: input.workspaceId, sourceId: source.id, projectId: project.id, action: input.action,
       originalRelativePath: original, requestedRelativePath: destination, revision: source.discoveryRevision, missingParents, blockers, previewToken: null };
     return { binding, preview };
@@ -175,81 +318,109 @@ export function createProjectArchiveMutations(db: Database, integration: {
         originalRelativePath: "", requestedRelativePath: "", revision: source.discoveryRevision, missingParents: [], blockers: [problem(e)], previewToken: null } };
     }
   }
+  const comparableBinding=(binding:Binding)=>({...binding,source:{...binding.source,propertyRevision:0,categoryPropertyRevision:0}});
   function sourceBinding(source: Source) {
     const { id, canonicalRoot, discoveryMode, discoveryRevision, excludedRelativePaths, archiveRelativePath, appliedRootIdentity } = source;
     return { id, canonicalRoot, discoveryMode, discoveryRevision, excludedRelativePaths, archiveRelativePath, appliedRootIdentity };
   }
   function authorization(row: Operation, workspaceId: string) {
     const b: Binding = JSON.parse(row.binding), current = sourceFor(workspaceId);
-    if (!current || current.id !== row.sourceId || !eqJSON(sourceBinding(current), sourceBinding(b.source)) || !eqJSON(projectFor(row.projectId), b.project) || !eqJSON(archiveFor(row.projectId), b.archive)) fail("stale_configuration");
+    if (!current || current.id !== row.sourceId || !eqJSON(sourceBinding(current), sourceBinding(b.source)) || !eqJSON(projectFor(row.projectId), b.project) || !eqJSON(archiveFor(row.projectId), b.archive) || b.category && !eqJSON(db.select().from(schema.categories).where(eq(schema.categories.id,b.category.id)).get(),b.category)) fail("stale_configuration");
     if (readProjectReservations(db, row.sourceId).some(r => r.operationKind !== "project_archive" || r.operationId !== row.operationId)) fail("busy");
     if (!eqJSON(operationFor(row.operationId), row)) fail("stale_operation");
-    root(current!); return b;
+    root(current!,authority(b)?.root);verifyPeerRoots(b,row.originalRelativePath,row.requestedRelativePath,JSON.parse(row.parents));verifyNamespace(b,row.originalRelativePath,row.requestedRelativePath,JSON.parse(row.parents)); return b;
   }
   function ensureParents(row: Operation, workspaceId: string) {
     const b = authorization(row, workspaceId);
     const entries: Parent[] = JSON.parse(row.parents);
     for (let i = 0; i < entries.length; i++) {
       const entry = entries[i];
-      verifyParents(b.source, entries.slice(0, i));
+      verifyParents(b.source, entries.slice(0, i),authority(b)?.root);
       if (entry.identity) verifyCreationDirectory(filesystem, join(b.source.canonicalRoot, entry.path), entry.identity);
       else {
-        free(b.source, entry.path, entries.slice(0, i));
-        verifyProject(b.source, row.originalRelativePath, b.sourceParents, row.nativeIdentity);
+        free(b.source, entry.path, entries.slice(0, i),authority(b)?.root);
+        verifyProject(b.source, row.originalRelativePath, b.sourceParents, row.nativeIdentity,authority(b));
+        authorization(row,workspaceId);
         filesystem.mkdir(join(b.source.canonicalRoot, entry.path));
         const created = filesystem.inspect(join(b.source.canonicalRoot, entry.path));
         if (created.kind !== "directory" || !reliableIdentity(created.identity)) fail("filesystem_changed");
         verifyCreationDirectory(filesystem, join(b.source.canonicalRoot, entry.path), created.identity);
-        entries[i] = { ...entry, identity: created.identity };
+        entries[i] = { ...entry, identity: created.identity,...(authorizer?{observation:authorizer.observe(join(b.source.canonicalRoot,entry.path),authority(b)!.root.root,created.identity)}:{}) };
         authorization(row, workspaceId);
+        verifyPeerRoots(b,row.originalRelativePath,row.requestedRelativePath,entries);verifyNamespace(b,row.originalRelativePath,row.requestedRelativePath,entries);
         db.update(schema.projectArchiveOperations).set({ parents: JSON.stringify(entries) }).where(eq(schema.projectArchiveOperations.operationId, row.operationId)).run();
         row = operationFor(row.operationId)!;
       }
     }
-    verifyParents(b.source, entries); return row;
+    verifyParents(b.source, entries,authority(b)?.root); return row;
   }
   function destinationEvidence(row: Operation, workspaceId: string) {
     const b = authorization(row, workspaceId);
-    verifyProject(b.source, row.requestedRelativePath, JSON.parse(row.parents), row.nativeIdentity);
-    free(b.source, row.originalRelativePath, b.sourceParents);
+    verifyProject(b.source, row.requestedRelativePath, JSON.parse(row.parents), row.nativeIdentity,authority(b));
+    free(b.source, row.originalRelativePath, b.sourceParents,authority(b)?.root);
     authorization(row, workspaceId);
   }
   function complete(row: Operation, workspaceId: string) {
     const b: Binding = JSON.parse(row.binding);
     const revision = b.source.discoveryRevision + 1;
     if (!Number.isSafeInteger(revision)) fail("stale_configuration");
+    let completionCategoryId=b.project.categoryId;
+    const expectedArchive:Archive|null=row.action==="archive" ? {projectId:row.projectId,sourceId:row.sourceId,relativePath:row.requestedRelativePath,
+      originalRelativePath:b.project.relativePath,mode:b.mode,categoryName:b.categoryName,parentIdentity:JSON.stringify(b.sourceParents.at(-1)?.identity??b.authorization?.originalParent.mount??JSON.parse(b.source.appliedRootIdentity!)),
+      parents:row.parents,authorization:b.authorization?JSON.stringify(b.authorization):null}:null;
     db.transaction(tx => {
       destinationEvidence(row, workspaceId);
+      const expectedCategories=new Map(tx.select().from(schema.categories).where(eq(schema.categories.sourceId,row.sourceId)).all().map(category=>[category.id,category]));
       if (row.stage !== "destination_recorded") {
         tx.update(schema.projectArchiveOperations).set({ stage: "destination_recorded", problem: null }).where(eq(schema.projectArchiveOperations.operationId, row.operationId)).run();
         row = operationFor(row.operationId)!;
       }
       if (row.action === "archive") {
         tx.update(schema.projects).set({ modeInactive: true }).where(eq(schema.projects.id, row.projectId)).run();
-        tx.insert(schema.projectArchives).values({ projectId: row.projectId, sourceId: row.sourceId, relativePath: row.requestedRelativePath,
-          originalRelativePath: b.project.relativePath, mode: b.mode, categoryName: b.categoryName,
-          parentIdentity: JSON.stringify(b.sourceParents.at(-1)?.identity ?? JSON.parse(b.source.appliedRootIdentity!)), parents: row.parents }).run();
+        tx.insert(schema.projectArchives).values(expectedArchive!).run();
       } else {
         let categoryId = b.project.categoryId;
         if (b.mode === "grouped") {
           const parent = JSON.parse(row.parents) as Parent[];
           const identity = JSON.stringify(parent.at(-1)!.identity);
           const current = categoryId ? tx.select().from(schema.categories).where(eq(schema.categories.id, categoryId)).get() : null;
-          if (!current || current.nativeIdentity !== identity) {
-            if (current) tx.update(schema.categories).set({ modeInactive: true, associationState: "replaced" }).where(eq(schema.categories.id, current.id)).run();
+          const proof=parent.at(-1)?.observation;
+          const matches=(category:typeof schema.categories.$inferSelect)=>authorizer ? !!category.durableEvidence && !!proof && sameDurableFolder(JSON.parse(category.durableEvidence),proof.evidence) : category.nativeIdentity===identity;
+          if (!current || !matches(current)) {
+            if (current && current.relativePath===parentPath(row.requestedRelativePath)) {
+              tx.update(schema.categories).set({ modeInactive: true, associationState: "replaced" }).where(eq(schema.categories.id, current.id)).run();
+              expectedCategories.set(current.id,{...current,modeInactive:true,associationState:"replaced"});
+            }
             const associated = tx.select().from(schema.categories).where(eq(schema.categories.sourceId, row.sourceId)).all().find(c =>
-              c.associationState === "active" && !c.modeInactive && c.relativePath === parentPath(row.requestedRelativePath) && c.nativeIdentity === identity);
+              c.associationState === "active" && !c.modeInactive && c.relativePath === parentPath(row.requestedRelativePath) && matches(c));
             categoryId = associated?.id ?? randomUUID();
-            if (!associated) tx.insert(schema.categories).values({ id: categoryId, sourceId: row.sourceId, relativePath: parentPath(row.requestedRelativePath), nativeIdentity: identity, associationState: "active", modeInactive: false }).run();
-          } else tx.update(schema.categories).set({ associationState: "active", modeInactive: false }).where(eq(schema.categories.id, current.id)).run();
+            if (!associated) {
+              const category:Category={id:categoryId,sourceId:row.sourceId,relativePath:parentPath(row.requestedRelativePath),nativeIdentity:identity,
+                associationState:"active",modeInactive:false,durableEvidence:proof?JSON.stringify(proof.evidence):null};
+              tx.insert(schema.categories).values(category).run();expectedCategories.set(category.id,category);
+            }
+          } else {
+            tx.update(schema.categories).set({ associationState: "active", modeInactive: false }).where(eq(schema.categories.id, current.id)).run();
+            expectedCategories.set(current.id,{...current,associationState:"active",modeInactive:false});
+          }
         }
+        completionCategoryId=categoryId;
         tx.delete(schema.projectArchives).where(eq(schema.projectArchives.projectId, row.projectId)).run();
         tx.update(schema.projects).set({ relativePath: row.requestedRelativePath, categoryId, associationState: "active", modeInactive: false }).where(eq(schema.projects.id, row.projectId)).run();
       }
       tx.update(schema.sources).set({ discoveryRevision: revision }).where(eq(schema.sources.id, row.sourceId)).run();
       tx.update(schema.projectArchiveOperations).set({ stage: "completed", completedRevision: revision, problem: null }).where(eq(schema.projectArchiveOperations.operationId, row.operationId)).run();
-      verifyProject(b.source, row.requestedRelativePath, JSON.parse(row.parents), row.nativeIdentity);
-      free(b.source, row.originalRelativePath, b.sourceParents);
+      verifyProject(b.source, row.requestedRelativePath, JSON.parse(row.parents), row.nativeIdentity,authority(b));
+      free(b.source, row.originalRelativePath, b.sourceParents,authority(b)?.root);
+      verifyPeerRoots(b,row.originalRelativePath,row.requestedRelativePath,JSON.parse(row.parents));verifyNamespace(b,row.originalRelativePath,row.requestedRelativePath,JSON.parse(row.parents),completionCategoryId);
+      const actualSource=sourceFor(workspaceId),expectedSource=sourcePolicy({...b.source,discoveryRevision:revision});
+      if(!actualSource || !eqJSON(sourcePolicy(actualSource),expectedSource))fail("stale_configuration");
+      root(actualSource!,authority(b)?.root);
+      const expectedProject:Project=row.action==="archive" ? {...b.project,modeInactive:true} : {...b.project,relativePath:row.requestedRelativePath,categoryId:completionCategoryId,modeInactive:false,associationState:"active"};
+      const ordered=(categories:Category[])=>categories.sort((a,b)=>a.id.localeCompare(b.id));
+      if(!eqJSON(projectFor(row.projectId),expectedProject) || !eqJSON(archiveFor(row.projectId),expectedArchive) ||
+        !eqJSON(ordered(tx.select().from(schema.categories).where(eq(schema.categories.sourceId,row.sourceId)).all()),ordered([...expectedCategories.values()])))fail("storage_error");
+      if(!eqJSON(sourcePolicy(sourceFor(workspaceId)!),expectedSource))fail("stale_configuration");
     }, { behavior: "immediate" });
     integration.invalidateSourceReviews(row.sourceId);
     integration.committed(row.sourceId, revision, db.select().from(schema.workspaces).where(eq(schema.workspaces.sourceId, row.sourceId)).all().map(w => w.id));
@@ -258,8 +429,8 @@ export function createProjectArchiveMutations(db: Database, integration: {
   function execute(row: Operation, workspaceId: string) {
     row = ensureParents(row, workspaceId);
     const b = authorization(row, workspaceId);
-    verifyProject(b.source, row.originalRelativePath, b.sourceParents, row.nativeIdentity);
-    free(b.source, row.requestedRelativePath, JSON.parse(row.parents));
+    verifyProject(b.source, row.originalRelativePath, b.sourceParents, row.nativeIdentity,authority(b));
+    free(b.source, row.requestedRelativePath, JSON.parse(row.parents),authority(b)?.root);
     authorization(row, workspaceId);
     const outcome = native(join(b.source.canonicalRoot, row.originalRelativePath), join(b.source.canonicalRoot, row.requestedRelativePath));
     if (outcome !== "renamed") fail(outcome);
@@ -290,14 +461,14 @@ export function createProjectArchiveMutations(db: Database, integration: {
       const request = { type: "workspace.previewProjectArchive" as const, workspaceId: input.workspaceId, projectId: p.projectId, action: p.action,
         name: p.action === "restore" ? p.requestedRelativePath.split("/").at(-1)! : null, createParent: b.createParent };
       const current = inspect(request);
-      if (!current || !eqJSON(current.binding, b) || current.preview.blockers.length) return invalid();
+      if (!current || !eqJSON(comparableBinding(current.binding), comparableBinding(b)) || current.preview.blockers.length) return invalid();
       row = { operationId: input.operationId, sourceId: source.id, workspaceId: input.workspaceId, projectId: p.projectId, action: p.action,
         originalRelativePath: p.originalRelativePath, requestedRelativePath: p.requestedRelativePath, nativeIdentity: b.project.nativeIdentity,
         binding: JSON.stringify(b), previewToken: input.previewToken, parents: JSON.stringify(b.destinationParents), stage: "intent", problem: null, completedRevision: null };
       const intent = row;
       db.transaction(tx => {
         const latest = inspect(request);
-        if (!latest || !eqJSON(latest.binding, b) || latest.preview.blockers.length) fail("stale_configuration");
+        if (!latest || !eqJSON(comparableBinding(latest.binding), comparableBinding(b)) || latest.preview.blockers.length) fail("stale_configuration");
         tx.insert(schema.projectArchiveOperations).values(intent).run();
       }, { behavior: "immediate" });
       accepted = true;
@@ -313,18 +484,18 @@ export function createProjectArchiveMutations(db: Database, integration: {
       const b = authorization(row, workspaceId);
       const status = (path: string, entries: Parent[]) => {
         try {
-          verifyProject(b.source, path, entries, row.nativeIdentity); return "matching";
+          verifyProject(b.source, path, entries, row.nativeIdentity,authority(b)); return "matching";
         } catch (e) { if (filesystemCode(e) === "ENOENT") return "missing"; throw e; }
       };
       const original = status(row.originalRelativePath, b.sourceParents);
       const entries: Parent[] = JSON.parse(row.parents);
       let destination: string;
       if (entries.some(p => !p.identity)) {
-        const now = parents(b.source, row.requestedRelativePath);
+        const now = parents(b.source, row.requestedRelativePath,authority(b)?.root);
         if (!eqJSON(entries, now)) fail("unrecorded_parent");
         destination = "missing";
       } else destination = status(row.requestedRelativePath, entries);
-      observations.push(original, destination, parents(b.source, row.requestedRelativePath));
+      observations.push(original, destination, parents(b.source, row.requestedRelativePath,authority(b)?.root));
       if (original === "matching" && destination === "missing") result.actions = ["retry_original", "keep_original"];
       else if (original === "missing" && destination === "matching") {
         destinationEvidence(row, workspaceId); result.actions = ["complete_destination"];
@@ -335,7 +506,7 @@ export function createProjectArchiveMutations(db: Database, integration: {
       // does not adopt, remove or alter an unrecorded/replaced destination parent.
       try {
         const b = authorization(row, workspaceId);
-        verifyProject(b.source, row.originalRelativePath, b.sourceParents, row.nativeIdentity);
+        verifyProject(b.source, row.originalRelativePath, b.sourceParents, row.nativeIdentity,authority(b));
         result.actions = ["keep_original"];
       } catch { /* Ambiguous original placement stays reserved. */ }
     }

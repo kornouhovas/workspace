@@ -286,7 +286,7 @@ export const projectArchives = sqliteTable("project_archives", {
   mode: text("mode", { enum: ["direct", "grouped"] }).notNull(),
   categoryName: text("category_name"),
   parentIdentity: text("parent_identity").notNull(),
-  parents: text("parents").notNull(),
+  parents: text("parents").notNull(), authorization:text("authorization"),
 });
 export const projectArchiveOperations = sqliteTable("project_archive_operations", {
   operationId: text("operation_id").primaryKey(),
@@ -304,6 +304,11 @@ export const projectArchiveOperations = sqliteTable("project_archive_operations"
   problem: text("problem"),
   completedRevision: integer("completed_revision"),
 });
+
+export const projectArchiveAttestations = sqliteTable("project_archive_attestations", {
+  id:text("id").primaryKey(), operationId:text("operation_id").notNull().references(()=>projectArchiveOperations.operationId),
+  sequence:integer("sequence").notNull(),journal:text("journal").notNull(),binding:text("binding").notNull(),parents:text("parents").notNull(),
+},table=>[unique().on(table.operationId,table.sequence)]);
 
 export const numberPropertyValues = sqliteTable("number_property_values", {
   projectId: text("project_id").notNull(),

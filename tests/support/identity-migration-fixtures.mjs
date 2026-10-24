@@ -1,7 +1,7 @@
 /** Exact additive migration expectations; legacy authority is deliberately absent. */
 export function withIdentityMigrationDefaults(table, rows) {
   return rows.map(row => table === 'sources' ? {durable_evidence:null,evidence_generation:0,...row}
-    : table==='project_creation_operations' ? {authorization:null,destination_evidence:null,...row} : table==='category_folder_operations' ? {authorization:null,destination_evidence:null,...row} : table==='project_rename_operations' ? {authorization:null,project_evidence:null,...row} : table==='project_category_move_operations' ? {original_authorization:null,destination_authorization:null,project_evidence:null,...row} : ['projects','categories'].includes(table) ? {durable_evidence:null,...row} : row);
+    : table==='project_creation_operations' ? {authorization:null,destination_evidence:null,...row} : table==='category_folder_operations' ? {authorization:null,destination_evidence:null,...row} : table==='project_rename_operations' ? {authorization:null,project_evidence:null,...row} : table==='project_category_move_operations' ? {original_authorization:null,destination_authorization:null,project_evidence:null,...row} : ['projects','categories'].includes(table) ? {durable_evidence:null,...row} : table==='project_archives' ? {authorization:null,...row} : row);
 }
 export function projectMetadataRecords(result) {
   if(!result.ok) throw new Error(`Project metadata query failed: ${JSON.stringify(result.error)}`);
@@ -90,7 +90,10 @@ export function assertHistoricalPublicMetadata(assert,application,fixture){
 
 /** Existing rewind fixtures must remove every additive 0025 object before replay. */
 export function rewindCreationAuthorization(db) {
- db.exec(`DROP TRIGGER category_removal_attestation_insert; DROP TRIGGER category_removal_attestation_update; DROP TRIGGER category_removal_attestation_delete;
+ db.exec(`DROP TRIGGER archive_parent_durable_evidence;
+ DROP TRIGGER project_archive_attestation_insert; DROP TRIGGER project_archive_attestation_update; DROP TRIGGER project_archive_attestation_delete;
+ DROP TABLE project_archive_attestations; ALTER TABLE project_archives DROP COLUMN authorization;
+ DROP TRIGGER category_removal_attestation_insert; DROP TRIGGER category_removal_attestation_update; DROP TRIGGER category_removal_attestation_delete;
  DROP TABLE category_removal_attestations;
  DROP TRIGGER category_folder_authority_update;
  DROP TRIGGER category_folder_attestation_insert; DROP TRIGGER category_folder_attestation_update; DROP TRIGGER category_folder_attestation_delete;

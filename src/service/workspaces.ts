@@ -221,7 +221,7 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
       publish([{ type: "workspace.projectsChanged", sourceId, revision, workspaceIds }]);
       observer.request(sourceId);
     },
-  }, projectFilesystem, projectRenameNative);
+  }, projectFilesystem, projectRenameNative,createFilesystemAuthorization(scope,readFolderEvidence,db));
   const archive = createProjectArchiveService(db, {
     invalidateSourceReviews,
     committed(sourceId, revision, workspaceIds) {
@@ -988,23 +988,10 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
 
   // ADR 0009 rollout: #72 must convert each consumer before this gate is removed.
   const blocked = () => ({ok:false as const,error:{code:"identity_update_required" as const,message:"Folder action awaits safety update. Retained metadata remains available."}});
-  type OperationTable = "project_creation_operations" | "project_rename_operations" | "project_category_move_operations" |
-    "project_archive_operations" | "category_folder_operations" | "category_removal_operations";
-  function terminalRetry<R>(table: OperationTable, original: (input: unknown) => ServiceResult<R>) {
-    return (input: unknown): ServiceResult<R> => {
-      try {
-        const request: unknown = structuredClone(input);
-        if (!isRecord(request) || !isUuid(request.operationId)) return blocked();
-        const receipt = db.get<{stage:string}>(sql`SELECT stage FROM ${sql.identifier(table)} WHERE operation_id=${request.operationId}`);
-        // The original consumer validates exact payload/ownership and returns its immutable receipt before any effect path.
-        return receipt && (receipt.stage === "completed" || receipt.stage === "failed" || table === "category_removal_operations" && receipt.stage === "abandoned") ? original(request) : blocked();
-      } catch { return blocked(); }
-    };
-  }
   const blockedAsync = async () => blocked();
   Object.assign(service, {
-    previewProjectArchive: blocked,
-    applyProjectArchive: terminalRetry("project_archive_operations", archiveMutations.applyProjectArchive),
+    previewProjectArchive: archiveMutations.previewProjectArchive,
+    applyProjectArchive: archiveMutations.applyProjectArchive,
     previewProjectArchiveRecovery: blocked,
     recoverProjectArchive: blocked,
     previewArchiveLocation: archive.previewArchiveLocation,

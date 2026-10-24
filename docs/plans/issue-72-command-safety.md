@@ -437,3 +437,60 @@ command/discovery/metadata consumers and build/artifact checks. Final focused
 UI/IPC renewal is recorded in the checkpoint. This is intermediate #72 evidence;
 archive/restore effects, native Reveal/files, whole-issue review/full suite and
 distinct macOS/Windows Electron/package/CI acceptance remain outstanding.
+
+### Ninth slice: fresh archive/restore effects
+
+Production fresh archive/restore now capture sufficient full root, project and
+all existing parent proofs, with a pinned current mount and evidence generation.
+Missing destination parents are created exclusively and recorded only after
+repeated observation. New archive metadata retains full historical origin and
+placement evidence separately from raw native identity; project/category IDs,
+contents, property values and independent property revisions survive device-only
+history changes. The archive operation's immutable Binding carries its authority.
+Migration0030 adds nullable archive metadata authority, append-only parent proof
+protection and the separate attestation table reserved for the recovery slice.
+Current schema inventory is31 migrations; old migration SQL stays unchanged.
+
+Fresh authorization checks complete source/archive namespace observations,
+physical and locator ownership, reservations, exact policy and current registry.
+Peer source checks protect moved project subtrees, archive destination containers
+and new restore parents. They permit separately saved roots used only as unchanged
+original parents; existing ancestors still receive full repeated checks. An
+already recreated grouped parent is reusable only through a valid completed
+restore receipt. Completion verifies current generation/policy, physical placement
+and intended source/project/category/archive metadata inside the transaction after
+SQL writes; a late generation change rolls back completion without replaying the
+physical effect. Unknown/malformed full authority never falls back to legacy.
+Matching backups restore; malformed journal descriptors, parent roles, unknown
+formats, future generation and contradictory metadata proofs are rejected.
+
+Retain historical archive engines, process-exit scenarios and archive metadata
+fixtures. Adapt only their obsolete production blanket-gate assertions: production
+archive effects are now covered by the durable public-service tests, while legacy
+engine fixtures continue producing historical archive rows for metadata coverage.
+Source/native gate tests retain the still-unconverted recovery/Reveal/files
+boundaries. No metadata, ownership or platform requirement is retired.
+
+Public controls include direct/grouped stored-device changes across restart,
+peer roots inside moved folders or below restore destinations, full project
+aliases, competing retained ownership, changed parent proof, unstable mkdir,
+uncertain native outcome/read-only retry, property-only edits, parent-recreation
+receipt validation, matching/malformed backup restore, unchanged nested-source
+parents, stale current mount and changed volume/creation/scope. Read-only Spec and
+Standards reviews found no residual concrete defect in inspected fresh effects,
+peer-parent repair and backup validation. Recovery/sidecar consumption is excluded.
+
+Observed Node22.21.1/macOS arm64: fresh build/typecheck/lint pass; initial affected
+set118/118; renewed public durable archive tests18/18. First migration run921:
+909 pass,11 failed,one existing skip; all11 traced to obsolete gate assertions
+in two test helpers. Their affected117 checks pass after adaptation. The focused
+migration rerun and final lint/docs receipts are recorded in the next checkpoint.
+No full-suite, OS remount, Windows or Electron/package acceptance is claimed.
+Physical archive recovery remains gated pending separate reviewed attestation,
+legacy exact-tuple and fresh-frame implementation. Native Reveal/files and final
+whole-issue/platform/CI acceptance remain outstanding.
+
+Ninth-slice renewal: `test:migrations`925 checks:924 pass,one existing skip,
+zero failures/cancellations on frozen source. Archive/contextual UI35/35 pass;
+lint, local Markdown links217 and diff checks pass. Build/typechecking passed on
+the unchanged service source. No new skips were introduced.

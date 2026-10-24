@@ -1,3 +1,4 @@
+import {archiveBindingMatchesRow,parseArchiveAuthorization,parseArchiveBindingAuthorization,parseArchiveParents,archiveParentPathsMatch,uniqueArchiveProofs,type ArchiveRowDescriptor} from "./archive-authorization.js";
 import {parseRemovalAuthorization,removalBindingMatchesRow,removalAttestationMatchesBinding} from "./category-removal-authorization.js";
 import {categoryAuthorizationMatchesBinding,parseCategoryFolderAuthorization,type CategoryFolderBindingRow} from "./category-folder-authorization.js";
 import {sameIdentity} from "./discovery.js";
@@ -237,6 +238,36 @@ function validate(db: Database.Database) {
       if(!row || !source || !journal || !["moving","cleanup_intent"].includes(journal.stage) ||
         fields.some(field=>!Object.hasOwn(journal,field)||journal[field]!==row[field.replace(/[A-Z]/g,letter=>"_"+letter.toLowerCase())]) ||
         !auth || auth.root.generation>source.evidence_generation || !removalAttestationMatchesBinding(binding,JSON.parse(row.binding as string)))throw new Error("Invalid category removal attestation");
+    }
+  }
+  if((db.prepare("PRAGMA table_info(project_archives)").all() as {name:string}[]).some(column=>column.name==="authorization")) {
+    const descriptor=(row:Record<string,unknown>):ArchiveRowDescriptor=>({sourceId:row.source_id as string,projectId:row.project_id as string,action:row.action as string,
+      originalRelativePath:row.original_relative_path as string,requestedRelativePath:row.requested_relative_path as string,nativeIdentity:row.native_identity as string});
+    for(const row of db.prepare("SELECT * FROM project_archive_operations").all() as Record<string,unknown>[]) {
+      const binding=JSON.parse(row.binding as string),parents=parseArchiveParents(JSON.parse(row.parents as string),Object.hasOwn(binding,"authorization"));
+      if(!parents || !archiveBindingMatchesRow(binding,descriptor(row)) || !archiveParentPathsMatch(parents,row.requested_relative_path as string) ||
+        parents.some((parent,index)=>binding.destinationParents[index].identity!==null &&
+          (!sameIdentity(parent.identity!,binding.destinationParents[index].identity) || binding.destinationParents[index].observation && JSON.stringify(parent.observation)!==JSON.stringify(binding.destinationParents[index].observation))) ||
+        ["destination_recorded","completed"].includes(row.stage as string)&&parents.some(parent=>parent.identity===null))throw new Error("Invalid archive operation binding");
+      if(!Object.hasOwn(binding,"authorization") && parents.some(parent=>parent.observation!=null))throw new Error("Partial legacy archive authorization");
+      if(Object.hasOwn(binding,"authorization")) {
+        const auth=parseArchiveBindingAuthorization(binding,descriptor(row)),source=db.prepare("SELECT evidence_generation FROM sources WHERE id=?").get(row.source_id) as {evidence_generation:number}|undefined;
+        if(!auth || !source || auth.root.generation>source.evidence_generation || !uniqueArchiveProofs(auth,[binding.sourceParents,parents]))throw new Error("Invalid archive operation authorization");
+      }
+    }
+    for(const row of db.prepare("SELECT * FROM project_archives").all() as Record<string,unknown>[]) {
+      const auth=parseArchiveAuthorization(row.authorization as string|null),parents=parseArchiveParents(JSON.parse(row.parents as string),row.authorization!==null);
+      if(!parents || parents.some(parent=>parent.identity===null) || !archiveParentPathsMatch(parents,row.relative_path as string))throw new Error("Invalid archive placement");
+      if(row.authorization===null) {if(parents.some(parent=>parent.observation!=null))throw new Error("Partial archive authority");continue;}
+      const source=db.prepare("SELECT durable_evidence,evidence_generation FROM sources WHERE id=?").get(row.source_id) as {durable_evidence:string|null;evidence_generation:number}|undefined;
+      const project=db.prepare("SELECT durable_evidence,category_id FROM projects WHERE id=?").get(row.project_id) as {durable_evidence:string|null;category_id:string|null}|undefined;
+      const category=project?.category_id?db.prepare("SELECT durable_evidence FROM categories WHERE id=?").get(project.category_id) as {durable_evidence:string|null}|undefined:undefined;
+      if(!auth || !source?.durable_evidence || !project?.durable_evidence || auth.root.generation>source.evidence_generation ||
+        !sameDurableFolder(auth.root.root.evidence,JSON.parse(source.durable_evidence),false) || !sameDurableFolder(auth.project.evidence,JSON.parse(project.durable_evidence),false) ||
+        !sameIdentity(auth.originalParent.mount,JSON.parse(row.parent_identity as string)) || !uniqueArchiveProofs(auth,[parents]))throw new Error("Invalid archived folder authorization");
+      if(row.mode==="direct" ? !sameDurableFolder(auth.originalParent.evidence,auth.root.root.evidence) :
+        !category?.durable_evidence || !sameDurableFolder(auth.originalParent.evidence,JSON.parse(category.durable_evidence),false) ||
+        durableOwnershipKey(auth.originalParent.evidence)===durableOwnershipKey(auth.root.root.evidence) || parents.some(parent=>parent.observation&&durableOwnershipKey(parent.observation.evidence)===durableOwnershipKey(auth.originalParent.evidence)))throw new Error("Invalid original archive parent");
     }
   }
   // These ownership constraints predate their SQL equivalents.

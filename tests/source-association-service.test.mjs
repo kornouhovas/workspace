@@ -73,7 +73,7 @@ test('legacy dev control requires explicit root and separate project enrollment,
 test('fresh and legacy sources cannot dispatch unconverted filesystem consumers',()=>fixture(f=>{
   discover(f);
   const initial=readdirSync(f.root);
-  const denied=f.query({type:'workspace.previewProjectArchive',action:'archive',name:null,createParent:false,projectId:f.query({type:'workspace.listProjects'}).value.projects[0].projectId});
+  const denied=f.query({type:'workspace.listProjectFiles',relativePath:'',projectId:f.query({type:'workspace.listProjects'}).value.projects[0].projectId});
   assert.equal(denied.ok,false);
   assert.match(denied.error.message,/safety update/);
   assert.deepEqual(readdirSync(f.root),initial);
@@ -196,7 +196,7 @@ test('every unconverted direct service and native entry point fails closed witho
  // Keep the fixture synchronous: all gated functions reject synchronously before any native dispatch.
  fixture(f=>{
   discover(f);
-  const names=['previewProjectArchive','applyProjectArchive','previewProjectArchiveRecovery','recoverProjectArchive',
+  const names=['previewProjectArchiveRecovery','recoverProjectArchive',
 
    'listProjectFiles',
    ];
@@ -245,7 +245,6 @@ test('valid IPC requests cannot bypass the gate and association cancellation rev
   {type:'workspace.openProjectFile',projectId,relativePath:'keep.txt'},
   {type:'workspace.revealProjectFile',projectId,relativePath:'keep.txt'},
   {type:'workspace.listProjectFiles',projectId,relativePath:''},
-  {type:'workspace.previewProjectArchive',projectId,action:'archive',name:null,createParent:false},
  ]){const denied=await send(input);assert.equal(denied.ok,false,JSON.stringify(input));assert.equal(denied.error.code,'identity_update_required');}
  assert.equal(port.sent.some(m=>m.type==='project.reveal.native'),false);assert.deepEqual(readdirSync(f.root),['Project']);
  const review=await send({type:'workspace.previewSourceAssociation',mappings:[]});assert.equal(review.ok,true);

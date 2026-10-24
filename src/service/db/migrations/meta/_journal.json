@@ -211,6 +211,13 @@
       "when": 1791504029000,
       "tag": "0029_category_removal_attestations",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "6",
+      "when": 1791504030000,
+      "tag": "0030_archive_authorization",
+      "breakpoints": true
     }
   ]
 }

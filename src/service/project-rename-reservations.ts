@@ -1,3 +1,4 @@
+import {parseArchiveBindingAuthorization} from "./archive-authorization.js";
 import {parseRemovalAuthorization} from "./category-removal-authorization.js";
 import {parseCategoryFolderAuthorization} from "./category-folder-authorization.js";
 import {validateEvidence} from "./folder-evidence.js";
@@ -50,7 +51,13 @@ export function readProjectReservations(db: Reader, sourceId: string) {
     return (proofs.length ? proofs : [null]).map(proof=>({...row,durableEvidence:evidence(proof)}));
   });
   const relocations = readProjectRelocationReservations(db, sourceId).flatMap<ReturnType<typeof readProjectRelocationReservations>[number] & {durableEvidence:string|null}>(row=>{
-    if(row.operationKind!=="rename" && row.operationKind!=="category_move")return [{...row,durableEvidence:null as string|null}];
+    if(row.operationKind==="project_archive") {
+      const binding=JSON.parse(row.binding);
+      if(!Object.hasOwn(binding,"authorization"))return [{...row,durableEvidence:null as string|null}];
+      const auth=parseArchiveBindingAuthorization(binding,row);
+      if(!auth)throw new Error("Invalid archive reservation");
+      return [{...row,durableEvidence:JSON.stringify(auth.project.evidence)}];
+    }
     const attestations=row.operationKind==="rename" ? renameProofs : moveProofs;
     const proofs=[row.projectEvidence,...attestations.filter(proof=>proof.operationId===row.operationId).map(proof=>proof.projectEvidence)].filter((proof):proof is string=>proof!==null);
     return (proofs.length ? proofs : [null]).map(proof=>({...row,durableEvidence:evidence(proof)}));
