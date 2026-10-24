@@ -1,7 +1,7 @@
 /** Exact additive migration expectations; legacy authority is deliberately absent. */
 export function withIdentityMigrationDefaults(table, rows) {
   return rows.map(row => table === 'sources' ? {durable_evidence:null,evidence_generation:0,...row}
-    : ['projects','categories'].includes(table) ? {durable_evidence:null,...row} : row);
+    : table==='project_creation_operations' ? {authorization:null,destination_evidence:null,...row} : ['projects','categories'].includes(table) ? {durable_evidence:null,...row} : row);
 }
 export function projectMetadataRecords(result) {
   if(!result.ok) throw new Error(`Project metadata query failed: ${JSON.stringify(result.error)}`);
@@ -86,4 +86,13 @@ export function assertHistoricalPublicMetadata(assert,application,fixture){
   assert.ok(snapshot.selectOptions.some(o=>o.optionId===p.optionId&&o.name===p.option.name&&o.color===p.option.color&&o.hidden===!!p.option.hidden));
  }
  return result;
+}
+
+/** Existing rewind fixtures must remove every additive 0025 object before replay. */
+export function rewindCreationAuthorization(db) {
+ db.exec(`DROP TRIGGER project_creation_authority_update;
+ DROP TRIGGER project_creation_attestation_insert; DROP TRIGGER project_creation_attestation_update; DROP TRIGGER project_creation_attestation_delete;
+ DROP TABLE project_creation_attestations;
+ ALTER TABLE project_creation_operations DROP COLUMN authorization;
+ ALTER TABLE project_creation_operations DROP COLUMN destination_evidence;`);
 }

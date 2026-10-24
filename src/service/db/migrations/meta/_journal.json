@@ -176,6 +176,13 @@
       "when": 1791504024000,
       "tag": "0024_durable_folder_evidence",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1791504025000,
+      "tag": "0025_creation_authorization",
+      "breakpoints": true
     }
   ]
 }

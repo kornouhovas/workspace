@@ -73,7 +73,7 @@ test('legacy dev control requires explicit root and separate project enrollment,
 test('fresh and legacy sources cannot dispatch unconverted filesystem consumers',()=>fixture(f=>{
   discover(f);
   const initial=readdirSync(f.root);
-  const denied=f.command({type:'workspace.createProject',operationId:'00000000-0000-4000-8000-000000000001',expectedRevision:1,name:'Unsafe',categoryId:null});
+  const denied=f.command({type:'workspace.renameProject',operationId:'00000000-0000-4000-8000-000000000001',expectedRevision:1,name:'Unsafe',projectId:f.query({type:'workspace.listProjects'}).value.projects[0].projectId});
   assert.equal(denied.ok,false);
   assert.match(denied.error.message,/safety update/);
   assert.deepEqual(readdirSync(f.root),initial);
@@ -199,7 +199,7 @@ test('every unconverted direct service and native entry point fails closed witho
   const names=['previewProjectArchive','applyProjectArchive','previewProjectArchiveRecovery','recoverProjectArchive','previewArchiveLocation','applyArchiveLocation',
    'previewCategoryRemovalRecovery','recoverCategoryRemoval','applyCategoryRemoval','previewCategoryRemoval','previewCategoryFolder','applyCategoryFolder','previewCategoryFolderRecovery','recoverCategoryFolder',
    'moveProjectCategory','previewProjectCategoryMoveRecovery','recoverProjectCategoryMove','renameProject','previewProjectRenameRecovery','recoverProjectRename','listProjectFiles',
-   'createProject','previewProjectCreationRecovery','recoverProjectCreation','previewProjectRecovery','reassociateProject'];
+   'previewProjectRecovery','reassociateProject'];
   const before=readdirSync(f.root);let dispatches=0;
   for(const name of names){const result=f.service.workspaces[name]({type:`workspace.${name}`,workspaceId:f.workspaceId},()=>{dispatches++;});assert.equal(result.ok,false,name);assert.match(result.error.message,/safety update/,name);}
   assert.equal(dispatches,0);assert.deepEqual(readdirSync(f.root),before);
@@ -215,7 +215,7 @@ test('immutable terminal creation retries remain readable offline while unfinish
  insert.run(operationId,source.id,f.workspaceId,projectId,'Never created',source.discovery_revision,f.root,'Never created',source.applied_root_identity,source.applied_root_identity);
  const request={type:'workspace.createProject',operationId,name:'Never created',mode:'direct',expectedRevision:source.discovery_revision};
  const unfinished=f.sql.prepare('SELECT * FROM project_creation_operations').get();
- assert.equal(f.command(request).ok,false);assert.deepEqual(f.sql.prepare('SELECT * FROM project_creation_operations').get(),unfinished);
+ assert.equal(f.command(request).value.outcome,'recoverable');assert.deepEqual(f.sql.prepare('SELECT * FROM project_creation_operations').get(),unfinished);
  f.sql.prepare("UPDATE project_creation_operations SET stage='failed',problem='occupied' WHERE operation_id=?").run(operationId);
  const receipt=f.sql.prepare('SELECT * FROM project_creation_operations').get();
  rmSync(f.root,{recursive:true});
@@ -245,7 +245,6 @@ test('valid IPC requests cannot bypass the gate and association cancellation rev
   {type:'workspace.openProjectFile',projectId,relativePath:'keep.txt'},
   {type:'workspace.revealProjectFile',projectId,relativePath:'keep.txt'},
   {type:'workspace.listProjectFiles',projectId,relativePath:''},
-  {type:'workspace.createProject',operationId:'20000000-0000-4000-8000-000000000001',mode:'direct',expectedRevision:current.revision,name:'Must not exist'},
   {type:'workspace.renameProject',operationId:'20000000-0000-4000-8000-000000000002',expectedRevision:current.revision,projectId,name:'Must not move'},
  ]){const denied=await send(input);assert.equal(denied.ok,false,JSON.stringify(input));assert.equal(denied.error.code,'identity_update_required');}
  assert.equal(port.sent.some(m=>m.type==='project.reveal.native'),false);assert.deepEqual(readdirSync(f.root),['Project']);

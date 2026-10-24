@@ -7,7 +7,7 @@ import test from 'node:test';
 import Database from 'better-sqlite3';
 import { openUnconvertedEngineFixture } from './support/unconverted-command-engines.mjs';
 
-test('unconverted engine fixture cannot enable application commands or silently enroll their output',()=>{
+test('unconverted engine fixture cannot enable remaining application commands or silently enroll its output',()=>{
  const directory=realpathSync(mkdtempSync(join(tmpdir(),'workspace-engine-boundary-'))),root=join(directory,'source'),path=join(directory,'app.sqlite');mkdirSync(root);
  const fixture=openUnconvertedEngineFixture(path),application=fixture.application,sql=new Database(path);
  try{
@@ -15,11 +15,11 @@ test('unconverted engine fixture cannot enable application commands or silently 
   const preview=application.handleQuery({type:'workspace.previewDiscovery',workspaceId,mode:'direct'}).value;
   const configured=application.handleCommand({type:'workspace.applyDiscovery',workspaceId,previewToken:preview.previewToken});assert.equal(configured.ok,true);
   const request={type:'workspace.createProject',workspaceId,mode:'direct',expectedRevision:configured.value.revision,operationId:randomUUID(),name:'Engine-created legacy record'};
-  const blocked=application.handleCommand(request);assert.equal(blocked.ok,false);assert.equal(blocked.error.code,'identity_update_required');
+  const blocked=application.handleCommand({type:'workspace.renameProject',workspaceId,projectId:randomUUID(),operationId:randomUUID(),expectedRevision:configured.value.revision,name:'Blocked'});assert.equal(blocked.ok,false);assert.equal(blocked.error.code,'identity_update_required');
   const created=fixture.engines.handleCommand(request);assert.equal(created.ok,true);assert.equal(created.value.outcome,'completed');
   const row=sql.prepare('SELECT * FROM projects WHERE id=?').get(created.value.project.projectId);assert.equal(row.durable_evidence,null);
   const displayed=application.handleQuery({type:'workspace.listProjects',workspaceId}).value;
   assert.equal(displayed.projects.length,0);assert.equal(displayed.retainedProjects[0].projectId,row.id);assert.equal(displayed.retainedProjects[0].identityReason,'review_required');
-  assert.equal(application.handleCommand({...request,operationId:randomUUID(),name:'Still blocked'}).error.code,'identity_update_required');
+  assert.equal(application.handleCommand({type:'workspace.renameProject',workspaceId,projectId:row.id,operationId:randomUUID(),expectedRevision:displayed.revision,name:'Still blocked'}).error.code,'identity_update_required');
  }finally{sql.close();fixture.engines.close();rmSync(directory,{recursive:true,force:true});}
 });

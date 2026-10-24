@@ -102,6 +102,8 @@ export const textPropertyValues = sqliteTable("text_property_values", {
 // SQL migration 0008 additionally guards immutable bindings and stage transitions.
 // The initiating workspace is historical context, deliberately not a foreign key.
 export const projectCreationOperations = sqliteTable("project_creation_operations", {
+  authorization: text("authorization"),
+  destinationEvidence: text("destination_evidence"),
   operationId: text("operation_id").primaryKey(),
   sourceId: text("source_id").notNull().references(() => sources.id),
   initiatingWorkspaceId: text("initiating_workspace_id").notNull(),
@@ -127,6 +129,15 @@ export const projectCreationOperations = sqliteTable("project_creation_operation
     .where(sql`${table.stage} IN ('intent', 'evidence_recorded', 'uncertain')`),
   foreignKey({ columns: [table.categoryId, table.sourceId], foreignColumns: [categories.id, categories.sourceId] }),
 ]);
+
+// Explicit per-operation review never rewrites legacy intent or native evidence.
+export const projectCreationAttestations = sqliteTable("project_creation_attestations", {
+  id: text("id").primaryKey(),
+  operationId: text("operation_id").notNull().references(() => projectCreationOperations.operationId),
+  journal: text("journal").notNull(),
+  destinationEvidence: text("destination_evidence"),
+  authorization: text("authorization").notNull(),
+});
 
 // Migration 0009 enforces immutable bindings, evidence, transitions and cross-role reservations.
 // Historical initiating workspace IDs deliberately survive workspace removal.

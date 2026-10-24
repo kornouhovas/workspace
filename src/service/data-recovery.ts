@@ -1,4 +1,6 @@
-import { durableOwnershipKey, validateEvidence } from "./folder-evidence.js";
+import {sameIdentity} from "./discovery.js";
+import {parseFilesystemAuthorization, parseFolderObservation} from "./filesystem-authorization.js";
+import { durableOwnershipKey, sameDurableFolder, validateEvidence } from "./folder-evidence.js";
 import { isWorkspaceSessionState } from "../contracts/workspace-sessions.js";
 import { validateSnapshotRelations } from "./data-recovery-invariants.js";
 import { validExclusions, validArchive } from "./discovery.js";
@@ -77,6 +79,35 @@ function validate(db: Database.Database) {
         const key = JSON.stringify([row.source_id,durableOwnershipKey(evidence)]);
         if (row.association_state !== "replaced") {if (owners.has(key)) throw new Error("Duplicate durable folder ownership"); owners.add(key);}
       }
+    }
+  }
+  if ((db.prepare("PRAGMA table_info(project_creation_operations)").all() as {name:string}[]).some(c=>c.name==="authorization")) {
+    const immutableFields = ["operationId","sourceId","initiatingWorkspaceId","projectId","name","mode","expectedRevision","categoryId",
+      "canonicalRoot","parentRelativePath","relativePath","rootIdentity","parentIdentity","excludedRelativePaths","archiveRelativePath","authorization"];
+    for(const row of db.prepare("SELECT operation_id,journal,authorization,destination_evidence FROM project_creation_attestations").all() as {operation_id:string;journal:string;authorization:string;destination_evidence:string|null}[]) {
+      const journal=JSON.parse(row.journal), binding=parseFilesystemAuthorization(row.authorization);
+      const current=db.prepare("SELECT * FROM project_creation_operations WHERE operation_id=?").get(row.operation_id) as Record<string,unknown> | undefined;
+      const destination=row.destination_evidence ? parseFolderObservation(JSON.parse(row.destination_evidence)) : null;
+      if(!binding || !current || !journal || journal.operationId!==row.operation_id ||
+        !["intent","evidence_recorded","uncertain"].includes(journal.stage) ||
+        immutableFields.some(field=>!Object.hasOwn(journal,field) || journal[field]!==current[field.replace(/[A-Z]/g,letter=>"_"+letter.toLowerCase())]) ||
+        journal.nativeIdentity!==null && journal.nativeIdentity!==current.native_identity ||
+        row.destination_evidence!==null && (!destination || destination.evidence.scope!==binding.root.evidence.scope ||
+          destination.evidence.provider!==binding.root.evidence.provider || destination.evidence.volume!==binding.root.evidence.volume || destination.evidence.serial!==binding.root.evidence.serial))throw new Error("Invalid creation attestation");
+      const recordedDestination=current.destination_evidence ? parseFolderObservation(JSON.parse(current.destination_evidence as string)) : null;
+      if(current.authorization!==null && destination && recordedDestination && !sameDurableFolder(destination.evidence,recordedDestination.evidence))throw new Error("Conflicting attestation destination");
+      const original=parseFilesystemAuthorization(journal.authorization);
+      if(journal.authorization!==null && (!original || !sameDurableFolder(original.root.evidence,binding.root.evidence) || !sameDurableFolder(original.parent.evidence,binding.parent.evidence)) ||
+        journal.authorization===null && (!sameIdentity(JSON.parse(journal.rootIdentity),binding.root.mount) || !sameIdentity(JSON.parse(journal.parentIdentity),binding.parent.mount) ||
+          journal.nativeIdentity!==null && destination && !sameIdentity(JSON.parse(journal.nativeIdentity),destination.mount)))throw new Error("Conflicting creation attestation");
+    }
+    const rows=db.prepare("SELECT authorization,destination_evidence,native_identity FROM project_creation_operations").all() as {authorization:string|null;destination_evidence:string|null;native_identity:string|null}[];
+    for(const row of rows) {
+      const binding=parseFilesystemAuthorization(row.authorization);
+      const destination=row.destination_evidence ? parseFolderObservation(JSON.parse(row.destination_evidence)) : null;
+      if(row.authorization!==null && (!binding || row.native_identity!==null && row.destination_evidence===null) || row.destination_evidence!==null && (!binding || !destination || !row.native_identity ||
+        destination.evidence.provider!==binding.root.evidence.provider || destination.evidence.volume!==binding.root.evidence.volume ||
+        destination.evidence.serial!==binding.root.evidence.serial || destination.evidence.scope!==binding.root.evidence.scope || !sameIdentity(destination.mount,JSON.parse(row.native_identity))))throw new Error("Invalid creation filesystem authorization");
     }
   }
   // These ownership constraints predate their SQL equivalents.

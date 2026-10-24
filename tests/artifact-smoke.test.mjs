@@ -42,6 +42,7 @@ const packagedFiles = [
     "dist/service/db/migrations/0022_board_layout.sql",
     "dist/service/db/migrations/0023_workspace_sessions.sql",
     "dist/service/db/migrations/0024_durable_folder_evidence.sql",
+    "dist/service/db/migrations/0025_creation_authorization.sql",
   "dist/service/db/migrations/meta/_journal.json",
 ];
 

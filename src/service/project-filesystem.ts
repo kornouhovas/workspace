@@ -27,7 +27,10 @@ export const nativeProjectFilesystem: ProjectFilesystem = {
     return { kind: stat.isSymbolicLink() ? "link" : stat.isDirectory() ? "directory" : "other",
       identity: { dev: String(stat.dev), ino: String(stat.ino), birthtimeNs: String(stat.birthtimeNs) } };
   },
-  realpath: (path) => realpathSync.native(path),
+  // Windows native realpath briefly opens descendants without DELETE sharing.
+  // Roots are canonicalized at the source boundary; retain route/link checks
+  // through the same non-exclusive resolver used by discovery and evidence.
+  realpath: (path) => process.platform === "win32" ? realpathSync(path) : realpathSync.native(path),
   names: (path) => readdirSync(path),
   mkdir: (path) => { mkdirSync(path, { recursive: false }); },
   removeEmptyDirectory: (path) => { rmdirSync(path); },

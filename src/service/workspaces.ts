@@ -1,3 +1,4 @@
+import {createFilesystemAuthorization} from "./filesystem-authorization.js";
 import { createWorkspacePublisher } from "./workspace-publication.js";
 import { createSourceAssociationService } from "./source-association.js";
 import { observeFolder, durableOwnershipKey } from "./folder-evidence.js";
@@ -235,7 +236,7 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
       publish([{ type: "workspace.projectsChanged", sourceId, revision, workspaceIds }]);
       observer.request(sourceId);
     },
-  }, projectFilesystem);
+  }, projectFilesystem, createFilesystemAuthorization(scope,readFolderEvidence,db));
   const rename = createProjectRenameService(db, {
     invalidateSourceReviews,
     committed(sourceId, revision, workspaceIds) {
@@ -1020,9 +1021,9 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
     listProjectFiles: blocked,
     projectFileCommand: blockedAsync,
     revealProject: blockedAsync,
-    createProject: terminalRetry("project_creation_operations", creation.createProject),
-    previewProjectCreationRecovery: blocked,
-    recoverProjectCreation: blocked,
+    createProject: creation.createProject,
+    previewProjectCreationRecovery: creation.previewProjectCreationRecovery,
+    recoverProjectCreation: creation.recoverProjectCreation,
     previewProjectRecovery: blocked,
     reassociateProject: blocked,
   } satisfies Partial<WorkspaceService>);

@@ -1,3 +1,4 @@
+import {rewindCreationAuthorization} from "./support/identity-migration-fixtures.mjs";
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtempSync, mkdirSync, rmSync, renameSync } from 'node:fs';
@@ -125,7 +126,7 @@ test('populated upgrade preserves Table, filters, grouping and values; storage e
     f.command('setViewFilter',{viewId,config:{search:'Alpha',rules:[]}});
     f.command('setViewGrouping',{viewId,config:{propertyId:'name',settings:[]}});
     const before=['listViews','listTextProperties','getTableLayout','getViewGrouping','queryView'].map(type=>f.query(type,{...(['listViews','listTextProperties'].includes(type)?{}:{viewId}),...(type==='queryView'?{archived:false}:{})}));
-    const db=new Database(f.path);try{db.exec('ALTER TABLE sources DROP COLUMN durable_evidence; ALTER TABLE sources DROP COLUMN evidence_generation; ALTER TABLE categories DROP COLUMN durable_evidence; ALTER TABLE projects DROP COLUMN durable_evidence; DROP TRIGGER initialize_workspace_session; DROP TRIGGER remove_view_session_preview; DROP TABLE workspace_sessions; ALTER TABLE views DROP COLUMN board_config; DELETE FROM __drizzle_migrations WHERE created_at>=1791504022000');}finally{db.close();}
+    const db=new Database(f.path);try{rewindCreationAuthorization(db);db.exec('ALTER TABLE sources DROP COLUMN durable_evidence; ALTER TABLE sources DROP COLUMN evidence_generation; ALTER TABLE categories DROP COLUMN durable_evidence; ALTER TABLE projects DROP COLUMN durable_evidence; DROP TRIGGER initialize_workspace_session; DROP TRIGGER remove_view_session_preview; DROP TABLE workspace_sessions; ALTER TABLE views DROP COLUMN board_config; DELETE FROM __drizzle_migrations WHERE created_at>=1791504022000');}finally{db.close();}
     f.reopen();
     assert.deepEqual(['listViews','listTextProperties','getTableLayout','getViewGrouping','queryView'].map(type=>f.query(type,{...(['listViews','listTextProperties'].includes(type)?{}:{viewId}),...(type==='queryView'?{archived:false}:{})})),before);
     const empty={widths:[],properties:[],wrap:true};assert.deepEqual(f.query('getBoardLayout',{viewId}).value.config,empty);
