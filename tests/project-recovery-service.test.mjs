@@ -267,7 +267,9 @@ for(const mode of ["direct","grouped"]) test(`${mode} legacy recovery does not e
  assert.equal(current.value.projects.length,0);
  const retained=current.value.retainedProjects.find(row=>row.projectId===f.project.projectId);
  assert.equal(retained.identityReason,'review_required');assert.equal(retained.relativePath,target);
- assert.equal(f.service.application.handleQuery({type:'workspace.previewProjectRecovery',workspaceId:f.workspace.workspaceId,projectId:f.project.projectId}).error.code,'identity_update_required');
+ const explicit=f.service.application.handleQuery({type:'workspace.previewProjectRecovery',workspaceId:f.workspace.workspaceId,projectId:f.project.projectId});
+ assert.equal(explicit.ok,true,JSON.stringify(explicit));assert.ok(explicit.value.previewToken);
+ assert.equal(f.sqlite.prepare('SELECT durable_evidence FROM projects WHERE id=?').get(f.project.projectId).durable_evidence,null);
  assert.equal(f.query('workspace.listTextProperties').value.values.find(row=>row.projectId===f.project.projectId).value,f.value);
  assert.deepEqual(f.records(),before);assert.deepEqual(inventory(f.root),files);
 },mode));

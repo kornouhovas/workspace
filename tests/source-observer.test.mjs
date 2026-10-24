@@ -303,7 +303,7 @@ for (const grouped of [false, true]) test(`notification reconciliation preserves
   }
   fs.renameSync(join(f.root, f.path), join(f.root, destination));
   fs.mkdirSync(join(f.root, f.path));
-  const recovery = f.query("workspace.previewProjectRecovery", { projectId: f.projectId });assert.equal(recovery.error.code,"identity_update_required");
+  const recovery = f.query("workspace.previewProjectRecovery", { projectId: f.projectId });assert.equal(recovery.ok,true,JSON.stringify(recovery));
   f.h.hint(f.root, "rename", "../../outside"); f.h.hint(f.root, "change", null); f.h.advance(200);
   const after = f.records();
   for (const table of ["category_properties", "property_definitions", "text_property_values", "workspaces", "views"]) assert.deepEqual(after[table], before[table]);
@@ -317,7 +317,7 @@ for (const grouped of [false, true]) test(`notification reconciliation preserves
   assert.equal(f.events.at(-1).type, "workspace.sourceObserved");
   assert.equal(f.query("workspace.listProjects").value.projects[0].relativePath, destination);
   assert.equal(f.command("workspace.applyDiscovery", { previewToken: discovery.previewToken }).error.code, "stale_preview");
-  assert.equal(f.command("workspace.reassociateProject", { projectId: f.projectId, previewToken: randomUUID(), relativePath: destination }).error.code,"identity_update_required");
+  assert.equal(f.command("workspace.reassociateProject", { projectId: f.projectId, previewToken: recovery.value.previewToken, relativePath: destination }).error.code,"stale_preview");
   assert.deepEqual(f.h.live().map((watch) => watch.path).sort(), [f.root, ...(grouped ? ["Category", "New", "Other", "Empty"].map((name) => join(f.root, name)) : [])].sort());
   const count = f.events.length;
   f.h.hint(f.root); f.h.advance(100);
@@ -507,12 +507,12 @@ for (const polling of [false, true]) test(`mode Apply immediately retargets shar
   if (obsolete) { assert.equal(obsolete.closed, true); obsolete.hint(); obsolete.failed(); }
   f.h.advance(100); assert.equal(f.events.length, count);
   const recovery = f.query("workspace.previewProjectRecovery", { workspaceId: f.two.workspaceId, projectId: f.projectId });
-  assert.equal(recovery.error.code,"identity_update_required");
+  assert.equal(recovery.ok,true,JSON.stringify(recovery));
   const grouped = configure(f.two.workspaceId, "grouped");
   assert.equal(grouped.categories[0].categoryId, f.initial.categories[0].categoryId);
   assert.deepEqual(f.h.live().map((watch) => watch.path).sort(), [f.root, otherRoot, ...(polling ? [] : [join(f.root, "Category")])].sort());
   assert.equal(f.command("workspace.reassociateProject", { workspaceId: f.two.workspaceId, projectId: f.projectId,
-    previewToken: randomUUID(), relativePath: "Category" }).error.code,"identity_update_required");
+    previewToken: recovery.value.previewToken, relativePath: "Category" }).error.code,"stale_preview");
   f.h.advance(200);
   const before = f.records();
   fs.mkdirSync(join(f.root, "Category/Unrelated")); fs.renameSync(join(f.root, f.path), join(f.root, "Category/Renamed"));

@@ -170,3 +170,80 @@ project reassociation and native/file consumers remain gated. Final review/full
 suite and actual macOS/Windows Electron/package/CI evidence remain outstanding;
 modeled remounts and Node-native process crashes do not establish Windows or
 Electron acceptance. No feature push or integration has occurred.
+
+### Fourth slice: explicit project reassociation
+
+Production retained-project recovery now requires verified source authorization,
+fresh root/parent/target proofs and source evidence generation. A single-use review
+pins the complete native scan, sufficient full durable observations, associations,
+reservations and policy. Apply reacquires separate evidence before/inside/after
+the transaction. Existing grouped parents must already be verified; an explicitly
+selected new parent and selected project are enrolled together without discovering
+its other children. Commit advances evidence generation and discovery revision
+once. IDs and authored values remain; SQL failures roll back enrollment.
+
+Review found duplicate durable candidate IDs could bypass the complete-scan veto,
+and repeated full inventories caused quadratic native acquisitions. Direct child
+and new grouped-parent collision controls plus a bounded native-read counter went
+red before repair, then green. Inventory/parent caches belong to a single newly
+created scan only; no observations cross preview/Apply or transaction phases.
+Root ownership and generation-increment controls also went red before their
+repairs. Scope/volume/created/mount substitutions, unverified parents, competing
+legacy/durable owners across device namespaces and late SQL rollback are covered.
+
+Coverage decisions: retain legacy-engine recovery checks and their no-enrollment
+assertions; replace only the old blanket production gate expectation with explicit
+review availability. Restore the pre-#71 observer token scenarios using actual
+issued recovery tokens: accepted notification reconciliation and mode changes
+invalidate them. Add compiled production recovery IPC, single-use replay refusal
+and private-proof non-disclosure. Initial restart fixture used a continuously
+active external rename, which accepted startup reconciliation correctly handled;
+the repaired fixture first persists genuine missing history, then returns the
+candidate. This preserves the existing external-continuity contract.
+
+Observed Node22.21.1/macOS arm64: fresh build, typecheck and lint passed; repaired
+recovery/public/legacy/UI/source/observer/fixture checks210/210, including18 new
+public recovery controls and compiled IPC coverage. Independent Standards/Spec
+follow-ups found no remaining concrete finding in these repairs. Dedicated
+migration renewal follows on this source. This remains an intermediate local
+candidate; category/archive/native/file consumers and final platform/full-suite
+acceptance remain outstanding.
+
+Migration renewal initially exposed29 retained-suite failures: obsolete blanket
+recovery gates and own-path/category-history regressions. Restore the accepted
+public mode/exclusion/own-path/grouped recovery scenarios instead of retaining the
+rollout gate as their expected behavior. The helper for live native role-history
+scenarios now uses production reassociation directly, with no legacy engine or
+post-operation backfill. Restored backup recovery also explicitly rebinds and
+reopens its retained ID/values.
+
+The direct own-historical-path role exception requires identical sufficient
+current-scope evidence in subject, dormant category and reviewed target. Missing,
+changed, foreign-scope, different-path or independently different-object history
+still vetoes. New grouped parents may reuse only retired history at a different
+path; unavailable existing categories and other retained path/physical owners
+remain blocked. A paired legacy dormant-role exception requires both saved native
+triples to match the reviewed parent exactly including dev; equal stale history
+alone remains a veto. Public negative controls went red before these path and
+current-mount repairs. No shared command-authorizer policy was weakened.
+
+The broad repaired source before the last two narrow review fixes passed415/415,
+including real native observer scenarios. The final affected recovery/mode/grouped/
+source/legacy set passed177/177 after those fixes (27 new public recovery cases).
+Standards/Spec narrow follow-ups found no unresolved defect in the repairs. Fresh
+build, typecheck, lint and diff check pass; exact-candidate migration evidence is
+being renewed. The failed797-test migration receipt (767pass/29fail/one existing
+skip) is diagnostic evidence, not an accepted final result.
+
+Renewed dedicated migration result:806 tests,805 passed, one existing skip, zero
+failures/cancellations; subsequent observer/UI set95/95 passed. A final same-scan
+root-proof control then exposed a later evidence inventory differing from the
+already authorized root while retaining its native tuple. Inventory acquisition
+now verifies its own root's full saved proof/current scope and scan mount, and
+retains failure for that scan so later clean reads cannot rehabilitate it. The
+public control went red before repair. The final affected recovery/source/mode/
+grouped/legacy/observer set passed217/217 after this repair (28 new public recovery
+cases); fresh build/typecheck/lint and diff check passed. This narrowly renews the
+affected source boundary after the806-test migration receipt; no schema, migration,
+backup format or build configuration changed in that final repair. Final whole-
+issue verification remains outstanding.

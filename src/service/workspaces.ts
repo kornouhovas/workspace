@@ -203,7 +203,7 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
       publish([{ type: "workspace.projectsChanged", sourceId, revision, workspaceIds }]);
       observer.request(sourceId);
     },
-  });
+  }, {scope,reader:readFolderEvidence});
   function invalidateSourceReviews(sourceId: string) {
     archiveMutations.invalidateSource(sourceId);
     archive.invalidateSource(sourceId);
@@ -1026,8 +1026,8 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
     createProject: creation.createProject,
     previewProjectCreationRecovery: creation.previewProjectCreationRecovery,
     recoverProjectCreation: creation.recoverProjectCreation,
-    previewProjectRecovery: blocked,
-    reassociateProject: blocked,
+    previewProjectRecovery: recovery.previewProjectRecovery,
+    reassociateProject: recovery.reassociateProject,
   } satisfies Partial<WorkspaceService>);
   const observer = createSourceObserver((sourceId): SourceObservation | Promise<SourceObservation> => {
     const workspaceId = sourceState(sourceId, { canonicalRoot: "", sourceAvailable: false }).workspaceIds[0];

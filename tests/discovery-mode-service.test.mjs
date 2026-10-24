@@ -64,7 +64,7 @@ function unchanged(f, run) {
 const paths = (rows) => rows.map((row) => row.relativePath);
 
 for (const exclusion of ["direct", "grouped-child", "grouped-category"]) for (const ownPath of [false, true]) {
-  test(`removed ${exclusion} exclusion retains metadata while unconverted recovery stays gated (ownPath=${ownPath})`, () => fixture((f) => {
+  test(`removed ${exclusion} exclusion permits explicit mode-retained recovery (ownPath=${ownPath})`, () => fixture((f) => {
     fs.mkdirSync(join(f.root, "Category/Child"), { recursive: true });
     fs.writeFileSync(join(f.root, "Category/Child/sentinel"), "unchanged");
     const mode = exclusion === "direct" ? "direct" : "grouped", otherMode = mode === "direct" ? "grouped" : "direct";
@@ -76,7 +76,7 @@ for (const exclusion of ["direct", "grouped-child", "grouped-category"]) for (co
     f.configure(mode, { excludedRelativePaths: [excludedPath] });
     f.configure(otherMode); f.restart();
     const request = { workspaceId: f.workspace.workspaceId, projectId: project.projectId };
-    assert.equal(f.service.workspaces.previewProjectRecovery({ type: "workspace.previewProjectRecovery", ...request }).error.code, "identity_update_required");
+    assert.equal(f.service.workspaces.previewProjectRecovery({ type: "workspace.previewProjectRecovery", ...request }).error.code, "invalid_input");
     const history = f.sqlite.prepare("SELECT * FROM projects WHERE id = ?").get(project.projectId);
     const files = inventory(f.root);
     const cleared = f.configure(otherMode, { excludedRelativePaths: [] });
@@ -89,17 +89,20 @@ for (const exclusion of ["direct", "grouped-child", "grouped-category"]) for (co
     if (!ownPath) fs.mkdirSync(join(f.root, target), { recursive: true });
     const before = databaseInventory(f.sqlite), targetFiles = inventory(f.root);
     const preview = f.service.workspaces.previewProjectRecovery({ type: "workspace.previewProjectRecovery", ...request });
-    assert.equal(preview.error.code, "identity_update_required");
+    assert.equal(preview.ok, true, JSON.stringify(preview));
+    assert.equal(preview.value.entries.find((entry) => entry.relativePath === target).status, "selectable");
     assert.deepEqual(databaseInventory(f.sqlite), before);
     assert.deepEqual(f.sqlite.prepare("SELECT * FROM projects WHERE id = ?").get(project.projectId), history);
-    const recovered = f.service.workspaces.reassociateProject({ type: "workspace.reassociateProject", ...request, previewToken: randomUUID(), relativePath: target });
-    assert.equal(recovered.error.code, "identity_update_required");
-    assert.deepEqual(databaseInventory(f.sqlite), before);
+    const recovered = f.service.workspaces.reassociateProject({ type: "workspace.reassociateProject", ...request, previewToken: preview.value.previewToken, relativePath: target });
+    assert.equal(recovered.ok, true, JSON.stringify(recovered));
+    assert.equal(recovered.value.projects.find((row) => row.projectId === project.projectId).relativePath, target);
+    const stored = f.sqlite.prepare("SELECT * FROM projects WHERE id = ?").get(project.projectId);
+    assert.equal(stored.association_state, "active"); assert.equal(stored.mode_inactive, 0);
     assert.equal(f.sqlite.prepare("SELECT value FROM text_property_values WHERE project_id = ?").get(project.projectId).value, value);
     assert.deepEqual(inventory(f.root), targetFiles);
     if (ownPath) assert.deepEqual(inventory(f.root), files);
     f.restart();
-    assert.ok(f.service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId: f.workspace.workspaceId }).value.retainedProjects.some((row) => row.projectId === project.projectId));
+    assert.ok(f.service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId: f.workspace.workspaceId }).value.projects.some((row) => row.projectId === project.projectId));
   }));
 }
 
@@ -113,9 +116,9 @@ for (const mode of ["direct", "grouped"]) test(`mode-retained archive exclusions
   assert.equal(retained.associationState, "excluded"); assert.equal(retained.resolution, "excluded");
   const before = databaseInventory(f.sqlite), files = inventory(f.root);
   const request = { type: "workspace.previewProjectRecovery", workspaceId: f.workspace.workspaceId, projectId: project.projectId };
-  assert.equal(f.service.workspaces.previewProjectRecovery(request).error.code, "identity_update_required");
+  assert.equal(f.service.workspaces.previewProjectRecovery(request).error.code, "invalid_input");
   f.restart();
-  assert.equal(f.service.workspaces.previewProjectRecovery(request).error.code, "identity_update_required");
+  assert.equal(f.service.workspaces.previewProjectRecovery(request).error.code, "invalid_input");
   assert.deepEqual(databaseInventory(f.sqlite), before); assert.deepEqual(inventory(f.root), files);
 }));
 
@@ -492,7 +495,7 @@ test("migration guards distinguish dormant history from operational category own
 }));
 
 
-for (const mode of ["direct", "grouped"]) test(`mode round trip with restart retains projects while own-path recovery is gated (${mode})`, () => fixture((f) => {
+for (const mode of ["direct", "grouped"]) test(`mode round trip with restart retains projects until explicit own-path recovery (${mode})`, () => fixture((f) => {
   for (const path of ["Category/One", "Category/Two"]) fs.mkdirSync(join(f.root, path), { recursive: true });
   fs.writeFileSync(join(f.root, "Category/One/sentinel"), Buffer.from([0, 255, 17]));
   const first = f.configure(mode), original = f.sqlite.prepare("SELECT * FROM projects ORDER BY id").all();
@@ -517,14 +520,15 @@ for (const mode of ["direct", "grouped"]) test(`mode round trip with restart ret
   for (const project of original) {
     const request = { workspaceId: f.workspace.workspaceId, projectId: project.id };
     const review = f.service.workspaces.previewProjectRecovery({ type: "workspace.previewProjectRecovery", ...request });
-    assert.equal(review.error.code, "identity_update_required");
+    assert.equal(review.ok, true, JSON.stringify(review));
+    assert.equal(review.value.entries.find((row) => row.relativePath === project.relative_path).status, "selectable");
     const recovered = f.service.workspaces.reassociateProject({ type: "workspace.reassociateProject", ...request,
-      previewToken: randomUUID(), relativePath: project.relative_path });
-    assert.equal(recovered.error.code, "identity_update_required");
-    assert.deepEqual(f.sqlite.prepare("SELECT * FROM projects WHERE id = ?").get(project.id), { ...project, mode_inactive: 1 });
+      previewToken: review.value.previewToken, relativePath: project.relative_path });
+    assert.equal(recovered.ok, true, JSON.stringify(recovered));
+    assert.deepEqual(f.sqlite.prepare("SELECT * FROM projects WHERE id = ?").get(project.id), project);
   }
   assert.deepEqual(f.sqlite.prepare("SELECT * FROM text_property_values ORDER BY project_id").all(), values);
   assert.deepEqual(f.sqlite.prepare("SELECT * FROM views").all(), views); assert.deepEqual(inventory(f.root), files);
   f.restart();
-  assert.deepEqual(new Set(f.service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId: f.workspace.workspaceId }).value.retainedProjects.filter(row=>original.some(old=>old.id===row.projectId)).map((row) => row.projectId)), new Set(original.map((row) => row.id)));
+  assert.deepEqual(new Set(f.service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId: f.workspace.workspaceId }).value.projects.map((row) => row.projectId)), new Set(original.map((row) => row.id)));
 }));

@@ -168,7 +168,7 @@ test('process death after deletion rolls back the restore on reopen', () => fixt
   finally {reopened.close();}
 }));
 
-test('restored missing folders retain logical IDs and values while unconverted reassociation is gated', () => {
+test('restored missing folders explicitly reassociate through production while retaining logical IDs and values', () => {
   const dir=mkdtempSync(join(tmpdir(),'restore-missing-')),root=join(dir,'root'),path=join(dir,'app.sqlite');mkdirSync(root);mkdirSync(join(root,'Gone'));
   let service=openSettingsService(path);
   const call=(type,fields={})=>unwrap(service[type.startsWith('workspace.preview')||type==='workspace.listProjects'||type==='workspace.listTextProperties'?'handleQuery':'handleCommand']({type,...fields}));
@@ -188,10 +188,11 @@ test('restored missing folders retain logical IDs and values while unconverted r
     assert.equal(existsSync(join(root,'Gone')),false);
     mkdirSync(join(root,'Located'));writeFileSync(join(root,'Located','keep'),'separate project bytes');
     const review=service.handleQuery({type:'workspace.previewProjectRecovery',workspaceId,projectId});
-    assert.equal(review.error.code,'identity_update_required');
-    assert.equal(service.handleCommand({type:'workspace.reassociateProject',workspaceId,projectId,previewToken:randomUUID(),relativePath:'Located'}).error.code,'identity_update_required');
+    assert.equal(review.ok,true,JSON.stringify(review));
+    const recovered=service.handleCommand({type:'workspace.reassociateProject',workspaceId,projectId,previewToken:review.value.previewToken,relativePath:'Located'});
+    assert.equal(recovered.ok,true,JSON.stringify(recovered));assert.equal(recovered.value.projects[0].projectId,projectId);
     service.close();service=openSettingsService(path);
-    assert.equal(call('workspace.listProjects',{workspaceId}).retainedProjects[0].projectId,projectId);
+    assert.equal(call('workspace.listProjects',{workspaceId}).projects[0].projectId,projectId);
     assert.equal(readFileSync(join(root,'Located','keep'),'utf8'),'separate project bytes');
     assert.equal(call('workspace.listTextProperties',{workspaceId}).values[0].value,'retained');
   }finally{service.close();rmSync(dir,{recursive:true,force:true});}

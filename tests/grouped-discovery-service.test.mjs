@@ -589,7 +589,7 @@ test("category label notification queue preserves committed snapshots with throw
   assert.equal(f.service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId: f.workspace.workspaceId }).value.categoryProperty.name, "Second");
 }));
 
-test("grouped historical category mismatch retains data while unconverted recovery stays gated", () => fixture((f) => {
+test("explicit grouped recovery remains active through discovery when moved category evidence is historical", () => fixture((f) => {
   fs.mkdirSync(join(f.root, "Category/Project"), { recursive: true });
   const apply = () => {
     const preview = f.preview(); assert.equal(preview.ok, true);
@@ -604,13 +604,20 @@ test("grouped historical category mismatch retains data while unconverted recove
   assert.equal(discovered.value.retainedProjects.find((row) => row.projectId === original.projectId).resolution, "replaced");
   const oldCategories = f.sqlite.prepare("SELECT * FROM categories").all();
   const preview = f.service.workspaces.previewProjectRecovery({ type: "workspace.previewProjectRecovery", workspaceId: f.workspace.workspaceId, projectId: original.projectId });
-  assert.equal(preview.error.code,"identity_update_required");
-  const files=inventory(f.root);
-  const recovered=f.service.workspaces.reassociateProject({type:"workspace.reassociateProject",workspaceId:f.workspace.workspaceId,projectId:original.projectId,previewToken:randomUUID(),relativePath:"New category/Project"});
-  assert.equal(recovered.error.code,"identity_update_required");
-  assert.deepEqual(f.sqlite.prepare("SELECT * FROM categories").all(),oldCategories);
-  assert.equal(f.service.workspaces.listTextProperties({type:"workspace.listTextProperties",workspaceId:f.workspace.workspaceId}).value.values[0].value,"Historical project Text");
-  assert.deepEqual(inventory(f.root),files);
+  assert.equal(preview.ok, true);
+  assert.equal(preview.value.entries.find((row) => row.relativePath === "New category/Project").status, "selectable");
+  const files = inventory(f.root);
+  const recovered = f.service.workspaces.reassociateProject({ type: "workspace.reassociateProject", workspaceId: f.workspace.workspaceId, projectId: original.projectId,
+    previewToken: preview.value.previewToken, relativePath: "New category/Project" });
+  assert.equal(recovered.ok, true);
+  assert.equal(recovered.value.projects.find((row) => row.projectId === original.projectId).resolution, "active");
+  const review = f.preview(); assert.equal(review.ok, true);
+  assert.ok(review.value.entries.every((entry) => entry.reason === null));
+  const reapplied = f.service.workspaces.applyDiscovery({ type: "workspace.applyDiscovery", workspaceId: f.workspace.workspaceId, previewToken: review.value.previewToken });
+  assert.deepEqual(reapplied, recovered);
+  assert.deepEqual(f.sqlite.prepare("SELECT * FROM categories").all().filter((row) => oldCategories.some((old) => old.id === row.id)), oldCategories);
+  assert.equal(f.service.workspaces.listTextProperties({ type: "workspace.listTextProperties", workspaceId: f.workspace.workspaceId }).value.values[0].value, "Historical project Text");
+  assert.deepEqual(inventory(f.root), files);
 }));
 
 test("insufficient category evidence retains unresolved projects rather than reporting manual exclusion", () => fixture((f) => {
@@ -633,6 +640,7 @@ test("insufficient category evidence retains unresolved projects rather than rep
     assert.equal(observed.value.retainedProjects[0].resolution, "unresolved");
     assert.deepEqual(f.sqlite.prepare("SELECT * FROM projects").all(), before);
     const recovery = f.service.workspaces.previewProjectRecovery({ type: "workspace.previewProjectRecovery", workspaceId: f.workspace.workspaceId, projectId: original.projectId });
-    assert.equal(recovery.error.code,"identity_update_required");
+    assert.equal(recovery.ok,true,JSON.stringify(recovery));
+    assert.notEqual(recovery.value.entries.find(row=>row.relativePath===original.relativePath)?.status,"selectable");
   } finally { fs.lstatSync = stat; syncBuiltinESMExports(); }
 }));

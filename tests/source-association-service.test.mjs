@@ -199,7 +199,7 @@ test('every unconverted direct service and native entry point fails closed witho
   const names=['previewProjectArchive','applyProjectArchive','previewProjectArchiveRecovery','recoverProjectArchive','previewArchiveLocation','applyArchiveLocation',
    'previewCategoryRemovalRecovery','recoverCategoryRemoval','applyCategoryRemoval','previewCategoryRemoval','previewCategoryFolder','applyCategoryFolder','previewCategoryFolderRecovery','recoverCategoryFolder',
    'listProjectFiles',
-   'previewProjectRecovery','reassociateProject'];
+   ];
   const before=readdirSync(f.root);let dispatches=0;
   for(const name of names){const result=f.service.workspaces[name]({type:`workspace.${name}`,workspaceId:f.workspaceId},()=>{dispatches++;});assert.equal(result.ok,false,name);assert.match(result.error.message,/safety update/,name);}
   assert.equal(dispatches,0);assert.deepEqual(readdirSync(f.root),before);
@@ -568,4 +568,30 @@ for(const conflictingScope of [false,true])test(`reviewed grouped scope renewal 
  assert.equal(f.command({type:'workspace.applySourceAssociation',previewToken:review.value.previewToken}).ok,!conflictingScope);
  assert.deepEqual(f.sql.prepare('SELECT * FROM projects WHERE id=?').get(direct.projects[0].projectId),dormantBefore);
  if(!conflictingScope){f.restart();assert.equal(f.query({type:'workspace.listProjects'}).value.projects[0].projectId,grouped.value.projects[0].projectId);}
+}));
+
+test('compiled recovery IPC enrolls only the reviewed retained project and exposes no private proof',()=>fixture(async f=>{
+ const {EventEmitter}=await import('node:events'),{startServiceProcess}=await import('../dist/service/entry.cjs');
+ const {isServiceResponse}=await import('../src/contracts/service-protocol.ts');
+ const projectId=discover(f).projects[0].projectId;
+ renameSync(join(f.root,'Project'),join(dirname(f.root),'away'));
+ const missing=f.query({type:'workspace.previewDiscovery',mode:'direct'}).value;
+ assert.equal(f.command({type:'workspace.applyDiscovery',previewToken:missing.previewToken}).ok,true);
+ renameSync(join(dirname(f.root),'away'),join(f.root,'Target'));
+ class Port extends EventEmitter {sent=[];postMessage(message){this.sent.push(message);}start(){}close(){}}
+ const parent=new Port(),port=new Port();startServiceProcess(parent,()=>f.service);
+ parent.emit('message',{data:{type:'connect',databasePath:f.dbPath},ports:[port]});assert.ok(parent.sent.some(message=>message.type==='ready'));
+ let id=0;
+ const send=async input=>{
+  const requestId=++id;port.emit('message',{data:{id:requestId,input:{workspaceId:f.workspaceId,...input}}});
+  await new Promise(resolve=>setImmediate(resolve));
+  const response=port.sent.find(message=>message.id===requestId);assert.ok(response);assert.equal(isServiceResponse(response),true);
+  const encoded=JSON.stringify(response);for(const key of [f.root,'durableEvidence','nativeIdentity','evidenceGeneration','authorization'])assert.equal(encoded.includes(key),false,key);
+  return response.result;
+ };
+ const preview=await send({type:'workspace.previewProjectRecovery',projectId});assert.equal(preview.ok,true,JSON.stringify(preview));
+ const applied=await send({type:'workspace.reassociateProject',projectId,previewToken:preview.value.previewToken,relativePath:'Target'});
+ assert.equal(applied.ok,true,JSON.stringify(applied));assert.equal(applied.value.projects[0].projectId,projectId);assert.equal(applied.value.projects[0].relativePath,'Target');
+ const replay=await send({type:'workspace.reassociateProject',projectId,previewToken:preview.value.previewToken,relativePath:'Target'});assert.equal(replay.error.code,'stale_preview');
+ assert.equal(port.sent.some(message=>message.type==='project.reveal.native'),false);assert.ok(f.sql.prepare('SELECT durable_evidence FROM projects WHERE id=?').get(projectId).durable_evidence);
 }));
