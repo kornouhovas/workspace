@@ -82,3 +82,48 @@ them. Follow-ups report no remaining defect in the specific repairs, not issue
 acceptance. Initial migration run (19 failures) and intermediate focused failures
 are diagnostic evidence, not accepted results. Full final suite, native/Electron,
 Windows hosts, package/CI and the other command families remain outstanding.
+
+### Second slice: rename and reservation continuity candidate
+
+New migration0026 retains nullable legacy fields and adds immutable rename
+root/parent/project authorization plus append-only reviewed attestations. Production
+rename uses sufficient enrolled evidence to acquire a current execution snapshot;
+case-only staging, no-replace effects, receipts and original native history remain.
+New-policy recovery reacquires mounts through a fresh explicit review and retains
+all recorded durable identities. Legacy recovery requires exact original triples.
+A legacy grouped parent can be inspected under that operation's exact-triple
+review; this does not enroll the category or its other children globally. Once the
+operation settles, ordinary category enrollment is separately available. Real
+0023 creation/rename upgrades exercise this route.
+
+Retained legacy inode/birthtime ownership vetoes are independent of device-number
+namespaces. Durable operation evidence and attestation targets now reach discovery,
+observation and explicit source mappings even after an object moves beyond its
+recorded paths. Unprovable legacy native evidence also remains a veto, never an
+execution permit. Root-only enrollment cannot adopt a folder physically reserved
+by an unfinished operation. These guards never rewrite journals or release IDs.
+
+Adapted blanket rename-denial cases to actual public production/IPC rename,
+missing-target no-effect refusal and private-data non-disclosure; remaining move,
+category, archive and native/file consumers stay gated. Backup tests reject future,
+incomplete or contradictory rename authorizations and attestation targets while
+matching current snapshots restore successfully. Historical fixtures retain exact
+NULL additive defaults and empty attestation tables.
+
+Observed local evidence on Node22.21.1/macOS arm64: 280 retained rename/new-command
+checks passed before subsequent review repairs; 142 production/IPC/observer checks
+passed after grouped-parent/ownership repairs. The final affected creation/rename,
+real legacy upgrade, source binding, observer, engine/crash/IPC and backup set passed
+401/401 after the root-reservation repair. Latest dedicated migration pass:753 tests,
+752 passed, one existing skip, zero failures/cancellations, before the final narrow
+root-veto repair; its affected evidence is renewed by the 401-check set. Earlier
+migration run750 had one obsolete gate expectation; it was adapted to actual
+missing-target refusal and preserved filesystem safety. No new skip/retirement.
+
+Standards/Spec review repaired grouped legacy-parent deadlock and historical
+ownership gaps; follow-ups found no remaining defect in those repairs. Additional
+public red/green regressions repaired moved pending objects and reserved-root
+adoption. Narrow follow-up found no remaining concrete veto defect. This is still
+not whole-issue or platform acceptance: move/category/archive/restore, native/file
+consumers, final full suite, native Electron/Windows/package/CI and integration
+remain outstanding. No push, main merge, release or owner live-data repair.

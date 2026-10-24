@@ -5,7 +5,7 @@ import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import * as schema from "./db/schema.js";
 import { scanDirectSource, scanGroupedSource, projectExclusions, reliableIdentity, sameIdentity, type DiscoveryScan } from "./discovery.js";
 import { readProjectReservations } from "./project-rename-reservations.js";
-import { identityState, sourceIdentity, storedEvidence, type EvidenceReader } from "./source-identity.js";
+import { reservationOwnsFolder, identityState, sourceIdentity, storedEvidence, type EvidenceReader } from "./source-identity.js";
 import { durableOwnershipKey, sameDurableFolder, type FolderObservation } from "./folder-evidence.js";
 import type { FolderMapping, SourceAssociationPreview, SourceAssociationResult } from "../contracts/source-association.js";
 import type { ServiceResult } from "../contracts/settings.js";
@@ -40,6 +40,7 @@ export function createSourceAssociationService(db: Database, scope: string, read
     const scan = (mode === "grouped" ? scanGroupedSource : scanDirectSource)(source.canonicalRoot, source.archiveRelativePath,
       projectExclusions(JSON.parse(source.excludedRelativePaths), mode).effective);
     const root = sourceIdentity(source, scan, scope, reader,data.peerSources);
+    if(data.reservations.some(reservation=>reservationOwnsFolder(reservation,root.observation)))root.state="unsafe";
     const evidence: {mapping: FolderMapping | null; observation: FolderObservation}[] = [{mapping: null, observation: root.observation}];
     const rootEligible = scan.snapshot && root.observation.ok && ["verified", "review_required", "scope_unverified"].includes(root.state);
     const observations = new Map<string, FolderObservation>();
@@ -98,7 +99,7 @@ export function createSourceAssociationService(db: Database, scope: string, read
         observed.evidence.volume === rootObservation.evidence.volume && observed.evidence.serial === rootObservation.evidence.serial &&
         counts.get(key(observed)!) === 1 && child?.kind === "directory" && sameIdentity(child.identity, observed.mount) &&
         !rows.some(other => other.row.id !== row.id && !dormantRoleHistory(other,kind,row,observed) && (other.row.relativePath === path || sameOwnership(other.row, observed))) &&
-        !data.reservations.some(r => r.relativePath === path || r.relativePath.startsWith(`${path}/`) || path.startsWith(`${r.relativePath}/`)));
+        !data.reservations.some(r => r.relativePath === path || r.relativePath.startsWith(`${path}/`) || path.startsWith(`${r.relativePath}/`) || observed && reservationOwnsFolder(r,observed)));
       if (kind === "category" && eligible && oldState === "verified" && path === row.relativePath) verifiedParents.add(row.id);
       return {kind, id:row.id, relativePath:path, savedPath:row.relativePath, eligible:eligible && (oldState !== "verified" || afterEnrollment && path === row.relativePath), selected:!!mapping, reason:observed?.ok && root.observation.ok && (observed.evidence.provider !== root.observation.evidence.provider || observed.evidence.volume !== root.observation.evidence.volume || observed.evidence.serial !== root.observation.evidence.serial) ? "different_volume" as const : oldState as import("../contracts/source-association.js").FolderIdentityReason};
     });

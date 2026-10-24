@@ -72,12 +72,12 @@ export function createProjectCreationService(db: Database, integration: {
   function assertReservations(row: Operation, nativeIdentity?: NativeIdentity, completed = false, authority?: FilesystemAuthorization) {
     // Reused dev/ino with a different birthtime is ambiguous historical evidence,
     // just as in discovery; it must not produce a completed but unresolved project.
-    const nativeCollision = (stored: string) => {
+    const nativeCollision = (stored: string, durable?:string|null) => {
       const identity: NativeIdentity = JSON.parse(stored);
       const source = db.select().from(schema.sources).where(eq(schema.sources.id,row.sourceId)).get();
       const root = source?.appliedRootIdentity ? JSON.parse(source.appliedRootIdentity) as NativeIdentity : null;
       return nativeIdentity && identity.ino === nativeIdentity.ino && (identity.dev === nativeIdentity.dev ||
-        authorizer && root && identity.dev === root.dev);
+        authorizer && root && identity.dev === root.dev || authorizer && !durable && identity.birthtimeNs===nativeIdentity.birthtimeNs);
     };
     const binding = authority ?? parseFilesystemAuthorization(row.authorization);
     const destination = authorizer && nativeIdentity && binding ? authorizer.observe(join(row.canonicalRoot,row.relativePath),binding.root,nativeIdentity) : null;
@@ -85,7 +85,7 @@ export function createProjectCreationService(db: Database, integration: {
     const categories = db.select().from(schema.categories).where(eq(schema.categories.sourceId, row.sourceId)).all();
     for (const record of [...projects.filter((p) => !completed || p.id !== row.projectId), ...categories]) {
       if (filesystemAlias(record.relativePath) === filesystemAlias(row.relativePath)) throw new CreationFailure("reserved_destination");
-      if (nativeCollision(record.nativeIdentity) || destination && record.durableEvidence &&
+      if (nativeCollision(record.nativeIdentity,record.durableEvidence) || destination && record.durableEvidence &&
         durableOwnershipKey(JSON.parse(record.durableEvidence)) === durableOwnershipKey(destination.evidence)) throw new CreationFailure("native_conflict");
     }
     if(destination) {
@@ -129,7 +129,7 @@ export function createProjectCreationService(db: Database, integration: {
     if (binding && row.authorization === null && (!sameIdentity(binding.root.mount,JSON.parse(row.rootIdentity)) ||
       !sameIdentity(binding.parent.mount,JSON.parse(row.parentIdentity)))) throw new CreationFailure("ownership_uncertain");
     if (!binding) throw new CreationFailure("ownership_uncertain");
-    authorizer.verify(binding, current, row.parentRelativePath, parentEvidence);
+    authorizer.verify(binding, current, row.parentRelativePath, parentEvidence, row.authorization===null ? {root:JSON.parse(row.rootIdentity),parent:JSON.parse(row.parentIdentity)} : undefined);
     return verifyCreationParents(filesystem, {...row, rootIdentity: JSON.stringify(binding.root.mount), parentIdentity: JSON.stringify(binding.parent.mount)});
   }
 
@@ -178,7 +178,7 @@ export function createProjectCreationService(db: Database, integration: {
         const original = parseFilesystemAuthorization(row.authorization), source = sourceFor(workspaceId);
         if (!source || row.authorization !== null && !original) throw new CreationFailure("ownership_uncertain");
         const category = row.categoryId ? db.select().from(schema.categories).where(eq(schema.categories.id,row.categoryId)).get() : null;
-        binding = authorizer.capture(source,row.parentRelativePath,category ? category.durableEvidence : source.durableEvidence);
+        binding = authorizer.capture(source,row.parentRelativePath,category ? category.durableEvidence : source.durableEvidence, row.authorization===null ? {root:JSON.parse(row.rootIdentity),parent:JSON.parse(row.parentIdentity)} : undefined);
         if (original && (!sameDurableFolder(original.root.evidence,binding.root.evidence) || !sameDurableFolder(original.parent.evidence,binding.parent.evidence))) throw new CreationFailure("filesystem_changed");
       }
       const parent = verifyContext(row, revision, workspaceId,binding);

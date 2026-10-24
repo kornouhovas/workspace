@@ -55,8 +55,9 @@ test('displayed reads cannot authorize filesystem changes and expire when source
   assert.deepEqual(f.results({projection}).value.projectIds, projection.projectIds);
   assert.ok(f.query('listProjects').value.retainedProjects.some(p => p.projectId === alpha.projectId));
   const denied = f.command('renameProject', {projectId:alpha.projectId,operationId:randomUUID(),name:'Unauthorized',expectedRevision:list.revision});
-  assert.equal(denied.ok,false);
-  assert.equal(denied.error.code,'identity_update_required');
+  assert.equal(denied.ok,true);
+  assert.equal(denied.value.outcome,'rejected');
+  assert.equal(denied.value.problem,'source_unavailable');
   assert.equal(f.command('refreshSource').ok, true);
   assert.equal(f.results({projection}).error.code, 'invalid_input');
   const fresh = f.query('listProjects').value;

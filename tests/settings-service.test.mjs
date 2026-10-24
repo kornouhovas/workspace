@@ -1,4 +1,3 @@
-import {openUnconvertedEngineFixture} from "./support/unconverted-command-engines.mjs";
 import assert from "node:assert/strict";
 import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -27,7 +26,7 @@ test("fresh database migrates and starts with English", () => {
     service.close();
 
     const sqlite = new Database(databasePath);
-    assert.equal(sqlite.prepare("SELECT count(*) AS count FROM __drizzle_migrations").get().count, 26);
+    assert.equal(sqlite.prepare("SELECT count(*) AS count FROM __drizzle_migrations").get().count, 27);
     sqlite.close();
   });
 });
@@ -74,7 +73,7 @@ test("existing settings database upgrades to workspaces without losing its langu
     upgraded.close();
 
     const sqlite = new Database(databasePath);
-    assert.equal(sqlite.prepare("SELECT count(*) AS count FROM __drizzle_migrations").get().count, 26);
+    assert.equal(sqlite.prepare("SELECT count(*) AS count FROM __drizzle_migrations").get().count, 27);
     assert.equal(sqlite.prepare("SELECT count(*) AS count FROM workspaces").get().count, 1);
     sqlite.close();
   });
@@ -145,16 +144,16 @@ test("settings dispatcher exposes rename receipts and reviewed recovery without 
     const root = join(directory, "rename-root"); mkdirSync(join(root, "Original"), { recursive: true });
     let calls = 0;
     const observers = { watch() { return { close() {} }; }, schedule() { return { cancel() {} }; } };
-    const service = openUnconvertedEngineFixture(databasePath, undefined, undefined, observers, undefined, () => {
+    const service = openSettingsService(databasePath, undefined, undefined, observers, undefined, () => {
       calls++; throw new Error("private native interruption");
-    }).engines;
+    });
     try {
       const workspaceId = service.handleCommand({ type: "workspace.create", name: "Rename", rootPath: root }).value.workspaceId;
       const preview = service.handleQuery({ type: "workspace.previewDiscovery", workspaceId }).value;
       const list = service.handleCommand({ type: "workspace.applyDiscovery", workspaceId, previewToken: preview.previewToken }).value;
       const input = { type: "workspace.renameProject", workspaceId, projectId: list.projects[0].projectId,
         operationId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", name: "Renamed", expectedRevision: list.revision };
-      assert.equal(service.application.handleCommand(input).error.code,"identity_update_required");assert.equal(calls,0);
+      assert.equal(calls,0);
       const result = service.handleCommand(input);
       assert.equal(result.value.outcome, "recoverable"); assert.equal(calls, 1);
       assert.deepEqual(service.handleQuery({ type: "workspace.getProjectRename", workspaceId, operationId: input.operationId }), result);

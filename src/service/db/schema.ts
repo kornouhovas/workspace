@@ -142,6 +142,8 @@ export const projectCreationAttestations = sqliteTable("project_creation_attesta
 // Migration 0009 enforces immutable bindings, evidence, transitions and cross-role reservations.
 // Historical initiating workspace IDs deliberately survive workspace removal.
 export const projectRenameOperations = sqliteTable("project_rename_operations", {
+  authorization: text("authorization"),
+  projectEvidence: text("project_evidence"),
   operationId: text("operation_id").primaryKey(),
   sourceId: text("source_id").notNull().references(() => sources.id),
   initiatingWorkspaceId: text("initiating_workspace_id").notNull(),
@@ -176,6 +178,14 @@ export const projectRenameOperations = sqliteTable("project_rename_operations", 
   foreignKey({ columns: [table.projectId, table.sourceId], foreignColumns: [projects.id, projects.sourceId] }),
   foreignKey({ columns: [table.categoryId, table.sourceId], foreignColumns: [categories.id, categories.sourceId] }),
 ]);
+
+export const projectRenameAttestations = sqliteTable("project_rename_attestations", {
+  id: text("id").primaryKey(),
+  operationId: text("operation_id").notNull().references(() => projectRenameOperations.operationId),
+  journal: text("journal").notNull(),
+  authorization: text("authorization").notNull(),
+  projectEvidence: text("project_evidence").notNull(),
+});
 
 // Migration 0010 guards immutable two-parent bindings, evidence and retained history.
 export const projectCategoryMoveOperations = sqliteTable("project_category_move_operations", {

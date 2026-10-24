@@ -1,6 +1,6 @@
 import { storedEvidence } from "./source-identity.js";
 import { observeFolder, sameDurableFolder } from "./folder-evidence.js";
-import { continuityRecords, discoveryEvidence, sameVolumeEvidence, discoveryIdentityState, sourceIdentity, type EvidenceReader } from "./source-identity.js";
+import { reserveDurablePlacements, continuityRecords, discoveryEvidence, sameVolumeEvidence, discoveryIdentityState, sourceIdentity, type EvidenceReader } from "./source-identity.js";
 import { hasUnfinishedProjectRelocation, readProjectReservations } from "./project-rename-reservations.js";
 import { randomUUID } from "node:crypto";
 import { asc, eq } from "drizzle-orm";
@@ -201,9 +201,9 @@ export function reconcileSource(db: Database, source: Source, observedScan?: Dis
     source.discoveryRevision < 0 || source.appliedRootIdentity === null) throw new Error("Invalid configured source");
   const readReservations = () => readProjectReservations(db, source.id);
   const reservations = readReservations();
-  const scanSource = () => reserveProjectPlacements((grouped ? scanGroupedSource : scanDirectSource)(source.canonicalRoot,
-    source.archiveRelativePath, projectExclusions(exclusions, grouped ? "grouped" : "direct").effective), reservations);
-  let scan = observedScan ? reserveProjectPlacements(observedScan, reservations) : scanSource();
+  const scanSource = () => reserveDurablePlacements(source,reserveProjectPlacements((grouped ? scanGroupedSource : scanDirectSource)(source.canonicalRoot,
+    source.archiveRelativePath, projectExclusions(exclusions, grouped ? "grouped" : "direct").effective), reservations),reservations,scope,reader);
+  let scan = observedScan ? reserveDurablePlacements(source,reserveProjectPlacements(observedScan, reservations),reservations,scope,reader) : scanSource();
   if (!scan.snapshot) return { changed: false, scan };
   const peers=()=>db.select().from(schema.sources).all().filter(peer=>peer.id!==source.id);
   const identity = sourceIdentity(source, scan, scope, reader,peers());

@@ -331,9 +331,10 @@ for (const mode of ["direct", "grouped"]) {
     }));
   }
 }
-test("compiled production entry denies unconverted rename before native dispatch", () => fixture("direct", async (f) => {
+test("compiled production entry performs durable rename without exposing trusted filesystem evidence", () => fixture("direct", async (f) => {
   const result = await f.client.renameProject(f.request());
-  assert.equal(result.error.code,"identity_update_required");
-  assert.equal(fs.existsSync(join(f.root,"Renamed")),false);
-  assert.equal(fs.readFileSync(join(f.root,"Original","sentinel"),"utf8"),"  Original\n");
+  assert.equal(result.ok,true,JSON.stringify(result));assert.equal(result.value.outcome,"completed");assertPublic(result,f);
+  assert.equal(fs.existsSync(join(f.root,"Original")),false);
+  assert.equal(fs.readFileSync(join(f.root,"Renamed","sentinel"),"utf8"),"  Original\n");
+  assert.equal(f.nativeTargets.length,0);
 }, { productionDefault: true }));

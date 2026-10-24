@@ -1,3 +1,6 @@
+import {parseFilesystemAuthorization, parseFolderObservation, type FilesystemAuthorization, type FilesystemAuthorizer, type VerifiedFolder} from "./filesystem-authorization.js";
+import {storedEvidence} from "./source-identity.js";
+import {durableOwnershipKey, sameDurableFolder} from "./folder-evidence.js";
 import { randomUUID } from "node:crypto";
 import { join } from "node:path";
 import { eq } from "drizzle-orm";
@@ -40,9 +43,12 @@ function recordedResult(row: Operation): ProjectRenameResult {
 export function createProjectRenameService(db: Database, integration: {
   invalidateSourceReviews(sourceId: string): void;
   committed(sourceId: string, revision: number, workspaceIds: string[]): void;
-}, filesystem: ProjectFilesystem = nativeProjectFilesystem, native: ProjectRenameNative = renameNoReplace) {
-  type Execution = { workspaceId: string; revision: number };
-  const executionFor = (row: Operation): Execution => ({ workspaceId: row.initiatingWorkspaceId, revision: row.expectedRevision });
+}, filesystem: ProjectFilesystem = nativeProjectFilesystem, native: ProjectRenameNative = renameNoReplace, authorizer?: FilesystemAuthorizer) {
+  type Execution = { workspaceId: string; revision: number; authorization?: FilesystemAuthorization; target?: VerifiedFolder; legacyAttested?: boolean; problem?: ProjectRenameProblem };
+  const executionFor = (row: Operation): Execution => ({ workspaceId: row.initiatingWorkspaceId, revision: row.expectedRevision,
+    authorization: parseFilesystemAuthorization(row.authorization) ?? undefined,
+    target: row.projectEvidence ? parseFolderObservation(JSON.parse(row.projectEvidence)) ?? undefined : undefined });
+  const expectedTarget = (row: Operation, execution: Execution) => authorizer ? execution.target?.mount ?? fail("ownership_uncertain") : JSON.parse(row.nativeIdentity) as NativeIdentity;
   const reviews = new Map<string, { row: Operation; execution: Execution; inspected: ReturnType<typeof inspectRecovery>; token: string }>();
   const reviewKey = (workspaceId: string, operationId: string) => `${workspaceId}:${operationId}`;
   function invalidateSource(sourceId: string) {
@@ -67,7 +73,7 @@ export function createProjectRenameService(db: Database, integration: {
     .where(eq(schema.workspaces.id, workspaceId)).get()?.sources;
   const invalid = () => ({ ok: false as const, error: { code: "invalid_input" as const, message: "Choose a saved workspace and its immutable project rename request." } });
   const rejected = (problem: ProjectRenameProblem): ServiceResult<ProjectRenameResult> => ({ ok: true, value: { outcome: "rejected", problem, operation: null } });
-  const fail = (problem: ProjectRenameProblem): never => { throw new RenameFailure(problem); };
+  const fail: (problem: ProjectRenameProblem) => never = (problem) => { throw new RenameFailure(problem); };
   const relativeName = (row: Operation, name: string) => row.parentRelativePath ? `${row.parentRelativePath}/${name}` : name;
   // Only this journal's operation receives the self exception. Historical
   // creation/rename ID overlaps must not hide another operation's reservations.
@@ -85,7 +91,7 @@ export function createProjectRenameService(db: Database, integration: {
     if (archive && filesystemAlias(parts[0]) === filesystemAlias(archive[0]) &&
       (row.mode === "direct" || archive.length === 1 || filesystemAlias(parts[1]) === filesystemAlias(archive[1]))) fail("archive");
   }
-  function reservations(row: Operation, paths = [row.originalRelativePath, row.requestedRelativePath, row.stagingRelativePath].filter((p): p is string => p !== null)) {
+  function reservations(row: Operation, paths = [row.originalRelativePath, row.requestedRelativePath, row.stagingRelativePath].filter((p): p is string => p !== null), execution = executionFor(row)) {
     const evidence: NativeIdentity = JSON.parse(row.nativeIdentity);
     const records = [
       ...db.select().from(schema.projects).where(eq(schema.projects.sourceId, row.sourceId)).all().filter((p) => p.id !== row.projectId),
@@ -96,11 +102,15 @@ export function createProjectRenameService(db: Database, integration: {
       if (paths.some((path) => filesystemAlias(path) === filesystemAlias(record.relativePath))) fail("reserved_destination");
       if (record.nativeIdentity) {
         const other: NativeIdentity = JSON.parse(record.nativeIdentity);
-        if (other.dev === evidence.dev && other.ino === evidence.ino) fail("native_conflict");
+        if (other.ino === evidence.ino && (other.dev === evidence.dev || ("durableEvidence" in record && record.durableEvidence===null && other.birthtimeNs===evidence.birthtimeNs))) fail("native_conflict");
+        const target = execution.target;
+        if (target && "durableEvidence" in record && record.durableEvidence &&
+          durableOwnershipKey(JSON.parse(record.durableEvidence))===durableOwnershipKey(target.evidence))fail("native_conflict");
       }
     }
   }
   function context(row: Operation, execution = executionFor(row), projectPath = row.originalRelativePath) {
+    if(execution.problem)fail(execution.problem);
     const source = sourceFor(execution.workspaceId);
     if (!source || source.id !== row.sourceId || source.canonicalRoot !== row.canonicalRoot || source.discoveryMode !== row.mode ||
       source.discoveryRevision !== execution.revision || source.appliedRootIdentity !== row.rootIdentity ||
@@ -109,13 +119,24 @@ export function createProjectRenameService(db: Database, integration: {
     const project = db.select().from(schema.projects).where(eq(schema.projects.id, row.projectId)).get();
     if (!project || project.sourceId !== row.sourceId || project.relativePath !== projectPath || project.nativeIdentity !== row.nativeIdentity ||
       project.categoryId !== row.categoryId || project.associationState !== "active" || project.modeInactive) fail("project_unavailable");
+    let parentEvidence=source.durableEvidence;
     if (row.mode === "grouped") {
       const category = db.select().from(schema.categories).where(eq(schema.categories.id, row.categoryId!)).get();
       if (!category || category.sourceId !== row.sourceId || category.relativePath !== row.parentRelativePath ||
         category.nativeIdentity !== row.parentIdentity || category.associationState !== "active" || category.modeInactive) fail("category_unavailable");
+      parentEvidence=category.durableEvidence;
     }
-    policy(row, row.originalRelativePath); policy(row, row.requestedRelativePath); reservations(row);
-    const parent = verifyCreationParents(filesystem, row);
+    policy(row, row.originalRelativePath); policy(row, row.requestedRelativePath); reservations(row,undefined,execution);
+    let contextBinding=row;
+    if(authorizer) {
+      if(!execution.authorization || !execution.target || (!project.durableEvidence && !execution.legacyAttested) ||
+        project.durableEvidence && !sameDurableFolder(execution.target!.evidence,JSON.parse(project.durableEvidence)))fail("ownership_uncertain");
+      if(execution.legacyAttested && (!sameIdentity(JSON.parse(row.rootIdentity),execution.authorization!.root.mount) ||
+        !sameIdentity(JSON.parse(row.parentIdentity),execution.authorization!.parent.mount) || !sameIdentity(JSON.parse(row.nativeIdentity),execution.target!.mount)))fail("ownership_uncertain");
+      authorizer.verify(execution.authorization!,source,row.parentRelativePath,parentEvidence,execution.legacyAttested ? {root:JSON.parse(row.rootIdentity),parent:JSON.parse(row.parentIdentity)} : undefined);
+      contextBinding={...row,rootIdentity:JSON.stringify(execution.authorization!.root.mount),parentIdentity:JSON.stringify(execution.authorization!.parent.mount)};
+    }
+    const parent = verifyCreationParents(filesystem, contextBinding);
     filesystem.assertAccessible?.(row.canonicalRoot); filesystem.assertAccessible?.(parent);
     if (row.parentRelativePath && !filesystem.names(row.canonicalRoot).includes(row.parentRelativePath)) fail("filesystem_changed");
     return parent;
@@ -123,7 +144,8 @@ export function createProjectRenameService(db: Database, integration: {
   function placement(row: Operation, path: string, execution = executionFor(row), projectPath = row.originalRelativePath) {
     const parent = context(row, execution, projectPath);
     if (!filesystem.names(parent).includes(path.split("/").at(-1)!)) fail("filesystem_changed");
-    verifyCreationDirectory(filesystem, join(row.canonicalRoot, path), JSON.parse(row.nativeIdentity));
+    verifyCreationDirectory(filesystem, join(row.canonicalRoot, path), expectedTarget(row,execution));
+    if(authorizer)authorizer.observe(join(row.canonicalRoot,path),execution.authorization!.root,execution.target!.mount,execution.target!.evidence);
     filesystem.assertAccessible?.(join(row.canonicalRoot, path));
     context(row, execution, projectPath);
     return parent;
@@ -136,7 +158,7 @@ export function createProjectRenameService(db: Database, integration: {
     try { inspected = filesystem.inspect(join(row.canonicalRoot, to)); }
     catch (error) { if (filesystemCode(error) !== "ENOENT") throw error; }
     const self = !!inspected && inspected.kind === "directory" && reliableIdentity(inspected.identity) &&
-      sameIdentity(inspected.identity, JSON.parse(row.nativeIdentity));
+      sameIdentity(inspected.identity, expectedTarget(row,execution));
     if (inspected && !(allowSelf && self)) fail("occupied");
     for (const entry of filesystem.names(parent)) {
       if (entry === from.split("/").at(-1)) continue;
@@ -151,7 +173,7 @@ export function createProjectRenameService(db: Database, integration: {
       if (!candidate || candidate === path) continue;
       try {
         const entry = filesystem.inspect(join(row.canonicalRoot, candidate));
-        const self = entry.kind === "directory" && reliableIdentity(entry.identity) && sameIdentity(entry.identity, JSON.parse(row.nativeIdentity));
+        const self = entry.kind === "directory" && reliableIdentity(entry.identity) && sameIdentity(entry.identity, expectedTarget(row,execution));
         if (self && !names.includes(candidate.split("/").at(-1)!)) continue;
         fail(self ? "native_conflict" : "occupied");
       } catch (error) { if (filesystemCode(error) !== "ENOENT") throw error; }
@@ -195,7 +217,7 @@ export function createProjectRenameService(db: Database, integration: {
     const completed = db.transaction((tx) => {
       uniquePlacement(row, row.requestedRelativePath, execution);
       if (!unchangedOperation(row)) fail("filesystem_changed");
-      tx.update(schema.projects).set({ relativePath: row.requestedRelativePath }).where(eq(schema.projects.id, row.projectId)).run();
+      tx.update(schema.projects).set({ relativePath: row.requestedRelativePath, ...(execution.target ? {durableEvidence:JSON.stringify(execution.target.evidence)} : {}) }).where(eq(schema.projects.id, row.projectId)).run();
       tx.update(schema.sources).set({ discoveryRevision: revision }).where(eq(schema.sources.id, row.sourceId)).run();
       tx.update(schema.projectRenameOperations).set({ stage: "completed", resultKind: "completed", completedRevision: revision, problem: null })
         .where(eq(schema.projectRenameOperations.operationId, row.operationId)).run();
@@ -216,6 +238,37 @@ export function createProjectRenameService(db: Database, integration: {
     placement(row, to, execution);
   }
 
+  function recoveryExecution(row: Operation, workspaceId:string, revision:number):Execution {
+    const execution:Execution={workspaceId,revision};
+    if(!authorizer)return execution;
+    try {
+      const source=sourceFor(workspaceId);
+      if(!source)fail("stale_configuration");
+      const category=row.categoryId ? db.select().from(schema.categories).where(eq(schema.categories.id,row.categoryId)).get() : null;
+      execution.authorization=authorizer.capture(source,row.parentRelativePath,category ? category.durableEvidence : source.durableEvidence,row.authorization===null ? {root:JSON.parse(row.rootIdentity),parent:JSON.parse(row.parentIdentity)} : undefined);
+      const original=parseFilesystemAuthorization(row.authorization), target=row.projectEvidence ? parseFolderObservation(JSON.parse(row.projectEvidence)) : null;
+      if(row.authorization!==null && (!original || !target))fail("ownership_uncertain");
+      if(original && (!sameDurableFolder(original.root.evidence,execution.authorization.root.evidence) ||
+        !sameDurableFolder(original.parent.evidence,execution.authorization.parent.evidence)))fail("filesystem_changed");
+      execution.legacyAttested=row.authorization===null;
+      if(execution.legacyAttested && (!sameIdentity(JSON.parse(row.rootIdentity),execution.authorization.root.mount) ||
+        !sameIdentity(JSON.parse(row.parentIdentity),execution.authorization.parent.mount)))fail("ownership_uncertain");
+      const matches:VerifiedFolder[]=[];
+      const parent=join(row.canonicalRoot,row.parentRelativePath), names=filesystem.names(parent);
+      for(const path of new Set([row.originalRelativePath,row.stagingRelativePath,row.requestedRelativePath])) {
+        if(!path || !names.includes(path.split("/").at(-1)!))continue;
+        let entry;
+        try{entry=filesystem.inspect(join(row.canonicalRoot,path));}catch(error){if(filesystemCode(error)==="ENOENT")continue;throw error;}
+        if(entry.kind!=="directory" || execution.legacyAttested && !sameIdentity(entry.identity,JSON.parse(row.nativeIdentity)))continue;
+        const observed=authorizer.observe(join(row.canonicalRoot,path),execution.authorization.root,entry.identity);
+        if(target && !sameDurableFolder(target.evidence,observed.evidence))continue;
+        matches.push(observed);
+      }
+      if(matches.length!==1)fail(matches.length ? "native_conflict" : "destination_missing");
+      execution.target=matches[0];
+    }catch(error){execution.problem=problemFor(error,"filesystem");}
+    return execution;
+  }
   function inspectRecovery(row: Operation, execution: Execution) {
     const preview: ProjectRenameRecoveryPreview = { workspaceId: execution.workspaceId, sourceId: row.sourceId,
       operation: operationView(row), revision: execution.revision, originalState: "unavailable",
@@ -235,7 +288,7 @@ export function createProjectRenameService(db: Database, integration: {
           const entry = filesystem.inspect(join(row.canonicalRoot, path));
           identity = entry.identity;
           if (entry.kind === "link") state = "link";
-          else if (entry.kind !== "directory" || !reliableIdentity(identity) || !sameIdentity(identity, JSON.parse(row.nativeIdentity))) state = "replaced";
+          else if (entry.kind !== "directory" || !reliableIdentity(identity) || !sameIdentity(identity, expectedTarget(row,execution))) state = "replaced";
           else if (names.includes(name)) {
             placement(row, path, execution);
             state = "matching";
@@ -308,7 +361,7 @@ export function createProjectRenameService(db: Database, integration: {
     try {
       const source = sourceFor(input.workspaceId), row = operationFor(input.operationId);
       if (!source || !row || source.id !== row.sourceId) return invalid();
-      const execution = { workspaceId: input.workspaceId, revision: source.discoveryRevision };
+      const execution = recoveryExecution(row,input.workspaceId,source.discoveryRevision);
       const inspected = inspectRecovery(row, execution);
       if (inspected.preview.actions.length) {
         const token = randomUUID();
@@ -330,9 +383,21 @@ export function createProjectRenameService(db: Database, integration: {
       const source = sourceFor(request.workspaceId);
       row = operationFor(request.operationId);
       if (!source || !row || source.id !== row.sourceId) return invalid();
-      if (!unchangedOperation(review.row) || source.discoveryRevision !== review.execution.revision ||
+      const currentExecution=recoveryExecution(row,request.workspaceId,source.discoveryRevision);
+      if (JSON.stringify(currentExecution)!==JSON.stringify(review.execution) || !unchangedOperation(review.row) || source.discoveryRevision !== review.execution.revision ||
         JSON.stringify(inspectRecovery(row, review.execution)) !== JSON.stringify(review.inspected)) return stale();
       const execution = review.execution;
+      if(authorizer) {
+        const bound=row;
+        db.transaction(tx=>{
+          const match=review.inspected.observations.find(observation=>observation.state==="matching");
+          if(!match)fail("ownership_uncertain");
+          placement(bound,match.path,execution);
+          if(!unchangedOperation(bound))fail("filesystem_changed");
+          tx.insert(schema.projectRenameAttestations).values({id:randomUUID(),operationId:bound.operationId,journal:JSON.stringify(bound),authorization:JSON.stringify(execution.authorization),projectEvidence:JSON.stringify(execution.target)}).run();
+          placement(bound,match.path,execution);
+        },{behavior:"immediate"});
+      }
       integration.invalidateSourceReviews(row.sourceId);
       accepted = true;
       if (request.action === "keep_original") {
@@ -403,7 +468,14 @@ export function createProjectRenameService(db: Database, integration: {
       const parentRelativePath = source.discoveryMode === "grouped" ? category!.relativePath : "";
       const originalName = project.relativePath.split("/").at(-1)!;
       if (!validProjectBasename(originalName, filesystem.platform) || project.relativePath !== (parentRelativePath ? `${parentRelativePath}/${originalName}` : originalName)) return rejected("project_unavailable");
+      phase="filesystem";
+      const authorization=authorizer ? authorizer.capture(source,parentRelativePath,category ? category.durableEvidence : source.durableEvidence) : null;
+      const saved=storedEvidence(project.durableEvidence);
+      if(authorizer && !saved) return rejected("ownership_uncertain");
+      const current=filesystem.inspect(join(source.canonicalRoot,project.relativePath));
+      const target=authorizer && authorization ? authorizer.observe(join(source.canonicalRoot,project.relativePath),authorization.root,current.identity,saved!) : null;
       const row: Operation = {
+        authorization:authorization ? JSON.stringify(authorization) : null, projectEvidence:target ? JSON.stringify(target) : null,
         operationId: request.operationId, initiatingWorkspaceId: request.workspaceId, sourceId: source.id, projectId: project.id,
         originalName, name: request.name, mode: source.discoveryMode, categoryId: project.categoryId, expectedRevision: request.expectedRevision,
         canonicalRoot: source.canonicalRoot, parentRelativePath, originalRelativePath: project.relativePath,

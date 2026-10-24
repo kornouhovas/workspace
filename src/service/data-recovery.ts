@@ -110,6 +110,32 @@ function validate(db: Database.Database) {
         destination.evidence.serial!==binding.root.evidence.serial || destination.evidence.scope!==binding.root.evidence.scope || !sameIdentity(destination.mount,JSON.parse(row.native_identity))))throw new Error("Invalid creation filesystem authorization");
     }
   }
+  if ((db.prepare("PRAGMA table_info(project_rename_operations)").all() as {name:string}[]).some(c=>c.name==="authorization")) {
+    const rows=db.prepare("SELECT * FROM project_rename_operations").all() as Record<string,unknown>[];
+    const volumeMatch=(binding:NonNullable<ReturnType<typeof parseFilesystemAuthorization>>,target:NonNullable<ReturnType<typeof parseFolderObservation>>)=>
+      target.evidence.provider===binding.root.evidence.provider && target.evidence.volume===binding.root.evidence.volume &&
+      target.evidence.serial===binding.root.evidence.serial && target.evidence.scope===binding.root.evidence.scope;
+    for(const row of rows) {
+      const binding=parseFilesystemAuthorization(row.authorization as string|null);
+      const target=row.project_evidence ? parseFolderObservation(JSON.parse(row.project_evidence as string)) : null;
+      if(row.authorization!==null && (!binding || !target || !volumeMatch(binding,target)) || row.authorization===null && row.project_evidence!==null)throw new Error("Invalid rename authorization");
+    }
+    const immutableFields=["operationId","sourceId","initiatingWorkspaceId","projectId","originalName","name","mode","expectedRevision","categoryId",
+      "canonicalRoot","parentRelativePath","originalRelativePath","requestedRelativePath","stagingRelativePath","rootIdentity","parentIdentity",
+      "nativeIdentity","excludedRelativePaths","archiveRelativePath","authorization","projectEvidence"];
+    for(const proof of db.prepare("SELECT * FROM project_rename_attestations").all() as Record<string,string>[]) {
+      const row=rows.find(row=>row.operation_id===proof.operation_id), journal=JSON.parse(proof.journal);
+      const binding=parseFilesystemAuthorization(proof.authorization), target=parseFolderObservation(JSON.parse(proof.project_evidence));
+      if(!row || !journal || !binding || !target || !volumeMatch(binding,target) ||
+        !["intent","staged","destination_recorded","uncertain"].includes(journal.stage) || immutableFields.some(field=>!Object.hasOwn(journal,field) ||
+          journal[field]!==row[field.replace(/[A-Z]/g,letter=>"_"+letter.toLowerCase())]))throw new Error("Invalid rename attestation");
+      const original=parseFilesystemAuthorization(journal.authorization), saved=journal.projectEvidence ? parseFolderObservation(JSON.parse(journal.projectEvidence)) : null;
+      if(journal.authorization!==null && (!original || !saved || !sameDurableFolder(original.root.evidence,binding.root.evidence) ||
+        !sameDurableFolder(original.parent.evidence,binding.parent.evidence) || !sameDurableFolder(saved.evidence,target.evidence)) ||
+        journal.authorization===null && (!sameIdentity(JSON.parse(journal.rootIdentity),binding.root.mount) ||
+          !sameIdentity(JSON.parse(journal.parentIdentity),binding.parent.mount) || !sameIdentity(JSON.parse(journal.nativeIdentity),target.mount)))throw new Error("Conflicting rename attestation");
+    }
+  }
   // These ownership constraints predate their SQL equivalents.
   if (db.prepare(`SELECT 1 FROM workspaces w WHERE NOT EXISTS (SELECT 1 FROM views v WHERE v.workspace_id=w.id)
     UNION ALL SELECT 1 FROM workspace_view_selection s JOIN views v ON v.id=s.view_id WHERE s.workspace_id!=v.workspace_id

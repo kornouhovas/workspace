@@ -8,6 +8,7 @@ import {rootOwnershipConflict, storedEvidence, identityState, sameVolumeEvidence
 import {CreationFailure} from "./project-filesystem.js";
 
 export type VerifiedFolder = Extract<FolderObservation,{ok:true}>;
+type LegacyParents = {root:NativeIdentity;parent:NativeIdentity};
 export interface FilesystemAuthorization {
   version: 1;
   generation: number;
@@ -30,32 +31,46 @@ export function parseFilesystemAuthorization(value:string|null): FilesystemAutho
 }
 /** Durable continuity admits an earlier mount; an execution snapshot never does. */
 export function createFilesystemAuthorization(scope:string, read:EvidenceReader, db:BetterSQLite3Database<typeof schema>) {
-  function capture(source:{canonicalRoot:string;durableEvidence:string|null;evidenceGeneration:number},parentRelativePath:string,parentEvidence:string|null):FilesystemAuthorization {
+  function capture(source:{canonicalRoot:string;durableEvidence:string|null;evidenceGeneration:number},parentRelativePath:string,parentEvidence:string|null,legacy?:LegacyParents):FilesystemAuthorization {
     const root=read(source.canonicalRoot,scope), parent=read(join(source.canonicalRoot,parentRelativePath),scope);
-    if(identityState(source.durableEvidence,root,scope)!=="verified" || identityState(parentEvidence,parent,scope)!=="verified" ||
+    if(identityState(source.durableEvidence,root,scope)!=="verified" ||
+      !(identityState(parentEvidence,parent,scope)==="verified" || parentEvidence===null && legacy && parent.ok && sameIdentity(legacy.parent,parent.mount)) ||
       !root.ok || !parent.ok || !sameVolumeEvidence(root,parent))throw new CreationFailure("filesystem_changed");
     const binding:FilesystemAuthorization={version:1,generation:source.evidenceGeneration,root,parent};
-    verify(binding,source,parentRelativePath,parentEvidence);
+    verify(binding,source,parentRelativePath,parentEvidence,legacy);
     return binding;
   }
-  function verify(binding:FilesystemAuthorization,source:{canonicalRoot:string;durableEvidence:string|null;evidenceGeneration:number},parentRelativePath:string,parentEvidence:string|null) {
+  function verify(binding:FilesystemAuthorization,source:{canonicalRoot:string;durableEvidence:string|null;evidenceGeneration:number},parentRelativePath:string,parentEvidence:string|null,legacy?:LegacyParents) {
     {
       const roots=db.select().from(schema.sources).all();
       const owner=roots.find(row=>row.canonicalRoot===source.canonicalRoot && row.durableEvidence===source.durableEvidence);
       if(!owner || rootOwnershipConflict(binding.root,roots.filter(row=>row.id!==owner.id),scope,read))throw new CreationFailure("native_conflict");
       const records=[...db.select().from(schema.categories).where(eq(schema.categories.sourceId,owner.id)).all(),
         ...db.select().from(schema.projects).where(eq(schema.projects.sourceId,owner.id)).all()];
+      const parentOwner=db.select().from(schema.categories).where(eq(schema.categories.sourceId,owner.id)).all()
+        .find(category=>category.relativePath===parentRelativePath && category.associationState==="active" && !category.modeInactive);
       for(const record of records) {
         const saved=storedEvidence(record.durableEvidence);
-        if(saved && (durableOwnershipKey(saved)===durableOwnershipKey(binding.root.evidence) ||
-          record.relativePath!==parentRelativePath && durableOwnershipKey(saved)===durableOwnershipKey(binding.parent.evidence)))throw new CreationFailure("native_conflict");
+        const historical=JSON.parse(record.nativeIdentity) as NativeIdentity;
+        if(record.relativePath===parentRelativePath) {
+          if(parentOwner?.id===record.id)continue;
+          const dormant="categoryId" in record && record.categoryId===null && record.modeInactive && ["active","excluded"].includes(record.associationState) && parentOwner;
+          if(dormant && (saved ? sameDurableFolder(saved,binding.parent.evidence,false)
+            : sameIdentity(historical,JSON.parse(parentOwner.nativeIdentity))))continue;
+          throw new CreationFailure("native_conflict");
+        }
+        const conflicts=(observed:VerifiedFolder)=>saved ? durableOwnershipKey(saved)===durableOwnershipKey(observed.evidence)
+          : record.durableEvidence!==null || historical.ino===observed.mount.ino && historical.birthtimeNs===observed.mount.birthtimeNs;
+        if(conflicts(binding.root) || conflicts(binding.parent))throw new CreationFailure("native_conflict");
       }
     }
+    if(legacy && (!sameIdentity(binding.root.mount,legacy.root) || !sameIdentity(binding.parent.mount,legacy.parent)))throw new CreationFailure("ownership_uncertain");
     if(source.evidenceGeneration!==binding.generation)throw new CreationFailure("stale_configuration");
     for(const [path,saved,old] of [[source.canonicalRoot,binding.root,source.durableEvidence],
       [join(source.canonicalRoot,parentRelativePath),binding.parent,parentEvidence]] as const) {
       const current=read(path,scope);
-      if(identityState(old,current,scope)!=="verified" || !current.ok || !sameDurableFolder(saved.evidence,current.evidence) ||
+      const reviewedLegacyParent=path===join(source.canonicalRoot,parentRelativePath) && old===null && !!legacy && current.ok && sameIdentity(legacy.parent,current.mount);
+      if((identityState(old,current,scope)!=="verified" && !reviewedLegacyParent) || !current.ok || current.evidence.scope!==scope || !sameDurableFolder(saved.evidence,current.evidence) ||
         !sameIdentity(saved.mount,current.mount))throw new CreationFailure("filesystem_changed");
     }
   }

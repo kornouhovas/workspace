@@ -118,3 +118,40 @@ export function discoveryEvidence(source: IdentitySource, scan: DiscoveryScan, s
 export function sameVolumeEvidence(root: FolderObservation, child: FolderObservation): boolean {
   return root.ok && child.ok && root.evidence.provider===child.evidence.provider && root.evidence.volume===child.evidence.volume && root.evidence.serial===child.evidence.serial;
 }
+
+/** Pending durable objects reserve their physical identity beyond their recorded
+ * paths. This is a discovery veto, never a filesystem execution authorization. */
+export function reserveDurablePlacements(source:IdentitySource,scan:DiscoveryScan,reservations:{durableEvidence?:string|null;nativeIdentity:string|null}[],scope:string,reader:EvidenceReader):DiscoveryScan {
+  const reserved=new Set(reservations.flatMap(row=>{
+    if(!row.durableEvidence)return [];
+    const saved=storedEvidence(row.durableEvidence);
+    if(!saved)throw new Error("Invalid durable reservation");
+    return [durableOwnershipKey(saved)];
+  }));
+  const legacy=reservations.filter(row=>!row.durableEvidence && row.nativeIdentity).map(row=>JSON.parse(row.nativeIdentity!) as import("./discovery.js").NativeIdentity);
+  if((!reserved.size && !legacy.length) || !scan.snapshot)return scan;
+  return {...scan,entries:scan.entries.map(entry=>{
+    if(entry.reason!==null)return entry;
+    const child=scan.snapshot!.children.find(child=>child.relativePath===entry.relativePath);
+    if(child && child.kind!=="excluded" && legacy.some(old=>old.ino===child.identity.ino && old.birthtimeNs===child.identity.birthtimeNs))return {...entry,reason:"unresolved"};
+    if(!reserved.size)return entry;
+    const observed=reader(join(source.canonicalRoot,entry.relativePath),scope);
+    return !observed.ok || !child || child.kind==="excluded" || !sameIdentity(child.identity,observed.mount) || reserved.has(durableOwnershipKey(observed.evidence))
+      ? {...entry,reason:"unresolved"} : entry;
+  })};
+}
+
+/** Historical evidence can veto ownership across mount namespaces; it cannot
+ * authorize continuity or a filesystem effect. */
+export function reservationOwnsFolder(reservation:{durableEvidence?:string|null;nativeIdentity:string|null},observed:FolderObservation):boolean {
+  if(!observed.ok)return false;
+  if(reservation.durableEvidence) {
+    const saved=storedEvidence(reservation.durableEvidence);
+    return !saved || durableOwnershipKey(saved)===durableOwnershipKey(observed.evidence);
+  }
+  if(reservation.nativeIdentity===null)return false;
+  try {
+    const old=JSON.parse(reservation.nativeIdentity) as import("./discovery.js").NativeIdentity;
+    return !reliableIdentity(old) || old.ino===observed.mount.ino && old.birthtimeNs===observed.mount.birthtimeNs;
+  }catch{return true;}
+}

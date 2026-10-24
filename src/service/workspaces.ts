@@ -2,7 +2,7 @@ import {createFilesystemAuthorization} from "./filesystem-authorization.js";
 import { createWorkspacePublisher } from "./workspace-publication.js";
 import { createSourceAssociationService } from "./source-association.js";
 import { observeFolder, durableOwnershipKey } from "./folder-evidence.js";
-import { associationReason, rootOwnershipConflict, continuityRecords, discoveryIdentityState, sourceIdentity, storedEvidence, type EvidenceReader } from "./source-identity.js";
+import { reserveDurablePlacements, associationReason, rootOwnershipConflict, continuityRecords, discoveryIdentityState, sourceIdentity, storedEvidence, type EvidenceReader } from "./source-identity.js";
 import { createWorkspaceSessionService } from "./workspace-sessions.js";
 import { createProjectFilesService } from "./project-files.js";
 import type { SourceSettingsList } from "../contracts/workspaces.js";
@@ -244,7 +244,7 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
       publish([{ type: "workspace.projectsChanged", sourceId, revision, workspaceIds }]);
       observer.request(sourceId);
     },
-  }, projectFilesystem, projectRenameNative);
+  }, projectFilesystem, projectRenameNative, createFilesystemAuthorization(scope,readFolderEvidence,db));
   const categoryMove = createProjectCategoryMoveService(db, {
     invalidateSourceReviews,
     settled(sourceId) {
@@ -406,7 +406,7 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
           input.excludedRelativePaths.some((path) => !saved.includes(path) && !validExclusions([path], mode)))) return invalid("Choose valid source-relative exclusions.");
         const exclusions = Object.hasOwn(input, "excludedRelativePaths") ? input.excludedRelativePaths as string[] : saved;
         const exclusionProjection = projectExclusions(exclusions, mode);
-        const scan = (mode === "grouped" ? scanGroupedSource : scanDirectSource)(source.canonicalRoot, source.archiveRelativePath, exclusionProjection.effective);
+        const scan = reserveDurablePlacements(source,(mode === "grouped" ? scanGroupedSource : scanDirectSource)(source.canonicalRoot, source.archiveRelativePath, exclusionProjection.effective),readReservations(source.id),scope,readFolderEvidence);
         if (scan.snapshot && exclusions.some((name) => !saved.includes(name) &&
           !scan.entries.some((entry) => entry.relativePath === name && (entry.reason === null || entry.reason === "manual")))) {
           return invalid("Exclude only selectable folders in the current preview.");
@@ -472,7 +472,8 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
           JSON.stringify(token.reservations) !== JSON.stringify(readReservations(source.id))) return stale();
         if (hasUnfinishedProjectRelocation(db, source.id)) return stale();
         const mode = token.preview.mode;
-        const scanner = mode === "grouped" ? scanGroupedSource : scanDirectSource;
+        const scanMode = mode === "grouped" ? scanGroupedSource : scanDirectSource;
+        const scanner:typeof scanMode=(root,archive,exclusions)=>reserveDurablePlacements(source,scanMode(root,archive,exclusions),readReservations(source.id),scope,readFolderEvidence);
         const scan = scanner(source.canonicalRoot, source.archiveRelativePath, token.preview.effectiveExcludedRelativePaths);
         if (!scan.snapshot || JSON.stringify(scan.snapshot) !== JSON.stringify(token.snapshot) ||
           !reliableIdentity(scan.snapshot.root.identity) || JSON.stringify(scanEvidence(source, scan)) !== JSON.stringify(token.evidence)) return stale();
@@ -856,7 +857,8 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
       !Number.isSafeInteger(source.discoveryRevision) || source.discoveryRevision < 0 ||
       !Number.isSafeInteger(source.categoryPropertyRevision) || source.categoryPropertyRevision < 0 ||
       (mode !== null && mode !== "direct" && mode !== "grouped")) throw new Error("Invalid source configuration");
-    const currentScan = observedScan ?? (source.discoveryMode === "grouped" ? scanGroupedSource : scanDirectSource)(source.canonicalRoot, source.archiveRelativePath, projectExclusions(JSON.parse(source.excludedRelativePaths), mode === "grouped" ? "grouped" : "direct").effective);
+    const rawScan = observedScan ?? (source.discoveryMode === "grouped" ? scanGroupedSource : scanDirectSource)(source.canonicalRoot, source.archiveRelativePath, projectExclusions(JSON.parse(source.excludedRelativePaths), mode === "grouped" ? "grouped" : "direct").effective);
+    const currentScan=reserveDurablePlacements(source,rawScan,readReservations(source.id),scope,readFolderEvidence);
     const projects = readProjects(source.id);
     const categories = readCategories(source.id);
     const property = db.select().from(schema.categoryProperties).where(eq(schema.categoryProperties.sourceId, source.id)).get();
@@ -1015,9 +1017,9 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
     moveProjectCategory: terminalRetry("project_category_move_operations", categoryMove.moveProjectCategory),
     previewProjectCategoryMoveRecovery: blocked,
     recoverProjectCategoryMove: blocked,
-    renameProject: terminalRetry("project_rename_operations", rename.renameProject),
-    previewProjectRenameRecovery: blocked,
-    recoverProjectRename: blocked,
+    renameProject: rename.renameProject,
+    previewProjectRenameRecovery: rename.previewProjectRenameRecovery,
+    recoverProjectRename: rename.recoverProjectRename,
     listProjectFiles: blocked,
     projectFileCommand: blockedAsync,
     revealProject: blockedAsync,

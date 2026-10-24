@@ -1,7 +1,8 @@
+import {alteredSnapshot} from "./support/mutate-application-snapshot.mjs";
 import fs from 'node:fs';
 import {syncBuiltinESMExports} from 'node:module';
 import assert from 'node:assert/strict';
-import {createHash,randomUUID} from 'node:crypto';
+import {randomUUID} from 'node:crypto';
 import {mkdtempSync,mkdirSync,realpathSync,rmSync,readdirSync,renameSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
@@ -133,17 +134,6 @@ test('unrecorded creation review pins the full durable destination until Apply',
  },'direct',{reader,filesystem});
 });
 
-function alteredSnapshot(content,mutate) {
- const envelope=JSON.parse(content),image=Buffer.from(envelope.database,'base64');image[18]=1;image[19]=1;
- const db=new Database(image);
- try {
-  const triggers=db.prepare("SELECT name,sql FROM sqlite_schema WHERE type='trigger'").all();
-  for(const {name} of triggers)db.exec(`DROP TRIGGER "${name}"`);
-  mutate(db);
-  for(const {sql} of triggers)db.exec(sql);
-  const bytes=db.serialize();return JSON.stringify({...envelope,database:bytes.toString('base64'),checksum:createHash('sha256').update(bytes).digest('hex')});
- }finally{db.close();}
-}
 test('restore rejects malformed and contradictory creation authorization while retaining current projects',()=>fixture(f=>{
  const request={type:'workspace.createProject',mode:'direct',name:'Backed up',operationId:randomUUID(),expectedRevision:f.query({type:'workspace.listProjects'}).value.revision};
  const created=f.command(request);assert.equal(created.value.outcome,'completed');
@@ -228,3 +218,70 @@ test('Windows command adapter does not open a descendant through native realpath
   assert.equal(nativeProjectFilesystem.realpath(child),child);assert.equal(childOpens,0);
  }finally{fs.realpathSync=original;syncBuiltinESMExports();Object.defineProperty(process,'platform',platform);rmSync(directory,{recursive:true,force:true});}
 });
+
+test('discovery cannot enroll a pending durable creation moved outside its reserved path after remount',()=>{
+ let device=null;
+ const reader=(path,scope)=>{const value=observeFolder(path,scope);return value.ok && device?{...value,mount:{...value.mount,dev:device}}:value;};
+ const filesystem={...nativeProjectFilesystem,inspect(path){const value=nativeProjectFilesystem.inspect(path);return device?{...value,identity:{...value.identity,dev:device}}:value;}};
+ fixture(f=>{
+  const revision=f.query({type:'workspace.listProjects'}).value.revision;device='222';
+  f.sql.exec("CREATE TRIGGER interrupt_creation BEFORE INSERT ON projects BEGIN SELECT RAISE(ABORT,'interrupted'); END");
+  const request={type:'workspace.createProject',operationId:randomUUID(),name:'Pending',mode:'direct',expectedRevision:revision};
+  assert.equal(f.command(request).value.outcome,'recoverable');f.sql.exec('DROP TRIGGER interrupt_creation');
+  device=null;renameSync(join(f.root,'Pending'),join(f.root,'External'));f.restart();
+  const preview=f.query({type:'workspace.previewDiscovery'});assert.equal(preview.ok,true,JSON.stringify(preview));
+  assert.equal(preview.value.entries.find(row=>row.relativePath==='External').reason,'unresolved');
+  assert.equal(preview.value.projectEffects.added.length,0);
+  assert.equal(f.command({type:'workspace.applyDiscovery',previewToken:preview.value.previewToken}).ok,true);
+  assert.equal(f.query({type:'workspace.listProjects'}).value.projects.length,0);
+  assert.equal(f.query({type:'workspace.listProjectCreations'}).value.operations[0].operationId,request.operationId);
+ },'direct',{reader,filesystem});
+});
+
+test('grouped legacy creation can attest exact parents without bypassing generic reserved-parent enrollment',()=>fixture(f=>{
+ const source=f.sql.prepare('SELECT * FROM sources').get(),category=f.sql.prepare('SELECT * FROM categories').get(),operationId=randomUUID();
+ f.sql.prepare(`INSERT INTO project_creation_operations (operation_id,source_id,initiating_workspace_id,project_id,name,mode,expected_revision,category_id,canonical_root,parent_relative_path,relative_path,root_identity,parent_identity,excluded_relative_paths,archive_relative_path,stage) VALUES (?,?,?,?,?,'grouped',?,?,?,'Category','Category/Legacy',?,?,?,?,'intent')`)
+  .run(operationId,source.id,f.workspaceId,randomUUID(),'Legacy',source.discovery_revision,category.id,f.root,source.applied_root_identity,category.native_identity,source.excluded_relative_paths,source.archive_relative_path);
+ f.sql.exec('UPDATE sources SET durable_evidence=NULL; UPDATE categories SET durable_evidence=NULL');f.restart();
+ const root=f.query({type:'workspace.previewSourceAssociation',mappings:[]}).value;assert.ok(root.previewToken);
+ assert.equal(f.command({type:'workspace.applySourceAssociation',previewToken:root.previewToken}).ok,true);
+ const mapping={kind:'category',id:category.id,relativePath:'Category'};
+ assert.equal(f.query({type:'workspace.previewSourceAssociation',mappings:[mapping]}).value.previewToken,null);
+ const preview=f.query({type:'workspace.previewProjectCreationRecovery',operationId});assert.equal(preview.ok,true);assert.deepEqual(preview.value.actions,['retry_missing']);
+ const result=f.command({type:'workspace.recoverProjectCreation',operationId,action:'retry_missing',previewToken:preview.value.previewToken});
+ assert.equal(result.ok,true,JSON.stringify(result));assert.equal(result.value.outcome,'completed');
+ assert.equal(f.sql.prepare('SELECT durable_evidence FROM categories').get().durable_evidence,null,'Per-operation parent consent must not enroll its other children');
+ const binding=f.query({type:'workspace.previewSourceAssociation',mappings:[mapping]}).value;assert.ok(binding.previewToken,JSON.stringify(binding));
+ assert.equal(f.command({type:'workspace.applySourceAssociation',previewToken:binding.previewToken}).ok,true);
+ assert.equal(f.query({type:'workspace.listProjects'}).value.projects[0].projectId,result.value.project.projectId);
+},'grouped'));
+
+test('unprovable legacy native evidence still vetoes enrollment outside the recorded path',()=>fixture(f=>{
+ const source=f.sql.prepare('SELECT * FROM sources').get(),operationId=randomUUID();mkdirSync(join(f.root,'Legacy'));
+ const native={...nativeProjectFilesystem.inspect(join(f.root,'Legacy')).identity,dev:'222'};
+ f.sql.prepare(`INSERT INTO project_creation_operations (operation_id,source_id,initiating_workspace_id,project_id,name,mode,expected_revision,canonical_root,parent_relative_path,relative_path,root_identity,parent_identity,excluded_relative_paths,archive_relative_path,stage) VALUES (?,?,?,?,'Legacy','direct',?,?,'','Legacy',?,?,?,?,'intent')`)
+  .run(operationId,source.id,f.workspaceId,randomUUID(),source.discovery_revision,f.root,source.applied_root_identity,source.applied_root_identity,source.excluded_relative_paths,source.archive_relative_path);
+ f.sql.prepare("UPDATE project_creation_operations SET stage='evidence_recorded',native_identity=? WHERE operation_id=?").run(JSON.stringify(native),operationId);
+ renameSync(join(f.root,'Legacy'),join(f.root,'External'));f.restart();
+ const preview=f.query({type:'workspace.previewDiscovery'});assert.equal(preview.ok,true);
+ assert.equal(preview.value.entries.find(row=>row.relativePath==='External').reason,'unresolved');
+ assert.equal(preview.value.projectEffects.added.length,0);
+ assert.equal(f.command({type:'workspace.applyDiscovery',previewToken:preview.value.previewToken}).ok,true);
+ assert.equal(f.query({type:'workspace.listProjectCreations'}).value.operations[0].operationId,operationId);
+ assert.equal(f.query({type:'workspace.listProjects'}).value.projects.length,0);
+}));
+
+test('root reassociation cannot adopt a physical folder reserved by its own interrupted operation',()=>fixture(f=>{
+ const source=f.sql.prepare('SELECT * FROM sources').get(),operationId=randomUUID();mkdirSync(join(f.root,'Legacy'));
+ const native=JSON.stringify(nativeProjectFilesystem.inspect(join(f.root,'Legacy')).identity);
+ f.sql.prepare(`INSERT INTO project_creation_operations (operation_id,source_id,initiating_workspace_id,project_id,name,mode,expected_revision,canonical_root,parent_relative_path,relative_path,root_identity,parent_identity,excluded_relative_paths,archive_relative_path,stage) VALUES (?,?,?,?,'Legacy','direct',?,?,'','Legacy',?,?,?,?,'intent')`)
+  .run(operationId,source.id,f.workspaceId,randomUUID(),source.discovery_revision,f.root,source.applied_root_identity,source.applied_root_identity,source.excluded_relative_paths,source.archive_relative_path);
+ f.sql.prepare("UPDATE project_creation_operations SET stage='evidence_recorded',native_identity=? WHERE operation_id=?").run(native,operationId);
+ f.sql.exec('UPDATE sources SET durable_evidence=NULL');
+ const oldRoot=join(f.root,'..','Held root');renameSync(f.root,oldRoot);renameSync(join(oldRoot,'Legacy'),f.root);f.restart();
+ const before=f.sql.prepare('SELECT * FROM project_creation_operations').get();
+ const preview=f.query({type:'workspace.previewSourceAssociation',mappings:[]});assert.equal(preview.ok,true);
+ assert.equal(preview.value.previewToken,null);assert.equal(preview.value.reason,'unsafe');
+ assert.deepEqual(f.sql.prepare('SELECT * FROM project_creation_operations').get(),before);
+ assert.equal(f.sql.prepare('SELECT durable_evidence FROM sources').get().durable_evidence,null);
+}));

@@ -1,3 +1,4 @@
+import {validateEvidence} from "./folder-evidence.js";
 import { asc, eq } from "drizzle-orm";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import * as schema from "./db/schema.js";
@@ -33,7 +34,23 @@ export function readProjectReservations(db: Reader, sourceId: string) {
   const creations = db.select().from(schema.projectCreationOperations).where(eq(schema.projectCreationOperations.sourceId, sourceId))
     .orderBy(asc(schema.projectCreationOperations.operationId)).all().filter((row) => row.stage !== "completed" && row.stage !== "failed")
     .map((row) => ({ ...row, operationKind: "creation" as const }));
-  const relocations = readProjectRelocationReservations(db, sourceId).flatMap((row) =>
+  function evidence(value:string|null):string|null {
+    if(value===null)return null;
+    const observed=JSON.parse(value);
+    if(observed?.ok!==true || !validateEvidence(observed.evidence))throw new Error("Invalid reserved durable evidence");
+    return JSON.stringify(observed.evidence);
+  }
+  const creationProofs=db.select().from(schema.projectCreationAttestations).all();
+  const renameProofs=db.select().from(schema.projectRenameAttestations).all();
+  const durableCreations=creations.flatMap(row=>{
+    const proofs=[row.destinationEvidence,...creationProofs.filter(proof=>proof.operationId===row.operationId).map(proof=>proof.destinationEvidence)].filter((proof):proof is string=>proof!==null);
+    return (proofs.length ? proofs : [null]).map(proof=>({...row,durableEvidence:evidence(proof)}));
+  });
+  const relocations = readProjectRelocationReservations(db, sourceId).flatMap<ReturnType<typeof readProjectRelocationReservations>[number] & {durableEvidence:string|null}>(row=>{
+    if(row.operationKind!=="rename")return [{...row,durableEvidence:null as string|null}];
+    const proofs=[row.projectEvidence,...renameProofs.filter(proof=>proof.operationId===row.operationId).map(proof=>proof.projectEvidence)].filter((proof):proof is string=>proof!==null);
+    return (proofs.length ? proofs : [null]).map(proof=>({...row,durableEvidence:evidence(proof)}));
+  }).flatMap((row) =>
     [...new Set([row.originalRelativePath, row.requestedRelativePath, ...(row.operationKind === "rename" ? [row.stagingRelativePath] : [])])]
       .filter((relativePath): relativePath is string => relativePath !== null)
       .map((relativePath) => ({ ...row, relativePath })));
@@ -46,7 +63,7 @@ export function readProjectReservations(db: Reader, sourceId: string) {
       ...binding.members.flatMap(p => [p.relativePath, `${row.requestedRelativePath}/${p.relativePath.split("/").at(-1)}`].map(relativePath =>
         ({ ...row, operationKind: "category_removal" as const, projectId: p.id, relativePath, nativeIdentity: p.nativeIdentity })))];
   });
-  return [...creations, ...relocations, ...categoryFolders, ...removals];
+  return [...durableCreations, ...relocations, ...categoryFolders.map(row=>({...row,durableEvidence:null as string|null})), ...removals.map(row=>({...row,durableEvidence:null as string|null}))];
 }
 
 export function readCategoryFolderReservations(db: Reader, sourceId: string) {

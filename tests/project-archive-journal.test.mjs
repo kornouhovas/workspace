@@ -56,7 +56,7 @@ test("0012 upgrade preserves populated project identity, exact Text, source/work
       const inspected = new Database(oldPath);
       try {
         for (const [table, rows] of Object.entries(snapshot)) assert.deepEqual(inspected.prepare(`SELECT * FROM ${table} ORDER BY 1`).all(), rows, table);
-        assert.equal(inspected.prepare("SELECT count(*) AS count FROM __drizzle_migrations").get().count, 26);
+        assert.equal(inspected.prepare("SELECT count(*) AS count FROM __drizzle_migrations").get().count, 27);
         assert.deepEqual(inspected.pragma("foreign_key_check"), []);
       } finally { inspected.close(); }
     }
