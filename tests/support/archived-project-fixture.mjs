@@ -8,10 +8,10 @@ export function archiveProjectFixture(databasePath,workspaceId,projectId,relativ
  const fixture=openUnconvertedEngineFixture(databasePath,undefined,undefined,quiet),engine=fixture.engines;
  const unwrap=result=>{assert.equal(result.ok,true,JSON.stringify(result));return result.value;};
  try{
-  const denied=fixture.application.handleQuery({type:'workspace.previewArchiveLocation',workspaceId,relativePath});
+  const denied=fixture.application.handleQuery({type:'workspace.previewProjectArchive',workspaceId,projectId,action:'archive',name:null,createParent:false});
   assert.equal(denied.ok,false);assert.equal(denied.error.code,'identity_update_required');
-  const location=unwrap(engine.handleQuery({type:'workspace.previewArchiveLocation',workspaceId,relativePath}));
-  unwrap(engine.handleCommand({type:'workspace.applyArchiveLocation',workspaceId,operationId:randomUUID(),previewToken:location.previewToken}));
+  const location=unwrap(fixture.application.handleQuery({type:'workspace.previewArchiveLocation',workspaceId,relativePath}));
+  unwrap(fixture.application.handleCommand({type:'workspace.applyArchiveLocation',workspaceId,operationId:randomUUID(),previewToken:location.previewToken}));
   const preview=unwrap(engine.handleQuery({type:'workspace.previewProjectArchive',workspaceId,projectId,action:'archive',name:null,createParent:false}));
   const result=unwrap(engine.handleCommand({type:'workspace.applyProjectArchive',workspaceId,operationId:randomUUID(),previewToken:preview.previewToken}));
   assert.equal(result.operation.stage,'completed');return result;

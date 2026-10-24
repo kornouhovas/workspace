@@ -247,3 +247,42 @@ cases); fresh build/typecheck/lint and diff check passed. This narrowly renews t
 affected source boundary after the806-test migration receipt; no schema, migration,
 backup format or build configuration changed in that final repair. Final whole-
 issue verification remains outstanding.
+
+### Fifth slice: archive location designation
+
+Production archive-location review/Apply now acquire a fresh durable/current root
+snapshot and full proofs for every existing component. Missing components remain
+missing; designation creates no folder or project. Scope/volume/mount changes,
+duplicate physical proofs, retained owners and saved roots veto adoption. Tokens
+bind source generation, policy, associations, reservations and observed components;
+Apply reinspects after its SQL write and rolls back on change, without a success
+event. Property-only edits retain their independent revision semantics.
+
+Saved source locators supply a separate ownership veto even for unconfigured
+legacy roots with NULL evidence. Conservative case/Unicode alias keys retain
+component boundaries without rewriting canonical/authored paths. Proper ancestor
+sources permit their already-selected nested source to designate its own archive;
+entering a peer subtree, containing a peer root, or aliasing the selected root
+remains blocked. Exact/descendant legacy roots, missing aliases, ancestor
+availability and alias-equality controls went red before the corresponding
+review repairs. Locator similarity is never continuity authorization.
+
+Coverage decisions: remove only location designation from the remaining blanket
+backend gate checks; archive/restore effects and recovery stay gated. Retain the
+legacy archive engine suites and renew production designation controls. New public
+set15/15 covers stored root-device changes, full component substitutions, root
+verification, duplicate proofs, independent metadata, source ownership and
+post-write rollback. Fresh build/typecheck/lint and the affected archive/journal/
+source/observer set137/137 passed; diff check passes. Standards/Spec narrow repair
+follow-ups found no remaining concrete issue in inspected fixes. Migration
+selection now includes these public legacy-root controls; its renewal follows.
+This is a local intermediate milestone, not archive-effects or platform acceptance.
+
+Final location-slice migration renewal:822 tests,821 passed, one existing skip,
+zero failures/cancellations; docs217 and diff check passed. The initial822-test
+run had9 failures from one obsolete location-denial assertion in the shared
+historical archived-project fixture. That fixture now performs designation through
+the production API, asserts the still-gated archive-effect boundary, and retains
+its explicit legacy archive/restore engine arrangement. All9 affected metadata,
+ordering/grouping/filter/session scenarios passed on renewal; no skip/retirement.
+The same run renews the preceding same-scan project-recovery root-proof repair.

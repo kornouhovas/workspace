@@ -228,7 +228,7 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
       publish([{ type: "workspace.projectsChanged", sourceId, revision, workspaceIds }]);
       observer.request(sourceId);
     },
-  }, projectFilesystem);
+  }, projectFilesystem, createFilesystemAuthorization(scope,readFolderEvidence,db));
   const creation = createProjectCreationService(db, {
     invalidateSourceReviews,
     committed(sourceId, revision, workspaceIds) {
@@ -1004,8 +1004,8 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
     applyProjectArchive: terminalRetry("project_archive_operations", archiveMutations.applyProjectArchive),
     previewProjectArchiveRecovery: blocked,
     recoverProjectArchive: blocked,
-    previewArchiveLocation: blocked,
-    applyArchiveLocation: blocked,
+    previewArchiveLocation: archive.previewArchiveLocation,
+    applyArchiveLocation: archive.applyArchiveLocation,
     previewCategoryRemovalRecovery: blocked,
     recoverCategoryRemoval: blocked,
     applyCategoryRemoval: terminalRetry("category_removal_operations", categoryRemoval.applyCategoryRemoval),
