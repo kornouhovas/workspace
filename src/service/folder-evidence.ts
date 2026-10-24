@@ -1,5 +1,5 @@
 import { createRequire } from "node:module";
-import { dirname, join } from "node:path";
+import { dirname, join, toNamespacedPath } from "node:path";
 import { fileURLToPath } from "node:url";
 import { lstatSync, realpathSync } from "node:fs";
 
@@ -52,7 +52,10 @@ export function observeFolder(path: string, scope: string): FolderObservation {
       try { native = requireNative(join(root, process.versions.electron ? "native/project-rename.node" : "../service-test-native/project-rename.node")); }
       catch { return {ok: false, reason: "unsupported"}; }
     }
-    const raw = native!.observeFolder(path);
+    // Node fs uses long-path namespacing internally; raw Win32 calls do not.
+    // Keep the canonical locator for validation/storage and qualify only this
+    // private syscall operand, including long Unicode descendants.
+    const raw = native!.observeFolder(process.platform === "win32" ? toNamespacedPath(path) : path);
     if (typeof raw === "string") return {ok: false, reason: reasons.has(raw as EvidenceFailure) ? raw as EvidenceFailure : "missing_attributes"};
     const evidence = { ...(raw as object), version: 1, scope, provider: process.platform === "darwin" ? "apfs" : "ntfs" };
     if (!validateEvidence(evidence)) return {ok: false, reason: "missing_attributes"};

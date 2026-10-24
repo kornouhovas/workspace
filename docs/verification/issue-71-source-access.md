@@ -174,3 +174,24 @@ Application/migrations/native/build/dependency/package inputs are unchanged by
 this fixture/diagnostic-route repair. Retain passing original macOS and unrelated
 Windows cases at their actual81a3381d provenance under CI evidence reuse. Renew
 failed Windows families and every missing dev/package journey before acceptance.
+
+
+Focused run40092057085/1 atf1ca8c9d confirmed the seven native-canonical fixture
+repairs on both Windows hosts:83 passed,26 failed,1 existing skip. Run40092344125/1
+atb462d986 added the actual long-Unicode native evidence control. Both hosts
+returned `disconnected` for an existing descendant, while Node's canonical lstat
+succeeded; totals83 passed/27 failed/1 skip in111 tests. Finite command traces
+identified `workspace.applyDiscovery` / `invalid_input` for the diagnostic setup.
+The remaining diagnostic scenarios did not reach their external rename yet.
+
+The private evidence adapter now converts only the Windows native syscall operand
+with Node's `toNamespacedPath`. Canonical locators, before/after stat/realpath
+checks, durable tuples, containment, reparse rejection and storage are unchanged.
+A long-junction negative control accompanies the regression. This removes reliance
+on host long-path policy for raw Win32 calls; [Microsoft's path documentation](https://learn.microsoft.com/en-us/windows/win32/fileio/maximum-file-path-limitation)
+describes the extended namespace. Actual Windows green evidence remains required;
+no individual failing Win32 API is asserted from a coarse failure code.
+
+This is an application adapter change, so successful focused Windows evidence
+must precede renewed full acceptance on the repaired candidate. Temporary setup
+traces remain diagnostic and must be removed before that full candidate.

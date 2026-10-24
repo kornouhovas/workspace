@@ -56,5 +56,7 @@ test('native evidence supports long Unicode category and project descendants on 
   const observed=[root,category,project].map(path=>observeFolder(path,'installation-test'));
   for(const item of observed)assert.equal(item.ok,true,JSON.stringify(item));
   for(const item of observed.slice(1)){assert.equal(item.evidence.volume,observed[0].evidence.volume);assert.equal(item.evidence.serial,observed[0].evidence.serial);}
+  const alias=join(category,'Alias');symlinkSync(project,alias,process.platform==='win32'?'junction':'dir');
+  assert.equal(observeFolder(alias,'installation-test').ok,false,'Long-path support never authorizes a link');
  }finally{rmSync(root,{recursive:true,force:true});}
 });
