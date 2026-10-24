@@ -47,3 +47,14 @@ test('NTFS GUID casing cannot conceal duplicate root ownership and different GUI
  assert.equal(rootOwnershipConflict(observed,[peer],evidence.scope,()=>({ok:false,reason:'disconnected'})),true);
  assert.equal(rootOwnershipConflict(observed,[{...peer,durableEvidence:JSON.stringify({...evidence,volume:volume.replace('aaaaaaaa','ffffffff')})}],evidence.scope,()=>({ok:false,reason:'disconnected'})),false);
 });
+
+test('native evidence supports long Unicode category and project descendants on the same volume',()=>{
+ const root=realpathSync.native(mkdtempSync(join(tmpdir(),'workspace-long-evidence-')));
+ try{
+  const category=join(root,'Категория-'+'long-category-'.repeat(14));
+  const project=join(category,'日本語-проект-'+'long-project-'.repeat(14));mkdirSync(project,{recursive:true});
+  const observed=[root,category,project].map(path=>observeFolder(path,'installation-test'));
+  for(const item of observed)assert.equal(item.ok,true,JSON.stringify(item));
+  for(const item of observed.slice(1)){assert.equal(item.evidence.volume,observed[0].evidence.volume);assert.equal(item.evidence.serial,observed[0].evidence.serial);}
+ }finally{rmSync(root,{recursive:true,force:true});}
+});
