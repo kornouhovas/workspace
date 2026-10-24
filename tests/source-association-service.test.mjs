@@ -196,7 +196,7 @@ test('every unconverted direct service and native entry point fails closed witho
  // Keep the fixture synchronous: all gated functions reject synchronously before any native dispatch.
  fixture(f=>{
   discover(f);
-  const names=['previewProjectArchiveRecovery','recoverProjectArchive',
+  const names=[
 
    'listProjectFiles',
    ];

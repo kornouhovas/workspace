@@ -494,3 +494,51 @@ Ninth-slice renewal: `test:migrations`925 checks:924 pass,one existing skip,
 zero failures/cancellations on frozen source. Archive/contextual UI35/35 pass;
 lint, local Markdown links217 and diff checks pass. Build/typechecking passed on
 the unchanged service source. No new skips were introduced.
+
+### Tenth slice: scoped archive/restore recovery
+
+For already sufficient same-scope journals, production explicit recovery now
+renews root/project/all recorded parent observations into a private current mount
+frame, preserving immutable original Binding/native/parent bytes. A single-use
+review pins that frame, current configuration, generation/revision, reservations
+and attestation history. Apply reinspects inside an immediate transaction and
+stores a separate append-only attestation before any retry effect. Original
+Apply/status/startup remain read-only. A verified destination after an uncertain
+native response completes metadata without another rename. Missing planned
+parents may be created exclusively on explicit retry; previously recorded parent
+proofs are never rewritten. Lost scope/root-only binding cannot renew authority.
+
+Keep original proves the actual original and commits its attestation plus
+reservation release together. Post-SQL full placement/policy checks roll back
+both on late relocation. Unrecorded parent creation and a separately occupied
+final destination can still offer Keep original without adopting, overwriting or
+deleting those unrelated objects. Unknown stored sidecars cannot be ignored by
+later review. Shared sidecar parsing validates immutable request/journal roles,
+full identity continuity, parent history and generation bounds on backup restore.
+
+Read-only interim Spec review found independent-property fingerprint invalidation
+and an occupied-destination availability regression. Public red/green tests now
+normalize only independent property counters and obtain project authority from
+exactly one full match, leaving other placements without authority. Follow-up
+found no residual defect in those repairs. Standards review found no concrete
+scoped authority/transaction/protocol defect. Legacy exact-tuple recovery and
+archived-record designated binding remain explicitly outstanding; their missing
+full authority cannot select a legacy fallback in the scoped implementation.
+
+New public checks cover modeled between-run mount renewal, no native replay,
+Keep-original late-write rollback, unknown/contradictory sidecar restore and
+runtime refusal, stale recovery mount, unrecorded parent retention, property
+independence, occupied final destination, direct/grouped restore settlement,
+retry with exclusive parent creation, and lost scope after root-only binding.
+Six production subprocess exits exercise intent, mkdir effect, rename effect,
+destination recording, uncommitted completion and committed receipt. The
+uncommitted-completion fixture exits after terminal SQL on the actual service
+connection; a separate SQLite reader cannot see an uncommitted terminal row.
+Compiled production IPC accepts IDs/token only, rejects proof injection/replay,
+and exposes no private proof. Historical archive engine scenarios remain intact.
+
+Observed Node22.21.1/macOS arm64: fresh build/typecheck/lint/diff pass; affected
+service/metadata/legacy/crash/UI/compiled-IPC set161/161 passes. No migration SQL or
+schema changed since the verified ninth slice. Full-suite and supported-platform
+acceptance remain unexecuted. Next: legacy archive recovery and designated
+archived binding; native Reveal/files; final review/full/platform/CI gates.

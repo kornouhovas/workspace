@@ -1,3 +1,4 @@
+import {isDeepStrictEqual} from "node:util";
 import {parseFilesystemAuthorization,parseFolderObservation,type FilesystemAuthorization,type VerifiedFolder} from "./filesystem-authorization.js";
 import {sameVolumeEvidence} from "./source-identity.js";
 import {sameDurableFolder,durableOwnershipKey} from "./folder-evidence.js";
@@ -111,5 +112,37 @@ export function parseArchiveBindingAuthorization(binding:ArchiveBindingSnapshot,
    if(binding.mode==='grouped' && (!binding.category || !sameDurableFolder(JSON.parse(binding.category.durableEvidence!),auth.originalParent.evidence)))return null;
   }
   return auth;
+ }catch{return null;}
+}
+
+/** A renewal retains every logical/path role and full identity from its journal. */
+export function archiveRenewalMatches(original:ArchiveBindingSnapshot,current:ArchiveBindingSnapshot,parents:ArchiveParent[],recorded:ArchiveParent[]):boolean {
+ try {
+  const before=parseArchiveBindingAuthorization(original),after=parseArchiveBindingAuthorization(current);
+  if(!before || !after || after.root.generation<before.root.generation || current.source.discoveryRevision<original.source.discoveryRevision ||
+   !sameDurableFolder(before.root.root.evidence,after.root.root.evidence) || !sameDurableFolder(before.project.evidence,after.project.evidence) ||
+   !sameDurableFolder(before.originalParent.evidence,after.originalParent.evidence))return false;
+  const policy=(source:ArchiveBindingSnapshot['source'])=>({...source,discoveryRevision:0,evidenceGeneration:0,propertyRevision:0,categoryPropertyRevision:0,appliedRootIdentity:null});
+  if(!isDeepStrictEqual(policy(original.source),policy(current.source)) ||
+   ['project','archive','category','mode','createParent','categoryName'].some(field=>!isDeepStrictEqual(original[field as keyof ArchiveBindingSnapshot],current[field as keyof ArchiveBindingSnapshot])))return false;
+  const sameRoles=(old:ArchiveParent[],fresh:ArchiveParent[])=>old.length===fresh.length && old.every((parent,index)=>{
+   const next=fresh[index];return parent.path===next.path && (parent.identity===null ? next.identity===null : !!parent.observation&&!!next.observation&&sameDurableFolder(parent.observation.evidence,next.observation.evidence));
+  });
+  return !!parseArchiveParents(parents,true) && !!parseArchiveParents(recorded,true) &&
+   sameRoles(original.sourceParents,current.sourceParents) && sameRoles(original.destinationParents,current.destinationParents) && sameRoles(recorded,parents) && uniqueArchiveProofs(after,[current.sourceParents,parents]);
+ }catch{return false;}
+}
+
+/** Sidecars carry renewed observations, never a rewritten original request. */
+export function parseArchiveAttestation(proof:Pick<typeof import('./db/schema.js').projectArchiveAttestations.$inferSelect,'journal'|'binding'|'parents'>,
+ row:typeof import('./db/schema.js').projectArchiveOperations.$inferSelect):{binding:ArchiveBindingSnapshot;parents:ArchiveParent[]}|null {
+ try {
+  const journal=JSON.parse(proof.journal),binding=JSON.parse(proof.binding),parents=parseArchiveParents(JSON.parse(proof.parents),true);
+  const fields=['operationId','sourceId','workspaceId','projectId','action','originalRelativePath','requestedRelativePath','nativeIdentity','binding','previewToken'] as const;
+  const recorded=parseArchiveParents(JSON.parse(journal.parents),true),current=parseArchiveParents(JSON.parse(row.parents),true);
+  if(!['intent','destination_recorded'].includes(journal.stage) || fields.some(field=>!Object.hasOwn(journal,field)||journal[field]!==row[field]) ||
+   !parseArchiveBindingAuthorization(binding,row) || !parents || !recorded || !current || !archiveParentPathsMatch(parents,row.requestedRelativePath) ||
+   !archiveRenewalMatches(JSON.parse(row.binding),binding,parents,recorded) || recorded.some((parent,index)=>parent.identity!==null&&!isDeepStrictEqual(parent,current[index])))return null;
+  return {binding,parents};
  }catch{return null;}
 }

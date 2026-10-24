@@ -992,8 +992,8 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
   Object.assign(service, {
     previewProjectArchive: archiveMutations.previewProjectArchive,
     applyProjectArchive: archiveMutations.applyProjectArchive,
-    previewProjectArchiveRecovery: blocked,
-    recoverProjectArchive: blocked,
+    previewProjectArchiveRecovery: archiveMutations.previewProjectArchiveRecovery,
+    recoverProjectArchive: archiveMutations.recoverProjectArchive,
     previewArchiveLocation: archive.previewArchiveLocation,
     applyArchiveLocation: archive.applyArchiveLocation,
     previewCategoryRemovalRecovery: categoryRemoval.previewCategoryRemovalRecovery,

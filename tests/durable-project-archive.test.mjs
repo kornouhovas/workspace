@@ -1,3 +1,7 @@
+import {EventEmitter} from "node:events";
+import {startServiceProcess} from "../dist/service/entry.cjs";
+import {spawnSync} from "node:child_process";
+import {nativeProjectFilesystem} from "../src/service/project-filesystem.ts";
 import {alteredSnapshot} from "./support/mutate-application-snapshot.mjs";
 import fs from "node:fs";
 import {syncBuiltinESMExports} from "node:module";
@@ -162,3 +166,154 @@ for(const field of ['volume','created','scope'])test(`fresh archive refuses chan
   assert.equal(existsSync(join(f.root,'Cold')),false);assert.equal(readFileSync(join(f.root,'Project/sentinel'),'utf8'),'exact contents');
  },{reader});
 });
+
+test('explicit archive recovery renews a between-run mount and completes a lost native response without replay',()=>{
+ let calls=0;fixture(f=>{
+  const preview=f.review('archive').value,request={type:'workspace.applyProjectArchive',operationId:randomUUID(),previewToken:preview.previewToken};
+  const result=f.command(request);assert.equal(result.value.operation.stage,'intent');assert.equal(calls,1);
+  const before=f.sql.prepare('SELECT binding,native_identity,parents FROM project_archive_operations').get();f.restart();assert.deepEqual(f.command(request),result);assert.equal(calls,1);
+  const lstat=fs.lstatSync;
+  try {
+   fs.lstatSync=(path,...options)=>{const stat=lstat(path,...options);if(typeof stat.dev==='bigint')stat.dev=777n;return stat;};syncBuiltinESMExports();
+   const review=f.query({type:'workspace.previewProjectArchiveRecovery',operationId:request.operationId});assert.equal(review.ok,true,JSON.stringify(review));assert.deepEqual(review.value.actions,['complete_destination']);assert.ok(review.value.previewToken);
+   const recovered=f.command({type:'workspace.recoverProjectArchive',operationId:request.operationId,previewToken:review.value.previewToken,action:'complete_destination'});
+   assert.equal(recovered.value.operation.stage,'completed',JSON.stringify(recovered));assert.equal(calls,1);
+  }finally{fs.lstatSync=lstat;syncBuiltinESMExports();}
+  assert.deepEqual(f.sql.prepare('SELECT binding,native_identity,parents FROM project_archive_operations').get(),before);
+  assert.equal(f.sql.prepare('SELECT count(*) n FROM project_archive_attestations').get().n,1);assert.equal(readFileSync(join(f.root,'Cold/Archive/Project/sentinel'),'utf8'),'exact contents');
+  assert.equal(f.query({type:'workspace.listTextProperties'}).value.values[0].value,'exact metadata');
+ },{native(from,to){calls++;assert.equal(renameNoReplace(from,to),'renamed');throw new Error('lost native response');}});
+});
+
+test('Keep original rolls back its attestation and reservation release when the project moves after terminal SQL',()=>{
+ fixture(f=>{
+  const result=f.apply(f.review('archive').value),operationId=result.value.operation.operationId;assert.equal(result.value.operation.stage,'intent');
+  const review=f.query({type:'workspace.previewProjectArchiveRecovery',operationId});assert.equal(review.ok,true,JSON.stringify(review));assert.ok(review.value.actions.includes('keep_original'));
+  const prepare=Database.prototype.prepare;let changed=false;
+  Database.prototype.prepare=function(sql,...args){const statement=prepare.call(this,sql,...args);
+   if(sql.trimStart().toLowerCase().startsWith('update "project_archive_operations"')){const run=statement.run;statement.run=function(...values){const result=run.apply(this,values);if(values.flat().includes('failed')){changed=true;fs.renameSync(join(f.root,'Project'),join(f.root,'Aside'));}return result;};}return statement;};
+  try{f.command({type:'workspace.recoverProjectArchive',operationId,previewToken:review.value.previewToken,action:'keep_original'});}finally{Database.prototype.prepare=prepare;}
+  assert.equal(changed,true);assert.equal(f.sql.prepare('SELECT stage FROM project_archive_operations').get().stage,'intent');
+  assert.equal(f.sql.prepare('SELECT count(*) n FROM project_archive_attestations').get().n,0);assert.equal(readFileSync(join(f.root,'Aside/sentinel'),'utf8'),'exact contents');
+  assert.equal(f.query({type:'workspace.listProjectArchiveOperations'}).value.operations.length,1);
+ },{native(){return 'occupied';}});
+});
+
+test('archive recovery backups reject forged attestation authority while retaining matching history',()=>fixture(f=>{
+ const result=f.apply(f.review('archive').value),operationId=result.value.operation.operationId;assert.equal(result.value.operation.stage,'intent');
+ const review=f.query({type:'workspace.previewProjectArchiveRecovery',operationId}).value;
+ assert.equal(f.command({type:'workspace.recoverProjectArchive',operationId,previewToken:review.previewToken,action:'complete_destination'}).value.operation.stage,'completed');
+ const exported=f.send({type:'data.export'});assert.equal(exported.ok,true,JSON.stringify(exported));
+ for(const mutate of [
+  db=>db.exec("UPDATE project_archive_attestations SET binding=json_set(binding,'$.authorization.version',2)"),
+  db=>db.exec("UPDATE project_archive_attestations SET binding=json_set(binding,'$.authorization.project.evidence.created','999999999999')"),
+  db=>db.exec("UPDATE project_archive_attestations SET journal=json_set(journal,'$.projectId','00000000-0000-4000-8000-000000000001')"),
+  db=>db.exec("UPDATE project_archive_attestations SET parents=json_set(parents,'$[0].path','Other')"),
+ ])assert.equal(f.send({type:'data.restore',content:alteredSnapshot(exported.value.content,mutate)}).ok,false);
+ assert.equal(f.send({type:'data.restore',content:exported.value.content}).ok,true);assert.equal(readFileSync(join(f.root,'Cold/Archive/Project/sentinel'),'utf8'),'exact contents');
+},{native(from,to){assert.equal(renameNoReplace(from,to),'renamed');throw new Error('lost response');}}));
+
+
+test('recovery can keep the verified original without adopting an unrecorded archive parent',()=>fixture(f=>{
+ const result=f.apply(f.review('archive').value),operationId=result.value.operation.operationId;assert.equal(result.value.operation.stage,'intent');
+ assert.equal(JSON.parse(f.sql.prepare('SELECT parents FROM project_archive_operations').get().parents)[0].identity,null);
+ writeFileSync(join(f.root,'Cold','late'),'unrelated bytes');
+ const review=f.query({type:'workspace.previewProjectArchiveRecovery',operationId});assert.equal(review.ok,true,JSON.stringify(review));assert.deepEqual(review.value.actions,['keep_original']);
+ const kept=f.command({type:'workspace.recoverProjectArchive',operationId,previewToken:review.value.previewToken,action:'keep_original'});assert.equal(kept.value.operation.stage,'failed',JSON.stringify(kept));
+ assert.equal(readFileSync(join(f.root,'Cold/late'),'utf8'),'unrelated bytes');assert.equal(readFileSync(join(f.root,'Project/sentinel'),'utf8'),'exact contents');
+ assert.equal(JSON.parse(f.sql.prepare('SELECT parents FROM project_archive_operations').get().parents)[0].identity,null);assert.equal(f.sql.prepare('SELECT count(*) n FROM project_archives').get().n,0);
+},{filesystem:{...nativeProjectFilesystem,mkdir(path){nativeProjectFilesystem.mkdir(path);throw new Error('lost mkdir response');}}}));
+
+test('unknown persisted recovery authority cannot be ignored by a later archive recovery review',()=>fixture(f=>{
+ const pending=f.apply(f.review('archive').value),operationId=pending.value.operation.operationId;
+ const review=f.query({type:'workspace.previewProjectArchiveRecovery',operationId}).value;
+ const recovered=f.command({type:'workspace.recoverProjectArchive',operationId,previewToken:review.previewToken,action:'retry_original'});assert.equal(recovered.value.operation.stage,'intent');
+ const trigger=f.sql.prepare("SELECT sql FROM sqlite_schema WHERE name='project_archive_attestation_update'").get().sql;
+ f.sql.exec('DROP TRIGGER project_archive_attestation_update');f.sql.exec("UPDATE project_archive_attestations SET binding=json_set(binding,'$.authorization.version',2)");f.sql.exec(trigger);
+ const denied=f.query({type:'workspace.previewProjectArchiveRecovery',operationId});
+ assert.ok(!denied.ok || denied.value.previewToken===null,JSON.stringify(denied));assert.equal(existsSync(join(f.root,'Project/sentinel')),true);assert.equal(f.query({type:'workspace.listProjectArchiveOperations'}).value.operations.length,1);
+},{native(){return 'occupied';}}));
+
+test('a second mount change after archive recovery Preview consumes consent without adding an attestation',()=>fixture(f=>{
+ const pending=f.apply(f.review('archive').value),operationId=pending.value.operation.operationId;
+ const review=f.query({type:'workspace.previewProjectArchiveRecovery',operationId}).value;assert.ok(review.previewToken);
+ const request={type:'workspace.recoverProjectArchive',operationId,previewToken:review.previewToken,action:'retry_original'},lstat=fs.lstatSync;
+ try{fs.lstatSync=(path,...options)=>{const stat=lstat(path,...options);if(typeof stat.dev==='bigint')stat.dev=888n;return stat;};syncBuiltinESMExports();assert.equal(f.command(request).ok,false);}
+ finally{fs.lstatSync=lstat;syncBuiltinESMExports();}
+ assert.equal(f.command(request).ok,false);assert.equal(f.sql.prepare('SELECT count(*) n FROM project_archive_attestations').get().n,0);
+ assert.equal(f.query({type:'workspace.listProjectArchiveOperations'}).value.operations.length,1);assert.equal(readFileSync(join(f.root,'Project/sentinel'),'utf8'),'exact contents');
+},{native(){return 'occupied';}}));
+
+test('property edits after archive recovery Preview remain independent of Keep original consent',()=>fixture(f=>{
+ const pending=f.apply(f.review('archive').value),operationId=pending.value.operation.operationId;
+ const review=f.query({type:'workspace.previewProjectArchiveRecovery',operationId}).value;assert.ok(review.previewToken);
+ const propertyId=f.query({type:'workspace.listTextProperties'}).value.definitions[0].propertyId;
+ assert.equal(f.command({type:'workspace.setTextValue',projectId:f.projectId,propertyId,value:'latest during recovery'}).ok,true);
+ const kept=f.command({type:'workspace.recoverProjectArchive',operationId,previewToken:review.previewToken,action:'keep_original'});assert.equal(kept.ok,true,JSON.stringify(kept));assert.equal(kept.value.operation.stage,'failed');
+ assert.equal(f.query({type:'workspace.listTextProperties'}).value.values[0].value,'latest during recovery');assert.equal(readFileSync(join(f.root,'Project/sentinel'),'utf8'),'exact contents');
+},{native(){return 'occupied';}}));
+
+test('recovery retains the verified original when an unrelated directory occupies the archive destination',()=>fixture(f=>{
+ const pending=f.apply(f.review('archive').value),operationId=pending.value.operation.operationId;
+ mkdirSync(join(f.root,'Cold/Archive/Project'));writeFileSync(join(f.root,'Cold/Archive/Project/other'),'other owner');
+ const review=f.query({type:'workspace.previewProjectArchiveRecovery',operationId});assert.equal(review.ok,true,JSON.stringify(review));assert.deepEqual(review.value.actions,['keep_original']);
+ assert.equal(f.command({type:'workspace.recoverProjectArchive',operationId,previewToken:review.value.previewToken,action:'keep_original'}).value.operation.stage,'failed');
+ assert.equal(readFileSync(join(f.root,'Cold/Archive/Project/other'),'utf8'),'other owner');assert.equal(readFileSync(join(f.root,'Project/sentinel'),'utf8'),'exact contents');
+},{native(){return 'occupied';}}));
+
+for(const mode of ['direct','grouped'])test(`${mode} explicit restore recovery completes a lost native response without another move`,()=>{
+ let interrupt=false,calls=0;fixture(f=>{
+  const before=f.sql.prepare('SELECT * FROM projects WHERE id=?').get(f.projectId);
+  assert.equal(f.apply(f.review('archive').value).value.operation.stage,'completed');interrupt=true;
+  const pending=f.apply(f.review('restore').value),operationId=pending.value.operation.operationId;assert.equal(pending.value.operation.stage,'intent');assert.equal(calls,2);
+  const history=f.sql.prepare('SELECT binding,parents,native_identity FROM project_archive_operations WHERE operation_id=?').get(operationId);f.restart();
+  const review=f.query({type:'workspace.previewProjectArchiveRecovery',operationId});assert.deepEqual(review.value.actions,['complete_destination']);
+  const recovered=f.command({type:'workspace.recoverProjectArchive',operationId,previewToken:review.value.previewToken,action:'complete_destination'});assert.equal(recovered.value.operation.stage,'completed',JSON.stringify(recovered));assert.equal(calls,2);
+  assert.deepEqual(f.sql.prepare('SELECT * FROM projects WHERE id=?').get(f.projectId),before);assert.deepEqual(f.sql.prepare('SELECT binding,parents,native_identity FROM project_archive_operations WHERE operation_id=?').get(operationId),history);
+  assert.equal(readFileSync(join(f.root,f.relativePath,'sentinel'),'utf8'),'exact contents');
+ },{mode,native(from,to){calls++;const result=renameNoReplace(from,to);if(interrupt)throw new Error('lost restore response');return result;}});
+});
+
+test('explicit archive retry creates only missing parents and retains a matching recovery backup',()=>{
+ let interrupted=false;fixture(f=>{
+  const pending=f.apply(f.review('archive').value),operationId=pending.value.operation.operationId;assert.equal(pending.value.operation.stage,'intent');assert.equal(existsSync(join(f.root,'Cold')),false);f.restart();
+  const review=f.query({type:'workspace.previewProjectArchiveRecovery',operationId});assert.deepEqual(review.value.actions,['retry_original','keep_original']);
+  const recovered=f.command({type:'workspace.recoverProjectArchive',operationId,previewToken:review.value.previewToken,action:'retry_original'});assert.equal(recovered.value.operation.stage,'completed',JSON.stringify(recovered));
+  assert.equal(readFileSync(join(f.root,'Cold/Archive/Project/sentinel'),'utf8'),'exact contents');
+  const exported=f.send({type:'data.export'});assert.equal(exported.ok,true);assert.equal(f.send({type:'data.restore',content:exported.value.content}).ok,true);
+ },{filesystem:{...nativeProjectFilesystem,mkdir(path){if(!interrupted){interrupted=true;throw new Error('before mkdir');}nativeProjectFilesystem.mkdir(path);}}});
+});
+
+test('lost installation scope and root-only binding leave a scoped archive operation reserved',()=>fixture(f=>{
+ const pending=f.apply(f.review('archive').value),operationId=pending.value.operation.operationId;
+ rmSync(join(f.directory,'installation-scope.json'));f.restart();
+ const root=f.query({type:'workspace.previewSourceAssociation',mappings:[]});assert.ok(root.value.previewToken,JSON.stringify(root));assert.equal(f.command({type:'workspace.applySourceAssociation',previewToken:root.value.previewToken}).ok,true);
+ const review=f.query({type:'workspace.previewProjectArchiveRecovery',operationId});assert.equal(review.ok,true,JSON.stringify(review));assert.deepEqual(review.value.actions,[]);assert.equal(review.value.previewToken,null);
+ assert.equal(f.sql.prepare('SELECT count(*) n FROM project_archive_attestations').get().n,0);assert.equal(f.query({type:'workspace.listProjectArchiveOperations'}).value.operations.length,1);assert.equal(readFileSync(join(f.root,'Project/sentinel'),'utf8'),'exact contents');
+},{native(){return 'occupied';}}));
+
+
+for(const phase of ['intent','effect','recorded','completed','committed','parent_effect'])test(`production archive process exit at ${phase} retains history without replay`,()=>fixture(f=>{
+ const operationId=randomUUID(),workspaceId=f.query({type:'workspace.listProjects'}).value.workspaceId;
+ const child=spawnSync(process.execPath,['--import','tsx','tests/fixtures/project-archive-crash-worker.mjs',f.path,workspaceId,f.projectId,operationId,'archive',phase,'application'],{cwd:process.cwd(),encoding:'utf8'});
+ assert.equal(child.status,71,child.stderr);const row=f.sql.prepare('SELECT * FROM project_archive_operations WHERE operation_id=?').get(operationId);assert.ok(JSON.parse(row.binding).authorization);
+ f.restart();const request={type:'workspace.applyProjectArchive',operationId,previewToken:row.preview_token},receipt=f.command(request);assert.equal(receipt.ok,true,JSON.stringify(receipt));assert.equal(receipt.value.operation.stage,row.stage);assert.deepEqual(f.command(request),receipt);
+ assert.equal(readFileSync(join(f.root,['intent','parent_effect'].includes(phase)?'Project/sentinel':'Cold/Archive/Project/sentinel'),'utf8'),'exact contents');
+ assert.equal(f.query({type:'workspace.listProjectArchiveOperations'}).value.operations.length,row.stage==='completed'?0:1);
+}));
+
+test('compiled production IPC settles archive recovery with IDs/token only and keeps proof fields private',()=>fixture(f=>{
+ const pending=f.apply(f.review('archive').value),operationId=pending.value.operation.operationId;
+ const parent=new EventEmitter(),port=new EventEmitter(),replies=[];parent.postMessage=()=>{};port.postMessage=message=>replies.push(message);port.start=()=>{};port.close=()=>{};
+ startServiceProcess(parent);parent.emit('message',{data:{type:'connect',databasePath:f.path},ports:[port]});let serial=0;
+ const workspaceId=f.query({type:'workspace.listProjects'}).value.workspaceId;
+ const send=input=>{const id=++serial;port.emit('message',{data:{id,input:{workspaceId,...input}}});const reply=replies.find(message=>message.id===id);assert.ok(reply);return reply.result;};
+ try {
+  const review=send({type:'workspace.previewProjectArchiveRecovery',operationId});assert.equal(review.ok,true,JSON.stringify(review));assert.ok(review.value.previewToken);
+  assert.doesNotMatch(JSON.stringify(review),/"(?:authorization|binding|mount|evidence|scope)":/);
+  const request={type:'workspace.recoverProjectArchive',operationId,previewToken:review.value.previewToken,action:'complete_destination'};
+  assert.equal(send({...request,authorization:{version:1}}).error.code,'invalid_input');
+  const result=send(request);assert.equal(result.value.operation.stage,'completed',JSON.stringify(result));assert.equal(send(request).ok,false);
+  assert.doesNotMatch(JSON.stringify(result),/"(?:authorization|binding|mount|evidence|scope)":/);assert.equal(readFileSync(join(f.root,'Cold/Archive/Project/sentinel'),'utf8'),'exact contents');
+ }finally{parent.emit('message',{data:{type:'shutdown'}});}
+},{native(from,to){assert.equal(renameNoReplace(from,to),'renamed');throw new Error('lost response');}}));

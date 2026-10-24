@@ -1,4 +1,4 @@
-import {archiveBindingMatchesRow,parseArchiveAuthorization,parseArchiveBindingAuthorization,parseArchiveParents,archiveParentPathsMatch,uniqueArchiveProofs,type ArchiveRowDescriptor} from "./archive-authorization.js";
+import {archiveBindingMatchesRow,parseArchiveAttestation,parseArchiveAuthorization,parseArchiveBindingAuthorization,parseArchiveParents,archiveParentPathsMatch,uniqueArchiveProofs,type ArchiveRowDescriptor} from "./archive-authorization.js";
 import {parseRemovalAuthorization,removalBindingMatchesRow,removalAttestationMatchesBinding} from "./category-removal-authorization.js";
 import {categoryAuthorizationMatchesBinding,parseCategoryFolderAuthorization,type CategoryFolderBindingRow} from "./category-folder-authorization.js";
 import {sameIdentity} from "./discovery.js";
@@ -254,6 +254,13 @@ function validate(db: Database.Database) {
         const auth=parseArchiveBindingAuthorization(binding,descriptor(row)),source=db.prepare("SELECT evidence_generation FROM sources WHERE id=?").get(row.source_id) as {evidence_generation:number}|undefined;
         if(!auth || !source || auth.root.generation>source.evidence_generation || !uniqueArchiveProofs(auth,[binding.sourceParents,parents]))throw new Error("Invalid archive operation authorization");
       }
+    }
+    for(const proof of db.prepare("SELECT * FROM project_archive_attestations ORDER BY operation_id,sequence").all() as Record<string,unknown>[]) {
+      const row=db.prepare("SELECT * FROM project_archive_operations WHERE operation_id=?").get(proof.operation_id) as Record<string,unknown>|undefined;
+      const source=row?db.prepare("SELECT evidence_generation FROM sources WHERE id=?").get(row.source_id) as {evidence_generation:number}|undefined:undefined;
+      const mapped=row?Object.fromEntries(Object.entries(row).map(([key,value])=>[key.replace(/_([a-z])/g,(_,letter:string)=>letter.toUpperCase()),value])):null;
+      const parsed=mapped?parseArchiveAttestation(proof as unknown as Parameters<typeof parseArchiveAttestation>[0],mapped as unknown as Parameters<typeof parseArchiveAttestation>[1]):null;
+      if(!parsed || !source || parsed.binding.authorization!.root.generation>source.evidence_generation)throw new Error("Invalid archive attestation");
     }
     for(const row of db.prepare("SELECT * FROM project_archives").all() as Record<string,unknown>[]) {
       const auth=parseArchiveAuthorization(row.authorization as string|null),parents=parseArchiveParents(JSON.parse(row.parents as string),row.authorization!==null);
