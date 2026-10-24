@@ -336,13 +336,7 @@ export async function runRenameFixture(directory, scenario, { rename = invokeExt
     assert.equal(workspace.ok, true);
     const workspaceId = workspace.value.workspaceId;
     const query = (type, extra = {}) => { const v = service.handleQuery({ type, workspaceId, ...extra }); assert.equal(v.ok, true); return v.value; };
-    const command = (type, extra = {}) => {
-      const v = service.handleCommand({ type, workspaceId, ...extra });
-      if(!v.ok && process.env.WORKSPACE_RENAME_SETUP_TRACE==='1')console.error('[DEBUG-71-windows-command]',JSON.stringify({
-        type:['workspace.applyDiscovery','workspace.createProperty','workspace.setTextValue','workspace.refreshSource'].includes(type)?type:'unknown',
-        code:['invalid_input','filesystem','storage','stale_preview','identity_update_required'].includes(v.error?.code)?v.error.code:'unknown'}));
-      assert.equal(v.ok, true);return v.value;
-    };
+    const command = (type, extra = {}) => { const v = service.handleCommand({ type, workspaceId, ...extra }); assert.equal(v.ok, true); return v.value; };
     const apply = (mode) => command('workspace.applyDiscovery', { previewToken: query('workspace.previewDiscovery', { mode }).previewToken });
     const direct = apply('direct');
     const historyId = direct.projects.find((p) => p.relativePath === category).projectId;
@@ -419,15 +413,7 @@ export async function runRenameFixture(directory, scenario, { rename = invokeExt
     const reopened = query('workspace.listProjects');
     result.invariants.restart = reopened.projects.find((p) => p.projectId === projectId)?.relativePath === `${expectedCategory}/${project}` &&
       JSON.stringify(rows('text_property_values')) === JSON.stringify(values) && JSON.stringify(rows('projects', 'WHERE mode_inactive = 1')) === JSON.stringify(history);
-  } catch (error) {
-    if(process.env.WORKSPACE_RENAME_SETUP_TRACE==='1') {
-      const stack=error instanceof Error && typeof error.stack==='string'?error.stack:'';
-      const site=stack.split('\n').find(line=>line.includes('windows-rename-diagnostics.mjs:'))?.match(/windows-rename-diagnostics\.mjs:(\d{1,6}):(\d{1,6})/)?.slice(1);
-      const name=error instanceof Error && ['Error','AssertionError','TypeError','RangeError'].includes(error.name)?error.name:'unknown';
-      console.error('[DEBUG-71-windows-setup]',JSON.stringify({stage:result.stage,name,code:code(error),site}));
-    }
-    result.errorCode = code(error);
-  }
+  } catch (error) { result.errorCode = code(error); }
   finally {
     if (pendingRename) result.rename = await pendingRename;
     try { service?.close(); sqlite?.close(); } catch (error) { result.errorCode ??= code(error); }

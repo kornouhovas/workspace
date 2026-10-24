@@ -28,12 +28,12 @@ Implementation and verification checkpoint: [observed candidate evidence](../ver
 ## Continuation gates
 
 The candidate is not accepted. Read the verification checkpoint and GitHub issue
-comments before continuing. Next: reconcile inherited migration/read-only and
-journal fixtures; classify each intentionally gated application journey under the
-accepted #72 rollout without removing safety coverage; extend valid-payload gate
-coverage for retained/archived histories; renew affected checks. Then complete
-Windows native/packaged and remaining required platform receipts, final review and
-exact-candidate full/CI acceptance before using the integration route.
+comments before continuing. Fixture reconciliation and focused native repair are
+complete. The final Windows repair passed110/111 tests with one existing skip on
+both hosts in40092827817; temporary traces are removed. Next: renew the complete
+three-host candidate, inspect every full/dev/package receipt and then apply the
+conditional integration route. No earlier diagnostic failure is relabelled passed.
+
 
 
 ### Inherited scenario decisions during continuation

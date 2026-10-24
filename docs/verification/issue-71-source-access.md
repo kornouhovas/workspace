@@ -195,3 +195,23 @@ no individual failing Win32 API is asserted from a coarse failure code.
 This is an application adapter change, so successful focused Windows evidence
 must precede renewed full acceptance on the repaired candidate. Temporary setup
 traces remain diagnostic and must be removed before that full candidate.
+
+
+## Confirmed Windows repair and renewed full candidate
+
+[Focused run40092827817/1](https://github.com/kornouhovas/workspace/actions/runs/40092827817)
+at`dfa6b62c34ae092eeb6a18685a801d19fa79fc53` passed on both Windows latest and
+Windows2022:111 tests,110 passed,0 failed/cancelled,1 existing platform skip each.
+Inspected both original logs: sufficient evidence for long Unicode descendants,
+long-link rejection and every original rename diagnostic invariant passed. This
+red/green evidence confirms the missing native operand namespace, without claiming
+an unobserved individual Win32 syscall error. No rejection, deadline or retained
+journal/metadata/tree assertion was relaxed.
+
+Temporary DEBUG-71 command/setup traces and their workflow environment selection
+are removed from the final candidate. The original diagnostic script's source is
+restored byte-for-byte to81a3381d. Its cases and finite failure protocol remain.
+A renewed complete three-host source-access route is required for this application
+adapter repair, including previously unreached Windows production dev and packaged
+Sources. Earlier receipts retain their original SHAs. Acceptance stays open until
+that result and all required artifacts are inspected.

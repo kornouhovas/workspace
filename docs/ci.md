@@ -1790,9 +1790,17 @@ For run40090391119's Windows failures, select `checks: source-access-repair`.
 It renews the five original failed files (native evidence, source association,
 identity upgrade, Text upgrade and Windows rename diagnostics) on Windows latest
 and Windows2022, after a fresh build. It does not rerun passing macOS acceptance
-or unrelated Windows files. The temporary diagnostic setup trace contains only
-stage, exception name/code and source line, never authored values or native paths;
-its output is diagnostic, not acceptance. Remove it after cause confirmation and
-renew the affected original tests. Passing full macOS evidence remains at81a3381d.
+or unrelated Windows files. The initial repair runs used a temporary finite setup trace to locate the
+long-path provider refusal. That trace and its environment selection have been
+removed after red/green confirmation; the current focused route runs the original
+checks without diagnostic substitution. Passing full macOS evidence remains at81a3381d.
 Windows dev/package journeys were unreached and still require execution after the
 focused failure gate passes.
+
+
+After focused40092827817 passed on both Windows hosts, renew `checks: source-access`
+on the trace-free final candidate. The adapter's Windows native operand changes
+application behavior, so this renewal includes the complete three-host suite and
+all original development/package Sources consumers, rather than substituting
+focused successes for full acceptance. Retain81a3381d's passing macOS receipt and
+original failing Windows receipts at their actual provenance.
