@@ -2,7 +2,7 @@ import { withIdentityMigrationDefaults } from "./support/identity-migration-fixt
 import test from "node:test";
 
 import assert from "node:assert/strict";
-import { mkdtempSync, mkdirSync, rmSync, readFileSync, writeFileSync, readdirSync, renameSync, cpSync } from "node:fs";
+import { mkdtempSync, realpathSync, mkdirSync, rmSync, readFileSync, writeFileSync, readdirSync, renameSync, cpSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
@@ -93,7 +93,7 @@ test("injected definition/revision transaction failures roll back data and suppr
 }));
 
 test("upgrade from populated baseline 0000–0004 preserves settings, sources, projects, views and selection across reopens", () => {
-  const directory = mkdtempSync(join(tmpdir(), "text-upgrade-"));
+  const directory = realpathSync.native(mkdtempSync(join(tmpdir(), "text-upgrade-")));
   const root = join(directory, "root"), legacy = join(directory, "baseline-migrations"), databasePath = join(directory, "workspace.sqlite");
   mkdirSync(root); mkdirSync(join(root, "Project")); mkdirSync(join(legacy, "meta"), { recursive: true });
   const migrations = "src/service/db/migrations";

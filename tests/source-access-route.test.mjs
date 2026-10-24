@@ -27,9 +27,9 @@ test('source access route preserves full suite, supported hosts and production p
   const desktop = load(readFileSync('.github/workflows/desktop-ci.yml', 'utf8'));
   const selected = desktop.jobs['focused-source-access'];
   assert.equal(selected.uses, './.github/workflows/source-access.yml');
-  for (const event of ['push', 'pull_request', 'workflow_dispatch']) for (const checks of ['full', 'source-access']) {
+  for (const event of ['push', 'pull_request', 'workflow_dispatch']) for (const checks of ['full', 'source-access', 'source-access-repair']) {
     const context = { github: { event_name: event }, inputs: { checks } };
-    const focused = event === 'workflow_dispatch' && checks === 'source-access';
+    const focused = event === 'workflow_dispatch' && ['source-access','source-access-repair'].includes(checks);
     assert.equal(runInNewContext(selected.if.slice(3, -2), context), focused);
     assert.equal(runInNewContext(desktop.jobs.common.if.slice(3, -2), context), !focused);
   }
@@ -45,4 +45,17 @@ test('source access log pipeline propagates an original fixture failure', () => 
   assert.ok(probe.includes('process.exit(23)') && !probe.includes('tests/'), 'The negative producer must replace the full-suite invocation');
   const result = spawnSync('bash', ['-c', probe], { encoding: 'utf8' });
   assert.equal(result.status, 23, result.stderr);
+});
+
+
+test('Windows renewal runs only original failed families and propagates failure',()=>{
+ const workflow=load(readFileSync('.github/workflows/source-access.yml','utf8'));
+ const job=workflow.jobs['windows-repair'];
+ assert.deepEqual(job.strategy.matrix.os,['windows-latest','windows-2022']);
+ assert.equal(job.strategy['fail-fast'],false);
+ const step=job.steps.find(step=>step.name==='Original failed Windows families');
+ for(const file of ['durable-folder-evidence','source-association-service','source-identity-upgrade','text-properties-service','windows-rename-diagnostics'])assert.ok(step.run.includes(`tests/${file}.test.mjs`));
+ assert.ok(!step.run.includes('test:all'));
+ const probe=step.run.replace(/node --import tsx --test[^\n]*? 2>&1/,'node -e "process.exit(23)" 2>&1').replace('tee work/ci-source-access-repair/original.log','cat');
+ assert.equal(spawnSync('bash',['-c',probe],{encoding:'utf8'}).status,23);
 });

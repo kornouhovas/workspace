@@ -145,3 +145,32 @@ An [upstream Electron quit report](https://github.com/electron/electron/issues/5
 describes a related post-teardown hang, but this candidate's exact cause remains
 unproven. Passing fresh-host platform receipts are still required. No retry-until-
 green or forced termination is counted as normal shutdown acceptance.
+
+
+## CI run 40090391119/1
+
+Owner authorized push/Actions in the continuation conversation. Published
+`81a3381d5d533aed6dd3f3eef96ed55d9f7e77d9`; [original run](https://github.com/kornouhovas/workspace/actions/runs/40090391119).
+macOS latest passed the complete3534-test inventory:3507 passed,0 failed/cancelled,
+27 existing skips. Production dev and packaged Sources both passed all eight
+capture states, logical IDs/native denial, normal shutdown and asserted cleanup.
+Inspected report SHA/run/attempt, packagehash and narrow RU/light screenshot.
+Runner kernel25.6.0; release app.asar SHA256:
+`09b75935cac00aabf9762ef5a2b856d590f769c33efe39d6512eab1395e64c96`.
+This clean-host success does not change the failed local macOS27 receipts.
+
+Both Windows latest and Windows2022 completed3553 tests:3506 passed,33 failed,
+0 cancelled,14 existing skips. Failures match in five files. Seven native/binding/
+upgrade controls expose8.3 temp paths from legacy `realpathSync`; fixtures now
+prepare their canonical paths through `realpathSync.native`, matching production.
+Old-row preservation and strict native rejection assertions remain unchanged.
+Twenty-six Windows rename diagnostic failures stop at setup with coarse unknown
+error codes; their exact cause remains under diagnosis. A bounded temporary setup
+trace and focused original-five-file route are prepared. Windows dev/package
+steps were unreached, not passed. Local affected-family control:110 tests,
+107 passed/3 existing platform skips; route controls68/68.
+
+Application/migrations/native/build/dependency/package inputs are unchanged by
+this fixture/diagnostic-route repair. Retain passing original macOS and unrelated
+Windows cases at their actual81a3381d provenance under CI evidence reuse. Renew
+failed Windows families and every missing dev/package journey before acceptance.

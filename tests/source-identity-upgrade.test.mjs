@@ -12,7 +12,7 @@ import { openSnapshot } from '../src/service/snapshot.ts';
 const native=path=>{const stat=lstatSync(path,{bigint:true});return JSON.stringify({dev:String(stat.dev),ino:String(stat.ino),birthtimeNs:String(stat.birthtimeNs)});};
 
 test('real populated pre-evidence SQLite upgrade preserves old identities, properties, views and sessions with a matching backup',()=>{
- const directory=realpathSync(mkdtempSync(join(tmpdir(),'workspace-evidence-upgrade-'))),root=join(directory,'root'),path=join(directory,'settings.sqlite'),old=join(directory,'old');
+ const directory=realpathSync.native(mkdtempSync(join(tmpdir(),'workspace-evidence-upgrade-'))),root=join(directory,'root'),path=join(directory,'settings.sqlite'),old=join(directory,'old');
  mkdirSync(join(root,'Project'),{recursive:true});cpSync('src/service/db/migrations',old,{recursive:true});
  const journalPath=join(old,'meta/_journal.json'),journal=JSON.parse(readFileSync(journalPath,'utf8'));
  journal.entries=journal.entries.slice(0,24);writeFileSync(journalPath,JSON.stringify(journal));

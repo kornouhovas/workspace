@@ -2,13 +2,23 @@ name: Durable source access
 
 on:
   workflow_call:
+    inputs:
+      phase:
+        type: string
+        default: full
   workflow_dispatch:
+    inputs:
+      phase:
+        type: choice
+        options: [full, windows-repair]
+        default: full
 
 permissions:
   contents: read
 
 jobs:
   source-access:
+    if: ${{ inputs.phase == 'full' }}
     strategy:
       fail-fast: false
       matrix:
@@ -51,5 +61,38 @@ jobs:
         with:
           name: source-access-${{ matrix.os }}-${{ github.sha }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
           path: work/ci-source-access/
+          if-no-files-found: error
+          retention-days: 14
+
+  windows-repair:
+    if: ${{ inputs.phase == 'windows-repair' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, windows-2022]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.21.1
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Original failed Windows families
+        shell: bash
+        run: |
+          mkdir -p work/ci-source-access-repair
+          set -o pipefail
+          node --import tsx --test tests/durable-folder-evidence.test.mjs tests/source-association-service.test.mjs tests/source-identity-upgrade.test.mjs tests/text-properties-service.test.mjs tests/windows-rename-diagnostics.test.mjs 2>&1 | tee work/ci-source-access-repair/original.log
+        env:
+          WORKSPACE_RENAME_SETUP_TRACE: '1'
+      - name: Preserve original result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: source-access-repair-${{ matrix.os }}-${{ github.sha }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
+          path: work/ci-source-access-repair/
           if-no-files-found: error
           retention-days: 14

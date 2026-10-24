@@ -1784,3 +1784,15 @@ steps and logs/artifacts retain their original status. A missing Windows or
 package receipt remains an open gate. Ordinary push/PR/full defaults are unchanged;
 successful unconverted folder effects remain owned by #72, separately from retained
 command-engine safety coverage and this issue's production capability denial.
+
+
+For run40090391119's Windows failures, select `checks: source-access-repair`.
+It renews the five original failed files (native evidence, source association,
+identity upgrade, Text upgrade and Windows rename diagnostics) on Windows latest
+and Windows2022, after a fresh build. It does not rerun passing macOS acceptance
+or unrelated Windows files. The temporary diagnostic setup trace contains only
+stage, exception name/code and source line, never authored values or native paths;
+its output is diagnostic, not acceptance. Remove it after cause confirmation and
+renew the affected original tests. Passing full macOS evidence remains at81a3381d.
+Windows dev/package journeys were unreached and still require execution after the
+focused failure gate passes.

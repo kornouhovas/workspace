@@ -413,7 +413,13 @@ export async function runRenameFixture(directory, scenario, { rename = invokeExt
     const reopened = query('workspace.listProjects');
     result.invariants.restart = reopened.projects.find((p) => p.projectId === projectId)?.relativePath === `${expectedCategory}/${project}` &&
       JSON.stringify(rows('text_property_values')) === JSON.stringify(values) && JSON.stringify(rows('projects', 'WHERE mode_inactive = 1')) === JSON.stringify(history);
-  } catch (error) { result.errorCode = code(error); }
+  } catch (error) {
+    if(process.env.WORKSPACE_RENAME_SETUP_TRACE==='1') {
+      const site=error.stack?.split('\n').find(line=>line.includes('windows-rename-diagnostics.mjs:'))?.match(/windows-rename-diagnostics\.mjs:(\d+):(\d+)/)?.slice(1);
+      console.error('[DEBUG-71-windows-setup]',JSON.stringify({stage:result.stage,name:error.name,code:code(error),site}));
+    }
+    result.errorCode = code(error);
+  }
   finally {
     if (pendingRename) result.rename = await pendingRename;
     try { service?.close(); sqlite?.close(); } catch (error) { result.errorCode ??= code(error); }

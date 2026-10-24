@@ -8,7 +8,7 @@ import { openSettingsService } from '../dist/service/settings.mjs';
 import { observeFolder } from '../src/service/folder-evidence.ts';
 
 function fixture(run, mode = "direct", reader = observeFolder) {
-  const directory = realpathSync(mkdtempSync(join(tmpdir(), 'workspace-association-')));
+  const directory = realpathSync.native(mkdtempSync(join(tmpdir(), 'workspace-association-')));
   const root = join(directory,'source'), dbPath = join(directory,'data','settings.sqlite');
   mkdirSync(join(root,mode==='grouped'?'Category/Project':'Project'),{recursive:true});
   let service = openSettingsService(dbPath,undefined,undefined,undefined,undefined,undefined,reader);

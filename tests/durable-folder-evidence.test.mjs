@@ -9,7 +9,7 @@ import test from 'node:test';
 import { observeFolder, sameDurableFolder, validateEvidence } from '../src/service/folder-evidence.ts';
 
 test('native evidence identifies a contained folder independently of device numbers and rejects links', () => {
-  const root = realpathSync(mkdtempSync(join(tmpdir(), 'workspace-evidence-')));
+  const root = realpathSync.native(mkdtempSync(join(tmpdir(), 'workspace-evidence-')));
   try {
     const child = join(root, 'Project'); mkdirSync(child);
     const first = observeFolder(child, 'installation-test');
@@ -29,7 +29,7 @@ test('native evidence identifies a contained folder independently of device numb
 
 
 test('native evidence rejects a partial current-mount observation even when durable attributes are available',()=>{
- const root=realpathSync(mkdtempSync(join(tmpdir(),'workspace-partial-mount-'))),original=fs.lstatSync;
+ const root=realpathSync.native(mkdtempSync(join(tmpdir(),'workspace-partial-mount-'))),original=fs.lstatSync;
  try{
   assert.equal(observeFolder(root,'installation-test').ok,true);
   fs.lstatSync=(path,...args)=>{const stat=original(path,...args);if(path===root)stat.birthtimeNs=0n;return stat;};syncBuiltinESMExports();
