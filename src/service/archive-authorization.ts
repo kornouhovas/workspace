@@ -2,51 +2,29 @@ import {isDeepStrictEqual} from "node:util";
 import {parseFilesystemAuthorization,parseFolderObservation,type FilesystemAuthorization,type VerifiedFolder} from "./filesystem-authorization.js";
 import {sameVolumeEvidence} from "./source-identity.js";
 import {sameDurableFolder,durableOwnershipKey} from "./folder-evidence.js";
-import {isChildName,reliableIdentity,sameIdentity,type NativeIdentity} from "./discovery.js";
-
-export interface ArchiveAuthorization {
- version:1;root:FilesystemAuthorization;project:VerifiedFolder;originalParent:VerifiedFolder;
+import {isChildName,sameIdentity} from "./discovery.js";
+import {parseArchivedFolderAssociation,type ArchivedFolderAssociation} from "./archive-association.js";
+import {parseArchiveAuthorizationV1,parseArchiveParents,archiveParentPathsMatch,uniqueArchiveProofs,type ArchiveAuthorizationV1,type ArchiveParent} from "./archive-proof.js";
+export {parseArchiveParents,archiveParentPathsMatch,uniqueArchiveProofs};
+export type {ArchiveParent};
+export interface ArchiveAuthorizationV2 {
+ version:2;root:FilesystemAuthorization;project:VerifiedFolder;originalParent:VerifiedFolder|null;association:ArchivedFolderAssociation;associationId:string;
 }
-export interface ArchiveParent {path:string;identity:NativeIdentity|null;observation?:VerifiedFolder|null}
+export type ArchiveAuthorization=ArchiveAuthorizationV1|ArchiveAuthorizationV2;
 export function parseArchiveAuthorization(value:string|null):ArchiveAuthorization|null {
  try {
-  const v=value?JSON.parse(value):null,root=v?parseFilesystemAuthorization(JSON.stringify(v.root)):null;
-  if(!v || Object.keys(v).sort().join()!=="originalParent,project,root,version" || v.version!==1 || !root ||
-   !sameDurableFolder(root.root.evidence,root.parent.evidence) || !sameIdentity(root.root.mount,root.parent.mount) ||
-   !parseFolderObservation(v.project) || !parseFolderObservation(v.originalParent))return null;
-  for(const proof of [v.project,v.originalParent])if(!sameVolumeEvidence(root.root,proof) || proof.evidence.scope!==root.root.evidence.scope)return null;
-  const projectKey=durableOwnershipKey(v.project.evidence);
-  if(projectKey===durableOwnershipKey(root.root.evidence) || projectKey===durableOwnershipKey(v.originalParent.evidence))return null;
+  const v=value?JSON.parse(value):null;
+  if(v?.version===1)return parseArchiveAuthorizationV1(value);
+  const root=v?parseFilesystemAuthorization(JSON.stringify(v.root)):null,association=v?parseArchivedFolderAssociation(JSON.stringify(v.association)):null;
+  if(!v || v.version!==2 || Object.keys(v).sort().join()!=="association,associationId,originalParent,project,root,version" || !root || !association || typeof v.associationId!=="string" || !/^[a-f0-9-]{36}$/i.test(v.associationId) ||
+   !parseFolderObservation(v.project) || !sameDurableFolder(root.root.evidence,root.parent.evidence) || !sameIdentity(root.root.mount,root.parent.mount) ||
+   !sameVolumeEvidence(root.root,v.project) || root.root.evidence.scope!==v.project.evidence.scope || root.generation<association.root.generation ||
+   !sameDurableFolder(root.root.evidence,association.root.root.evidence) || !sameDurableFolder(v.project.evidence,association.project.evidence) ||
+   durableOwnershipKey(root.root.evidence)===durableOwnershipKey(v.project.evidence))return null;
+  const old=association.archive.authorization===null?null:parseArchiveAuthorizationV1(association.archive.authorization);
+  if(old ? !isDeepStrictEqual(v.originalParent,old.originalParent) : v.originalParent!==null)return null;
   return v;
  }catch{return null;}
-}
-export function parseArchiveParents(value:unknown,requireProof:boolean):ArchiveParent[]|null {
- try {
-  if(!Array.isArray(value))return null;
-  for(const [index,p] of value.entries()) {
-   if(!p || typeof p!=="object" || Array.isArray(p) || !["identity,path","identity,observation,path"].includes(Object.keys(p).sort().join()) ||
-    typeof p.path!=="string" || p.path.split("/").length!==index+1 || !p.path.split("/").every(isChildName) ||
-    index>0 && !p.path.startsWith(value[index-1].path+"/"))return null;
-   if(p.identity!==null && (!reliableIdentity(p.identity) || Object.keys(p.identity).sort().join()!=="birthtimeNs,dev,ino" ||
-    ![p.identity.dev,p.identity.ino,p.identity.birthtimeNs].every(field=>typeof field==="string"&&/^\d+$/.test(field))))return null;
-   if(p.identity===null ? p.observation!=null : requireProof && !parseFolderObservation(p.observation) || p.observation!=null && (!parseFolderObservation(p.observation) || !sameIdentity(p.identity,p.observation.mount)))return null;
-   if(index>0 && value[index-1].identity===null && p.identity!==null)return null;
-  }
-  return value;
- }catch{return null;}
-}
-/** Different locators cannot supply the same physical parent/project proof. */
-export function uniqueArchiveProofs(authority:ArchiveAuthorization,groups:ArchiveParent[][]):boolean {
- const paths=new Map<string,VerifiedFolder>([["",authority.root.root]]),owners=new Map<string,string>([[durableOwnershipKey(authority.root.root.evidence),""]]);
- for(const group of groups)for(const parent of group) {
-  const proof=parent.observation;
-  if(!proof)continue;
-  if(!sameVolumeEvidence(authority.root.root,proof) || authority.root.root.evidence.scope!==proof.evidence.scope)return false;
-  const key=durableOwnershipKey(proof.evidence),existing=paths.get(parent.path),owner=owners.get(key);
-  if(existing && (!sameDurableFolder(existing.evidence,proof.evidence) || !sameIdentity(existing.mount,proof.mount)) || owner!==undefined && owner!==parent.path || key===durableOwnershipKey(authority.project.evidence))return false;
-  paths.set(parent.path,proof);owners.set(key,parent.path);
- }
- return true;
 }
 
 export interface ArchiveBindingSnapshot {
@@ -61,10 +39,6 @@ export interface ArchiveRowDescriptor {
  sourceId:string;projectId:string;action:string;originalRelativePath:string;requestedRelativePath:string;nativeIdentity:string;
 }
 const pathParts=(path:string)=>typeof path==='string'&&path.split('/').every(isChildName);
-export function archiveParentPathsMatch(parents:ArchiveParent[],path:string):boolean {
- const parts=path.split('/').slice(0,-1);
- return parents.length===parts.length&&parents.every((parent,index)=>parent.path===parts.slice(0,index+1).join('/'));
-}
 /** Bind physical observations to the immutable operation's logical and path roles. */
 export function archiveBindingMatchesRow(binding:ArchiveBindingSnapshot,row:ArchiveRowDescriptor):boolean {
  try {
@@ -95,10 +69,17 @@ export function parseArchiveBindingAuthorization(binding:ArchiveBindingSnapshot,
    !sameDurableFolder(auth.project.evidence,JSON.parse(binding.project.durableEvidence!)) || !parseArchiveParents(binding.sourceParents,true) ||
    !parseArchiveParents(binding.destinationParents,true) || binding.sourceParents.some(p=>p.identity===null) ||
    !uniqueArchiveProofs(auth,[binding.sourceParents,binding.destinationParents]) || row&&!archiveBindingMatchesRow(binding,row))return null;
+  if(auth.version===2) {
+   if(!binding.archive || typeof binding.source.archiveRelativePath!=="string" || !pathParts(binding.source.archiveRelativePath) || !binding.archive.relativePath.startsWith(binding.source.archiveRelativePath+'/') || auth.association.sourceId!==binding.source.id || auth.association.projectId!==binding.project.id || !isDeepStrictEqual(auth.association.archive,binding.archive) ||
+    binding.sourceParents.length!==auth.association.parents.length || binding.sourceParents.some((parent,index)=>parent.path!==auth.association.parents[index].path ||
+      !parent.observation || !sameDurableFolder(parent.observation.evidence,auth.association.parents[index].observation!.evidence)))return null;
+   return auth;
+  }
   if(binding.archive) {
    const saved=binding.archive.authorization?parseArchiveAuthorization(binding.archive.authorization):null;
    if(binding.archive.authorization!==null && !saved)return null;
    if(saved) {
+    if(saved.version!==1)return null;
     if(saved.root.generation>auth.root.generation)return null;
     if(!sameDurableFolder(saved.root.root.evidence,auth.root.root.evidence) || !sameDurableFolder(saved.project.evidence,auth.project.evidence) ||
      !sameDurableFolder(saved.originalParent.evidence,auth.originalParent.evidence))return null;
@@ -119,9 +100,9 @@ export function parseArchiveBindingAuthorization(binding:ArchiveBindingSnapshot,
 export function archiveRenewalMatches(original:ArchiveBindingSnapshot,current:ArchiveBindingSnapshot,parents:ArchiveParent[],recorded:ArchiveParent[]):boolean {
  try {
   const before=parseArchiveBindingAuthorization(original),after=parseArchiveBindingAuthorization(current);
-  if(!before || !after || after.root.generation<before.root.generation || current.source.discoveryRevision<original.source.discoveryRevision ||
+  if(!before || !after || before.version!==after.version || before.version===2&&(after.version!==2||before.associationId!==after.associationId||!isDeepStrictEqual(before.association,after.association)) || after.root.generation<before.root.generation || current.source.discoveryRevision<original.source.discoveryRevision ||
    !sameDurableFolder(before.root.root.evidence,after.root.root.evidence) || !sameDurableFolder(before.project.evidence,after.project.evidence) ||
-   !sameDurableFolder(before.originalParent.evidence,after.originalParent.evidence))return false;
+   (before.originalParent===null?after.originalParent!==null:after.originalParent===null||!sameDurableFolder(before.originalParent.evidence,after.originalParent.evidence)))return false;
   const policy=(source:ArchiveBindingSnapshot['source'])=>({...source,discoveryRevision:0,evidenceGeneration:0,propertyRevision:0,categoryPropertyRevision:0,appliedRootIdentity:null});
   if(!isDeepStrictEqual(policy(original.source),policy(current.source)) ||
    ['project','archive','category','mode','createParent','categoryName'].some(field=>!isDeepStrictEqual(original[field as keyof ArchiveBindingSnapshot],current[field as keyof ArchiveBindingSnapshot])))return false;
@@ -157,7 +138,7 @@ export function legacyArchiveRenewalMatches(original:ArchiveBindingSnapshot,curr
   if(Object.hasOwn(original,'authorization') || original.source.durableEvidence!=null || original.project.durableEvidence!=null || original.category?.durableEvidence!=null || original.archive?.authorization!=null)return false;
   const native=(value:string)=>{const identity=JSON.parse(value);if(!parseArchiveParents([{path:'Role',identity}],false))throw new Error('Invalid legacy identity');return identity;};
   const auth=parseArchiveBindingAuthorization(current);
-  if(!auth || original.source.evidenceGeneration!==undefined && (!Number.isSafeInteger(original.source.evidenceGeneration) || original.source.evidenceGeneration<0 || original.source.evidenceGeneration>auth.root.generation) || !sameIdentity(native(original.source.appliedRootIdentity!),auth.root.root.mount) || !sameIdentity(native(original.project.nativeIdentity),auth.project.mount))return false;
+  if(!auth || auth.version!==1 || original.source.evidenceGeneration!==undefined && (!Number.isSafeInteger(original.source.evidenceGeneration) || original.source.evidenceGeneration<0 || original.source.evidenceGeneration>auth.root.generation) || !sameIdentity(native(original.source.appliedRootIdentity!),auth.root.root.mount) || !sameIdentity(native(original.project.nativeIdentity),auth.project.mount))return false;
   const evidenceMatches=(saved:string|null|undefined,proof:VerifiedFolder)=>saved==null || sameDurableFolder(JSON.parse(saved),proof.evidence);
   if(!evidenceMatches(original.source.durableEvidence,auth.root.root) || !evidenceMatches(original.project.durableEvidence,auth.project))return false;
   const policy=(source:ArchiveBindingSnapshot['source'])=>({...source,durableEvidence:null,evidenceGeneration:0,discoveryRevision:0,propertyRevision:0,categoryPropertyRevision:0});

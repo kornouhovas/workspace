@@ -7,8 +7,8 @@ export interface SourceAssociationPreview {
   sourceId: string;
   canonicalRoot: string;
   reason: FolderIdentityReason;
-  targets: {kind:"category" | "project";relativePath:string}[];
-  candidates: (FolderMapping & { savedPath: string; eligible: boolean; selected: boolean; reason: FolderIdentityReason })[];
+  targets: {kind:"category" | "project";relativePath:string;archivedProjectId?:string;archivedParentCategoryId?:string}[];
+  candidates: (FolderMapping & { savedPath: string; archived?:boolean; archivedParent?:boolean; eligible: boolean; selected: boolean; reason: FolderIdentityReason })[];
   mappings: FolderMapping[];
   retainedCount: number;
   pendingOperations: number;

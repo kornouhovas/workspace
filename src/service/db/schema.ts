@@ -360,3 +360,9 @@ export const workspaceSessions = sqliteTable("workspace_sessions", {
   revision: integer("revision").notNull().default(0),
   state: text("state").notNull(),
 });
+
+
+export const archivedFolderAssociations=sqliteTable("archived_folder_associations",{
+ id:text("id").primaryKey(),sourceId:text("source_id").notNull().references(()=>sources.id),projectId:text("project_id").notNull().references(()=>projects.id),
+ generation:integer("generation").notNull(),authorization:text("authorization").notNull(),
+},table=>[unique().on(table.projectId,table.generation)]);

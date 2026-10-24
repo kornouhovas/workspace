@@ -594,3 +594,64 @@ Eleventh-slice renewal: Node22.21.1 fresh build/typecheck/lint/docs217/diff
 pass; targeted set144/144 passes, including both compiled production IPC routes.
 Frozen-source `test:migrations`962 checks:961 pass,one existing skip,zero
 failures/cancellations. No new skips or migration SQL changes were introduced.
+
+## Twelfth slice: explicit completed-archive association
+
+Completed legacy or scope-unverified archives can explicitly enroll only their
+fixed designated archived placement. Association preserves inactive state,
+original relative path/category, native history, properties and archive metadata.
+Root-only approval never enrolls archived children. Append-only migration0031
+records the exact archive snapshot, current source generation and full root,
+project and every archive-parent observation separately from old metadata.
+Malformed roles, aliases, retained owners, reservations, peer roots inside the
+selected target and known physical mismatches fail closed. An unchanged route
+parent may itself be another source root; observing it does not move that root.
+
+Restore v2 references an actual immutable association row. It retains the known
+historical original-parent observation verbatim, including its old scope; legacy
+history has a null original-parent proof rather than a fabricated one. Existing
+grouped destinations require a separately enrolled current category. Explicit
+creation of a missing original parent creates a new category ID and retains old
+native/proof history. Matching backups validate receipt references and reject
+orphaned, altered, future-generation or contradictory roles. Recovery renews a
+private frame without rewriting the original journal or repeating a lost native
+response. Original retry remains read-only.
+
+A mode/scope-loss lifecycle exposed an unavailable dormant original category.
+Only a category referenced by a verified available grouped archive can now bind
+at its unchanged saved path while preserving dormant flags. Its direct-project
+role history requires matching full physical evidence or exact current native
+triples for every remaining native-only role, including `dev`. Each role still needs
+its own explicit selection; reviewed mode Apply performs activation separately.
+A dormant direct-project record can coexist with a restore parent only when its
+full physical proof matches that separately enrolled current category. EN/RU UI
+labels distinguish archived projects and retained original parents and fix their
+mapping destinations. Ordinary project/category mapping cannot reactivate an
+archived project.
+
+Interim read-only Spec/Standards reviews found retained/peer ownership gaps,
+root/project receipt aliases and a stale-native role exception. Each reproduced
+red at the public service or backup boundary and passed after repair. Follow-up
+reviews found no residual concrete defect in the inspected repairs. Existing
+coverage is retained; migration inventory/count fixtures adapt from 31 to 32 and
+add the completed-archive association fixture to `test:migrations`.
+
+Observed Node 22.21.1/macOS arm64: fresh build/typecheck/lint/docs 217/diff pass;
+affected 131/131 pass, including compiled production IPC binding and v2 restore.
+Frozen-source `test:migrations`: 985 checks, 984 pass, one existing skip, zero
+failures/cancellations. Real 0023 direct/grouped fixtures preserve metadata and
+contents; controls include explicit/missing original parents, scope loss,
+contradictory ownership, late-SQL ancestor changes, matching/malformed backups,
+mode round trips and lost-response recovery without replay.
+
+The separate disposable Electron UI journey completed selection/Cancel, archived
+binding and archived-state checks with eight EN/RU light/dark screenshots at
+1024/1440 widths, but its first shutdown exceeded 10 seconds and was forcibly
+cleaned up. A minimal empty-app shutdown and three subsequent complete UI runs
+closed normally without parallel migration load. The first shutdown failure is
+retained as an intermittent runtime limitation; no product shutdown repair is
+claimed. EN/RU changed rows were visually inspected at 1024 light and 1440 dark;
+notes wrap without horizontal overflow. These runs verify the changed UI, not
+whole-issue platform acceptance. Native Reveal/files conversion and final whole-issue review/full suite,
+separate macOS/Windows native/Electron/package/CI gates remain. No push,
+integration, release or actual remount acceptance is inferred.
