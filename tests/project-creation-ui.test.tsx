@@ -7,7 +7,12 @@ import fs from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, join } from "node:path";
 import { randomUUID } from "node:crypto";
-import { openSettingsService } from "../src/service/settings.js";
+import type { openSettingsService } from "../src/service/settings.js";
+// @ts-expect-error Explicit legacy-engine test fixture has no declarations.
+import {openUnconvertedEngineFixture} from "./support/unconverted-command-engines.mjs";
+const openLegacyEngineService=(...args:Parameters<typeof openSettingsService>)=>openUnconvertedEngineFixture(...args).engines as ReturnType<typeof openSettingsService>&{application:ReturnType<typeof openSettingsService>};
+// @ts-expect-error Explicit fixture binding helper intentionally has no declarations.
+import {bindFixtureFolders} from "./support/identity-migration-fixtures.mjs";
 import { nativeObserverDependencies, type ObserverDependencies } from "../src/service/source-observer.js";
 import { Window } from "happy-dom";
 import { ProjectCreationPanel } from "../src/renderer/components/ProjectCreationPanel.js";
@@ -302,7 +307,7 @@ for (const language of ["en", "ru"] as const) for (const mode of ["direct", "gro
   test(`${language}: ${mode} real creation feedback survives stale list reads and independent list failure/recovery`, async () => {
     const directory = fs.realpathSync.native(fs.mkdtempSync(join(tmpdir(), "creation-feedback-"))), root = join(directory, "root");
     fs.mkdirSync(root); if (mode === "grouped") fs.mkdirSync(join(root, "Category"));
-    const observer = controlledRevealObserver(), service = openSettingsService(join(directory, "workspace.sqlite"), "src/service/db/migrations", undefined, observer.dependencies);
+    const observer = controlledRevealObserver(), service = openLegacyEngineService(join(directory, "workspace.sqlite"), "src/service/db/migrations", undefined, observer.dependencies);
     try {
       const { workspaceId, sourceId } = value(service.workspaces.create({ type: "workspace.create", name: "Feedback", rootPath: root }));
       const preview = value(service.workspaces.previewDiscovery({ type: "workspace.previewDiscovery", workspaceId, mode }));
@@ -357,9 +362,10 @@ for (const language of ["en", "ru"] as const) for (const mode of ["direct", "gro
       assert.equal(screen.queryByText(t("creationListError")), null);
       assert.ok(screen.getByText(t("creationSaved")));
       assert.equal(creates, 1); assert.equal(completions, 1);
-      const final = value(service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId }));
-      assert.equal(final.projects.length, 1); assert.equal(final.projects[0].name, "Created Текст");
-      assert.deepEqual(fs.readdirSync(join(root, final.projects[0].relativePath)), []);
+      const final=value(service.workspaces.listProjects({type:"workspace.listProjects",workspaceId}));
+      assert.equal(final.projects.length,0);assert.equal(final.retainedProjects.length,1);
+      assert.equal(final.retainedProjects[0].name,"Created Текст");assert.equal(final.retainedProjects[0].identityReason,"review_required");
+      assert.deepEqual(fs.readdirSync(join(root,final.retainedProjects[0].relativePath)),[]);
     } finally { cleanup(); service.close(); fs.rmSync(directory, { recursive: true, force: true }); }
   });
 }
@@ -423,7 +429,7 @@ for (const language of ["en", "ru"] as const) for (const mode of ["direct", "gro
       const directory = fs.realpathSync.native(fs.mkdtempSync(join(tmpdir(), "reveal-ui-lifetime-"))), root = join(directory, "root");
       fs.mkdirSync(root); if (mode === "grouped") fs.mkdirSync(join(root, "Category"));
       const observer = controlledRevealObserver();
-      const service = openSettingsService(join(directory, "workspace.sqlite"), "src/service/db/migrations", undefined, observer.dependencies);
+      const service = openLegacyEngineService(join(directory, "workspace.sqlite"), "src/service/db/migrations", undefined, observer.dependencies);
       const client = new Client(), nativeCompletion = deferred<void>();
       let calls = 0, initialValidation: string | undefined, receipt: ServiceResult<ProjectRevealResult> | undefined;
       let off: (() => void) | undefined;
@@ -434,7 +440,8 @@ for (const language of ["en", "ru"] as const) for (const mode of ["direct", "gro
         const revision = value(service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId })).revision;
         const created = value(service.workspaces.createProject({ type: "workspace.createProject", workspaceId, operationId: randomUUID(), name: "Folder", mode, expectedRevision: revision,
           ...(mode === "grouped" ? { categoryId: value(service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId })).categories[0].categoryId } : {}) }));
-        assert.equal(created.outcome, "completed");
+        assert.equal(created.outcome,"completed");assert.ok(created.project);
+        bindFixtureFolders(service.application,workspaceId,[{kind:'project',id:created.project.projectId,relativePath:mode==='grouped'?'Category/Folder':'Folder'}]);
         observer.flush();
         client.list = value(service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId }));
         const original = structuredClone(client.list);
@@ -495,7 +502,7 @@ for (const language of ["en", "ru"] as const) for (const mode of ["direct", "gro
   test(`${language}: ${mode} explicit retry reconciles ${delivery} with original payload and one durable project`, async () => {
     const directory = fs.realpathSync.native(fs.mkdtempSync(join(tmpdir(), "creation-ui-retry-"))), root = join(directory, "root"), database = join(directory, "workspace.sqlite");
     fs.mkdirSync(root); if (mode === "grouped") fs.mkdirSync(join(root, "Category"));
-    let service = openSettingsService(database, "src/service/db/migrations");
+    let service = openLegacyEngineService(database, "src/service/db/migrations");
     try {
       const workspace = value(service.workspaces.create({ type: "workspace.create", name: "Retry", rootPath: root }));
       const { workspaceId, sourceId } = workspace;
@@ -557,19 +564,20 @@ for (const language of ["en", "ru"] as const) for (const mode of ["direct", "gro
       await act(async () => gate.resolve());
       await screen.findByText(t("creationSaved")); assert.equal(completions, 1);
       const list = value(service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId }));
-      assert.equal(list.projects.length, 1);
-      assert.equal(calls[0].name, "  Retry Текст 📝");
-      assert.equal(list.projects[0].name, calls[0].name);
-      assert.equal(basename(list.projects[0].relativePath), calls[0].name);
+      assert.equal(list.projects.length,0);assert.equal(list.retainedProjects.length,1);
+      const retained=list.retainedProjects[0];assert.equal(retained.identityReason,"review_required");
+      assert.equal(calls[0].name,"  Retry Текст 📝");
+      assert.equal(retained.name,calls[0].name);assert.equal(basename(retained.relativePath),calls[0].name);
       assert.deepEqual(fs.readdirSync(mode === "grouped" ? join(root, "Category") : root), [calls[0].name]);
-      assert.deepEqual(fs.readdirSync(join(root, list.projects[0].relativePath)), []);
+      assert.deepEqual(fs.readdirSync(join(root,retained.relativePath)), []);
       const finalReceipt = service.handleCommand({ type: "workspace.createProject", ...calls[0] });
+      assert.deepEqual(service.application.handleCommand({type:"workspace.createProject",...calls[0]}),finalReceipt);
       assert.deepEqual(await client.getProjectCreation(workspaceId, calls[0].operationId), finalReceipt);
       assert.deepEqual(value(await client.listProjectCreations(workspaceId)), { workspaceId, sourceId, operations: [] });
       if (receipt) assert.deepEqual(finalReceipt, receipt);
-      view.unmount(); assert.equal(statuses.size, 0); service.close(); service = openSettingsService(database, "src/service/db/migrations");
+      view.unmount(); assert.equal(statuses.size, 0); service.close(); service = openLegacyEngineService(database, "src/service/db/migrations");
       assert.deepEqual(service.handleCommand({ type: "workspace.createProject", ...calls[0] }), finalReceipt);
-      assert.equal(value(service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId })).projects[0].projectId, list.projects[0].projectId);
+      assert.equal(value(service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId })).retainedProjects[0].projectId,retained.projectId);
     } finally { cleanup(); service.close(); fs.rmSync(directory, { recursive: true, force: true }); }
   });
 }
@@ -639,7 +647,7 @@ for (const language of ["en", "ru"] as const) {
 
 for (const language of ["en","ru"] as const) test(`${language}: same-path missing observation preserves the authoritative Reveal rejection`,async()=>{
   const directory=fs.realpathSync.native(fs.mkdtempSync(join(tmpdir(),"reveal-missing-state-"))),root=join(directory,"root");fs.mkdirSync(join(root,"Folder"),{recursive:true});
-  const observer=controlledRevealObserver(),service=openSettingsService(join(directory,"app.sqlite"),"src/service/db/migrations",undefined,observer.dependencies);
+  const observer=controlledRevealObserver(),service=openLegacyEngineService(join(directory,"app.sqlite"),"src/service/db/migrations",undefined,observer.dependencies);
   const client=new Client(),response=deferred<void>();let off:(()=>void)|undefined,receipt:ServiceResult<ProjectRevealResult>|undefined;
   const t=(key:Parameters<typeof translate>[1])=>translate(language,key);
   try {

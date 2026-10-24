@@ -339,7 +339,7 @@ export async function interruptCategoryMoveFixture(setup, checkpoint, ownedProce
   assert.ok(Object.hasOwn(stages, checkpoint), "Supported category interruption checkpoint");
   const marker = join(setup.data, "cleanup-marker");
   const child = fork(join(root, "tests/fixtures/project-category-move-crash-worker.mjs"), [setup.database, checkpoint, JSON.stringify(setup.request), marker],
-    { cwd: root, execArgv: [], stdio: ["ignore", "ignore", "pipe", "ipc"] });
+    { cwd: root, execArgv: ["--import","tsx"], stdio: ["ignore", "ignore", "pipe", "ipc"] });
   ownedProcesses.add(child);
   const exited = once(child, "exit");
   // Observe the exit promise immediately, including spawn failures, while the

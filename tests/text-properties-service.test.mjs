@@ -1,3 +1,4 @@
+import { withIdentityMigrationDefaults } from "./support/identity-migration-fixtures.mjs";
 import test from "node:test";
 
 import assert from "node:assert/strict";
@@ -126,7 +127,7 @@ test("upgrade from populated baseline 0000–0004 preserves settings, sources, p
           if (table === "sources") actual.forEach((row) => { delete row.property_revision; delete row.category_property_revision; });
           if (table === "projects") actual.forEach((row) => { delete row.category_id; delete row.mode_inactive; });
           if (table === "views") actual.forEach(row => { assert.equal(row.position, 0); assert.equal(row.filter_config, '{"search":"","rules":[]}'); assert.equal(row.grouping_config, '{"propertyId":null,"settings":[]}'); assert.equal(row.board_config, '{"widths":[],"properties":[],"wrap":true}'); assert.equal(row.table_config, '{"columns":[],"rowOrder":[]}'); delete row.board_config; delete row.table_config; delete row.grouping_config; delete row.position; delete row.filter_config; });
-          assert.deepEqual(actual, before[table]);
+          assert.deepEqual(actual, withIdentityMigrationDefaults(table,before[table]));
         }
       } finally { inspected.close(); }
       if (attempt === 0) {
@@ -258,11 +259,13 @@ test("Text metadata stays on retained logical IDs through exclusions, replacemen
     renameSync(join(f.root, "Project"), join(f.directory, "original"));
     cpSync(join(f.directory, "original"), join(f.root, "Project"), { recursive: true });
     const replacement = safe(() => discover(f.service, f.one.workspaceId));
-    const replacementId = replacement.projects[0].projectId; assert.notEqual(replacementId, projectId);
+    assert.deepEqual(replacement.projects,[]);
+    assert.equal(replacement.retainedProjects[0].projectId,projectId);
+    assert.equal(sql.prepare("SELECT count(*) n FROM projects").get().n,1);
     assert.deepEqual(list(f.service, f.sibling.workspaceId).value.values, expected.values);
-    assert.equal(list(f.service, f.one.workspaceId).value.values.some((value) => value.projectId === replacementId), false);
+    assert.deepEqual(list(f.service,f.one.workspaceId).value.values.map(row=>row.projectId),[projectId]);
     renameSync(join(f.root, "Project"), join(f.directory, "missing"));
-    assert.equal(safe(() => discover(f.service, f.one.workspaceId)).retainedCount, 2);
+    assert.equal(safe(() => discover(f.service, f.one.workspaceId)).retainedCount, 1);
     assert.deepEqual(list(f.service, f.one.workspaceId).value.values, expected.values);
     renameSync(join(f.directory, "missing"), join(f.root, "Project"));
     assert.equal(safe(() => discover(f.service, f.one.workspaceId)).projects.length, 0);

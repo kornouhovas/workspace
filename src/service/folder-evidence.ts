@@ -31,6 +31,10 @@ export function validateEvidence(value: unknown): value is FolderEvidence {
     /^\\\\\?\\Volume\{[a-f0-9-]{36}\}\\$/i.test(v.volume) && /^[1-9][0-9]*$/.test(v.serial) &&
     /^[a-f0-9]{32}$/.test(v.fileId) && /[1-9a-f]/.test(v.fileId);
 }
+/** Physical ownership veto key; NTFS GUID letter casing cannot name another volume. */
+export function durableOwnershipKey(evidence:FolderEvidence):string {
+  return JSON.stringify([evidence.provider,evidence.provider === "ntfs" ? evidence.volume.toLowerCase() : evidence.volume,evidence.serial,evidence.fileId]);
+}
 export function sameDurableFolder(a: FolderEvidence, b: FolderEvidence, includeScope = true): boolean {
   return validateEvidence(a) && validateEvidence(b) && a.provider === b.provider && (!includeScope || a.scope === b.scope) &&
     a.volume === b.volume && a.serial === b.serial && a.fileId === b.fileId && a.created === b.created;
@@ -39,6 +43,7 @@ export function observeFolder(path: string, scope: string): FolderObservation {
   try {
     const before = lstatSync(path, { bigint: true });
     if (!before.isDirectory() || realpathSync.native(path) !== path) return {ok: false, reason: "changed"};
+    if (before.ino <= 0n || before.birthtimeNs <= 0n) return {ok:false,reason:"missing_attributes"};
     if (process.platform !== "darwin" && process.platform !== "win32") return {ok: false, reason: "unsupported"};
     if (!native) {
       // Source imports are used by host tests; emitted modules use the same fixed artifact provenance.

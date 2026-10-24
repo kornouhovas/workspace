@@ -1,7 +1,7 @@
 import { createWorkspacePublisher } from "./workspace-publication.js";
 import { createSourceAssociationService } from "./source-association.js";
-import { observeFolder } from "./folder-evidence.js";
-import { associationReason, continuityRecords, discoveryIdentityState, sourceIdentity, storedEvidence, type EvidenceReader } from "./source-identity.js";
+import { observeFolder, durableOwnershipKey } from "./folder-evidence.js";
+import { associationReason, rootOwnershipConflict, continuityRecords, discoveryIdentityState, sourceIdentity, storedEvidence, type EvidenceReader } from "./source-identity.js";
 import { createWorkspaceSessionService } from "./workspace-sessions.js";
 import { createProjectFilesService } from "./project-files.js";
 import type { SourceSettingsList } from "../contracts/workspaces.js";
@@ -412,9 +412,8 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
         }
         let snapshot = scan.snapshot;
         let state = scan.state;
-        const identity = sourceIdentity(source, scan, scope, readFolderEvidence);
-        const freshSource = source.appliedRootIdentity === null && source.discoveryMode === null;
-        if (snapshot && (identity.state !== "verified" && !(freshSource && identity.state === "review_required" && identity.observation.ok))) {
+        const identity = sourceIdentity(source, scan, scope, readFolderEvidence,peerSources(source.id));
+        if (snapshot && identity.state !== "verified") {
           snapshot = null;
           state = discoveryIdentityState(identity.state);
         }
@@ -637,8 +636,12 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
               tx.update(schema.sources).set({ canonicalRoot }).where(eq(schema.sources.id, source.id)).run();
             }
           }
+          let newRoot: import("./folder-evidence.js").FolderObservation | null = null;
           if (!source) {
-            source = tx.insert(schema.sources).values({ id: randomUUID(), canonicalRoot }).returning().get();
+            newRoot = readFolderEvidence(canonicalRoot,scope);
+            if(rootOwnershipConflict(newRoot,tx.select().from(schema.sources).all(),scope,readFolderEvidence))throw new SourceOwnershipConflict();
+            source = tx.insert(schema.sources).values({ id: randomUUID(), canonicalRoot,
+              durableEvidence:newRoot.ok?JSON.stringify(newRoot.evidence):null }).returning().get();
           }
           const lastPosition = tx.select({ value: max(schema.workspaces.position) }).from(schema.workspaces).get()?.value;
           tx.insert(schema.workspaces).values({ id: workspaceId, name, sourceId: source.id, position: (lastPosition ?? -1) + 1 }).run();
@@ -651,11 +654,13 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
               target: schema.activeWorkspace.key,
               set: { workspaceId, viewId },
             }).run();
+          if (newRoot?.ok && (JSON.stringify(readFolderEvidence(canonicalRoot,scope)) !== JSON.stringify(newRoot) || rootOwnershipConflict(newRoot,peerSources(source.id),scope,readFolderEvidence))) throw new SourceOwnershipConflict();
           return source.id;
         });
         observe(created, { canonicalRoot, sourceAvailable: true });
         return { ok: true, value: { sourceId: created, workspaceId, viewId, name, canonicalRoot } };
-      } catch {
+      } catch (error) {
+        if(error instanceof SourceOwnershipConflict)return invalid("This folder has conflicting saved source ownership. Choose the existing source.");
         return { ok: false, error: { code: "storage", message: "Workspace could not be created." } };
       }
     },
@@ -805,6 +810,7 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
     return db.select().from(schema.workspaces).innerJoin(schema.sources, eq(schema.workspaces.sourceId, schema.sources.id))
       .where(eq(schema.workspaces.id, workspaceId)).get()?.sources;
   }
+  function peerSources(sourceId:string){return db.select().from(schema.sources).all().filter(peer=>peer.id!==sourceId);}
   function readProjects(sourceId: string) {
     return db.select().from(schema.projects).where(eq(schema.projects.sourceId, sourceId)).orderBy(asc(schema.projects.id)).all();
   }
@@ -813,19 +819,18 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
   }
   function scanEvidence(source: typeof schema.sources.$inferSelect, scan: DiscoveryScan) {
     if (!scan.snapshot) return null;
-    const identity = sourceIdentity(source, scan, scope, readFolderEvidence);
-    const fresh = source.appliedRootIdentity === null && source.discoveryMode === null && source.durableEvidence === null;
+    const identity = sourceIdentity(source, scan, scope, readFolderEvidence,peerSources(source.id));
     const root = identity.observation;
-    if (!root.ok || (identity.state !== "verified" && !(fresh && identity.state === "review_required")) ||
+    if (!root.ok || identity.state !== "verified" ||
       !sameIdentity(root.mount, scan.snapshot.root.identity)) return null;
     const observations = [{relativePath:"",observation:root}];
-    const aliases = new Set([JSON.stringify([root.evidence.provider,root.evidence.volume,root.evidence.serial,root.evidence.fileId])]);
+    const aliases = new Set([durableOwnershipKey(root.evidence)]);
     for (const entry of scan.entries.filter(entry => entry.reason === null)) {
       const observed = readFolderEvidence(join(source.canonicalRoot, entry.relativePath), scope);
       const child = scan.snapshot.children.find(child => child.relativePath === entry.relativePath);
       if (!observed.ok || child?.kind !== "directory" || !sameIdentity(observed.mount, child.identity) ||
         root.evidence.volume !== observed.evidence.volume || root.evidence.serial !== observed.evidence.serial) return null;
-      const key = JSON.stringify([observed.evidence.provider,observed.evidence.volume,observed.evidence.serial,observed.evidence.fileId]);
+      const key = durableOwnershipKey(observed.evidence);
       if (aliases.has(key)) return null;
       aliases.add(key); observations.push({relativePath:entry.relativePath,observation:observed});
     }
@@ -856,7 +861,7 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
     const property = db.select().from(schema.categoryProperties).where(eq(schema.categoryProperties.sourceId, source.id)).get();
     if (mode === "grouped" && !property) throw new Error("Invalid category property configuration");
     let state = displayed?.state ?? currentScan.state;
-    const identity = displayed ? null : sourceIdentity(source, currentScan, scope, readFolderEvidence);
+    const identity = displayed ? null : sourceIdentity(source, currentScan, scope, readFolderEvidence,peerSources(source.id));
     if (currentScan.snapshot && identity && identity.state !== "verified") state = discoveryIdentityState(identity.state);
     const verified = !!currentScan.snapshot && (displayed ? ["ready","empty"].includes(displayed.state) : identity?.state === "verified");
     if (!verified) invalidateSourceReviews(source.id);
@@ -1210,3 +1215,5 @@ function sameAssociations(a: object[], b: object[]) {
   const normalize = (rows: object[]) => JSON.stringify(rows.map((row) => Object.fromEntries(Object.entries(row).sort(([a], [b]) => a.localeCompare(b)))));
   return normalize(a) === normalize(b);
 }
+
+class SourceOwnershipConflict extends Error {}

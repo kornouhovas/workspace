@@ -44,12 +44,12 @@ export async function inputDigest(inputRoot = repository) {
 
 export async function superviseCategoryMoveService({ fault, evidenceDirectory = process.env.WORKSPACE_CATEGORY_MOVE_SERVICE_EVIDENCE_DIR } = {}) {
   const root = await realpath(await mkdtemp(join(tmpdir(), "workspace-category-move-service-")));
-  const evidence = { platform: process.platform, arch: process.arch, supervisorNode: process.versions.node,
+  const evidence = { commandBoundary:"unconverted_test_engine", platform: process.platform, arch: process.arch, supervisorNode: process.versions.node,
     inputSha256: null, ok: false, scenarios: Object.fromEntries(SCENARIOS.map(key => [key, { status: "unreached" }])),
     scenarioKinds: Object.fromEntries(SCENARIOS.map(key => [key,
       key === "grouped.occupied_insertion" ? "injected_adapter_collision"
         : ["grouped.retry_original", "grouped.keep_original"].includes(key) ? "injected_external_return_recovery"
-          : key === "grouped.complete_destination" ? "injected_sqlite_recovery" : "production_service"])),
+          : key === "grouped.complete_destination" ? "injected_sqlite_recovery" : "unconverted_engine_service"])),
     events: [], cleanup: "pending", shutdownConfirmed: false };
   let child, timer, closed = false, resultOK = false, ack = false, resultSeen = false, protocolError = false;
   let utilityExits = 0, utilityExitFailure = false, mainReady = false, forceTimeout, stopOwned;

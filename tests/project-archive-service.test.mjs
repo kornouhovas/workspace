@@ -6,7 +6,9 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import test from "node:test";
-import { openSettingsService } from "../dist/service/settings.mjs";
+import { openUnconvertedEngineFixture } from "./support/unconverted-command-engines.mjs";
+import { projectMetadataRecords } from "./support/identity-migration-fixtures.mjs";
+const openEngineService = (...args) => openUnconvertedEngineFixture(...args).engines;
 const observer = { watch() { return { close() {} }; }, schedule() { return { cancel() {} }; } };
 function fixture(run, mode = "direct", options = {}) {
   const directory = fs.realpathSync.native(fs.mkdtempSync(join(tmpdir(), "project-archive-")));
@@ -15,7 +17,7 @@ function fixture(run, mode = "direct", options = {}) {
   const original = mode === "grouped" ? "Client/Project" : "Project";
   fs.mkdirSync(join(root, original)); fs.writeFileSync(join(root, original, "sentinel"), "exact bytes\n");
   let service;
-  const open = () => service = openSettingsService(database, undefined, undefined, observer, options.filesystem, options.native);
+  const open = () => service = openEngineService(database, undefined, undefined, observer, options.filesystem, options.native);
   try {
     open();
     const workspace = service.workspaces.create({ type: "workspace.create", name: "Primary", rootPath: root }).value;
@@ -30,7 +32,7 @@ function fixture(run, mode = "direct", options = {}) {
 }
 
 for (const mode of ["direct", "grouped"]) test(`${mode}: explicit archive designation persists and excludes its folder without moving projects`, () => fixture(f => {
-  const before = f.query("workspace.listProjects").value.projects;
+  const before = projectMetadataRecords(f.query("workspace.listProjects"));
   const preview = f.query("workspace.previewArchiveLocation", { relativePath: "Archive" });
   assert.equal(preview.ok, true);
   assert.equal(fs.existsSync(join(f.root, "Archive")), false);
@@ -38,7 +40,7 @@ for (const mode of ["direct", "grouped"]) test(`${mode}: explicit archive design
   const applied = f.command("workspace.applyArchiveLocation", { operationId: randomUUID(), previewToken: preview.value.previewToken });
   assert.equal(applied.ok, true);
   assert.equal(applied.value.relativePath, "Archive");
-  assert.deepEqual(f.query("workspace.listProjects").value.projects, before);
+  assert.deepEqual(projectMetadataRecords(f.query("workspace.listProjects")), before);
   f.restart();
   assert.equal(f.query("workspace.listArchivedProjects").value.relativePath, "Archive");
   fs.mkdirSync(join(f.root, "Archive"));
@@ -63,7 +65,7 @@ for (const mode of ["direct", "grouped"]) test(`${mode}: archive and restore pre
   assert.equal(result.ok, true); assert.equal(result.value.operation.stage, "completed", JSON.stringify(result.value));
   assert.equal(fs.existsSync(join(f.root, f.original)), false);
   assert.equal(fs.readFileSync(join(f.root, "Archive", f.original, "sentinel"), "utf8"), "exact bytes\n");
-  assert.deepEqual(f.query("workspace.listProjects").value.projects, []);
+  assert.deepEqual(projectMetadataRecords(f.query("workspace.listProjects")), []);
   let archived = f.query("workspace.listArchivedProjects").value.projects;
   assert.equal(archived[0].projectId, project.projectId);
   assert.equal(archived[0].originalRelativePath, f.original);
@@ -75,7 +77,7 @@ for (const mode of ["direct", "grouped"]) test(`${mode}: archive and restore pre
   assert.equal(restore.ok, true); assert.deepEqual(restore.value.blockers, []);
   const restored = f.command("workspace.applyProjectArchive", { operationId: randomUUID(), previewToken: restore.value.previewToken });
   assert.equal(restored.ok, true); assert.equal(restored.value.operation.stage, "completed", JSON.stringify(restored.value));
-  assert.equal(f.query("workspace.listProjects").value.projects[0].projectId, project.projectId);
+  assert.equal(projectMetadataRecords(f.query("workspace.listProjects"))[0].projectId, project.projectId);
   assert.deepEqual(f.query("workspace.listArchivedProjects").value.projects, []);
   assert.equal(fs.readFileSync(join(f.root, f.original, "sentinel"), "utf8"), "exact bytes\n");
   assert.equal(f.query("workspace.listTextProperties").value.values.find(v => v.projectId === project.projectId).value, "  archived\n");
@@ -109,7 +111,7 @@ test("missing grouped restore parent requires explicit creation and fresh catego
   assert.deepEqual(explicit.blockers, []);
   const result = f.command("workspace.applyProjectArchive", { operationId: randomUUID(), previewToken: explicit.previewToken });
   assert.equal(result.value.operation.stage, "completed", JSON.stringify(result));
-  const project = f.query("workspace.listProjects").value.projects[0];
+  const project = projectMetadataRecords(f.query("workspace.listProjects"))[0];
   assert.equal(project.projectId, projectId); assert.notEqual(project.categoryId, f.initial.projects[0].categoryId);
 }, "grouped"));
 test("archive designation cannot change while populated and incompatible mode cannot invent a restore target", () => fixture(f => {
@@ -272,7 +274,7 @@ test("multiple archived siblings restore into the explicitly recreated original 
     const result = f.command("workspace.applyProjectArchive", { operationId: randomUUID(), previewToken: preview.previewToken });
     assert.equal(result.value.operation.stage, "completed", JSON.stringify(result));
   }
-  const restored = f.query("workspace.listProjects").value.projects;
+  const restored = projectMetadataRecords(f.query("workspace.listProjects"));
   assert.equal(restored.length, 2); assert.equal(restored[0].categoryId, restored[1].categoryId);
 }, "grouped"));
 

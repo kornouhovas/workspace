@@ -9,7 +9,8 @@ import test from "node:test";
 import { build } from "esbuild";
 import { BackendController } from "../dist/desktop/backend-controller.mjs";
 import { startServiceProcess } from "../dist/service/entry.cjs";
-import { openSettingsService } from "../dist/service/settings.mjs";
+import { openUnconvertedEngineFixture } from "./support/unconverted-command-engines.mjs";
+const openEngineService = (...args) => openUnconvertedEngineFixture(...args).engines;
 import { renameNoReplace } from "../dist/service/project-rename-filesystem.mjs";
 import { createNativeProjectReveal } from "../src/desktop/project-reveal.ts";
 
@@ -80,7 +81,7 @@ async function fixture(run, options = {}) {
       return result;
     };
     startServiceProcess(parent, options.productionDefault ? undefined :
-      (path, folder) => openSettingsService(path, folder, undefined, observers, undefined, native), () => child.emit("exit", 0));
+      (path, folder) => openEngineService(path, folder, undefined, observers, undefined, native), () => child.emit("exit", 0));
     generation = { parent, child, servicePort, desktopPort };
     assert.equal(await controller.start(child, desktopPort, database, {}, 2000), true);
   }
@@ -313,10 +314,13 @@ for (const boundary of ["pre-intent", "unfinished-original", "unfinished-destina
   }));
 }
 
-test("compiled production entry moves categories with its fixed native adapter", () => fixture(async (f) => {
+test("compiled production entry denies unconverted category moves without effects", () => fixture(async (f) => {
   const result = await f.client.moveProjectCategory(f.request());
-  assert.equal(result.value.outcome, "completed");
-  assert.equal(fs.readFileSync(join(f.root, "Destination/Original/sentinel"), "utf8"), "  Original\n");
+  assert.equal(result.ok, false);assert.equal(result.error.code,"identity_update_required");
+  assert.equal(fs.readFileSync(join(f.root, "Category/Original/sentinel"), "utf8"), "  Original\n");
+  assert.equal(fs.existsSync(join(f.root,"Destination/Original")),false);
+  assert.equal((await f.client.listProjects(f.one.workspaceId)).value.revision,f.list.revision);
+  assert.deepEqual(f.nativeTargets,[]);assert.deepEqual(f.events,[]);
 }, { productionDefault: true }));
 
 for (const delivered of [false, true]) {

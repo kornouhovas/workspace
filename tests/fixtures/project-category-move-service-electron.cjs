@@ -246,7 +246,7 @@ if (process.versions.electron) {
       await lifecycle("connect", async () => {
         if (++connectCount === 2 && fault === "restart-connect-malformed-result") throw new Error("private injected reconnect failure");
         controller = new BackendController();
-        const child = utilityProcess.fork(join(__dirname, "../../dist/service/entry.cjs"), [],
+        const child = utilityProcess.fork(join(__dirname, "../../dist/service/unconverted-engine-test-entry.cjs"), [],
           { stdio: "pipe", serviceName: "Project category move service checkpoint" });
         own.add(child);
         let pid;
@@ -375,7 +375,7 @@ if (process.versions.electron) {
         const nextParent = currentParent === destinationParent ? originalParent : destinationParent;
         const nextCategoryId = currentCategoryId === destination.categoryId ? project.categoryId : destination.categoryId;
         // Real SQLite transaction rejection after the native effect creates an
-        // unfinished operation in the unmodified production utility service.
+        // unfinished operation in the explicitly injected unconverted-engine utility fixture.
         sql.exec("CREATE TRIGGER fixture_interrupt BEFORE UPDATE ON projects BEGIN SELECT RAISE(ABORT, 'Fixture completion interruption'); END");
         const recoveryInput = moveInput(nextCategoryId, revision), unfinished = await request(recoveryInput);
         seam("unfinished_result"); assert.equal(unfinished.outcome, "recoverable");

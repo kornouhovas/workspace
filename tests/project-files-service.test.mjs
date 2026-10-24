@@ -5,13 +5,14 @@ import {mkdtempSync,mkdirSync,writeFileSync,rmSync,realpathSync,symlinkSync,link
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {randomUUID} from 'node:crypto';
-import {openSettingsService} from '../dist/service/settings.mjs';
+import {openUnconvertedEngineFixture} from './support/unconverted-command-engines.mjs';
+const openEngineService=(...args)=>openUnconvertedEngineFixture(...args).engines;
 import {createNativeProjectReveal} from '../src/desktop/project-reveal.ts';
 
 async function fixture(run,mode='direct') {
  const temp=realpathSync.native(mkdtempSync(join(tmpdir(),'project-files-'))),root=join(temp,'root');
  mkdirSync(root);const projectPath=mode==='direct'?join(root,'Atlas'):join(root,'Category','Atlas');mkdirSync(projectPath,{recursive:true});
- const service=openSettingsService(join(temp,'data.sqlite'));
+ const service=openEngineService(join(temp,'data.sqlite'));
  try {
   const workspace=service.workspaces.create({type:'workspace.create',name:'Files',rootPath:root}).value;
   const preview=service.workspaces.previewDiscovery({type:'workspace.previewDiscovery',workspaceId:workspace.workspaceId,mode}).value;

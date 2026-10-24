@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { mkdtempSync, mkdirSync, realpathSync, rmSync, readdirSync, renameSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import {join,basename,dirname} from 'node:path';
 import test from 'node:test';
 import Database from 'better-sqlite3';
 import { openSettingsService } from '../dist/service/settings.mjs';
@@ -380,9 +380,9 @@ for(const failure of ['different_volume','unsupported','changed_during_commit','
  let moved=false,calls=0;
  const reader=(path,scope)=>{
   const observed=observeFolder(path,scope);
-  if(!moved || !path.endsWith('/Needed'))return observed;
+  if(!moved || basename(path)!=='Needed')return observed;
   if(failure==='unsupported')return {ok:false,reason:'unsupported'};
-  if(failure==='duplicate_folder_id' && observed.ok){const root=observeFolder(path.slice(0,-'/Needed'.length),scope);return root.ok?{...observed,evidence:root.evidence}:root;}
+  if(failure==='duplicate_folder_id' && observed.ok){const root=observeFolder(dirname(path),scope);return root.ok?{...observed,evidence:root.evidence}:root;}
   if(observed.ok && (failure==='different_volume'||failure==='changed_during_commit'&&++calls>=3))return {...observed,evidence:{...observed.evidence,volume:'1234567890abcdef1234567890abcdef'}};
   return observed;
  };
@@ -434,22 +434,139 @@ test('root-only review cannot accept duplicate root and descendant durable IDs',
   assert.equal(f.sql.prepare('SELECT durable_evidence FROM sources').get().durable_evidence,null);
  },'direct',(path,scope)=>{
   const current=observeFolder(path,scope);
-  if(!duplicate||!path.endsWith('/Project')||!current.ok)return current;
-  const root=observeFolder(path.slice(0,-'/Project'.length),scope);
+  if(!duplicate||basename(path)!=='Project'||!current.ok)return current;
+  const root=observeFolder(dirname(path),scope);
   return root.ok?{...current,evidence:root.evidence}:root;
  });
 });
 
 
-test('legacy dormant role needs current proof after device renumbering; blocker aliases cannot authorize it',()=>fixture(f=>{
+for(const stale of [false,true]) test(`legacy role after device renumbering needs exact original relationship and unchanged creation (stale=${stale})`,()=>fixture(f=>{
  mkdirSync(join(f.root,'Project','Nested'));discover(f);
  const preview=f.query({type:'workspace.previewDiscovery',mode:'grouped'}).value;
  assert.equal(f.command({type:'workspace.applyDiscovery',previewToken:preview.previewToken}).ok,true);
  f.sql.prepare('UPDATE projects SET durable_evidence=NULL WHERE mode_inactive=1').run();
  f.sql.prepare("UPDATE sources SET applied_root_identity=json_set(applied_root_identity,'$.dev','999')").run();
  for(const table of ['categories','projects'])f.sql.prepare(`UPDATE ${table} SET native_identity=json_set(native_identity,'$.dev','999')`).run();
+ if(stale)f.sql.prepare("UPDATE projects SET native_identity=json_set(native_identity,'$.birthtimeNs','1') WHERE mode_inactive=1").run();
  const before=f.sql.prepare('SELECT * FROM categories').all();
  renameSync(join(f.root,'Project'),join(f.root,'Moved'));
  assert.equal(f.command({type:'workspace.refreshSource'}).ok,true);
- assert.deepEqual(f.sql.prepare('SELECT * FROM categories').all(),before);
+ assert.deepEqual(f.sql.prepare('SELECT * FROM categories').all(),stale?before:before.map(row=>({...row,relative_path:'Moved'})));
+}));
+
+
+test('an existing unconfigured source without volume evidence cannot bypass explicit root review',()=>fixture(f=>{
+ const saved=f.sql.prepare('SELECT * FROM sources').get();assert.equal(saved.discovery_mode,null);assert.equal(saved.applied_root_identity,null);
+ f.sql.prepare('UPDATE sources SET durable_evidence=NULL').run();f.restart();
+ const sibling=f.service.handleCommand({type:'workspace.create',rootPath:f.root,name:'Reused source'});assert.equal(sibling.ok,true);
+ const review=f.query({type:'workspace.previewDiscovery'});assert.equal(review.ok,true);
+ assert.equal(review.value.state,'association_review_required');assert.equal(review.value.previewToken,null);
+ assert.equal(f.sql.prepare('SELECT durable_evidence FROM sources').get().durable_evidence,null);
+ const binding=f.query({type:'workspace.previewSourceAssociation',mappings:[]});assert.ok(binding.value.previewToken);
+ assert.equal(f.command({type:'workspace.applySourceAssociation',previewToken:binding.value.previewToken}).ok,true);
+ assert.equal(f.sql.prepare('SELECT count(*) n FROM projects').get().n,0);
+ assert.equal(f.query({type:'workspace.previewDiscovery'}).value.state,'ready');
+}));
+
+
+test('a second source cannot enroll a duplicate durable root under a distinct locator',()=>{
+ let firstRoot;
+ fixture(f=>{
+  firstRoot=f.root;
+  const other=join(f.root,'..','other');mkdirSync(other);
+  const before=f.sql.prepare('SELECT * FROM sources').all();
+  const duplicate=f.service.handleCommand({type:'workspace.create',name:'Duplicate root',rootPath:other});
+  assert.equal(duplicate.ok,false);assert.equal(duplicate.error.code,'invalid_input');
+  assert.deepEqual(f.sql.prepare('SELECT * FROM sources').all(),before);
+ },'direct',(path,scope)=>{
+  const current=observeFolder(path,scope);
+  if(!firstRoot||basename(path)!=='other'||!current.ok)return current;
+  const original=observeFolder(firstRoot,scope);return original.ok?{...current,evidence:original.evidence}:original;
+ });
+});
+
+
+for(const enrolled of [false,true]) test(`competing retained source roots block binding and continuity (enrolled=${enrolled})`,()=>{
+ let root;
+ fixture(f=>{
+  root=f.root;const first=discover(f),id=first.projects[0].projectId;
+  const other=join(f.root,'..','other');mkdirSync(other);
+  const source=f.sql.prepare('SELECT * FROM sources').get();
+  f.sql.prepare('INSERT INTO sources (id,canonical_root,durable_evidence) VALUES (?,?,?)')
+   .run('20000000-0000-4000-8000-000000000001',other,enrolled?source.durable_evidence:null);
+  if(!enrolled)f.sql.prepare('UPDATE sources SET durable_evidence=NULL').run();
+  const before=f.sql.prepare('SELECT * FROM sources ORDER BY id').all(),projects=f.sql.prepare('SELECT * FROM projects').all();
+  const review=f.query({type:'workspace.previewSourceAssociation',mappings:[]});assert.equal(review.ok,true);assert.equal(review.value.previewToken,null);
+  const current=f.query({type:'workspace.listProjects'});assert.equal(current.ok,true);assert.equal(current.value.state,'changed');
+  assert.equal(current.value.projects.length,0);assert.equal(current.value.retainedProjects[0].projectId,id);
+  assert.equal(f.command({type:'workspace.refreshSource'}).ok,true);
+  assert.deepEqual(f.sql.prepare('SELECT * FROM sources ORDER BY id').all(),before);
+  assert.deepEqual(f.sql.prepare('SELECT * FROM projects').all(),projects);
+ },'direct',(path,scope)=>{
+  const current=observeFolder(path,scope);
+  if(!root||basename(path)!=='other'||!current.ok)return current;
+  const original=observeFolder(root,scope);return original.ok?{...current,evidence:original.evidence}:original;
+ });
+});
+
+test('macOS non-symlink Data-volume alias cannot create a second enrolled source',{skip:process.platform!=='darwin'},()=>fixture(f=>{
+ const alias=`/System/Volumes/Data${f.root}`;
+ assert.notEqual(realpathSync(alias),f.root);
+ const duplicate=f.service.handleCommand({type:'workspace.create',name:'Alias source',rootPath:alias});
+ assert.equal(duplicate.ok,false);assert.equal(duplicate.error.code,'invalid_input');
+ assert.equal(f.sql.prepare('SELECT count(*) n FROM sources').get().n,1);
+}));
+
+
+test('root consent and clearing exclusions cannot enroll or reactivate an excluded legacy project',()=>fixture(f=>{
+ const original=discover(f),id=original.projects[0].projectId;
+ const excluded=f.query({type:'workspace.previewDiscovery',excludedRelativePaths:['Project']}).value;
+ assert.equal(f.command({type:'workspace.applyDiscovery',previewToken:excluded.previewToken}).ok,true);
+ f.sql.prepare('UPDATE projects SET durable_evidence=NULL').run();
+ const before=f.sql.prepare('SELECT * FROM projects').all();assert.equal(before[0].association_state,'excluded');
+ const mapping=f.query({type:'workspace.previewSourceAssociation',mappings:[{kind:'project',id,relativePath:'Project'}]});
+ assert.equal(mapping.value.previewToken,null);
+ const root=f.query({type:'workspace.previewSourceAssociation',mappings:[]}).value;
+ assert.equal(f.command({type:'workspace.applySourceAssociation',previewToken:root.previewToken}).ok,true);
+ assert.deepEqual(f.sql.prepare('SELECT * FROM projects').all(),before);
+ const clear=f.query({type:'workspace.previewDiscovery',excludedRelativePaths:[]}).value;
+ assert.equal(f.command({type:'workspace.applyDiscovery',previewToken:clear.previewToken}).ok,true);
+ assert.deepEqual(f.sql.prepare('SELECT * FROM projects').all(),before);
+ assert.equal(f.query({type:'workspace.listProjects'}).value.projects.length,0);
+ assert.equal(f.query({type:'workspace.listProjects'}).value.retainedProjects[0].projectId,id);
+}));
+
+for(const contradictory of [false,true])test(`mixed legacy enrollment respects ${contradictory?'contradictory':'matching'} durable dormant-role evidence with equal native triples`,()=>fixture(f=>{
+ mkdirSync(join(f.root,'Project','Nested'));const direct=discover(f);
+ const preview=f.query({type:'workspace.previewDiscovery',mode:'grouped'}).value;
+ const grouped=f.command({type:'workspace.applyDiscovery',previewToken:preview.previewToken});assert.equal(grouped.ok,true);
+ const dormantId=direct.projects[0].projectId;
+ const old=JSON.parse(f.sql.prepare('SELECT durable_evidence FROM projects WHERE id=?').get(dormantId).durable_evidence);
+ for(const table of ['sources','categories','projects'])f.sql.prepare(`UPDATE ${table} SET durable_evidence=NULL`).run();
+ f.sql.prepare('UPDATE projects SET durable_evidence=? WHERE id=?').run(JSON.stringify(contradictory?{...old,created:String(BigInt(old.created)+1n)}:old),dormantId);
+ const mappings=[{kind:'category',id:grouped.value.categories[0].categoryId,relativePath:'Project'},
+  {kind:'project',id:grouped.value.projects[0].projectId,relativePath:'Project/Nested'}];
+ const before=['sources','categories','projects'].map(table=>f.sql.prepare(`SELECT * FROM ${table}`).all());
+ const review=f.query({type:'workspace.previewSourceAssociation',mappings});assert.equal(review.ok,true);
+ assert.equal(!!review.value.previewToken,!contradictory,JSON.stringify(review));
+ assert.equal(review.value.candidates.find(c=>c.kind==='category').eligible,!contradictory);
+ assert.equal(f.command({type:'workspace.applySourceAssociation',previewToken:review.value.previewToken}).ok,!contradictory);
+ if(contradictory)assert.deepEqual(['sources','categories','projects'].map(table=>f.sql.prepare(`SELECT * FROM ${table}`).all()),before);
+}));
+
+for(const conflictingScope of [false,true])test(`reviewed grouped scope renewal ${conflictingScope?'rejects conflicting':'preserves matching'} dormant role history`,()=>fixture(f=>{
+ mkdirSync(join(f.root,'Project','Nested'));const direct=discover(f);
+ const preview=f.query({type:'workspace.previewDiscovery',mode:'grouped'}).value;
+ const grouped=f.command({type:'workspace.applyDiscovery',previewToken:preview.previewToken});assert.equal(grouped.ok,true);
+ for(const table of ['sources','categories','projects'])f.sql.prepare(`UPDATE ${table} SET durable_evidence=json_set(durable_evidence,'$.scope','lost-installation')`).run();
+ if(conflictingScope)f.sql.prepare("UPDATE projects SET durable_evidence=json_set(durable_evidence,'$.scope','another-installation') WHERE id=?").run(direct.projects[0].projectId);
+ const mappings=[{kind:'category',id:grouped.value.categories[0].categoryId,relativePath:'Project'},
+  {kind:'project',id:grouped.value.projects[0].projectId,relativePath:'Project/Nested'}];
+ const dormantBefore=f.sql.prepare('SELECT * FROM projects WHERE id=?').get(direct.projects[0].projectId);
+ const review=f.query({type:'workspace.previewSourceAssociation',mappings});assert.equal(review.ok,true);
+ assert.equal(!!review.value.previewToken,!conflictingScope,JSON.stringify(review));
+ assert.equal(f.command({type:'workspace.applySourceAssociation',previewToken:review.value.previewToken}).ok,!conflictingScope);
+ assert.deepEqual(f.sql.prepare('SELECT * FROM projects WHERE id=?').get(direct.projects[0].projectId),dormantBefore);
+ if(!conflictingScope){f.restart();assert.equal(f.query({type:'workspace.listProjects'}).value.projects[0].projectId,grouped.value.projects[0].projectId);}
 }));

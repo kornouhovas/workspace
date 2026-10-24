@@ -1,3 +1,5 @@
+import {observeFolder} from '../src/service/folder-evidence.ts';
+import {withIdentityMigrationDefaults,bindFixtureFolders,projectMetadataRecords} from './support/identity-migration-fixtures.mjs';
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import { mkdtempSync, mkdirSync, readFileSync, realpathSync, rmSync, statSync, symlinkSync, writeFileSync } from "node:fs";
@@ -22,7 +24,7 @@ function withFixture(run) {
 
 const unconfiguredDiscovery = {
   category_property_revision: 0, property_revision: 0, discovery_mode: null, discovery_revision: 0, excluded_relative_paths: "[]",
-  archive_relative_path: null, applied_root_identity: null,
+  archive_relative_path: null, applied_root_identity: null,durable_evidence:null,evidence_generation:0,
 };
 
 function records(databasePath) {
@@ -731,8 +733,8 @@ test("upgrades populated two-migration databases in insertion order without chan
           views: before.views.map(row => ({ ...row, position: 0, filter_config: '{"search":"","rules":[]}', grouping_config: '{"propertyId":null,"settings":[]}', board_config: '{"widths":[],"properties":[],"wrap":true}', table_config: '{"columns":[],"rowOrder":[]}' })) });
         const preview = discoveryPreview(service, ids[1]);
         assert.equal(preview.ok, true);
-        assert.equal(preview.value.state, "empty");
-        assert.equal(preview.value.revision, 0);
+        assert.equal(preview.value.state,"association_review_required");assert.equal(preview.value.previewToken,null);
+        assert.equal(preview.value.revision,0);
         assert.deepEqual(records(databasePath), after);
         assert.equal(service.handleQuery({ type: "settings.load" }).value.language, "ru");
       } finally { service.close(); }
@@ -1414,7 +1416,7 @@ test("apply rolls back configuration/project failures and emits no committed dis
   });
 });
 
-test("replacement/copy gets a new ID, missing records stay unresolved, and final workspace removal retains source projects", () => {
+test("replacement/copy cannot inherit an enrolled binding; missing and removed-workspace metadata stays retained", () => {
   withFixture(({ directory, root, databasePath }) => {
     mkdirSync(join(root, "Project"));
     writeFileSync(join(root, "Project", "keep"), "sentinel");
@@ -1425,17 +1427,15 @@ test("replacement/copy gets a new ID, missing records stay unresolved, and final
       fs.renameSync(join(root, "Project"), join(directory, "original"));
       fs.cpSync(join(directory, "original"), join(root, "Project"), { recursive: true });
       const replacement = applyDiscovery(service, workspace.workspaceId).value;
-      assert.notEqual(replacement.projects[0].projectId, original.projectId);
-      assert.equal(replacement.retainedCount, 1);
-      assert.equal(projectRecords(databasePath).find((p) => p.id === original.projectId).association_state, "replaced");
-      const replacementId = replacement.projects[0].projectId;
+      assert.deepEqual(replacement.projects,[]);assert.equal(replacement.retainedCount,1);
+      assert.equal(projectRecords(databasePath).find(p=>p.id===original.projectId).association_state,"unresolved");
       fs.renameSync(join(root, "Project"), join(directory, "missing"));
-      assert.equal(applyDiscovery(service, workspace.workspaceId).value.retainedCount, 2);
+      assert.equal(applyDiscovery(service, workspace.workspaceId).value.retainedCount, 1);
       fs.renameSync(join(directory, "missing"), join(root, "Project"));
       const unresolved = discoveryPreview(service, workspace.workspaceId).value;
       assert.equal(unresolved.entries[0].reason, "unresolved");
       assert.deepEqual(applyDiscovery(service, workspace.workspaceId, unresolved.previewToken).value.projects, []);
-      assert.equal(projectRecords(databasePath).find((p) => p.id === replacementId).association_state, "unresolved");
+      assert.equal(projectRecords(databasePath).find((p) => p.id === original.projectId).association_state, "unresolved");
       const savedProjects = projectRecords(databasePath);
       service.workspaces.remove({ type: "workspace.remove", workspaceId: workspace.workspaceId });
       assert.deepEqual(projectRecords(databasePath), savedProjects);
@@ -1443,7 +1443,7 @@ test("replacement/copy gets a new ID, missing records stay unresolved, and final
       const recreated = service.handleCommand({ type: "workspace.create", name: "Again", rootPath: root }).value;
       assert.equal(recreated.sourceId, workspace.sourceId);
       assert.notEqual(recreated.viewId, workspace.viewId);
-      assert.equal(listProjects(service, recreated.workspaceId).value.retainedCount, 2);
+      assert.equal(listProjects(service, recreated.workspaceId).value.retainedCount, 1);
       assert.equal(discoveryPreview(service, recreated.workspaceId).value.entries[0].reason, "unresolved");
       assert.equal(readFileSync(join(root, "Project", "keep"), "utf8"), "sentinel");
     } finally { service.close(); }
@@ -1474,6 +1474,13 @@ test("insufficient/reused native evidence remains unresolved rather than transfe
         };
         syncBuiltinESMExports();
         const preview = discoveryPreview(service, workspace.workspaceId).value;
+        if(preview.previewToken===null){
+          assert.equal(preview.state,"identity_unverified");
+          assert.equal(applyDiscovery(service,workspace.workspaceId,randomUUID()).ok,false);
+          assert.equal(projectRecords(databasePath).length,1);
+          assert.equal(projectRecords(databasePath)[0].id,first.projectId);
+          return;
+        }
         assert.equal(preview.entries.find((e) => e.name === (evidence === "insufficient" ? "One" : "Two")).reason, "unresolved");
         const applied = applyDiscovery(service, workspace.workspaceId, preview.previewToken).value;
         if (evidence === "insufficient" || evidence.startsWith("reused")) {
@@ -1504,7 +1511,9 @@ test("unavailable/unreadable/replaced roots keep saved projects and reject unsaf
       fs.opendirSync = originalOpen; syncBuiltinESMExports();
       fs.renameSync(root, join(directory, "disconnected"));
       assert.equal(listProjects(service, workspace.workspaceId).value.state, "unavailable");
-      assert.deepEqual(listProjects(service, workspace.workspaceId).value.projects, applied.projects.map((row) => ({ ...row, resolution: null })));
+      assert.deepEqual(listProjects(service,workspace.workspaceId).value.projects,[]);
+      assert.equal(projectMetadataRecords(listProjects(service,workspace.workspaceId))[0].projectId,applied.projects[0].projectId);
+      assert.equal(projectMetadataRecords(listProjects(service,workspace.workspaceId))[0].resolution,"unresolved");
       mkdirSync(root); mkdirSync(join(root, "Project"));
       const conflict = discoveryPreview(service, workspace.workspaceId).value;
       assert.equal(conflict.state, "root_identity_conflict");
@@ -1563,11 +1572,13 @@ test("populated discovery configuration upgrades to projects, applies and reopen
     let service = openSettingsService(databasePath);
     let projects;
     try {
-      assert.deepEqual(records(databasePath), { ...before, sources: before.sources.map((row) => ({ ...row, property_revision: 0, category_property_revision: 0 })), views: before.views.map(row => ({ ...row, position: 0, filter_config: '{"search":"","rules":[]}', grouping_config: '{"propertyId":null,"settings":[]}', board_config: '{"widths":[],"properties":[],"wrap":true}', table_config: '{"columns":[],"rowOrder":[]}' })) });
+      assert.deepEqual(records(databasePath), { ...before, sources: withIdentityMigrationDefaults("sources",before.sources).map((row) => ({ ...row, property_revision: 0, category_property_revision: 0 })), views: before.views.map(row => ({ ...row, position: 0, filter_config: '{"search":"","rules":[]}', grouping_config: '{"propertyId":null,"settings":[]}', board_config: '{"widths":[],"properties":[],"wrap":true}', table_config: '{"columns":[],"rowOrder":[]}' })) });
       assert.deepEqual(projectRecords(databasePath), []);
-      projects = applyDiscovery(service, workspace.workspaceId).value;
-      assert.deepEqual(projects.projects.map((p) => p.name), ["Kept"]);
-      assert.equal(projects.revision, 8);
+      assert.equal(discoveryPreview(service,workspace.workspaceId).value.state,"association_review_required");
+      bindFixtureFolders(service,workspace.workspaceId,[]);
+      projects=applyDiscovery(service,workspace.workspaceId).value;
+      assert.deepEqual(projects.projects.map(p=>p.name),["Kept"]);
+      assert.equal(projects.revision,9);
     } finally { service.close(); }
     service = openSettingsService(databasePath);
     try {
@@ -1672,27 +1683,22 @@ test("Apply rejects a replaced or link-retargeted root even before its first com
   });
 });
 
-test("a reused native inode with changed birth evidence at the same path retires old metadata and keeps the replacement ID", () => {
-  withFixture(({ root, databasePath }) => {
-    mkdirSync(join(root, "Project"));
-    const service = openSettingsService(databasePath);
-    const originalLstat = fs.lstatSync;
-    try {
-      const workspace = service.handleCommand({ type: "workspace.create", name: "Test", rootPath: root }).value;
-      const original = applyDiscovery(service, workspace.workspaceId).value.projects[0];
-      fs.lstatSync = (path, options) => {
-        const value = originalLstat(path, options);
-        if (path === join(workspace.canonicalRoot, "Project") && options?.bigint) value.birthtimeNs += 1n;
-        return value;
-      };
-      syncBuiltinESMExports();
-      const replacement = applyDiscovery(service, workspace.workspaceId).value;
-      assert.notEqual(replacement.projects[0].projectId, original.projectId);
-      assert.equal(replacement.retainedCount, 1);
-      assert.equal(applyDiscovery(service, workspace.workspaceId).value.projects[0].projectId, replacement.projects[0].projectId);
-      assert.equal(projectRecords(databasePath).find((row) => row.id === original.projectId).association_state, "replaced");
-    } finally { fs.lstatSync = originalLstat; syncBuiltinESMExports(); service.close(); }
-  });
+test("changed durable creation evidence cannot transfer metadata or silently enroll a same-path replacement",()=>{
+ withFixture(({root,databasePath})=>{
+  mkdirSync(join(root,'Project'));let changed=false;
+  const reader=(path,scope)=>{const current=observeFolder(path,scope);return changed&&path===join(realpathSync.native(root),'Project')&&current.ok?{...current,evidence:{...current.evidence,created:String(BigInt(current.evidence.created)+1n)}}:current;};
+  const service=openSettingsService(databasePath,undefined,undefined,undefined,undefined,undefined,reader);
+  try{
+   const workspace=service.handleCommand({type:'workspace.create',name:'Test',rootPath:root}).value;
+   const original=applyDiscovery(service,workspace.workspaceId).value.projects[0];
+   changed=true;
+   const replacement=applyDiscovery(service,workspace.workspaceId).value;
+   assert.deepEqual(replacement.projects,[]);assert.equal(replacement.retainedProjects[0].projectId,original.projectId);
+   assert.equal(replacement.retainedProjects[0].identityReason,'folder_changed');
+   assert.equal(projectRecords(databasePath).length,1);
+   assert.equal(applyDiscovery(service,workspace.workspaceId).value.retainedProjects[0].projectId,original.projectId);
+  }finally{service.close();}
+ });
 });
 
 test("committed projects fan out to actual source references, invalidate sibling previews, suppress unchanged applies and retain metadata", () => {

@@ -1,4 +1,5 @@
-import { historicalWorkspace } from "./helpers/historical-workspace.mjs";
+import { archiveProjectFixture } from "./support/archived-project-fixture.mjs";
+import { seedHistoricalFixture, assertHistoricalFixturePreserved, assertHistoricalPublicMetadata } from "./support/identity-migration-fixtures.mjs";
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync } from 'node:fs';
@@ -113,20 +114,16 @@ test('populated pre-Select migration preserves Text/Number/Date and identities w
   const journal = JSON.parse(readFileSync('src/service/db/migrations/meta/_journal.json', 'utf8')); journal.entries = journal.entries.slice(0, 16);
   for (const entry of journal.entries) writeFileSync(join(migrations, `${entry.tag}.sql`), readFileSync(`src/service/db/migrations/${entry.tag}.sql`));
   writeFileSync(join(migrations, 'meta/_journal.json'), JSON.stringify(journal));
-  const path = join(directory, 'workspace.sqlite'); let service = openSettingsService(path, migrations);
+  const path = join(directory, 'workspace.sqlite');
+  const workspace=seedHistoricalFixture(path,migrations,root,[{name:'text',type:'text',value:'  exact\nТекст  '},{name:'number',type:'number',value:42},{name:'date',type:'date',value:'2024-02-29'}]);
+  const workspaceId=workspace.workspaceId,projectId=workspace.projectId;
+  let service=openSettingsService(path);
   try {
-    const workspace = historicalWorkspace(path, root), workspaceId = workspace.workspaceId;
-    const preview = service.handleQuery({ type: 'workspace.previewDiscovery', workspaceId }).value;
-    const projectId = service.handleCommand({ type: 'workspace.applyDiscovery', workspaceId, previewToken: preview.previewToken }).value.projects[0].projectId;
-    for (const [propertyType, command, field, value] of [['text', 'setTextValue', 'value', '  exact\nТекст  '], ['number', 'setNumberValue', 'expression', '42'], ['date', 'setDateValue', 'value', '2024-02-29']]) {
-      const propertyId = service.handleCommand({ type: 'workspace.createProperty', workspaceId, name: propertyType, propertyType }).value.propertyId;
-      assert.equal(service.handleCommand({ type: `workspace.${command}`, workspaceId, projectId, propertyId, [field]: value }).ok, true);
-    }
-    const before = service.handleQuery({ type: 'workspace.listTextProperties', workspaceId });
-    const settings = service.handleQuery({ type: 'workspace.load' });
-    service.close(); service = openSettingsService(path);
-    assert.deepEqual(service.handleQuery({ type: 'workspace.listTextProperties', workspaceId }), before);
-    assert.deepEqual(service.handleQuery({ type: 'workspace.load' }), settings);
+    assertHistoricalFixturePreserved(assert,path,workspace);
+    const before=assertHistoricalPublicMetadata(assert,service,workspace);
+    assert.equal(service.handleQuery({type:'workspace.listProjects',workspaceId}).value.state,'association_review_required');
+    service.close();service=openSettingsService(path);
+    assert.deepEqual(service.handleQuery({type:'workspace.listTextProperties',workspaceId}),before);
     const propertyId = service.handleCommand({ type: 'workspace.createProperty', workspaceId, name: 'New Select', propertyType: 'single_select' }).value.propertyId;
     const added = service.handleCommand({ type: 'workspace.createSelectOption', workspaceId, propertyId, name: 'Ready', color: 'green' }); assert.equal(added.ok, true);
     const optionId = added.value.snapshot.selectOptions[0].optionId;
@@ -158,10 +155,7 @@ test('retained and archived projects keep editable Single Select metadata and do
   assert.equal(set(f, propertyId, optionId).ok, true);
   const active = f.service.handleQuery({ type: 'workspace.previewDiscovery', workspaceId, excludedRelativePaths: [] }).value;
   assert.equal(f.service.handleCommand({ type: 'workspace.applyDiscovery', workspaceId, previewToken: active.previewToken }).ok, true);
-  const archiveLocation = f.service.handleQuery({ type: 'workspace.previewArchiveLocation', workspaceId, relativePath: 'Archive' }).value;
-  assert.equal(f.service.handleCommand({ type: 'workspace.applyArchiveLocation', workspaceId, operationId: randomUUID(), previewToken: archiveLocation.previewToken }).ok, true);
-  const archive = f.service.handleQuery({ type: 'workspace.previewProjectArchive', workspaceId, projectId: f.projectId, action: 'archive', name: null, createParent: false }).value;
-  assert.equal(f.service.handleCommand({ type: 'workspace.applyProjectArchive', workspaceId, operationId: randomUUID(), previewToken: archive.previewToken }).ok, true);
+  archiveProjectFixture(f.path,workspaceId,f.projectId);
   assert.equal(set(f, propertyId, optionId).ok, true);
   f.reopen(); assert.equal(list(f).value.selectValues[0].optionId, optionId);
   assert.equal(readFileSync(join(f.root, 'Archive', 'Project', 'keep'), 'utf8'), 'unchanged');

@@ -7,7 +7,9 @@ import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import test from "node:test";
 import { renameNoReplace } from "../dist/service/project-rename-filesystem.mjs";
-import { openSettingsService } from "../dist/service/settings.mjs";
+import { openUnconvertedEngineFixture } from "./support/unconverted-command-engines.mjs";
+import { projectMetadataRecords, bindFixtureFolders } from "./support/identity-migration-fixtures.mjs";
+const openEngineService = (...args) => openUnconvertedEngineFixture(...args).engines;
 
 const observer = { watch() { return { close() {} }; }, schedule() { return { cancel() {} }; } };
 function fixture(run, options = {}) {
@@ -16,7 +18,7 @@ function fixture(run, options = {}) {
   fs.mkdirSync(root); fs.mkdirSync(join(root, "Original")); fs.mkdirSync(join(root, "Original", "Project"));
   fs.writeFileSync(join(root, "Original", "Project", "sentinel"), "exact bytes\n");
   let service;
-  const open = () => service = openSettingsService(database, undefined, undefined, observer, options.filesystem, options.native);
+  const open = () => service = openEngineService(database, undefined, undefined, observer, options.filesystem, options.native);
   try {
     open();
     const workspace = service.workspaces.create({ type: "workspace.create", name: "Primary", rootPath: root }).value;
@@ -25,7 +27,7 @@ function fixture(run, options = {}) {
     const command = (type, rest = {}) => service.handleCommand({ type, workspaceId: workspace.workspaceId, ...rest });
     const preview = query("workspace.previewDiscovery", { mode: "grouped" }).value;
     const initial = command("workspace.applyDiscovery", { previewToken: preview.previewToken }).value;
-    run({ root, directory, database, query, command, initial, workspace, sibling,
+    run({ root, directory, database, query, command, initial, workspace, sibling, get application(){return service.application;},
       restart() { service.close(); open(); } });
   } finally { service?.close(); fs.rmSync(directory, { recursive: true, force: true }); }
 }
@@ -42,7 +44,9 @@ test("reviewed creation persists an empty category shared with sibling workspace
   f.restart();
   assert.deepEqual(f.command("workspace.applyCategoryFolder", request), result);
   const projects = f.query("workspace.listProjects", { workspaceId: f.sibling.workspaceId }).value;
-  assert.equal(projects.categories.find(c => c.name === "Empty").categoryId, categoryId);
+  assert.equal(projects.categories.some(c=>c.categoryId===categoryId),false);
+  const stored=new Database(f.database);
+  try {assert.deepEqual(stored.prepare('SELECT relative_path,durable_evidence FROM categories WHERE id=?').get(categoryId),{relative_path:'Empty',durable_evidence:null});}finally{stored.close();}
   assert.deepEqual(projects.projects.map(p => p.projectId), f.initial.projects.map(p => p.projectId));
 }));
 
@@ -78,8 +82,9 @@ test("existing folders require separate association review and enroll previewed 
   assert.equal(applied.value.outcome, "completed");
   f.restart();
   const list = f.query("workspace.listProjects").value;
-  assert.equal(list.projects.length, 2);
-  assert.equal(list.projects.find(p => p.name === "Second").categoryId, applied.value.operation.categoryId);
+  assert.equal(list.projects.length,1);
+  assert.equal(list.retainedProjects.find(p=>p.name==='Second').categoryId,applied.value.operation.categoryId);
+  assert.equal(list.retainedProjects.find(p=>p.name==='Second').identityReason,'review_required');
   assert.equal(fs.readFileSync(join(f.root, "Existing", "Second", "contents"), "utf8"), "keep");
 }));
 
@@ -100,8 +105,8 @@ test("interrupted rename is not replayed by reads/restart and completes only aft
   const done = f.command("workspace.recoverCategoryFolder", { operationId: request.operationId, previewToken: recovery.value.previewToken, action: "complete_destination" });
   assert.equal(done.value.outcome, "completed");
   f.restart();
-  assert.equal(f.query("workspace.listProjects").value.projects[0].projectId, project.projectId);
-  assert.equal(f.query("workspace.listProjects").value.projects[0].relativePath, "Moved/Project");
+  assert.equal(projectMetadataRecords(f.query("workspace.listProjects"))[0].projectId, project.projectId);
+  assert.equal(projectMetadataRecords(f.query("workspace.listProjects"))[0].relativePath, "Moved/Project");
   assert.deepEqual(f.query("workspace.listCategoryFolderOperations").value.operations, []);
 }, { native(from, to) { assert.equal(renameNoReplace(from, to), "renamed"); throw new Error("Injected response interruption"); } }));
 
@@ -123,7 +128,7 @@ test("native no-replace rejects a destination inserted after preview without ove
   assert.equal(result.value.outcome, "rejected"); assert.equal(result.value.operation.problem, "occupied");
   assert.equal(fs.readFileSync(join(f.root, "Collision", "marker"), "utf8"), "do not overwrite");
   assert.equal(fs.readFileSync(join(f.root, "Original", "Project", "sentinel"), "utf8"), "exact bytes\n");
-  assert.equal(f.query("workspace.listProjects").value.projects[0].projectId, f.initial.projects[0].projectId);
+  assert.equal(projectMetadataRecords(f.query("workspace.listProjects"))[0].projectId, f.initial.projects[0].projectId);
 }, { native(from, to) { fs.mkdirSync(to); fs.writeFileSync(join(to, "marker"), "do not overwrite"); return renameNoReplace(from, to); } }));
 
 
@@ -192,7 +197,7 @@ for (const phase of ["intent", "effect", "recorded"]) {
 test("closed storage produces normalized query errors instead of escaping the service boundary", () => {
   const directory = fs.mkdtempSync(join(tmpdir(), "category-options-closed-"));
   try {
-    const service = openSettingsService(join(directory, "app.sqlite")); service.close();
+    const service = openEngineService(join(directory, "app.sqlite")); service.close();
     for (const type of ["workspace.listCategoryFolderOperations", "workspace.previewCategoryFolderRecovery", "workspace.getCategoryFolderOperation", "workspace.listCategoryPresentation"]) {
       const input = { type, workspaceId: randomUUID(), ...(["workspace.previewCategoryFolderRecovery", "workspace.getCategoryFolderOperation"].includes(type) ? { operationId: randomUUID() } : {}) };
       assert.equal(service.handleQuery(input).ok, false);
@@ -214,6 +219,7 @@ test("category option order persists by identity while folder and project placem
   const preview = f.query("workspace.previewCategoryFolder", { action: "create", categoryId: null, name: "Second" }).value;
   const created = f.command("workspace.applyCategoryFolder", { operationId: randomUUID(), previewToken: preview.previewToken }).value;
   const originalId = f.initial.categories[0].categoryId, secondId = created.operation.categoryId;
+  bindFixtureFolders(f.application,f.workspace.workspaceId,[{kind:'category',id:secondId,relativePath:'Second'}]);
   const before = f.query("workspace.listProjects").value;
   const options = [{ categoryId: secondId, color: "blue", hidden: false, position: 0 }, { categoryId: originalId, color: "default", hidden: true, position: 1 }];
   assert.equal(f.command("workspace.setCategoryPresentation", { options }).ok, true);

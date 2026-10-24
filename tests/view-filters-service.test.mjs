@@ -1,3 +1,4 @@
+import {archiveProjectFixture} from './support/archived-project-fixture.mjs';
 import { createPerformanceQueries } from '../scripts/runtime-performance-queries.mjs';
 import Database from 'better-sqlite3';
 import { randomUUID } from 'node:crypto';
@@ -53,8 +54,8 @@ test('displayed reads cannot authorize filesystem changes and expire when source
   assert.deepEqual(f.results({projection}).value.projectIds, projection.projectIds);
   assert.ok(f.query('listProjects').value.retainedProjects.some(p => p.projectId === alpha.projectId));
   const denied = f.command('renameProject', {projectId:alpha.projectId,operationId:randomUUID(),name:'Unauthorized',expectedRevision:list.revision});
-  assert.equal(denied.ok, true);
-  assert.equal(denied.value.outcome, 'rejected');
+  assert.equal(denied.ok,false);
+  assert.equal(denied.error.code,'identity_update_required');
   assert.equal(f.command('refreshSource').ok, true);
   assert.equal(f.results({projection}).error.code, 'invalid_input');
   const fresh = f.query('listProjects').value;
@@ -214,10 +215,7 @@ test('filter ownership is per workspace; foreign options, invalid dates, duplica
 
 test('archive and active queries share saved filters while keeping lifecycle membership separate', () => fixture(f => {
   const alpha = f.query('listProjects').value.projects.find(p => p.name === 'Alpha').projectId;
-  const location = f.query('previewArchiveLocation', { relativePath: 'Archive' }).value;
-  assert.equal(f.command('applyArchiveLocation', { operationId: randomUUID(), previewToken: location.previewToken }).ok, true);
-  const preview = f.query('previewProjectArchive', { projectId: alpha, action: 'archive', name: null, createParent: false }).value;
-  assert.equal(f.command('applyProjectArchive', { operationId: randomUUID(), previewToken: preview.previewToken }).value.operation.stage, 'completed');
+  archiveProjectFixture(f.path,f.workspace.workspaceId,alpha);
   assert.equal(f.save({ search: 'ALP', rules: [] }).ok, true);
   assert.deepEqual(f.results().value.projectIds, []);
   assert.deepEqual(f.results({ archived: true }).value.projectIds, [alpha]);

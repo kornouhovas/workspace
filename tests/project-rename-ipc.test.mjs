@@ -10,7 +10,8 @@ import Database from "better-sqlite3";
 import { build } from "esbuild";
 import { BackendController } from "../dist/desktop/backend-controller.mjs";
 import { startServiceProcess } from "../dist/service/entry.cjs";
-import { openSettingsService } from "../dist/service/settings.mjs";
+import { openUnconvertedEngineFixture } from "./support/unconverted-command-engines.mjs";
+const openEngineService = (...args) => openUnconvertedEngineFixture(...args).engines;
 import { renameNoReplace } from "../dist/service/project-rename-filesystem.mjs";
 import { createNativeProjectReveal } from "../src/desktop/project-reveal.ts";
 
@@ -81,7 +82,7 @@ async function fixture(mode, run, options = {}) {
       return result;
     };
     startServiceProcess(parent, options.productionDefault ? undefined :
-      (path, folder) => openSettingsService(path, folder, undefined, observers, undefined, native), () => child.emit("exit", 0));
+      (path, folder) => openEngineService(path, folder, undefined, observers, undefined, native), () => child.emit("exit", 0));
     generation = { parent, child, servicePort, desktopPort };
     assert.equal(await controller.start(child, desktopPort, database, {}, 2000), true);
   }
@@ -330,8 +331,9 @@ for (const mode of ["direct", "grouped"]) {
     }));
   }
 }
-test("compiled production entry uses its fixed native adapter without service injection", () => fixture("direct", async (f) => {
+test("compiled production entry denies unconverted rename before native dispatch", () => fixture("direct", async (f) => {
   const result = await f.client.renameProject(f.request());
-  assert.equal(result.value.outcome, "completed");
-  assert.equal(fs.readFileSync(join(f.root, "Renamed", "sentinel"), "utf8"), "  Original\n");
+  assert.equal(result.error.code,"identity_update_required");
+  assert.equal(fs.existsSync(join(f.root,"Renamed")),false);
+  assert.equal(fs.readFileSync(join(f.root,"Original","sentinel"),"utf8"),"  Original\n");
 }, { productionDefault: true }));

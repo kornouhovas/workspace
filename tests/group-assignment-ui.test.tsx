@@ -14,14 +14,15 @@ Object.assign(globalThis, { window: browser, document: browser.document, HTMLEle
 Object.defineProperty(globalThis, "navigator", { configurable: true, value: browser.navigator });
 const { cleanup, render, screen, waitFor, fireEvent, within } = await import("@testing-library/react");
 const { default: userEvent } = await import("@testing-library/user-event");
-// @ts-expect-error Built service module intentionally has no declarations.
-const { openSettingsService } = await import("../dist/service/settings.mjs");
+// @ts-expect-error Explicit legacy-engine fixture intentionally has no declarations.
+const {openUnconvertedEngineFixture}=await import("./support/unconverted-command-engines.mjs");
+const openLegacyEngineService=(...args:Parameters<typeof import("../src/service/settings.js").openSettingsService>)=>openUnconvertedEngineFixture(...args).engines;
 
 for (const language of ["en", "ru"] as const) for (const layout of ["table", "board"] as const) for (const type of ["text", "number", "date", "single_select"] as const) {
   test(`${language} ${layout} ${type} pointer assignment and keyboard empty clearing persist`, async () => {
     const directory=mkdtempSync(join(tmpdir(),"assignment-ui-")),root=join(directory,"root");mkdirSync(root);
     for(const name of ["Alpha","Beta"])mkdirSync(join(root,name));
-    const service=openSettingsService(join(directory,"app.sqlite"));
+    const service=openLegacyEngineService(join(directory,"app.sqlite"));
     const workspace=service.handleCommand({type:"workspace.create",rootPath:root,name:"One"}).value;
     const {workspaceId,viewId,sourceId}=workspace;
     const command=(type:string,fields={})=>service.handleCommand({type:`workspace.${type}`,workspaceId,...fields});
@@ -104,7 +105,7 @@ for (const language of ["en", "ru"] as const) for (const layout of ["table", "bo
   test(`${language} ${layout} MultiSelect uses each occurrence's source and refreshes duplicates`, async () => {
     const directory = mkdtempSync(join(tmpdir(), "multi-drop-ui-")), root = join(directory, "root");
     mkdirSync(root); mkdirSync(join(root, "Alpha"));
-    const service = openSettingsService(join(directory, "app.sqlite"));
+    const service = openLegacyEngineService(join(directory, "app.sqlite"));
     const {workspaceId, viewId, sourceId} = service.handleCommand({type:"workspace.create", rootPath:root, name:"Multi"}).value;
     const command = (type:string, fields={}) => service.handleCommand({type:`workspace.${type}`,workspaceId,...fields});
     const query = (type:string, fields={}) => service.handleQuery({type:`workspace.${type}`,workspaceId,...fields});
@@ -181,7 +182,7 @@ for (const language of ['en','ru'] as const) for (const layout of ['table','boar
   test(`${language} ${layout} ${grouping} ${recoverable?'interrupted':'normal'} folder drag, cancel, rejection, lost reply and keyboard reflect real state`,async()=>{
     const directory=mkdtempSync(join(tmpdir(),'folder-drag-ui-')),root=join(directory,'root');mkdirSync(root);
     for(const name of ['A','B','C']){mkdirSync(join(root,name));mkdirSync(join(root,name,grouping==='category'&&(!recoverable||name==='A')||name==='A'?'Alpha':'Target'));}
-    const service=openSettingsService(join(directory,'app.sqlite'),undefined,undefined,undefined,undefined,recoverable?()=>{throw new Error('interrupted native reply');}:undefined);
+    const service=openLegacyEngineService(join(directory,'app.sqlite'),undefined,undefined,undefined,undefined,recoverable?()=>{throw new Error('interrupted native reply');}:undefined);
     const {workspaceId,viewId,sourceId}=service.handleCommand({type:'workspace.create',rootPath:root,name:'One'}).value;
     const command=(type:string,fields={})=>service.handleCommand({type:`workspace.${type}`,workspaceId,...fields});
     const query=(type:string,fields={})=>service.handleQuery({type:`workspace.${type}`,workspaceId,...fields});
@@ -254,7 +255,7 @@ for (const language of ['en','ru'] as const) for (const layout of ['table','boar
 test('a newer property change during assignment supersedes its older reply without replay', async () => {
   const directory=mkdtempSync(join(tmpdir(),'assignment-revision-ui-')),root=join(directory,'root');mkdirSync(root);
   for(const name of ['Alpha','Beta'])mkdirSync(join(root,name));
-  const service=openSettingsService(join(directory,'app.sqlite'));
+  const service=openLegacyEngineService(join(directory,'app.sqlite'));
   const {workspaceId,viewId,sourceId}=service.handleCommand({type:'workspace.create',rootPath:root,name:'One'}).value;
   const command=(type:string,fields={})=>service.handleCommand({type:`workspace.${type}`,workspaceId,...fields});
   const projects=command('applyDiscovery',{previewToken:service.handleQuery({type:'workspace.previewDiscovery',workspaceId}).value.previewToken}).value.projects;

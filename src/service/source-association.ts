@@ -5,8 +5,8 @@ import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import * as schema from "./db/schema.js";
 import { scanDirectSource, scanGroupedSource, projectExclusions, reliableIdentity, sameIdentity, type DiscoveryScan } from "./discovery.js";
 import { readProjectReservations } from "./project-rename-reservations.js";
-import { identityState, sourceIdentity, type EvidenceReader } from "./source-identity.js";
-import type { FolderObservation } from "./folder-evidence.js";
+import { identityState, sourceIdentity, storedEvidence, type EvidenceReader } from "./source-identity.js";
+import { durableOwnershipKey, sameDurableFolder, type FolderObservation } from "./folder-evidence.js";
 import type { FolderMapping, SourceAssociationPreview, SourceAssociationResult } from "../contracts/source-association.js";
 import type { ServiceResult } from "../contracts/settings.js";
 
@@ -29,7 +29,9 @@ export function createSourceAssociationService(db: Database, scope: string, read
     const archives = db.select().from(schema.projectArchives).where(eq(schema.projectArchives.sourceId, source.id)).all();
     const reservations = readProjectReservations(db, source.id);
     const siblings = db.select().from(schema.workspaces).where(eq(schema.workspaces.sourceId, source.id)).orderBy(asc(schema.workspaces.id)).all();
-    return {workspace, source, categories, projects, archives, reservations, siblings};
+    const peerSources=db.select().from(schema.sources).orderBy(asc(schema.sources.id)).all().filter(peer=>peer.id!==source.id)
+      .map(({id,canonicalRoot,durableEvidence,appliedRootIdentity})=>({id,canonicalRoot,durableEvidence,appliedRootIdentity}));
+    return {workspace,source,categories,projects,archives,reservations,siblings,peerSources};
   }
   function inspect(workspaceId: string, mappings: FolderMapping[], afterEnrollment = false) {
     const data = read(workspaceId), {source} = data;
@@ -37,13 +39,13 @@ export function createSourceAssociationService(db: Database, scope: string, read
     if (mode !== "direct" && mode !== "grouped") throw new StaleBinding();
     const scan = (mode === "grouped" ? scanGroupedSource : scanDirectSource)(source.canonicalRoot, source.archiveRelativePath,
       projectExclusions(JSON.parse(source.excludedRelativePaths), mode).effective);
-    const root = sourceIdentity(source, scan, scope, reader);
+    const root = sourceIdentity(source, scan, scope, reader,data.peerSources);
     const evidence: {mapping: FolderMapping | null; observation: FolderObservation}[] = [{mapping: null, observation: root.observation}];
     const rootEligible = scan.snapshot && root.observation.ok && ["verified", "review_required", "scope_unverified"].includes(root.state);
     const observations = new Map<string, FolderObservation>();
     for (const entry of scan.entries.filter(e => e.reason === null)) observations.set(entry.relativePath, reader(join(source.canonicalRoot, entry.relativePath), scope));
     // Each physical identity has exactly one observable candidate. Root and descendants cannot alias.
-    const key = (o: FolderObservation) => o.ok ? JSON.stringify([o.evidence.provider, o.evidence.volume, o.evidence.serial, o.evidence.fileId]) : null;
+    const key = (o: FolderObservation) => o.ok ? durableOwnershipKey(o.evidence) : null;
     const counts = new Map<string, number>();
     for (const observation of [root.observation, ...observations.values()]) {
       const id = key(observation); if (id) counts.set(id, (counts.get(id) ?? 0) + 1);
@@ -62,10 +64,19 @@ export function createSourceAssociationService(db: Database, scope: string, read
         return reliableIdentity(legacy) && legacy.ino === observed.mount.ino && legacy.birthtimeNs === observed.mount.birthtimeNs;
       } catch {return true;}
     };
-    const dormantRoleHistory = (other: typeof rows[number], kind: "category" | "project", owner: typeof data.categories[number] | typeof data.projects[number]) => {
+    const dormantRoleHistory = (other: typeof rows[number], kind: "category" | "project", owner: typeof data.categories[number] | typeof data.projects[number], observed: FolderObservation) => {
       if (kind !== "category" || owner.modeInactive || owner.associationState !== "active" || other.kind !== "project" ||
         !other.row.modeInactive || !("categoryId" in other.row) || other.row.categoryId !== null ||
         other.row.relativePath !== owner.relativePath || !["active","excluded"].includes(other.row.associationState)) return false;
+      if (other.row.durableEvidence !== null) {
+        const saved = storedEvidence(other.row.durableEvidence);
+        const historicalOwner = storedEvidence(owner.durableEvidence);
+        return !!saved && observed.ok && sameDurableFolder(saved, observed.evidence, false) &&
+          // Pre-write verification binds the old scopes. After enrollment the
+          // owner scope is new; exact expected-row comparison below preserves
+          // the untouched dormant history while checking the committed state.
+          (afterEnrollment || owner.durableEvidence === null || !!historicalOwner && sameDurableFolder(saved, historicalOwner));
+      }
       try {
         const old = JSON.parse(other.row.nativeIdentity), current = JSON.parse(owner.nativeIdentity);
         return reliableIdentity(old) && reliableIdentity(current) && sameIdentity(old,current);
@@ -86,7 +97,7 @@ export function createSourceAssociationService(db: Database, scope: string, read
         ["review_required", "scope_unverified", "verified"].includes(oldState) &&
         observed.evidence.volume === rootObservation.evidence.volume && observed.evidence.serial === rootObservation.evidence.serial &&
         counts.get(key(observed)!) === 1 && child?.kind === "directory" && sameIdentity(child.identity, observed.mount) &&
-        !rows.some(other => other.row.id !== row.id && !dormantRoleHistory(other,kind,row) && (other.row.relativePath === path || sameOwnership(other.row, observed))) &&
+        !rows.some(other => other.row.id !== row.id && !dormantRoleHistory(other,kind,row,observed) && (other.row.relativePath === path || sameOwnership(other.row, observed))) &&
         !data.reservations.some(r => r.relativePath === path || r.relativePath.startsWith(`${path}/`) || path.startsWith(`${r.relativePath}/`)));
       if (kind === "category" && eligible && oldState === "verified" && path === row.relativePath) verifiedParents.add(row.id);
       return {kind, id:row.id, relativePath:path, savedPath:row.relativePath, eligible:eligible && (oldState !== "verified" || afterEnrollment && path === row.relativePath), selected:!!mapping, reason:observed?.ok && root.observation.ok && (observed.evidence.provider !== root.observation.evidence.provider || observed.evidence.volume !== root.observation.evidence.volume || observed.evidence.serial !== root.observation.evidence.serial) ? "different_volume" as const : oldState as import("../contracts/source-association.js").FolderIdentityReason};

@@ -14,7 +14,7 @@
     "check:docs": "node scripts/check-doc-links.mjs",
     "build:renderer": "vite build",
     "build:desktop": "esbuild src/desktop/main.ts --bundle --platform=node --format=cjs --external:electron --outfile=dist/desktop/main.cjs && esbuild src/desktop/preload.ts --bundle --platform=node --format=cjs --external:electron --outfile=dist/desktop/preload.cjs && esbuild src/desktop/backend-controller.ts --bundle --platform=node --format=esm --outfile=dist/desktop/backend-controller.mjs && esbuild src/desktop/root-picker.ts --bundle --platform=node --format=esm --outfile=dist/desktop/root-picker.mjs && node scripts/copy-native-resources.mjs",
-    "build:service-test-lib": "npm run build:project-rename-native && npm run build:discovery-worker && esbuild src/service/settings.ts --bundle --platform=node --format=esm --external:better-sqlite3 --outfile=dist/service/settings.mjs && esbuild src/service/project-rename-filesystem.ts --bundle --platform=node --format=esm --outfile=dist/service/project-rename-filesystem.mjs && esbuild src/service/project-rename-filesystem.ts --bundle --platform=node --format=cjs --define:import.meta.url=undefined --outfile=dist/service/project-rename-filesystem.cjs",
+    "build:service-test-lib": "npm run build:project-rename-native && npm run build:discovery-worker && esbuild src/service/settings.ts --bundle --platform=node --format=esm --external:better-sqlite3 --outfile=dist/service/settings.mjs && esbuild src/service/project-rename-filesystem.ts --bundle --platform=node --format=esm --outfile=dist/service/project-rename-filesystem.mjs && esbuild src/service/project-rename-filesystem.ts --bundle --platform=node --format=cjs --define:import.meta.url=undefined --outfile=dist/service/project-rename-filesystem.cjs && npm run build:unconverted-test-entry",
     "build:backend": "npm run build:discovery-worker && esbuild src/service/entry.ts --bundle --platform=node --format=cjs --external:better-sqlite3 --outfile=dist/service/entry.cjs",
     "ladle": "ladle serve",
     "build:ladle": "ladle build --outDir dist/ladle",
@@ -64,7 +64,8 @@
     "smoke:workspaces": "node scripts/smoke-workspace-management.mjs",
     "test:desktop-ux": "node scripts/desktop-ux-checks.mjs foundation",
     "smoke:visual-foundation": "node scripts/smoke-visual-foundation.mjs",
-    "smoke:source-association": "node scripts/smoke-source-association.mjs"
+    "smoke:source-association": "node scripts/smoke-source-association.mjs",
+    "build:unconverted-test-entry": "esbuild tests/fixtures/unconverted-engine-entry.mjs --bundle --platform=node --format=cjs --external:better-sqlite3 --define:process.parentPort=undefined --outfile=dist/service/unconverted-engine-test-entry.cjs"
   },
   "dependencies": {
     "@fontsource-variable/inter": "5.2.8",
@@ -118,7 +119,8 @@
       "dist/**",
       "package.json",
       "!dist/service-test-native/**",
-      "!dist/service/project-rename-filesystem.mjs"
+      "!dist/service/project-rename-filesystem.mjs",
+      "!dist/service/unconverted-engine-test-entry.cjs"
     ],
     "extraResources": [
       {

@@ -1,10 +1,10 @@
+import {archiveProjectFixture} from './support/archived-project-fixture.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import Database from 'better-sqlite3';
-import { randomUUID } from 'node:crypto';
 import { openSettingsService } from '../dist/service/settings.mjs';
 
 const unwrap = result => { assert.equal(result.ok, true, JSON.stringify(result)); return result.value; };
@@ -173,10 +173,7 @@ test('dormant grouping settings and mixed filter operands are cleaned without er
 
 test('archived values are included in previews and removed without changing archive location or stored project identity', () => fixture(f => {
   const propertyId = f.property('date'); unwrap(f.command('setDateValue', { propertyId, projectId: f.projectId, value: '2024-02-29' }));
-  const location = unwrap(f.query('previewArchiveLocation', { relativePath: 'Archive' }));
-  unwrap(f.command('applyArchiveLocation', { operationId: randomUUID(), previewToken: location.previewToken }));
-  const archive = unwrap(f.query('previewProjectArchive', { projectId: f.projectId, action: 'archive', name: null, createParent: false }));
-  unwrap(f.command('applyProjectArchive', { operationId: randomUUID(), previewToken: archive.previewToken }));
+  archiveProjectFixture(f.path,f.one.workspaceId,f.projectId);
   const before = f.query('listArchivedProjects');
   const preview = unwrap(f.preview(propertyId)); assert.equal(preview.projects[0].projectId, f.projectId);
   assert.deepEqual(preview.projects[0].values, ['2024-02-29']); unwrap(f.apply(preview)); f.reopen();

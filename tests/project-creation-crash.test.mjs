@@ -6,13 +6,15 @@ import { fork } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import test from "node:test";
 import Database from "better-sqlite3";
-import { openSettingsService } from "../dist/service/settings.mjs";
+import { openUnconvertedEngineFixture } from "./support/unconverted-command-engines.mjs";
+import {projectMetadataRecords} from "./support/identity-migration-fixtures.mjs";
+const openEngineService = (...args) => openUnconvertedEngineFixture(...args).engines;
 
 async function crash(f, checkpoint) {
   const marker = join(f.directory, "cleanup-marker");
   await new Promise((resolve, reject) => {
     const child = fork("tests/fixtures/project-creation-crash-worker.mjs", [f.databasePath, checkpoint, JSON.stringify(f.request), marker], {
-      execArgv: [], env: { ...process.env, PATH: `/Users/aleksandersk/.nvm/versions/node/v22.21.1/bin:${process.env.PATH}` },
+      execArgv: ["--import","tsx"], env: { ...process.env, PATH: `/Users/aleksandersk/.nvm/versions/node/v22.21.1/bin:${process.env.PATH}` },
       stdio: ["ignore", "ignore", "pipe", "ipc"],
     });
     let reached = false, stderr = "";
@@ -36,9 +38,9 @@ async function fixture(mode, checkpoint, run) {
   const root = join(directory, "root"), otherRoot = join(directory, "other"), databasePath = join(directory, "workspace.sqlite");
   fs.mkdirSync(root); fs.mkdirSync(otherRoot); fs.writeFileSync(join(otherRoot, "sentinel"), "unrelated");
   if (mode === "grouped") fs.mkdirSync(join(root, "Category"));
-  let service = openSettingsService(databasePath, "src/service/db/migrations");
+  let service = openEngineService(databasePath, "src/service/db/migrations");
   const sql = new Database(databasePath);
-  const open = () => { service = openSettingsService(databasePath, "src/service/db/migrations"); return service; };
+  const open = () => { service = openEngineService(databasePath, "src/service/db/migrations"); return service; };
   try {
     const workspace = service.workspaces.create({ type: "workspace.create", name: "Origin", rootPath: root }).value;
     const preview = service.workspaces.previewDiscovery({ type: "workspace.previewDiscovery", workspaceId: workspace.workspaceId, mode }).value;
@@ -107,7 +109,7 @@ for (const mode of ["direct", "grouped"]) {
         assert.equal(f.sql.prepare("SELECT count(*) AS n FROM projects WHERE source_id = ?").get(f.workspace.sourceId).n, 1);
         assert.deepEqual(f.service.handleCommand(f.request).value, completed);
         for (const workspaceId of [f.workspace.workspaceId, f.sibling.workspaceId]) {
-          assert.equal(f.service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId }).value.projects[0].projectId, crashed.project_id);
+          assert.equal(projectMetadataRecords(f.service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId }))[0].projectId, crashed.project_id);
           assert.equal(f.service.workspaces.refreshSource({ type: "workspace.refreshSource", workspaceId }).ok, true);
         }
         assert.equal(f.row().completed_revision, f.request.expectedRevision + 1);
@@ -153,7 +155,7 @@ for (const mode of ["direct", "grouped"]) test(`${mode} runtime crash seed prese
   try {
     const message = await new Promise((resolve, reject) => {
       child = fork("tests/fixtures/project-creation-crash-worker.mjs", [database, "after_evidence", JSON.stringify({ type: "workspace.createProject", operationId: randomUUID(), name: "Interrupted" }), marker, JSON.stringify({ mode, root, otherRoot })], {
-        execArgv: [], env: { ...process.env, PATH: `/Users/aleksandersk/.nvm/versions/node/v22.21.1/bin:${process.env.PATH}` }, stdio: ["ignore", "ignore", "pipe", "ipc"],
+        execArgv: ["--import","tsx"], env: { ...process.env, PATH: `/Users/aleksandersk/.nvm/versions/node/v22.21.1/bin:${process.env.PATH}` }, stdio: ["ignore", "ignore", "pipe", "ipc"],
       });
       let result, stderr = "";
       child.stderr.on("data", (bytes) => { stderr += bytes; });
@@ -163,7 +165,7 @@ for (const mode of ["direct", "grouped"]) test(`${mode} runtime crash seed prese
       child.on("exit", () => { clearTimeout(timer); if (result?.checkpoint === "after_evidence") resolve(result); else reject(new Error(`Unexpected seed exit: ${stderr}`)); });
     });
     assert.equal(fs.existsSync(marker), false);
-    service = openSettingsService(database, "src/service/db/migrations");
+    service = openEngineService(database, "src/service/db/migrations");
     const { workspace, sibling, other, properties } = message.setup;
     const list = service.handleQuery({ type: "workspace.listProjectCreations", workspaceId: sibling.workspaceId });
     assert.equal(list.ok, true); assert.equal(list.value.operations[0].projectId, message.operation.project_id);

@@ -4,17 +4,18 @@ import { mkdtempSync, mkdirSync, rmSync, readdirSync, renameSync } from 'node:fs
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
-import { openSettingsService } from '../dist/service/settings.mjs';
+import {openUnconvertedEngineFixture} from './support/unconverted-command-engines.mjs';
+const openLegacyEngineService=(...args)=>openUnconvertedEngineFixture(...args).engines;
 function fixture(run, mode = 'direct', native, prepare) {
   const directory = mkdtempSync(join(tmpdir(), 'grouping-')), root = join(directory, 'root'); mkdirSync(root);
   for (const name of ['Alpha','Beta','Gamma']) { mkdirSync(join(root,name)); if(mode==='grouped' && name!=='Gamma') mkdirSync(join(root,name,'Project')); }
   prepare?.(root);
-  const path = join(directory,'app.sqlite'); let service = openSettingsService(path,undefined,undefined,undefined,undefined,native);
+  const path = join(directory,'app.sqlite'); let service = openLegacyEngineService(path,undefined,undefined,undefined,undefined,native);
   const workspace = service.handleCommand({type:'workspace.create',rootPath:root,name:'One'}).value;
   const command = (type,fields={}) => service.handleCommand({type:`workspace.${type}`,workspaceId:workspace.workspaceId,...fields});
   const query = (type,fields={}) => service.handleQuery({type:`workspace.${type}`,workspaceId:workspace.workspaceId,...fields});
   command('applyDiscovery',{previewToken:query('previewDiscovery',{mode}).value.previewToken});
-  try { run({workspace,command,query,root,path,subscribe:listener=>service.workspaces.subscribe(listener),reopen(){service.close();service=openSettingsService(path,undefined,undefined,undefined,undefined,native);}}); }
+  try { run({workspace,command,query,root,path,subscribe:listener=>service.workspaces.subscribe(listener),reopen(){service.close();service=openLegacyEngineService(path,undefined,undefined,undefined,undefined,native);}}); }
   finally { service.close();rmSync(directory,{recursive:true,force:true}); }
 }
 test('group assignment saves exact Text and clears it through the typed service',()=>fixture(f=>{

@@ -7,7 +7,8 @@ import test from "node:test";
 import { scanDirectSource, scanGroupedSource } from "../src/service/discovery.ts";
 import Database from "better-sqlite3";
 import { nativeObserverDependencies } from "../src/service/source-observer.ts";
-import { openSettingsService } from "../dist/service/settings.mjs";
+import { openUnconvertedEngineFixture } from "./support/unconverted-command-engines.mjs";
+const openEngineService = (...args) => openUnconvertedEngineFixture(...args).engines;
 import { performFixtureRecovery, prepareFixtureObservation, fixtureTree } from "./fixtures/project-category-move-service-electron.cjs";
 
 async function fixture(run, observerOptions = {}) {
@@ -31,7 +32,7 @@ async function fixture(run, observerOptions = {}) {
       const timer = [...timers].find((timer) => timer.delay <= 100); timers.delete(timer); timer.callback();
     }
   }
-  let service = openSettingsService(databasePath, undefined, undefined, dependencies);
+  let service = openEngineService(databasePath, undefined, undefined, dependencies);
   const sql = new Database(databasePath); sql.pragma("foreign_keys = ON");
   const workspace = service.workspaces.create({ type: "workspace.create", name: "Primary", rootPath: root }).value;
   const sibling = service.workspaces.create({ type: "workspace.create", name: "Sibling", rootPath: root }).value;
@@ -88,7 +89,7 @@ async function fixture(run, observerOptions = {}) {
       const timer = [...timers].find(timer => timer.delay === 5000);
       assert.ok(timer); timers.delete(timer); timer.callback(); flushHints();
     }, get service() { return service; },
-    restart(workspaceFilesystem) { service.close(); service = openSettingsService(databasePath, undefined, workspaceFilesystem, dependencies); } };
+    restart(workspaceFilesystem) { service.close(); service = openEngineService(databasePath, undefined, workspaceFilesystem, dependencies); } };
   try { await run(f); } finally { service.close(); sql.close(); fs.rmSync(directory, { recursive: true, force: true }); }
 }
 
@@ -375,14 +376,15 @@ for (const terminal of ["failed", "completed", "unchanged"]) test(`${terminal} m
 }));
 
 // Controlled invalidation evidence is separate from original Electron/CI runs.
-// Deliver a real observer pass over the returned directory, never clear tokens.
+// Deliver a real current-app observer pass, then explicitly invalidate the
+// independent legacy engine peer. This fixture does not establish app capability wiring.
 const recoveryControls = ["second_stale", "other_error", "unknown_error", "changed_state", "changed_bytes", "missing_action",
   "failed_preview", "malformed_preview", "malformed_reply", "foreign_preview", "changed_placement", "reused_token", "empty_token",
   "changed_after_preview", "second_error", "malformed_fresh_reply", "changed_identity"];
 for (const preparation of ["unprepared", "prepared", "ordinary", "late"])
 for (const pollCategories of [false, true]) for (const action of ["complete_destination", "retry_original", "keep_original"])
   for (const control of [null, ...(preparation === "unprepared" && action === "keep_original" && !pollCategories ? recoveryControls : [])]) {
-  test(`${preparation} sourceObserved recovery: ${action}, ${pollCategories ? "Windows grouped polling seam" : "category notification seam"}${control ? `, response/state control ${control}` : ""}`, () => fixture(async f => {
+  test(`${preparation} sourceObserved plus explicit legacy-engine invalidation recovery: ${action}, ${pollCategories ? "Windows grouped polling seam" : "category notification seam"}${control ? `, response/state control ${control}` : ""}`, () => fixture(async f => {
     f.flushHints();
     f.sql.exec("CREATE TRIGGER fixture_interrupt BEFORE UPDATE ON projects BEGIN SELECT RAISE(ABORT, 'Fixture completion interruption'); END");
     const input = { type: "workspace.moveProjectCategory", workspaceId: f.workspace.workspaceId,
@@ -398,6 +400,7 @@ for (const pollCategories of [false, true]) for (const action of ["complete_dest
         const watch = f.watches.find(watch => !watch.closed && watch.path === join(f.root, "Category"));
         assert.ok(watch); watch.hint(); f.flushHints();
       }
+      if(preparation==="unprepared"||preparation==="late")f.service.invalidateSource(f.workspace.sourceId);
     };
     if (action !== "complete_destination") {
       observe(); // Observer sees destination before the controlled external return.
@@ -516,8 +519,11 @@ for (const pollCategories of [false, true]) for (const action of ["complete_dest
         after.tree.entries.Category.entries.Original = before.tree.entries.Category.entries.Original;
         const replaced = after.projects.value.retainedProjects.find(project => project.projectId === f.project.projectId);
         assert.equal(replaced.resolution, "replaced");
-        replaced.resolution = before.projects.value.retainedProjects.find(project => project.projectId === f.project.projectId).resolution;
-        assert.deepEqual(after, before);
+        const prior=before.projects.value.retainedProjects.find(project=>project.projectId===f.project.projectId);
+        assert.equal(replaced.identityReason,"folder_changed");
+        replaced.resolution=prior.resolution;
+        if(prior.identityReason===undefined)delete replaced.identityReason;else replaced.identityReason=prior.identityReason;
+        assert.deepEqual(after,before);
       } else if (!["changed_state", "changed_bytes", "changed_after_preview"].includes(control)) assert.deepEqual(state(), before);
       return;
     }

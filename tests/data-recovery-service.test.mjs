@@ -1,9 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, rmSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, rmSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { openSettingsService } from '../dist/service/settings.mjs';
+import { bindFixtureFolders } from './support/identity-migration-fixtures.mjs';
+import { openUnconvertedEngineFixture } from './support/unconverted-command-engines.mjs';
+function arrangeLegacyHistory(path,run){const fixture=openUnconvertedEngineFixture(path);try{return run(fixture.engines);}finally{fixture.engines.close();}}
 const unwrap = result => { assert.equal(result.ok, true, JSON.stringify(result)); return result.value; };
 
 test('a live WAL export restores multiple workspaces, exact Text, independent views and language after reopen', () => {
@@ -38,7 +41,7 @@ test('a live WAL export restores multiple workspaces, exact Text, independent vi
     const siblingViews=unwrap(service.handleQuery({type:'workspace.listViews',workspaceId:b.workspaceId}));
     assert.ok(board.views.some(v=>v.kind==='board'));
     unwrap(service.handleCommand({ type: 'settings.setLanguage', language: 'ru' }));
-    const creation = cmd('createProject',{operationId:randomUUID(),name:'Created',mode:'direct',expectedRevision:query('listProjects').revision});
+    const creation = arrangeLegacyHistory(path,engines=>unwrap(engines.handleCommand({type:'workspace.createProject',workspaceId,operationId:randomUUID(),name:'Created',mode:'direct',expectedRevision:query('listProjects').revision})));
     assert.equal(creation.outcome,'completed');
     const receipt = query('getProjectCreation',{operationId:creation.operation.operationId});
     const before = query('listTextProperties'), views = query('listViews');
@@ -51,6 +54,7 @@ test('a live WAL export restores multiple workspaces, exact Text, independent vi
       db.exec(trigger);
     };
     for (const corrupt of [
+      db=>db.prepare("UPDATE sources SET durable_evidence=(SELECT durable_evidence FROM sources WHERE id=?) WHERE id=?").run(a.sourceId,c.sourceId),
       ...['text','number','date','single_select','multi_select'].map(type => db => changeType(db,type,type==='text'?'number':'text')),
       db => {
         const trigger=db.prepare("SELECT sql FROM sqlite_schema WHERE name='select_visibility_owner_insert'").get().sql;
@@ -164,7 +168,7 @@ test('process death after deletion rolls back the restore on reopen', () => fixt
   finally {reopened.close();}
 }));
 
-test('restored missing folders retain logical IDs and values and use explicit reassociation without recreating contents', () => {
+test('restored missing folders retain logical IDs and values while unconverted reassociation is gated', () => {
   const dir=mkdtempSync(join(tmpdir(),'restore-missing-')),root=join(dir,'root'),path=join(dir,'app.sqlite');mkdirSync(root);mkdirSync(join(root,'Gone'));
   let service=openSettingsService(path);
   const call=(type,fields={})=>unwrap(service[type.startsWith('workspace.preview')||type==='workspace.listProjects'||type==='workspace.listTextProperties'?'handleQuery':'handleCommand']({type,...fields}));
@@ -183,10 +187,12 @@ test('restored missing folders retain logical IDs and values and use explicit re
     assert.equal(list.projects.length,0);assert.equal(list.retainedProjects[0].projectId,projectId);
     assert.equal(existsSync(join(root,'Gone')),false);
     mkdirSync(join(root,'Located'));writeFileSync(join(root,'Located','keep'),'separate project bytes');
-    const review=call('workspace.previewProjectRecovery',{workspaceId,projectId});
-    call('workspace.reassociateProject',{workspaceId,projectId,previewToken:review.previewToken,relativePath:'Located'});
+    const review=service.handleQuery({type:'workspace.previewProjectRecovery',workspaceId,projectId});
+    assert.equal(review.error.code,'identity_update_required');
+    assert.equal(service.handleCommand({type:'workspace.reassociateProject',workspaceId,projectId,previewToken:randomUUID(),relativePath:'Located'}).error.code,'identity_update_required');
     service.close();service=openSettingsService(path);
-    assert.equal(call('workspace.listProjects',{workspaceId}).projects[0].projectId,projectId);
+    assert.equal(call('workspace.listProjects',{workspaceId}).retainedProjects[0].projectId,projectId);
+    assert.equal(readFileSync(join(root,'Located','keep'),'utf8'),'separate project bytes');
     assert.equal(call('workspace.listTextProperties',{workspaceId}).values[0].value,'retained');
   }finally{service.close();rmSync(dir,{recursive:true,force:true});}
 });
@@ -202,12 +208,19 @@ test('restore preserves completed removal children, archive receipts, dormant ca
     const sibling=unwrap(service.handleCommand({type:'workspace.create',name:'Retained owner',rootPath:root}));
     const initial=cmd('applyDiscovery',{previewToken:query('previewDiscovery',{mode:'grouped'}).previewToken});
     const {projectId,categoryId}=initial.projects[0];
-    const folder=cmd('applyCategoryFolder',{operationId:randomUUID(),previewToken:query('previewCategoryFolder',{action:'create',name:'Destination',categoryId:null}).previewToken});
-    const removal=cmd('applyCategoryRemoval',{operationId:randomUUID(),previewToken:query('previewCategoryRemoval',{categoryId,destinationCategoryId:folder.operation.categoryId}).previewToken});
+    const history=arrangeLegacyHistory(path,engines=>{
+    const legacyCommand=(type,fields={})=>unwrap(engines.handleCommand({type:`workspace.${type}`,workspaceId,...fields}));
+    const legacyQuery=(type,fields={})=>unwrap(engines.handleQuery({type:`workspace.${type}`,workspaceId,...fields}));
+    const folder=legacyCommand('applyCategoryFolder',{operationId:randomUUID(),previewToken:legacyQuery('previewCategoryFolder',{action:'create',name:'Destination',categoryId:null}).previewToken});
+    bindFixtureFolders(service,workspaceId,[{kind:'category',id:folder.operation.categoryId,relativePath:'Destination'}]);
+    const removal=legacyCommand('applyCategoryRemoval',{operationId:randomUUID(),previewToken:legacyQuery('previewCategoryRemoval',{categoryId,destinationCategoryId:folder.operation.categoryId}).previewToken});
     assert.equal(removal.operation.stage,'completed');
-    cmd('applyArchiveLocation',{operationId:randomUUID(),previewToken:query('previewArchiveLocation',{relativePath:'Archive'}).previewToken});
-    const archived=cmd('applyProjectArchive',{operationId:randomUUID(),previewToken:query('previewProjectArchive',{projectId,action:'archive',name:null,createParent:false}).previewToken});
+    legacyCommand('applyArchiveLocation',{operationId:randomUUID(),previewToken:legacyQuery('previewArchiveLocation',{relativePath:'Archive'}).previewToken});
+    const archived=legacyCommand('applyProjectArchive',{operationId:randomUUID(),previewToken:legacyQuery('previewProjectArchive',{projectId,action:'archive',name:null,createParent:false}).previewToken});
     assert.equal(archived.operation.stage,'completed');
+    return {removal,archived,folder};
+    });
+    const {removal,folder}=history;
     cmd('applyDiscovery',{previewToken:query('previewDiscovery',{mode:'direct'}).previewToken});
     cmd('remove'); workspaceId=sibling.workspaceId;
     const before=query('listArchivedProjects');

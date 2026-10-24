@@ -92,7 +92,7 @@ if (process.versions.electron) {
         // Only authorization is under test. No Finder/Explorer invocation.
         return { outcome: "dispatched" };
       });
-      const child = utilityProcess.fork(join(__dirname, "../../dist/service/entry.cjs"), [],
+      const child = utilityProcess.fork(join(__dirname, "../../dist/service/unconverted-engine-test-entry.cjs"), [],
         { stdio: "pipe", serviceName: "Project rename service checkpoint" });
       own.add(child);
       let pid;

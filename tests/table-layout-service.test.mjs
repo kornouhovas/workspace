@@ -1,3 +1,4 @@
+import {archiveProjectFixture,restoreProjectFixture} from './support/archived-project-fixture.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtempSync, mkdirSync, rmSync } from 'node:fs';
@@ -110,20 +111,15 @@ test('layout migration retains populated views, values, filters and grouping; st
   });
 });
 
-test('archive and restoration retain the same ordered project identity and metadata',async()=>{
-  const {randomUUID}=await import('node:crypto');
+test('archive and restoration retain the same ordered project identity and metadata',()=>{
   fixture(f=>{
     const {viewId}=f.workspace,projects=f.query('listProjects').value.projects;
     const ids=projects.map(p=>p.projectId).reverse(),projectId=ids[0];
     f.command('setTableLayout',{viewId,config:{columns:[],rowOrder:ids}});
-    const location=f.query('previewArchiveLocation',{relativePath:'Archive'}).value;
-    f.command('applyArchiveLocation',{operationId:randomUUID(),previewToken:location.previewToken});
-    const archive=f.query('previewProjectArchive',{projectId,action:'archive',name:null,createParent:false});
-    assert.equal(f.command('applyProjectArchive',{operationId:randomUUID(),previewToken:archive.value.previewToken}).value.operation.stage,'completed');
+    archiveProjectFixture(f.path,f.workspace.workspaceId,projectId);
     assert.deepEqual(f.query('queryView',{viewId,archived:false}).value.projectIds,ids.slice(1));
     f.reopen();assert.deepEqual(f.query('queryView',{viewId,archived:true}).value.projectIds,[projectId]);
-    const restore=f.query('previewProjectArchive',{projectId,action:'restore',name:null,createParent:false});
-    assert.equal(f.command('applyProjectArchive',{operationId:randomUUID(),previewToken:restore.value.previewToken}).value.operation.stage,'completed');
+    restoreProjectFixture(f.path,f.workspace.workspaceId,projectId);
     assert.deepEqual(f.query('queryView',{viewId,archived:false}).value.projectIds,ids);
   });
 });

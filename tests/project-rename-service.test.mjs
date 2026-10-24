@@ -5,7 +5,9 @@ import { join, sep } from "node:path";
 import { randomUUID } from "node:crypto";
 import test from "node:test";
 import Database from "better-sqlite3";
-import { openSettingsService } from "../dist/service/settings.mjs";
+// ADR 0009: invoke the unconverted production engines, never the gated application API.
+import { openUnconvertedEngineFixture } from "./support/unconverted-command-engines.mjs";
+const openEngineService = (...args) => openUnconvertedEngineFixture(...args).engines;
 import { renameNoReplace } from "../dist/service/project-rename-filesystem.mjs";
 import { nativeProjectFilesystem } from "../src/service/project-filesystem.ts";
 
@@ -21,7 +23,7 @@ function fixture(mode, run, options = {}) {
   const dependencies = { watch() { return { close() {} }; }, schedule() { return { cancel() {} }; } };
   let service, sql;
   const calls = [];
-  const open = () => { service = openSettingsService(databasePath, undefined, undefined, dependencies,
+  const open = () => { service = openEngineService(databasePath, undefined, undefined, dependencies,
     options.filesystem?.(f) ?? nativeProjectFilesystem, options.defaultNative ? undefined : (from, to) => {
       calls.push([from, to]); return options.native ? options.native(f, from, to) : renameNoReplace(from, to);
     }); };

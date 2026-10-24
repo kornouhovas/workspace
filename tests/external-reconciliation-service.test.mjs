@@ -1,3 +1,4 @@
+import {recoverProjectFixture} from './support/recovered-project-fixture.mjs';
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import { randomUUID } from "node:crypto";
@@ -7,6 +8,8 @@ import { join } from "node:path";
 import test from "node:test";
 import Database from "better-sqlite3";
 import { openSettingsService } from "../dist/service/settings.mjs";
+import { observeFolder } from "../src/service/folder-evidence.ts";
+import { projectMetadataRecords } from "./support/identity-migration-fixtures.mjs";
 
 function inventory(path) {
   return fs.readdirSync(path, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name)).map((entry) => [entry.name,
@@ -20,7 +23,8 @@ function fixture(run, { grouped = false, paths = [] } = {}) {
   for (const path of paths) fs.mkdirSync(join(root, path), { recursive: true });
   fs.writeFileSync(join(root, initialPath, "nested/sentinel"), Buffer.from([0, 255, 42, 10]));
   const databasePath = join(directory, "workspace.sqlite");
-  const service = openSettingsService(databasePath), sqlite = new Database(databasePath);
+  let evidenceReader = observeFolder;
+  const service = openSettingsService(databasePath,undefined,undefined,undefined,undefined,undefined,(path,scope)=>evidenceReader(path,scope)), sqlite = new Database(databasePath);
   const workspace = service.workspaces.create({ type: "workspace.create", name: "Primary", rootPath: root }).value;
   const sibling = service.workspaces.create({ type: "workspace.create", name: "Sibling", rootPath: root }).value;
   const query = (type, extra = {}) => service.handleQuery({ type, workspaceId: workspace.workspaceId, ...extra });
@@ -41,7 +45,7 @@ function fixture(run, { grouped = false, paths = [] } = {}) {
   const events = [], observations = [];
   service.workspaces.subscribe((event) => (event.type === "workspace.sourceObserved" ? observations : events).push(event));
   const refresh = () => command("workspace.refreshSource");
-  try { run({ initial, directory, root, databasePath, service, sqlite, workspace, sibling, project, propertyId, value, query, command, apply, records, events, observations, refresh }); }
+  try { run({ initial, directory, root, databasePath, service, setEvidenceReader(reader){evidenceReader=reader;}, sqlite, workspace, sibling, project, propertyId, value, query, command, apply, records, events, observations, refresh }); }
   finally { sqlite.close(); service.close(); fs.rmSync(directory, { recursive: true, force: true }); }
 }
 function patchFs(methods, run) {
@@ -70,7 +74,8 @@ test("explicit direct refresh preserves identities, exact Text, source configura
   fs.renameSync(join(f.root, "Project"), join(f.root, "Renamed")); fs.mkdirSync(join(f.root, "Unrelated"));
   const files = inventory(f.root);
   const discovery = f.query("workspace.previewDiscovery").value;
-  const recovery = f.query("workspace.previewProjectRecovery", { projectId: f.project.projectId }).value;
+  const recovery = f.query("workspace.previewProjectRecovery", { projectId: f.project.projectId });
+  assert.equal(recovery.error.code, "identity_update_required");
   assert.equal(f.query("workspace.listProjects").value.retainedProjects[0].resolution, "missing");
   assert.deepEqual(f.records(), before);
   f.events.length = 0;
@@ -92,7 +97,7 @@ test("explicit direct refresh preserves identities, exact Text, source configura
   const list = f.query("workspace.listProjects").value;
   assert.deepEqual(list.projects.map((row) => [row.projectId, row.relativePath, row.resolution]), [[f.project.projectId, "Renamed", "active"]]);
   assert.equal(f.command("workspace.applyDiscovery", { previewToken: discovery.previewToken }).error.code, "stale_preview");
-  assert.equal(f.command("workspace.reassociateProject", { projectId: f.project.projectId, previewToken: recovery.previewToken, relativePath: "Renamed" }).error.code, "stale_preview");
+  assert.equal(f.command("workspace.reassociateProject", { projectId: f.project.projectId, previewToken: randomUUID(), relativePath: "Renamed" }).error.code, "identity_update_required");
   f.events.length = 0;
   assert.equal(f.refresh().ok, true); assert.deepEqual(f.events, []); assert.deepEqual(f.records(), after);
   assert.deepEqual(inventory(f.root), files);
@@ -163,10 +168,11 @@ for (const scenario of ["copy", "birthtime", "volume", "insufficient", "alias", 
     });
     assert.deepEqual(f.records(), before); assert.deepEqual(f.events, []); assert.deepEqual(inventory(f.root), files);
     if (["copy", "birthtime", "volume", "insufficient"].includes(scenario)) {
-      const preview = f.query("workspace.previewProjectRecovery", { projectId: f.project.projectId }).value;
-      assert.equal(preview.entries.find((row) => row.relativePath === "Target").status, "selectable");
-      const result = f.command("workspace.reassociateProject", { projectId: f.project.projectId, previewToken: preview.previewToken, relativePath: "Target" });
-      assert.equal(result.ok, true); assert.equal(result.value.projects[0].projectId, f.project.projectId);
+      const preview = f.query("workspace.previewProjectRecovery", { projectId: f.project.projectId });
+      assert.equal(preview.error.code, "identity_update_required");
+      const result = f.command("workspace.reassociateProject", { projectId: f.project.projectId, previewToken: randomUUID(), relativePath: "Target" });
+      assert.equal(result.error.code, "identity_update_required");
+      assert.deepEqual(f.records(), before); assert.deepEqual(inventory(f.root), files);
       assert.equal(f.query("workspace.listTextProperties").value.values[0].value, f.value);
     }
   }));
@@ -265,7 +271,7 @@ for (const state of ["unavailable", "unreadable", "changed", "root_identity_conf
     }, () => {
       assert.equal(f.refresh().ok, true);
       assert.equal(f.query("workspace.listProjects").value.state, state);
-      assert.equal(f.query("workspace.listProjects").value.projects[0].resolution, null);
+      assert.equal(projectMetadataRecords(f.query("workspace.listProjects"))[0].resolution, state === "root_identity_conflict" ? "replaced" : "unresolved");
     });
     assert.deepEqual(f.records(), before); assert.ok(f.events.every((event) => event.type !== "workspace.projectsChanged"));
   }));
@@ -315,7 +321,7 @@ for (const failure of ["reservation release", "partial mapping", "revision", "po
   }));
 }
 
-test("same-path recovery over retired evidence remains continuous but that evidence blocks a later automatic move", () => fixture((f) => {
+test("same-path continuity over retired evidence remains active but a later move stays blocked during recovery rollout", () => fixture((f) => {
   const original = f.records().projects[0];
   f.sqlite.prepare("INSERT INTO projects (id, source_id, relative_path, native_identity, association_state) VALUES (?, ?, 'Historical', ?, 'replaced')")
     .run(randomUUID(), f.workspace.sourceId, original.native_identity);
@@ -324,9 +330,10 @@ test("same-path recovery over retired evidence remains continuous but that evide
   assert.equal(f.query("workspace.listProjects").value.projects[0].resolution, "active");
   fs.renameSync(join(f.root, "Project"), join(f.root, "Target"));
   assert.equal(f.refresh().ok, true); assert.deepEqual(f.records(), before); assert.deepEqual(f.events, []);
-  const preview = f.query("workspace.previewProjectRecovery", { projectId: f.project.projectId }).value;
-  assert.equal(f.command("workspace.reassociateProject", { projectId: f.project.projectId, previewToken: preview.previewToken, relativePath: "Target" }).ok, true);
-  assert.equal(f.query("workspace.listProjects").value.projects[0].resolution, "active");
+  const preview = f.query("workspace.previewProjectRecovery", { projectId: f.project.projectId });
+  assert.equal(preview.error.code, "identity_update_required");
+  assert.equal(f.command("workspace.reassociateProject", { projectId: f.project.projectId, previewToken: randomUUID(), relativePath: "Target" }).error.code, "identity_update_required");
+  assert.deepEqual(f.records(), before);
 }));
 
 test("concurrent configuration or record changes during scanning cannot commit stale locators", () => {
@@ -453,7 +460,8 @@ for (const multiple of [false, true]) test(`grouped moves create only one needed
   fs.renameSync(join(f.root, "Category/Project"), join(f.root, "Needed/Moved"));
   if (multiple) fs.renameSync(join(f.root, "Category/Second"), join(f.root, "Needed/Second"));
   const discovery = f.query("workspace.previewDiscovery").value;
-  const recovery = f.query("workspace.previewProjectRecovery", { projectId: f.project.projectId }).value;
+  const recovery = f.query("workspace.previewProjectRecovery", { projectId: f.project.projectId });
+  assert.equal(recovery.error.code, "identity_update_required");
   const files = inventory(f.root); f.events.length = 0;
   let eventList;
   f.service.workspaces.subscribe((event) => { if (event.type === "workspace.projectsChanged") eventList = f.query("workspace.listProjects").value; });
@@ -466,7 +474,7 @@ for (const multiple of [false, true]) test(`grouped moves create only one needed
   assert.equal(needed.association_state, "active"); assert.match(needed.id, /^[0-9a-f-]{36}$/);
   assert.deepEqual(after.projects.map((row) => row.category_id), before.projects.map(() => needed.id));
   assert.equal(f.command("workspace.applyDiscovery", { previewToken: discovery.previewToken }).error.code, "stale_preview");
-  assert.equal(f.command("workspace.reassociateProject", { projectId: f.project.projectId, previewToken: recovery.previewToken, relativePath: "Needed/Moved" }).error.code, "stale_preview");
+  assert.equal(f.command("workspace.reassociateProject", { projectId: f.project.projectId, previewToken: randomUUID(), relativePath: "Needed/Moved" }).error.code, "identity_update_required");
   const reopened = openSettingsService(f.databasePath);
   try {
     assert.deepEqual(reopened.workspaces.listProjects({ type: "workspace.listProjects", workspaceId: f.workspace.workspaceId }).value, f.query("workspace.listProjects").value);
@@ -487,8 +495,9 @@ for (const state of ["missing", "unresolved", "excluded", "replaced"]) test(`exi
   fs.renameSync(join(f.root, "Category/Project"), join(f.root, "Target/Moved"));
   const before = f.records(); f.events.length = 0;
   assert.equal(f.refresh().ok, true); assert.deepEqual(f.records(), before); assert.deepEqual(f.events, []);
-  const preview = f.query("workspace.previewProjectRecovery", { projectId: f.project.projectId }).value;
-  assert.equal(preview.entries.find((row) => row.relativePath === "Target/Moved").status, "category_unavailable");
+  const preview = f.query("workspace.previewProjectRecovery", { projectId: f.project.projectId });
+  assert.equal(preview.error.code, "identity_update_required");
+  assert.deepEqual(f.records(), before);
 }, ["Target"]));
 
 for (const conflict of ["category historical path", "category reserved path", "category historical native", "category current native", "project historical native", "project reserved path", "category observed alias", "project observed alias", "cross-depth alias", "category birthtime", "category insufficient", "project birthtime", "project volume", "project insufficient"]) {
@@ -518,6 +527,15 @@ for (const conflict of ["category historical path", "category reserved path", "c
     // evidence, independently of project identity. Never repair that parent.
     if (conflict === "category birthtime") retired("categories", "Historical", { ...categoryEvidence, birthtimeNs: (BigInt(categoryEvidence.birthtimeNs) - 1n).toString() });
     const before = f.records(), files = inventory(f.root); f.events.length = 0;
+    // Change durable provider evidence as well as the current mount observation.
+    // A stat-only dev change is now valid continuity, not proof of another volume.
+    f.setEvidenceReader((path,scope)=>{
+      const observed=observeFolder(path,scope);
+      if(!observed.ok || path!==join(f.root,"Target/Moved"))return observed;
+      if(conflict==="project birthtime")return {...observed,evidence:{...observed.evidence,created:String(BigInt(observed.evidence.created)+1n)}};
+      if(conflict==="project volume")return {...observed,evidence:{...observed.evidence,volume:"1234567890abcdef1234567890abcdef"}};
+      return observed;
+    });
     patchFs({ lstatSync: (original) => (path, ...args) => {
       const stat = original(path, ...args);
       const override = path === join(f.root, "Alias") && conflict === "category observed alias" ? categoryEvidence
@@ -683,7 +701,7 @@ for (const state of ["unavailable", "unreadable", "changed", "root_identity_conf
     }, () => {
       assert.equal(f.refresh().ok, true);
       const result = f.query("workspace.listProjects"); assert.equal(result.ok, true); assert.equal(result.value.state, state);
-      assert.equal(result.value.projects[0].resolution, null);
+      assert.equal(projectMetadataRecords(result)[0].resolution, state === "root_identity_conflict" ? "replaced" : "unresolved");
     });
     assert.deepEqual(f.records(), before); assert.ok(f.events.every((event) => event.type !== "workspace.projectsChanged"));
   }));
@@ -766,18 +784,17 @@ for (const evidence of ["copy", "birthtime", "volume", "alias", "historical"]) t
   assert.equal(f.query("workspace.listTextProperties").value.values[0].value, f.value);
 }));
 
-test("grouped persisted missing project can still use explicit T07 recovery into one new category after refresh declines it", () => groupedFixture((f) => {
+test("grouped persisted missing project retains metadata and blocks unconverted T07 recovery after refresh declines it", () => groupedFixture((f) => {
   f.sqlite.prepare("UPDATE projects SET association_state = 'missing' WHERE id = ?").run(f.project.projectId);
   fs.mkdirSync(join(f.root, "Needed/Unrelated"), { recursive: true });
   fs.renameSync(join(f.root, "Category/Project"), join(f.root, "Needed/Moved"));
   const before = f.records(); f.events.length = 0;
   assert.equal(f.refresh().ok, true); assert.deepEqual(f.records(), before); assert.deepEqual(f.events, []);
-  const preview = f.query("workspace.previewProjectRecovery", { projectId: f.project.projectId }).value;
-  assert.equal(preview.entries.find((row) => row.relativePath === "Needed/Moved").status, "selectable");
-  const recovered = f.command("workspace.reassociateProject", { projectId: f.project.projectId, relativePath: "Needed/Moved", previewToken: preview.previewToken });
-  assert.equal(recovered.ok, true); assert.equal(recovered.value.projects.length, 1);
-  assert.equal(recovered.value.projects[0].projectId, f.project.projectId);
-  assert.equal(f.records().categories.length, before.categories.length + 1);
+  const preview = f.query("workspace.previewProjectRecovery", { projectId: f.project.projectId });
+  assert.equal(preview.error.code, "identity_update_required");
+  const recovered = f.command("workspace.reassociateProject", { projectId: f.project.projectId, relativePath: "Needed/Moved", previewToken: randomUUID() });
+  assert.equal(recovered.error.code, "identity_update_required");
+  assert.deepEqual(f.records(), before);
   assert.equal(f.records().projects.length, before.projects.length);
   assert.equal(f.query("workspace.listTextProperties").value.values[0].value, f.value);
   const after = f.records(); f.events.length = 0;
@@ -834,9 +851,7 @@ for (const history of ["none", "direct role", "grouped round trip"]) for (const 
     const project = initial.projects[0], category = initial.categories[0];
     if (history === "grouped round trip") {
       configure("direct"); configure("grouped");
-      const review = service.handleQuery({ type: "workspace.previewProjectRecovery", workspaceId: workspace.workspaceId, projectId: project.projectId });
-      assert.equal(review.ok, true);
-      assert.equal(command("workspace.reassociateProject", { projectId: project.projectId, previewToken: review.value.previewToken, relativePath: project.relativePath }).ok, true);
+      recoverProjectFixture(databasePath,service,workspace.workspaceId,project.projectId,project.relativePath);
     }
     const property = command("workspace.createProperty", { name: "Notes", propertyType: "text" }).value;
     assert.equal(command("workspace.setTextValue", { propertyId: property.propertyId, projectId: project.projectId, value: "  Exact\nТекст  " }).ok, true);
@@ -1067,9 +1082,7 @@ for (const groupedStart of [false, true]) test(`role history permits repeated ca
   f.apply({ mode: "grouped" });
   const path = groupedStart ? "Category/Project" : "Project/nested";
   if (groupedStart) {
-    const review = f.query("workspace.previewProjectRecovery", { projectId: f.project.projectId });
-    assert.equal(review.ok, true);
-    assert.equal(f.command("workspace.reassociateProject", { projectId: f.project.projectId, previewToken: review.value.previewToken, relativePath: path }).ok, true);
+    recoverProjectFixture(f.databasePath,f.service,f.workspace.workspaceId,f.project.projectId,path);
   }
   const current = f.query("workspace.listProjects").value;
   const child = current.projects.find((row) => row.relativePath === path), category = current.categories.find((row) => row.categoryId === child.categoryId);
@@ -1114,7 +1127,7 @@ for (const unsafe of ["missing", "unresolved", "replaced", "birthtime", "same-ro
   if (["missing", "unresolved", "replaced"].includes(unsafe)) f.sqlite.prepare("UPDATE projects SET association_state = ? WHERE id = ?").run(unsafe, history.id);
   if (unsafe === "birthtime") {
     const identity = JSON.parse(history.native_identity); identity.birthtimeNs = String(BigInt(identity.birthtimeNs) + 1n);
-    f.sqlite.prepare("UPDATE projects SET native_identity = ? WHERE id = ?").run(JSON.stringify(identity), history.id);
+    f.sqlite.prepare("UPDATE projects SET native_identity = ?,durable_evidence=json_set(durable_evidence,'$.created',?) WHERE id = ?").run(JSON.stringify(identity),String(BigInt(JSON.parse(history.durable_evidence).created)+1n),history.id);
   }
   if (unsafe === "same-role") f.sqlite.prepare("INSERT INTO categories (id, source_id, relative_path, native_identity, association_state, mode_inactive) VALUES (?, ?, 'Other historical category', ?, 'active', 1)")
     .run(randomUUID(), f.workspace.sourceId, history.native_identity);

@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import Database from "better-sqlite3";
-import { openSettingsService } from "../../dist/service/settings.mjs";
+import { openUnconvertedEngineFixture } from "../support/unconverted-command-engines.mjs";
+const openEngineService = (...args) => openUnconvertedEngineFixture(...args).engines;
 import { renameNoReplace } from "../../dist/service/project-rename-filesystem.mjs";
 
 const [databasePath, checkpoint, serializedRequest, cleanupMarker] = process.argv.slice(2);
@@ -26,7 +27,7 @@ const filesystem = {
   assertAccessible(path) { fs.accessSync(path, fs.constants.R_OK | fs.constants.X_OK); const dir = fs.opendirSync(path); dir.closeSync(); },
 };
 const dependencies = { watch() { return { close() {} }; }, schedule() { return { cancel() {} }; } };
-const service = openSettingsService(databasePath, undefined, undefined, dependencies, filesystem, (from, to) => {
+const service = openEngineService(databasePath, undefined, undefined, dependencies, filesystem, (from, to) => {
   if (checkpoint === "intent") stop();
   const outcome = renameNoReplace(from, to);
   if (outcome !== "renamed") throw new Error("Required native effect did not occur");

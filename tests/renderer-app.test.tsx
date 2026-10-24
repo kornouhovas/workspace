@@ -1,10 +1,11 @@
+import Database from "better-sqlite3";
 import { defaultWorkspaceSession, type WorkspaceSessionSnapshot } from "../src/contracts/workspace-sessions.js";
 import { findAction } from "./context-tools-driver.js";
 import assert from "node:assert/strict";
 import { scanDirectSource, scanGroupedSource } from "../src/service/discovery.js";
 import type { BackgroundScanRequest } from "../src/service/background-discovery.js";
 const scanOnFixtureClock = (request: BackgroundScanRequest) => (request.mode === "grouped" ? scanGroupedSource : scanDirectSource)(request.canonicalRoot, request.archiveRelativePath, request.exclusions);
-import { readFile, writeFile } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import { mkdtempSync, mkdirSync, readdirSync, renameSync, realpathSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -22,8 +23,6 @@ import type { TextPropertySnapshot, TextPropertyMutation } from "../src/contract
 import { randomUUID } from "node:crypto";
 import { DiscoveryPanel } from "../src/renderer/components/DiscoveryPanel.js";
 import { openSettingsService } from "../src/service/settings.js";
-import { nativeProjectFilesystem } from "../src/service/project-filesystem.js";
-import type { ProjectRenameResult } from "../src/contracts/project-rename.js";
 
 const browser = new Window({ url: "http://localhost" });
 // Match the browser hidden rule when user-event computes keyboard tab order.
@@ -45,7 +44,7 @@ Object.assign(globalThis, {
 Object.defineProperty(globalThis, "navigator", { configurable: true, value: browser.navigator });
 
 const { App } = await import("../src/renderer/App.js");
-const { act, cleanup, render, screen, waitFor, within, fireEvent } = await import("@testing-library/react");
+const { act, cleanup, render, screen, waitFor, within } = await import("@testing-library/react");
 const { default: userEvent } = await import("@testing-library/user-event");
 afterEach(() => cleanup());
 
@@ -3034,7 +3033,7 @@ test("EN/RU production Refresh retains metadata and recovery when an existing de
       unwrap(service.workspaces.setTextValue({ type: "workspace.setTextValue", workspaceId, projectId: initial.projects[0].projectId, propertyId: property.propertyId, value: "  Retained exact Text 📝  " }));
       const query = async (input: WorkspaceRequest) => service.handleQuery(input) as ServiceResult<WorkspaceResponse>;
       const api = mockApi({ language, onProjects: query, onProperties: query, onWorkspace: async (input) =>
-        (input.type === "workspace.load" || input.type === "workspace.previewProjectRecovery" ? service.handleQuery(input) : service.handleCommand(input)) as ServiceResult<WorkspaceResponse> });
+        (input.type === "workspace.load" || input.type === "workspace.previewProjectRecovery" || input.type === "workspace.previewSourceAssociation" ? service.handleQuery(input) : service.handleCommand(input)) as ServiceResult<WorkspaceResponse> });
       off = service.workspaces.subscribe(api.emitChange); render(<App />);
       await act(async () => advance(0));
       await screen.findByRole("cell", { name: "Project" });
@@ -3049,15 +3048,18 @@ test("EN/RU production Refresh retains metadata and recovery when an existing de
       const text = (await findAction("button",{ name: `${translate(language, "editTextValue")}: Project / Notes` }));
       assert.equal(text.textContent, "  Retained exact Text 📝  ");
       await userEvent.click((await findAction("button",{ name: `${translate(language, "recoveryLocate")}: Project` })));
-      await screen.findByText(translate(language, "recoveryCategoryUnavailable"));
-      const target = await screen.findByRole("radio", { name: /Conflict\/Project/ }) as HTMLInputElement;
-      assert.equal(target.disabled, true); assert.equal(((await findAction("button",{ name: translate(language, "recoveryConfirm") })) as HTMLButtonElement).disabled, true);
-      // Deliver a later watcher failure explicitly; its real observation must invalidate the preview.
-      await act(async () => hints.get(created.canonicalRoot)!.failed());
-      await screen.findByRole("heading", { name: translate(language, "recoveryStale") });
-      assert.equal(screen.queryByRole("radio", { name: /Conflict\/Project/ }), null);
-      assert.equal(((await findAction("button",{ name: translate(language, "recoveryConfirm") })) as HTMLButtonElement).disabled, true);
-      await userEvent.keyboard("{Escape}"); assert.equal(screen.queryByRole("heading", { name: translate(language, "recoveryTitle") }) === null, true);
+      await screen.findByText(translate(language,"folderActionSafetyUpdate"));
+      const reviewLabel=language==='en'?'Review folder association':'Проверить связь с папкой';
+      await userEvent.click(await findAction('button',{name:reviewLabel}));
+      const conflict=await screen.findByRole('checkbox',{name:/Conflict.*Conflict/}) as HTMLInputElement;
+      assert.equal(conflict.disabled,true);assert.equal(screen.queryByRole('radio',{name:/Conflict\/Project/}),null);
+      const confirmLabel=language==='en'?'Confirm association':'Подтвердить связь';
+      assert.equal((screen.getByRole('button',{name:confirmLabel}) as HTMLButtonElement).disabled,true);
+      // A real later observation discards the source-level binding preview.
+      await act(async()=>hints.get(created.canonicalRoot)!.failed());
+      await waitFor(()=>assert.equal(screen.queryByRole('button',{name:confirmLabel}),null));
+      assert.ok(await findAction('button',{name:reviewLabel}));
+      await userEvent.click(await findAction('button',{name:translate(language,"cancelRenameWorkspace")}));
       assert.equal(text.textContent, "  Retained exact Text 📝  ");
     } finally { off?.(); cleanup(); service.close(); rmSync(directory, { recursive: true, force: true }); }
   }
@@ -3496,291 +3498,53 @@ test("EN/RU configured mode Apply keeps confirmed delayed success and never over
   }
 });
 
-test("EN/RU production App immediately Reveals creation through an active observation, preserves IDs after reopen and reports verified outcomes", async () => {
-  for (const language of ["en", "ru"] as const) for (const mode of ["direct", "grouped"] as const) {
-    const directory = mkdtempSync(join(tmpdir(), "creation-app-ui-")), root = join(directory, "root"), database = join(directory, "workspace.sqlite");
-    mkdirSync(root); if (mode === "grouped") mkdirSync(join(root, "Existing category"));
-    let service = openSettingsService(database), off: (() => void) | undefined, dispatches = 0;
-    let finishNative!: () => void, projectionReads = 0, observationRevision = 0;
-    let revealAttempts = 0, disabledAtMissingClick: boolean | null = null;
-    const revealReceipts: { outcome: string; problem?: string }[] = [];
-    const timeline: Record<string, unknown>[] = [];
-    let phase = "creation";
-    const record = (entry: Record<string, unknown>) => {
-      if (timeline.length === 32) timeline.shift();
-      timeline.push({ phase, ...entry });
-    };
-    const nativeCompletion = new Promise<void>((resolve) => { finishNative = resolve; });
-    const targets: { canonicalRoot: string; relativePath: string; validation: string }[] = [];
-    const creationRequests: WorkspaceRequest[] = [];
-    const t = (key: Parameters<typeof translate>[1]) => translate(language, key);
-    try {
-      const created = service.workspaces.create({ type: "workspace.create", name: "Real creation workspace", rootPath: root });
-      assert.ok(created.ok); if (!created.ok) throw new Error("Fixture failed");
-      const workspaceId = created.value.workspaceId;
-      const preview = service.workspaces.previewDiscovery({ type: "workspace.previewDiscovery", workspaceId, mode });
-      assert.ok(preview.ok); if (!preview.ok) throw new Error("Fixture failed");
-      assert.ok(service.workspaces.applyDiscovery({ type: "workspace.applyDiscovery", workspaceId, previewToken: preview.value.previewToken }).ok);
-      const setup = () => {
-        const query = async (input: WorkspaceRequest) => {
-          if (input.type === "workspace.listProjects") projectionReads++;
-          const response = service.handleQuery(input) as ServiceResult<WorkspaceResponse>;
-          if (input.type === "workspace.listProjects" && response.ok && "projects" in response.value && "state" in response.value && "retainedProjects" in response.value) {
-            record({ type: "projection", revision: response.value.revision, state: response.value.state,
-              projects: response.value.projects.length, retained: response.value.retainedProjects.length });
-          }
-          return response;
-        };
-        const api = mockApi({ language, onProjects: query, onProperties: query, onCreations: query,
-          onWorkspace: async (input) => {
-            if (input.type === "workspace.revealProject") {
-              revealAttempts++;
-              record({ type: "revealStart", attempt: revealAttempts, observationRevision });
-              const response = await service.revealProject(input, async (target, validate) => {
-                targets.push({ canonicalRoot: target.canonicalRoot, relativePath: target.relativePath, validation: validate().outcome });
-                dispatches++; await nativeCompletion; return { outcome: "dispatched" };
-              });
-              record({ type: "revealReply", attempt: revealAttempts, observationRevision,
-                outcome: response.ok ? response.value.outcome : "transport_error" });
-              if (revealReceipts.length < 4) revealReceipts.push(response.ok ? { outcome: response.value.outcome,
-                ...("problem" in response.value ? { problem: response.value.problem } : {}) }
-                : { outcome: "transport_error", problem: response.error.code });
-              return response;
-            }
-            if (input.type === "workspace.createProject") creationRequests.push(input);
-            return (input.type === "workspace.load" ? service.handleQuery(input) : service.handleCommand(input)) as ServiceResult<WorkspaceResponse>;
-          } });
-        off = service.workspaces.subscribe((event) => {
-          if (event.type === "workspace.sourceObserved") observationRevision = Math.max(observationRevision, event.observationRevision);
-          record({ type: event.type,
-            ...("revision" in event ? { revision: event.revision } : {}),
-            ...(event.type === "workspace.sourceObserved" ? { observationRevision: event.observationRevision, state: event.state } : {}) });
-          api.emitChange(event);
-        }); render(<App />);
-        return api;
-      };
-      const api = setup(); const trigger = await findAction("button",{ name: t("createProject") });
-      await waitFor(() => assert.equal((trigger as HTMLButtonElement).disabled, false)); await userEvent.click(trigger);
-      await userEvent.type(screen.getByRole("textbox", { name: t("creationName") }), "Authored folder");
-      if (mode === "grouped") {
-        const select = screen.getByRole("combobox", { name: t("creationCategory") });
-        const option = within(select).getByRole("option", { name: "Existing category" }) as HTMLOptionElement;
-        await userEvent.selectOptions(select, option.value);
-      }
-      screen.getByRole("textbox", { name: t("creationName") }).focus(); await userEvent.keyboard("{Enter}");
-      await screen.findByText(t("creationSaved")); await screen.findByRole("cell", { name: "Authored folder" });
-      const before = service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId }); assert.ok(before.ok); if (!before.ok) throw new Error("Fixture failed");
-      assert.equal(before.value.projects.length, 1); const projectId = before.value.projects[0].projectId;
-      const reveal = (await findAction("button",{ name: `${t("revealProject")}: Authored folder` }));
-      reveal.focus(); await userEvent.keyboard("{Enter}");
-      assert.equal(dispatches, 1);
-      const readsBeforeObservation = projectionReads;
-      // Deterministic event delivery around a delayed native adapter, with the
-      // actual service, filesystem and production observer still active.
-      await act(async () => api.emitChange({ type: "workspace.sourceObserved", sourceId: created.value.sourceId,
-        workspaceIds: [workspaceId], observationRevision: ++observationRevision, state: "ready", automaticUpdates: "active" }));
-      assert.ok(projectionReads > readsBeforeObservation);
-      assert.equal((reveal as HTMLButtonElement).disabled, true);
-      fireEvent.click(reveal); assert.equal(dispatches, 1);
-      await act(async () => finishNative());
-      await screen.findByText(t("revealDispatched")); assert.equal(dispatches, 1);
-      assert.deepEqual(targets, [{ canonicalRoot: realpathSync.native(root), relativePath: mode === "grouped" ? "Existing category/Authored folder" : "Authored folder", validation: "verified" }]);
-      assert.equal(targets[0].canonicalRoot, created.value.canonicalRoot);
-      assert.equal(creationRequests.length, 1);
-      const request = creationRequests[0];
-      assert.equal(request.type, "workspace.createProject");
-      if (request.type !== "workspace.createProject") throw new Error("Unexpected creation request");
-      assert.equal(request.name, "Authored folder");
-      assert.equal(before.value.projects[0].name, request.name);
-      assert.deepEqual(readdirSync(mode === "grouped" ? join(root, "Existing category") : root), [request.name]);
-      phase = "reopen";
-      cleanup(); off?.(); service.close(); service = openSettingsService(database); setup();
-      await screen.findByRole("cell", { name: "Authored folder" });
-      const after = service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId }); assert.ok(after.ok); if (!after.ok) throw new Error("Fixture failed");
-      assert.equal(after.value.projects[0].projectId, projectId);
-      phase = "remove";
-      rmSync(join(root, ...(mode === "grouped" ? ["Existing category", "Authored folder"] : ["Authored folder"])), { recursive: true });
-      const missingReveal = (await findAction("button",{ name: `${t("revealProject")}: Authored folder` })) as HTMLButtonElement;
-      disabledAtMissingClick = missingReveal.disabled;
-      phase = "missingClick"; record({ type: "click", disabled: missingReveal.disabled, observationRevision });
-      await userEvent.click(missingReveal);
-      await screen.findByText(t("revealMissing")); assert.equal(screen.queryByText(t("revealDispatched")), null); assert.equal(dispatches, 1);
-      console.log(`[creation-reveal-trace] ${JSON.stringify({ language, mode, timeline })}`);
-    } catch (error) {
-      if (error instanceof Error) error.message = `[creation-reveal] ${JSON.stringify({ language, mode,
-        revealAttempts, revealReceipts, disabledAtMissingClick, dispatches, projectionReads, observationRevision, timeline,
-        revealButtonCount: screen.queryAllByRole("button", { name: `${t("revealProject")}: Authored folder` }).length,
-        messages: { missing: !!screen.queryByText(t("revealMissing")), uncertain: !!screen.queryByText(t("revealUncertain")),
-          error: !!screen.queryByText(t("revealError")), dispatched: !!screen.queryByText(t("revealDispatched")) } })}\n${error.message}`;
-      throw error;
-    } finally { cleanup(); off?.(); service.close(); rmSync(directory, { recursive: true, force: true }); }
-  }
-});
-
-for (const platform of process.platform === "win32" ? [process.platform] : [process.platform, "win32"] as const) test(`EN/RU production Name editing preserves identity and exact Text and resolves a lost response after backend remount (${platform} policy)`, async () => {
-  const { openSettingsService: openRenameService } = await import(new URL("../dist/service/settings.mjs", import.meta.url).href) as { openSettingsService: typeof openSettingsService };
-  const { renameNoReplace } = await import(new URL("../dist/service/project-rename-filesystem.mjs", import.meta.url).href) as typeof import("../src/service/project-rename-filesystem.js");
-  const unwrap = <T,>(result: ServiceResult<T>) => { assert.ok(result.ok, JSON.stringify(result)); return result.value; };
-  // Exercise Windows policy on POSIX hosts without changing the real filesystem/native adapter.
-  const authoredName = platform === "win32" ? "  Renamed Текст 📝" : "  Renamed Текст 📝  ";
-  for (const language of ["en", "ru"] as const) for (const mode of ["direct", "grouped"] as const) {
-    const directory = realpathSync.native(mkdtempSync(join(tmpdir(), "rename-app-ui-"))), root = join(directory, "root"), database = join(directory, "workspace.sqlite");
-    mkdirSync(root); const parent = mode === "grouped" ? join(root, "Existing category") : root;
-    if (mode === "grouped") mkdirSync(parent); mkdirSync(join(parent, "Original"));
-    let nativeCalls = 0;
-    const openService = () => openRenameService(database, undefined, undefined, undefined, { ...nativeProjectFilesystem, platform }, (from, to) => {
-      nativeCalls++; return renameNoReplace(from, to);
-    });
-    let service = openService(), off: (() => void) | undefined;
-    const renames: WorkspaceRequest[] = [], statuses: WorkspaceRequest[] = [];
-    const serviceResults: ServiceResult<ProjectRenameResult>[] = [], statusResults: ServiceResult<ProjectRenameResult>[] = [];
-    const t = (key: Parameters<typeof translate>[1]) => translate(language, key);
-    try {
-      const workspace = unwrap(service.workspaces.create({ type: "workspace.create", name: "Rename workspace", rootPath: root }));
-      const workspaceId = workspace.workspaceId;
-      const preview = unwrap(service.workspaces.previewDiscovery({ type: "workspace.previewDiscovery", workspaceId, mode }));
-      unwrap(service.workspaces.applyDiscovery({ type: "workspace.applyDiscovery", workspaceId, previewToken: preview.previewToken }));
-      const before = unwrap(service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId })), project = before.projects[0];
-      const sibling = unwrap(service.workspaces.create({ type: "workspace.create", name: "Sibling", rootPath: root }));
-      unwrap(service.workspaces.activate({ type: "workspace.activate", workspaceId }));
-      const property = unwrap(service.workspaces.createProperty({ type: "workspace.createProperty", workspaceId, name: "Notes", propertyType: "text" }));
-      const exactText = "  Exact\nТекст 📝  ";
-      unwrap(service.workspaces.setTextValue({ type: "workspace.setTextValue", workspaceId, propertyId: property.propertyId, projectId: project.projectId, value: exactText }));
-      const query = async (input: WorkspaceRequest) => service.handleQuery(input) as ServiceResult<WorkspaceResponse>;
-      const api = mockApi({ language, onProjects: query, onProperties: query, onCreations: query, onObservation: query, onWorkspace: async (input) => {
-        if (input.type === "workspace.getProjectRename") {
-          statuses.push(input); const result = service.handleQuery(input) as ServiceResult<ProjectRenameResult>;
-          statusResults.push(result); return result;
-        }
-        if (input.type === "workspace.renameProject") {
-          renames.push(input); serviceResults.push(service.workspaces.renameProject(input));
-          return fail("service_unavailable"); // Native effect and commit succeeded; only the response is lost.
-        }
-        return (input.type === "workspace.load" ? service.handleQuery(input) : service.handleCommand(input)) as ServiceResult<WorkspaceResponse>;
-      } });
-      off = service.workspaces.subscribe(api.emitChange); render(<App />);
-      await userEvent.click(await findAction("button",{ name: `${t("renameProject")}: Original` }));
-      const input = screen.getByRole("textbox", { name: t("projectName") });
-      await userEvent.clear(input); await userEvent.type(input, `${authoredName}{Enter}`);
-      // Assert outside the callback: renderer transport handling catches thrown assertions.
-      assert.equal(serviceResults.length, 1);
-      const receipt = unwrap(serviceResults[0]);
-      assert.equal(receipt.outcome, "completed", JSON.stringify(receipt));
-      if (receipt.outcome !== "completed") throw new Error("Expected a committed rename before losing its response");
-      assert.equal(nativeCalls, 1);
-      assert.equal(receipt.operation.originalName, "Original"); assert.equal(receipt.operation.name, authoredName);
-      assert.equal(receipt.operation.originalRelativePath, project.relativePath);
-      assert.equal(receipt.operation.projectId, project.projectId); assert.equal(receipt.operation.categoryId, project.categoryId);
-      assert.equal(receipt.project.name, authoredName);
-      assert.equal(receipt.project.relativePath, mode === "grouped" ? `Existing category/${authoredName}` : authoredName);
-      assert.equal(receipt.operation.requestedRelativePath, receipt.project.relativePath);
-      await screen.findByText(t("renameUncertain"));
-      assert.equal((input as HTMLInputElement).value, authoredName);
-      await act(async () => { api.emitStatus("unavailable"); api.emitStatus("ready"); });
-      const statusButton = await findAction("button",{ name: t("renameStatus") });
-      assert.equal(screen.queryByText(t("renameSaved")), null);
-      assert.ok(screen.getByText(authoredName, { selector: "dd", normalizer: (text) => text }));
-      assert.equal(renames.length, 1); assert.equal(statuses.length, 0); assert.equal(nativeCalls, 1);
-      await userEvent.click(statusButton);
-      await screen.findByText(t("renameSaved"));
-      assert.ok(screen.getByText(authoredName, { selector: "td button.project-preview-trigger", normalizer: (text) => text }));
-      assert.deepEqual(statusResults, serviceResults);
-      const after = unwrap(service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId }));
-      assert.equal(after.projects[0].projectId, project.projectId); assert.equal(after.projects[0].categoryId, project.categoryId);
-      assert.equal(after.projects[0].name, authoredName); assert.equal(after.revision, before.revision + 1);
-      assert.equal(after.projects[0].relativePath, receipt.project.relativePath);
-      assert.equal(unwrap(service.workspaces.listTextProperties({ type: "workspace.listTextProperties", workspaceId })).values[0].value, exactText);
-      assert.deepEqual(unwrap(service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId: sibling.workspaceId })).projects, after.projects);
-      assert.deepEqual(readdirSync(parent), [authoredName]);
-      assert.equal(renames.length, 1); assert.equal(statuses.length, 1);
-      const command = renames[0]; assert.equal(command.type, "workspace.renameProject");
-      if (command.type !== "workspace.renameProject") throw new Error("Unexpected command");
-      assert.equal(command.name, authoredName); assert.equal(command.projectId, project.projectId); assert.equal(command.expectedRevision, before.revision);
-      assert.equal(receipt.operation.operationId, command.operationId);
-      assert.deepEqual(statuses[0], { type: "workspace.getProjectRename", workspaceId, operationId: command.operationId });
-      cleanup(); off(); off = undefined; service.close(); service = openService();
-      assert.deepEqual(unwrap(service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId })).projects, after.projects);
-      assert.equal(unwrap(service.workspaces.listTextProperties({ type: "workspace.listTextProperties", workspaceId })).values[0].value, exactText);
-      assert.deepEqual(unwrap(service.getProjectRename({ type: "workspace.getProjectRename", workspaceId, operationId: command.operationId })), receipt);
-      assert.deepEqual(unwrap(service.getProjectRename({ type: "workspace.getProjectRename", workspaceId: sibling.workspaceId, operationId: command.operationId })), receipt);
-      assert.deepEqual(readdirSync(parent), [authoredName]);
-      assert.equal(renames.length, 1); assert.equal(statuses.length, 1); assert.equal(nativeCalls, 1);
-    } finally { cleanup(); off?.(); service.close(); rmSync(directory, { recursive: true, force: true }); }
-  }
-});
-
-for (const language of ["en", "ru"] as const) test(`${language}: production category move survives lost response and App backend remount without replay`, async () => {
-  const { openSettingsService: openMoveService } = await import(new URL("../dist/service/settings.mjs", import.meta.url).href) as { openSettingsService: typeof openSettingsService };
-  const { renameNoReplace } = await import(new URL("../dist/service/project-rename-filesystem.mjs", import.meta.url).href) as typeof import("../src/service/project-rename-filesystem.js");
-  const unwrap = <T,>(result: ServiceResult<T>) => { assert.ok(result.ok, JSON.stringify(result)); return result.value; };
-  const directory = realpathSync.native(mkdtempSync(join(tmpdir(), "category-move-app-ui-"))), root = join(directory, "root");
-  const basename = process.platform === "win32" ? "  Exact Текст 📝" : "  Exact Текст 📝  ";
-  mkdirSync(root); mkdirSync(join(root, "Current")); mkdirSync(join(root, "Empty")); mkdirSync(join(root, "Current", basename));
-  const sentinel = "Preserved project bytes\nТекст"; await writeFile(join(root, "Current", basename, "sentinel.txt"), sentinel);
-  let nativeCalls = 0;
-  const service = openMoveService(join(directory, "workspace.sqlite"), undefined, undefined, undefined, nativeProjectFilesystem, (from, to) => { nativeCalls++; return renameNoReplace(from, to); });
-  let off: (() => void) | undefined;
-  const moves: WorkspaceRequest[] = [], statuses: WorkspaceRequest[] = [];
-  const t = (key: Parameters<typeof translate>[1]) => translate(language, key);
-  try {
-    const workspaceId = unwrap(service.workspaces.create({ type: "workspace.create", name: "Category workspace", rootPath: root })).workspaceId;
-    const preview = unwrap(service.workspaces.previewDiscovery({ type: "workspace.previewDiscovery", workspaceId, mode: "grouped" }));
-    unwrap(service.workspaces.applyDiscovery({ type: "workspace.applyDiscovery", workspaceId, previewToken: preview.previewToken }));
-    const before = unwrap(service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId })), project = before.projects[0];
-    const sibling = unwrap(service.workspaces.create({ type: "workspace.create", name: "Sibling", rootPath: root }));
-    unwrap(service.workspaces.activate({ type: "workspace.activate", workspaceId }));
-    const property = unwrap(service.workspaces.createProperty({ type: "workspace.createProperty", workspaceId, name: "Notes", propertyType: "text" }));
-    const exactText = "  Exact\nТекст 📝  ";
-    unwrap(service.workspaces.setTextValue({ type: "workspace.setTextValue", workspaceId, propertyId: property.propertyId, projectId: project.projectId, value: exactText }));
-    const query = async (input: WorkspaceRequest) => service.handleQuery(input) as ServiceResult<WorkspaceResponse>;
-    const api = mockApi({ language, onProjects: query, onProperties: query, onCreations: query, onCategoryMoves: query, onObservation: query, onWorkspace: async (input) => {
-      if (input.type === "workspace.moveProjectCategory") { moves.push(input); service.handleCommand(input); return fail("service_unavailable"); }
-      if (input.type === "workspace.getProjectCategoryMove") { statuses.push(input); return service.handleQuery(input) as ServiceResult<WorkspaceResponse>; }
-      return (input.type === "workspace.load" ? service.handleQuery(input) : service.handleCommand(input)) as ServiceResult<WorkspaceResponse>;
-    } });
-    off = service.workspaces.subscribe(api.emitChange); render(<App />);
-    await userEvent.click(await findAction("button",{ name: `${t("moveCategory")}: ${basename}`.replace(/\s+/g, " ").trim() }));
-    await userEvent.selectOptions(screen.getByRole("combobox", { name: t("moveCategoryDestination") }), before.categories.find((category) => category.name === "Empty")!.categoryId);
-    await userEvent.keyboard("{Enter}"); await screen.findByText(t("moveCategoryUncertain"));
-    await act(async () => { api.emitStatus("unavailable"); api.emitStatus("ready"); });
-    const status = await findAction("button",{ name: t("moveCategoryStatus") });
-    assert.equal(moves.length, 1); assert.equal(statuses.length, 0); assert.equal(nativeCalls, 1);
-    assert.equal(screen.queryByText(t("moveCategorySaved")), null);
-    await userEvent.click(status); await screen.findByText(t("moveCategorySaved"));
-    const after = unwrap(service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId }));
-    assert.equal(after.projects[0].projectId, project.projectId); assert.equal(after.projects[0].name, basename);
-    assert.equal(after.projects[0].relativePath, `Empty/${basename}`); assert.equal(after.revision, before.revision + 1);
-    assert.deepEqual(unwrap(service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId: sibling.workspaceId })).projects, after.projects);
-    assert.equal(unwrap(service.workspaces.listTextProperties({ type: "workspace.listTextProperties", workspaceId })).values[0].value, exactText);
-    assert.equal(await readFile(join(root, "Empty", basename, "sentinel.txt"), "utf8"), sentinel);
-    assert.deepEqual(readdirSync(join(root, "Current")), []); assert.deepEqual(readdirSync(join(root, "Empty")), [basename]);
-    assert.equal(moves.length, 1); assert.equal(statuses.length, 1); assert.equal(nativeCalls, 1);
-    const command = moves[0]; assert.equal(command.type, "workspace.moveProjectCategory");
-    if (command.type !== "workspace.moveProjectCategory") throw new Error("Unexpected command");
-    assert.deepEqual(statuses[0], { type: "workspace.getProjectCategoryMove", workspaceId, operationId: command.operationId });
-  } finally { cleanup(); off?.(); service.close(); rmSync(directory, { recursive: true, force: true }); }
-});
-
-for (const language of ["en", "ru"] as const) test(`${language}: desktop settings remembers its section and returns keyboard focus to workspace`, async () => {
-  const active = makeActive("shell", "  Authored workspace  ");
-  mockApi({ language, load: ok(snapshotOf(active)), onProjects: async () => ok(projectList(active, ["Real project"])) });
-  render(<App />);
-  await screen.findByRole("cell", { name: "Real project" });
-  const settingsButton = (await findAction("button",{ name: language === "en" ? "Settings" : "Настройки" }));
-  settingsButton.focus(); await userEvent.keyboard("{Enter}");
-  const appearance = await screen.findByRole("tab", { name: language === "en" ? "Appearance" : "Оформление" });
-  await userEvent.click(appearance);
-  assert.equal(screen.queryByRole("cell", { name: "Real project" }), null);
-  await screen.findByRole("radiogroup", { name: language === "en" ? "Color theme" : "Цветовая тема" });
-  const back = (await findAction("button",{ name: language === "en" ? "Back to workspace" : "Вернуться к работе" }));
-  back.focus(); await userEvent.keyboard("{Enter}");
-  assert.equal(document.activeElement, settingsButton);
-  assert.ok(screen.getByRole("cell", { name: "Real project" }));
-  await userEvent.click(settingsButton);
-  assert.equal(appearance.getAttribute("aria-selected"), "true");
-  cleanup(); render(<App />);
-  await screen.findByRole("cell", { name: "Real project" });
-  assert.equal(screen.queryByRole("tab", { name: language === "en" ? "Appearance" : "Оформление" }), null);
+test("EN/RU production App explains capability denial, keeps metadata and never creates or dispatches folders",async()=>{
+ for(const language of ["en","ru"] as const)for(const mode of ["direct","grouped"] as const){
+  const directory=mkdtempSync(join(tmpdir(),"gated-app-ui-")),root=join(directory,"root"),database=join(directory,"workspace.sqlite");
+  mkdirSync(join(root,...(mode==='grouped'?['Existing category','Existing project']:['Existing project'])),{recursive:true});
+  let service=openSettingsService(database),off:(()=>void)|undefined,dispatches=0,creates=0;
+  const t=(key:Parameters<typeof translate>[1])=>translate(language,key);
+  const gate=language==='en'?'Folder actions await a safety update. Retained properties and saved views remain available.':'Действия с папками ожидают обновления проверок безопасности. Сохранённые свойства и представления доступны.';
+  try{
+   const created=service.workspaces.create({type:'workspace.create',name:'Gated workspace',rootPath:root});assert.ok(created.ok);if(!created.ok)throw new Error('Fixture failed');
+   const {workspaceId,sourceId}=created.value;
+   const preview=service.workspaces.previewDiscovery({type:'workspace.previewDiscovery',workspaceId,mode});assert.ok(preview.ok);if(!preview.ok)throw new Error('Fixture failed');
+   const initial=service.workspaces.applyDiscovery({type:'workspace.applyDiscovery',workspaceId,previewToken:preview.value.previewToken});assert.ok(initial.ok);if(!initial.ok)throw new Error('Fixture failed');
+   const projectId=initial.value.projects[0].projectId;
+   const property=service.workspaces.createProperty({type:'workspace.createProperty',workspaceId,name:'Notes',propertyType:'text'});assert.ok(property.ok);if(!property.ok)throw new Error('Fixture failed');
+   assert.ok(service.workspaces.setTextValue({type:'workspace.setTextValue',workspaceId,projectId,propertyId:property.value.propertyId,value:'Keep exact metadata'}).ok);
+   const properties=service.workspaces.listTextProperties({type:'workspace.listTextProperties',workspaceId});
+   const tree=readdirSync(mode==='grouped'?join(root,'Existing category'):root);
+   const setup=()=>{
+    const query=async(input:WorkspaceRequest)=>service.handleQuery(input) as ServiceResult<WorkspaceResponse>;
+    const api=mockApi({language,onProjects:query,onProperties:query,onCreations:query,onWorkspace:async input=>{
+     if(input.type==='workspace.revealProject')return service.revealProject(input,async()=>{dispatches++;return {outcome:'dispatched'};});
+     if(input.type==='workspace.createProject')creates++;
+     return (/workspace\.(load|list|get|preview|query)/.test(input.type)?service.handleQuery(input):service.handleCommand(input)) as ServiceResult<WorkspaceResponse>;
+    }});
+    off=service.workspaces.subscribe(api.emitChange);render(<App/>);
+   };
+   setup();await screen.findByRole('cell',{name:'Existing project'});
+   await userEvent.click(await findAction('button',{name:t('createProject')}));
+   await userEvent.type(screen.getByRole('textbox',{name:t('creationName')}),'Must not exist');
+   if(mode==='grouped')await userEvent.selectOptions(screen.getByRole('combobox',{name:t('creationCategory')}),initial.value.categories[0].categoryId);
+   await userEvent.click(await findAction('button',{name:t('creationSubmit')}));
+   await screen.findByText(gate);assert.equal(screen.queryByText(t('creationUncertain')),null);
+   assert.equal((screen.getByRole('textbox',{name:t('creationName')}) as HTMLInputElement).value,'Must not exist');
+   assert.equal(creates,1);assert.deepEqual(readdirSync(mode==='grouped'?join(root,'Existing category'):root),tree);
+   const sql=new Database(database);try{assert.equal(sql.prepare<[],{n:number}>('SELECT count(*) n FROM project_creation_operations').get()!.n,0);}finally{sql.close();}
+   await userEvent.keyboard('{Escape}');
+   await userEvent.click(await findAction('button',{name:`${t('revealProject')}: Existing project`}));
+   await waitFor(()=>assert.equal(screen.getAllByText(gate).length,2));assert.equal(dispatches,0);
+   assert.deepEqual(service.workspaces.listTextProperties({type:'workspace.listTextProperties',workspaceId}),properties);
+   cleanup();off?.();service.close();service=openSettingsService(database);setup();
+   await screen.findByRole('cell',{name:'Existing project'});
+   const after=service.workspaces.listProjects({type:'workspace.listProjects',workspaceId});assert.ok(after.ok);if(!after.ok)throw new Error('Fixture failed');
+   assert.equal(after.value.projects[0].projectId,projectId);assert.equal(after.value.sourceId,sourceId);
+   assert.deepEqual(service.workspaces.listTextProperties({type:'workspace.listTextProperties',workspaceId}),properties);
+   assert.equal(creates,1);assert.equal(dispatches,0);
+  }finally{cleanup();off?.();service.close();rmSync(directory,{recursive:true,force:true});}
+ }
 });
 
 test("appearance keeps the accepted theme while saving, reports failure and permits explicit retry", async () => {

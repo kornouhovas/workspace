@@ -141,7 +141,7 @@ export function openSettingsService(
       if (isRecord(input) && input.type === "workspace.getBoardLayout") return workspaces.boardLayoutRequest(input);
       if (isRecord(input) && input.type === "workspace.getTableLayout") return workspaces.tableLayoutRequest(input);
       if (isRecord(input) && input.type === "workspace.getViewGrouping") return workspaces.groupingRequest(input);
-      if (isRecord(input) && ["workspace.getViewFilter", "workspace.queryView"].includes(String(input.type))) return workspaces.filterRequest(input);
+      if (isRecord(input) && typeof input.type === "string" && ["workspace.getViewFilter", "workspace.queryView"].includes(input.type)) return workspaces.filterRequest(input);
       if (isRecord(input) && input.type === "workspace.listViews") return workspaces.viewRequest(input);
       if (isRecord(input) && input.type === "workspace.previewProjectArchive") return workspaces.previewProjectArchive(input);
       if (isRecord(input) && input.type === "workspace.listProjectArchiveOperations") return workspaces.listProjectArchiveOperations(input);
@@ -187,7 +187,7 @@ export function openSettingsService(
     },
 
     handleCommand(input) {
-      if (isRecord(input) && ["workspace.applySourceAssociation", "workspace.cancelSourceAssociation"].includes(String(input.type))) return workspaces.sourceAssociationRequest(input);
+      if (isRecord(input) && typeof input.type === "string" && ["workspace.applySourceAssociation", "workspace.cancelSourceAssociation"].includes(input.type)) return workspaces.sourceAssociationRequest(input);
       if (isRecord(input) && input.type === "workspace.setSession") return workspaces.sessionRequest(input);
       if (isRecord(input) && input.type === "data.backupNow") return backups.request(input);
       if (isRecord(input) && input.type === "data.restore") {

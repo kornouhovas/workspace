@@ -42,7 +42,8 @@ export function ProjectRevealButton({ client, workspaceId, projectId, name, lang
       // target. The service revalidates it after native completion; keep that
       // acknowledgment while still rejecting invalidated source/target lifetimes.
       if (revision !== minimumRevision?.current || source !== sourceLifetime?.current) { setMessage("revealUncertain"); return; }
-      if (!result.ok || result.value.workspaceId !== workspaceId || result.value.projectId !== projectId) setMessage("revealUncertain");
+      if(!result.ok && result.error.code === "identity_update_required")setMessage("folderActionSafetyUpdate");
+      else if (!result.ok || result.value.workspaceId !== workspaceId || result.value.projectId !== projectId) setMessage("revealUncertain");
       else if (requestedTarget !== target.current.version && (requestedLocator !== locator.current.version || result.value.outcome !== "rejected")) setMessage("revealUncertain");
       else if (result.value.outcome === "dispatched") setMessage("revealDispatched");
       else setMessage(result.value.problem === "mode_retained" ? "revealRetained" :

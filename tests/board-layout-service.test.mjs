@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, rmSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, rmSync, renameSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { openSettingsService } from '../dist/service/settings.mjs';
@@ -94,8 +94,7 @@ test('Board rejects malformed, foreign and wrong-type keys without writes or not
   });
 });
 
-test('category rename and discovery mode roundtrip keep stable Board column settings',async()=>{
-  const {randomUUID}=await import('node:crypto');
+test('external category rename and discovery mode roundtrip keep stable Board column settings',()=>{
   fixture(f=>{
     const {viewId}=f.workspace,initial=f.query('listProjects').value;
     const propertyId=initial.categoryProperty.propertyId,categoryId=initial.projects[0].categoryId;
@@ -103,8 +102,8 @@ test('category rename and discovery mode roundtrip keep stable Board column sett
     f.command('setViewLayout',{viewId,kind:'board'});
     f.command('setViewGrouping',{viewId,config:{propertyId,settings:[]}});
     assert.equal(f.command('setBoardLayout',{viewId,config}).ok,true);
-    const preview=f.query('previewCategoryFolder',{action:'rename',categoryId,name:'Renamed'}).value;
-    assert.equal(f.command('applyCategoryFolder',{operationId:randomUUID(),previewToken:preview.previewToken}).ok,true);
+    renameSync(join(f.root,initial.categories.find(c=>c.categoryId===categoryId).relativePath),join(f.root,'Renamed'));
+    assert.equal(f.command('refreshSource').ok,true);
     assert.equal(f.query('queryView',{viewId,archived:false}).value.groups.find(g=>g.key===JSON.stringify(categoryId)).label,'Renamed');
     assert.deepEqual(f.query('getBoardLayout',{viewId}).value.config,config);
     f.command('setViewGrouping',{viewId,config:{propertyId:null,settings:[]}});

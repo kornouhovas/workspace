@@ -1,4 +1,5 @@
-import { openSettingsService } from "../../dist/service/settings.mjs";
+import { openUnconvertedEngineFixture } from "../support/unconverted-command-engines.mjs";
+const openEngineService = (...args) => openUnconvertedEngineFixture(...args).engines;
 import { renameNoReplace } from "../../dist/service/project-rename-filesystem.mjs";
 import { nativeProjectFilesystem } from "../../src/service/project-filesystem.ts";
 import Database from "better-sqlite3";
@@ -24,7 +25,7 @@ const native = (from, to) => {
   return result;
 };
 const observer = { watch() { return { close() {} }; }, schedule() { return { cancel() {} }; } };
-const service = openSettingsService(database, undefined, undefined, observer, filesystem, native);
+const service = openEngineService(database, undefined, undefined, observer, filesystem, native);
 const preview = service.handleQuery({ type: "workspace.previewCategoryRemoval", workspaceId, categoryId, destinationCategoryId });
 if (!preview.ok) throw new Error("Crash fixture preview failed");
 service.handleCommand({ type: "workspace.applyCategoryRemoval", workspaceId, operationId, previewToken: preview.value.previewToken });

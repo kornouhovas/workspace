@@ -1768,3 +1768,19 @@ closed if absent; collection has2s before unchanged normal shutdown. Trial
 identity is retained in provenance/artifact names. These bounded samples seek
 a reproduction; passing them cannot clear the historical category gate or
 unblock acceptance tails. Mode1 remains available for original heavy trace.
+
+
+## Durable source access correction
+
+For #71, dispatch `desktop-ci.yml` with `checks: source-access`. The registered
+selection calls `source-access.yml` on macOS latest, Windows latest and Windows
+2022. It builds once, runs the complete current suite, then actual production
+Sources enrollment in development mode. Packaging and resource inspection precede
+the same Sources journey in release mode against the unchanged candidate.
+Receipts preserve EN/RU, both themes/sizes, explicit mappings, Cancel/Apply,
+logical IDs, native-command denial, normal shutdown and owned cleanup, with
+SHA/run/attempt/kernel and the packaged app.asar hash. Failures stop dependent
+steps and logs/artifacts retain their original status. A missing Windows or
+package receipt remains an open gate. Ordinary push/PR/full defaults are unchanged;
+successful unconverted folder effects remain owned by #72, separately from retained
+command-engine safety coverage and this issue's production capability denial.

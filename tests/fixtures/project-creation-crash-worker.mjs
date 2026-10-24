@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import Database from "better-sqlite3";
-import { openSettingsService } from "../../dist/service/settings.mjs";
+import { openUnconvertedEngineFixture } from "../support/unconverted-command-engines.mjs";
+const openEngineService = (...args) => openUnconvertedEngineFixture(...args).engines;
 
 const [databasePath, checkpoint, serializedRequest, cleanupMarker, serializedSetup] = process.argv.slice(2);
 let request = JSON.parse(serializedRequest);
@@ -8,7 +9,7 @@ let setupResult;
 const migrations = process.env.WORKSPACE_CRASH_MIGRATIONS ?? "src/service/db/migrations";
 if (serializedSetup) {
   const setup = JSON.parse(serializedSetup);
-  const seed = openSettingsService(databasePath, migrations);
+  const seed = openEngineService(databasePath, migrations);
   const unwrap = (result) => { if (!result.ok) throw new Error(JSON.stringify(result)); return result.value; };
   try {
     const workspace = unwrap(seed.workspaces.create({ type: "workspace.create", name: setup.mode, rootPath: setup.root }));
@@ -49,7 +50,7 @@ const native = {
     if (checkpoint === "after_mkdir") stop();
   },
 };
-const service = openSettingsService(databasePath, migrations, undefined, undefined, native);
+const service = openEngineService(databasePath, migrations, undefined, undefined, native);
 try {
   service.workspaces.subscribe((event) => {
     if (checkpoint === "after_commit" && event.type === "workspace.projectsChanged" &&

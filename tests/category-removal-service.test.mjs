@@ -14,7 +14,9 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import test from "node:test";
-import { openSettingsService } from "../dist/service/settings.mjs";
+import { openUnconvertedEngineFixture } from "./support/unconverted-command-engines.mjs";
+import { projectMetadataRecords, withIdentityMigrationDefaults } from "./support/identity-migration-fixtures.mjs";
+const openEngineService = (...args) => openUnconvertedEngineFixture(...args).engines;
 
 const observer = { watch() { return { close() {} }; }, schedule() { return { cancel() {} }; } };
 function fixture(run, options = {}) {
@@ -23,7 +25,7 @@ function fixture(run, options = {}) {
   fs.mkdirSync(root); fs.mkdirSync(join(root, "Original")); fs.mkdirSync(join(root, "Original", "Project"));
   fs.writeFileSync(join(root, "Original", "Project", "sentinel"), "exact bytes\n");
   let service;
-  const open = () => service = openSettingsService(database, undefined, undefined, observer, options.filesystem, options.native);
+  const open = () => service = openEngineService(database, undefined, undefined, observer, options.filesystem, options.native);
   try {
     open();
     const workspace = service.workspaces.create({ type: "workspace.create", name: "Primary", rootPath: root }).value;
@@ -117,7 +119,7 @@ test("preview traverses the typed client, narrow preload and production query va
     parent.postMessage = () => {};
     port.postMessage = message => replies.push(message);
     port.start = () => {}; port.close = () => {};
-    startServiceProcess(parent, database => openSettingsService(database, undefined, undefined, observer));
+    startServiceProcess(parent, database => openEngineService(database, undefined, undefined, observer));
     parent.emit("message", { data: { type: "connect", databasePath: f.database }, ports: [port] });
     let serial = 0;
     const ipc = new EventEmitter();
@@ -157,9 +159,11 @@ test("reviewed occupied removal preserves project IDs, values and bytes across s
   assert.equal(fs.readFileSync(join(f.root, "Destination", "Project", "sentinel"), "utf8"), "exact bytes\n");
   f.restart();
   assert.deepEqual(f.command("workspace.applyCategoryRemoval", request), result);
-  const list = f.query("workspace.listProjects", { workspaceId: f.sibling.workspaceId }).value;
-  assert.deepEqual(list.categories.map(c => c.categoryId), [destinationCategoryId]);
-  assert.equal(list.projects[0].projectId, project.projectId); assert.equal(list.projects[0].relativePath, "Destination/Project");
+  const list = f.query("workspace.listProjects", { workspaceId: f.sibling.workspaceId });
+  const retained=projectMetadataRecords(list);
+  assert.equal(retained[0].categoryId,destinationCategoryId);
+  assert.equal(retained[0].projectId,project.projectId);assert.equal(retained[0].relativePath,"Destination/Project");
+  assert.equal(list.value.projects.length,0);
   assert.deepEqual(f.query("workspace.listTextProperties"), values);
   assert.deepEqual(f.query("workspace.listCategoryRemovals").value.operations, []);
 }));
@@ -248,7 +252,7 @@ test("interruption after empty-directory removal recovers metadata without anoth
     assert.equal(partial.value.operation.stage, "cleanup_intent"); assert.equal(fs.existsSync(join(f.root, "Original")), false);
     f.restart();
     assert.equal(retry(f, request.operationId, f.sibling.workspaceId).value.operation.stage, "completed");
-    assert.equal(calls, 1); assert.equal(f.query("workspace.listProjects").value.projects[0].projectId, f.initial.projects[0].projectId);
+    assert.equal(calls, 1); assert.equal(projectMetadataRecords(f.query("workspace.listProjects"))[0].projectId, f.initial.projects[0].projectId);
   }, { filesystem: { ...nativeProjectFilesystem, removeEmptyDirectory(path) { calls++; fs.rmdirSync(path); throw new Error("Response interrupted"); } } });
 });
 
@@ -286,7 +290,7 @@ for (const phase of ["batch_intent", "intent", "effect", "recorded", "first_comp
     const done = retry(f, prepared.operationId, f.sibling.workspaceId);
     assert.equal(done.value.operation.stage, "completed");
     f.restart();
-    assert.equal(f.query("workspace.listProjects").value.projects.find(p => p.projectId === f.initial.projects[0].projectId).relativePath, "Destination/Project");
+    assert.equal(projectMetadataRecords(f.query("workspace.listProjects")).find(p => p.projectId === f.initial.projects[0].projectId).relativePath, "Destination/Project");
     assert.equal(fs.readFileSync(join(f.root, "Destination", "Project", "sentinel"), "utf8"), "exact bytes\n");
     assert.equal(fs.existsSync(join(f.root, "Original")), false);
   }));
@@ -352,20 +356,20 @@ test("migration 0012 preserves populated 0011 data, presentation and receipts ac
     migrate(drizzle(previous), { migrationsFolder: folder });
     snapshot = Object.fromEntries(tables.map(table => [table, current.prepare(`SELECT * FROM ${table} ORDER BY 1`).all()]));
     for (const table of tables) for (const row of snapshot[table]) {
-      const columns = Object.keys(row).filter(key => table !== "views" || !["position", "filter_config", "grouping_config", "table_config", "board_config"].includes(key));
+      const columns = previous.prepare(`PRAGMA table_info(${table})`).all().map(column=>column.name);
       previous.prepare(`INSERT INTO ${table} (${columns.join(",")}) VALUES (${columns.map(() => "?").join(",")})`).run(...columns.map(key => row[key]));
     }
   } finally { previous.close(); current.close(); }
   for (let i = 0; i < 2; i++) {
-    const reopened = openSettingsService(oldPath, undefined, undefined, observer), sql = new Database(oldPath);
+    const reopened = openEngineService(oldPath, undefined, undefined, observer), sql = new Database(oldPath);
     try {
-      for (const table of tables) assert.deepEqual(sql.prepare(`SELECT * FROM ${table} ORDER BY 1`).all(), snapshot[table], table);
+      for (const table of tables) assert.deepEqual(sql.prepare(`SELECT * FROM ${table} ORDER BY 1`).all(), withIdentityMigrationDefaults(table,snapshot[table].map(row=>Object.fromEntries(Object.entries(row).filter(([key])=>!["durable_evidence","evidence_generation"].includes(key))))), table);
       assert.equal(sql.prepare("SELECT count(*) AS n FROM __drizzle_migrations").get().n, 25);
       assert.deepEqual(sql.prepare("SELECT * FROM category_removal_operations").all(), []);
       assert.deepEqual(sql.prepare("SELECT * FROM category_removal_attempts").all(), []);
       assert.deepEqual(sql.pragma("foreign_key_check"), []);
       const list = reopened.handleQuery({ type: "workspace.listProjects", workspaceId: f.workspace.workspaceId });
-      assert.equal(list.value.projects[0].projectId, project.projectId);
+      assert.equal(projectMetadataRecords(list)[0].projectId, project.projectId);
       assert.equal(fs.readFileSync(join(f.root, "Original", "Project", "sentinel"), "utf8"), "exact bytes\n");
     } finally { reopened.close(); sql.close(); }
   }

@@ -68,7 +68,7 @@ export async function seedRenameFixture(data, discoveryMode) {
 export async function interruptRenameFixture(setup, checkpoint, ownedProcesses) {
   const marker = join(setup.data, "cleanup-marker");
   const child = fork(join(root, "tests/fixtures/project-rename-crash-worker.mjs"), [setup.database, checkpoint, JSON.stringify(setup.request), marker],
-    { cwd: root, execArgv: [], stdio: ["ignore", "ignore", "pipe", "ipc"] });
+    { cwd: root, execArgv: ["--import","tsx"], stdio: ["ignore", "ignore", "pipe", "ipc"] });
   ownedProcesses.add(child);
   const exited = once(child, "exit");
   // Attach before waiting so early errors/exit always terminate the bounded wait.

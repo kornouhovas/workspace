@@ -45,7 +45,7 @@ const packagedFiles = [
   "dist/service/db/migrations/meta/_journal.json",
 ];
 
-async function makeArtifact(root, buildVersion = "0.1.0", omittedFiles = [], omitModeJournalEntry = false, corruptFile) {
+async function makeArtifact(root, buildVersion = "0.1.0", omittedFiles = [], omitModeJournalEntry = false, corruptFile, extraFiles = []) {
   const appDirectory = join(root, "app");
   const resourcesDirectory = join(root, "bundle", "resources");
   await mkdir(appDirectory, { recursive: true });
@@ -90,6 +90,7 @@ async function makeArtifact(root, buildVersion = "0.1.0", omittedFiles = [], omi
     const contents = await readFile(`dist/desktop/native/${file}`);
     await writeFile(join(resourcesDirectory, relative), relative === corruptFile ? Buffer.from("modified native script") : contents);
   }
+  for(const file of extraFiles){await mkdir(dirname(join(appDirectory,file)),{recursive:true});await writeFile(join(appDirectory,file),"test-only command fixture");}
   const asarPath = join(resourcesDirectory, "app.asar");
   await createPackageWithOptions(appDirectory, asarPath, { unpack: omittedFiles.includes("packed-rename") ? "discovery-worker.cjs" : omittedFiles.includes("packed-worker") ? "project-rename.node" : "{project-rename.node,discovery-worker.cjs}" });
   if (omittedFiles.includes("unpacked-rename")) await rm(join(`${asarPath}.unpacked`, "dist/service/native/project-rename.node"));
@@ -366,4 +367,13 @@ for (const corruption of ["valid", "same-length", "shorter", "longer"]) test(`ar
     assert.ok(child.stdout.length < 256); assert.equal(child.stderr, "");
     assert.equal(JSON.parse(child.stdout).accepted, corruption === "valid");
   } finally { await rm(root, { recursive: true, force: true }); }
+});
+
+
+test('artifact check rejects a packaged unconverted command test entry',async()=>{
+ const root=await mkdtemp(join(tmpdir(),'workspace-artifact-test-entry-'));
+ try{
+  await makeArtifact(root,'0.1.0',[],false,undefined,['dist/service/unconverted-engine-test-entry.cjs']);
+  await assert.rejects(checkArtifact(join(root,'bundle'),{platform:'darwin',arch:'arm64'}),/test-only command entry/);
+ }finally{await rm(root,{recursive:true,force:true});}
 });

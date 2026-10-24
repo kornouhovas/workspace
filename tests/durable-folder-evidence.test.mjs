@@ -1,3 +1,6 @@
+import {rootOwnershipConflict} from '../src/service/source-identity.ts';
+import fs from 'node:fs';
+import {syncBuiltinESMExports} from 'node:module';
 import assert from 'node:assert/strict';
 import { mkdtempSync, mkdirSync, rmSync, realpathSync, symlinkSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -22,4 +25,25 @@ test('native evidence identifies a contained folder independently of device numb
     assert.equal(observeFolder(join(root, 'Alias'), 'installation-test').ok, false);
     assert.equal(observeFolder(join(root, 'Missing'), 'installation-test').reason, 'disconnected');
   } finally { rmSync(root, {recursive: true, force: true}); }
+});
+
+
+test('native evidence rejects a partial current-mount observation even when durable attributes are available',()=>{
+ const root=realpathSync(mkdtempSync(join(tmpdir(),'workspace-partial-mount-'))),original=fs.lstatSync;
+ try{
+  assert.equal(observeFolder(root,'installation-test').ok,true);
+  fs.lstatSync=(path,...args)=>{const stat=original(path,...args);if(path===root)stat.birthtimeNs=0n;return stat;};syncBuiltinESMExports();
+  assert.deepEqual(observeFolder(root,'installation-test'),{ok:false,reason:'missing_attributes'});
+ }finally{fs.lstatSync=original;syncBuiltinESMExports();rmSync(root,{recursive:true,force:true});}
+});
+
+
+test('NTFS GUID casing cannot conceal duplicate root ownership and different GUID aliases stay distinct',()=>{
+ const slash=String.fromCharCode(92),volume=`${slash}${slash}?${slash}Volume{aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee}${slash}`;
+ const evidence={version:1,provider:'ntfs',scope:'installation-test',volume,serial:'1',fileId:'1234567890abcdef1234567890abcdef',created:'1'};
+ const observed={ok:true,evidence,mount:{dev:'1',ino:'2',birthtimeNs:'3'}};
+ const peer={canonicalRoot:'unavailable-peer',durableEvidence:JSON.stringify({...evidence,volume:volume.toUpperCase()}),appliedRootIdentity:null};
+ assert.equal(validateEvidence(evidence),true);assert.equal(validateEvidence(JSON.parse(peer.durableEvidence)),true);
+ assert.equal(rootOwnershipConflict(observed,[peer],evidence.scope,()=>({ok:false,reason:'disconnected'})),true);
+ assert.equal(rootOwnershipConflict(observed,[{...peer,durableEvidence:JSON.stringify({...evidence,volume:volume.replace('aaaaaaaa','ffffffff')})}],evidence.scope,()=>({ok:false,reason:'disconnected'})),false);
 });

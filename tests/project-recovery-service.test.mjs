@@ -8,7 +8,9 @@ import Database from "better-sqlite3";
 import { randomUUID } from "node:crypto";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import { migrate } from "drizzle-orm/better-sqlite3/migrator";
-import { openSettingsService } from "../dist/service/settings.mjs";
+import { openUnconvertedEngineFixture } from "./support/unconverted-command-engines.mjs";
+import { projectMetadataRecords } from "./support/identity-migration-fixtures.mjs";
+const openEngineService = (...args) => openUnconvertedEngineFixture(...args).engines;
 
 function inventory(path, include = () => true) {
   return fs.readdirSync(path, { withFileTypes: true }).filter((entry) => include(entry.name)).sort((a, b) => a.name.localeCompare(b.name)).map((entry) => [entry.name,
@@ -20,7 +22,7 @@ function fixture(run, mode = "direct") {
   const root = join(directory, "root");
   fs.mkdirSync(join(root, mode === "grouped" ? "Category/Project" : "Project"), { recursive: true });
   const databasePath = join(directory, "workspace.sqlite");
-  const service = openSettingsService(databasePath);
+  const service = openEngineService(databasePath);
   const sqlite = new Database(databasePath);
   const workspace = service.workspaces.create({ type: "workspace.create", name: "Recovery", rootPath: root }).value;
   const query = (type) => service.handleQuery({ type, workspaceId: workspace.workspaceId });
@@ -63,7 +65,7 @@ test("retained excluded, missing, ambiguous and replaced records expose original
     }
     const before = f.records(), result = f.query("workspace.listProjects").value;
     const retained = result.retainedProjects.find((row) => row.projectId === f.project.projectId);
-    assert.equal(retained.associationState, state); assert.equal(retained.resolution, state);
+    assert.equal(retained.associationState,state==="replaced"?"unresolved":state); assert.equal(retained.resolution,state);
     assert.equal(result.retainedCount, result.retainedProjects.length);
     assert.equal(f.query("workspace.listTextProperties").value.values[0].value, f.value);
     assert.deepEqual(f.records(), before);
@@ -95,9 +97,9 @@ test("unavailable, unreadable, changed and conflicting roots do not report mass 
     try { result = f.query("workspace.listProjects"); }
     finally { fs.opendirSync = originalOpen; fs.lstatSync = originalStat; syncBuiltinESMExports(); }
     assert.equal(result.ok, true); assert.equal(result.value.state, state);
-    assert.equal(result.value.projects[0].projectId, f.project.projectId);
-    assert.equal(result.value.projects[0].resolution, null);
-    assert.deepEqual(result.value.retainedProjects, []);
+    assert.equal(projectMetadataRecords(result)[0].projectId,f.project.projectId);
+    assert.equal(projectMetadataRecords(result)[0].resolution,state==="root_identity_conflict"?"replaced":"unresolved");
+    assert.deepEqual(result.value.projects,[]);
     assert.deepEqual(f.records(), before);
     assert.equal(f.query("workspace.listTextProperties").value.values[0].value, f.value);
     assert.equal(fs.readFileSync(join(state === "unavailable" || state === "root_identity_conflict" ? join(f.directory, "away") : f.root, "Project", "sentinel"), "utf8"), "unchanged");
@@ -178,9 +180,9 @@ test("direct recovery previews without Apply, cancels read-only and explicitly r
   assert.deepEqual(inventory(f.root), files);
   assert.deepEqual(events.map((event) => [event.type, event.sourceId, event.revision]), [["workspace.projectsChanged", f.workspace.sourceId, result.value.revision]]);
   assert.equal(recover(f, refreshed, "Renamed").error.code, "stale_preview");
-  const reopened = openSettingsService(join(f.directory, "workspace.sqlite"));
+  const reopened = openEngineService(join(f.directory, "workspace.sqlite"));
   try {
-    assert.equal(reopened.workspaces.listProjects({ type: "workspace.listProjects", workspaceId: f.workspace.workspaceId }).value.projects[0].projectId, f.project.projectId);
+    assert.equal(projectMetadataRecords(reopened.workspaces.listProjects({ type: "workspace.listProjects", workspaceId: f.workspace.workspaceId }))[0].projectId, f.project.projectId);
     assert.equal(reopened.workspaces.listTextProperties({ type: "workspace.listTextProperties", workspaceId: f.workspace.workspaceId }).value.values[0].value, f.value);
     assert.equal(reopened.workspaces.load().value.activeWorkspace.viewId, f.workspace.viewId);
   } finally { reopened.close(); }
@@ -231,14 +233,17 @@ test("recovery rejects non-direct, malformed/foreign ownership and unsafe or exc
   });
 });
 
-test("replacement already owned by another project cannot inherit retained Text or relinquish its reserved path", () => fixture((f) => {
-  fs.renameSync(join(f.root, "Project"), join(f.directory, "away")); fs.mkdirSync(join(f.root, "Project"));
-  const replacement = f.apply().projects[0];
-  const before = f.records(), files = inventory(f.root), preview = review(f).value;
-  assert.equal(preview.entries.find((row) => row.relativePath === "Project").status, "reserved_path");
-  assert.equal(recover(f, preview, "Project").error.code, "invalid_input");
-  assert.deepEqual(f.records(), before); assert.deepEqual(inventory(f.root), files);
-  assert.ok(!f.query("workspace.listTextProperties").value.values.some((row) => row.projectId === replacement.projectId));
+test("replacement already owned by another project cannot inherit retained Text or relinquish its reserved path",()=>fixture(f=>{
+ fs.mkdirSync(join(f.root,'Second'));const replacement=f.apply().projects.find(p=>p.relativePath==='Second');
+ fs.renameSync(join(f.root,'Project'),join(f.directory,'away'));fs.renameSync(join(f.root,'Second'),join(f.root,'Project'));
+ // Arrange a historical accepted ownership; this test targets the legacy engine.
+ f.sqlite.prepare("UPDATE projects SET association_state='replaced' WHERE id=?").run(f.project.projectId);
+ f.sqlite.prepare("UPDATE projects SET relative_path='Project' WHERE id=?").run(replacement.projectId);
+ const before=f.records(),files=inventory(f.root),preview=review(f).value;
+ assert.equal(preview.entries.find(row=>row.relativePath==='Project').status,'reserved_path');
+ assert.equal(recover(f,preview,'Project').error.code,'invalid_input');
+ assert.deepEqual(f.records(),before);assert.deepEqual(inventory(f.root),files);
+ assert.ok(!f.query('workspace.listTextProperties').value.values.some(row=>row.projectId===replacement.projectId));
 }));
 
 test("retired native evidence alone does not block an explicit association or make its result ambiguous", () => fixture((f) => {
@@ -249,42 +254,23 @@ test("retired native evidence alone does not block an explicit association or ma
   const result = recover(f, review(f).value, "Target");
   assert.equal(result.ok, true); assert.equal(result.value.projects[0].resolution, "active");
   assert.equal(result.value.projects[0].projectId, f.project.projectId);
-  assert.equal(f.query("workspace.listProjects").value.projects[0].projectId, f.project.projectId);
+  assert.ok(projectMetadataRecords(f.query("workspace.listProjects")).some(row=>row.projectId===f.project.projectId));
 }));
 
-for (const [mode, excludeCategory] of [["direct", false], ["grouped", false], ["grouped", true]]) {
-  test(`${mode} recovered association survives ${excludeCategory ? "category" : "project"} exclusion and reinclusion over retired evidence`, () => fixture((f) => {
-    const path = (name) => mode === "grouped" ? `Category/${name}` : name;
-    fs.mkdirSync(join(f.root, path("Previous")));
-    const previous = f.apply().projects.find((row) => row.relativePath === path("Previous"));
-    fs.renameSync(join(f.root, path("Previous")), join(f.root, path("Target")));
-    fs.mkdirSync(join(f.root, path("Previous")));
-    f.apply();
-    assert.equal(f.query("workspace.listProjects").value.retainedProjects.find((row) => row.projectId === previous.projectId).associationState, "replaced");
-    fs.renameSync(join(f.root, path("Project")), join(f.directory, "away"));
-    const recovered = recover(f, review(f).value, path("Target"));
-    assert.equal(recovered.ok, true);
-    const categoryId = recovered.value.projects.find((row) => row.projectId === f.project.projectId).categoryId;
-    const files = inventory(f.root);
-    const excluded = f.apply({ excludedRelativePaths: [excludeCategory ? "Category" : path("Target")] });
-    const excludedRow = excluded.retainedProjects.find((row) => row.projectId === f.project.projectId);
-    assert.equal(excludedRow.associationState, "excluded");
-    assert.equal(excludedRow.resolution, "excluded");
-    assert.equal(f.query("workspace.listProjects").value.retainedProjects.find((row) => row.projectId === f.project.projectId).resolution, "excluded");
-    const reincludePreview = f.service.handleQuery({ type: "workspace.previewDiscovery", workspaceId: f.workspace.workspaceId, excludedRelativePaths: [] });
-    assert.equal(reincludePreview.ok, true);
-    assert.equal(reincludePreview.value.entries.find((row) => row.relativePath === path("Target")).reason, null);
-    const reinclude = f.service.handleCommand({ type: "workspace.applyDiscovery", workspaceId: f.workspace.workspaceId, previewToken: reincludePreview.value.previewToken });
-    assert.equal(reinclude.ok, true);
-    const active = reinclude.value.projects.find((row) => row.projectId === f.project.projectId);
-    assert.equal(active.relativePath, path("Target"));
-    assert.equal(active.resolution, "active");
-    assert.equal(active.categoryId, categoryId);
-    assert.equal(f.query("workspace.listProjects").value.projects.find((row) => row.projectId === f.project.projectId).resolution, "active");
-    assert.equal(f.query("workspace.listTextProperties").value.values.find((row) => row.projectId === f.project.projectId).value, f.value);
-    assert.deepEqual(inventory(f.root), files);
-  }, mode));
-}
+for(const mode of ["direct","grouped"]) test(`${mode} legacy recovery does not enroll new-policy folder identity`,()=>fixture(f=>{
+ const target=mode==='grouped'?'Category/Target':'Target';
+ fs.mkdirSync(join(f.root,target));fs.renameSync(join(f.root,mode==='grouped'?'Category/Project':'Project'),join(f.directory,'away'));
+ const recovered=recover(f,review(f).value,target);assert.equal(recovered.ok,true);
+ assert.equal(recovered.value.projects.find(row=>row.projectId===f.project.projectId).resolution,'active');
+ const before=f.records(),files=inventory(f.root);
+ const current=f.service.application.handleQuery({type:'workspace.listProjects',workspaceId:f.workspace.workspaceId});
+ assert.equal(current.value.projects.length,0);
+ const retained=current.value.retainedProjects.find(row=>row.projectId===f.project.projectId);
+ assert.equal(retained.identityReason,'review_required');assert.equal(retained.relativePath,target);
+ assert.equal(f.service.application.handleQuery({type:'workspace.previewProjectRecovery',workspaceId:f.workspace.workspaceId,projectId:f.project.projectId}).error.code,'identity_update_required');
+ assert.equal(f.query('workspace.listTextProperties').value.values.find(row=>row.projectId===f.project.projectId).value,f.value);
+ assert.deepEqual(f.records(),before);assert.deepEqual(inventory(f.root),files);
+},mode));
 
 test("recovery reviews stale on root/target/configuration/record swaps; transactional failures roll back and emit no success", () => {
   for (const failure of ["root", "target", "configuration", "record", "write", "revision_write", "after_write"]) fixture((f) => {
@@ -454,10 +440,12 @@ test("grouped recovery reuses active or atomically creates new categories withou
     assert.equal(f.query("workspace.listTextProperties").value.values[0].value, f.value);
     assert.equal(events.length, 1); assert.deepEqual(events[0].workspaceIds, [f.workspace.workspaceId, sibling.workspaceId]);
     assert.deepEqual(inventory(f.root), files);
-    const reopened = openSettingsService(join(f.directory, "workspace.sqlite"));
+    const reopened = openEngineService(join(f.directory, "workspace.sqlite"));
     try {
       const list = reopened.workspaces.listProjects({ type: "workspace.listProjects", workspaceId: f.workspace.workspaceId });
-      assert.deepEqual(list, result);
+      assert.equal(projectMetadataRecords(list).find(row=>row.projectId===f.project.projectId).relativePath,target.relativePath);
+      assert.equal(list.value.projects.length,0);
+      assert.equal(list.value.retainedProjects.find(row=>row.projectId===f.project.projectId).identityReason,'review_required');
       assert.equal(reopened.workspaces.listTextProperties({ type: "workspace.listTextProperties", workspaceId: sibling.workspaceId }).value.values[0].value, f.value);
       assert.deepEqual(f.records().slice(3), before.slice(3));
     } finally { reopened.close(); }
@@ -652,7 +640,7 @@ test("grouped recovery rejects native aliases at both levels and insufficient ca
   }, "grouped");
 });
 
-test("source observations invalidate both review kinds for persisted missing metadata even after the same root reconnects", () => fixture((f) => {
+test("explicit engine invalidation after source observations revokes legacy recovery; app observations revoke discovery for persisted missing metadata even after the same root reconnects", () => fixture((f) => {
   fs.renameSync(join(f.root, "Project"), join(f.directory, "away"));
   f.apply(); // Persisted missing associations still require explicit recovery.
   fs.renameSync(join(f.directory, "away"), join(f.root, "Target"));
@@ -666,6 +654,7 @@ test("source observations invalidate both review kinds for persisted missing met
   try { assert.equal(f.service.workspaces.refreshSource({ type: "workspace.refreshSource", workspaceId: f.workspace.workspaceId }).value.sourceAvailable, false); }
   finally { fs.accessSync = originalAccess; syncBuiltinESMExports(); }
   assert.equal(f.service.workspaces.refreshSource({ type: "workspace.refreshSource", workspaceId: f.workspace.workspaceId }).value.sourceAvailable, true);
+  f.service.invalidateSource(f.workspace.sourceId);
   assert.equal(recover(f, recovery, "Target").error.code, "stale_preview");
   assert.equal(f.service.workspaces.applyDiscovery({ type: "workspace.applyDiscovery", workspaceId: f.workspace.workspaceId, previewToken: discovery.previewToken }).error.code, "stale_preview");
   assert.deepEqual(f.records(), before); assert.deepEqual(inventory(f.root), files);
@@ -714,7 +703,7 @@ test("review tokens are ephemeral across workspace removal and service restart",
   const current = review(f, { workspaceId: sibling.workspaceId }).value;
   const before = f.records();
   f.service.close();
-  const reopened = openSettingsService(join(f.directory, "workspace.sqlite"));
+  const reopened = openEngineService(join(f.directory, "workspace.sqlite"));
   try {
     assert.equal(reopened.workspaces.reassociateProject({ type: "workspace.reassociateProject", workspaceId: sibling.workspaceId,
       projectId: f.project.projectId, previewToken: current.previewToken, relativePath: "Target" }).error.code, "stale_preview");
@@ -723,7 +712,7 @@ test("review tokens are ephemeral across workspace removal and service restart",
   } finally { reopened.close(); }
 }));
 
-test("an incomplete project observation revokes reviews without metadata writes even after access returns", () => fixture((f) => {
+test("an incomplete project observation plus explicit legacy-engine invalidation revokes reviews without metadata writes even after access returns", () => fixture((f) => {
   fs.renameSync(join(f.root, "Project"), join(f.root, "Target"));
   const recovery = review(f).value, discovery = f.query("workspace.previewDiscovery").value;
   const before = f.records(), files = inventory(f.root), originalOpen = fs.opendirSync;
@@ -731,12 +720,13 @@ test("an incomplete project observation revokes reviews without metadata writes 
   syncBuiltinESMExports();
   try { assert.equal(f.query("workspace.listProjects").value.state, "unreadable"); }
   finally { fs.opendirSync = originalOpen; syncBuiltinESMExports(); }
+  f.service.invalidateSource(f.workspace.sourceId);
   assert.equal(recover(f, recovery, "Target").error.code, "stale_preview");
   assert.equal(f.service.workspaces.applyDiscovery({ type: "workspace.applyDiscovery", workspaceId: f.workspace.workspaceId, previewToken: discovery.previewToken }).error.code, "stale_preview");
   assert.deepEqual(f.records(), before); assert.deepEqual(inventory(f.root), files);
 }));
 
-test("failed discovery and recovery scans invalidate sibling reviews before reporting source feedback", () => {
+test("failed scans and explicit legacy-engine invalidation revoke sibling reviews before reporting source feedback", () => {
   for (const type of ["workspace.previewDiscovery", "workspace.previewProjectRecovery"]) for (const persisted of [false, true]) fixture((f) => {
     fs.renameSync(join(f.root, "Project"), join(f.directory, "away")); if (persisted) f.apply();
     fs.renameSync(join(f.directory, "away"), join(f.root, "Target"));
@@ -750,7 +740,9 @@ test("failed discovery and recovery scans invalidate sibling reviews before repo
       const response = f.service.handleQuery({ type, workspaceId: f.workspace.workspaceId, ...(type === "workspace.previewProjectRecovery" ? { projectId: f.project.projectId } : {}) });
       if (type === "workspace.previewProjectRecovery" && !persisted) assert.equal(response.error.code, "invalid_input");
       else { assert.equal(response.ok, true); assert.equal(response.value.state, "unreadable"); }
+      assert.equal(f.query("workspace.listProjects").value.state,"unreadable");
     } finally { fs.opendirSync = originalOpen; syncBuiltinESMExports(); }
+    f.service.invalidateSource(f.workspace.sourceId);
     assert.equal(recover(f, recovery, "Target", { workspaceId: sibling.workspaceId }).error.code, "stale_preview");
     assert.equal(f.service.workspaces.applyDiscovery({ type: "workspace.applyDiscovery", workspaceId: sibling.workspaceId, previewToken: discovery.previewToken }).error.code, "stale_preview");
     assert.deepEqual(f.records(), before); assert.deepEqual(inventory(f.root), files);
@@ -811,12 +803,13 @@ test("populated baseline reopens and recovers direct/grouped records without sch
       const files = inventory(root), outside = projects.filter((p) => ["unresolved", "replaced"].includes(p.state))
         .map((p) => [p.state, inventory(join(directory, p.state))]);
       const before = records();
-      service = openSettingsService(databasePath);
+      service = openEngineService(databasePath);
       const query = (type, id = workspaceId) => service.handleQuery({ type, workspaceId: id });
       const listed = query("workspace.listProjects");
       assert.equal(listed.ok, true);
-      assert.deepEqual(listed.value.projects.map((p) => p.projectId), [projects[0].id]);
-      assert.deepEqual(listed.value.retainedProjects.map((p) => [p.projectId, p.associationState]).sort(), projects.slice(1).map((p) => [p.id, p.state]).sort());
+      assert.deepEqual(listed.value.projects,[]);
+      assert.equal(listed.value.state,"association_review_required");
+      assert.deepEqual(listed.value.retainedProjects.map(p=>[p.projectId,p.associationState]).sort(),projects.map(p=>[p.id,p.state]).sort());
       assert.deepEqual(records(), before);
       const text = query("workspace.listTextProperties").value;
       assert.equal(text.revision, 9); assert.equal(text.definitions[0].propertyId, propertyId);
@@ -839,15 +832,19 @@ test("populated baseline reopens and recovers direct/grouped records without sch
         assert.equal(recovered.value.categoryProperty.name, "  Этап / Category  ");
         assert.equal(recovered.value.projects.find((p) => p.projectId === subject.id).categoryId, categoryId);
       }
-      service.close(); service = openSettingsService(databasePath);
-      assert.deepEqual(query("workspace.listProjects"), recovered);
+      service.close(); service = openEngineService(databasePath);
+      assert.equal(projectMetadataRecords(query("workspace.listProjects")).find(p=>p.projectId===subject.id).relativePath,path("Target"));
+      assert.equal(query("workspace.listProjects").value.state,"association_review_required");
       assert.deepEqual(query("workspace.listTextProperties", siblingId).value, { ...text, workspaceId: siblingId });
       assert.deepEqual(records(), after);
       for (const id of [workspaceId, siblingId]) assert.equal(service.workspaces.remove({ type: "workspace.remove", workspaceId: id }).ok, true);
-      service.close(); service = openSettingsService(databasePath);
+      service.close(); service = openEngineService(databasePath);
       const reused = service.workspaces.create({ type: "workspace.create", name: "Reused", rootPath: root }).value;
       assert.equal(reused.sourceId, sourceId); assert.notEqual(reused.viewId, viewId); assert.notEqual(reused.viewId, siblingViewId);
-      assert.deepEqual(query("workspace.listProjects", reused.workspaceId).value, { ...recovered.value, workspaceId: reused.workspaceId });
+      const reusedList=query("workspace.listProjects",reused.workspaceId);
+      assert.equal(reusedList.value.state,"association_review_required");
+      assert.equal(reusedList.value.revision,recovered.value.revision);
+      assert.equal(projectMetadataRecords(reusedList).find(p=>p.projectId===subject.id).relativePath,path("Target"));
       assert.deepEqual(query("workspace.listTextProperties", reused.workspaceId).value, { ...text, workspaceId: reused.workspaceId });
       for (const table of tables.filter((t) => !["workspaces", "views", "active_workspace"].includes(t))) assert.deepEqual(records()[table], after[table]);
       assert.deepEqual(inventory(root), files);
@@ -889,7 +886,7 @@ for (const mode of ["direct", "grouped"]) test(`mode-retained recovery accepts o
   assert.equal(f.query("workspace.listTextProperties").value.values[0].value, f.value); assert.deepEqual(inventory(f.root), files);
 }, mode));
 
-test("sibling mode Apply invalidates retained recovery and discovery reviews without changing their subjects", () => fixture((f) => {
+test("sibling mode Apply and explicit legacy-engine invalidation revoke retained recovery and discovery reviews without changing their subjects", () => fixture((f) => {
   fs.mkdirSync(join(f.root, "New/Target"), { recursive: true }); f.apply({ mode: "grouped" });
   const preview = review(f); assert.equal(preview.ok, true, JSON.stringify(preview));
   const discovery = f.service.workspaces.previewDiscovery({ type: "workspace.previewDiscovery", workspaceId: f.workspace.workspaceId }).value;
@@ -897,6 +894,7 @@ test("sibling mode Apply invalidates retained recovery and discovery reviews wit
   const change = f.service.workspaces.previewDiscovery({ type: "workspace.previewDiscovery", workspaceId: sibling.workspaceId, mode: "direct" }).value;
   assert.equal(f.service.workspaces.applyDiscovery({ type: "workspace.applyDiscovery", workspaceId: sibling.workspaceId, previewToken: change.previewToken }).ok, true);
   const before = f.records(), files = inventory(f.root);
+  f.service.invalidateSource(f.workspace.sourceId);
   assert.equal(recover(f, preview.value, "New/Target").error.code, "stale_preview");
   assert.equal(f.service.workspaces.applyDiscovery({ type: "workspace.applyDiscovery", workspaceId: f.workspace.workspaceId, previewToken: discovery.previewToken }).error.code, "stale_preview");
   assert.deepEqual(f.records(), before); assert.deepEqual(inventory(f.root), files);
@@ -911,7 +909,7 @@ for (const mode of ["direct", "grouped"]) test(`mode-retained own-path replaceme
   assert.equal(preview.value.entries.find((row) => row.relativePath === path).status, "selectable");
   assert.deepEqual(f.records(), before);
   assert.equal(recover(f, preview.value, path).ok, true);
-  assert.equal(f.query("workspace.listProjects").value.projects.find((row) => row.projectId === f.project.projectId).relativePath, path);
+  assert.equal(projectMetadataRecords(f.query("workspace.listProjects")).find((row) => row.projectId === f.project.projectId).relativePath, path);
   assert.equal(f.query("workspace.listTextProperties").value.values[0].value, f.value);
   assert.deepEqual(inventory(f.root), files);
 }, mode));

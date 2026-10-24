@@ -1,3 +1,4 @@
+import { projectMetadataRecords } from "./support/identity-migration-fixtures.mjs";
 import assert from "node:assert/strict";
 import test from "node:test";
 import fs from "node:fs";
@@ -32,12 +33,14 @@ test("0012 upgrade preserves populated project identity, exact Text, source/work
       migrate(drizzle(old), { migrationsFolder: folder });
       const tables = old.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name!='__drizzle_migrations' ORDER BY name").all().map(r => r.name);
       snapshot = Object.fromEntries(tables.map(table => [table, current.prepare(`SELECT * FROM ${table} ORDER BY 1`).all()]));
+      for(const table of ['sources','projects','categories'])snapshot[table]=snapshot[table].map(row=>({...row,durable_evidence:null,...(table==='sources'?{evidence_generation:0}:{})}));
       // This migration fixture copies only existing rows, retaining exact prior
       // schema and migration history instead of mutating the new schema backwards.
       old.pragma("foreign_keys=OFF");
       for (const table of ["settings", "sources", "workspaces", "views", "active_workspace", "categories", "category_properties", "projects", "property_definitions", "text_property_values", "project_creation_operations", "project_rename_operations", "project_category_move_operations", "category_folder_operations", "category_presentation", "category_removal_operations", "category_removal_attempts"]) {
         for (const row of snapshot[table]) {
-          const keys = Object.keys(row).filter(key => table !== "views" || !["position", "filter_config", "grouping_config", "table_config", "board_config"].includes(key));
+          const columns=new Set(old.prepare(`PRAGMA table_info(${table})`).all().map(column=>column.name));
+          const keys = Object.keys(row).filter(key => columns.has(key));
           old.prepare(`INSERT INTO ${table} (${keys.join(",")}) VALUES (${keys.map(() => "?").join(",")})`).run(...keys.map(key => row[key]));
         }
       }
@@ -45,7 +48,8 @@ test("0012 upgrade preserves populated project identity, exact Text, source/work
     for (let i = 0; i < 2; i++) {
       service = openSettingsService(oldPath, undefined, undefined, observer);
       const read = service.handleQuery({ type: "workspace.listProjects", workspaceId });
-      assert.equal(read.value.projects[0].projectId, project.projectId);
+      assert.equal(read.value.state,"association_review_required");
+      assert.equal(projectMetadataRecords(read)[0].projectId, project.projectId);
       assert.equal(service.handleQuery({ type: "workspace.listTextProperties", workspaceId }).value.values[0].value, "  exact\nТекст  ");
       assert.deepEqual(service.handleQuery({ type: "workspace.listArchivedProjects", workspaceId }).value.projects, []);
       service.close(); service = undefined;

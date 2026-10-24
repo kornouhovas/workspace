@@ -1,0 +1,55 @@
+name: Durable source access
+
+on:
+  workflow_call:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  source-access:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest, windows-2022]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.21.1
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm run check:docs
+      - run: npm run build
+      - name: Complete current suite
+        shell: bash
+        run: |
+          mkdir -p work/ci-source-access
+          set -o pipefail
+          npm run test:all 2>&1 | tee work/ci-source-access/full.log
+      - name: Development source enrollment
+        run: npm run smoke:source-association
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-source-access/dev
+          WORKSPACE_SMOKE_MODE: dev
+      - name: Package unchanged candidate
+        run: npx electron-builder --dir
+      - run: npm run check:artifact -- release
+      - name: Packaged source enrollment
+        run: npm run smoke:source-association
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-source-access/release
+          WORKSPACE_SMOKE_MODE: release
+      - name: Preserve exact-candidate receipts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: source-access-${{ matrix.os }}-${{ github.sha }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
+          path: work/ci-source-access/
+          if-no-files-found: error
+          retention-days: 14

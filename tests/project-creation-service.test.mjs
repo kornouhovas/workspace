@@ -1,3 +1,4 @@
+import { withIdentityMigrationDefaults, projectMetadataRecords, bindFixtureFolders } from "./support/identity-migration-fixtures.mjs";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import { tmpdir } from "node:os";
@@ -7,12 +8,14 @@ import test from "node:test";
 import Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import { migrate } from "drizzle-orm/better-sqlite3/migrator";
-import { openSettingsService } from "../dist/service/settings.mjs";
+// ADR 0009: these are unconverted engine contracts; application dispatch remains gated.
+import { openUnconvertedEngineFixture } from "./support/unconverted-command-engines.mjs";
 import { isProjectCreationRequest } from "../src/contracts/project-creation.ts";
 import { projectCreationOperations } from "../src/service/db/schema.ts";
 import { nativeProjectFilesystem } from "../src/service/project-filesystem.ts";
 import { nativeObserverDependencies } from "../src/service/source-observer.ts";
 
+const openEngineService = (...args) => openUnconvertedEngineFixture(...args).engines;
 const migrationFolder = "src/service/db/migrations";
 const journal = JSON.parse(fs.readFileSync(join(migrationFolder, "meta/_journal.json"), "utf8"));
 const identity = (path) => {
@@ -40,7 +43,7 @@ function fixture(mode, run, legacy = false) {
   const sourceId = randomUUID(), workspaceId = randomUUID(), siblingId = randomUUID(), categoryId = randomUUID();
   const sql = new Database(databasePath);
   let service;
-  const open = (folder, creationFilesystem) => { service = openSettingsService(databasePath, folder, undefined, undefined, creationFilesystem); return service; };
+  const open = (folder, creationFilesystem) => { service = openUnconvertedEngineFixture(databasePath, folder, undefined, undefined, creationFilesystem).engines; return service; };
   const close = () => { service?.close(); service = undefined; };
   try {
     let folder = migrationFolder;
@@ -123,7 +126,7 @@ for (const mode of ["direct", "grouped"]) {
     for (let attempt = 0; attempt < 2; attempt++) {
       const service = f.open();
       const after = records(f.sql);
-      for (const [table, rows] of Object.entries(before)) if (table !== "__drizzle_migrations") assert.deepEqual(after[table], table === "views" ? rows.map(row => ({ ...row, position: 0, filter_config: '{"search":"","rules":[]}', grouping_config: '{"propertyId":null,"settings":[]}', board_config: '{"widths":[],"properties":[],"wrap":true}', table_config: '{"columns":[],"rowOrder":[]}' })) : rows, table);
+      for (const [table, rows] of Object.entries(before)) if (table !== "__drizzle_migrations") assert.deepEqual(after[table], withIdentityMigrationDefaults(table, table === "views" ? rows.map(row => ({ ...row, position: 0, filter_config: '{"search":"","rules":[]}', grouping_config: '{"propertyId":null,"settings":[]}', board_config: '{"widths":[],"properties":[],"wrap":true}', table_config: '{"columns":[],"rowOrder":[]}' })) : rows), table);
       assert.deepEqual(after.project_creation_operations, []);
       assert.deepEqual(after.__drizzle_migrations.slice(0, 8), before.__drizzle_migrations);
       assert.equal(after.__drizzle_migrations.length, journal.entries.length);
@@ -193,7 +196,7 @@ for (const mode of ["direct", "grouped"]) {
     assert.throws(() => update({ stage: "uncertain", completed_revision: null, problem: "ownership_uncertain" }), /immutable/);
     assert.throws(() => update({ completed_revision: 9 }), /immutable/);
     assert.deepEqual(f.sql.prepare("SELECT * FROM text_property_values WHERE project_id = ?").all(op.project_id), []);
-    const service = f.open(); assert.equal(service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId: f.workspaceId }).value.projects.some((p) => p.projectId === op.project_id), true);
+    const service = f.open(); assert.equal(projectMetadataRecords(service.application.workspaces.listProjects({ type: "workspace.listProjects", workspaceId: f.workspaceId })).some((p) => p.projectId === op.project_id), true);
     f.close(); f.open(); assert.deepEqual(f.sql.prepare("SELECT * FROM project_creation_operations").get(), completed);
   }));
 
@@ -254,7 +257,7 @@ function emptyFixture(mode, run, adapter = nativeProjectFilesystem, { configure 
   fs.mkdirSync(root, { recursive: true });
   if (mode === "grouped" && category) fs.mkdirSync(join(root, "Category"));
   const observer = { ...nativeObserverDependencies, watch() { return { close() {} }; }, schedule() { return { cancel() {} }; } };
-  const service = openSettingsService(databasePath, migrationFolder, undefined, observer, adapter);
+  const service = openUnconvertedEngineFixture(databasePath, migrationFolder, undefined, observer, adapter).engines;
   let sql;
   try {
     const workspace = service.workspaces.create({ type: "workspace.create", name: "Empty", rootPath: root }).value;
@@ -296,9 +299,9 @@ for (const mode of ["direct", "grouped"]) {
         assert.deepEqual(f.sql.prepare("SELECT * FROM project_creation_operations").all(), journal);
         assert.deepEqual(f.service.workspaces.createProject(request), result);
         f.service.close();
-        const reopened = openSettingsService(f.databasePath);
+        const reopened = openEngineService(f.databasePath);
         try {
-          assert.deepEqual(reopened.workspaces.listProjects({ type: "workspace.listProjects", workspaceId: f.workspaceId }).value.projects, []);
+          assert.deepEqual(projectMetadataRecords(reopened.application.workspaces.listProjects({ type: "workspace.listProjects", workspaceId: f.workspaceId })), []);
           const outstanding = reopened.handleQuery(creationQuery(f, "listProjectCreations")).value.operations;
           assert.equal(outstanding.length, 1); assert.equal(outstanding[0].projectId, result.value.operation.projectId);
           assert.deepEqual(reopened.workspaces.createProject(request), result);
@@ -610,7 +613,7 @@ test("same-source sibling notifications exclude unrelated sources and survive th
   f.service.workspaces.subscribe((event) => {
     if (event.type !== "workspace.projectsChanged") return;
     events.push(event);
-    assert.equal(f.service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId: sibling.workspaceId }).value.projects.length, 1);
+    assert.equal(projectMetadataRecords(f.service.application.workspaces.listProjects({ type: "workspace.listProjects", workspaceId: sibling.workspaceId })).length, 1);
   });
   const request = command(f, "Fresh");
   const created = f.service.workspaces.createProject(request); assert.equal(created.value.outcome, "completed");
@@ -632,7 +635,7 @@ for (const mode of ["direct", "grouped"]) {
       assert.equal(result.value.outcome, "completed"); assert.equal(competing.value.problem, "reserved_destination");
       assert.equal(f.sql.prepare("SELECT count(*) AS n FROM project_creation_operations").get().n, 1);
     }, { ...nativeProjectFilesystem, mkdir(path) {
-      const service = openSettingsService(f.databasePath, migrationFolder, undefined,
+      const service = openEngineService(f.databasePath, migrationFolder, undefined,
         { ...nativeObserverDependencies, watch() { return { close() {} }; }, schedule() { return { cancel() {} }; } });
       try { competing = service.workspaces.createProject(command(f, "concurrent")); }
       finally { service.close(); }
@@ -742,7 +745,7 @@ test("late migration failure rolls back journal/schema changes and every populat
   assert.deepEqual(inventory(f.root), files);
   f.open(); f.close(); f.open();
   const after = records(f.sql);
-  for (const [table, rows] of Object.entries(before)) if (table !== "__drizzle_migrations") assert.deepEqual(after[table], table === "views" ? rows.map(row => ({ ...row, position: 0, filter_config: '{"search":"","rules":[]}', grouping_config: '{"propertyId":null,"settings":[]}', board_config: '{"widths":[],"properties":[],"wrap":true}', table_config: '{"columns":[],"rowOrder":[]}' })) : rows);
+  for (const [table, rows] of Object.entries(before)) if (table !== "__drizzle_migrations") assert.deepEqual(after[table], withIdentityMigrationDefaults(table, table === "views" ? rows.map(row => ({ ...row, position: 0, filter_config: '{"search":"","rules":[]}', grouping_config: '{"propertyId":null,"settings":[]}', board_config: '{"widths":[],"properties":[],"wrap":true}', table_config: '{"columns":[],"rowOrder":[]}' })) : rows));
   assert.equal(after.__drizzle_migrations.length, journal.entries.length); assert.deepEqual(after.project_creation_operations, []);
   assert.deepEqual(inventory(f.root), files);
 }, true));
@@ -782,7 +785,7 @@ for (const mode of ["direct", "grouped"]) {
     if (mode === "direct") assert.deepEqual(afterFiles.filter(([name]) => name !== request.name), files);
     else assert.deepEqual(afterFiles.map(([name, entries]) => [name, name === "Category" ? entries.filter(([name]) => name !== request.name) : entries]), files);
     f.close(); const reopened = f.open(); assert.deepEqual(reopened.handleCommand(request), result);
-    assert.ok(reopened.workspaces.listProjects({ type: "workspace.listProjects", workspaceId: f.siblingId }).value.projects.some((p) => p.projectId === created.projectId));
+    assert.ok(projectMetadataRecords(reopened.application.workspaces.listProjects({ type: "workspace.listProjects", workspaceId: f.siblingId })).some((p) => p.projectId === created.projectId));
   }));
 
   test(`${mode} rejects unsafe names, occupied content, configuration and ownership without effects`, () => fixture(mode, (f) => {
@@ -962,6 +965,8 @@ for (const mode of ["direct", "grouped"]) for (const relocation of ["refresh", "
     assert.equal(receipt.value.outcome, "completed");
     const original = receipt.value.project, oldPath = join(f.root, original.relativePath);
     const relativePath = mode === "grouped" ? "Category/Renamed" : "Renamed", moved = join(f.root, relativePath);
+    bindFixtureFolders(service.application,f.workspaceId,[...(mode === "grouped" ? [{kind:"category",id:f.categoryId,relativePath:"Category"}] : []),{kind:"project",id:original.projectId,relativePath:original.relativePath}]);
+    const receiptBaseline=records(f.sql);
     const propertyId = before.property_definitions[0].id;
     f.sql.prepare("INSERT INTO text_property_values VALUES (?, ?, ?, ?)").run(original.projectId, propertyId, f.sourceId, "  Exact\nТекст 📝  ");
     fs.writeFileSync(join(oldPath, "sentinel"), "original bytes");
@@ -989,10 +994,10 @@ for (const mode of ["direct", "grouped"]) for (const relocation of ["refresh", "
     assert.equal(fs.readFileSync(join(moved, "sentinel"), "utf8"), "original bytes");
     assert.equal(snapshot.text_property_values.find((v) => v.project_id === original.projectId).value, "  Exact\nТекст 📝  ");
     assert.equal(snapshot.text_property_values.some((v) => v.project_id === fresh.value.project.projectId), false);
-    for (const table of ["settings", "workspaces", "views", "active_workspace", "categories", "category_properties", "property_definitions"]) assert.deepEqual(snapshot[table], before[table], table);
+    for (const table of ["settings", "workspaces", "views", "active_workspace", "categories", "category_properties", "property_definitions"]) assert.deepEqual(snapshot[table], receiptBaseline[table], table);
     f.close(); service = f.open();
     assert.deepEqual(service.handleCommand(request), receipt);
-    const projects = service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId: f.siblingId }).value.projects;
+    const projects = projectMetadataRecords(service.application.workspaces.listProjects({ type: "workspace.listProjects", workspaceId: f.siblingId }));
     assert.equal(projects.find((p) => p.projectId === original.projectId).relativePath, relativePath);
     assert.equal(projects.find((p) => p.projectId === fresh.value.project.projectId).relativePath, original.relativePath);
     assert.deepEqual(inventory(f.root), files);

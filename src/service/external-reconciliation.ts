@@ -81,7 +81,7 @@ function directMappings(scan: DiscoveryScan, records: Project[], exclusions: str
 
 interface Placement { relativePath: string; categoryId: string | null }
 
-function groupedMappings(scan: DiscoveryScan, projects: Project[], categories: Category[], exclusions: string[], archive: string | null) {
+function groupedMappings(scan: DiscoveryScan, projects: Project[], categories: Category[], exclusions: string[], archive: string | null, historicalRoot: NativeIdentity) {
   const directories = scan.snapshot!.children.filter((child): child is DirectoryObservation => child.kind === "directory");
   const evidence = [...categories, ...projects].flatMap((row:Association) => [storedIdentity(row), storedIdentity(row, true), ...(row.ownershipNativeIdentities??[]).map(value=>JSON.parse(value) as NativeIdentity)].map(identity => ({row, identity})));
   // Keep every alias, including historical and insufficient birth evidence.
@@ -108,7 +108,14 @@ function groupedMappings(scan: DiscoveryScan, projects: Project[], categories: C
       return !!old && !!current && sameDurableFolder(old,current);
     }
     const old = JSON.parse(row.originalNativeIdentity ?? row.nativeIdentity) as NativeIdentity;
-    return reliableIdentity(old) && sameIdentity(old,storedIdentity(owner));
+    const originalOwner = JSON.parse(owner.originalNativeIdentity ?? owner.nativeIdentity) as NativeIdentity;
+    const currentOwner = storedIdentity(owner);
+    // A known current category may retain its exact historical cross-role peer
+    // across a root-only device change. The original relationship and current
+    // inode/creation must agree; synthesized ownership aliases prove none of it.
+    return reliableIdentity(old) && reliableIdentity(originalOwner) && reliableIdentity(currentOwner) &&
+      sameIdentity(old,originalOwner) && old.ino === currentOwner.ino && old.birthtimeNs === currentOwner.birthtimeNs &&
+      (old.dev === currentOwner.dev || old.dev === historicalRoot.dev);
   };
   const conflict = (child: DirectoryObservation, owner?: Association, continuous = false) =>
     directoryAliases(child.identity).some((other) => other !== child) ||
@@ -198,7 +205,8 @@ export function reconcileSource(db: Database, source: Source, observedScan?: Dis
     source.archiveRelativePath, projectExclusions(exclusions, grouped ? "grouped" : "direct").effective), reservations);
   let scan = observedScan ? reserveProjectPlacements(observedScan, reservations) : scanSource();
   if (!scan.snapshot) return { changed: false, scan };
-  const identity = sourceIdentity(source, scan, scope, reader);
+  const peers=()=>db.select().from(schema.sources).all().filter(peer=>peer.id!==source.id);
+  const identity = sourceIdentity(source, scan, scope, reader,peers());
   if (identity.state !== "verified") return {changed:false,scan:{state:discoveryIdentityState(identity.state),entries:[],snapshot:null}};
   const evidence = discoveryEvidence(source,scan,scope,reader);
   const rootEvidence=evidence.get("")!;
@@ -223,7 +231,7 @@ export function reconcileSource(db: Database, source: Source, observedScan?: Dis
     !row.modeInactive && (grouped ? row.relativePath.split("/").length !== 2 || !categories.some((category) => category.id === row.categoryId &&
       (row.associationState !== "active" || !category.modeInactive && category.associationState === "active" && row.relativePath.split("/")[0] === category.relativePath)) :
       row.categoryId !== null || !isChildName(row.relativePath)))) throw new Error("Invalid configured associations");
-  const mapping = grouped ? groupedMappings(scan, continuityRecords(source, scan, records, scope, reader), continuityRecords(source, scan, categories, scope, reader), exclusions, source.archiveRelativePath) : null;
+  const mapping = grouped ? groupedMappings(scan, continuityRecords(source, scan, records, scope, reader), continuityRecords(source, scan, categories, scope, reader), exclusions, source.archiveRelativePath, JSON.parse(source.appliedRootIdentity) as NativeIdentity) : null;
   const mappings = mapping?.projects ?? new Map([...directMappings(scan, continuityRecords(source, scan, records, scope, reader), exclusions, source.archiveRelativePath)]
     .map(([id, relativePath]) => [id, { relativePath, categoryId: null }]));
   const categoryMappings = mapping?.categories ?? new Map<string, string>();
@@ -238,7 +246,7 @@ export function reconcileSource(db: Database, source: Source, observedScan?: Dis
   const verifyScan = () => {
     const current = scanSource();
     if (!current.snapshot || !same(current.snapshot, scan.snapshot) ||
-      sourceIdentity(source,current,scope,reader).state!=="verified" ||
+      sourceIdentity(source,current,scope,reader,peers()).state!=="verified" ||
       !same([...discoveryEvidence(source,current,scope,reader)],[...evidence])) throw new Error("Reconciliation observation changed");
   };
   db.transaction((tx) => {

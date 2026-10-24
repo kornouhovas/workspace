@@ -1,3 +1,9 @@
+import { archiveProjectFixture } from "./support/archived-project-fixture.mjs";
+import Database from 'better-sqlite3';
+import { drizzle } from 'drizzle-orm/better-sqlite3';
+import { migrate } from 'drizzle-orm/better-sqlite3/migrator';
+import { dataRecovery } from '../src/service/data-recovery.ts';
+import { seedHistoricalFixture, assertHistoricalFixturePreserved, assertHistoricalPublicMetadata } from './support/identity-migration-fixtures.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtempSync, mkdirSync, rmSync } from 'node:fs';
@@ -14,7 +20,7 @@ function fixture(run) {
   const get = (workspaceId = one.workspaceId) => service.handleQuery({ type: 'workspace.getSession', workspaceId });
   const save = (before, state, workspaceId = one.workspaceId) => service.handleCommand({ type: 'workspace.setSession', workspaceId,
     epoch: before.epoch, expectedRevision: before.revision, state });
-  try { run({ directory, root, one, sibling, get, save, get service() { return service; },
+  try { run({ directory, root, path, one, sibling, get, save, get service() { return service; },
     reopen() { service.close(); service = openSettingsService(path); } }); }
   finally { service.close(); rmSync(directory, { recursive: true, force: true }); }
 }
@@ -65,7 +71,6 @@ test('deleting a view removes only its preview and workspace removal keeps its s
   assert.deepEqual(f.get(f.sibling.workspaceId).value, sibling);
 }));
 
-import Database from 'better-sqlite3';
 import { createHash } from 'node:crypto';
 function corruptExport(content, mutate) {
   const envelope = JSON.parse(content), image = Buffer.from(envelope.database, 'base64'); image[18] = image[19] = 1;
@@ -102,16 +107,12 @@ test('populated pre-session schema upgrades without losing properties, views or 
   const directory=mkdtempSync(join(tmpdir(),'session-upgrade-')), root=join(directory,'root'), path=join(directory,'app.sqlite');mkdirSync(root);mkdirSync(join(root,'Project'));
   const old=join(directory,'old');cpSync('src/service/db/migrations',old,{recursive:true});
   const journalPath=join(old,'meta/_journal.json'), journal=JSON.parse(readFileSync(journalPath,'utf8'));journal.entries=journal.entries.slice(0,23);writeFileSync(journalPath,JSON.stringify(journal));
-  let service=openSettingsService(path,old);
+  const one=seedHistoricalFixture(path,old,root,[{name:'Notes',type:'text',value:' exact\nТекст '}],{language:'ru',board:true});
+  let service=openSettingsService(path);
   try {
-    const one=service.handleCommand({type:'workspace.create',rootPath:root,name:'Before'}).value;
-    const query=(type, fields={})=>service.handleQuery({type:`workspace.${type}`,workspaceId:one.workspaceId,...fields}).value;
-    const command=(type,fields={})=>service.handleCommand({type:`workspace.${type}`,workspaceId:one.workspaceId,...fields}).value;
-    const project=command('applyDiscovery',{previewToken:query('previewDiscovery').previewToken}).projects[0];
-    const property=command('createProperty',{name:'Notes',propertyType:'text'}).propertyId;
-    command('setTextValue',{projectId:project.projectId,propertyId:property,value:' exact\nТекст '});
-    command('createView',{name:'Board',kind:'board'});service.handleCommand({type:'settings.setLanguage',language:'ru'});
-    const properties=query('listTextProperties'), views=query('listViews');
+    assertHistoricalFixturePreserved(assert,path,one);
+    const query=(type,fields={})=>service.handleQuery({type:`workspace.${type}`,workspaceId:one.workspaceId,...fields}).value;
+    const properties=assertHistoricalPublicMetadata(assert,service,one).value,views=query('listViews');
     service.close();service=openSettingsService(path);
     assert.deepEqual(query('listTextProperties'),properties);assert.deepEqual(query('listViews'),views);
     assert.equal(service.handleQuery({type:'settings.load'}).value.language,'ru');
@@ -119,9 +120,12 @@ test('populated pre-session schema upgrades without losing properties, views or 
     assert.deepEqual(query('getSession').state.tabs,[]);
     const backup=service.handleQuery({type:'data.backups'}).value.backups.snapshots.find(s=>s.kind==='pre-migration');assert.ok(backup);
     const snapshot=service.handleQuery({type:'data.backupExport',backupId:backup.id});assert.equal(snapshot.ok,true);
-    const previous=openSettingsService(join(directory,'previous.sqlite'),old);
-    try { assert.equal(previous.handleCommand({type:'data.restore',content:snapshot.value.content}).ok,true);assert.deepEqual(previous.handleQuery({type:'workspace.listTextProperties',workspaceId:one.workspaceId}).value,properties); }
-    finally{previous.close();}
+    const previous=new Database(join(directory,'previous.sqlite'));
+    try {
+      migrate(drizzle(previous),{migrationsFolder:old});previous.pragma('foreign_keys=ON');
+      assert.equal(dataRecovery(previous,{type:'data.restore',content:snapshot.value.content}).ok,true);
+      for(const [table,rows] of Object.entries(one.rows))assert.deepEqual(previous.prepare(`SELECT * FROM "${table}" ORDER BY rowid`).all(),rows,table);
+    } finally{previous.close();}
   } finally{service.close();rmSync(directory,{recursive:true,force:true});}
 });
 
@@ -135,10 +139,7 @@ for(const availability of ['missing','excluded','archived','unavailable-source']
  assert.equal(f.save(before,state).ok,true);call('setTextValue',{propertyId,projectId,value:'Current'});
  if(availability==='missing')rmSync(join(f.root,'Project'),{recursive:true});
  if(availability==='excluded')call('applyDiscovery',{previewToken:call('previewDiscovery',{mode:'direct',excludedRelativePaths:['Project']}).previewToken});
- if(availability==='archived'){
-  const location=call('previewArchiveLocation',{relativePath:'Archive'});call('applyArchiveLocation',{previewToken:location.previewToken,operationId:crypto.randomUUID()});
-  const archive=call('previewProjectArchive',{projectId,action:'archive',name:null,createParent:false});call('applyProjectArchive',{previewToken:archive.previewToken,operationId:crypto.randomUUID()});
- }
+ if(availability==='archived')archiveProjectFixture(f.path,workspaceId,projectId);
  if(availability==='unavailable-source')renameSync(f.root,join(f.directory,'offline'));
  f.reopen();assert.deepEqual(f.get().value.state,state);
  assert.equal(call('listTextProperties').values.find(v=>v.projectId===projectId&&v.propertyId===propertyId).value,'Current');

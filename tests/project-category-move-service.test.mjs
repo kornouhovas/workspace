@@ -1,3 +1,4 @@
+import { projectMetadataRecords } from "./support/identity-migration-fixtures.mjs";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import { tmpdir } from "node:os";
@@ -5,7 +6,9 @@ import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import test from "node:test";
 import Database from "better-sqlite3";
-import { openSettingsService } from "../dist/service/settings.mjs";
+// ADR 0009: invoke the unconverted production engines, never the gated application API.
+import { openUnconvertedEngineFixture } from "./support/unconverted-command-engines.mjs";
+const openEngineService = (...args) => openUnconvertedEngineFixture(...args).engines;
 import { renameNoReplace } from "../dist/service/project-rename-filesystem.mjs";
 import { nativeProjectFilesystem } from "../src/service/project-filesystem.ts";
 
@@ -17,7 +20,7 @@ function fixture(run, options = {}) {
   const projectName = options.name ?? "Project 📝";
   const f = { directory, root, get service() { return service; }, get sql() { return sql; },
     restart() { service.close(); open(); } };
-  const open = () => { service = openSettingsService(databasePath, undefined, undefined, dependencies,
+  const open = () => { service = openEngineService(databasePath, undefined, undefined, dependencies,
     options.filesystem?.(f) ?? nativeProjectFilesystem, options.defaultNative ? undefined : (from, to) => {
       if (options.native) return options.native(f, from, to);
       throw new Error("Injected unknown native outcome");
@@ -189,7 +192,7 @@ test("completed move survives reopen and releases its vacated placement without 
   assert.deepEqual(nativeProjectFilesystem.inspect(destination).identity, identity);
   const current = f.query("workspace.listProjects").value;
   assert.equal(current.revision, moved.value.project.revision);
-  assert.equal(current.projects.find((p) => p.projectId === projectId).categoryId, f.destination.categoryId);
+  assert.equal(projectMetadataRecords({ok:true,value:current}).find((p) => p.projectId === projectId).categoryId, f.destination.categoryId);
   assert.deepEqual(f.query("workspace.listTextProperties"), values);
   const freshRequest = { ...creationRequest, operationId: randomUUID(), name: "History 📝",
     expectedRevision: current.revision };
@@ -215,8 +218,8 @@ test("completed move survives reopen and releases its vacated placement without 
     }
     const projects = f.query("workspace.listProjects").value;
     assert.equal(projects.revision, fresh.value.project.revision);
-    assert.equal(projects.projects.find((p) => p.projectId === projectId).relativePath, "Destination/History 📝");
-    assert.equal(projects.projects.find((p) => p.projectId === fresh.value.project.projectId).relativePath, "Original category/History 📝");
+    assert.equal(projectMetadataRecords({ok:true,value:projects}).find((p) => p.projectId === projectId).relativePath, "Destination/History 📝");
+    assert.equal(projectMetadataRecords({ok:true,value:projects}).find((p) => p.projectId === fresh.value.project.projectId).relativePath, "Original category/History 📝");
     assert.deepEqual(f.query("workspace.listTextProperties"), values);
     assert.deepEqual(f.query("workspace.listProjectCategoryMoves").value.operations, []);
     assert.equal(fs.readFileSync(join(destination, "sentinel"), "utf8"), "Historical project bytes\n");
@@ -689,7 +692,7 @@ for (const location of ["original", "destination"]) {
 }
 
 for (const change of ["preview", "restart", "revision", "configuration", "operation", "root_names", "original_names", "destination_names", "placement", "workspace", "refresh", "reservation"]) {
-  test(`${change} invalidates a recovery review before any native effect`, () => fixture((f) => {
+  test(`${change === "refresh" ? "explicit engine invalidation" : change} invalidates a recovery review before any native effect`, () => fixture((f) => {
     pendingMove(f); const preview = reviewMove(f), identity = nativeProjectFilesystem.inspect(originalPath(f)).identity;
     if (change === "preview") reviewMove(f);
     if (change === "restart") f.restart();
@@ -703,7 +706,7 @@ for (const change of ["preview", "restart", "revision", "configuration", "operat
     if (change === "workspace") f.command("workspace.remove");
     if (change === "refresh") {
       fs.renameSync(originalPath(f), join(f.directory, "saved"));
-      f.command("workspace.refreshSource");
+      f.service.invalidateSource(f.workspace.sourceId);
       fs.renameSync(join(f.directory, "saved"), originalPath(f));
     }
     if (change === "reservation") f.sql.exec(`

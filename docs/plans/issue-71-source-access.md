@@ -34,3 +34,39 @@ accepted #72 rollout without removing safety coverage; extend valid-payload gate
 coverage for retained/archived histories; renew affected checks. Then complete
 Windows native/packaged and remaining required platform receipts, final review and
 exact-candidate full/CI acceptance before using the integration route.
+
+
+### Inherited scenario decisions during continuation
+
+| Scenarios | Decision and retained boundary |
+| --- | --- |
+| Observed project reads, Refresh/restart | Adapt: cache the accepted availability projection; keep live metadata and fresh default reads. `observed-projects-service` verifies both. |
+| Pre-property/pre-view/pre-session SQL upgrades and journal history | Adapt historical SQL fixtures to the actual old schema; assert all old rows plus explicit NULL evidence/generation-zero defaults. Keep backup, constraints, reopen and rollback assertions. |
+| Archived metadata/property/session reads | Adapt arrangement through actual legacy archive engine, then exercise the current application metadata boundary. No identity backfill. |
+| Creation/rename/move/Reveal command-engine guarantees | Retain at explicit `openUnconvertedEngineFixture(...).engines`, using real production factories/native adapters/SQLite. The separate `.application` stays gated; `unconverted-engine-fixture` proves separation and no evidence enrollment. |
+| Archive/category/removal/recovery command and crash guarantees | Retain through the same explicitly named engine fixture, including crash-worker handshakes and real Electron adapters. This does not establish availability through the current application API. |
+| Old successful project recovery after external reconciliation or mode change | Replace current-application success assertions with `identity_update_required`, retained metadata and no-effect assertions under ADR 0009/#72. Keep actual discovery/reconciliation checks and separate retained engine guarantees. |
+| Refresh invalidating independent legacy engine fixture reviews | Adapt to explicit engine invalidation. Do not claim the private engine fixture proves current application observer-generation wiring; current service binding/observed tests cover that boundary. |
+
+No failing scenario is newly skipped. These decisions preserve SQL/native safety
+and distinguish old-engine evidence from current application behavior. Current migration reconciliation passes; final full-suite and supported-platform acceptance remain required.
+
+
+| Additional inherited/current scenarios | Decision and replacement evidence |
+| --- | --- |
+| Successful current-App creation/Reveal and retained-project recovery | Replace effects with EN/RU real-App `identity_update_required` feedback, preserved draft/metadata, zero journal/native/filesystem changes and no replay on reopen (`renderer-app`). Keep terminal original retries as receipts and unfinished operation uncertainty/reservations intact (`project-creation-ui`, `source-association-service`). |
+| Historical command native/Electron process guarantees | Retain original rename/category-move consumers using an explicitly test-only service entry. Reports identify `unconverted_test_engine`; default application entry stays gated. Package exclusion plus `artifact-smoke` reject any shipped test entry. |
+| Source observer/reconciliation | Retain actual application observation, independent metadata edits, reservations and explicit binding guards. External old recovery arrangement uses actual engines followed by real reviewed enrollment; it does not backfill evidence. |
+| Legacy unconfigured sources | Add paired new-source creation enrollment versus existing NULL-evidence root review. Root-only approval never enrolls legacy descendants or silently reactivates excluded records. |
+| Cross-source ownership and mixed role history | Add actual macOS Data-volume alias, duplicate-root creation/binding/restore and NTFS GUID-case ownership controls. Require full durable evidence for a non-NULL dormant record, even with equal native triples; retain separate legitimate NULL-history and matching-durable controls. |
+| Supported host/package acceptance | Add registered `source-access` CI selection: full suite on macOS/Windows latest/Windows 2022, production development Sources and unchanged package/resources plus packaged Sources. Original ordinary CI defaults remain unchanged. This route makes no claim that gated #72 effects are available. |
+
+
+The old current-application `keep_original` settlement/observer scenario is deferred
+specifically to #72: after settlement, a late pre-settlement scan must not restore
+ambiguous eligibility or a degraded state for either sibling. That transition is
+unreachable through #71's production gate; generic source-binding generation tests
+do not replace its settlement-hook evidence. `project-category-move-runtime`
+retains the complete keep-original journal/metadata/trees/receipt oracle through
+the explicit legacy engine, while current production denial is compared against
+`recoveryState` after each request, including every interrupted journal byte.

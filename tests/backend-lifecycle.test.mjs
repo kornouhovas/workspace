@@ -1,3 +1,7 @@
+import {syncBuiltinESMExports} from 'node:module';
+import {openUnconvertedEngineFixture} from './support/unconverted-command-engines.mjs';
+import {projectMetadataRecords} from './support/identity-migration-fixtures.mjs';
+const openLegacyEngineService=(...args)=>openUnconvertedEngineFixture(...args).engines;
 import assert from "node:assert/strict";
 import { EventEmitter } from "node:events";
 import fs from "node:fs";
@@ -634,18 +638,19 @@ test("production IPC exposes insufficient root identity as non-applyable on repe
       if (path === workspace.canonicalRoot && options?.bigint) info.birthtimeNs = 0n;
       return info;
     };
+    syncBuiltinESMExports();
     for (let attempt = 0; attempt < 2; attempt++) {
       const preview = request({ type: "workspace.previewDiscovery", workspaceId: workspace.workspaceId });
       assert.equal(preview.ok, true);
-      assert.equal(preview.value.state, "root_identity_conflict");
+      assert.equal(preview.value.state,"identity_unverified");
       assert.equal(preview.value.previewToken, null);
       assert.deepEqual(preview.value.entries, []);
     }
-    fs.lstatSync = originalLstat;
+    fs.lstatSync = originalLstat;syncBuiltinESMExports();
     assert.deepEqual(request({ type: "workspace.listProjects", workspaceId: workspace.workspaceId }).value, before);
     assert.equal(port.sent.filter((message) => message.change?.type === "workspace.projectsChanged").length, 0);
   } finally {
-    fs.lstatSync = originalLstat;
+    fs.lstatSync = originalLstat;syncBuiltinESMExports();
     parent.emit("message", { data: { type: "shutdown" }, ports: [] });
     await rm(directory, { recursive: true, force: true });
   }
@@ -680,7 +685,9 @@ test("production IPC keeps applied IDs/exclusions through unavailable roots, fin
     assert.equal(saved.retainedCount, 1);
     await rename(root, disconnected);
     const unavailable = connection.request({ type: "workspace.listProjects", workspaceId: first.workspaceId }).value;
-    assert.deepEqual(unavailable, { ...saved, state: "unavailable", projects: saved.projects.map((row) => ({ ...row, resolution: null })), retainedProjects: saved.retainedProjects.map((row) => ({ ...row, resolution: null })) });
+    assert.equal(unavailable.state,"unavailable");assert.deepEqual(unavailable.projects,[]);
+    assert.deepEqual(unavailable.retainedProjects.map(row=>row.projectId).sort(),[...saved.projects,...saved.retainedProjects].map(row=>row.projectId).sort());
+    assert.ok(unavailable.retainedProjects.every(row=>row.resolution==='unresolved'));
     assert.equal(connection.request({ type: "workspace.previewDiscovery", workspaceId: first.workspaceId }).value.previewToken, null);
     await rename(disconnected, root);
     assert.deepEqual(connection.request({ type: "workspace.listProjects", workspaceId: first.workspaceId }).value, saved);
@@ -1072,7 +1079,7 @@ test("category labels traverse entry/controller/preload/clients with validated o
   } finally { off(); offSibling(); relay(); parent.emit("message", { data: { type: "shutdown" }, ports: [] }); await rm(directory, { recursive: true, force: true }); }
 });
 
-test("direct recovery traverses production service ports/controller/client and rejects malformed requests without metadata transfer", async () => {
+test("direct recovery traverses ports with explicitly injected legacy engines/controller/client and rejects malformed requests without metadata transfer", async () => {
   const directory = await mkdtemp(join(tmpdir(), "workspace-recovery-ipc-"));
   const root = join(directory, "root");
   await mkdir(join(root, "Original"), { recursive: true });
@@ -1082,7 +1089,6 @@ test("direct recovery traverses production service ports/controller/client and r
   desktopPort.postMessage = (message) => { desktopPort.sent.push(message); servicePort.receive(message); };
   parent.postMessage = (message) => child.send(message);
   child.postMessage = (data) => parent.emit("message", { data, ports: [servicePort] });
-  const { openSettingsService } = await import("../dist/service/settings.mjs");
   const { nativeObserverDependencies } = await import("../src/service/source-observer.ts");
   // This fixture owns the explicit recovery route. Hold unrelated notification
   // scans so a uniquely identifiable move cannot reconcile before the review.
@@ -1090,7 +1096,7 @@ test("direct recovery traverses production service ports/controller/client and r
   const heldObservation = { ...nativeObserverDependencies,
     schedule() { return { cancel() {} }; }, watch() { return { close() {} }; },
   };
-  startServiceProcess(parent, (path, migrations) => openSettingsService(path, migrations, undefined, heldObservation), () => child.exit());
+  startServiceProcess(parent, (path, migrations) => openLegacyEngineService(path, migrations, undefined, heldObservation), () => child.exit());
   const controller = new BackendController();
   const client = new WorkspaceServiceClient({ workspace: (input) => controller.request(input), onWorkspaceChange: (listener) => controller.onWorkspaceChange(listener) });
   try {
@@ -1127,8 +1133,7 @@ test("direct recovery traverses production service ports/controller/client and r
   } finally { parent.emit("message", { data: { type: "shutdown" }, ports: [] }); await rm(directory, { recursive: true, force: true }); }
 });
 
-test("recovery fanout traverses production preload clients in commit order and clears listeners", async () => {
-  const { openSettingsService } = await import("../dist/service/settings.mjs");
+test("recovery fanout traverses preload clients with explicitly injected legacy engines in commit order and clears listeners", async () => {
   const { nativeObserverDependencies } = await import("../src/service/source-observer.ts");
   const timers = new Set(), watchers = [];
   const dependencies = { ...nativeObserverDependencies,
@@ -1150,7 +1155,7 @@ test("recovery fanout traverses production preload clients in commit order and c
   desktopPort.postMessage = (message) => servicePort.receive(message);
   parent.postMessage = (message) => child.send(message);
   child.postMessage = (data) => parent.emit("message", { data, ports: [servicePort] });
-  startServiceProcess(parent, (path, migrations) => openSettingsService(path, migrations, undefined, dependencies), () => child.exit());
+  startServiceProcess(parent, (path, migrations) => openLegacyEngineService(path, migrations, undefined, dependencies), () => child.exit());
   const controller = new BackendController(), ipc = new EventEmitter();
   ipc.invoke = async (channel, input) => { assert.equal(channel, "workspace:command"); return controller.request(input); };
   const relay = controller.onWorkspaceChange((event) => ipc.emit("workspace:change", {}, event));
@@ -1186,7 +1191,7 @@ test("recovery fanout traverses production preload clients in commit order and c
     assert.deepEqual(events, [expected]); assert.deepEqual(siblingEvents, events); assert.deepEqual(otherEvents, []);
     assert.equal(servicePort.sent[0].type, "workspace.change"); assert.equal(servicePort.sent[1].result.ok, true);
     assert.equal((await sibling.client.reassociateProject(siblingWorkspace.workspaceId, original.projectId, siblingReview.previewToken, "Target")).error.code, "stale_preview");
-    assert.equal((await sibling.client.listProjects(siblingWorkspace.workspaceId)).value.projects[0].projectId, original.projectId);
+    assert.equal(projectMetadataRecords(await sibling.client.listProjects(siblingWorkspace.workspaceId))[0].projectId, original.projectId);
     await rename(join(root, "Target"), join(root, "Next"));
     const nextReview = (await sibling.client.previewProjectRecovery(siblingWorkspace.workspaceId, original.projectId)).value;
     const next = await sibling.client.reassociateProject(siblingWorkspace.workspaceId, original.projectId, nextReview.previewToken, "Next");
@@ -1359,7 +1364,7 @@ test("late preload/client reads startup degraded observation through production 
 });
 
 for (const mode of ["direct", "grouped"]) {
-  test(`${mode} creation, status, reviewed recovery and Reveal traverse actual entry/controller/ports/preload/client`, async () => {
+  test(`${mode} legacy-engine creation/status/recovery/Reveal traverse emitted entry/controller/ports/preload/client`, async () => {
     const directory = fs.realpathSync.native(fs.mkdtempSync(join(tmpdir(), "creation-reveal-transport-")));
     const root = join(directory, "root"), database = join(directory, "workspace.sqlite");
     fs.mkdirSync(root); if (mode === "grouped") fs.mkdirSync(join(root, "Category"));
@@ -1368,13 +1373,12 @@ for (const mode of ["direct", "grouped"]) {
     desktopPort.postMessage = (message) => { desktopPort.sent.push(message); servicePort.receive(message); };
     parent.postMessage = (message) => child.send(message);
     child.postMessage = (data) => parent.emit("message", { data, ports: [servicePort] });
-    const { openSettingsService } = await import("../dist/service/settings.mjs");
     const { nativeProjectFilesystem } = await import("../src/service/project-filesystem.ts");
     const { createNativeProjectReveal } = await import("../src/desktop/project-reveal.ts");
     const { randomUUID } = await import("node:crypto");
     // Deterministic evidence-write interruption using the real database/service.
     let interrupt = false;
-    startServiceProcess(parent, (path, folder) => openSettingsService(path, folder, undefined, undefined, {
+    startServiceProcess(parent, (path, folder) => openLegacyEngineService(path, folder, undefined, undefined, {
       ...nativeProjectFilesystem,
       mkdir(path) { nativeProjectFilesystem.mkdir(path); if (interrupt) throw new Error("response lost after mkdir"); },
     }), () => child.exit());
@@ -1523,11 +1527,11 @@ for (const cause of ["timeout", "exit", "restart", "stop", "service_cancel"]) {
   });
 }
 
-test("service native reply bindings reject foreign IDs/evidence and time out without retry or leaked pending requests", async () => {
+test("injected legacy-engine native reply bindings reject foreign IDs/evidence and time out without retry or leaked pending requests", async () => {
   const directory = fs.realpathSync.native(fs.mkdtempSync(join(tmpdir(), "native-reply-lifetime-")));
   const root = join(directory, "root"); fs.mkdirSync(join(root, "Project"), { recursive: true });
   const parent = new EventEmitter(), port = new FakePort(); parent.postMessage = () => {};
-  startServiceProcess(parent, undefined, undefined, 10);
+  startServiceProcess(parent,openLegacyEngineService,undefined,10);
   parent.emit("message", { data: { type: "connect", databasePath: join(directory, "data.sqlite") }, ports: [port] });
   let id = 0;
   const request = (input) => { const requestId = ++id; port.receive({ id: requestId, input }); return port.sent.find((message) => message.id === requestId)?.result; };
@@ -1579,7 +1583,7 @@ test("pending backend reauthorization rejects foreign/late verification replies 
 
 for (const mode of ["direct", "grouped"]) {
   for (const scenario of ["metadata_exclusion", "destination_missing", "destination_replaced", "native_sync_throw", "native_rejection", "native_timeout"]) {
-    test(`${mode} actual entry/controller native route blocks delayed ${scenario} and remains usable`, async () => {
+    test(`${mode} injected legacy-engine entry/controller native route blocks delayed ${scenario} and remains usable`, async () => {
       const directory = fs.realpathSync.native(fs.mkdtempSync(join(tmpdir(), "native-dispatch-race-")));
       const root = join(directory, "root"), relativePath = mode === "direct" ? "Project" : "Category/Project", path = join(root, relativePath);
       fs.mkdirSync(path, { recursive: true }); fs.writeFileSync(join(path, "keep"), "sentinel");
@@ -1588,7 +1592,7 @@ for (const mode of ["direct", "grouped"]) {
       desktopPort.postMessage = (message) => { desktopPort.sent.push(message); servicePort.receive(message); };
       parent.postMessage = (message) => child.send(message);
       child.postMessage = (data) => parent.emit("message", { data, ports: [servicePort] });
-      startServiceProcess(parent, undefined, () => child.exit(), scenario === "native_timeout" ? 15 : 1000);
+      startServiceProcess(parent,openLegacyEngineService,() => child.exit(),scenario === "native_timeout" ? 15 : 1000);
       const { createNativeProjectReveal } = await import("../src/desktop/project-reveal.ts");
       const calls = []; let finish, delayed = true, entered;
       const hasEntered = new Promise((resolve) => { entered = resolve; });

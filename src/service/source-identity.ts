@@ -1,6 +1,6 @@
 import { join } from "node:path";
-import { observeFolder, sameDurableFolder, validateEvidence, type FolderEvidence, type FolderObservation } from "./folder-evidence.js";
-import { sameIdentity, type DiscoveryScan } from "./discovery.js";
+import { observeFolder, durableOwnershipKey, sameDurableFolder, validateEvidence, type FolderEvidence, type FolderObservation } from "./folder-evidence.js";
+import { reliableIdentity, sameIdentity, type DiscoveryScan } from "./discovery.js";
 import type { DiscoveryPreview } from "../contracts/workspaces.js";
 
 export type EvidenceReader = (path: string, scope: string) => FolderObservation;
@@ -19,11 +19,26 @@ export function identityState(saved: string | null, observed: FolderObservation,
   if (!sameDurableFolder(old, observed.evidence, false)) return "folder_changed";
   return old.scope === scope ? "verified" : "scope_unverified";
 }
-export function sourceIdentity(source: IdentitySource, scan: DiscoveryScan, scope: string, reader: EvidenceReader = observeFolder): {
+/** Competing root evidence can veto enrollment; it never chooses/merges a source. */
+export function rootOwnershipConflict(observed: FolderObservation, peers: IdentitySource[], scope:string, reader:EvidenceReader=observeFolder): boolean {
+  if (!observed.ok) return false;
+  const alias=durableOwnershipKey;
+  for (const peer of peers) {
+    const saved=storedEvidence(peer.durableEvidence);
+    if(saved && alias(saved)===alias(observed.evidence))return true;
+    const current=reader(peer.canonicalRoot,scope);
+    if(current.ok && alias(current.evidence)===alias(observed.evidence))return true;
+    if(!current.ok && peer.appliedRootIdentity) {
+      try {const old=JSON.parse(peer.appliedRootIdentity);if(reliableIdentity(old)&&sameIdentity(old,observed.mount))return true;}catch{/* Unusable history cannot authorize another source. */}
+    }
+  }
+  return false;
+}
+export function sourceIdentity(source: IdentitySource, scan: DiscoveryScan, scope: string, reader: EvidenceReader = observeFolder, peers:IdentitySource[]=[]): {
   state: IdentityState; observation: FolderObservation; scan: DiscoveryScan;
 } {
   const observation = reader(source.canonicalRoot, scope);
-  const state = identityState(source.durableEvidence, observation, scope);
+  const state = rootOwnershipConflict(observation,peers,scope,reader)?"unsafe":identityState(source.durableEvidence, observation, scope);
   if (!scan.snapshot || !observation.ok) return {state, observation, scan};
   if (!sameIdentity(scan.snapshot.root.identity, observation.mount)) return {state: "unsafe", observation, scan: {...scan, state: "changed", snapshot: null, entries: []}};
   return {state, observation, scan};
@@ -42,7 +57,7 @@ export function continuityRecords<T extends {relativePath: string; durableEviden
   const eligiblePaths = new Set(scan.entries.filter(entry => entry.reason === null).map(entry => entry.relativePath));
   const candidates = new Map<string, { evidence: FolderEvidence; mount: import("./discovery.js").NativeIdentity }[]>();
   const ownershipCandidates = new Map<string, import("./discovery.js").NativeIdentity[]>();
-  const ownershipKey = (evidence: FolderEvidence) => JSON.stringify([evidence.provider,evidence.volume,evidence.serial,evidence.fileId]);
+  const ownershipKey=durableOwnershipKey;
   const key = (evidence: FolderEvidence) => JSON.stringify([evidence.provider,evidence.scope,evidence.volume,evidence.serial,evidence.fileId,evidence.created]);
   for (const child of scan.snapshot?.children ?? []) {
     if (child.kind !== "directory" || !eligiblePaths.has(child.relativePath)) continue;
@@ -94,7 +109,7 @@ export function discoveryEvidence(source: IdentitySource, scan: DiscoveryScan, s
   // Duplicate durable IDs remain ambiguous even when native observations differ.
   const aliases = new Map<string,string[]>();
   for(const [path,observed] of observations) if(observed.ok) {
-    const key=JSON.stringify([observed.evidence.provider,observed.evidence.volume,observed.evidence.serial,observed.evidence.fileId]);
+    const key=durableOwnershipKey(observed.evidence);
     const paths=aliases.get(key)??[];paths.push(path);aliases.set(key,paths);
   }
   for(const paths of aliases.values()) if(paths.length>1) for(const path of paths) observations.set(path,{ok:false,reason:"changed"});

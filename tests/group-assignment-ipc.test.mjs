@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { EventEmitter } from 'node:events';
-import { mkdtempSync, mkdirSync, rmSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, rmSync, readdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { startServiceProcess } from '../dist/service/entry.cjs';
@@ -38,9 +38,8 @@ test('built backend routes group assignment and rejects malformed and stale drop
     assert.deepEqual(command('listTextProperties'),actual);
     command('setViewGrouping',{viewId,config:{propertyId:'name',settings:[]}});
     const collision=command('assignProjectGroup',{...drop,propertyId:'name',fromKey:JSON.stringify(a.name),toKey:JSON.stringify(b.name)});
-    assert.equal(collision.ok,true);
-    assert.equal(collision.value.filesystem.outcome,'rejected');
-    assert.equal(collision.value.filesystem.problem,'reserved_destination');
+    assert.equal(collision.ok,false);assert.equal(collision.error.code,'identity_update_required');
+    assert.deepEqual(readdirSync(root).sort(),['Alpha','Beta']);assert.deepEqual(command('listTextProperties'),actual);
     assert.equal(command('assignProjectGroup',{...drop,propertyId:'name',fromKey:JSON.stringify(a.name),toKey:'null'}).ok,false);
 
   } finally {parent.emit('message',{data:{type:'shutdown'},ports:[]});rmSync(directory,{recursive:true,force:true});}

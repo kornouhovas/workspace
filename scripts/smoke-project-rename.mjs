@@ -31,7 +31,7 @@ export async function inputDigest(inputRoot = repository) {
 
 export async function superviseRenameService({ fault, evidenceDirectory = process.env.WORKSPACE_RENAME_SERVICE_EVIDENCE_DIR } = {}) {
   const root = await realpath(await mkdtemp(join(tmpdir(), "workspace-rename-service-")));
-  const evidence = { platform: process.platform, arch: process.arch, supervisorNode: process.versions.node,
+  const evidence = { commandBoundary:"unconverted_test_engine", platform: process.platform, arch: process.arch, supervisorNode: process.versions.node,
     inputSha256: null, ok: false, scenarios: Object.fromEntries(SCENARIOS.map(key => [key, { status: "unreached" }])),
     mountedCase: {}, events: [], cleanup: "pending", shutdownConfirmed: false };
   let child, timer, closed = false, resultOK = false, ack = false, resultSeen = false, protocolError = false;

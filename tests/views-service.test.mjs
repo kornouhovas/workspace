@@ -1,4 +1,4 @@
-import { historicalWorkspace } from './helpers/historical-workspace.mjs';
+import { seedHistoricalFixture, assertHistoricalFixturePreserved, assertHistoricalPublicMetadata } from './support/identity-migration-fixtures.mjs';
 import Database from 'better-sqlite3';
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -97,15 +97,15 @@ test('populated pre-view-management migration preserves project values and each 
   const journal = JSON.parse(readFileSync('src/service/db/migrations/meta/_journal.json', 'utf8')); journal.entries = journal.entries.slice(0, 18);
   for (const entry of journal.entries) writeFileSync(join(migrations, `${entry.tag}.sql`), readFileSync(`src/service/db/migrations/${entry.tag}.sql`));
   writeFileSync(join(migrations, 'meta/_journal.json'), JSON.stringify(journal));
-  const path = join(directory, 'workspace.sqlite'); let service = openSettingsService(path, migrations);
+  const path = join(directory, 'workspace.sqlite');
+  const one=seedHistoricalFixture(path,migrations,root,[{name:'Notes',type:'text',value:'  Exact\nТекст  '}]),workspaceId=one.workspaceId;
+  let service=openSettingsService(path);
   try {
-    const one = historicalWorkspace(path, root), workspaceId = one.workspaceId;
-    const preview = service.handleQuery({ type: 'workspace.previewDiscovery', workspaceId }).value;
-    const projectId = service.handleCommand({ type: 'workspace.applyDiscovery', workspaceId, previewToken: preview.previewToken }).value.projects[0].projectId;
-    const propertyId = service.handleCommand({ type: 'workspace.createProperty', workspaceId, name: 'Notes', propertyType: 'text' }).value.propertyId;
-    service.handleCommand({ type: 'workspace.setTextValue', workspaceId, propertyId, projectId, value: '  Exact\nТекст  ' });
-    const properties = service.handleQuery({ type: 'workspace.listTextProperties', workspaceId });
-    const load = service.workspaces.load(); service.close(); service = openSettingsService(path);
+    assertHistoricalFixturePreserved(assert,path,one);
+    const properties=assertHistoricalPublicMetadata(assert,service,one);
+    const load=service.workspaces.load();
+    assert.equal(load.value.activeWorkspace.workspaceId,workspaceId);assert.equal(load.value.activeWorkspace.viewId,one.viewId);
+    service.close();service=openSettingsService(path);
     assert.deepEqual(service.workspaces.load(), load);
     assert.deepEqual(service.handleQuery({ type: 'workspace.listTextProperties', workspaceId }), properties);
     assert.deepEqual(service.handleQuery({ type: 'workspace.listViews', workspaceId }).value,

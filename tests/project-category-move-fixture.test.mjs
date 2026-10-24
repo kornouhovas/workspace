@@ -162,7 +162,7 @@ function assertNormalHandshake(result, { exitCode = 0, malformed = false, cleanu
   assertProtocol(result, malformed, invalidDiagnostic);
 }
 
-test("real Electron service checkpoint requires every scenario, handshake, shutdown and cleanup", { skip: !supported }, async () => {
+test("real Electron unconverted-engine checkpoint requires every scenario, handshake, shutdown and cleanup", { skip: !supported }, async () => {
   const result = await checkpoint();
   assert.equal(result.ok, true, JSON.stringify(result));
   assert.equal(SCENARIOS.length, 12);

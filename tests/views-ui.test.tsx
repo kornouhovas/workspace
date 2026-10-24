@@ -1,5 +1,6 @@
+// @ts-expect-error Explicit archive arrangement fixture has no declarations.
+import {archiveProjectFixture} from "./support/archived-project-fixture.mjs";
 import { findAction } from "./context-tools-driver.js";
-import { randomUUID } from "node:crypto";
 import assert from "node:assert/strict";
 import test from "node:test";
 import React from "react";
@@ -150,10 +151,7 @@ for (const language of ["en", "ru"] as const) test(`${language} selected layout 
   const request = (type: string, rest: object = {}) => /workspace\.(list|get|preview|query)/.test(type) ? service.handleQuery({ type, workspaceId, ...rest }) : service.handleCommand({ type, workspaceId, ...rest });
   const preview = request("workspace.previewDiscovery").value;
   const projectId = request("workspace.applyDiscovery", { previewToken: preview.previewToken }).value.projects.find((p: {name:string}) => p.name === "Archived project").projectId;
-  const location = request("workspace.previewArchiveLocation", { relativePath: "Archive" }).value;
-  request("workspace.applyArchiveLocation", { operationId: randomUUID(), previewToken: location.previewToken });
-  const archive = request("workspace.previewProjectArchive", { projectId, action: "archive", name: null, createParent: false }).value;
-  assert.equal(request("workspace.applyProjectArchive", { operationId: randomUUID(), previewToken: archive.previewToken }).value.operation.stage, "completed");
+  archiveProjectFixture(join(directory,"workspace.sqlite"),workspaceId,projectId);
   const boardId = request("workspace.createView", { name: "Board", kind: "board" }).value.activeViewId;
   request("workspace.setViewFilter", { viewId: boardId, config: { search: "missing", rules: [] } });
   let failViews = true;

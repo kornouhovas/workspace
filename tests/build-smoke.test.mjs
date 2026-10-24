@@ -80,6 +80,7 @@ test("build emits desktop, renderer, backend, and matching version artifacts", a
 
   assert.ok(manifest.build.asarUnpack.includes("dist/service/native/project-rename.node"));
   assert.ok(manifest.build.files.includes("!dist/service-test-native/**"));
+  assert.ok(manifest.build.files.includes("!dist/service/unconverted-engine-test-entry.cjs"));
 
   const rendererHtml = await readFile("dist/renderer/index.html", "utf8");
   assert.match(rendererHtml, /(?:src|href)="\.\/assets\//);

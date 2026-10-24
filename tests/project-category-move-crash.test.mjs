@@ -5,7 +5,8 @@ import { join } from "node:path";
 import { fork } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import test from "node:test";
-import { openSettingsService } from "../dist/service/settings.mjs";
+import { openUnconvertedEngineFixture } from "./support/unconverted-command-engines.mjs";
+const openEngineService = (...args) => openUnconvertedEngineFixture(...args).engines;
 import { nativeProjectFilesystem } from "../src/service/project-filesystem.ts";
 
 const dependencies = { watch() { return { close() {} }; }, schedule() { return { cancel() {} }; } };
@@ -13,7 +14,7 @@ async function terminateAt(f, checkpoint) {
   const marker = join(f.directory, "cleanup");
   const reached = await new Promise((resolve, reject) => {
     const child = fork("tests/fixtures/project-category-move-crash-worker.mjs",
-      [f.databasePath, checkpoint, JSON.stringify(f.request), marker], { execArgv: [], stdio: ["ignore", "ignore", "pipe", "ipc"] });
+      [f.databasePath, checkpoint, JSON.stringify(f.request), marker], { execArgv: ["--import","tsx"], stdio: ["ignore", "ignore", "pipe", "ipc"] });
     let acknowledged, stderr = "", failure;
     child.stderr.on("data", (data) => { stderr = (stderr + data).slice(-16000); });
     const timer = setTimeout(() => { failure = new Error(`Checkpoint timeout ${checkpoint}: ${stderr}`); child.kill("SIGKILL"); }, 10000);
@@ -42,7 +43,7 @@ async function fixture(checkpoint, run) {
   fs.writeFileSync(join(original, "sentinel"), "  Authored 日本語\n");
   const identity = nativeProjectFilesystem.inspect(original).identity;
   let service;
-  const open = () => service = openSettingsService(databasePath, undefined, undefined, dependencies);
+  const open = () => service = openEngineService(databasePath, undefined, undefined, dependencies);
   try {
     open();
     const workspace = service.workspaces.create({ type: "workspace.create", name: "Origin", rootPath: root }).value;

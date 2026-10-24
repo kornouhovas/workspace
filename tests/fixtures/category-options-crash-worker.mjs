@@ -1,4 +1,5 @@
-import { openSettingsService } from "../../dist/service/settings.mjs";
+import { openUnconvertedEngineFixture } from "../support/unconverted-command-engines.mjs";
+const openEngineService = (...args) => openUnconvertedEngineFixture(...args).engines;
 import { renameNoReplace } from "../../dist/service/project-rename-filesystem.mjs";
 import { nativeProjectFilesystem } from "../../src/service/project-filesystem.ts";
 import Database from "better-sqlite3";
@@ -16,7 +17,7 @@ const native = (from, to) => {
   return result;
 };
 const observer = { watch() { return { close() {} }; }, schedule() { return { cancel() {} }; } };
-const service = openSettingsService(database, undefined, undefined, observer, filesystem, native);
+const service = openEngineService(database, undefined, undefined, observer, filesystem, native);
 const preview = service.handleQuery({ type: "workspace.previewCategoryFolder", workspaceId, action: "rename", categoryId, name: "Crash target" });
 if (!preview.ok) throw new Error("Crash preview failed");
 service.handleCommand({ type: "workspace.applyCategoryFolder", workspaceId, operationId, previewToken: preview.value.previewToken });

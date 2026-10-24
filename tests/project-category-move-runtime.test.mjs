@@ -1,3 +1,5 @@
+import { openUnconvertedEngineFixture } from "./support/unconverted-command-engines.mjs";
+const openLegacyEngineService=(...args)=>openUnconvertedEngineFixture(...args).engines;
 import assert from "node:assert/strict";
 import test from "node:test";
 import React from "react";
@@ -227,7 +229,6 @@ test("Windows-policy driver fixture completes current-category and native moves 
   const { join } = await import("node:path");
   const { randomUUID } = await import("node:crypto");
   const { seedCategoryMoveFixture, categoryMoveInventory } = await import("../scripts/smoke-project-category-move-ui.mjs");
-  const { openSettingsService } = await import("../dist/service/settings.mjs");
   const { nativeProjectFilesystem } = await import("../src/service/project-filesystem.ts");
   const { renameNoReplace } = await import("../dist/service/project-rename-filesystem.mjs");
   const fixture = await mkdtemp(join(tmpdir(), "category-driver-windows-policy-"));
@@ -235,7 +236,7 @@ test("Windows-policy driver fixture completes current-category and native moves 
   try {
     const setup = await seedCategoryMoveFixture(join(fixture, "data"), "win32");
     let nativeCalls = 0;
-    service = openSettingsService(setup.database, undefined, undefined, undefined,
+    service = openLegacyEngineService(setup.database, undefined, undefined, undefined,
       { ...nativeProjectFilesystem, platform: "win32" }, (from, to) => { nativeCalls++; return renameNoReplace(from, to); });
     const request = { type: "workspace.moveProjectCategory", workspaceId: setup.workspace.workspaceId, projectId: setup.project.projectId,
       operationId: randomUUID(), destinationCategoryId: setup.project.categoryId, expectedRevision: setup.projection.revision };
@@ -371,13 +372,12 @@ test("current-category durable proof binds one actual operation and rejects ever
   const { join } = await import("node:path");
   const { randomUUID } = await import("node:crypto");
   const { seedCategoryMoveFixture } = await import("../scripts/smoke-project-category-move-ui.mjs");
-  const { openSettingsService } = await import("../dist/service/settings.mjs");
   const fixture = await mkdtemp(join(tmpdir(), "category-noop-proof-"));
   const savedApi = globalThis.window.workspace, savedEvents = globalThis.categoryMoveEvents;
   let service;
   try {
     const setup = await seedCategoryMoveFixture(join(fixture, "data"));
-    service = openSettingsService(setup.database);
+    service = openLegacyEngineService(setup.database);
     globalThis.categoryMoveEvents = [];
     globalThis.window.workspace = { workspace: input => service.handleQuery(input), settings: input => service.handleQuery(input) };
     const page = { evaluate: async (fn, input) => fn(input) };
@@ -489,12 +489,11 @@ test("actual action ID recorder restores crypto after success, rejection and thr
   assert.equal(globalThis.crypto.randomUUID, original);
 });
 
-for (const language of ["en", "ru"]) for (const observation of [false, true]) test(`${language}: actual DiscoveryWorkspace ${observation ? "in-flight sourceObserved" : "neutral"} no-op crosses driver proof and acknowledgment`, async () => {
+for (const language of ["en", "ru"]) for (const observation of [false, true]) test(`${language}: legacy-engine DiscoveryWorkspace ${observation ? "in-flight sourceObserved" : "neutral"} no-op crosses driver proof and acknowledgment`, async () => {
   const { mkdtemp, rm } = await import("node:fs/promises");
   const { tmpdir } = await import("node:os");
   const { join } = await import("node:path");
   const { seedCategoryMoveFixture } = await import("../scripts/smoke-project-category-move-ui.mjs");
-  const { openSettingsService } = await import("../dist/service/settings.mjs");
   const { DiscoveryWorkspace } = await import("../src/renderer/components/DiscoveryPanel.tsx");
   const { WorkspaceServiceClient } = await import("../src/renderer/workspace-service-client.ts");
   const { act, waitFor } = await import("@testing-library/react");
@@ -504,7 +503,7 @@ for (const language of ["en", "ru"]) for (const observation of [false, true]) te
   let service;
   try {
     const setup = await seedCategoryMoveFixture(join(fixture, "data"));
-    service = openSettingsService(setup.database);
+    service = openLegacyEngineService(setup.database);
     const listeners = new Set(), submissions = [];
     let resolveResponse, result;
     const response = new Promise(done => { resolveResponse = done; });
@@ -571,14 +570,13 @@ for (const language of ["en", "ru"]) for (const observation of [false, true]) te
 });
 
 
-test("public-service keep_original reaches the exact driver oracle with independent active projection and no effects", async () => {
-  const { mkdtemp, rm, realpath } = await import("node:fs/promises");
+test("legacy-engine keep_original reaches the exact driver oracle with independent active projection and no effects", async () => {
+  const { mkdtemp, rm } = await import("node:fs/promises");
   const { tmpdir } = await import("node:os");
   const { join } = await import("node:path");
   const { randomUUID } = await import("node:crypto");
-  const { seedCategoryMoveFixture, interruptCategoryMoveFixture } = await import("../scripts/smoke-project-category-move-ui.mjs");
+  const { seedCategoryMoveFixture, interruptCategoryMoveFixture, recoveryState } = await import("../scripts/smoke-project-category-move-ui.mjs");
   const { ownedProcessesStopped } = await import("../scripts/runtime-lifecycle.mjs");
-  const { openSettingsService } = await import("../dist/service/settings.mjs");
   const fixture = await mkdtemp(join(tmpdir(), "category-keep-original-oracle-")), children = new Set();
   const savedApi = globalThis.window.workspace, savedEvents = globalThis.categoryMoveEvents;
   let service;
@@ -591,36 +589,18 @@ test("public-service keep_original reaches the exact driver oracle with independ
       operationId: randomUUID(), destinationCategoryId: setup.projection.categories.find(c => c.name === "Destination").categoryId,
       expectedRevision: setup.projection.revision };
     await interruptCategoryMoveFixture(setup, "intent", children);
-    const canonicalSourceRoot = await realpath(setup.sourceRoot);
-    const {nativeObserverDependencies} = await import("../src/service/source-observer.ts");
-    const {scanGroupedSource, scanDirectSource} = await import("../src/service/discovery.ts");
-    const scheduled = new Set(), sourceEvents = [];
-    let resolveOldScan, oldScan, holding = true;
-    const dependencies = {
-      probe: nativeObserverDependencies.probe,
-      watch: () => ({close() {}}),
-      schedule(callback, delay) {
-        const timer = {callback, delay}; scheduled.add(timer);
-        return {cancel() {scheduled.delete(timer);}};
-      },
-      scan(request) {
-        const scan = (request.mode === "grouped" ? scanGroupedSource : scanDirectSource)(request.canonicalRoot, request.archiveRelativePath, request.exclusions);
-        if (holding && request.canonicalRoot === canonicalSourceRoot) {
-          holding = false; oldScan = scan;
-          return new Promise(resolve => {resolveOldScan = resolve;});
-        }
-        return scan;
-      },
-    };
-    const flushHints = () => {
-      for (const timer of [...scheduled].filter(timer => timer.delay === 100)) {
-        if (scheduled.delete(timer)) timer.callback();
-      }
-    };
-    service = openSettingsService(setup.database, undefined, undefined, dependencies);
-    service.workspaces.subscribe(event => {if (event.type === "workspace.sourceObserved" && event.sourceId === setup.workspace.sourceId) sourceEvents.push(event);});
-    flushHints();
-    assert.equal(typeof resolveOldScan, "function", "Hold a genuine pre-settlement background scan");
+    // The production application keeps unfinished #72 authority reserved.
+    const {openSettingsService}=await import("../dist/service/settings.mjs");
+    const stateBefore=await recoveryState(setup);
+    const gated=openSettingsService(setup.database);
+    try {
+      for(const input of [
+        {type:"workspace.previewProjectCategoryMoveRecovery",workspaceId:setup.sibling.workspaceId,operationId:setup.request.operationId},
+        {type:"workspace.recoverProjectCategoryMove",workspaceId:setup.sibling.workspaceId,operationId:setup.request.operationId,previewToken:randomUUID(),action:"keep_original"},
+      ]) {const denied=input.type.startsWith("workspace.preview")?gated.handleQuery(input):gated.handleCommand(input);assert.equal(denied.ok,false);assert.equal(denied.error.code,"identity_update_required");
+        assert.deepEqual(await recoveryState(setup),stateBefore,"Denied request preserves every journal byte, metadata and both owned trees");}
+    } finally {gated.close();}
+    service = openLegacyEngineService(setup.database);
     globalThis.categoryMoveEvents = [];
     service.workspaces.subscribe(event => { if (event.type === "workspace.projectsChanged") globalThis.categoryMoveEvents.push(event); });
     globalThis.window.workspace = { workspace: async input => service.handleQuery(input), settings: async input => service.handleQuery(input) };
@@ -634,21 +614,6 @@ test("public-service keep_original reaches the exact driver oracle with independ
     const result = service.handleCommand({ type: "workspace.recoverProjectCategoryMove", workspaceId: setup.sibling.workspaceId,
       operationId: setup.request.operationId, previewToken: preview.value.previewToken, action: "keep_original" });
     assert.equal(result.ok, true); assert.equal(result.value.problem, "kept_original");
-    for (const workspaceId of [setup.workspace.workspaceId, setup.sibling.workspaceId]) {
-      const observed = service.handleQuery({type: "workspace.listProjects", workspaceId, observed: true});
-      assert.equal(observed.ok, true);
-      assert.deepEqual(observed.value, {...originalProjection, workspaceId}, "Settled recovery invalidates cached ambiguous eligibility for every source reference");
-    }
-    resolveOldScan(oldScan);
-    for (let turn = 0; turn < 6; turn++) await Promise.resolve();
-    // A rejected old pass queues a new one; neither its cache nor a degraded
-    // notification may permanently restore the pre-settlement association.
-    flushHints();
-    for (let turn = 0; turn < 6; turn++) await Promise.resolve();
-    for (const workspaceId of [setup.workspace.workspaceId, setup.sibling.workspaceId]) {
-      assert.deepEqual(service.handleQuery({type: "workspace.listProjects", workspaceId, observed: true}).value, {...originalProjection, workspaceId});
-    }
-    assert.equal(sourceEvents.at(-1)?.automaticUpdates, "active", "Queued fresh scan restores healthy observation after the stale pass");
     const after = await captureRuntimeCategoryState(page, setup, setup.sibling.workspaceId);
     const verify = (state = after, receipt = result, expectedRow = row, projection = originalProjection) =>
       assertRuntimeCategoryKeptOriginal(before, state, expectedRow, receipt, projection);

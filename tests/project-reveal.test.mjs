@@ -6,7 +6,9 @@ import { randomUUID } from "node:crypto";
 import test from "node:test";
 import { syncBuiltinESMExports } from "node:module";
 import Database from "better-sqlite3";
-import { openSettingsService } from "../dist/service/settings.mjs";
+// ADR 0009: invoke the unconverted production engines, never the gated application API.
+import { openUnconvertedEngineFixture } from "./support/unconverted-command-engines.mjs";
+const openEngineService = (...args) => openUnconvertedEngineFixture(...args).engines;
 import { createNativeProjectReveal } from "../src/desktop/project-reveal.ts";
 import { isProjectRevealRequest } from "../src/contracts/project-reveal.ts";
 
@@ -15,7 +17,7 @@ async function fixture(mode, run, projectFilesystem) {
   const root = join(directory, "root"), other = join(directory, "other"), database = join(directory, "data.sqlite");
   fs.mkdirSync(root); fs.mkdirSync(other);
   if (mode === "grouped") fs.mkdirSync(join(root, "Category"));
-  const service = openSettingsService(database, undefined, undefined, undefined, projectFilesystem);
+  const service = openEngineService(database, undefined, undefined, undefined, projectFilesystem);
   const sql = new Database(database);
   try {
     const workspace = service.workspaces.create({ type: "workspace.create", name: "One", rootPath: root }).value;

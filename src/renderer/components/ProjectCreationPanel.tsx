@@ -130,7 +130,7 @@ function CreationContent({ client, workspaceId, sourceId, language, projects, di
       ["source_unavailable", "category_unavailable", "unconfigured", "stale_configuration", "permission_denied"].includes(value.problem) ? "creationUnavailable" : "creationFailed");
     return true;
   };
-  const run = async (operationId: string, command: () => ReturnType<WorkspaceServiceClient["getProjectCreation"]>, readOnly = false) => {
+  const run = async (operationId: string, command: () => ReturnType<WorkspaceServiceClient["getProjectCreation"]>, readOnly = false, initialRequest = false) => {
     if (busy.current || disabled || (!readOnly && effectsBlocked) || !ready.current) return;
     pendingFocus.current = ownsFocus();
     busy.current = true; setPending(true); setMessage(null); setUnknownId((current) => current ?? operationId);
@@ -138,7 +138,12 @@ function CreationContent({ client, workspaceId, sourceId, language, projects, di
     try {
       const result = await command();
       if (!mounted.current || current !== request.current || backend !== generation.current) return;
-      if (!result.ok || !accept(result.value, operationId)) setMessage("creationUncertain");
+      if(!result.ok && result.error.code === "identity_update_required") {
+        // A fresh request was refused before effects. Earlier uncertain attempts
+        // still retain their status/retry identity and all journal reservations.
+        if(initialRequest){originalRequest.current=null;setUnknownId(id=>id===operationId?null:id);}
+        setMessage("folderActionSafetyUpdate");
+      } else if (!result.ok || !accept(result.value, operationId)) setMessage("creationUncertain");
     } catch { if (mounted.current && current === request.current && backend === generation.current) setMessage("creationUncertain"); }
     finally {
       if (mounted.current && current === request.current && backend === generation.current) { busy.current = false; setPending(false); if (open && (document.activeElement === document.body || ownsFocus())) restoreInputFocus.current = true; }
@@ -153,7 +158,8 @@ function CreationContent({ client, workspaceId, sourceId, language, projects, di
     try {
       const result = await client.previewProjectCreationRecovery(workspaceId, operationId);
       if (!mounted.current || current !== request.current || backend !== generation.current) return;
-      if (version === previewVersion.current && observed === observationVersion.current && result.ok &&
+      if(!result.ok && result.error.code === "identity_update_required")setMessage("folderActionSafetyUpdate");
+      else if (version === previewVersion.current && observed === observationVersion.current && result.ok &&
         result.value.workspaceId === workspaceId && result.value.sourceId === sourceId && result.value.operation.operationId === operationId &&
         result.value.operation.sourceId === sourceId && result.value.revision >= minimumRevision.current) {
         previewObservation.current = observed; setPreview(result.value);
@@ -179,7 +185,7 @@ function CreationContent({ client, workspaceId, sourceId, language, projects, di
       const common = { workspaceId, operationId, name, expectedRevision: projects.revision };
       const authoredRequest: Parameters<WorkspaceServiceClient["createProject"]>[0] = projects.mode === "grouped" ? { ...common, mode: "grouped", categoryId } : { ...common, mode: "direct" };
       originalRequest.current = authoredRequest;
-      void run(operationId, () => client.createProject(authoredRequest));
+      void run(operationId, () => client.createProject(authoredRequest),false,true);
     }} onKeyDown={(event) => { if (event.key === "Escape") { event.preventDefault(); close(); } }}>
       <label htmlFor="project-creation-name">{t("creationName")}</label>
       <input ref={input} id="project-creation-name" className="bb-input" value={name} disabled={mutationsDisabled || pending || !!unknownId}

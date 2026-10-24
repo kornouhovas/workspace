@@ -1,10 +1,10 @@
-import { historicalWorkspace } from "./helpers/historical-workspace.mjs";
+import { archiveProjectFixture } from "./support/archived-project-fixture.mjs";
+import { seedHistoricalFixture, assertHistoricalFixturePreserved, assertHistoricalPublicMetadata } from "./support/identity-migration-fixtures.mjs";
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { randomUUID } from 'node:crypto';
 import Database from 'better-sqlite3';
 import { openSettingsService } from '../dist/service/settings.mjs';
 
@@ -101,22 +101,20 @@ test('upgrade from pre-Number database preserves Text, identities, presentation 
   const journal = JSON.parse(readFileSync('src/service/db/migrations/meta/_journal.json', 'utf8')); journal.entries = journal.entries.slice(0, 14);
   for (const entry of journal.entries) writeFileSync(join(migrations, `${entry.tag}.sql`), readFileSync(`src/service/db/migrations/${entry.tag}.sql`));
   writeFileSync(join(migrations, 'meta/_journal.json'), JSON.stringify(journal));
-  const path = join(directory, 'workspace.sqlite'); let service = openSettingsService(path, migrations);
+  const path = join(directory, 'workspace.sqlite');
+  const workspace=seedHistoricalFixture(path,migrations,root,[{name:'  Exact Text  ',type:'text',value:'  exact\nТекст  '}]);
+  const workspaceId=workspace.workspaceId,projectId=workspace.projectId;
+  let service=openSettingsService(path);
   try {
-    const workspace = historicalWorkspace(path, root);
-    const workspaceId = workspace.workspaceId;
-    const preview = service.handleQuery({ type: 'workspace.previewDiscovery', workspaceId }).value;
-    const projects = service.handleCommand({ type: 'workspace.applyDiscovery', workspaceId, previewToken: preview.previewToken }).value;
-    const propertyId = service.handleCommand({ type: 'workspace.createProperty', workspaceId, name: '  Exact Text  ', propertyType: 'text' }).value.propertyId;
-    assert.equal(service.handleCommand({ type: 'workspace.setTextValue', workspaceId, projectId: projects.projects[0].projectId, propertyId, value: '  exact\nТекст  ' }).ok, true);
-    const before = service.handleQuery({ type: 'workspace.listTextProperties', workspaceId });
-    const tables = ['sources', 'workspaces', 'views', 'active_workspace', 'projects', 'property_definitions', 'text_property_values'];
-    const db = new Database(path); const rows = Object.fromEntries(tables.map(table => [table, db.prepare(`SELECT * FROM ${table}`).all().map(row => table === 'views' ? { ...row, position: 0, filter_config: '{"search":"","rules":[]}', grouping_config: '{"propertyId":null,"settings":[]}', board_config: '{"widths":[],"properties":[],"wrap":true}', table_config: '{"columns":[],"rowOrder":[]}' } : row)])); db.close();
-    service.close(); service = openSettingsService(path);
-    assert.deepEqual(service.handleQuery({ type: 'workspace.listTextProperties', workspaceId }), before);
+    assertHistoricalFixturePreserved(assert,path,workspace);
+    const before=assertHistoricalPublicMetadata(assert,service,workspace);
+    service.close();service=openSettingsService(path);
+    assert.deepEqual(service.handleQuery({type:"workspace.listTextProperties",workspaceId}),before);
+    assert.equal(service.handleQuery({type:'workspace.listProjects',workspaceId}).value.state,'association_review_required');
+    const propertyId=workspace.definitions[0].id;
+    const projects={projects:[{projectId}]};
     const inspected = new Database(path); inspected.pragma('foreign_keys = ON');
     try {
-      for (const table of tables) assert.deepEqual(inspected.prepare(`SELECT * FROM ${table}`).all(), rows[table]);
       assert.deepEqual(inspected.pragma('foreign_key_check'), []);
       assert.throws(() => inspected.prepare("UPDATE property_definitions SET property_type = 'number' WHERE id = ?").run(propertyId), /immutable/);
       const number = service.handleCommand({ type: 'workspace.createProperty', workspaceId, name: 'New Number', propertyType: 'number' }); assert.equal(number.ok, true);
@@ -137,10 +135,7 @@ test('retained and archived projects keep editable Number metadata and do not tr
   assert.equal(set(f, propertyId, '43').ok, true);
   const active = f.service.handleQuery({ type: 'workspace.previewDiscovery', workspaceId, excludedRelativePaths: [] }).value;
   assert.equal(f.service.handleCommand({ type: 'workspace.applyDiscovery', workspaceId, previewToken: active.previewToken }).ok, true);
-  const archiveLocation = f.service.handleQuery({ type: 'workspace.previewArchiveLocation', workspaceId, relativePath: 'Archive' }).value;
-  assert.equal(f.service.handleCommand({ type: 'workspace.applyArchiveLocation', workspaceId, operationId: randomUUID(), previewToken: archiveLocation.previewToken }).ok, true);
-  const archive = f.service.handleQuery({ type: 'workspace.previewProjectArchive', workspaceId, projectId: f.projectId, action: 'archive', name: null, createParent: false }).value;
-  assert.equal(f.service.handleCommand({ type: 'workspace.applyProjectArchive', workspaceId, operationId: randomUUID(), previewToken: archive.previewToken }).ok, true);
+  archiveProjectFixture(f.path,workspaceId,f.projectId);
   assert.equal(set(f, propertyId, '44').ok, true);
   f.reopen(); assert.equal(list(f).value.numberValues[0].value, 44);
   assert.equal(readFileSync(join(f.root, 'Archive', 'Project', 'keep'), 'utf8'), 'unchanged');

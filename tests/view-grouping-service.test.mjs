@@ -1,6 +1,7 @@
+import {archiveProjectFixture} from './support/archived-project-fixture.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, rmSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, rmSync, renameSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { openSettingsService } from '../dist/service/settings.mjs';
@@ -147,7 +148,6 @@ test('semantically invalid persisted keys fail visibly on read and are explicitl
 });
 
 test('manual fallback orders new values stably, and Active/Archived share settings with separate groups',async()=>{
-  const {randomUUID}=await import('node:crypto');
   fixture(f=>{
     const {viewId}=f.workspace;
     const propertyId=f.command('createProperty',{name:'Score',propertyType:'number'}).value.propertyId;
@@ -159,10 +159,7 @@ test('manual fallback orders new values stably, and Active/Archived share settin
     f.command('setNumberValue',{projectId:beta,propertyId,expression:'2'});
     const groups=archived=>f.query('queryView',{viewId,archived}).value.groups;
     assert.deepEqual(groups(false).map(g=>g.value),[10,2,null]);
-    const location=f.query('previewArchiveLocation',{relativePath:'Archive'}).value;
-    f.command('applyArchiveLocation',{operationId:randomUUID(),previewToken:location.previewToken});
-    const preview=f.query('previewProjectArchive',{projectId:alpha,action:'archive',name:null,createParent:false}).value;
-    assert.equal(f.command('applyProjectArchive',{operationId:randomUUID(),previewToken:preview.previewToken}).value.operation.stage,'completed');
+    archiveProjectFixture(f.path,f.workspace.workspaceId,alpha);
     assert.deepEqual(groups(false).map(g=>g.value),[2,null]);
     assert.deepEqual(groups(true).map(g=>g.value),[10,null]);
     assert.deepEqual(groups(true)[0].projectIds,[alpha]);
@@ -282,7 +279,6 @@ test('option order, filtered empties and view-owned presentation stay independen
 }));
 
 test('category renames and moves retain keys and archive grouping preserves original category',async()=>{
-  const {randomUUID}=await import('node:crypto');
   const {existsSync}=await import('node:fs');
   fixture(f=>{
     const {viewId}=f.workspace,list=f.query('listProjects').value;
@@ -290,16 +286,14 @@ test('category renames and moves retain keys and archive grouping preserves orig
     const projectId=list.projects.find(p=>p.categoryId===a).projectId;
     const setting={propertyId,order:'manual',manualOrder:[JSON.stringify(a)],hidden:[],collapsed:[JSON.stringify(a)],hideEmpty:false};
     f.command('setViewGrouping',{viewId,config:{propertyId,settings:[setting]}});
-    const rename=f.query('previewCategoryFolder',{action:'rename',categoryId:a,name:'Renamed'});
-    assert.equal(rename.ok,true);
-    assert.equal(f.command('applyCategoryFolder',{operationId:randomUUID(),previewToken:rename.value.previewToken}).value.outcome,'completed');
+    renameSync(join(f.root,list.categories.find(c=>c.categoryId===a).relativePath),join(f.root,'Renamed'));
+    assert.equal(f.command('refreshSource').ok,true);
     const groups=archived=>f.query('queryView',{viewId,archived}).value.groups;
     assert.equal(groups(false)[0].value,a);assert.equal(groups(false)[0].label,'Renamed');assert.equal(groups(false)[0].collapsed,true);
     // Avoid an occupied destination by moving the Alpha project to the empty category.
     const destination=list.categories.find(c=>c.name==='Gamma').categoryId;
-    const before=f.query('listProjects').value;
-    const move=f.command('moveProjectCategory',{operationId:randomUUID(),projectId,destinationCategoryId:destination,expectedRevision:before.revision});
-    assert.equal(move.value.outcome,'completed');
+    renameSync(join(f.root,'Renamed','Project'),join(f.root,'Gamma','Project'));
+    assert.equal(f.command('refreshSource').ok,true);
     assert.deepEqual(groups(false).find(g=>g.value===destination).projectIds,[projectId]);
     assert.deepEqual(groups(false).find(g=>g.value===a).projectIds,[]);
     assert.equal(existsSync(join(f.root,'Gamma','Project')),true);
@@ -308,10 +302,7 @@ test('category renames and moves retain keys and archive grouping preserves orig
     assert.equal(f.command('setSelectValue',{propertyId:ordinary,projectId,optionId:option}).ok,true);
     assert.equal(f.query('listProjects').value.projects.find(p=>p.projectId===projectId).categoryId,destination);
     assert.equal(existsSync(join(f.root,'Gamma','Project')),true);
-    const location=f.query('previewArchiveLocation',{relativePath:'Archive'}).value;
-    f.command('applyArchiveLocation',{operationId:randomUUID(),previewToken:location.previewToken});
-    const preview=f.query('previewProjectArchive',{projectId,action:'archive',name:null,createParent:false}).value;
-    assert.equal(f.command('applyProjectArchive',{operationId:randomUUID(),previewToken:preview.previewToken}).value.operation.stage,'completed');
+    archiveProjectFixture(f.path,f.workspace.workspaceId,projectId);
     assert.deepEqual(groups(true).find(g=>g.value===destination).projectIds,[projectId]);
     assert.equal(groups(true).some(g=>g.value===null),false);
     f.reopen();assert.deepEqual(groups(true).find(g=>g.value===destination).projectIds,[projectId]);

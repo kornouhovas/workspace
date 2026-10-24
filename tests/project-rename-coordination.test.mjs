@@ -6,7 +6,8 @@ import { join } from "node:path";
 import test from "node:test";
 import Database from "better-sqlite3";
 import { nativeObserverDependencies } from "../src/service/source-observer.ts";
-import { openSettingsService } from "../dist/service/settings.mjs";
+import { openUnconvertedEngineFixture } from "./support/unconverted-command-engines.mjs";
+const openEngineService = (...args) => openUnconvertedEngineFixture(...args).engines;
 
 const identity = (path) => {
   const stat = fs.lstatSync(path, { bigint: true });
@@ -30,7 +31,7 @@ async function fixture(mode, run) {
       const timer = [...timers].find((timer) => timer.delay <= 100); timers.delete(timer); timer.callback();
     }
   }
-  let service = openSettingsService(databasePath, undefined, undefined, dependencies);
+  let service = openEngineService(databasePath, undefined, undefined, dependencies);
   const sql = new Database(databasePath);
   const workspace = service.workspaces.create({ type: "workspace.create", name: "Primary", rootPath: root }).value;
   const sibling = service.workspaces.create({ type: "workspace.create", name: "Sibling", rootPath: root }).value;
@@ -57,7 +58,7 @@ async function fixture(mode, run) {
   const snapshot = () => Object.fromEntries(["sources", "projects", "categories", "category_properties", "property_definitions", "text_property_values", "views", "settings"]
     .map((table) => [table, sql.prepare(`SELECT * FROM ${table} ORDER BY 1`).all()]));
   const f = { directory, root, sql, workspace, sibling, initial, project, missing, other, propertyId, query, command, apply, seed, snapshot, relative,
-    watches, flushHints, get service() { return service; }, restart() { service.close(); service = openSettingsService(databasePath, undefined, undefined, dependencies); } };
+    watches, flushHints, get service() { return service; }, restart() { service.close(); service = openEngineService(databasePath, undefined, undefined, dependencies); } };
   try { await run(f); } finally { service.close(); sql.close(); fs.rmSync(directory, { recursive: true, force: true }); }
 }
 

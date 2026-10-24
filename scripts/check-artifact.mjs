@@ -41,6 +41,8 @@ export async function checkArtifact(root, { platform = process.platform, arch = 
     assert.ok(files.has(file), `Packaged app is missing ${file}`);
   }
 
+  assert.equal(files.has("dist/service/unconverted-engine-test-entry.cjs"),false,"Packaged app includes a test-only command entry");
+
   const html = (await extractFile(asarPath, join("dist", "renderer", "index.html"))).toString();
   const resources = [...html.matchAll(/(?:src|href)="(\.\/assets\/[^"?#]+)"/g)].map((match) => match[1].slice(2));
   assert.ok(resources.some((file) => file.endsWith(".js")), "Packaged renderer has no local JavaScript entry");

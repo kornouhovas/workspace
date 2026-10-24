@@ -1,26 +1,29 @@
 /* global window, document */
 import assert from 'node:assert/strict';
-import { createRequire } from 'node:module';
-import { mkdtemp, mkdir, realpath, writeFile } from 'node:fs/promises';
+import { runtimeSmokeLaunch } from './runtime-executable.mjs';
+import { createHash } from 'node:crypto';
+import { release } from 'node:os';
+import { mkdtemp, mkdir, realpath, writeFile, readFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { join, resolve } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import { _electron } from 'playwright-core';
 import Database from 'better-sqlite3';
 import { openSettingsService } from '../dist/service/settings.mjs';
 import { closeElectron, cleanupOwnedFixture, ownedProcessesStopped } from './runtime-lifecycle.mjs';
 import { openSettingsSection, setInterfaceLanguage } from './runtime-settings.mjs';
-const root=resolve(import.meta.dirname,'..'),fixture=await realpath(await mkdtemp(join(tmpdir(),'source-association-runtime-')));
+const root=resolve(import.meta.dirname,'..'),launchOptions=runtimeSmokeLaunch(root),mode=process.env.WORKSPACE_SMOKE_MODE??'dev',fixture=await realpath(await mkdtemp(join(tmpdir(),'source-association-runtime-')));
 const data=join(fixture,'data'),source=join(fixture,'source'),evidence=resolve(process.env.WORKSPACE_SMOKE_EVIDENCE_DIR??'work/issue-71-source-association');
 await mkdir(join(source,'Project'),{recursive:true});await mkdir(evidence,{recursive:true});
-const parents=new Set(),backends=new Set(),report={checks:[],screens:[],platform:process.platform,status:'running'};
+const parents=new Set(),backends=new Set(),report={checks:[],screens:[],platform:process.platform,kernel:release(),mode,sha:process.env.GITHUB_SHA??null,run:process.env.GITHUB_RUN_ID??null,attempt:process.env.GITHUB_RUN_ATTEMPT??null,status:'running'};
 let app,page,failed,launchUnverified=false;
 const call=async input=>{const result=await page.evaluate(input=>window.workspace.workspace(input),input);assert.equal(result.ok,true,JSON.stringify(result));return result.value;};
-async function launch(){launchUnverified=true;app=await _electron.launch({executablePath:createRequire(import.meta.url)('electron'),args:[root],cwd:root,env:{...process.env,WORKSPACE_USER_DATA_DIR:data}});parents.add(app.process());page=await app.firstWindow();page.setDefaultTimeout(15000);
+async function launch(){launchUnverified=true;app=await _electron.launch({...launchOptions,cwd:root,env:{...process.env,WORKSPACE_USER_DATA_DIR:data}});parents.add(app.process());page=await app.firstWindow();page.setDefaultTimeout(15000);
  await page.waitForFunction(async()=>(await window.workspace.getBackendStatus()).state==='ready');
  for(const pid of await app.evaluate(({app})=>app.getAppMetrics().filter(m=>m.type==='Utility'&&m.serviceName?.includes('Node')).map(m=>m.pid)))backends.add(pid);launchUnverified=false;}
 async function close(){if(app){const current=app;app=null;await closeElectron(current);}}
 async function openSource(){await openSettingsSection(page,'sources');const entry=page.getByRole('button',{name:source,exact:true}),region=page.getByRole('region',{name:source,exact:true});await entry.or(region).waitFor();if(await entry.isVisible())await entry.click();await region.waitFor();}
 try{
+ if(mode==='release'){const resources=process.platform==='darwin'?join(dirname(launchOptions.executablePath),'..','Resources'):join(dirname(launchOptions.executablePath),'resources');report.appAsarSha256=createHash('sha256').update(await readFile(join(resources,'app.asar'))).digest('hex');}
  const seed=openSettingsService(join(data,'workspace.sqlite'));
  let workspaceId,projectId;
  try {

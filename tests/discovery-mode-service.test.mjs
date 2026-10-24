@@ -9,6 +9,7 @@ import Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import { migrate } from "drizzle-orm/better-sqlite3/migrator";
 import { openSettingsService } from "../dist/service/settings.mjs";
+import { withIdentityMigrationDefaults, projectMetadataRecords } from "./support/identity-migration-fixtures.mjs";
 import { modeRetainedResolution } from "../src/service/discovery.ts";
 
 test("mode-retained archive containment uses exact paths and scanner-confirmed aliases", () => {
@@ -63,7 +64,7 @@ function unchanged(f, run) {
 const paths = (rows) => rows.map((row) => row.relativePath);
 
 for (const exclusion of ["direct", "grouped-child", "grouped-category"]) for (const ownPath of [false, true]) {
-  test(`removed ${exclusion} exclusion permits explicit mode-retained recovery (ownPath=${ownPath})`, () => fixture((f) => {
+  test(`removed ${exclusion} exclusion retains metadata while unconverted recovery stays gated (ownPath=${ownPath})`, () => fixture((f) => {
     fs.mkdirSync(join(f.root, "Category/Child"), { recursive: true });
     fs.writeFileSync(join(f.root, "Category/Child/sentinel"), "unchanged");
     const mode = exclusion === "direct" ? "direct" : "grouped", otherMode = mode === "direct" ? "grouped" : "direct";
@@ -75,7 +76,7 @@ for (const exclusion of ["direct", "grouped-child", "grouped-category"]) for (co
     f.configure(mode, { excludedRelativePaths: [excludedPath] });
     f.configure(otherMode); f.restart();
     const request = { workspaceId: f.workspace.workspaceId, projectId: project.projectId };
-    assert.equal(f.service.workspaces.previewProjectRecovery({ type: "workspace.previewProjectRecovery", ...request }).error.code, "invalid_input");
+    assert.equal(f.service.workspaces.previewProjectRecovery({ type: "workspace.previewProjectRecovery", ...request }).error.code, "identity_update_required");
     const history = f.sqlite.prepare("SELECT * FROM projects WHERE id = ?").get(project.projectId);
     const files = inventory(f.root);
     const cleared = f.configure(otherMode, { excludedRelativePaths: [] });
@@ -88,20 +89,17 @@ for (const exclusion of ["direct", "grouped-child", "grouped-category"]) for (co
     if (!ownPath) fs.mkdirSync(join(f.root, target), { recursive: true });
     const before = databaseInventory(f.sqlite), targetFiles = inventory(f.root);
     const preview = f.service.workspaces.previewProjectRecovery({ type: "workspace.previewProjectRecovery", ...request });
-    assert.equal(preview.ok, true, JSON.stringify(preview));
-    assert.equal(preview.value.entries.find((entry) => entry.relativePath === target).status, "selectable");
+    assert.equal(preview.error.code, "identity_update_required");
     assert.deepEqual(databaseInventory(f.sqlite), before);
     assert.deepEqual(f.sqlite.prepare("SELECT * FROM projects WHERE id = ?").get(project.projectId), history);
-    const recovered = f.service.workspaces.reassociateProject({ type: "workspace.reassociateProject", ...request, previewToken: preview.value.previewToken, relativePath: target });
-    assert.equal(recovered.ok, true, JSON.stringify(recovered));
-    assert.equal(recovered.value.projects.find((row) => row.projectId === project.projectId).relativePath, target);
-    const stored = f.sqlite.prepare("SELECT * FROM projects WHERE id = ?").get(project.projectId);
-    assert.equal(stored.association_state, "active"); assert.equal(stored.mode_inactive, 0);
+    const recovered = f.service.workspaces.reassociateProject({ type: "workspace.reassociateProject", ...request, previewToken: randomUUID(), relativePath: target });
+    assert.equal(recovered.error.code, "identity_update_required");
+    assert.deepEqual(databaseInventory(f.sqlite), before);
     assert.equal(f.sqlite.prepare("SELECT value FROM text_property_values WHERE project_id = ?").get(project.projectId).value, value);
     assert.deepEqual(inventory(f.root), targetFiles);
     if (ownPath) assert.deepEqual(inventory(f.root), files);
     f.restart();
-    assert.ok(f.service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId: f.workspace.workspaceId }).value.projects.some((row) => row.projectId === project.projectId));
+    assert.ok(f.service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId: f.workspace.workspaceId }).value.retainedProjects.some((row) => row.projectId === project.projectId));
   }));
 }
 
@@ -115,9 +113,9 @@ for (const mode of ["direct", "grouped"]) test(`mode-retained archive exclusions
   assert.equal(retained.associationState, "excluded"); assert.equal(retained.resolution, "excluded");
   const before = databaseInventory(f.sqlite), files = inventory(f.root);
   const request = { type: "workspace.previewProjectRecovery", workspaceId: f.workspace.workspaceId, projectId: project.projectId };
-  assert.equal(f.service.workspaces.previewProjectRecovery(request).error.code, "invalid_input");
+  assert.equal(f.service.workspaces.previewProjectRecovery(request).error.code, "identity_update_required");
   f.restart();
-  assert.equal(f.service.workspaces.previewProjectRecovery(request).error.code, "invalid_input");
+  assert.equal(f.service.workspaces.previewProjectRecovery(request).error.code, "identity_update_required");
   assert.deepEqual(databaseInventory(f.sqlite), before); assert.deepEqual(inventory(f.root), files);
 }));
 
@@ -178,46 +176,26 @@ test("same-mode preview separates continuous IDs, new folders and already retain
   });
 }));
 
-test("a continuously matching replacement category resumes across mode return without reviving superseded history", () => fixture((f) => {
-  fs.mkdirSync(join(f.root, "Category/Old"), { recursive: true });
-  const first = f.configure("grouped");
-  fs.renameSync(join(f.root, "Category"), join(f.directory, "old-category"));
-  fs.mkdirSync(join(f.root, "Category/New"), { recursive: true });
-  fs.writeFileSync(join(f.root, "Category/New/sentinel"), "unchanged");
-  const replacement = f.configure("grouped"), project = replacement.projects[0];
-  assert.notEqual(project.categoryId, first.projects[0].categoryId);
-  const property = f.service.workspaces.createProperty({ type: "workspace.createProperty", workspaceId: f.workspace.workspaceId, name: "Notes", propertyType: "text" }).value;
-  const value = "  Replacement\nТекст 📝  ";
-  assert.equal(f.service.workspaces.setTextValue({ type: "workspace.setTextValue", workspaceId: f.workspace.workspaceId, projectId: project.projectId, propertyId: property.propertyId, value }).ok, true);
-  f.configure("direct"); f.restart();
-  const superseded = f.sqlite.prepare("SELECT * FROM categories WHERE id = ?").get(first.projects[0].categoryId);
-  assert.equal(superseded.association_state, "replaced"); assert.equal(superseded.mode_inactive, 1);
-  const files = inventory(f.root);
-  unchanged(f, () => {
-    const review = f.query({ mode: "grouped" }).value;
-    assert.equal(review.entries.find((row) => row.relativePath === "Category").reason, null);
-    // Project history still reserves its path until explicit recovery.
-    assert.ok(review.projectEffects.alreadyRetained.some((row) => row.projectId === project.projectId));
-    assert.deepEqual(review.projectEffects.added, []);
-  });
-  const returned = f.configure("grouped");
-  assert.deepEqual(returned.categories.map((row) => row.categoryId), [project.categoryId]);
-  assert.deepEqual(f.sqlite.prepare("SELECT * FROM categories WHERE id = ?").get(superseded.id), superseded);
-  assert.ok(returned.retainedProjects.some((row) => row.projectId === project.projectId && row.retentionReason === "mode_change"));
-  const request = { workspaceId: f.workspace.workspaceId, projectId: project.projectId };
-  const preview = f.service.workspaces.previewProjectRecovery({ type: "workspace.previewProjectRecovery", ...request });
-  assert.equal(preview.ok, true, JSON.stringify(preview));
-  assert.equal(preview.value.entries.find((row) => row.relativePath === "Category/New").status, "selectable");
-  const recovered = f.service.workspaces.reassociateProject({ type: "workspace.reassociateProject", ...request, previewToken: preview.value.previewToken, relativePath: "Category/New" });
-  assert.equal(recovered.ok, true, JSON.stringify(recovered));
-  assert.equal(recovered.value.projects.find((row) => row.projectId === project.projectId).categoryId, project.categoryId);
-  assert.equal(f.sqlite.prepare("SELECT value FROM text_property_values WHERE project_id = ?").get(project.projectId).value, value);
-  assert.deepEqual(inventory(f.root), files);
+test("enrolled category mismatch retains its original data without automatic replacement enrollment", () => fixture((f) => {
+  fs.mkdirSync(join(f.root,"Category/Old"),{recursive:true});
+  const first=f.configure("grouped"),project=first.projects[0];
+  const property=f.service.workspaces.createProperty({type:"workspace.createProperty",workspaceId:f.workspace.workspaceId,name:"Notes",propertyType:"text"}).value;
+  assert.equal(f.service.workspaces.setTextValue({type:"workspace.setTextValue",workspaceId:f.workspace.workspaceId,projectId:project.projectId,propertyId:property.propertyId,value:"Original metadata"}).ok,true);
+  const original=f.sqlite.prepare('SELECT id,native_identity,durable_evidence FROM categories').all();
+  fs.renameSync(join(f.root,"Category"),join(f.directory,"old-category"));
+  fs.mkdirSync(join(f.root,"Category/New"),{recursive:true});
+  const files=inventory(f.root),applied=f.configure("grouped");
+  assert.deepEqual(applied.projects,[]);
+  assert.equal(applied.retainedProjects[0].projectId,project.projectId);
+  assert.deepEqual(f.sqlite.prepare('SELECT id,native_identity,durable_evidence FROM categories').all(),original);
+  const review=f.service.handleQuery({type:"workspace.previewSourceAssociation",workspaceId:f.workspace.workspaceId,mappings:[{kind:"category",id:project.categoryId,relativePath:"Category"}]});
+  assert.equal(review.ok,true);assert.equal(review.value.previewToken,null);
+  assert.equal(review.value.candidates.find(c=>c.id===project.categoryId).reason,"folder_changed");
   f.restart();
-  fs.mkdirSync(join(f.root, "Category/Extra"));
-  const enrolled = f.configure("grouped");
-  assert.equal(enrolled.projects.find((row) => row.relativePath === "Category/Extra").categoryId, project.categoryId);
-  assert.deepEqual(f.sqlite.prepare("SELECT * FROM categories WHERE id = ?").get(superseded.id), superseded);
+  assert.deepEqual(f.sqlite.prepare('SELECT id,native_identity,durable_evidence FROM categories').all(),original);
+  assert.equal(f.sqlite.prepare('SELECT count(*) n FROM projects').get().n,1);
+  assert.equal(f.service.workspaces.listTextProperties({type:"workspace.listTextProperties",workspaceId:f.workspace.workspaceId}).value.values[0].value,"Original metadata");
+  assert.deepEqual(inventory(f.root),files);
 }));
 
 test("empty configured roots can review either interpretation without persistent writes", () => {
@@ -430,7 +408,7 @@ test("actual populated 0000–0006 upgrade preserves authored data, selection, I
         const inspected = new Database(databasePath);
         try {
           assert.deepEqual(databaseInventory(inspected).filter(([table]) => !["workspace_sessions", "workspace_view_selection", "__drizzle_migrations", "project_creation_operations", "project_rename_operations", "project_category_move_operations", "category_folder_operations", "category_presentation", "category_removal_operations", "category_removal_attempts", "project_archives", "project_archive_operations", "number_property_values", "date_property_values", "select_options", "select_property_values", "select_option_visibility", "multi_select_property_values"].includes(table)), before.map(([table, rows]) =>
-            [table, rows.map((row) => table === "projects" || table === "categories" ? { ...row, mode_inactive: 0 } : table === "views" ? { ...row, position: 0, filter_config: '{"search":"","rules":[]}', grouping_config: '{"propertyId":null,"settings":[]}', board_config: '{"widths":[],"properties":[],"wrap":true}', table_config: '{"columns":[],"rowOrder":[]}' } : row)]));
+            [table, withIdentityMigrationDefaults(table,rows).map((row) => table === "projects" || table === "categories" ? { ...row, mode_inactive: 0 } : table === "views" ? { ...row, position: 0, filter_config: '{"search":"","rules":[]}', grouping_config: '{"propertyId":null,"settings":[]}', board_config: '{"widths":[],"properties":[],"wrap":true}', table_config: '{"columns":[],"rowOrder":[]}' } : row)]));
           assert.equal(inspected.prepare("SELECT COUNT(*) AS count FROM __drizzle_migrations").get().count, 25);
           assert.equal(inspected.prepare("SELECT COUNT(*) AS count FROM workspace_sessions").get().count, 2);
           assert.deepEqual(inspected.prepare("SELECT * FROM project_creation_operations").all(), []);
@@ -443,7 +421,8 @@ test("actual populated 0000–0006 upgrade preserves authored data, selection, I
           assert.deepEqual(inspected.pragma("foreign_key_check"), []);
         } finally { inspected.close(); }
         const listed = service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId });
-        assert.equal(listed.ok, true, JSON.stringify(listed)); assert.equal(listed.value.projects[0].projectId, projectId);
+        assert.equal(listed.ok, true, JSON.stringify(listed)); assert.equal(projectMetadataRecords(listed)[0].projectId, projectId);
+        assert.equal(listed.value.state,"association_review_required");
         assert.equal(listed.value.categoryProperty?.name ?? null, mode === "grouped" ? "  Authored category  " : null);
         assert.deepEqual(inventory(root), files); service.close(); service = undefined;
       }
@@ -513,7 +492,7 @@ test("migration guards distinguish dormant history from operational category own
 }));
 
 
-for (const mode of ["direct", "grouped"]) test(`mode round trip with restart retains projects until explicit own-path recovery (${mode})`, () => fixture((f) => {
+for (const mode of ["direct", "grouped"]) test(`mode round trip with restart retains projects while own-path recovery is gated (${mode})`, () => fixture((f) => {
   for (const path of ["Category/One", "Category/Two"]) fs.mkdirSync(join(f.root, path), { recursive: true });
   fs.writeFileSync(join(f.root, "Category/One/sentinel"), Buffer.from([0, 255, 17]));
   const first = f.configure(mode), original = f.sqlite.prepare("SELECT * FROM projects ORDER BY id").all();
@@ -538,15 +517,14 @@ for (const mode of ["direct", "grouped"]) test(`mode round trip with restart ret
   for (const project of original) {
     const request = { workspaceId: f.workspace.workspaceId, projectId: project.id };
     const review = f.service.workspaces.previewProjectRecovery({ type: "workspace.previewProjectRecovery", ...request });
-    assert.equal(review.ok, true, JSON.stringify(review));
-    assert.equal(review.value.entries.find((row) => row.relativePath === project.relative_path).status, "selectable");
+    assert.equal(review.error.code, "identity_update_required");
     const recovered = f.service.workspaces.reassociateProject({ type: "workspace.reassociateProject", ...request,
-      previewToken: review.value.previewToken, relativePath: project.relative_path });
-    assert.equal(recovered.ok, true, JSON.stringify(recovered));
-    assert.deepEqual(f.sqlite.prepare("SELECT * FROM projects WHERE id = ?").get(project.id), project);
+      previewToken: randomUUID(), relativePath: project.relative_path });
+    assert.equal(recovered.error.code, "identity_update_required");
+    assert.deepEqual(f.sqlite.prepare("SELECT * FROM projects WHERE id = ?").get(project.id), { ...project, mode_inactive: 1 });
   }
   assert.deepEqual(f.sqlite.prepare("SELECT * FROM text_property_values ORDER BY project_id").all(), values);
   assert.deepEqual(f.sqlite.prepare("SELECT * FROM views").all(), views); assert.deepEqual(inventory(f.root), files);
   f.restart();
-  assert.deepEqual(new Set(f.service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId: f.workspace.workspaceId }).value.projects.map((row) => row.projectId)), new Set(original.map((row) => row.id)));
+  assert.deepEqual(new Set(f.service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId: f.workspace.workspaceId }).value.retainedProjects.filter(row=>original.some(old=>old.id===row.projectId)).map((row) => row.projectId)), new Set(original.map((row) => row.id)));
 }));
