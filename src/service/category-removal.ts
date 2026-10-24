@@ -10,7 +10,7 @@ import { filesystemAlias } from "./path-alias.js";
 import { assertCreationDestinationFree, filesystemCode, filesystemProblem, nativeProjectFilesystem, validProjectBasename, verifyCreationDirectory, type ProjectFilesystem } from "./project-filesystem.js";
 import { readProjectReservations } from "./project-rename-reservations.js";
 import type { createProjectCategoryMoveService } from "./project-category-move.js";
-import {parseRemovalAuthorization, type RemovalAuthorization} from "./category-removal-authorization.js";
+import {parseRemovalAuthorization, removalBindingMatchesRow, type RemovalAuthorization} from "./category-removal-authorization.js";
 import {type FilesystemAuthorizer, type VerifiedFolder} from "./filesystem-authorization.js";
 import {sameDurableFolder, durableOwnershipKey} from "./folder-evidence.js";
 import * as schema from "./db/schema.js";
@@ -20,7 +20,7 @@ type Source = typeof schema.sources.$inferSelect;
 type Category = typeof schema.categories.$inferSelect;
 type Project = typeof schema.projects.$inferSelect;
 type Operation = typeof schema.categoryRemovalOperations.$inferSelect;
-type Binding = { authorization?: RemovalAuthorization; source: Source; category: Category; destination: Category | null; members: Project[] };
+type Binding = { legacyReview?:true; authorization?: RemovalAuthorization; source: Source; category: Category; destination: Category | null; members: Project[] };
 class RemovalFailure extends Error { constructor(readonly problem: string) { super(problem); } }
 const same = isDeepStrictEqual;
 const policy = (source: Source) => ({...source,propertyRevision:0,categoryPropertyRevision:0});
@@ -28,7 +28,7 @@ export function createCategoryRemovalService(db: Database, moves: ReturnType<typ
   committed: (sourceId: string, revision: number, workspaceIds: string[]) => void,
   filesystem: ProjectFilesystem = nativeProjectFilesystem, authorizer?: FilesystemAuthorizer) {
   const reviews = new Map<string, { preview: CategoryRemovalPreview; binding: Binding; fingerprint: string }>();
-  const recoveryReviews = new Map<string, { sourceId: string; token: string; fingerprint: string; actions: ("retry_remaining" | "abandon")[] }>();
+  const recoveryReviews = new Map<string, { sourceId: string; token: string; fingerprint: string; actions: ("retry_remaining" | "abandon")[]; binding?:Binding }>();
   const sourceFor = (workspaceId: string) => db.select().from(schema.workspaces).innerJoin(schema.sources, eq(schema.workspaces.sourceId, schema.sources.id))
     .where(eq(schema.workspaces.id, workspaceId)).get()?.sources;
   const operationFor = (id: string) => db.select().from(schema.categoryRemovalOperations).where(eq(schema.categoryRemovalOperations.operationId, id)).get();
@@ -105,8 +105,8 @@ export function createCategoryRemovalService(db: Database, moves: ReturnType<typ
     }
     verifyDirectory(binding,"",source.appliedRootIdentity!);
   }
-  function topology(binding: Binding) {
-    verifyInventory(binding);
+  function topology(binding: Binding, categoryMissing=false) {
+    verifyInventory(binding,categoryMissing);
     const { source, category, destination } = binding;
     verifyDirectory(binding, "", source.appliedRootIdentity!);
     const proofs=new Map<string,VerifiedFolder>();
@@ -141,10 +141,11 @@ export function createCategoryRemovalService(db: Database, moves: ReturnType<typ
   }
   function fingerprint(binding: Binding, workspaceId: string, operation?: Operation) {
     let observed: unknown;
-    try { observed = topology(binding); } catch { observed = "unavailable"; }
+    try { observed = topology(binding,operation?.stage==="cleanup_intent"); } catch { observed = "unavailable"; }
     return JSON.stringify({ roots: db.select().from(schema.sources).orderBy(asc(schema.sources.id)).all().map(policy), source: sourceFor(workspaceId) ? policy(sourceFor(workspaceId)!) : null, categories: db.select().from(schema.categories).where(eq(schema.categories.sourceId, binding.source.id)).orderBy(asc(schema.categories.id)).all(),
       projects: db.select().from(schema.projects).where(eq(schema.projects.sourceId, binding.source.id)).orderBy(asc(schema.projects.id)).all(),
       reservations: readProjectReservations(db, binding.source.id), observed, operation,
+      attestations:db.select().from(schema.categoryRemovalAttestations).where(eq(schema.categoryRemovalAttestations.operationId,operation?.operationId??"empty")).all(),
       attempts: operation ? db.select().from(schema.categoryRemovalAttempts).where(eq(schema.categoryRemovalAttempts.removalId, operation.operationId)).orderBy(asc(schema.categoryRemovalAttempts.moveId)).all() : [] });
   }
   function lastAttempt(operationId: string, projectId: string) {
@@ -238,13 +239,14 @@ export function createCategoryRemovalService(db: Database, moves: ReturnType<typ
       return { ok: true, value: preview };
     } catch { return { ok: false, error: { code: "filesystem", message: "Category folders could not be verified. Refresh and review their current state." } }; }
   }
-  function inspectBatch(row: Operation, workspaceId: string) {
-    const b: Binding = JSON.parse(row.binding), source = sourceFor(workspaceId), view = operationView(row);
+  function inspectBatch(row: Operation, workspaceId: string, reviewed?:Binding, abandoning=false) {
+    const b: Binding = reviewed??JSON.parse(row.binding), source = sourceFor(workspaceId), view = operationView(row);
     if (!source || source.id !== row.sourceId || source.canonicalRoot !== b.source.canonicalRoot || source.discoveryMode !== "grouped" ||
       source.appliedRootIdentity !== b.source.appliedRootIdentity || source.excludedRelativePaths !== b.source.excludedRelativePaths || source.archiveRelativePath !== b.source.archiveRelativePath ||
       !same(policy(source),policy({...b.source,discoveryRevision:b.source.discoveryRevision+view.projects.filter(p=>p.outcome==="completed").length}))) throw new RemovalFailure("stale_configuration");
     for (const c of [b.category, ...(b.destination ? [b.destination] : [])]) {
-      if (!same(db.select().from(schema.categories).where(eq(schema.categories.id, c.id)).get(), c)) throw new RemovalFailure("category_unavailable");
+      const actual=db.select().from(schema.categories).where(eq(schema.categories.id,c.id)).get();
+      if(!actual || !same(b.legacyReview && actual.durableEvidence===null ? {...actual,durableEvidence:c.durableEvidence} : actual,c))throw new RemovalFailure("category_unavailable");
     }
     const attempts = db.select().from(schema.categoryRemovalAttempts).where(eq(schema.categoryRemovalAttempts.removalId, row.operationId)).all();
     if (readProjectReservations(db, row.sourceId).some(r => !(r.operationKind === "category_removal" && r.operationId === row.operationId) &&
@@ -263,10 +265,11 @@ export function createCategoryRemovalService(db: Database, moves: ReturnType<typ
     const records = db.select().from(schema.projects).where(eq(schema.projects.sourceId, source.id)).all();
     if (records.some(p => p.categoryId === b.category.id && !b.members.some(m => m.id === p.id))) throw new RemovalFailure("unexpected_entry");
     const allowedNames = new Set(view.projects.filter(p => p.outcome !== "completed").map(p => p.originalRelativePath.split("/").at(-1)!));
-    if (!originalMissing && filesystem.names(originalPath).some(name => !allowedNames.has(name))) throw new RemovalFailure("unexpected_entry");
+    if (!abandoning && !originalMissing && filesystem.names(originalPath).some(name => !allowedNames.has(name))) throw new RemovalFailure("unexpected_entry");
     for (const [i, p] of b.members.entries()) {
       const outcome = view.projects[i], record = records.find(r => r.id === p.id), completed = outcome.outcome === "completed";
       if (!record || record.nativeIdentity !== p.nativeIdentity || record.modeInactive || record.associationState !== "active" ||
+        record.durableEvidence!==null && (!p.durableEvidence || !sameDurableFolder(JSON.parse(record.durableEvidence),JSON.parse(p.durableEvidence))) ||
         record.relativePath !== (completed ? outcome.requestedRelativePath : p.relativePath) || record.categoryId !== (completed ? b.destination!.id : b.category.id)) throw new RemovalFailure("project_unavailable");
       if (outcome.outcome === "recoverable") {
         const attempt = lastAttempt(row.operationId, p.id)!;
@@ -276,21 +279,21 @@ export function createCategoryRemovalService(db: Database, moves: ReturnType<typ
         const path = completed ? outcome.requestedRelativePath : p.relativePath;
         verifyDirectory(b,path,p.nativeIdentity);
         filesystem.assertAccessible?.(join(source.canonicalRoot, path));
-        if (!completed) assertCreationDestinationFree(filesystem, join(source.canonicalRoot, b.destination!.relativePath), p.relativePath.split("/").at(-1)!);
-        else if (!originalMissing) assertCreationDestinationFree(filesystem, originalPath, p.relativePath.split("/").at(-1)!);
+        if (!abandoning && !completed) assertCreationDestinationFree(filesystem, join(source.canonicalRoot, b.destination!.relativePath), p.relativePath.split("/").at(-1)!);
+        else if (!abandoning && !originalMissing) assertCreationDestinationFree(filesystem, originalPath, p.relativePath.split("/").at(-1)!);
       }
     }
     verifyDirectory(b, "", source.appliedRootIdentity!);
     if (row.stage === "cleanup_intent" && view.projects.some(p => p.outcome !== "completed")) throw new RemovalFailure("ownership_uncertain");
     return { binding: b, source, originalMissing, view, records };
   }
-  function execute(row: Operation, workspaceId: string): ServiceResult<CategoryRemovalResult> {
+  function execute(row: Operation, workspaceId: string, reviewed?:Binding): ServiceResult<CategoryRemovalResult> {
     try {
-      let inspected = inspectBatch(row, workspaceId);
+      let inspected = inspectBatch(row, workspaceId,reviewed);
       if (row.stage === "moving") {
         for (const p of inspected.binding.members) {
           // Recheck the whole reviewed membership between individual effects.
-          inspected = inspectBatch(row, workspaceId);
+          inspected = inspectBatch(row, workspaceId,reviewed);
           const outcome = inspected.view.projects.find(m => m.projectId === p.id)!;
           if (outcome.outcome === "completed") continue;
           let attempt = lastAttempt(row.operationId, p.id);
@@ -305,7 +308,7 @@ export function createCategoryRemovalService(db: Database, moves: ReturnType<typ
             // new durable attempt; successful attempts are never resubmitted.
             const next = { moveId: randomUUID(), removalId: row.operationId, projectId: p.id, workspaceId,
               sequence: (attempt?.sequence ?? -1) + 1, expectedRevision: inspected.source.discoveryRevision, problem: null };
-            db.transaction(tx => { inspectBatch(row, workspaceId); tx.insert(schema.categoryRemovalAttempts).values(next).run(); }, { behavior: "immediate" });
+            db.transaction(tx => { inspectBatch(row, workspaceId,reviewed); tx.insert(schema.categoryRemovalAttempts).values(next).run(); }, { behavior: "immediate" });
             attempt = next;
             const moved = moves.moveProjectCategory({ type: "workspace.moveProjectCategory", workspaceId, projectId: p.id, operationId: attempt.moveId,
               destinationCategoryId: row.destinationCategoryId!, expectedRevision: attempt.expectedRevision });
@@ -316,13 +319,13 @@ export function createCategoryRemovalService(db: Database, moves: ReturnType<typ
           }
         }
         db.transaction(tx => {
-          const current = inspectBatch(row, workspaceId);
+          const current = inspectBatch(row, workspaceId,reviewed);
           if (current.view.projects.some(p => p.outcome !== "completed") || filesystem.names(join(current.source.canonicalRoot, row.originalRelativePath)).length) throw new RemovalFailure("unexpected_entry");
           tx.update(schema.categoryRemovalOperations).set({ stage: "cleanup_intent", problem: null }).where(eq(schema.categoryRemovalOperations.operationId, row.operationId)).run();
         }, { behavior: "immediate" });
         row = operationFor(row.operationId)!;
       }
-      inspected = inspectBatch(row, workspaceId);
+      inspected = inspectBatch(row, workspaceId,reviewed);
       if (!inspected.originalMissing) {
         if (filesystem.names(join(inspected.source.canonicalRoot, row.originalRelativePath)).length) throw new RemovalFailure("unexpected_entry");
         if (!filesystem.removeEmptyDirectory) throw new RemovalFailure("unsupported");
@@ -334,7 +337,7 @@ export function createCategoryRemovalService(db: Database, moves: ReturnType<typ
       const revision = inspected.source.discoveryRevision + 1;
       if (!Number.isSafeInteger(revision)) throw new RemovalFailure("stale_configuration");
       db.transaction(tx => {
-        const current = inspectBatch(row, workspaceId);
+        const current = inspectBatch(row, workspaceId,reviewed);
         if (!current.originalMissing) throw new RemovalFailure("filesystem_changed");
         tx.update(schema.categories).set({ associationState: "missing" }).where(eq(schema.categories.id, row.categoryId)).run();
         tx.update(schema.sources).set({ discoveryRevision: revision }).where(eq(schema.sources.id, row.sourceId)).run();
@@ -407,12 +410,107 @@ export function createCategoryRemovalService(db: Database, moves: ReturnType<typ
         .orderBy(asc(schema.categoryRemovalOperations.operationId)).all().filter(r => r.stage === "moving" || r.stage === "cleanup_intent").map(operationView) } };
     } catch { return storage(); }
   }
+  function legacyReviewedBinding(row:Operation,workspaceId:string):Binding {
+    const old:Binding=JSON.parse(row.binding),source=sourceFor(workspaceId);
+    if(!source || !removalBindingMatchesRow(old,row) || old.source.durableEvidence!=null || old.category.durableEvidence!=null || old.destination?.durableEvidence!=null || old.members.some(p=>p.durableEvidence!=null) ||
+      source.id!==old.source.id || source.canonicalRoot!==old.source.canonicalRoot || source.discoveryMode!=="grouped" || source.excludedRelativePaths!==old.source.excludedRelativePaths ||
+      source.archiveRelativePath!==old.source.archiveRelativePath || source.discoveryRevision<old.source.discoveryRevision+operationView(row).projects.filter(p=>p.outcome==="completed").length)throw new RemovalFailure("ownership_uncertain");
+    const root=authorizer!.capture(source,"",source.durableEvidence);
+    if(!sameIdentity(root.root.mount,JSON.parse(old.source.appliedRootIdentity!)))throw new RemovalFailure("ownership_uncertain");
+    const observe=(path:string,native:string)=>{
+      verifyCreationDirectory(filesystem,join(source.canonicalRoot,path),JSON.parse(native));
+      return authorizer!.observe(join(source.canonicalRoot,path),root.root,JSON.parse(native));
+    };
+    // Legacy cleanup with an absent folder cannot prove its recorded tuple.
+    const category=observe(old.category.relativePath,old.category.nativeIdentity),destination=old.destination?observe(old.destination.relativePath,old.destination.nativeIdentity):null;
+    const projects=old.members.map(member=>{
+      const matches:VerifiedFolder[]=[];
+      for(const path of [member.relativePath,`${old.destination!.relativePath}/${member.relativePath.split("/").at(-1)}`])try{matches.push(observe(path,member.nativeIdentity));}catch(error){if(filesystemCode(error)!=="ENOENT")throw error;}
+      if(matches.length!==1)throw new RemovalFailure("ownership_uncertain");
+      return {id:member.id,observation:matches[0]};
+    });
+    const binding:Binding={...old,legacyReview:true,source:{...source,discoveryRevision:source.discoveryRevision-operationView(row).projects.filter(p=>p.outcome==="completed").length},
+      category:{...old.category,durableEvidence:JSON.stringify(category.evidence)},destination:old.destination?{...old.destination,durableEvidence:JSON.stringify(destination!.evidence)}:null,
+      members:old.members.map(p=>({...p,durableEvidence:JSON.stringify(projects.find(q=>q.id===p.id)!.observation.evidence)})),
+      authorization:{version:1,root,category,destination,projects}};
+    authority(binding);verifyPeerRoots(binding);return binding;
+  }
+  function renewedBinding(row:Operation,workspaceId:string):Binding {
+    const original:Binding=JSON.parse(row.binding);
+    if(!removalBindingMatchesRow(original,row))throw new RemovalFailure("ownership_uncertain");
+    if(!Object.hasOwn(original,"authorization"))return legacyReviewedBinding(row,workspaceId);
+    const saved=authority(original),source=sourceFor(workspaceId),view=operationView(row);
+    if(!saved || !source || source.id!==original.source.id || source.canonicalRoot!==original.source.canonicalRoot || source.discoveryMode!=="grouped" ||
+      source.excludedRelativePaths!==original.source.excludedRelativePaths || source.archiveRelativePath!==original.source.archiveRelativePath ||
+      source.discoveryRevision<original.source.discoveryRevision+view.projects.filter(p=>p.outcome==="completed").length || source.evidenceGeneration<saved.root.generation)throw new RemovalFailure("stale_configuration");
+    const root=authorizer!.capture(source,"",source.durableEvidence);
+    if(!sameDurableFolder(root.root.evidence,saved.root.root.evidence))throw new RemovalFailure("ownership_uncertain");
+    const observe=(path:string,expected:VerifiedFolder)=>authorizer!.observe(join(source.canonicalRoot,path),root.root,filesystem.inspect(join(source.canonicalRoot,path)).identity,expected.evidence);
+    let category:VerifiedFolder;
+    try{category=observe(original.category.relativePath,saved.category);}catch(error){
+      if(row.stage!=="cleanup_intent" || filesystemCode(error)!=="ENOENT")throw error;
+      category=saved.category;
+    }
+    const destination=original.destination?observe(original.destination.relativePath,saved.destination!):null;
+    const projects=saved.projects.map(p=>{
+      const member=original.members.find(m=>m.id===p.id)!,paths=[member.relativePath,`${original.destination!.relativePath}/${member.relativePath.split("/").at(-1)}`],matches:VerifiedFolder[]=[];
+      for(const path of paths)try{matches.push(observe(path,p.observation));}catch(error){if(filesystemCode(error)!=="ENOENT")throw error;}
+      if(matches.length!==1)throw new RemovalFailure("ownership_uncertain");
+      return {id:p.id,observation:matches[0]};
+    });
+    const binding:Binding={...original,source:{...source,discoveryRevision:source.discoveryRevision-view.projects.filter(p=>p.outcome==="completed").length},authorization:{version:1,root,category,destination,projects}};
+    authority(binding);verifyPeerRoots(binding);
+    return binding;
+  }
+  function durableRecoveryPreview(row:Operation,workspaceId:string):ServiceResult<CategoryRemovalRecoveryPreview> {
+    const operation=operationView(row),actions:("retry_remaining"|"abandon")[]=[];
+    let previewToken:string|null=null;
+    try {
+      const binding=renewedBinding(row,workspaceId),before=fingerprint(binding,workspaceId,row);
+      try{inspectBatch(row,workspaceId,binding);actions.push("retry_remaining");}catch{/* A blocked retry cannot authorize another effect. */}
+      if(operation.projects.every(p=>p.outcome!=="recoverable"))try{
+        const inspected=inspectBatch(row,workspaceId,binding,true);
+        if(!inspected.originalMissing)actions.push("abandon");
+      }catch{/* Abandonment still proves every original affected object. */}
+      if(!actions.length)return {ok:true,value:{workspaceId,sourceId:row.sourceId,operation,actions,previewToken:null}};
+      if(before!==fingerprint(binding,workspaceId,row))return stale();
+      previewToken=randomUUID();
+      recoveryReviews.set(`${workspaceId}:${row.operationId}`,{sourceId:row.sourceId,token:previewToken,fingerprint:before,actions,binding});
+    }catch{actions.length=0;previewToken=null;/* Unprovable journals retain status and all reservations without a permit. */}
+    return {ok:true,value:{workspaceId,sourceId:row.sourceId,operation,actions,previewToken}};
+  }
+  function durableRecovery(row:Operation,workspaceId:string,review:NonNullable<ReturnType<typeof recoveryReviews.get>>,action:"retry_remaining"|"abandon"):ServiceResult<CategoryRemovalResult> {
+    const binding=review.binding!;
+    let current:Binding;
+    try{current=renewedBinding(row,workspaceId);}catch{return stale();}
+    if(!same({...current,source:policy(current.source)},{...binding,source:policy(binding.source)}) || fingerprint(binding,workspaceId,row)!==review.fingerprint)return stale();
+    db.transaction(tx=>{
+      inspectBatch(row,workspaceId,binding,action==="abandon");
+      if(fingerprint(binding,workspaceId,row)!==review.fingerprint)throw new RemovalFailure("stale_preview");
+      const previous=tx.select().from(schema.categoryRemovalAttestations).where(eq(schema.categoryRemovalAttestations.operationId,row.operationId)).all();
+      tx.insert(schema.categoryRemovalAttestations).values({id:randomUUID(),operationId:row.operationId,sequence:Math.max(-1,...previous.map(p=>p.sequence))+1,
+        journal:JSON.stringify(row),binding:JSON.stringify(binding)}).run();
+      if(binding.legacyReview) {
+        for(const category of [binding.category,...(binding.destination?[binding.destination]:[])])tx.update(schema.categories).set({durableEvidence:category.durableEvidence}).where(eq(schema.categories.id,category.id)).run();
+        for(const project of binding.members)tx.update(schema.projects).set({durableEvidence:project.durableEvidence}).where(eq(schema.projects.id,project.id)).run();
+      }
+      inspectBatch(row,workspaceId,binding,action==="abandon");
+      if(action==="abandon") {
+        if(operationView(row).projects.some(p=>p.outcome==="recoverable"))throw new RemovalFailure("ownership_uncertain");
+        tx.update(schema.categoryRemovalOperations).set({stage:"abandoned",problem:"abandoned"}).where(eq(schema.categoryRemovalOperations.operationId,row.operationId)).run();
+        inspectBatch(row,workspaceId,binding,action==="abandon");
+      }
+    },{behavior:"immediate"});
+    if(action==="abandon") {notify(row,sourceFor(workspaceId)!.discoveryRevision);return result(operationFor(row.operationId)!);}
+    return execute(row,workspaceId,binding);
+  }
   function previewCategoryRemovalRecovery(input: unknown): ServiceResult<CategoryRemovalRecoveryPreview> {
     if (!isCategoryRemovalRequest(input) || input.type !== "workspace.previewCategoryRemovalRecovery") return invalid();
     const key = `${input.workspaceId}:${input.operationId}`; recoveryReviews.delete(key);
     try {
       const source = sourceFor(input.workspaceId), row = operationFor(input.operationId);
       if (!source || !row || row.sourceId !== source.id || row.stage === "completed" || row.stage === "abandoned") return invalid();
+      if(authorizer)return durableRecoveryPreview(row,input.workspaceId);
       const b: Binding = JSON.parse(row.binding), operation = operationView(row), actions: ("retry_remaining" | "abandon")[] = [];
       const before = fingerprint(b, input.workspaceId, row);
       try { inspectBatch(row, input.workspaceId); actions.push("retry_remaining"); } catch { /* Unsafe placements expose status without mutation. */ }
@@ -431,10 +529,12 @@ export function createCategoryRemovalService(db: Database, moves: ReturnType<typ
   }
   function recoverCategoryRemoval(input: unknown): ServiceResult<CategoryRemovalResult> {
     if (!isCategoryRemovalRequest(input) || input.type !== "workspace.recoverCategoryRemoval") return invalid();
-    const key = `${input.workspaceId}:${input.operationId}`, review = recoveryReviews.get(key); recoveryReviews.delete(key);
+    const key = `${input.workspaceId}:${input.operationId}`, review = recoveryReviews.get(key);
     if (!review || review.token !== input.previewToken || !review.actions.includes(input.action)) return stale();
+    recoveryReviews.delete(key);
     try {
       const row = operationFor(input.operationId); if (!row) return invalid();
+      if(authorizer) {if(!review.binding || sourceFor(input.workspaceId)?.id!==row.sourceId)return stale();return durableRecovery(row,input.workspaceId,review,input.action);}
       const b: Binding = JSON.parse(row.binding);
       if (fingerprint(b, input.workspaceId, row) !== review.fingerprint) return stale();
       if (input.action === "abandon") {

@@ -90,7 +90,9 @@ export function assertHistoricalPublicMetadata(assert,application,fixture){
 
 /** Existing rewind fixtures must remove every additive 0025 object before replay. */
 export function rewindCreationAuthorization(db) {
- db.exec(`DROP TRIGGER category_folder_authority_update;
+ db.exec(`DROP TRIGGER category_removal_attestation_insert; DROP TRIGGER category_removal_attestation_update; DROP TRIGGER category_removal_attestation_delete;
+ DROP TABLE category_removal_attestations;
+ DROP TRIGGER category_folder_authority_update;
  DROP TRIGGER category_folder_attestation_insert; DROP TRIGGER category_folder_attestation_update; DROP TRIGGER category_folder_attestation_delete;
  DROP TABLE category_folder_attestations; ALTER TABLE category_folder_operations DROP COLUMN authorization; ALTER TABLE category_folder_operations DROP COLUMN destination_evidence;
  DROP TRIGGER project_category_move_authority_update;

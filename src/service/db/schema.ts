@@ -266,6 +266,10 @@ export const categoryRemovalOperations = sqliteTable("category_removal_operation
   stage: text("stage", { enum: ["moving", "cleanup_intent", "completed", "abandoned"] }).notNull(),
   problem: text("problem"), completedRevision: integer("completed_revision"),
 });
+export const categoryRemovalAttestations = sqliteTable("category_removal_attestations", {
+  id: text("id").primaryKey(), operationId: text("operation_id").notNull().references(()=>categoryRemovalOperations.operationId),
+  sequence:integer("sequence").notNull(), journal:text("journal").notNull(), binding:text("binding").notNull(),
+},table=>[unique().on(table.operationId,table.sequence)]);
 export const categoryRemovalAttempts = sqliteTable("category_removal_attempts", {
   moveId: text("move_id").primaryKey(), removalId: text("removal_id").notNull().references(() => categoryRemovalOperations.operationId),
   projectId: text("project_id").notNull().references(() => projects.id), workspaceId: text("workspace_id").notNull(),

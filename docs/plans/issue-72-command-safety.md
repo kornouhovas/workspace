@@ -379,3 +379,61 @@ six separate production process exits at batch intent, child intent/effect/recor
 cleanup intent/effect, retaining the legacy crash matrix. UI and build/artifact
 consumers271/271 pass. These are focused intermediate results, not the final
 whole-issue suite or macOS/Windows Electron/package acceptance.
+
+## Eighth local milestone: category-removal recovery
+
+Migration0029 adds separate append-only sequenced removal attestations, without
+rewriting original bindings, native tuples, IDs or receipts. New-policy explicit
+recovery reacquires the same durable root/category/destination/member identities
+in the same installation scope and pins a fresh mount frame. Child read-only
+inspection can inspect fresh proofs before parent consent, but actual child
+settlement compares the accepted parent attestation. Original retries remain
+read-only, including across process exits. New-policy cleanup intent with an
+already absent removed category can complete metadata without another rmdir.
+
+Authentic0023 SQL upgrades require every recorded legacy tuple, including dev,
+to match exactly before an explicit attestation. Root-only enrollment leaves
+category/member proof fields NULL until that consent; only affected records are
+enrolled in the attestation transaction before child effects. Separate root,
+category, destination and member dev999 controls remain reserved without actions.
+An absent legacy cleanup category cannot prove its tuple and remains reserved.
+Malformed/unknown authorization or historical evidence never downgrades to legacy;
+missing/NULL is distinct from empty string/zero. Original row/binding descriptors
+must match before renewal or restore. Attested full proofs also reserve moved
+objects independently of recorded paths.
+
+An explicit recovery review may take a newer baseline revision after root binding
+or observation, while preserving original semantic configuration and associations;
+its generation/revision/frame are pinned within the review. This repaired an
+observed exact0023 positive refusal after root-only binding advanced discovery
+revision. Property/category-label revisions remain independent. Scoped anchor
+loss/root-only rebinding cannot bless the old operation. Modeled between-run dev777
+renewal succeeds without move replay; dev888 after Preview consumes the review
+without attestation. These are modeled mount observations, not OS remount evidence.
+
+Abandonment proves every known original affected object and placement, requires
+no recoverable child and an existing original category, and performs no filesystem
+effect. It can preserve unrelated late files/folders without adopting or deleting
+them. Independent retry/abandon inspections retain this inherited guarantee;
+private abandonment validation relaxes only empty-directory/destination-free
+checks. Post-SQL inspection rolls back both attestation and reservation release
+on a late change. Matching export/restore retains history; role/native/full proof,
+unknown format, future/retrograde generation and consistent-but-malformed legacy
+backup controls reject restore. Compiled production IPC rejects injected private
+authority/replay and exposes no proofs.
+
+Retain all legacy engine/crash checks; add separate public production recovery
+and real historical-schema controls. No requirement is retired or newly skipped.
+Read-only Spec/Standards follow-ups found no residual concrete issue in inspected
+recovery, legacy-classification and late-arrival abandonment repairs. Whole-issue
+and platform acceptance remain excluded. Migration inventories/counts/tags, exact
+historical rewind and build/package resources include0029 (30 migrations).
+
+Observed Node22.21.1/macOS arm64: fresh build/typecheck/lint pass; latest affected
+set131 checks:130 pass, one existing skip, zero failure/cancellation. Dedicated
+`test:migrations` on the reviewed frozen source executed907 checks:906 pass, one
+existing skip, zero failure/cancellation. It includes matching restores, prior
+command/discovery/metadata consumers and build/artifact checks. Final focused
+UI/IPC renewal is recorded in the checkpoint. This is intermediate #72 evidence;
+archive/restore effects, native Reveal/files, whole-issue review/full suite and
+distinct macOS/Windows Electron/package/CI acceptance remain outstanding.

@@ -1,3 +1,4 @@
+import {isDeepStrictEqual} from "node:util";
 import {parseFilesystemAuthorization,parseFolderObservation,type FilesystemAuthorization,type VerifiedFolder} from "./filesystem-authorization.js";
 import {sameIdentity,isChildName} from "./discovery.js";
 import {durableOwnershipKey,sameDurableFolder} from "./folder-evidence.js";
@@ -10,9 +11,9 @@ export interface RemovalAuthorization {
   destination:VerifiedFolder|null;
   projects:{id:string;observation:VerifiedFolder}[];
 }
-type RecordProof={id:string;sourceId:string;relativePath:string;durableEvidence:string|null};
+type RecordProof={nativeIdentity:string;id:string;sourceId:string;relativePath:string;durableEvidence:string|null};
 export interface RemovalBinding {
-  source:{id:string;discoveryMode:string|null;durableEvidence:string|null;evidenceGeneration:number};
+  source:{discoveryRevision:number;appliedRootIdentity?:string|null;id:string;discoveryMode:string|null;durableEvidence:string|null;evidenceGeneration:number};
   category:RecordProof;destination:RecordProof|null;members:RecordProof[];
 }
 /** Proofs are role-bound to the original immutable batch, never inferred from a locator. */
@@ -50,4 +51,28 @@ export function parseRemovalAuthorization(value:string|null,binding:RemovalBindi
 export function removalBindingMatchesRow(binding:RemovalBinding & {category:{nativeIdentity:string}}, row:{sourceId:string;categoryId:string;destinationCategoryId:string|null;originalRelativePath:string;requestedRelativePath:string|null;nativeIdentity:string}):boolean {
   return binding.source.id===row.sourceId && binding.category.id===row.categoryId && binding.category.relativePath===row.originalRelativePath &&
     binding.category.nativeIdentity===row.nativeIdentity && (binding.destination?.id??null)===row.destinationCategoryId && (binding.destination?.relativePath??null)===row.requestedRelativePath;
+}
+
+export function removalAttestationMatchesBinding(reviewed:RemovalBinding & {authorization:RemovalAuthorization},original:RemovalBinding & {authorization?:RemovalAuthorization}):boolean {
+  try {
+    const saved=parseRemovalAuthorization(original.authorization?JSON.stringify(original.authorization):null,original);
+    const current=parseRemovalAuthorization(JSON.stringify(reviewed.authorization),reviewed);
+    if(reviewed.source.discoveryRevision<original.source.discoveryRevision)return false;
+    if(!saved && current) {
+      if(Object.hasOwn(original,"authorization") || original.source.durableEvidence!=null || original.category.durableEvidence!=null || original.destination?.durableEvidence!=null || original.members.some(p=>p.durableEvidence!=null) ||
+        !sameIdentity(JSON.parse(original.source.appliedRootIdentity!),current.root.root.mount) || !sameIdentity(JSON.parse(original.category.nativeIdentity),current.category.mount) ||
+        (original.destination===null ? current.destination!==null : !current.destination || !sameIdentity(JSON.parse(original.destination.nativeIdentity),current.destination.mount)) ||
+        original.members.length!==current.projects.length || original.members.some(p=>!current.projects.some(q=>q.id===p.id&&sameIdentity(JSON.parse(p.nativeIdentity),q.observation.mount))))return false;
+      const strip=(value:unknown)=>JSON.parse(JSON.stringify(value, (key,value)=>key==="durableEvidence"?undefined:value));
+      const sourcePolicy=(source:RemovalBinding["source"])=>Object.fromEntries(Object.entries(source).filter(([key])=>!["propertyRevision","categoryPropertyRevision","appliedRootIdentity","durableEvidence","evidenceGeneration","discoveryRevision"].includes(key)));
+      return isDeepStrictEqual(sourcePolicy(reviewed.source),sourcePolicy(original.source)) && isDeepStrictEqual(strip(reviewed.category),strip(original.category)) &&
+        isDeepStrictEqual(strip(reviewed.destination),strip(original.destination)) && isDeepStrictEqual(strip(reviewed.members),strip(original.members));
+    }
+    if(!saved || !current || current.root.generation<saved.root.generation || !sameDurableFolder(saved.root.root.evidence,current.root.root.evidence) ||
+      !sameDurableFolder(saved.category.evidence,current.category.evidence) || (saved.destination===null ? current.destination!==null : !current.destination || !sameDurableFolder(saved.destination.evidence,current.destination.evidence)) ||
+      saved.projects.length!==current.projects.length || saved.projects.some(p=>!current.projects.some(q=>q.id===p.id&&sameDurableFolder(p.observation.evidence,q.observation.evidence))))return false;
+    const sourcePolicy=(source:RemovalBinding["source"])=>Object.fromEntries(Object.entries(source).filter(([key])=>!["propertyRevision","categoryPropertyRevision","appliedRootIdentity","durableEvidence","evidenceGeneration","discoveryRevision"].includes(key)));
+    return isDeepStrictEqual(sourcePolicy(reviewed.source),sourcePolicy(original.source)) && isDeepStrictEqual(reviewed.category,original.category) &&
+      isDeepStrictEqual(reviewed.destination,original.destination) && isDeepStrictEqual(reviewed.members,original.members);
+  }catch{return false;}
 }

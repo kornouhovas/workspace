@@ -47,7 +47,7 @@ export function createProjectCategoryMoveService(db: Database, integration: {
   settled(sourceId: string): void;
 }, filesystem: ProjectFilesystem = nativeProjectFilesystem,
   native: (from: string, to: string) => ProjectRenameFilesystemResult = renameNoReplace, authorizer?:FilesystemAuthorizer) {
-  type Execution = { workspaceId: string; revision: number; original?:FilesystemAuthorization; destination?:FilesystemAuthorization; target?:VerifiedFolder; legacyAttested?:boolean;problem?:ProjectCategoryMoveProblem };
+  type Execution = { workspaceId: string; revision: number; inspectionOnly?:boolean; original?:FilesystemAuthorization; destination?:FilesystemAuthorization; target?:VerifiedFolder; legacyAttested?:boolean;problem?:ProjectCategoryMoveProblem };
   const executionFor = (row: Operation): Execution => ({ workspaceId: row.initiatingWorkspaceId, revision: row.expectedRevision,
     original:parseFilesystemAuthorization(row.originalAuthorization) ?? undefined,destination:parseFilesystemAuthorization(row.destinationAuthorization) ?? undefined,
     target:row.projectEvidence ? parseFolderObservation(JSON.parse(row.projectEvidence)) ?? undefined : undefined });
@@ -113,11 +113,12 @@ export function createProjectCategoryMoveService(db: Database, integration: {
     if(authorizer && (!execution.original || !execution.destination || !execution.target || (!project.durableEvidence && !execution.legacyAttested) ||
       project.durableEvidence && !sameDurableFolder(JSON.parse(project.durableEvidence),execution.target!.evidence)))fail("ownership_uncertain");
     if(authorizer && !sameAuthorizationRoot(execution.original!,execution.destination!))fail("filesystem_changed");
-    if(authorizer) {
+    if(authorizer && !execution.inspectionOnly) {
       const owner=categoryRemovalOwner(db,row);
       if(owner) {
         const parent=db.select().from(schema.categoryRemovalOperations).where(eq(schema.categoryRemovalOperations.operationId,owner)).get()!;
-        const binding=JSON.parse(parent.binding),auth=parseRemovalAuthorization(binding.authorization?JSON.stringify(binding.authorization):null,binding);
+        const attestation=db.select().from(schema.categoryRemovalAttestations).where(eq(schema.categoryRemovalAttestations.operationId,owner)).all().sort((a,b)=>b.sequence-a.sequence)[0];
+        const binding=JSON.parse(attestation?.binding??parent.binding),auth=parseRemovalAuthorization(binding.authorization?JSON.stringify(binding.authorization):null,binding);
         const member=auth?.projects.find(p=>p.id===row.projectId)?.observation;
         const sameProof=(a:VerifiedFolder,b:VerifiedFolder)=>sameDurableFolder(a.evidence,b.evidence)&&sameIdentity(a.mount,b.mount);
         if(!auth || !member || !auth.destination || !sameAuthorizationRoot(auth.root,execution.original!) ||
@@ -341,6 +342,9 @@ export function createProjectCategoryMoveService(db: Database, integration: {
     return execution;
   }
   function inspectRecovery(row: Operation, execution: Execution) {
+    // Read-only inspection cannot mint a batch permit. Actual settlement below
+    // still checks the accepted parent frame, including its fresh attestation.
+    execution={...execution,inspectionOnly:true};
     const preview: ProjectCategoryMoveRecoveryPreview = { workspaceId: execution.workspaceId, sourceId: row.sourceId,
       operation: operationView(row), revision: execution.revision, originalState: "unavailable", destinationState: "unavailable",
       problem: null, actions: [], previewToken: null };

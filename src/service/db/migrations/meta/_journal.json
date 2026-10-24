@@ -204,6 +204,13 @@
       "when": 1791504028000,
       "tag": "0028_category_folder_authorization",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "6",
+      "when": 1791504029000,
+      "tag": "0029_category_removal_attestations",
+      "breakpoints": true
     }
   ]
 }

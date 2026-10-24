@@ -75,12 +75,20 @@ export function readProjectReservations(db: Reader, sourceId: string) {
   });
   const removals = readCategoryRemovalReservations(db, sourceId).flatMap(row => {
     const binding = JSON.parse(row.binding);
-    const authority=binding.authorization ? parseRemovalAuthorization(JSON.stringify(binding.authorization),binding) : null;
-    if(binding.authorization && !authority)throw new Error("Invalid category removal reservation");
-    return [{ ...row, operationKind: "category_removal" as const, projectId: row.categoryId, relativePath: row.originalRelativePath,durableEvidence:authority ? JSON.stringify(authority.category.evidence) : null },
-      ...binding.members.flatMap((p:{id:string;relativePath:string;nativeIdentity:string}) => [p.relativePath, `${row.requestedRelativePath}/${p.relativePath.split("/").at(-1)}`].map(relativePath =>
-        ({ ...row, operationKind: "category_removal" as const, projectId: p.id, relativePath, nativeIdentity: p.nativeIdentity,
-          durableEvidence:authority ? JSON.stringify(authority.projects.find(project=>project.id===p.id)!.observation.evidence) : null })))];
+    const attestations=db.select().from(schema.categoryRemovalAttestations).where(eq(schema.categoryRemovalAttestations.operationId,row.operationId)).orderBy(asc(schema.categoryRemovalAttestations.sequence)).all();
+    const authorities=[binding,...attestations.map(proof=>JSON.parse(proof.binding))].flatMap(b=>{
+      if(!Object.hasOwn(b,"authorization"))return [];
+      const auth=parseRemovalAuthorization(JSON.stringify(b.authorization),b);
+      if(!auth)throw new Error("Invalid category removal reservation");
+      return [auth];
+    });
+    const categoryProofs=authorities.map(auth=>JSON.stringify(auth.category.evidence));
+    return [...(categoryProofs.length?categoryProofs:[null]).map(durableEvidence=>({ ...row,attestations, operationKind: "category_removal" as const, projectId: row.categoryId, relativePath: row.originalRelativePath,durableEvidence })),
+      ...binding.members.flatMap((p:{id:string;relativePath:string;nativeIdentity:string}) => {
+        const proofs=authorities.map(auth=>JSON.stringify(auth.projects.find(project=>project.id===p.id)!.observation.evidence));
+        return [p.relativePath, `${row.requestedRelativePath}/${p.relativePath.split("/").at(-1)}`].flatMap(relativePath=>(proofs.length?proofs:[null]).map(durableEvidence=>
+          ({ ...row,attestations, operationKind: "category_removal" as const, projectId: p.id, relativePath, nativeIdentity: p.nativeIdentity,durableEvidence })));
+      })];
   });
   return [...durableCreations, ...relocations, ...categoryFolders, ...removals];
 }

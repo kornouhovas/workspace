@@ -1,4 +1,4 @@
-import {parseRemovalAuthorization,removalBindingMatchesRow} from "./category-removal-authorization.js";
+import {parseRemovalAuthorization,removalBindingMatchesRow,removalAttestationMatchesBinding} from "./category-removal-authorization.js";
 import {categoryAuthorizationMatchesBinding,parseCategoryFolderAuthorization,type CategoryFolderBindingRow} from "./category-folder-authorization.js";
 import {sameIdentity} from "./discovery.js";
 import {sameAuthorizationRoot,parseFilesystemAuthorization, parseFolderObservation} from "./filesystem-authorization.js";
@@ -212,13 +212,31 @@ function validate(db: Database.Database) {
   if(db.prepare("SELECT 1 FROM sqlite_schema WHERE type='table' AND name='category_removal_operations'").get()) {
     for(const row of db.prepare("SELECT * FROM category_removal_operations").all() as Record<string,unknown>[]) {
       const binding=JSON.parse(row.binding as string);
-      if(!Object.hasOwn(binding,"authorization"))continue;
+      if(!removalBindingMatchesRow(binding,{sourceId:row.source_id as string,categoryId:row.category_id as string,destinationCategoryId:row.destination_category_id as string|null,
+        originalRelativePath:row.original_relative_path as string,requestedRelativePath:row.requested_relative_path as string|null,nativeIdentity:row.native_identity as string}))throw new Error("Contradictory removal binding");
+      if(!Object.hasOwn(binding,"authorization")) {
+        for(const record of [binding.source,binding.category,...(binding.destination?[binding.destination]:[]),...binding.members]) {
+          if(record.durableEvidence!==undefined && record.durableEvidence!==null && (typeof record.durableEvidence!=="string" || !validateEvidence(JSON.parse(record.durableEvidence))))throw new Error("Malformed historical removal evidence");
+        }
+        continue;
+      }
       const auth=parseRemovalAuthorization(JSON.stringify(binding.authorization),binding);
       const source=db.prepare("SELECT evidence_generation FROM sources WHERE id=?").get(row.source_id) as {evidence_generation:number}|undefined;
       if(!auth || !source || auth.root.generation>source.evidence_generation || !removalBindingMatchesRow(binding,{
         sourceId:row.source_id as string,categoryId:row.category_id as string,destinationCategoryId:row.destination_category_id as string|null,
         originalRelativePath:row.original_relative_path as string,requestedRelativePath:row.requested_relative_path as string|null,nativeIdentity:row.native_identity as string,
       }))throw new Error("Invalid category removal authorization");
+    }
+  }
+  if(db.prepare("SELECT 1 FROM sqlite_schema WHERE type='table' AND name='category_removal_attestations'").get()) {
+    const fields=["operationId","sourceId","workspaceId","categoryId","destinationCategoryId","originalRelativePath","requestedRelativePath","nativeIdentity","previewToken","binding"];
+    for(const proof of db.prepare("SELECT * FROM category_removal_attestations").all() as Record<string,string>[]) {
+      const row=db.prepare("SELECT * FROM category_removal_operations WHERE operation_id=?").get(proof.operation_id) as Record<string,unknown>|undefined;
+      const journal=JSON.parse(proof.journal),binding=JSON.parse(proof.binding),auth=parseRemovalAuthorization(JSON.stringify(binding.authorization),binding);
+      const source=row?db.prepare("SELECT evidence_generation FROM sources WHERE id=?").get(row.source_id) as {evidence_generation:number}|undefined:undefined;
+      if(!row || !source || !journal || !["moving","cleanup_intent"].includes(journal.stage) ||
+        fields.some(field=>!Object.hasOwn(journal,field)||journal[field]!==row[field.replace(/[A-Z]/g,letter=>"_"+letter.toLowerCase())]) ||
+        !auth || auth.root.generation>source.evidence_generation || !removalAttestationMatchesBinding(binding,JSON.parse(row.binding as string)))throw new Error("Invalid category removal attestation");
     }
   }
   // These ownership constraints predate their SQL equivalents.
