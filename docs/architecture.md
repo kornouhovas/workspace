@@ -801,7 +801,9 @@ pre-migration snapshots keep their exact schema and matching-version recovery.
 
 ## Immediate folder-first initialization (issue 73)
 
-The desktop client submits `workspace.create` with `initialize: "status"`.
+The folder-first desktop flow explicitly selects `initialize: "status"` on the
+typed client, which submits it with `workspace.create`. Other client callers
+retain the staged setup default.
 For a genuinely new source, creation atomically enrolls the ordinary two-level
 grouped interpretation, a folder-backed Status property, projects/categories and
 a Table grouped by that property. The scanner stops at project folders and retains

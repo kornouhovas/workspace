@@ -297,7 +297,7 @@ function WorkspaceApp() {
     const version = ++dataVersion.current;
     setBusy("create");
     try {
-      const result = await client.createWorkspace("Workspace", path);
+      const result = await client.createWorkspace("Workspace", path, "status");
       if (!result.ok) {
         setFormMessage(errorMessage(result.error.code));
         return;

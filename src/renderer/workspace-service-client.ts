@@ -275,8 +275,8 @@ export class WorkspaceServiceClient {
     return this.api.workspace({ type: "workspace.load" });
   }
 
-  createWorkspace(name: string, rootPath: string): Promise<ServiceResult<WorkspaceCreated>> {
-    return this.api.workspace({ type: "workspace.create", name, rootPath, initialize: "status" });
+  createWorkspace(name: string, rootPath: string, initialize?: "status"): Promise<ServiceResult<WorkspaceCreated>> {
+    return this.api.workspace({ type: "workspace.create", name, rootPath, ...(initialize ? { initialize } : {}) });
   }
 
   activateWorkspace(workspaceId: string): Promise<ServiceResult<ActiveWorkspace>> {

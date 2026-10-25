@@ -453,7 +453,7 @@ test("typed client forwards settings, workspace, activation and picker requests"
   assert.deepEqual(await client.loadSettings(), settings("ru"));
   assert.deepEqual(await client.loadWorkspaces(), ok(emptyLoad()));
   assert.deepEqual(await client.activateWorkspace("id"), ok(active));
-  assert.deepEqual(await client.createWorkspace("Name", "/tmp/root"), ok({ sourceId: active.sourceId, workspaceId: active.workspaceId, viewId: active.viewId, name: active.name, canonicalRoot: active.canonicalRoot }));
+  assert.deepEqual(await client.createWorkspace("Name", "/tmp/root", "status"), ok({ sourceId: active.sourceId, workspaceId: active.workspaceId, viewId: active.viewId, name: active.name, canonicalRoot: active.canonicalRoot }));
   assert.deepEqual(await client.renameWorkspace("id", "New name"), ok({ workspaces: [{ workspaceId: "id", name: "New name" }], activeWorkspace: { ...active, name: "New name" } }));
   assert.deepEqual(await client.removeWorkspace("id"), ok(emptyLoad()));
   assert.deepEqual(await client.pickRoot(), { outcome: "selected", path: "/tmp/root" });

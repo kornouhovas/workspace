@@ -56,3 +56,23 @@ tracked separately, without relabeling the initial failed attempt as passing.
 The review's possible duplication heuristic is retained as a bounded tradeoff:
 fresh initialization has its own atomic creation orchestration, while scanning,
 planning, durable evidence, reservations and enrollment use the existing helpers.
+
+## Broad-run compatibility repairs
+
+The first local full run retained 40 failures and 33 cancellations (3751 passes,
+27 platform skips). Its direct/setup IPC scenarios exposed the typed client's
+new implicit initialization default. A one-scenario production-port reproduction
+failed; making initialization an explicit argument selected only by App's
+folder-first flow restored all 94 backend/rename/category-move IPC checks without
+changing their assertions. Both staged API callers and immediate desktop opening
+now retain their intended semantics.
+
+The same run found a missing common-job exclusion for the new CI selector; the
+existing route guards caught it and the selector/options assertions were adapted.
+The local shared node_modules symlink caused Ladle's documented serving-boundary
+403; it was replaced with a worktree-local dependency copy, without changing app
+or Vite configuration. Several unchanged native fixtures also timed out during
+shutdown in the broad concurrent run. A single original property-editor control
+passed in isolation; this does not establish the historical timeout's cause.
+Original native deadlines and cleanup assertions are retained for focused renewal
+and final/CI verification. Failed broad-run evidence is not acceptance.
