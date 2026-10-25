@@ -1855,3 +1855,12 @@ alias case, `checks: command-safety-archive-alias` selects only
 still selects all eleven files. Artifacts record the actual profile/file inventory;
 a narrow pass does not claim the eleven-file profile ran again. Build prerequisites,
 original failure propagation and separate diagnostic concurrency are retained.
+
+After the focused #72 fixture gate passes, `checks: command-safety-windows`
+renews only Windows latest and Windows2022 in runtime phase: unchanged static/build
+prerequisites, all eight DEV journeys, one package/artifact check, then all eight
+package journeys. It supplies the previously unreached Windows consumers without
+rerunning the completed macOS acceptance or the addressed full-suite step.
+The reusable workflow's `hosts` selection defaults to all three hosts for both
+call and direct dispatch, and unknown selections fail before consumers run.
+Preserve each inherited full/focused receipt's real SHA and each package hash.

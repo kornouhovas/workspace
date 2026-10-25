@@ -3,6 +3,9 @@ name: Durable command safety
 on:
   workflow_call:
     inputs:
+      hosts:
+        type: string
+        default: all
       phase:
         type: string
         default: full
@@ -11,6 +14,10 @@ on:
         default: ''
   workflow_dispatch:
     inputs:
+      hosts:
+        type: choice
+        options: [all, windows]
+        default: all
       phase:
         type: choice
         options: [full, runtime, packaged]
@@ -27,7 +34,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-latest, windows-latest, windows-2022]
+        os: ${{ fromJSON(inputs.hosts == 'windows' && '["windows-latest","windows-2022"]' || '["macos-latest","windows-latest","windows-2022"]') }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 90
     env:
@@ -42,10 +49,12 @@ jobs:
         shell: bash
         env:
           ACCEPTANCE_PHASE: ${{ inputs.phase }}
+          ACCEPTANCE_HOSTS: ${{ inputs.hosts }}
           RENEW_FROM: ${{ inputs.from }}
         run: |
           mkdir -p work/ci-command-safety
           case "$ACCEPTANCE_PHASE" in full|runtime|packaged) ;; *) exit 2 ;; esac
+          case "$ACCEPTANCE_HOSTS" in all|windows) ;; *) exit 2 ;; esac
           args=(dev --list)
           if [[ -n "$RENEW_FROM" ]]; then args+=("--from=$RENEW_FROM"); fi
           node scripts/command-safety-acceptance.mjs "${args[@]}" > work/ci-command-safety/selection.json

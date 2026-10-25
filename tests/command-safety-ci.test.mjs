@@ -11,15 +11,18 @@ import {commandSafetyJourneys} from '../scripts/command-safety-acceptance.mjs';
 test('registered command-safety dispatch isolates its three-host route while ordinary full remains unchanged',()=>{
  const desktop=load(readFileSync('.github/workflows/desktop-ci.yml','utf8')),workflow=load(readFileSync('.github/workflows/command-safety.yml','utf8'));
  assert.ok(Object.keys(desktop.on.workflow_dispatch.inputs).length <= 25);
- for(const choice of ['command-safety','command-safety-runtime','command-safety-packaged']) assert.ok(desktop.on.workflow_dispatch.inputs.checks.options.includes(choice));
+ for(const choice of ['command-safety','command-safety-runtime','command-safety-packaged','command-safety-windows']) assert.ok(desktop.on.workflow_dispatch.inputs.checks.options.includes(choice));
  assert.equal(desktop.jobs['focused-command-safety'].uses,'./.github/workflows/command-safety.yml');
- for(const checks of ['command-safety','command-safety-runtime','command-safety-packaged','full','source-access']) {
+ for(const checks of ['command-safety','command-safety-runtime','command-safety-packaged','command-safety-windows','full','source-access']) {
   const context={github:{event_name:'workflow_dispatch'},inputs:{checks}};
   assert.equal(runInNewContext(desktop.jobs['focused-command-safety'].if.slice(3,-2),context),checks.startsWith('command-safety'));
-  if(checks.startsWith('command-safety')) assert.equal(runInNewContext(desktop.jobs['focused-command-safety'].with.phase.slice(3,-2),context),checks==='command-safety'?'full':checks.slice('command-safety-'.length));
+  if(checks.startsWith('command-safety')) assert.equal(runInNewContext(desktop.jobs['focused-command-safety'].with.phase.slice(3,-2),context),checks==='command-safety'?'full':checks==='command-safety-windows'?'runtime':checks.slice('command-safety-'.length));
+  if(checks.startsWith('command-safety')) assert.equal(runInNewContext(desktop.jobs['focused-command-safety'].with.hosts.slice(3,-2),context),checks==='command-safety-windows'?'windows':'all');
   assert.equal(runInNewContext(desktop.jobs.common.if.slice(3,-2),context),checks==='full');
  }
- const job=workflow.jobs['command-safety'];assert.deepEqual(job.strategy.matrix.os,['macos-latest','windows-latest','windows-2022']);
+ const job=workflow.jobs['command-safety'];
+ assert.equal(workflow.on.workflow_call.inputs.hosts.default,'all');assert.equal(workflow.on.workflow_dispatch.inputs.hosts.default,'all');
+ for(const hosts of ['all','windows']) assert.deepEqual(runInNewContext(job.strategy.matrix.os.slice(3,-2),{inputs:{hosts},fromJSON:JSON.parse}),hosts==='windows'?['windows-latest','windows-2022']:['macos-latest','windows-latest','windows-2022']);
  const suite=job.steps.find(step=>step.name==='Complete current suite'),dev=job.steps.find(step=>step.name==='Development command and native consumers');
  for(const phase of ['full','runtime','packaged']) {
   const context={inputs:{phase}};assert.equal(runInNewContext(suite.if.slice(3,-2),context),phase==='full');assert.equal(runInNewContext(dev.if.slice(3,-2),context),phase!=='packaged');

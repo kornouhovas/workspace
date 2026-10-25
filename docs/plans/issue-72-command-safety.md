@@ -1021,3 +1021,30 @@ macOS27 intermittent failures. The whole delta since that receipt is tests,
 diagnostic workflow selection and documentation; application, migrations, native
 resources, dependencies/lockfile and build/package inputs are unchanged. Windows
 DEV/package/native remains unreached. No integration or issue completion yet.
+
+### Missing Windows runtime route preparation
+
+`432346a7` retains the corrected two-stage archive root-alias cases. Its narrow
+three-host run40165486179 is the remaining fixture gate; Windows runtime dispatch
+must wait for its actual successful receipts. The `command-safety-windows` route
+is prepared to select runtime phase and both Windows hosts only. Existing
+all-host defaults and every DEV/package/native journey remain unchanged; finite
+host validation prevents an unknown selection from reaching consumers. Local103
+routing controls pass, and both review axes find no coverage/default-selection
+defect. No product or build-input change accompanies this route. Acceptance will
+combine explicitly inspected matching-input receipts under the shared policy;
+it will not describe failed original jobs as passing or replay full CI while
+focused acceptance is unresolved.
+
+Narrow run40165486179 at `432346a7` is now green on all three hosts. Inspected
+artifact selection.json names only `durable-archive-location.test.mjs`; each
+actual log passes16/16, zero skipped/cancelled/failed. This completes the addressed
+fixture gate together with the228 inspected matching-input checks on each Windows
+host from `ec5fa54c`; the original failure conclusions are retained. macOS full,
+DEV and package evidence stays at `a5470a9e`. The prepared Windows-only runtime
+route may now run to supply the missing DEV/package/native rows. The complete
+intermediate diff contains only test fixtures, diagnostic/selection workflow
+configuration and documentation; production sources/migrations/native resources,
+dependencies/lockfile, producer scripts and package inputs remain unchanged.
+GitHub CLI metadata temporarily hit TLS timeouts; primary REST/connector reads
+and downloaded artifact contents confirmed the actual gate before dispatch.
