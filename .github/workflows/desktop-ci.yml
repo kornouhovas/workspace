@@ -132,7 +132,7 @@ jobs:
       - run: npm run build
       - name: Original entry controls prefix
         if: ${{ inputs.checks == 'folder-management-diagnostic' }}
-        run: node --import tsx --test --test-name-pattern='role settings entry|role rename explicitly|role action entry|workspace removal entry|role move preparation|workspace rename cancellation|role folder expansion|workspace creation entry|role move completion|role archive completion|role configuration preview|role archive location review' tests/runtime-view-readiness.test.mjs
+        run: node --import tsx --test --test-name-pattern='role settings entry|role rename explicitly|role action entry|workspace removal entry|role move preparation|workspace rename cancellation|role folder expansion|workspace creation entry|role move completion|role archive completion|role configuration preview|role archive location review|role creation reauthors' tests/runtime-view-readiness.test.mjs
       - name: Original role DEV prefix
         if: ${{ inputs.checks == 'folder-management-diagnostic' }}
         run: npm run smoke:folder-roles

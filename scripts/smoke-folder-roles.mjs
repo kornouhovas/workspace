@@ -6,7 +6,7 @@ import {join,resolve} from 'node:path';
 import {_electron} from 'playwright-core';
 import {runtimeSmokeLaunch} from './runtime-executable.mjs';
 import {closeElectron,cleanupOwnedFixture,ownedProcessesStopped} from './runtime-lifecycle.mjs';
-import {openRoleSettingsSection as openSettingsSection,renameRoleProject,reviewRoleArchiveLocation,reviewRoleConfiguration,expandRoleFolder,enterRoleDialog,prepareRoleMove,completeRoleMove,completeRoleArchive,returnRoleWorkspace as returnToWorkspace,setRoleLanguage as setInterfaceLanguage} from './folder-role-driver.mjs';
+import {openRoleSettingsSection as openSettingsSection,renameRoleProject,completeRoleCreation,reviewRoleArchiveLocation,reviewRoleConfiguration,expandRoleFolder,enterRoleDialog,prepareRoleMove,completeRoleMove,completeRoleArchive,returnRoleWorkspace as returnToWorkspace,setRoleLanguage as setInterfaceLanguage} from './folder-role-driver.mjs';
 const root=resolve(import.meta.dirname,'..'),fixture=await realpath(await mkdtemp(join(tmpdir(),'folder-roles-')));
 const source=join(fixture,'Source'),data=join(fixture,'data'),evidence=resolve(process.env.WORKSPACE_SMOKE_EVIDENCE_DIR??'work/issue-74-folder-roles');
 await mkdir(evidence,{recursive:true});
@@ -90,12 +90,20 @@ try{
   for(const language of ['en','ru']) {
     const en=language==='en',name=`Created-${language}`,renamed=`Renamed-${language}`;
     await setInterfaceLanguage(page,language);await returnToWorkspace(page);
-    await page.getByRole('button',{name:en?'Create project folder':'Создать папку проекта',exact:true}).click();
-    let dialog=page.getByRole('dialog',{name:en?'Create project folder':'Создать папку проекта',exact:true});
-    await dialog.getByRole('textbox').fill(name);await dialog.getByRole('combobox').selectOption('Clients');
-    await page.screenshot({path:join(evidence,`${language}-create-role-parent.png`)});
-    await dialog.getByRole('button',{name:en?'Create folder':'Создать папку',exact:true}).click();
-    await dialog.waitFor({state:'detached'});
+    const creationTitle=en?'Create project folder':'Создать папку проекта';
+    const openCreation=async()=>{await page.getByRole('button',{name:creationTitle,exact:true}).and(page.locator(':enabled')).press('Enter');const modal=page.getByRole('dialog',{name:creationTitle,exact:true});await modal.waitFor();return modal;};
+    let dialog=await openCreation();
+    await completeRoleCreation({dialog,name,parent:'Clients',en,reopen:openCreation,
+      capture:()=>page.screenshot({path:join(evidence,`${language}-create-role-parent.png`)}),
+      verifyUnchanged:async()=>{
+        const list=await query({type:'workspace.listProjects',workspaceId:first.workspaceId});assert.ok(['ready','empty'].includes(list.state));
+        assert.ok(list.projectParents.some(parent=>parent.relativePath==='Clients'&&parent.role==='group'));
+        assert.equal([...list.projects,...list.retainedProjects].some(row=>row.relativePath===`Clients/${name}`),false);
+        assert.equal((await stat(join(source,'Clients'))).isDirectory(),true);
+        await assert.rejects(stat(join(source,'Clients',name)),error=>error.code==='ENOENT');
+        const journal=await query({type:'workspace.listProjectCreations',workspaceId:first.workspaceId});
+        assert.equal(journal.operations.filter(op=>op.relativePath===`Clients/${name}`&&!['completed','failed'].includes(op.stage)).length,0);
+      }});
     let created=(await query({type:'workspace.listProjects',workspaceId:first.workspaceId})).projects.find(p=>p.name===name);assert.equal(created.relativePath,`Clients/${name}`);assert.equal(created.categoryId,null);
     const action=(label,projectName=renamed)=>enterRoleDialog(page,{projectId:created.projectId,projectName,label,en});
     dialog=await action(en?'Rename project folder':'Переименовать папку проекта',name);

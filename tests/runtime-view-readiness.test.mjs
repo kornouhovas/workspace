@@ -13,7 +13,7 @@ import { build } from "esbuild";
 import { closeElectron } from "../scripts/runtime-lifecycle.mjs";
 import { usableRuntimeViewProjection } from "../scripts/runtime-view-readiness.mjs";
 import { activateRuntimeView, setRuntimeViewLanguage } from "../scripts/runtime-view-controls.mjs";
-import {openRoleSettingsSection,renameRoleProject,reviewRoleArchiveLocation,reviewRoleConfiguration,expandRoleFolder,enterRoleDialog,prepareRoleMove,completeRoleMove,completeRoleArchive} from "../scripts/folder-role-driver.mjs";
+import {openRoleSettingsSection,renameRoleProject,completeRoleCreation,reviewRoleArchiveLocation,reviewRoleConfiguration,expandRoleFolder,enterRoleDialog,prepareRoleMove,completeRoleMove,completeRoleArchive} from "../scripts/folder-role-driver.mjs";
 import {openSettingsSection} from "../scripts/runtime-settings.mjs";
 import { openArchiveTextEditor } from "../scripts/archive-editor-driver.mjs";
 import { installArchiveEntryTrace } from "../scripts/archive-entry-trace.mjs";
@@ -80,6 +80,23 @@ test('preview timing admits current properties and visible loading before the se
       assert.equal(await page.getByRole('treeitem').textContent(),'preserved.txt');
     } finally {clearTimeout(timer);}
   });
+});
+
+test('role creation reauthors only verified rejected placement and never replays an unknown request',async()=>{
+ await withPage(async page=>{
+  await page.setContent('<div id="host"></div>');
+  await page.evaluate(unavailableText=>{
+   globalThis.creationAttempts=0;globalThis.creationEffects=0;globalThis.creationUnknown=false;globalThis.creationRejectFirst=true;
+   globalThis.openRoleCreation=()=>{const dialog=document.createElement('div');dialog.setAttribute('role','dialog');dialog.innerHTML='<input aria-label="Name"><select aria-label="Parent"><option value="Clients">Clients</option></select><button>Create folder</button><button>Cancel</button>';document.querySelector('#host').append(dialog);dialog.querySelectorAll('button')[1].onclick=()=>dialog.remove();dialog.querySelector('button').onclick=()=>{globalThis.creationAttempts++;if(globalThis.creationAttempts===1&&globalThis.creationRejectFirst){const message=document.createElement(globalThis.creationUnknown?'button':'p');message.textContent=globalThis.creationUnknown?'Check operation status':unavailableText;dialog.append(message);}else{globalThis.creationEffects++;dialog.remove();}};};globalThis.openRoleCreation();
+  },translate('en','creationUnavailable'));
+  let reopens=0,proofs=0;const options={dialog:page.getByRole('dialog'),name:'Created',parent:'Clients',en:true,capture:async()=>{},reopen:async()=>{reopens++;await page.evaluate(()=>globalThis.openRoleCreation());return page.getByRole('dialog');},verifyUnchanged:async()=>{proofs++;assert.equal(await page.evaluate(()=>globalThis.creationEffects),0);}};
+  await completeRoleCreation(options);assert.equal(reopens,1);assert.ok(proofs>=2);assert.deepEqual(await page.evaluate(()=>[globalThis.creationAttempts,globalThis.creationEffects]),[2,1]);
+  await page.evaluate(()=>{globalThis.creationAttempts=0;globalThis.creationEffects=0;globalThis.creationUnknown=true;globalThis.openRoleCreation();});proofs=0;reopens=0;
+  await assert.rejects(completeRoleCreation({...options,dialog:page.getByRole('dialog')}),/Unknown creation/);assert.equal(reopens,0);assert.equal(proofs,1);assert.deepEqual(await page.evaluate(()=>[globalThis.creationAttempts,globalThis.creationEffects]),[1,0]);
+  await page.evaluate(()=>{document.querySelector('#host').replaceChildren();globalThis.creationAttempts=0;globalThis.creationEffects=0;globalThis.creationUnknown=false;globalThis.creationRejectFirst=false;globalThis.openRoleCreation();});reopens=0;proofs=0;let captures=0;
+  await completeRoleCreation({...options,dialog:page.getByRole('dialog'),capture:async()=>{if(++captures===1)await page.evaluate(text=>{const dialog=document.querySelector('[role="dialog"]');dialog.querySelector('button').disabled=true;const message=document.createElement('p');message.textContent=text;dialog.append(message);},translate('en','creationUnavailable'));}});
+  assert.equal(reopens,1);assert.equal(captures,2);assert.deepEqual(await page.evaluate(()=>[globalThis.creationAttempts,globalThis.creationEffects]),[1,1]);
+ });
 });
 
 test('role archive location review acknowledges discarded preview before one separate confirmation',async()=>{

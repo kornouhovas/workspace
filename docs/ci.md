@@ -2220,3 +2220,16 @@ option is unavailable; it still requires proof/reopen and2forms/0commands with
 the correct parent. Local original role/control/lint and both reviews pass.
 Only the role host/mode gate is renewed; management and recovery/outage ledgers
 remain unchanged. No application/build inputs changed or deadlines increased.
+
+
+Ordinary40210892301 atc94cd9c2 stopped in the role package prefix before
+management: RU creation returned the exact source/category unavailable-or-changed
+rejection with no unknown status. Creation now follows the same guarded current-draft
+flow: ready public Group parent, target absent in public records/on disk, no
+unfinished creation journal, exact name/parent before Submit, and fresh proof before
+any rejected-request reopening. Unknown/recoverable outcomes cannot allocate a
+new request. Four drafts and1s gesture handling share the unchanged15s total.
+Controls verify rejected2attempts/1effect, unknown1attempt/0effect/0reopen, and
+pre-Submit invalidation1attempt/1effect after a fresh form. Local role/control,
+71 routing/lint and both review axes pass. Renew only the role13-control/6consumer
+gate; management's Win22package row and Windows recovery/outage tail remain open.

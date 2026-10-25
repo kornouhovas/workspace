@@ -200,3 +200,29 @@ export async function reviewRoleArchiveLocation(page) {
  }
  return confirm;
 }
+
+export async function completeRoleCreation({dialog,name,parent,en,capture,reopen,verifyUnchanged}) {
+ const deadline=Date.now()+15000,left=()=>{const ms=deadline-Date.now();assert.ok(ms>0,'Role creation exceeded15000ms');return ms;};
+ const unavailableText=en?'The source or selected category is unavailable or changed. Refresh and review the configuration.':'Источник или выбранная категория недоступны либо изменились. Обновите и проверьте настройки.';
+ for(let draft=0;draft<4;draft++){
+  const status=dialog.getByRole('button',{name:/^(Check operation status|Проверить состояние операции)$/});
+  assert.equal(await status.count(),0,'Unknown creation cannot allocate a new request');
+  await withDeadline(verifyUnchanged(),left(),'Role creation no-effect proof');
+  const unavailable=dialog.getByText(unavailableText,{exact:true});let submitted=false;
+  try{
+   await dialog.getByRole('textbox').fill(name,{timeout:Math.min(1000,left())});await dialog.getByRole('combobox').selectOption(parent,{timeout:Math.min(1000,left())});
+   await withDeadline(capture(),left(),'Role creation capture');
+   assert.equal(await dialog.getByRole('textbox').inputValue({timeout:left()}),name);
+   assert.equal(await dialog.getByRole('combobox').inputValue({timeout:left()}),parent);
+   await dialog.getByRole('button',{name:en?'Create folder':'Создать папку',exact:true}).and(dialog.locator(':enabled')).press('Enter',{timeout:Math.min(1000,left())});submitted=true;
+  }catch(error){if(!await unavailable.isVisible()||await status.count())throw error;}
+  if(submitted)await Promise.race([dialog.waitFor({state:'hidden',timeout:left()}),unavailable.waitFor({timeout:left()}),status.and(dialog.locator(':enabled')).waitFor({timeout:left()})]);
+  if(!await dialog.isVisible())return;
+  assert.equal(await status.count(),0,'Unknown creation must use its original status and cannot be replayed');
+  await unavailable.waitFor({timeout:left()});
+  await withDeadline(verifyUnchanged(),left(),'Rejected creation no-effect proof');
+  await dialog.getByRole('button',{name:en?'Cancel':'Отмена',exact:true}).press('Enter',{timeout:left()});
+  dialog=await withDeadline(reopen(),left(),'Role creation fresh editor');
+ }
+ throw new Error('Role creation remained rejected after four current drafts');
+}
