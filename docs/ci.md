@@ -1896,3 +1896,12 @@ Submit to first entry. It requires trace mode, records the rate, resets to norma
 and detaches before native dispatch, and retains all original visibility/native/
 cleanup deadlines. Failures to configure/reset tracing or CPU remain failures.
 This stress condition is diagnostic only and never ordinary acceptance.
+
+After the bounded Windows2022 diagnostic comparisons,
+`checks: command-safety-windows-2022` supplies one ordinary runtime renewal on
+Windows2022 only: original prerequisites, all eight DEV journeys, one package and
+artifact check, then all eight packaged journeys. It enables no diagnostic flags
+and the failed creation gate stops later consumers. Preserve the original failure
+and unestablished historical cause; diagnostic successes do not supply ordinary
+acceptance. Reusable/all-host defaults and other host selections stay unchanged.
+A new ordinary failure returns to the failed-Actions diagnosis loop.

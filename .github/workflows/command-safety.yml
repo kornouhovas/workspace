@@ -16,7 +16,7 @@ on:
     inputs:
       hosts:
         type: choice
-        options: [all, windows]
+        options: [all, windows, windows-2022]
         default: all
       phase:
         type: choice
@@ -34,7 +34,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: ${{ fromJSON(inputs.hosts == 'windows' && '["windows-latest","windows-2022"]' || '["macos-latest","windows-latest","windows-2022"]') }}
+        os: ${{ fromJSON(inputs.hosts == 'windows-2022' && '["windows-2022"]' || inputs.hosts == 'windows' && '["windows-latest","windows-2022"]' || '["macos-latest","windows-latest","windows-2022"]') }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 90
     env:
@@ -54,7 +54,7 @@ jobs:
         run: |
           mkdir -p work/ci-command-safety
           case "$ACCEPTANCE_PHASE" in full|runtime|packaged) ;; *) exit 2 ;; esac
-          case "$ACCEPTANCE_HOSTS" in all|windows) ;; *) exit 2 ;; esac
+          case "$ACCEPTANCE_HOSTS" in all|windows|windows-2022) ;; *) exit 2 ;; esac
           args=(dev --list)
           if [[ -n "$RENEW_FROM" ]]; then args+=("--from=$RENEW_FROM"); fi
           node scripts/command-safety-acceptance.mjs "${args[@]}" > work/ci-command-safety/selection.json

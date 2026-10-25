@@ -1128,3 +1128,22 @@ failure, and any retained failure blocks native dispatch. A failed-reset and
 failed-detach regression plus real Electron throttle/reset/trace control pass
 within72 selected checks; lint/docs pass. Both follow-up review axes confirm
 the concrete finding resolved. Original entry failure remains unresolved.
+
+CPU-stress run40169945469 at78278724 succeeded; artifact12590122239 retained
+for inspection. Bounded passive, trace-only and CPU-stress comparisons did not
+reproduce the historical failure. No production/helper repair or cause is claimed.
+Prepare one Windows2022-only ordinary runtime renewal with no diagnostic flags,
+original prerequisites and all eight DEV then packaged journeys, packaging once.
+The failed creation gate must pass normally before its missing tail can proceed.
+Original failures and unknown-cause limitation stay in the ledger; a new failure
+returns to diagnosis, and diagnostic successes cannot substitute for this gate.
+
+CPU artifact12590122239 inspected: all24 samples record rate6, exactly one
+grouped after_commit case, two normal closes and passing bridge/fixture cleanup;
+trace archives are present and no reset/trace error is recorded. This remains
+diagnostic evidence. Ordinary Windows2022 route controls pass70/70; lint/docs
+pass. Both read-only reviewers confirm one-host runtime selection, unchanged
+full DEV/package inventory/defaults and absent diagnostic flags. Spec policy
+review confirms ordinary renewal is appropriate for the missing rows while
+retaining the original failure and unestablished cause; it proves only its actual
+run result and cannot be described as a repair.
