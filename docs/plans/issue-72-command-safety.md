@@ -873,3 +873,53 @@ the original guard; the affected runtime, UI and CI controls pass 243/243. Exist
 preservation and observer-invalidation checks remain. This is a harness-only
 repair; application/build/migrations/dependencies remain unchanged. Actual renewed
 category move and remaining development/package/platform consumers are pending.
+
+### Local package and final runtime evidence ledger
+
+Production sources, migrations, dependencies and build inputs remained unchanged
+through the reviewed test-consumer repairs. Runtime candidate `a2cae38c` is clean;
+the following report-only commit is not described as separately platform-tested.
+The local arm64 directory package was built once from the verified build, and
+`check:artifact -- release` passed. After all package attempts, its 353-entry
+inventory, source diff and every script digest still matched the initial manifest.
+`app.asar` SHA256 is
+`6cdebc1ec141b3466477b100068c4096baaecd1113e21035354be702a0c19ec9`.
+The full inventory/provenance receipt is
+`work/issue-72-candidate-release-provenance.json`.
+
+| Journey | Development evidence | Unchanged package evidence |
+| --- | --- | --- |
+| Source enrollment | Passed on `ff7a8490`, eight EN/RU/theme/size captures | Passed on `a2cae38c` |
+| Creation/recovery/native | All eight direct/grouped checkpoints and 16 normal closes passed on unchanged `ff7a8490` renewal | All eight checkpoints and normal closes passed on `a2cae38c` |
+| Rename | Failed normal close; later cases unreached | Both original and one bounded standalone renewal failed normal close; not accepted |
+| Category move | Corrected unavailable guard passed, later failed normal close | Complete grouped EN/RU moves, refusals, interruptions, recovery and restart passed |
+| Category folders/removal | 16 checks, normal close and cleanup passed | Passed |
+| Archive/restore | 12 checks, normal close and cleanup passed | Passed |
+| File Open/Reveal | Strict standalone renewal passed on `a2cae38c` | Passed |
+| Backup/recovery | Two checks, normal close and cleanup passed | Passed |
+
+The packaged five-journey tail is correctly reported `partial`, not complete.
+The standalone rename renewal retained 43 successful normal closes before its
+44th close failed at the final grouped recovery. Forced owned-process cleanup and
+fixture cleanup passed, but they do not satisfy the missing normal-close gate.
+These reproducible intermittent failures occur in development, the actual
+package and raw UI fixtures. The bounded diagnostic did not establish their
+cause; neither application shutdown nor deadlines/scheduling was changed.
+No repeated success-only retry loop was used to accept rename.
+
+File journeys in both modes passed real nested navigation and 16 EN/RU/theme/size
+captures, missing-file feedback, exact Unicode selection in Finder, external
+application Open and byte preservation, followed by normal shutdown and owned
+cleanup. Source enrollment, category operations and archive/recovery retain their
+separate appearance/behavior receipts. These local receipts are macOS27 arm64;
+they do not establish Windows or actual remount acceptance.
+
+Actual artifacts/logs are retained under `work/issue-72-candidate-*` and
+`/tmp/issue72-*`. The failed full suite and runtime attempts remain explicit;
+passing unaffected checks are reused only across the documented test/docs-only
+delta. Remaining acceptance: rename normal close, development category-move
+normal close, required supported-host CI/native evidence and conditional
+integration. Push/Actions authorization remains required by AGENTS.md; no push,
+Actions dispatch, integration, publication or release has occurred. The next
+external action is the reviewed task-branch push and three-host `command-safety`
+workflow, with unresolved failures preserved for the mandatory diagnosis loop.
