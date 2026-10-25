@@ -163,14 +163,14 @@ test('role move completion reopens only a verified stale rejection and rejects u
 
 test('role archive completion re-reviews only idle no-effect state and checks unknown outcomes without replay',async()=>{
  await withPage(async page=>{
-  async function fixture(unknown){
+  async function fixture(unknown,late=false){
    await page.setContent(`<div role="dialog"><button>Review archive</button><button>${translate('en','archiveCancel')}</button></div>`);
-   await page.evaluate(unknown=>{
+   await page.evaluate(({unknown,late})=>{
     globalThis.archiveApplies=0;globalThis.archiveChecks=0;globalThis.archiveEffects=0;
     const dialog=document.querySelector('[role="dialog"]'),review=dialog.querySelector('button');
     const completed=()=>{const message=document.createElement('p');message.textContent='Folder operation completed.';dialog.append(message);};
-    review.onclick=()=>{const hint=document.createElement('p');hint.textContent='The project keeps its identity and ordinary properties. The archive mirrors its original relative location. Nothing is overwritten.';dialog.append(hint);const apply=document.createElement('button');apply.textContent='Archive project';dialog.append(apply);apply.onclick=()=>{globalThis.archiveApplies++;apply.remove();hint.remove();if(unknown){const check=document.createElement('button');check.textContent='Check saved outcome';check.onclick=()=>{globalThis.archiveChecks++;globalThis.archiveEffects++;completed();};dialog.append(check);}else if(globalThis.archiveApplies>1){globalThis.archiveEffects++;completed();}};};
-   },unknown);
+    review.onclick=()=>{const hint=document.createElement('p');hint.textContent='The project keeps its identity and ordinary properties. The archive mirrors its original relative location. Nothing is overwritten.';dialog.append(hint);const apply=document.createElement('button');apply.textContent='Archive project';dialog.append(apply);apply.onclick=()=>{globalThis.archiveApplies++;apply.remove();hint.remove();if(late){dialog.querySelectorAll('button')[1].remove();setTimeout(()=>{globalThis.archiveEffects++;completed();},1300);}else if(unknown){const check=document.createElement('button');check.textContent='Check saved outcome';check.onclick=()=>{globalThis.archiveChecks++;globalThis.archiveEffects++;completed();};dialog.append(check);}else if(globalThis.archiveApplies>1){globalThis.archiveEffects++;completed();}};};
+   },{unknown,late});
   }
   await fixture(false);let proofs=0;
   await completeRoleArchive({dialog:page.getByRole('dialog'),en:true,restore:false,verifyUnchanged:async()=>{proofs++;assert.equal(await page.evaluate(()=>globalThis.archiveEffects),0);}});
@@ -178,6 +178,9 @@ test('role archive completion re-reviews only idle no-effect state and checks un
   await fixture(true);proofs=0;
   await completeRoleArchive({dialog:page.getByRole('dialog'),en:true,restore:false,verifyUnchanged:async()=>{proofs++;assert.equal(await page.evaluate(()=>globalThis.archiveEffects),0);}});
   assert.equal(proofs,1);assert.deepEqual(await page.evaluate(()=>[globalThis.archiveApplies,globalThis.archiveChecks,globalThis.archiveEffects]),[1,1,1]);
+  await fixture(false,true);proofs=0;
+  await completeRoleArchive({dialog:page.getByRole('dialog'),en:true,restore:false,verifyUnchanged:async()=>{proofs++;assert.equal(await page.evaluate(()=>globalThis.archiveEffects),0);}});
+  assert.equal(proofs,1);assert.deepEqual(await page.evaluate(()=>[globalThis.archiveApplies,globalThis.archiveChecks,globalThis.archiveEffects]),[1,0,1]);
  });
 });
 

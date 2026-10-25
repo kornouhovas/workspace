@@ -63,7 +63,7 @@ jobs:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-folder-roles/dev
           WORKSPACE_SMOKE_MODE: dev
       - name: Retained unconfigured workspace management
-        if: ${{ !inputs.focused && !inputs.runtime_only }}
+        if: ${{ !inputs.focused && !inputs.runtime_only && !inputs.entry_repair }}
         run: npm run smoke:workspaces
         env:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-folder-roles/management-dev
@@ -86,7 +86,7 @@ jobs:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-folder-roles/release
           WORKSPACE_SMOKE_MODE: release
       - name: Packaged retained setup
-        if: ${{ !inputs.focused && !inputs.runtime_only }}
+        if: ${{ !inputs.focused && !inputs.runtime_only && !inputs.entry_repair }}
         run: npm run smoke:workspaces
         env:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-folder-roles/management-release

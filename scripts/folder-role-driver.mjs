@@ -157,15 +157,19 @@ export async function completeRoleArchive({dialog,en,restore,verifyUnchanged}) {
   await dialog.getByText(en?'The project keeps its identity and ordinary properties. The archive mirrors its original relative location. Nothing is overwritten.':'Идентификатор проекта и обычные свойства сохраняются. Архив повторяет исходное относительное размещение. Перезаписи нет.',{exact:true}).waitFor({timeout:left()});
   await confirm.and(dialog.locator(':enabled')).press('Enter',{timeout:left()});
   try{await completed.waitFor({timeout:Math.min(1000,left())});return;}catch(error){if(Date.now()>=deadline)throw error;}
-  if(await status.count()){
-   await Promise.race([completed.waitFor({timeout:left()}),status.and(dialog.locator(':enabled')).waitFor({timeout:left()})]);
-   if(await completed.isVisible())return;
+  const idle=dialog.getByRole('button',{name:/^(Cancel archive review|Отменить просмотр архива)$/}).and(dialog.locator(':enabled'));
+  const outcome=await Promise.race([
+   completed.waitFor({timeout:left()}).then(()=>'completed'),
+   status.and(dialog.locator(':enabled')).waitFor({timeout:left()}).then(()=>'status'),
+   idle.waitFor({timeout:left()}).then(()=>'idle'),
+  ]);
+  if(outcome==='completed'||await completed.isVisible())return;
+  if(outcome==='status'){
    await status.and(dialog.locator(':enabled')).press('Enter',{timeout:left()});
    await completed.waitFor({timeout:left()});return;
   }
-  // Enabled Cancel proves the UI is no longer pending/unknown; journal and
-  // physical proof in the next iteration also exclude an accepted operation.
-  await dialog.getByRole('button',{name:/^(Cancel archive review|Отменить просмотр архива)$/}).and(dialog.locator(':enabled')).waitFor({timeout:left()});
+  // Only confirmed idle UI reaches another no-effect proof. A late completion
+  // remains an observed terminal result instead of waiting for a removed Cancel.
  }
  throw new Error('Role archive review did not complete within four current drafts');
 }

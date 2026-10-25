@@ -467,3 +467,20 @@ inspection. No other host/full suite/DEV consumers are selected. Both use the
 existing package and artifact prerequisites. All ordinary management failures now
 collect bounded read-only DOM/public/session failureState after the error; no
 happy-path observation/action is added and the original failure remains primary.
+
+
+Ordinary Windows2022 package renewal40207318581 atbae3e96a stopped in the
+role prefix, before management. Its failure capture proves archive completion
+and Done were already present: the helper had left its first1s wait, then waited
+for an obsolete Cancel. This is a reproduced acknowledgment defect, not an unknown
+filesystem result. Post-submit observation now races completed, enabled read-only
+status and enabled idle Cancel under the original15s total. Late completion is
+accepted without new Apply. The real Electron1300ms control verifies1Apply,
+0status,1effect; stale/unknown proof controls remain. Local role, routing and lint pass.
+
+The role-entry gate now renews only the affected role DEV/package journey and
+10 controls on all3hosts. Management is excluded from this gate: navigation and
+management happy-path inputs are unchanged by the archive helper repair, so the
+11passing c9 driver rows retain their evidence as applicable; all6 role rows are
+renewed, and Windows2022 management package still requires its dedicated ordinary
+route after role success. No diagnostic result supplies acceptance.
