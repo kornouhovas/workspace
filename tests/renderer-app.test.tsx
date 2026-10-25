@@ -3048,11 +3048,13 @@ test("EN/RU production Refresh retains metadata and recovery when an existing de
       const text = (await findAction("button",{ name: `${translate(language, "editTextValue")}: Project / Notes` }));
       assert.equal(text.textContent, "  Retained exact Text 📝  ");
       await userEvent.click((await findAction("button",{ name: `${translate(language, "recoveryLocate")}: Project` })));
-      await screen.findByText(translate(language,"folderActionSafetyUpdate"));
+      await screen.findByText(language === 'en' ? 'Folder actions require verified folder associations. Retained properties and saved views remain available.' : 'Для действий с папками требуется подтверждённая связь. Сохранённые свойства и представления доступны.' );
       const reviewLabel=language==='en'?'Review folder association':'Проверить связь с папкой';
       await userEvent.click(await findAction('button',{name:reviewLabel}));
-      const conflict=await screen.findByRole('checkbox',{name:/Conflict.*Conflict/}) as HTMLInputElement;
-      assert.equal(conflict.disabled,true);assert.equal(screen.queryByRole('radio',{name:/Conflict\/Project/}),null);
+      const mapping = await screen.findByText('Conflict → Conflict');
+      const conflict = mapping.closest('label')!.querySelector('input[type="checkbox"]') as HTMLInputElement;
+      assert.equal(conflict.disabled,true);
+      assert.equal(mapping.closest('.source-association')!.querySelectorAll('input[type="radio"], [role="radio"]').length, 0);
       const confirmLabel=language==='en'?'Confirm association':'Подтвердить связь';
       assert.equal((screen.getByRole('button',{name:confirmLabel}) as HTMLButtonElement).disabled,true);
       // A real later observation discards the source-level binding preview.

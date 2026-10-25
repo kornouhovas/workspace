@@ -1826,9 +1826,10 @@ package inventory and app.asar hash; package changes fail acceptance. No release
 is published and no live data is used. Windows Server receipts remain distinct
 from Windows 11 desktop acceptance.
 
-`command_safety_phase: runtime` omits the full suite; `packaged` also omits the
-development journeys. Use these only under the existing evidence-reuse policy.
-`command_safety_from` selects a named tail of the driver inventory. Excluded and
+`checks: command-safety-runtime` omits the full suite;
+`checks: command-safety-packaged` also omits the development journeys. Use these only under the existing evidence-reuse policy.
+The reusable workflow input `from`, or the local driver option `--from`,
+selects a named tail of the driver inventory. Excluded and
 unreached journeys remain explicit; a successful tail reports `partial` rather
 than complete acceptance. Earlier passing results retain their actual SHA,
 package hash and source provenance. A failure stops later consumers and preserves

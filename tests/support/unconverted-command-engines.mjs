@@ -98,3 +98,16 @@ export function openUnconvertedEngineFixture(path, migrations, workspaceFilesyst
     close(){if(databaseClosed)return;databaseClosed=true;closeEngines();listeners.clear();sqlite.close();application.close();}};
   return {application,engines:engineService,callbacks};
 }
+
+/** Retain historical command/recovery scenarios through the current native consumer.
+ * Native authorization comes from the real application; no proof is fabricated.
+ */
+export function openLegacyCommandTransportFixture(...args) {
+  const {application, engines} = openUnconvertedEngineFixture(...args);
+  return {...engines,
+    revealProject: (...input) => application.revealProject(...input),
+    projectFileCommand: (...input) => application.projectFileCommand(...input),
+    handleQuery: input => input?.type === 'workspace.listProjectFiles'
+      ? application.handleQuery(input) : engines.handleQuery(input),
+  };
+}

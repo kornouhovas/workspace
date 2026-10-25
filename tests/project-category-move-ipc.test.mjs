@@ -9,8 +9,8 @@ import test from "node:test";
 import { build } from "esbuild";
 import { BackendController } from "../dist/desktop/backend-controller.mjs";
 import { startServiceProcess } from "../dist/service/entry.cjs";
-import { openUnconvertedEngineFixture } from "./support/unconverted-command-engines.mjs";
-const openEngineService = (...args) => openUnconvertedEngineFixture(...args).engines;
+import { openLegacyCommandTransportFixture } from "./support/unconverted-command-engines.mjs";
+const openEngineService = (...args) => openLegacyCommandTransportFixture(...args);
 import { renameNoReplace } from "../dist/service/project-rename-filesystem.mjs";
 import { createNativeProjectReveal } from "../src/desktop/project-reveal.ts";
 

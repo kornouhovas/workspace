@@ -10,8 +10,8 @@ import Database from "better-sqlite3";
 import { build } from "esbuild";
 import { BackendController } from "../dist/desktop/backend-controller.mjs";
 import { startServiceProcess } from "../dist/service/entry.cjs";
-import { openUnconvertedEngineFixture } from "./support/unconverted-command-engines.mjs";
-const openEngineService = (...args) => openUnconvertedEngineFixture(...args).engines;
+import { openLegacyCommandTransportFixture } from "./support/unconverted-command-engines.mjs";
+const openEngineService = (...args) => openLegacyCommandTransportFixture(...args);
 import { renameNoReplace } from "../dist/service/project-rename-filesystem.mjs";
 import { createNativeProjectReveal } from "../src/desktop/project-reveal.ts";
 
@@ -281,7 +281,12 @@ for (const mode of ["direct", "grouped"]) {
         assert.deepEqual(f.journal(), before);
         assert.equal((await f.client.recoverProjectRename(f.sibling.workspaceId, input.operationId, oldReview.previewToken, oldReview.actions[0])).error.code, "stale_preview");
         assert.deepEqual(f.journal(), before);
-        assert.equal((await f.client.revealProject(f.one.workspaceId, f.project.projectId)).value.problem, "unresolved");
+        const nativeCount = f.nativeTargets.length;
+        // The current native consumer observes the absent original before it
+        // checks reservations; both placements must refuse without OS dispatch.
+        assert.equal((await f.client.revealProject(f.one.workspaceId, f.project.projectId)).value.problem,
+          boundary === "unfinished-destination" ? "missing" : "unresolved");
+        assert.equal(f.nativeTargets.length, nativeCount);
         const review = (await f.client.previewProjectRenameRecovery(f.sibling.workspaceId, input.operationId)).value;
         const action = boundary === "unfinished-original" ? "retry_original" : "complete_destination";
         assert.ok(review.actions.includes(action));

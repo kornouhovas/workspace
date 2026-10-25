@@ -797,3 +797,46 @@ Lint/docs217/diff pass. Independent Standards and Spec inspections found no
 concrete orchestration, scope or false-acceptance defect. Windows Server receipts
 remain separate from Windows 11 and documented human acceptance. Next: frozen
 migration renewal, the final full suite and local unchanged-package consumers.
+
+## Frozen candidate verification and test-consumer renewal
+
+Candidate `dedb297b` completed fresh migration renewal: 1,003 tests,
+1,002 passed and one existing skip. Its one full suite completed 3,835 tests:
+3,772 passed, 23 failed, 13 cancelled and 27 skipped. The failed full receipt is
+retained at `/tmp/issue72-candidate-full1.txt`; it is not described as passing.
+The subsequent delta changes CI/test consumers and this report only; production
+source, migrations, dependencies and application build inputs are unchanged.
+Passing unaffected full-suite/migration evidence is reused under the shared CI
+policy, with these affected renewals:
+
+- Retain the 25-input manual dispatch limit. Three `checks` choices select full,
+  runtime and packaged phases; the reusable workflow/local driver retains named
+  tails. Updated exact route inventory and isolation controls pass 102/102.
+- Adapt retained historical rename/move transport fixtures to obtain native
+  authority from the actual converted application while preserving their legacy
+  command/recovery engines. No proof is fabricated or backfilled. The original
+  strict production controller remains unchanged. The three-file renewal passed
+  55/57; its two remaining expectations assumed reservation feedback preceded a
+  physically missing original. Renewed rename IPC passes 21/21, now retaining an
+  explicit no-native-dispatch assertion for both placements. Category IPC and
+  all Electron checkpoint failure/timeout/cleanup controls passed in that receipt.
+  Independent native/controller/legacy Reveal controls pass 164/164.
+- Adapt the conflicting-category App case to the current verified-association
+  message. Happy DOM accessible-name queries stall on the compound mapping label;
+  exact visible mapping text selects its checkbox, while the absence check covers
+  every native/explicit radio in that panel. Disabled mapping/confirmation,
+  retained identity/text, source invalidation and both languages remain checked.
+  The focused actual-service App case passes 1/1.
+- Raw Electron fixtures intermittently fail their unchanged 10-second normal
+  close bound after observing app quit/node exit. Their forced owned-process
+  cleanup is confirmed, but this does not count as normal close acceptance.
+  A five-file sequential renewal passed 82/83, including all original failed
+  close scenarios; the new failing asynchronous-folder-selection close passed
+  its strict focused renewal 1/1. An unchanged minimal fixture closed normally
+  12/12 times. No application shutdown cause is established; no timeout or
+  scheduling rule is weakened. The intermittent reliability limitation remains
+  explicit pending actual development/package/platform consumers.
+
+Both independent Standards and Spec follow-ups found no concrete defect in the
+CI/test-only repair boundary. No push, Actions run, package acceptance or Windows
+acceptance is claimed by these renewals.
