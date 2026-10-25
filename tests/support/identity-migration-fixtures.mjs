@@ -1,6 +1,6 @@
 /** Exact additive migration expectations; legacy authority is deliberately absent. */
 export function withIdentityMigrationDefaults(table, rows) {
-  return rows.map(row => table === 'sources' ? {durable_evidence:null,evidence_generation:0,...row}
+  return rows.map(row => table === 'category_properties' ? {default_label:'category',...row} : table === 'sources' ? {durable_evidence:null,evidence_generation:0,...row}
     : table==='project_creation_operations' ? {authorization:null,destination_evidence:null,...row} : table==='category_folder_operations' ? {authorization:null,destination_evidence:null,...row} : table==='project_rename_operations' ? {authorization:null,project_evidence:null,...row} : table==='project_category_move_operations' ? {original_authorization:null,destination_authorization:null,project_evidence:null,...row} : ['projects','categories'].includes(table) ? {durable_evidence:null,...row} : table==='project_archives' ? {authorization:null,...row} : row);
 }
 export function projectMetadataRecords(result) {
@@ -90,6 +90,7 @@ export function assertHistoricalPublicMetadata(assert,application,fixture){
 
 /** Existing rewind fixtures must remove every additive 0025 object before replay. */
 export function rewindCreationAuthorization(db) {
+  db.exec("ALTER TABLE category_properties DROP COLUMN default_label");
  db.exec(`DROP TRIGGER archived_folder_association_insert; DROP TRIGGER archived_folder_association_update; DROP TRIGGER archived_folder_association_delete;
  DROP TABLE archived_folder_associations;
  DROP TRIGGER archive_parent_durable_evidence;

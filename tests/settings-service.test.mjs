@@ -26,7 +26,7 @@ test("fresh database migrates and starts with English", () => {
     service.close();
 
     const sqlite = new Database(databasePath);
-    assert.equal(sqlite.prepare("SELECT count(*) AS count FROM __drizzle_migrations").get().count, 32);
+    assert.equal(sqlite.prepare("SELECT count(*) AS count FROM __drizzle_migrations").get().count, 33);
     sqlite.close();
   });
 });
@@ -73,7 +73,7 @@ test("existing settings database upgrades to workspaces without losing its langu
     upgraded.close();
 
     const sqlite = new Database(databasePath);
-    assert.equal(sqlite.prepare("SELECT count(*) AS count FROM __drizzle_migrations").get().count, 32);
+    assert.equal(sqlite.prepare("SELECT count(*) AS count FROM __drizzle_migrations").get().count, 33);
     assert.equal(sqlite.prepare("SELECT count(*) AS count FROM workspaces").get().count, 1);
     sqlite.close();
   });

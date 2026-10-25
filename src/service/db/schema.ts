@@ -64,6 +64,7 @@ export const categories = sqliteTable("categories", {
 }, (table) => [unique("categories_id_source").on(table.id, table.sourceId)]);
 
 export const categoryProperties = sqliteTable("category_properties", {
+  defaultLabel: text("default_label", { enum: ["category", "status"] }).notNull().default("category"),
   id: text("id").primaryKey(),
   sourceId: text("source_id").notNull().unique().references(() => sources.id),
   name: text("name"),

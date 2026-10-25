@@ -225,6 +225,13 @@
       "when": 1791504030001,
       "tag": "0031_archived_folder_associations",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "6",
+      "when": 1791504030002,
+      "tag": "0032_category_default_label",
+      "breakpoints": true
     }
   ]
 }

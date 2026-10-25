@@ -28,7 +28,7 @@ for(const stale of [null,'root','category','destination','project','cleanup_miss
   const binding={source,category,destination,members:cleanupMissing?[]:[project]},previewToken=randomUUID();
   sql.prepare("INSERT INTO sources(id,canonical_root,discovery_mode,discovery_revision,property_revision,applied_root_identity) VALUES(?,?,'grouped',1,1,?)").run(sourceId,root,source.appliedRootIdentity);
   sql.prepare("INSERT INTO workspaces(id,name,source_id,position) VALUES(?,'Legacy',?,0)").run(workspaceId,sourceId);sql.prepare("INSERT INTO views(id,workspace_id,name,kind) VALUES(?,?,'Table','table')").run(randomUUID(),workspaceId);
-  sql.prepare("INSERT INTO category_properties VALUES(?,?,'Category')").run(randomUUID(),sourceId);
+  sql.prepare("INSERT INTO category_properties (id,source_id,name) VALUES(?,?,'Category')").run(randomUUID(),sourceId);
   sql.prepare("INSERT INTO categories(id,source_id,relative_path,native_identity,association_state) VALUES(?,?,'Category',?,'active')").run(categoryId,sourceId,category.nativeIdentity);
   sql.prepare("INSERT INTO categories(id,source_id,relative_path,native_identity,association_state) VALUES(?,?,'Destination',?,'active')").run(destinationId,sourceId,destination.nativeIdentity);
   if(!cleanupMissing)sql.prepare("INSERT INTO projects(id,source_id,relative_path,native_identity,category_id,association_state) VALUES(?,?,'Category/Project',?,?,'active')").run(projectId,sourceId,project.nativeIdentity,categoryId);

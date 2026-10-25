@@ -3821,7 +3821,8 @@ test("EN/RU choosing a fresh folder opens its status-grouped projects without se
     mkdirSync(join(root, "Projects", "draw"), { recursive: true });
     const service = openSettingsService(join(directory, "data", "workspace.sqlite"));
     try {
-      mockApi({ language, picker: async () => ({ outcome: "selected", path: root }) });
+      const api = mockApi({ language, picker: async () => ({ outcome: "selected", path: root }) });
+      service.workspaces.subscribe(api.emitChange);
       window.workspace.workspace = (async (input: WorkspaceRequest) => {
         const queried = service.handleQuery(input);
         return queried.ok || queried.error.code !== "invalid_input" ? queried : service.handleCommand(input);
@@ -3831,8 +3832,22 @@ test("EN/RU choosing a fresh folder opens its status-grouped projects without se
       await screen.findByRole("cell", { name: "cpp" });
       assert.ok(screen.getByRole("cell", { name: "draw" }));
       assert.equal(document.querySelector("#workspace-title")?.textContent, "Workspace");
+      assert.ok(screen.getAllByRole("columnheader", { name: language === "ru" ? "Статус" : "Status" }).length > 0);
       assert.equal(screen.queryByText(translate(language, "setupOffer")), null);
       assert.equal(screen.queryByRole("button", { name: translate(language, "setupLater") }), null);
+      const loaded = service.workspaces.load();
+      assert.ok(loaded.ok && loaded.value.activeWorkspace);
+      if (!loaded.ok || !loaded.value.activeWorkspace) throw new Error("Missing created workspace");
+      const active = loaded.value.activeWorkspace;
+      const listed = service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId: active.workspaceId });
+      assert.ok(listed.ok && listed.value.categoryProperty);
+      if (!listed.ok || !listed.value.categoryProperty) throw new Error("Missing category property");
+      await act(async () => {
+        const renamed = service.workspaces.renameCategoryProperty({ type: "workspace.renameCategoryProperty", workspaceId: active.workspaceId,
+          propertyId: listed.value.categoryProperty!.propertyId, name: "  My Status  " });
+        assert.equal(renamed.ok, true);
+      });
+      await waitFor(() => assert.ok(screen.getAllByRole("columnheader", { name: "My Status" }).length > 0));
     } finally { cleanup(); service.close(); rmSync(directory, { recursive: true, force: true }); }
   }
 });

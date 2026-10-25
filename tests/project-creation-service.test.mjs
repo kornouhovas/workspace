@@ -66,7 +66,7 @@ function fixture(mode, run, legacy = false) {
       .run(categoryId, sourceId, identity(join(root, "Category")), mode === "direct" ? 1 : 0);
     // Seed a retained category label through a valid prior grouped interpretation.
     if (mode === "direct") sql.prepare("UPDATE sources SET discovery_mode = 'grouped' WHERE id = ?").run(sourceId);
-    sql.prepare("INSERT INTO category_properties VALUES (?, ?, '  Authored category  ')").run(randomUUID(), sourceId);
+    sql.prepare("INSERT INTO category_properties (id,source_id,name) VALUES (?, ?, '  Authored category  ')").run(randomUUID(), sourceId);
     if (mode === "direct") sql.prepare("UPDATE sources SET discovery_mode = 'direct' WHERE id = ?").run(sourceId);
     const propertyId = randomUUID();
     sql.prepare("INSERT INTO property_definitions VALUES (?, ?, '  Notes  ', 'text', 0)").run(propertyId, sourceId);

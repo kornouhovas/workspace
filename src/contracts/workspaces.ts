@@ -161,6 +161,8 @@ export interface CategorySummary {
   relativePath: string;
 }
 export interface CategoryProperty {
+  /** Omission preserves the legacy Category default. Authored names take precedence. */
+  defaultLabel?: "status";
   propertyId: string;
   sourceId: string;
   name: string | null;

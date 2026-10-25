@@ -24,7 +24,8 @@ test('opening a fresh root immediately discovers status projects and persists gr
     assert.equal(readFileSync(join(root,'Projects','draw','keep.txt'),'utf8'),'User project bytes');
     assert.deepEqual(projects.projects.map(p=>p.relativePath).sort(),['Archive/cpp','Projects/draw']);
     assert.deepEqual(projects.categories.map(c=>c.relativePath).sort(),['Archive','Empty','Projects']);
-    assert.equal(projects.categoryProperty.name,'Status');
+    assert.equal(projects.categoryProperty.name,null);
+    assert.equal(projects.categoryProperty.defaultLabel,'status');
     const grouping={type:'workspace.getViewGrouping',workspaceId:created.workspaceId,viewId:created.viewId};
     assert.equal(value(app.handleQuery(grouping)).config.propertyId,projects.categoryProperty.propertyId);
     assert.equal(value(app.handleQuery({type:'workspace.listSources'})).sources[0].archiveRelativePath,null);
@@ -105,5 +106,40 @@ for (const failure of ['unsupported','changed']) test(`${failure} evidence rolls
     assert.deepEqual(value(app.handleQuery({type:'workspace.load'})),{workspaces:[],activeWorkspace:null});
     assert.deepEqual(value(app.handleQuery({type:'workspace.listSources'})).sources,[]);
     assert.deepEqual(events,[]);
+  } finally {app.close();rmSync(directory,{recursive:true,force:true});}
+});
+
+test('upgrade preserves legacy null and authored category names without selecting the Status default', async () => {
+  const {default:Database}=await import('better-sqlite3');
+  const {drizzle}=await import('drizzle-orm/better-sqlite3');
+  const {migrate}=await import('drizzle-orm/better-sqlite3/migrator');
+  const {cpSync,mkdirSync,readFileSync,writeFileSync,realpathSync}=await import('node:fs');
+  const directory=mkdtempSync(join(tmpdir(),'immediate-label-upgrade-'));
+  const database=join(directory,'workspace.sqlite'),migrations=join(directory,'migrations');
+  cpSync(join(process.cwd(),'src/service/db/migrations'),migrations,{recursive:true});
+  const journalPath=join(migrations,'meta','_journal.json');
+  const journal=JSON.parse(readFileSync(journalPath,'utf8'));
+  journal.entries=journal.entries.slice(0,32);writeFileSync(journalPath,JSON.stringify(journal));
+  const sqlite=new Database(database);
+  const saved=[];
+  try {
+    migrate(drizzle(sqlite),{migrationsFolder:migrations});
+    sqlite.prepare("INSERT INTO settings(key,value) VALUES('language','en')").run();
+    for (const [index,name] of [null,'  Authored Status  '].entries()) {
+      const root=join(directory,`Root${index}`);mkdirSync(root);
+      const sourceId=crypto.randomUUID(),propertyId=crypto.randomUUID();
+      sqlite.prepare("INSERT INTO sources(id,canonical_root,discovery_mode) VALUES(?,?,'grouped')").run(sourceId,realpathSync.native(root));
+      sqlite.prepare('INSERT INTO category_properties(id,source_id,name) VALUES(?,?,?)').run(propertyId,sourceId,name);
+      saved.push({root,sourceId,propertyId,name});
+    }
+  } finally {sqlite.close();}
+  const app=openSettingsService(database);
+  try {
+    for (const previous of saved) {
+      const workspace=value(app.handleCommand({type:'workspace.create',name:'Workspace',rootPath:previous.root,initialize:'status'}));
+      assert.equal(workspace.sourceId,previous.sourceId);
+      assert.deepEqual(value(app.handleQuery({type:'workspace.listProjects',workspaceId:workspace.workspaceId})).categoryProperty,
+        {propertyId:previous.propertyId,sourceId:previous.sourceId,name:previous.name});
+    }
   } finally {app.close();rmSync(directory,{recursive:true,force:true});}
 });

@@ -50,6 +50,7 @@ try {
   checks.push({cancellationCreatesNothing:true,immediateProjects:true,ordinaryArchive:true,defaultGrouping:true});
   for (const language of ['en','ru']) {
     await setInterfaceLanguage(page,language);
+    await page.getByRole('columnheader',{name:language==='ru'?'Статус':'Status',exact:true}).first().waitFor();
     for (const theme of ['light','dark']) {
       await openSettingsSection(page,'appearance');
       await page.getByRole('radio',{name:theme==='light'?/^(Light|Светлая)$/:/^(Dark|Тёмная)$/}).click();

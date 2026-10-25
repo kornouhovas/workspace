@@ -846,7 +846,7 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
     db.update(schema.sources).set({ discoveryMode: "grouped", discoveryRevision: 1,
       appliedRootIdentity: JSON.stringify(initial.snapshot.root.identity) }).where(eq(schema.sources.id, source.id)).run();
     const propertyId = randomUUID();
-    db.insert(schema.categoryProperties).values({ id: propertyId, sourceId: source.id, name: "Status" }).run();
+    db.insert(schema.categoryProperties).values({ id: propertyId, sourceId: source.id, name: null, defaultLabel: "status" }).run();
     const categories = new Map<string, string>();
     for (const row of planned.categories.additions) {
       const id = randomUUID();
@@ -941,7 +941,7 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
         categoryId: row.id, relativePath: row.relativePath, name: row.relativePath,
         ...(presentations.find(p => p.categoryId === row.id) ? { presentation: (() => { const p = presentations.find(p => p.categoryId === row.id)!; return { categoryId: row.id, color: p.color, hidden: p.hidden, position: p.position }; })() } : {}),
       })).sort((a, b) => (a.presentation?.position ?? Number.MAX_SAFE_INTEGER) - (b.presentation?.position ?? Number.MAX_SAFE_INTEGER) || (a.relativePath < b.relativePath ? -1 : a.relativePath > b.relativePath ? 1 : 0)),
-      categoryProperty: mode === "grouped" && property ? { propertyId: property.id, sourceId: property.sourceId, name: property.name } : null,
+      categoryProperty: mode === "grouped" && property ? { propertyId: property.id, sourceId: property.sourceId, name: property.name, ...(property.defaultLabel === "status" ? { defaultLabel: "status" as const } : {}) } : null,
       categoryPropertyRevision: source.categoryPropertyRevision,
       state, projects: active, retainedProjects, retainedCount: retainedProjects.length };
   }

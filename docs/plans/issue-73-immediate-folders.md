@@ -33,3 +33,26 @@ file bytes and owned-process cleanup. Inspected EN light 1440 and RU dark 1024
 captures show the expected grouped Table with no initial setup wizard. Other
 appearance captures remain in the local evidence directory. Full suite, parallel
 standards/spec review and three-host dev/package CI are the next acceptance gates.
+
+## Review repair: localized default label
+
+Both independent review axes identified the generated English Status label in RU.
+A failing RU header assertion reproduced it. Migration0032 now preserves legacy
+Category defaults and authored names while recording a separate Status default for
+fresh sources. Headers, grouping and filters use one shared localized name helper;
+a later authored rename remains exact. The public UI regression verifies Статус
+and an authored rename, and the service regression upgrades a real prior schema
+with null and authored category labels without changing their public properties.
+
+Inherited migration count/latest-tag/package inventories and positional category
+fixture inserts are adapted to the additive column; the shared historical-row
+expectations add only default_label=category, and rewind fixtures remove that
+column before replay. Their original data, rejection and identity assertions are
+retained. The immediate-opening suite is included in test:migrations. The first
+migration run exposed outdated count/rewind fixtures; 43 focused original/repair
+checks then passed. The complete migration run and final full-suite result remain
+tracked separately, without relabeling the initial failed attempt as passing.
+
+The review's possible duplication heuristic is retained as a bounded tradeoff:
+fresh initialization has its own atomic creation orchestration, while scanning,
+planning, durable evidence, reservations and enrollment use the existing helpers.

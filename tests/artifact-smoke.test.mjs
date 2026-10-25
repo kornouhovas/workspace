@@ -49,6 +49,7 @@ const packagedFiles = [
     "dist/service/db/migrations/0029_category_removal_attestations.sql",
     "dist/service/db/migrations/0030_archive_authorization.sql",
     "dist/service/db/migrations/0031_archived_folder_associations.sql",
+    "dist/service/db/migrations/0032_category_default_label.sql",
   "dist/service/db/migrations/meta/_journal.json",
 ];
 

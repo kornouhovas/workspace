@@ -400,7 +400,7 @@ test("actual populated 0000–0006 upgrade preserves authored data, selection, I
       sql.prepare("INSERT INTO active_workspace VALUES ('active', ?, ?)").run(siblingId, siblingViewId);
       if (mode === "grouped") {
         sql.prepare("INSERT INTO categories (id, source_id, relative_path, native_identity, association_state) VALUES (?, ?, 'Category', ?, 'active')").run(categoryId, sourceId, identity(join(root, "Category")));
-        sql.prepare("INSERT INTO category_properties VALUES (?, ?, ?)").run(categoryPropertyId, sourceId, "  Authored category  ");
+        sql.prepare("INSERT INTO category_properties (id,source_id,name) VALUES (?, ?, ?)").run(categoryPropertyId, sourceId, "  Authored category  ");
       }
       sql.prepare("INSERT INTO projects (id, source_id, relative_path, native_identity, association_state, category_id) VALUES (?, ?, ?, ?, 'active', ?)").run(projectId, sourceId, relativePath, identity(join(root, relativePath)), mode === "grouped" ? categoryId : null);
       sql.prepare("INSERT INTO property_definitions VALUES (?, ?, '  Notes  ', 'text', 0)").run(propertyId, sourceId);
@@ -412,7 +412,7 @@ test("actual populated 0000–0006 upgrade preserves authored data, selection, I
         try {
           assert.deepEqual(databaseInventory(inspected).filter(([table]) => !["workspace_sessions", "workspace_view_selection", "__drizzle_migrations", "project_creation_operations", "project_creation_attestations", "project_rename_attestations", "project_category_move_attestations", "category_folder_attestations", "category_removal_attestations", "project_archive_attestations", "archived_folder_associations", "project_rename_operations", "project_category_move_operations", "category_folder_operations", "category_presentation", "category_removal_operations", "category_removal_attempts", "project_archives", "project_archive_operations", "number_property_values", "date_property_values", "select_options", "select_property_values", "select_option_visibility", "multi_select_property_values"].includes(table)), before.map(([table, rows]) =>
             [table, withIdentityMigrationDefaults(table,rows).map((row) => table === "projects" || table === "categories" ? { ...row, mode_inactive: 0 } : table === "views" ? { ...row, position: 0, filter_config: '{"search":"","rules":[]}', grouping_config: '{"propertyId":null,"settings":[]}', board_config: '{"widths":[],"properties":[],"wrap":true}', table_config: '{"columns":[],"rowOrder":[]}' } : row)]));
-          assert.equal(inspected.prepare("SELECT COUNT(*) AS count FROM __drizzle_migrations").get().count, 32);
+          assert.equal(inspected.prepare("SELECT COUNT(*) AS count FROM __drizzle_migrations").get().count, 33);
           assert.equal(inspected.prepare("SELECT COUNT(*) AS count FROM workspace_sessions").get().count, 2);
           assert.deepEqual(inspected.prepare("SELECT * FROM project_creation_operations").all(), []);
           assert.deepEqual(inspected.prepare("SELECT * FROM project_rename_operations").all(), []);

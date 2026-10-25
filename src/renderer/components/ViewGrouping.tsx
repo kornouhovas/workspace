@@ -5,7 +5,7 @@ import type { CategoryProperty } from "../../contracts/workspaces.js";
 import type { Language } from "../../contracts/settings.js";
 import type { PropertySnapshot } from "../../contracts/text-properties.js";
 import { WorkspaceServiceClient } from "../workspace-service-client.js";
-import { translate, type TranslationKey } from "../localization.js";
+import { categoryPropertyName, translate, type TranslationKey } from "../localization.js";
 import { StatusMessage } from "./bb-foundation.js";
 interface Props {
     client: WorkspaceServiceClient;
@@ -31,7 +31,7 @@ function GroupingContent({ client, workspaceId, viewId, language, snapshot, cate
         if (element?.isConnected && !element.matches(":disabled") && document.activeElement === document.body) element.focus();
     }, [pending, loading]);
     const version = useRef(0), saving = useRef(false), reloadAfterSave = useRef(false);
-    const properties = [{ id: "name", name: t("projectName") }, ...(snapshot?.definitions.map(p => ({ id: p.propertyId, name: p.name })) ?? []), ...(categoryProperty ? [{ id: categoryProperty.propertyId, name: categoryProperty.name ?? t("discoveryCategory") }] : [])];
+    const properties = [{ id: "name", name: t("projectName") }, ...(snapshot?.definitions.map(p => ({ id: p.propertyId, name: p.name })) ?? []), ...(categoryProperty ? [{ id: categoryProperty.propertyId, name: categoryPropertyName(categoryProperty, language) }] : [])];
     const load = async () => {
         const request = ++version.current;
         setLoading(true);

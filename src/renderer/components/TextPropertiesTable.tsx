@@ -21,7 +21,7 @@ import type { Language } from "../../contracts/settings.js";
 import type { ProjectSummary, ProjectAssociationSummary, CategoryProperty, CategoryPropertySnapshot, CategorySummary } from "../../contracts/workspaces.js";
 import type { TextPropertySnapshot, TextPropertyDefinition } from "../../contracts/text-properties.js";
 import { WorkspaceServiceClient } from "../workspace-service-client.js";
-import { translate, type TranslationKey } from "../localization.js";
+import { categoryPropertyName, translate, type TranslationKey } from "../localization.js";
 import { CategoryPropertyHeader, type CategoryLabelDraft } from "./CategoryPropertyHeader.js";
 import { ProjectRevealButton } from "./ProjectRevealButton.js";
 import { SelectOptionsEditor } from "./SelectOptionsEditor.js";
@@ -196,7 +196,7 @@ function TextPropertiesContent({ sourceAvailable = true, detail, onPreview, view
   const boardState = useBoardLayout(client, workspaceId, layout === "board" ? viewId : undefined);
   const layoutTrigger = useRef<HTMLButtonElement>(null);
   const tableState = useTableLayout(client, workspaceId, layout === "table" ? viewId : undefined);
-  const fields = [{propertyId: "name", name: t("projectName"), text: false}, ...(categoryProperty ? [{propertyId:categoryProperty.propertyId, name:categoryProperty.name ?? t("discoveryCategory"), text:false}] : []), ...(snapshot?.definitions.map(p => ({propertyId:p.propertyId, name:p.name, text:p.propertyType === "text"})) ?? [])];
+  const fields = [{propertyId: "name", name: t("projectName"), text: false}, ...(categoryProperty ? [{propertyId:categoryProperty.propertyId, name:categoryPropertyName(categoryProperty, language), text:false}] : []), ...(snapshot?.definitions.map(p => ({propertyId:p.propertyId, name:p.name, text:p.propertyType === "text"})) ?? [])];
   const columns = tableColumns(tableState.config, fields);
   const projectById = new Map([...projects, ...retainedProjects].map(p => [p.projectId,p]));
   const retainedById = new Map(retainedProjects.map(p => [p.projectId, p]));
@@ -281,7 +281,7 @@ function TextPropertiesContent({ sourceAvailable = true, detail, onPreview, view
     preservedDraft={categoryDrafts.current.get(categoryProperty.propertyId)} onDraftChange={draft => {
       if (draft) categoryDrafts.current.set(categoryProperty.propertyId, draft); else categoryDrafts.current.delete(categoryProperty.propertyId);
     }} onCommitted={onCategoryPropertyCommitted} language={language} disabled={disabled || (minimumDiscoveryRevision !== undefined && minimumDiscoveryRevision.current > discoveryRevision)}/>
-    : <span className="property-authored">{categoryProperty.name ?? t("discoveryCategory")}</span>);
+    : <span className="property-authored">{categoryPropertyName(categoryProperty, language)}</span>);
   const propertyTools = <div className="property-context-controls">{propertyControl()}{categoryHeader}
     {snapshot?.definitions.map(property => <span key={property.propertyId} className="property-control-item"><span className="property-authored">{property.name}</span>{propertyControl(property)}</span>)}
   </div>;
@@ -358,7 +358,7 @@ function TextPropertiesContent({ sourceAvailable = true, detail, onPreview, view
   const Header = layout === "board" ? "div" : "th";
   const Cell = layout === "board" ? "div" : "td";
   const headers = presentCells(<><Header data-column-id="name" className="board-field-placeholder">{t("projectName")}</Header>
-        {categoryProperty && <Header data-column-id={categoryProperty.propertyId} key={categoryProperty.propertyId} aria-label={categoryProperty.name ?? t("discoveryCategory")}>
+        {categoryProperty && <Header data-column-id={categoryProperty.propertyId} key={categoryProperty.propertyId} aria-label={categoryPropertyName(categoryProperty, language)}>
           {categoryHeader}
         </Header>}
         {snapshot?.definitions.map((property) => <Header data-column-id={property.propertyId} key={property.propertyId}>
@@ -405,7 +405,7 @@ function TextPropertiesContent({ sourceAvailable = true, detail, onPreview, view
             <button type="button" className="workspace-button workspace-button--secondary" disabled={disabled || locateDisabled}
               aria-label={`${t("recoveryLocate")}: ${project.name}`} onClick={(event) => onLocate(retained, event.currentTarget)}>{t("recoveryLocate")}</button>}
         </Cell>
-        {categoryProperty && <Cell data-column-id={categoryProperty.propertyId} data-label={categoryProperty.name ?? t("discoveryCategory")} key={categoryProperty.propertyId} className="category-cell" data-color={categories.find(category => category.categoryId === project.categoryId)?.presentation?.color ?? "default"}>{layout === "board" ? <span className="board-category-value">{retained?.categoryName ?? categories.find((category) => category.categoryId === project.categoryId)?.name}</span> : retained?.categoryName ?? categories.find((category) => category.categoryId === project.categoryId)?.name}
+        {categoryProperty && <Cell data-column-id={categoryProperty.propertyId} data-label={categoryPropertyName(categoryProperty, language)} key={categoryProperty.propertyId} className="category-cell" data-color={categories.find(category => category.categoryId === project.categoryId)?.presentation?.color ?? "default"}>{layout === "board" ? <span className="board-category-value">{retained?.categoryName ?? categories.find((category) => category.categoryId === project.categoryId)?.name}</span> : retained?.categoryName ?? categories.find((category) => category.categoryId === project.categoryId)?.name}
 
         </Cell>}
         {snapshot?.definitions.map((property) => <Cell data-column-id={property.propertyId} key={property.propertyId} data-label={property.name} data-custom-property={detail || undefined}>

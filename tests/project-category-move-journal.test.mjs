@@ -56,7 +56,7 @@ function fixture(run, legacy = false) {
     for (const [id, name] of [[categoryId, "Original category"], [destinationId, "Destination"]])
       sql.prepare("INSERT INTO categories (id, source_id, relative_path, native_identity, association_state) VALUES (?, ?, ?, ?, 'active')")
         .run(id, sourceId, name, identity(join(root, name)));
-    sql.prepare("INSERT INTO category_properties VALUES (?, ?, 'Category')").run(randomUUID(), sourceId);
+    sql.prepare("INSERT INTO category_properties (id,source_id,name) VALUES (?, ?, 'Category')").run(randomUUID(), sourceId);
     const addProject = (name, id = randomUUID()) => {
       sql.prepare("INSERT INTO projects (id, source_id, relative_path, native_identity, association_state, category_id) VALUES (?, ?, ?, ?, 'active', ?)")
         .run(id, sourceId, `Original category/${name}`, identity(join(root, "Original category", name)), categoryId);
@@ -145,7 +145,7 @@ test("populated 0000–0009 upgrade and reopen retain creation/rename receipts, 
     const after = records(f.sql);
     for (const [table, rows] of Object.entries(before)) if (table !== "__drizzle_migrations") assert.deepEqual(after[table], withIdentityMigrationDefaults(table, table === "views" ? rows.map(row => ({ ...row, position: 0, filter_config: '{"search":"","rules":[]}', grouping_config: '{"propertyId":null,"settings":[]}', board_config: '{"widths":[],"properties":[],"wrap":true}', table_config: '{"columns":[],"rowOrder":[]}' })) : rows), table);
     assert.deepEqual(after.__drizzle_migrations.slice(0, 10), before.__drizzle_migrations);
-    assert.equal(after.__drizzle_migrations.length, 32); assert.deepEqual(after.project_category_move_operations, []);
+    assert.equal(after.__drizzle_migrations.length, 33); assert.deepEqual(after.project_category_move_operations, []);
     assert.deepEqual(f.sql.pragma("foreign_key_check"), []);
     assert.deepEqual(fs.readFileSync(join(f.root, "Original category", "Original", "sentinel")), Buffer.from([0, 255, 42]));
   }

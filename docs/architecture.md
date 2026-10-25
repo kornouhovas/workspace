@@ -818,3 +818,9 @@ Table, without changing sibling views. The low-level creation command without
 fixtures. Folder-first desktop creation uses immediate initialization; it requires
 neither a name form nor initial preview/Apply. Later interpretation changes still
 use the existing reviewed source settings.
+
+Migration0032 adds category_properties.default_label with legacy default `category`.
+Fresh folder-first sources choose `status` with a null authored name. Renderer
+headers, filters and grouping localize that default as Status/Статус; an authored
+rename takes precedence and retains its exact spelling across language changes.
+No legacy label, identity, archive or project is rewritten by this migration.

@@ -364,7 +364,7 @@ test("migration 0012 preserves populated 0011 data, presentation and receipts ac
     const reopened = openEngineService(oldPath, undefined, undefined, observer), sql = new Database(oldPath);
     try {
       for (const table of tables) assert.deepEqual(sql.prepare(`SELECT * FROM ${table} ORDER BY 1`).all(), withIdentityMigrationDefaults(table,snapshot[table].map(row=>Object.fromEntries(Object.entries(row).filter(([key])=>!["durable_evidence","evidence_generation"].includes(key))))), table);
-      assert.equal(sql.prepare("SELECT count(*) AS n FROM __drizzle_migrations").get().n, 32);
+      assert.equal(sql.prepare("SELECT count(*) AS n FROM __drizzle_migrations").get().n, 33);
       assert.deepEqual(sql.prepare("SELECT * FROM category_removal_operations").all(), []);
       assert.deepEqual(sql.prepare("SELECT * FROM category_removal_attempts").all(), []);
       assert.deepEqual(sql.pragma("foreign_key_check"), []);

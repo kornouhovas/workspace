@@ -4,7 +4,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import type { Language } from "../../contracts/settings.js";
 import type { CategoryProperty, CategoryPropertySnapshot } from "../../contracts/workspaces.js";
 import { WorkspaceServiceClient } from "../workspace-service-client.js";
-import { translate, type TranslationKey } from "../localization.js";
+import { categoryPropertyName, translate, type TranslationKey } from "../localization.js";
 import { StatusMessage } from "./bb-foundation.js";
 
 export interface CategoryLabelDraft { name: string; originalRevision: number }
@@ -26,7 +26,7 @@ interface Props {
 }
 export function CategoryPropertyHeader({ client, workspaceId, sourceId, property, revision, minimumRevision, onCommitted, language, disabled, preservedDraft, onDraftChange, discoveryRevision = 0, minimumDiscoveryRevision }: Props) {
   const t = (key: TranslationKey) => translate(language, key);
-  const name = property.name ?? t("discoveryCategory");
+  const name = categoryPropertyName(property, language);
   const [draft, setDraft] = useState<string | null>(preservedDraft?.name ?? null);
   const [pending, setPending] = useState(false);
   const [message, setMessage] = useState<"categoryPropertyValidation" | "categoryPropertySaveError" | "categoryPropertySaved" | "categoryPropertyNewerChange" | null>(null);

@@ -28,7 +28,7 @@ for(const kind of ['creation','rename','category_move'])for(const attack of [nul
   sql.prepare("INSERT INTO workspaces (id,name,source_id,position) VALUES (?,'Legacy',?,0)").run(workspaceId,sourceId);
   sql.prepare("INSERT INTO views (id,workspace_id,name,kind) VALUES (?,?,'Table','table')").run(randomUUID(),workspaceId);
   sql.prepare("INSERT INTO categories (id,source_id,relative_path,native_identity,association_state) VALUES (?,?,'Category',?,'active')").run(categoryId,sourceId,parentIdentity);
-  sql.prepare("INSERT INTO category_properties VALUES (?,?,'Folder category')").run(randomUUID(),sourceId);
+  sql.prepare("INSERT INTO category_properties (id,source_id,name) VALUES (?,?,'Folder category')").run(randomUUID(),sourceId);
   if(kind==='category_move') {
    mkdirSync(join(root,'Destination'));
    sql.prepare("INSERT INTO categories (id,source_id,relative_path,native_identity,association_state) VALUES (?,?,'Destination',?,'active')").run(destinationId,sourceId,identity(join(root,'Destination')));

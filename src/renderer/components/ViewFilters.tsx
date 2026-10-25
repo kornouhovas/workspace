@@ -9,7 +9,7 @@ import type { Language } from "../../contracts/settings.js";
 import type { PropertySnapshot } from "../../contracts/text-properties.js";
 import type { CategoryProperty, CategorySummary } from "../../contracts/workspaces.js";
 import { WorkspaceServiceClient } from "../workspace-service-client.js";
-import { translate, type TranslationKey } from "../localization.js";
+import { categoryPropertyName, translate, type TranslationKey } from "../localization.js";
 import { StatusMessage } from "./bb-foundation.js";
 
 interface Props {
@@ -37,7 +37,7 @@ function FilterContent({ showEmpty = true, client, workspaceId, viewId, archived
   const groupResults = useRef(onGroups); groupResults.current = onGroups;
   const properties: { id: string; name: string; type: FilterType }[] = [
     { id: "name", name: t("projectName"), type: "name" },
-    ...(categoryProperty ? [{ id: categoryProperty.propertyId, name: categoryProperty.name ?? t("discoveryCategory"), type: "category" as const }] : []),
+    ...(categoryProperty ? [{ id: categoryProperty.propertyId, name: categoryPropertyName(categoryProperty, language), type: "category" as const }] : []),
     ...(snapshot?.definitions.map(p => ({ id: p.propertyId, name: p.name, type: p.propertyType })) ?? []),
   ];
   const latestProjection = useRef(projection); latestProjection.current = projection;

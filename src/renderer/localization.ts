@@ -1,6 +1,8 @@
+import type { CategoryProperty } from "../contracts/workspaces.js";
 import type { Language } from "../contracts/settings.js";
 
 const english = {
+  folderStatus: "Status",
   addProperty: "Add property",
   propertyType: "Property type",
   propertyTypeText: "Text", propertyTypeNumber: "Number", propertyTypeDate: "Date", propertyTypeSelect: "Single Select", propertyTypeMultiSelect: "MultiSelect",
@@ -717,6 +719,7 @@ const english = {
 } as const;
 
 const russian: Record<keyof typeof english, string> = {
+  folderStatus: "Статус",
   addProperty: "Добавить свойство",
   propertyType: "Тип свойства",
   propertyTypeText: "Текст", propertyTypeNumber: "Число", propertyTypeDate: "Дата", propertyTypeSelect: "Single Select", propertyTypeMultiSelect: "MultiSelect",
@@ -1433,4 +1436,9 @@ export type TranslationKey = keyof typeof english;
 
 export function translate(language: Language, key: TranslationKey): string {
   return language === "ru" ? russian[key] : english[key];
+}
+
+/** A generated default follows UI language; an authored rename remains exact. */
+export function categoryPropertyName(property: CategoryProperty, language: Language): string {
+  return property.name ?? translate(language, property.defaultLabel === "status" ? "folderStatus" : "discoveryCategory");
 }
