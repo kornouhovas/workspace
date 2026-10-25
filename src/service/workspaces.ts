@@ -1,3 +1,4 @@
+import { nestedStatus } from "./folder-roles.js";
 import { roleParentPlacement, validFolderRoles, validRolePath, folderRole, scanRoleSource, savedFolderRoles, scanConfiguredSource, planRoleDiscovery } from "./folder-roles.js";
 import {createFilesystemAuthorization} from "./filesystem-authorization.js";
 import { createWorkspacePublisher } from "./workspace-publication.js";
@@ -1004,6 +1005,7 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
       })] : []} : {}),
       categories: categories.filter((row) => mode === "grouped" && !row.modeInactive && row.associationState === "active" &&
         (displayed ? displayed.categories.some(category => category.categoryId === row.id) : !planned || planned.categories.retained.find((observed) => observed.id === row.id)?.associationState === "active")).map((row) => ({
+        ...(source.folderRoles && nestedStatus(row.relativePath, savedFolderRoles(source)!, mode!) ? {statusMoveUnavailable: "nested_status" as const} : {}),
         categoryId: row.id, relativePath: row.relativePath, name: source.folderRoles ? row.relativePath.split("/").at(-1)! : row.relativePath,
         ...(presentations.find(p => p.categoryId === row.id) ? { presentation: (() => { const p = presentations.find(p => p.categoryId === row.id)!; return { categoryId: row.id, color: p.color, hidden: p.hidden, position: p.position }; })() } : {}),
       })).sort((a, b) => (a.presentation?.position ?? Number.MAX_SAFE_INTEGER) - (b.presentation?.position ?? Number.MAX_SAFE_INTEGER) || (a.relativePath < b.relativePath ? -1 : a.relativePath > b.relativePath ? 1 : 0)),

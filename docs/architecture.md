@@ -869,3 +869,22 @@ Fresh folder-first sources choose `status` with a null authored name. Renderer
 headers, filters and grouping localize that default as Status/Статус; an authored
 rename takes precedence and retains its exact spelling across language changes.
 No legacy label, identity, archive or project is rewritten by this migration.
+
+
+## Safe folder-role status assignment (issue 75)
+
+The project status cell opens the existing journaled move controller in status
+mode. Category UUIDs select the destination; full relative paths distinguish
+same-name folders. Status mode and Table/Board assignment reject No status,
+statuses under another status, inactive historical statuses and foreign ownership.
+Their projects remain visible. The service derives these restrictions from current
+source roles and validates durable/current-mount evidence before the existing
+no-replace effect. A move retains basename, project UUID, metadata, contents and
+rebased descendant role overrides. No new schema or native primitive is introduced.
+
+The owner-approved #74 explicit parent-folder operation remains a separate action:
+it deliberately selects a source-contained root/group/status parent and is not a
+status assignment. Its existing safety, review and recovery contract is retained.
+Pending/lost outcomes keep the original operation binding; dismissal never cancels
+an accepted effect or replays it. Read-only status and explicit fresh interrupted
+operation recovery remain shared with the existing move controller.

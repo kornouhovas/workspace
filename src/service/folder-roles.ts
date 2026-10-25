@@ -29,6 +29,11 @@ export function roleParentPlacement(path: string, roles: FolderRoleOverride[], m
   }
   return {allowed:true,categoryPath};
 }
+/** A status below any other status is visible, but is not an assignment destination. */
+export function nestedStatus(path: string, roles: FolderRoleOverride[], mode: DiscoveryMode): boolean {
+  const parent = path.split("/").slice(0, -1).join("/");
+  return roleParentPlacement(parent, roles, mode).categoryPath !== null;
+}
 export function rolePlacement(path: string, roles: FolderRoleOverride[], mode: DiscoveryMode) {
   const parent=roleParentPlacement(path.split("/").slice(0,-1).join("/"),roles,mode);
   return {recognized:parent.allowed&&folderRole(path,roles,mode)==="project",categoryPath:parent.categoryPath};

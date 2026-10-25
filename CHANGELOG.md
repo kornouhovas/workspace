@@ -14,6 +14,10 @@ User-facing changes are maintained in English. The first target release is 0.1.0
 
 ### Added
 
+- Edit project status with path-disambiguated physical destinations and assign
+  Table/Board status groups safely. No status, nested statuses and retained
+  historical groups remain visible with unavailable destination explanations.
+
 - Manage saved Table/Board views through keyboard-accessible tabs and contextual
   actions, with independent duplication and final-view protection. Find projects
   through toolbar search and a typed-filter popover with saved per-view settings.

@@ -160,6 +160,7 @@ export type WorkspaceApplyDiscoveryCommand = {
 };
 export type WorkspaceListProjectsQuery = { type: "workspace.listProjects"; workspaceId: string; observed?: true };
 export interface CategorySummary {
+  statusMoveUnavailable?: "nested_status";
   presentation?: import("./category-options.js").CategoryPresentation;
   categoryId: string;
   name: string;

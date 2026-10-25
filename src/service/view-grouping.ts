@@ -1,3 +1,4 @@
+import { nestedStatus, folderRole, savedFolderRoles } from "./folder-roles.js";
 import { eq } from "drizzle-orm";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import { defaultGroupSettings, groupKey, isViewGroupingConfig, isViewGroupingRequest, type ScalarGroupValue, type ViewGroup, type ViewGroupingConfig, type ViewGroupingSnapshot } from "../contracts/view-grouping.js";
@@ -83,10 +84,11 @@ export function projectGroups(db: Database, sourceId: string, config: ViewGroupi
     const id = config.propertyId, setting = config.settings.find(s => s.propertyId === id) ?? defaultGroupSettings(id);
     const type = id === "name" ? "name" : values.definitions.find(p => p.propertyId === id)?.propertyType ?? "category";
     const categoryRows = type === "category" ? db.select().from(schema.categories).where(eq(schema.categories.sourceId, sourceId)).all() : [];
-    const roleSource = type === "category" && db.select().from(schema.sources).where(eq(schema.sources.id,sourceId)).get()?.folderRoles;
+    const source = type === "category" ? db.select().from(schema.sources).where(eq(schema.sources.id,sourceId)).get() : undefined;
+    const roles = source?.folderRoles ? savedFolderRoles(source) : null;
     const referencedCategories = new Set(projects.map(p => p.categoryId));
     const categoryOptions = categoryRows.filter(c => (!c.modeInactive && c.associationState === "active") || referencedCategories.has(c.id))
-        .map(c => ({ optionId: c.id, name: roleSource ? c.relativePath.split("/").at(-1)! : c.relativePath, position: 0 })).sort((a, b) => a.name < b.name ? -1 : a.name > b.name ? 1 : a.optionId < b.optionId ? -1 : 1);
+        .map(c => ({ optionId: c.id, name: c.relativePath, position: 0 })).sort((a, b) => a.name < b.name ? -1 : a.name > b.name ? 1 : a.optionId < b.optionId ? -1 : 1);
     const selection = type === "single_select" || type === "multi_select";
     const options = selection ? (values.selectOptions ?? []).filter(o => o.propertyId === id).sort((a, b) => a.position - b.position || (a.optionId < b.optionId ? -1 : 1)) : categoryOptions;
     const optionOrder = new Map(options.map((option, index) => [option.optionId, index]));
@@ -141,6 +143,13 @@ export function projectGroups(db: Database, sourceId: string, config: ViewGroupi
         const result = typeof a.value === "number" && typeof b.value === "number" ? a.value - b.value : left < right ? -1 : left > right ? 1 : a.key < b.key ? -1 : a.key > b.key ? 1 : 0;
         return setting.order === "descending" ? -result : result;
     };
+    const categoryById = new Map(categoryRows.map(row => [row.id, row]));
+    if (roles) for (const group of groups.values()) {
+        const category = typeof group.value === "string" ? categoryById.get(group.value) : undefined;
+        if (group.value === null) group.assignmentUnavailable = "no_status";
+        else if (!category || category.modeInactive || category.associationState !== "active" || folderRole(category.relativePath, roles, source!.discoveryMode === "grouped" ? "grouped" : "direct") !== "status") group.assignmentUnavailable = "status_unavailable";
+        else if (nestedStatus(category.relativePath, roles, source!.discoveryMode === "grouped" ? "grouped" : "direct")) group.assignmentUnavailable = "nested_status";
+    }
     const result = [...groups.values()].sort((a, b) => {
         if (setting.order === "manual") {
             const x = setting.manualOrder.indexOf(a.key), y = setting.manualOrder.indexOf(b.key);

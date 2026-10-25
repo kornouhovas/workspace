@@ -20,7 +20,7 @@ export function assignProjectGroup(model: WorkspaceService, input: unknown): Ser
   const groups = projection.value.groups;
   const origin = groups?.find(group => group.key === input.fromKey);
   const destination = groups?.find(group => group.key === input.toKey);
-  if (!origin?.projectIds.includes(input.projectId) || !destination || destination.hidden) return invalid();
+  if (!origin?.projectIds.includes(input.projectId) || !destination || destination.hidden || destination.assignmentUnavailable) return invalid();
   if (input.propertyId === "name" || !property) {
     // Read current source ownership/revision; a drop never supplies paths or a revision.
     const projects = model.listProjects({type:"workspace.listProjects",workspaceId:input.workspaceId});

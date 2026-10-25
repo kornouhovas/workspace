@@ -18,6 +18,7 @@ export interface ViewGroupingSnapshot {
     config: ViewGroupingConfig;
 }
 export interface ViewGroup {
+    assignmentUnavailable?: "no_status" | "nested_status" | "status_unavailable";
     key: string;
     value: ScalarGroupValue;
     // Option/category identity stays in value/key; labels may change independently.

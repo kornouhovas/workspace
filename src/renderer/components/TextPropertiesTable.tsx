@@ -47,7 +47,7 @@ interface Props {
   categoryMoveDisabled?: boolean;
   onFilesystemAssignmentObserved?(): void;
   onFilesystemAssignmentDetails?(kind: "name" | "category"): void;
-  onMoveCategory?(project: ProjectSummary, trigger: HTMLButtonElement): void;
+  onMoveCategory?(project: ProjectSummary, trigger: HTMLButtonElement, statusOnly?: boolean): void;
   onRename?(project: ProjectSummary, trigger: HTMLButtonElement): void;
   onArchive?(project: ProjectSummary, action: "archive" | "restore", trigger: HTMLButtonElement): void;
   archiveDisabled?: boolean;
@@ -316,7 +316,7 @@ function TextPropertiesContent({ sourceAvailable = true, detail, onPreview, view
   const filesystemAssignment = assignmentProperty?.propertyId === "name" || !!categoryProperty && assignmentProperty?.propertyId === categoryProperty.propertyId;
   const assignmentBusy = editingScalar || disabled || loading || loadError || assignmentPending || filesystemAssignment && (!!hideReveal || !!renameDisabled || !!categoryMoveDisabled);
   const assign = async (command: AssignProjectGroupCommand) => {
-    if (assignmentBusy || assigning.current) return;
+    if (assignmentBusy || assigning.current || grouped?.groups?.find(group=>group.key===command.toKey)?.assignmentUnavailable) return;
     const owner = assignmentOwner, generation = lifetime.current;
     assignmentFocusIntent.current = {origin: document.activeElement, cancelled: false};
     assigning.current = true; setAssignmentPending(true); setAssignmentMessage(null); setAssignmentFilesystem(undefined);
@@ -405,8 +405,9 @@ function TextPropertiesContent({ sourceAvailable = true, detail, onPreview, view
             <button type="button" className="workspace-button workspace-button--secondary" disabled={disabled || locateDisabled}
               aria-label={`${t("recoveryLocate")}: ${project.name}`} onClick={(event) => onLocate(retained, event.currentTarget)}>{t("recoveryLocate")}</button>}
         </Cell>
-        {categoryProperty && <Cell data-column-id={categoryProperty.propertyId} data-label={categoryPropertyName(categoryProperty, language)} key={categoryProperty.propertyId} className="category-cell" data-color={categories.find(category => category.categoryId === project.categoryId)?.presentation?.color ?? "default"}>{layout === "board" ? <span className="board-category-value">{retained?.categoryName ?? categories.find((category) => category.categoryId === project.categoryId)?.name}</span> : retained?.categoryName ?? categories.find((category) => category.categoryId === project.categoryId)?.name}
+        {categoryProperty && <Cell data-column-id={categoryProperty.propertyId} data-label={categoryPropertyName(categoryProperty, language)} key={categoryProperty.propertyId} className="category-cell" data-color={categories.find(category => category.categoryId === project.categoryId)?.presentation?.color ?? "default"}>{layout === "board" ? <span className="board-category-value">{retained?.categoryName ?? categories.find((category) => category.categoryId === project.categoryId)?.name ?? t("groupNoStatus")}</span> : retained?.categoryName ?? categories.find((category) => category.categoryId === project.categoryId)?.name ?? t("groupNoStatus")}
 
+          {!hideReveal && !retained && onMoveCategory && "resolution" in project && project.resolution === "active" && <Hint label={`${t("editProjectStatus")}: ${project.name}`}><button type="button" className="workspace-button workspace-button--secondary property-rename" aria-label={`${t("editProjectStatus")}: ${project.name}`} disabled={disabled || categoryMoveDisabled} onClick={event=>onMoveCategory(project,event.currentTarget,true)}><Icon name="edit"/></button></Hint>}
         </Cell>}
         {snapshot?.definitions.map((property) => <Cell data-column-id={property.propertyId} key={property.propertyId} data-label={property.name} data-custom-property={detail || undefined}>
           {detail && <div className="detail-property-label"><span className="property-authored">{property.name}</span>{propertyControl(property)}</div>}
@@ -491,11 +492,11 @@ function TextPropertiesContent({ sourceAvailable = true, detail, onPreview, view
       {grouped.groups.filter(group=>!group.hidden).map(group=><section className="project-group" data-assignment-target={dropTarget === group.key || undefined} onDragLeave={event => {
           if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setDropTarget(current => current === group.key ? null : current);
         }} onDragOver={event => {
-          if (activeDrag.current && assignmentProperty && !assignmentBusy && event.dataTransfer.types.includes(groupAssignmentMime)) {
+          if (!group.assignmentUnavailable && activeDrag.current && assignmentProperty && !assignmentBusy && event.dataTransfer.types.includes(groupAssignmentMime)) {
             event.preventDefault(); event.dataTransfer.dropEffect = "move"; setDropTarget(group.key);
           }
         }} onDrop={event => {
-          if (!viewId || !assignmentProperty || assignmentBusy) return;
+          if (!viewId || !assignmentProperty || assignmentBusy || group.assignmentUnavailable) return;
           const raw = event.dataTransfer.getData(groupAssignmentMime);
           if (!raw || !activeDrag.current || raw !== JSON.stringify(activeDrag.current.command)) return;
           event.preventDefault(); event.stopPropagation(); finishDrag();
@@ -505,6 +506,7 @@ function TextPropertiesContent({ sourceAvailable = true, detail, onPreview, view
         <div className="project-group-header"><h3 className="property-authored">{group.value===null?t(grouped.propertyId===categoryProperty?.propertyId?"groupNoStatus":"groupNoValue"):(group.label ?? String(group.value))} ({group.projectIds.length})</h3>
         {layout === "board" && viewId && <BoardLayoutControls column={group} layoutTrigger={layoutTrigger} state={boardState} fields={fields} groups={null} groupPropertyId={grouped.propertyId} language={language} disabled={disabled || loadError || loading}/>}
         </div>
+        {group.assignmentUnavailable && <p className="text-value-hint">{t(group.assignmentUnavailable === "no_status" ? "statusNoDestination" : group.assignmentUnavailable === "nested_status" ? "statusNestedDestination" : "statusUnavailableDestination")}</p>}
         {!group.collapsed && (group.empty ? <p>{t("groupEmpty")}</p> : layout === "board" ? <ul className="project-board" aria-label={t("boardProjects")}>{rows(group.projectIds, group.key)}</ul> :
           <div className="project-table-scroll"><table className="project-table" style={tableStyle}><thead><tr>{headers}</tr></thead><tbody>{rows(group.projectIds, group.key)}</tbody></table></div>)}
       </section>)}

@@ -1,5 +1,18 @@
 # CI checks and diagnostic routes
 
+## Folder status assignment
+
+For #75, dispatch `desktop-ci.yml` with `checks: status-moves`. The reusable
+`status-moves.yml` builds once on macOS latest, Windows latest and Windows2022,
+runs the final complete suite, then actual EN/RU status editing, disabled target,
+Cancel/focus, Table assignment and Board drag journeys. Retained explicit parent
+operations and ordinary/filesystem assignment run in DEV; status and parent
+operations run again in the checked packaged artifact. Receipts retain candidate
+SHA, run/attempt, host, mode, screenshots, normal shutdown and fixture cleanup.
+No installer, resource, dependency or schema input changes; final release/manual
+Windows11 acceptance remains separate. Original full/release routes are unchanged.
+
+
 ## Folder-role settings acceptance
 
 For #74, dispatch `desktop-ci.yml` with `checks: folder-roles` on the reviewed

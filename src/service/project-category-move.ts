@@ -1,4 +1,4 @@
-import {relocatedFolderRoles,roleParentPlacement,savedFolderRoles} from "./folder-roles.js";
+import {nestedStatus,relocatedFolderRoles,roleParentPlacement,savedFolderRoles} from "./folder-roles.js";
 import {sameLegacyNativeIdentity} from './filesystem-authorization.js';
 import {sameAuthorizationRoute,sameAuthorizationRoot,parseFilesystemAuthorization,parseFolderObservation,type FilesystemAuthorization,type FilesystemAuthorizer,type VerifiedFolder} from "./filesystem-authorization.js";
 import {parseRemovalAuthorization} from "./category-removal-authorization.js";
@@ -258,12 +258,14 @@ export function createProjectCategoryMoveService(db: Database, integration: {
       if (!validProjectBasename(name, filesystem.platform) || !source.folderRoles && project.relativePath !== `${original!.relativePath}/${name}`) return rejected("project_unavailable");
       phase="filesystem";
       if(!source.folderRoles && request.parentRelativePath!==undefined)return rejected("category_unavailable");
-      if(source.folderRoles && request.parentRelativePath===undefined&&!destination)return rejected("category_unavailable");
+      if(source.folderRoles && request.parentRelativePath===undefined && (!destination || destination.sourceId!==source.id ||
+        destination.associationState!=="active" || destination.modeInactive ||
+        nestedStatus(destination.relativePath,savedFolderRoles(source)!,"grouped"))) return rejected("category_unavailable");
       const fromPath=source.folderRoles?project.relativePath.split("/").slice(0,-1).join("/"):original!.relativePath;
       const toPath=request.parentRelativePath??destination!.relativePath;
       const roleFrom=source.folderRoles?authorizer?.captureRoleParent(source,fromPath):null;
       const roleTo=source.folderRoles?authorizer?.captureRoleParent(source,toPath):null;
-      if(source.folderRoles&&(!roleFrom||!roleTo||roleFrom.categoryId!==project.categoryId))return rejected("category_unavailable");
+      if(source.folderRoles&&(!roleFrom||!roleTo||roleFrom.categoryId!==project.categoryId || request.destinationCategoryId!==undefined && roleTo.categoryId!==request.destinationCategoryId))return rejected("category_unavailable");
       const fromBinding=roleFrom?.authorization ?? (authorizer ? authorizer.capture(source,fromPath,original!.durableEvidence) : null);
       const toBinding=roleTo?.authorization ?? (authorizer ? authorizer.capture(source,toPath,destination!.durableEvidence) : null);
       const requestedPath=toPath?`${toPath}/${name}`:name;
