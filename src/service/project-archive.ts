@@ -11,7 +11,8 @@ import { isArchiveRequest, type ArchiveLocationPreview, type ArchiveSnapshot } f
 import { nativeProjectFilesystem, verifyCreationDirectory, validProjectBasename, filesystemCode, type ProjectFilesystem } from "./project-filesystem.js";
 import { readProjectReservations } from "./project-rename-reservations.js";
 import { filesystemAlias } from "./path-alias.js";
-import { reliableIdentity } from "./discovery.js";
+import { reliableIdentity, projectExclusions } from "./discovery.js";
+import { scanConfiguredSource } from "./folder-roles.js";
 
 type Database = BetterSQLite3Database<typeof schema>;
 const invalid = (): ServiceResult<never> => ({ ok: false, error: { code: "invalid_input", message: "Invalid archive request." } });
@@ -34,7 +35,7 @@ export function createProjectArchiveService(db: Database, integration: {
   }
   function inspect(workspaceId: string, relativePath: string) {
     const source = sourceFor(workspaceId);
-    if (!source || !source.appliedRootIdentity || !source.discoveryMode) return null;
+    if (!source || !source.appliedRootIdentity || source.discoveryMode !== "direct" && source.discoveryMode !== "grouped") return null;
     const parts = relativePath.split("/");
     if (!parts.length || !parts.every(p => validProjectBasename(p, filesystem.platform) && !p.startsWith(".") && !/^(\$RECYCLE.BIN|System Volume Information)$/i.test(p))) return null;
     const authorization=authorizer?.capture(source,"",source.durableEvidence);
@@ -66,6 +67,12 @@ export function createProjectArchiveService(db: Database, integration: {
     const overlap = (a: string, b: string) => { a = filesystemAlias(a); b = filesystemAlias(b); return a === b || a.startsWith(`${b}/`) || b.startsWith(`${a}/`); };
     if (projects.some(p => p.associationState !== "replaced" && overlap(p.relativePath, relativePath)) ||
       categories.some(c => c.associationState !== "replaced" && overlap(c.relativePath, relativePath))) blockers.push("owned_location");
+    // Discovery may not have enrolled folders added since the last observation.
+    // Authorize designation against the current interpretation, not just saved rows.
+    const scan = scanConfiguredSource(source, projectExclusions(JSON.parse(source.excludedRelativePaths), source.discoveryMode).effective);
+    const statusFolders = scan.entries.filter(entry => entry.kind === "category" && entry.reason !== "archive");
+    if (!scan.snapshot) blockers.push("source_unavailable");
+    if (statusFolders.some(entry => overlap(entry.relativePath, relativePath))) blockers.push("owned_location");
     const evidence: unknown[] = [];
     const observations: {path:string;proof:NonNullable<typeof authorization>["root"]}[]=[];
     const owners=[...projects,...categories,...savedSources.map(row=>({durableEvidence:row.durableEvidence,nativeIdentity:row.appliedRootIdentity}))];

@@ -45,7 +45,7 @@ try {
   await page.reload();
   const actions=page.getByRole('button',{name:`${en?'Project actions':'Действия с проектом'}: Brand refresh`,exact:true});
   await actions.click();
-  assert.equal(await page.getByRole('button',{name:`${en?'Archive project':'Архивировать проект'}: Brand refresh`,exact:true}).isDisabled(),true,'Archive is unavailable before source designation');
+  assert.equal(await page.getByRole('button',{name:`${en?'Archive project':'Архивировать проект'}: Brand refresh`,exact:true}).isEnabled(),true,'Archive offers first-use configuration before source designation');
   await actions.click();
   await call('applyArchiveLocation',{operationId:crypto.randomUUID(),previewToken:(await call('previewArchiveLocation',{relativePath:'Archive'})).previewToken});
   const propertyId=(await call('createProperty',{name:'Notes',propertyType:'text'})).propertyId;

@@ -1,5 +1,17 @@
 # CI checks and diagnostic routes
 
+## Separate special archive
+
+For #76, dispatch `desktop-ci.yml` with `checks: special-archive`. The reusable
+route builds the reviewed candidate and runs the complete suite on macOS latest,
+Windows latest and Windows2022. EN/RU first-use Archive, Cancel, ordinary-status
+rejection, separate designation, settings, restart and configured reuse run in
+DEV and the checked packaged artifact. Retained contextual archive and original
+archive recovery/restart consumers preserve existing guarantees. Artifact names
+include candidate SHA, run/attempt and host; screenshots and normal-quit/cleanup
+receipts stay separate from behavioral/full-suite results. This route does not
+publish a release or replace final desktop/manual Windows acceptance.
+
 ## Folder status assignment
 
 For #75, dispatch `desktop-ci.yml` with `checks: status-moves`. The reusable

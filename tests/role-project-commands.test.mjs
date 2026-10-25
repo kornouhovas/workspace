@@ -199,3 +199,66 @@ test('repeated root rename/move/archive retains dormant role history without blo
  setArchive(f);archive(f,project.projectId);assert.equal(f.query({type:'workspace.listProjectFiles',projectId:project.projectId,relativePath:''}).outcome,'listed');assert.equal(restore(f,project.projectId).operation.stage,'completed');
  list=f.query({type:'workspace.listProjects'});assert.equal(list.projects.find(p=>p.projectId===project.projectId).relativePath,'Clients/Team/SecondName');
 }));
+
+test('ordinary Archive stays active while a separate explicit archive survives review cancellation and restart',()=>fixture(f=>{
+  const project=f.list.projects.find(p=>p.relativePath==='Archive/cpp');
+  assert.ok(project);assert.equal(f.list.categories.find(c=>c.categoryId===project.categoryId).name,'Archive');
+  assert.equal(f.query({type:'workspace.listArchivedProjects'}).relativePath,null);
+  const before=f.query({type:'workspace.listProjects'});
+  const ordinary=f.query({type:'workspace.previewArchiveLocation',relativePath:'Archive'});
+  assert.equal(ordinary.previewToken,null);assert.ok(ordinary.blockers.includes('owned_location'));
+  const separate=f.query({type:'workspace.previewArchiveLocation',relativePath:'Cold storage'});assert.ok(separate.previewToken);
+  f.restart();
+  assert.equal(f.query({type:'workspace.listArchivedProjects'}).relativePath,null);
+  assert.deepEqual(f.query({type:'workspace.listProjects'}).projects,before.projects);
+  assert.equal(existsSync(join(f.root,'Cold storage')),false);
+  const property=f.command({type:'workspace.createProperty',name:'Retained',propertyType:'text'});
+  f.command({type:'workspace.setTextValue',projectId:project.projectId,propertyId:property.propertyId,value:'Exact notes'});
+  const selected=f.query({type:'workspace.previewArchiveLocation',relativePath:'Cold storage'});
+  f.command({type:'workspace.applyArchiveLocation',operationId:crypto.randomUUID(),previewToken:selected.previewToken});
+  f.restart();assert.equal(f.query({type:'workspace.listArchivedProjects'}).relativePath,'Cold storage');
+  assert.equal(f.query({type:'workspace.listProjects'}).projects.find(p=>p.projectId===project.projectId).relativePath,'Archive/cpp');
+  const reviewed=f.query({type:'workspace.previewProjectArchive',projectId:project.projectId,action:'archive',name:null,createParent:false});
+  assert.equal(reviewed.requestedRelativePath,'Cold storage/Archive/cpp');
+  assert.equal(f.command({type:'workspace.applyProjectArchive',operationId:crypto.randomUUID(),previewToken:reviewed.previewToken}).operation.stage,'completed');
+  f.restart();assert.equal(f.query({type:'workspace.listArchivedProjects'}).projects[0].projectId,project.projectId);
+  const restored=f.query({type:'workspace.previewProjectArchive',projectId:project.projectId,action:'restore',name:null,createParent:false});
+  assert.equal(f.command({type:'workspace.applyProjectArchive',operationId:crypto.randomUUID(),previewToken:restored.previewToken}).operation.stage,'completed');
+  const after=f.query({type:'workspace.listProjects'}).projects.find(p=>p.projectId===project.projectId);
+  assert.equal(after.relativePath,'Archive/cpp');assert.equal(after.categoryId,project.categoryId);
+  assert.equal(f.query({type:'workspace.listTextProperties'}).values.find(p=>p.projectId===project.projectId).value,'Exact notes');
+}));
+
+for(const populated of [false,true])test(`an un-enrolled ${populated?'populated':'empty'} ordinary Archive status cannot become the special archive`,()=>{
+ const directory=mkdtempSync(join(tmpdir(),'unobserved-archive-status-')),root=join(directory,'Root');mkdirSync(join(root,'Work/App'),{recursive:true});
+ const observer={watch(){return {close(){}};},schedule(){return {cancel(){}};}};
+ const app=openSettingsService(join(directory,'data','workspace.sqlite'),undefined,undefined,observer);
+ try{
+  const workspace=value(app.handleCommand({type:'workspace.create',name:'Workspace',rootPath:root,initialize:'status'}));
+  const query=input=>value(app.handleQuery({workspaceId:workspace.workspaceId,...input}));
+  const before=query({type:'workspace.listProjects'});
+  mkdirSync(join(root,populated?'Archive/cpp':'Archive'),{recursive:true});
+  const review=query({type:'workspace.previewArchiveLocation',relativePath:'Archive'});
+  assert.equal(review.previewToken,null);assert.ok(review.blockers.includes('owned_location'));
+  assert.equal(query({type:'workspace.listArchivedProjects'}).relativePath,null);
+  assert.deepEqual(query({type:'workspace.listProjects'}).projects,before.projects);
+  const preview=query({type:'workspace.previewDiscovery'});
+  assert.ok(preview.entries.some(entry=>entry.relativePath==='Archive'&&entry.reason!=='archive'));
+ }finally{app.close();rmSync(directory,{recursive:true,force:true});}
+});
+
+test('explicit empty archive designation can change without moving its former folder',()=>fixture(f=>{
+ setArchive(f);mkdirSync(join(f.root,'Stored'),{recursive:true});
+ const preview=f.query({type:'workspace.previewArchiveLocation',relativePath:'New archive'});assert.ok(preview.previewToken);
+ const changed=f.command({type:'workspace.applyArchiveLocation',operationId:crypto.randomUUID(),previewToken:preview.previewToken});
+ assert.equal(changed.relativePath,'New archive');assert.equal(existsSync(join(f.root,'Stored')),true);assert.equal(existsSync(join(f.root,'New archive')),false);
+ f.restart();assert.equal(f.query({type:'workspace.listArchivedProjects'}).relativePath,'New archive');
+}));
+
+test('an ordinary status appearing after archive-location review rejects Apply without changing designation',()=>fixture(f=>{
+ const preview=f.query({type:'workspace.previewArchiveLocation',relativePath:'New archive'});assert.ok(preview.previewToken);
+ mkdirSync(join(f.root,'New archive','New project'),{recursive:true});
+ const result=f.app.handleCommand({type:'workspace.applyArchiveLocation',workspaceId:f.workspace.workspaceId,operationId:crypto.randomUUID(),previewToken:preview.previewToken});
+ assert.equal(result.ok,false);assert.equal(f.query({type:'workspace.listArchivedProjects'}).relativePath,null);
+ assert.equal(existsSync(join(f.root,'New archive','New project')),true);
+}));

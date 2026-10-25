@@ -35,6 +35,7 @@ Read development's scope, integration, tracker, executor-selection and verificat
 | --- | --- |
 | Representative-scale responsiveness | [Approved targets/scenarios](plans/issue-41-performance.md), Architecture's view projection contract and [measurement evidence](verification/issue-41-performance.md) |
 | Folder status editing and assignment | [#75 scenarios](plans/issue-75-status-moves.md), [verification](verification/issue-75-status-moves.md), existing move journal and explicit-parent boundary |
+| Separate special archive | [#76 scenarios](plans/issue-76-special-archive.md), [verification](verification/issue-76-special-archive.md), current role-aware designation veto and retained archive/recovery contracts |
 | Folder roles and workspace settings | [Role discovery](architecture.md#role-configured-discovery), [#74 plan](plans/issue-74-folder-roles.md), typed workspace contracts and the existing source identity/recovery boundaries |
 | Service, storage or filesystem changes | Affected sections in [architecture](architecture.md), [ADRs](adr/) and typed contracts in `src/shared/`; inspect the active service wiring |
 | Automatic/pre-migration backups | [Contract/scenarios](plans/issue-38-automatic-backups.md), typed recovery commands and [recovery](recovery.md#automatic-backups-and-updates) |

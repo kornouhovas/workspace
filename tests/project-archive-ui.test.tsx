@@ -8,7 +8,7 @@ import { WorkspaceServiceClient } from "../src/renderer/workspace-service-client
 import type { WorkspaceDesktopApi } from "../src/contracts/desktop-api.js";
 import { translate } from "../src/renderer/localization.js";
 const browser = new Window({ url: "http://localhost" });
-Object.assign(globalThis, { window: browser, document: browser.document, HTMLElement: browser.HTMLElement, Node: browser.Node, MutationObserver: browser.MutationObserver });
+Object.assign(globalThis, { window: browser, document: browser.document, HTMLElement: browser.HTMLElement, Node: browser.Node, MutationObserver: browser.MutationObserver, CustomEvent: browser.CustomEvent, Element: browser.Element, NodeFilter: browser.NodeFilter, HTMLInputElement: browser.HTMLInputElement, getComputedStyle: browser.getComputedStyle.bind(browser) });
 Object.defineProperty(globalThis, "navigator", { configurable: true, value: browser.navigator });
 const { render, screen, cleanup, waitFor, fireEvent, act } = await import("@testing-library/react");
 const { default: userEvent } = await import("@testing-library/user-event");
@@ -177,4 +177,50 @@ test("reopening archive location resets the draft and discards its previous revi
   await act(async () => { summary.parentElement!.setAttribute("open", ""); fireEvent(summary.parentElement!, new browser.Event("toggle") as unknown as Event); });
   await waitFor(() => assert.equal((screen.getByRole("textbox", { name: translate("en", "archiveLocation") }) as HTMLInputElement).value, "Archive"));
   assert.equal(screen.queryByRole("button", { name: translate("en", "archiveConfirmLocation") }) === null, true);
+});
+
+for (const language of ["en", "ru"] as const) test(`${language}: first Archive offers a separate location, cancellation writes nothing, and confirmation still requires project review`, async () => {
+  const t = (key: Parameters<typeof translate>[1]) => translate(language, key);
+  const calls: Record<string, unknown>[] = [];
+  let relativePath: string | null = null;
+  const project = {projectId:"p",categoryId:"status",name:"App",relativePath:"Archive/App"};
+  const trigger = document.createElement("button"); document.body.append(trigger);
+  const api = {workspace:async (input:Record<string,unknown>)=>{
+    calls.push(input);
+    if(input.type === "workspace.listArchivedProjects") return {ok:true,value:{workspaceId:"w",sourceId:"s",relativePath,revision:relativePath?2:1,projects:[]}};
+    if(input.type === "workspace.listProjectArchiveOperations") return {ok:true,value:{workspaceId:"w",sourceId:"s",operations:[]}};
+    if(input.type === "workspace.previewArchiveLocation") return {ok:true,value:{workspaceId:"w",sourceId:"s",relativePath:input.relativePath,revision:1,blockers:[],previewToken:"location-token"}};
+    if(input.type === "workspace.applyArchiveLocation") {relativePath="Cold storage";return {ok:true,value:{workspaceId:"w",sourceId:"s",relativePath,revision:2,projects:[]}};}
+    if(input.type === "workspace.previewProjectArchive") return {ok:true,value:{workspaceId:"w",sourceId:"s",projectId:"p",action:"archive",originalRelativePath:"Archive/App",requestedRelativePath:"Cold storage/Archive/App",revision:2,missingParents:["Cold storage"],blockers:[],previewToken:"project-token"}};
+    throw new Error("Unexpected command");
+  },onWorkspaceChange:()=>()=>{}} as unknown as WorkspaceDesktopApi;
+  const client=new WorkspaceServiceClient(api);
+  const props={client,workspaceId:"w",sourceId:"s",projects:[project],language,disabled:false,revision:1,invalidation:0,onCommitted:()=>{},onViewChange:()=>{}};
+  const view=render(<ProjectArchivePanel {...props} request={{project,action:"archive",trigger}}/>);
+  const user=userEvent.setup({document});
+  const dialog=await screen.findByRole("dialog",{name:t("archiveApply")});
+  const {within}=await import("@testing-library/react");
+  const field=await within(dialog).findByLabelText(t("archiveLocation"));
+  await user.clear(field);await user.type(field,"Cold storage");
+  await user.click(within(dialog).getByRole("button",{name:t("archiveReviewLocation")}));
+  await within(dialog).findByRole("button",{name:t("archiveConfirmLocation")});
+  await user.keyboard("{Escape}");
+  assert.equal(calls.some(c=>String(c.type).startsWith("workspace.apply")),false);
+  assert.equal(relativePath,null);
+  assert.equal(document.activeElement,trigger);
+  view.rerender(<ProjectArchivePanel {...props} request={null}/>);
+  view.rerender(<ProjectArchivePanel {...props} request={{project,action:"archive",trigger}}/>);
+  const next=await screen.findByRole("dialog",{name:t("archiveApply")});
+  const nextField=within(next).getByLabelText(t("archiveLocation"));
+  await user.clear(nextField);await user.type(nextField,"Cold storage");
+  await user.click(within(next).getByRole("button",{name:t("archiveReviewLocation")}));
+  await user.click(await within(next).findByRole("button",{name:t("archiveConfirmLocation")}));
+  await waitFor(()=>assert.equal((within(next).getByRole("button",{name:t("archiveReview")}) as HTMLButtonElement).disabled,false));
+  assert.equal(within(next).queryByLabelText(t("archiveLocation")),null);
+  assert.equal(calls.some(c=>c.type==="workspace.previewProjectArchive"),false);
+  await user.click(within(next).getByRole("button",{name:t("archiveReview")}));
+  await within(next).findByText("Archive/App → Cold storage/Archive/App");
+  assert.equal(calls.filter(c=>c.type==="workspace.applyArchiveLocation").length,1);
+  assert.equal(calls.some(c=>c.type==="workspace.applyProjectArchive"),false);
+  trigger.remove();
 });

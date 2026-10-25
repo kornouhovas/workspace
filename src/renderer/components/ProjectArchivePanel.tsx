@@ -60,7 +60,7 @@ function ArchiveContent({ request, onRequestClosed, onRestoreFocus, onPreview, o
   useEffect(() => {
     if (!request || busy.current || unknown) return;
     epoch.current++; setContextual(request); setProjectId(request.project.projectId); setName(""); setCreateParent(false);
-    setReview(null); setRecovery(null); setMessage(null); returnFocus.current = request.trigger;
+    setReview(null); setLocationReview(null); setLocation(snapshot?.relativePath ?? ""); setRecovery(null); setMessage(null); returnFocus.current = request.trigger;
   }, [request]);
   const load = async () => {
     const version = ++listVersion.current; setLoading(true); setError(false);
@@ -148,7 +148,7 @@ function ArchiveContent({ request, onRequestClosed, onRestoreFocus, onPreview, o
       const result = await client.applyArchiveLocation(workspaceId, crypto.randomUUID(), token);
       if (!alive.current) return;
       setLocationReview(null);
-      if (result.ok && result.value.workspaceId === workspaceId && result.value.sourceId === sourceId) { setSnapshot(result.value); onCommitted(); void load(); } else setError(true);
+      if (result.ok && result.value.workspaceId === workspaceId && result.value.sourceId === sourceId && result.value.relativePath === locationReview.relativePath && result.value.revision >= minimumRevision.current) { minimumRevision.current = result.value.revision; setSnapshot(result.value); onCommitted(); void load(); } else { setError(true); void load(); }
     } catch { if (alive.current) { setError(true); void load(); } }
     finally { if (alive.current) { busy.current = false; setPending(false); } }
   }
@@ -190,6 +190,13 @@ function ArchiveContent({ request, onRequestClosed, onRestoreFocus, onPreview, o
   }
   const problems = (values: string[]) => values.map((p, i) => <p key={`${p}:${i}`} role="alert">{t(problemKeys[p] ?? "archiveProblemUnavailable")}</p>);
   const controlsDisabled = disabled || blocked || loading || error;
+  const locationFields = <div><p>{t("archiveLocationPolicy")}</p>
+      <label className="bb-field"><span>{t("archiveLocation")}</span><input className="bb-input" value={location} disabled={controlsDisabled} onChange={e => changeDraft(() => setLocation(e.currentTarget.value))} /></label>
+      <button type="button" disabled={controlsDisabled || !location} className="workspace-button workspace-button--secondary" onClick={event => { if (!contextual) returnFocus.current = event.currentTarget; void preview(true); }}>{t("archiveReviewLocation")}</button>
+      {locationReview && <div><p>{locationReview.relativePath}</p>{problems(locationReview.blockers)}
+        {locationReview.previewToken && <button type="button" disabled={controlsDisabled} className="workspace-button workspace-button--secondary" onClick={() => void confirmLocation()}>{t("archiveConfirmLocation")}</button>}
+        {!contextual && <button type="button" disabled={blocked} onClick={cancel} className="workspace-button workspace-button--secondary">{t("archiveCancel")}</button>}</div>}
+      </div>;
   return <section ref={section} tabIndex={-1} className="project-archive" aria-label={t("archiveTitle")} aria-busy={pending || loading}
     onKeyDown={event => { if (!contextual && !event.defaultPrevented && event.key === "Escape" && (review || locationReview || recovery)) { event.preventDefault(); cancel(); } }}>
     {locationOnly && <h3>{t("archiveLocation")}</h3>}
@@ -198,23 +205,18 @@ function ArchiveContent({ request, onRequestClosed, onRestoreFocus, onPreview, o
     {loading && <StatusMessage kind="info" title={t("archiveLoading")} />}
     {error && <><StatusMessage kind="error" title={t("archiveError")} /><button type="button" disabled={pending} className="workspace-button workspace-button--secondary" onClick={() => void load()}>{t("propertiesRetry")}</button></>}
     <ContextTools label={t("archiveTitle")} compact={!locationOnly} inline={locationOnly} daily={!locationOnly} onEscape={event=>{if(review || locationReview || recovery){event.preventDefault();cancel();}}}>
-    <details onToggle={event => { setLocationEditor(event.currentTarget.open); if (event.currentTarget.open) changeDraft(() => setLocation(snapshot?.relativePath ?? "Archive")); }}><summary>{t("archiveLocation")}: {snapshot?.relativePath ?? "Archive"}</summary>
-      {locationEditor && <div><p>{t("archiveLocationPolicy")}</p>
-      <label className="bb-field"><span>{t("archiveLocation")}</span><input className="bb-input" value={location} disabled={controlsDisabled} onChange={e => changeDraft(() => setLocation(e.currentTarget.value))} /></label>
-      <button type="button" disabled={controlsDisabled} className="workspace-button workspace-button--secondary" onClick={event => { returnFocus.current = event.currentTarget; void preview(true); }}>{t("archiveReviewLocation")}</button>
-      {locationReview && <div><p>{locationReview.relativePath}</p>{problems(locationReview.blockers)}
-        {locationReview.previewToken && <button type="button" disabled={controlsDisabled} className="workspace-button workspace-button--secondary" onClick={() => void confirmLocation()}>{t("archiveConfirmLocation")}</button>}
-        <button type="button" disabled={blocked} onClick={cancel} className="workspace-button workspace-button--secondary">{t("archiveCancel")}</button></div>}
-      </div>}
+    <details hidden={!!contextual} onToggle={event => { setLocationEditor(event.currentTarget.open); if (event.currentTarget.open) changeDraft(() => setLocation(snapshot?.relativePath ?? "Archive")); }}><summary>{t("archiveLocation")}: {snapshot?.relativePath ?? t("archiveNotConfigured")}</summary>
+      {locationEditor && locationFields}
     </details>
     {!snapshot?.relativePath && <p>{t("archiveNoLocation")}</p>}
     <ProjectOperationDialog open={contextual !== null} contentRef={dialogRoot} className="project-archive-dialog" title={t(restoring ? "archiveRestoreApply" : "archiveApply")} onClose={cancel}>
     {pending && <StatusMessage kind="info" title={t("archivePending")} />}
-    {contextual && error && <StatusMessage kind="error" title={t("archiveError")} />}
+    {contextual && error && <><StatusMessage kind="error" title={t("archiveError")} /><button type="button" disabled={pending} className="workspace-button workspace-button--secondary" onClick={() => void load()}>{t("propertiesRetry")}</button></>}
     {message && <StatusMessage kind={message === "archiveCompleted" ? "info" : "error"} title={t(message)} />}
     {unknown && <div><button type="button" disabled={pending || disabled} className="workspace-button workspace-button--secondary" onClick={() => void check()}>{t("archiveCheck")}</button>
       {unknown.initial && <button type="button" disabled={pending || disabled} className="workspace-button workspace-button--secondary" onClick={() => void apply(unknown)}>{t("archiveRetryOriginalRequest")}</button>}</div>}
-    <form hidden={locationOnly} onSubmit={e => { e.preventDefault(); if (!contextual) returnFocus.current = trigger.current; void preview(false); }}>
+    {contextual && !restoring && !snapshot?.relativePath && <div><p>{t("archiveFirstUse")}</p>{locationFields}</div>}
+    <form hidden={locationOnly || !!contextual && !restoring && !snapshot?.relativePath} onSubmit={e => { e.preventDefault(); if (!contextual) returnFocus.current = trigger.current; void preview(false); }}>
       <div className="bb-field" hidden={!!contextual}><label htmlFor={projectSelectId}>{t(restoring ? "archiveRestoreProject" : "archiveProject")}</label>
         <select id={projectSelectId} className="bb-input" disabled={controlsDisabled} value={projectId} onChange={e => changeDraft(() => setProjectId(e.currentTarget.value))}>
           <option value="">{t("archiveChoose")}</option>{(restoring ? snapshot?.projects ?? [] : projects).map(p => <option key={p.projectId} value={p.projectId}>{p.relativePath}</option>)}

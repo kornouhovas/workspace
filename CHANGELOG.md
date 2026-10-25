@@ -14,6 +14,10 @@ User-facing changes are maintained in English. The first target release is 0.1.0
 
 ### Added
 
+- Keep ordinary Archive statuses active and offer separate reviewed archive
+  configuration on first use, with existing configuration available in workspace
+  settings. Status folders cannot be adopted as the special archive.
+
 - Edit project status with path-disambiguated physical destinations and assign
   Table/Board status groups safely. No status, nested statuses and retained
   historical groups remain visible with unavailable destination explanations.
