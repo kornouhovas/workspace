@@ -73,3 +73,20 @@ test('fixture diagnosis retains all failed files and separates only its concurre
  assert.equal(job.steps.find(step=>step.name==='Record disposable path and injection observations').if,"${{ inputs.profile == 'all' }}");
  assert.ok(step.run.includes('set -o pipefail'));assert.equal(job.steps.at(-1).if,'always()');
 });
+
+test('creation-entry diagnosis preserves the exact Windows prefix and cannot accept diagnostic success as a runtime matrix',()=>{
+ const desktop=load(readFileSync('.github/workflows/desktop-ci.yml','utf8')),workflow=load(readFileSync('.github/workflows/command-safety-creation-entry.yml','utf8'));
+ const job=workflow.jobs['creation-entry'];assert.equal(job['runs-on'],'windows-2022');
+ const context={github:{event_name:'workflow_dispatch'},inputs:{checks:'command-safety-creation-diagnostic'}};
+ assert.equal(runInNewContext(desktop.jobs['focused-command-safety-creation-diagnostic'].if.slice(3,-2),context),true);
+ assert.equal(runInNewContext(desktop.jobs['focused-command-safety'].if.slice(3,-2),context),false);
+ assert.equal(runInNewContext(desktop.jobs.common.if.slice(3,-2),context),false);
+ const prefix='desktop-${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}';
+ assert.equal(runInNewContext(desktop.concurrency.group.slice(prefix.length+3,-2),context),'-command-safety-creation-diagnostic');
+ const creation=job.steps.find(step=>step.name==='Original eight creation checkpoints with passive entry evidence');
+ assert.ok(creation.run.includes('node scripts/smoke-project-creation.mjs dev'));assert.doesNotMatch(creation.run,/skip-native|checkpoint=|discovery-mode=/);
+ assert.equal(creation.env.WORKSPACE_CREATION_CONTEXT_DIAGNOSTIC,'1');
+ assert.ok(job.steps.findIndex(step=>step.id==='enrollment')<job.steps.indexOf(creation));
+ assert.ok(job.steps.indexOf(creation)<job.steps.findIndex(step=>step.name==='Passive observation control'));
+ assert.equal(job.steps.at(-1).if,'always()');
+});

@@ -1864,3 +1864,13 @@ rerunning the completed macOS acceptance or the addressed full-suite step.
 The reusable workflow's `hosts` selection defaults to all three hosts for both
 call and direct dispatch, and unknown selections fail before consumers run.
 Preserve each inherited full/focused receipt's real SHA and each package hash.
+
+For run40166177229's Windows2022 creation context-entry failure, select
+`checks: command-safety-creation-diagnostic`. This isolated diagnostic route runs
+the original source-enrollment prefix and all eight original creation checkpoints
+on Windows2022, with passive, bounded context-entry observation enabled. It
+changes no UI actions, visibility deadlines, native checks or cleanup assertions.
+A passive-observer control runs after the original sequence; primary failures and
+all artifacts remain. Its separate concurrency suffix preserves other runtime
+runs. Diagnostic receipts are explicitly marked and cannot supply ordinary
+acceptance or waive the unresolved failure. Default routes install no observer.

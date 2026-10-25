@@ -1048,3 +1048,30 @@ configuration and documentation; production sources/migrations/native resources,
 dependencies/lockfile, producer scripts and package inputs remain unchanged.
 GitHub CLI metadata temporarily hit TLS timeouts; primary REST/connector reads
 and downloaded artifact contents confirmed the actual gate before dispatch.
+
+### Windows2022 creation context-entry diagnosis
+
+Runtime run40166177229 at `cb9eb387` completed Windows latest successfully; its
+artifacts still require inspection. Windows2022 job121087579728 failed during
+DEV creation: after seven successful creation/native cases, the grouped
+`after_commit` Reveal button remained attached but hidden for the original15s
+wait in `enterContextFor`. The screenshot shows the success acknowledgment and
+closed creation form, a focused/hovered row action trigger, and no open menu.
+No native call was dispatched for that final case. Cleanup could not confirm
+native bridge shutdown and therefore retained the fixture; this is not accepted
+cleanup or completion. Later Windows2022 consumers remain unreached.
+
+Ranked hypotheses are a context owner replaced during row update, an outside
+event closing the menu, or entry before creation UI state has settled. None is
+proven. A diagnostic-only Windows2022 route preserves the successful enrollment
+prefix and all eight original checkpoints. A96-event passive ring records exact
+owner IDs, hidden/expanded state, focused element, input events and relevant
+source notifications before Submit through the first Reveal entry; it is
+disposed and contains no clicks, focus changes or workspace commands. Collection
+errors cannot erase the primary failure. Default runs install nothing. Shared
+entry logic, production UI, original deadlines and native assertions are unchanged.
+The disposable Electron control reproduces a visible-to-hidden transition,
+verifies the cap/disposal and zero commands, and closes normally (1/1 locally).
+Routing controls pass104/104. Both read-only review axes report no concrete scope,
+coverage or false-acceptance defect. The diagnostic route is not ordinary runtime
+acceptance and does not establish the historical failure's cause.

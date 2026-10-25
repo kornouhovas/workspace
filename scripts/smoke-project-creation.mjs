@@ -2,6 +2,7 @@ import { inspectNativeView } from "./windows-native-view-diagnostics.mjs";
 import { setRuntimeCaptureViewport } from "./runtime-settings.mjs";
 import { waitForSelectedRuntimeWorkspace, selectRuntimeWorkspace } from "./runtime-settings.mjs";
 import { enterContextFor } from "./runtime-context-tools.mjs";
+import {installCreationContextObservation,collectCreationContextObservation} from "./creation-context-observation.mjs";
 import { setInterfaceLanguage } from "./runtime-settings.mjs";
 import { waitForFocusedInput } from "./property-editor-driver.mjs";
 import assert from "node:assert/strict";
@@ -34,6 +35,8 @@ await mkdir(evidenceDirectory, { recursive: true });
 const selectedMode = process.argv.find((arg) => arg.startsWith("--discovery-mode="))?.split("=")[1];
 const selectedCheckpoint = process.argv.find((arg) => arg.startsWith("--checkpoint="))?.split("=")[1];
 const diagnostic = process.env.WORKSPACE_WINDOWS_SELECTION_DIAGNOSTIC === "1";
+const contextEntryDiagnostic=process.env.WORKSPACE_CREATION_CONTEXT_DIAGNOSTIC === "1";
+assert.ok(!contextEntryDiagnostic || !process.argv.includes('--skip-native'),'Context diagnosis retains the original native commands');
 validateProductDiagnostic({ enabled: diagnostic, platform: process.platform, mode, selectedMode, selectedCheckpoint, args: process.argv.slice(2) });
 const metadata = diagnostic ? await collectNativeSelectionMetadata() : undefined;
 const fixture = await realpath(await mkdtemp(join(tmpdir(), "workspace-create-runtime-")));
@@ -59,7 +62,7 @@ const save = async () => {
   await writeFile(join(evidenceDirectory, `${mode}-creation-observations.json`), JSON.stringify({
   mode, platform: process.platform, arch: process.arch, executablePath, fixedBase: "4ac402620dd8139bdef9ff03625aae64bf60e132",
   scope: "production UI/IPC/native adapter; interruption seeded by terminated real-service child, not an Electron backend crash",
-  runs, checkpointEvidence, observations, fixtureCleanup, nativeBridgeCleanup, ...(failure ? { error: failure.message } : {}),
+  contextEntryDiagnostic, runs, checkpointEvidence, observations, fixtureCleanup, nativeBridgeCleanup, ...(failure ? { error: failure.message } : {}),
 }, null, 2) + "\n");
   if (diagnostic) await writeFile(join(evidenceDirectory, "result.json"), JSON.stringify(productDiagnosticSnapshot({
     metadata, runtime, evidence, invocationCount, targetMatched, nativeInvocationOutcome, fileManagerCleanup, fixtureCleanup, failureCleanup, nativeBridgeCleanup,
@@ -310,6 +313,7 @@ try {
           await withDeadline(current.electron.evaluate(installNativeRevealReceipt, { workspaceId: workspace.workspaceId }), 1000, "Native receipt installation");
         }
       }
+      if(contextEntryDiagnostic)await withDeadline(installCreationContextObservation(page,{label:`${t.reveal}: ${name}`,sourceId:workspace.sourceId}),5000,"Creation context observation installation");
       await page.locator(".project-creation button[type=submit]").press("Enter");
       if (directoryPackage) {
         await page.getByRole("cell", { name, exact: true }).waitFor();
@@ -331,7 +335,12 @@ try {
         // Reveal directly: no Refresh, sibling switch or settling delay first.
         nativeTargets.add(destination);
         const revealEntry=page.getByRole("button", { name: `${t.reveal}: ${name}`, exact: true, includeHidden:true });
-        await enterContextFor(page,revealEntry);
+        try {await enterContextFor(page,revealEntry);}
+        finally {if(contextEntryDiagnostic) {
+          try {activeRun.contextEntryObservation=await withDeadline(collectCreationContextObservation(page),5000,"Creation context observation collection");}
+          catch(error){activeRun.contextEntryObservation={diagnostic:true,collectionError:error.message};failure??=error;}
+          await saveFailureEvidence();
+        }}
         await revealEntry.press("Enter");
         const electron = current.electron;
         nativeInvocationOutcome = await pollNativeInvocation({ target: destination,
