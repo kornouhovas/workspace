@@ -8,7 +8,7 @@ import test from 'node:test';
 import {_electron} from 'playwright-core';
 import {closeElectron} from '../scripts/runtime-lifecycle.mjs';
 import {enterContextFor} from '../scripts/runtime-context-tools.mjs';
-import {installCreationContextObservation,collectCreationContextObservation} from '../scripts/creation-context-observation.mjs';
+import {installCreationContextObservation,collectCreationContextObservation,resetCreationContextCpu} from '../scripts/creation-context-observation.mjs';
 
 test('passive creation entry diagnosis records source/panel changes without commands and disposes bounded evidence',async()=>{
  const profile=await mkdtemp(join(tmpdir(),'creation-context-observation-'));
@@ -25,9 +25,11 @@ test('passive creation entry diagnosis records source/panel changes without comm
     for(const listener of globalThis.listeners)listener({sourceId:'fixture',type:'workspace.sourceObserved',observationRevision:1});
     queueMicrotask(()=>{panel.hidden=true;entry.setAttribute('aria-expanded','false');});};
   });
+  const cpu=await page.context().newCDPSession(page);await cpu.send('Emulation.setCPUThrottlingRate',{rate:6});
   await page.context().tracing.start({screenshots:true,snapshots:true,sources:false});
   await installCreationContextObservation(page,{label:'Reveal folder: Created',sourceId:'fixture'});
   await assert.rejects(enterContextFor(page,page.getByRole('button',{name:'Reveal folder: Created',exact:true,includeHidden:true})),/Timeout/);
+  await resetCreationContextCpu(cpu);
   const trace=join(profile,'entry-trace.zip');await page.context().tracing.stop({path:trace});assert.ok((await stat(trace)).size>0);
   const transitions=await collectCreationContextObservation(page);
   assert.ok(transitions.events.some(event=>event.state.visible));assert.equal(transitions.final.visible,false);
@@ -42,4 +44,11 @@ test('passive creation entry diagnosis records source/panel changes without comm
  try{await closeElectron(app);}catch(error){failure??=error;}
  if(child.exitCode!==null||child.signalCode!==null)await rm(profile,{recursive:true,force:true});
  if(failure)throw failure;
+});
+
+test('CPU diagnostic cleanup attempts detach after reset failure and retains the first failure',async()=>{
+ const primary=new Error('reset failed'),events=[];
+ await assert.rejects(resetCreationContextCpu({send:async()=>{events.push('reset');throw primary;},detach:async()=>{events.push('detach');throw new Error('detach failed');}}),error=>error===primary);
+ assert.deepEqual(events,['reset','detach']);
+ await assert.rejects(resetCreationContextCpu({send:async()=>{},detach:async()=>{throw new Error('detach failed');}}),/detach failed/);
 });

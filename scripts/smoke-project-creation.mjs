@@ -2,7 +2,7 @@ import { inspectNativeView } from "./windows-native-view-diagnostics.mjs";
 import { setRuntimeCaptureViewport } from "./runtime-settings.mjs";
 import { waitForSelectedRuntimeWorkspace, selectRuntimeWorkspace } from "./runtime-settings.mjs";
 import { enterContextFor } from "./runtime-context-tools.mjs";
-import {installCreationContextObservation,collectCreationContextObservation} from "./creation-context-observation.mjs";
+import {installCreationContextObservation,collectCreationContextObservation,resetCreationContextCpu} from "./creation-context-observation.mjs";
 import { setInterfaceLanguage } from "./runtime-settings.mjs";
 import { waitForFocusedInput } from "./property-editor-driver.mjs";
 import assert from "node:assert/strict";
@@ -36,6 +36,8 @@ const selectedMode = process.argv.find((arg) => arg.startsWith("--discovery-mode
 const selectedCheckpoint = process.argv.find((arg) => arg.startsWith("--checkpoint="))?.split("=")[1];
 const diagnostic = process.env.WORKSPACE_WINDOWS_SELECTION_DIAGNOSTIC === "1";
 const contextTraceDiagnostic=process.env.WORKSPACE_CREATION_CONTEXT_TRACE === "1";
+const contextCpuRate=process.env.WORKSPACE_CREATION_CONTEXT_CPU_RATE;
+assert.ok(contextCpuRate===undefined || (contextTraceDiagnostic&&contextCpuRate==='6'),'CPU diagnosis requires traced fixed sixfold throttling');
 const contextEntryDiagnostic=process.env.WORKSPACE_CREATION_CONTEXT_DIAGNOSTIC === "1";
 assert.ok(!(contextEntryDiagnostic||contextTraceDiagnostic) || !process.argv.includes('--skip-native'),'Context diagnosis retains the original native commands');
 validateProductDiagnostic({ enabled: diagnostic, platform: process.platform, mode, selectedMode, selectedCheckpoint, args: process.argv.slice(2) });
@@ -51,6 +53,7 @@ const runs = (selectedMode ? [selectedMode] : ["direct", "grouped"]).flatMap((di
 let evidence = runs[0].evidence;
 let activeRun;
 let activeStage;
+let pendingContextDiagnosis;
 const observations = [];
 const checkpointEvidence = [];
 const nativeTargets = new Set();
@@ -63,7 +66,7 @@ const save = async () => {
   await writeFile(join(evidenceDirectory, `${mode}-creation-observations.json`), JSON.stringify({
   mode, platform: process.platform, arch: process.arch, executablePath, fixedBase: "4ac402620dd8139bdef9ff03625aae64bf60e132",
   scope: "production UI/IPC/native adapter; interruption seeded by terminated real-service child, not an Electron backend crash",
-  contextEntryDiagnostic, contextTraceDiagnostic, runs, checkpointEvidence, observations, fixtureCleanup, nativeBridgeCleanup, ...(failure ? { error: failure.message } : {}),
+  contextEntryDiagnostic, contextTraceDiagnostic, contextCpuRate:contextCpuRate?6:null, runs, checkpointEvidence, observations, fixtureCleanup, nativeBridgeCleanup, ...(failure ? { error: failure.message } : {}),
 }, null, 2) + "\n");
   if (diagnostic) await writeFile(join(evidenceDirectory, "result.json"), JSON.stringify(productDiagnosticSnapshot({
     metadata, runtime, evidence, invocationCount, targetMatched, nativeInvocationOutcome, fileManagerCleanup, fixtureCleanup, failureCleanup, nativeBridgeCleanup,
@@ -314,8 +317,31 @@ try {
           await withDeadline(current.electron.evaluate(installNativeRevealReceipt, { workspaceId: workspace.workspaceId }), 1000, "Native receipt installation");
         }
       }
-      if(contextTraceDiagnostic)await withDeadline(page.context().tracing.start({screenshots:true,snapshots:true,sources:false}),5000,"Creation context trace start");
-      if(contextEntryDiagnostic)await withDeadline(installCreationContextObservation(page,{label:`${t.reveal}: ${name}`,sourceId:workspace.sourceId}),5000,"Creation context observation installation");
+      let contextCpuSession,contextTraceStarted=false,contextObservationStarted=false;
+      if(contextTraceDiagnostic||contextEntryDiagnostic)pendingContextDiagnosis=async()=>{
+        pendingContextDiagnosis=undefined;
+        if(contextCpuSession) {
+          try {await resetCreationContextCpu({
+            send:(...args)=>withDeadline(contextCpuSession.send(...args),5000,"Creation diagnostic CPU reset"),
+            detach:()=>withDeadline(contextCpuSession.detach(),5000,"Creation diagnostic CPU detach")});}
+          catch(error){activeRun.contextCpuError=error.message;failure??=error;}
+        }
+        if(contextTraceStarted) {
+          try {await withDeadline(page.context().tracing.stop({path:join(evidenceDirectory,`${mode}-${discoveryMode}-${checkpoint}-entry-trace.zip`)}),5000,"Creation context trace collection");}
+          catch(error){activeRun.contextTraceError=error.message;failure??=error;}
+        }
+        if(contextObservationStarted) {
+          try {activeRun.contextEntryObservation=await withDeadline(collectCreationContextObservation(page),5000,"Creation context observation collection");}
+          catch(error){activeRun.contextEntryObservation={diagnostic:true,collectionError:error.message};failure??=error;}
+        }
+        await saveFailureEvidence();
+      };
+      if(contextTraceDiagnostic){await withDeadline(page.context().tracing.start({screenshots:true,snapshots:true,sources:false}),5000,"Creation context trace start");contextTraceStarted=true;}
+      if(contextCpuRate) {
+        contextCpuSession=await withDeadline(page.context().newCDPSession(page),5000,"Creation diagnostic CPU session");
+        await withDeadline(contextCpuSession.send('Emulation.setCPUThrottlingRate',{rate:6}),5000,"Creation diagnostic CPU throttle");
+      }
+      if(contextEntryDiagnostic){await withDeadline(installCreationContextObservation(page,{label:`${t.reveal}: ${name}`,sourceId:workspace.sourceId}),5000,"Creation context observation installation");contextObservationStarted=true;}
       await page.locator(".project-creation button[type=submit]").press("Enter");
       if (directoryPackage) {
         await page.getByRole("cell", { name, exact: true }).waitFor();
@@ -338,16 +364,8 @@ try {
         nativeTargets.add(destination);
         const revealEntry=page.getByRole("button", { name: `${t.reveal}: ${name}`, exact: true, includeHidden:true });
         try {await enterContextFor(page,revealEntry);}
-        finally {
-          if(contextTraceDiagnostic) {
-            try {await withDeadline(page.context().tracing.stop({path:join(evidenceDirectory,`${mode}-${discoveryMode}-${checkpoint}-entry-trace.zip`)}),5000,"Creation context trace collection");}
-            catch(error){activeRun.contextTraceError=error.message;failure??=error;}
-          }
-          if(contextEntryDiagnostic) {
-          try {activeRun.contextEntryObservation=await withDeadline(collectCreationContextObservation(page),5000,"Creation context observation collection");}
-          catch(error){activeRun.contextEntryObservation={diagnostic:true,collectionError:error.message};failure??=error;}
-          await saveFailureEvidence();
-        }}
+        finally {await pendingContextDiagnosis?.();}
+        if(failure)throw failure;
         await revealEntry.press("Enter");
         const electron = current.electron;
         nativeInvocationOutcome = await pollNativeInvocation({ target: destination,
@@ -467,6 +485,7 @@ try {
   finished = true;
 } catch (error) {
   failure = error;
+  await pendingContextDiagnosis?.();
   await retainReceipt(error);
   if (activeStage) {
     recordCreationEvidence(evidence, ...activeStage, { status: "failed", reason: error.message });

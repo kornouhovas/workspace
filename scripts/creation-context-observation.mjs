@@ -44,3 +44,10 @@ export async function installCreationContextObservation(page, parameters) {
 export async function collectCreationContextObservation(page) {
   return page.evaluate(()=>globalThis.creationContextObservation?.dispose()??{diagnostic:true,unavailable:true});
 }
+
+export async function resetCreationContextCpu(session) {
+  let failure;
+  try {await session.send('Emulation.setCPUThrottlingRate',{rate:1});}catch(error){failure=error;}
+  try {await session.detach();}catch(error){failure??=error;}
+  if(failure)throw failure;
+}

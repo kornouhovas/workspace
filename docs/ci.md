@@ -1889,3 +1889,10 @@ Receipts carry `contextTraceDiagnostic`; trace failures preserve a nonzero resul
 The original eight-case prefix retains passive observations, and ordinary routes
 install neither diagnostic. This comparison tests observation sensitivity and
 still supplies no ordinary acceptance or asserted historical cause.
+
+Run40169066416's24 trace-only samples also passed. The next bounded diagnostic
+changes one timing variable: sixfold Chromium renderer CPU throttling only from
+Submit to first entry. It requires trace mode, records the rate, resets to normal
+and detaches before native dispatch, and retains all original visibility/native/
+cleanup deadlines. Failures to configure/reset tracing or CPU remain failures.
+This stress condition is diagnostic only and never ordinary acceptance.

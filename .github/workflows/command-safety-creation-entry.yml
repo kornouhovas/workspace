@@ -47,6 +47,7 @@ jobs:
         shell: bash
         env:
           WORKSPACE_CREATION_CONTEXT_TRACE: '1'
+          WORKSPACE_CREATION_CONTEXT_CPU_RATE: '6'
         run: |
           set -euo pipefail
           for sample in {1..24}; do

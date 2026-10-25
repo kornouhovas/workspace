@@ -1110,3 +1110,21 @@ DOM observer and collect Playwright traces around Submit/first entry instead,
 testing whether observation timing masks the failure. Default execution and
 shared entry helper remain unchanged. Both diagnostic kinds are explicitly marked;
 trace collection errors cannot turn a failure into success.
+
+Run40169066416 at eee9e09d succeeded, including the24 trace-only samples.
+Artifact12589668033 is retained for inspection. Passive samples previously showed
+24 stable owner IDs, no visible-to-hidden transition and zero dropped events.
+The remaining intermittent hypothesis is renderer event/render scheduling; next
+probe changes one variable to sixfold Chromium CPU throttling only during
+Submit/first entry, requiring tracing and recording the rate. It resets/detaches
+before native dispatch and preserves all original deadlines. Configuration, reset
+or trace failures stay failures. This is diagnostic stress, no product/helper fix
+or historical-cause claim, and cannot supply normal acceptance.
+
+Pre-dispatch review found that a failed CPU reset could skip detach and still
+reach Reveal. Repaired before dispatch: reset/detach are attempted independently,
+the first failure is retained, all diagnostic disposal also runs on setup/Submit
+failure, and any retained failure blocks native dispatch. A failed-reset and
+failed-detach regression plus real Electron throttle/reset/trace control pass
+within72 selected checks; lint/docs pass. Both follow-up review axes confirm
+the concrete finding resolved. Original entry failure remains unresolved.
