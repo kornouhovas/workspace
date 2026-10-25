@@ -76,3 +76,27 @@ shutdown in the broad concurrent run. A single original property-editor control
 passed in isolation; this does not establish the historical timeout's cause.
 Original native deadlines and cleanup assertions are retained for focused renewal
 and final/CI verification. Failed broad-run evidence is not acceptance.
+
+## Final local candidate verification
+
+Reviewed application candidate: `5f2b37af32ae3d6f0c93e8466c6888d4276a4e21`.
+Both review axes have zero outstanding findings after the compatibility repair.
+On macOS arm64 with Node22.21.1, the complete test inventory passed using
+`node --import tsx --test --test-concurrency=1 tests/*.test.mjs tests/*.test.tsx`:
+3824 passed, 27 platform skips, zero failures/cancellations (3851 tests).
+This renews the original failed native fixtures without changing their deadlines,
+assertions or cleanup rules; it establishes serial passing coverage, not the
+historical cause of concurrency-sensitive shutdown failures.
+
+The final candidate build, typecheck, lint, docs links and diff checks passed.
+Both final local native consumers passed: immediate opening in EN/RU, both themes
+and sizes with localized Status, cancellation, restart, source reuse and preserved
+bytes; and retained unconfigured-source workspace management. Their local receipts
+are under work/issue-73-candidate-dev and work/issue-73-candidate-management.
+The migration command previously passed 1010 tests with one platform skip; the
+final complete suite also retains those migration/recovery scenarios.
+
+Three-host dev/package CI, artifact inspection and integration receipts are
+maintained in the [issue checkpoint](https://github.com/kornouhovas/workspace/issues/73).
+Source acceptance must retain its actual tested SHA; documentation-only reporting
+commits use the shared evidence-reuse policy rather than relabeling that SHA.
