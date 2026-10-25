@@ -113,3 +113,41 @@ phase/matrix evaluation confirms Windows-only routing repair and unchanged
 three-host full/runtime scope. Local and independent renewed routing:74/74.
 The two Windows original-command receipts remain pending; retain the successful
 macOS source receipt and inspect renewed artifacts before native tails.
+
+
+### Hosted full complement and status focus repair
+
+Original run40216043193/attempt1 at8e0b258f completes all three full-suite hosts.
+macOS reports3923pass/1fail/27skip (3951total); the only failure is the exact
+selector inventory. Each Windows host first passes isolated batches51/51 and14/14,
+then reports3954pass/2fail/14skip in its3970-case main batch. Its two failures are
+that inventory and the CRLF guard. No application, data-safety or native-lifecycle
+assertion fails in these hosted full receipts. Their overall failed result remains
+failed; subsequent repairs do not relabel it green.
+
+Inspected routing artifacts: macOS73/73 at1ee7e4fc (run40216820576); Windows
+latest and Windows202274/74 at2078ddfa (run40217259409, artifacts12607693833 and
+12607703746). Local copies are under `work/issue-75-ci/routing-*`. These renew the
+exact failures while retaining original full complement provenance.
+
+Local packaged status testing then reproduces a new focus defect: after group
+assignment and status Cancel the active element stays body for15s while the
+status button is enabled and no busy region remains. The status-only return now
+retains project identity through source loading and dialog teardown, reacquires
+its current control, and respects independent focus. The general explicit-parent
+return path stays unchanged. Four new public EN/RU delayed-refresh/Cancel and
+independent-focus regressions pass; complete affected move/role renderer files
+pass225/225. Independent Standards and Spec reviews find no material issue.
+The initial unpatched DOM attempt was SIGKILL after105s, so it is not an assertion
+red result; the twice-failing actual packaged focus predicate supplies red evidence.
+
+Renewed local package behavior passes all4 status/assignment groups and16captures,
+including all focus assertions, but its normal close times out; therefore this is
+not accepted packaged lifecycle evidence. Original serial native fixture renewal
+also finishes56pass/15close-fail (71total), disproving any claim that serial
+execution repairs the historical local shutdown problem. Keep all negatives.
+The current source changes only the bounded status return in the renderer; service,
+contracts, desktop/native, migrations, dependencies and build inputs retain the
+hosted8e complement. Renew the final local full suite and all affected controller,
+actual DEV/package and retained role/ordinary assignment consumers on3hosts under
+the desktop matrix. Do not claim wholesale reuse of the application graph.

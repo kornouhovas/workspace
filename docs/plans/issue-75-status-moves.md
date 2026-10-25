@@ -100,3 +100,16 @@ fixture. Original Ladle passes after replacing the task-owned dependency link;
 The application graph remains unchanged. Preserve full successful complement and
 negative receipts; renew exact failures/missing platform/native tails through the
 focused routes under ci.md, and keep historical quit causation unestablished.
+
+
+## Packaged status focus correction
+
+Original hosted full receipts fail only reconciled test inventory/CRLF guards;
+all actual backend/native assertions pass. Focused repair artifacts are inspected:
+Mac73/73 at1ee; Winlatest/Win202274/74 at2078. A separate local packaged focus
+predicate exposes body focus after status Cancel across source refresh. The
+bounded status-only return repair passes4public scenarios and225affected renderer
+checks and both review axes; its native behavior passes4groups but normal quit
+remains an explicit local watchpoint. Renew final local full and affected3host
+DEV/package acceptance on this renderer repair; retain unchanged backend/native
+complement at8e. Details and exact receipts are in the verification report.

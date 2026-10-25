@@ -26,6 +26,14 @@ failure retains its result; these selectors never turn skipped or failed checks
 into passing evidence. Additional observed failures require their own diagnosis
 and focused selection before the missing tails.
 
+The current runtime phase also renews the complete affected move/role/assignment
+controller and public service regressions before actual DEV/package consumers.
+The later focus correction is a bounded renderer change: retain unchanged backend,
+contract, native, dependency and build input evidence from the full run, and renew
+all affected UI/native consumers under the desktop UX selection matrix. This is
+full affected UI acceptance, not a passing raw full-suite claim or a waiver of its
+historical fixture watchpoints. Run the local final suite on the completed repair.
+
 Routing40216820576 at1ee7e4fc passed73/73 on macOS and72/73 on both Windows
 hosts. The Windows error directly identifies CRLF rejection in the new raw-source
 newline guard. The repair accepts both line endings and runs LF/CRLF variants

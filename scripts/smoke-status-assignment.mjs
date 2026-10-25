@@ -52,7 +52,7 @@ await writeFile(join(source,'Clients/Active/App/Inside/keep.txt'),'Exact project
      assert.ok(choices.some(o=>o.label.includes('Work/Urgent')&&o.disabled));assert.ok(choices.some(o=>o.value===''&&o.disabled));
      const name=`${language}-${theme}-${layout}-${size.width}-status.png`;await page.screenshot({path:join(evidence,name)});report.screens.push(name);
      await select.selectOption(personal.categoryId);await page.keyboard.press('Escape');await dialog.waitFor({state:'detached'});
-     assert.equal(await editor().evaluate(element=>element===document.activeElement),true);assert.equal((await call('listProjectCategoryMoves')).operations.length,0);
+     await editor().and(page.locator(':focus')).waitFor();assert.equal(await editor().evaluate(element=>element===document.activeElement),true);assert.equal((await call('listProjectCategoryMoves')).operations.length,0);
     }
    }
    await showRuntimeProject(page,'App',project.projectId,'Clients/Active');await editor().click();const dialog=page.getByRole('dialog',{name:en?'Edit status':'Изменить статус',exact:true});
@@ -68,7 +68,7 @@ await writeFile(join(source,'Clients/Active/App/Inside/keep.txt'),'Exact project
    await showRuntimeProject(page,'App',project.projectId,'Clients/Active');
    await selector().waitFor();
    await editor().click();const settled=page.getByRole('dialog',{name:en?'Edit status':'Изменить статус',exact:true});await settled.getByRole('combobox').and(page.locator(':enabled')).waitFor();await page.keyboard.press('Escape');await settled.waitFor({state:'detached'});
-   assert.equal(await editor().evaluate(element=>element===document.activeElement),true);
+   await editor().and(page.locator(':focus')).waitFor();assert.equal(await editor().evaluate(element=>element===document.activeElement),true);
    assert.equal(await readFile(join(source,'Clients/Active/App/Inside/keep.txt'),'utf8'),'Exact project bytes');
    assert.equal((await call('listTextProperties')).values.find(v=>v.projectId===project.projectId).value,'  Exact notes  ');
    report.checks.push({language,layout,paths:true,unavailableChoices:true,cancelFocus:true,statusEditor:true,groupAssignment:true,bytes:true,metadata:true});
@@ -79,7 +79,7 @@ await writeFile(join(source,'Clients/Active/App/Inside/keep.txt'),'Exact project
  assert.ok((await call('getFolderChildren',{parentRelativePath:''})).folderRoles.some(r=>r.relativePath==='Clients/Active/App/Inside'&&r.role==='group'));
  await showRuntimeProject(page,'App',project.projectId,'Clients/Active');await page.getByRole('button',{name:'Изменить статус: App',exact:true}).and(page.locator(':enabled')).waitFor();
  report.restart=true;
-}catch(error){failed=error;if(page)await page.screenshot({path:join(evidence,'failure.png')}).catch(()=>{});}
+}catch(error){failed=error;if(page)report.failureState=await page.evaluate(()=>({active:document.activeElement?{tag:document.activeElement.tagName,id:document.activeElement.id,label:document.activeElement.getAttribute("aria-label")}:null,edit:[...document.querySelectorAll('button')].filter(element=>/^(Edit status|Изменить статус): App$/.test(element.getAttribute('aria-label')??'')).map(element=>({disabled:element.disabled,focused:element===document.activeElement})),busy:[...document.querySelectorAll('[aria-busy=true]')].map(element=>element.className)})).catch(()=>null);if(page)await page.screenshot({path:join(evidence,'failure.png')}).catch(()=>{});}
 finally{
  try{await close();}catch(error){failed??=error;}
  const stopped=ownedProcessesStopped(parents,backends,{launchUnverified});report.stopped=stopped;

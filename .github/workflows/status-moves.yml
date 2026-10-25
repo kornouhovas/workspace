@@ -44,6 +44,13 @@ jobs:
           mkdir -p work/ci-status-moves
           set -o pipefail
           npm run test:all 2>&1 | tee work/ci-status-moves/full.log
+      - name: Affected status controller and service regressions
+        if: ${{ inputs.phase == 'runtime' }}
+        shell: bash
+        run: |
+          mkdir -p work/ci-status-moves
+          set -o pipefail
+          node --import tsx --test tests/project-category-move-ui.test.tsx tests/role-command-ui.test.tsx tests/group-assignment-ui.test.tsx tests/status-assignment-service.test.mjs tests/group-assignment-service.test.mjs tests/role-project-commands.test.mjs tests/view-grouping-service.test.mjs 2>&1 | tee work/ci-status-moves/affected.log
       - name: Development status editing and Board/Table assignment
         if: ${{ inputs.phase != 'routing-repair' }}
         run: node scripts/smoke-status-assignment.mjs

@@ -27,6 +27,7 @@ test('routing repair renews only the original failed inventory and runtime tails
   const runs=workflow.jobs['status-moves'].steps.filter(step=>step.run&&(!step.if||runInNewContext(step.if.slice(3,-2),{inputs:{phase}}))).map(step=>step.run);
   assert.equal(runs.some(run=>run.includes('npm run test:all')),phase==='full');
   assert.equal(runs.some(run=>run.includes('node --test tests/test-suites.test.mjs tests/status-moves-workflow.test.mjs')),phase==='routing-repair');
+  assert.equal(runs.some(run=>run.includes('tests/project-category-move-ui.test.tsx')),phase==='runtime');
   assert.equal(runs.includes('npm run build'),phase!=='routing-repair');
   assert.equal(runs.includes('node scripts/smoke-status-assignment.mjs'),phase!=='routing-repair');
  }

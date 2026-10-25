@@ -830,3 +830,17 @@ for (const language of ["en", "ru"] as const) for (const expanded of [false, tru
   assert.equal(document.activeElement, trigger);
   assert.ok(screen.getByRole("region", { name: `${en ? "Project" : "Проект"}: ${"Atlas"}` }));
 });
+
+for(const language of ['en','ru'] as const) for(const independent of [false,true]) test(`${language}: status Cancel retains a return intent across source refresh${independent?' without stealing independent focus':''}`,async()=>{
+ const client=new Client(),t=(key:Parameters<typeof translate>[1])=>translate(language,key);
+ render(<><DiscoveryWorkspace client={client} workspaceId="workspace" sourceId="source" language={language} disabled={false}/><button>Independent focus</button></>);
+ const trigger=await screen.findByRole('button',{name:new RegExp(`^${t('editProjectStatus')}:`)});
+ await userEvent.click(trigger);await screen.findByRole('dialog',{name:t('editProjectStatus')});
+ const response=deferred<Awaited<ReturnType<Client['listProjects']>>>();client.listProjects=()=>response.promise;
+ await act(async()=>client.events.forEach(listener=>listener({type:'workspace.sourceObserved',sourceId:'source',workspaceIds:['workspace'],observationRevision:1,state:'ready',automaticUpdates:'active'})));
+ await userEvent.click(screen.getByRole('button',{name:t('cancelRenameWorkspace')}));
+ if(independent)await userEvent.click(screen.getByRole('button',{name:'Independent focus'}));
+ await act(async()=>response.resolve({ok:true,value:client.list}));
+ const target=independent?screen.getByRole('button',{name:'Independent focus'}):await screen.findByRole('button',{name:new RegExp(`^${t('editProjectStatus')}:`)});
+ await waitFor(()=>assert.equal(document.activeElement,target));assert.equal(client.moves.length,0);
+});

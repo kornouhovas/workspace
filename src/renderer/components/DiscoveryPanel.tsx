@@ -340,15 +340,36 @@ function DiscoveryWorkspaceContent({ memory, client, workspaceId, sourceId, refr
       restoreRenameFocus.current = false;
     }
   }, [renameProject, renameBlocked]);
-  useEffect(() => {
-    if (!categoryMoveProject && restoreCategoryMoveFocus.current) {
-      const trigger = categoryMoveTrigger.current;
-      (trigger?.isConnected && !trigger.disabled ? trigger : tableHeading.current)?.focus();
-      restoreCategoryMoveFocus.current = false;
-    }
-  }, [categoryMoveProject, categoryMoveBlocked]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  useEffect(() => {
+    if (categoryMoveProject || !restoreCategoryMoveFocus.current) return;
+    const trigger = categoryMoveTrigger.current;
+    if (!statusOnly) {
+      (trigger?.isConnected && !trigger.disabled ? trigger : tableHeading.current)?.focus();
+      restoreCategoryMoveFocus.current = false;
+      return;
+    }
+    // Source observation can replace/disable the originating status cell while
+    // the dialog closes. Retain its project identity until the current row is ready.
+    if (loading) return;
+    const frame = window.requestAnimationFrame(() => {
+      const active = document.activeElement;
+      if (active && active !== document.body && active !== trigger && active !== tableHeading.current) {
+        restoreCategoryMoveFocus.current = false;
+        return;
+      }
+      const id = trigger?.dataset.statusProjectId;
+      const current = trigger?.isConnected && !trigger.disabled ? trigger :
+        [...(workBody.current?.querySelectorAll<HTMLButtonElement>("button[data-status-project-id]") ?? [])]
+          .find(button => button.dataset.statusProjectId === id && !button.disabled && !button.closest("[hidden], [inert]"));
+      const target = current ?? tableHeading.current;
+      target?.focus();
+      restoreCategoryMoveFocus.current = false;
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [categoryMoveProject, categoryMoveBlocked, statusOnly, loading, projects]);
+
   const version = useRef(0);
   const minimumRevision = useRef(0);
   const minimumCategoryPropertyRevision = useRef(0);
