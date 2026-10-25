@@ -48,8 +48,9 @@ Push/Actions authorization is not inferred from #71's separate conversation.
 
 ## Progress
 
-Implementation started; no #72 runtime acceptance claimed. Exact checkpoints and
-commit/CI status belong to the issue. No live-data repair, main merge or release.
+Implementation and selected acceptance are complete; the final ledger below records
+the actual inherited and renewed evidence. Integration/delivered SHA belongs to
+the GitHub checkpoint. No live-data repair, main merge or release.
 
 ### First slice: creation candidate
 
@@ -1174,3 +1175,66 @@ reuse gap once its artifacts pass: inclusive/finite range, explicit partial
 coverage, unchanged full-default ordered commands/environment/loop, original
 eight checkpoints in both modes, no diagnostics and separate concurrency.
 Selected72 routing/range/failure controls, lint/docs and diff check pass.
+
+### Final acceptance ledger
+
+All six #72 criteria have passing selected evidence: durable/current command and
+token boundaries; allowed device-number change versus substitution/containment;
+old/new interrupted journals and migration/reopen; non-overwrite and preserved
+IDs/properties/contents; disposable service/SQLite plus distinct native hosts;
+restored production gates only after family-specific checks. Main implementation
+Standards/Spec review and scoped follow-ups are complete. No release/final #67
+desktop milestone is claimed.
+
+| Required boundary | Actual passing evidence | Disposition |
+| --- | --- | --- |
+| Public commands, tokens, legacy/new recovery and additive storage | Full macOS suite at a5470a9e, run40162220624:3836 tests,3809 passed,27 existing skips; final local migration1003/1002 passed/one existing skip at dedb297b | Inherited; implementation/migration inputs unchanged |
+| Windows service/filesystem/platform suites | Individually passing full rows at a5470a9e run40162220624; canonical-fixture228 checks per host at ec5fa54c run40164287527; alias16/16 on all three hosts at432346a7 run40165486179 | Original failed job conclusions retained; affected safety assertions renewed |
+| macOS six non-prefix DEV/package journeys | a5470a9e run40162220624, complete native/package receipts and inspected file screens | Inherited; their drivers and relevant effective inputs unchanged |
+| Windows latest six non-prefix DEV/package journeys | cb9eb387 run40166177229, all original journeys passed, inspected native/external/cleanup evidence | Inherited; only creation consumer required later renewal |
+| Ordinary source-enrollment/creation on macOS and Windows latest | e78f1f49 run40171068504, artifacts12590166710/12590386488 | Renewed both modes:all8 creation cases,16 normal closes per mode/host, exact native and acknowledgment, restart and owned cleanup; no diagnostics |
+| Ordinary Windows2022 entire runtime | c2685537 run40170685964, artifact12590361911 | Renewed all8 DEV and all8 packaged journeys; no exclusions/diagnostics |
+| Later CI/range/diagnostic changes | Focused local routing/range controls72/72; real Electron diagnostic controls incl reset/detach failure; type/lint/docs/build prerequisites in ordinary host runs | Changed seams verified; default full range commands/environment/loop retained |
+
+Creation renewal receipts correctly say `partial`:two selected prefix journeys
+and six exclusions, never full runtime acceptance. Each mode/host has eight
+creation cases and16 normal closes; Windows exact native selection agrees with
+independent UI Automation, and bridge shutdown/fixture cleanup passes. macOS
+uses Finder and has no Windows bridge requirement. Both packaged inventories
+remain unchanged during use:macOS353 entries, Windows latest163. Their actual
+app.asar SHA256 values are respectively
+`b73cc926fbfa160316a5c3827a0aac7ef4f4b050a2f866d745686b7d1d7dd5d9` and
+`1387cec920541cc414c14ef8dd53b8d4520cd5d3107b9c6d09f4320cdf0e5ea0`.
+
+Windows2022 artifact inspection confirms all16 ordinary journey results and log
+hashes against the clean c2685537 manifest. Each mode has eight creation cases/
+16 normal closes/native-UIA agreement, rename46 normal closes, exact external
+file document/bytes, and confirmed bridge/fixture/process cleanup. Category
+folders/removal, archive/restore and backup/recovery show normal quits/backend
+exits and passing owned cleanup. Packaged inventory163 entries is unchanged;
+actual app.asar SHA256
+`f68e7da3194e8895c75bc44254eaf5ae5c680bc4af88bd444d5080cca76c45c3`.
+RU light narrow expanded and EN dark wide preview file screens were inspected.
+
+The cumulative follow-up diff was reviewed commit by commit:application,
+migrations/native resources, dependencies/lockfile, build/package inputs and
+ordinary effective runtime environment remain unchanged. The creation-driver
+disposal microtask is covered by the new ordinary creation evidence; the
+inclusive range option changes selection only and omitted defaults preserve
+commands and execution order. Distinct receipt SHAs/package hashes are retained;
+no single run is relabelled as the complete multi-run ledger.
+
+Limitations retained:the original Windows2022 hidden-menu failure was not
+reproduced by bounded passive/trace/CPU diagnostics; passing ordinary renewal
+proves its current result, not a repair or historical cause. Local macOS27
+intermittent normal-quit failures remain unexplained and are not replaced with
+forced-close success; hosted macOS ordinary acceptance is separate supported-host
+evidence. Those observations remain in the issue history and do not become
+claims of fixed lifecycle behavior.
+
+Final Standards and Spec evidence-map reviews report no remaining selected #72
+acceptance/reuse blocker. Ordinary creation renewals close the driver-sequence
+gap, and Windows2022 supplies the missing full DEV/package tail. Only this
+documentation follow-up remains; it requires documentation checks, not another
+runtime replay. Owner-authorized integration may proceed, preserving all listed
+unknown-cause limitations and separate #67/release/human gates.
