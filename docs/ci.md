@@ -12,6 +12,13 @@ include candidate SHA, run/attempt and host; screenshots and normal-quit/cleanup
 receipts stay separate from behavioral/full-suite results. This route does not
 publish a release or replace final desktop/manual Windows acceptance.
 
+For a driver-only repair after inspected complete-suite evidence, the same route
+accepts `checks: special-archive-native`. It retains build/static prerequisites
+and every DEV/package/native consumer, skipping only the complete-suite step.
+Compare application/build inputs and retain exact source-SHA provenance under
+the evidence-reuse policy before selecting it; default acceptance still runs all.
+
+
 ## Folder status assignment
 
 For #75, dispatch `desktop-ci.yml` with `checks: status-moves`. The reusable

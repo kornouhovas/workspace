@@ -36,8 +36,12 @@ Toolchain: Node 22.21.1, macOS arm64. Disposable SQLite and folder fixtures only
 - Workflow scheduling/artifact retention: 72/72 pass. DEV and packaged retained
   evidence use distinct uploaded directories.
 - Typecheck, lint, documentation links, production build and diff whitespace pass.
-- Final complete local suite: running at implementation checkpoint; its exact
-  result and any renewed evidence are recorded in the subsequent GitHub checkpoint.
+- Complete local suite at the application candidate: 3965 tests, 3910 passed,
+  28 failed, 27 skipped. Twenty-five failures are native 10s shutdown timeouts;
+  one fixture-cleanup assertion is downstream of the same quit failure. Two
+  LF/CRLF status-workflow guards freeze the old option position and are repaired
+  to check actual YAML membership/default and preserve the original routing.
+  No full-green result is claimed. Affected routing/startup renewal passes 97/97.
 
 Independent Standards and Spec review found and repaired lost DEV evidence,
 un-enrolled status adoption and the empty-designation-change regression. Both
@@ -71,3 +75,21 @@ suites and actual DEV/package first-use/settings/restart on macOS latest, Window
 latest and Windows2022, plus retained contextual archive and original recovery/
 restart consumers. Hosted results and inspected artifacts remain acceptance gates;
 release/manual Windows11 and final #67/#42 acceptance are separate.
+
+## Driver and routing renewal
+
+The post-candidate repair changes only smoke-driver, tests, CI routing and prose.
+Application, migrations, resources, dependencies, build scripts and packaging
+inputs remain identical to `bb7701e6`. The first new driver revision omitted the
+required startup-receipt callback; a minimal boundary invocation reproduces
+`record is not a function`, while the explicit callback records the ready state.
+The final driver records every launch and retains original normal-quit assertions.
+A speculative visibility wait matched a hidden retained settings section and is
+removed; completed archived identity and absence of unfinished operations are
+still read before close. Current local actual native execution reaches the
+original normal-quit timeout, with confirmed owned-process cleanup.
+
+`special-archive-native` renews affected routing/startup regressions and all
+original DEV/package consumers after inspected full-suite evidence. Its separate
+concurrency group preserves a still-running full receipt. No diagnostic result,
+failed run or skipped consumer becomes passing acceptance.

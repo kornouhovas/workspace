@@ -2,6 +2,10 @@ name: Separate special archive
 
 on:
   workflow_call:
+    inputs:
+      native_only:
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -26,11 +30,15 @@ jobs:
       - run: npm run check:docs
       - run: npm run build
       - name: Final complete suite
+        if: ${{ !inputs.native_only }}
         shell: bash
         run: |
           mkdir -p work/ci-special-archive
           set -o pipefail
           npm run test:all 2>&1 | tee work/ci-special-archive/full.log
+      - name: Renew affected routing and startup checks
+        if: ${{ inputs.native_only }}
+        run: node --test tests/status-moves-workflow.test.mjs tests/test-suites.test.mjs tests/special-archive-workflow.test.mjs tests/rename-runtime-startup.test.mjs
       - name: First-use archive and settings in development
         run: node scripts/smoke-special-archive.mjs
         env:

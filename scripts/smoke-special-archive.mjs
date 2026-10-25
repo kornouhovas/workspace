@@ -11,12 +11,12 @@ import {enterContextFor} from './runtime-context-tools.mjs';
 import {waitForRuntimeInterface} from './runtime-startup.mjs';
 const root=resolve(import.meta.dirname,'..'),fixture=await realpath(await mkdtemp(join(tmpdir(),'special-archive-')));
 const evidence=resolve(process.env.WORKSPACE_SMOKE_EVIDENCE_DIR??'work/issue-76-special-archive');await mkdir(evidence,{recursive:true});
-const report={issue:76,sha:process.env.GITHUB_SHA??null,run:process.env.GITHUB_RUN_ID??null,attempt:process.env.GITHUB_RUN_ATTEMPT??null,mode:process.env.WORKSPACE_SMOKE_MODE??'dev',platform:process.platform,kernel:release(),checks:[],screens:[],shutdowns:[],status:'running'};
+const report={issue:76,sha:process.env.GITHUB_SHA??null,run:process.env.GITHUB_RUN_ID??null,attempt:process.env.GITHUB_RUN_ATTEMPT??null,mode:process.env.WORKSPACE_SMOKE_MODE??'dev',platform:process.platform,kernel:release(),checks:[],screens:[],startups:[],shutdowns:[],status:'running'};
 const parents=new Set(),backends=new Set();let app,page,failure,launchUnverified=false;
 const query=async input=>{const result=await page.evaluate(input=>window.workspace.workspace(input),input);assert.equal(result.ok,true,JSON.stringify(result));return result.value;};
 async function launch(){
  launchUnverified=true;app=await _electron.launch({...runtimeSmokeLaunch(root),cwd:root,env:{...process.env,WORKSPACE_USER_DATA_DIR:join(fixture,'data')}});parents.add(app.process());
- page=await app.firstWindow();page.setDefaultTimeout(15000);await waitForRuntimeInterface(page);
+ page=await app.firstWindow();page.setDefaultTimeout(15000);await waitForRuntimeInterface(page,status=>{report.startups.push(status);});
  for(const pid of await app.evaluate(({app})=>app.getAppMetrics().filter(item=>item.type==='Utility'&&item.serviceName?.includes('Node')).map(item=>item.pid)))backends.add(pid);
  launchUnverified=false;
 }
@@ -62,7 +62,6 @@ try{
   await dialog.getByRole('button',{name:en?'Done':'Готово',exact:true}).click();await dialog.waitFor({state:'detached'});
   assert.equal((await call('listArchivedProjects')).projects[0].projectId,project.projectId);
   assert.equal((await call('listProjectArchiveOperations')).operations.length,0);
-  await page.locator('.project-archive[aria-busy="false"]').first().waitFor();
   await close();await launch();
   assert.equal((await call('listArchivedProjects')).relativePath,'Cold storage');assert.equal((await call('listArchivedProjects')).projects[0].projectId,project.projectId);
   assert.equal(await readFile(join(source,'Cold storage','Archive','App','keep.txt'),'utf8'),'Exact project bytes');
