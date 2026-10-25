@@ -3,113 +3,73 @@
 Tracker: [#75](https://github.com/kornouhovas/workspace/issues/75).
 Baseline: `52c7a9e35e8c28ec5dd6eff21f720b873a8c4203`, accepted #74 integration.
 Branch: `codex/issue-75-status-moves`; checkout: `.worktrees/issue-75-status-moves`.
-Executor: Matt Pocock implement. Both native blockers (#72, #74) are closed;
-there is no native parent or existing issue checkpoint/owner.
+Executor: Matt Pocock implement. Both native/textual blockers (#72, #74) are closed;
+no native parent or earlier issue ownership checkpoint existed at start.
 
-## Contract and scenarios
+## Outcome and boundaries
 
-- Status choices retain category UUIDs and show full source-relative paths, so
-  Clients/Active and Personal/Active remain distinct.
-- Status assignment moves the whole project into the chosen status folder,
-  preserving basename, logical identity, values, bytes and descendant overrides.
-- No status and statuses below another status remain discoverable, but cannot
-  receive a status assignment. Explain disabled choices in EN/RU.
-- Revalidate current source, roles, category ownership, revision and durable
-  evidence before effects. Retain collision, substitution, containment and
-  no-overwrite guards from the journaled move engine.
-- Cover cancel, pending, lost response, explicit read-only status, interrupted
-  operation review/recovery and restart on disposable roots/SQLite.
-- Retain explicit parent-folder moves introduced and owner-approved in #74;
-  status editing and group assignment do not expose arbitrary rearrangement.
-- Preserve ordinary scalar/select assignment, Board/Table entry points,
-  accessible alternatives and focus. Inspect EN/RU, themes and supported sizes.
+Status editing and supported Table/Board group assignment move whole project
+folders into permitted physical statuses. Keep category UUIDs and show full paths
+so same-name destinations remain distinct. Preserve basename, project identity,
+values, contents and applicable descendant role overrides.
 
-## Verification and retention
+No status, statuses under another status and historical unavailable groups retain
+their projects and discovery visibility, but cannot receive status assignment.
+Explain disabled choices in EN/RU. Retain #74's separately owner-approved explicit
+parent-folder operation and ordinary-property metadata assignment.
 
-Public seams reuse the owner-confirmed #74 boundaries and #75 acceptance: service commands using real temporary
-folders/SQLite, and renderer/Electron interactions. Retain existing move identity,
-crash, recovery, no-overwrite, IPC and ordinary property scenarios. Adapt status
-choice/assignment expectations only where #75 changes the accepted contract.
-No schema/native/packaging change is planned. Run focused regressions/typechecks
-through slices; independent Standards/Spec review precedes the final full suite.
-Renew affected filesystem/native/platform consumers in DEV and packaged modes on
-macOS, Windows latest and Windows2022, using a matching scoped CI route. Preserve
-exact SHA/run/artifact evidence. Release, main merge and live-data repair are excluded.
+Revalidate current source, roles, category ownership, revision and durable/current-
+mount evidence before effects. Retain collision, substitution, containment and
+no-overwrite guards from the existing journaled engine. Pending/lost outcomes keep
+original bindings; interruption requires explicit fresh recovery review. Cancel,
+keyboard return and independent focus remain usable through source refresh.
 
-## Checkpoint
+No schema/native/installer change, release, main merge or live-data repair belongs
+to this issue. Use only disposable real folders and SQLite for safety/recovery.
 
-Implementation and verification in progress. GitHub owns CI/integration status.
+## Scenario ledger
 
+| Requirement | Check / retained guarantee |
+| --- | --- |
+| Distinct allowed destinations | Public projection and native status choices use UUIDs and Clients/Active versus Personal/Active paths |
+| Whole-folder move | Public Table/Board commands, exact bytes/Text, saved descendant roles and reopen |
+| Invalid destinations | Nested/No status/historical UI states, visible discovery and service rejection before effects |
+| Failure safety | Occupied destination, stale config, replaced intermediate parent, foreign ownership; original contents retained |
+| Recovery | Injected transaction interruption, no automatic replay, reviewed explicit completion and restart; original journal/crash/IPC suites retained |
+| UI lifecycle | Status UUID request, Cancel/Escape, pending/unknown controller coverage, delayed refresh and independent focus; actual DEV/package return/reopen |
+| Ordinary assignment / parent action | Existing service/UI suites and original native consumers retained |
+| Appearance | Main/bb reference contract, EN/RU, light/dark, 1024x720/1440x960 captures on required hosts |
 
-## Local implementation evidence
+The owner explicitly confirmed both public TDD seams: service commands with real
+temporary folders/SQLite and UI/Electron interactions. Existing requirements are
+retained; only superseded status-choice expectations are adapted. No test is
+retired because it failed or was costly.
 
-- The initial public-service regression failed because nested status assignment
-  completed; the scoped server guard now rejects it before effects.
-- Focused service/role/grouping run: 56/56 passed, including distinct status UUIDs,
-  whole-folder bytes, properties, descendant roles, restart, collisions, stale
-  configuration, changed intermediate parents, foreign ownership and explicit
-  interrupted-operation recovery. Existing move/crash/identity suites are retained.
-- Focused inherited renderer run: 258/258 passed; the extended role/status UI and
-  route checks pass separately (9/9). Pending/unknown/dismissal/review behavior
-  remains covered through the shared move controller; status-specific commands
-  retain category IDs rather than the explicit-parent action's path request.
-- Typecheck/lint/build/documentation checks pass. Native appearance and complete
-  final suite/three-host acceptance are pending; GitHub owns their delivery gates.
-- Native driver preparation preserves the 15s bounds: query actual settled public
-  paths through the existing host-side helper, visit viewport-loaded project rows,
-  and use the existing native drag helper with a visible destination heading.
-  Reading option.disabled verifies native option state; Playwright isDisabled
-  retargets this option check to its enabled parent select.
+## Completed implementation and verification
 
+- [x] Verify ownership/dependencies and create the isolated branch from the accepted tip.
+- [x] Implement full-path status choices and server ownership/nesting restrictions.
+- [x] Add status-cell editing and preserve Table/Board accessible assignment routes.
+- [x] Verify identity, contents, properties, roles, failure safety and explicit recovery.
+- [x] Preserve pending/unknown bindings, cancellation and return focus.
+- [x] Review Standards and Spec independently; repair and re-review findings.
+- [x] Run focused checks/typechecking and the final complete local suite, retaining negative receipts.
+- [x] Inspect appearance and current affected DEV/package evidence on all three supported CI hosts.
+- [x] Commit and publish the verified implementation and acceptance records.
 
-## Review and native checkpoint
+Application source: `e1551eca` (implementation `fdd9e97c` plus status focus repair).
+Accepted native candidate: `5dd4918f`. Current controller/service verification is
+346/346 on macOS latest, Windows latest and Windows2022; evaluated routing checks
+pass 74/74. Required native rows are complete through inspected receipts at e155,
+ad8 and 5dd. Source/build equality and exact run/attempt/artifact provenance are
+recorded in the [verification report](../verification/issue-75-status-moves.md).
 
-Independent code-review axes against `52c7a9e3...fdd9e97c`: Spec found zero
-implementation issues. Standards found two P2 acceptance-guard issues: the
-ordinary common job needed to exclude the new selector, and each shutdown needed
-to assert backend exit. Both are repaired and independently re-reviewed with zero
-remaining material findings. The routing regression now checks ordinary suppression.
+The initial and final local full runs remain non-green: 3901/23/27 and
+3877/53/27 passed/failed/skipped respectively. Their inherited native shutdown/
+cleanup watchpoints, task dependency-symlink correction, selector/CRLF repairs and
+fresh native draft guards retain explicit evidence. Hosted full application/data/
+native assertions pass; failed routing rows and all changed/unreached native rows
+have their own passing renewals. There is no blanket full-green claim.
 
-The local macOS native status journey passes four EN/RU Table/Board cases, sixteen
-light/dark 1024x720/1440x960 captures, whole-folder/value/role preservation,
-reopen and two normal shutdowns with asserted backend termination and cleanup.
-The retained #74 explicit parent-operation journey also passes. Inspected whole-screen
-captures reuse main's accepted composition and existing bb-inspired controls/Inter
-(reference revisions remain in reuse.md); the status cell adds the existing edit
-icon and move dialog, with path choices and explanatory disabled states. No new
-component framework, asset, CSS token or dependency is introduced. Text wraps and
-actions remain reachable in inspected narrow RU and wide EN captures.
-
-Earlier local driver failures remain failures: async predicate/path acknowledgment,
-viewport-loaded Board rows, native option retargeting and native drag endpoint
-preparation were reconciled with the existing helpers. Some runs timed out during
-normal quit despite complete quit events; empty/source controls and the retained
-role journey passed, so the historical cause is unestablished. The final driver
-additionally proves post-assignment editor availability/Cancel focus and real UI
-readiness after restart, then verifies unchanged normal-exit deadlines. Successful
-current shutdown receipts do not relabel earlier failures. Final suite/CI and
-integration remain pending at this checkpoint.
-
-
-## Final-suite reconciliation
-
-Single local full run:3901pass/23fail/27skip (3951total), including21 inherited
-normal-close timeouts, Ladle's task-symlink403 and one omitted exact CI-selector
-fixture. Original Ladle passes after replacing the task-owned dependency link;
-73 focused inventory/routing checks pass after additive fixture reconciliation.
-The application graph remains unchanged. Preserve full successful complement and
-negative receipts; renew exact failures/missing platform/native tails through the
-focused routes under ci.md, and keep historical quit causation unestablished.
-
-
-## Packaged status focus correction
-
-Original hosted full receipts fail only reconciled test inventory/CRLF guards;
-all actual backend/native assertions pass. Focused repair artifacts are inspected:
-Mac73/73 at1ee; Winlatest/Win202274/74 at2078. A separate local packaged focus
-predicate exposes body focus after status Cancel across source refresh. The
-bounded status-only return repair passes4public scenarios and225affected renderer
-checks and both review axes; its native behavior passes4groups but normal quit
-remains an explicit local watchpoint. Renew final local full and affected3host
-DEV/package acceptance on this renderer repair; retain unchanged backend/native
-complement at8e. Details and exact receipts are in the verification report.
+GitHub owns integration status and the delivered SHA. Follow the authorized
+new-workspace integration route after acceptance; do not start another issue.
