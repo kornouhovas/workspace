@@ -6,7 +6,7 @@ import {join,resolve} from 'node:path';
 import {_electron} from 'playwright-core';
 import {runtimeSmokeLaunch} from './runtime-executable.mjs';
 import {closeElectron,cleanupOwnedFixture,ownedProcessesStopped} from './runtime-lifecycle.mjs';
-import {openRoleSettingsSection as openSettingsSection,renameRoleProject,enterRoleDialog,prepareRoleMove,returnRoleWorkspace as returnToWorkspace,setRoleLanguage as setInterfaceLanguage} from './folder-role-driver.mjs';
+import {openRoleSettingsSection as openSettingsSection,renameRoleProject,expandRoleFolder,enterRoleDialog,prepareRoleMove,returnRoleWorkspace as returnToWorkspace,setRoleLanguage as setInterfaceLanguage} from './folder-role-driver.mjs';
 const root=resolve(import.meta.dirname,'..'),fixture=await realpath(await mkdtemp(join(tmpdir(),'folder-roles-')));
 const source=join(fixture,'Source'),data=join(fixture,'data'),evidence=resolve(process.env.WORKSPACE_SMOKE_EVIDENCE_DIR??'work/issue-74-folder-roles');
 await mkdir(evidence,{recursive:true});
@@ -24,13 +24,8 @@ async function launch(){
 }
 async function close(){if(app){const current=app;app=null;await closeElectron(current);}}
 async function settings(){await openSettingsSection(page,'workspaces');const tab=page.getByRole('tab',{name:/^(Workspaces|Рабочие пространства)$/});await tab.press('Enter');await tab.and(page.locator('[aria-selected="true"]')).waitFor();await page.getByRole('region',{name:source,exact:true}).waitFor();assert.equal(await page.getByRole('tab',{name:/^(Sources|Источники)$/}).count(),0);}
-async function expand(path){
-  const escaped=path.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
-  const expand=page.getByRole('button',{name:new RegExp(`^(Expand|Раскрыть): ${escaped}$`)});
-  const collapse=page.getByRole('button',{name:new RegExp(`^(Collapse|Свернуть): ${escaped}$`)});
-  await expand.or(collapse).waitFor();if(await expand.count())await expand.click();
-  await collapse.waitFor();
-}
+const expand=path=>expandRoleFolder(page,path);
+
 async function role(path,next){await page.getByRole('combobox',{name:new RegExp(`^(Role|Роль): ${path.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}$`)}).selectOption(next);}
 async function apply(){
   await page.getByRole('button',{name:/^(Review changes|Проверить изменения)$/}).click();

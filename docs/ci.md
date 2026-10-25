@@ -2069,3 +2069,17 @@ runtime_only selects Windows latest/2022 only and the remaining retained-recover
 and source-outage DEV/package rows, with package/artifact prerequisites. It does
 not replay accepted role/management consumers. Normal full and entry selections
 still use all3hosts. Routing checks evaluate both inventories and full defaults.
+
+
+Gate40201834859 at46ceba93 passes macOS all changed consumers; Windows2022
+passes role/management DEV then loses a packaged tree-expansion gesture; Windows
+latest reaches a second independently stale rename review. Both captures show
+unchanged originals and explicit UI guards, not unknown accepted effects.
+Folder expansion now acknowledges expanded state through read-only navigation
+within15s. Rename supports at most4 freshly reviewed drafts in the unchanged15s
+budget. Each requires the enabled no-unresolved current-name review, fresh public
+and physical no-effect proof, and acknowledgment that review disappeared before
+authoring. Unknown/accepted work is never replayed. The repeated-stale control
+requires3 submissions/2 reviews/1 effect; unknown and stalled checks remain.
+Local7 controls, original role journey, routing and lint pass. The same affected
+consumer gate renews these driver-only changes before remaining Windows tails.

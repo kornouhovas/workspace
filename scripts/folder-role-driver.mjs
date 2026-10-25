@@ -19,27 +19,30 @@ export async function openRoleSettingsSection(page, section) {
 }
 // A visible enabled current-name review proves the UI has no unresolved command.
 // Only that explicit guard plus unchanged physical operands permits a new draft.
+// Up to four independently reviewed drafts share the same15s budget.
 // No unknown/accepted command is replayed, and the whole flow keeps15s.
 export async function renameRoleProject(dialog,name,en,verifyUnchanged,{timeout=15000}={}) {
  const deadline=Date.now()+timeout,remaining=()=>{const left=deadline-Date.now();assert.ok(left>0,'Role rename exceeded its deadline');return left;};
  const review=dialog.getByRole('button',{name:en?'Review current project name':'Проверить текущее имя проекта',exact:true});
  const submit=dialog.getByRole('button',{name:en?'Rename folder':'Переименовать папку',exact:true});
  const input=dialog.getByRole('textbox');
- async function author(){
+ for(let draft=0;draft<4;draft++){
   await Promise.race([input.and(dialog.locator(':enabled')).waitFor({timeout:remaining()}),review.and(dialog.locator(':enabled')).waitFor({timeout:remaining()})]);
-  if(await review.isVisible()){await withDeadline(verifyUnchanged(),remaining(),'Role rename operand verification');await review.press('Enter',{timeout:remaining()});}
+  if(await review.isVisible()){
+   await review.and(dialog.locator(':enabled')).waitFor({timeout:remaining()});
+   await withDeadline(verifyUnchanged(),remaining(),'Role rename operand verification');
+   await review.press('Enter',{timeout:remaining()});
+   await review.waitFor({state:'hidden',timeout:remaining()});
+  }
   await input.fill(name,{timeout:remaining()});
   await submit.and(dialog.locator(':enabled')).press('Enter',{timeout:remaining()});
- }
- await author();
- await Promise.race([dialog.waitFor({state:'hidden',timeout:remaining()}),review.and(dialog.locator(':enabled')).waitFor({timeout:remaining()})]);
- if(await dialog.isVisible()){
-  // Explicitly rejected/stale before effect; never Cancel/reopen an uncertain result.
+  await Promise.race([dialog.waitFor({state:'hidden',timeout:remaining()}),review.and(dialog.locator(':enabled')).waitFor({timeout:remaining()})]);
+  if(!await dialog.isVisible())return;
+  // Every new draft requires this explicit safe state and fresh no-effect proof.
+  // No elapsed-time retry, uncertain-result retry or prior operation-ID replay.
   await review.and(dialog.locator(':enabled')).waitFor({timeout:remaining()});
-  await withDeadline(verifyUnchanged(),remaining(),'Role rename operand verification');await review.press('Enter',{timeout:remaining()});
-  await input.fill(name,{timeout:remaining()});await submit.and(dialog.locator(':enabled')).press('Enter',{timeout:remaining()});
  }
- await dialog.waitFor({state:'hidden',timeout:remaining()});
+ throw new Error('Role rename remained invalidated after four reviewed drafts');
 }
 
 
@@ -101,4 +104,17 @@ export async function prepareRoleMove({dialog,parent,en,capture,reopen,verifyUnc
   dialog=await withDeadline(reopen(),left(),'Role move reopening');
  }
  throw new Error('Role move preparation did not complete');
+}
+
+
+export async function expandRoleFolder(page,path) {
+ const escaped=path.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+ const expand=page.getByRole('button',{name:new RegExp(`^(Expand|Раскрыть): ${escaped}$`)});
+ const collapse=page.getByRole('button',{name:new RegExp(`^(Collapse|Свернуть): ${escaped}$`)});
+ const deadline=Date.now()+15000;
+ while(!await collapse.isVisible()){
+  const ms=deadline-Date.now();assert.ok(ms>0,'Role folder expansion exceeded15000ms');
+  await expand.and(page.locator(':enabled')).press('Enter',{timeout:ms});
+  try{await collapse.waitFor({timeout:Math.min(1000,Math.max(1,deadline-Date.now()))});}catch(error){if(Date.now()>=deadline)throw error;}
+ }
 }

@@ -12,7 +12,7 @@ import { build } from "esbuild";
 import { closeElectron } from "../scripts/runtime-lifecycle.mjs";
 import { usableRuntimeViewProjection } from "../scripts/runtime-view-readiness.mjs";
 import { activateRuntimeView, setRuntimeViewLanguage } from "../scripts/runtime-view-controls.mjs";
-import {openRoleSettingsSection,renameRoleProject,enterRoleDialog,prepareRoleMove} from "../scripts/folder-role-driver.mjs";
+import {openRoleSettingsSection,renameRoleProject,expandRoleFolder,enterRoleDialog,prepareRoleMove} from "../scripts/folder-role-driver.mjs";
 import {openSettingsSection} from "../scripts/runtime-settings.mjs";
 import { openArchiveTextEditor } from "../scripts/archive-editor-driver.mjs";
 import { installArchiveEntryTrace } from "../scripts/archive-entry-trace.mjs";
@@ -79,6 +79,14 @@ test('preview timing admits current properties and visible loading before the se
       assert.equal(await page.getByRole('treeitem').textContent(),'preserved.txt');
     } finally {clearTimeout(timer);}
   });
+});
+
+test('role folder expansion acknowledges a consumed key without changing roles',async()=>{
+ await withPage(async page=>{
+  await page.setContent('<button aria-label="Expand: Clients/Acme">+</button>');
+  await page.evaluate(()=>{const button=document.querySelector('button');let first=true;button.onkeydown=event=>{if(first&&event.key==='Enter'){first=false;event.preventDefault();}};button.onclick=()=>button.setAttribute('aria-label','Collapse: Clients/Acme');});
+  await expandRoleFolder(page,'Clients/Acme');assert.equal(await page.getByRole('button').getAttribute('aria-label'),'Collapse: Clients/Acme');
+ });
 });
 
 test('role settings entry acknowledges keyboard navigation after a pointer interruption',async()=>{
@@ -163,14 +171,14 @@ test('role action entry follows a replaced row without submitting a filesystem f
 
 test('role rename explicitly re-reviews stale operands and never replays an uncertain submission',async()=>{
  await withPage(async page=>{
-  async function fixture(uncertain=false){
+  async function fixture(uncertain=false,staleCount=1){
    await page.setContent('<div role="dialog" aria-label="Rename project folder"><form><input aria-label="Name"><button type="button" hidden>Review current project name</button><button type="submit">Rename folder</button></form></div>');
-   await page.evaluate(uncertain=>{
+   await page.evaluate(({uncertain,staleCount})=>{
     globalThis.roleAttempts=0;globalThis.roleEffects=0;globalThis.roleReviews=0;
     const input=document.querySelector('input'),review=document.querySelector('[type="button"]'),form=document.querySelector('form');
     review.onclick=()=>{globalThis.roleReviews++;review.hidden=true;input.disabled=false;input.value='Original';};
-    form.onsubmit=event=>{event.preventDefault();globalThis.roleAttempts++;if(globalThis.roleAttempts===1){input.disabled=true;review.hidden=uncertain;}else{if(globalThis.roleReviews!==1)throw new Error('Explicit review is required');globalThis.roleEffects++;document.querySelector('[role="dialog"]').remove();}};
-   },uncertain);
+    form.onsubmit=event=>{event.preventDefault();globalThis.roleAttempts++;if(globalThis.roleAttempts<=staleCount){input.disabled=true;review.hidden=uncertain;}else{if(globalThis.roleReviews!==staleCount)throw new Error('Explicit review is required');globalThis.roleEffects++;document.querySelector('[role="dialog"]').remove();}};
+   },{uncertain,staleCount});
   }
   await fixture();const dialog=page.getByRole('dialog');
   await dialog.getByRole('textbox').fill('Renamed');await dialog.getByRole('button',{name:'Rename folder',exact:true}).press('Enter');
@@ -179,6 +187,8 @@ test('role rename explicitly re-reviews stale operands and never replays an unce
   await fixture();let checks=0;
   await renameRoleProject(page.getByRole('dialog'),'Renamed',true,async()=>{checks++;assert.equal(await page.evaluate(()=>globalThis.roleEffects),0);});
   assert.equal(checks,1);assert.deepEqual(await page.evaluate(()=>[globalThis.roleAttempts,globalThis.roleReviews,globalThis.roleEffects]),[2,1,1]);
+  await fixture(false,2);checks=0;await renameRoleProject(page.getByRole('dialog'),'Renamed',true,async()=>{checks++;assert.equal(await page.evaluate(()=>globalThis.roleEffects),0);});
+  assert.equal(checks,2);assert.deepEqual(await page.evaluate(()=>[globalThis.roleAttempts,globalThis.roleReviews,globalThis.roleEffects]),[3,2,1]);
   await fixture(true);checks=0;
   await assert.rejects(renameRoleProject(page.getByRole('dialog'),'Renamed',true,async()=>{checks++;},{timeout:500}),/Timeout|deadline/);
   assert.equal(checks,0);assert.deepEqual(await page.evaluate(()=>[globalThis.roleAttempts,globalThis.roleReviews,globalThis.roleEffects]),[1,0,0]);
