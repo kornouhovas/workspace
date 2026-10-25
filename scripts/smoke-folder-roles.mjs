@@ -1,12 +1,13 @@
 /* global window */
 import assert from 'node:assert/strict';
-import {mkdtemp,mkdir,realpath,writeFile,readFile} from 'node:fs/promises';
+import {mkdtemp,mkdir,realpath,writeFile,readFile,stat} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join,resolve} from 'node:path';
 import {_electron} from 'playwright-core';
 import {runtimeSmokeLaunch} from './runtime-executable.mjs';
 import {closeElectron,cleanupOwnedFixture,ownedProcessesStopped} from './runtime-lifecycle.mjs';
-import {openSettingsSection,returnToWorkspace,setInterfaceLanguage} from './runtime-settings.mjs';
+import {returnToWorkspace,setInterfaceLanguage} from './runtime-settings.mjs';
+import {openRoleSettingsSection as openSettingsSection,renameRoleProject} from './folder-role-driver.mjs';
 const root=resolve(import.meta.dirname,'..'),fixture=await realpath(await mkdtemp(join(tmpdir(),'folder-roles-')));
 const source=join(fixture,'Source'),data=join(fixture,'data'),evidence=resolve(process.env.WORKSPACE_SMOKE_EVIDENCE_DIR??'work/issue-74-folder-roles');
 await mkdir(evidence,{recursive:true});
@@ -121,15 +122,12 @@ try{
     };
     const action=async(label,projectName)=>{await openProjectTools(projectName);const button=page.locator('.saved-view-content').getByRole('button',{name:`${label}: ${projectName}`,exact:true,includeHidden:true});return enterDialog(button,label,projectName);};
     dialog=await action(en?'Rename project folder':'Переименовать папку проекта',name);
-    const reviewCurrent=dialog.getByRole('button',{name:en?'Review current project name':'Проверить текущее имя проекта',exact:true});
-    const submitRename=dialog.getByRole('button',{name:en?'Rename folder':'Переименовать папку',exact:true});
-    const renameInput=dialog.getByRole('textbox');
-    await Promise.race([renameInput.and(page.locator(':enabled')).waitFor(),reviewCurrent.waitFor()]);
-    if(await reviewCurrent.isVisible())await reviewCurrent.click();
-    try{await renameInput.fill(renamed,{timeout:1000});}catch(error){if(!await reviewCurrent.isVisible())throw error;await reviewCurrent.click();await renameInput.fill(renamed);}
-    await Promise.race([submitRename.and(page.locator(':enabled')).waitFor(),reviewCurrent.waitFor()]);
-    if(await reviewCurrent.isVisible()){await reviewCurrent.click();await dialog.getByRole('textbox').fill(renamed);}
-    await submitRename.and(page.locator(':enabled')).press('Enter');await dialog.waitFor({state:'detached'});
+    await renameRoleProject(dialog,renamed,en,async()=>{
+      const current=(await query({type:'workspace.listProjects',workspaceId:first.workspaceId})).projects.find(row=>row.projectId===created.projectId);
+      assert.equal(current.relativePath,`Clients/${name}`);assert.equal(current.name,name);
+      assert.equal((await stat(join(source,'Clients',name))).isDirectory(),true);
+      await assert.rejects(stat(join(source,'Clients',renamed)),error=>error.code==='ENOENT');
+    });
     const move=async(parent)=>{
       const current=(await query({type:'workspace.listProjects',workspaceId:first.workspaceId})).projects.find(p=>p.projectId===created.projectId);assert.equal(current.name,renamed);
       const label=en?'Move project category':'Переместить проект в категорию';

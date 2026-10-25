@@ -58,6 +58,26 @@ management and retained-recovery consumers; independent view presentation is
 covered by the role journey. Ordinary historical full routes are not rewritten.
 
 
+Run40198618666 at43811dde passed all eight macOS runtime rows, including actual
+packaged source outage and retained recovery. Windows latest lost pointer entry
+into Settings; Windows2022 reached explicit stale-name review during rename.
+`checks: folder-role-entry-repair` renews just two real-Electron entry controls
+and the original role DEV journey on all three hosts. The scoped driver uses acknowledged
+keyboard Settings entry, and permits at most one explicit current-name
+review after a conclusively inactive/stale editor. It requires the enabled review
+control (no pending/unresolved submission), unchanged public project identity/path,
+an original physical folder and an absent requested destination. Unknown outcomes
+are never replayed; the complete rename retains its15s limit.
+
+After this gate passes, `folder-roles-runtime` renews the changed role packaged
+consumer on all hosts and the missing Windows management/recovery/source-outage
+rows. It omits role DEV supplied by the gate and unchanged successful macOS rows,
+whose43811dde receipts remain inherited. Default full behavior remains unchanged.
+The pointer interruption control establishes a possible mechanism; the precise
+historical pointer timing cause remains unestablished. The Windows2022 capture
+itself proves the explicit stale review rather than an accepted operation.
+
+
 ## Final integrated desktop acceptance
 
 For #67, dispatch the registered `desktop-ci.yml` with `checks: integrated-desktop`
@@ -1988,3 +2008,13 @@ modes. Each host packages once. Receipts retain SHA/run/attempt, mode, screensho
 reopen, source reuse, file preservation and normal shutdown/cleanup. It changes
 no ordinary full defaults and publishes no release. Windows Server evidence does
 not substitute for Windows 11 desktop acceptance.
+
+
+A local keyboard renewal also reproduced the Settings failure. Bounded passive
+trace captured Enter delivered to Settings without a click/transition; the precise
+reason for that consumed activation is unestablished. The navigation-only helper
+now waits for the visible destination and may re-enter Settings within its original
+15s budget. A control consumes the first keyboard activation and verifies eventual
+selected-tab acknowledgment. No service mutation is repeated. Temporary trace
+instrumentation was removed. Rename operand verification is also bounded by the
+remaining15s; a stalled read-only callback fails with no further submission.

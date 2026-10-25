@@ -280,3 +280,40 @@ scoped source-disconnect replacement in both modes. Application, migrations,
 resources, dependencies and build/package inputs are identical to9ee8c787.
 Successful full-suite complements retain their real SHA/run/artifact; repaired
 expectations and runtime rows require new receipts. The failed runs stay failed.
+
+
+## Native entry gate and remaining Windows complement
+
+Outage-repair40198320655 at43811dde passes all13 selected cases on all3
+hosts. Runtime40198618666 passes all8 macOS native DEV/package consumers with
+owned shutdown/cleanup; packaged source-outage records app.isPackaged=true.
+Windows latest stops at Settings/Appearance entry; capture shows the workspace,
+not settings. Windows2022 reaches an explicit stale current-name review at rename,
+with original path and requested draft intact. Both failed receipts retain their
+original exits and successful cleanup. Later Windows consumers are unreached.
+
+Real Electron controls demonstrate original pointer navigation failure under a
+mid-gesture interruption and original rename-submit waiting forever after stale
+review; no historical pointer timing cause is claimed. The scoped role helper
+uses acknowledged keyboard Settings entry followed by selected-tab acknowledgment.
+Rename allows one explicit review only when production exposes an enabled
+current-name review (no pending/unresolved command), after public current name/path
+and physical original-directory/absent-target verification. The uncertain-result
+control has1 submission,0 effects,0 review and fails closed. The complete rename
+keeps15s; no accepted command is replayed. Original local role journey passes.
+
+The role-entry gate selects the2 controls and original role DEV on all3hosts.
+After success, runtime tail renews role packaged on all3hosts and all missing
+Windows consumers, inheriting unchanged successful macOS management/recovery/outage
+receipts at43811dde. Application/build inputs remain identical to9ee8c787.
+70 routing tests and lint pass; independent reviews cover this repair.
+
+
+A local keyboard renewal also reproduced the Settings failure. Bounded passive
+trace captured Enter delivered to Settings without a click/transition; the precise
+reason for that consumed activation is unestablished. The navigation-only helper
+now waits for the visible destination and may re-enter Settings within its original
+15s budget. A control consumes the first keyboard activation and verifies eventual
+selected-tab acknowledgment. No service mutation is repeated. Temporary trace
+instrumentation was removed. Rename operand verification is also bounded by the
+remaining15s; a stalled read-only callback fails with no further submission.
