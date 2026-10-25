@@ -1812,3 +1812,26 @@ therefore also renews `discovery-canonicalization.test.mjs` on both Windows host
 retaining source-level native root checks. Passing earlier full receipts do not
 waive this finding; inspect the repaired focused gate before the next full
 source-access renewal. The original ordinary/full selection is unchanged.
+
+## Durable command safety acceptance
+
+For #72, use the registered `desktop-ci.yml` dispatcher with
+`checks: command-safety`. The [command workflow](../.github/workflows/command-safety.yml)
+runs the complete current suite on macOS latest, Windows latest and Windows 2022,
+then renews development and packaged source enrollment, creation/recovery/native,
+rename, category move, category folders/removal, archive/restore, file Open/Reveal
+and backup/recovery consumers. Each host packages once. The acceptance driver
+records the actual source SHA/diff and harness digests, host/architecture, full
+package inventory and app.asar hash; package changes fail acceptance. No release
+is published and no live data is used. Windows Server receipts remain distinct
+from Windows 11 desktop acceptance.
+
+`command_safety_phase: runtime` omits the full suite; `packaged` also omits the
+development journeys. Use these only under the existing evidence-reuse policy.
+`command_safety_from` selects a named tail of the driver inventory. Excluded and
+unreached journeys remain explicit; a successful tail reports `partial` rather
+than complete acceptance. Earlier passing results retain their actual SHA,
+package hash and source provenance. A failure stops later consumers and preserves
+its nonzero exit. `--failure-probe` is diagnostic-only: it runs no real journey and
+must produce a failed receipt. These routes do not waive any unresolved issue or
+supported-host requirement. Ordinary full dispatch behavior remains unchanged.

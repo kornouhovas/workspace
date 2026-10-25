@@ -775,3 +775,25 @@ pass 3/3; the category/archive subset passed 46/46 before the added backup contr
 Both independent review follow-ups found no residual defect or history-preservation
 overreach in the inspected repairs. Migration renewal, final full suite, package
 and separate supported-platform/CI receipts remain to be completed.
+
+## Verification route preparation
+
+The registered desktop dispatcher now selects `command-safety` for a bounded
+three-host workflow: macOS latest, Windows latest and Windows 2022. It retains the
+complete suite and eight existing affected dev/package journeys: source enrollment,
+creation/recovery/native, rename, category move, category folders/removal,
+archive/restore, file Open/Reveal and backup/recovery. Each host packages once.
+The runtime driver records source SHA/diff, harness hashes, host/architecture,
+package inventory and app.asar hash; a package/source/harness change fails its
+current journey. First failure stops later consumers, preserving their unreached
+state and original exit code. A selected tail remains partial. Workflow phase is
+explicit; focused renewals do not stand in for omitted suite/development checks.
+
+This route prepares required #72 acceptance without adding #67's unrelated layout
+or scale matrix. No push or Actions dispatch is authorized yet. Ordinary full
+selection is unchanged. Local routing/selection/failure-propagation controls pass
+3/3; the diagnostic probe exits23, fails its receipt and reaches no real journey.
+Lint/docs217/diff pass. Independent Standards and Spec inspections found no
+concrete orchestration, scope or false-acceptance defect. Windows Server receipts
+remain separate from Windows 11 and documented human acceptance. Next: frozen
+migration renewal, the final full suite and local unchanged-package consumers.

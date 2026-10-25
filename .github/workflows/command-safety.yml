@@ -1,0 +1,93 @@
+name: Durable command safety
+
+on:
+  workflow_call:
+    inputs:
+      phase:
+        type: string
+        default: full
+      from:
+        type: string
+        default: ''
+  workflow_dispatch:
+    inputs:
+      phase:
+        type: choice
+        options: [full, runtime, packaged]
+        default: full
+      from:
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+
+jobs:
+  command-safety:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest, windows-2022]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 90
+    env:
+      WORKSPACE_COMMAND_SAFETY_PHASE: ${{ inputs.phase }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.21.1
+          cache: npm
+      - name: Validate acceptance selection
+        shell: bash
+        env:
+          ACCEPTANCE_PHASE: ${{ inputs.phase }}
+          RENEW_FROM: ${{ inputs.from }}
+        run: |
+          mkdir -p work/ci-command-safety
+          case "$ACCEPTANCE_PHASE" in full|runtime|packaged) ;; *) exit 2 ;; esac
+          args=(dev --list)
+          if [[ -n "$RENEW_FROM" ]]; then args+=("--from=$RENEW_FROM"); fi
+          node scripts/command-safety-acceptance.mjs "${args[@]}" > work/ci-command-safety/selection.json
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm run check:docs
+      - run: npm run build
+      - name: Complete current suite
+        if: ${{ inputs.phase == 'full' }}
+        shell: bash
+        run: |
+          mkdir -p work/ci-command-safety
+          set -o pipefail
+          npm run test:all 2>&1 | tee work/ci-command-safety/full.log
+      - name: Development command and native consumers
+        if: ${{ inputs.phase != 'packaged' }}
+        shell: bash
+        env:
+          RENEW_FROM: ${{ inputs.from }}
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-command-safety/dev
+        run: |
+          args=()
+          if [[ -n "$RENEW_FROM" ]]; then args+=("--from=$RENEW_FROM"); fi
+          node scripts/command-safety-acceptance.mjs dev "${args[@]}"
+      - name: Package unchanged candidate
+        run: npx electron-builder --dir
+      - run: npm run check:artifact -- release
+      - name: Packaged command and native consumers
+        shell: bash
+        env:
+          RENEW_FROM: ${{ inputs.from }}
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-command-safety/release
+        run: |
+          args=()
+          if [[ -n "$RENEW_FROM" ]]; then args+=("--from=$RENEW_FROM"); fi
+          node scripts/command-safety-acceptance.mjs release "${args[@]}"
+      - name: Preserve exact-candidate receipts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: command-safety-${{ matrix.os }}-${{ github.sha }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
+          path: work/ci-command-safety/
+          if-no-files-found: error
+          retention-days: 14
