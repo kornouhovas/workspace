@@ -76,9 +76,9 @@ Record actual results and exact-SHA CI/integration progress in the issue checkpo
 - [x] Confirm TDD seams with the owner.
 - [x] Implement reviewed, persisted role interpretation with retention and migration coverage.
 - [x] Expose the shared tree inside workspace settings and reconcile navigation/consumers.
-- [ ] Complete appearance, affected behavior and retained-guarantee verification.
+- [x] Complete appearance, affected behavior and retained-guarantee verification.
 - [x] Complete independent Standards and Spec reviews; repair findings.
-- [ ] Commit the verified candidate and complete required CI/integration acceptance.
+- [x] Commit the verified candidate and complete required CI/integration acceptance.
 
 
 ## Local candidate evidence before independent review
@@ -135,7 +135,7 @@ new placement. Both previously approved TDD seams still apply.
   intermediate authority and contradictory role snapshots.
 - [x] Real populated0033 journal rebuild preserves every old cell and dependent
   attestation; existing pre-identity fixtures retain their legacy rejection assertions.
-- [ ] Renew the full migration inventory, native command journey, final independent
+- [x] Renew the full migration inventory, native command journey, final independent
   reviews and complete final suite on the expanded candidate; publish exact-SHA CI.
 
 ## Expanded candidate verification and retained coverage
@@ -557,3 +557,35 @@ unchanged Windows2022 pair retains40213146706 provenance. No full/role/managemen
 consumer is selected. Application/build inputs remain identical to9ee8c787.
 The failed overall run remains failed; original Windows latest acceptance is open
 until this focused renewal succeeds and its artifacts are inspected.
+
+
+## Final acceptance and integration
+
+All required scenario rows have passing, inspected evidence. The consolidated
+[acceptance ledger](https://github.com/kornouhovas/workspace/issues/74#issuecomment-6400505691)
+records source SHAs, commands, artifacts, unchanged-input proof and retained failures.
+All runs below are attempt1; inherited receipts retain their original SHA.
+
+| Boundary | Accepted source evidence |
+| --- | --- |
+| Complete inventory, all three hosts | Successful complement of40194100008 at9ee8c787 plus all13 affected outage cases passing on each host in40198320655 at43811dde. The original full run remains failed for nine obsolete expectations per host. |
+| Role settings and expanded commands, DEV/package on three hosts |40211888336 atcbeb1e3b: six reports pass three groups with normal quit/cleanup;13 controls pass each host. |
+| Workspace management |40205926705 atc9e068a3: DEV on three hosts and packaged macOS/Windows latest pass11 groups. Ordinary40212746263 atcbeb1e3b renews Windows2022 packaged with11 groups/quit/cleanup and no diagnosticOnly flag. |
+| Retained recovery, DEV/package on three hosts |40213756323 atad33aa8a: six reports pass seven groups/64 captures/three normal shutdowns/cleanup; four editor/settings controls pass on each host. |
+| Source outage, DEV/package | macOS40198618666 at43811dde; Windows2022 40213146706 atcbeb1e3b; Windows latest40213756323 atad33aa8a. Six reports pass both verified cycles, exact identity/value/partition/fanout/isolation/bytes/restart, actual packaged mode and normal shutdown/cleanup. |
+| Appearance and review | Actual EN/RU, both themes/sizes, contextual settings and explicit parent captures inspected. Independent Standards and Spec reviews pass, including each affected driver repair. |
+
+Application, migrations, native resources, dependency/lockfile, build/package
+inputs and runtime configuration remain unchanged after9ee8c787. Only tests,
+fixtures, smoke navigation, diagnostic routes and documentation changed. Changed
+consumers were renewed under the shared evidence-reuse policy; no failed,
+diagnostic, skipped or missing receipt supplies acceptance. The historical
+intermittent removal-entry cause remains unestablished, while its ordinary
+acceptance row now passes. Local routing71 checks, settings controls and original
+retained recovery, lint, documentation links and diff checks pass.
+
+The clean integration checkout fast-forwarded fromd20eddc1 toad33aa8a;
+its tree matched the accepted task tip exactly and documentation/diff checks passed.
+This final documentation-only record inherits that runtime evidence. The GitHub
+completion checkpoint records the final delivered documentation SHA and verified
+remote integration. No release, main merge, live-data repair or next issue is included.
