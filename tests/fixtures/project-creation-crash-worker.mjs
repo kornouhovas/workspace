@@ -1,7 +1,10 @@
 import fs from "node:fs";
 import Database from "better-sqlite3";
 import { openUnconvertedEngineFixture } from "../support/unconverted-command-engines.mjs";
-const openEngineService = (...args) => openUnconvertedEngineFixture(...args).engines;
+import {openSettingsService} from '../../dist/service/settings.mjs';
+// Existing historical engine tests retain their legacy fixture. Runtime consumer
+// renewal explicitly selects the compiled current application factory.
+const openEngineService = process.env.WORKSPACE_CRASH_ENGINE==='application'?openSettingsService:(...args) => openUnconvertedEngineFixture(...args).engines;
 
 const [databasePath, checkpoint, serializedRequest, cleanupMarker, serializedSetup] = process.argv.slice(2);
 let request = JSON.parse(serializedRequest);
@@ -42,7 +45,7 @@ const native = {
     return { kind: stat.isSymbolicLink() ? "link" : stat.isDirectory() ? "directory" : "other",
       identity: { dev: String(stat.dev), ino: String(stat.ino), birthtimeNs: String(stat.birthtimeNs) } };
   },
-  realpath: (path) => fs.realpathSync.native(path),
+  realpath: (path) => process.platform==='win32'?fs.realpathSync(path):fs.realpathSync.native(path),
   names: (path) => fs.readdirSync(path),
   mkdir(path) {
     if (checkpoint === "after_intent") stop();

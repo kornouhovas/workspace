@@ -97,9 +97,9 @@ async function seedCrash(data, discoveryMode, checkpoint, projectRoot, otherRoot
   await mkdir(data, { recursive: true });
   const marker = join(data, "cleanup-marker");
   const request = { type: "workspace.createProject", operationId: randomUUID(), name: "Interrupted" };
-  const child = spawn(executablePath, [join(root, "tests/fixtures/project-creation-crash-worker.mjs"), join(data, "workspace.sqlite"), checkpoint,
+  const child = spawn(executablePath, ["--import","tsx",join(root, "tests/fixtures/project-creation-crash-worker.mjs"), join(data, "workspace.sqlite"), checkpoint,
     JSON.stringify(request), marker, JSON.stringify({ mode: discoveryMode, root: projectRoot, otherRoot })], {
-    cwd: root, env: { ...process.env, ELECTRON_RUN_AS_NODE: "1", PATH: `/Users/aleksandersk/.nvm/versions/node/v22.21.1/bin:${process.env.PATH}` },
+    cwd: root, env: { ...process.env, ELECTRON_RUN_AS_NODE: "1", WORKSPACE_CRASH_ENGINE:"application", PATH: `/Users/aleksandersk/.nvm/versions/node/v22.21.1/bin:${process.env.PATH}` },
     stdio: ["ignore", "pipe", "pipe"],
   });
   ownedProcesses.add(child);

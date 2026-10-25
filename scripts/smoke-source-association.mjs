@@ -59,9 +59,9 @@ try{
  await panel.getByRole('checkbox',{name:'I confirm that these folders should own the retained data',exact:true}).check();
  await panel.getByRole('button',{name:'Confirm association',exact:true}).click();
  await page.waitForFunction(async({workspaceId,projectId})=>{const r=await window.workspace.workspace({type:'workspace.listProjects',workspaceId});return r.ok&&r.value.projects.some(p=>p.projectId===projectId);},{workspaceId,projectId});
- const denied=await page.evaluate(({workspaceId,projectId})=>window.workspace.workspace({type:'workspace.revealProject',workspaceId,projectId}),{workspaceId,projectId});
- assert.equal(denied.ok,false);assert.match(denied.error.message,/safety update/);
- report.checks.push({reviewedEnrollment:true,logicalProjectPreserved:true,nativeDispatchGated:true});
+ const files=await page.evaluate(({workspaceId,projectId})=>window.workspace.workspace({type:'workspace.listProjectFiles',workspaceId,projectId,relativePath:''}),{workspaceId,projectId});
+ assert.equal(files.ok,true,JSON.stringify(files));assert.equal(files.value.outcome,'listed');
+ report.checks.push({reviewedEnrollment:true,logicalProjectPreserved:true,folderListingVerified:true});
  await close();assert.equal(await ownedProcessesStopped(parents,backends),true);report.status='passed';
 }catch(error){failed=error;report.status='failed';report.error=error.stack;}
 finally{try{await close();await cleanupOwnedFixture(fixture,{processesStopped:ownedProcessesStopped(parents,backends,{launchUnverified}),primaryFailure:failed,record:result=>{report.cleanup=result;}});}catch(error){failed??=error;report.cleanupError=error.stack;report.status='failed';}await writeFile(join(evidence,'report.json'),JSON.stringify(report,null,2));}

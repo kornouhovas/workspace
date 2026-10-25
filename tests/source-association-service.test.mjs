@@ -70,12 +70,13 @@ test('legacy dev control requires explicit root and separate project enrollment,
   assert.equal(f.command({type:'workspace.applySourceAssociation',previewToken:preview.value.previewToken}).ok,false);
 }));
 
-test('fresh and legacy sources cannot dispatch unconverted filesystem consumers',()=>fixture(f=>{
+test('converted file listing accepts enrolled folders and keeps unbound legacy folders inaccessible',()=>fixture(f=>{
   discover(f);
   const initial=readdirSync(f.root);
   const denied=f.query({type:'workspace.listProjectFiles',relativePath:'',projectId:f.query({type:'workspace.listProjects'}).value.projects[0].projectId});
-  assert.equal(denied.ok,false);
-  assert.match(denied.error.message,/safety update/);
+  assert.equal(denied.ok,true);assert.equal(denied.value.outcome,'listed');
+  f.sql.exec('UPDATE projects SET durable_evidence=NULL');
+  const legacy=f.query({type:'workspace.listProjectFiles',relativePath:'',projectId:f.query({type:'workspace.listProjects'}).value.retainedProjects[0].projectId});assert.equal(legacy.value.outcome,'rejected');
   assert.deepEqual(readdirSync(f.root),initial);
   assert.equal(f.sql.prepare('SELECT count(*) n FROM project_creation_operations').get().n,0);
 }));
@@ -192,8 +193,8 @@ test('folder substitution after preview rejects the complete association transac
  assert.equal(f.sql.prepare('SELECT durable_evidence FROM projects').get().durable_evidence,null);
 }));
 
-test('every unconverted direct service and native entry point fails closed without filesystem effects',async()=>{
- // Keep the fixture synchronous: all gated functions reject synchronously before any native dispatch.
+test('converted direct file entry rejects malformed logical requests without filesystem effects',async()=>{
+ // Invalid logical requests never reach filesystem/native dispatch.
  fixture(f=>{
   discover(f);
   const names=[
@@ -201,7 +202,7 @@ test('every unconverted direct service and native entry point fails closed witho
    'listProjectFiles',
    ];
   const before=readdirSync(f.root);let dispatches=0;
-  for(const name of names){const result=f.service.workspaces[name]({type:`workspace.${name}`,workspaceId:f.workspaceId},()=>{dispatches++;});assert.equal(result.ok,false,name);assert.match(result.error.message,/safety update/,name);}
+  for(const name of names){const result=f.service.workspaces[name]({type:`workspace.${name}`,workspaceId:f.workspaceId},()=>{dispatches++;});assert.equal(result.ok,false,name);assert.equal(result.error.code,'invalid_input',name);}
   assert.equal(dispatches,0);assert.deepEqual(readdirSync(f.root),before);
   for(const table of ['project_creation_operations','project_rename_operations','project_category_move_operations','project_archive_operations','category_folder_operations','category_removal_operations']) assert.equal(f.sql.prepare(`SELECT count(*) n FROM ${table}`).get().n,0);
  });
@@ -224,11 +225,12 @@ test('immutable terminal creation retries remain readable offline while unfinish
  assert.equal(f.command({...request,name:'Changed payload'}).ok,false);
 }));
 
-test('valid IPC requests cannot bypass the gate and association cancellation revokes its token across transport',()=>fixture(async f=>{
+test('valid IPC requests cannot bypass missing enrollment and association cancellation revokes its token across transport',()=>fixture(async f=>{
  const {EventEmitter}=await import('node:events');
  const {startServiceProcess}=await import('../dist/service/entry.cjs');
  const {isServiceResponse}=await import('../src/contracts/service-protocol.ts');
  const current=discover(f),projectId=current.projects[0].projectId;
+ f.sql.exec('UPDATE sources SET durable_evidence=NULL');f.sql.exec('UPDATE projects SET durable_evidence=NULL');
  class Port extends EventEmitter { sent=[];postMessage(message){this.sent.push(message);}start(){}close(){} }
  const parent=new Port(),port=new Port();
  startServiceProcess(parent,()=>f.service);
@@ -245,7 +247,7 @@ test('valid IPC requests cannot bypass the gate and association cancellation rev
   {type:'workspace.openProjectFile',projectId,relativePath:'keep.txt'},
   {type:'workspace.revealProjectFile',projectId,relativePath:'keep.txt'},
   {type:'workspace.listProjectFiles',projectId,relativePath:''},
- ]){const denied=await send(input);assert.equal(denied.ok,false,JSON.stringify(input));assert.equal(denied.error.code,'identity_update_required');}
+ ]){const denied=await send(input);assert.ok(!denied.ok||denied.value.outcome==='rejected',JSON.stringify(denied));}
  assert.equal(port.sent.some(m=>m.type==='project.reveal.native'),false);assert.deepEqual(readdirSync(f.root),['Project']);
  const review=await send({type:'workspace.previewSourceAssociation',mappings:[]});assert.equal(review.ok,true);
  assert.equal((await send({type:'workspace.cancelSourceAssociation',previewToken:review.value.previewToken})).ok,true);

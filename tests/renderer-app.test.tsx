@@ -3498,15 +3498,14 @@ test("EN/RU configured mode Apply keeps confirmed delayed success and never over
   }
 });
 
-test("EN/RU production App explains capability denial, keeps metadata and never creates or dispatches folders",async()=>{
+test("EN/RU production App enables verified folder commands and preserves metadata across restart",async()=>{
  for(const language of ["en","ru"] as const)for(const mode of ["direct","grouped"] as const){
-  const directory=mkdtempSync(join(tmpdir(),"gated-app-ui-")),root=join(directory,"root"),database=join(directory,"workspace.sqlite");
+  const directory=mkdtempSync(join(tmpdir(),"verified-app-ui-")),root=join(directory,"root"),database=join(directory,"workspace.sqlite");
   mkdirSync(join(root,...(mode==='grouped'?['Existing category','Existing project']:['Existing project'])),{recursive:true});
   let service=openSettingsService(database),off:(()=>void)|undefined,dispatches=0,creates=0;
   const t=(key:Parameters<typeof translate>[1])=>translate(language,key);
-  const gate=language==='en'?'Folder actions await a safety update. Retained properties and saved views remain available.':'Действия с папками ожидают обновления проверок безопасности. Сохранённые свойства и представления доступны.';
   try{
-   const created=service.workspaces.create({type:'workspace.create',name:'Gated workspace',rootPath:root});assert.ok(created.ok);if(!created.ok)throw new Error('Fixture failed');
+   const created=service.workspaces.create({type:'workspace.create',name:'Verified workspace',rootPath:root});assert.ok(created.ok);if(!created.ok)throw new Error('Fixture failed');
    const {workspaceId,sourceId}=created.value;
    const preview=service.workspaces.previewDiscovery({type:'workspace.previewDiscovery',workspaceId,mode});assert.ok(preview.ok);if(!preview.ok)throw new Error('Fixture failed');
    const initial=service.workspaces.applyDiscovery({type:'workspace.applyDiscovery',workspaceId,previewToken:preview.value.previewToken});assert.ok(initial.ok);if(!initial.ok)throw new Error('Fixture failed');
@@ -3526,23 +3525,23 @@ test("EN/RU production App explains capability denial, keeps metadata and never 
    };
    setup();await screen.findByRole('cell',{name:'Existing project'});
    await userEvent.click(await findAction('button',{name:t('createProject')}));
-   await userEvent.type(screen.getByRole('textbox',{name:t('creationName')}),'Must not exist');
+   await userEvent.type(screen.getByRole('textbox',{name:t('creationName')}),'Created safely');
    if(mode==='grouped')await userEvent.selectOptions(screen.getByRole('combobox',{name:t('creationCategory')}),initial.value.categories[0].categoryId);
    await userEvent.click(await findAction('button',{name:t('creationSubmit')}));
-   await screen.findByText(gate);assert.equal(screen.queryByText(t('creationUncertain')),null);
-   assert.equal((screen.getByRole('textbox',{name:t('creationName')}) as HTMLInputElement).value,'Must not exist');
-   assert.equal(creates,1);assert.deepEqual(readdirSync(mode==='grouped'?join(root,'Existing category'):root),tree);
-   const sql=new Database(database);try{assert.equal(sql.prepare<[],{n:number}>('SELECT count(*) n FROM project_creation_operations').get()!.n,0);}finally{sql.close();}
+   await screen.findByText(t('creationSaved'));
+   await screen.findByRole('cell',{name:'Created safely'});
+   assert.equal(creates,1);assert.deepEqual(readdirSync(mode==='grouped'?join(root,'Existing category'):root).sort(),[...tree,'Created safely'].sort());
+   const sql=new Database(database);try{assert.equal(sql.prepare<[],{n:number}>('SELECT count(*) n FROM project_creation_operations').get()!.n,1);assert.ok(sql.prepare<[],{durable_evidence:string|null}>("SELECT durable_evidence FROM projects WHERE relative_path LIKE '%Created safely'").get()!.durable_evidence);}finally{sql.close();}
    await userEvent.keyboard('{Escape}');
    await userEvent.click(await findAction('button',{name:`${t('revealProject')}: Existing project`}));
-   await waitFor(()=>assert.equal(screen.getAllByText(gate).length,2));assert.equal(dispatches,0);
+   await screen.findByText(t('revealDispatched'));assert.equal(dispatches,1);
    assert.deepEqual(service.workspaces.listTextProperties({type:'workspace.listTextProperties',workspaceId}),properties);
    cleanup();off?.();service.close();service=openSettingsService(database);setup();
    await screen.findByRole('cell',{name:'Existing project'});
    const after=service.workspaces.listProjects({type:'workspace.listProjects',workspaceId});assert.ok(after.ok);if(!after.ok)throw new Error('Fixture failed');
-   assert.equal(after.value.projects[0].projectId,projectId);assert.equal(after.value.sourceId,sourceId);
+   assert.ok(after.value.projects.some(project=>project.projectId===projectId));assert.equal(after.value.projects.length,2);assert.equal(after.value.sourceId,sourceId);
    assert.deepEqual(service.workspaces.listTextProperties({type:'workspace.listTextProperties',workspaceId}),properties);
-   assert.equal(creates,1);assert.equal(dispatches,0);
+   assert.equal(creates,1);assert.equal(dispatches,1);
   }finally{cleanup();off?.();service.close();rmSync(directory,{recursive:true,force:true});}
  }
 });

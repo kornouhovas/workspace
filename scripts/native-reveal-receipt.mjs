@@ -5,12 +5,26 @@ import { withDeadline } from "./runtime-lifecycle.mjs";
 export function installNativeRevealReceipt({ MessageChannelMain, app }, options) {
   if (globalThis.creationRevealReceipt) return globalThis.creationRevealReceipt.snapshot();
   const problems = ["unconfigured", "mode_retained", "excluded", "missing", "replaced", "unresolved", "root_unavailable", "root_replaced", "category_unavailable", "unavailable", "native_unavailable", "native_error", "request_expired"];
-  const errors = ["invalid_input", "filesystem", "storage", "service_unavailable", "stale_preview"];
+  const errors = ["invalid_input", "filesystem", "storage", "service_unavailable", "stale_preview", "identity_update_required"];
   const record = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
   const exact = (value, keys) => record(value) && Object.keys(value).length === keys.length && keys.every((key) => Object.hasOwn(value, key));
   const uuid = (value) => typeof value === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
   const id = (value) => Number.isSafeInteger(value) && value > 0;
-  const target = (value) => exact(value, ["canonicalRoot", "parentRelativePath", "relativePath", "rootIdentity", "parentIdentity", "nativeIdentity"]) &&
+  // Observation only: recognize the closed private proof shape; never retain it.
+  const evidence = value => exact(value,["version","provider","scope","volume","serial","fileId","created"]) && value.version===1 &&
+    typeof value.scope==="string" && value.scope.length>0 && typeof value.created==="string" && /^[1-9][0-9]*$/.test(value.created) &&
+    (value.provider==="apfs" ? typeof value.volume==="string" && /^[a-f0-9]{32}$/.test(value.volume) && /[1-9a-f]/.test(value.volume) &&
+      value.serial==="" && typeof value.fileId==="string" && /^[1-9][0-9]*$/.test(value.fileId) : value.provider==="ntfs" &&
+      typeof value.volume==="string" && /^\\\\\?\\Volume\{[a-f0-9-]{36}\}\\$/i.test(value.volume) &&
+      typeof value.serial==="string" && /^[1-9][0-9]*$/.test(value.serial) && typeof value.fileId==="string" && /^[a-f0-9]{32}$/.test(value.fileId) && /[1-9a-f]/.test(value.fileId));
+  const target = value => {
+    if(record(value)&&Object.hasOwn(value,"authorization")) {
+      const {authorization,...base}=value;
+      return target(base) && exact(authorization,["version","generation","folders"]) && authorization.version===1 && Number.isSafeInteger(authorization.generation) && authorization.generation>=0 &&
+        Array.isArray(authorization.folders) && authorization.folders.length>=2 && authorization.folders.length<=129 && authorization.folders.every(folder=>
+          exact(folder,["relativePath","evidence","mount"]) && typeof folder.relativePath==="string" && !folder.relativePath.includes("\0") && evidence(folder.evidence) && target({...base,nativeIdentity:JSON.stringify(folder.mount)}));
+    }
+    return  exact(value, ["canonicalRoot", "parentRelativePath", "relativePath", "rootIdentity", "parentIdentity", "nativeIdentity"]) &&
     [value.canonicalRoot, value.parentRelativePath, value.relativePath].every((path) => typeof path === "string" && !path.includes("\0")) && value.canonicalRoot !== "" && value.relativePath !== "" &&
     [value.rootIdentity, value.parentIdentity, value.nativeIdentity].every((encoded) => {
       if (typeof encoded !== "string" || encoded.length > 256) return false;
@@ -20,6 +34,7 @@ export function installNativeRevealReceipt({ MessageChannelMain, app }, options)
           [identity.ino, identity.birthtimeNs].every((part) => typeof part === "string" && /^[0-9]+$/.test(part) && BigInt(part) > 0n);
       } catch { return false; }
     });
+  };
   let state = "unarmed", supported = false, armed = false, pending, expectedWorkspace;
   let start, lastAt = 0, timer, truncated = false, observerFailed = false;
   let nativeBoundaryLatencyMs = "unknown";

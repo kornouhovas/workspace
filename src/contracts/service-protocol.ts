@@ -1,3 +1,4 @@
+import {validateEvidence,type FolderEvidence} from './folder-evidence.js';
 import { isProjectFilesRequest } from "./project-files.js";
 import type { MetadataRemovalPreview, MetadataRemovalResult } from "./metadata-removal.js";
 import type { BoardLayoutSnapshot } from "./board-layout.js";
@@ -114,7 +115,12 @@ function ids(value: unknown): value is string[] {
 }
 
 // Private service/main protocol. Never forward these messages to the renderer.
+export interface NativeFolderAuthorization {
+  version:1;generation:number;
+  folders:{relativePath:string;evidence:FolderEvidence;mount:{dev:string;ino:string;birthtimeNs:string}}[];
+}
 export interface TrustedProjectRevealTarget {
+  authorization?:NativeFolderAuthorization;
   ancestors?: { relativePath: string; identity: string }[];
   item?: import("./project-files.js").ProjectFileTarget;
   canonicalRoot: string;
@@ -137,6 +143,15 @@ export type NativeProjectRevealReply = {
 };
 export type NativeProjectRevealCancel = { type: "project.reveal.cancel"; requestId: number; dispatchId: string };
 export function isTrustedProjectRevealTarget(value: unknown): value is TrustedProjectRevealTarget {
+  if(record(value) && Object.hasOwn(value,"authorization")) {
+    const {authorization,...base}=value;
+    if(!isTrustedProjectRevealTarget(base) || !record(authorization) || !exact(authorization,["version","generation","folders"]) || authorization.version!==1 ||
+      !Number.isSafeInteger(authorization.generation) || Number(authorization.generation)<0 || !Array.isArray(authorization.folders) ||
+      authorization.folders.length<2 || authorization.folders.length>129)return false;
+    return authorization.folders.every(folder=>record(folder) && exact(folder,["relativePath","evidence","mount"]) && typeof folder.relativePath==="string" && !folder.relativePath.includes("\0") &&
+      validateEvidence(folder.evidence) && isTrustedProjectRevealTarget({...base,nativeIdentity:JSON.stringify(folder.mount)}));
+  }
+
   if (record(value) && Object.hasOwn(value, "ancestors")) {
     const { ancestors, ...base } = value;
     return isTrustedProjectRevealTarget(base) && Array.isArray(ancestors) && ancestors.length > 0 && ancestors.length < 128 &&
@@ -149,8 +164,14 @@ export function isTrustedProjectRevealTarget(value: unknown): value is TrustedPr
       !["open", "reveal"].includes(String(item.action)) ||
       !isProjectFilesRequest({ type: "workspace.openProjectFile", workspaceId: "00000000-0000-4000-8000-000000000001", projectId: "00000000-0000-4000-8000-000000000001", relativePath: item.relativePath }) ||
       !Array.isArray(item.components) || item.components.length !== String(item.relativePath).split("/").length) return false;
-    return item.components.every(component => record(component) && exact(component, ["identity", "kind"]) &&
-      ["directory", "file"].includes(String(component.kind)) && isTrustedProjectRevealTarget({ ...base, nativeIdentity: component.identity }));
+    return item.components.every(component => {
+      if(!record(component)||!exact(component,Object.hasOwn(component,"observation")?["identity","kind","observation"]:["identity","kind"]) ||
+        !["directory","file"].includes(String(component.kind)) || !isTrustedProjectRevealTarget({...base,nativeIdentity:component.identity}))return false;
+      const proof=component.observation;
+      if(proof===undefined)return true;
+      return component.kind==="directory" && record(proof) && exact(proof,["ok","evidence","mount"]) && proof.ok===true && validateEvidence(proof.evidence) &&
+        isTrustedProjectRevealTarget({...base,nativeIdentity:JSON.stringify(proof.mount)});
+    });
   }
   if (!record(value) || !exact(value, ["canonicalRoot", "parentRelativePath", "relativePath", "rootIdentity", "parentIdentity", "nativeIdentity"]) ||
     ![value.canonicalRoot, value.parentRelativePath, value.relativePath].every((path) => typeof path === "string" && !path.includes("\0")) ||

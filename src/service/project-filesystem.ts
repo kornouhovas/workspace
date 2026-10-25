@@ -1,3 +1,4 @@
+import {observeFolder,sameDurableFolder} from './folder-evidence.js';
 import type { ProjectRevealProblem } from "../contracts/project-reveal.js";
 import { isTrustedProjectRevealTarget, type TrustedProjectRevealTarget } from "../contracts/service-protocol.js";
 import { accessSync, constants, lstatSync, mkdirSync, opendirSync, readdirSync, realpathSync, rmdirSync } from "node:fs";
@@ -107,6 +108,20 @@ export function verifyTrustedProjectRevealTarget(target: TrustedProjectRevealTar
       target.parentIdentity !== target.ancestors.at(-1)?.identity) throw new RevealFailure("unresolved");
   } else if (components.length !== (target.parentRelativePath === "" ? 1 : 2) ||
     (target.parentRelativePath !== "" && target.parentRelativePath !== components[0])) throw new RevealFailure("unresolved");
+  const verifyFull=()=>{
+    if(!target.authorization)return;
+    const expectedPaths=["",...components.map((_,index)=>components.slice(0,index+1).join("/"))];
+    const proofs=target.authorization.folders;
+    if(proofs.length!==expectedPaths.length || proofs.some((proof,index)=>proof.relativePath!==expectedPaths[index]))throw new RevealFailure("unresolved");
+    const root=proofs[0];
+    if(!sameIdentity(root.mount,JSON.parse(target.rootIdentity)) || !sameIdentity(proofs.at(-1)!.mount,JSON.parse(target.nativeIdentity)) ||
+      !sameIdentity(proofs.at(-2)!.mount,JSON.parse(target.parentIdentity)))throw new RevealFailure("unresolved");
+    for(const proof of proofs) {
+      const current=observeFolder(join(target.canonicalRoot,proof.relativePath),root.evidence.scope);
+      if(!current.ok || !sameDurableFolder(current.evidence,proof.evidence) || !sameIdentity(current.mount,proof.mount) ||
+        proof.evidence.scope!==root.evidence.scope || proof.evidence.provider!==root.evidence.provider || proof.evidence.volume!==root.evidence.volume || proof.evidence.serial!==root.evidence.serial)throw new RevealFailure("replaced");
+    }
+  };
   const path = join(target.canonicalRoot, ...components), parent = join(target.canonicalRoot, target.parentRelativePath);
   const rel = relative(target.canonicalRoot, path);
   if (isAbsolute(rel) || rel === ".." || rel.startsWith(`..${sep}`) || path === target.canonicalRoot) throw new RevealFailure("unresolved");
@@ -128,8 +143,8 @@ export function verifyTrustedProjectRevealTarget(target: TrustedProjectRevealTar
     if (target.ancestors) for (const ancestor of target.ancestors) verify(join(target.canonicalRoot, ancestor.relativePath), ancestor.identity, "category_unavailable", "category_unavailable");
     else if (target.parentRelativePath) category();
   };
-  root(); parents();
+  verifyFull();root(); parents();
   verify(path, target.nativeIdentity, "missing", "replaced");
-  parents(); root();
+  parents(); root();verifyFull();
   return path;
 }

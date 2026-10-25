@@ -188,7 +188,7 @@ export class BackendController {
 
   private async onNativeReveal(message: NativeProjectRevealRequest): Promise<void> {
     const pending = this.pending.get(message.requestId);
-    if (!pending || pending.nativeStarted) return;
+    if (!pending || pending.nativeStarted || !message.target.authorization) return;
     const input = pending.input;
     if (isProjectRevealRequest(input)) { if (message.target.item || message.target.ancestors) return; }
     else if (isProjectFilesRequest(input) && input.type !== "workspace.listProjectFiles") {

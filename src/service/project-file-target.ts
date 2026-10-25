@@ -1,3 +1,5 @@
+import {observeFolder,sameDurableFolder,durableOwnershipKey} from './folder-evidence.js';
+import type {EvidenceReader} from './source-identity.js';
 import { spawnSync } from "node:child_process";
 import { accessSync, constants, lstatSync, realpathSync } from 'node:fs';
 import { join } from 'node:path';
@@ -7,7 +9,7 @@ import { sameIdentity, reliableIdentity } from './discovery.js';
 import { RevealFailure, validProjectBasename, verifyTrustedProjectRevealTarget } from './project-filesystem.js';
 
 // Private backend/main target: no paths or native evidence are supplied by renderer.
-export function inspectProjectItem(base: string, relativePath: string): { path: string; components: ProjectFileTarget['components'] } {
+export function inspectProjectItem(base: string, relativePath: string,scope?:string,reader:EvidenceReader=observeFolder): { path: string; components: ProjectFileTarget['components'] } {
   const names = relativePath === '' ? [] : relativePath.split('/');
   if (names.some(name => !validProjectBasename(name, process.platform))) throw new RevealFailure('unresolved');
   let path = base;
@@ -17,9 +19,11 @@ export function inspectProjectItem(base: string, relativePath: string): { path: 
     const stat = lstatSync(path, { bigint: true });
     const identity = { dev: String(stat.dev), ino: String(stat.ino), birthtimeNs: String(stat.birthtimeNs) };
     if (stat.isSymbolicLink() || (!stat.isDirectory() && !stat.isFile()) || !reliableIdentity(identity) ||
-      (!stat.isDirectory() && (index !== names.length - 1 || stat.nlink !== 1n)) || realpathSync.native(path) !== path) throw new RevealFailure('replaced');
+      (!stat.isDirectory() && (index !== names.length - 1 || stat.nlink !== 1n)) || (process.platform==='win32'?realpathSync(path):realpathSync.native(path)) !== path) throw new RevealFailure('replaced');
     accessSync(path, constants.R_OK | (stat.isDirectory() ? constants.X_OK : 0));
-    components.push({ identity: JSON.stringify(identity), kind: stat.isDirectory() ? 'directory' : 'file' });
+    const observation=scope&&stat.isDirectory()?reader(path,scope):undefined;
+    if(observation && (!observation.ok || !sameIdentity(observation.mount,identity) || observation.evidence.scope!==scope))throw new RevealFailure('replaced');
+    components.push({identity:JSON.stringify(identity),kind:stat.isDirectory()?'directory':'file',...(observation?.ok?{observation}:{})});
   }
   return { path, components };
 }
@@ -29,7 +33,20 @@ export function verifyProjectFileTarget(target: TrustedProjectRevealTarget): str
   const base = verifyTrustedProjectRevealTarget(project);
   if (!item) return base;
   try {
-    const current = inspectProjectItem(base, item.relativePath);
+    const root=project.authorization?.folders[0];
+    const current = inspectProjectItem(base,item.relativePath,root?.evidence.scope);
+    if(root) {
+      const keys=new Set(project.authorization!.folders.map(folder=>durableOwnershipKey(folder.evidence)));
+      for(const [index,component] of item.components.entries()) {
+        if(JSON.parse(component.identity).dev!==root.mount.dev)throw new RevealFailure('replaced');
+        if(component.kind!=="directory"){if(component.observation)throw new RevealFailure('unresolved');continue;}
+        const proof=component.observation,now=current.components[index]?.observation;
+        if(!proof || !now || !sameDurableFolder(proof.evidence,now.evidence) || !sameIdentity(proof.mount,now.mount) ||
+          proof.evidence.scope!==root.evidence.scope || proof.evidence.volume!==root.evidence.volume || proof.evidence.serial!==root.evidence.serial ||
+          proof.evidence.provider!==root.evidence.provider || keys.has(durableOwnershipKey(proof.evidence)))throw new RevealFailure('replaced');
+        keys.add(durableOwnershipKey(proof.evidence));
+      }
+    }
     if (current.components.length !== item.components.length || current.components.some((component, index) =>
       component.kind !== item.components[index].kind || !sameIdentity(JSON.parse(component.identity), JSON.parse(item.components[index].identity))) ||
       (item.action === 'open' && current.components.at(-1)?.kind !== 'file')) throw new RevealFailure('replaced');

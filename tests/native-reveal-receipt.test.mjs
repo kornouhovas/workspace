@@ -383,3 +383,10 @@ test("invalid requests never consume the armed intent and observer clock failure
   assert.equal(f.prototype.postMessage, f.post);
   assert.equal(f.timerActive(), false);
 });
+
+for(const provider of ['apfs','ntfs'])test(`${provider}: serializable receipt recognizes private durable folder authorization without retaining its values`,()=>{
+ const f=fixture(),evidence={version:1,provider,scope:'PRIVATE_SCOPE_SENTINEL',volume:provider==='apfs'?'11111111111111111111111111111111':'\\\\?\\Volume{11111111-1111-4111-8111-111111111111}\\',serial:provider==='apfs'?'':'123',fileId:provider==='apfs'?'2':'11111111111111111111111111111111',created:'3'};
+ const authorization={version:1,generation:4,folders:[{relativePath:'',evidence,mount:JSON.parse(identity)},{relativePath:target.relativePath,evidence:{...evidence,fileId:provider==='apfs'?'4':'22222222222222222222222222222222'},mount:JSON.parse(identity)}]};
+ f.port.postMessage(request);f.port.emit('message',{data:native('native',{target:{...target,authorization}})});f.advance(8);f.port.postMessage(native('reply',{result:{outcome:'dispatched'}}));f.port.emit('message',{data:response()});
+ const captured=snapshot(f);assert.equal(captured.nativeBoundaryLatencyMs,8);assert.equal(captured.records.some(record=>record.boundary==='native_malformed'),false);assert.equal(JSON.stringify(captured).includes('PRIVATE_SCOPE_SENTINEL'),false);f.collector.dispose();
+});

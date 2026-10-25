@@ -1,3 +1,4 @@
+import {openSettingsService} from '../dist/service/settings.mjs';
 import {syncBuiltinESMExports} from 'node:module';
 import {openUnconvertedEngineFixture} from './support/unconverted-command-engines.mjs';
 import {projectMetadataRecords} from './support/identity-migration-fixtures.mjs';
@@ -1364,7 +1365,7 @@ test("late preload/client reads startup degraded observation through production 
 });
 
 for (const mode of ["direct", "grouped"]) {
-  test(`${mode} legacy-engine creation/status/recovery/Reveal traverse emitted entry/controller/ports/preload/client`, async () => {
+  test(`${mode} production creation/status/recovery/Reveal traverse emitted entry/controller/ports/preload/client`, async () => {
     const directory = fs.realpathSync.native(fs.mkdtempSync(join(tmpdir(), "creation-reveal-transport-")));
     const root = join(directory, "root"), database = join(directory, "workspace.sqlite");
     fs.mkdirSync(root); if (mode === "grouped") fs.mkdirSync(join(root, "Category"));
@@ -1378,7 +1379,7 @@ for (const mode of ["direct", "grouped"]) {
     const { randomUUID } = await import("node:crypto");
     // Deterministic evidence-write interruption using the real database/service.
     let interrupt = false;
-    startServiceProcess(parent, (path, folder) => openLegacyEngineService(path, folder, undefined, undefined, {
+    startServiceProcess(parent, (path, folder) => openSettingsService(path, folder, undefined, undefined, {
       ...nativeProjectFilesystem,
       mkdir(path) { nativeProjectFilesystem.mkdir(path); if (interrupt) throw new Error("response lost after mkdir"); },
     }), () => child.exit());
@@ -1458,7 +1459,11 @@ for (const mode of ["direct", "grouped"]) {
 const revealCommand = () => ({ type: "workspace.revealProject", workspaceId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", projectId: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb" });
 const trustedTarget = () => ({ canonicalRoot: "/fixture/root", parentRelativePath: "", relativePath: "Project",
   rootIdentity: '{"dev":"1","ino":"2","birthtimeNs":"3"}', parentIdentity: '{"dev":"1","ino":"2","birthtimeNs":"3"}',
-  nativeIdentity: '{"dev":"1","ino":"4","birthtimeNs":"5"}' });
+  nativeIdentity: '{"dev":"1","ino":"4","birthtimeNs":"5"}',
+  authorization:{version:1,generation:0,folders:[
+    {relativePath:"",mount:{dev:"1",ino:"2",birthtimeNs:"3"},evidence:{version:1,provider:"apfs",scope:"fixture-scope",volume:"11111111111111111111111111111111",serial:"",fileId:"2",created:"3"}},
+    {relativePath:"Project",mount:{dev:"1",ino:"4",birthtimeNs:"5"},evidence:{version:1,provider:"apfs",scope:"fixture-scope",volume:"11111111111111111111111111111111",serial:"",fileId:"4",created:"5"}},
+  ]} });
 const nativeMessage = (requestId = 1) => ({ type: "project.reveal.native", requestId,
   dispatchId: "cccccccc-cccc-4ccc-8ccc-cccccccccccc", target: trustedTarget() });
 
@@ -1478,7 +1483,9 @@ test("private native requests require an outstanding Reveal, exact evidence/enve
   f.port.receive({ id: 1, result: { ok: true, value: { language: "en" } } }); await ordinary;
   const pending = f.controller.request(revealCommand());
   const message = nativeMessage(2);
-  for (const invalid of [{ ...message, requestId: 900 }, { ...message, path: "/outside" },
+  const {authorization: omittedProof,...nativeOnly}=message.target;
+  assert.ok(omittedProof);
+  for (const invalid of [{...message,target:nativeOnly},{ ...message, requestId: 900 }, { ...message, path: "/outside" },
     { ...message, dispatchId: "bad" }, { ...message, target: { ...message.target, nativeIdentity: '{}' } },
     { ...message, target: { ...message.target, nativeIdentity: '{"dev":"1","ino":"0","birthtimeNs":"5"}' } },
     { ...message, target: { ...message.target, url: "file:///outside" } }]) f.port.receive(invalid);
@@ -1531,7 +1538,7 @@ test("injected legacy-engine native reply bindings reject foreign IDs/evidence a
   const directory = fs.realpathSync.native(fs.mkdtempSync(join(tmpdir(), "native-reply-lifetime-")));
   const root = join(directory, "root"); fs.mkdirSync(join(root, "Project"), { recursive: true });
   const parent = new EventEmitter(), port = new FakePort(); parent.postMessage = () => {};
-  startServiceProcess(parent,openLegacyEngineService,undefined,10);
+  startServiceProcess(parent,openSettingsService,undefined,10);
   parent.emit("message", { data: { type: "connect", databasePath: join(directory, "data.sqlite") }, ports: [port] });
   let id = 0;
   const request = (input) => { const requestId = ++id; port.receive({ id: requestId, input }); return port.sent.find((message) => message.id === requestId)?.result; };
@@ -1583,7 +1590,7 @@ test("pending backend reauthorization rejects foreign/late verification replies 
 
 for (const mode of ["direct", "grouped"]) {
   for (const scenario of ["metadata_exclusion", "destination_missing", "destination_replaced", "native_sync_throw", "native_rejection", "native_timeout"]) {
-    test(`${mode} injected legacy-engine entry/controller native route blocks delayed ${scenario} and remains usable`, async () => {
+    test(`${mode} production entry/controller native route blocks delayed ${scenario} and remains usable`, async () => {
       const directory = fs.realpathSync.native(fs.mkdtempSync(join(tmpdir(), "native-dispatch-race-")));
       const root = join(directory, "root"), relativePath = mode === "direct" ? "Project" : "Category/Project", path = join(root, relativePath);
       fs.mkdirSync(path, { recursive: true }); fs.writeFileSync(join(path, "keep"), "sentinel");
@@ -1592,7 +1599,7 @@ for (const mode of ["direct", "grouped"]) {
       desktopPort.postMessage = (message) => { desktopPort.sent.push(message); servicePort.receive(message); };
       parent.postMessage = (message) => child.send(message);
       child.postMessage = (data) => parent.emit("message", { data, ports: [servicePort] });
-      startServiceProcess(parent,openLegacyEngineService,() => child.exit(),scenario === "native_timeout" ? 15 : 1000);
+      startServiceProcess(parent,openSettingsService,() => child.exit(),scenario === "native_timeout" ? 15 : 1000);
       const { createNativeProjectReveal } = await import("../src/desktop/project-reveal.ts");
       const calls = []; let finish, delayed = true, entered;
       const hasEntered = new Promise((resolve) => { entered = resolve; });

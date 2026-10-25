@@ -655,3 +655,75 @@ notes wrap without horizontal overflow. These runs verify the changed UI, not
 whole-issue platform acceptance. Native Reveal/files conversion and final whole-issue review/full suite,
 separate macOS/Windows native/Electron/package/CI gates remain. No push,
 integration, release or actual remount acceptance is inferred.
+
+## Thirteenth slice: native and file consumers
+
+Production Reveal, file listing and file Open/Reveal now acquire current durable
+source/project/ancestor frames rather than using stored device numbers as
+cross-run identity. A private closed protocol carries full folder observations
+and source generation; renderer requests still contain logical IDs and relative
+file locators only. Pure evidence types/validation/equality move into a Node-free
+contract module, with existing service exports retained. Main independently
+reobserves every protected folder immediately before dispatch/GO and rejects
+missing authority at the actual controller boundary. The bundled main provider
+loads from the fixed `dist/service` artifact location rather than incorrectly
+looking for the addon under `dist/desktop`. Windows descendants keep nonexclusive
+route resolution, native DELETE sharing, long-path operands and READY_PARENT/GO.
+
+Archived file targets require current same-scope recorded full ancestry or an
+actual immutable selected-archive association receipt. Root-only scope renewal
+cannot authorize archived contents. Both ordinary and archive namespaces veto
+full root/ancestor/project aliases. Current/stale peer-source target owners and
+late ownership changes are checked during permit reauthorization. Unchanged
+route-parent source roots remain allowed. Native regular-file operands retain
+request-local exact device/inode/birth, kind, link-count and route checks beneath
+fully verified directories; they do not acquire persisted file identity or
+cross-remount authority. Spec review confirmed this preserves the accepted folder
+contract and does not add durable regular-file storage.
+
+Read-only interim reviews drove public red/green repairs for ordinary-namespace
+archive aliases and peer target ownership. An additional protected-root alias
+control reproduced red and passed after inventory repair. Source-generation,
+policy, scope, volume, current-mount, cancellation, late peer ownership and
+independent main proof changes all reject before dispatch. Missing/replaced
+transport controls retain their specific problems instead of a generic expired
+request. Follow-up Spec/Standards inspections found no remaining concrete defect
+in those ownership repairs; whole-issue review remains separate.
+
+Coverage decisions: adapt obsolete #71 gate assertions to converted production
+behavior, retaining unbound-folder refusal, logical-only request validation,
+zero-effect malformed inputs and cancellation. `backend-lifecycle` native journeys
+now use the production factory, including current creation/recovery transport;
+dedicated legacy engine/crash suites remain. The EN/RU production App gate test
+now verifies successful enrolled creation/Reveal, exact retained metadata and
+restart, while source-binding/native service cases cover missing enrollment.
+The legacy-engine fixture still proves its output cannot silently enroll or
+acquire archive authority. No safety requirement or supported platform is retired.
+
+The serialized native receipt observer recognizes the added APFS/NTFS proof shape
+without retaining proof values. The original creation runtime seed failed first
+because Electron's child lacked the `tsx` loader already used by Node crash
+checks, then because its legacy completed rows were correctly retained as
+unbound. Runtime renewal explicitly selects the compiled production factory;
+legacy Node crash fixtures keep their existing default engine. This fixes the
+acceptance harness without restoring automatic legacy adoption.
+
+Observed Node 22.21.1/macOS arm64: fresh build/typecheck/lint/diff pass;
+latest affected set 278/278, including 23 new production/native checks and 51
+receipt-observer checks. Separate fixture renewal 90/90 and adapted public App/
+legacy-boundary controls 2/2 pass. Actual macOS dev file journey passed nested
+listing/navigation, 16 EN/RU/theme/size captures, missing-file feedback, exact
+Unicode file selection in Finder, external application Open, preserved bytes and
+owned process/fixture cleanup (`work/issue-72-native-files/report.json`). Actual
+creation/recovery dev journey passed all eight direct/grouped abrupt checkpoints,
+new native invocation/acknowledgment, exact Finder target selection and two normal
+shutdown/restart observations per checkpoint
+(`work/issue-72-native-creation3/dev-creation-observations.json`). These are dev
+consumer receipts; no packaged or Windows result is inferred. Full final suite,
+whole-issue review, migration renewal and separate package/CI acceptance remain.
+
+The updated source-association dev journey also passes: eight EN/RU light/dark
+1024/1440 captures, explicit selection/Cancel, preserved logical project and
+successful converted file listing after enrollment, with normal owned shutdown.
+The new non-gating association guidance was visually inspected in the narrow RU
+capture. Its report is `work/issue-72-native-source-association/report.json`.

@@ -1,3 +1,4 @@
+import type {FolderObservation} from './folder-evidence.js';
 import { isProjectRevealRequest, type ProjectRevealProblem } from './project-reveal.js';
 
 export type ProjectFilesQuery = { type: 'workspace.listProjectFiles'; workspaceId: string; projectId: string; relativePath: string };
@@ -21,4 +22,4 @@ export function isProjectFilesRequest(value: unknown): value is ProjectFilesQuer
 }
 
 // Private service/main evidence; never part of a renderer response.
-export type ProjectFileTarget = { relativePath: string; action: 'open' | 'reveal'; components: { identity: string; kind: 'directory' | 'file' }[] };
+export type ProjectFileTarget = { relativePath: string; action: 'open' | 'reveal'; components: { identity: string; kind: 'directory' | 'file';observation?:Extract<FolderObservation,{ok:true}> }[] };

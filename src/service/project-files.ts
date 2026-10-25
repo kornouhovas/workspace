@@ -1,3 +1,5 @@
+import {observeFolder} from './folder-evidence.js';
+import type {EvidenceReader} from './source-identity.js';
 import { opendirSync } from 'node:fs';
 import type { TrustedProjectRevealTarget, NativeProjectReveal } from '../contracts/service-protocol.js';
 import { isProjectFilesRequest, type ProjectFilesResult, type ProjectFileResult, type ProjectFileEntry } from '../contracts/project-files.js';
@@ -6,7 +8,7 @@ import { InvalidReveal } from './project-reveal.js';
 import { RevealFailure, verifyTrustedProjectRevealTarget } from './project-filesystem.js';
 import { inspectProjectItem, verifyProjectFileTarget } from './project-file-target.js';
 
-export function createProjectFilesService(authorize: (workspaceId: string, projectId: string) => TrustedProjectRevealTarget) {
+export function createProjectFilesService(authorize: (workspaceId: string, projectId: string) => TrustedProjectRevealTarget,reader:EvidenceReader=observeFolder) {
   function rejected(input: { workspaceId: string; projectId: string; relativePath: string }, error: unknown): ServiceResult<never> | ServiceResult<Extract<ProjectFilesResult, { outcome: 'rejected' }>> {
     if (error instanceof InvalidReveal) return invalid();
     const code = typeof error === 'object' && error !== null && 'code' in error ? String(error.code) : '';
@@ -16,7 +18,9 @@ export function createProjectFilesService(authorize: (workspaceId: string, proje
   function current(input: { workspaceId: string; projectId: string; relativePath: string }) {
     const target = authorize(input.workspaceId, input.projectId);
     const base = verifyTrustedProjectRevealTarget(target);
-    return { target, ...inspectProjectItem(base, input.relativePath) };
+    const item=inspectProjectItem(base,input.relativePath,target.authorization?.folders[0].evidence.scope,reader);
+    if(input.relativePath)verifyProjectFileTarget({...target,item:{relativePath:input.relativePath,action:"reveal",components:item.components}});
+    return {target,...item};
   }
   return {
     listProjectFiles(input: unknown): ServiceResult<ProjectFilesResult> {
@@ -29,7 +33,7 @@ export function createProjectFilesService(authorize: (workspaceId: string, proje
           for (let entry = directory.readSync(); entry; entry = directory.readSync()) {
             const relativePath = input.relativePath ? `${input.relativePath}/${entry.name}` : entry.name;
             let kind: ProjectFileEntry['kind'] = 'unavailable';
-            try { kind = inspectProjectItem(verifyTrustedProjectRevealTarget(initial.target), relativePath).components.at(-1)!.kind; } catch { /* Unsafe/disappeared entries remain visible but disabled. */ }
+            try { kind = inspectProjectItem(verifyTrustedProjectRevealTarget(initial.target), relativePath,initial.target.authorization?.folders[0].evidence.scope,reader).components.at(-1)!.kind; } catch { /* Unsafe/disappeared entries remain visible but disabled. */ }
             entries.push({ name: entry.name, relativePath, kind });
           }
         } finally { directory.closeSync(); }

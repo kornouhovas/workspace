@@ -280,8 +280,8 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
     publish([{ type: "workspace.projectsChanged", sourceId, revision, workspaceIds }]);
     observer.request(sourceId);
   }, projectFilesystem, createFilesystemAuthorization(scope,readFolderEvidence,db));
-  const reveal = createProjectRevealService(db, projectFilesystem);
-  const files = createProjectFilesService(reveal.authorizeProject);
+  const reveal = createProjectRevealService(db, projectFilesystem,{scope,read:readFolderEvidence});
+  const files = createProjectFilesService(reveal.authorizeProject,readFolderEvidence);
   const association = createSourceAssociationService(db, scope, readFolderEvidence, (sourceId, revision) => {
     association.invalidate(sourceId);
     invalidateSourceReviews(sourceId);
@@ -991,9 +991,7 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
     } catch { return storageFailure(); }
   }
 
-  // ADR 0009 rollout: #72 must convert each consumer before this gate is removed.
-  const blocked = () => ({ok:false as const,error:{code:"identity_update_required" as const,message:"Folder action awaits safety update. Retained metadata remains available."}});
-  const blockedAsync = async () => blocked();
+  // ADR 0009: each enabled consumer enforces current durable/mount authority.
   Object.assign(service, {
     previewProjectArchive: archiveMutations.previewProjectArchive,
     applyProjectArchive: archiveMutations.applyProjectArchive,
@@ -1015,9 +1013,9 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
     renameProject: rename.renameProject,
     previewProjectRenameRecovery: rename.previewProjectRenameRecovery,
     recoverProjectRename: rename.recoverProjectRename,
-    listProjectFiles: blocked,
-    projectFileCommand: blockedAsync,
-    revealProject: blockedAsync,
+    listProjectFiles: files.listProjectFiles,
+    projectFileCommand: files.projectFileCommand,
+    revealProject: reveal.revealProject,
     createProject: creation.createProject,
     previewProjectCreationRecovery: creation.previewProjectCreationRecovery,
     recoverProjectCreation: creation.recoverProjectCreation,
