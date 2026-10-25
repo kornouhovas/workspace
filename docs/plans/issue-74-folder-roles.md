@@ -180,3 +180,43 @@ replayed by that navigation preparation, and the original dialog deadline is kep
 Remaining delivery gate: publish the reviewed candidate, inspect required DEV/package
 three-host CI receipts/captures and integrate only after complete acceptance. GitHub
 checkpoints own exact SHAs, runs, inherited/renewed evidence and final delivery.
+
+## First published CI failure map and repair gate
+
+Run40190522307/attempt1 tested7ad3b1c4. macOS passed its full3910-case
+inventory, role DEV journey and retained workspace DEV journey, then failed the
+original retained-recovery DEV source-outage assertion at line132. Both Windows
+hosts failed the same12 new deep role command scenarios with filesystem_changed;
+root creation and archive parent-chain cases passed. Their full-suite reports have
+51+14+3929 tests and12 failures, with no cancellations. Required later native/package
+steps remained unreached and are not accepted.
+
+- The original macOS native command reproduced locally. A minimized public service
+  loop fails on fresh legacy and role sources without archive history: a root outage
+  incorrectly changes last-known active membership to individual unresolved state.
+  The repair returns null resolution for unavailable/unreadable sources and retains
+  deliberate null values in the observed projection. Ownership conflicts and all
+  actual filesystem authorization checks remain unchanged. Both public cases pass.
+- A sub-millisecond guard loop reproduces the Windows failure using actual win32
+  path semantics: native relative paths contain backslashes, while the immutable
+  journal locator uses forward slashes. Compare after native-separator conversion;
+  do not normalize the authored path. Windows/POSIX positive cases and traversal,
+  link and changed-identity rejection cases pass. Native Windows renewal is pending.
+- After the outage repair the original native journey advanced to its previously
+  unreached line145, whose literal mode-change text was superseded by #74's folder
+  configuration label. The inspected UI has the expected retained project and exact
+  ordinary value. Update that literal; retain the original retained/edit/file checks.
+
+Independent Standards and Spec review pass for the two application repairs. The
+new folder-roles-repair manual gate targets these regressions and the original
+retained DEV consumer on all three hosts. Full acceptance is renewed only after
+that gate passes, because application inputs changed. No original failure, deadline,
+identity/effect assertion or supported host is waived.
+
+Local repair gate preparation passes160 focused/routing tests, typecheck, lint,
+documentation links and diff checks. Strengthening the Windows/POSIX guard test
+also exposed an old private-helper traversal gap: a canonical ../Outside relative
+path could equal its supplied locator. Both hosts now explicitly reject parent
+escape before comparing portable paths; exact identities still apply. The original
+retained DEV command now passes all7 journeys and64 captures with normal shutdown
+and owned cleanup. Native supported-host repair-gate results remain pending.

@@ -142,7 +142,7 @@ try{
  const excluded=await call('previewDiscovery',{mode:'direct',excludedRelativePaths:['Verified move']});await call('applyDiscovery',{previewToken:excluded.previewToken});
  await area.getByText('Excluded from discovery. Use Preview folders to include it again.',{exact:true}).waitFor();assert.equal(await area.getByRole('button',{name:'Locate folder: Verified move',exact:true}).count(),0);await captureState('excluded-retained');
  const grouped=await call('previewDiscovery',{mode:'grouped',excludedRelativePaths:[]});await call('applyDiscovery',{previewToken:grouped.previewToken});
- await area.getByText('Retained after a mode change. Text remains editable; locate a folder to reassociate explicitly.',{exact:true}).waitFor();await captureState('mode-inactive-retained');
+ await area.getByText('Retained after a folder configuration change. Text remains editable; locate a folder to reassociate explicitly.',{exact:true}).waitFor();await captureState('mode-inactive-retained');
  assert.ok((await call('listTextProperties')).values.some(v=>v.projectId===project.projectId&&v.value==='Archived brief stays editable.'));
  report.checks.push('current exclusions and mode inactivity remain distinct retained states with preserved ordinary values');
  await close();report.status='passed';

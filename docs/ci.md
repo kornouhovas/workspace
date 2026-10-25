@@ -9,6 +9,16 @@ and retained project settings/Back journeys in DEV and packaged modes. Artifacts
 retain host, candidate SHA, run/attempt, full log and each consumer's receipts and
 captures. This does not publish a release or replace #67/#42 acceptance.
 
+For original run40190522307 failures at7ad3b1c4, first dispatch
+`checks: folder-roles-repair`. It builds on the same three hosts, runs the actual
+Windows/POSIX parent-path guard, role-command and source-outage public regressions,
+then the original DEV `smoke-retained-recovery.mjs` consumer. Its focused log and
+runtime report preserve SHA/run/attempt and failure/cleanup evidence. It does not
+run full suites, unrelated journeys or packages. The reusable workflow defaults to
+full acceptance; the focused input is explicit and routing-tested. After focused
+success, the application changes require renewed `checks: folder-roles` broad
+acceptance before integration.
+
 
 ## Final integrated desktop acceptance
 

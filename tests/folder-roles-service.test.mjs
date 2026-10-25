@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {mkdtempSync, mkdirSync, rmSync} from 'node:fs';
+import {mkdtempSync, mkdirSync, rmSync, renameSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import test from 'node:test';
@@ -246,4 +246,18 @@ test('a deep unrelated exclusion preserves rename and category move for ordinary
     const moved=value(app.handleCommand({type:'workspace.moveProjectCategory',workspaceId:workspace.workspaceId,projectId:project.projectId,operationId:crypto.randomUUID(),destinationCategoryId:before.categories.find(category=>category.relativePath==='Other').categoryId,expectedRevision:renamed.project.revision}));
     assert.equal(moved.outcome,'completed',JSON.stringify(moved));assert.equal(moved.project.relativePath,'Other/Renamed');
   }finally{app.close();rmSync(directory,{recursive:true,force:true});}
+});
+
+for(const roles of [false,true])test(`${roles?'role':'legacy'} source outage preserves last-known active projects without individual unresolved state`,()=>{
+ const directory=mkdtempSync(join(tmpdir(),'folder-outage-')),root=join(directory,'Root'),offline=join(directory,'Offline'),database=join(directory,'app.sqlite');mkdirSync(join(root,'Clients/App'),{recursive:true});let app=openSettingsService(database);
+ try{
+  const workspace=value(app.handleCommand({type:'workspace.create',name:'Workspace',rootPath:root,initialize:'status'}));
+  const query=input=>value(app.handleQuery({workspaceId:workspace.workspaceId,...input})),command=input=>value(app.handleCommand({workspaceId:workspace.workspaceId,...input}));
+  if(roles){const preview=query({type:'workspace.previewDiscovery',folderRoles:[{relativePath:'Clients',role:'group'}]});command({type:'workspace.applyDiscovery',previewToken:preview.previewToken});}
+  const before=query({type:'workspace.listProjects'}),project=before.projects[0];
+  app.close();renameSync(root,offline);app=openSettingsService(database);
+  for(const observed of [false,true]){
+   const outage=query({type:'workspace.listProjects',...(observed?{observed:true}:{})});assert.equal(outage.state,'unavailable');assert.equal(outage.projects.some(p=>p.projectId===project.projectId&&p.resolution===null),true,JSON.stringify(outage));assert.equal(outage.retainedCount,before.retainedCount);
+  }
+ }finally{app.close();rmSync(directory,{recursive:true,force:true});}
 });

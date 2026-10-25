@@ -989,9 +989,9 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
       return { ...(reason && reason !== "verified" ? {identityReason:reason} : {}), projectId: row.id, relativePath: row.relativePath, name: row.relativePath.split("/").at(-1)!, categoryId: row.categoryId,
         categoryName: (()=>{const path=categories.find((category)=>category.id===row.categoryId)?.relativePath;return path ? source.folderRoles ? path.split("/").at(-1)! : path : null;})(),
         retentionReason: row.modeInactive ? "mode_change" as const : null,
-        associationState: row.associationState, resolution: displayed ? displayedRows.get(row.id)?.resolution ?? "unresolved" : row.modeInactive
+        associationState: row.associationState, resolution: displayed ? displayedRows.has(row.id) ? displayedRows.get(row.id)!.resolution : "unresolved" : row.modeInactive
           ? modeRetainedResolution(verified ? currentScan : { ...currentScan, snapshot: null }, row, JSON.parse(source.excludedRelativePaths), source.archiveRelativePath)
-          : reason === "folder_changed" || reason === "different_volume" ? "replaced" : reason && reason !== "verified" ? "unresolved" : verified ? interpretation?.retained.find((observed) => observed.id === row.id)?.associationState ?? "unresolved" : "unresolved" };
+          : state === "unavailable" || state === "unreadable" ? null : reason === "folder_changed" || reason === "different_volume" ? "replaced" : reason && reason !== "verified" ? "unresolved" : verified ? interpretation?.retained.find((observed) => observed.id === row.id)?.associationState ?? "unresolved" : "unresolved" };
     }).sort((a, b) => a.relativePath < b.relativePath ? -1 : a.relativePath > b.relativePath ? 1 : 0);
     const presentations = db.select().from(schema.categoryPresentation).where(eq(schema.categoryPresentation.workspaceId, workspaceId)).all();
     const active = projection.filter((row) => row.retentionReason === null && row.associationState === "active" && (row.resolution === "active" || row.resolution === null));

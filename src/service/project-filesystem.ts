@@ -79,7 +79,7 @@ export function verifyCreationParents(filesystem: ProjectFilesystem, binding: {
   verifyCreationDirectory(filesystem, binding.canonicalRoot, rootIdentity);
   const parent = join(binding.canonicalRoot, binding.parentRelativePath);
   const rel = relative(binding.canonicalRoot, parent);
-  if (isAbsolute(rel) || rel !== binding.parentRelativePath) throw new CreationFailure("filesystem_changed");
+  if (isAbsolute(rel) || rel === ".." || rel.startsWith(`..${sep}`) || rel.split(sep).join("/") !== binding.parentRelativePath) throw new CreationFailure("filesystem_changed");
   verifyCreationDirectory(filesystem, parent, parentIdentity);
   verifyCreationDirectory(filesystem, binding.canonicalRoot, rootIdentity);
   return parent;
