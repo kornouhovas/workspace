@@ -1,4 +1,4 @@
-import {enterWorkspaceRemoval} from '../scripts/workspace-removal-driver.mjs';
+import {enterWorkspaceRemoval,cancelWorkspaceRename} from '../scripts/workspace-removal-driver.mjs';
 /* global document, requestAnimationFrame */
 import assert from "node:assert/strict";
 import test from "node:test";
@@ -95,6 +95,19 @@ test('role settings entry acknowledges keyboard navigation after a pointer inter
   await page.evaluate(()=>{const button=document.querySelector('button');let first=true;button.addEventListener('keydown',event=>{if(first&&event.key==='Enter'){first=false;event.preventDefault();}});});
   page.setDefaultTimeout(15000);await openRoleSettingsSection(page,'appearance');
   assert.equal(await page.getByRole('tab').getAttribute('aria-selected'),'true');
+ });
+});
+
+test('workspace rename cancellation waits for the active reply to enable its input',async()=>{
+ await withPage(async page=>{
+  await page.setContent('<input aria-label="Workspace name" disabled><button>Release activation reply</button>');
+  await page.evaluate(()=>{globalThis.renameCancels=0;const input=document.querySelector('input');input.onkeydown=event=>{if(event.key==='Escape'&&!input.disabled){globalThis.renameCancels++;input.hidden=true;}};document.querySelector('button').onclick=()=>{input.disabled=false;};});
+  const input=page.getByRole('textbox');await input.press('Escape');
+  assert.equal(await page.evaluate(()=>globalThis.renameCancels),0,'The original premature Escape cannot cancel a busy contextual form');
+  let complete=false;const cancelling=cancelWorkspaceRename(page,input).then(()=>{complete=true;});
+  await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+  assert.equal(complete,false);await page.getByRole('button').click();await cancelling;
+  assert.equal(await page.evaluate(()=>globalThis.renameCancels),1);
  });
 });
 

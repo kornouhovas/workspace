@@ -21,7 +21,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-latest, windows-latest, windows-2022]
+        os: ${{ inputs.runtime_only && fromJSON('["windows-latest","windows-2022"]') || fromJSON('["macos-latest","windows-latest","windows-2022"]') }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 45
     steps:
@@ -55,7 +55,7 @@ jobs:
         run: |
           mkdir -p work/ci-folder-roles
           set -o pipefail
-          node --import tsx --test --test-name-pattern='role settings entry|role rename explicitly|role action entry|workspace removal entry|role move preparation' tests/runtime-view-readiness.test.mjs 2>&1 | tee work/ci-folder-roles/entry.log
+          node --import tsx --test --test-name-pattern='role settings entry|role rename explicitly|role action entry|workspace removal entry|role move preparation|workspace rename cancellation' tests/runtime-view-readiness.test.mjs 2>&1 | tee work/ci-folder-roles/entry.log
       - name: Development folder configuration
         if: ${{ inputs.entry_repair || (!inputs.focused && !inputs.runtime_only) }}
         run: npm run smoke:folder-roles
@@ -63,7 +63,7 @@ jobs:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-folder-roles/dev
           WORKSPACE_SMOKE_MODE: dev
       - name: Retained unconfigured workspace management
-        if: ${{ !inputs.focused && (!inputs.runtime_only || runner.os == 'Windows') }}
+        if: ${{ !inputs.focused && !inputs.runtime_only }}
         run: npm run smoke:workspaces
         env:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-folder-roles/management-dev
@@ -80,13 +80,13 @@ jobs:
       - if: ${{ !inputs.focused }}
         run: npm run check:artifact -- release
       - name: Packaged folder configuration
-        if: ${{ !inputs.focused }}
+        if: ${{ !inputs.focused && !inputs.runtime_only }}
         run: npm run smoke:folder-roles
         env:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-folder-roles/release
           WORKSPACE_SMOKE_MODE: release
       - name: Packaged retained setup
-        if: ${{ !inputs.focused && (!inputs.runtime_only || runner.os == 'Windows') }}
+        if: ${{ !inputs.focused && !inputs.runtime_only }}
         run: npm run smoke:workspaces
         env:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-folder-roles/management-release

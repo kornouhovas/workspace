@@ -350,3 +350,21 @@ It omits full suites and unchanged retained recovery/source-outage rows. Local5
 controls,70 routing checks, role and management native journeys, lint/docs pass.
 Original failed receipts remain failed; remaining Windows retained recovery/outage
 rows still require their separate complement after this gate passes.
+
+
+Gate40201152440 at75b3e9c1 passes macOS role/management DEV/package.
+Both Windows role DEV journeys pass; management stops in navigation readiness
+after contextual rename Escape (line118). The input can be visible but disabled
+until its inactive-workspace activation reply completes; production ignores busy
+cancellation. The old driver dispatched Escape without enabled readiness, then
+returned while the draft could remain open. A real Electron control reproduces
+disabled Escape causing no cancellation. The driver now waits for the enabled
+input, sends Escape once and requires hidden-form acknowledgment within15s.
+This demonstrates the mechanism; the precise historical race remains inferred.
+Local6 controls and original management journey pass. Application code is unchanged.
+
+After this entry gate supplies role/management on all3hosts in both modes,
+runtime_only selects Windows latest/2022 only and the remaining retained-recovery
+and source-outage DEV/package rows, with package/artifact prerequisites. It does
+not replay accepted role/management consumers. Normal full and entry selections
+still use all3hosts. Routing checks evaluate both inventories and full defaults.

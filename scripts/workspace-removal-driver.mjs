@@ -19,3 +19,11 @@ export async function enterWorkspaceRemoval(page,workspaceId,name) {
  }
  return confirm;
 }
+
+// A contextual activation can expose the rename form before its reply unlocks
+// it. Disabled inputs cannot accept a human Escape; wait for that public control.
+export async function cancelWorkspaceRename(page,input) {
+ const deadline=Date.now()+15000;
+ await input.and(page.locator(':enabled')).press('Escape',{timeout:15000});
+ await input.waitFor({state:'hidden',timeout:Math.max(1,deadline-Date.now())});
+}

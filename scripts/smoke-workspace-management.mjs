@@ -1,4 +1,4 @@
-import {enterWorkspaceRemoval} from './workspace-removal-driver.mjs';
+import {enterWorkspaceRemoval,cancelWorkspaceRename} from './workspace-removal-driver.mjs';
 import { enterContextFor } from "./runtime-context-tools.mjs";
 import { applyReviewedDiscovery } from "./workspace-management-driver.mjs";
 import { activateWorkspaceFixture } from "./workspace-activation-driver.mjs";
@@ -114,7 +114,7 @@ try {
   await page.getByRole("group", { name: /^(Workspace actions|Действия с рабочим пространством):/ }).getByRole("button", { name: /^(Rename workspace|Переименовать рабочее пространство)$/ }).press("Enter");
   const renameInput = page.getByRole("textbox", { name: /^(Workspace name|Название рабочего пространства)$/ });
   await renameInput.waitFor(); assert.equal(await renameInput.inputValue(), "Workspace");
-  await renameInput.press("Escape"); await returnToWorkspace(page);
+  await cancelWorkspaceRename(page,renameInput); await returnToWorkspace(page);
   await activateWorkspaceFixture(page, first);
   await actions().nth(1).press("Enter");
   await page.getByRole("group", { name: /^(Workspace actions|Действия с рабочим пространством):/ }).getByRole("button", { name: /^(Settings|Настройки)$/ }).press("Enter");

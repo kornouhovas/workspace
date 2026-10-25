@@ -1372,7 +1372,7 @@ test('folder role acceptance selects its three-host DEV/package route without or
     if(event==='workflow_dispatch'&&checks==='folder-roles')assert.equal(enabled(workflow.jobs.common,event,checks),false);
   }
   const route=load(readFileSync('.github/workflows/folder-roles.yml','utf8')).jobs['folder-roles'];
-  assert.deepEqual(route.strategy.matrix.os,['macos-latest','windows-latest','windows-2022']);
+  assert.deepEqual(Array.from(runInNewContext(route.strategy.matrix.os.slice(3,-2),{inputs:{runtime_only:false},fromJSON:JSON.parse})),['macos-latest','windows-latest','windows-2022']);
   const runs=route.steps.filter(step=>step.run).map(step=>step.run);
   assert.ok(runs.some(run=>run.includes('npm run test:all')));
   for(const mode of ['dev','release']) {
@@ -1439,7 +1439,7 @@ test('source outage repair selects failed expectations while runtime tail suppli
   const runs=route.jobs['folder-roles'].steps.filter(step=>step.run&&(!step.if||runInNewContext(step.if.slice(3,-2),{inputs:{focused:false,runtime_only,entry_repair:false},runner:{os:'Windows'}}))).map(step=>step.run);
   assert.equal(runs.some(run=>run.includes('test:all')),!runtime_only);
   for(const mode of ['dev','release'])assert.equal(runs.includes(`node scripts/smoke-source-outage.mjs ${mode}`),runtime_only);
-  assert.equal(runs.filter(run=>run==='npm run smoke:folder-roles').length,runtime_only?1:2);assert.ok(runs.includes('node scripts/smoke-retained-recovery.mjs release'));
+  assert.equal(runs.filter(run=>run==='npm run smoke:folder-roles').length,runtime_only?0:2);assert.ok(runs.includes('node scripts/smoke-retained-recovery.mjs release'));
  }
 });
 
@@ -1455,11 +1455,13 @@ test('role entry gate isolates current driver and runtime tail reuses unchanged 
   const entry=runs({entry_repair:true,focused:false,runtime_only:false},os);
   assert.equal(entry.filter(run=>run==='npm run smoke:folder-roles').length,2);
   assert.equal(entry.filter(run=>run==='npm run smoke:workspaces').length,2);
-  assert.ok(entry.some(run=>run.includes("--test-name-pattern='role settings entry|role rename explicitly|role action entry|workspace removal entry|role move preparation'")));
+  assert.ok(entry.some(run=>run.includes("--test-name-pattern='role settings entry|role rename explicitly|role action entry|workspace removal entry|role move preparation|workspace rename cancellation'")));
   assert.ok(entry.includes('npx electron-builder --dir'));assert.ok(!entry.some(run=>run.includes('test:all')||run.includes('smoke-retained-recovery')));
  }
  const mac=runs({entry_repair:false,focused:false,runtime_only:true},'macOS');
- assert.deepEqual(mac,['npm ci','npm run typecheck','npm run lint','npm run check:docs','npm run build','npx electron-builder --dir','npm run check:artifact -- release','npm run smoke:folder-roles']);
+ assert.ok(!mac.includes('npm run smoke:folder-roles'));
+ assert.deepEqual(Array.from(runInNewContext(route.jobs['folder-roles'].strategy.matrix.os.slice(3,-2),{inputs:{runtime_only:true},fromJSON:JSON.parse})),['windows-latest','windows-2022']);
  const win=runs({entry_repair:false,focused:false,runtime_only:true},'Windows');
- for(const command of ['npm run smoke:workspaces','node scripts/smoke-retained-recovery.mjs','node scripts/smoke-retained-recovery.mjs release','node scripts/smoke-source-outage.mjs dev','node scripts/smoke-source-outage.mjs release'])assert.ok(win.includes(command));
+ assert.ok(!win.includes('npm run smoke:workspaces')&&!win.includes('npm run smoke:folder-roles'));
+ for(const command of ['node scripts/smoke-retained-recovery.mjs','node scripts/smoke-retained-recovery.mjs release','node scripts/smoke-source-outage.mjs dev','node scripts/smoke-source-outage.mjs release'])assert.ok(win.includes(command));
 });
