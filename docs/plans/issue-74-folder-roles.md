@@ -317,3 +317,16 @@ now waits for the visible destination and may re-enter Settings within its origi
 selected-tab acknowledgment. No service mutation is repeated. Temporary trace
 instrumentation was removed. Rename operand verification is also bounded by the
 remaining15s; a stalled read-only callback fails with no further submission.
+
+
+Focused40199671216 at9752299b passes macOS controls/role DEV; Windows
+latest reaches Settings but loses target-tab selection, while Windows2022 passes
+rename and stops entering archive review after a logged row detachment and hidden
+replacement action. No filesystem submission was reached at that failure. The
+navigation gate now waits through selected-tab acknowledgment and re-enters only
+row tools/unsubmitted action forms after replacement, each within15s. A real
+Electron row-clone control requires2 tools entries and exactly1 unsubmitted form;
+first-tab activation consumption is also covered. Rename unknown-outcome and
+operand guards remain unchanged. Local3 controls and the original role journey
+pass. The same focused role-entry gate renews these changes before the existing
+runtime complement; all prior failed receipts remain failed.

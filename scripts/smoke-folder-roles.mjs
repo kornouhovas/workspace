@@ -7,7 +7,7 @@ import {_electron} from 'playwright-core';
 import {runtimeSmokeLaunch} from './runtime-executable.mjs';
 import {closeElectron,cleanupOwnedFixture,ownedProcessesStopped} from './runtime-lifecycle.mjs';
 import {returnToWorkspace,setInterfaceLanguage} from './runtime-settings.mjs';
-import {openRoleSettingsSection as openSettingsSection,renameRoleProject} from './folder-role-driver.mjs';
+import {openRoleSettingsSection as openSettingsSection,renameRoleProject,enterRoleDialog} from './folder-role-driver.mjs';
 const root=resolve(import.meta.dirname,'..'),fixture=await realpath(await mkdtemp(join(tmpdir(),'folder-roles-')));
 const source=join(fixture,'Source'),data=join(fixture,'data'),evidence=resolve(process.env.WORKSPACE_SMOKE_EVIDENCE_DIR??'work/issue-74-folder-roles');
 await mkdir(evidence,{recursive:true});
@@ -104,23 +104,7 @@ try{
     await dialog.getByRole('button',{name:en?'Create folder':'Создать папку',exact:true}).click();
     await dialog.waitFor({state:'detached'});
     let created=(await query({type:'workspace.listProjects',workspaceId:first.workspaceId})).projects.find(p=>p.name===name);assert.equal(created.relativePath,`Clients/${name}`);assert.equal(created.categoryId,null);
-    const openProjectTools=async(projectName)=>{
-      await page.locator(`.saved-view-content [data-project-id="${created.projectId}"]`).scrollIntoViewIfNeeded();
-      const trigger=page.getByRole('button',{name:`${en?'Project actions':'Действия с проектом'}: ${projectName}`,exact:true});await trigger.and(page.locator(':enabled')).focus();await trigger.press('Enter');await page.getByRole('dialog',{name:`${en?'Project actions':'Действия с проектом'}: ${projectName}`,exact:true}).waitFor();
-    };
-    const enterDialog=async(button,label,projectName=renamed)=>{
-      const deadline=Date.now()+15000,modal=page.getByRole('dialog',{name:label,exact:true});
-      await button.and(page.locator(':enabled')).click();
-      try{await modal.waitFor({timeout:Math.min(1000,deadline-Date.now())});}catch(error){
-        if(await modal.isVisible())return modal;
-        if(!await page.getByRole('dialog',{name:`${en?'Project actions':'Действия с проектом'}: ${projectName}`,exact:true}).isVisible())throw error;
-        // A source observation can replace a row between pointerdown and click.
-        // Re-entering this editor authors no filesystem command.
-        await button.and(page.locator(':enabled')).click();await modal.waitFor({timeout:Math.max(1,deadline-Date.now())});
-      }
-      return modal;
-    };
-    const action=async(label,projectName)=>{await openProjectTools(projectName);const button=page.locator('.saved-view-content').getByRole('button',{name:`${label}: ${projectName}`,exact:true,includeHidden:true});return enterDialog(button,label,projectName);};
+    const action=(label,projectName=renamed)=>enterRoleDialog(page,{projectId:created.projectId,projectName,label,en});
     dialog=await action(en?'Rename project folder':'Переименовать папку проекта',name);
     await renameRoleProject(dialog,renamed,en,async()=>{
       const current=(await query({type:'workspace.listProjects',workspaceId:first.workspaceId})).projects.find(row=>row.projectId===created.projectId);
@@ -131,11 +115,9 @@ try{
     const move=async(parent)=>{
       const current=(await query({type:'workspace.listProjects',workspaceId:first.workspaceId})).projects.find(p=>p.projectId===created.projectId);assert.equal(current.name,renamed);
       const label=en?'Move project category':'Переместить проект в категорию';
-      await openProjectTools(renamed);
-      const moveButton=page.locator('.saved-view-content').getByRole('button',{name:`${label}: ${renamed}`,exact:true,includeHidden:true});
-      dialog=await enterDialog(moveButton,label);
+      dialog=await action(label);
       const select=dialog.getByRole('combobox');
-      if(await select.isDisabled()) {await dialog.getByRole('button',{name:en?'Cancel':'Отмена',exact:true}).click();await openProjectTools(renamed);dialog=await enterDialog(moveButton,label);}
+      if(await select.isDisabled()) {await dialog.getByRole('button',{name:en?'Cancel':'Отмена',exact:true}).click();dialog=await action(label);}
       await select.selectOption(parent);await page.screenshot({path:join(evidence,`${language}-move-${parent?'status':'root'}.png`)});
       await dialog.getByRole('button',{name:en?'Move project folder':'Переместить папку проекта',exact:true}).click();await dialog.waitFor({state:'detached'});
     };

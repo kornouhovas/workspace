@@ -11,7 +11,7 @@ import { build } from "esbuild";
 import { closeElectron } from "../scripts/runtime-lifecycle.mjs";
 import { usableRuntimeViewProjection } from "../scripts/runtime-view-readiness.mjs";
 import { activateRuntimeView, setRuntimeViewLanguage } from "../scripts/runtime-view-controls.mjs";
-import {openRoleSettingsSection,renameRoleProject} from "../scripts/folder-role-driver.mjs";
+import {openRoleSettingsSection,renameRoleProject,enterRoleDialog} from "../scripts/folder-role-driver.mjs";
 import {openSettingsSection} from "../scripts/runtime-settings.mjs";
 import { openArchiveTextEditor } from "../scripts/archive-editor-driver.mjs";
 import { installArchiveEntryTrace } from "../scripts/archive-entry-trace.mjs";
@@ -85,7 +85,7 @@ test('role settings entry acknowledges keyboard navigation after a pointer inter
   await page.setContent('<button>Settings</button><div id="tabs"></div>');
   await page.evaluate(()=>{
    const button=document.querySelector('button');button.onpointerdown=()=>{button.disabled=true;setTimeout(()=>{button.disabled=false;},100);};
-   button.onclick=()=>{button.hidden=true;const tab=document.createElement('button');tab.setAttribute('role','tab');tab.textContent='Appearance';tab.onclick=()=>tab.setAttribute('aria-selected','true');document.querySelector('#tabs').append(tab);};
+   button.onclick=()=>{button.hidden=true;const tab=document.createElement('button');tab.setAttribute('role','tab');tab.textContent='Appearance';let firstTab=true;tab.onkeydown=event=>{if(firstTab&&event.key==='Enter'){firstTab=false;event.preventDefault();}};tab.onclick=()=>tab.setAttribute('aria-selected','true');document.querySelector('#tabs').append(tab);};
   });
   page.setDefaultTimeout(300);
   await assert.rejects(openSettingsSection(page,'appearance'),/Timeout/);
@@ -94,6 +94,22 @@ test('role settings entry acknowledges keyboard navigation after a pointer inter
   await page.evaluate(()=>{const button=document.querySelector('button');let first=true;button.addEventListener('keydown',event=>{if(first&&event.key==='Enter'){first=false;event.preventDefault();}});});
   page.setDefaultTimeout(15000);await openRoleSettingsSection(page,'appearance');
   assert.equal(await page.getByRole('tab').getAttribute('aria-selected'),'true');
+ });
+});
+
+test('role action entry follows a replaced row without submitting a filesystem form',async()=>{
+ await withPage(async page=>{
+  await page.setContent('<main class="saved-view-content"><div data-project-id="project"><button id="trigger" aria-label="Project actions: Original">Tools</button><div id="tools" role="dialog" aria-label="Project actions: Original" hidden><button aria-label="Archive project: Original">Archive project</button></div></div></main>');
+  await page.evaluate(()=>{
+   globalThis.roleEntries=0;globalThis.roleDialogs=0;
+   const tools=document.querySelector('#tools'),trigger=document.querySelector('#trigger'),button=tools.querySelector('button');
+   trigger.onclick=()=>{globalThis.roleEntries++;tools.hidden=false;};
+   let replaced=false;
+   button.onkeydown=event=>{if(!replaced&&event.key==='Enter'){event.preventDefault();replaced=true;tools.hidden=true;const row=document.querySelector('[data-project-id]');const next=row.cloneNode(true);row.replaceWith(next);next.querySelector('#trigger').onclick=()=>{globalThis.roleEntries++;next.querySelector('#tools').hidden=false;};next.querySelector('#tools button').onclick=()=>{globalThis.roleDialogs++;const modal=document.createElement('div');modal.setAttribute('role','dialog');modal.setAttribute('aria-label','Archive project');modal.textContent='Unsubmitted archive review';document.body.append(modal);};}};
+  });
+  await enterRoleDialog(page,{projectId:'project',projectName:'Original',label:'Archive project',en:true});
+  assert.deepEqual(await page.evaluate(()=>[globalThis.roleEntries,globalThis.roleDialogs]),[2,1]);
+  assert.equal(await page.getByRole('dialog',{name:'Archive project',exact:true}).textContent(),'Unsubmitted archive review');
  });
 });
 

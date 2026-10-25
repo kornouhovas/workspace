@@ -1454,7 +1454,7 @@ test('role entry gate isolates current driver and runtime tail reuses unchanged 
  for(const os of ['macOS','Windows']){
   const entry=runs({entry_repair:true,focused:false,runtime_only:false},os);
   assert.equal(entry.filter(run=>run==='npm run smoke:folder-roles').length,1);
-  assert.ok(entry.some(run=>run.includes("--test-name-pattern='role settings entry|role rename explicitly'")));
+  assert.ok(entry.some(run=>run.includes("--test-name-pattern='role settings entry|role rename explicitly|role action entry'")));
   assert.ok(!entry.some(run=>run.includes('test:all')||run.includes('electron-builder')||run.includes('smoke:workspaces')||run.includes('smoke-retained-recovery')));
  }
  const mac=runs({entry_repair:false,focused:false,runtime_only:true},'macOS');
