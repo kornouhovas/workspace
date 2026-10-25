@@ -898,7 +898,7 @@ for (const history of ["none", "direct role", "grouped round trip"]) for (const 
   } finally { service?.close(); sqlite?.close(); fs.rmSync(directory, { recursive: true, force: true }); }
 });
 
-for (const grouped of [false, true]) test(`real native notifications and shutdown-missed ${grouped ? "grouped needed-category" : "direct"} changes preserve metadata before Refresh`, async () => {
+for (const {grouped,lateHint} of [{grouped:false,lateHint:false},{grouped:true,lateHint:false},{grouped:true,lateHint:true}]) test(`real native notifications and shutdown-missed ${grouped ? "grouped needed-category" : "direct"} changes preserve metadata before Refresh${lateHint ? " (delayed native hint)" : ""}`, async () => {
   const { nativeObserverDependencies } = await import("../src/service/source-observer.ts");
   const { withDeadline } = await import("../scripts/runtime-lifecycle.mjs");
   const directory = fs.realpathSync.native(fs.mkdtempSync(join(tmpdir(), "native-reconciliation-")));
@@ -907,10 +907,24 @@ for (const grouped of [false, true]) test(`real native notifications and shutdow
   fs.mkdirSync(join(root, original, "nested"), { recursive: true });
   fs.writeFileSync(join(root, original, "nested/sentinel"), Buffer.from([0, 10, 255, 42]));
   const sqlite = new Database(databasePath);
-  let hints = 0, service;
+  let hints = 0, service, committedForHint, releaseScan;
+  let sawHint = () => {};
+  const scanGate = new Promise(resolve => { releaseScan = resolve; });
+  const {scanConfiguredSource} = await import("../src/service/folder-roles.ts");
   const dependencies = { ...nativeObserverDependencies,
+    ...(lateHint ? {async scan(request) {
+      // Hold the real installation-window scan until the fixture mutation.
+      await scanGate;
+      return scanConfiguredSource({canonicalRoot:request.canonicalRoot,archiveRelativePath:request.archiveRelativePath,
+        discoveryMode:request.mode,folderRoles:request.folderRoles??null},request.exclusions);
+    }} : {}),
     watch(path, hint, failed) {
-      return nativeObserverDependencies.watch(path, () => { ++hints; hint(); }, failed);
+      return nativeObserverDependencies.watch(path, () => {
+        const deliver = () => { ++hints; sawHint(); hint(); };
+        // Delay only a genuine OS callback. No notification is synthesized.
+        if (lateHint && committedForHint) void committedForHint.then(() => setImmediate(deliver));
+        else deliver();
+      }, failed);
     },
   };
   try {
@@ -938,16 +952,21 @@ for (const grouped of [false, true]) test(`real native notifications and shutdow
         if (event.type === "workspace.projectsChanged" && event.sourceId === workspace.sourceId) resolve(event);
       });
     });
+    committedForHint = committed;
     const target = grouped ? "Needed/Moved" : "Renamed";
     if (grouped) {
       for (const path of ["Needed/Unrelated", "Other new/Unrelated", "Empty new"]) fs.mkdirSync(join(root, path), { recursive: true });
     }
     const hintsBefore = hints;
+    const nativeHint = new Promise(resolve => {
+      sawHint = () => { if (hints > hintsBefore) resolve(); };
+    });
     fs.renameSync(join(root, original), join(root, target));
+    releaseScan();
     const prepared = inventory(root);
     let event;
-    try { event = await withDeadline(committed, 4000, "Native reconciliation notification"); }
-    finally { off(); }
+    try { [event] = await withDeadline(Promise.all([committed, nativeHint]), 4000, "Native reconciliation notification"); }
+    finally { off(); sawHint = () => {}; }
     assert.ok(hints > hintsBefore, "Expected an actual fs.watch hint, not only health/Refresh");
     assert.deepEqual(event.workspaceIds, [workspace.workspaceId, sibling.workspaceId]);
     const notified = query("workspace.listProjects");

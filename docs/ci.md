@@ -15,6 +15,8 @@ publish a release or replace final desktop/manual Windows acceptance.
 For a driver-only repair after inspected complete-suite evidence, the same route
 accepts `checks: special-archive-native`. It retains build/static prerequisites
 and every DEV/package/native consumer, skipping only the complete-suite step.
+It also renews the original direct/grouped native-notification cases and the
+real-callback ordering control within their original shared 4s deadline.
 Compare application/build inputs and retain exact source-SHA provenance under
 the evidence-reuse policy before selecting it; default acceptance still runs all.
 

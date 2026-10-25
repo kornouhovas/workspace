@@ -39,6 +39,9 @@ jobs:
       - name: Renew affected routing and startup checks
         if: ${{ inputs.native_only }}
         run: node --test tests/status-moves-workflow.test.mjs tests/test-suites.test.mjs tests/special-archive-workflow.test.mjs tests/rename-runtime-startup.test.mjs
+      - name: Renew original native notification and ordering control
+        if: ${{ inputs.native_only }}
+        run: node --import tsx --test --test-name-pattern="real native notifications and shutdown-missed" tests/external-reconciliation-service.test.mjs
       - name: First-use archive and settings in development
         run: node scripts/smoke-special-archive.mjs
         env:

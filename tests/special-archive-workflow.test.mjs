@@ -24,7 +24,10 @@ test('special archive is explicit, preserves ordinary scheduling and accepts all
  const renewal=steps.find(s=>s.name==='Renew affected routing and startup checks');
  assert.ok(renewal.run.includes('tests/status-moves-workflow.test.mjs'));
  assert.equal(runInNewContext(renewal.if.slice(3,-2),{inputs:{native_only:true}}),true);
- assert.equal(steps.filter(s=>s.if&&s.if.includes('native_only')).length,2,'native-only replaces the already-inspected complete suite with affected regressions');
+ const notification=steps.find(s=>s.name==='Renew original native notification and ordering control');
+ assert.ok(notification.run.includes('tests/external-reconciliation-service.test.mjs'));
+ assert.equal(runInNewContext(notification.if.slice(3,-2),{inputs:{native_only:true}}),true);
+ assert.equal(steps.filter(s=>s.if&&s.if.includes('native_only')).length,3,'native-only replaces the already-inspected complete suite with affected regressions');
  assert.ok(steps[full].run.includes('set -o pipefail'));assert.ok(steps[full].run.includes('npm run test:all'));
  const native=steps.filter(s=>s.run==='node scripts/smoke-special-archive.mjs');assert.equal(native.length,2);
  assert.ok(steps.indexOf(native[0])>full);assert.equal(native[0].env.WORKSPACE_SMOKE_MODE,undefined);

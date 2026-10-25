@@ -93,3 +93,34 @@ original normal-quit timeout, with confirmed owned-process cleanup.
 original DEV/package consumers after inspected full-suite evidence. Its separate
 concurrency group preserves a still-running full receipt. No diagnostic result,
 failed run or skipped consumer becomes passing acceptance.
+
+## Inspected original hosted complete suites
+
+At application candidate `bb7701e6`, run
+[40224251563/attempt 1](https://github.com/kornouhovas/workspace/actions/runs/40224251563):
+
+- macOS latest: 3965 tests, 3935 passed, 3 failed, 27 skipped. The two option-position
+  guards and the grouped native-notification assertion fail; all other reported
+  checks pass. Downloaded full log/artifact inspected.
+- Windows latest: isolated batches pass 51/51 and 14/14; remaining batch has
+  3984 tests, 3968 passed, 2 failed, 14 skipped. Only the two option-position
+  guards fail. Downloaded full log/artifact inspected.
+- Windows2022 remains running at this checkpoint; it is not accepted by inference.
+
+The notification failure asserts callback order: reconciliation committed before
+its `hints` counter advanced. An exact local 20-run loop does not reproduce the
+natural timing. A deterministic public-service control instead holds the real
+read-only installation-window scan until the single fixture move, and delays a
+*genuine OS callback* until after that scan commits. The old check reproduces the
+same assertion failure; awaiting commit and the actual native hint independently
+passes all three selected cases under the original shared 4000ms deadline. There
+is no synthetic notification, Refresh, mutation replay or deadline increase.
+This proves the ordering mechanism is possible; the precise historical CI timing
+cause remains unestablished. Native-hint delivery is still required for acceptance.
+Both review axes report zero findings for the test-only repair; local cases pass
+3/3 and routing/startup renewal remains 97/97.
+
+The original retained `smoke:archive -- dev` also passes locally: all 12 direct/
+grouped EN/RU layout, archived Text, restart and restore checks, with five normal
+quits, backend exit and owned cleanup. This successful receipt stays separate
+from the failed new native driver's local quit receipt.
