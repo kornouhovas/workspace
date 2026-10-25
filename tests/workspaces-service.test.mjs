@@ -1,5 +1,5 @@
 import {observeFolder} from '../src/service/folder-evidence.ts';
-import {withIdentityMigrationDefaults,bindFixtureFolders,projectMetadataRecords} from './support/identity-migration-fixtures.mjs';
+import {withIdentityMigrationDefaults,bindFixtureFolders} from './support/identity-migration-fixtures.mjs';
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import { mkdtempSync, mkdirSync, readFileSync, realpathSync, rmSync, statSync, symlinkSync, writeFileSync } from "node:fs";
@@ -1511,9 +1511,8 @@ test("unavailable/unreadable/replaced roots keep saved projects and reject unsaf
       fs.opendirSync = originalOpen; syncBuiltinESMExports();
       fs.renameSync(root, join(directory, "disconnected"));
       assert.equal(listProjects(service, workspace.workspaceId).value.state, "unavailable");
-      assert.deepEqual(listProjects(service,workspace.workspaceId).value.projects,[]);
-      assert.equal(projectMetadataRecords(listProjects(service,workspace.workspaceId))[0].projectId,applied.projects[0].projectId);
-      assert.equal(projectMetadataRecords(listProjects(service,workspace.workspaceId))[0].resolution,"unresolved");
+      assert.deepEqual(listProjects(service,workspace.workspaceId).value.projects,applied.projects.map(row=>({...row,resolution:null,identityReason:'evidence_unavailable'})));
+      assert.deepEqual(listProjects(service,workspace.workspaceId).value.retainedProjects,[]);
       mkdirSync(root); mkdirSync(join(root, "Project"));
       const conflict = discoveryPreview(service, workspace.workspaceId).value;
       assert.equal(conflict.state, "root_identity_conflict");

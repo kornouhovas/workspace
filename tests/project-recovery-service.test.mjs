@@ -98,8 +98,10 @@ test("unavailable, unreadable, changed and conflicting roots do not report mass 
     finally { fs.opendirSync = originalOpen; fs.lstatSync = originalStat; syncBuiltinESMExports(); }
     assert.equal(result.ok, true); assert.equal(result.value.state, state);
     assert.equal(projectMetadataRecords(result)[0].projectId,f.project.projectId);
-    assert.equal(projectMetadataRecords(result)[0].resolution,state==="root_identity_conflict"?"replaced":"unresolved");
-    assert.deepEqual(result.value.projects,[]);
+    assert.equal(projectMetadataRecords(result)[0].resolution,state==="root_identity_conflict"?"replaced":["unavailable","unreadable"].includes(state)?null:"unresolved");
+    if (["unavailable","unreadable"].includes(state)) {
+      assert.equal(result.value.projects[0].projectId,f.project.projectId);assert.deepEqual(result.value.retainedProjects,[]);
+    } else assert.deepEqual(result.value.projects,[]);
     assert.deepEqual(f.records(), before);
     assert.equal(f.query("workspace.listTextProperties").value.values[0].value, f.value);
     assert.equal(fs.readFileSync(join(state === "unavailable" || state === "root_identity_conflict" ? join(f.directory, "away") : f.root, "Project", "sentinel"), "utf8"), "unchanged");

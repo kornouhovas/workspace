@@ -591,11 +591,9 @@ try {
       const actual = await projects(page, workspace.workspaceId);
       assertProjection(actual, { ...savedProjects, workspaceId: workspace.workspaceId,
         state: unavailable ? "unavailable" : savedProjects.state,
-        projects: unavailable ? [] : savedProjects.projects,
-        retainedProjects: unavailable ? [...savedProjects.projects,...savedProjects.retainedProjects]
-          .map(row=>({...row,resolution:"unresolved",identityReason:"evidence_unavailable"}))
-          .sort((a,b)=>a.relativePath<b.relativePath?-1:a.relativePath>b.relativePath?1:0) : savedProjects.retainedProjects,
-        retainedCount: unavailable ? savedProjects.projects.length+savedProjects.retainedProjects.length : savedProjects.retainedCount,
+        projects: unavailable ? savedProjects.projects.map(row=>({...row,resolution:null,identityReason:"evidence_unavailable"})) : savedProjects.projects,
+        retainedProjects: unavailable ? savedProjects.retainedProjects.map(row=>({...row,resolution:null,identityReason:"evidence_unavailable"})) : savedProjects.retainedProjects,
+        retainedCount: savedProjects.retainedCount,
       });
       assert.deepEqual(await properties(page, workspace.workspaceId), { ...savedProperties, workspaceId: workspace.workspaceId });
     }
@@ -611,11 +609,10 @@ try {
   const disconnectedProjects = await projects(page, sibling.workspaceId);
   assert.equal(disconnectedProjects.state, "unavailable");
   assert.equal(await page.getByRole("heading", { name: "Папка проекта недоступна", exact: true }).count(), 1);
-  assert.deepEqual(disconnectedProjects.projects,[]);
-  assert.deepEqual(new Set(disconnectedProjects.retainedProjects.map(row=>row.projectId)),new Set([...savedProjects.projects,...savedProjects.retainedProjects].map(row=>row.projectId)));
-  assert.ok(disconnectedProjects.retainedProjects.every(row=>row.resolution==="unresolved"&&row.identityReason==="evidence_unavailable"));
+  assert.deepEqual(disconnectedProjects.projects,savedProjects.projects.map(row=>({...row,resolution:null,identityReason:"evidence_unavailable"})));
+  assert.deepEqual(disconnectedProjects.retainedProjects,savedProjects.retainedProjects.map(row=>({...row,resolution:null,identityReason:"evidence_unavailable"})));
   assert.deepEqual(await properties(page, sibling.workspaceId), { ...savedProperties, workspaceId: sibling.workspaceId });
-  assert.equal(disconnectedProjects.retainedCount,savedProjects.projects.length+savedProjects.retainedProjects.length);
+  assert.equal(disconnectedProjects.retainedCount,savedProjects.retainedCount);
   await assertSourceState(true);
   await previewFolders(page, "ru");
   assert.equal(await page.getByRole("button", { name: discoveryLabels.ru.apply, exact: true }).isDisabled(), true);

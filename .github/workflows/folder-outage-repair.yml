@@ -1,0 +1,37 @@
+name: Folder source outage expectation renewal
+on:
+  workflow_call:
+permissions:
+  contents: read
+jobs:
+  outage:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest, windows-2022]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.21.1
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm run check:docs
+      - run: npm run build
+      - name: Original source outage failures and state distinctions
+        shell: bash
+        run: |
+          mkdir -p work/ci-folder-outage
+          set -o pipefail
+          node --import tsx --test --test-name-pattern='refresh leaves all metadata intact|incomplete grouped .* source|grouped unavailable roots|unavailable, unreadable, changed|actual runtime state assertions|unavailable/unreadable/replaced roots|production IPC keeps applied' tests/backend-lifecycle.test.mjs tests/external-reconciliation-service.test.mjs tests/grouped-discovery-service.test.mjs tests/project-recovery-service.test.mjs tests/runtime-source-disconnect.test.mjs tests/workspaces-service.test.mjs 2>&1 | tee work/ci-folder-outage/outage.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: folder-outage-${{ matrix.os }}-${{ github.sha }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
+          path: work/ci-folder-outage/
+          if-no-files-found: error
+          retention-days: 14

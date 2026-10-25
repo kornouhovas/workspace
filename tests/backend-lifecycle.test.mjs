@@ -686,9 +686,10 @@ test("production IPC keeps applied IDs/exclusions through unavailable roots, fin
     assert.equal(saved.retainedCount, 1);
     await rename(root, disconnected);
     const unavailable = connection.request({ type: "workspace.listProjects", workspaceId: first.workspaceId }).value;
-    assert.equal(unavailable.state,"unavailable");assert.deepEqual(unavailable.projects,[]);
-    assert.deepEqual(unavailable.retainedProjects.map(row=>row.projectId).sort(),[...saved.projects,...saved.retainedProjects].map(row=>row.projectId).sort());
-    assert.ok(unavailable.retainedProjects.every(row=>row.resolution==='unresolved'));
+    assert.equal(unavailable.state,"unavailable");
+    assert.deepEqual(unavailable.projects,saved.projects.map(row=>({...row,resolution:null,identityReason:'evidence_unavailable'})));
+    assert.deepEqual(unavailable.retainedProjects,saved.retainedProjects.map(row=>({...row,resolution:null,identityReason:'evidence_unavailable'})));
+    assert.equal(unavailable.retainedCount,saved.retainedCount);
     assert.equal(connection.request({ type: "workspace.previewDiscovery", workspaceId: first.workspaceId }).value.previewToken, null);
     await rename(disconnected, root);
     assert.deepEqual(connection.request({ type: "workspace.listProjects", workspaceId: first.workspaceId }).value, saved);

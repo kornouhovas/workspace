@@ -34,6 +34,30 @@ The packaged retained consumer explicitly passes the positional `release` argume
 the script does not select executable mode from WORKSPACE_SMOKE_MODE.
 
 
+Run40194100008/attempt1 at9ee8c787 completed all three full inventories.
+macOS has3917 tests/3881 pass/9 fail/27 platform skips; each Windows host has
+51+14+3936 tests with the same9 failures,14 skips and no cancellations. These
+are obsolete source-outage projection expectations, not additional application
+changes. `checks: folder-outage-repair` renews those13 selected service/IPC cases
+(including changed/conflicting-root distinctions) on all three hosts first.
+After inspected success, `checks: folder-roles-runtime` supplies the previously
+unreached original role/management/retained-recovery DEV/package journeys.
+The successful full-suite complement retains9ee8c787 provenance under evidence
+reuse; the failed full runs remain failed. Default full selection is unchanged.
+
+The runtime tail also runs `smoke-source-outage.mjs dev|release` on all three
+hosts. This replaces the affected source-disconnect segment of the historical
+composite `smoke-runtime` for #74: two original verified source-move cycles,
+shared ownership/fanout, active/excluded membership, exact Text, distinct view IDs,
+unsubscribed isolation, unrelated/source/external-link-target bytes, restart and
+normal shutdown/cleanup. Its actual Electron packaged state is asserted. The
+historical composite's local renewal stopped at its superseded pre-#73 setup
+message before this segment; it remains failed and supplies no acceptance.
+Current #73/#74 setup/context guarantees are covered by the role, workspace
+management and retained-recovery consumers; independent view presentation is
+covered by the role journey. Ordinary historical full routes are not rewritten.
+
+
 ## Final integrated desktop acceptance
 
 For #67, dispatch the registered `desktop-ci.yml` with `checks: integrated-desktop`

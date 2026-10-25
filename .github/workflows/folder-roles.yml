@@ -3,6 +3,9 @@ name: Contextual folder roles
 on:
   workflow_call:
     inputs:
+      runtime_only:
+        type: boolean
+        default: false
       focused:
         type: boolean
         default: false
@@ -37,7 +40,7 @@ jobs:
           set -o pipefail
           node --import tsx --test tests/role-parent-paths.test.mjs tests/role-project-commands.test.mjs tests/folder-roles-service.test.mjs 2>&1 | tee work/ci-folder-roles/focused.log
       - name: Complete current suite
-        if: ${{ !inputs.focused }}
+        if: ${{ !inputs.focused && !inputs.runtime_only }}
         shell: bash
         run: |
           mkdir -p work/ci-folder-roles
@@ -83,6 +86,16 @@ jobs:
         env:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-folder-roles/recovery-release
           WORKSPACE_SMOKE_MODE: release
+      - name: Renew shared source outage driver in DEV
+        if: ${{ inputs.runtime_only }}
+        run: node scripts/smoke-source-outage.mjs dev
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-folder-roles/source-runtime-dev
+      - name: Renew shared source outage driver packaged
+        if: ${{ inputs.runtime_only }}
+        run: node scripts/smoke-source-outage.mjs release
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-folder-roles/source-runtime-release
       - name: Preserve exact-candidate evidence
         if: always()
         uses: actions/upload-artifact@v4

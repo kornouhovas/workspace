@@ -271,7 +271,7 @@ for (const state of ["unavailable", "unreadable", "changed", "root_identity_conf
     }, () => {
       assert.equal(f.refresh().ok, true);
       assert.equal(f.query("workspace.listProjects").value.state, state);
-      assert.equal(projectMetadataRecords(f.query("workspace.listProjects"))[0].resolution, state === "root_identity_conflict" ? "replaced" : "unresolved");
+      assert.equal(projectMetadataRecords(f.query("workspace.listProjects"))[0].resolution, state === "root_identity_conflict" ? "replaced" : ["unavailable","unreadable"].includes(state) ? null : "unresolved");
     });
     assert.deepEqual(f.records(), before); assert.ok(f.events.every((event) => event.type !== "workspace.projectsChanged"));
   }));
@@ -701,7 +701,7 @@ for (const state of ["unavailable", "unreadable", "changed", "root_identity_conf
     }, () => {
       assert.equal(f.refresh().ok, true);
       const result = f.query("workspace.listProjects"); assert.equal(result.ok, true); assert.equal(result.value.state, state);
-      assert.equal(projectMetadataRecords(result)[0].resolution, state === "root_identity_conflict" ? "replaced" : "unresolved");
+      assert.equal(projectMetadataRecords(result)[0].resolution, state === "root_identity_conflict" ? "replaced" : ["unavailable","unreadable"].includes(state) ? null : "unresolved");
     });
     assert.deepEqual(f.records(), before); assert.ok(f.events.every((event) => event.type !== "workspace.projectsChanged"));
   }));

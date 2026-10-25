@@ -245,3 +245,38 @@ prior DEV receipts never establish packaged acceptance. Routing tests cover this
 Application, migrations, dependencies and build/package inputs are unchanged from
 97819571; its successful public/other-host repair receipts remain valid. Full
 three-host DEV/package acceptance remains required after the focused gate passes.
+
+
+## Full-suite expectation renewal and runtime complement
+
+Full40194100008/attempt1 at9ee8c787 completed all three inventories: macOS
+3917 cases/3881 pass/9 fail/27 skips; each Windows host51+14+3936 cases
+with3913 passes in the last batch, the same9 failures and14 skips. No cancellations.
+The local exact13-case selection reproduces9 failures and4 successes in2.4s.
+All failures require the obsolete unavailable/unreadable projects=[]/unresolved
+projection, contradicted by the accepted source-level-outage contract and the
+original retained native consumer. Adapt expectations to null individual resolution
+and retained last-known active/excluded membership; keep all SQL, bytes, Text,
+counts, IDs and safety assertions. Changed roots remain unresolved and identity
+conflicts replaced. The same13 cases then pass in2.1s. No application changes.
+
+The actual-runtime assertion test consumes the source-disconnect expectations
+from smoke-runtime and preserves both cycles, source fanout, isolation and byte
+checks. A local whole-composite renewal failed earlier at superseded pre-#73
+workspace-creation messaging, before outage. That failure is retained. Under
+requirement-based retention, renew its affected segment using the current scoped
+smoke-source-outage native driver: original verified move helper, two cycles,
+active/excluded exact projections and authored Unicode/whitespace Text, shared
+source IDs/distinct view IDs, isolated third workspace/source, exact source event
+sequence and unsubscribe, original/source/unrelated/external link-target bytes,
+restart and actual packaged-mode assertion. Current role/management/recovery
+journeys replace the old composite setup/context assumptions; role journey covers
+independent presentation. No original safety requirement is retired.
+
+The all-host folder-outage-repair gate selects the13 original affected cases
+before runtime acceptance. folder-roles-runtime then omits only the already-run
+full inventory and supplies all original unreached DEV/package journeys plus the
+scoped source-disconnect replacement in both modes. Application, migrations,
+resources, dependencies and build/package inputs are identical to9ee8c787.
+Successful full-suite complements retain their real SHA/run/artifact; repaired
+expectations and runtime rows require new receipts. The failed runs stay failed.
