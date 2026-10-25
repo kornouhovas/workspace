@@ -6,7 +6,7 @@ import {tmpdir,release} from 'node:os';
 import {join,resolve} from 'node:path';
 import {_electron} from 'playwright-core';
 import {closeElectron,cleanupOwnedFixture,ownedProcessesStopped,withDeadline} from './runtime-lifecycle.mjs';
-import {setInterfaceLanguage,openSettingsSection,returnToWorkspace} from './runtime-settings.mjs';
+import {setRoleLanguage as setInterfaceLanguage,openRoleSettingsSection as openSettingsSection,returnRoleWorkspace as returnToWorkspace} from './folder-role-driver.mjs';
 import {waitForRuntimeInterface} from './runtime-startup.mjs';
 import {packagedExecutablePath} from './runtime-executable.mjs';
 import {waitForRuntimeRecoverySource} from './runtime-recovery-readiness.mjs';

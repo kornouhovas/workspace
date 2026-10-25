@@ -182,7 +182,11 @@ jobs:
 
   folder-roles-recovery-repair:
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.checks == 'folder-roles-recovery-repair' }}
-    runs-on: windows-2022
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest, windows-2022]
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
@@ -197,15 +201,31 @@ jobs:
         run: |
           mkdir -p work/ci-folder-roles
           set -o pipefail
-          node --import tsx --test --test-name-pattern='archive editor|retained archive' tests/runtime-view-readiness.test.mjs 2>&1 | tee work/ci-folder-roles/editor.log
+          node --import tsx --test --test-name-pattern='archive editor|retained archive|role settings entry|retained settings navigation' tests/runtime-view-readiness.test.mjs 2>&1 | tee work/ci-folder-roles/editor.log
       - name: Original retained project settings and Back
         run: node scripts/smoke-retained-recovery.mjs
         env:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-folder-roles/recovery-dev
+      - run: npx electron-builder --dir
+      - run: npm run check:artifact -- release
+      - name: Original packaged retained project settings and Back
+        run: node scripts/smoke-retained-recovery.mjs release
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-folder-roles/recovery-release
+      - name: Missing Windows latest source outage DEV
+        if: ${{ matrix.os == 'windows-latest' }}
+        run: node scripts/smoke-source-outage.mjs dev
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-folder-roles/source-runtime-dev
+      - name: Missing Windows latest source outage packaged
+        if: ${{ matrix.os == 'windows-latest' }}
+        run: node scripts/smoke-source-outage.mjs release
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-folder-roles/source-runtime-release
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: folder-roles-recovery-windows-2022-${{ github.sha }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
+          name: folder-roles-recovery-${{ matrix.os }}-${{ github.sha }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
           path: work/ci-folder-roles/
           if-no-files-found: error
           retention-days: 14

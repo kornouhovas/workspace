@@ -1406,15 +1406,18 @@ test('folder role CI repair gate runs actual command/outage regressions and orig
 });
 
 
-test('retained recovery repair isolates the failed Windows2022 consumer and packaged acceptance selects the actual executable',()=>{
+test('retained recovery repair renews scoped navigation consumers and missing Windows latest outage modes',()=>{
  const workflow=load(readFileSync('.github/workflows/desktop-ci.yml','utf8'));
  const context={github:{event_name:'workflow_dispatch'},inputs:{checks:'folder-roles-recovery-repair'}};
  const active=Object.entries(workflow.jobs).filter(([,job])=>job.if&&runInNewContext(job.if.slice(3,-2),context)).map(([name])=>name);
  assert.deepEqual(active,['folder-roles-recovery-repair']);
- const job=workflow.jobs[active[0]];assert.equal(job['runs-on'],'windows-2022');
+ const job=workflow.jobs[active[0]];assert.equal(job['runs-on'],'${{ matrix.os }}');
+ assert.deepEqual(job.strategy.matrix.os,['macos-latest','windows-latest','windows-2022']);
  assert.ok(job.steps.some(step=>step.run==='node scripts/smoke-retained-recovery.mjs'));
- assert.ok(job.steps.some(step=>step.run?.includes("--test-name-pattern='archive editor|retained archive'")));
- assert.ok(!job.steps.some(step=>step.run?.includes('test:all')||step.run?.includes('electron-builder')));
+ assert.ok(job.steps.some(step=>step.run?.includes("--test-name-pattern='archive editor|retained archive|role settings entry|retained settings navigation'")));
+ assert.ok(!job.steps.some(step=>step.run?.includes('test:all')||step.run?.includes('smoke:folder-roles')||step.run?.includes('smoke:workspaces')));
+ assert.ok(job.steps.some(step=>step.run==='node scripts/smoke-retained-recovery.mjs release'));
+ for(const mode of ['dev','release'])assert.equal(job.steps.find(step=>step.run===`node scripts/smoke-source-outage.mjs ${mode}`).if,"${{ matrix.os == 'windows-latest' }}");
  assert.equal(job.steps.at(-1).if,'always()');
  const route=load(readFileSync('.github/workflows/folder-roles.yml','utf8')).jobs['folder-roles'];
  assert.equal(route.steps.find(step=>step.name==='Packaged retained project settings and Back').run,'node scripts/smoke-retained-recovery.mjs release');

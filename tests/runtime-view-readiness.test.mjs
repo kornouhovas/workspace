@@ -13,7 +13,7 @@ import { build } from "esbuild";
 import { closeElectron } from "../scripts/runtime-lifecycle.mjs";
 import { usableRuntimeViewProjection } from "../scripts/runtime-view-readiness.mjs";
 import { activateRuntimeView, setRuntimeViewLanguage } from "../scripts/runtime-view-controls.mjs";
-import {openRoleSettingsSection,renameRoleProject,completeRoleCreation,reviewRoleArchiveLocation,reviewRoleConfiguration,expandRoleFolder,enterRoleDialog,prepareRoleMove,completeRoleMove,completeRoleArchive} from "../scripts/folder-role-driver.mjs";
+import {setRoleLanguage,openRoleSettingsSection,renameRoleProject,completeRoleCreation,reviewRoleArchiveLocation,reviewRoleConfiguration,expandRoleFolder,enterRoleDialog,prepareRoleMove,completeRoleMove,completeRoleArchive} from "../scripts/folder-role-driver.mjs";
 import {openSettingsSection} from "../scripts/runtime-settings.mjs";
 import { openArchiveTextEditor } from "../scripts/archive-editor-driver.mjs";
 import { installArchiveEntryTrace } from "../scripts/archive-entry-trace.mjs";
@@ -140,6 +140,30 @@ test('role settings entry acknowledges keyboard navigation after a pointer inter
   await page.evaluate(()=>{const button=document.querySelector('button');let first=true;button.addEventListener('keydown',event=>{if(first&&event.key==='Enter'){first=false;event.preventDefault();}});});
   page.setDefaultTimeout(15000);await openRoleSettingsSection(page,'appearance');
   assert.equal(await page.getByRole('tab').getAttribute('aria-selected'),'true');
+ });
+});
+
+test('retained settings navigation acknowledges entry and selected General before changing language',async()=>{
+ await withPage(async page=>{
+  await page.setContent('<button id="entry">Settings</button><div id="settings" hidden><button role="tab" aria-selected="true">General</button><button role="tab">Backup and recovery</button><select id="interface-language"><option value="en">English</option><option value="ru">Russian</option></select><button id="back">Back to workspace</button></div>');
+  await page.evaluate(()=>{
+   const entry=document.querySelector('#entry'),settings=document.querySelector('#settings');let firstEntry=true,firstTab=true;
+   globalThis.languageChanges=0;
+   entry.onkeydown=event=>{if(firstEntry&&event.key==='Enter'){firstEntry=false;event.preventDefault();}};
+   entry.onclick=()=>{entry.hidden=true;settings.hidden=false;};
+   for(const tab of document.querySelectorAll('[role="tab"]')){
+    tab.onkeydown=event=>{if(firstTab&&event.key==='Enter'){firstTab=false;event.preventDefault();}};
+    tab.onclick=()=>{for(const item of document.querySelectorAll('[role="tab"]'))item.setAttribute('aria-selected',String(item===tab));};
+   }
+   document.querySelector('#interface-language').onchange=event=>{document.documentElement.lang=event.target.value;globalThis.languageChanges++;};
+   document.querySelector('#back').onclick=()=>{entry.hidden=false;settings.hidden=true;};
+  });
+  await setRoleLanguage(page,'ru');
+  assert.equal(await page.evaluate(()=>document.documentElement.lang),'ru');
+  assert.equal(await page.evaluate(()=>globalThis.languageChanges),1);
+  assert.equal(await page.getByRole('button',{name:'Settings',exact:true}).isVisible(),true);
+  await openRoleSettingsSection(page,'backup');
+  assert.equal(await page.getByRole('tab',{name:'Backup and recovery',selected:true}).isVisible(),true);
  });
 });
 

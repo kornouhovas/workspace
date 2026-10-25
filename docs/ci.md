@@ -2233,3 +2233,28 @@ Controls verify rejected2attempts/1effect, unknown1attempt/0effect/0reopen, and
 pre-Submit invalidation1attempt/1effect after a fresh form. Local role/control,
 71 routing/lint and both review axes pass. Renew only the role13-control/6consumer
 gate; management's Win22package row and Windows recovery/outage tail remain open.
+
+
+## Retained settings navigation renewal
+
+Runtime40213146706/attempt1 atcbeb1e3b passes all four Windows2022 recovery
+and source-outage DEV/package rows. Its Windows latest retained DEV consumer
+passes six groups/48 captures, then waits on hidden interface-language while the
+project remains visible and Settings has focus. Three normal shutdowns and cleanup
+pass. The original pointer navigator neither acknowledges settings entry nor selected
+General; the existing real Electron interruption control reproduces that gap.
+
+Reuse the existing acknowledged role settings/language/Back navigator in the retained
+consumer. Its only helper addition is the Backup label; existing role/management
+paths are unchanged. A native control consumes entry/tab keys and verifies exactly
+one language change, return and selected Backup. It fails before the additive label
+and passes afterward. Original seven journeys/64 captures and all data/identity,
+review, focus, containment, restart, bytes and cleanup assertions remain unchanged.
+
+The recovery-repair selector now renews the changed consumer in DEV/package on all
+three hosts, with editor/settings controls and package/artifact prerequisites.
+Only Windows latest adds its still-missing source-outage DEV/package pair; the
+unchanged Windows2022 pair retains40213146706 provenance. No full/role/management
+consumer is selected. Application/build inputs remain identical to9ee8c787.
+The failed overall run remains failed; original Windows latest acceptance is open
+until this focused renewal succeeds and its artifacts are inspected.
