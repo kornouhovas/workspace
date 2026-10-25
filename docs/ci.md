@@ -1905,3 +1905,17 @@ and the failed creation gate stops later consumers. Preserve the original failur
 and unestablished historical cause; diagnostic successes do not supply ordinary
 acceptance. Reusable/all-host defaults and other host selections stay unchanged.
 A new ordinary failure returns to the failed-Actions diagnosis loop.
+
+Cumulative review identified a changed default creation driver sequence in the
+optional diagnostic disposal wrapper. Renew only that consumer on macOS latest
+and Windows latest with `checks: command-safety-creation`. The ordinary route
+retains source-enrollment as its original prefix, all eight creation checkpoints
+in DEV and package modes, one package/artifact check and native/cleanup gates.
+It enables no diagnostics and uses separate concurrency so Windows2022 can
+finish supplying its missing tail. Other six journeys are explicitly excluded;
+manifest status is `partial`, with actual source/harness/package provenance.
+The reusable `through` input / CLI `--through` selects an inclusive inventory end;
+unknown/reversed ranges fail, and empty defaults preserve the full inventory.
+This narrow renewal resolves only creation-driver reuse; inherited successful
+receipts retain their actual tested SHA, and the unknown historical cause stays
+explicit.

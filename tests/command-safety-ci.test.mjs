@@ -11,18 +11,19 @@ import {commandSafetyJourneys} from '../scripts/command-safety-acceptance.mjs';
 test('registered command-safety dispatch isolates its three-host route while ordinary full remains unchanged',()=>{
  const desktop=load(readFileSync('.github/workflows/desktop-ci.yml','utf8')),workflow=load(readFileSync('.github/workflows/command-safety.yml','utf8'));
  assert.ok(Object.keys(desktop.on.workflow_dispatch.inputs).length <= 25);
- for(const choice of ['command-safety','command-safety-runtime','command-safety-packaged','command-safety-windows','command-safety-windows-2022']) assert.ok(desktop.on.workflow_dispatch.inputs.checks.options.includes(choice));
+ for(const choice of ['command-safety','command-safety-runtime','command-safety-packaged','command-safety-windows','command-safety-windows-2022','command-safety-creation']) assert.ok(desktop.on.workflow_dispatch.inputs.checks.options.includes(choice));
  assert.equal(desktop.jobs['focused-command-safety'].uses,'./.github/workflows/command-safety.yml');
- for(const checks of ['command-safety','command-safety-runtime','command-safety-packaged','command-safety-windows','command-safety-windows-2022','full','source-access']) {
+ for(const checks of ['command-safety','command-safety-runtime','command-safety-packaged','command-safety-windows','command-safety-windows-2022','command-safety-creation','full','source-access']) {
   const context={github:{event_name:'workflow_dispatch'},inputs:{checks}};
   assert.equal(runInNewContext(desktop.jobs['focused-command-safety'].if.slice(3,-2),context),checks.startsWith('command-safety'));
-  if(checks.startsWith('command-safety')) assert.equal(runInNewContext(desktop.jobs['focused-command-safety'].with.phase.slice(3,-2),context),checks==='command-safety'?'full':['command-safety-windows','command-safety-windows-2022'].includes(checks)?'runtime':checks.slice('command-safety-'.length));
-  if(checks.startsWith('command-safety')) assert.equal(runInNewContext(desktop.jobs['focused-command-safety'].with.hosts.slice(3,-2),context),checks==='command-safety-windows-2022'?'windows-2022':checks==='command-safety-windows'?'windows':'all');
+  if(checks.startsWith('command-safety')) assert.equal(runInNewContext(desktop.jobs['focused-command-safety'].with.phase.slice(3,-2),context),checks==='command-safety'?'full':['command-safety-windows','command-safety-windows-2022','command-safety-creation'].includes(checks)?'runtime':checks.slice('command-safety-'.length));
+  if(checks.startsWith('command-safety')) assert.equal(runInNewContext(desktop.jobs['focused-command-safety'].with.hosts.slice(3,-2),context),checks==='command-safety-creation'?'macos-windows-latest':checks==='command-safety-windows-2022'?'windows-2022':checks==='command-safety-windows'?'windows':'all');
+  if(checks.startsWith('command-safety'))assert.equal(runInNewContext(desktop.jobs['focused-command-safety'].with.through.slice(3,-2),context),checks==='command-safety-creation'?'creation-recovery-native':'');
   assert.equal(runInNewContext(desktop.jobs.common.if.slice(3,-2),context),checks==='full');
  }
  const job=workflow.jobs['command-safety'];
  assert.equal(workflow.on.workflow_call.inputs.hosts.default,'all');assert.equal(workflow.on.workflow_dispatch.inputs.hosts.default,'all');
- for(const hosts of ['all','windows','windows-2022']) assert.deepEqual(runInNewContext(job.strategy.matrix.os.slice(3,-2),{inputs:{hosts},fromJSON:JSON.parse}),hosts==='windows-2022'?['windows-2022']:hosts==='windows'?['windows-latest','windows-2022']:['macos-latest','windows-latest','windows-2022']);
+ for(const hosts of ['all','windows','windows-2022','macos-windows-latest']) assert.deepEqual(runInNewContext(job.strategy.matrix.os.slice(3,-2),{inputs:{hosts},fromJSON:JSON.parse}),hosts==='macos-windows-latest'?['macos-latest','windows-latest']:hosts==='windows-2022'?['windows-2022']:hosts==='windows'?['windows-latest','windows-2022']:['macos-latest','windows-latest','windows-2022']);
  const suite=job.steps.find(step=>step.name==='Complete current suite'),dev=job.steps.find(step=>step.name==='Development command and native consumers');
  for(const phase of ['full','runtime','packaged']) {
   const context={inputs:{phase}};assert.equal(runInNewContext(suite.if.slice(3,-2),context),phase==='full');assert.equal(runInNewContext(dev.if.slice(3,-2),context),phase!=='packaged');
@@ -35,6 +36,19 @@ test('acceptance selection retains every affected boundary and makes a renewed t
  const result=spawnSync(process.execPath,['scripts/command-safety-acceptance.mjs','release','--from=archive-restore','--list'],{encoding:'utf8'});assert.equal(result.status,0,result.stderr);
  const selected=JSON.parse(result.stdout);assert.deepEqual(selected.map(row=>row.id),['archive-restore','files-native','backup-recovery']);assert.ok(selected[0].args.includes('release'));
  const invalid=spawnSync(process.execPath,['scripts/command-safety-acceptance.mjs','dev','--from=unknown','--list']);assert.notEqual(invalid.status,0);
+});
+
+test('creation renewal selects the enrollment prefix and original creation only, rejecting invalid ranges',()=>{
+ const desktop=load(readFileSync('.github/workflows/desktop-ci.yml','utf8'));
+ const prefix='desktop-${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}';
+ for(const checks of ['command-safety-creation','command-safety-windows-2022'])
+  assert.equal(runInNewContext(desktop.concurrency.group.slice(prefix.length+3,-2),{inputs:{checks}}),checks==='command-safety-creation'?'-command-safety-creation':'');
+ for(const mode of ['dev','release']) {
+  const result=spawnSync(process.execPath,['scripts/command-safety-acceptance.mjs',mode,'--through=creation-recovery-native','--list'],{encoding:'utf8'});
+  assert.equal(result.status,0,result.stderr);assert.deepEqual(JSON.parse(result.stdout).map(row=>row.id),['source-enrollment','creation-recovery-native']);
+ }
+ for(const options of [['--through=unknown'],['--from=rename','--through=creation-recovery-native'],['--through=rename','--through=archive-restore']])
+  assert.notEqual(spawnSync(process.execPath,['scripts/command-safety-acceptance.mjs','dev',...options,'--list']).status,0);
 });
 
 test('diagnostic failure retains the original nonzero exit and never accepts or reaches real native journeys',()=>{
@@ -96,4 +110,13 @@ test('creation-entry diagnosis preserves the exact Windows prefix and cannot acc
  assert.ok(job.steps.indexOf(creation)<job.steps.indexOf(samples));
  assert.ok(job.steps.indexOf(samples)<job.steps.findIndex(step=>step.name==='Passive observation control'));
  assert.equal(job.steps.at(-1).if,'always()');
+});
+
+test('creation-only renewal retains partial receipts and original failure propagation',()=>{
+ const directory=mkdtempSync(join(tmpdir(),'command-safety-creation-range-'));
+ try {
+  const result=spawnSync(process.execPath,['scripts/command-safety-acceptance.mjs','dev','--through=creation-recovery-native','--failure-probe'],{env:{...process.env,WORKSPACE_SMOKE_EVIDENCE_DIR:directory},encoding:'utf8'});
+  assert.equal(result.status,23);const report=JSON.parse(readFileSync(join(directory,'manifest.json'),'utf8'));
+  assert.deepEqual(report.selected,['source-enrollment','creation-recovery-native']);assert.equal(report.excluded.length,6);assert.equal(report.status,'failed');assert.equal(report.journeys[0].exitCode,23);
+ }finally{rmSync(directory,{recursive:true,force:true});}
 });

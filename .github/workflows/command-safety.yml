@@ -9,6 +9,9 @@ on:
       phase:
         type: string
         default: full
+      through:
+        type: string
+        default: ''
       from:
         type: string
         default: ''
@@ -16,12 +19,15 @@ on:
     inputs:
       hosts:
         type: choice
-        options: [all, windows, windows-2022]
+        options: [all, windows, windows-2022, macos-windows-latest]
         default: all
       phase:
         type: choice
         options: [full, runtime, packaged]
         default: full
+      through:
+        type: string
+        default: ''
       from:
         type: string
         default: ''
@@ -34,7 +40,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: ${{ fromJSON(inputs.hosts == 'windows-2022' && '["windows-2022"]' || inputs.hosts == 'windows' && '["windows-latest","windows-2022"]' || '["macos-latest","windows-latest","windows-2022"]') }}
+        os: ${{ fromJSON(inputs.hosts == 'macos-windows-latest' && '["macos-latest","windows-latest"]' || inputs.hosts == 'windows-2022' && '["windows-2022"]' || inputs.hosts == 'windows' && '["windows-latest","windows-2022"]' || '["macos-latest","windows-latest","windows-2022"]') }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 90
     env:
@@ -50,13 +56,15 @@ jobs:
         env:
           ACCEPTANCE_PHASE: ${{ inputs.phase }}
           ACCEPTANCE_HOSTS: ${{ inputs.hosts }}
+          RENEW_THROUGH: ${{ inputs.through }}
           RENEW_FROM: ${{ inputs.from }}
         run: |
           mkdir -p work/ci-command-safety
           case "$ACCEPTANCE_PHASE" in full|runtime|packaged) ;; *) exit 2 ;; esac
-          case "$ACCEPTANCE_HOSTS" in all|windows|windows-2022) ;; *) exit 2 ;; esac
+          case "$ACCEPTANCE_HOSTS" in all|windows|windows-2022|macos-windows-latest) ;; *) exit 2 ;; esac
           args=(dev --list)
           if [[ -n "$RENEW_FROM" ]]; then args+=("--from=$RENEW_FROM"); fi
+          if [[ -n "$RENEW_THROUGH" ]]; then args+=("--through=$RENEW_THROUGH"); fi
           node scripts/command-safety-acceptance.mjs "${args[@]}" > work/ci-command-safety/selection.json
       - run: npm ci
       - run: npm run typecheck
@@ -74,11 +82,13 @@ jobs:
         if: ${{ inputs.phase != 'packaged' }}
         shell: bash
         env:
+          RENEW_THROUGH: ${{ inputs.through }}
           RENEW_FROM: ${{ inputs.from }}
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-command-safety/dev
         run: |
           args=()
           if [[ -n "$RENEW_FROM" ]]; then args+=("--from=$RENEW_FROM"); fi
+          if [[ -n "$RENEW_THROUGH" ]]; then args+=("--through=$RENEW_THROUGH"); fi
           node scripts/command-safety-acceptance.mjs dev "${args[@]}"
       - name: Package unchanged candidate
         run: npx electron-builder --dir
@@ -86,11 +96,13 @@ jobs:
       - name: Packaged command and native consumers
         shell: bash
         env:
+          RENEW_THROUGH: ${{ inputs.through }}
           RENEW_FROM: ${{ inputs.from }}
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-command-safety/release
         run: |
           args=()
           if [[ -n "$RENEW_FROM" ]]; then args+=("--from=$RENEW_FROM"); fi
+          if [[ -n "$RENEW_THROUGH" ]]; then args+=("--through=$RENEW_THROUGH"); fi
           node scripts/command-safety-acceptance.mjs release "${args[@]}"
       - name: Preserve exact-candidate receipts
         if: always()

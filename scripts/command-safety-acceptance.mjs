@@ -31,10 +31,11 @@ function inventory(directory,prefix='') {
 function harnessDigests(){return Object.fromEntries(readdirSync(join(root,'scripts')).filter(name=>name.endsWith('.mjs')).sort().map(name=>[name,sha256(readFileSync(join(root,'scripts',name)))]));}
 if(process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url)) {
   const [mode,...options]=process.argv.slice(2),all=commandSafetyJourneys(mode);
-  if(options.some(option=>!['--list','--failure-probe'].includes(option)&&!option.startsWith('--from=')) || options.filter(option=>option.startsWith('--from=')).length>1)throw new Error('Expected --list, --from=<journey> or --failure-probe');
+  if(options.some(option=>!['--list','--failure-probe'].includes(option)&&!['--from=','--through='].some(prefix=>option.startsWith(prefix))) || ['--from=','--through='].some(prefix=>options.filter(option=>option.startsWith(prefix)).length>1))throw new Error('Expected --list, --from=<journey>, --through=<journey> or --failure-probe');
   const from=options.find(option=>option.startsWith('--from='))?.slice(7),start=from===undefined?0:all.findIndex(row=>row.id===from);
-  if(start<0)throw new Error('Unknown command-safety journey');
-  const selected=all.slice(start);
+  const through=options.find(option=>option.startsWith('--through='))?.slice(10),end=through===undefined?all.length-1:all.findIndex(row=>row.id===through);
+  if(start<0||end<start)throw new Error('Unknown or reversed command-safety journey range');
+  const selected=all.slice(start,end+1);
   if(options.includes('--list'))console.log(JSON.stringify(selected));
   else {
     const diagnostic=options.includes('--failure-probe'),output=resolve(process.env.WORKSPACE_SMOKE_EVIDENCE_DIR??`work/issue-72-${mode}`);
@@ -42,7 +43,7 @@ if(process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url)) {
     const report={mode,phase:process.env.WORKSPACE_COMMAND_SAFETY_PHASE??'standalone-runtime',diagnostic,platform:process.platform,os:release(),arch:arch(),head:git(['rev-parse','HEAD']),sha:process.env.GITHUB_SHA??null,
       run:process.env.GITHUB_RUN_ID??null,attempt:process.env.GITHUB_RUN_ATTEMPT??null,sourceDiffSha256:sha256(execFileSync('git',['diff','HEAD','--binary'],{cwd:root})),
       harnessDigests:harnessDigests(),
-      selected:selected.map(row=>row.id),excluded:all.slice(0,start).map(row=>row.id),packageBefore:null,packageAfter:null,appAsarSha256:null,
+      selected:selected.map(row=>row.id),excluded:all.filter(row=>!selected.includes(row)).map(row=>row.id),packageBefore:null,packageAfter:null,appAsarSha256:null,
       journeys:all.map(row=>({id:row.id,status:'unreached'})),status:'running'};
     const save=()=>writeFileSync(join(output,'manifest.json'),JSON.stringify(report,null,2)+'\n');
     let bundle,activeRow,exitCode=0;
@@ -72,7 +73,7 @@ if(process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url)) {
         if(git(['rev-parse','HEAD'])!==report.head || sha256(execFileSync('git',['diff','HEAD','--binary'],{cwd:root}))!==report.sourceDiffSha256 || JSON.stringify(harnessDigests())!==JSON.stringify(report.harnessDigests))throw new Error('Source or harness changed during command-safety acceptance');
         activeRow=undefined;
       }
-      report.status=exitCode?'failed':start>0?'partial':'passed';
+      report.status=exitCode?'failed':selected.length<all.length?'partial':'passed';
     }catch(error){exitCode=1;report.status='failed';report.error=error.message;if(activeRow){activeRow.status='failed';activeRow.error=error.message;}}
     finally{save();}
     process.exitCode=exitCode;

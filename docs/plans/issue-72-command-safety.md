@@ -1147,3 +1147,30 @@ full DEV/package inventory/defaults and absent diagnostic flags. Spec policy
 review confirms ordinary renewal is appropriate for the missing rows while
 retaining the original failure and unestablished cause; it proves only its actual
 run result and cannot be described as a repair.
+
+Final cumulative review inspected every follow-up commit from a5470a9e and
+confirmed unchanged application/migrations/native resources/dependencies/lockfile/
+build-package inputs/ordinary environment. It found one narrow reuse gap: the
+creation driver's optional disposer is unconditionally awaited, adding a
+microtask before Reveal even with diagnostics disabled. Renew that consumer on
+macOS and Windows latest instead of treating A/CB creation as identical. The
+Windows2022 ordinary run40170685964 already executes that current driver. No
+product/helper repair or historical-cause inference accompanies this choice.
+
+The prepared ordinary `command-safety-creation` route selects only macOS latest
+and Windows latest, source-enrollment then original eight creation checkpoints
+in both modes, one package/artifact check, no diagnostic flags. Separate
+concurrency preserves the ongoing Windows2022 missing-tail run. Its inclusive
+`through` selection records all excluded journeys and partial status; empty
+selection defaults execute the identical full ordered inventory with unchanged
+commands/environment. The CLI range test first failed on unsupported --through
+(`/tmp/issue72-creation-range-red1.txt`), then passed alongside72 controls; an
+actual exit23 probe retains failure and exclusions. Remaining seven runtime
+journeys do not consume the changed creation driver. Integration stays
+conditional on both ordinary renewals' inspected artifacts.
+
+Both scoped reviewers confirm the ordinary creation renewal closes the narrow
+reuse gap once its artifacts pass: inclusive/finite range, explicit partial
+coverage, unchanged full-default ordered commands/environment/loop, original
+eight checkpoints in both modes, no diagnostics and separate concurrency.
+Selected72 routing/range/failure controls, lint/docs and diff check pass.
