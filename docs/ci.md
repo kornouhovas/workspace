@@ -2151,3 +2151,20 @@ fresh proof for each later draft. Unknown/stalled/repeated-rejection checks rema
 Local control, original role journey,71 routing checks and lint pass. Renew ordinary
 affected-consumer acceptance on the reviewed repair; diagnostic successes are not
 substituted for original consumers and historical failures remain recorded.
+
+
+Ordinary gate40205926705 at c9e068a3 passes all10 controls on3hosts,
+role DEV/package on3hosts and management DEV on3hosts plus management package
+on macOS/Windows latest. Only Windows2022 management package fails at first
+removal entry (10 groups passed, no confirmation reached). Eleven of12 driver
+rows pass; all3 package/artifact prerequisites pass. The successful rows retain
+exact c9e068a3 provenance and inspected cleanup; the failed row stays unresolved.
+
+Use folder-management-package-diagnostic for the exact remaining Windows2022
+packaged role-prefix/management sequence, with failure-only diagnostics. Its
+prepared ordinary counterpart folder-management-package uses the same commands
+and empty diagnostic flag, and requires its own passing receipt after diagnostic
+inspection. No other host/full suite/DEV consumers are selected. Both use the
+existing package and artifact prerequisites. All ordinary management failures now
+collect bounded read-only DOM/public/session failureState after the error; no
+happy-path observation/action is added and the original failure remains primary.
