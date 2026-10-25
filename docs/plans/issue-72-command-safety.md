@@ -1075,3 +1075,28 @@ verifies the cap/disposal and zero commands, and closes normally (1/1 locally).
 Routing controls pass104/104. Both read-only review axes report no concrete scope,
 coverage or false-acceptance defect. The diagnostic route is not ordinary runtime
 acceptance and does not establish the historical failure's cause.
+
+Passive diagnostic commit `16413303` passes final selected controls71/71, lint
+and local Markdown checks217 files; it is pushed and running as40168196170,
+Windows2022 job121093459064. This diagnostic is explicitly not acceptance.
+Windows latest runtime artifact12588114013 from40166177229 has been inspected:
+both mode manifests pass all eight journeys, source diff is empty, packaged
+inventory163 entries is unchanged, app.asar SHA256
+`4dba9052015d05cc5b1c8782de53290e09fe061b1988325f2d64fe78560919c9`.
+Each mode has eight creation cases,16 normal closes, exact native/UI Automation
+selection agreement and confirmed bridge/fixture cleanup; rename has46 normal
+closes. Files native/external document/cleanup receipts pass; narrow RU light
+expanded and wide EN dark preview screenshots were inspected. All retain
+`cb9eb387` provenance. Windows2022 hidden entry and its unreached consumers are
+the next unresolved gate; no integration or completion is claimed.
+
+Diagnostic run40168196170 at16413303 succeeded: artifact12589940631 contains
+all eight original checkpoints,16 normal closes and verified bridge/fixture
+cleanup, with the explicit diagnostic marker. All eight entry traces retain one
+owner ID, a normal pointerdown/up/click and an open panel; none drops events.
+The grouped after_commit trace includes source observation after successful
+entry. This does not reproduce or explain the earlier failure. The next bounded
+diagnostic adds24 independent grouped after_commit samples after the unchanged
+eight-checkpoint sequence, each preserving native/cleanup assertions and stopping
+on first failure. It seeks a failing trace rather than accepting repeated green
+inputs as a fix. No product/helper repair has been selected.

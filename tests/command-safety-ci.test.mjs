@@ -88,5 +88,12 @@ test('creation-entry diagnosis preserves the exact Windows prefix and cannot acc
  assert.equal(creation.env.WORKSPACE_CREATION_CONTEXT_DIAGNOSTIC,'1');
  assert.ok(job.steps.findIndex(step=>step.id==='enrollment')<job.steps.indexOf(creation));
  assert.ok(job.steps.indexOf(creation)<job.steps.findIndex(step=>step.name==='Passive observation control'));
+ const samples=job.steps.find(step=>step.name==='Bounded grouped after_commit diagnostic samples');
+ assert.ok(samples.run.includes('set -euo pipefail'));assert.ok(samples.run.includes('for sample in {1..24}'));
+ assert.ok(samples.run.includes('--discovery-mode=grouped --checkpoint=after_commit'));assert.doesNotMatch(samples.run,/skip-native|continue-on-error|\|\| true/);
+ assert.equal(samples.env.WORKSPACE_CREATION_CONTEXT_DIAGNOSTIC,'1');assert.equal(creation.id,'creation');
+ assert.equal(samples.if,"${{ !cancelled() && steps.creation.outcome == 'success' }}");
+ assert.ok(job.steps.indexOf(creation)<job.steps.indexOf(samples));
+ assert.ok(job.steps.indexOf(samples)<job.steps.findIndex(step=>step.name==='Passive observation control'));
  assert.equal(job.steps.at(-1).if,'always()');
 });

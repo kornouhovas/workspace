@@ -32,7 +32,8 @@ jobs:
         run: |
           set -o pipefail
           node scripts/smoke-source-association.mjs 2>&1 | tee work/ci-command-safety-creation-entry/enrollment.log
-      - name: Original eight creation checkpoints with passive entry evidence
+      - id: creation
+        name: Original eight creation checkpoints with passive entry evidence
         if: ${{ !cancelled() && steps.build.outcome == 'success' && steps.enrollment.outcome == 'success' }}
         shell: bash
         env:
@@ -41,6 +42,18 @@ jobs:
         run: |
           set -o pipefail
           node scripts/smoke-project-creation.mjs dev 2>&1 | tee work/ci-command-safety-creation-entry/creation.log
+      - name: Bounded grouped after_commit diagnostic samples
+        if: ${{ !cancelled() && steps.creation.outcome == 'success' }}
+        shell: bash
+        env:
+          WORKSPACE_CREATION_CONTEXT_DIAGNOSTIC: '1'
+        run: |
+          set -euo pipefail
+          for sample in {1..24}; do
+            evidence="work/ci-command-safety-creation-entry/sample-${sample}"
+            mkdir -p "$evidence"
+            WORKSPACE_SMOKE_EVIDENCE_DIR="$evidence" node scripts/smoke-project-creation.mjs dev --discovery-mode=grouped --checkpoint=after_commit 2>&1 | tee "$evidence/run.log"
+          done
       - name: Passive observation control
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         shell: bash

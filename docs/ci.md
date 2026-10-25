@@ -1874,3 +1874,10 @@ A passive-observer control runs after the original sequence; primary failures an
 all artifacts remain. Its separate concurrency suffix preserves other runtime
 runs. Diagnostic receipts are explicitly marked and cannot supply ordinary
 acceptance or waive the unresolved failure. Default routes install no observer.
+
+The same diagnostic route now adds at most24 grouped `after_commit` samples
+after the original eight checkpoints succeed. Each sample gets its own fixture,
+app and marked evidence directory, retains native/cleanup assertions and stops
+the series on its first failure. These samples aim to capture an intermittent
+failure with passive evidence; even24 successes establish no historical cause
+and do not replace ordinary runtime acceptance.
