@@ -1473,6 +1473,6 @@ test('management diagnostic isolates original failed Windows consumers and prese
  assert.deepEqual(Object.entries(workflow.jobs).filter(([,job])=>job.if&&runInNewContext(job.if.slice(3,-2),context)).map(([name])=>name),['folder-management-diagnostic']);
  const job=workflow.jobs['folder-management-diagnostic'];assert.deepEqual(job.strategy.matrix.os,['windows-latest','windows-2022']);
  const original=job.steps.find(step=>step.name==='Original management with passive failure state');
- assert.equal(original.run,'node scripts/smoke-workspace-management.mjs');assert.equal(original.env.WORKSPACE_MANAGEMENT_DIAGNOSTIC,'1');
+ assert.equal(original.run,'node scripts/smoke-workspace-management.mjs');assert.equal(original.env.WORKSPACE_MANAGEMENT_DIAGNOSTIC,'failure');
  assert.ok(!job.steps.some(step=>step.run?.includes('test:all')||step.run?.includes('electron-builder')));assert.equal(job.steps.at(-1).if,'always()');
 });

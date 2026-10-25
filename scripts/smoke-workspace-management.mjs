@@ -138,7 +138,7 @@ try {
   assert.deepEqual((await query({ type: "workspace.load" })).workspaces.map(w => w.workspaceId), [second.workspaceId, first.workspaceId]);
   assert.equal((await query({ type: "workspace.load" })).activeWorkspace.name, "Renamed workspace");
   for (const name of ["Renamed workspace", "Workspace"]) {
-    await recordDiagnostic(name);
+    if(process.env.WORKSPACE_MANAGEMENT_DIAGNOSTIC==='1')await recordDiagnostic(name);
     const confirmation=await enterWorkspaceRemoval(page,name==='Renamed workspace'?second.workspaceId:first.workspaceId,name);
     await confirmation.press('Enter');
     await page.waitForFunction(async remaining => (await window.workspace.workspace({ type:"workspace.load" })).value?.workspaces.length === remaining, name === "Renamed workspace" ? 1 : 0);

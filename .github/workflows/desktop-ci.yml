@@ -133,7 +133,7 @@ jobs:
       - name: Original management with passive failure state
         run: node scripts/smoke-workspace-management.mjs
         env:
-          WORKSPACE_MANAGEMENT_DIAGNOSTIC: '1'
+          WORKSPACE_MANAGEMENT_DIAGNOSTIC: 'failure'
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-management-diagnostic
       - uses: actions/upload-artifact@v4
         if: always()

@@ -417,3 +417,12 @@ reads. Each read has1s and records unavailable without replacing the original
 failure. Reports are diagnosticOnly and cannot establish acceptance. No observer
 or CPU change is installed in ordinary routes. A local6x CPU probe passed without
 reproducing the failure; it does not establish cause or ordinary acceptance.
+
+
+Diagnostic40204450670 at a0c6aa2b passes both Windows original consumers
+with the pre-removal DOM snapshot. These marked receipts establish no acceptance
+or historical cause. The comparison now changes only observation timing:
+folder-management-diagnostic uses mode failure, omitting all pre-removal reads
+and collecting bounded DOM/public state only after the original failure. Ordinary
+execution also awaits no diagnostic helper when the flag is absent. A success
+under observation does not clear the earlier ordinary failures.
