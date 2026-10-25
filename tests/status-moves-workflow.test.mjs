@@ -3,6 +3,7 @@ import test from 'node:test';
 import {readFileSync} from 'node:fs';
 test('status assignment acceptance selects three hosts, complete suite and actual DEV/package consumers without changing full default',()=>{
  const dispatch=readFileSync('.github/workflows/desktop-ci.yml','utf8'),workflow=readFileSync('.github/workflows/status-moves.yml','utf8');
+ assert.match(dispatch,/common:\n {4}if:.*inputs.checks != 'status-moves'/);
  assert.match(dispatch,/options: \[full, status-moves,/);assert.match(dispatch,/default: full/);
  assert.match(dispatch,/inputs.checks == 'status-moves'[\s\S]*?uses: .\/.github\/workflows\/status-moves.yml/);
  assert.match(workflow,/os: \[macos-latest, windows-latest, windows-2022\]/);

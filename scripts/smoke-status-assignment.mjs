@@ -24,7 +24,7 @@ async function launch(){
  for(const pid of await app.evaluate(({app})=>app.getAppMetrics().filter(item=>item.type==='Utility'&&item.serviceName?.includes('Node')).map(item=>item.pid)))backends.add(pid);
  launchUnverified=false;
 }
-async function close(){if(app){const shutdown={normalQuit:false};report.shutdowns.push(shutdown);try{await closeElectron(app);app=null;shutdown.normalQuit=true;shutdown.backendsExited=ownedProcessesStopped(parents,backends);}catch(error){shutdown.error=error.message;shutdown.forcedCleanup=error.forcedCleanup;app=null;throw error;}finally{shutdown.quitEvents=quitEvents;shutdown.debuggerWait=debuggerWait;}}}
+async function close(){if(app){const shutdown={normalQuit:false};report.shutdowns.push(shutdown);try{await closeElectron(app);app=null;shutdown.normalQuit=true;shutdown.backendsExited=ownedProcessesStopped(parents,backends);assert.equal(shutdown.backendsExited,true);}catch(error){shutdown.error=error.message;shutdown.forcedCleanup=error.forcedCleanup;app=null;throw error;}finally{shutdown.quitEvents=quitEvents;shutdown.debuggerWait=debuggerWait;}}}
 try{
  await launch();const workspace=await query({type:'workspace.create',name:'Studio',rootPath:source,initialize:'status'});
  const call=(type,fields={})=>query({type:`workspace.${type}`,workspaceId:workspace.workspaceId,...fields});
@@ -65,6 +65,10 @@ await writeFile(join(source,'Clients/Active/App/Inside/keep.txt'),'Exact project
     await dragRuntimeGroup(handle,page.getByRole('region',{name:'Clients/Active',exact:true}).getByRole('heading'));
    }
    await waitPath('Clients/Active/App');
+   await showRuntimeProject(page,'App',project.projectId,'Clients/Active');
+   await selector().waitFor();
+   await editor().click();const settled=page.getByRole('dialog',{name:en?'Edit status':'Изменить статус',exact:true});await settled.getByRole('combobox').and(page.locator(':enabled')).waitFor();await page.keyboard.press('Escape');await settled.waitFor({state:'detached'});
+   assert.equal(await editor().evaluate(element=>element===document.activeElement),true);
    assert.equal(await readFile(join(source,'Clients/Active/App/Inside/keep.txt'),'utf8'),'Exact project bytes');
    assert.equal((await call('listTextProperties')).values.find(v=>v.projectId===project.projectId).value,'  Exact notes  ');
    report.checks.push({language,layout,paths:true,unavailableChoices:true,cancelFocus:true,statusEditor:true,groupAssignment:true,bytes:true,metadata:true});

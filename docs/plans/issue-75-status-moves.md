@@ -60,3 +60,32 @@ Implementation and verification in progress. GitHub owns CI/integration status.
   and use the existing native drag helper with a visible destination heading.
   Reading option.disabled verifies native option state; Playwright isDisabled
   retargets this option check to its enabled parent select.
+
+
+## Review and native checkpoint
+
+Independent code-review axes against `52c7a9e3...fdd9e97c`: Spec found zero
+implementation issues. Standards found two P2 acceptance-guard issues: the
+ordinary common job needed to exclude the new selector, and each shutdown needed
+to assert backend exit. Both are repaired and independently re-reviewed with zero
+remaining material findings. The routing regression now checks ordinary suppression.
+
+The local macOS native status journey passes four EN/RU Table/Board cases, sixteen
+light/dark 1024x720/1440x960 captures, whole-folder/value/role preservation,
+reopen and two normal shutdowns with asserted backend termination and cleanup.
+The retained #74 explicit parent-operation journey also passes. Inspected whole-screen
+captures reuse main's accepted composition and existing bb-inspired controls/Inter
+(reference revisions remain in reuse.md); the status cell adds the existing edit
+icon and move dialog, with path choices and explanatory disabled states. No new
+component framework, asset, CSS token or dependency is introduced. Text wraps and
+actions remain reachable in inspected narrow RU and wide EN captures.
+
+Earlier local driver failures remain failures: async predicate/path acknowledgment,
+viewport-loaded Board rows, native option retargeting and native drag endpoint
+preparation were reconciled with the existing helpers. Some runs timed out during
+normal quit despite complete quit events; empty/source controls and the retained
+role journey passed, so the historical cause is unestablished. The final driver
+additionally proves post-assignment editor availability/Cancel focus and real UI
+readiness after restart, then verifies unchanged normal-exit deadlines. Successful
+current shutdown receipts do not relabel earlier failures. Final suite/CI and
+integration remain pending at this checkpoint.
