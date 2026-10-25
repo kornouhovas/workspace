@@ -14,7 +14,7 @@ Windows11 acceptance remains separate. Original full/release routes are unchange
 
 For the additive selector inventory failure at8e0b258f, use
 `checks: status-moves-routing` first. It runs only the original
-`tests/test-suites.test.mjs` and route guards on all three hosts after npm ci/static
+`tests/test-suites.test.mjs` and route guards after npm ci/static
 checks, without builds, native consumers or a full-suite retry. The frozen expected
 selector list is updated to include the authorized route; the default/full and
 negative scheduling guarantees remain. After focused success and artifact
@@ -25,6 +25,13 @@ suffixes so the original broad run can finish recording evidence. Every original
 failure retains its result; these selectors never turn skipped or failed checks
 into passing evidence. Additional observed failures require their own diagnosis
 and focused selection before the missing tails.
+
+Routing40216820576 at1ee7e4fc passed73/73 on macOS and72/73 on both Windows
+hosts. The Windows error directly identifies CRLF rejection in the new raw-source
+newline guard. The repair accepts both line endings and runs LF/CRLF variants
+without weakening the guard; actual phase/matrix evaluation remains. Renew routing
+only on Windows latest/Windows2022. The macOS receipt retains its source provenance;
+full/runtime still select all three hosts. Local/independent routing passes74/74.
 
 
 ## Folder-role settings acceptance

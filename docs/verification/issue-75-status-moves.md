@@ -100,3 +100,16 @@ cleanup gate or supported-platform promise is removed. Original native files
 renew separately with their existing assertions; hosted repair and native tails
 remain pending. Both test seams are now explicitly confirmed by the owner in
 this issue, in addition to their accepted #74 precedent.
+
+
+### Focused Windows routing renewal
+
+[Routing40216820576](https://github.com/kornouhovas/workspace/actions/runs/40216820576),
+at1ee7e4fc, passes73/73 on macOS and fails one new guard on each Windows host
+(72/73 passing). The failure shows raw workflow CRLF at the exact LF-only regex;
+this is a directly established cause, unlike the native shutdown watchpoints.
+The repaired guard accepts LF/CRLF and explicitly exercises both encodings;
+phase/matrix evaluation confirms Windows-only routing repair and unchanged
+three-host full/runtime scope. Local and independent renewed routing:74/74.
+The two Windows original-command receipts remain pending; retain the successful
+macOS source receipt and inspect renewed artifacts before native tails.
