@@ -46,7 +46,7 @@ jobs:
         if: ${{ !cancelled() && steps.creation.outcome == 'success' }}
         shell: bash
         env:
-          WORKSPACE_CREATION_CONTEXT_DIAGNOSTIC: '1'
+          WORKSPACE_CREATION_CONTEXT_TRACE: '1'
         run: |
           set -euo pipefail
           for sample in {1..24}; do

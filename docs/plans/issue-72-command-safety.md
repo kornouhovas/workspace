@@ -1100,3 +1100,13 @@ diagnostic adds24 independent grouped after_commit samples after the unchanged
 eight-checkpoint sequence, each preserving native/cleanup assertions and stopping
 on first failure. It seeks a failing trace rather than accepting repeated green
 inputs as a fix. No product/helper repair has been selected.
+
+Run40168582599 at d1c024c9 completed successfully. Artifact12590071158 inspected:
+all24 independent samples contain exactly one grouped after_commit case, two
+normal closes, verified bridge/fixture cleanup and zero dropped passive events.
+The original eight-checkpoint prefix also passed. These are diagnostic passes;
+the historical cause is unresolved. Next, the bounded samples remove the custom
+DOM observer and collect Playwright traces around Submit/first entry instead,
+testing whether observation timing masks the failure. Default execution and
+shared entry helper remain unchanged. Both diagnostic kinds are explicitly marked;
+trace collection errors cannot turn a failure into success.

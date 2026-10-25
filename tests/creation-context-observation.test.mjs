@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
-import {mkdtemp,rm} from 'node:fs/promises';
+import {mkdtemp,rm,stat} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {fileURLToPath} from 'node:url';
@@ -25,8 +25,10 @@ test('passive creation entry diagnosis records source/panel changes without comm
     for(const listener of globalThis.listeners)listener({sourceId:'fixture',type:'workspace.sourceObserved',observationRevision:1});
     queueMicrotask(()=>{panel.hidden=true;entry.setAttribute('aria-expanded','false');});};
   });
+  await page.context().tracing.start({screenshots:true,snapshots:true,sources:false});
   await installCreationContextObservation(page,{label:'Reveal folder: Created',sourceId:'fixture'});
   await assert.rejects(enterContextFor(page,page.getByRole('button',{name:'Reveal folder: Created',exact:true,includeHidden:true})),/Timeout/);
+  const trace=join(profile,'entry-trace.zip');await page.context().tracing.stop({path:trace});assert.ok((await stat(trace)).size>0);
   const transitions=await collectCreationContextObservation(page);
   assert.ok(transitions.events.some(event=>event.state.visible));assert.equal(transitions.final.visible,false);
   assert.ok(transitions.events.some(event=>event.reason==='workspace'));

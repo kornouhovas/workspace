@@ -1881,3 +1881,11 @@ app and marked evidence directory, retains native/cleanup assertions and stops
 the series on its first failure. These samples aim to capture an intermittent
 failure with passive evidence; even24 successes establish no historical cause
 and do not replace ordinary runtime acceptance.
+
+After run40168582599 completed all24 passive samples without reproducing the
+failure, those bounded samples now omit the custom DOM observer and record
+Playwright action/DOM/screenshot traces around Submit and first entry instead.
+Receipts carry `contextTraceDiagnostic`; trace failures preserve a nonzero result.
+The original eight-case prefix retains passive observations, and ordinary routes
+install neither diagnostic. This comparison tests observation sensitivity and
+still supplies no ordinary acceptance or asserted historical cause.
