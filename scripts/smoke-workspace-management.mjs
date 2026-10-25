@@ -10,7 +10,8 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { _electron } from "playwright-core";
 import { closeElectron, cleanupOwnedFixture, ownedProcessesStopped } from "./runtime-lifecycle.mjs";
-import { openSettingsSection, returnToWorkspace, setInterfaceLanguage, renameActiveWorkspace } from "./runtime-settings.mjs";
+import { renameActiveWorkspace } from "./runtime-settings.mjs";
+import {openRoleSettingsSection as openSettingsSection,returnRoleWorkspace as returnToWorkspace,setRoleLanguage as setInterfaceLanguage} from "./folder-role-driver.mjs";
 
 const root = resolve(import.meta.dirname, "..");
 const fixture = await realpath(await mkdtemp(join(tmpdir(), "workspace-management-")));
@@ -35,8 +36,8 @@ async function launch() {
 }
 async function close() { if (app) { const current = app; app = null; await closeElectron(current); } }
 const sidebar = () => page.getByRole("navigation", { name: /^(Workspaces|Рабочие пространства)$/ });
-const add = () => sidebar().getByRole("button", { name: /^(Add workspace|Добавить рабочее пространство)$/ });
-const actions = () => sidebar().getByRole("button", { name: /^(Workspace actions|Действия с рабочим пространством):/ });
+const add = () => sidebar().getByRole("button", { name: /^(Add workspace|Добавить рабочее пространство)$/ }).and(page.locator(":enabled"));
+const actions = () => sidebar().getByRole("button", { name: /^(Workspace actions|Действия с рабочим пространством):/ }).and(page.locator(":enabled"));
 async function selectRoot() { await app.evaluate((_electron, path) => { process.env.WORKSPACE_TEST_ROOT_PICKER_PATH = path; }, source); }
 try {
   await launch();
@@ -45,7 +46,7 @@ try {
     globalThis.originalWorkspaceDialog = dialog.showOpenDialog;
     dialog.showOpenDialog = async () => ({ canceled: true, filePaths: [] });
   });
-  await add().press("Enter");
+  await add().click();
   await page.getByRole("heading", { name: "Folder selection cancelled", exact: true }).waitFor();
   assert.equal((await query({ type: "workspace.load" })).workspaces.length, 0);
   await app.evaluate(({ dialog }) => { dialog.showOpenDialog = globalThis.originalWorkspaceDialog; });
@@ -53,7 +54,8 @@ try {
   // Fresh folder-first initialization is covered by smoke-immediate-folders.
   const staged = await query({ type: "workspace.create", name: "Retained setup", rootPath: source });
   await query({ type: "workspace.remove", workspaceId: staged.workspaceId });
-  await selectRoot(); await add().press("Enter");
+  await page.waitForFunction(()=>!document.querySelector('.sidebar-workspace-row')&&!document.querySelector('.sidebar-create')?.disabled);
+  await selectRoot(); await add().click();
   await page.getByRole("button",{name:"Workspace",exact:true}).and(page.locator('[aria-current="page"]')).waitFor();
   const first = (await query({ type: "workspace.load" })).activeWorkspace;
   const views = await query({ type: "workspace.listViews", workspaceId: first.workspaceId });
@@ -99,7 +101,7 @@ try {
   await applyReviewedDiscovery(page);
   await page.getByRole("cell", { name: "Project", exact: true }).waitFor();
   const before = await query({ type: "workspace.listProjects", workspaceId: first.workspaceId });
-  await add().press("Enter");
+  await add().click();
   await page.waitForFunction(async () => (await window.workspace.workspace({ type:"workspace.load" })).value?.workspaces.length === 2);
   const second = (await query({ type: "workspace.load" })).activeWorkspace;
   assert.equal(second.name, "Workspace"); assert.equal(second.sourceId, first.sourceId);
@@ -120,7 +122,9 @@ try {
   await page.getByRole("group", { name: /^(Workspace actions|Действия с рабочим пространством):/ }).getByRole("button", { name: /^(Settings|Настройки)$/ }).press("Enter");
   await page.getByRole("tab", { name: /^(Workspaces|Рабочие пространства)$/ }).waitFor();
   assert.equal(await page.getByRole("combobox", { name: /^(Saved workspaces|Сохранённые рабочие пространства)$/ }).inputValue(), second.workspaceId);
+  await openSettingsSection(page,"workspaces");
   await renameActiveWorkspace(page, "Renamed workspace");
+  await returnToWorkspace(page);
   await actions().nth(1).press("Enter");
   await page.getByRole("group", { name: /Renamed workspace$/ }).getByRole("button", { name: /^(Move up|Переместить выше)$/ }).press("Enter");
   assert.deepEqual((await query({ type: "workspace.load" })).workspaces.map(w => w.workspaceId), [second.workspaceId, first.workspaceId]);
@@ -138,7 +142,7 @@ try {
   await page.waitForFunction(() => document.activeElement?.matches(".workspace-create .root-picker-row button"));
   assert.equal((await query({ type: "workspace.load" })).workspaces.length, 0);
   assert.equal(await readFile(join(source, "Project", "keep.txt"), "utf8"), "User project bytes");
-  await selectRoot(); await add().press("Enter");
+  await selectRoot(); await add().click();
   await page.getByRole("cell", { name: "Project", exact: true }).waitFor();
   const recovered = (await query({ type: "workspace.load" })).activeWorkspace;
   assert.equal(recovered.sourceId, first.sourceId);

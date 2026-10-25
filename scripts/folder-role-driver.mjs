@@ -28,7 +28,7 @@ export async function renameRoleProject(dialog,name,en,verifyUnchanged,{timeout=
  const input=dialog.getByRole('textbox');
  for(let draft=0;draft<4;draft++){
   await Promise.race([input.and(dialog.locator(':enabled')).waitFor({timeout:remaining()}),review.and(dialog.locator(':enabled')).waitFor({timeout:remaining()})]);
-  if(await review.isVisible()){
+  if(draft>0 || await review.isVisible()){
    await review.and(dialog.locator(':enabled')).waitFor({timeout:remaining()});
    await withDeadline(verifyUnchanged(),remaining(),'Role rename operand verification');
    await review.press('Enter',{timeout:remaining()});
@@ -97,7 +97,7 @@ export async function prepareRoleMove({dialog,parent,en,capture,reopen,verifyUnc
   if(await submit.isEnabled())return dialog;
   await stale.waitFor({timeout:left()});
   // This helper has never submitted; stale UI alone does not authorize a replay.
-  assert.equal(await dialog.getByRole('button',{name:/^(Check operation status|Проверить статус операции)$/}).count(),0);
+  assert.equal(await dialog.getByRole('button',{name:/^(Check category move status|Проверить статус перемещения в категорию)$/}).count(),0);
   await withDeadline(verifyUnchanged(),left(),'Role move operand verification');
   assert.equal(attempt,0,'A second invalidated draft requires another explicit review');
   await dialog.getByRole('button',{name:en?'Cancel':'Отмена',exact:true}).press('Enter',{timeout:left()});
@@ -117,4 +117,48 @@ export async function expandRoleFolder(page,path) {
   await expand.and(page.locator(':enabled')).press('Enter',{timeout:ms});
   try{await collapse.waitFor({timeout:Math.min(1000,Math.max(1,deadline-Date.now()))});}catch(error){if(Date.now()>=deadline)throw error;}
  }
+}
+
+export async function completeRoleMove({dialog,en,prepare,reopen,verifyUnchanged}) {
+ const deadline=Date.now()+15000,left=()=>{const ms=deadline-Date.now();assert.ok(ms>0,'Role move exceeded15000ms');return ms;};
+ for(let draft=0;draft<4;draft++){
+  dialog=await withDeadline(prepare(dialog),left(),'Role move draft preparation');
+  await dialog.getByRole('button',{name:en?'Move project folder':'Переместить папку проекта',exact:true}).and(dialog.locator(':enabled')).press('Enter',{timeout:left()});
+  const stale=dialog.getByText(en?'The source or project changed. Refresh and reopen the editor before submitting again.':'Источник или проект изменился. Обновите данные и откройте редактор снова перед отправкой.',{exact:true});
+  const status=dialog.getByRole('button',{name:/^(Check category move status|Проверить статус перемещения в категорию)$/});
+  await Promise.race([dialog.waitFor({state:'hidden',timeout:left()}),stale.waitFor({timeout:left()}),status.and(dialog.locator(':enabled')).waitFor({timeout:left()})]);
+  if(!await dialog.isVisible())return;
+  assert.equal(await status.count(),0,'Unknown moves must use status and cannot be replayed');
+  await stale.waitFor({timeout:left()});await withDeadline(verifyUnchanged(),left(),'Role move no-effect proof');
+  await dialog.getByRole('button',{name:en?'Cancel':'Отмена',exact:true}).press('Enter',{timeout:left()});
+  dialog=await withDeadline(reopen(),left(),'Role move fresh editor');
+ }
+ throw new Error('Role move remained stale after four reviewed drafts');
+}
+
+export async function completeRoleArchive({dialog,en,restore,verifyUnchanged}) {
+ const deadline=Date.now()+15000,left=()=>{const ms=deadline-Date.now();assert.ok(ms>0,'Role archive exceeded15000ms');return ms;};
+ const review=dialog.getByRole('button',{name:restore?(en?'Review restore':'Проверить восстановление'):(en?'Review archive':'Проверить архивирование'),exact:true});
+ const confirm=dialog.getByRole('button',{name:restore?(en?'Restore project':'Восстановить проект'):(en?'Archive project':'Архивировать проект'),exact:true});
+ const completed=dialog.getByText(en?'Folder operation completed.':'Операция с папкой завершена.',{exact:true});
+ const status=dialog.getByRole('button',{name:/^(Check saved outcome|Проверить сохранённый результат)$/});
+ for(let draft=0;draft<4;draft++){
+  assert.equal(await status.count(),0,'Unknown archive outcomes cannot be replayed');
+  await withDeadline(verifyUnchanged(),left(),'Role archive no-effect proof');
+  await review.and(dialog.locator(':enabled')).press('Enter',{timeout:left()});
+  try{await confirm.and(dialog.locator(':enabled')).waitFor({timeout:Math.min(1000,left())});}catch(error){if(Date.now()>=deadline)throw error;continue;}
+  await dialog.getByText(en?'The project keeps its identity and ordinary properties. The archive mirrors its original relative location. Nothing is overwritten.':'Идентификатор проекта и обычные свойства сохраняются. Архив повторяет исходное относительное размещение. Перезаписи нет.',{exact:true}).waitFor({timeout:left()});
+  await confirm.and(dialog.locator(':enabled')).press('Enter',{timeout:left()});
+  try{await completed.waitFor({timeout:Math.min(1000,left())});return;}catch(error){if(Date.now()>=deadline)throw error;}
+  if(await status.count()){
+   await Promise.race([completed.waitFor({timeout:left()}),status.and(dialog.locator(':enabled')).waitFor({timeout:left()})]);
+   if(await completed.isVisible())return;
+   await status.and(dialog.locator(':enabled')).press('Enter',{timeout:left()});
+   await completed.waitFor({timeout:left()});return;
+  }
+  // Enabled Cancel proves the UI is no longer pending/unknown; journal and
+  // physical proof in the next iteration also exclude an accepted operation.
+  await dialog.getByRole('button',{name:/^(Cancel archive review|Отменить просмотр архива)$/}).and(dialog.locator(':enabled')).waitFor({timeout:left()});
+ }
+ throw new Error('Role archive review did not complete within four current drafts');
 }

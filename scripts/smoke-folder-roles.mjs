@@ -6,7 +6,7 @@ import {join,resolve} from 'node:path';
 import {_electron} from 'playwright-core';
 import {runtimeSmokeLaunch} from './runtime-executable.mjs';
 import {closeElectron,cleanupOwnedFixture,ownedProcessesStopped} from './runtime-lifecycle.mjs';
-import {openRoleSettingsSection as openSettingsSection,renameRoleProject,expandRoleFolder,enterRoleDialog,prepareRoleMove,returnRoleWorkspace as returnToWorkspace,setRoleLanguage as setInterfaceLanguage} from './folder-role-driver.mjs';
+import {openRoleSettingsSection as openSettingsSection,renameRoleProject,expandRoleFolder,enterRoleDialog,prepareRoleMove,completeRoleMove,completeRoleArchive,returnRoleWorkspace as returnToWorkspace,setRoleLanguage as setInterfaceLanguage} from './folder-role-driver.mjs';
 const root=resolve(import.meta.dirname,'..'),fixture=await realpath(await mkdtemp(join(tmpdir(),'folder-roles-')));
 const source=join(fixture,'Source'),data=join(fixture,'data'),evidence=resolve(process.env.WORKSPACE_SMOKE_EVIDENCE_DIR??'work/issue-74-folder-roles');
 await mkdir(evidence,{recursive:true});
@@ -110,27 +110,29 @@ try{
       const current=(await query({type:'workspace.listProjects',workspaceId:first.workspaceId})).projects.find(p=>p.projectId===created.projectId);assert.equal(current.name,renamed);
       const label=en?'Move project category':'Переместить проект в категорию';
       dialog=await action(label);
-      dialog=await prepareRoleMove({dialog,parent,en,
-        capture:()=>page.screenshot({path:join(evidence,`${language}-move-${parent?'status':'root'}.png`)}),
-        reopen:()=>action(label),verifyUnchanged:async()=>{
-          const now=(await query({type:'workspace.listProjects',workspaceId:first.workspaceId})).projects.find(row=>row.projectId===created.projectId);
-          assert.equal(now.relativePath,current.relativePath);assert.equal((await stat(join(source,...current.relativePath.split('/')))).isDirectory(),true);
-          await assert.rejects(stat(join(source,...[parent,renamed].filter(Boolean).join('/').split('/'))),error=>error.code==='ENOENT');
-        }});
-      await dialog.getByRole('button',{name:en?'Move project folder':'Переместить папку проекта',exact:true}).click();await dialog.waitFor({state:'detached'});
+      const verifyUnchanged=async()=>{
+        const now=(await query({type:'workspace.listProjects',workspaceId:first.workspaceId})).projects.find(row=>row.projectId===created.projectId);
+        assert.equal(now.relativePath,current.relativePath);assert.equal((await stat(join(source,...current.relativePath.split('/')))).isDirectory(),true);
+        await assert.rejects(stat(join(source,...[parent,renamed].filter(Boolean).join('/').split('/'))),error=>error.code==='ENOENT');
+        const journal=await query({type:'workspace.listProjectCategoryMoves',workspaceId:first.workspaceId});
+        assert.equal(journal.operations.filter(op=>op.projectId===created.projectId&&!['completed','failed'].includes(op.stage)).length,0);
+      };
+      await completeRoleMove({dialog,en,reopen:()=>action(label),verifyUnchanged,
+        prepare:dialog=>prepareRoleMove({dialog,parent,en,reopen:()=>action(label),verifyUnchanged,
+          capture:()=>page.screenshot({path:join(evidence,`${language}-move-${parent?'status':'root'}.png`)})})});
     };
     await move('Work/Urgent');
     for(const kind of ['archive','restore']) {
       const label=kind==='archive'?(en?'Archive project':'Архивировать проект'):(en?'Restore project':'Восстановить проект');
       if(kind==='restore')await page.getByRole('button',{name:en?'Archived':'Архив',exact:true}).click();
       dialog=await action(label,renamed);
-      const reviewArchive=dialog.getByRole('button',{name:kind==='archive'?(en?'Review archive':'Проверить архивирование'):(en?'Review restore':'Проверить восстановление'),exact:true});
-      await reviewArchive.click();await reviewArchive.and(page.locator(':enabled')).waitFor();
-      const confirmArchive=dialog.getByRole('button',{name:label,exact:true});
-      if(!await confirmArchive.count()){await reviewArchive.click();await reviewArchive.and(page.locator(':enabled')).waitFor();}
-      await dialog.getByText(en?'The project keeps its identity and ordinary properties. The archive mirrors its original relative location. Nothing is overwritten.':'Идентификатор проекта и обычные свойства сохраняются. Архив повторяет исходное относительное размещение. Перезаписи нет.',{exact:true}).waitFor();
-      await confirmArchive.click();
-      await dialog.getByText(en?'Folder operation completed.':'Операция с папкой завершена.',{exact:true}).waitFor();
+      const activePath=join(source,'Work','Urgent',renamed),archivedPath=join(source,'Stored','Work','Urgent',renamed);
+      await completeRoleArchive({dialog,en,restore:kind==='restore',verifyUnchanged:async()=>{
+        assert.equal((await stat(kind==='restore'?archivedPath:activePath)).isDirectory(),true);
+        await assert.rejects(stat(kind==='restore'?activePath:archivedPath),error=>error.code==='ENOENT');
+        const journal=await query({type:'workspace.listProjectArchiveOperations',workspaceId:first.workspaceId});
+        assert.equal(journal.operations.filter(op=>op.projectId===created.projectId&&!['completed','failed'].includes(op.stage)).length,0);
+      }});
       await dialog.getByRole('button',{name:en?'Done':'Готово',exact:true}).click();await dialog.waitFor({state:'detached'});
     }
     await page.getByRole('button',{name:en?'Active':'Активные',exact:true}).click();await move('');

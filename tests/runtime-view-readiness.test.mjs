@@ -1,3 +1,4 @@
+import {translate} from '../src/renderer/localization.ts';
 import {enterWorkspaceRemoval,cancelWorkspaceRename} from '../scripts/workspace-removal-driver.mjs';
 /* global document, requestAnimationFrame */
 import assert from "node:assert/strict";
@@ -12,7 +13,7 @@ import { build } from "esbuild";
 import { closeElectron } from "../scripts/runtime-lifecycle.mjs";
 import { usableRuntimeViewProjection } from "../scripts/runtime-view-readiness.mjs";
 import { activateRuntimeView, setRuntimeViewLanguage } from "../scripts/runtime-view-controls.mjs";
-import {openRoleSettingsSection,renameRoleProject,expandRoleFolder,enterRoleDialog,prepareRoleMove} from "../scripts/folder-role-driver.mjs";
+import {openRoleSettingsSection,renameRoleProject,expandRoleFolder,enterRoleDialog,prepareRoleMove,completeRoleMove,completeRoleArchive} from "../scripts/folder-role-driver.mjs";
 import {openSettingsSection} from "../scripts/runtime-settings.mjs";
 import { openArchiveTextEditor } from "../scripts/archive-editor-driver.mjs";
 import { installArchiveEntryTrace } from "../scripts/archive-entry-trace.mjs";
@@ -106,6 +107,18 @@ test('role settings entry acknowledges keyboard navigation after a pointer inter
  });
 });
 
+test('workspace creation entry waits for the enabled picker control and activates once',async()=>{
+ await withPage(async page=>{
+  await page.setContent('<button aria-label="Add workspace" disabled>Add workspace</button><button>Release fixture cleanup</button>');
+  await page.evaluate(()=>{globalThis.pickerEntries=0;const button=document.querySelector('[aria-label]');button.onclick=()=>{globalThis.pickerEntries++;};document.querySelectorAll('button')[1].onclick=()=>{button.disabled=false;};});
+  const add=page.getByRole('button',{name:'Add workspace',exact:true});await add.press('Enter');assert.equal(await page.evaluate(()=>globalThis.pickerEntries),0);
+  const entering=add.and(page.locator(':enabled')).click();
+  await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));assert.equal(await page.evaluate(()=>globalThis.pickerEntries),0);
+  await page.getByRole('button',{name:'Release fixture cleanup',exact:true}).click();await entering;
+  assert.equal(await page.evaluate(()=>globalThis.pickerEntries),1);
+ });
+});
+
 test('workspace rename cancellation waits for the active reply to enable its input',async()=>{
  await withPage(async page=>{
   await page.setContent('<input aria-label="Workspace name" disabled><button>Release activation reply</button>');
@@ -131,6 +144,40 @@ test('workspace removal entry acknowledges tools before the separate configurati
   const confirm=await enterWorkspaceRemoval(page,'one','Workspace');
   assert.equal(await confirm.isVisible(),true);assert.deepEqual(await page.evaluate(()=>[globalThis.removalEntries,globalThis.removalCommands]),[1,0]);
   await confirm.press('Enter');assert.equal(await page.evaluate(()=>globalThis.removalCommands),1);
+ });
+});
+
+test('role move completion reopens only a verified stale rejection and rejects unknown results',async()=>{
+ await withPage(async page=>{
+  await page.setContent('<div id="host"></div>');
+  await page.evaluate(()=>{
+   globalThis.moveAttempts=0;globalThis.moveEffects=0;globalThis.moveUnknown=false;
+   globalThis.openCompletionMove=()=>{const dialog=document.createElement('div');dialog.setAttribute('role','dialog');dialog.innerHTML='<button>Move project folder</button><button>Cancel</button>';document.querySelector('#host').append(dialog);dialog.querySelectorAll('button')[1].onclick=()=>dialog.remove();dialog.querySelector('button').onclick=()=>{globalThis.moveAttempts++;if(globalThis.moveAttempts===1){const result=document.createElement(globalThis.moveUnknown?'button':'p');result.textContent=globalThis.moveUnknown?'Check category move status':'The source or project changed. Refresh and reopen the editor before submitting again.';dialog.append(result);}else{globalThis.moveEffects++;dialog.remove();}};};globalThis.openCompletionMove();
+  });
+  let proofs=0,reopens=0;const options={dialog:page.getByRole('dialog'),en:true,prepare:async dialog=>dialog,reopen:async()=>{reopens++;await page.evaluate(()=>globalThis.openCompletionMove());return page.getByRole('dialog');},verifyUnchanged:async()=>{proofs++;assert.equal(await page.evaluate(()=>globalThis.moveEffects),0);}};
+  await completeRoleMove(options);assert.deepEqual([proofs,reopens],[1,1]);assert.deepEqual(await page.evaluate(()=>[globalThis.moveAttempts,globalThis.moveEffects]),[2,1]);
+  await page.evaluate(()=>{globalThis.moveAttempts=0;globalThis.moveEffects=0;globalThis.moveUnknown=true;globalThis.openCompletionMove();});proofs=0;reopens=0;
+  await assert.rejects(completeRoleMove({...options,dialog:page.getByRole('dialog')}),/Unknown moves/);assert.deepEqual([proofs,reopens],[0,0]);assert.deepEqual(await page.evaluate(()=>[globalThis.moveAttempts,globalThis.moveEffects]),[1,0]);
+ });
+});
+
+test('role archive completion re-reviews only idle no-effect state and checks unknown outcomes without replay',async()=>{
+ await withPage(async page=>{
+  async function fixture(unknown){
+   await page.setContent(`<div role="dialog"><button>Review archive</button><button>${translate('en','archiveCancel')}</button></div>`);
+   await page.evaluate(unknown=>{
+    globalThis.archiveApplies=0;globalThis.archiveChecks=0;globalThis.archiveEffects=0;
+    const dialog=document.querySelector('[role="dialog"]'),review=dialog.querySelector('button');
+    const completed=()=>{const message=document.createElement('p');message.textContent='Folder operation completed.';dialog.append(message);};
+    review.onclick=()=>{const hint=document.createElement('p');hint.textContent='The project keeps its identity and ordinary properties. The archive mirrors its original relative location. Nothing is overwritten.';dialog.append(hint);const apply=document.createElement('button');apply.textContent='Archive project';dialog.append(apply);apply.onclick=()=>{globalThis.archiveApplies++;apply.remove();hint.remove();if(unknown){const check=document.createElement('button');check.textContent='Check saved outcome';check.onclick=()=>{globalThis.archiveChecks++;globalThis.archiveEffects++;completed();};dialog.append(check);}else if(globalThis.archiveApplies>1){globalThis.archiveEffects++;completed();}};};
+   },unknown);
+  }
+  await fixture(false);let proofs=0;
+  await completeRoleArchive({dialog:page.getByRole('dialog'),en:true,restore:false,verifyUnchanged:async()=>{proofs++;assert.equal(await page.evaluate(()=>globalThis.archiveEffects),0);}});
+  assert.equal(proofs,2);assert.deepEqual(await page.evaluate(()=>[globalThis.archiveApplies,globalThis.archiveChecks,globalThis.archiveEffects]),[2,0,1]);
+  await fixture(true);proofs=0;
+  await completeRoleArchive({dialog:page.getByRole('dialog'),en:true,restore:false,verifyUnchanged:async()=>{proofs++;assert.equal(await page.evaluate(()=>globalThis.archiveEffects),0);}});
+  assert.equal(proofs,1);assert.deepEqual(await page.evaluate(()=>[globalThis.archiveApplies,globalThis.archiveChecks,globalThis.archiveEffects]),[1,1,1]);
  });
 });
 

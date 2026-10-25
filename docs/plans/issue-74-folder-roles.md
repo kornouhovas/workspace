@@ -382,3 +382,25 @@ authoring. Unknown/accepted work is never replayed. The repeated-stale control
 requires3 submissions/2 reviews/1 effect; unknown and stalled checks remain.
 Local7 controls, original role journey, routing and lint pass. The same affected
 consumer gate renews these driver-only changes before remaining Windows tails.
+
+
+Gate40202436050 at1791b2df remains failed. macOS lost Add entry after staged
+fixture deletion; Windows latest reached a vanished RU restore preview and Windows
+2022 a stale RU move rejection. The Add driver now waits for actual empty UI and
+enabled controls, then clicks once. Management language/Back uses the acknowledged
+navigator. Subsequent rename drafts unconditionally require enabled review and
+fresh proof, even if refreshed props might otherwise hide that guard.
+
+Move completion can reauthor only an exact stale rejection with no status control,
+unchanged public/physical source, absent target and no unfinished project journal.
+It opens a fresh form within15s; unknown/accepted commands are never replayed.
+Archive completion requires the same physical/journal no-effect proof and idle UI
+before fresh review. An unknown archive outcome uses only Check saved outcome,
+then requires completion; Apply is never replayed for unknown work. Both helpers
+retain bounded4-draft/15s limits. The English idle Cancel label is taken from
+production localization in the native control. No application source changed.
+
+Local10 controls, original role/management journeys,70 routing checks and lint
+pass. Independent reviews cover the cumulative guards and the localization repair.
+The affected-consumer gate renews both drivers in DEV/package on all3hosts; the
+remaining runtime tail is still Windows retained recovery/outage only.
