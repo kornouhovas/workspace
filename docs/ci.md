@@ -20,6 +20,20 @@ success, the application changes require renewed `checks: folder-roles` broad
 acceptance before integration.
 
 
+Run40193124906 at97819571 passed all52 public regressions on all three
+hosts and the retained DEV consumer on macOS/Windows latest. Windows2022 failed
+at archived Text editor entry (line121): pointer action completed but no textarea
+appeared; the retained value stayed unchanged and shutdown/cleanup passed.
+`checks: folder-roles-recovery-repair` renews only that host's original consumer
+and bounded archive-editor entry controls. It reuses the existing one-activation
+keyboard/focus preparation without mutation replay or longer deadlines. A real
+Electron pointer-interruption control reproduces the symptom pattern; the precise
+historical timing cause remains unestablished. Successful public and other-host
+receipts retain their original SHA/run. Full acceptance follows this focused gate.
+The packaged retained consumer explicitly passes the positional `release` argument;
+the script does not select executable mode from WORKSPACE_SMOKE_MODE.
+
+
 ## Final integrated desktop acceptance
 
 For #67, dispatch the registered `desktop-ci.yml` with `checks: integrated-desktop`

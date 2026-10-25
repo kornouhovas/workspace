@@ -93,7 +93,7 @@ test('investigation jobs run only with explicit manual diagnostic inputs', () =>
 test('manual failed-check scope runs only the Windows observer and macOS rename routes', () => {
   const workflow = load(readFileSync('.github/workflows/desktop-ci.yml', 'utf8'));
   assert.equal(workflow.on.workflow_dispatch.inputs.checks.default, 'full');
-  assert.deepEqual(workflow.on.workflow_dispatch.inputs.checks.options, ['full', 'folder-roles', 'folder-roles-repair', 'immediate-folders', 'command-safety-creation', 'command-safety-windows-2022', 'command-safety-creation-diagnostic', 'command-safety-windows', 'command-safety-archive-alias', 'command-safety-fixtures', 'command-safety', 'command-safety-runtime', 'command-safety-packaged', 'source-access', 'source-access-repair', 'integrated-desktop', 'integrated-regressions', 'integrated-layout', 'integrated-category-layout', 'integrated-operation-layout', 'integrated-archive-profile', 'integrated-fixture-repairs', 'integrated-filesystem-repair', 'integrated-project-entry-repair', 'integrated-category-entry-profile', 'integrated-missing-tails', 'integrated-runtime', 'desktop-ux', 'layout-fixtures', 'source-inventory', 'observer-cancellation', 'observer-workflow', 'native-owner-controls', 'native-lifecycle', 'project-files-windows', 'project-files-windows-trace', 'failed', 'readiness', 'windows-release', 'issue22-failures', 'creation-shutdown', 'raw-rename', 'issue24-failures', 'category-fixture', 'issue24-startup', 'multiselect', 'etw-controls', 'app-fixture', 'property-fixture', 'runtime-observation', 'view-fixtures', 'number', 'windows-property-fixture', 'rename-authoring', 'rename-fixture', 'viewport-runtime', 'workspace-root-runtime', 'archive-contexts', 'creation-ownership', 'desktop-shell', 'shell-runtime', 'views-readiness', 'view-contexts', 'workspace-sidebar', 'workspace-setup', 'workspace-setup-readiness', 'select-readiness', 'source-fixture', 'source-runtime']);
+  assert.deepEqual(workflow.on.workflow_dispatch.inputs.checks.options, ['full', 'folder-roles', 'folder-roles-repair', 'folder-roles-recovery-repair', 'immediate-folders', 'command-safety-creation', 'command-safety-windows-2022', 'command-safety-creation-diagnostic', 'command-safety-windows', 'command-safety-archive-alias', 'command-safety-fixtures', 'command-safety', 'command-safety-runtime', 'command-safety-packaged', 'source-access', 'source-access-repair', 'integrated-desktop', 'integrated-regressions', 'integrated-layout', 'integrated-category-layout', 'integrated-operation-layout', 'integrated-archive-profile', 'integrated-fixture-repairs', 'integrated-filesystem-repair', 'integrated-project-entry-repair', 'integrated-category-entry-profile', 'integrated-missing-tails', 'integrated-runtime', 'desktop-ux', 'layout-fixtures', 'source-inventory', 'observer-cancellation', 'observer-workflow', 'native-owner-controls', 'native-lifecycle', 'project-files-windows', 'project-files-windows-trace', 'failed', 'readiness', 'windows-release', 'issue22-failures', 'creation-shutdown', 'raw-rename', 'issue24-failures', 'category-fixture', 'issue24-startup', 'multiselect', 'etw-controls', 'app-fixture', 'property-fixture', 'runtime-observation', 'view-fixtures', 'number', 'windows-property-fixture', 'rename-authoring', 'rename-fixture', 'viewport-runtime', 'workspace-root-runtime', 'archive-contexts', 'creation-ownership', 'desktop-shell', 'shell-runtime', 'views-readiness', 'view-contexts', 'workspace-sidebar', 'workspace-setup', 'workspace-setup-readiness', 'select-readiness', 'source-fixture', 'source-runtime']);
   const enabled = (job, event, checks) => runInNewContext(job.if.slice(3, -2), { github: { event_name: event }, inputs: { checks } });
   for (const event of ['push', 'pull_request', 'workflow_dispatch']) for (const checks of [undefined, 'full', 'failed']) {
     const focused = event === 'workflow_dispatch' && checks === 'failed';
@@ -1378,7 +1378,7 @@ test('folder role acceptance selects its three-host DEV/package route without or
   for(const mode of ['dev','release']) {
     const consumers=route.steps.filter(step=>step.env?.WORKSPACE_SMOKE_MODE===mode).map(step=>step.run);
     assert.ok(consumers.includes('npm run smoke:folder-roles'));assert.ok(consumers.includes('npm run smoke:workspaces'));
-    assert.ok(consumers.includes('node scripts/smoke-retained-recovery.mjs'));
+    assert.ok(consumers.includes(`node scripts/smoke-retained-recovery.mjs${mode==='release'?' release':''}`));
   }
 });
 
@@ -1399,8 +1399,23 @@ test('folder role CI repair gate runs actual command/outage regressions and orig
   assert.equal(!!focusedTest,focused);
   if(focused)assert.ok(focusedTest.includes('set -o pipefail'));
   if(focused)for(const file of ['role-parent-paths','role-project-commands','folder-roles-service'])assert.ok(focusedTest.includes(`tests/${file}.test.mjs`));
-  assert.deepEqual(steps.filter(step=>step.run==='node scripts/smoke-retained-recovery.mjs').map(step=>step.env.WORKSPACE_SMOKE_MODE),focused?['dev']:['dev','release']);
+  assert.deepEqual(steps.filter(step=>step.run.startsWith('node scripts/smoke-retained-recovery.mjs')).map(step=>step.env.WORKSPACE_SMOKE_MODE),focused?['dev']:['dev','release']);
   assert.equal(runs.includes('npx electron-builder --dir'),!focused);
   if(focused)assert.ok(!runs.some(run=>run.includes('smoke:folder-roles')||run.includes('smoke:workspaces')));
  }
+});
+
+
+test('retained recovery repair isolates the failed Windows2022 consumer and packaged acceptance selects the actual executable',()=>{
+ const workflow=load(readFileSync('.github/workflows/desktop-ci.yml','utf8'));
+ const context={github:{event_name:'workflow_dispatch'},inputs:{checks:'folder-roles-recovery-repair'}};
+ const active=Object.entries(workflow.jobs).filter(([,job])=>job.if&&runInNewContext(job.if.slice(3,-2),context)).map(([name])=>name);
+ assert.deepEqual(active,['folder-roles-recovery-repair']);
+ const job=workflow.jobs[active[0]];assert.equal(job['runs-on'],'windows-2022');
+ assert.ok(job.steps.some(step=>step.run==='node scripts/smoke-retained-recovery.mjs'));
+ assert.ok(job.steps.some(step=>step.run?.includes("--test-name-pattern='archive editor|retained archive'")));
+ assert.ok(!job.steps.some(step=>step.run?.includes('test:all')||step.run?.includes('electron-builder')));
+ assert.equal(job.steps.at(-1).if,'always()');
+ const route=load(readFileSync('.github/workflows/folder-roles.yml','utf8')).jobs['folder-roles'];
+ assert.equal(route.steps.find(step=>step.name==='Packaged retained project settings and Back').run,'node scripts/smoke-retained-recovery.mjs release');
 });

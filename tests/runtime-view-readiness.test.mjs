@@ -78,6 +78,27 @@ test('preview timing admits current properties and visible loading before the se
   });
 });
 
+test('retained archive editor entry survives pointer-time availability interruption', async () => {
+  await withPage(async page => {
+    const label='Edit Text value: Verified move / Notes';
+    await page.setContent(`<button aria-label="${label}">Keep the approved brief.</button><div id="editor"></div>`);
+    await page.evaluate(label=>{
+      globalThis.editorActivations=0;
+      const button=document.querySelector('button');
+      button.addEventListener('pointerdown',()=>{button.disabled=true;setTimeout(()=>{button.disabled=false;},100);});
+      button.onclick=()=>{globalThis.editorActivations++;const input=document.createElement('textarea');input.setAttribute('aria-label',label);document.querySelector('#editor').append(input);input.focus();};
+    },label);
+    // The original retained consumer's entry: a completed pointer action does
+    // not establish editor activation when availability changes mid-gesture.
+    await page.getByRole('button',{name:label,exact:true}).click();
+    await assert.rejects(page.getByRole('textbox',{name:label,exact:true}).fill('Archived brief stays editable.',{timeout:200}),/Timeout/);
+    assert.equal(await page.evaluate(()=>globalThis.editorActivations),0);
+    const input=await openArchiveTextEditor(page,label,'Archived brief stays editable.');
+    assert.equal(await input.inputValue(),'Archived brief stays editable.');
+    assert.equal(await page.evaluate(()=>globalThis.editorActivations),1);
+  });
+});
+
 test('archive editor preparation waits for the focused committed control without repeating activation', async () => {
   await withPage(async page => {
     await page.setContent('<button aria-label="Edit archived value">Edit</button><div id="host"></div>');

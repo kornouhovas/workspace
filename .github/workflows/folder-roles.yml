@@ -79,7 +79,7 @@ jobs:
           WORKSPACE_SMOKE_MODE: release
       - name: Packaged retained project settings and Back
         if: ${{ !inputs.focused }}
-        run: node scripts/smoke-retained-recovery.mjs
+        run: node scripts/smoke-retained-recovery.mjs release
         env:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-folder-roles/recovery-release
           WORKSPACE_SMOKE_MODE: release

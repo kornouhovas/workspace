@@ -8,7 +8,7 @@ on:
       checks:
         description: Full acceptance or a selected focused failure route
         type: choice
-        options: [full, folder-roles, folder-roles-repair, immediate-folders, command-safety-creation, command-safety-windows-2022, command-safety-creation-diagnostic, command-safety-windows, command-safety-archive-alias, command-safety-fixtures, command-safety, command-safety-runtime, command-safety-packaged, source-access, source-access-repair, integrated-desktop, integrated-regressions, integrated-layout, integrated-category-layout, integrated-operation-layout, integrated-archive-profile, integrated-fixture-repairs, integrated-filesystem-repair, integrated-project-entry-repair, integrated-category-entry-profile, integrated-missing-tails, integrated-runtime, desktop-ux, layout-fixtures, source-inventory, observer-cancellation, observer-workflow, native-owner-controls, native-lifecycle, project-files-windows, project-files-windows-trace, failed, readiness, windows-release, issue22-failures, creation-shutdown, raw-rename, issue24-failures, category-fixture, issue24-startup, multiselect, etw-controls, app-fixture, property-fixture, runtime-observation, view-fixtures, number, windows-property-fixture, rename-authoring, rename-fixture, viewport-runtime, workspace-root-runtime, archive-contexts, creation-ownership, desktop-shell, shell-runtime, views-readiness, view-contexts, workspace-sidebar, workspace-setup, workspace-setup-readiness, select-readiness, source-fixture, source-runtime]
+        options: [full, folder-roles, folder-roles-repair, folder-roles-recovery-repair, immediate-folders, command-safety-creation, command-safety-windows-2022, command-safety-creation-diagnostic, command-safety-windows, command-safety-archive-alias, command-safety-fixtures, command-safety, command-safety-runtime, command-safety-packaged, source-access, source-access-repair, integrated-desktop, integrated-regressions, integrated-layout, integrated-category-layout, integrated-operation-layout, integrated-archive-profile, integrated-fixture-repairs, integrated-filesystem-repair, integrated-project-entry-repair, integrated-category-entry-profile, integrated-missing-tails, integrated-runtime, desktop-ux, layout-fixtures, source-inventory, observer-cancellation, observer-workflow, native-owner-controls, native-lifecycle, project-files-windows, project-files-windows-trace, failed, readiness, windows-release, issue22-failures, creation-shutdown, raw-rename, issue24-failures, category-fixture, issue24-startup, multiselect, etw-controls, app-fixture, property-fixture, runtime-observation, view-fixtures, number, windows-property-fixture, rename-authoring, rename-fixture, viewport-runtime, workspace-root-runtime, archive-contexts, creation-ownership, desktop-shell, shell-runtime, views-readiness, view-contexts, workspace-sidebar, workspace-setup, workspace-setup-readiness, select-readiness, source-fixture, source-runtime]
         default: full
       desktop_ux_profile:
         description: With desktop-ux, select foundation, grouped Board or project navigation acceptance
@@ -114,6 +114,36 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  folder-roles-recovery-repair:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.checks == 'folder-roles-recovery-repair' }}
+    runs-on: windows-2022
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.21.1
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Archive editor entry regression
+        shell: bash
+        run: |
+          mkdir -p work/ci-folder-roles
+          set -o pipefail
+          node --import tsx --test --test-name-pattern='archive editor|retained archive' tests/runtime-view-readiness.test.mjs 2>&1 | tee work/ci-folder-roles/editor.log
+      - name: Original retained project settings and Back
+        run: node scripts/smoke-retained-recovery.mjs
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-folder-roles/recovery-dev
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: folder-roles-recovery-windows-2022-${{ github.sha }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
+          path: work/ci-folder-roles/
+          if-no-files-found: error
+          retention-days: 14
+
   folder-roles-repair:
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.checks == 'folder-roles-repair' }}
     uses: ./.github/workflows/folder-roles.yml
@@ -843,7 +873,7 @@ jobs:
           if-no-files-found: error
 
   common:
-    if: ${{ github.event_name != 'workflow_dispatch' || (inputs.checks != 'folder-roles' && inputs.checks != 'folder-roles-repair' && inputs.checks != 'immediate-folders' && inputs.checks != 'command-safety-creation' && inputs.checks != 'command-safety-windows-2022' && inputs.checks != 'command-safety-creation-diagnostic' && inputs.checks != 'command-safety-windows' && inputs.checks != 'command-safety-archive-alias' && inputs.checks != 'command-safety-fixtures' && inputs.checks != 'command-safety' && inputs.checks != 'command-safety-runtime' && inputs.checks != 'command-safety-packaged' && inputs.checks != 'source-access' && inputs.checks != 'source-access-repair' && inputs.checks != 'failed' && inputs.checks != 'readiness' && inputs.checks != 'windows-release' && inputs.checks != 'issue22-failures' && inputs.checks != 'creation-shutdown' && inputs.checks != 'raw-rename' && inputs.checks != 'issue24-failures' && inputs.checks != 'category-fixture' && inputs.checks != 'issue24-startup' && inputs.checks != 'multiselect' && inputs.checks != 'etw-controls' && inputs.checks != 'app-fixture' && inputs.checks != 'property-fixture' && inputs.checks != 'runtime-observation' && inputs.checks != 'view-fixtures' && inputs.checks != 'number' && inputs.checks != 'windows-property-fixture' && inputs.checks != 'rename-authoring' && inputs.checks != 'rename-fixture' && inputs.checks != 'viewport-runtime' && inputs.checks != 'workspace-root-runtime' && inputs.checks != 'archive-contexts' && inputs.checks != 'creation-ownership' && inputs.checks != 'desktop-shell' && inputs.checks != 'shell-runtime' && inputs.checks != 'views-readiness' && inputs.checks != 'view-contexts' && inputs.checks != 'workspace-sidebar' && inputs.checks != 'workspace-setup' && inputs.checks != 'workspace-setup-readiness' && inputs.checks != 'select-readiness' && inputs.checks != 'source-fixture' && inputs.checks != 'source-runtime' && inputs.checks != 'desktop-ux' && inputs.checks != 'layout-fixtures' && inputs.checks != 'source-inventory' && inputs.checks != 'observer-cancellation' && inputs.checks != 'observer-workflow' && inputs.checks != 'native-owner-controls' && inputs.checks != 'native-lifecycle' && inputs.checks != 'project-files-windows' && inputs.checks != 'project-files-windows-trace' && inputs.checks != 'integrated-desktop' && inputs.checks != 'integrated-regressions' && inputs.checks != 'integrated-runtime' && inputs.checks != 'integrated-layout' && inputs.checks != 'integrated-category-layout' && inputs.checks != 'integrated-operation-layout' && inputs.checks != 'integrated-archive-profile' && inputs.checks != 'integrated-fixture-repairs' && inputs.checks != 'integrated-filesystem-repair' && inputs.checks != 'integrated-missing-tails' && inputs.checks != 'integrated-project-entry-repair' && inputs.checks != 'integrated-category-entry-profile') }}
+    if: ${{ github.event_name != 'workflow_dispatch' || (inputs.checks != 'folder-roles' && inputs.checks != 'folder-roles-repair' && inputs.checks != 'folder-roles-recovery-repair' && inputs.checks != 'immediate-folders' && inputs.checks != 'command-safety-creation' && inputs.checks != 'command-safety-windows-2022' && inputs.checks != 'command-safety-creation-diagnostic' && inputs.checks != 'command-safety-windows' && inputs.checks != 'command-safety-archive-alias' && inputs.checks != 'command-safety-fixtures' && inputs.checks != 'command-safety' && inputs.checks != 'command-safety-runtime' && inputs.checks != 'command-safety-packaged' && inputs.checks != 'source-access' && inputs.checks != 'source-access-repair' && inputs.checks != 'failed' && inputs.checks != 'readiness' && inputs.checks != 'windows-release' && inputs.checks != 'issue22-failures' && inputs.checks != 'creation-shutdown' && inputs.checks != 'raw-rename' && inputs.checks != 'issue24-failures' && inputs.checks != 'category-fixture' && inputs.checks != 'issue24-startup' && inputs.checks != 'multiselect' && inputs.checks != 'etw-controls' && inputs.checks != 'app-fixture' && inputs.checks != 'property-fixture' && inputs.checks != 'runtime-observation' && inputs.checks != 'view-fixtures' && inputs.checks != 'number' && inputs.checks != 'windows-property-fixture' && inputs.checks != 'rename-authoring' && inputs.checks != 'rename-fixture' && inputs.checks != 'viewport-runtime' && inputs.checks != 'workspace-root-runtime' && inputs.checks != 'archive-contexts' && inputs.checks != 'creation-ownership' && inputs.checks != 'desktop-shell' && inputs.checks != 'shell-runtime' && inputs.checks != 'views-readiness' && inputs.checks != 'view-contexts' && inputs.checks != 'workspace-sidebar' && inputs.checks != 'workspace-setup' && inputs.checks != 'workspace-setup-readiness' && inputs.checks != 'select-readiness' && inputs.checks != 'source-fixture' && inputs.checks != 'source-runtime' && inputs.checks != 'desktop-ux' && inputs.checks != 'layout-fixtures' && inputs.checks != 'source-inventory' && inputs.checks != 'observer-cancellation' && inputs.checks != 'observer-workflow' && inputs.checks != 'native-owner-controls' && inputs.checks != 'native-lifecycle' && inputs.checks != 'project-files-windows' && inputs.checks != 'project-files-windows-trace' && inputs.checks != 'integrated-desktop' && inputs.checks != 'integrated-regressions' && inputs.checks != 'integrated-runtime' && inputs.checks != 'integrated-layout' && inputs.checks != 'integrated-category-layout' && inputs.checks != 'integrated-operation-layout' && inputs.checks != 'integrated-archive-profile' && inputs.checks != 'integrated-fixture-repairs' && inputs.checks != 'integrated-filesystem-repair' && inputs.checks != 'integrated-missing-tails' && inputs.checks != 'integrated-project-entry-repair' && inputs.checks != 'integrated-category-entry-profile') }}
     name: Common tests and static checks
     runs-on: macos-latest
     steps:

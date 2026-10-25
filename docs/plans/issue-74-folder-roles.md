@@ -220,3 +220,28 @@ path could equal its supplied locator. Both hosts now explicitly reject parent
 escape before comparing portable paths; exact identities still apply. The original
 retained DEV command now passes all7 journeys and64 captures with normal shutdown
 and owned cleanup. Native supported-host repair-gate results remain pending.
+
+
+## Second focused failure and bounded consumer repair
+
+Run40193124906 at97819571 passes52 public role/path/outage checks on every
+host. macOS and Windows latest retained DEV pass7 journeys/64 captures each.
+Windows2022's retained DEV stops at archived Text editor entry, line121, before
+any authored value/save: the pointer click completed but no textarea appeared.
+Its failure capture shows the enabled old value, focus BODY and archived context;
+normal shutdown and owned cleanup passed. Exact historical timing cause is not
+established. Three hypotheses were compared: pointer-time availability interruption,
+editor focus/blur closure, and an obscuring context. A real Electron control rejects
+the original pointer+fill under injected pointer-time disabling, then succeeds via
+the existing one-activation keyboard/focus helper, with no application mutation.
+Reuse that helper in this consumer; retain its15s deadline, exactly authored value,
+Save and public persisted-value assertions. This is driver-only preparation.
+
+A new Windows2022-only folder-roles-recovery-repair gate runs the bounded editor
+controls and original retained DEV consumer, preserving the failed receipt.
+The same review found that the retained script accepts positional mode rather than
+the workflow's environment mode. Its packaged command now explicitly passes release;
+prior DEV receipts never establish packaged acceptance. Routing tests cover this.
+Application, migrations, dependencies and build/package inputs are unchanged from
+97819571; its successful public/other-host repair receipts remain valid. Full
+three-host DEV/package acceptance remains required after the focused gate passes.

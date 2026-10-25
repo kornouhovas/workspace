@@ -10,6 +10,7 @@ import {setInterfaceLanguage,openSettingsSection,returnToWorkspace} from './runt
 import {waitForRuntimeInterface} from './runtime-startup.mjs';
 import {packagedExecutablePath} from './runtime-executable.mjs';
 import {waitForRuntimeRecoverySource} from './runtime-recovery-readiness.mjs';
+import {openArchiveTextEditor} from './archive-editor-driver.mjs';
 import {enterContextFor} from './runtime-context-tools.mjs';
 const mode=process.argv[2]??'dev';assert.ok(['dev','release'].includes(mode));
 const root=resolve(import.meta.dirname,'..'),evidence=resolve(process.env.WORKSPACE_SMOKE_EVIDENCE_DIR??`work/issue-65-recovery-${mode}`);
@@ -117,8 +118,8 @@ try{
  await call('applyArchiveLocation',{operationId:crypto.randomUUID(),previewToken:(await call('previewArchiveLocation',{relativePath:'Archive'})).previewToken});
  await call('applyProjectArchive',{operationId:crypto.randomUUID(),previewToken:(await call('previewProjectArchive',{projectId:project.projectId,action:'archive',name:null,createParent:false})).previewToken});
  await area.getByText('Archived',{exact:true}).waitFor();
- const edit=area.getByRole('button',{name:'Edit Text value: Verified move / Notes',exact:true,includeHidden:true});await enterContextFor(page,edit);await edit.click();
- await area.getByRole('textbox',{name:'Edit Text value: Verified move / Notes',exact:true}).fill('Archived brief stays editable.');
+ const edit=area.getByRole('button',{name:'Edit Text value: Verified move / Notes',exact:true,includeHidden:true});await enterContextFor(page,edit);
+ await openArchiveTextEditor(area,'Edit Text value: Verified move / Notes','Archived brief stays editable.');
  await area.getByRole('button',{name:'Save value',exact:true}).click();
  assert.equal((await call('listTextProperties')).values.find(v=>v.projectId===project.projectId&&v.propertyId===propertyId).value,'Archived brief stays editable.');
  assert.equal(await area.getByRole('button',{name:'Refresh files',exact:true}).isDisabled(),true);
