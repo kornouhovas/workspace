@@ -10,7 +10,7 @@ import { filesystemAlias } from "./path-alias.js";
 import { assertCreationDestinationFree, filesystemCode, filesystemProblem, nativeProjectFilesystem, validProjectBasename, verifyCreationDirectory, type ProjectFilesystem } from "./project-filesystem.js";
 import { readProjectReservations } from "./project-rename-reservations.js";
 import type { createProjectCategoryMoveService } from "./project-category-move.js";
-import {parseRemovalAuthorization, removalBindingMatchesRow, type RemovalAuthorization} from "./category-removal-authorization.js";
+import {validLegacyRemovalHistory,parseRemovalAuthorization, removalBindingMatchesRow, type RemovalAuthorization} from "./category-removal-authorization.js";
 import {type FilesystemAuthorizer, type VerifiedFolder} from "./filesystem-authorization.js";
 import {sameDurableFolder, durableOwnershipKey} from "./folder-evidence.js";
 import * as schema from "./db/schema.js";
@@ -412,7 +412,7 @@ export function createCategoryRemovalService(db: Database, moves: ReturnType<typ
   }
   function legacyReviewedBinding(row:Operation,workspaceId:string):Binding {
     const old:Binding=JSON.parse(row.binding),source=sourceFor(workspaceId);
-    if(!source || !removalBindingMatchesRow(old,row) || old.source.durableEvidence!=null || old.category.durableEvidence!=null || old.destination?.durableEvidence!=null || old.members.some(p=>p.durableEvidence!=null) ||
+    if(!source || !validLegacyRemovalHistory(old,source.evidenceGeneration) || !removalBindingMatchesRow(old,row) || old.source.durableEvidence!=null || old.category.durableEvidence!=null || old.destination?.durableEvidence!=null || old.members.some(p=>p.durableEvidence!=null) ||
       source.id!==old.source.id || source.canonicalRoot!==old.source.canonicalRoot || source.discoveryMode!=="grouped" || source.excludedRelativePaths!==old.source.excludedRelativePaths ||
       source.archiveRelativePath!==old.source.archiveRelativePath || source.discoveryRevision<old.source.discoveryRevision+operationView(row).projects.filter(p=>p.outcome==="completed").length)throw new RemovalFailure("ownership_uncertain");
     const root=authorizer!.capture(source,"",source.durableEvidence);

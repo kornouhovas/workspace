@@ -727,3 +727,51 @@ The updated source-association dev journey also passes: eight EN/RU light/dark
 successful converted file listing after enrollment, with normal owned shutdown.
 The new non-gating association guidance was visually inspected in the narrow RU
 capture. Its report is `work/issue-72-native-source-association/report.json`.
+
+## Whole-issue review and fourteenth slice: closed legacy history
+
+Review fixed point: `61c4c0bd...fff33784`, including all thirteen implementation
+milestones. The independent Spec axis found no confirmed remaining implementation
+defect or unrelated scope expansion, and explicitly retained the unexecuted full,
+package and supported-platform gates. The Standards axis found ignored optional
+original generations in category-removal/category-folder legacy snapshots and
+non-closed native tuple comparisons; its judgment smell was the duplicated
+security-sensitive removal source-policy filter. These findings were resolved
+before final broad verification. This is not final platform acceptance.
+
+Legacy snapshots now distinguish absent authentic pre-policy generations from
+present values: the latter must be safe nonnegative integers bounded by the
+reviewed/current generation. Shared history validators run in recovery and backup
+validation. Closed native tuple syntax requires exactly three decimal strings;
+retained zero tuples remain representable but cannot match sufficient positive
+current proofs. Legacy capture/observe, creation/rename/move target comparisons,
+category snapshot roles and backup native columns use the closed parser. The
+single removal source-policy helper replaces the duplicated filters. No global
+identity equality is weakened and no historical bytes are rewritten.
+
+An additional public repro showed that removing a new category-folder journal's
+authorization could expose legacy recovery both in the same scope and after
+scope loss plus root-only rebinding. Legacy attestation now refuses every retained
+nonnull durable field in the original source/category/member/addition roles,
+matching the archive/removal policy. Syntax-only unprovable history remains
+retainable without gaining authority. A coherent backup relabel of a scoped
+receipt is rejected; pending reservations remain intact. This is a separate
+anti-downgrade repair, not a claim that database snapshots are tamper-evident.
+
+New public real0023 recovery/backup controls pass 26/26. An isolated pristine
+`fff33784` service build ran the same focused controls: six real failures across
+seven cases confirmed target-shape grants, a removal grant and malformed backup
+acceptance; the category-folder live shape control was already refused. Earlier
+fixture-constraint/import failures were diagnostic-only and were corrected before
+that baseline comparison. Native-shape and generation controls preserve the
+matching positive backups and exact legacy recovery. The existing archive shape
+fixture now injects its malformed nested history after opening a valid migrated
+fixture, because strict backup validation correctly rejects malformed native
+columns before migration can begin. Its recovery no-effect guarantee remains.
+
+Fresh build/typecheck/lint/diff pass; affected legacy/scoped command, category,
+archive and real backup checks pass 161/161. Additional anti-downgrade controls
+pass 3/3; the category/archive subset passed 46/46 before the added backup control.
+Both independent review follow-ups found no residual defect or history-preservation
+overreach in the inspected repairs. Migration renewal, final full suite, package
+and separate supported-platform/CI receipts remain to be completed.

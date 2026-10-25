@@ -1,7 +1,7 @@
-import {parseFilesystemAuthorization,parseFolderObservation,type FilesystemAuthorization,type VerifiedFolder} from "./filesystem-authorization.js";
+import {exactNativeIdentity,sameLegacyNativeIdentity,parseLegacyNativeIdentity,validLegacyGeneration,parseFilesystemAuthorization,parseFolderObservation,type FilesystemAuthorization,type VerifiedFolder} from "./filesystem-authorization.js";
 import {sameIdentity,isChildName} from "./discovery.js";
 import {durableOwnershipKey,sameDurableFolder} from "./folder-evidence.js";
-import {sameVolumeEvidence} from "./source-identity.js";
+import {storedEvidence,sameVolumeEvidence} from "./source-identity.js";
 
 export interface CategoryFolderAuthorization {
   version: 1;
@@ -39,6 +39,19 @@ export interface CategoryFolderBindingRow {
   sourceId:string;categoryId:string;action:string;binding:string;nativeIdentity:string|null;
   originalRelativePath:string|null;requestedRelativePath:string;
 }
+/** Preserve only recognized native history; it never proves a current placement. */
+export function validLegacyCategoryFolderHistory(row:CategoryFolderBindingRow,maximum:number):boolean {
+  try {
+    const b=JSON.parse(row.binding);
+    if(!validLegacyGeneration(b.source,maximum) || !parseLegacyNativeIdentity(b.source.appliedRootIdentity) || !exactNativeIdentity(b.snapshot.root.identity))return false;
+    const records=[...(b.category?[b.category]:[]),...b.members,...b.additions];
+    if(!records.every(record=>!!parseLegacyNativeIdentity(record.nativeIdentity)) || [b.source,...records].some(record=>record.durableEvidence!=null&&!storedEvidence(record.durableEvidence)))return false;
+    if(row.nativeIdentity!==null&&!parseLegacyNativeIdentity(row.nativeIdentity))return false;
+    const paths=[row.originalRelativePath??row.requestedRelativePath,...records.map(record=>record.relativePath)];
+    return b.snapshot.children.filter((child:{relativePath:string})=>paths.includes(child.relativePath)).every((child:{identity:unknown})=>exactNativeIdentity(child.identity));
+  }catch{return false;}
+}
+
 /** Match proof roles to the immutable request. Renewed reviews keep full durable
  * evidence; legacy reviews must additionally prove every original native tuple. */
 export function categoryAuthorizationMatchesBinding(authority:CategoryFolderAuthorization,row:CategoryFolderBindingRow,mode:"original"|"legacy_review"|"renewed_review"="original"):boolean {
@@ -47,7 +60,12 @@ export function categoryAuthorizationMatchesBinding(authority:CategoryFolderAuth
     if(!b || b.source?.id!==row.sourceId || b.source.discoveryMode!=="grouped" || !b.snapshot || !Array.isArray(b.snapshot.children) ||
       !Array.isArray(b.members) || !Array.isArray(b.additions) || !["create","associate","rename"].includes(row.action) || !isChildName(row.requestedRelativePath))return false;
     if(mode!=="renewed_review" && !sameIdentity(b.snapshot.root.identity,root.mount))return false;
-    if(mode==="legacy_review") {if(!sameIdentity(JSON.parse(b.source.appliedRootIdentity),root.mount))return false;}
+    if(mode==="legacy_review") {
+      // Retained durable fields prove this is not an authentic pre-policy journal.
+      // Missing authorization must never convert known scoped history to legacy.
+      if([b.source,b.category,...b.members,...b.additions].some(record=>record?.durableEvidence!=null) ||
+        !validLegacyCategoryFolderHistory(row,authority.binding.generation) || !sameLegacyNativeIdentity(b.source.appliedRootIdentity,root.mount))return false;
+    }
     else {
       const sourceProof=JSON.parse(b.source.durableEvidence);
       if(!sameDurableFolder(sourceProof,root.evidence) || mode==="original" && b.source.evidenceGeneration!==authority.binding.generation)return false;
@@ -62,10 +80,10 @@ export function categoryAuthorizationMatchesBinding(authority:CategoryFolderAuth
       if(row.action==="rename") {
         if(!b.category || b.category.id!==row.categoryId || b.category.sourceId!==row.sourceId || b.category.relativePath!==row.originalRelativePath ||
           b.category.nativeIdentity!==row.nativeIdentity || b.additions.length)return false;
-        if(mode==="legacy_review") {if(!sameIdentity(JSON.parse(row.nativeIdentity),authority.category.mount))return false;}
+        if(mode==="legacy_review") {if(!sameLegacyNativeIdentity(row.nativeIdentity,authority.category.mount))return false;}
         else if(!sameDurableFolder(JSON.parse(b.category.durableEvidence),authority.category.evidence))return false;
       } else if(b.category!==null || row.originalRelativePath!==null || b.members.length || b.associationIdentity!==row.nativeIdentity ||
-        mode!=="renewed_review" && !sameIdentity(JSON.parse(row.nativeIdentity),authority.category.mount))return false;
+        mode!=="renewed_review" && !sameLegacyNativeIdentity(row.nativeIdentity,authority.category.mount))return false;
     }
     const expected=row.action==="rename"?b.members:b.additions;
     if(expected.length!==authority.projects.length)return false;
@@ -76,7 +94,7 @@ export function categoryAuthorizationMatchesBinding(authority:CategoryFolderAuth
         project.relativePath.split("/")[0]!== (row.originalRelativePath??row.requestedRelativePath) ||
         mode!=="renewed_review" && !sameIdentity(child.identity,project.observation.mount))return false;
       if(mode==="legacy_review" || row.action==="associate" && mode==="original") {
-        if(!sameIdentity(JSON.parse(saved.nativeIdentity),project.observation.mount))return false;
+        if(!sameLegacyNativeIdentity(saved.nativeIdentity,project.observation.mount))return false;
       } else if(row.action==="rename" && !sameDurableFolder(JSON.parse(saved.durableEvidence),project.observation.evidence))return false;
     }
     return true;

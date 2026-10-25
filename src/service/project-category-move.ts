@@ -1,3 +1,4 @@
+import {sameLegacyNativeIdentity} from './filesystem-authorization.js';
 import {sameAuthorizationRoot,parseFilesystemAuthorization,parseFolderObservation,type FilesystemAuthorization,type FilesystemAuthorizer,type VerifiedFolder} from "./filesystem-authorization.js";
 import {parseRemovalAuthorization} from "./category-removal-authorization.js";
 import {storedEvidence} from "./source-identity.js";
@@ -331,7 +332,7 @@ export function createProjectCategoryMoveService(db: Database, integration: {
       for(const path of new Set([row.originalRelativePath,row.requestedRelativePath])) {
         let entry;
         try{entry=filesystem.inspect(join(row.canonicalRoot,path));}catch(error){if(filesystemCode(error)==="ENOENT")continue;throw error;}
-        if(entry.kind!=="directory" || execution.legacyAttested && !sameIdentity(entry.identity,JSON.parse(row.nativeIdentity)))continue;
+        if(entry.kind!=="directory" || execution.legacyAttested && !sameLegacyNativeIdentity(row.nativeIdentity,entry.identity))continue;
         const observed=authorizer.observe(join(row.canonicalRoot,path),execution.original!.root,entry.identity);
         if(target && !sameDurableFolder(target.evidence,observed.evidence))continue;
         matches.push(observed);

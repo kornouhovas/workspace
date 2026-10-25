@@ -23,7 +23,7 @@ function fixture(run,{action='archive',stale=null,native,mode='direct',missingAr
  const journal=JSON.parse(readFileSync('src/service/db/migrations/meta/_journal.json','utf8'));journal.entries=journal.entries.slice(0,24);
  for(const entry of journal.entries)copyFileSync(`src/service/db/migrations/${entry.tag}.sql`,join(migrations,`${entry.tag}.sql`));writeFileSync(join(migrations,'meta/_journal.json'),JSON.stringify(journal));
  const sql=new Database(path),sourceId=randomUUID(),workspaceId=randomUUID(),projectId=randomUUID(),operationId=randomUUID(),categoryId=mode==='grouped'?randomUUID():null;let service;
- const identity=(path,role)=>{const value=nativeProjectFilesystem.inspect(path).identity;return {...value,...(stale===role?{dev:'999'}:{}),...(extraNative===role?{version:2}:{})};};
+ const identity=(path,role)=>{const value=nativeProjectFilesystem.inspect(path).identity;return {...value,...(stale===role?{dev:'999'}:{})};};
  const camel=row=>Object.fromEntries(Object.entries(row).map(([key,value])=>[key.replace(/_([a-z])/g,(_,letter)=>letter.toUpperCase()),key==='mode_inactive'?!!value:value]));
  try {
   migrate(drizzle(sql),{migrationsFolder:migrations});sql.pragma('foreign_keys=ON');sql.exec("INSERT INTO settings VALUES ('language','en')");
@@ -40,9 +40,13 @@ function fixture(run,{action='archive',stale=null,native,mode='direct',missingAr
   sql.prepare("INSERT INTO project_archive_operations(operation_id,source_id,workspace_id,project_id,action,original_relative_path,requested_relative_path,native_identity,binding,preview_token,parents,stage) VALUES (?,?,?,?,?,?,?,?,?,?,?,'intent')").run(operationId,sourceId,workspaceId,projectId,action,placement,action==='archive'?archived:original,nativeIdentity,JSON.stringify(binding),randomUUID(),JSON.stringify(binding.destinationParents));
   const observer={watch(){return{close(){}};},schedule(){return{cancel(){}};}};
   const open=()=>openSettingsService(path,undefined,undefined,observer,undefined,native);
-  const before=sql.prepare('SELECT * FROM project_archive_operations').get();if(missingArchiveParents)rmSync(join(root,'Cold'),{recursive:true});service=open();
+  let before=sql.prepare('SELECT * FROM project_archive_operations').get();if(missingArchiveParents)rmSync(join(root,'Cold'),{recursive:true});service=open();
   const query=input=>service.handleQuery({workspaceId,...input}),command=input=>service.handleCommand({workspaceId,...input});
   const rootBinding=query({type:'workspace.previewSourceAssociation',mappings:[]});assert.ok(rootBinding.value.previewToken,JSON.stringify(rootBinding));assert.equal(command({type:'workspace.applySourceAssociation',previewToken:rootBinding.value.previewToken}).ok,true);
+  if(extraNative==='root') {
+   const old=JSON.parse(before.binding),native=JSON.stringify({...JSON.parse(old.source.appliedRootIdentity),version:2}),triggers=sql.prepare("SELECT name,sql FROM sqlite_schema WHERE type='trigger' AND tbl_name='project_archive_operations'").all();for(const trigger of triggers)sql.exec(`DROP TRIGGER "${trigger.name}"`);
+   sql.prepare("UPDATE project_archive_operations SET binding=json_set(binding,'$.source.appliedRootIdentity',?)").run(native);for(const trigger of triggers)sql.exec(trigger.sql);before=sql.prepare('SELECT * FROM project_archive_operations').get();
+  }
   run({root,path,sql,query,command,operationId,projectId,categoryId,before,restart(){service.close();service=open();},send:input=>input.type==='data.export'?service.handleQuery(input):service.handleCommand(input)});
  }finally{service?.close();sql.close();rmSync(directory,{recursive:true,force:true});}
 }

@@ -1,4 +1,4 @@
-import {categoryAuthorizationMatchesBinding,parseCategoryFolderAuthorization,type CategoryFolderAuthorization} from "./category-folder-authorization.js";
+import {validLegacyCategoryFolderHistory,categoryAuthorizationMatchesBinding,parseCategoryFolderAuthorization,type CategoryFolderAuthorization} from "./category-folder-authorization.js";
 import {parseFolderObservation,type FilesystemAuthorizer,type VerifiedFolder} from "./filesystem-authorization.js";
 import {identityState,storedEvidence} from "./source-identity.js";
 import {durableOwnershipKey,sameDurableFolder} from "./folder-evidence.js";
@@ -360,7 +360,7 @@ export function createCategoryOptionsService(db: Database, committed: (sourceId:
     const original=parseCategoryFolderAuthorization(row.authorization),legacy=row.authorization===null;
     if(!legacy && !original)throw new Error("Unknown authorization policy");
     const authority:CategoryFolderAuthorization={version:1,binding:authorizer.capture(source,"",source.durableEvidence),category:null,projects:[]};
-    if(legacy ? !sameIdentity(JSON.parse(b.source.appliedRootIdentity!),authority.binding.root.mount)
+    if(legacy ? !validLegacyCategoryFolderHistory(row,authority.binding.generation) || !sameIdentity(JSON.parse(b.source.appliedRootIdentity!),authority.binding.root.mount)
       : source.evidenceGeneration<original!.binding.generation || !sameDurableFolder(original!.binding.root.evidence,authority.binding.root.evidence))throw new Error("Unprovable operation root");
     const recorded=row.destinationEvidence?parseFolderObservation(JSON.parse(row.destinationEvidence)):null;
     if(row.destinationEvidence!==null && !recorded)throw new Error("Invalid recorded target");

@@ -15,6 +15,18 @@ export interface FilesystemAuthorization {
   root: VerifiedFolder;
   parent: VerifiedFolder;
 }
+/** Closed legacy tuple syntax is separate from reliable current evidence. */
+export function exactNativeIdentity(value:unknown):value is NativeIdentity {
+  if(!value || typeof value!=="object" || Array.isArray(value) || Object.keys(value).sort().join()!=="birthtimeNs,dev,ino")return false;
+  const v=value as NativeIdentity;
+  return [v.dev,v.ino,v.birthtimeNs].every(field=>typeof field==="string"&&/^\d+$/.test(field));
+}
+export function parseLegacyNativeIdentity(encoded:unknown):NativeIdentity|null {
+  try{if(typeof encoded!=="string")return null;const value:unknown=JSON.parse(encoded);return exactNativeIdentity(value)?value:null;}catch{return null;}
+}
+export function sameLegacyNativeIdentity(encoded:unknown,current:NativeIdentity):boolean {
+  const saved=parseLegacyNativeIdentity(encoded);return !!saved&&sameIdentity(saved,current);
+}
 export function parseFolderObservation(value:unknown): VerifiedFolder | null {
   if(!value || typeof value!=="object" || Array.isArray(value))return null;
   const v=value as Partial<VerifiedFolder>;
@@ -29,12 +41,17 @@ export function parseFilesystemAuthorization(value:string|null): FilesystemAutho
       && parseFolderObservation(v.root) && parseFolderObservation(v.parent) && sameVolumeEvidence(v.root,v.parent) && v.root.evidence.scope===v.parent.evidence.scope ? v : null;
   } catch {return null;}
 }
+/** An authentic old snapshot has no generation; a present field is still typed history. */
+export function validLegacyGeneration(source:{evidenceGeneration?:unknown},maximum:number):boolean {
+  return !Object.hasOwn(source,"evidenceGeneration") || Number.isSafeInteger(source.evidenceGeneration) && Number(source.evidenceGeneration)>=0 && Number(source.evidenceGeneration)<=maximum;
+}
 export function sameAuthorizationRoot(a:FilesystemAuthorization,b:FilesystemAuthorization):boolean {
   return a.generation===b.generation && sameDurableFolder(a.root.evidence,b.root.evidence) && sameIdentity(a.root.mount,b.root.mount);
 }
 /** Durable continuity admits an earlier mount; an execution snapshot never does. */
 export function createFilesystemAuthorization(scope:string, read:EvidenceReader, db:BetterSQLite3Database<typeof schema>) {
   function capture(source:{canonicalRoot:string;durableEvidence:string|null;evidenceGeneration:number},parentRelativePath:string,parentEvidence:string|null,legacy?:LegacyParents):FilesystemAuthorization {
+    if(legacy&&(!exactNativeIdentity(legacy.root)||!exactNativeIdentity(legacy.parent)))throw new CreationFailure("ownership_uncertain");
     const root=read(source.canonicalRoot,scope), parent=read(join(source.canonicalRoot,parentRelativePath),scope);
     if(identityState(source.durableEvidence,root,scope)!=="verified" ||
       !(identityState(parentEvidence,parent,scope)==="verified" || parentEvidence===null && legacy && parent.ok && sameIdentity(legacy.parent,parent.mount)) ||
@@ -67,7 +84,7 @@ export function createFilesystemAuthorization(scope:string, read:EvidenceReader,
         if(conflicts(binding.root) || conflicts(binding.parent))throw new CreationFailure("native_conflict");
       }
     }
-    if(legacy && (!sameIdentity(binding.root.mount,legacy.root) || !sameIdentity(binding.parent.mount,legacy.parent)))throw new CreationFailure("ownership_uncertain");
+    if(legacy && (!exactNativeIdentity(legacy.root) || !exactNativeIdentity(legacy.parent) || !sameIdentity(binding.root.mount,legacy.root) || !sameIdentity(binding.parent.mount,legacy.parent)))throw new CreationFailure("ownership_uncertain");
     if(source.evidenceGeneration!==binding.generation)throw new CreationFailure("stale_configuration");
     for(const [path,saved,old] of [[source.canonicalRoot,binding.root,source.durableEvidence],
       [join(source.canonicalRoot,parentRelativePath),binding.parent,parentEvidence]] as const) {
@@ -79,7 +96,7 @@ export function createFilesystemAuthorization(scope:string, read:EvidenceReader,
   }
   function observe(path:string,root:VerifiedFolder,mount:NativeIdentity,expected?:FolderEvidence):VerifiedFolder {
     const current=read(path,scope);
-    if(!parseFolderObservation(current) || !current.ok || current.evidence.scope!==scope || root.evidence.scope!==scope || !sameVolumeEvidence(root,current) || !sameIdentity(current.mount,mount) ||
+    if(!exactNativeIdentity(mount) || !parseFolderObservation(current) || !current.ok || current.evidence.scope!==scope || root.evidence.scope!==scope || !sameVolumeEvidence(root,current) || !sameIdentity(current.mount,mount) ||
       expected && !sameDurableFolder(expected,current.evidence))throw new CreationFailure("filesystem_changed");
     return current;
   }

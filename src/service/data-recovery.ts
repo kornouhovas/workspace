@@ -1,9 +1,9 @@
 import {archivedAssociationMatchesRecord,parseArchivedFolderAssociation} from "./archive-association.js";
 import {archiveBindingMatchesRow,parseArchiveAttestation,parseArchiveAuthorization,parseArchiveBindingAuthorization,parseArchiveParents,archiveParentPathsMatch,uniqueArchiveProofs,type ArchiveRowDescriptor} from "./archive-authorization.js";
-import {parseRemovalAuthorization,removalBindingMatchesRow,removalAttestationMatchesBinding} from "./category-removal-authorization.js";
-import {categoryAuthorizationMatchesBinding,parseCategoryFolderAuthorization,type CategoryFolderBindingRow} from "./category-folder-authorization.js";
+import {validLegacyRemovalHistory,parseRemovalAuthorization,removalBindingMatchesRow,removalAttestationMatchesBinding} from "./category-removal-authorization.js";
+import {validLegacyCategoryFolderHistory,categoryAuthorizationMatchesBinding,parseCategoryFolderAuthorization,type CategoryFolderBindingRow} from "./category-folder-authorization.js";
 import {sameIdentity} from "./discovery.js";
-import {sameAuthorizationRoot,parseFilesystemAuthorization, parseFolderObservation} from "./filesystem-authorization.js";
+import {parseLegacyNativeIdentity,sameAuthorizationRoot,parseFilesystemAuthorization, parseFolderObservation} from "./filesystem-authorization.js";
 import { durableOwnershipKey, sameDurableFolder, validateEvidence } from "./folder-evidence.js";
 import { isWorkspaceSessionState } from "../contracts/workspace-sessions.js";
 import { validateSnapshotRelations } from "./data-recovery-invariants.js";
@@ -59,8 +59,7 @@ function validate(db: Database.Database) {
     const columns = db.prepare(`PRAGMA table_info(${quote(table.name)})`).all() as { name: string }[];
     for (const column of columns.filter(c => c.name.endsWith("_identity"))) {
       for (const row of db.prepare(`SELECT ${quote(column.name)} AS value FROM ${quote(table.name)} WHERE ${quote(column.name)} IS NOT NULL`).all() as { value: string }[]) {
-        const identity = JSON.parse(row.value);
-        if (!identity || typeof identity.dev !== "string" || typeof identity.ino !== "string" || typeof identity.birthtimeNs !== "string") throw new Error("Invalid filesystem identity");
+        if (!parseLegacyNativeIdentity(row.value)) throw new Error("Invalid filesystem identity");
       }
     }
   }
@@ -189,7 +188,7 @@ function validate(db: Database.Database) {
       ["provider","volume","serial","scope"].every(key=>authority.binding.root.evidence[key as keyof typeof destination.evidence]===destination.evidence[key as keyof typeof destination.evidence]);
     for(const row of rows) {
       const authority=parseCategoryFolderAuthorization(row.authorization as string|null),destination=target(row.destination_evidence);
-      if(row.authorization===null) {if(row.destination_evidence!==null)throw new Error("Legacy category evidence was rewritten");continue;}
+      if(row.authorization===null) {if(row.destination_evidence!==null || !validLegacyCategoryFolderHistory(descriptor(row),generations.get(row.source_id as string)??0))throw new Error("Invalid legacy category folder history");continue;}
       if(!authority || !validGeneration(authority,row.source_id as string) || !categoryAuthorizationMatchesBinding(authority,descriptor(row)) ||
         ["destination_recorded","completed"].includes(row.stage as string) && !destination ||
         row.destination_evidence!==null && (!destination || !volume(authority,destination) || authority.category && !sameDurableFolder(authority.category.evidence,destination.evidence)) ||
@@ -217,6 +216,8 @@ function validate(db: Database.Database) {
       if(!removalBindingMatchesRow(binding,{sourceId:row.source_id as string,categoryId:row.category_id as string,destinationCategoryId:row.destination_category_id as string|null,
         originalRelativePath:row.original_relative_path as string,requestedRelativePath:row.requested_relative_path as string|null,nativeIdentity:row.native_identity as string}))throw new Error("Contradictory removal binding");
       if(!Object.hasOwn(binding,"authorization")) {
+        const source=db.prepare("SELECT * FROM sources WHERE id=?").get(row.source_id) as {evidence_generation?:number}|undefined;
+        if(!source || !validLegacyRemovalHistory(binding,source.evidence_generation??0))throw new Error("Invalid historical removal generation");
         for(const record of [binding.source,binding.category,...(binding.destination?[binding.destination]:[]),...binding.members]) {
           if(record.durableEvidence!==undefined && record.durableEvidence!==null && (typeof record.durableEvidence!=="string" || !validateEvidence(JSON.parse(record.durableEvidence))))throw new Error("Malformed historical removal evidence");
         }

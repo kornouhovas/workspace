@@ -223,3 +223,21 @@ test('category attestation restore retains original bindings, full evidence and 
  ])assert.equal(f.send({type:'data.restore',content:alteredSnapshot(exported.value.content,mutate)}).ok,false);
  assert.equal(f.send({type:'data.restore',content:exported.value.content}).ok,true);assert.deepEqual(f.command(request),completed);
 },{native(from,to){assert.equal(renameNoReplace(from,to),'renamed');throw new Error('lost effect reply');}}));
+
+for(const lostScope of [false,true])test(`removing scoped category authority cannot downgrade ${lostScope?'lost-scope':'same-scope'} history to legacy recovery`,()=>fixture(f=>{
+ const preview=f.review('rename','Renamed',f.categoryId).value,request={type:'workspace.applyCategoryFolder',operationId:randomUUID(),previewToken:preview.previewToken};
+ const pending=f.command(request);assert.equal(pending.value.outcome,'recoverable');
+ if(lostScope){rmSync(join(f.directory,'installation-scope.json'));f.restart();const root=f.query({type:'workspace.previewSourceAssociation',mappings:[]}).value;assert.equal(f.command({type:'workspace.applySourceAssociation',previewToken:root.previewToken}).ok,true);}
+ const triggers=f.sql.prepare("SELECT name,sql FROM sqlite_schema WHERE type='trigger' AND tbl_name='category_folder_operations'").all();for(const trigger of triggers)f.sql.exec(`DROP TRIGGER "${trigger.name}"`);f.sql.exec('UPDATE category_folder_operations SET authorization=NULL');for(const trigger of triggers)f.sql.exec(trigger.sql);
+ const review=f.query({type:'workspace.previewCategoryFolderRecovery',operationId:request.operationId});assert.ok(!review.ok||review.value.previewToken===null,JSON.stringify(review));if(review.ok)assert.deepEqual(review.value.actions,[]);
+ assert.equal(f.sql.prepare('SELECT count(*) n FROM category_folder_attestations').get().n,0);assert.equal(f.query({type:'workspace.listCategoryFolderOperations'}).value.operations.length,1);assert.equal(readFileSync(join(f.root,'From/Project/sentinel'),'utf8'),'exact contents');
+},{native(){throw new Error('lost before-effect response');}}));
+
+test('backup restore cannot relabel a scoped category recovery receipt as legacy by removing its original authorization',()=>fixture(f=>{
+ const preview=f.review('rename','Renamed',f.categoryId).value,request={type:'workspace.applyCategoryFolder',operationId:randomUUID(),previewToken:preview.previewToken};assert.equal(f.command(request).value.outcome,'recoverable');
+ const review=f.query({type:'workspace.previewCategoryFolderRecovery',operationId:request.operationId});assert.ok(review.value.actions.includes('keep_original'));
+ const kept=f.command({type:'workspace.recoverCategoryFolder',operationId:request.operationId,previewToken:review.value.previewToken,action:'keep_original'});assert.equal(kept.value.outcome,'rejected');
+ const exported=f.send({type:'data.export'});assert.equal(exported.ok,true);
+ const downgraded=alteredSnapshot(exported.value.content,db=>{db.exec('UPDATE category_folder_operations SET authorization=NULL');db.exec("UPDATE category_folder_attestations SET journal=json_set(journal,'$.authorization',NULL)");});
+ assert.equal(f.send({type:'data.restore',content:downgraded}).ok,false);assert.deepEqual(f.command(request),kept);assert.equal(readFileSync(join(f.root,'From/Project/sentinel'),'utf8'),'exact contents');assert.equal(f.send({type:'data.restore',content:exported.value.content}).ok,true);
+},{native(){throw new Error('lost before-effect response');}}));

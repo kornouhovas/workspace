@@ -1,5 +1,5 @@
 import {durableOwnershipKey, sameDurableFolder} from "./folder-evidence.js";
-import {parseFilesystemAuthorization, parseFolderObservation, type FilesystemAuthorizer, type FilesystemAuthorization, type VerifiedFolder} from "./filesystem-authorization.js";
+import {sameLegacyNativeIdentity,parseFilesystemAuthorization, parseFolderObservation, type FilesystemAuthorizer, type FilesystemAuthorization, type VerifiedFolder} from "./filesystem-authorization.js";
 import { hasUnfinishedProjectRelocation, readProjectReservations } from "./project-rename-reservations.js";
 import { randomUUID } from "node:crypto";
 import { join } from "node:path";
@@ -198,7 +198,7 @@ export function createProjectCreationService(db: Database, integration: {
       else if (destination.kind !== "directory" || !reliableIdentity(destination.identity) ||
         row.nativeIdentity && (authorizer && binding && row.destinationEvidence
           ? !sameDurableFolder(parseFolderObservation(JSON.parse(row.destinationEvidence))!.evidence,authorizer.observe(join(parent,row.name),binding.root,destination.identity).evidence)
-          : !sameIdentity(JSON.parse(row.nativeIdentity), destination.identity))) {
+          : !sameLegacyNativeIdentity(row.nativeIdentity, destination.identity))) {
         preview.destinationState = "replaced"; preview.problem = "destination_replaced";
       } else {
         evidence = destination.identity;

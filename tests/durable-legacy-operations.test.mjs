@@ -1,3 +1,4 @@
+import {alteredSnapshot} from './support/mutate-application-snapshot.mjs';
 import assert from 'node:assert/strict';
 import {randomUUID} from 'node:crypto';
 import {mkdtempSync,mkdirSync,realpathSync,rmSync,writeFileSync,readFileSync,copyFileSync} from 'node:fs';
@@ -10,7 +11,7 @@ import {migrate} from 'drizzle-orm/better-sqlite3/migrator';
 import {nativeProjectFilesystem} from '../src/service/project-filesystem.ts';
 import {openSettingsService} from '../dist/service/settings.mjs';
 
-for(const kind of ['creation','rename','category_move'])test(`real 0023 grouped ${kind} upgrade permits only explicitly attested exact-parent recovery`,()=>{
+for(const kind of ['creation','rename','category_move'])for(const attack of [null,'root','parent','target'])test(`real 0023 grouped ${kind} ${attack?'rejects unknown '+attack+' native shape':'upgrade permits only explicitly attested exact-parent recovery'}`,()=>{
  const directory=realpathSync.native(mkdtempSync(join(tmpdir(),'legacy-operation-'))),root=join(directory,'source'),databasePath=join(directory,'data','settings.sqlite'),migrations=join(directory,'migrations');
  mkdirSync(join(root,'Category'),{recursive:true});mkdirSync(join(directory,'data'));mkdirSync(join(migrations,'meta'),{recursive:true});
  const journal=JSON.parse(readFileSync('src/service/db/migrations/meta/_journal.json','utf8'));journal.entries=journal.entries.slice(0,24);
@@ -55,7 +56,21 @@ for(const kind of ['creation','rename','category_move'])test(`real 0023 grouped 
   const mapping={kind:'category',id:categoryId,relativePath:'Category'};
   assert.equal(query({type:'workspace.previewSourceAssociation',mappings:[mapping]}).value.previewToken,null);
   const method=kind==='creation'?'ProjectCreation':kind==='rename'?'ProjectRename':'ProjectCategoryMove';
-  const review=query({type:`workspace.preview${method}Recovery`,operationId});assert.equal(review.ok,true,JSON.stringify(review));
+  if(attack) {
+   const column=attack==='root'?'root_identity':attack==='parent'?(kind==='category_move'?'original_parent_identity':'parent_identity'):'native_identity';
+   let native;
+   if(kind==='creation'&&attack==='target'){mkdirSync(join(root,'Category/Recovered'));native=nativeProjectFilesystem.inspect(join(root,'Category/Recovered')).identity;}
+   else native=JSON.parse(sql.prepare(`SELECT ${column} AS native FROM ${table}`).get().native);
+   const triggers=sql.prepare("SELECT name,sql FROM sqlite_schema WHERE type='trigger' AND tbl_name=?").all(table);for(const trigger of triggers)sql.exec(`DROP TRIGGER "${trigger.name}"`);
+   const changed=JSON.stringify({...native,version:2});
+   if(attack==='target'&&kind==='creation')sql.prepare(`UPDATE ${table} SET native_identity=?,stage='evidence_recorded'`).run(changed);
+   else if(attack==='target'){sql.prepare(`UPDATE ${table} SET native_identity=?,last_verified_identity=?`).run(changed,changed);sql.prepare('UPDATE projects SET native_identity=? WHERE id=?').run(changed,projectId);}
+   else sql.prepare(`UPDATE ${table} SET ${column}=?`).run(changed);
+   for(const trigger of triggers)sql.exec(trigger.sql);
+  }
+  const review=query({type:`workspace.preview${method}Recovery`,operationId});
+  if(attack){assert.equal(review.value.previewToken,null,JSON.stringify(review));assert.deepEqual(review.value.actions,[]);assert.equal(sql.prepare(`SELECT count(*) n FROM project_${kind}_attestations`).get().n,0);return;}
+assert.equal(review.ok,true,JSON.stringify(review));
   assert.ok(review.value.previewToken,JSON.stringify(review));
   const result=command({type:`workspace.recover${method}`,operationId,previewToken:review.value.previewToken,action:kind==='creation'?'retry_missing':'retry_original'});
   assert.equal(result.ok,true,JSON.stringify(result));assert.equal(result.value.outcome,'completed',JSON.stringify(result));assert.equal(result.value.project.projectId,projectId);
@@ -70,5 +85,12 @@ for(const kind of ['creation','rename','category_move'])test(`real 0023 grouped 
   }
   assert.equal(sql.prepare(`SELECT ${kind==='category_move'?'original_authorization':'authorization'} AS authority FROM ${table}`).get().authority,null);
   assert.equal(sql.prepare(`SELECT count(*) n FROM project_${kind}_attestations`).get().n,1);
+  const exported=service.handleQuery({type:'data.export'});assert.equal(exported.ok,true,JSON.stringify(exported));
+  for(const field of ['root_identity',kind==='category_move'?'original_parent_identity':'parent_identity','native_identity']) {
+   const content=alteredSnapshot(exported.value.content,db=>{const native=db.prepare(`SELECT ${field} AS native FROM ${table}`).get().native;if(native===null)throw new Error('Expected recorded native history');const changed=JSON.stringify({...JSON.parse(native),version:2});if(field==='native_identity'&&kind!=='creation')db.prepare(`UPDATE ${table} SET native_identity=?,last_verified_identity=?,destination_identity=CASE WHEN destination_identity IS NULL THEN NULL ELSE ? END`).run(changed,changed,changed);else db.prepare(`UPDATE ${table} SET ${field}=?`).run(changed);const key=field.replace(/_([a-z])/g,(_,letter)=>letter.toUpperCase());db.prepare(`UPDATE project_${kind}_attestations SET journal=json_set(journal,?,(SELECT ${field} FROM ${table} WHERE operation_id=project_${kind}_attestations.operation_id))`).run('$.'+key);});
+   assert.equal(service.handleCommand({type:'data.restore',content}).ok,false,`${kind}:${field}`);
+  }
+  assert.equal(service.handleCommand({type:'data.restore',content:exported.value.content}).ok,true);
+
  }finally{service?.close();sql.close();rmSync(directory,{recursive:true,force:true});}
 });
