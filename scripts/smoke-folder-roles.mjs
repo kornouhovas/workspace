@@ -6,7 +6,7 @@ import {join,resolve} from 'node:path';
 import {_electron} from 'playwright-core';
 import {runtimeSmokeLaunch} from './runtime-executable.mjs';
 import {closeElectron,cleanupOwnedFixture,ownedProcessesStopped} from './runtime-lifecycle.mjs';
-import {openRoleSettingsSection as openSettingsSection,renameRoleProject,expandRoleFolder,enterRoleDialog,prepareRoleMove,completeRoleMove,completeRoleArchive,returnRoleWorkspace as returnToWorkspace,setRoleLanguage as setInterfaceLanguage} from './folder-role-driver.mjs';
+import {openRoleSettingsSection as openSettingsSection,renameRoleProject,reviewRoleConfiguration,expandRoleFolder,enterRoleDialog,prepareRoleMove,completeRoleMove,completeRoleArchive,returnRoleWorkspace as returnToWorkspace,setRoleLanguage as setInterfaceLanguage} from './folder-role-driver.mjs';
 const root=resolve(import.meta.dirname,'..'),fixture=await realpath(await mkdtemp(join(tmpdir(),'folder-roles-')));
 const source=join(fixture,'Source'),data=join(fixture,'data'),evidence=resolve(process.env.WORKSPACE_SMOKE_EVIDENCE_DIR??'work/issue-74-folder-roles');
 await mkdir(evidence,{recursive:true});
@@ -28,8 +28,7 @@ const expand=path=>expandRoleFolder(page,path);
 
 async function role(path,next){await page.getByRole('combobox',{name:new RegExp(`^(Role|Роль): ${path.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}$`)}).selectOption(next);}
 async function apply(){
-  await page.getByRole('button',{name:/^(Review changes|Проверить изменения)$/}).click();
-  const review=page.locator('.folder-role-review');await review.waitFor();
+  const review=await reviewRoleConfiguration(page);
   assert.equal(await review.getByText('First',{exact:true}).count(),1);assert.equal(await review.getByText('Second',{exact:true}).count(),1);
   const apply=review.getByRole('button',{name:/^(Apply folder configuration|Применить настройку папок)$/});assert.equal(await apply.isEnabled(),false);
   await review.getByRole('checkbox').check();await apply.click();await review.waitFor({state:'hidden'});

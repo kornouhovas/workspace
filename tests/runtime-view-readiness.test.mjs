@@ -13,7 +13,7 @@ import { build } from "esbuild";
 import { closeElectron } from "../scripts/runtime-lifecycle.mjs";
 import { usableRuntimeViewProjection } from "../scripts/runtime-view-readiness.mjs";
 import { activateRuntimeView, setRuntimeViewLanguage } from "../scripts/runtime-view-controls.mjs";
-import {openRoleSettingsSection,renameRoleProject,expandRoleFolder,enterRoleDialog,prepareRoleMove,completeRoleMove,completeRoleArchive} from "../scripts/folder-role-driver.mjs";
+import {openRoleSettingsSection,renameRoleProject,reviewRoleConfiguration,expandRoleFolder,enterRoleDialog,prepareRoleMove,completeRoleMove,completeRoleArchive} from "../scripts/folder-role-driver.mjs";
 import {openSettingsSection} from "../scripts/runtime-settings.mjs";
 import { openArchiveTextEditor } from "../scripts/archive-editor-driver.mjs";
 import { installArchiveEntryTrace } from "../scripts/archive-entry-trace.mjs";
@@ -80,6 +80,16 @@ test('preview timing admits current properties and visible loading before the se
       assert.equal(await page.getByRole('treeitem').textContent(),'preserved.txt');
     } finally {clearTimeout(timer);}
   });
+});
+
+test('role configuration preview acknowledges a discarded read without applying shared changes',async()=>{
+ await withPage(async page=>{
+  await page.setContent('<button>Review changes</button>');
+  await page.evaluate(()=>{globalThis.rolePreviews=0;globalThis.roleApplies=0;document.querySelector('button').onclick=()=>{globalThis.rolePreviews++;if(globalThis.rolePreviews===1)return;const review=document.createElement('div');review.className='folder-role-review';review.innerHTML='<label><input type="checkbox">I reviewed the shared impact</label><button>Apply folder configuration</button>';review.querySelector('button').onclick=()=>{globalThis.roleApplies++;};document.body.append(review);};});
+  const review=await reviewRoleConfiguration(page);assert.equal(await review.isVisible(),true);
+  assert.deepEqual(await page.evaluate(()=>[globalThis.rolePreviews,globalThis.roleApplies]),[2,0]);
+  assert.equal(await review.getByRole('checkbox').isChecked(),false);
+ });
 });
 
 test('role folder expansion acknowledges a consumed key without changing roles',async()=>{

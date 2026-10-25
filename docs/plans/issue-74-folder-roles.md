@@ -484,3 +484,14 @@ management happy-path inputs are unchanged by the archive helper repair, so the
 11passing c9 driver rows retain their evidence as applicable; all6 role rows are
 renewed, and Windows2022 management package still requires its dedicated ordinary
 route after role success. No diagnostic result supplies acceptance.
+
+
+Role gate40207912871 at1ea7fe8b passes macOS/Windows2022 DEV/package and
+Windows latest DEV; Windows latest package stops waiting for configuration review
+before any Apply. Preview entry now acknowledges the actual review within15s,
+repeating only read-only Review changes when its prior response/gesture was lost.
+Affected-workspace checks, unchecked shared-impact acknowledgment and one explicit
+Apply remain unchanged. The real Electron control discards its first preview and
+requires2 reads/0 applies/unchecked acknowledgment. Local role journey,71 routing,
+lint and both reviews pass. The role-only gate now selects11 controls and all6
+role host/mode consumers; unrelated management rows are not replayed.

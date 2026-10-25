@@ -173,3 +173,15 @@ export async function completeRoleArchive({dialog,en,restore,verifyUnchanged}) {
  }
  throw new Error('Role archive review did not complete within four current drafts');
 }
+
+// Configuration preview is read-only. Wait for the actual review surface before
+// the caller independently acknowledges shared impact and applies configuration.
+export async function reviewRoleConfiguration(page) {
+ const review=page.locator('.folder-role-review'),deadline=Date.now()+15000;
+ while(!await review.isVisible()){
+  const ms=deadline-Date.now();assert.ok(ms>0,'Folder role review exceeded15000ms');
+  await page.getByRole('button',{name:/^(Review changes|Проверить изменения)$/}).and(page.locator(':enabled')).press('Enter',{timeout:ms});
+  try{await review.waitFor({timeout:Math.min(1000,Math.max(1,deadline-Date.now()))});}catch(error){if(Date.now()>=deadline)throw error;}
+ }
+ return review;
+}
