@@ -506,3 +506,16 @@ assertion. Native control uses production localization and verifies2 preview
 reads/0 premature confirms/1 separate confirmation. Local native/routing/lint and
 both review axes pass. Renew the role-only12control/6consumer gate; accepted
 management rows remain separately reused and Win22package management remains open.
+
+
+Role40209213750 at da181321 passes Mac/Windows2022 both modes; Winlatest
+DEV reaches stale move preparation while selectOption waits on a disabled select
+before any Submit. Its bounded selection attempt now yields to the exact stale
+UI and fresh no-status/public/physical/journal proof, with at most4 verified
+preparations in the unchanged15s total. A form is returned only after successful
+selection, exact current parent value, no stale message and enabled Submit.
+The strengthened real Electron control leaves Submit enabled while the requested
+option is unavailable; it still requires proof/reopen and2forms/0commands with
+the correct parent. Local original role/control/lint and both reviews pass.
+Only the role host/mode gate is renewed; management and recovery/outage ledgers
+remain unchanged. No application/build inputs changed or deadlines increased.

@@ -219,6 +219,14 @@ test('role move preparation reauthors a stale draft before its single explicit s
   assert.equal(checks,1);assert.equal(await dialog.getByRole('combobox').inputValue(),'target');
   assert.deepEqual(await page.evaluate(()=>[globalThis.moveForms,globalThis.moveCommands]),[2,0]);
   await dialog.getByRole('button',{name:'Move project folder',exact:true}).press('Enter');assert.equal(await page.evaluate(()=>globalThis.moveCommands),1);
+  await page.evaluate(()=>{
+   globalThis.moveCommands=0;globalThis.moveForms=0;globalThis.openMoveForm();
+   const select=document.querySelector('select');select.querySelector('[value="target"]').remove();
+   setTimeout(()=>{select.disabled=false;select.closest('[role="dialog"]').querySelector('button').disabled=false;const message=document.createElement('p');message.textContent='The source or project changed. Refresh and reopen the editor before submitting again.';select.closest('[role="dialog"]').append(message);},30);
+  });
+  let selectionProofs=0;
+  const ready=await prepareRoleMove({dialog:page.getByRole('dialog'),parent:'target',en:true,capture:async()=>{},reopen:async()=>{await page.evaluate(()=>globalThis.openMoveForm());return page.getByRole('dialog');},verifyUnchanged:async()=>{selectionProofs++;assert.equal(await page.evaluate(()=>globalThis.moveCommands),0);}});
+  assert.equal(selectionProofs,1);assert.equal(await ready.getByRole('combobox').inputValue(),'target');assert.deepEqual(await page.evaluate(()=>[globalThis.moveForms,globalThis.moveCommands]),[2,0]);
  });
 });
 

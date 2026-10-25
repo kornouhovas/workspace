@@ -93,20 +93,24 @@ export async function setRoleLanguage(page,language) {
 }
 
 // Prepare a move form only. Source observation may invalidate the draft during
-// a capture; reauthor at most once, before the caller's single submission.
+// a capture; up to four verified drafts precede the caller's single submission.
 export async function prepareRoleMove({dialog,parent,en,capture,reopen,verifyUnchanged}) {
  const deadline=Date.now()+15000,left=()=>{const ms=deadline-Date.now();assert.ok(ms>0,'Role move preparation exceeded15000ms');return ms;};
  const staleText=en?'The source or project changed. Refresh and reopen the editor before submitting again.':'Источник или проект изменился. Обновите данные и откройте редактор снова перед отправкой.';
- for(let attempt=0;attempt<2;attempt++){
+ for(let attempt=0;attempt<4;attempt++){
   const select=dialog.getByRole('combobox'),submit=dialog.getByRole('button',{name:en?'Move project folder':'Переместить папку проекта',exact:true}),stale=dialog.getByText(staleText,{exact:true});
   await Promise.race([select.and(dialog.locator(':enabled')).waitFor({timeout:left()}),stale.waitFor({timeout:left()})]);
-  if(!await stale.isVisible()){await select.selectOption(parent,{timeout:left()});await withDeadline(capture(),left(),'Role move capture');}
-  if(await submit.isEnabled())return dialog;
+  let selected=false;
+  if(!await stale.isVisible()){
+   try{await select.selectOption(parent,{timeout:Math.min(1000,left())});selected=await select.inputValue({timeout:left()})===parent;await withDeadline(capture(),left(),'Role move capture');}
+   catch(error){if(!await stale.isVisible())throw error;}
+  }
+  if(selected&&!await stale.isVisible()&&await select.inputValue({timeout:left()})===parent&&await submit.isEnabled())return dialog;
   await stale.waitFor({timeout:left()});
   // This helper has never submitted; stale UI alone does not authorize a replay.
   assert.equal(await dialog.getByRole('button',{name:/^(Check category move status|Проверить статус перемещения в категорию)$/}).count(),0);
   await withDeadline(verifyUnchanged(),left(),'Role move operand verification');
-  assert.equal(attempt,0,'A second invalidated draft requires another explicit review');
+  assert.ok(attempt<3,'Role move remained invalidated after four verified drafts');
   await dialog.getByRole('button',{name:en?'Cancel':'Отмена',exact:true}).press('Enter',{timeout:left()});
   dialog=await withDeadline(reopen(),left(),'Role move reopening');
  }
