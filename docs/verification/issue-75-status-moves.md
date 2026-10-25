@@ -151,3 +151,33 @@ contracts, desktop/native, migrations, dependencies and build inputs retain the
 hosted8e complement. Renew the final local full suite and all affected controller,
 actual DEV/package and retained role/ordinary assignment consumers on3hosts under
 the desktop matrix. Do not claim wholesale reuse of the application graph.
+
+
+### Final local suite and native entry failure map
+
+The final local suite on the e155 renderer repair completes3957 tests:
+3877 passed,53 failed,27 skipped. All53 are inherited native fixture watchpoints:
+52 report normal-close timeouts; one reports the known cleanup-control assertion.
+Current status/controller/service assertions pass. Raw negative evidence is at
+`work/issue-75-local/final-full.log`; neither local full attempt is called green.
+
+Runtime40218363946 at e155 passes346/346 affected controller/service checks on
+all3hosts. macOS native DEV rejects the initial role Apply as stale_preview.
+Windows latest native DEV passes EN Table then captures the EN Board stale-editor
+message, disabled Submit and unchanged original placement. Those are safe
+rejections, not lost/uncertain effects. The fixture had populated an already
+configured source after starting observation; configuration now follows complete
+fixture construction on an unconfigured source, before observation begins.
+The Status property label and grouping are explicitly authored through public
+commands; authored Status/Notes text remains unchanged in RU.
+
+The driver reuses the approved role move preparation/completion guards with the
+status UUID as the selected option. Reauthoring requires fresh public active
+identity/path/category, exact original bytes, absent target and zero unfinished
+journals. Unknown-result status forbids replay. No deadline/assertion is weakened.
+Local revised behavior passes4groups/16captures but normal quit still times out,
+so it supplies no passing lifecycle receipt. Independent Standards review finds no
+material issue; routing checks74/74 pass. The two failed-host DEV entry receipts
+and subsequent all3host changed native DEV/package consumers remain pending.
+Application, service/native, dependency and build inputs are unchanged from e155;
+reuse its346 public checks with exact provenance, not a blanket full-green claim.

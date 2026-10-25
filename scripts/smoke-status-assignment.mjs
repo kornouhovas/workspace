@@ -1,6 +1,6 @@
 /* global window, document */
 import assert from 'node:assert/strict';
-import {mkdtemp,mkdir,realpath,writeFile,readFile} from 'node:fs/promises';
+import {mkdtemp,mkdir,realpath,writeFile,readFile,stat} from 'node:fs/promises';
 import {tmpdir,release} from 'node:os';
 import {join,resolve} from 'node:path';
 import {_electron} from 'playwright-core';
@@ -8,11 +8,13 @@ import {showRuntimeProject,waitForRuntimeProjectPath} from './runtime-project-vi
 import {dragRuntimeGroup} from './runtime-group-drag.mjs';
 import {runtimeSmokeLaunch} from './runtime-executable.mjs';
 import {closeElectron,cleanupOwnedFixture,ownedProcessesStopped} from './runtime-lifecycle.mjs';
-import {openRoleSettingsSection,returnRoleWorkspace,setRoleLanguage} from './folder-role-driver.mjs';
+import {openRoleSettingsSection,returnRoleWorkspace,setRoleLanguage,prepareRoleMove,completeRoleMove} from './folder-role-driver.mjs';
 const root=resolve(import.meta.dirname,'..'),fixture=await realpath(await mkdtemp(join(tmpdir(),'status-assignment-')));
 const source=join(fixture,'Source'),evidence=resolve(process.env.WORKSPACE_SMOKE_EVIDENCE_DIR??'work/issue-75-status-moves');
 await mkdir(evidence,{recursive:true});
 await mkdir(source,{recursive:true});
+for(const path of ['Clients/Active/App/Inside','Personal/Active','Work/Urgent/Task','Bare'])await mkdir(join(source,path),{recursive:true});
+await writeFile(join(source,'Clients/Active/App/Inside/keep.txt'),'Exact project bytes');
 const report={issue:75,sha:process.env.GITHUB_SHA??null,run:process.env.GITHUB_RUN_ID??null,attempt:process.env.GITHUB_RUN_ATTEMPT??null,platform:process.platform,kernel:release(),mode:process.env.WORKSPACE_SMOKE_MODE??'dev',checks:[],screens:[],shutdowns:[],status:'running'};
 const parents=new Set(),backends=new Set();let app,page,failed,launchUnverified=false,quitEvents,debuggerWait;
 const query=async input=>{const result=await page.evaluate(input=>window.workspace.workspace(input),input);assert.equal(result.ok,true,JSON.stringify(result));return result.value;};
@@ -26,13 +28,13 @@ async function launch(){
 }
 async function close(){if(app){const shutdown={normalQuit:false};report.shutdowns.push(shutdown);try{await closeElectron(app);app=null;shutdown.normalQuit=true;shutdown.backendsExited=ownedProcessesStopped(parents,backends);assert.equal(shutdown.backendsExited,true);}catch(error){shutdown.error=error.message;shutdown.forcedCleanup=error.forcedCleanup;app=null;throw error;}finally{shutdown.quitEvents=quitEvents;shutdown.debuggerWait=debuggerWait;}}}
 try{
- await launch();const workspace=await query({type:'workspace.create',name:'Studio',rootPath:source,initialize:'status'});
+ await launch();const workspace=await query({type:'workspace.create',name:'Studio',rootPath:source});
  const call=(type,fields={})=>query({type:`workspace.${type}`,workspaceId:workspace.workspaceId,...fields});
- for(const path of ['Clients/Active/App/Inside','Personal/Active','Work/Urgent/Task','Bare'])await mkdir(join(source,path),{recursive:true});
-await writeFile(join(source,'Clients/Active/App/Inside/keep.txt'),'Exact project bytes');
  const roles=[{relativePath:'Clients',role:'group'},{relativePath:'Personal',role:'group'},{relativePath:'Clients/Active',role:'status'},{relativePath:'Personal/Active',role:'status'},{relativePath:'Work/Urgent',role:'status'},{relativePath:'Bare',role:'project'},{relativePath:'Clients/Active/App/Inside',role:'group'}];
- const preview=await call('previewDiscovery',{folderRoles:roles});await call('applyDiscovery',{previewToken:preview.previewToken});
+ const preview=await call('previewDiscovery',{mode:'grouped',folderRoles:roles});await call('applyDiscovery',{previewToken:preview.previewToken});
  const list=await call('listProjects'),project=list.projects.find(p=>p.relativePath==='Clients/Active/App'),personal=list.categories.find(c=>c.relativePath==='Personal/Active'),clients=list.categories.find(c=>c.relativePath==='Clients/Active');
+ await call('renameCategoryProperty',{propertyId:list.categoryProperty.propertyId,name:'Status'});
+ await call('setViewGrouping',{viewId:workspace.viewId,config:{propertyId:list.categoryProperty.propertyId,settings:[]}});
  const property=await call('createProperty',{name:'Notes',propertyType:'text'});await call('setTextValue',{projectId:project.projectId,propertyId:property.propertyId,value:'  Exact notes  '});
  const waitPath=relativePath=>waitForRuntimeProjectPath(page,workspace.workspaceId,project.projectId,relativePath);
  await page.reload();
@@ -55,8 +57,17 @@ await writeFile(join(source,'Clients/Active/App/Inside/keep.txt'),'Exact project
      await editor().and(page.locator(':focus')).waitFor();assert.equal(await editor().evaluate(element=>element===document.activeElement),true);assert.equal((await call('listProjectCategoryMoves')).operations.length,0);
     }
    }
-   await showRuntimeProject(page,'App',project.projectId,'Clients/Active');await editor().click();const dialog=page.getByRole('dialog',{name:en?'Edit status':'Изменить статус',exact:true});
-   await dialog.getByRole('combobox').selectOption(personal.categoryId);await dialog.getByRole('combobox').press('Enter');await waitPath('Personal/Active/App');await dialog.waitFor({state:'detached'});
+   const reopen=async()=>{await showRuntimeProject(page,'App',project.projectId,'Clients/Active');await editor().click();return page.getByRole('dialog',{name:en?'Edit status':'Изменить статус',exact:true});};
+   const verifyUnchanged=async()=>{
+    const current=await call('listProjects'),row=current.projects.find(p=>p.projectId===project.projectId);
+    assert.equal(current.state,'ready');assert.equal(row?.relativePath,'Clients/Active/App');assert.equal(row?.categoryId,clients.categoryId);assert.equal(row?.resolution,'active');
+    assert.equal((await call('listProjectCategoryMoves')).operations.length,0);
+    assert.equal(await readFile(join(source,'Clients/Active/App/Inside/keep.txt'),'utf8'),'Exact project bytes');
+    await assert.rejects(stat(join(source,'Personal/Active/App')),error=>error.code==='ENOENT');
+   };
+   // The shared form helper selects an option value; status mode uses its UUID.
+   await completeRoleMove({dialog:await reopen(),en,reopen,verifyUnchanged,prepare:dialog=>prepareRoleMove({dialog,parent:personal.categoryId,en,capture:async()=>{},reopen,verifyUnchanged})});
+   await waitPath('Personal/Active/App');
    const selector=()=>page.getByLabel(`${en?'Change group':'Изменить группу'}: App`,{exact:true}).and(page.locator(':enabled'));
    await showRuntimeProject(page,'App',project.projectId,'Personal/Active');await selector().waitFor();report.groupState={projection:await call('queryView',{viewId:workspace.viewId,archived:false}),roles:(await call('getFolderChildren',{parentRelativePath:''})).folderRoles,options:await selector().locator('option').evaluateAll(options=>options.map(o=>({label:o.textContent,value:o.value,disabled:o.disabled})))};assert.equal(await selector().locator('option[value="null"]').evaluate(option=>option.disabled),true);
    if(layout==='table')await selector().selectOption(JSON.stringify(clients.categoryId));

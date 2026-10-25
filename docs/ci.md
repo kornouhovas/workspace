@@ -2300,3 +2300,29 @@ unchanged Windows2022 pair retains40213146706 provenance. No full/role/managemen
 consumer is selected. Application/build inputs remain identical to9ee8c787.
 The failed overall run remains failed; original Windows latest acceptance is open
 until this focused renewal succeeds and its artifacts are inspected.
+
+
+## Issue 75 native entry repair
+
+At e1551eca, runtime40218363946 passes346/346 affected public/controller checks
+on all3hosts. macOS DEV stops at initial role Apply with stale_preview: the
+fixture populated an already-observed empty source. Windows latest DEV passes
+EN Table, then its EN Board editor shows the exact stale-source rejection before
+movement; source files remain at Clients/Active/App. The driver incorrectly waited
+only for the target path rather than entering the already-supported fresh-draft flow.
+
+`status-moves-entry-repair` runs build/static prerequisites and the original
+DEV status command only on those two failed hosts. Fixture directories now precede
+connection; an unconfigured source has no observation reference until its single
+reviewed grouped-role Apply. Authored Status/Notes labels are fixture content and
+remain unchanged in RU. The unchanged approved prepareRoleMove/completeRoleMove
+helpers select the status UUID and allow another draft only with current active
+membership, original bytes/path/category, absent target and no unfinished journal.
+Unknown outcomes cannot be reopened/replayed. Four drafts share the unchanged15s
+outer deadline; no filesystem mutation is introduced into the driver.
+
+After focused success and artifact inspection, status-moves-native-renewal runs
+the complete affected DEV/package native/retained consumers on all3hosts. It skips
+the already-passing346 public checks and raw full suite because this is a fixture/
+driver/route-only repair. Existing full/runtime routes and all supported-platform
+assertions stay available. The new phases have separate concurrency suffixes.
