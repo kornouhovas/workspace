@@ -663,7 +663,7 @@ function CreationPreview({ language, state }: { language: Language; state: Creat
       configured: state !== "unconfigured", state: state === "unavailable" ? "unavailable" : "empty", projects: [], retainedProjects: [], retainedCount: 0,
       categories: grouped && state !== "no-category" ? [{ categoryId: "existing-category", name: longCategory, relativePath: longCategory }] : [], categoryProperty: null, categoryPropertyRevision: 0 };
     const result = (input: Parameters<WorkspaceServiceClient["createProject"]>[0]): ProjectCreationResult => {
-      const op = { ...operation, ...input, categoryId: "categoryId" in input ? input.categoryId : null };
+      const op = { ...operation, ...input, categoryId: "categoryId" in input ? input.categoryId ?? null : null };
       return state.startsWith("success") ? { outcome: "completed", operation: { ...op, stage: "completed", completedRevision: 2 }, project: {
         operationId: op.operationId, sourceId: op.sourceId, projectId: op.projectId, name: op.name, relativePath: op.relativePath, categoryId: op.categoryId, revision: 2,
       } } : { outcome: "rejected", operation: null, problem: state === "validation" ? "invalid_name" : state === "collision" ? "occupied" : "filesystem_error" };
@@ -1115,7 +1115,7 @@ function CategoryMovePreview({ language, state }: { language: Language; state: C
         return { ok: true as const, value: { ...textStoryIds, operations } };
       }
       override async moveProjectCategory(input: Parameters<WorkspaceServiceClient["moveProjectCategory"]>[0]) {
-        count("move"); operation = { ...operation, operationId: input.operationId, destinationCategoryId: input.destinationCategoryId, initiatingWorkspaceId: input.workspaceId, requestedRelativePath: `${input.destinationCategoryId === "move-original-category" ? longCategory : categoryMoveDestination}/${row.name}` };
+        count("move"); operation = { ...operation, operationId: input.operationId, destinationCategoryId: input.destinationCategoryId ?? null, initiatingWorkspaceId: input.workspaceId, requestedRelativePath: `${input.destinationCategoryId === "move-original-category" ? longCategory : categoryMoveDestination}/${row.name}` };
         if (state === "pending") return new Promise<ServiceResult<ProjectCategoryMoveResult>>(() => {});
         if (state === "unknown") throw new Error("Disposable lost response");
         if (["editing", "saved", "unchanged"].includes(state)) return { ok: true as const, value: finish(state === "unchanged") };

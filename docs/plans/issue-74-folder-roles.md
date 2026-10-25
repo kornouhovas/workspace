@@ -77,7 +77,7 @@ Record actual results and exact-SHA CI/integration progress in the issue checkpo
 - [x] Implement reviewed, persisted role interpretation with retention and migration coverage.
 - [x] Expose the shared tree inside workspace settings and reconcile navigation/consumers.
 - [ ] Complete appearance, affected behavior and retained-guarantee verification.
-- [ ] Complete independent Standards and Spec reviews; repair findings.
+- [x] Complete independent Standards and Spec reviews; repair findings.
 - [ ] Commit the verified candidate and complete required CI/integration acceptance.
 
 
@@ -106,10 +106,77 @@ Record actual results and exact-SHA CI/integration progress in the issue checkpo
 - The Sources native journey is replaced by the #74 contextual role journey while
   retaining its shared ownership, review/cancellation, archive, localization/restart
   and file-preservation assertions. Existing direct/grouped service coverage remains.
-- Mutation journals retain their existing placement authorization; unsupported novel
-  placements fail closed. This task adds no filesystem effect to configuration edits.
+- The owner expanded command scope after review: explicit Group/Status parent selection
+  for create/move, plus rename and archive/restore for all role placements. Migration0034
+  extends the existing journals with full route authority and immutable role snapshots.
+  This task adds no filesystem effect to configuration edits.
   File listing/Reveal uses the existing full-ancestor trusted target for new roles.
 - Remaining: independent Standards/Spec review and repairs, complete final suite,
   renewed exact-candidate native evidence, three-host DEV/package CI and integration.
   Local complete inventory will use serial file scheduling as in the accepted #73
   local run; CI retains its ordinary host scheduling and complete inventory.
+
+## Owner-confirmed command expansion after review
+
+The owner selected implementation now, rather than deferral, for project creation
+and moves with an explicit Group/Status parent and rename/archive/restore for every
+new placement. Both previously approved TDD seams still apply.
+
+- [x] Public create/move accept explicit parent paths; service validates roles,
+  containment and full durable root-to-parent authority. UI lists full paths so
+  same-name status folders remain distinct.
+- [x] Rename/move relocate explicit project and descendant overrides; root project
+  creation persists Project semantics. Derived count/depth overflow rejects before effects.
+- [x] Archive/restore retain no-status and nearest-status behavior; alternative names
+  bind target policy, current role changes determine restored status, missing parents
+  need explicit consent, and original intermediate-parent replacement rejects restore.
+- [x] Interrupted deep create/rename/move retain journals across restart and complete
+  only through fresh reviewed recovery. Backup rejects future versions, changed
+  intermediate authority and contradictory role snapshots.
+- [x] Real populated0033 journal rebuild preserves every old cell and dependent
+  attestation; existing pre-identity fixtures retain their legacy rejection assertions.
+- [ ] Renew the full migration inventory, native command journey, final independent
+  reviews and complete final suite on the expanded candidate; publish exact-SHA CI.
+
+## Expanded candidate verification and retained coverage
+
+Both independent review axes pass after repairs. Thirty public command scenarios
+cover role placements, repeated operations, interruption/reviewed recovery, backup,
+parent replacement, explicit parent recreation and sibling restore. The populated0033
+upgrade test retains every old table cell and its authentic dependent attestation.
+Migration checks recorded1057 passes, one platform skip and no failures/cancellations.
+
+The complete local inventory ran once with serial file scheduling:3910 tests,
+3866 passed,17 failed,27 platform skips and no cancellations. All seventeen failed
+scenarios were diagnosed and renewed without retiring their guarantees:
+
+- One category-move IPC case exposed an overly broad client payload spread. The
+  client again selects only accepted fields, including the new parent alternative.
+- Five category runtime/production-component cases needed the two additive null
+  journal columns in the exact expected schema. Existing bytes/state/effect and
+  one-actual-operation assertions remain unchanged.
+- Seven workspace-management UI cases used mocks that returned workspace-load
+  payloads for the new contextual source query. A separate valid source-list mock
+  preserves exact management-command assertions and explicit source scenarios.
+- Four category-grouping UI cases now expect No status under #74. Ordinary Select
+  remains No value; recovery and editable-metadata assertions are retained.
+
+The transport/runtime repair passes40 tests; the renderer fixture repair passes102;
+folder/ordinary grouping passes18. A rebuilt candidate's combined command, UI,
+transport/runtime and grouping selection passes92 tests. The larger category/dialog
+UI selection passes217. Typecheck, lint, local documentation links and diff checks
+pass. The failed full receipt remains failed; final exact-candidate broad evidence
+will come from the complete three-host CI route.
+
+The real Electron expanded journey passes EN/RU, both themes and supported sizes,
+Group creation, no-status rename, nested Status move, archive/restore, explicit root
+move, restart IDs/paths/values/file bytes, normal shutdown and owned cleanup. Actual
+creation/parent-selector captures were inspected. The driver scrolls to real row
+identities, waits for enabled controls, follows explicit current-name/impact review
+and acknowledges editor entry before authoring a mutation. Re-entering an editor
+can handle row replacement during pointer activation; filesystem commands are never
+replayed by that navigation preparation, and the original dialog deadline is kept.
+
+Remaining delivery gate: publish the reviewed candidate, inspect required DEV/package
+three-host CI receipts/captures and integrate only after complete acceptance. GitHub
+checkpoints own exact SHAs, runs, inherited/renewed evidence and final delivery.

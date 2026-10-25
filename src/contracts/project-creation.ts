@@ -7,7 +7,7 @@ export type WorkspaceCreateProjectCommand = {
   operationId: string;
   name: string;
   expectedRevision: number;
-} & ({ mode: "direct" } | { mode: "grouped"; categoryId: string });
+} & ({ mode: "direct" } | { mode: "grouped"; categoryId: string; parentRelativePath?: never } | { mode: "grouped"; parentRelativePath: string; categoryId?: never });
 
 export type WorkspaceListProjectCreationsQuery = {
   type: "workspace.listProjectCreations";
@@ -107,5 +107,6 @@ export function isProjectCreationRequest(value: unknown): value is ProjectCreati
     typeof input.expectedRevision !== "number" || !Number.isSafeInteger(input.expectedRevision) || input.expectedRevision < 0) return false;
   const keys = ["type", "workspaceId", "operationId", "name", "expectedRevision", "mode"];
   return (input.mode === "direct" && exact(keys)) ||
-    (input.mode === "grouped" && exact([...keys, "categoryId"]) && uuid(input.categoryId));
+    (input.mode === "grouped" && exact([...keys, "categoryId"]) && uuid(input.categoryId)) ||
+    (input.mode === "grouped" && exact([...keys, "parentRelativePath"]) && typeof input.parentRelativePath === "string");
 }

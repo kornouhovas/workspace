@@ -1,0 +1,322 @@
+{
+  "project_rename_operations": {
+    "table": "CREATE TABLE project_rename_operations (\n  operation_id TEXT PRIMARY KEY NOT NULL,\n  source_id TEXT NOT NULL REFERENCES sources(id),\n  initiating_workspace_id TEXT NOT NULL,\n  project_id TEXT NOT NULL,\n  original_name TEXT NOT NULL CHECK (length(original_name) > 0 AND original_name NOT IN ('.', '..') AND instr(original_name, '/') = 0 AND instr(original_name, char(0)) = 0),\n  name TEXT NOT NULL CHECK (length(name) > 0 AND name NOT IN ('.', '..') AND instr(name, '/') = 0 AND instr(name, char(0)) = 0),\n  mode TEXT NOT NULL CHECK (mode IN ('direct', 'grouped')),\n  expected_revision INTEGER NOT NULL CHECK (typeof(expected_revision) = 'integer' AND expected_revision >= 0),\n  category_id TEXT,\n  canonical_root TEXT NOT NULL,\n  parent_relative_path TEXT NOT NULL,\n  original_relative_path TEXT NOT NULL,\n  requested_relative_path TEXT NOT NULL,\n  staging_relative_path TEXT,\n  root_identity TEXT NOT NULL CHECK (json_valid(root_identity) AND json_type(root_identity) = 'object' AND json_type(root_identity, '$.dev') IS 'text' AND length(json_extract(root_identity, '$.dev')) > 0 AND json_extract(root_identity, '$.dev') NOT GLOB '*[^0-9]*' AND json_type(root_identity, '$.ino') IS 'text' AND length(json_extract(root_identity, '$.ino')) > 0 AND json_extract(root_identity, '$.ino') NOT GLOB '*[^0-9]*' AND json_extract(root_identity, '$.ino') GLOB '*[1-9]*' AND json_type(root_identity, '$.birthtimeNs') IS 'text' AND length(json_extract(root_identity, '$.birthtimeNs')) > 0 AND json_extract(root_identity, '$.birthtimeNs') NOT GLOB '*[^0-9]*' AND json_extract(root_identity, '$.birthtimeNs') GLOB '*[1-9]*'),\n  parent_identity TEXT NOT NULL CHECK (json_valid(parent_identity) AND json_type(parent_identity) = 'object' AND json_type(parent_identity, '$.dev') IS 'text' AND length(json_extract(parent_identity, '$.dev')) > 0 AND json_extract(parent_identity, '$.dev') NOT GLOB '*[^0-9]*' AND json_type(parent_identity, '$.ino') IS 'text' AND length(json_extract(parent_identity, '$.ino')) > 0 AND json_extract(parent_identity, '$.ino') NOT GLOB '*[^0-9]*' AND json_extract(parent_identity, '$.ino') GLOB '*[1-9]*' AND json_type(parent_identity, '$.birthtimeNs') IS 'text' AND length(json_extract(parent_identity, '$.birthtimeNs')) > 0 AND json_extract(parent_identity, '$.birthtimeNs') NOT GLOB '*[^0-9]*' AND json_extract(parent_identity, '$.birthtimeNs') GLOB '*[1-9]*'),\n  native_identity TEXT NOT NULL CHECK (json_valid(native_identity) AND json_type(native_identity) = 'object' AND json_type(native_identity, '$.dev') IS 'text' AND length(json_extract(native_identity, '$.dev')) > 0 AND json_extract(native_identity, '$.dev') NOT GLOB '*[^0-9]*' AND json_type(native_identity, '$.ino') IS 'text' AND length(json_extract(native_identity, '$.ino')) > 0 AND json_extract(native_identity, '$.ino') NOT GLOB '*[^0-9]*' AND json_extract(native_identity, '$.ino') GLOB '*[1-9]*' AND json_type(native_identity, '$.birthtimeNs') IS 'text' AND length(json_extract(native_identity, '$.birthtimeNs')) > 0 AND json_extract(native_identity, '$.birthtimeNs') NOT GLOB '*[^0-9]*' AND json_extract(native_identity, '$.birthtimeNs') GLOB '*[1-9]*'),\n  excluded_relative_paths TEXT NOT NULL CHECK (json_valid(excluded_relative_paths) AND json_type(excluded_relative_paths) = 'array'),\n  archive_relative_path TEXT,\n  stage TEXT NOT NULL CHECK (stage IN ('intent', 'staged', 'destination_recorded', 'uncertain', 'completed', 'failed')),\n  staged_identity TEXT CHECK (staged_identity IS NULL OR (staging_relative_path IS NOT NULL AND staged_identity = native_identity)),\n  destination_identity TEXT CHECK (destination_identity IS NULL OR destination_identity = native_identity),\n  last_verified_placement TEXT NOT NULL CHECK (last_verified_placement IN ('original', 'staged', 'destination')),\n  last_verified_identity TEXT NOT NULL CHECK (last_verified_identity = native_identity),\n  problem TEXT CHECK (problem IS NULL OR problem IN (\n    'invalid_name', 'unconfigured', 'stale_configuration', 'category_unavailable', 'project_unavailable',\n    'excluded', 'archive', 'reserved_destination', 'occupied', 'source_unavailable', 'permission_denied',\n    'filesystem_changed', 'filesystem_error', 'ownership_uncertain', 'destination_missing', 'destination_replaced',\n    'destination_link', 'native_conflict', 'native_unavailable', 'busy', 'cross_device', 'unsupported', 'storage_error', 'kept_original')),\n  result_kind TEXT CHECK (result_kind IS NULL OR result_kind IN ('completed', 'unchanged', 'rejected')),\n  completed_revision INTEGER CHECK (completed_revision IS NULL OR (typeof(completed_revision) = 'integer' AND completed_revision >= 0)), authorization TEXT CHECK(authorization IS NULL OR json_valid(authorization)), project_evidence TEXT CHECK(project_evidence IS NULL OR json_valid(project_evidence)),\n  FOREIGN KEY (project_id, source_id) REFERENCES projects(id, source_id),\n  FOREIGN KEY (category_id, source_id) REFERENCES categories(id, source_id),\n  CHECK ((mode = 'direct' AND category_id IS NULL AND parent_relative_path = ''\n      AND original_relative_path = original_name AND requested_relative_path = name AND parent_identity = root_identity)\n    OR (mode = 'grouped' AND category_id IS NOT NULL AND length(parent_relative_path) > 0 AND parent_relative_path NOT IN ('.', '..') AND instr(parent_relative_path, '/') = 0 AND instr(parent_relative_path, char(0)) = 0\n      AND original_relative_path = parent_relative_path || '/' || original_name\n      AND requested_relative_path = parent_relative_path || '/' || name)),\n  CHECK (staging_relative_path IS NULL OR (\n    staging_relative_path != original_relative_path AND staging_relative_path != requested_relative_path\n    AND ((mode = 'direct' AND length(staging_relative_path) > 0 AND staging_relative_path NOT IN ('.', '..') AND instr(staging_relative_path, '/') = 0 AND instr(staging_relative_path, char(0)) = 0)\n      OR (mode = 'grouped' AND substr(staging_relative_path, 1, length(parent_relative_path) + 1) = parent_relative_path || '/'\n        AND length(substr(staging_relative_path, length(parent_relative_path) + 2)) > 0 AND substr(staging_relative_path, length(parent_relative_path) + 2) NOT IN ('.', '..') AND instr(substr(staging_relative_path, length(parent_relative_path) + 2), '/') = 0 AND instr(substr(staging_relative_path, length(parent_relative_path) + 2), char(0)) = 0))\n    AND substr(staging_relative_path, length(parent_relative_path) + CASE WHEN mode = 'grouped' THEN 2 ELSE 1 END, 1) = '.')),\n  CHECK ((last_verified_placement = 'original')\n    OR (last_verified_placement = 'staged' AND staged_identity IS NOT NULL)\n    OR (last_verified_placement = 'destination' AND destination_identity IS NOT NULL)),\n  CHECK ((stage = 'intent' AND staged_identity IS NULL AND destination_identity IS NULL AND last_verified_placement = 'original'\n      AND problem IS NULL AND result_kind IS NULL AND completed_revision IS NULL)\n    OR (stage = 'staged' AND staged_identity IS NOT NULL AND last_verified_placement = 'staged'\n      AND problem IS NULL AND result_kind IS NULL AND completed_revision IS NULL)\n    OR (stage = 'destination_recorded' AND destination_identity IS NOT NULL AND last_verified_placement = 'destination'\n      AND problem IS NULL AND result_kind IS NULL AND completed_revision IS NULL)\n    OR (stage = 'uncertain' AND problem IS NOT NULL AND result_kind IS NULL AND completed_revision IS NULL)\n    OR (stage = 'failed' AND last_verified_placement = 'original' AND problem IS NOT NULL AND result_kind IS NOT NULL AND result_kind = 'rejected' AND completed_revision IS NULL)\n    OR (stage = 'completed' AND problem IS NULL AND result_kind IS NOT NULL AND completed_revision IS NOT NULL AND (\n      (result_kind = 'completed' AND original_name != name AND destination_identity IS NOT NULL\n        AND last_verified_placement = 'destination' AND completed_revision > expected_revision)\n      OR (result_kind = 'unchanged' AND original_name = name AND original_relative_path = requested_relative_path\n        AND staging_relative_path IS NULL AND staged_identity IS NULL AND destination_identity IS NULL\n        AND last_verified_placement = 'original' AND completed_revision = expected_revision))))\n)",
+    "columns": [
+      "operation_id",
+      "source_id",
+      "initiating_workspace_id",
+      "project_id",
+      "original_name",
+      "name",
+      "mode",
+      "expected_revision",
+      "category_id",
+      "canonical_root",
+      "parent_relative_path",
+      "original_relative_path",
+      "requested_relative_path",
+      "staging_relative_path",
+      "root_identity",
+      "parent_identity",
+      "native_identity",
+      "excluded_relative_paths",
+      "archive_relative_path",
+      "stage",
+      "staged_identity",
+      "destination_identity",
+      "last_verified_placement",
+      "last_verified_identity",
+      "problem",
+      "result_kind",
+      "completed_revision",
+      "authorization",
+      "project_evidence"
+    ],
+    "objects": [
+      {
+        "type": "index",
+        "name": "project_rename_outstanding_project",
+        "sql": "CREATE UNIQUE INDEX project_rename_outstanding_project ON project_rename_operations (project_id) WHERE stage IN ('intent', 'staged', 'destination_recorded', 'uncertain')"
+      },
+      {
+        "type": "index",
+        "name": "project_rename_source",
+        "sql": "CREATE INDEX project_rename_source ON project_rename_operations (source_id)"
+      },
+      {
+        "type": "trigger",
+        "name": "project_rename_authority_update",
+        "sql": "CREATE TRIGGER project_rename_authority_update BEFORE UPDATE ON project_rename_operations\nWHEN NEW.authorization IS NOT OLD.authorization OR NEW.project_evidence IS NOT OLD.project_evidence\nBEGIN SELECT RAISE(ABORT, 'Rename authorization and project evidence are immutable'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "project_rename_binding_update",
+        "sql": "CREATE TRIGGER project_rename_binding_update BEFORE UPDATE ON project_rename_operations\nWHEN NEW.operation_id IS NOT OLD.operation_id\nOR NEW.source_id IS NOT OLD.source_id\nOR NEW.initiating_workspace_id IS NOT OLD.initiating_workspace_id\nOR NEW.project_id IS NOT OLD.project_id\nOR NEW.original_name IS NOT OLD.original_name\nOR NEW.name IS NOT OLD.name\nOR NEW.mode IS NOT OLD.mode\nOR NEW.expected_revision IS NOT OLD.expected_revision\nOR NEW.category_id IS NOT OLD.category_id\nOR NEW.canonical_root IS NOT OLD.canonical_root\nOR NEW.parent_relative_path IS NOT OLD.parent_relative_path\nOR NEW.original_relative_path IS NOT OLD.original_relative_path\nOR NEW.requested_relative_path IS NOT OLD.requested_relative_path\nOR NEW.staging_relative_path IS NOT OLD.staging_relative_path\nOR NEW.root_identity IS NOT OLD.root_identity\nOR NEW.parent_identity IS NOT OLD.parent_identity\nOR NEW.native_identity IS NOT OLD.native_identity\nOR NEW.excluded_relative_paths IS NOT OLD.excluded_relative_paths\nOR NEW.archive_relative_path IS NOT OLD.archive_relative_path\nOR (OLD.staged_identity IS NOT NULL AND NEW.staged_identity IS NOT OLD.staged_identity)\nOR (OLD.destination_identity IS NOT NULL AND NEW.destination_identity IS NOT OLD.destination_identity)\nOR (OLD.stage IN ('completed', 'failed') AND (NEW.stage IS NOT OLD.stage\n  OR NEW.staged_identity IS NOT OLD.staged_identity\n  OR NEW.destination_identity IS NOT OLD.destination_identity\n  OR NEW.last_verified_placement IS NOT OLD.last_verified_placement\n  OR NEW.last_verified_identity IS NOT OLD.last_verified_identity\n  OR NEW.problem IS NOT OLD.problem\n  OR NEW.result_kind IS NOT OLD.result_kind\n  OR NEW.completed_revision IS NOT OLD.completed_revision))\nBEGIN SELECT RAISE(ABORT, 'Rename request, recorded evidence and terminal result are immutable'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "project_rename_complete",
+        "sql": "CREATE TRIGGER project_rename_complete BEFORE UPDATE ON project_rename_operations\nWHEN NEW.stage = 'completed' AND OLD.stage != 'completed' AND NOT EXISTS (SELECT 1 FROM sources s JOIN projects p ON p.source_id = s.id\n    WHERE s.id = NEW.source_id\n    AND s.canonical_root = NEW.canonical_root AND s.discovery_mode = NEW.mode\n    AND s.discovery_revision = NEW.completed_revision AND s.applied_root_identity = NEW.root_identity\n    AND s.excluded_relative_paths = NEW.excluded_relative_paths AND s.archive_relative_path IS NEW.archive_relative_path\n    AND p.id = NEW.project_id AND p.relative_path = NEW.requested_relative_path AND p.native_identity = NEW.native_identity\n    AND p.category_id IS NEW.category_id AND p.association_state = 'active' AND p.mode_inactive = 0\n    AND (NEW.mode = 'direct' OR EXISTS (SELECT 1 FROM categories c WHERE c.id = NEW.category_id\n      AND c.source_id = NEW.source_id AND c.relative_path = NEW.parent_relative_path\n      AND c.native_identity = NEW.parent_identity AND c.association_state = 'active' AND c.mode_inactive = 0)))\nBEGIN SELECT RAISE(ABORT, 'Rename completion requires its committed active project, identity and source revision'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "project_rename_delete",
+        "sql": "CREATE TRIGGER project_rename_delete BEFORE DELETE ON project_rename_operations\nBEGIN SELECT RAISE(ABORT, 'Rename history must be retained'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "project_rename_evidence_update",
+        "sql": "CREATE TRIGGER project_rename_evidence_update BEFORE UPDATE ON project_rename_operations\nWHEN (NEW.stage = 'uncertain' AND (NEW.last_verified_placement IS NOT OLD.last_verified_placement\n    OR NEW.last_verified_identity IS NOT OLD.last_verified_identity\n    OR NEW.staged_identity IS NOT OLD.staged_identity OR NEW.destination_identity IS NOT OLD.destination_identity))\nOR (NEW.staged_identity IS NOT OLD.staged_identity AND NEW.stage != 'staged')\nOR (NEW.destination_identity IS NOT OLD.destination_identity AND NEW.stage != 'destination_recorded')\nBEGIN SELECT RAISE(ABORT, 'Rename uncertainty must retain the last verified evidence'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "project_rename_history_insert",
+        "sql": "CREATE TRIGGER project_rename_history_insert BEFORE INSERT ON project_rename_operations\nWHEN EXISTS (SELECT 1 FROM project_rename_operations o WHERE o.operation_id = NEW.operation_id\n  OR (o.project_id = NEW.project_id AND o.stage IN ('intent', 'staged', 'destination_recorded', 'uncertain')))\nBEGIN SELECT RAISE(ABORT, 'Rename history and unfinished project operations must be retained'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "project_rename_insert",
+        "sql": "CREATE TRIGGER project_rename_insert BEFORE INSERT ON project_rename_operations\nWHEN NEW.stage != 'intent' OR NOT EXISTS (SELECT 1 FROM workspaces w JOIN sources s ON s.id = w.source_id\n    JOIN projects p ON p.source_id = s.id\n    WHERE w.id = NEW.initiating_workspace_id AND s.id = NEW.source_id\n    AND s.canonical_root = NEW.canonical_root AND s.discovery_mode = NEW.mode\n    AND s.discovery_revision = NEW.expected_revision AND s.applied_root_identity = NEW.root_identity\n    AND s.excluded_relative_paths = NEW.excluded_relative_paths AND s.archive_relative_path IS NEW.archive_relative_path\n    AND p.id = NEW.project_id AND p.relative_path = NEW.original_relative_path AND p.native_identity = NEW.native_identity\n    AND p.category_id IS NEW.category_id AND p.association_state = 'active' AND p.mode_inactive = 0\n    AND (NEW.mode = 'direct' OR EXISTS (SELECT 1 FROM categories c WHERE c.id = NEW.category_id\n      AND c.source_id = NEW.source_id AND c.relative_path = NEW.parent_relative_path\n      AND c.native_identity = NEW.parent_identity AND c.association_state = 'active' AND c.mode_inactive = 0)))\nBEGIN SELECT RAISE(ABORT, 'Rename intent requires the current active project and initiating source configuration'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "project_rename_move_operation_id_insert",
+        "sql": "CREATE TRIGGER project_rename_move_operation_id_insert BEFORE INSERT ON project_rename_operations\nWHEN EXISTS (SELECT 1 FROM project_category_move_operations WHERE operation_id = NEW.operation_id)\nBEGIN SELECT RAISE(ABORT, 'Operation ID already belongs to move history'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "project_rename_operations_archive_id",
+        "sql": "CREATE TRIGGER project_rename_operations_archive_id BEFORE INSERT ON project_rename_operations\nWHEN EXISTS(SELECT 1 FROM project_archive_operations WHERE operation_id=NEW.operation_id)\nBEGIN SELECT RAISE(ABORT, 'Operation ID belongs to archive history'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "project_rename_operations_category_id",
+        "sql": "CREATE TRIGGER project_rename_operations_category_id BEFORE INSERT ON project_rename_operations\nWHEN EXISTS (SELECT 1 FROM category_folder_operations WHERE operation_id = NEW.operation_id)\nBEGIN SELECT RAISE(ABORT, 'Operation ID already bound'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "project_rename_operations_removal_id",
+        "sql": "CREATE TRIGGER project_rename_operations_removal_id BEFORE INSERT ON project_rename_operations\nWHEN EXISTS(SELECT 1 FROM category_removal_operations WHERE operation_id = NEW.operation_id)\n OR EXISTS(SELECT 1 FROM category_removal_attempts WHERE move_id = NEW.operation_id)\nBEGIN SELECT RAISE(ABORT, 'Operation ID already bound'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "project_rename_path_insert",
+        "sql": "CREATE TRIGGER project_rename_path_insert BEFORE INSERT ON project_rename_operations\nWHEN EXISTS (SELECT 1 FROM project_rename_operations o WHERE o.source_id = NEW.source_id\n  AND o.stage IN ('intent', 'staged', 'destination_recorded', 'uncertain')\n  AND (NEW.original_relative_path IN (o.original_relative_path, o.requested_relative_path, o.staging_relative_path)\n    OR NEW.requested_relative_path IN (o.original_relative_path, o.requested_relative_path, o.staging_relative_path)\n    OR NEW.staging_relative_path IN (o.original_relative_path, o.requested_relative_path, o.staging_relative_path)))\nBEGIN SELECT RAISE(ABORT, 'Unfinished rename placements are reserved'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "project_rename_stage_update",
+        "sql": "CREATE TRIGGER project_rename_stage_update BEFORE UPDATE ON project_rename_operations\nWHEN NEW.stage != OLD.stage AND OLD.stage NOT IN ('completed', 'failed') AND NOT (\n  (OLD.stage = 'intent' AND NEW.stage IN ('staged', 'destination_recorded', 'uncertain', 'failed'))\n  OR (OLD.stage = 'intent' AND NEW.stage = 'completed' AND NEW.result_kind = 'unchanged')\n  OR (OLD.stage = 'staged' AND NEW.stage IN ('destination_recorded', 'uncertain'))\n  OR (OLD.stage = 'destination_recorded' AND NEW.stage IN ('completed', 'uncertain'))\n  OR (OLD.stage = 'uncertain' AND NEW.stage IN ('staged', 'destination_recorded', 'failed')))\nBEGIN SELECT RAISE(ABORT, 'Invalid rename stage transition'); END"
+      }
+    ]
+  },
+  "project_creation_operations": {
+    "table": "CREATE TABLE project_creation_operations (\n  operation_id TEXT PRIMARY KEY NOT NULL,\n  source_id TEXT NOT NULL REFERENCES sources(id),\n  initiating_workspace_id TEXT NOT NULL,\n  project_id TEXT NOT NULL UNIQUE,\n  name TEXT NOT NULL CHECK (length(name) > 0 AND name NOT IN ('.', '..') AND instr(name, '/') = 0 AND instr(name, char(0)) = 0),\n  mode TEXT NOT NULL CHECK (mode IN ('direct', 'grouped')),\n  expected_revision INTEGER NOT NULL CHECK (expected_revision >= 0),\n  category_id TEXT,\n  canonical_root TEXT NOT NULL,\n  parent_relative_path TEXT NOT NULL,\n  relative_path TEXT NOT NULL,\n  root_identity TEXT NOT NULL CHECK (json_valid(root_identity) AND json_type(root_identity) = 'object' AND json_type(root_identity, '$.dev') IS 'text' AND length(json_extract(root_identity, '$.dev')) > 0 AND json_extract(root_identity, '$.dev') NOT GLOB '*[^0-9]*' AND json_type(root_identity, '$.ino') IS 'text' AND length(json_extract(root_identity, '$.ino')) > 0 AND json_extract(root_identity, '$.ino') NOT GLOB '*[^0-9]*' AND json_extract(root_identity, '$.ino') GLOB '*[1-9]*' AND json_type(root_identity, '$.birthtimeNs') IS 'text' AND length(json_extract(root_identity, '$.birthtimeNs')) > 0 AND json_extract(root_identity, '$.birthtimeNs') NOT GLOB '*[^0-9]*' AND json_extract(root_identity, '$.birthtimeNs') GLOB '*[1-9]*'),\n  parent_identity TEXT NOT NULL CHECK (json_valid(parent_identity) AND json_type(parent_identity) = 'object' AND json_type(parent_identity, '$.dev') IS 'text' AND length(json_extract(parent_identity, '$.dev')) > 0 AND json_extract(parent_identity, '$.dev') NOT GLOB '*[^0-9]*' AND json_type(parent_identity, '$.ino') IS 'text' AND length(json_extract(parent_identity, '$.ino')) > 0 AND json_extract(parent_identity, '$.ino') NOT GLOB '*[^0-9]*' AND json_extract(parent_identity, '$.ino') GLOB '*[1-9]*' AND json_type(parent_identity, '$.birthtimeNs') IS 'text' AND length(json_extract(parent_identity, '$.birthtimeNs')) > 0 AND json_extract(parent_identity, '$.birthtimeNs') NOT GLOB '*[^0-9]*' AND json_extract(parent_identity, '$.birthtimeNs') GLOB '*[1-9]*'),\n  excluded_relative_paths TEXT NOT NULL CHECK (json_valid(excluded_relative_paths) AND json_type(excluded_relative_paths) = 'array'),\n  archive_relative_path TEXT,\n  stage TEXT NOT NULL CHECK (stage IN ('intent', 'evidence_recorded', 'uncertain', 'completed', 'failed')),\n  native_identity TEXT CHECK (native_identity IS NULL OR (json_valid(native_identity) AND json_type(native_identity) = 'object' AND json_type(native_identity, '$.dev') IS 'text' AND length(json_extract(native_identity, '$.dev')) > 0 AND json_extract(native_identity, '$.dev') NOT GLOB '*[^0-9]*' AND json_type(native_identity, '$.ino') IS 'text' AND length(json_extract(native_identity, '$.ino')) > 0 AND json_extract(native_identity, '$.ino') NOT GLOB '*[^0-9]*' AND json_extract(native_identity, '$.ino') GLOB '*[1-9]*' AND json_type(native_identity, '$.birthtimeNs') IS 'text' AND length(json_extract(native_identity, '$.birthtimeNs')) > 0 AND json_extract(native_identity, '$.birthtimeNs') NOT GLOB '*[^0-9]*' AND json_extract(native_identity, '$.birthtimeNs') GLOB '*[1-9]*')),\n  problem TEXT CHECK (problem IS NULL OR problem IN (\n    'invalid_name', 'unconfigured', 'stale_configuration', 'category_unavailable', 'excluded', 'archive',\n    'reserved_destination', 'occupied', 'case_alias', 'source_unavailable', 'permission_denied',\n    'filesystem_changed', 'filesystem_error', 'ownership_uncertain', 'destination_missing',\n    'destination_replaced', 'destination_link', 'native_conflict', 'storage_error')),\n  completed_revision INTEGER, authorization TEXT CHECK(authorization IS NULL OR json_valid(authorization)), destination_evidence TEXT CHECK(destination_evidence IS NULL OR json_valid(destination_evidence)),\n  FOREIGN KEY (category_id, source_id) REFERENCES categories(id, source_id),\n  CHECK ((mode = 'direct' AND category_id IS NULL AND parent_relative_path = '' AND relative_path = name AND parent_identity = root_identity)\n    OR (mode = 'grouped' AND category_id IS NOT NULL AND length(parent_relative_path) > 0\n      AND instr(parent_relative_path, '/') = 0 AND parent_relative_path NOT IN ('.', '..')\n      AND relative_path = parent_relative_path || '/' || name)),\n  CHECK ((stage = 'intent' AND native_identity IS NULL AND problem IS NULL AND completed_revision IS NULL)\n    OR (stage = 'evidence_recorded' AND native_identity IS NOT NULL AND problem IS NULL AND completed_revision IS NULL)\n    OR (stage = 'uncertain' AND problem IS NOT NULL AND completed_revision IS NULL)\n    OR (stage = 'failed' AND native_identity IS NULL AND problem IS NOT NULL AND completed_revision IS NULL)\n    OR (stage = 'completed' AND native_identity IS NOT NULL AND problem IS NULL AND completed_revision IS NOT NULL AND completed_revision > expected_revision))\n)",
+    "columns": [
+      "operation_id",
+      "source_id",
+      "initiating_workspace_id",
+      "project_id",
+      "name",
+      "mode",
+      "expected_revision",
+      "category_id",
+      "canonical_root",
+      "parent_relative_path",
+      "relative_path",
+      "root_identity",
+      "parent_identity",
+      "excluded_relative_paths",
+      "archive_relative_path",
+      "stage",
+      "native_identity",
+      "problem",
+      "completed_revision",
+      "authorization",
+      "destination_evidence"
+    ],
+    "objects": [
+      {
+        "type": "index",
+        "name": "project_creation_outstanding_path",
+        "sql": "CREATE UNIQUE INDEX project_creation_outstanding_path ON project_creation_operations (source_id, relative_path) WHERE stage IN ('intent', 'evidence_recorded', 'uncertain')"
+      },
+      {
+        "type": "index",
+        "name": "project_creation_source",
+        "sql": "CREATE INDEX project_creation_source ON project_creation_operations (source_id)"
+      },
+      {
+        "type": "trigger",
+        "name": "project_creation_authority_update",
+        "sql": "CREATE TRIGGER project_creation_authority_update BEFORE UPDATE ON project_creation_operations\nWHEN (NEW.authorization IS NOT NULL AND NEW.native_identity IS NOT NULL AND NEW.destination_evidence IS NULL)\nOR NEW.authorization IS NOT OLD.authorization\nOR (OLD.destination_evidence IS NOT NULL AND NEW.destination_evidence IS NOT OLD.destination_evidence)\nOR (NEW.destination_evidence IS NOT OLD.destination_evidence AND (OLD.stage IN ('completed','failed') OR NEW.stage != 'evidence_recorded'))\nBEGIN SELECT RAISE(ABORT, 'Creation authorization and recorded durable evidence are immutable'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "project_creation_binding_update",
+        "sql": "CREATE TRIGGER project_creation_binding_update BEFORE UPDATE ON project_creation_operations\nWHEN NEW.operation_id IS NOT OLD.operation_id\nOR NEW.source_id IS NOT OLD.source_id\nOR NEW.initiating_workspace_id IS NOT OLD.initiating_workspace_id\nOR NEW.project_id IS NOT OLD.project_id\nOR NEW.name IS NOT OLD.name\nOR NEW.mode IS NOT OLD.mode\nOR NEW.expected_revision IS NOT OLD.expected_revision\nOR NEW.category_id IS NOT OLD.category_id\nOR NEW.canonical_root IS NOT OLD.canonical_root\nOR NEW.parent_relative_path IS NOT OLD.parent_relative_path\nOR NEW.relative_path IS NOT OLD.relative_path\nOR NEW.root_identity IS NOT OLD.root_identity\nOR NEW.parent_identity IS NOT OLD.parent_identity\nOR NEW.excluded_relative_paths IS NOT OLD.excluded_relative_paths\nOR NEW.archive_relative_path IS NOT OLD.archive_relative_path\nOR (OLD.native_identity IS NOT NULL AND NEW.native_identity IS NOT OLD.native_identity)\nOR (OLD.stage IN ('completed', 'failed') AND (NEW.stage IS NOT OLD.stage OR NEW.problem IS NOT OLD.problem\n  OR NEW.native_identity IS NOT OLD.native_identity OR NEW.completed_revision IS NOT OLD.completed_revision))\nBEGIN SELECT RAISE(ABORT, 'Creation request, recorded evidence and terminal outcome are immutable'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "project_creation_complete",
+        "sql": "CREATE TRIGGER project_creation_complete BEFORE UPDATE ON project_creation_operations\nWHEN NEW.stage = 'completed' AND OLD.stage != 'completed' AND NOT EXISTS (\n  SELECT 1 FROM projects p JOIN sources s ON s.id = p.source_id\n  WHERE p.id = NEW.project_id AND p.source_id = NEW.source_id AND p.relative_path = NEW.relative_path\n  AND p.native_identity = NEW.native_identity AND p.category_id IS NEW.category_id\n  AND p.association_state = 'active' AND p.mode_inactive = 0 AND s.discovery_mode = NEW.mode\n  AND s.discovery_revision = NEW.completed_revision)\nBEGIN SELECT RAISE(ABORT, 'Completion requires its committed project and source revision'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "project_creation_delete",
+        "sql": "CREATE TRIGGER project_creation_delete BEFORE DELETE ON project_creation_operations\nBEGIN SELECT RAISE(ABORT, 'Creation history must be retained'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "project_creation_history_insert",
+        "sql": "CREATE TRIGGER project_creation_history_insert BEFORE INSERT ON project_creation_operations\nWHEN EXISTS (SELECT 1 FROM project_creation_operations WHERE operation_id = NEW.operation_id OR project_id = NEW.project_id\n  OR (source_id = NEW.source_id AND relative_path = NEW.relative_path AND stage IN ('intent', 'evidence_recorded', 'uncertain')))\nBEGIN SELECT RAISE(ABORT, 'Creation operation history and reserved IDs must be retained'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "project_creation_insert",
+        "sql": "CREATE TRIGGER project_creation_insert BEFORE INSERT ON project_creation_operations\nWHEN NEW.stage != 'intent'\nOR NOT EXISTS (SELECT 1 FROM workspaces w JOIN sources s ON s.id = w.source_id\n  WHERE w.id = NEW.initiating_workspace_id AND s.id = NEW.source_id\n  AND s.canonical_root = NEW.canonical_root AND s.discovery_mode = NEW.mode\n  AND s.discovery_revision = NEW.expected_revision AND s.applied_root_identity = NEW.root_identity\n  AND s.excluded_relative_paths = NEW.excluded_relative_paths AND s.archive_relative_path IS NEW.archive_relative_path)\nOR (NEW.mode = 'grouped' AND NOT EXISTS (SELECT 1 FROM categories c WHERE c.id = NEW.category_id\n  AND c.source_id = NEW.source_id AND c.relative_path = NEW.parent_relative_path\n  AND c.native_identity = NEW.parent_identity AND c.association_state = 'active' AND c.mode_inactive = 0))\nOR EXISTS (SELECT 1 FROM projects WHERE id = NEW.project_id)\nBEGIN SELECT RAISE(ABORT, 'Creation intent requires a fresh ID and the initiating source configuration'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "project_creation_move_operation_id_insert",
+        "sql": "CREATE TRIGGER project_creation_move_operation_id_insert BEFORE INSERT ON project_creation_operations\nWHEN EXISTS (SELECT 1 FROM project_category_move_operations WHERE operation_id = NEW.operation_id)\nBEGIN SELECT RAISE(ABORT, 'Operation ID already belongs to move history'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "project_creation_operations_archive_id",
+        "sql": "CREATE TRIGGER project_creation_operations_archive_id BEFORE INSERT ON project_creation_operations\nWHEN EXISTS(SELECT 1 FROM project_archive_operations WHERE operation_id=NEW.operation_id)\nBEGIN SELECT RAISE(ABORT, 'Operation ID belongs to archive history'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "project_creation_operations_category_id",
+        "sql": "CREATE TRIGGER project_creation_operations_category_id BEFORE INSERT ON project_creation_operations\nWHEN EXISTS (SELECT 1 FROM category_folder_operations WHERE operation_id = NEW.operation_id)\nBEGIN SELECT RAISE(ABORT, 'Operation ID already bound'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "project_creation_operations_removal_id",
+        "sql": "CREATE TRIGGER project_creation_operations_removal_id BEFORE INSERT ON project_creation_operations\nWHEN EXISTS(SELECT 1 FROM category_removal_operations WHERE operation_id = NEW.operation_id)\n OR EXISTS(SELECT 1 FROM category_removal_attempts WHERE move_id = NEW.operation_id)\nBEGIN SELECT RAISE(ABORT, 'Operation ID already bound'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "project_creation_stage_update",
+        "sql": "CREATE TRIGGER project_creation_stage_update BEFORE UPDATE ON project_creation_operations\nWHEN NEW.stage != OLD.stage AND OLD.stage NOT IN ('completed', 'failed') AND NOT (\n  (OLD.stage = 'intent' AND NEW.stage IN ('evidence_recorded', 'uncertain', 'failed'))\n  OR (OLD.stage = 'evidence_recorded' AND NEW.stage IN ('uncertain', 'completed'))\n  OR (OLD.stage = 'uncertain' AND NEW.stage = 'evidence_recorded'))\nBEGIN SELECT RAISE(ABORT, 'Invalid creation stage transition'); END"
+      }
+    ]
+  },
+  "project_category_move_operations": {
+    "table": "CREATE TABLE project_category_move_operations (\n  operation_id TEXT PRIMARY KEY NOT NULL,\n  source_id TEXT NOT NULL REFERENCES sources(id),\n  initiating_workspace_id TEXT NOT NULL,\n  project_id TEXT NOT NULL,\n  name TEXT NOT NULL CHECK (length(name) > 0 AND name NOT IN ('.', '..') AND instr(name, '/') = 0 AND instr(name, char(0)) = 0),\n  expected_revision INTEGER NOT NULL CHECK (typeof(expected_revision) = 'integer' AND expected_revision >= 0),\n  original_category_id TEXT NOT NULL,\n  destination_category_id TEXT NOT NULL,\n  canonical_root TEXT NOT NULL,\n  original_parent_relative_path TEXT NOT NULL CHECK (length(original_parent_relative_path) > 0 AND original_parent_relative_path NOT IN ('.', '..') AND instr(original_parent_relative_path, '/') = 0 AND instr(original_parent_relative_path, char(0)) = 0),\n  destination_parent_relative_path TEXT NOT NULL CHECK (length(destination_parent_relative_path) > 0 AND destination_parent_relative_path NOT IN ('.', '..') AND instr(destination_parent_relative_path, '/') = 0 AND instr(destination_parent_relative_path, char(0)) = 0),\n  original_relative_path TEXT NOT NULL,\n  requested_relative_path TEXT NOT NULL,\n  root_identity TEXT NOT NULL CHECK (json_valid(root_identity) AND json_type(root_identity) = 'object' AND json_type(root_identity, '$.dev') IS 'text' AND length(json_extract(root_identity, '$.dev')) > 0 AND json_extract(root_identity, '$.dev') NOT GLOB '*[^0-9]*' AND json_type(root_identity, '$.ino') IS 'text' AND length(json_extract(root_identity, '$.ino')) > 0 AND json_extract(root_identity, '$.ino') NOT GLOB '*[^0-9]*' AND json_extract(root_identity, '$.ino') GLOB '*[1-9]*' AND json_type(root_identity, '$.birthtimeNs') IS 'text' AND length(json_extract(root_identity, '$.birthtimeNs')) > 0 AND json_extract(root_identity, '$.birthtimeNs') NOT GLOB '*[^0-9]*' AND json_extract(root_identity, '$.birthtimeNs') GLOB '*[1-9]*'),\n  original_parent_identity TEXT NOT NULL CHECK (json_valid(original_parent_identity) AND json_type(original_parent_identity) = 'object' AND json_type(original_parent_identity, '$.dev') IS 'text' AND length(json_extract(original_parent_identity, '$.dev')) > 0 AND json_extract(original_parent_identity, '$.dev') NOT GLOB '*[^0-9]*' AND json_type(original_parent_identity, '$.ino') IS 'text' AND length(json_extract(original_parent_identity, '$.ino')) > 0 AND json_extract(original_parent_identity, '$.ino') NOT GLOB '*[^0-9]*' AND json_extract(original_parent_identity, '$.ino') GLOB '*[1-9]*' AND json_type(original_parent_identity, '$.birthtimeNs') IS 'text' AND length(json_extract(original_parent_identity, '$.birthtimeNs')) > 0 AND json_extract(original_parent_identity, '$.birthtimeNs') NOT GLOB '*[^0-9]*' AND json_extract(original_parent_identity, '$.birthtimeNs') GLOB '*[1-9]*'),\n  destination_parent_identity TEXT NOT NULL CHECK (json_valid(destination_parent_identity) AND json_type(destination_parent_identity) = 'object' AND json_type(destination_parent_identity, '$.dev') IS 'text' AND length(json_extract(destination_parent_identity, '$.dev')) > 0 AND json_extract(destination_parent_identity, '$.dev') NOT GLOB '*[^0-9]*' AND json_type(destination_parent_identity, '$.ino') IS 'text' AND length(json_extract(destination_parent_identity, '$.ino')) > 0 AND json_extract(destination_parent_identity, '$.ino') NOT GLOB '*[^0-9]*' AND json_extract(destination_parent_identity, '$.ino') GLOB '*[1-9]*' AND json_type(destination_parent_identity, '$.birthtimeNs') IS 'text' AND length(json_extract(destination_parent_identity, '$.birthtimeNs')) > 0 AND json_extract(destination_parent_identity, '$.birthtimeNs') NOT GLOB '*[^0-9]*' AND json_extract(destination_parent_identity, '$.birthtimeNs') GLOB '*[1-9]*'),\n  native_identity TEXT NOT NULL CHECK (json_valid(native_identity) AND json_type(native_identity) = 'object' AND json_type(native_identity, '$.dev') IS 'text' AND length(json_extract(native_identity, '$.dev')) > 0 AND json_extract(native_identity, '$.dev') NOT GLOB '*[^0-9]*' AND json_type(native_identity, '$.ino') IS 'text' AND length(json_extract(native_identity, '$.ino')) > 0 AND json_extract(native_identity, '$.ino') NOT GLOB '*[^0-9]*' AND json_extract(native_identity, '$.ino') GLOB '*[1-9]*' AND json_type(native_identity, '$.birthtimeNs') IS 'text' AND length(json_extract(native_identity, '$.birthtimeNs')) > 0 AND json_extract(native_identity, '$.birthtimeNs') NOT GLOB '*[^0-9]*' AND json_extract(native_identity, '$.birthtimeNs') GLOB '*[1-9]*'),\n  excluded_relative_paths TEXT NOT NULL CHECK (json_valid(excluded_relative_paths) AND json_type(excluded_relative_paths) = 'array'),\n  archive_relative_path TEXT,\n  stage TEXT NOT NULL CHECK (stage IN ('intent', 'destination_recorded', 'uncertain', 'completed', 'failed')),\n  destination_identity TEXT CHECK (destination_identity IS NULL OR destination_identity = native_identity),\n  last_verified_placement TEXT NOT NULL CHECK (last_verified_placement IN ('original', 'destination')),\n  last_verified_identity TEXT NOT NULL CHECK (last_verified_identity = native_identity),\n  problem TEXT CHECK (problem IS NULL OR problem IN (\n    'invalid_name', 'unconfigured', 'stale_configuration', 'category_unavailable', 'project_unavailable',\n    'excluded', 'archive', 'reserved_destination', 'occupied', 'source_unavailable', 'permission_denied',\n    'filesystem_changed', 'filesystem_error', 'ownership_uncertain', 'destination_missing', 'destination_replaced',\n    'destination_link', 'native_conflict', 'native_unavailable', 'busy', 'cross_device', 'unsupported', 'storage_error', 'kept_original')),\n  result_kind TEXT CHECK (result_kind IS NULL OR result_kind IN ('completed', 'unchanged', 'rejected')),\n  completed_revision INTEGER CHECK (completed_revision IS NULL OR (typeof(completed_revision) = 'integer' AND completed_revision >= 0)), original_authorization TEXT CHECK(original_authorization IS NULL OR json_valid(original_authorization)), destination_authorization TEXT CHECK(destination_authorization IS NULL OR json_valid(destination_authorization)), project_evidence TEXT CHECK(project_evidence IS NULL OR json_valid(project_evidence)),\n  FOREIGN KEY (project_id, source_id) REFERENCES projects(id, source_id),\n  FOREIGN KEY (original_category_id, source_id) REFERENCES categories(id, source_id),\n  FOREIGN KEY (destination_category_id, source_id) REFERENCES categories(id, source_id),\n  CHECK (original_relative_path = original_parent_relative_path || '/' || name\n    AND requested_relative_path = destination_parent_relative_path || '/' || name),\n  CHECK ((original_category_id = destination_category_id AND original_parent_relative_path = destination_parent_relative_path\n      AND original_parent_identity = destination_parent_identity)\n    OR (original_category_id != destination_category_id AND original_parent_relative_path != destination_parent_relative_path)),\n  CHECK (last_verified_placement = 'original' OR destination_identity IS NOT NULL),\n  CHECK ((stage = 'intent' AND destination_identity IS NULL AND last_verified_placement = 'original'\n      AND problem IS NULL AND result_kind IS NULL AND completed_revision IS NULL)\n    OR (stage = 'destination_recorded' AND destination_identity IS NOT NULL AND last_verified_placement = 'destination'\n      AND problem IS NULL AND result_kind IS NULL AND completed_revision IS NULL)\n    OR (stage = 'uncertain' AND problem IS NOT NULL AND result_kind IS NULL AND completed_revision IS NULL)\n    OR (stage = 'failed' AND last_verified_placement = 'original' AND problem IS NOT NULL AND result_kind = 'rejected'\n      AND result_kind IS NOT NULL AND completed_revision IS NULL)\n    OR (stage = 'completed' AND problem IS NULL AND result_kind IS NOT NULL AND completed_revision IS NOT NULL AND (\n      (result_kind = 'completed' AND original_category_id != destination_category_id AND destination_identity IS NOT NULL\n        AND last_verified_placement = 'destination' AND completed_revision > expected_revision)\n      OR (result_kind = 'unchanged' AND original_category_id = destination_category_id AND destination_identity IS NULL\n        AND last_verified_placement = 'original' AND completed_revision = expected_revision))))\n)",
+    "columns": [
+      "operation_id",
+      "source_id",
+      "initiating_workspace_id",
+      "project_id",
+      "name",
+      "expected_revision",
+      "original_category_id",
+      "destination_category_id",
+      "canonical_root",
+      "original_parent_relative_path",
+      "destination_parent_relative_path",
+      "original_relative_path",
+      "requested_relative_path",
+      "root_identity",
+      "original_parent_identity",
+      "destination_parent_identity",
+      "native_identity",
+      "excluded_relative_paths",
+      "archive_relative_path",
+      "stage",
+      "destination_identity",
+      "last_verified_placement",
+      "last_verified_identity",
+      "problem",
+      "result_kind",
+      "completed_revision",
+      "original_authorization",
+      "destination_authorization",
+      "project_evidence"
+    ],
+    "objects": [
+      {
+        "type": "index",
+        "name": "project_category_move_outstanding_project",
+        "sql": "CREATE UNIQUE INDEX project_category_move_outstanding_project ON project_category_move_operations (project_id) WHERE stage IN ('intent', 'destination_recorded', 'uncertain')"
+      },
+      {
+        "type": "index",
+        "name": "project_category_move_source",
+        "sql": "CREATE INDEX project_category_move_source ON project_category_move_operations (source_id)"
+      },
+      {
+        "type": "trigger",
+        "name": "project_category_move_authority_update",
+        "sql": "CREATE TRIGGER project_category_move_authority_update BEFORE UPDATE ON project_category_move_operations\nWHEN NEW.original_authorization IS NOT OLD.original_authorization OR NEW.destination_authorization IS NOT OLD.destination_authorization OR NEW.project_evidence IS NOT OLD.project_evidence\nBEGIN SELECT RAISE(ABORT, 'Category move authorization and project evidence are immutable'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "project_category_move_binding_update",
+        "sql": "CREATE TRIGGER project_category_move_binding_update BEFORE UPDATE ON project_category_move_operations\nWHEN NEW.operation_id IS NOT OLD.operation_id\nOR NEW.source_id IS NOT OLD.source_id\nOR NEW.initiating_workspace_id IS NOT OLD.initiating_workspace_id\nOR NEW.project_id IS NOT OLD.project_id\nOR NEW.name IS NOT OLD.name\nOR NEW.expected_revision IS NOT OLD.expected_revision\nOR NEW.original_category_id IS NOT OLD.original_category_id\nOR NEW.destination_category_id IS NOT OLD.destination_category_id\nOR NEW.canonical_root IS NOT OLD.canonical_root\nOR NEW.original_parent_relative_path IS NOT OLD.original_parent_relative_path\nOR NEW.destination_parent_relative_path IS NOT OLD.destination_parent_relative_path\nOR NEW.original_relative_path IS NOT OLD.original_relative_path\nOR NEW.requested_relative_path IS NOT OLD.requested_relative_path\nOR NEW.root_identity IS NOT OLD.root_identity\nOR NEW.original_parent_identity IS NOT OLD.original_parent_identity\nOR NEW.destination_parent_identity IS NOT OLD.destination_parent_identity\nOR NEW.native_identity IS NOT OLD.native_identity\nOR NEW.excluded_relative_paths IS NOT OLD.excluded_relative_paths\nOR NEW.archive_relative_path IS NOT OLD.archive_relative_path\nOR (OLD.destination_identity IS NOT NULL AND NEW.destination_identity IS NOT OLD.destination_identity)\nOR (OLD.stage IN ('completed', 'failed') AND (NEW.stage IS NOT OLD.stage\n  OR NEW.destination_identity IS NOT OLD.destination_identity\n  OR NEW.last_verified_placement IS NOT OLD.last_verified_placement\n  OR NEW.last_verified_identity IS NOT OLD.last_verified_identity\n  OR NEW.problem IS NOT OLD.problem\n  OR NEW.result_kind IS NOT OLD.result_kind\n  OR NEW.completed_revision IS NOT OLD.completed_revision))\nBEGIN SELECT RAISE(ABORT, 'Move request, recorded evidence and terminal result are immutable'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "project_category_move_complete",
+        "sql": "CREATE TRIGGER project_category_move_complete BEFORE UPDATE ON project_category_move_operations\nWHEN NEW.stage = 'completed' AND OLD.stage != 'completed' AND NOT EXISTS (SELECT 1 FROM sources s JOIN projects p ON p.source_id = s.id\n    WHERE s.id = NEW.source_id AND s.canonical_root = NEW.canonical_root AND s.discovery_mode = 'grouped'\n    AND s.discovery_revision = NEW.completed_revision AND s.applied_root_identity = NEW.root_identity\n    AND s.excluded_relative_paths = NEW.excluded_relative_paths AND s.archive_relative_path IS NEW.archive_relative_path\n    AND p.id = NEW.project_id AND p.relative_path = NEW.requested_relative_path AND p.native_identity = NEW.native_identity\n    AND p.category_id = NEW.destination_category_id AND p.association_state = 'active' AND p.mode_inactive = 0\n    AND EXISTS (SELECT 1 FROM categories c WHERE c.id = NEW.original_category_id AND c.source_id = NEW.source_id\n      AND c.relative_path = NEW.original_parent_relative_path AND c.native_identity = NEW.original_parent_identity\n      AND c.association_state = 'active' AND c.mode_inactive = 0)\n    AND EXISTS (SELECT 1 FROM categories c WHERE c.id = NEW.destination_category_id AND c.source_id = NEW.source_id\n      AND c.relative_path = NEW.destination_parent_relative_path AND c.native_identity = NEW.destination_parent_identity\n      AND c.association_state = 'active' AND c.mode_inactive = 0))\nBEGIN SELECT RAISE(ABORT, 'Move completion requires committed project category, locator, identity and source revision'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "project_category_move_delete",
+        "sql": "CREATE TRIGGER project_category_move_delete BEFORE DELETE ON project_category_move_operations\nBEGIN SELECT RAISE(ABORT, 'Move history must be retained'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "project_category_move_evidence_update",
+        "sql": "CREATE TRIGGER project_category_move_evidence_update BEFORE UPDATE ON project_category_move_operations\nWHEN (NEW.stage = 'uncertain' AND (NEW.last_verified_placement IS NOT OLD.last_verified_placement\n    OR NEW.last_verified_identity IS NOT OLD.last_verified_identity OR NEW.destination_identity IS NOT OLD.destination_identity))\nOR (NEW.destination_identity IS NOT OLD.destination_identity AND NEW.stage != 'destination_recorded')\nBEGIN SELECT RAISE(ABORT, 'Move uncertainty must retain the last verified evidence'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "project_category_move_history_insert",
+        "sql": "CREATE TRIGGER project_category_move_history_insert BEFORE INSERT ON project_category_move_operations\nWHEN EXISTS (SELECT 1 FROM project_category_move_operations o WHERE o.operation_id = NEW.operation_id\n  OR (o.project_id = NEW.project_id AND o.stage IN ('intent', 'destination_recorded', 'uncertain')))\nBEGIN SELECT RAISE(ABORT, 'Move history and unfinished project operations must be retained'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "project_category_move_insert",
+        "sql": "CREATE TRIGGER project_category_move_insert BEFORE INSERT ON project_category_move_operations\nWHEN NEW.stage != 'intent' OR NOT EXISTS (SELECT 1 FROM workspaces w WHERE w.id = NEW.initiating_workspace_id AND w.source_id = NEW.source_id)\nOR NOT EXISTS (SELECT 1 FROM sources s JOIN projects p ON p.source_id = s.id\n    WHERE s.id = NEW.source_id AND s.canonical_root = NEW.canonical_root AND s.discovery_mode = 'grouped'\n    AND s.discovery_revision = NEW.expected_revision AND s.applied_root_identity = NEW.root_identity\n    AND s.excluded_relative_paths = NEW.excluded_relative_paths AND s.archive_relative_path IS NEW.archive_relative_path\n    AND p.id = NEW.project_id AND p.relative_path = NEW.original_relative_path AND p.native_identity = NEW.native_identity\n    AND p.category_id = NEW.original_category_id AND p.association_state = 'active' AND p.mode_inactive = 0\n    AND EXISTS (SELECT 1 FROM categories c WHERE c.id = NEW.original_category_id AND c.source_id = NEW.source_id\n      AND c.relative_path = NEW.original_parent_relative_path AND c.native_identity = NEW.original_parent_identity\n      AND c.association_state = 'active' AND c.mode_inactive = 0)\n    AND EXISTS (SELECT 1 FROM categories c WHERE c.id = NEW.destination_category_id AND c.source_id = NEW.source_id\n      AND c.relative_path = NEW.destination_parent_relative_path AND c.native_identity = NEW.destination_parent_identity\n      AND c.association_state = 'active' AND c.mode_inactive = 0))\nBEGIN SELECT RAISE(ABORT, 'Move intent requires current active project, categories and initiating source configuration'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "project_category_move_operation_id_insert",
+        "sql": "CREATE TRIGGER project_category_move_operation_id_insert BEFORE INSERT ON project_category_move_operations\nWHEN EXISTS (SELECT 1 FROM project_creation_operations WHERE operation_id = NEW.operation_id)\n  OR EXISTS (SELECT 1 FROM project_rename_operations WHERE operation_id = NEW.operation_id)\nBEGIN SELECT RAISE(ABORT, 'Operation ID already belongs to creation or rename history'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "project_category_move_operations_archive_id",
+        "sql": "CREATE TRIGGER project_category_move_operations_archive_id BEFORE INSERT ON project_category_move_operations\nWHEN EXISTS(SELECT 1 FROM project_archive_operations WHERE operation_id=NEW.operation_id)\nBEGIN SELECT RAISE(ABORT, 'Operation ID belongs to archive history'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "project_category_move_operations_category_id",
+        "sql": "CREATE TRIGGER project_category_move_operations_category_id BEFORE INSERT ON project_category_move_operations\nWHEN EXISTS (SELECT 1 FROM category_folder_operations WHERE operation_id = NEW.operation_id)\nBEGIN SELECT RAISE(ABORT, 'Operation ID already bound'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "project_category_move_operations_removal_id",
+        "sql": "CREATE TRIGGER project_category_move_operations_removal_id BEFORE INSERT ON project_category_move_operations\nWHEN EXISTS(SELECT 1 FROM category_removal_operations WHERE operation_id = NEW.operation_id)\nBEGIN SELECT RAISE(ABORT, 'Operation ID already bound'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "project_category_move_path_insert",
+        "sql": "CREATE TRIGGER project_category_move_path_insert BEFORE INSERT ON project_category_move_operations\nWHEN EXISTS (SELECT 1 FROM project_category_move_operations o WHERE o.source_id = NEW.source_id\n  AND o.stage IN ('intent', 'destination_recorded', 'uncertain')\n  AND (NEW.original_relative_path IN (o.original_relative_path, o.requested_relative_path)\n    OR NEW.requested_relative_path IN (o.original_relative_path, o.requested_relative_path)))\nBEGIN SELECT RAISE(ABORT, 'Unfinished move placements are reserved'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "project_category_move_removal_child",
+        "sql": "CREATE TRIGGER project_category_move_removal_child BEFORE INSERT ON project_category_move_operations\nWHEN EXISTS(SELECT 1 FROM category_removal_attempts WHERE move_id = NEW.operation_id)\n AND NOT EXISTS(SELECT 1 FROM category_removal_attempts a JOIN category_removal_operations r ON r.operation_id = a.removal_id\n WHERE a.move_id = NEW.operation_id AND a.project_id = NEW.project_id AND a.workspace_id = NEW.initiating_workspace_id\n AND a.expected_revision = NEW.expected_revision AND r.stage = 'moving' AND r.source_id = NEW.source_id\n AND r.category_id = NEW.original_category_id AND r.destination_category_id = NEW.destination_category_id\n AND r.original_relative_path = NEW.original_parent_relative_path AND r.requested_relative_path = NEW.destination_parent_relative_path)\nBEGIN SELECT RAISE(ABORT, 'Move does not match its removal assignment'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "project_category_move_stage_update",
+        "sql": "CREATE TRIGGER project_category_move_stage_update BEFORE UPDATE ON project_category_move_operations\nWHEN NEW.stage != OLD.stage AND OLD.stage NOT IN ('completed', 'failed') AND NOT (\n  (OLD.stage = 'intent' AND NEW.stage IN ('destination_recorded', 'uncertain', 'failed'))\n  OR (OLD.stage = 'intent' AND NEW.stage = 'completed' AND NEW.result_kind = 'unchanged')\n  OR (OLD.stage = 'destination_recorded' AND NEW.stage IN ('completed', 'uncertain'))\n  OR (OLD.stage = 'uncertain' AND NEW.stage IN ('destination_recorded', 'failed')))\nBEGIN SELECT RAISE(ABORT, 'Invalid move stage transition'); END"
+      }
+    ]
+  }
+}

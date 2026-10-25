@@ -1,4 +1,4 @@
-import { scanConfiguredSource, planRoleDiscovery, rolePlacement, savedFolderRoles } from "./folder-roles.js";
+import { scanRoleSource, scanConfiguredSource, planRoleDiscovery, rolePlacement, savedFolderRoles } from "./folder-roles.js";
 import {isDeepStrictEqual} from 'node:util';
 import {parseArchiveAuthorizationV1,parseArchiveParents,archiveParentPathsMatch} from './archive-proof.js';
 import {parseArchivedFolderAssociation,archivedAssociationMatchesRecord} from './archive-association.js';
@@ -71,15 +71,16 @@ export function createProjectRevealService(db: BetterSQLite3Database<typeof sche
     const records=[...db.select().from(schema.projects).where(eq(schema.projects.sourceId,source.id)).all(),...db.select().from(schema.categories).where(eq(schema.categories.sourceId,source.id)).all()];
     for(const row of records.filter(row=>row.id!==project.id)) {
       const proof=storedEvidence(row.durableEvidence),native=JSON.parse(row.nativeIdentity);
+      if(source.folderRoles && row.modeInactive && ["active","excluded"].includes(row.associationState) && (row.relativePath===project.relativePath || !("categoryId" in row)) && proof && sameDurableFolder(proof,saved))continue;
       if(row.durableEvidence!==null&&!proof)throw new RevealFailure("unresolved");
       for(const folder of folders)if(row.relativePath===folder.relativePath || (proof?durableOwnershipKey(proof)===durableOwnershipKey(folder.evidence):native.ino===folder.mount.ino&&native.birthtimeNs===folder.mount.birthtimeNs)) {
         if(!("categoryId" in row) && folder.relativePath!==archive.relativePath && !row.modeInactive && row.associationState==="active" && proof&&sameDurableFolder(proof,folder.evidence))continue;
         throw new RevealFailure("unresolved");
       }
     }
-    const base=join(source.canonicalRoot,source.archiveRelativePath),scan=(archive.mode==="grouped"?scanGroupedSource:scanDirectSource)(base,null,[]),baseProof=folders.find(folder=>folder.relativePath===source.archiveRelativePath);
+    const base=join(source.canonicalRoot,source.archiveRelativePath),scan=source.folderRoles ? scanRoleSource(base,null,[],savedFolderRoles(source)!,"grouped") : (archive.mode==="grouped"?scanGroupedSource:scanDirectSource)(base,null,[]),baseProof=folders.find(folder=>folder.relativePath===source.archiveRelativePath);
     if(!scan.snapshot || !baseProof || !sameIdentity(scan.snapshot.root.identity,baseProof.mount))throw new RevealFailure("unresolved");
-    const ordinary=(source.discoveryMode==="grouped"?scanGroupedSource:scanDirectSource)(source.canonicalRoot,source.archiveRelativePath,projectExclusions(JSON.parse(source.excludedRelativePaths),source.discoveryMode==="grouped"?"grouped":"direct").effective);
+    const ordinary=scanConfiguredSource(source,projectExclusions(JSON.parse(source.excludedRelativePaths),source.discoveryMode==="grouped"?"grouped":"direct").effective);
     if(!ordinary.snapshot || !sameIdentity(ordinary.snapshot.root.identity,frame.root.mount))throw new RevealFailure("unresolved");
     for(const inventory of [{scan,base,prefix:source.archiveRelativePath},{scan:ordinary,base:source.canonicalRoot,prefix:""}])for(const entry of inventory.scan.entries.filter(entry=>entry.reason===null)) {
       const relativePath=[inventory.prefix,entry.relativePath].filter(Boolean).join('/');

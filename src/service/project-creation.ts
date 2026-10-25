@@ -1,5 +1,6 @@
+import {relocatedFolderRoles,rolePlacement,savedFolderRoles} from "./folder-roles.js";
 import {durableOwnershipKey, sameDurableFolder} from "./folder-evidence.js";
-import {sameLegacyNativeIdentity,parseFilesystemAuthorization, parseFolderObservation, type FilesystemAuthorizer, type FilesystemAuthorization, type VerifiedFolder} from "./filesystem-authorization.js";
+import {sameAuthorizationRoute,sameLegacyNativeIdentity,parseFilesystemAuthorization, parseFolderObservation, type FilesystemAuthorizer, type FilesystemAuthorization, type VerifiedFolder} from "./filesystem-authorization.js";
 import { hasUnfinishedProjectRelocation, readProjectReservations } from "./project-rename-reservations.js";
 import { randomUUID } from "node:crypto";
 import { join } from "node:path";
@@ -62,6 +63,12 @@ export function createProjectCreationService(db: Database, integration: {
       exclusions.some((path) => filesystemAlias(path) === filesystemAlias(relativePath) ||
         parentRelativePath && filesystemAlias(path) === filesystemAlias(parentRelativePath))) throw new CreationFailure("excluded");
     // Discovery suppresses the containing project, or an archive category.
+    if(source.folderRoles) {
+      const archive=source.archiveRelativePath;
+      if(archive && (filesystemAlias(relativePath)===filesystemAlias(archive)||filesystemAlias(relativePath).startsWith(filesystemAlias(archive)+"/")||filesystemAlias(archive).startsWith(filesystemAlias(relativePath)+"/")))throw new CreationFailure("archive");
+      if(exclusions.some(path=>filesystemAlias(relativePath).startsWith(filesystemAlias(path)+"/")))throw new CreationFailure("excluded");
+      return;
+    }
     const archive = source.archiveRelativePath?.split("/");
     if (archive && (source.discoveryMode === "direct" ? filesystemAlias(parts[0]) === filesystemAlias(archive[0])
       : filesystemAlias(parts[0]) === filesystemAlias(archive[0]) && (archive.length === 1 || filesystemAlias(parts[1]) === filesystemAlias(archive[1])))) {
@@ -115,7 +122,15 @@ export function createProjectCreationService(db: Database, integration: {
       throw new CreationFailure("stale_configuration");
     }
     let parentEvidence = current.durableEvidence;
-    if (row.mode === "grouped") {
+    if(row.folderRoles) {
+      const policy=current.folderRoles===row.folderRoles ? row.folderRoles : row.targetFolderRoles;
+      const binding=authority ?? parseFilesystemAuthorization(row.authorization);
+      if(current.folderRoles!==policy || !binding || binding.version!==2)throw new CreationFailure("stale_configuration");
+      const placement=rolePlacement(row.relativePath,savedFolderRoles({folderRoles:row.targetFolderRoles})!,"grouped");
+      const category=placement?.categoryPath ? db.select().from(schema.categories).where(eq(schema.categories.sourceId,row.sourceId)).all().find(c=>c.relativePath===placement.categoryPath&&!c.modeInactive&&c.associationState==="active") : null;
+      if(!placement.recognized || (category?.id??null)!==row.categoryId)throw new CreationFailure("category_unavailable");
+      parentEvidence=JSON.stringify(binding.parent.evidence);
+    } else if (row.mode === "grouped") {
       const category = db.select().from(schema.categories).where(eq(schema.categories.id, row.categoryId!)).get();
       if (!category || category.sourceId !== row.sourceId || category.relativePath !== row.parentRelativePath ||
         category.nativeIdentity !== row.parentIdentity || category.associationState !== "active" || category.modeInactive) {
@@ -155,7 +170,7 @@ export function createProjectCreationService(db: Database, integration: {
       tx.insert(schema.projects).values({ id: row.projectId, sourceId: row.sourceId, relativePath: row.relativePath,
         nativeIdentity: row.nativeIdentity ?? JSON.stringify(evidence), durableEvidence: row.destinationEvidence ? JSON.stringify(parseFolderObservation(JSON.parse(row.destinationEvidence))!.evidence)
           : authorizer && authority ? JSON.stringify(authorizer.observe(join(row.canonicalRoot,row.relativePath),authority.root,evidence).evidence) : null, categoryId: row.categoryId, associationState: "active", modeInactive: false }).run();
-      tx.update(schema.sources).set({ discoveryRevision: revision }).where(eq(schema.sources.id, row.sourceId)).run();
+      tx.update(schema.sources).set({ discoveryRevision: revision, ...(row.folderRoles ? {folderRoles:row.targetFolderRoles} : {}) }).where(eq(schema.sources.id, row.sourceId)).run();
       tx.update(schema.projectCreationOperations).set({ stage: "completed", completedRevision: revision, problem: null })
         .where(eq(schema.projectCreationOperations.operationId, row.operationId)).run();
       verifyDestination(row, evidence, revision, workspaceId, authority, destination); assertReservations(row, evidence, true, authority);
@@ -178,8 +193,8 @@ export function createProjectCreationService(db: Database, integration: {
         const original = parseFilesystemAuthorization(row.authorization), source = sourceFor(workspaceId);
         if (!source || row.authorization !== null && !original) throw new CreationFailure("ownership_uncertain");
         const category = row.categoryId ? db.select().from(schema.categories).where(eq(schema.categories.id,row.categoryId)).get() : null;
-        binding = authorizer.capture(source,row.parentRelativePath,category ? category.durableEvidence : source.durableEvidence, row.authorization===null ? {root:JSON.parse(row.rootIdentity),parent:JSON.parse(row.parentIdentity)} : undefined);
-        if (original && (!sameDurableFolder(original.root.evidence,binding.root.evidence) || !sameDurableFolder(original.parent.evidence,binding.parent.evidence))) throw new CreationFailure("filesystem_changed");
+        binding = row.folderRoles ? authorizer.captureRoleParent(source,row.parentRelativePath).authorization : authorizer.capture(source,row.parentRelativePath,category ? category.durableEvidence : source.durableEvidence, row.authorization===null ? {root:JSON.parse(row.rootIdentity),parent:JSON.parse(row.parentIdentity)} : undefined);
+        if (original && !sameAuthorizationRoute(original,binding)) throw new CreationFailure("filesystem_changed");
       }
       const parent = verifyContext(row, revision, workspaceId,binding);
       assertReservations(row);
@@ -341,7 +356,7 @@ export function createProjectCreationService(db: Database, integration: {
       if (prior) {
         if (prior.initiatingWorkspaceId !== request.workspaceId || prior.sourceId !== source.id || prior.name !== request.name ||
           prior.mode !== request.mode || prior.expectedRevision !== request.expectedRevision ||
-          prior.categoryId !== (request.mode === "grouped" ? request.categoryId : null)) return {
+          (request.mode === "grouped" && request.parentRelativePath!==undefined ? prior.parentRelativePath!==request.parentRelativePath : prior.categoryId !== (request.mode === "grouped" ? request.categoryId : null))) return {
           ok: false, error: { code: "invalid_input", message: "The operation ID belongs to its immutable original request." },
         };
         return { ok: true, value: recordedResult(prior) };
@@ -353,19 +368,26 @@ export function createProjectCreationService(db: Database, integration: {
       if (source.discoveryMode === null || source.appliedRootIdentity === null) return rejected("unconfigured");
       if (source.discoveryMode !== request.mode || source.discoveryRevision !== request.expectedRevision) return rejected("stale_configuration");
       if (!Number.isSafeInteger(source.discoveryRevision + 1)) throw new Error("Invalid revision");
-      const category = request.mode === "grouped" ? db.select().from(schema.categories).where(eq(schema.categories.id, request.categoryId)).get() : null;
-      if (request.mode === "grouped" && (!category || category.sourceId !== source.id || category.associationState !== "active" ||
+      const category = request.mode === "grouped" && request.categoryId ? db.select().from(schema.categories).where(eq(schema.categories.id, request.categoryId)).get() : null;
+      if (!source.folderRoles && request.mode === "grouped" && (!category || category.sourceId !== source.id || category.associationState !== "active" ||
         category.modeInactive || !isChildName(category.relativePath))) return rejected("category_unavailable");
-      const parentRelativePath = category?.relativePath ?? "";
+      if(source.folderRoles && (request.mode!=="grouped" || request.parentRelativePath===undefined && !category))return rejected("category_unavailable");
+      if(!source.folderRoles && request.mode==="grouped" && request.parentRelativePath!==undefined)return rejected("category_unavailable");
+      const parentRelativePath = request.mode==="grouped" && request.parentRelativePath!==undefined ? request.parentRelativePath : category?.relativePath ?? "";
       phase = "filesystem";
-      const authorization = authorizer ? JSON.stringify(authorizer.capture(source,parentRelativePath,category ? category.durableEvidence : source.durableEvidence)) : null;
+      const roleParent=source.folderRoles && authorizer ? authorizer.captureRoleParent(source,parentRelativePath) : null;
+      if(source.folderRoles&&!roleParent)return rejected("ownership_uncertain");
+      const relativePath=parentRelativePath ? `${parentRelativePath}/${request.name}` : request.name;
+      const targetFolderRoles=source.folderRoles ? relocatedFolderRoles(source.folderRoles,null,relativePath) : null;
+      if(source.folderRoles&&targetFolderRoles===null)return rejected("reserved_destination");
+      const authorization = authorizer ? JSON.stringify(roleParent?.authorization ?? authorizer.capture(source,parentRelativePath,category ? category.durableEvidence : source.durableEvidence)) : null;
       const row: Operation = {
-        authorization, destinationEvidence: null,
+        authorization, destinationEvidence: null,folderRoles:source.folderRoles,targetFolderRoles,
         operationId: request.operationId, sourceId: source.id, initiatingWorkspaceId: request.workspaceId,
         projectId: randomUUID(), name: request.name, mode: request.mode, expectedRevision: request.expectedRevision,
-        categoryId: category?.id ?? null, canonicalRoot: source.canonicalRoot, parentRelativePath,
+        categoryId: roleParent ? roleParent.categoryId : category?.id ?? null, canonicalRoot: source.canonicalRoot, parentRelativePath,
         relativePath: parentRelativePath ? `${parentRelativePath}/${request.name}` : request.name,
-        rootIdentity: source.appliedRootIdentity, parentIdentity: category?.nativeIdentity ?? source.appliedRootIdentity,
+        rootIdentity: source.appliedRootIdentity, parentIdentity: roleParent ? roleParent.parentIdentity : category?.nativeIdentity ?? source.appliedRootIdentity,
         excludedRelativePaths: source.excludedRelativePaths, archiveRelativePath: source.archiveRelativePath,
         stage: "intent", nativeIdentity: null, problem: null, completedRevision: null,
       };

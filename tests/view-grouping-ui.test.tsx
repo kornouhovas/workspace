@@ -213,9 +213,9 @@ for(const language of ['en','ru'] as const) for(const layout of ['table','board'
     if (document.querySelector(".presentation-trigger")) await user.click(await screen.findByRole("button", {name:t("groupTitle")}));
       const select=await screen.findByLabelText(t('groupProperty'));await waitFor(()=>assert.equal((select as HTMLSelectElement).disabled,false));
     await user.selectOptions(select,list.categoryProperty.propertyId);
-    await screen.findByRole('heading',{name:`${t('groupNoValue')} (1)`});
+    await screen.findByRole('heading',{name:`${t('groupNoStatus')} (1)`});
     if (layout === "table") await user.keyboard("{Escape}");
-    const group=screen.getByRole('region',{name:t('groupNoValue')});
+    const group=screen.getByRole('region',{name:t('groupNoStatus')});
     await within(group).findByText(t('projectModeRetained'));
     const locate=within(group).getByRole('button',{name:`${t('recoveryLocate')}: Project`});locate.focus();await user.keyboard('{Enter}');
     assert.equal(located,original.projectId);

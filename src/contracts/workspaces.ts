@@ -188,6 +188,7 @@ export interface ProjectAssociationSummary extends ProjectSummary {
   categoryName: string | null;
 }
 export interface ProjectList {
+  projectParents?: {relativePath:string;role:"group"|"status"}[];
   mode: DiscoveryMode | null;
   categories: CategorySummary[];
   categoryProperty: CategoryProperty | null;

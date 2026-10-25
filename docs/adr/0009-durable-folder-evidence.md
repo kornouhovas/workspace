@@ -107,3 +107,21 @@ These APIs support the accepted acquisition strategy; platform persistence, capa
 
 - [Apple filesystem attribute definitions](https://raw.githubusercontent.com/apple-oss-distributions/xnu/main/bsd/sys/attr.h) define volume UUID/file-ID attributes and persistent-object capability. [Apple getattrlist documentation](https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man2/getattrlist.2.html) describes attribute support and volume-root query restrictions. The adapter must validate actual returned support.
 - [Microsoft FILE_ID_INFO](https://learn.microsoft.com/en-us/windows/win32/api/winbase/ns-winbase-file_id_info) provides a volume serial and 128-bit file ID. [Naming a Volume](https://learn.microsoft.com/en-us/windows/win32/fileio/naming-a-volume) describes volume GUID paths and their non-unique aliases. Requiring both a volume binding and supplementary creation time is this ADR's conservative policy, not an OS guarantee against cloning/reuse.
+
+## Issue #74 role-command extension
+
+The owner authorized project commands for deep and no-status role placements.
+The existing journal engines remain responsible for effects and recovery. Their
+private v2 filesystem authorization records every root-to-parent folder proof,
+including Groups without a category ID. The immediate physical parent and nearest
+Status are separate roles. Explicit recovery and backup validation compare the
+complete saved route; legacy v1 authority is never silently upgraded.
+
+Migration0034 rebuilds only the three constrained project journals, copies every
+existing cell verbatim, restores dependent schema objects and checks all foreign
+keys before commit. New nullable original/target role snapshots leave old receipts
+unchanged. Source policy, project locator/status and terminal receipt commit
+atomically after existing no-replace or mkdir checks. Archive uses its existing
+full parent journal; restore checks original route continuity and derives current
+role membership. These changes retain the existing path-based race limits and
+require no new native provider, marker, dependency or live-data repair.

@@ -1,3 +1,4 @@
+import {rewindRoleJournals} from './support/identity-migration-fixtures.mjs';
 import assert from 'node:assert/strict';
 import {randomUUID} from 'node:crypto';
 import {cpSync,readFileSync,writeFileSync,mkdirSync,mkdtempSync,realpathSync,lstatSync,rmSync} from 'node:fs';
@@ -51,4 +52,38 @@ test('a populated pre-role database upgrades and reviewed reinterpretation prese
     assert.equal(value(app.handleQuery({type:'workspace.listProjects',workspaceId})).projects[0].projectId,projectId);
     assert.equal(value(app.handleQuery({type:'workspace.listTextProperties',workspaceId})).values[0].propertyId,propertyId);
   } finally {app?.close();sql.close();rmSync(directory,{recursive:true,force:true});}
+});
+
+
+test('0034 rebuild preserves populated 0033 journals, dependent attestations and every existing cell',()=>{
+ const directory=realpathSync.native(mkdtempSync(join(tmpdir(),'role-journal-upgrade-'))),root=join(directory,'Root'),database=join(directory,'app.sqlite');
+ mkdirSync(join(root,'From/App'),{recursive:true});mkdirSync(join(root,'To'));let app=openSettingsService(database),sql;
+ try{
+  const workspace=value(app.handleCommand({type:'workspace.create',rootPath:root,name:'Before',initialize:'status'}));
+  const query=input=>value(app.handleQuery({workspaceId:workspace.workspaceId,...input})),command=input=>value(app.handleCommand({workspaceId:workspace.workspaceId,...input}));
+  let list=query({type:'workspace.listProjects'}),project=list.projects[0];
+  command({type:'workspace.createProject',mode:'grouped',categoryId:project.categoryId,operationId:randomUUID(),name:'Created',expectedRevision:list.revision});
+  list=query({type:'workspace.listProjects'});sql=new Database(database);
+  sql.exec("CREATE TRIGGER stop_rename BEFORE UPDATE OF relative_path ON projects BEGIN SELECT RAISE(ABORT,'interrupted'); END");
+  const operationId=randomUUID(),request={type:'workspace.renameProject',projectId:project.projectId,operationId,name:'Renamed',expectedRevision:list.revision};
+  assert.equal(command(request).outcome,'recoverable');sql.exec('DROP TRIGGER stop_rename');
+  const review=query({type:'workspace.previewProjectRenameRecovery',operationId});assert.equal(command({type:'workspace.recoverProjectRename',operationId,previewToken:review.previewToken,action:'complete_destination'}).outcome,'completed');
+  list=query({type:'workspace.listProjects'});assert.equal(command({type:'workspace.moveProjectCategory',projectId:project.projectId,operationId:randomUUID(),destinationCategoryId:list.categories.find(c=>c.relativePath==='To').categoryId,expectedRevision:list.revision}).outcome,'completed');
+  app.close();app=null;
+  sql.pragma('foreign_keys=ON');rewindRoleJournals(sql);sql.exec('DELETE FROM __drizzle_migrations WHERE created_at=(SELECT max(created_at) FROM __drizzle_migrations)');
+  const tables=sql.prepare("SELECT name FROM sqlite_schema WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name!='__drizzle_migrations'").all().map(r=>r.name);
+  const before=Object.fromEntries(tables.map(name=>[name,sql.prepare(`SELECT * FROM "${name}" ORDER BY rowid`).all()]));
+  const beforeDefinitions=sql.prepare("SELECT type,name,tbl_name,sql FROM sqlite_schema WHERE type IN ('index','trigger') AND sql IS NOT NULL").all();
+  assert.equal(before.project_rename_attestations.length,1);assert.equal(before.project_creation_operations.length,1);assert.equal(before.project_category_move_operations.length,1);
+  app=openSettingsService(database);
+  for(const [table,rows] of Object.entries(before)) {
+   const expected=table.match(/^project_(creation|rename|category_move)_operations$/)?rows.map(row=>({folder_roles:null,target_folder_roles:null,...row})):rows;
+   assert.deepEqual(sql.prepare(`SELECT * FROM "${table}" ORDER BY rowid`).all(),expected,table);
+  }
+  for(const object of beforeDefinitions)assert.ok(sql.prepare('SELECT 1 FROM sqlite_schema WHERE type=? AND name=? AND tbl_name=?').get(object.type,object.name,object.tbl_name),object.name);
+  assert.deepEqual(sql.pragma('foreign_key_check'),[]);assert.equal(sql.pragma('legacy_alter_table',{simple:true}),0);assert.equal(sql.pragma('defer_foreign_keys',{simple:true}),0);
+  assert.ok(!sql.prepare("SELECT name FROM sqlite_schema WHERE sql LIKE '%_role_upgrade%'").get());
+  const content=value(app.handleQuery({type:'data.export'})).content;assert.equal(app.handleCommand({type:'data.restore',content}).ok,true);
+  assert.equal(query({type:'workspace.listProjects'}).projects.find(p=>p.projectId===project.projectId).relativePath,'To/Renamed');
+ }finally{app?.close();sql?.close();rmSync(directory,{recursive:true,force:true});}
 });

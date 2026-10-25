@@ -23,7 +23,7 @@ async function launch(){
   launchUnverified=false;
 }
 async function close(){if(app){const current=app;app=null;await closeElectron(current);}}
-async function settings(){await openSettingsSection(page,'workspaces');await page.getByRole('region',{name:source,exact:true}).waitFor();assert.equal(await page.getByRole('tab',{name:/^(Sources|Источники)$/}).count(),0);}
+async function settings(){await openSettingsSection(page,'workspaces');const tab=page.getByRole('tab',{name:/^(Workspaces|Рабочие пространства)$/});await tab.press('Enter');await tab.and(page.locator('[aria-selected="true"]')).waitFor();await page.getByRole('region',{name:source,exact:true}).waitFor();assert.equal(await page.getByRole('tab',{name:/^(Sources|Источники)$/}).count(),0);}
 async function expand(path){
   const escaped=path.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
   const expand=page.getByRole('button',{name:new RegExp(`^(Expand|Раскрыть): ${escaped}$`)});
@@ -93,6 +93,76 @@ try{
   assert.equal((await query({type:'workspace.listTextProperties',workspaceId:sibling.workspaceId})).values.find(row=>row.projectId===bare.projectId).value,'Keep metadata');
   assert.equal(await readFile(join(source,'Clients','Bare','keep.txt'),'utf8'),'Preserved project bytes');
   checks.push('explicit project expansion, shared impact confirmation, Escape cancellation, independent views, parent edit preserves child override, shared archive controls and restart IDs/values/files');
+  for(const language of ['en','ru']) {
+    const en=language==='en',name=`Created-${language}`,renamed=`Renamed-${language}`;
+    await setInterfaceLanguage(page,language);await returnToWorkspace(page);
+    await page.getByRole('button',{name:en?'Create project folder':'Создать папку проекта',exact:true}).click();
+    let dialog=page.getByRole('dialog',{name:en?'Create project folder':'Создать папку проекта',exact:true});
+    await dialog.getByRole('textbox').fill(name);await dialog.getByRole('combobox').selectOption('Clients');
+    await page.screenshot({path:join(evidence,`${language}-create-role-parent.png`)});
+    await dialog.getByRole('button',{name:en?'Create folder':'Создать папку',exact:true}).click();
+    await dialog.waitFor({state:'detached'});
+    let created=(await query({type:'workspace.listProjects',workspaceId:first.workspaceId})).projects.find(p=>p.name===name);assert.equal(created.relativePath,`Clients/${name}`);assert.equal(created.categoryId,null);
+    const openProjectTools=async(projectName)=>{
+      await page.locator(`.saved-view-content [data-project-id="${created.projectId}"]`).scrollIntoViewIfNeeded();
+      const trigger=page.getByRole('button',{name:`${en?'Project actions':'Действия с проектом'}: ${projectName}`,exact:true});await trigger.and(page.locator(':enabled')).focus();await trigger.press('Enter');await page.getByRole('dialog',{name:`${en?'Project actions':'Действия с проектом'}: ${projectName}`,exact:true}).waitFor();
+    };
+    const enterDialog=async(button,label,projectName=renamed)=>{
+      const deadline=Date.now()+15000,modal=page.getByRole('dialog',{name:label,exact:true});
+      await button.and(page.locator(':enabled')).click();
+      try{await modal.waitFor({timeout:Math.min(1000,deadline-Date.now())});}catch(error){
+        if(await modal.isVisible())return modal;
+        if(!await page.getByRole('dialog',{name:`${en?'Project actions':'Действия с проектом'}: ${projectName}`,exact:true}).isVisible())throw error;
+        // A source observation can replace a row between pointerdown and click.
+        // Re-entering this editor authors no filesystem command.
+        await button.and(page.locator(':enabled')).click();await modal.waitFor({timeout:Math.max(1,deadline-Date.now())});
+      }
+      return modal;
+    };
+    const action=async(label,projectName)=>{await openProjectTools(projectName);const button=page.locator('.saved-view-content').getByRole('button',{name:`${label}: ${projectName}`,exact:true,includeHidden:true});return enterDialog(button,label,projectName);};
+    dialog=await action(en?'Rename project folder':'Переименовать папку проекта',name);
+    const reviewCurrent=dialog.getByRole('button',{name:en?'Review current project name':'Проверить текущее имя проекта',exact:true});
+    const submitRename=dialog.getByRole('button',{name:en?'Rename folder':'Переименовать папку',exact:true});
+    const renameInput=dialog.getByRole('textbox');
+    await Promise.race([renameInput.and(page.locator(':enabled')).waitFor(),reviewCurrent.waitFor()]);
+    if(await reviewCurrent.isVisible())await reviewCurrent.click();
+    try{await renameInput.fill(renamed,{timeout:1000});}catch(error){if(!await reviewCurrent.isVisible())throw error;await reviewCurrent.click();await renameInput.fill(renamed);}
+    await Promise.race([submitRename.and(page.locator(':enabled')).waitFor(),reviewCurrent.waitFor()]);
+    if(await reviewCurrent.isVisible()){await reviewCurrent.click();await dialog.getByRole('textbox').fill(renamed);}
+    await submitRename.and(page.locator(':enabled')).press('Enter');await dialog.waitFor({state:'detached'});
+    const move=async(parent)=>{
+      const current=(await query({type:'workspace.listProjects',workspaceId:first.workspaceId})).projects.find(p=>p.projectId===created.projectId);assert.equal(current.name,renamed);
+      const label=en?'Move project category':'Переместить проект в категорию';
+      await openProjectTools(renamed);
+      const moveButton=page.locator('.saved-view-content').getByRole('button',{name:`${label}: ${renamed}`,exact:true,includeHidden:true});
+      dialog=await enterDialog(moveButton,label);
+      const select=dialog.getByRole('combobox');
+      if(await select.isDisabled()) {await dialog.getByRole('button',{name:en?'Cancel':'Отмена',exact:true}).click();await openProjectTools(renamed);dialog=await enterDialog(moveButton,label);}
+      await select.selectOption(parent);await page.screenshot({path:join(evidence,`${language}-move-${parent?'status':'root'}.png`)});
+      await dialog.getByRole('button',{name:en?'Move project folder':'Переместить папку проекта',exact:true}).click();await dialog.waitFor({state:'detached'});
+    };
+    await move('Work/Urgent');
+    for(const kind of ['archive','restore']) {
+      const label=kind==='archive'?(en?'Archive project':'Архивировать проект'):(en?'Restore project':'Восстановить проект');
+      if(kind==='restore')await page.getByRole('button',{name:en?'Archived':'Архив',exact:true}).click();
+      dialog=await action(label,renamed);
+      const reviewArchive=dialog.getByRole('button',{name:kind==='archive'?(en?'Review archive':'Проверить архивирование'):(en?'Review restore':'Проверить восстановление'),exact:true});
+      await reviewArchive.click();await reviewArchive.and(page.locator(':enabled')).waitFor();
+      const confirmArchive=dialog.getByRole('button',{name:label,exact:true});
+      if(!await confirmArchive.count()){await reviewArchive.click();await reviewArchive.and(page.locator(':enabled')).waitFor();}
+      await dialog.getByText(en?'The project keeps its identity and ordinary properties. The archive mirrors its original relative location. Nothing is overwritten.':'Идентификатор проекта и обычные свойства сохраняются. Архив повторяет исходное относительное размещение. Перезаписи нет.',{exact:true}).waitFor();
+      await confirmArchive.click();
+      await dialog.getByText(en?'Folder operation completed.':'Операция с папкой завершена.',{exact:true}).waitFor();
+      await dialog.getByRole('button',{name:en?'Done':'Готово',exact:true}).click();await dialog.waitFor({state:'detached'});
+    }
+    await page.getByRole('button',{name:en?'Active':'Активные',exact:true}).click();await move('');
+    created=(await query({type:'workspace.listProjects',workspaceId:first.workspaceId})).projects.find(p=>p.projectId===created.projectId);assert.equal(created.relativePath,renamed);assert.equal(created.categoryId,null);
+  }
+  const afterCommands=await query({type:'workspace.listProjects',workspaceId:first.workspaceId});await close();await launch();
+  assert.deepEqual((await query({type:'workspace.listProjects',workspaceId:first.workspaceId})).projects.map(p=>[p.projectId,p.relativePath,p.categoryId]),afterCommands.projects.map(p=>[p.projectId,p.relativePath,p.categoryId]));
+  assert.equal(await readFile(join(source,'Clients','Bare','keep.txt'),'utf8'),'Preserved project bytes');
+  checks.push('EN/RU UI: explicit Group creation, no-status rename, nested Status move, archive/restore, explicit root move, stable project IDs after restart');
+
 }catch(error){failed=error;if(page)await page.screenshot({path:join(evidence,'failure.png')}).catch(()=>{});}
 finally{
   try{await close();}catch(error){failed??=error;}

@@ -52,7 +52,7 @@ export function validArchive(value: unknown): value is string | null {
   return value === null || (typeof value === "string" && value.split("/").every(isChildName));
 }
 
-function observation(relativePath: string, stat: BigIntStats): DirectoryObservation {
+export function directoryObservation(relativePath: string, stat: BigIntStats): DirectoryObservation {
   return {
     relativePath, kind: stat.isSymbolicLink() ? "link" : stat.isDirectory() ? "directory" : "other",
     identity: { dev: stat.dev.toString(), ino: stat.ino.toString(), birthtimeNs: stat.birthtimeNs.toString() },
@@ -69,11 +69,11 @@ class RootConflict extends Error {}
 // can block an external rename of its parent. Entry spelling comes from the
 // verified directory enumeration; legacy realpath still resolves ancestor links.
 // Keep source-root canonicalization native and all identity/path checks intact.
-function descendantRealpath(path: string): string {
+export function descendantRealpath(path: string): string {
   return process.platform === "win32" ? realpathSync(path) : realpathSync.native(path);
 }
 
-function automaticDirectoryReason(name: string, archiveChild: string | null): ExcludedObservation["reason"] | null {
+export function automaticDirectoryReason(name: string, archiveChild: string | null): ExcludedObservation["reason"] | null {
   return name.startsWith(".") ? "hidden"
     : ["$recycle.bin", "system volume information"].includes(name.toLowerCase()) ? "service"
     : name === archiveChild ? "archive" : null;
@@ -81,7 +81,7 @@ function automaticDirectoryReason(name: string, archiveChild: string | null): Ex
 
 function scanOnce(canonicalRoot: string, archiveRelativePath: string | null, exclusions: string[], cancelled?: () => boolean): DiscoverySnapshot {
   if (cancelled?.()) throw new ScanChanged();
-  const root = observation("", lstatSync(canonicalRoot, { bigint: true }));
+  const root = directoryObservation("", lstatSync(canonicalRoot, { bigint: true }));
   // Do not open a retargeted root or a link, including a link in an ancestor.
   if (root.kind !== "directory" || realpathSync.native(canonicalRoot) !== canonicalRoot) throw new RootConflict();
   if (!validArchive(archiveRelativePath)) throw new RootConflict();
@@ -103,18 +103,18 @@ function scanOnce(canonicalRoot: string, archiveRelativePath: string | null, exc
         continue;
       }
       const path = join(canonicalRoot, entry.name);
-      const child = observation(entry.name, lstatSync(path, { bigint: true }));
+      const child = directoryObservation(entry.name, lstatSync(path, { bigint: true }));
       // Links/junctions are never resolved, opened or enumerated. Project contents are never read.
       if (child.kind === "directory") {
         const resolved = descendantRealpath(path);
         if (relative(canonicalRoot, resolved) !== entry.name || resolved !== path) throw new ScanChanged();
-        if (changed(child, observation(entry.name, lstatSync(path, { bigint: true })))) throw new ScanChanged();
+        if (changed(child, directoryObservation(entry.name, lstatSync(path, { bigint: true })))) throw new ScanChanged();
       }
       children.push(child);
     }
   } finally { directory.closeSync(); }
   if (realpathSync.native(canonicalRoot) !== canonicalRoot ||
-    changed(root, observation("", lstatSync(canonicalRoot, { bigint: true })))) throw new ScanChanged();
+    changed(root, directoryObservation("", lstatSync(canonicalRoot, { bigint: true })))) throw new ScanChanged();
   // Resolve non-exact archive casing only with verified identity evidence, never by guessing names.
   const suppressedArchiveAlias = archiveChild && children.some((child) => child.kind === "excluded" &&
     filesystemAlias(child.relativePath) === filesystemAlias(archiveChild!));
@@ -122,7 +122,7 @@ function scanOnce(canonicalRoot: string, archiveRelativePath: string | null, exc
     !children.some((child) => child.relativePath === archiveChild)) {
     try {
       // Resolve casing using only the designated immediate child's own evidence. Do not open it.
-      const archive = observation(archiveChild, lstatSync(join(canonicalRoot, archiveChild), { bigint: true }));
+      const archive = directoryObservation(archiveChild, lstatSync(join(canonicalRoot, archiveChild), { bigint: true }));
       if (archive.kind === "directory") {
         archiveChild = children.find((child) => child.kind === "directory" &&
           sameIdentity(child.identity, archive.identity))?.relativePath ?? archiveChild;
@@ -161,7 +161,7 @@ export function scanDirectSource(canonicalRoot: string, archiveRelativePath: str
 // after enumeration; excluded entries use only their parent's directory entries.
 function scanGroupedOnce(canonicalRoot: string, archiveRelativePath: string | null, exclusions: string[], cancelled?: () => boolean): DiscoverySnapshot {
   if (cancelled?.()) throw new ScanChanged();
-  const root = observation("", lstatSync(canonicalRoot, { bigint: true }));
+  const root = directoryObservation("", lstatSync(canonicalRoot, { bigint: true }));
   if (root.kind !== "directory" || realpathSync.native(canonicalRoot) !== canonicalRoot ||
     !validArchive(archiveRelativePath)) throw new RootConflict();
   const children: DiscoverySnapshot["children"] = [];
@@ -170,7 +170,7 @@ function scanGroupedOnce(canonicalRoot: string, archiveRelativePath: string | nu
     if (cancelled?.()) throw new ScanChanged();
     const path = join(canonicalRoot, parent.relativePath);
     // lstat first: a swapped link must never be resolved or traversed.
-    if (changed(parent, observation(parent.relativePath, lstatSync(path, { bigint: true }))) ||
+    if (changed(parent, directoryObservation(parent.relativePath, lstatSync(path, { bigint: true }))) ||
       (parent.relativePath === "" ? realpathSync.native(path) : descendantRealpath(path)) !== path) throw new ScanChanged();
   };
   const readLevel = (parent: DirectoryObservation, archiveName: string | null) => {
@@ -198,13 +198,13 @@ function scanGroupedOnce(canonicalRoot: string, archiveRelativePath: string | nu
       // Case aliases require the designated child's own evidence. No directory
       // is opened here, and symlinks cannot provide archive identity evidence.
       try {
-        const target = observation(designated, lstatSync(join(path, designated), { bigint: true }));
+        const target = directoryObservation(designated, lstatSync(join(path, designated), { bigint: true }));
         if (target.kind === "directory") {
           for (const entry of entries) {
             const relativePath = parent.relativePath ? `${parent.relativePath}/${entry.name}` : entry.name;
             if (!entry.isDirectory() || automaticDirectoryReason(entry.name, null) || exclusions.includes(relativePath)) continue;
             verify(root); verify(parent);
-            const candidate = observation(relativePath, lstatSync(join(path, entry.name), { bigint: true }));
+            const candidate = directoryObservation(relativePath, lstatSync(join(path, entry.name), { bigint: true }));
             if (candidate.kind === "directory" && sameIdentity(candidate.identity, target.identity)) { designated = entry.name; break; }
           }
         }
@@ -222,7 +222,7 @@ function scanGroupedOnce(canonicalRoot: string, archiveRelativePath: string | nu
     if (reason) { children.push({ relativePath, kind: "excluded", reason }); return null; }
     verify(root); verify(parent);
     const path = join(canonicalRoot, relativePath);
-    const child = observation(relativePath, lstatSync(path, { bigint: true }));
+    const child = directoryObservation(relativePath, lstatSync(path, { bigint: true }));
     if (child.kind === "directory") {
       if (descendantRealpath(path) !== path) throw new ScanChanged();
       verify(root); verify(parent); verify(child);

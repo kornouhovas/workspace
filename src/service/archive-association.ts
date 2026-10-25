@@ -23,14 +23,14 @@ export function parseArchivedFolderAssociation(value:string):ArchivedFolderAssoc
    !archive || Object.keys(archive).sort().join()!=='authorization,categoryName,mode,originalRelativePath,parentIdentity,parents,projectId,relativePath,sourceId' ||
    archive.sourceId!==v.sourceId || archive.projectId!==v.projectId || !['direct','grouped'].includes(archive.mode) ||
    typeof archive.relativePath!=='string' || !safe(archive.relativePath) || typeof archive.originalRelativePath!=='string' ||
-   archive.originalRelativePath.split('/').length!==(archive.mode==='direct'?1:2) || !safe(archive.originalRelativePath) || archive.categoryName!==null&&typeof archive.categoryName!=='string' || typeof archive.parentIdentity!=='string' || !JSON.parse(archive.parentIdentity) || !parseArchiveParents([{path:'Role',identity:JSON.parse(archive.parentIdentity)}],false) ||
+   root.version!==2 && archive.originalRelativePath.split('/').length!==(archive.mode==='direct'?1:2) || !safe(archive.originalRelativePath) || archive.categoryName!==null&&typeof archive.categoryName!=='string' || typeof archive.parentIdentity!=='string' || !JSON.parse(archive.parentIdentity) || !parseArchiveParents([{path:'Role',identity:JSON.parse(archive.parentIdentity)}],false) ||
    durableOwnershipKey(root.root.evidence)===durableOwnershipKey(v.project.evidence) || !sameVolumeEvidence(root.root,v.project) || root.root.evidence.scope!==v.project.evidence.scope ||
    !parseArchiveParents(v.parents,true) || v.parents.some((p:ArchiveParent)=>!p.observation) || !archiveParentPathsMatch(v.parents,archive.relativePath) ||
    !uniqueArchiveProofs({root,project:v.project},[v.parents]))return null;
   const oldParents=parseArchiveParents(JSON.parse(archive.parents),archive.authorization!==null),old=archive.authorization===null?null:parseArchiveAuthorization(archive.authorization);
   if(!oldParents || oldParents.some(parent=>parent.identity===null) || !archiveParentPathsMatch(oldParents,archive.relativePath) ||
    archive.authorization!==null&&!old || old&&(old.root.generation>root.generation || !sameIdentity(JSON.parse(archive.parentIdentity),old.originalParent.mount) ||
-    (archive.mode==='direct'?!sameDurableFolder(old.originalParent.evidence,old.root.root.evidence):sameDurableFolder(old.originalParent.evidence,old.root.root.evidence,false)) || !sameDurableFolder(old.root.root.evidence,root.root.evidence,false)||!sameDurableFolder(old.project.evidence,v.project.evidence,false)))return null;
+    (root.version===2 ? false : archive.mode==='direct'?!sameDurableFolder(old.originalParent.evidence,old.root.root.evidence):sameDurableFolder(old.originalParent.evidence,old.root.root.evidence,false)) || !sameDurableFolder(old.root.root.evidence,root.root.evidence,false)||!sameDurableFolder(old.project.evidence,v.project.evidence,false)))return null;
   if(oldParents.some((parent,index)=>parent.observation&&(!v.parents[index]?.observation||!sameDurableFolder(parent.observation.evidence,v.parents[index].observation.evidence,false))))return null;
   return v;
  }catch{return null;}

@@ -46,7 +46,7 @@ class Client extends WorkspaceServiceClient {
   operation(): ProjectCategoryMoveOperation {
     const input = this.moves.at(-1)!;
     return { operationId: input.operationId, sourceId: "source", initiatingWorkspaceId: input.workspaceId, projectId: input.projectId,
-      name: "  Exact 📝  ", originalCategoryId: "current", destinationCategoryId: input.destinationCategoryId,
+      name: "  Exact 📝  ", originalCategoryId: "current", destinationCategoryId: input.destinationCategoryId ?? null,
       originalRelativePath: "Current/  Exact 📝  ", requestedRelativePath: input.destinationCategoryId === "current" ? "Current/  Exact 📝  " : "Empty/  Exact 📝  ",
       expectedRevision: input.expectedRevision, stage: "completed", lastVerifiedPlacement: "destination", problem: null, resultKind: "completed", completedRevision: 2 };
   }

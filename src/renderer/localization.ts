@@ -2,6 +2,11 @@ import type { CategoryProperty } from "../contracts/workspaces.js";
 import type { Language } from "../contracts/settings.js";
 
 const english = {
+  projectRolePlacementHint: "Choose a Group or Status folder. The project uses its nearest Status, or No status.",
+  projectParentFolder: "Parent folder",
+  projectRootFolder: "Source root",
+  folderRoleGroup: "Group",
+  folderRoleStatus: "Status",
   folderStatus: "Status",
   addProperty: "Add property",
   propertyType: "Property type",
@@ -720,6 +725,11 @@ const english = {
 } as const;
 
 const russian: Record<keyof typeof english, string> = {
+  projectRolePlacementHint: "Выберите Группу или Статус. Проект получит ближайший Статус или «Без статуса».",
+  projectParentFolder: "Родительская папка",
+  projectRootFolder: "Корень источника",
+  folderRoleGroup: "Группа",
+  folderRoleStatus: "Статус",
   folderStatus: "Статус",
   addProperty: "Добавить свойство",
   propertyType: "Тип свойства",

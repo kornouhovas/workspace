@@ -1,12 +1,11 @@
 // The service alone resolves mode, category, locators and native evidence.
-export interface WorkspaceMoveProjectCategoryCommand {
+export type WorkspaceMoveProjectCategoryCommand = {
   type: "workspace.moveProjectCategory";
   workspaceId: string;
   projectId: string;
   operationId: string;
-  destinationCategoryId: string;
   expectedRevision: number;
-}
+} & ({destinationCategoryId:string;parentRelativePath?:never}|{parentRelativePath:string;destinationCategoryId?:never});
 export interface WorkspaceListProjectCategoryMovesQuery {
   type: "workspace.listProjectCategoryMoves";
   workspaceId: string;
@@ -45,8 +44,8 @@ export interface ProjectCategoryMoveOperation {
   initiatingWorkspaceId: string;
   projectId: string;
   name: string;
-  originalCategoryId: string;
-  destinationCategoryId: string;
+  originalCategoryId: string | null;
+  destinationCategoryId: string | null;
   originalRelativePath: string;
   requestedRelativePath: string;
   expectedRevision: number;
@@ -63,7 +62,7 @@ export interface ProjectCategoryMoveCompleted {
   projectId: string;
   name: string;
   relativePath: string;
-  categoryId: string;
+  categoryId: string | null;
   revision: number;
 }
 export type ProjectCategoryMoveResult =
@@ -104,7 +103,7 @@ export function isProjectCategoryMoveRequest(value: unknown): value is ProjectCa
     return exact(["type", "workspaceId", "operationId", "previewToken", "action"]) && uuid(input.previewToken) &&
       ["retry_original", "complete_destination", "keep_original"].includes(typeof input.action === "string" ? input.action : "");
   }
-  return input.type === "workspace.moveProjectCategory" && uuid(input.projectId) && uuid(input.destinationCategoryId) &&
+  return input.type === "workspace.moveProjectCategory" && uuid(input.projectId) && (uuid(input.destinationCategoryId) || typeof input.parentRelativePath==="string") &&
     typeof input.expectedRevision === "number" && Number.isSafeInteger(input.expectedRevision) && input.expectedRevision >= 0 &&
-    exact(["type", "workspaceId", "projectId", "operationId", "destinationCategoryId", "expectedRevision"]);
+    (exact(["type", "workspaceId", "projectId", "operationId", "destinationCategoryId", "expectedRevision"]) || exact(["type", "workspaceId", "projectId", "operationId", "parentRelativePath", "expectedRevision"]));
 }

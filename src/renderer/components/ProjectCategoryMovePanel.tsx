@@ -50,7 +50,7 @@ function matchesSubmission(operation: ProjectCategoryMoveOperation, binding: Sub
   return operation.sourceId === binding.sourceId && operation.operationId === command.operationId && operation.projectId === command.projectId &&
     operation.initiatingWorkspaceId === command.workspaceId && operation.expectedRevision === command.expectedRevision &&
     operation.name === binding.project.name && operation.originalRelativePath === binding.project.relativePath &&
-    operation.originalCategoryId === binding.project.categoryId && operation.destinationCategoryId === command.destinationCategoryId &&
+    operation.originalCategoryId === binding.project.categoryId && (command.parentRelativePath!==undefined ? operation.requestedRelativePath.split("/").slice(0,-1).join("/")===command.parentRelativePath : operation.destinationCategoryId === command.destinationCategoryId) &&
     operation.requestedRelativePath === binding.requestedPath && (!binding.operation || sameOperation(operation, binding.operation));
 }
 // App remounts its Table on backend restart and selection changes. Keep unknown
@@ -146,7 +146,7 @@ function CategoryMoveContent({ client, workspaceId, sourceId, language, project,
   useEffect(() => { void loadMoves(); return () => { listVersion.current++; }; }, [client, workspaceId, sourceId, invalidation]);
   const [editorState, setEditorState] = useState({ revision: -1, observation: -1, lifetime: -1 });
   useEffect(() => {
-    if (project) { setEditorState({ revision: projects?.revision ?? -1, observation: observationVersion.current, lifetime: sourceLifetime.current }); restoreInput.current = true; setDestination(project.categoryId ?? ""); if (!submitted.current) setMessage(null); input.current?.focus(); }
+    if (project) { setEditorState({ revision: projects?.revision ?? -1, observation: observationVersion.current, lifetime: sourceLifetime.current }); restoreInput.current = true; setDestination(projects?.projectParents ? project.relativePath.split("/").slice(0,-1).join("/") : project.categoryId ?? ""); if (!submitted.current) setMessage(null); input.current?.focus(); }
   }, [project]);
   useEffect(() => { onBlockedChange(pending || unresolved || reviewed !== null || operations.length > 0); }, [pending, unresolved, reviewed, operations, onBlockedChange]);
   useEffect(() => {
@@ -168,9 +168,9 @@ function CategoryMoveContent({ client, workspaceId, sourceId, language, project,
   const available = !!projects && projects.workspaceId === workspaceId && projects.sourceId === sourceId && projects.configured && projects.mode === "grouped" &&
     ["ready", "empty"].includes(projects.state) && editorCurrent() && !!project &&
     projects.projects.some((row) => row.associationState === "active" && row.resolution === "active" && row.projectId === project.projectId && row.name === project.name && row.relativePath === project.relativePath && row.categoryId === project.categoryId);
-  const destinationCategory = projects?.categories.find((category) => category.categoryId === destination);
+  const destinationCategory = projects?.projectParents ? projects.projectParents.find(parent=>parent.relativePath===destination) : projects?.categories.find((category) => category.categoryId === destination);
   // Display paths explain the move; the service authorizes placement from IDs.
-  const destinationPath = destinationCategory && project ? `${destinationCategory.relativePath}/${project.name}` : "";
+  const destinationPath = destinationCategory && project ? [destinationCategory.relativePath,project.name].filter(Boolean).join("/") : "";
   const review = async (operation: ProjectCategoryMoveOperation) => {
     if (busy.current || !ready.current || disabled || (unresolved && (binding.current?.uncertain || submitted.current?.operationId !== operation.operationId))) return;
     selectedReview.current = operation; setReviewed(operation); setPreview(null); previewBinding.current = null; setReviewMessage(null); setReviewLoading(true);
@@ -223,7 +223,7 @@ function CategoryMoveContent({ client, workspaceId, sourceId, language, project,
     return true;
   };
   const bindOperation = (operation: ProjectCategoryMoveOperation) => {
-    submitted.current = { workspaceId: operation.initiatingWorkspaceId, projectId: operation.projectId, operationId: operation.operationId, destinationCategoryId: operation.destinationCategoryId, expectedRevision: operation.expectedRevision };
+    submitted.current = { workspaceId: operation.initiatingWorkspaceId, projectId: operation.projectId, operationId: operation.operationId, ...(projects?.projectParents ? {parentRelativePath:operation.requestedRelativePath.split("/").slice(0,-1).join("/")} : {destinationCategoryId:operation.destinationCategoryId!}), expectedRevision: operation.expectedRevision };
     binding.current = { command: submitted.current, sourceId, project: { projectId: operation.projectId, name: operation.name, relativePath: operation.originalRelativePath, categoryId: operation.originalCategoryId }, requestedPath: operation.requestedRelativePath, operation: { ...operation }, uncertain: true };
     requests.set(sourceId, binding.current);
   };
@@ -239,7 +239,7 @@ function CategoryMoveContent({ client, workspaceId, sourceId, language, project,
       // Source refs advance before React renders disabled controls. An older
       // event handler must recheck them before authoring any operation ID.
       if (!editorCurrent()) { setMessage("moveCategoryStale"); return; }
-      submitted.current = { workspaceId, projectId: project!.projectId, operationId: crypto.randomUUID(), destinationCategoryId: destination, expectedRevision: projects!.revision };
+      submitted.current = { workspaceId, projectId: project!.projectId, operationId: crypto.randomUUID(), ...(projects?.projectParents?{parentRelativePath:destination}:{destinationCategoryId:destination}), expectedRevision: projects!.revision };
       binding.current = { command: submitted.current, sourceId, project: { ...project! }, requestedPath: destinationPath, uncertain: true };
       requests.set(sourceId, binding.current);
     }
@@ -285,14 +285,14 @@ function CategoryMoveContent({ client, workspaceId, sourceId, language, project,
         if (event.key === "Escape") { event.preventDefault(); onClose(); }
         if (event.key === "Enter" && event.target === input.current) { event.preventDefault(); void run(false); }
       }}>
-      <label htmlFor="project-category-move-destination">{t("moveCategoryDestination")}</label>
+      <label htmlFor="project-category-move-destination">{t(projects?.projectParents ? "projectParentFolder" : "moveCategoryDestination")}</label>
       <select ref={input} id="project-category-move-destination" value={destination} disabled={disabled || pending || unresolved || !available}
         onChange={(event) => setDestination(event.currentTarget.value)}>
-        {projects?.categories.map((category) => <option key={category.categoryId} value={category.categoryId}>{category.name}</option>)}
+        {projects?.projectParents ? projects.projectParents.map(parent=><option key={parent.relativePath} value={parent.relativePath}>{parent.relativePath || t("projectRootFolder")} · {t(parent.role==="group"?"folderRoleGroup":"folderRoleStatus")}</option>) : projects?.categories.map((category) => <option key={category.categoryId} value={category.categoryId}>{category.name}</option>)}
       </select>
       <dl><dt>{t("moveCategoryCurrentPlacement")}</dt><dd>{project.relativePath}</dd>
         <dt>{t("moveCategoryDestinationPlacement")}</dt><dd>{destinationPath}</dd></dl>
-      <p>{t("moveCategoryHint")}</p>
+      <p>{t(projects?.projectParents ? "projectRolePlacementHint" : "moveCategoryHint")}</p>
       {!available && !pending && !unresolved && message !== "moveCategoryStale" && <StatusMessage kind="error" title={t("moveCategoryStale")} />}
       <div className="workspace-form-actions">
         <button type="submit" className="workspace-button" disabled={disabled || pending || unresolved || !available || !destinationCategory || operations.length > 0}>{t("moveCategorySubmit")}</button>

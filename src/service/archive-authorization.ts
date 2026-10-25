@@ -1,4 +1,4 @@
-import {sourceFolderRolePolicy} from "./folder-roles.js";
+import {sourceFolderRolePolicy,savedFolderRoles,rolePlacement,relocatedFolderRoles} from "./folder-roles.js";
 import {isDeepStrictEqual} from "node:util";
 import {parseFilesystemAuthorization,parseFolderObservation,type FilesystemAuthorization,type VerifiedFolder} from "./filesystem-authorization.js";
 import {sameVolumeEvidence} from "./source-identity.js";
@@ -34,7 +34,7 @@ export interface ArchiveBindingSnapshot {
  archive:typeof import('./db/schema.js').projectArchives.$inferSelect|null;
  category:typeof import('./db/schema.js').categories.$inferSelect|null;
  sourceParents:ArchiveParent[];destinationParents:ArchiveParent[];createParent:boolean;
- mode:'direct'|'grouped';categoryName:string|null;authorization?:ArchiveAuthorization;
+ mode:'direct'|'grouped';categoryName:string|null;targetFolderRoles?:string;authorization?:ArchiveAuthorization;
 }
 export interface ArchiveRowDescriptor {
  sourceId:string;projectId:string;action:string;originalRelativePath:string;requestedRelativePath:string;nativeIdentity:string;
@@ -52,14 +52,15 @@ export function archiveBindingMatchesRow(binding:ArchiveBindingSnapshot,row:Arch
    b.sourceParents.some(p=>p.identity===null))return false;
   if(b.category && (b.category.id!==b.project.categoryId || b.category.sourceId!==row.sourceId))return false;
   if(row.action==='archive')return b.archive===null && !b.project.modeInactive && b.project.associationState==='active' &&
-   b.project.relativePath===row.originalRelativePath && b.project.relativePath.split('/').length===(b.mode==='direct'?1:2) &&
+   b.project.relativePath===row.originalRelativePath && (b.source.folderRoles ? rolePlacement(b.project.relativePath,savedFolderRoles(b.source)!,b.mode).recognized : b.project.relativePath.split('/').length===(b.mode==='direct'?1:2)) &&
    typeof b.source.archiveRelativePath==='string'&&pathParts(b.source.archiveRelativePath)&&row.requestedRelativePath===`${b.source.archiveRelativePath}/${b.project.relativePath}` &&
-   (b.mode==='direct'?b.category===null&&b.project.categoryId===null:!!b.category&&b.category.relativePath===b.project.relativePath.split('/')[0]);
+   (b.source.folderRoles ? (b.category?.relativePath??null)===rolePlacement(b.project.relativePath,savedFolderRoles(b.source)!,b.mode).categoryPath : (b.mode==='direct'?b.category===null&&b.project.categoryId===null:!!b.category&&b.category.relativePath===b.project.relativePath.split('/')[0]));
   if(row.action!=='restore' || !b.archive || b.archive.projectId!==row.projectId || b.archive.sourceId!==row.sourceId ||
-   b.archive.relativePath!==row.originalRelativePath || b.archive.originalRelativePath!==b.project.relativePath || b.archive.mode!==b.mode ||
+   b.archive.relativePath!==row.originalRelativePath || b.archive.originalRelativePath!==b.project.relativePath || !b.source.folderRoles && b.archive.mode!==b.mode ||
    !b.project.modeInactive || b.destinationParents.some(p=>p.identity===null)&&!b.createParent)return false;
+  if(b.source.folderRoles && (!b.targetFolderRoles || relocatedFolderRoles(b.source.folderRoles,b.project.relativePath,row.requestedRelativePath)!==b.targetFolderRoles))return false;
   const parts=b.archive.originalRelativePath.split('/');
-  return parts.length===(b.mode==='direct'?1:2)&&row.requestedRelativePath.split('/').length===parts.length &&
+  return (b.source.folderRoles ? rolePlacement(b.archive.originalRelativePath,savedFolderRoles(b.source)!,b.mode).recognized : parts.length===(b.mode==='direct'?1:2))&&row.requestedRelativePath.split('/').length===parts.length &&
    row.requestedRelativePath.split('/').slice(0,-1).join('/')===parts.slice(0,-1).join('/');
  }catch{return false;}
 }
@@ -91,7 +92,7 @@ export function parseArchiveBindingAuthorization(binding:ArchiveBindingSnapshot,
   }else {
    const parent=binding.sourceParents.at(-1)?.observation??auth.root.root;
    if(!parent || !sameDurableFolder(parent.evidence,auth.originalParent.evidence) || !sameIdentity(parent.mount,auth.originalParent.mount))return null;
-   if(binding.mode==='grouped' && (!binding.category || !sameDurableFolder(JSON.parse(binding.category.durableEvidence!),auth.originalParent.evidence)))return null;
+   if(!binding.source.folderRoles && binding.mode==='grouped' && (!binding.category || !sameDurableFolder(JSON.parse(binding.category.durableEvidence!),auth.originalParent.evidence)))return null;
   }
   return auth;
  }catch{return null;}
@@ -106,7 +107,7 @@ export function archiveRenewalMatches(original:ArchiveBindingSnapshot,current:Ar
    (before.originalParent===null?after.originalParent!==null:after.originalParent===null||!sameDurableFolder(before.originalParent.evidence,after.originalParent.evidence)))return false;
   const policy=(source:ArchiveBindingSnapshot['source'])=>({...sourceFolderRolePolicy(source),discoveryRevision:0,evidenceGeneration:0,propertyRevision:0,categoryPropertyRevision:0,appliedRootIdentity:null});
   if(!isDeepStrictEqual(policy(original.source),policy(current.source)) ||
-   ['project','archive','category','mode','createParent','categoryName'].some(field=>!isDeepStrictEqual(original[field as keyof ArchiveBindingSnapshot],current[field as keyof ArchiveBindingSnapshot])))return false;
+   ['project','archive','category','mode','createParent','categoryName','targetFolderRoles'].some(field=>!isDeepStrictEqual(original[field as keyof ArchiveBindingSnapshot],current[field as keyof ArchiveBindingSnapshot])))return false;
   const sameRoles=(old:ArchiveParent[],fresh:ArchiveParent[])=>old.length===fresh.length && old.every((parent,index)=>{
    const next=fresh[index];return parent.path===next.path && (parent.identity===null ? next.identity===null : !!parent.observation&&!!next.observation&&sameDurableFolder(parent.observation.evidence,next.observation.evidence));
   });

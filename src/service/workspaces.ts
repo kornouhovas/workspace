@@ -1,4 +1,4 @@
-import { validFolderRoles, validRolePath, folderRole, scanRoleSource, savedFolderRoles, scanConfiguredSource, planRoleDiscovery } from "./folder-roles.js";
+import { roleParentPlacement, validFolderRoles, validRolePath, folderRole, scanRoleSource, savedFolderRoles, scanConfiguredSource, planRoleDiscovery } from "./folder-roles.js";
 import {createFilesystemAuthorization} from "./filesystem-authorization.js";
 import { createWorkspacePublisher } from "./workspace-publication.js";
 import { createSourceAssociationService } from "./source-association.js";
@@ -441,9 +441,10 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
         if (roles && source.discoveryMode === "direct" && source.folderRoles === null) {
           const current=scanConfiguredSource(source,JSON.parse(source.excludedRelativePaths));
           const explicit = roles;
-          roles=[...explicit,...current.entries.filter(entry=>!entry.relativePath.includes("/") && !explicit.some(row=>row.relativePath===entry.relativePath))
+          roles=[...explicit,...[...current.entries,...db.select().from(schema.projectArchives).where(eq(schema.projectArchives.sourceId,source.id)).all().map(archive=>({relativePath:archive.originalRelativePath}))].filter(entry=>!entry.relativePath.includes("/") && !explicit.some(row=>row.relativePath===entry.relativePath))
             .map(entry=>({relativePath:entry.relativePath,role:"project" as const}))];
         }
+        if(roles && !validFolderRoles(roles))return invalid("Choose valid folder roles.");
         const roleSource = { ...source, discoveryMode: mode, folderRoles: roles === null ? null : JSON.stringify(roles) };
         const saved: unknown = JSON.parse(source.excludedRelativePaths);
         if (!validExclusions(saved, "grouped", roles!==null) || !validArchive(source.archiveRelativePath) ||
@@ -523,7 +524,7 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
           JSON.stringify(token.reservations) !== JSON.stringify(readReservations(source.id))) return stale();
         if (hasUnfinishedProjectRelocation(db, source.id)) return stale();
         const mode = token.preview.mode;
-        const roleSource = { ...source, discoveryMode: mode, folderRoles: token.preview.folderRoles ? JSON.stringify(token.preview.folderRoles) : null };
+                const roleSource = { ...source, discoveryMode: mode, folderRoles: token.preview.folderRoles ? JSON.stringify(token.preview.folderRoles) : null };
         const scanMode = (root: string, archive: string | null, exclusions: string[]) => scanConfiguredSource({...roleSource,canonicalRoot:root,archiveRelativePath:archive},exclusions);
         const scanner:typeof scanMode=(root,archive,exclusions)=>reserveDurablePlacements(source,scanMode(root,archive,exclusions),readReservations(source.id),scope,readFolderEvidence);
         const scan = scanner(source.canonicalRoot, source.archiveRelativePath, token.preview.effectiveExcludedRelativePaths);
@@ -996,6 +997,11 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
     const active = projection.filter((row) => row.retentionReason === null && row.associationState === "active" && (row.resolution === "active" || row.resolution === null));
     const retainedProjects = projection.filter((row) => !active.includes(row));
     return { workspaceId, sourceId: source.id, revision: source.discoveryRevision, configured: mode !== null, mode,
+      ...(source.folderRoles ? {projectParents:verified ? [{relativePath:"",role:"group" as const},...currentScan.snapshot!.children.flatMap(child=>{
+        if(child.kind!=="directory")return [];
+        const placement=roleParentPlacement(child.relativePath,savedFolderRoles(source)!,mode!);
+        return placement.allowed ? [{relativePath:child.relativePath,role:folderRole(child.relativePath,savedFolderRoles(source)!,mode!) as "group"|"status"}] : [];
+      })] : []} : {}),
       categories: categories.filter((row) => mode === "grouped" && !row.modeInactive && row.associationState === "active" &&
         (displayed ? displayed.categories.some(category => category.categoryId === row.id) : !planned || planned.categories.retained.find((observed) => observed.id === row.id)?.associationState === "active")).map((row) => ({
         categoryId: row.id, relativePath: row.relativePath, name: source.folderRoles ? row.relativePath.split("/").at(-1)! : row.relativePath,

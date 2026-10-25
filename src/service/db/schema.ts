@@ -104,6 +104,8 @@ export const textPropertyValues = sqliteTable("text_property_values", {
 // SQL migration 0008 additionally guards immutable bindings and stage transitions.
 // The initiating workspace is historical context, deliberately not a foreign key.
 export const projectCreationOperations = sqliteTable("project_creation_operations", {
+  folderRoles: text("folder_roles"),
+  targetFolderRoles: text("target_folder_roles"),
   authorization: text("authorization"),
   destinationEvidence: text("destination_evidence"),
   operationId: text("operation_id").primaryKey(),
@@ -144,6 +146,8 @@ export const projectCreationAttestations = sqliteTable("project_creation_attesta
 // Migration 0009 enforces immutable bindings, evidence, transitions and cross-role reservations.
 // Historical initiating workspace IDs deliberately survive workspace removal.
 export const projectRenameOperations = sqliteTable("project_rename_operations", {
+  folderRoles: text("folder_roles"),
+  targetFolderRoles: text("target_folder_roles"),
   authorization: text("authorization"),
   projectEvidence: text("project_evidence"),
   operationId: text("operation_id").primaryKey(),
@@ -191,6 +195,8 @@ export const projectRenameAttestations = sqliteTable("project_rename_attestation
 
 // Migration 0010 guards immutable two-parent bindings, evidence and retained history.
 export const projectCategoryMoveOperations = sqliteTable("project_category_move_operations", {
+  folderRoles: text("folder_roles"),
+  targetFolderRoles: text("target_folder_roles"),
   originalAuthorization: text("original_authorization"),
   destinationAuthorization: text("destination_authorization"),
   projectEvidence: text("project_evidence"),
@@ -200,8 +206,8 @@ export const projectCategoryMoveOperations = sqliteTable("project_category_move_
   projectId: text("project_id").notNull(),
   name: text("name").notNull(),
   expectedRevision: integer("expected_revision").notNull(),
-  originalCategoryId: text("original_category_id").notNull(),
-  destinationCategoryId: text("destination_category_id").notNull(),
+  originalCategoryId: text("original_category_id"),
+  destinationCategoryId: text("destination_category_id"),
   canonicalRoot: text("canonical_root").notNull(),
   originalParentRelativePath: text("original_parent_relative_path").notNull(),
   destinationParentRelativePath: text("destination_parent_relative_path").notNull(),

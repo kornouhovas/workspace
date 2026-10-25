@@ -150,7 +150,7 @@ function CreationContent({ client, workspaceId, sourceId, language, projects, di
     }
   };
   const available = projects?.configured && projects.mode && ["ready", "empty"].includes(projects.state) && projects.revision >= minimumRevision.current;
-  const categoryAvailable = projects?.mode !== "grouped" || projects.categories.some((category) => category.categoryId === categoryId);
+  const categoryAvailable = projects?.projectParents ? projects.projectParents.some(parent=>parent.relativePath===categoryId) : projects?.mode !== "grouped" || projects.categories.some((category) => category.categoryId === categoryId);
   const review = async (operationId: string) => {
     if (busy.current || mutationsDisabled || !ready.current) return;
     busy.current = true; reviewing.current = true; setPending(true); setPreview(null); setMessage(null);
@@ -170,7 +170,7 @@ function CreationContent({ client, workspaceId, sourceId, language, projects, di
   return <section ref={root} tabIndex={-1} className="project-creation" aria-label={t("createProject")} aria-busy={pending} onKeyDown={(event) => {
       if (event.key === "Escape" && (preview || reviewing.current)) { event.preventDefault(); dismissReview(); }
     }}>
-    <DailyControl><Hint label={t("createProject")}><button ref={trigger} type="button" className="workspace-button icon-button" aria-label={t("createProject")} disabled={mutationsDisabled || pending || !available || (projects?.mode === "grouped" && !projects.categories.length)}
+    <DailyControl><Hint label={t("createProject")}><button ref={trigger} type="button" className="workspace-button icon-button" aria-label={t("createProject")} disabled={mutationsDisabled || pending || !available || (projects?.mode === "grouped" && !projects.projectParents && !projects.categories.length)}
       onClick={() => { setOpen(true); setMessage(null); }}><Icon name="plus"/></button></Hint></DailyControl>
     <ProjectOperationDialog className="project-creation" open={open} title={t("createProject")} onClose={() => close()} contentRef={dialog}>
 
@@ -183,21 +183,21 @@ function CreationContent({ client, workspaceId, sourceId, language, projects, di
       if (!name.length) { setMessage("creationInvalid"); input.current?.focus(); return; }
       const operationId = crypto.randomUUID();
       const common = { workspaceId, operationId, name, expectedRevision: projects.revision };
-      const authoredRequest: Parameters<WorkspaceServiceClient["createProject"]>[0] = projects.mode === "grouped" ? { ...common, mode: "grouped", categoryId } : { ...common, mode: "direct" };
+      const authoredRequest: Parameters<WorkspaceServiceClient["createProject"]>[0] = projects.projectParents ? {...common,mode:"grouped",parentRelativePath:categoryId} : projects.mode === "grouped" ? { ...common, mode: "grouped", categoryId } : { ...common, mode: "direct" };
       originalRequest.current = authoredRequest;
       void run(operationId, () => client.createProject(authoredRequest),false,true);
     }} onKeyDown={(event) => { if (event.key === "Escape") { event.preventDefault(); close(); } }}>
       <label htmlFor="project-creation-name">{t("creationName")}</label>
       <input ref={input} id="project-creation-name" className="bb-input" value={name} disabled={mutationsDisabled || pending || !!unknownId}
         onChange={(event) => setName(event.currentTarget.value)} aria-invalid={message === "creationInvalid"} />
-      {projects?.mode === "grouped" && <label>{t("creationCategory")}
+      {projects?.mode === "grouped" && <label>{t(projects.projectParents ? "projectParentFolder" : "creationCategory")}
         <select value={categoryId} disabled={mutationsDisabled || pending || !!unknownId} onChange={(event) => setCategoryId(event.currentTarget.value)}>
-          <option value="">{t("creationChooseCategory")}</option>
-          {projects.categories.map((category) => <option key={category.categoryId} value={category.categoryId}>{category.name}</option>)}
+          {projects.projectParents ? projects.projectParents.map(parent=><option key={parent.relativePath} value={parent.relativePath}>{parent.relativePath || t("projectRootFolder")} · {t(parent.role==="group"?"folderRoleGroup":"folderRoleStatus")}</option>) : <><option value="">{t("creationChooseCategory")}</option>
+          {projects.categories.map((category) => <option key={category.categoryId} value={category.categoryId}>{category.name}</option>)}</>}
         </select>
       </label>}
-      <p>{t(projects?.mode === "grouped" ? "creationGroupedHint" : "creationDirectHint")}</p>
-      <div className="project-operation-path"><span>{t("creationDestination")}</span><output aria-label={t("creationDestination")}>{[projects?.mode === "grouped" ? projects.categories.find(category => category.categoryId === categoryId)?.relativePath : null, name].filter(Boolean).join("/")}</output></div>
+      <p>{t(projects?.projectParents ? "projectRolePlacementHint" : projects?.mode === "grouped" ? "creationGroupedHint" : "creationDirectHint")}</p>
+      <div className="project-operation-path"><span>{t("creationDestination")}</span><output aria-label={t("creationDestination")}>{[projects?.projectParents ? categoryId : projects?.mode === "grouped" ? projects.categories.find(category => category.categoryId === categoryId)?.relativePath : null, name].filter(Boolean).join("/")}</output></div>
       <div className="workspace-form-actions">
         <button type="submit" className="workspace-button" disabled={mutationsDisabled || pending || !!unknownId || !available || !categoryAvailable}>{t("creationSubmit")}</button>
         <button ref={formCancel} type="button" className="workspace-button workspace-button--secondary" onClick={() => close()}>{t("cancelRenameWorkspace")}</button>
@@ -222,7 +222,7 @@ function CreationContent({ client, workspaceId, sourceId, language, projects, di
     <ManagementHistory><ContextTools label={t("creationRecovery")} compact>
       {projects?.configured && !available && <p>{t("creationUnavailable")}</p>}
       {!projects?.configured && <p>{t("creationUnconfigured")}</p>}
-      {available && projects?.mode === "grouped" && !projects.categories.length && <p>{t("creationNoCategory")}</p>}<button type="button" className="workspace-button workspace-button--secondary" disabled={disabled || loading || pending} onClick={() => void load()}>{t("creationReload")}</button></ContextTools></ManagementHistory>
+      {available && projects?.mode === "grouped" && !projects.projectParents && !projects.categories.length && <p>{t("creationNoCategory")}</p>}<button type="button" className="workspace-button workspace-button--secondary" disabled={disabled || loading || pending} onClick={() => void load()}>{t("creationReload")}</button></ContextTools></ManagementHistory>
     {operations.length > 0 && <div><h4>{t("creationOutstanding")}</h4><p>{t("creationRecoverable")}</p>
       <ul>{operations.map((operation) => <li key={operation.operationId}>
         <span className="property-authored">{operation.relativePath}</span>

@@ -201,3 +201,49 @@ for(const folderRoles of [null,[{relativePath:'../outside',role:'group'}],[{rela
     assert.deepEqual(value(app.handleQuery({type:'workspace.listProjects',workspaceId:workspace.workspaceId})).projects,before.projects);
   }finally{app.close();rmSync(directory,{recursive:true,force:true});}
 });
+
+test('switching to roles continues suppressing a project candidate containing a nested archive',()=>{
+  const directory=mkdtempSync(join(tmpdir(),'folder-archive-'));const root=join(directory,'Root');mkdirSync(join(root,'Work','App'),{recursive:true});
+  const app=openSettingsService(join(directory,'data','workspace.sqlite'));
+  try{
+    const workspace=value(app.handleCommand({type:'workspace.create',name:'First',rootPath:root,initialize:'status'}));
+    const archive=value(app.handleQuery({type:'workspace.previewArchiveLocation',workspaceId:workspace.workspaceId,relativePath:'Cold/Storage/Archive'}));
+    value(app.handleCommand({type:'workspace.applyArchiveLocation',workspaceId:workspace.workspaceId,operationId:crypto.randomUUID(),previewToken:archive.previewToken}));
+    mkdirSync(join(root,'Cold','Storage','Archive'),{recursive:true});
+    const review=value(app.handleQuery({type:'workspace.previewDiscovery',workspaceId:workspace.workspaceId,folderRoles:[{relativePath:'Work',role:'group'}]}));
+    assert.equal(review.entries.find(entry=>entry.relativePath==='Cold/Storage').reason,'archive');
+    const applied=value(app.handleCommand({type:'workspace.applyDiscovery',workspaceId:workspace.workspaceId,previewToken:review.previewToken}));
+    assert.equal(applied.projects.some(project=>project.relativePath==='Cold/Storage'),false);
+  }finally{app.close();rmSync(directory,{recursive:true,force:true});}
+});
+
+test('verified external renames keep logical identity after roles are configured',async()=>{
+  const {renameSync}=await import('node:fs');
+  const directory=mkdtempSync(join(tmpdir(),'folder-rename-'));const root=join(directory,'Root');mkdirSync(join(root,'Work','App'),{recursive:true});
+  const app=openSettingsService(join(directory,'data','workspace.sqlite'));
+  try{
+    const workspace=value(app.handleCommand({type:'workspace.create',name:'First',rootPath:root,initialize:'status'}));
+    const review=value(app.handleQuery({type:'workspace.previewDiscovery',workspaceId:workspace.workspaceId,folderRoles:[{relativePath:'Work',role:'status'}]}));
+    const before=value(app.handleCommand({type:'workspace.applyDiscovery',workspaceId:workspace.workspaceId,previewToken:review.previewToken}));
+    renameSync(join(root,'Work','App'),join(root,'Work','Renamed'));
+    value(app.handleCommand({type:'workspace.refreshSource',workspaceId:workspace.workspaceId}));
+    const after=value(app.handleQuery({type:'workspace.listProjects',workspaceId:workspace.workspaceId}));
+    assert.equal(after.projects[0].relativePath,'Work/Renamed');assert.equal(after.projects[0].projectId,before.projects[0].projectId);
+  }finally{app.close();rmSync(directory,{recursive:true,force:true});}
+});
+
+test('a deep unrelated exclusion preserves rename and category move for ordinary placements',()=>{
+  const directory=mkdtempSync(join(tmpdir(),'folder-command-'));const root=join(directory,'Root');
+  for(const path of ['Work/App','Other','Clients/Acme/Keep','Clients/Acme/Excluded'])mkdirSync(join(root,path),{recursive:true});
+  const app=openSettingsService(join(directory,'data','workspace.sqlite'));
+  try{
+    const workspace=value(app.handleCommand({type:'workspace.create',name:'First',rootPath:root,initialize:'status'}));
+    const review=value(app.handleQuery({type:'workspace.previewDiscovery',workspaceId:workspace.workspaceId,folderRoles:[{relativePath:'Clients',role:'group'},{relativePath:'Clients/Acme',role:'status'}],excludedRelativePaths:['Clients/Acme/Excluded']}));
+    const before=value(app.handleCommand({type:'workspace.applyDiscovery',workspaceId:workspace.workspaceId,previewToken:review.previewToken}));
+    const project=before.projects.find(project=>project.relativePath==='Work/App');
+    const renamed=value(app.handleCommand({type:'workspace.renameProject',workspaceId:workspace.workspaceId,projectId:project.projectId,operationId:crypto.randomUUID(),name:'Renamed',expectedRevision:before.revision}));
+    assert.equal(renamed.outcome,'completed',JSON.stringify(renamed));
+    const moved=value(app.handleCommand({type:'workspace.moveProjectCategory',workspaceId:workspace.workspaceId,projectId:project.projectId,operationId:crypto.randomUUID(),destinationCategoryId:before.categories.find(category=>category.relativePath==='Other').categoryId,expectedRevision:renamed.project.revision}));
+    assert.equal(moved.outcome,'completed',JSON.stringify(moved));assert.equal(moved.project.relativePath,'Other/Renamed');
+  }finally{app.close();rmSync(directory,{recursive:true,force:true});}
+});

@@ -129,9 +129,10 @@ export class WorkspaceServiceClient {
     return () => { active = false; unsubscribe(); };
   }
 
-  moveProjectCategory(input: Omit<WorkspaceMoveProjectCategoryCommand, "type">): Promise<ServiceResult<ProjectCategoryMoveResult>> {
-    const { workspaceId, projectId, operationId, destinationCategoryId, expectedRevision } = input;
-    return this.api.workspace({ type: "workspace.moveProjectCategory", workspaceId, projectId, operationId, destinationCategoryId, expectedRevision });
+  moveProjectCategory(input: Omit<Extract<WorkspaceMoveProjectCategoryCommand,{destinationCategoryId:string}>, "type"> | Omit<Extract<WorkspaceMoveProjectCategoryCommand,{parentRelativePath:string}>, "type">): Promise<ServiceResult<ProjectCategoryMoveResult>> {
+    const {workspaceId,projectId,operationId,expectedRevision}=input;
+    const destination=input.parentRelativePath!==undefined ? {parentRelativePath:input.parentRelativePath} : {destinationCategoryId:input.destinationCategoryId};
+    return this.api.workspace({type:"workspace.moveProjectCategory",workspaceId,projectId,operationId,expectedRevision,...destination});
   }
   listProjectCategoryMoves(workspaceId: string): Promise<ServiceResult<ProjectCategoryMoveList>> {
     return this.api.workspace({ type: "workspace.listProjectCategoryMoves", workspaceId });
@@ -162,7 +163,7 @@ export class WorkspaceServiceClient {
     return this.api.workspace({ type: "workspace.recoverProjectRename", workspaceId, operationId, previewToken, action });
   }
 
-  createProject(input: Omit<Extract<WorkspaceCreateProjectCommand, { mode: "direct" }>, "type"> | Omit<Extract<WorkspaceCreateProjectCommand, { mode: "grouped" }>, "type">): Promise<ServiceResult<ProjectCreationResult>> {
+  createProject(input: Omit<Extract<WorkspaceCreateProjectCommand, { mode: "direct" }>, "type"> | Omit<Extract<WorkspaceCreateProjectCommand, { categoryId: string }>, "type"> | Omit<Extract<WorkspaceCreateProjectCommand, { parentRelativePath: string }>, "type">): Promise<ServiceResult<ProjectCreationResult>> {
     return this.api.workspace({ ...input, type: "workspace.createProject" });
   }
   listProjectCreations(workspaceId: string): Promise<ServiceResult<ProjectCreationList>> {

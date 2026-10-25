@@ -1,4 +1,4 @@
-import { scanConfiguredSource } from "./folder-roles.js";
+import { scanConfiguredSource, validRolePath } from "./folder-roles.js";
 import { storedEvidence } from "./source-identity.js";
 import { observeFolder, sameDurableFolder } from "./folder-evidence.js";
 import { reserveDurablePlacements, continuityRecords, discoveryEvidence, sameVolumeEvidence, discoveryIdentityState, sourceIdentity, type EvidenceReader } from "./source-identity.js";
@@ -82,7 +82,7 @@ function directMappings(scan: DiscoveryScan, records: Project[], exclusions: str
 
 interface Placement { relativePath: string; categoryId: string | null }
 
-function groupedMappings(scan: DiscoveryScan, projects: Project[], categories: Category[], exclusions: string[], archive: string | null, historicalRoot: NativeIdentity) {
+function groupedMappings(scan: DiscoveryScan, projects: Project[], categories: Category[], exclusions: string[], archive: string | null, historicalRoot: NativeIdentity, roleMode=false) {
   const directories = scan.snapshot!.children.filter((child): child is DirectoryObservation => child.kind === "directory");
   const evidence = [...categories, ...projects].flatMap((row:Association) => [storedIdentity(row), storedIdentity(row, true), ...(row.ownershipNativeIdentities??[]).map(value=>JSON.parse(value) as NativeIdentity)].map(identity => ({row, identity})));
   // Keep every alias, including historical and insufficient birth evidence.
@@ -92,8 +92,10 @@ function groupedMappings(scan: DiscoveryScan, projects: Project[], categories: C
   // Index exact, reliable candidate identities once. Keep every alias and all
   // reservation checks below; the index must never choose an ambiguous match.
   const { eligible, matches: candidatesByIdentity } = indexCandidates(scan, directories);
+  const entryByPath=new Map(scan.entries.map(entry=>[entry.relativePath,entry]));
+  const statusPath=(path:string)=>{const entry=entryByPath.get(path);return roleMode ? entry?.kind==="project"?entry.categoryPath:null : path.split("/")[0];};
   const suppressed = (path: string) => exclusions.some((excluded) => path === excluded || path.startsWith(`${excluded}/`)) ||
-    !!archive && archive.split("/").slice(0, 2).join("/") === path;
+    !!archive && (roleMode ? entryByPath.get(path)?.reason==="archive" || path===archive : archive.split("/").slice(0, 2).join("/") === path);
   // Reviewed mode changes can retain a direct project over the same physical
   // folder now owned by an operational category. This exact, continuous role
   // history remains legitimate after the category moves; its old project locator
@@ -101,7 +103,7 @@ function groupedMappings(scan: DiscoveryScan, projects: Project[], categories: C
   // block reconciliation, and a new category has no owner for this exception.
   const categoryRoleHistory = (row: Association, owner?: Association) => {
     if (!owner || "categoryId" in owner || owner.modeInactive || owner.associationState !== "active" ||
-      !("categoryId" in row) || row.categoryId !== null || !isChildName(row.relativePath) || row.sourceId !== owner.sourceId ||
+      !("categoryId" in row) || !roleMode && (row.categoryId !== null || !isChildName(row.relativePath)) || row.sourceId !== owner.sourceId ||
       !row.modeInactive || !["active","excluded"].includes(row.associationState)) return false;
     // Alias projections may veto adoption, never prove legitimate role history.
     if (row.durableEvidence !== null) {
@@ -138,14 +140,14 @@ function groupedMappings(scan: DiscoveryScan, projects: Project[], categories: C
   const verified = new Map<string, string>();
   for (const category of categories) {
     const child = candidate(category);
-    if (child && isChildName(child.relativePath)) verified.set(category.id, child.relativePath);
+    if (child && (roleMode ? entryByPath.get(child.relativePath)?.kind==="category" : isChildName(child.relativePath))) verified.set(category.id, child.relativePath);
   }
-  const newTargets = directories.filter((child) => isChildName(child.relativePath) && eligible(child.relativePath) &&
+  const newTargets = directories.filter((child) => (roleMode ? entryByPath.get(child.relativePath)?.kind==="category" : isChildName(child.relativePath)) && eligible(child.relativePath) &&
     reliableIdentity(child.identity) && !categories.some((row) => row.relativePath === child.relativePath) && !conflict(child));
   const projectCandidates = new Map<string, DirectoryObservation>();
   for (const project of projects) {
     const child = candidate(project);
-    if (child?.relativePath.split("/").length === 2) projectCandidates.set(project.id, child);
+    if (child && (roleMode ? entryByPath.get(child.relativePath)?.kind==="project" : child.relativePath.split("/").length === 2)) projectCandidates.set(project.id, child);
   }
   let placements = new Map<string, Placement>();
   let removed: boolean;
@@ -159,12 +161,12 @@ function groupedMappings(scan: DiscoveryScan, projects: Project[], categories: C
     }
     placements = new Map();
     for (const project of projects) {
-      if (!project.categoryId || !verified.has(project.categoryId)) continue;
+      if (project.categoryId ? !verified.has(project.categoryId) : !roleMode) continue;
       const child = projectCandidates.get(project.id);
       if (!child) continue;
-      const parent = child.relativePath.split("/")[0];
+      const parent = statusPath(child.relativePath);
       const category = categories.find((row) => verified.get(row.id) === parent);
-      if (!category && !newTargets.some((target) => target.relativePath === parent)) continue;
+      if (parent!==null && !category && !newTargets.some((target) => target.relativePath === parent)) continue;
       if (child.relativePath !== project.relativePath || category?.id !== project.categoryId) {
         placements.set(project.id, { relativePath: child.relativePath, categoryId: category?.id ?? null });
       }
@@ -188,7 +190,7 @@ function groupedMappings(scan: DiscoveryScan, projects: Project[], categories: C
     }
   } while (removed);
   const changedCategories = new Map([...verified].filter(([id, path]) => categories.find((row) => row.id === id)!.relativePath !== path));
-  const needed = newTargets.filter((child) => [...placements.values()].some((target) => target.categoryId === null && target.relativePath.split("/")[0] === child.relativePath));
+  const needed = newTargets.filter((child) => [...placements.values()].some((target) => target.categoryId === null && statusPath(target.relativePath) === child.relativePath));
   return { projects: placements, categories: changedCategories, needed };
 }
 
@@ -224,22 +226,23 @@ export function reconcileSource(db: Database, source: Source, observedScan?: Dis
   const readProjects = () => db.select().from(schema.projects).where(eq(schema.projects.sourceId, source.id)).orderBy(asc(schema.projects.id)).all();
   const readCategories = () => db.select().from(schema.categories).where(eq(schema.categories.sourceId, source.id)).orderBy(asc(schema.categories.id)).all();
   const readProperty = () => db.select().from(schema.categoryProperties).where(eq(schema.categoryProperties.sourceId, source.id)).get();
-  if (source.folderRoles) return {changed:false,scan};
   const records = readProjects(), categories = readCategories(), property = readProperty();
-  if (grouped && !property || categories.some((row) => !isChildName(row.relativePath)) || records.some((row) =>
-    !row.relativePath.split("/").every(isChildName) || row.relativePath.split("/").length > 2 ||
+  if (grouped && !property || categories.some((row) => source.folderRoles ? !validRolePath(row.relativePath) : !isChildName(row.relativePath)) || records.some((row) =>
+    !row.relativePath.split("/").every(isChildName) || !source.folderRoles && row.relativePath.split("/").length > 2 ||
     row.categoryId !== null && !categories.some((category) => category.id === row.categoryId) ||
-    !row.modeInactive && (grouped ? row.relativePath.split("/").length !== 2 || !categories.some((category) => category.id === row.categoryId &&
+    !source.folderRoles && !row.modeInactive && (grouped ? row.relativePath.split("/").length !== 2 || !categories.some((category) => category.id === row.categoryId &&
       (row.associationState !== "active" || !category.modeInactive && category.associationState === "active" && row.relativePath.split("/")[0] === category.relativePath)) :
       row.categoryId !== null || !isChildName(row.relativePath)))) throw new Error("Invalid configured associations");
-  const mapping = grouped ? groupedMappings(scan, continuityRecords(source, scan, records, scope, reader), continuityRecords(source, scan, categories, scope, reader), exclusions, source.archiveRelativePath, JSON.parse(source.appliedRootIdentity) as NativeIdentity) : null;
+  const mapping = grouped ? groupedMappings(scan, continuityRecords(source, scan, records, scope, reader), continuityRecords(source, scan, categories, scope, reader), exclusions, source.archiveRelativePath, JSON.parse(source.appliedRootIdentity) as NativeIdentity,!!source.folderRoles) : null;
   const mappings = mapping?.projects ?? new Map([...directMappings(scan, continuityRecords(source, scan, records, scope, reader), exclusions, source.archiveRelativePath)]
     .map(([id, relativePath]) => [id, { relativePath, categoryId: null }]));
   const categoryMappings = mapping?.categories ?? new Map<string, string>();
   const insertedCategories: Category[] = (mapping?.needed ?? []).map((child) => ({ modeInactive: false, id: randomUUID(), sourceId: source.id,
     relativePath: child.relativePath, nativeIdentity: JSON.stringify(child.identity), durableEvidence: JSON.stringify((evidence.get(child.relativePath) as Extract<import("./folder-evidence.js").FolderObservation,{ok:true}>).evidence), associationState: "active" }));
   for (const target of mappings.values()) if (target.categoryId === null && grouped) {
-    target.categoryId = insertedCategories.find((row) => row.relativePath === target.relativePath.split("/")[0])!.id;
+    const entry=scan.entries.find(entry=>entry.relativePath===target.relativePath);
+    const parent=source.folderRoles && entry?.kind==="project" ? entry.categoryPath : target.relativePath.split("/")[0];
+    if(parent!==null)target.categoryId=insertedCategories.find(row=>row.relativePath===parent)!.id;
   }
   if (mappings.size === 0 && categoryMappings.size === 0) return { changed: false, scan };
   if (!Number.isSafeInteger(source.discoveryRevision + 1)) throw new Error("Invalid discovery revision");

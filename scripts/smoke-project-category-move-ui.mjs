@@ -171,7 +171,7 @@ export function expectedRuntimeCategoryRow(before, binding, operationId, outcome
   const root={ok:true,evidence:JSON.parse(source.durable_evidence),mount:JSON.parse(source.applied_root_identity)};
   const parent=category=>({ok:true,evidence:JSON.parse(category.durable_evidence),mount:JSON.parse(category.native_identity)});
   const authorization=category=>JSON.stringify({version:1,generation:source.evidence_generation,root,parent:parent(category)});
-  return { original_authorization:authorization(original),destination_authorization:authorization(destination),
+  return { folder_roles:null,target_folder_roles:null,original_authorization:authorization(original),destination_authorization:authorization(destination),
     project_evidence:JSON.stringify({ok:true,evidence:JSON.parse(project.durable_evidence),mount:JSON.parse(project.native_identity)}),
     operation_id: operationId, source_id: binding.sourceId, initiating_workspace_id: binding.workspaceId,
     project_id: binding.projectId, name: binding.name, expected_revision: binding.expectedRevision,

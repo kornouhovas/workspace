@@ -437,7 +437,7 @@ function TextPropertiesContent({ sourceAvailable = true, detail, onPreview, view
             aria-label={`${t(hideReveal ? "archiveRestoreApply" : "archiveApply")}: ${project.name}`}
             disabled={disabled || archiveDisabled || (!hideReveal && "resolution" in project && project.resolution !== "active")}
             onClick={event => { const trigger = contextReturnTarget(event.currentTarget); const run = () => onArchive(project, hideReveal ? "restore" : "archive", trigger); if (draftGuard) draftGuard.run(run); else run(); }}>{t(hideReveal ? "archiveRestoreApply" : "archiveApply")}</button>}
-          {!hideReveal && !retained && onMoveCategory && project.categoryId && "associationState" in project && project.associationState === "active" &&
+          {!hideReveal && !retained && onMoveCategory && "associationState" in project && project.associationState === "active" &&
             "resolution" in project && project.resolution === "active" && <button type="button" className="workspace-button workspace-button--secondary property-rename"
               aria-label={`${t("moveCategory")}: ${project.name}`} disabled={disabled || categoryMoveDisabled}
               data-close-context onClick={(event) => onMoveCategory(project, contextReturnTarget(event.currentTarget))}>{t("moveCategory")}</button>}{!hideReveal && <ProjectRevealButton client={client} workspaceId={workspaceId} projectId={project.projectId} name={project.name} language={language} disabled={disabled} minimumRevision={minimumDiscoveryRevision} sourceLifetime={sourceLifetime}

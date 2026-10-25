@@ -1,4 +1,5 @@
-import {sameLegacyNativeIdentity,parseFilesystemAuthorization, parseFolderObservation, type FilesystemAuthorization, type FilesystemAuthorizer, type VerifiedFolder} from "./filesystem-authorization.js";
+import {relocatedFolderRoles,rolePlacement,savedFolderRoles} from "./folder-roles.js";
+import {sameLegacyNativeIdentity,sameAuthorizationRoute, parseFilesystemAuthorization, parseFolderObservation, type FilesystemAuthorization, type FilesystemAuthorizer, type VerifiedFolder} from "./filesystem-authorization.js";
 import {storedEvidence} from "./source-identity.js";
 import {durableOwnershipKey, sameDurableFolder} from "./folder-evidence.js";
 import { randomUUID } from "node:crypto";
@@ -82,13 +83,14 @@ export function createProjectRenameService(db: Database, integration: {
 
   function policy(row: Operation, path: string) {
     const exclusions: unknown = JSON.parse(row.excludedRelativePaths);
-    if (!validExclusions(exclusions, "grouped") || !validArchive(row.archiveRelativePath)) fail("stale_configuration");
+    if (!validExclusions(exclusions, "grouped", !!db.select().from(schema.sources).where(eq(schema.sources.id,row.sourceId)).get()?.folderRoles) || !validArchive(row.archiveRelativePath)) fail("stale_configuration");
     const parts = path.split("/");
     if (parts.some((name) => name.startsWith(".") || ["$RECYCLE.BIN", "SYSTEM VOLUME INFORMATION"].includes(filesystemAlias(name))) ||
       (exclusions as string[]).some((excluded) => filesystemAlias(excluded) === filesystemAlias(path) ||
         row.parentRelativePath && filesystemAlias(excluded) === filesystemAlias(row.parentRelativePath))) fail("excluded");
     const archive = row.archiveRelativePath?.split("/");
-    if (archive && filesystemAlias(parts[0]) === filesystemAlias(archive[0]) &&
+    if(row.folderRoles && archive){const target=filesystemAlias(path),reserved=filesystemAlias(row.archiveRelativePath!);if(target===reserved||target.startsWith(`${reserved}/`)||reserved.startsWith(`${target}/`))fail("archive");}
+    if (!row.folderRoles && archive && filesystemAlias(parts[0]) === filesystemAlias(archive[0]) &&
       (row.mode === "direct" || archive.length === 1 || filesystemAlias(parts[1]) === filesystemAlias(archive[1]))) fail("archive");
   }
   function reservations(row: Operation, paths = [row.originalRelativePath, row.requestedRelativePath, row.stagingRelativePath].filter((p): p is string => p !== null), execution = executionFor(row)) {
@@ -99,6 +101,8 @@ export function createProjectRenameService(db: Database, integration: {
       ...otherOperationReservations(row),
     ];
     for (const record of records) {
+      if(row.folderRoles && "modeInactive" in record && record.modeInactive && ["active","excluded"].includes(record.associationState) && (record.relativePath===row.originalRelativePath || !("categoryId" in record)) &&
+        record.durableEvidence && execution.target && sameDurableFolder(JSON.parse(record.durableEvidence),execution.target.evidence))continue;
       if (paths.some((path) => filesystemAlias(path) === filesystemAlias(record.relativePath))) fail("reserved_destination");
       if (record.nativeIdentity) {
         const other: NativeIdentity = JSON.parse(record.nativeIdentity);
@@ -120,7 +124,14 @@ export function createProjectRenameService(db: Database, integration: {
     if (!project || project.sourceId !== row.sourceId || project.relativePath !== projectPath || project.nativeIdentity !== row.nativeIdentity ||
       project.categoryId !== row.categoryId || project.associationState !== "active" || project.modeInactive) fail("project_unavailable");
     let parentEvidence=source.durableEvidence;
-    if (row.mode === "grouped") {
+    if(row.folderRoles) {
+      const policy=projectPath===row.requestedRelativePath&&execution.revision>row.expectedRevision ? row.targetFolderRoles : row.folderRoles;
+      if(source.folderRoles!==policy || !execution.authorization || execution.authorization.version!==2)fail("stale_configuration");
+      const placement=rolePlacement(projectPath,savedFolderRoles({folderRoles:policy})!,"grouped");
+      const category=placement.categoryPath===null?null:db.select().from(schema.categories).where(eq(schema.categories.sourceId,row.sourceId)).all().find(category=>category.relativePath===placement.categoryPath&&!category.modeInactive&&category.associationState==="active");
+      if(!placement.recognized || (category?.id??null)!==row.categoryId)fail("category_unavailable");
+      parentEvidence=JSON.stringify(execution.authorization.parent.evidence);
+    } else if (row.mode === "grouped") {
       const category = db.select().from(schema.categories).where(eq(schema.categories.id, row.categoryId!)).get();
       if (!category || category.sourceId !== row.sourceId || category.relativePath !== row.parentRelativePath ||
         category.nativeIdentity !== row.parentIdentity || category.associationState !== "active" || category.modeInactive) fail("category_unavailable");
@@ -138,7 +149,7 @@ export function createProjectRenameService(db: Database, integration: {
     }
     const parent = verifyCreationParents(filesystem, contextBinding);
     filesystem.assertAccessible?.(row.canonicalRoot); filesystem.assertAccessible?.(parent);
-    if (row.parentRelativePath && !filesystem.names(row.canonicalRoot).includes(row.parentRelativePath)) fail("filesystem_changed");
+    if (row.parentRelativePath && !filesystem.names(join(row.canonicalRoot,...row.parentRelativePath.split("/").slice(0,-1))).includes(row.parentRelativePath.split("/").at(-1)!)) fail("filesystem_changed");
     return parent;
   }
   function placement(row: Operation, path: string, execution = executionFor(row), projectPath = row.originalRelativePath) {
@@ -218,7 +229,7 @@ export function createProjectRenameService(db: Database, integration: {
       uniquePlacement(row, row.requestedRelativePath, execution);
       if (!unchangedOperation(row)) fail("filesystem_changed");
       tx.update(schema.projects).set({ relativePath: row.requestedRelativePath, ...(execution.target ? {durableEvidence:JSON.stringify(execution.target.evidence)} : {}) }).where(eq(schema.projects.id, row.projectId)).run();
-      tx.update(schema.sources).set({ discoveryRevision: revision }).where(eq(schema.sources.id, row.sourceId)).run();
+      tx.update(schema.sources).set({ discoveryRevision: revision, ...(row.folderRoles ? {folderRoles:row.targetFolderRoles} : {}) }).where(eq(schema.sources.id, row.sourceId)).run();
       tx.update(schema.projectRenameOperations).set({ stage: "completed", resultKind: "completed", completedRevision: revision, problem: null })
         .where(eq(schema.projectRenameOperations.operationId, row.operationId)).run();
       uniquePlacement(row, row.requestedRelativePath, { ...execution, revision }, row.requestedRelativePath);
@@ -245,11 +256,10 @@ export function createProjectRenameService(db: Database, integration: {
       const source=sourceFor(workspaceId);
       if(!source)fail("stale_configuration");
       const category=row.categoryId ? db.select().from(schema.categories).where(eq(schema.categories.id,row.categoryId)).get() : null;
-      execution.authorization=authorizer.capture(source,row.parentRelativePath,category ? category.durableEvidence : source.durableEvidence,row.authorization===null ? {root:JSON.parse(row.rootIdentity),parent:JSON.parse(row.parentIdentity)} : undefined);
+      execution.authorization=row.folderRoles ? authorizer.captureRoleParent(source,row.parentRelativePath).authorization : authorizer.capture(source,row.parentRelativePath,category ? category.durableEvidence : source.durableEvidence,row.authorization===null ? {root:JSON.parse(row.rootIdentity),parent:JSON.parse(row.parentIdentity)} : undefined);
       const original=parseFilesystemAuthorization(row.authorization), target=row.projectEvidence ? parseFolderObservation(JSON.parse(row.projectEvidence)) : null;
       if(row.authorization!==null && (!original || !target))fail("ownership_uncertain");
-      if(original && (!sameDurableFolder(original.root.evidence,execution.authorization.root.evidence) ||
-        !sameDurableFolder(original.parent.evidence,execution.authorization.parent.evidence)))fail("filesystem_changed");
+      if(original && !sameAuthorizationRoute(original,execution.authorization))fail("filesystem_changed");
       execution.legacyAttested=row.authorization===null;
       if(execution.legacyAttested && (!sameIdentity(JSON.parse(row.rootIdentity),execution.authorization.root.mount) ||
         !sameIdentity(JSON.parse(row.parentIdentity),execution.authorization.parent.mount)))fail("ownership_uncertain");
@@ -464,23 +474,29 @@ export function createProjectRenameService(db: Database, integration: {
       if (!project || project.sourceId !== source.id || project.associationState !== "active" || project.modeInactive) return rejected("project_unavailable");
       if (source.discoveryMode === "direct" && project.categoryId !== null) return rejected("project_unavailable");
       const category = project.categoryId ? db.select().from(schema.categories).where(eq(schema.categories.id, project.categoryId)).get() : null;
-      if (source.discoveryMode === "grouped" && (!category || !isChildName(category.relativePath) || !validProjectBasename(category.relativePath, filesystem.platform))) return rejected("category_unavailable");
-      const parentRelativePath = source.discoveryMode === "grouped" ? category!.relativePath : "";
+      if (!source.folderRoles && source.discoveryMode === "grouped" && (!category || !isChildName(category.relativePath) || !validProjectBasename(category.relativePath, filesystem.platform))) return rejected("category_unavailable");
+      const parentRelativePath = source.folderRoles ? project.relativePath.split("/").slice(0,-1).join("/") : source.discoveryMode === "grouped" ? category!.relativePath : "";
       const originalName = project.relativePath.split("/").at(-1)!;
       if (!validProjectBasename(originalName, filesystem.platform) || project.relativePath !== (parentRelativePath ? `${parentRelativePath}/${originalName}` : originalName)) return rejected("project_unavailable");
       phase="filesystem";
-      const authorization=authorizer ? authorizer.capture(source,parentRelativePath,category ? category.durableEvidence : source.durableEvidence) : null;
+      const roleParent=source.folderRoles ? authorizer?.captureRoleParent(source,parentRelativePath) : null;
+      if(source.folderRoles&&(!roleParent||roleParent.categoryId!==project.categoryId))return rejected("category_unavailable");
+      const authorization=roleParent?.authorization ?? (authorizer ? authorizer.capture(source,parentRelativePath,category ? category.durableEvidence : source.durableEvidence) : null);
+      const requestedRelativePath=parentRelativePath?`${parentRelativePath}/${request.name}`:request.name;
+      const targetFolderRoles=source.folderRoles ? relocatedFolderRoles(source.folderRoles,project.relativePath,requestedRelativePath) : null;
+      if(source.folderRoles&&targetFolderRoles===null)return rejected("reserved_destination");
       const saved=storedEvidence(project.durableEvidence);
       if(authorizer && !saved) return rejected("ownership_uncertain");
       const current=authorizer ? filesystem.inspect(join(source.canonicalRoot,project.relativePath)) : null;
       const target=authorizer && authorization ? authorizer.observe(join(source.canonicalRoot,project.relativePath),authorization.root,current!.identity,saved!) : null;
       const row: Operation = {
+        folderRoles:source.folderRoles,targetFolderRoles,
         authorization:authorization ? JSON.stringify(authorization) : null, projectEvidence:target ? JSON.stringify(target) : null,
         operationId: request.operationId, initiatingWorkspaceId: request.workspaceId, sourceId: source.id, projectId: project.id,
         originalName, name: request.name, mode: source.discoveryMode, categoryId: project.categoryId, expectedRevision: request.expectedRevision,
         canonicalRoot: source.canonicalRoot, parentRelativePath, originalRelativePath: project.relativePath,
         requestedRelativePath: parentRelativePath ? `${parentRelativePath}/${request.name}` : request.name, stagingRelativePath: null,
-        rootIdentity: source.appliedRootIdentity, parentIdentity: category?.nativeIdentity ?? source.appliedRootIdentity,
+        rootIdentity: source.appliedRootIdentity, parentIdentity: roleParent?.parentIdentity ?? category?.nativeIdentity ?? source.appliedRootIdentity,
         nativeIdentity: project.nativeIdentity, excludedRelativePaths: source.excludedRelativePaths, archiveRelativePath: source.archiveRelativePath,
         stage: "intent", stagedIdentity: null, destinationIdentity: null, lastVerifiedPlacement: "original",
         lastVerifiedIdentity: project.nativeIdentity, problem: null, resultKind: null, completedRevision: null,

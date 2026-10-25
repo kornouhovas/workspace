@@ -2,7 +2,7 @@ import {readFileSync} from "node:fs";
 /** Exact additive migration expectations; legacy authority is deliberately absent. */
 export function withIdentityMigrationDefaults(table, rows) {
   return rows.map(row => table === 'category_properties' ? {default_label:'category',...row} : table === 'sources' ? {durable_evidence:null,evidence_generation:0,folder_roles:null,...row}
-    : table==='project_creation_operations' ? {authorization:null,destination_evidence:null,...row} : table==='category_folder_operations' ? {authorization:null,destination_evidence:null,...row} : table==='project_rename_operations' ? {authorization:null,project_evidence:null,...row} : table==='project_category_move_operations' ? {original_authorization:null,destination_authorization:null,project_evidence:null,...row} : ['projects','categories'].includes(table) ? {durable_evidence:null,...row} : table==='project_archives' ? {authorization:null,...row} : row);
+    : table==='project_creation_operations' ? {folder_roles:null,target_folder_roles:null,authorization:null,destination_evidence:null,...row} : table==='category_folder_operations' ? {authorization:null,destination_evidence:null,...row} : table==='project_rename_operations' ? {folder_roles:null,target_folder_roles:null,authorization:null,project_evidence:null,...row} : table==='project_category_move_operations' ? {folder_roles:null,target_folder_roles:null,original_authorization:null,destination_authorization:null,project_evidence:null,...row} : ['projects','categories'].includes(table) ? {durable_evidence:null,...row} : table==='project_archives' ? {authorization:null,...row} : row);
 }
 export function projectMetadataRecords(result) {
   if(!result.ok) throw new Error(`Project metadata query failed: ${JSON.stringify(result.error)}`);
@@ -90,7 +90,28 @@ export function assertHistoricalPublicMetadata(assert,application,fixture){
 }
 
 /** Existing rewind fixtures must remove every additive 0025 object before replay. */
+export function rewindRoleJournals(db) {
+  if(db.prepare('PRAGMA table_info(project_creation_operations)').all().some(column=>column.name==='folder_roles')) {
+    const schema=JSON.parse(readFileSync(new URL('../fixtures/pre-role-journal-schema.json',import.meta.url),'utf8'));
+    db.pragma('legacy_alter_table=ON');
+    try {db.transaction(()=>{
+      db.pragma('defer_foreign_keys=ON');
+      for(const [table,item] of Object.entries(schema)) {
+        const temporary=table+'_rewind';
+        db.exec(item.table.replace(new RegExp('^(CREATE TABLE )'+table), '$1'+temporary));
+        const columns=item.columns.map(column=>`"${column}"`).join(',');
+        db.exec(`INSERT INTO ${temporary} (${columns}) SELECT ${columns} FROM ${table}`);
+        db.exec(`DROP TABLE ${table}`);db.exec(`ALTER TABLE ${temporary} RENAME TO ${table}`);
+        for(const object of item.objects)db.exec(object.sql);
+      }
+      if(db.pragma('foreign_key_check').length)throw new Error('Invalid role fixture rewind');
+      db.pragma('defer_foreign_keys=OFF');
+    })();}finally{db.pragma('legacy_alter_table=OFF');db.pragma('defer_foreign_keys=OFF');}
+  }
+}
+
 export function rewindCreationAuthorization(db) {
+  rewindRoleJournals(db);
   if (db.prepare("PRAGMA table_info(sources)").all().some(column=>column.name==='folder_roles')) {
     for (const trigger of ['grouped_project_insert','grouped_project_update','category_insert','category_update','discovery_mode_update','role_project_insert','role_project_update']) db.exec(`DROP TRIGGER ${trigger}`);
     db.exec('ALTER TABLE sources DROP COLUMN folder_roles');

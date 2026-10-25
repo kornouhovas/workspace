@@ -1,4 +1,4 @@
-import {sourceFolderRolePolicy} from "./folder-roles.js";
+import {sourceFolderRolePolicy,scanRoleSource,savedFolderRoles,rolePlacement,relocatedFolderRoles} from "./folder-roles.js";
 import {archivedAssociationMatchesRecord,parseArchivedFolderAssociation} from "./archive-association.js";
 import {isDeepStrictEqual} from "node:util";
 import {legacyArchiveRenewalMatches,parseArchiveAttestation,parseArchiveAuthorization,parseArchiveParents,parseArchiveBindingAuthorization,type ArchiveAuthorization,type ArchiveParent} from "./archive-authorization.js";
@@ -27,7 +27,7 @@ type Category = typeof schema.categories.$inferSelect;
 type Operation = typeof schema.projectArchiveOperations.$inferSelect;
 type Parent = ArchiveParent;
 type Binding = { authorization?:ArchiveAuthorization; source: Source; project: Project; archive: Archive | null; category: typeof schema.categories.$inferSelect | null;
-  sourceParents: Parent[]; destinationParents: Parent[]; createParent: boolean; mode: "direct" | "grouped"; categoryName: string | null };
+  sourceParents: Parent[]; destinationParents: Parent[]; createParent: boolean; mode: "direct" | "grouped"; categoryName: string | null; targetFolderRoles?:string };
 class ArchiveFailure extends Error {}
 const fail = (reason: string): never => { throw new ArchiveFailure(reason); };
 const problem = (e: unknown) => e instanceof ArchiveFailure ? e.message : filesystemCode(e) === "ENOENT" ? "source_unavailable"
@@ -96,7 +96,7 @@ export function createProjectArchiveMutations(db: Database, integration: {
       put(parent.path,parent.observation);
     }
     const scan=(base:string,relative:string,expected:VerifiedFolder,archive:string|null,exclusions:string[])=>{
-      const observed=(binding.mode==="grouped"?scanGroupedSource:scanDirectSource)(base,archive,exclusions);
+      const observed=binding.source.folderRoles ? scanRoleSource(base,archive,exclusions,savedFolderRoles(binding.source)!,binding.mode) : (binding.mode==="grouped"?scanGroupedSource:scanDirectSource)(base,archive,exclusions);
       if(!observed.snapshot || !sameIdentity(observed.snapshot.root.identity,expected.mount))fail("filesystem_changed");
       for(const entry of observed.entries.filter(e=>e.reason===null)) {
         const child=observed.snapshot!.children.find(c=>c.relativePath===entry.relativePath);
@@ -126,7 +126,16 @@ export function createProjectArchiveMutations(db: Database, integration: {
     for(const record of records) {
       const saved=storedEvidence(record.durableEvidence),native:NativeIdentity=JSON.parse(record.nativeIdentity);
       if(record.durableEvidence!==null&&!saved)fail("ownership_uncertain");
+      if(binding.source.folderRoles && record.modeInactive && ["active","excluded"].includes(record.associationState) && (record.relativePath===binding.project.relativePath || !("categoryId" in record)) &&
+        saved && sameDurableFolder(saved,auth.project.evidence))continue;
       const allowed=(parent:Parent)=>{
+        if(binding.source.folderRoles && record.modeInactive && record.relativePath===parent.path && parent.identity && parent.observation &&
+          explicitlyRecreatedParent(binding.source.id,binding.project.categoryId,parent.path,parent.identity,parent.observation,auth.root))return true;
+        if(binding.source.folderRoles && binding.createParent && record.modeInactive && ["active","excluded"].includes(record.associationState) && record.relativePath===parent.path &&
+          binding.destinationParents.some(planned=>planned.path===parent.path&&planned.identity===null) &&
+          rolePlacement(binding.project.relativePath,savedFolderRoles(binding.source)!,binding.mode).recognized)return true;
+        if(binding.source.folderRoles && record.relativePath===parent.path && parent.observation && saved && sameDurableFolder(saved,parent.observation.evidence) &&
+          (record.modeInactive && ["active","excluded"].includes(record.associationState) || !("categoryId" in record) && !record.modeInactive && record.associationState==="active"))return true;
         if("categoryId" in record) {
           // A direct-mode project can be retained history for this same grouped
           // category. Its full physical proof must match the explicitly enrolled
@@ -143,7 +152,7 @@ export function createProjectArchiveMutations(db: Database, integration: {
         if([...activeRecovery.values()].some(frame=>frame.legacy&&frame.binding===binding) && record.id===binding.category?.id && record.durableEvidence===null &&
           parent.observation && parent.identity && sameIdentity(native,parent.identity))return true;
         const recreated=!!parent.observation && explicitlyRecreatedParent(binding.source.id,binding.project.categoryId,parent.path,parent.identity!,parent.observation,auth.root);
-        if(recreated && (record.id===binding.category?.id || same && !record.modeInactive && record.associationState==="active"))return true;
+        if(recreated && (binding.source.folderRoles && record.modeInactive || record.id===binding.category?.id || same && !record.modeInactive && record.associationState==="active"))return true;
         return record.id===binding.category?.id && !!binding.archive && binding.createParent && parent.path===parentPath(requested) &&
           binding.destinationParents.some(planned=>planned.path===parent.path&&planned.identity===null);
       };
@@ -220,13 +229,14 @@ export function createProjectArchiveMutations(db: Database, integration: {
     if (source.archiveRelativePath && (alias === filesystemAlias(source.archiveRelativePath) || alias.startsWith(`${filesystemAlias(source.archiveRelativePath)}/`))) fail("archive");
   }
   function explicitlyRecreatedParent(sourceId: string, categoryId: string | null, path: string, identity: NativeIdentity,proof?:VerifiedFolder,frame?:FilesystemAuthorization) {
-    if (!categoryId) return false;
     return db.select().from(schema.projectArchiveOperations).where(eq(schema.projectArchiveOperations.sourceId, sourceId)).all().some(row => {
-      if (row.action !== "restore" || row.stage !== "completed" || parentPath(row.requestedRelativePath) !== path) return false;
+      if (row.action !== "restore" || row.stage !== "completed") return false;
       const binding: Binding = JSON.parse(row.binding), recorded: Parent[] = parentFrames(row);
       const reviewed=binding.authorization?parseArchiveBindingAuthorization(binding,row):null;
-      const parent = recorded.at(-1);
-      return binding.project.categoryId === categoryId && binding.createParent && binding.destinationParents.at(-1)?.identity === null &&
+      const parent = binding.source.folderRoles ? recorded.find(parent=>parent.path===path) : recorded.at(-1);
+      if(binding.source.folderRoles) return binding.createParent && binding.destinationParents.some(parent=>parent.path===path&&parent.identity===null) &&
+        !!proof && !!parent?.observation && !!reviewed && !!frame && sameDurableFolder(parent.observation.evidence,proof.evidence) && sameDurableFolder(reviewed.root.root.evidence,frame.root.evidence);
+      return categoryId!==null && parentPath(row.requestedRelativePath)===path && binding.project.categoryId === categoryId && binding.createParent && binding.destinationParents.at(-1)?.identity === null &&
         parent?.path === path && !!parent.identity && (authorizer ? !!proof && !!parent.observation && !!reviewed &&
           sameDurableFolder(parent.observation.evidence,proof.evidence) && sameDurableFolder(reviewed.root.root.evidence,frame!.root.evidence) : sameIdentity(parent.identity, identity));
     });
@@ -255,6 +265,8 @@ export function createProjectArchiveMutations(db: Database, integration: {
     const destination = input.action === "archive" ? `${source.archiveRelativePath}/${project.relativePath}`
       : [...restoreOriginal.split("/").slice(0, -1), input.name ?? restoreOriginal.split("/").at(-1)!].join("/");
     if (!validPath(original) || !validPath(destination)) return null;
+    const targetFolderRoles=source.folderRoles && input.action==="restore" ? relocatedFolderRoles(source.folderRoles,project.relativePath,destination) : null;
+    if(source.folderRoles && input.action==="restore" && targetFolderRoles===null)fail("reserved_destination");
     const sourceParents = parents(source, original,frame), destinationParents = parents(source, destination,frame);
     let auth:ArchiveAuthorization|undefined;
     if(authorizer) {
@@ -292,18 +304,33 @@ export function createProjectArchiveMutations(db: Database, integration: {
     verifyProject(source, original, sourceParents, project.nativeIdentity,auth);
     const blockers: string[] = [];
     if (readProjectReservations(db, source.id).length) blockers.push("busy");
-    const mode = archive?.mode ?? source.discoveryMode;
+    const mode = source.folderRoles ? source.discoveryMode : archive?.mode ?? source.discoveryMode;
     if (input.action === "restore" && source.discoveryMode !== mode) blockers.push("incompatible_mode");
     if (input.action === "archive") {
       policy(source, original);
-      if (category && (category.modeInactive || category.associationState !== "active" || !sourceParents[0]?.identity || !(auth ? category.durableEvidence && sameDurableFolder(sourceParents[0].observation!.evidence,JSON.parse(category.durableEvidence)) : sameIdentity(sourceParents[0].identity, JSON.parse(category.nativeIdentity))))) blockers.push("category_unavailable");
+      if (category && (category.modeInactive || category.associationState !== "active" || !sourceParents.find(p=>p.path===category.relativePath)?.identity || !(auth ? category.durableEvidence && sameDurableFolder(sourceParents.find(p=>p.path===category.relativePath)!.observation!.evidence,JSON.parse(category.durableEvidence)) : sameIdentity(sourceParents.find(p=>p.path===category.relativePath)!.identity!, JSON.parse(category.nativeIdentity))))) blockers.push("category_unavailable");
     } else {
       policy(source, destination);
+      // New role archives retain the whole original route in their immutable
+      // archive intent. A familiar immediate parent cannot hide a changed Group.
+      if(source.folderRoles && archive?.authorization) {
+        const archivedAuthority=parseArchiveAuthorization(archive.authorization);
+        if(archivedAuthority?.root.version===2) {
+          const receipt=db.select().from(schema.projectArchiveOperations).where(eq(schema.projectArchiveOperations.projectId,project.id)).all().find(row=>row.sourceId===source.id&&row.action==="archive"&&row.stage==="completed"&&row.originalRelativePath===archive.originalRelativePath&&row.requestedRelativePath===archive.relativePath&&JSON.stringify((JSON.parse(row.binding) as Binding).authorization)===archive.authorization);
+          if(!receipt)fail("ownership_uncertain");
+          const originalBinding=JSON.parse(receipt!.binding) as Binding;
+          if(!parseArchiveBindingAuthorization(originalBinding,receipt!))fail("ownership_uncertain");
+          for(const parent of destinationParents.filter(parent=>parent.identity!==null)) {
+            const saved=originalBinding.sourceParents.find(saved=>saved.path===parent.path)?.observation;
+            if(!saved || !parent.observation || !sameDurableFolder(saved.evidence,parent.observation.evidence,auth?.version!==2) && !explicitlyRecreatedParent(source.id,project.categoryId,parent.path,parent.identity!,parent.observation,frame))fail("parent_replaced");
+          }
+        }
+      }
       if(!authorizer)verifyParents(source, JSON.parse(archive!.parents));
       const existingParent = destinationParents.at(-1)?.identity;
       const parentProof=destinationParents.at(-1)?.observation;
-      const originalMatches=auth?.version===2 ? !!parentProof && !!category?.durableEvidence && category.relativePath===parentPath(destination) &&
-        sameDurableFolder(JSON.parse(category.durableEvidence),parentProof.evidence) && (auth.originalParent===null||sameDurableFolder(auth.originalParent.evidence,parentProof.evidence,false))
+      const originalMatches=source.folderRoles && parentPath(destination)==="" ? !!auth && (auth.originalParent===null || sameDurableFolder(auth.originalParent.evidence,frame!.root.evidence,false)) : auth?.version===2 ? !!parentProof && (source.folderRoles || !!category?.durableEvidence && category.relativePath===parentPath(destination) &&
+        sameDurableFolder(JSON.parse(category.durableEvidence),parentProof.evidence)) && (auth.originalParent===null||sameDurableFolder(auth.originalParent.evidence,parentProof.evidence,false))
         : auth?!!parentProof&&sameDurableFolder(parentProof.evidence,auth.originalParent.evidence):!!existingParent&&sameIdentity(existingParent,JSON.parse(archive!.parentIdentity));
       if (existingParent && !originalMatches &&
         !explicitlyRecreatedParent(source.id, project.categoryId, parentPath(destination), existingParent,destinationParents.at(-1)?.observation??undefined,frame)) blockers.push("parent_replaced");
@@ -340,7 +367,7 @@ export function createProjectArchiveMutations(db: Database, integration: {
     })())) blockers.push("native_conflict");
     if (allArchives.some(p => p.projectId !== project.id && filesystemAlias(p.relativePath) === filesystemAlias(destination))) blockers.push("reserved_destination");
     const binding: Binding = { ...(auth?{authorization:auth}:{}),source, project, archive, category, sourceParents, destinationParents, createParent: input.createParent,
-      mode, categoryName: archive?.categoryName ?? category?.relativePath ?? null };
+      mode, categoryName: archive?.categoryName ?? category?.relativePath ?? null,...(targetFolderRoles?{targetFolderRoles}:{}) };
     authority(binding);verifyPeerRoots(binding,original,destination);verifyNamespace(binding,original,destination);
     const preview: ProjectArchivePreview = { workspaceId: input.workspaceId, sourceId: source.id, projectId: project.id, action: input.action,
       originalRelativePath: original, requestedRelativePath: destination, revision: source.discoveryRevision, missingParents, blockers, previewToken: null };
@@ -432,23 +459,27 @@ export function createProjectArchiveMutations(db: Database, integration: {
         tx.update(schema.projects).set({ modeInactive: true }).where(eq(schema.projects.id, row.projectId)).run();
         tx.insert(schema.projectArchives).values(expectedArchive!).run();
       } else {
-        let categoryId = b.project.categoryId;
-        if (b.mode === "grouped") {
+        const currentStatus=b.source.folderRoles ? rolePlacement(b.project.relativePath,savedFolderRoles(b.source)!,b.mode).categoryPath : parentPath(row.requestedRelativePath);
+        let categoryId = b.source.folderRoles ? currentStatus===null ? null : tx.select().from(schema.categories).where(eq(schema.categories.sourceId,row.sourceId)).all().find(c=>c.relativePath===currentStatus&&!c.modeInactive&&c.associationState==="active")?.id ?? (b.category?.relativePath===currentStatus ? b.project.categoryId : null) : b.project.categoryId;
+        if (b.mode === "grouped" && (!b.source.folderRoles || currentStatus!==null)) {
           const parent = parentFrames(row) as Parent[];
-          const identity = JSON.stringify(parent.at(-1)!.identity);
+          const statusPath=currentStatus;
+          const statusParent=parent.find(p=>p.path===statusPath);
+          if(!statusParent?.identity)fail("category_unavailable");
+          const identity = JSON.stringify(statusParent!.identity);
           const current = categoryId ? tx.select().from(schema.categories).where(eq(schema.categories.id, categoryId)).get() : null;
-          const proof=parent.at(-1)?.observation;
+          const proof=statusParent!.observation;
           const matches=(category:typeof schema.categories.$inferSelect)=>authorizer ? !!category.durableEvidence && !!proof && sameDurableFolder(JSON.parse(category.durableEvidence),proof.evidence) : category.nativeIdentity===identity;
           if (!current || !matches(current)) {
-            if (current && current.relativePath===parentPath(row.requestedRelativePath)) {
+            if (current && current.relativePath===statusPath) {
               tx.update(schema.categories).set({ modeInactive: true, associationState: "replaced" }).where(eq(schema.categories.id, current.id)).run();
               expectedCategories.set(current.id,{...current,modeInactive:true,associationState:"replaced"});
             }
             const associated = tx.select().from(schema.categories).where(eq(schema.categories.sourceId, row.sourceId)).all().find(c =>
-              c.associationState === "active" && !c.modeInactive && c.relativePath === parentPath(row.requestedRelativePath) && matches(c));
+              c.associationState === "active" && !c.modeInactive && c.relativePath === statusPath && matches(c));
             categoryId = associated?.id ?? randomUUID();
             if (!associated) {
-              const category:Category={id:categoryId,sourceId:row.sourceId,relativePath:parentPath(row.requestedRelativePath),nativeIdentity:identity,
+              const category:Category={id:categoryId,sourceId:row.sourceId,relativePath:statusPath!,nativeIdentity:identity,
                 associationState:"active",modeInactive:false,durableEvidence:proof?JSON.stringify(proof.evidence):null};
               tx.insert(schema.categories).values(category).run();expectedCategories.set(category.id,category);
             }
@@ -461,12 +492,12 @@ export function createProjectArchiveMutations(db: Database, integration: {
         tx.delete(schema.projectArchives).where(eq(schema.projectArchives.projectId, row.projectId)).run();
         tx.update(schema.projects).set({ relativePath: row.requestedRelativePath, categoryId, associationState: "active", modeInactive: false }).where(eq(schema.projects.id, row.projectId)).run();
       }
-      tx.update(schema.sources).set({ discoveryRevision: revision }).where(eq(schema.sources.id, row.sourceId)).run();
+      tx.update(schema.sources).set({ discoveryRevision: revision,...(b.source.folderRoles && row.action==="restore" ? {folderRoles:b.targetFolderRoles!} : {}) }).where(eq(schema.sources.id, row.sourceId)).run();
       tx.update(schema.projectArchiveOperations).set({ stage: "completed", completedRevision: revision, problem: null }).where(eq(schema.projectArchiveOperations.operationId, row.operationId)).run();
       verifyProject(b.source, row.requestedRelativePath, parentFrames(row), row.nativeIdentity,authority(b));
       free(b.source, row.originalRelativePath, b.sourceParents,authority(b)?.root);
       verifyPeerRoots(b,row.originalRelativePath,row.requestedRelativePath,parentFrames(row));verifyNamespace(b,row.originalRelativePath,row.requestedRelativePath,parentFrames(row),completionCategoryId);
-      const actualSource=sourceFor(workspaceId),expectedSource=sourcePolicy({...b.source,discoveryRevision:revision});
+      const actualSource=sourceFor(workspaceId),expectedSource=sourcePolicy({...b.source,discoveryRevision:revision,...(b.targetFolderRoles?{folderRoles:b.targetFolderRoles}:{})});
       if(!actualSource || !eqJSON(sourcePolicy(actualSource),expectedSource))fail("stale_configuration");
       root(actualSource!,authority(b)?.root);
       const expectedProject:Project=row.action==="archive" ? {...b.project,modeInactive:true} : {...b.project,relativePath:row.requestedRelativePath,categoryId:completionCategoryId,modeInactive:false,associationState:"active"};

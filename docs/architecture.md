@@ -120,9 +120,19 @@ Workspace details own the role tree, exclusions, availability and existing archi
 controls. Views and their presentation stay workspace-owned. Export/restore validates
 role placements and retains values and view/session references. File listing/Reveal
 for role projects verifies every ancestor through the existing trusted target format.
-Existing mutation journals keep their direct/two-level placement authorization and
-reject unsupported new placements; role configuration itself grants no file-mutation
-permit. Platform and final acceptance remain in the issue checkpoint.
+The owner expanded #74 to keep project operations usable in every role placement.
+Creation and move accept an explicit source-relative Group/Status parent, including
+root; the service resolves nearest-status identity. Migration0034 extends the existing
+creation/rename/move journals with immutable original/target role policies. Private
+v2 authorization binds every root-to-parent observation; v1 histories stay unchanged.
+Rename/move rebase saved project/descendant overrides, and root projects persist an
+explicit Project role. Invalid derived policies reject before intent. Recovery and
+backup validation compare the whole route. Archive mirrors the full locator and
+retains original parents in its immutable intent; restore checks that route, derives
+current nearest status and binds an alternative name's role policy before effects.
+The journal rebuild copies old cells verbatim, restores schema objects and checks
+foreign keys before commit under pre-migration backup protection. Role configuration
+itself grants no file-mutation permit. Platform and final acceptance remain in the issue checkpoint.
 
 ## Implemented grouped discovery and categories
 

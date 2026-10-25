@@ -50,7 +50,7 @@ for(const kind of ['creation','rename','category_move'])for(const attack of [nul
   const table=`project_${kind}_operations`,before=sql.prepare(`SELECT * FROM ${table}`).get();
   service=openSettingsService(databasePath);
   const query=input=>service.handleQuery({workspaceId,...input}),command=input=>service.handleCommand({workspaceId,...input});
-  assert.deepEqual(sql.prepare(`SELECT * FROM ${table}`).get(),{...before,...(kind!=='category_move'?{authorization:null}:{}),...(kind==='creation'?{destination_evidence:null}:kind==='rename'?{project_evidence:null}:{original_authorization:null,destination_authorization:null,project_evidence:null})});
+  assert.deepEqual(sql.prepare(`SELECT * FROM ${table}`).get(),{folder_roles:null,target_folder_roles:null,...before,...(kind!=='category_move'?{authorization:null}:{}),...(kind==='creation'?{destination_evidence:null}:kind==='rename'?{project_evidence:null}:{original_authorization:null,destination_authorization:null,project_evidence:null})});
   const binding=query({type:'workspace.previewSourceAssociation',mappings:[]}).value;assert.ok(binding.previewToken);
   assert.equal(command({type:'workspace.applySourceAssociation',previewToken:binding.previewToken}).ok,true);
   const mapping={kind:'category',id:categoryId,relativePath:'Category'};

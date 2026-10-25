@@ -1,5 +1,6 @@
+import {relocatedFolderRoles,roleParentPlacement,savedFolderRoles} from "./folder-roles.js";
 import {sameLegacyNativeIdentity} from './filesystem-authorization.js';
-import {sameAuthorizationRoot,parseFilesystemAuthorization,parseFolderObservation,type FilesystemAuthorization,type FilesystemAuthorizer,type VerifiedFolder} from "./filesystem-authorization.js";
+import {sameAuthorizationRoute,sameAuthorizationRoot,parseFilesystemAuthorization,parseFolderObservation,type FilesystemAuthorization,type FilesystemAuthorizer,type VerifiedFolder} from "./filesystem-authorization.js";
 import {parseRemovalAuthorization} from "./category-removal-authorization.js";
 import {storedEvidence} from "./source-identity.js";
 import {sameDurableFolder,durableOwnershipKey} from "./folder-evidence.js";
@@ -78,10 +79,16 @@ export function createProjectCategoryMoveService(db: Database, integration: {
     .where(eq(schema.workspaces.id, workspaceId)).get()?.sources;
   function policy(row: Operation, path: string) {
     const exclusions: unknown = JSON.parse(row.excludedRelativePaths);
-    if (!validExclusions(exclusions, "grouped") || !validArchive(row.archiveRelativePath)) fail("stale_configuration");
+    if (!validExclusions(exclusions, "grouped", !!db.select().from(schema.sources).where(eq(schema.sources.id,row.sourceId)).get()?.folderRoles) || !validArchive(row.archiveRelativePath)) fail("stale_configuration");
     const parts = path.split("/"), parent = parts[0];
     if (parts.some((name) => name.startsWith(".") || ["$RECYCLE.BIN", "SYSTEM VOLUME INFORMATION"].includes(filesystemAlias(name))) ||
       (exclusions as string[]).some((excluded) => [path, parent].some((p) => filesystemAlias(excluded) === filesystemAlias(p)))) fail("excluded");
+    if(row.folderRoles) {
+      if((exclusions as string[]).some(excluded=>filesystemAlias(path).startsWith(filesystemAlias(excluded)+"/")))fail("excluded");
+      const archive=row.archiveRelativePath;
+      if(archive && (filesystemAlias(path)===filesystemAlias(archive)||filesystemAlias(path).startsWith(filesystemAlias(archive)+"/")||filesystemAlias(archive).startsWith(filesystemAlias(path)+"/")))fail("archive");
+      return;
+    }
     const archive = row.archiveRelativePath?.split("/");
     if (archive && filesystemAlias(parent) === filesystemAlias(archive[0]) &&
       (archive.length === 1 || filesystemAlias(parts[1]) === filesystemAlias(archive[1]))) fail("archive");
@@ -96,6 +103,8 @@ export function createProjectCategoryMoveService(db: Database, integration: {
       ...db.select().from(schema.categories).where(eq(schema.categories.sourceId, row.sourceId)).all()];
     const evidence: NativeIdentity = JSON.parse(row.nativeIdentity);
     for (const record of records) {
+      if(row.folderRoles && "modeInactive" in record && record.modeInactive && ["active","excluded"].includes(record.associationState) && (record.relativePath===row.originalRelativePath || !("categoryId" in record)) &&
+        record.durableEvidence && execution.target && sameDurableFolder(JSON.parse(record.durableEvidence),execution.target.evidence))continue;
       if (paths.some((path) => filesystemAlias(path) === filesystemAlias(record.relativePath))) fail("reserved_destination");
       const other: NativeIdentity = JSON.parse(record.nativeIdentity);
       if (other.ino===evidence.ino && (other.dev===evidence.dev || record.durableEvidence===null && other.birthtimeNs===evidence.birthtimeNs))fail("native_conflict");
@@ -128,10 +137,18 @@ export function createProjectCategoryMoveService(db: Database, integration: {
     }
     for (const [id, path, identity,binding] of [[row.originalCategoryId, row.originalParentRelativePath, row.originalParentIdentity,execution.original],
       [row.destinationCategoryId, row.destinationParentRelativePath, row.destinationParentIdentity,execution.destination]] as const) {
-      const category = db.select().from(schema.categories).where(eq(schema.categories.id, id)).get();
-      if (!category || category.sourceId !== row.sourceId || category.relativePath !== path || category.nativeIdentity !== identity ||
-        category.associationState !== "active" || category.modeInactive) fail("category_unavailable");
-      if(authorizer)authorizer.verify(binding!,source,path,category.durableEvidence,execution.legacyAttested ? {root:JSON.parse(row.rootIdentity),parent:JSON.parse(identity)} : undefined);
+      if(row.folderRoles) {
+        if(source.folderRoles!==(completed?row.targetFolderRoles:row.folderRoles) || binding?.version!==2)fail("stale_configuration");
+        const placement=roleParentPlacement(path,savedFolderRoles(source)!,"grouped");
+        const category=placement.categoryPath ? db.select().from(schema.categories).where(eq(schema.categories.sourceId,source.id)).all().find(c=>c.relativePath===placement.categoryPath&&!c.modeInactive&&c.associationState==="active") : null;
+        if(!placement.allowed || (category?.id??null)!==id)fail("category_unavailable");
+        authorizer!.verify(binding,source,path,JSON.stringify(binding.parent.evidence));
+      }else {
+        const category = id ? db.select().from(schema.categories).where(eq(schema.categories.id, id)).get() : null;
+        if (!category || category.sourceId !== row.sourceId || category.relativePath !== path || category.nativeIdentity !== identity ||
+          category.associationState !== "active" || category.modeInactive) fail("category_unavailable");
+        if(authorizer)authorizer.verify(binding!,source,path,category.durableEvidence,execution.legacyAttested ? {root:JSON.parse(row.rootIdentity),parent:JSON.parse(identity)} : undefined);
+      }
     }
     if(authorizer && execution.legacyAttested && !sameIdentity(JSON.parse(row.nativeIdentity),execution.target!.mount))fail("ownership_uncertain");
     policy(row, row.originalRelativePath); policy(row, row.requestedRelativePath); reservations(row,execution);
@@ -149,9 +166,10 @@ export function createProjectCategoryMoveService(db: Database, integration: {
       const {parentRelativePath}=binding;
       const parent = verifyCreationParents(filesystem, binding);
       filesystem.assertAccessible?.(row.canonicalRoot); filesystem.assertAccessible?.(parent);
-      const names = filesystem.names(row.canonicalRoot);
-      if (!names.includes(parentRelativePath)) fail("filesystem_changed");
-      if (names.some((name) => name !== parentRelativePath && filesystemAlias(name) === filesystemAlias(parentRelativePath))) fail("occupied");
+      const name=parentRelativePath.split("/").at(-1)!,prefix=parentRelativePath.split("/").slice(0,-1).join("/");
+      const names = filesystem.names(join(row.canonicalRoot,prefix));
+      if (parentRelativePath && !names.includes(name)) fail("filesystem_changed");
+      if (names.some((name) => name !== parentRelativePath.split("/").at(-1) && filesystemAlias(name) === filesystemAlias(parentRelativePath.split("/").at(-1)!))) fail("occupied");
     }
     context(row, completed, execution);
   }
@@ -200,7 +218,7 @@ export function createProjectCategoryMoveService(db: Database, integration: {
       if (!unchangedOperation(row)) fail("filesystem_changed");
       tx.update(schema.projects).set({ categoryId: row.destinationCategoryId, relativePath: row.requestedRelativePath, ...(execution.target ? {durableEvidence:JSON.stringify(execution.target.evidence)} : {}) })
         .where(eq(schema.projects.id, row.projectId)).run();
-      tx.update(schema.sources).set({ discoveryRevision: revision }).where(eq(schema.sources.id, row.sourceId)).run();
+      tx.update(schema.sources).set({ discoveryRevision: revision,...(row.folderRoles?{folderRoles:row.targetFolderRoles}:{}) }).where(eq(schema.sources.id, row.sourceId)).run();
       tx.update(schema.projectCategoryMoveOperations).set({ stage: "completed", resultKind: "completed", completedRevision: revision, problem: null })
         .where(eq(schema.projectCategoryMoveOperations.operationId, row.operationId)).run();
       uniqueDestination(row, true, execution);
@@ -221,7 +239,7 @@ export function createProjectCategoryMoveService(db: Database, integration: {
       const prior = operationFor(request.operationId);
       if (prior) {
         if (prior.initiatingWorkspaceId !== request.workspaceId || prior.sourceId !== source.id || prior.projectId !== request.projectId ||
-          prior.destinationCategoryId !== request.destinationCategoryId || prior.expectedRevision !== request.expectedRevision) return invalid();
+          (request.parentRelativePath!==undefined ? prior.destinationParentRelativePath!==request.parentRelativePath : prior.destinationCategoryId !== request.destinationCategoryId) || prior.expectedRevision !== request.expectedRevision) return invalid();
         return { ok: true, value: recordedResult(prior) };
       }
       if (db.select().from(schema.projectCreationOperations).where(eq(schema.projectCreationOperations.operationId, request.operationId)).get() ||
@@ -229,34 +247,44 @@ export function createProjectCategoryMoveService(db: Database, integration: {
       if (source.discoveryMode !== "grouped" || !source.appliedRootIdentity) return rejected("unconfigured");
       if (source.discoveryRevision !== request.expectedRevision) return rejected("stale_configuration");
       const project = db.select().from(schema.projects).where(eq(schema.projects.id, request.projectId)).get();
-      if (!project || project.sourceId !== source.id || !project.categoryId || project.associationState !== "active" || project.modeInactive) return rejected("project_unavailable");
-      const original = db.select().from(schema.categories).where(eq(schema.categories.id, project.categoryId)).get();
-      const destination = db.select().from(schema.categories).where(eq(schema.categories.id, request.destinationCategoryId)).get();
-      for (const category of [original, destination]) {
+      if (!project || project.sourceId !== source.id || !source.folderRoles && !project.categoryId || project.associationState !== "active" || project.modeInactive) return rejected("project_unavailable");
+      const original = project.categoryId ? db.select().from(schema.categories).where(eq(schema.categories.id, project.categoryId)).get() : null;
+      const destination = request.destinationCategoryId ? db.select().from(schema.categories).where(eq(schema.categories.id, request.destinationCategoryId)).get() : null;
+      if(!source.folderRoles)for (const category of [original, destination]) {
         if (!category || category.sourceId !== source.id || category.associationState !== "active" || category.modeInactive ||
           !isChildName(category.relativePath) || !validProjectBasename(category.relativePath, filesystem.platform)) return rejected("category_unavailable");
       }
       const name = project.relativePath.split("/").at(-1)!;
-      if (!validProjectBasename(name, filesystem.platform) || project.relativePath !== `${original!.relativePath}/${name}`) return rejected("project_unavailable");
+      if (!validProjectBasename(name, filesystem.platform) || !source.folderRoles && project.relativePath !== `${original!.relativePath}/${name}`) return rejected("project_unavailable");
       phase="filesystem";
-      const fromBinding=authorizer ? authorizer.capture(source,original!.relativePath,original!.durableEvidence) : null;
-      const toBinding=authorizer ? authorizer.capture(source,destination!.relativePath,destination!.durableEvidence) : null;
+      if(!source.folderRoles && request.parentRelativePath!==undefined)return rejected("category_unavailable");
+      if(source.folderRoles && request.parentRelativePath===undefined&&!destination)return rejected("category_unavailable");
+      const fromPath=source.folderRoles?project.relativePath.split("/").slice(0,-1).join("/"):original!.relativePath;
+      const toPath=request.parentRelativePath??destination!.relativePath;
+      const roleFrom=source.folderRoles?authorizer?.captureRoleParent(source,fromPath):null;
+      const roleTo=source.folderRoles?authorizer?.captureRoleParent(source,toPath):null;
+      if(source.folderRoles&&(!roleFrom||!roleTo||roleFrom.categoryId!==project.categoryId))return rejected("category_unavailable");
+      const fromBinding=roleFrom?.authorization ?? (authorizer ? authorizer.capture(source,fromPath,original!.durableEvidence) : null);
+      const toBinding=roleTo?.authorization ?? (authorizer ? authorizer.capture(source,toPath,destination!.durableEvidence) : null);
+      const requestedPath=toPath?`${toPath}/${name}`:name;
+      const targetFolderRoles=source.folderRoles?relocatedFolderRoles(source.folderRoles,project.relativePath,requestedPath):null;
+      if(source.folderRoles&&targetFolderRoles===null)return rejected("reserved_destination");
       const saved=storedEvidence(project.durableEvidence);
       if(authorizer && !saved)return rejected("ownership_uncertain");
       const observed=authorizer ? filesystem.inspect(join(source.canonicalRoot,project.relativePath)) : null;
       const target=authorizer && fromBinding ? authorizer.observe(join(source.canonicalRoot,project.relativePath),fromBinding.root,observed!.identity,saved!) : null;
-      const row: Operation = { originalAuthorization:fromBinding ? JSON.stringify(fromBinding) : null,
+      const row: Operation = { folderRoles:source.folderRoles,targetFolderRoles,originalAuthorization:fromBinding ? JSON.stringify(fromBinding) : null,
         destinationAuthorization:toBinding ? JSON.stringify(toBinding) : null,projectEvidence:target ? JSON.stringify(target) : null, operationId: request.operationId, sourceId: source.id, initiatingWorkspaceId: request.workspaceId,
-        projectId: project.id, name, expectedRevision: request.expectedRevision, originalCategoryId: original!.id, destinationCategoryId: destination!.id,
-        canonicalRoot: source.canonicalRoot, originalParentRelativePath: original!.relativePath, destinationParentRelativePath: destination!.relativePath,
-        originalRelativePath: project.relativePath, requestedRelativePath: `${destination!.relativePath}/${name}`,
-        rootIdentity: source.appliedRootIdentity, originalParentIdentity: original!.nativeIdentity, destinationParentIdentity: destination!.nativeIdentity,
+        projectId: project.id, name, expectedRevision: request.expectedRevision, originalCategoryId: project.categoryId, destinationCategoryId: roleTo ? roleTo.categoryId : destination!.id,
+        canonicalRoot: source.canonicalRoot, originalParentRelativePath: fromPath, destinationParentRelativePath: toPath,
+        originalRelativePath: project.relativePath, requestedRelativePath: requestedPath,
+        rootIdentity: source.appliedRootIdentity, originalParentIdentity: roleFrom?.parentIdentity ?? original!.nativeIdentity, destinationParentIdentity: roleTo?.parentIdentity ?? destination!.nativeIdentity,
         nativeIdentity: project.nativeIdentity, excludedRelativePaths: source.excludedRelativePaths, archiveRelativePath: source.archiveRelativePath,
         stage: "intent", destinationIdentity: null, lastVerifiedPlacement: "original", lastVerifiedIdentity: project.nativeIdentity,
         problem: null, resultKind: null, completedRevision: null };
       phase = "filesystem"; placement(row);
       phase = "storage";
-      if (row.originalCategoryId === row.destinationCategoryId) {
+      if (row.originalRelativePath === row.requestedRelativePath) {
         const receipt = db.transaction((tx) => {
           placement(row);
           tx.insert(schema.projectCategoryMoveOperations).values(row).run();
@@ -320,10 +348,10 @@ export function createProjectCategoryMoveService(db: Database, integration: {
       const bindings:FilesystemAuthorization[]=[];
       for(const [id,path,identity,saved] of [[row.originalCategoryId,row.originalParentRelativePath,row.originalParentIdentity,original],
         [row.destinationCategoryId,row.destinationParentRelativePath,row.destinationParentIdentity,destination]] as const) {
-        const category=db.select().from(schema.categories).where(eq(schema.categories.id,id)).get();
-        if(!category || category.sourceId!==source.id)fail("category_unavailable");
-        const current=authorizer.capture(source,path,category.durableEvidence,execution.legacyAttested ? {root:JSON.parse(row.rootIdentity),parent:JSON.parse(identity)} : undefined);
-        if(saved && (!sameDurableFolder(saved.root.evidence,current.root.evidence) || !sameDurableFolder(saved.parent.evidence,current.parent.evidence)))fail("filesystem_changed");
+        const category=id ? db.select().from(schema.categories).where(eq(schema.categories.id,id)).get() : null;
+        if(!row.folderRoles&&(!category || category.sourceId!==source.id))fail("category_unavailable");
+        const current=row.folderRoles ? authorizer.captureRoleParent(source,path).authorization : authorizer.capture(source,path,category!.durableEvidence,execution.legacyAttested ? {root:JSON.parse(row.rootIdentity),parent:JSON.parse(identity)} : undefined);
+        if(saved && !sameAuthorizationRoute(saved,current))fail("filesystem_changed");
         bindings.push(current);
       }
       [execution.original,execution.destination]=bindings;

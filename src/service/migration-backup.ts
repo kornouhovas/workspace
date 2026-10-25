@@ -25,6 +25,11 @@ export function protectMigration(sqlite: Database.Database, databasePath: string
     try { saveBackup(sqlite, join(dirname(databasePath), "backups"), "pre-migration"); }
     catch (error) { throw new MigrationProtectionError("BACKUP_FAILED", error); }
   }
+  const legacyAlterTable=sqlite.pragma("legacy_alter_table",{simple:true}),deferred=sqlite.pragma("defer_foreign_keys",{simple:true});
   try { apply(); }
   catch (error) { if (!hasData) throw error; throw new MigrationProtectionError("MIGRATION_FAILED", error); }
+  finally {
+    sqlite.pragma(`legacy_alter_table=${legacyAlterTable?"ON":"OFF"}`);
+    sqlite.pragma(`defer_foreign_keys=${deferred?"ON":"OFF"}`);
+  }
 }

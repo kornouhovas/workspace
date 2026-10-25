@@ -107,6 +107,9 @@ interface MockOptions {
   settingsResult?: ServiceResult<Settings>;
   picker?: WorkspaceDesktopApi["pickRoot"];
   onWorkspace?: (input: WorkspaceRequest) => Promise<ServiceResult<WorkspaceResponse>>;
+  // Contextual workspace settings read sources; unrelated management fixtures
+  // return a valid empty list, while source scenarios supply their own boundary.
+  onSources?: MockOptions["onWorkspace"];
   onProjects?: MockOptions["onWorkspace"];
   onArchived?: MockOptions["onWorkspace"];
   onCreations?: MockOptions["onWorkspace"];
@@ -162,6 +165,8 @@ function mockApi(options: MockOptions = {}) {
       ? (() => { const session = sessions.get(input.workspaceId) ?? { workspaceId: input.workspaceId, activeViewId: `view-${input.workspaceId}`, epoch: randomUUID(), revision: 0, state: defaultWorkspaceSession() };
         const next = input.type === "workspace.setSession" ? { ...session, revision: session.revision + 1, state: input.state } : session;
         sessions.set(input.workspaceId, next); return Promise.resolve(ok(next)); })()
+      : input.type === "workspace.listSources"
+      ? options.onSources?.(input) ?? Promise.resolve(ok({sources:[]}))
       : input.type === "workspace.getTableLayout"
       ? Promise.resolve(ok({ workspaceId: input.workspaceId, viewId: input.viewId, config: { columns: [], rowOrder: [] } }))
       : input.type === "workspace.getViewGrouping"
@@ -3722,10 +3727,10 @@ test("Workspace settings displays shared ownership and current configuration wit
     const active = makeActive("one", "One");
     const requests: WorkspaceRequest[] = [];
     mockApi({ language, load: ok({ workspaces: [{ workspaceId: "one", name: "One" }, { workspaceId: "two", name: "Two" }], activeWorkspace: active }),
+      onSources: async input => {requests.push(input);return ok({ sources: [{ sourceId: active.sourceId, canonicalRoot: active.canonicalRoot, sourceAvailable: true, mode: "grouped", excludedRelativePaths: ["Client/Excluded"], archiveRelativePath: "Saved", workspaces: [{ workspaceId: "one", name: "One" }, { workspaceId: "two", name: "Two" }] }] });},
       onWorkspace: async input => {
         requests.push(input);
         if (input.type === "workspace.load") return ok({ workspaces: [{ workspaceId: "one", name: "One" }, { workspaceId: "two", name: "Two" }], activeWorkspace: active });
-        if (input.type === "workspace.listSources") return ok({ sources: [{ sourceId: active.sourceId, canonicalRoot: active.canonicalRoot, sourceAvailable: true, mode: "grouped", excludedRelativePaths: ["Client/Excluded"], archiveRelativePath: "Saved", workspaces: [{ workspaceId: "one", name: "One" }, { workspaceId: "two", name: "Two" }] }] });
         return fail("invalid_input");
       } });
     render(<App />);
@@ -3753,7 +3758,7 @@ test("Sources settings reviews and applies discovery through real shared source 
     const first = service.workspaces.create({ type: "workspace.create", name: "One", rootPath: root });
     const second = service.workspaces.create({ type: "workspace.create", name: "Two", rootPath: root });
     assert.ok(first.ok && second.ok); if (!first.ok || !second.ok) throw new Error("fixture");
-    const api = mockApi({ onWorkspace: async input => (input.type === "workspace.applyDiscovery" || input.type === "workspace.refreshSource"
+    const api = mockApi({ onSources: async input=>service.handleQuery(input) as ServiceResult<WorkspaceResponse>, onWorkspace: async input => (input.type === "workspace.applyDiscovery" || input.type === "workspace.refreshSource"
       ? service.handleCommand(input) : service.handleQuery(input)) as ServiceResult<WorkspaceResponse> });
     off = service.workspaces.subscribe(api.emitChange);
     render(<SourceSettings client={new WorkspaceServiceClient()} language="en" disabled={false} />);
@@ -3782,8 +3787,7 @@ test("Sources settings invalidates reviews on source changes and ignores older s
   const active = { ...makeActive(randomUUID(), "One"), sourceId: randomUUID() };
   let finishStatus!: (value: ServiceResult<WorkspaceResponse>) => void;
   const status = new Promise<ServiceResult<WorkspaceResponse>>(resolve => { finishStatus = resolve; });
-  const api = mockApi({ onObservation: () => status, onWorkspace: async input => {
-    if (input.type === "workspace.listSources") return ok({ sources: [{ sourceId: active.sourceId, canonicalRoot: active.canonicalRoot, sourceAvailable: true, mode: null, excludedRelativePaths: [], archiveRelativePath: null, workspaces: [{ workspaceId: active.workspaceId, name: "One" }] }] });
+  const api = mockApi({ onSources: async ()=>ok({ sources: [{ sourceId: active.sourceId, canonicalRoot: active.canonicalRoot, sourceAvailable: true, mode: null, excludedRelativePaths: [], archiveRelativePath: null, workspaces: [{ workspaceId: active.workspaceId, name: "One" }] }] }), onObservation: () => status, onWorkspace: async input => {
     if (input.type === "workspace.previewDiscovery") return ok(previewResult(active));
     return fail("invalid_input");
   } });

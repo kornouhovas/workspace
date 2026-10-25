@@ -1,10 +1,10 @@
-import {validFolderRoles} from "./folder-roles.js";
+import {validFolderRoles,savedFolderRoles,relocatedFolderRoles,roleParentPlacement} from "./folder-roles.js";
 import {archivedAssociationMatchesRecord,parseArchivedFolderAssociation} from "./archive-association.js";
 import {archiveBindingMatchesRow,parseArchiveAttestation,parseArchiveAuthorization,parseArchiveBindingAuthorization,parseArchiveParents,archiveParentPathsMatch,uniqueArchiveProofs,type ArchiveRowDescriptor} from "./archive-authorization.js";
 import {validLegacyRemovalHistory,parseRemovalAuthorization,removalBindingMatchesRow,removalAttestationMatchesBinding} from "./category-removal-authorization.js";
 import {validLegacyCategoryFolderHistory,categoryAuthorizationMatchesBinding,parseCategoryFolderAuthorization,type CategoryFolderBindingRow} from "./category-folder-authorization.js";
 import {sameIdentity} from "./discovery.js";
-import {parseLegacyNativeIdentity,sameAuthorizationRoot,parseFilesystemAuthorization, parseFolderObservation} from "./filesystem-authorization.js";
+import {sameAuthorizationRoute,parseLegacyNativeIdentity,sameAuthorizationRoot,parseFilesystemAuthorization, parseFolderObservation} from "./filesystem-authorization.js";
 import { durableOwnershipKey, sameDurableFolder, validateEvidence } from "./folder-evidence.js";
 import { isWorkspaceSessionState } from "../contracts/workspace-sessions.js";
 import { validateSnapshotRelations } from "./data-recovery-invariants.js";
@@ -94,6 +94,24 @@ function validate(db: Database.Database) {
       }
     }
   }
+  for(const table of ["project_creation_operations","project_rename_operations","project_category_move_operations"]) {
+    if(!(db.prepare(`PRAGMA table_info(${table})`).all() as {name:string}[]).some(c=>c.name==="folder_roles"))continue;
+    for(const row of db.prepare(`SELECT * FROM ${table}`).all() as Record<string,unknown>[]) {
+      const authNames=table==="project_category_move_operations"?["original_authorization","destination_authorization"]:["authorization"];
+      const bindings=authNames.map(name=>parseFilesystemAuthorization(row[name] as string|null));
+      if(row.folder_roles===null) {
+        if(row.target_folder_roles!==null || bindings.some(binding=>binding?.version===2))throw new Error("Invalid legacy role authority");
+        continue;
+      }
+      if(typeof row.folder_roles!=="string" || typeof row.target_folder_roles!=="string" || !validFolderRoles(JSON.parse(row.folder_roles)) || !validFolderRoles(JSON.parse(row.target_folder_roles)) || bindings.some(binding=>binding?.version!==2))throw new Error("Invalid role intent policy");
+      const creation=table==="project_creation_operations",move=table==="project_category_move_operations";
+      const from=creation?null:row.original_relative_path as string,to=(creation?row.relative_path:row.requested_relative_path) as string;
+      if(relocatedFolderRoles(row.folder_roles,from,to)!==row.target_folder_roles)throw new Error("Conflicting role intent target");
+      const paths=move?[row.original_parent_relative_path,row.destination_parent_relative_path]:[row.parent_relative_path];
+      const roles=savedFolderRoles({folderRoles:row.folder_roles})!;
+      for(const [index,path] of paths.entries())if(typeof path!=="string" || bindings[index]!.ancestors!.at(-1)!.relativePath!==path || !roleParentPlacement(path,roles,"grouped").allowed)throw new Error("Conflicting role intent route");
+    }
+  }
   if ((db.prepare("PRAGMA table_info(project_creation_operations)").all() as {name:string}[]).some(c=>c.name==="authorization")) {
     const immutableFields = ["operationId","sourceId","initiatingWorkspaceId","projectId","name","mode","expectedRevision","categoryId",
       "canonicalRoot","parentRelativePath","relativePath","rootIdentity","parentIdentity","excludedRelativePaths","archiveRelativePath","authorization"];
@@ -103,6 +121,7 @@ function validate(db: Database.Database) {
       const destination=row.destination_evidence ? parseFolderObservation(JSON.parse(row.destination_evidence)) : null;
       if(!binding || !current || !journal || journal.operationId!==row.operation_id ||
         !["intent","evidence_recorded","uncertain"].includes(journal.stage) ||
+        (["folderRoles","targetFolderRoles"].some(field=>(journal[field]??null)!==(current[field.replace(/[A-Z]/g,letter=>"_"+letter.toLowerCase())]??null))) ||
         immutableFields.some(field=>!Object.hasOwn(journal,field) || journal[field]!==current[field.replace(/[A-Z]/g,letter=>"_"+letter.toLowerCase())]) ||
         !recordedEvidenceRetained(journal,current,["nativeIdentity","destinationEvidence"]) ||
         row.destination_evidence!==null && (!destination || destination.evidence.scope!==binding.root.evidence.scope ||
@@ -110,7 +129,7 @@ function validate(db: Database.Database) {
       const recordedDestination=current.destination_evidence ? parseFolderObservation(JSON.parse(current.destination_evidence as string)) : null;
       if(current.authorization!==null && destination && recordedDestination && !sameDurableFolder(destination.evidence,recordedDestination.evidence))throw new Error("Conflicting attestation destination");
       const original=parseFilesystemAuthorization(journal.authorization);
-      if(journal.authorization!==null && (!original || !sameDurableFolder(original.root.evidence,binding.root.evidence) || !sameDurableFolder(original.parent.evidence,binding.parent.evidence)) ||
+      if(journal.authorization!==null && (!original || !sameAuthorizationRoute(original,binding)) ||
         journal.authorization===null && (!sameIdentity(JSON.parse(journal.rootIdentity),binding.root.mount) || !sameIdentity(JSON.parse(journal.parentIdentity),binding.parent.mount) ||
           journal.nativeIdentity!==null && destination && !sameIdentity(JSON.parse(journal.nativeIdentity),destination.mount)))throw new Error("Conflicting creation attestation");
     }
@@ -140,11 +159,10 @@ function validate(db: Database.Database) {
       const row=rows.find(row=>row.operation_id===proof.operation_id), journal=JSON.parse(proof.journal);
       const binding=parseFilesystemAuthorization(proof.authorization), target=parseFolderObservation(JSON.parse(proof.project_evidence));
       if(!row || !journal || !binding || !target || !volumeMatch(binding,target) ||
-        !["intent","staged","destination_recorded","uncertain"].includes(journal.stage) || !recordedEvidenceRetained(journal,row,["stagedIdentity","destinationIdentity","lastVerifiedIdentity"]) || immutableFields.some(field=>!Object.hasOwn(journal,field) ||
+        !["intent","staged","destination_recorded","uncertain"].includes(journal.stage) || ["folderRoles","targetFolderRoles"].some(field=>(journal[field]??null)!==(row[field.replace(/[A-Z]/g,letter=>"_"+letter.toLowerCase())]??null)) || !recordedEvidenceRetained(journal,row,["stagedIdentity","destinationIdentity","lastVerifiedIdentity"]) || immutableFields.some(field=>!Object.hasOwn(journal,field) ||
           journal[field]!==row[field.replace(/[A-Z]/g,letter=>"_"+letter.toLowerCase())]))throw new Error("Invalid rename attestation");
       const original=parseFilesystemAuthorization(journal.authorization), saved=journal.projectEvidence ? parseFolderObservation(JSON.parse(journal.projectEvidence)) : null;
-      if(journal.authorization!==null && (!original || !saved || !sameDurableFolder(original.root.evidence,binding.root.evidence) ||
-        !sameDurableFolder(original.parent.evidence,binding.parent.evidence) || !sameDurableFolder(saved.evidence,target.evidence)) ||
+      if(journal.authorization!==null && (!original || !saved || !sameAuthorizationRoute(original,binding) || !sameDurableFolder(saved.evidence,target.evidence)) ||
         journal.authorization===null && (!sameIdentity(JSON.parse(journal.rootIdentity),binding.root.mount) ||
           !sameIdentity(JSON.parse(journal.parentIdentity),binding.parent.mount) || !sameIdentity(JSON.parse(journal.nativeIdentity),target.mount)))throw new Error("Conflicting rename attestation");
     }
@@ -166,15 +184,14 @@ function validate(db: Database.Database) {
     for(const proof of db.prepare("SELECT * FROM project_category_move_attestations").all() as Record<string,string>[]) {
       const row=rows.find(row=>row.operation_id===proof.operation_id), journal=JSON.parse(proof.journal);
       const current=parseMoveProof(proof.original_authorization,proof.destination_authorization,proof.project_evidence);
-      if(!row || !journal || !["intent","destination_recorded","uncertain"].includes(journal.stage) || !recordedEvidenceRetained(journal,row,["destinationIdentity","lastVerifiedIdentity"]) || fields.some(field=>!Object.hasOwn(journal,field) ||
+      if(!row || !journal || !["intent","destination_recorded","uncertain"].includes(journal.stage) || ["folderRoles","targetFolderRoles"].some(field=>(journal[field]??null)!==(row[field.replace(/[A-Z]/g,letter=>"_"+letter.toLowerCase())]??null)) || !recordedEvidenceRetained(journal,row,["destinationIdentity","lastVerifiedIdentity"]) || fields.some(field=>!Object.hasOwn(journal,field) ||
         journal[field]!==row[field.replace(/[A-Z]/g,letter=>"_"+letter.toLowerCase())]))throw new Error("Invalid category move attestation");
       if(journal.originalAuthorization===null && journal.destinationAuthorization===null && journal.projectEvidence===null) {
         if(!sameIdentity(JSON.parse(journal.rootIdentity),current.original.root.mount) || !sameIdentity(JSON.parse(journal.originalParentIdentity),current.original.parent.mount) ||
           !sameIdentity(JSON.parse(journal.destinationParentIdentity),current.destination.parent.mount) || !sameIdentity(JSON.parse(journal.nativeIdentity),current.target.mount))throw new Error("Conflicting legacy category move attestation");
       }else {
         const old=parseMoveProof(journal.originalAuthorization,journal.destinationAuthorization,journal.projectEvidence);
-        if(!sameDurableFolder(old.original.root.evidence,current.original.root.evidence) || !sameDurableFolder(old.original.parent.evidence,current.original.parent.evidence) ||
-          !sameDurableFolder(old.destination.parent.evidence,current.destination.parent.evidence) || !sameDurableFolder(old.target.evidence,current.target.evidence))throw new Error("Conflicting category move attestation");
+        if(!sameAuthorizationRoute(old.original,current.original) || !sameAuthorizationRoute(old.destination,current.destination) || !sameDurableFolder(old.target.evidence,current.target.evidence))throw new Error("Conflicting category move attestation");
       }
     }
   }

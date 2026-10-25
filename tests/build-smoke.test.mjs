@@ -51,6 +51,7 @@ test("build emits desktop, renderer, backend, and matching version artifacts", a
     "dist/service/db/migrations/0031_archived_folder_associations.sql",
     "dist/service/db/migrations/0032_category_default_label.sql",
     "dist/service/db/migrations/0033_folder_roles.sql",
+    "dist/service/db/migrations/0034_role_command_placements.sql",
     "dist/service/db/migrations/meta/_journal.json",
   ]) {
     await assert.doesNotReject(readFile(artifact));
@@ -58,8 +59,8 @@ test("build emits desktop, renderer, backend, and matching version artifacts", a
 
   const journal = JSON.parse(await readFile("dist/service/db/migrations/meta/_journal.json", "utf8"));
   assert.deepEqual(journal, JSON.parse(await readFile("src/service/db/migrations/meta/_journal.json", "utf8")));
-  assert.equal(journal.entries.at(-1).idx, 33);
-  assert.equal(journal.entries.at(-1).tag, "0033_folder_roles");
+  assert.equal(journal.entries.at(-1).idx, 34);
+  assert.equal(journal.entries.at(-1).tag, "0034_role_command_placements");
   assert.equal(await readFile("dist/service/db/migrations/0007_discovery_mode_changes.sql", "utf8"),
     await readFile("src/service/db/migrations/0007_discovery_mode_changes.sql", "utf8"));
 
