@@ -13,7 +13,7 @@ import { build } from "esbuild";
 import { closeElectron } from "../scripts/runtime-lifecycle.mjs";
 import { usableRuntimeViewProjection } from "../scripts/runtime-view-readiness.mjs";
 import { activateRuntimeView, setRuntimeViewLanguage } from "../scripts/runtime-view-controls.mjs";
-import {openRoleSettingsSection,renameRoleProject,reviewRoleConfiguration,expandRoleFolder,enterRoleDialog,prepareRoleMove,completeRoleMove,completeRoleArchive} from "../scripts/folder-role-driver.mjs";
+import {openRoleSettingsSection,renameRoleProject,reviewRoleArchiveLocation,reviewRoleConfiguration,expandRoleFolder,enterRoleDialog,prepareRoleMove,completeRoleMove,completeRoleArchive} from "../scripts/folder-role-driver.mjs";
 import {openSettingsSection} from "../scripts/runtime-settings.mjs";
 import { openArchiveTextEditor } from "../scripts/archive-editor-driver.mjs";
 import { installArchiveEntryTrace } from "../scripts/archive-entry-trace.mjs";
@@ -80,6 +80,15 @@ test('preview timing admits current properties and visible loading before the se
       assert.equal(await page.getByRole('treeitem').textContent(),'preserved.txt');
     } finally {clearTimeout(timer);}
   });
+});
+
+test('role archive location review acknowledges discarded preview before one separate confirmation',async()=>{
+ await withPage(async page=>{
+  await page.setContent(`<button>${translate('en','archiveReviewLocation')}</button>`);
+  await page.evaluate(confirmLabel=>{globalThis.locationPreviews=0;globalThis.locationConfirms=0;document.querySelector('button').onclick=()=>{globalThis.locationPreviews++;if(globalThis.locationPreviews===1)return;const confirm=document.createElement('button');confirm.textContent=confirmLabel;confirm.onclick=()=>{globalThis.locationConfirms++;};document.body.append(confirm);};},translate('en','archiveConfirmLocation'));
+  const confirm=await reviewRoleArchiveLocation(page);assert.deepEqual(await page.evaluate(()=>[globalThis.locationPreviews,globalThis.locationConfirms]),[2,0]);
+  await confirm.click();assert.equal(await page.evaluate(()=>globalThis.locationConfirms),1);
+ });
 });
 
 test('role configuration preview acknowledges a discarded read without applying shared changes',async()=>{

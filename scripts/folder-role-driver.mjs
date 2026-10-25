@@ -185,3 +185,14 @@ export async function reviewRoleConfiguration(page) {
  }
  return review;
 }
+
+export async function reviewRoleArchiveLocation(page) {
+ const confirm=page.getByRole('button',{name:/^(Confirm archive folder|Подтвердить папку архива)$/}).and(page.locator(':enabled'));
+ const deadline=Date.now()+15000;
+ while(!await confirm.isVisible()){
+  const ms=deadline-Date.now();assert.ok(ms>0,'Archive folder review exceeded15000ms');
+  await page.getByRole('button',{name:/^(Review archive folder|Проверить папку архива)$/}).and(page.locator(':enabled')).press('Enter',{timeout:ms});
+  try{await confirm.waitFor({timeout:Math.min(1000,Math.max(1,deadline-Date.now()))});}catch(error){if(Date.now()>=deadline)throw error;}
+ }
+ return confirm;
+}

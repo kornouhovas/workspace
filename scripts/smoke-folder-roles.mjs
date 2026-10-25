@@ -6,7 +6,7 @@ import {join,resolve} from 'node:path';
 import {_electron} from 'playwright-core';
 import {runtimeSmokeLaunch} from './runtime-executable.mjs';
 import {closeElectron,cleanupOwnedFixture,ownedProcessesStopped} from './runtime-lifecycle.mjs';
-import {openRoleSettingsSection as openSettingsSection,renameRoleProject,reviewRoleConfiguration,expandRoleFolder,enterRoleDialog,prepareRoleMove,completeRoleMove,completeRoleArchive,returnRoleWorkspace as returnToWorkspace,setRoleLanguage as setInterfaceLanguage} from './folder-role-driver.mjs';
+import {openRoleSettingsSection as openSettingsSection,renameRoleProject,reviewRoleArchiveLocation,reviewRoleConfiguration,expandRoleFolder,enterRoleDialog,prepareRoleMove,completeRoleMove,completeRoleArchive,returnRoleWorkspace as returnToWorkspace,setRoleLanguage as setInterfaceLanguage} from './folder-role-driver.mjs';
 const root=resolve(import.meta.dirname,'..'),fixture=await realpath(await mkdtemp(join(tmpdir(),'folder-roles-')));
 const source=join(fixture,'Source'),data=join(fixture,'data'),evidence=resolve(process.env.WORKSPACE_SMOKE_EVIDENCE_DIR??'work/issue-74-folder-roles');
 await mkdir(evidence,{recursive:true});
@@ -77,7 +77,7 @@ try{
   await setInterfaceLanguage(page,'en');await settings();
   await page.getByRole('region',{name:source,exact:true}).locator('.project-archive summary').click();
   await page.getByRole('textbox',{name:'Archive folder relative to the source',exact:true}).fill('Stored');
-  await page.getByRole('button',{name:/Review archive folder/}).click();await page.getByRole('button',{name:/Confirm archive folder/}).click();
+  const confirmArchiveLocation=await reviewRoleArchiveLocation(page);await confirmArchiveLocation.click();
   await page.waitForFunction(async()=>(await window.workspace.workspace({type:'workspace.listSources'})).value.sources[0].archiveRelativePath==='Stored');
   await page.getByRole('button',{name:'Refresh source',exact:true}).click();
   await returnToWorkspace(page);await close();await launch();

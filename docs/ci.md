@@ -2196,3 +2196,14 @@ Apply remain unchanged. The real Electron control discards its first preview and
 requires2 reads/0 applies/unchecked acknowledgment. Local role journey,71 routing,
 lint and both reviews pass. The role-only gate now selects11 controls and all6
 role host/mode consumers; unrelated management rows are not replayed.
+
+
+Role40208488377 at3999232c passes Mac/Windows2022 both modes and Winlatest
+DEV. Winlatest package's remaining failure is archive-location preview: the one
+read-only Review archive folder gesture did not expose Confirm. The matching
+helper now waits for enabled confirmation, repeating only the preview read within
+15s. Caller confirmation remains single, followed by the existing Stored API
+assertion. Native control uses production localization and verifies2 preview
+reads/0 premature confirms/1 separate confirmation. Local native/routing/lint and
+both review axes pass. Renew the role-only12control/6consumer gate; accepted
+management rows remain separately reused and Win22package management remains open.
