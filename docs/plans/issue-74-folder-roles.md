@@ -330,3 +330,23 @@ first-tab activation consumption is also covered. Rename unknown-outcome and
 operand guards remain unchanged. Local3 controls and the original role journey
 pass. The same focused role-entry gate renews these changes before the existing
 runtime complement; all prior failed receipts remain failed.
+
+
+Runtime40200473514 at a2d240b4 remains failed: macOS role package stopped
+at hidden language settings selected through the old helper; Windows2022 management
+DEV reached the second removal but lost tools entry before confirmation; Windows
+latest management/recovery DEV passed, then role package reached a stale move draft
+before its disabled Submit. Cleanup passes. The role language/Back routes now use
+the acknowledged settings helper. Management removal entry is bound to stable ID
+and opens only an unsubmitted confirmation; the caller still confirms once.
+Move preparation permits one explicit stale Cancel/reopen before any command,
+verifying unchanged public/physical source and absent destination under15s. The
+caller sends the move exactly once; uncertain results have no replay path.
+
+The existing folder-role-entry-repair gate now renews all affected consumers:
+five actual-Electron navigation/draft controls, original role and workspace-management
+journeys in DEV and package modes on all3hosts, with package/artifact prerequisites.
+It omits full suites and unchanged retained recovery/source-outage rows. Local5
+controls,70 routing checks, role and management native journeys, lint/docs pass.
+Original failed receipts remain failed; remaining Windows retained recovery/outage
+rows still require their separate complement after this gate passes.

@@ -1,3 +1,4 @@
+import {enterWorkspaceRemoval} from './workspace-removal-driver.mjs';
 import { enterContextFor } from "./runtime-context-tools.mjs";
 import { applyReviewedDiscovery } from "./workspace-management-driver.mjs";
 import { activateWorkspaceFixture } from "./workspace-activation-driver.mjs";
@@ -128,9 +129,8 @@ try {
   assert.deepEqual((await query({ type: "workspace.load" })).workspaces.map(w => w.workspaceId), [second.workspaceId, first.workspaceId]);
   assert.equal((await query({ type: "workspace.load" })).activeWorkspace.name, "Renamed workspace");
   for (const name of ["Renamed workspace", "Workspace"]) {
-    await actions().first().press("Enter");
-    await page.getByRole("group", { name: new RegExp(`${name}$`) }).getByRole("button", { name: /^(Remove workspace|Удалить рабочее пространство)$/ }).press("Enter");
-    await page.getByRole("button", { name: /^(Remove configuration|Удалить конфигурацию)$/ }).press("Enter");
+    const confirmation=await enterWorkspaceRemoval(page,name==='Renamed workspace'?second.workspaceId:first.workspaceId,name);
+    await confirmation.press('Enter');
     await page.waitForFunction(async remaining => (await window.workspace.workspace({ type:"workspace.load" })).value?.workspaces.length === remaining, name === "Renamed workspace" ? 1 : 0);
     if (name === "Renamed workspace") await returnToWorkspace(page);
   }

@@ -6,8 +6,7 @@ import {join,resolve} from 'node:path';
 import {_electron} from 'playwright-core';
 import {runtimeSmokeLaunch} from './runtime-executable.mjs';
 import {closeElectron,cleanupOwnedFixture,ownedProcessesStopped} from './runtime-lifecycle.mjs';
-import {returnToWorkspace,setInterfaceLanguage} from './runtime-settings.mjs';
-import {openRoleSettingsSection as openSettingsSection,renameRoleProject,enterRoleDialog} from './folder-role-driver.mjs';
+import {openRoleSettingsSection as openSettingsSection,renameRoleProject,enterRoleDialog,prepareRoleMove,returnRoleWorkspace as returnToWorkspace,setRoleLanguage as setInterfaceLanguage} from './folder-role-driver.mjs';
 const root=resolve(import.meta.dirname,'..'),fixture=await realpath(await mkdtemp(join(tmpdir(),'folder-roles-')));
 const source=join(fixture,'Source'),data=join(fixture,'data'),evidence=resolve(process.env.WORKSPACE_SMOKE_EVIDENCE_DIR??'work/issue-74-folder-roles');
 await mkdir(evidence,{recursive:true});
@@ -116,9 +115,13 @@ try{
       const current=(await query({type:'workspace.listProjects',workspaceId:first.workspaceId})).projects.find(p=>p.projectId===created.projectId);assert.equal(current.name,renamed);
       const label=en?'Move project category':'Переместить проект в категорию';
       dialog=await action(label);
-      const select=dialog.getByRole('combobox');
-      if(await select.isDisabled()) {await dialog.getByRole('button',{name:en?'Cancel':'Отмена',exact:true}).click();dialog=await action(label);}
-      await select.selectOption(parent);await page.screenshot({path:join(evidence,`${language}-move-${parent?'status':'root'}.png`)});
+      dialog=await prepareRoleMove({dialog,parent,en,
+        capture:()=>page.screenshot({path:join(evidence,`${language}-move-${parent?'status':'root'}.png`)}),
+        reopen:()=>action(label),verifyUnchanged:async()=>{
+          const now=(await query({type:'workspace.listProjects',workspaceId:first.workspaceId})).projects.find(row=>row.projectId===created.projectId);
+          assert.equal(now.relativePath,current.relativePath);assert.equal((await stat(join(source,...current.relativePath.split('/')))).isDirectory(),true);
+          await assert.rejects(stat(join(source,...[parent,renamed].filter(Boolean).join('/').split('/'))),error=>error.code==='ENOENT');
+        }});
       await dialog.getByRole('button',{name:en?'Move project folder':'Переместить папку проекта',exact:true}).click();await dialog.waitFor({state:'detached'});
     };
     await move('Work/Urgent');

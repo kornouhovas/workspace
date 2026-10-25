@@ -1453,9 +1453,10 @@ test('role entry gate isolates current driver and runtime tail reuses unchanged 
  const runs=(inputs,os)=>route.jobs['folder-roles'].steps.filter(step=>step.run&&(!step.if||runInNewContext(step.if.slice(3,-2),{inputs,runner:{os}}))).map(step=>step.run);
  for(const os of ['macOS','Windows']){
   const entry=runs({entry_repair:true,focused:false,runtime_only:false},os);
-  assert.equal(entry.filter(run=>run==='npm run smoke:folder-roles').length,1);
-  assert.ok(entry.some(run=>run.includes("--test-name-pattern='role settings entry|role rename explicitly|role action entry'")));
-  assert.ok(!entry.some(run=>run.includes('test:all')||run.includes('electron-builder')||run.includes('smoke:workspaces')||run.includes('smoke-retained-recovery')));
+  assert.equal(entry.filter(run=>run==='npm run smoke:folder-roles').length,2);
+  assert.equal(entry.filter(run=>run==='npm run smoke:workspaces').length,2);
+  assert.ok(entry.some(run=>run.includes("--test-name-pattern='role settings entry|role rename explicitly|role action entry|workspace removal entry|role move preparation'")));
+  assert.ok(entry.includes('npx electron-builder --dir'));assert.ok(!entry.some(run=>run.includes('test:all')||run.includes('smoke-retained-recovery')));
  }
  const mac=runs({entry_repair:false,focused:false,runtime_only:true},'macOS');
  assert.deepEqual(mac,['npm ci','npm run typecheck','npm run lint','npm run check:docs','npm run build','npx electron-builder --dir','npm run check:artifact -- release','npm run smoke:folder-roles']);

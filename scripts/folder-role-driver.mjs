@@ -5,7 +5,7 @@ import {withDeadline} from './runtime-lifecycle.mjs';
 // A disabled transition may consume a key without activation. Only navigation
 // can be re-entered until acknowledged, within the original15s.
 export async function openRoleSettingsSection(page, section) {
- const labels={workspaces:/^(Workspaces|Рабочие пространства)$/,appearance:/^(Appearance|Оформление)$/};
+ const labels={general:/^(General|Основные)$/,workspaces:/^(Workspaces|Рабочие пространства)$/,appearance:/^(Appearance|Оформление)$/};
  const tab=page.getByRole('tab',{name:labels[section]});
  const selected=tab.and(page.locator('[aria-selected="true"]'));
  const deadline=Date.now()+15000;
@@ -63,4 +63,42 @@ export async function enterRoleDialog(page,{projectId,projectName,label,en}) {
   }catch(error){if(Date.now()>=deadline)throw error;}
  }
  return modal;
+}
+
+
+export async function returnRoleWorkspace(page) {
+ const entry=page.getByRole('button',{name:/^(Settings|Настройки)$/});
+ const deadline=Date.now()+15000;
+ while(!await entry.isVisible()){
+  const left=deadline-Date.now();assert.ok(left>0,'Role workspace return exceeded15000ms');
+  await page.getByRole('button',{name:/^(Back to workspace|Вернуться к работе)$/}).and(page.locator(':enabled')).press('Enter',{timeout:left});
+  try{await entry.waitFor({timeout:Math.min(1000,Math.max(1,deadline-Date.now()))});}catch(error){if(Date.now()>=deadline)throw error;}
+ }
+}
+export async function setRoleLanguage(page,language) {
+ await openRoleSettingsSection(page,'general');
+ await page.locator('#interface-language').selectOption(language);
+ await page.waitForFunction(language=>globalThis.document.documentElement.lang===language&&!globalThis.document.querySelector('#interface-language')?.disabled,language);
+ await returnRoleWorkspace(page);
+}
+
+// Prepare a move form only. Source observation may invalidate the draft during
+// a capture; reauthor at most once, before the caller's single submission.
+export async function prepareRoleMove({dialog,parent,en,capture,reopen,verifyUnchanged}) {
+ const deadline=Date.now()+15000,left=()=>{const ms=deadline-Date.now();assert.ok(ms>0,'Role move preparation exceeded15000ms');return ms;};
+ const staleText=en?'The source or project changed. Refresh and reopen the editor before submitting again.':'Источник или проект изменился. Обновите данные и откройте редактор снова перед отправкой.';
+ for(let attempt=0;attempt<2;attempt++){
+  const select=dialog.getByRole('combobox'),submit=dialog.getByRole('button',{name:en?'Move project folder':'Переместить папку проекта',exact:true}),stale=dialog.getByText(staleText,{exact:true});
+  await Promise.race([select.and(dialog.locator(':enabled')).waitFor({timeout:left()}),stale.waitFor({timeout:left()})]);
+  if(!await stale.isVisible()){await select.selectOption(parent,{timeout:left()});await withDeadline(capture(),left(),'Role move capture');}
+  if(await submit.isEnabled())return dialog;
+  await stale.waitFor({timeout:left()});
+  // This helper has never submitted; stale UI alone does not authorize a replay.
+  assert.equal(await dialog.getByRole('button',{name:/^(Check operation status|Проверить статус операции)$/}).count(),0);
+  await withDeadline(verifyUnchanged(),left(),'Role move operand verification');
+  assert.equal(attempt,0,'A second invalidated draft requires another explicit review');
+  await dialog.getByRole('button',{name:en?'Cancel':'Отмена',exact:true}).press('Enter',{timeout:left()});
+  dialog=await withDeadline(reopen(),left(),'Role move reopening');
+ }
+ throw new Error('Role move preparation did not complete');
 }

@@ -1,3 +1,4 @@
+import {enterWorkspaceRemoval} from '../scripts/workspace-removal-driver.mjs';
 /* global document, requestAnimationFrame */
 import assert from "node:assert/strict";
 import test from "node:test";
@@ -11,7 +12,7 @@ import { build } from "esbuild";
 import { closeElectron } from "../scripts/runtime-lifecycle.mjs";
 import { usableRuntimeViewProjection } from "../scripts/runtime-view-readiness.mjs";
 import { activateRuntimeView, setRuntimeViewLanguage } from "../scripts/runtime-view-controls.mjs";
-import {openRoleSettingsSection,renameRoleProject,enterRoleDialog} from "../scripts/folder-role-driver.mjs";
+import {openRoleSettingsSection,renameRoleProject,enterRoleDialog,prepareRoleMove} from "../scripts/folder-role-driver.mjs";
 import {openSettingsSection} from "../scripts/runtime-settings.mjs";
 import { openArchiveTextEditor } from "../scripts/archive-editor-driver.mjs";
 import { installArchiveEntryTrace } from "../scripts/archive-entry-trace.mjs";
@@ -94,6 +95,40 @@ test('role settings entry acknowledges keyboard navigation after a pointer inter
   await page.evaluate(()=>{const button=document.querySelector('button');let first=true;button.addEventListener('keydown',event=>{if(first&&event.key==='Enter'){first=false;event.preventDefault();}});});
   page.setDefaultTimeout(15000);await openRoleSettingsSection(page,'appearance');
   assert.equal(await page.getByRole('tab').getAttribute('aria-selected'),'true');
+ });
+});
+
+test('workspace removal entry acknowledges tools before the separate configuration command',async()=>{
+ await withPage(async page=>{
+  await page.setContent('<div class="sidebar-workspace-row"><button data-workspace-id="one">Workspace</button><button aria-label="Workspace actions: Workspace">Tools</button></div>');
+  await page.evaluate(()=>{
+   globalThis.removalCommands=0;globalThis.removalEntries=0;
+   const trigger=document.querySelector('[aria-label]');let first=true;
+   trigger.onkeydown=event=>{if(first&&event.key==='Enter'){first=false;event.preventDefault();}};
+   trigger.onclick=()=>{globalThis.removalEntries++;const group=document.createElement('div');group.setAttribute('role','group');group.setAttribute('aria-label','Workspace actions: Workspace');group.innerHTML='<button>Remove workspace</button>';document.body.append(group);group.querySelector('button').onclick=()=>{group.remove();const button=document.createElement('button');button.textContent='Remove configuration';button.onclick=()=>{globalThis.removalCommands++;};document.body.append(button);};};
+  });
+  const confirm=await enterWorkspaceRemoval(page,'one','Workspace');
+  assert.equal(await confirm.isVisible(),true);assert.deepEqual(await page.evaluate(()=>[globalThis.removalEntries,globalThis.removalCommands]),[1,0]);
+  await confirm.press('Enter');assert.equal(await page.evaluate(()=>globalThis.removalCommands),1);
+ });
+});
+
+test('role move preparation reauthors a stale draft before its single explicit submission',async()=>{
+ await withPage(async page=>{
+  await page.setContent('<div id="host"></div>');
+  await page.evaluate(()=>{
+   globalThis.moveCommands=0;globalThis.moveForms=0;
+   globalThis.openMoveForm=()=>{globalThis.moveForms++;const dialog=document.createElement('div');dialog.setAttribute('role','dialog');dialog.innerHTML='<select aria-label="Parent"><option value="original">Original</option><option value="target">Target</option></select><button>Move project folder</button><button>Cancel</button>';document.querySelector('#host').append(dialog);dialog.querySelectorAll('button')[0].onclick=()=>{globalThis.moveCommands++;dialog.remove();};dialog.querySelectorAll('button')[1].onclick=()=>dialog.remove();};
+   globalThis.openMoveForm();
+  });
+  let captures=0,checks=0;
+  const dialog=await prepareRoleMove({dialog:page.getByRole('dialog'),parent:'target',en:true,
+   capture:async()=>{if(++captures===1)await page.evaluate(()=>{const dialog=document.querySelector('[role="dialog"]');dialog.querySelector('select').disabled=true;dialog.querySelector('button').disabled=true;const message=document.createElement('p');message.textContent='The source or project changed. Refresh and reopen the editor before submitting again.';dialog.append(message);});},
+   reopen:async()=>{await page.evaluate(()=>globalThis.openMoveForm());return page.getByRole('dialog');},
+   verifyUnchanged:async()=>{checks++;assert.equal(await page.evaluate(()=>globalThis.moveCommands),0);}});
+  assert.equal(checks,1);assert.equal(await dialog.getByRole('combobox').inputValue(),'target');
+  assert.deepEqual(await page.evaluate(()=>[globalThis.moveForms,globalThis.moveCommands]),[2,0]);
+  await dialog.getByRole('button',{name:'Move project folder',exact:true}).press('Enter');assert.equal(await page.evaluate(()=>globalThis.moveCommands),1);
  });
 });
 
