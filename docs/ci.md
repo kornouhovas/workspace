@@ -2127,3 +2127,14 @@ folder-management-diagnostic uses mode failure, omitting all pre-removal reads
 and collecting bounded DOM/public state only after the original failure. Ordinary
 execution also awaits no diagnostic helper when the flag is absent. A success
 under observation does not clear the earlier ordinary failures.
+
+
+Failure-only diagnostic40204774239 at93d6e436 also passes both Windows
+management consumers, with no pre-removal observation. These remain diagnostic
+receipts, not acceptance. Compare the remaining environment difference before
+inferring observation sensitivity: the diagnostic originally ran management
+immediately after build, whereas the failed acceptance ran entry controls and
+role DEV first. The diagnostic now retains that exact bounded prefix (10 controls,
+role DEV, original management) on both Windows hosts. Failure-only reads and all
+original deadlines/assertions remain. No full inventory or packages are selected;
+all diagnostic results retain their status and cannot waive ordinary acceptance.

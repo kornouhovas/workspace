@@ -130,6 +130,13 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
+      - name: Original entry controls prefix
+        run: node --import tsx --test --test-name-pattern='role settings entry|role rename explicitly|role action entry|workspace removal entry|role move preparation|workspace rename cancellation|role folder expansion|workspace creation entry|role move completion|role archive completion' tests/runtime-view-readiness.test.mjs
+      - name: Original role DEV prefix
+        run: npm run smoke:folder-roles
+        env:
+          WORKSPACE_SMOKE_MODE: dev
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-management-diagnostic/role-prefix
       - name: Original management with passive failure state
         run: node scripts/smoke-workspace-management.mjs
         env:
