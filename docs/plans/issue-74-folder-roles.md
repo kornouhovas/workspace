@@ -437,3 +437,16 @@ role DEV first. The diagnostic now retains that exact bounded prefix (10 control
 role DEV, original management) on both Windows hosts. Failure-only reads and all
 original deadlines/assertions remain. No full inventory or packages are selected;
 all diagnostic results retain their status and cannot waive ordinary acceptance.
+
+
+Prefix diagnostic40205201537 at c98a3e1c passes Windows2022 through original
+management, while Windows latest stops earlier at role rename input disabled by
+a fresh observation after enabled readiness. Management cause remains unestablished.
+The matching focused control invalidates both input and Submit during input focus,
+as production does; a fresh review is required before1 submit/1 effect. Rename
+per-gesture waits are now bounded to1s within its unchanged15s total, and advance
+only through the explicit enabled no-unresolved review guard with unconditional
+fresh proof for each later draft. Unknown/stalled/repeated-rejection checks remain.
+Local control, original role journey,71 routing checks and lint pass. Renew ordinary
+affected-consumer acceptance on the reviewed repair; diagnostic successes are not
+substituted for original consumers and historical failures remain recorded.

@@ -236,6 +236,15 @@ test('role rename explicitly re-reviews stale operands and never replays an unce
   assert.equal(checks,1);assert.deepEqual(await page.evaluate(()=>[globalThis.roleAttempts,globalThis.roleReviews,globalThis.roleEffects]),[2,1,1]);
   await fixture(false,2);checks=0;await renameRoleProject(page.getByRole('dialog'),'Renamed',true,async()=>{checks++;assert.equal(await page.evaluate(()=>globalThis.roleEffects),0);});
   assert.equal(checks,2);assert.deepEqual(await page.evaluate(()=>[globalThis.roleAttempts,globalThis.roleReviews,globalThis.roleEffects]),[3,2,1]);
+  await fixture(false,0);checks=0;
+  await page.evaluate(()=>{
+   const input=document.querySelector('input'),review=document.querySelector('[type="button"]'),submit=document.querySelector('[type="submit"]');let invalidate=true;
+   input.onfocus=()=>{if(invalidate){invalidate=false;input.disabled=true;submit.disabled=true;review.hidden=false;}};
+   review.onclick=()=>{globalThis.roleReviews++;review.hidden=true;input.disabled=false;submit.disabled=false;input.value='Original';};
+   document.querySelector('form').onsubmit=event=>{event.preventDefault();globalThis.roleAttempts++;if(globalThis.roleReviews!==1)throw new Error('Fresh current-name review is required');globalThis.roleEffects++;document.querySelector('[role="dialog"]').remove();};
+  });
+  await renameRoleProject(page.getByRole('dialog'),'Renamed',true,async()=>{checks++;assert.equal(await page.evaluate(()=>globalThis.roleEffects),0);});
+  assert.equal(checks,1);assert.deepEqual(await page.evaluate(()=>[globalThis.roleAttempts,globalThis.roleReviews,globalThis.roleEffects]),[1,1,1]);
   await fixture(true);checks=0;
   await assert.rejects(renameRoleProject(page.getByRole('dialog'),'Renamed',true,async()=>{checks++;},{timeout:500}),/Timeout|deadline/);
   assert.equal(checks,0);assert.deepEqual(await page.evaluate(()=>[globalThis.roleAttempts,globalThis.roleReviews,globalThis.roleEffects]),[1,0,0]);

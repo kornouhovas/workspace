@@ -32,10 +32,17 @@ export async function renameRoleProject(dialog,name,en,verifyUnchanged,{timeout=
    await review.and(dialog.locator(':enabled')).waitFor({timeout:remaining()});
    await withDeadline(verifyUnchanged(),remaining(),'Role rename operand verification');
    await review.press('Enter',{timeout:remaining()});
-   await review.waitFor({state:'hidden',timeout:remaining()});
+   try{await review.waitFor({state:'hidden',timeout:Math.min(1000,remaining())});}catch(error){if(await review.isVisible()&&await review.isEnabled())continue;throw error;}
   }
-  await input.fill(name,{timeout:remaining()});
-  await submit.and(dialog.locator(':enabled')).press('Enter',{timeout:remaining()});
+  try{
+   await input.fill(name,{timeout:Math.min(1000,remaining())});
+   await submit.and(dialog.locator(':enabled')).press('Enter',{timeout:Math.min(1000,remaining())});
+  }catch(error){
+   // An observation can invalidate an enabled operand before the next gesture.
+   // Continue only through the explicit no-pending/no-unresolved review guard.
+   if(await review.isVisible()&&await review.isEnabled())continue;
+   throw error;
+  }
   await Promise.race([dialog.waitFor({state:'hidden',timeout:remaining()}),review.and(dialog.locator(':enabled')).waitFor({timeout:remaining()})]);
   if(!await dialog.isVisible())return;
   // Every new draft requires this explicit safe state and fresh no-effect proof.
