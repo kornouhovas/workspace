@@ -2326,3 +2326,15 @@ the complete affected DEV/package native/retained consumers on all3hosts. It ski
 the already-passing346 public checks and raw full suite because this is a fixture/
 driver/route-only repair. Existing full/runtime routes and all supported-platform
 assertions stay available. The new phases have separate concurrency suffixes.
+
+
+Entry run40220050595 atad8a5018 passes the original DEV command on macOS and
+Windows latest. Both inspected reports have4behavior groups,16captures, restart,
+2normal quits with backend exit and owned cleanup. Runtime40218363946 at e155
+also succeeds completely on Windows2022; its retained role DEV/package and ordinary
+assignment receipts are inspected. Native renewal therefore skips accepted status
+DEV on Mac/Windows latest and accepted retained/ordinary rows on Windows2022.
+It renews status DEV on Windows2022, status package/artifact prerequisites on all
+three hosts, and the missing retained/ordinary/role-package rows on Mac/Windows
+latest. Full/runtime defaults still run their original inventory. Evaluated routing
+checks assert per-host command counts;74/74 pass locally and independently.

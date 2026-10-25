@@ -52,17 +52,17 @@ jobs:
           set -o pipefail
           node --import tsx --test tests/project-category-move-ui.test.tsx tests/role-command-ui.test.tsx tests/group-assignment-ui.test.tsx tests/status-assignment-service.test.mjs tests/group-assignment-service.test.mjs tests/role-project-commands.test.mjs tests/view-grouping-service.test.mjs 2>&1 | tee work/ci-status-moves/affected.log
       - name: Development status editing and Board/Table assignment
-        if: ${{ inputs.phase != 'routing-repair' }}
+        if: ${{ inputs.phase != 'routing-repair' && !(inputs.phase == 'native-renewal' && matrix.os != 'windows-2022') }}
         run: node scripts/smoke-status-assignment.mjs
         env:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-status-moves/dev
       - name: Retained explicit parent operations
-        if: ${{ inputs.phase != 'routing-repair' && inputs.phase != 'entry-repair' }}
+        if: ${{ inputs.phase != 'routing-repair' && inputs.phase != 'entry-repair' && !(inputs.phase == 'native-renewal' && matrix.os == 'windows-2022') }}
         run: npm run smoke:folder-roles
         env:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-status-moves/roles-dev
       - name: Retained ordinary and filesystem assignment
-        if: ${{ inputs.phase != 'routing-repair' && inputs.phase != 'entry-repair' }}
+        if: ${{ inputs.phase != 'routing-repair' && inputs.phase != 'entry-repair' && !(inputs.phase == 'native-renewal' && matrix.os == 'windows-2022') }}
         run: node scripts/smoke-group-assignment.mjs --filesystem
         env:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-status-moves/assignment-dev
@@ -78,7 +78,7 @@ jobs:
           WORKSPACE_SMOKE_MODE: release
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-status-moves/release
       - name: Packaged retained explicit parent operations
-        if: ${{ inputs.phase != 'routing-repair' && inputs.phase != 'entry-repair' }}
+        if: ${{ inputs.phase != 'routing-repair' && inputs.phase != 'entry-repair' && !(inputs.phase == 'native-renewal' && matrix.os == 'windows-2022') }}
         run: npm run smoke:folder-roles
         env:
           WORKSPACE_SMOKE_MODE: release

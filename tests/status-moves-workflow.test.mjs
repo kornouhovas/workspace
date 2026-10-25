@@ -24,7 +24,8 @@ test('routing repair renews only the original failed inventory and runtime tails
   assert.equal(runInNewContext(dispatch.jobs['status-moves'].with.phase.slice(3,-2),context),phase);
   const matrix=workflow.jobs['status-moves'].strategy.matrix.os;
   assert.deepEqual(Array.from(runInNewContext(matrix.slice(3,-2),{inputs:{phase},fromJSON:JSON.parse})),phase==='routing-repair'?['windows-latest','windows-2022']:phase==='entry-repair'?['macos-latest','windows-latest']:['macos-latest','windows-latest','windows-2022']);
-  const runs=workflow.jobs['status-moves'].steps.filter(step=>step.run&&(!step.if||runInNewContext(step.if.slice(3,-2),{inputs:{phase}}))).map(step=>step.run);
+  const scheduled=os=>workflow.jobs['status-moves'].steps.filter(step=>step.run&&(!step.if||runInNewContext(step.if.slice(3,-2),{inputs:{phase},matrix:{os}}))).map(step=>step.run);
+  const runs=scheduled('macos-latest');
   assert.equal(runs.some(run=>run.includes('npm run test:all')),phase==='full');
   assert.equal(runs.some(run=>run.includes('node --test tests/test-suites.test.mjs tests/status-moves-workflow.test.mjs')),phase==='routing-repair');
   assert.equal(runs.some(run=>run.includes('tests/project-category-move-ui.test.tsx')),phase==='runtime');
@@ -32,5 +33,12 @@ test('routing repair renews only the original failed inventory and runtime tails
   assert.equal(runs.includes('node scripts/smoke-status-assignment.mjs'),phase!=='routing-repair');
   assert.equal(runs.includes('npx electron-builder --dir'),['full','runtime','native-renewal'].includes(phase));
   assert.equal(runs.includes('npm run smoke:folder-roles'),['full','runtime','native-renewal'].includes(phase));
+  for(const os of ['macos-latest','windows-latest','windows-2022']){
+   const commands=scheduled(os);
+   const statusCount=commands.filter(run=>run==='node scripts/smoke-status-assignment.mjs').length;
+   assert.equal(statusCount,phase==='routing-repair'?0:phase==='entry-repair'?1:phase==='native-renewal'?(os==='windows-2022'?2:1):2);
+   assert.equal(commands.filter(run=>run==='npm run smoke:folder-roles').length,['full','runtime'].includes(phase)||phase==='native-renewal'&&os!=='windows-2022'?2:0);
+   assert.equal(commands.includes('node scripts/smoke-group-assignment.mjs --filesystem'),['full','runtime'].includes(phase)||phase==='native-renewal'&&os!=='windows-2022');
+  }
  }
 });

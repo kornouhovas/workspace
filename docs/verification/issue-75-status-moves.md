@@ -181,3 +181,27 @@ material issue; routing checks74/74 pass. The two failed-host DEV entry receipts
 and subsequent all3host changed native DEV/package consumers remain pending.
 Application, service/native, dependency and build inputs are unchanged from e155;
 reuse its346 public checks with exact provenance, not a blanket full-green claim.
+
+
+### Inspected entry gate and remaining native rows
+
+[Entry run40220050595](https://github.com/kornouhovas/workspace/actions/runs/40220050595)
+atad8a5018 passes macOS and Windows latest DEV. Downloaded result.json for each
+has4behavior groups,16captures, restart=true,2normalQuit/backend-exit receipts,
+stopped=true and cleanup=passed. Original e155 Windows2022 runtime also succeeds;
+its role DEV/package and ordinary assignment reports are inspected and passed.
+Fixture/harness-only changes after e155 do not change these retained consumers or
+application/build inputs. Their source provenance remains e155, while the status
+DEV provenance remains ad8. Native renewal selects exactly these pending rows:
+
+| Host | Current status DEV | Current status package | Retained role DEV/package | Ordinary assignment DEV |
+| --- | --- | --- | --- | --- |
+| macOS latest | Accepted ad8 /40220050595 | Pending renewal | Pending, originally unreached | Pending, originally unreached |
+| Windows latest | Accepted ad8 /40220050595 | Pending renewal | Pending, originally unreached | Pending, originally unreached |
+| Windows2022 | Pending changed-driver renewal | Pending changed-driver renewal | Accepted e155 /40218363946 | Accepted e155 /40218363946 |
+
+Package/artifact prerequisites run for every selected packaged status consumer.
+The native-renewal route skips only the accepted rows above; full/runtime defaults
+retain their complete inventory. Per-host routing assertions pass74/74. No raw full
+suite or346-case public-suite rerun is warranted for this fixture/route-only repair.
+Every pending row still requires its own inspected passing receipt before delivery.
