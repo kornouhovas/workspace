@@ -32,7 +32,7 @@ test('real populated pre-evidence SQLite upgrade preserves old identities, prope
   const before={source:sql.prepare('SELECT * FROM sources').get(),project:sql.prepare('SELECT * FROM projects').get(),views:sql.prepare('SELECT * FROM views').all(),sessions:sql.prepare('SELECT * FROM workspace_sessions').all()};
   service=openSettingsService(path);
   const source=sql.prepare('SELECT * FROM sources').get(),project=sql.prepare('SELECT * FROM projects').get();
-  assert.deepEqual(source,{...before.source,durable_evidence:null,evidence_generation:0});
+  assert.deepEqual(source,{...before.source,durable_evidence:null,evidence_generation:0,folder_roles:null});
   assert.deepEqual(project,{...before.project,durable_evidence:null});
   assert.deepEqual(sql.prepare('SELECT * FROM views').all(),before.views);assert.deepEqual(sql.prepare('SELECT * FROM workspace_sessions').all(),before.sessions);
   assert.equal(service.handleQuery({type:'workspace.listProjects',workspaceId}).value.state,'association_review_required');

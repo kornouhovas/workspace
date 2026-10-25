@@ -1,3 +1,4 @@
+import {sourceFolderRolePolicy} from "./folder-roles.js";
 import {validLegacyCategoryFolderHistory,categoryAuthorizationMatchesBinding,parseCategoryFolderAuthorization,type CategoryFolderAuthorization} from "./category-folder-authorization.js";
 import {parseFolderObservation,type FilesystemAuthorizer,type VerifiedFolder} from "./filesystem-authorization.js";
 import {identityState,storedEvidence} from "./source-identity.js";
@@ -26,7 +27,7 @@ type Project = typeof schema.projects.$inferSelect;
 type Binding = { source: Source; snapshot: unknown; category: Category | null; members: Project[]; additions: Project[]; associationIdentity: string | null };
 type Execution = {authorization:CategoryFolderAuthorization;destination:VerifiedFolder|null;source:Source;legacy:boolean};
 const same = (a: unknown, b: unknown) => isDeepStrictEqual(a,b);
-const policy=(source:Source)=>({...source,propertyRevision:0,categoryPropertyRevision:0});
+const policy=(source:Source)=>({...sourceFolderRolePolicy(source),propertyRevision:0,categoryPropertyRevision:0});
 const invalid = (message = "Review a category folder in a saved grouped workspace.") => ({ ok: false as const, error: { code: "invalid_input" as const, message } });
 const storageFailure = () => ({ ok: false as const, error: { code: "storage" as const, message: "Category operation history could not be read." } });
 const stale = () => ({ ok: false as const, error: { code: "stale_preview" as const, message: "Refresh the preview and review the current folder state." } });

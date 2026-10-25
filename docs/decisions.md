@@ -88,6 +88,16 @@ Accepted on 2026-10-20; applied after completion of the independently owned #52:
 | D64 | For subsequent UI work, require appearance evidence and affected-behavior checks per issue. Run broad platform/installer acceptance at agreed integration milestones or when the relevant boundary changes. Preserve data-safety coverage, report failures and retain evidence provenance. Do not retrospectively change #52's acceptance gates. |
 | D65 | For the owner's “undo/redo as in main” request, preserve main's actual Back/Forward navigation: visited workspaces/settings, current-run history, end-of-history disabled states and localized hints. Inspection of current remote main confirms this is not Undo/Redo of saved mutations. Keep navigation, Cancel/Escape and persisted workspace sessions distinct; do not infer a new mutation-reversal feature from the label. |
 
+## Folder-role correction
+
+The owner-confirmed correction in [#74](https://github.com/kornouhovas/workspace/issues/74)
+extends D08/D21/D27: workspace settings configure shared group/status/project roles
+and exclusions; discovery stops at projects and uses the nearest status ancestor.
+No-status projects are valid. Explicit descendant overrides survive parent edits.
+The Sources navigation entry moves into the selected workspace detail; independent
+views, reviewed impact and metadata retention remain required. This is the accepted
+product contract; its delivery status belongs to the issue checkpoint.
+
 ## Open design branches
 
 | ID | Question and prerequisite |

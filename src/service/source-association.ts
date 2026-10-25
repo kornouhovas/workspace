@@ -1,3 +1,4 @@
+import {scanConfiguredSource} from "./folder-roles.js";
 import {filesystemAlias} from "./path-alias.js";
 import {parseFolderObservation} from "./filesystem-authorization.js";
 import {observeArchivedFolder,parseArchivedFolderAssociation,type ArchivedFolderAssociation} from "./archive-association.js";
@@ -41,8 +42,7 @@ export function createSourceAssociationService(db: Database, scope: string, read
     const data = read(workspaceId), {source} = data;
     const mode = source.discoveryMode ?? "direct";
     if (mode !== "direct" && mode !== "grouped") throw new StaleBinding();
-    const scan = (mode === "grouped" ? scanGroupedSource : scanDirectSource)(source.canonicalRoot, source.archiveRelativePath,
-      projectExclusions(JSON.parse(source.excludedRelativePaths), mode).effective);
+    const scan = scanConfiguredSource(source,projectExclusions(JSON.parse(source.excludedRelativePaths),mode).effective);
     const root = sourceIdentity(source, scan, scope, reader,data.peerSources);
     if(data.reservations.some(reservation=>reservationOwnsFolder(reservation,root.observation)))root.state="unsafe";
     const evidence: {mapping: FolderMapping | null; observation: FolderObservation}[] = [{mapping: null, observation: root.observation}];
@@ -173,7 +173,9 @@ export function createSourceAssociationService(db: Database, scope: string, read
         const selectedParent = mappings.find(m => m.kind === "category" && m.id === parent?.id);
         const parentPath = selectedParent?.relativePath ?? parent?.relativePath;
         const parentObserved = parentPath ? observations.get(parentPath) : undefined;
-        if (!parent || mapping.relativePath.split("/")[0] !== parentPath || (!selectedParent &&
+        const target=scan.entries.find(entry=>entry.kind==="project"&&entry.relativePath===mapping.relativePath);
+        if(source.folderRoles && target?.kind==="project" && target.categoryPath===null && project.categoryId===null){evidence.push({mapping,observation:observations.get(mapping.relativePath)??{ok:false,reason:"missing_attributes"}});continue;}
+        if (!parent || (source.folderRoles && target?.kind==="project" ? target.categoryPath : mapping.relativePath.split("/")[0]) !== parentPath || (!selectedParent &&
           (!parentObserved?.ok || !root.observation.ok || parentObserved.evidence.volume !== root.observation.evidence.volume ||
             parentObserved.evidence.serial !== root.observation.evidence.serial ||
             !verifiedParents.has(parent.id) ||

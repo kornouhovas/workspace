@@ -13,6 +13,7 @@ export const sources = sqliteTable("sources", {
   id: text("id").primaryKey(),
   canonicalRoot: text("canonical_root").notNull().unique(),
   discoveryMode: text("discovery_mode"),
+  folderRoles: text("folder_roles"),
   categoryPropertyRevision: integer("category_property_revision").notNull().default(0),
   propertyRevision: integer("property_revision").notNull().default(0),
   discoveryRevision: integer("discovery_revision").notNull().default(0),

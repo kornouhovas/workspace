@@ -501,8 +501,8 @@ function TextPropertiesContent({ sourceAvailable = true, detail, onPreview, view
           event.preventDefault(); event.stopPropagation(); finishDrag();
           const command = readGroupDrop(raw, {workspaceId,viewId,propertyId:assignmentProperty.propertyId,archived:!!hideReveal}, group.key);
           if (command) void assign(command);
-        }} style={layout === "board" ? {flexBasis:boardColumnWidth(boardState.config, grouped.propertyId, group.key)} : undefined} key={group.key} aria-label={group.value===null?t("groupNoValue"):(group.label ?? String(group.value))}>
-        <div className="project-group-header"><h3 className="property-authored">{group.value===null?t("groupNoValue"):(group.label ?? String(group.value))} ({group.projectIds.length})</h3>
+        }} style={layout === "board" ? {flexBasis:boardColumnWidth(boardState.config, grouped.propertyId, group.key)} : undefined} key={group.key} aria-label={group.value===null?t(grouped.propertyId===categoryProperty?.propertyId?"groupNoStatus":"groupNoValue"):(group.label ?? String(group.value))}>
+        <div className="project-group-header"><h3 className="property-authored">{group.value===null?t(grouped.propertyId===categoryProperty?.propertyId?"groupNoStatus":"groupNoValue"):(group.label ?? String(group.value))} ({group.projectIds.length})</h3>
         {layout === "board" && viewId && <BoardLayoutControls column={group} layoutTrigger={layoutTrigger} state={boardState} fields={fields} groups={null} groupPropertyId={grouped.propertyId} language={language} disabled={disabled || loadError || loading}/>}
         </div>
         {!group.collapsed && (group.empty ? <p>{t("groupEmpty")}</p> : layout === "board" ? <ul className="project-board" aria-label={t("boardProjects")}>{rows(group.projectIds, group.key)}</ul> :

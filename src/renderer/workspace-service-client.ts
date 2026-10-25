@@ -219,8 +219,12 @@ export class WorkspaceServiceClient {
     return this.api.workspace({ type: "workspace.setTextValue", workspaceId, projectId, propertyId, value });
   }
 
-  previewDiscovery(workspaceId: string, excludedRelativePaths?: string[], mode?: DiscoveryMode): Promise<ServiceResult<DiscoveryPreview>> {
-    return this.api.workspace({ type: "workspace.previewDiscovery", workspaceId, ...(mode === undefined ? {} : { mode }),
+  getFolderChildren(workspaceId: string, parentRelativePath: string): Promise<ServiceResult<import("../contracts/workspaces.js").FolderChildren>> {
+    return this.api.workspace({type:"workspace.getFolderChildren",workspaceId,parentRelativePath});
+  }
+
+  previewDiscovery(workspaceId: string, excludedRelativePaths?: string[], mode?: DiscoveryMode, folderRoles?: import("../contracts/workspaces.js").FolderRoleOverride[]): Promise<ServiceResult<DiscoveryPreview>> {
+    return this.api.workspace({ type: "workspace.previewDiscovery", workspaceId, ...(folderRoles === undefined ? {} : {folderRoles}), ...(mode === undefined ? {} : { mode }),
       ...(excludedRelativePaths === undefined ? {} : { excludedRelativePaths }) });
   }
 

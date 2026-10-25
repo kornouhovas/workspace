@@ -13,8 +13,8 @@ import type { Appearance, Language } from "../../contracts/settings.js";
 import type { WorkspaceLoad } from "../../contracts/workspaces.js";
 
 
-const sections = ["general", "appearance", "workspaces", "sources", "backup", "about"] as const;
-type Section = typeof sections[number];
+const sections = ["general", "appearance", "workspaces", "backup", "about"] as const;
+type Section = typeof sections[number] | "sources";
 export const shellLabels = {
   en: { actions: "Workspace actions", add: "Add workspace", rename: "Rename workspace", remove: "Remove workspace", up: "Move up", down: "Move down", settings: "Settings", back: "Back to workspace", general: "General", appearance: "Appearance", workspaces: "Workspaces", sources: "Sources", backup: "Backup and recovery", about: "About", theme: "Color theme", light: "Light", dark: "Dark", system: "System", retry: "Retry", workspace: "Workspace", unavailable: "Settings will be available when the backend reconnects.", aboutDescription: "Workspace organizes real project folders using properties and saved views." },
   ru: { actions: "Действия с рабочим пространством", add: "Добавить рабочее пространство", rename: "Переименовать рабочее пространство", remove: "Удалить рабочее пространство", up: "Переместить выше", down: "Переместить ниже", settings: "Настройки", back: "Вернуться к работе", general: "Основные", appearance: "Оформление", workspaces: "Рабочие пространства", sources: "Источники", backup: "Резервные копии и восстановление", about: "О приложении", theme: "Цветовая тема", light: "Светлая", dark: "Тёмная", system: "Системная", retry: "Повторить", workspace: "Рабочее пространство", unavailable: "Настройки станут доступны после подключения сервиса.", aboutDescription: "Workspace помогает работать с папками проектов, свойствами и сохранёнными видами." },
@@ -136,7 +136,7 @@ export function DesktopShell({ language, data, busy, locked, onCreate, onManage,
     }
   };
   const panels = renderPanels(back);
-  return <SettingsNavigationContext.Provider value={{ open: (next: RecoverySettingsSection) => openSettings(next), workspaceVisible: !open }}><Tabs.Root className={`desktop-shell bg-background text-foreground${collapsed?" desktop-shell--collapsed":""}`} style={{"--sidebar-width":`${sidebarWidth}px`} as React.CSSProperties} orientation="vertical" activationMode="manual" value={section} onValueChange={value => setSection(value as Section)}>
+  return <SettingsNavigationContext.Provider value={{ open: (next: RecoverySettingsSection) => openSettings(next === "sources" ? "workspaces" : next), workspaceVisible: !open, section: open ? section : undefined }}><Tabs.Root className={`desktop-shell bg-background text-foreground${collapsed?" desktop-shell--collapsed":""}`} style={{"--sidebar-width":`${sidebarWidth}px`} as React.CSSProperties} orientation="vertical" activationMode="manual" value={section} onValueChange={value => setSection(value as Section)}>
     <aside className="desktop-sidebar" aria-label={open ? l.settings : l.workspaces}>
       <div className="sidebar-navigation"><div className="desktop-brand">Workspace</div>{!collapsed && navigationControls}</div>
       {historyError && <p role="status">{n.destination}</p>}
@@ -183,7 +183,7 @@ export function DesktopShell({ language, data, busy, locked, onCreate, onManage,
       <div className="desktop-settings" hidden={!open}>
         {sections.map(item => <Tabs.Content key={item} value={item} forceMount hidden={!open || section !== item} className="settings-page" tabIndex={0}>
           <header className="settings-page-heading"><p>{l.settings}</p><h1>{l[item]}</h1></header>
-          <div className="settings-card">{item === "sources" && (!open || section !== item) ? null : panels[item]}</div>
+          <div className="settings-card">{panels[item]}</div>
         </Tabs.Content>)}
       </div>
     </div>

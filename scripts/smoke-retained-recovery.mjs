@@ -88,7 +88,7 @@ try{
    }
   }
   await area.getByRole('button',{name:en?'Source settings':'Настройки источника',exact:true}).click();
-  await page.getByRole('tab',{name:en?'Sources':'Источники',selected:true,exact:true}).waitFor();
+  await page.getByRole('tab',{name:en?'Workspaces':'Рабочие пространства',selected:true,exact:true}).waitFor();
   await waitForRuntimeRecoverySource(page,source);
   await returnToWorkspace(page);await page.getByRole('tab',{name:'Brand refresh',selected:true,exact:true}).waitFor();
  }
@@ -134,11 +134,11 @@ try{
  assert.equal(await area.getByRole('button',{name:'Refresh files',exact:true}).isDisabled(),true);
  assert.equal(await page.locator('.project-navigation > .source-refresh').evaluate(el=>el.getBoundingClientRect().height<window.innerHeight*0.4),true,'Outage banner leaves retained navigation and recovery on screen');
  await captureState('source-unavailable');
- await area.getByRole('button',{name:'Source settings',exact:true}).click();await page.getByRole('tab',{name:'Sources',selected:true,exact:true}).waitFor();
+ await area.getByRole('button',{name:'Source settings',exact:true}).click();await page.getByRole('tab',{name:'Workspaces',selected:true,exact:true}).waitFor();
  await openSettingsSection(page,'backup');await page.locator('.settings-page:not([hidden])').getByText('Backup and recovery',{exact:true}).first().waitFor();await returnToWorkspace(page);
  assert.equal(await page.locator('.project-tab [role="tab"]').count(),2);
  await rename(join(fixture,'offline-source'),source);await area.getByRole('button',{name:'Refresh source',exact:true}).click();await page.getByRole('treeitem',{name:'fresh.txt',exact:true}).waitFor();
- report.checks.push('root outage/restart retains tabs without mass missing; Sources and Backup remain reachable; reconnect revalidates files');
+ report.checks.push('root outage/restart retains tabs without mass missing; workspace settings and Backup remain reachable; reconnect revalidates files');
  const excluded=await call('previewDiscovery',{mode:'direct',excludedRelativePaths:['Verified move']});await call('applyDiscovery',{previewToken:excluded.previewToken});
  await area.getByText('Excluded from discovery. Use Preview folders to include it again.',{exact:true}).waitFor();assert.equal(await area.getByRole('button',{name:'Locate folder: Verified move',exact:true}).count(),0);await captureState('excluded-retained');
  const grouped=await call('previewDiscovery',{mode:'grouped',excludedRelativePaths:[]});await call('applyDiscovery',{previewToken:grouped.previewToken});

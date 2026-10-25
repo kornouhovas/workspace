@@ -1,5 +1,15 @@
 # CI checks and diagnostic routes
 
+## Folder-role settings acceptance
+
+For #74, dispatch `desktop-ci.yml` with `checks: folder-roles` on the reviewed
+candidate. The reusable `folder-roles.yml` runs the complete suite on macOS latest,
+Windows latest and Windows2022, then role settings, retained workspace management
+and retained project settings/Back journeys in DEV and packaged modes. Artifacts
+retain host, candidate SHA, run/attempt, full log and each consumer's receipts and
+captures. This does not publish a release or replace #67/#42 acceptance.
+
+
 ## Final integrated desktop acceptance
 
 For #67, dispatch the registered `desktop-ci.yml` with `checks: integrated-desktop`

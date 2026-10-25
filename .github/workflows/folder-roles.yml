@@ -1,0 +1,74 @@
+name: Contextual folder roles
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  folder-roles:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest, windows-2022]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.21.1
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm run check:docs
+      - run: npm run build
+      - name: Complete current suite
+        shell: bash
+        run: |
+          mkdir -p work/ci-folder-roles
+          set -o pipefail
+          npm run test:all 2>&1 | tee work/ci-folder-roles/full.log
+      - name: Development folder configuration
+        run: npm run smoke:folder-roles
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-folder-roles/dev
+          WORKSPACE_SMOKE_MODE: dev
+      - name: Retained unconfigured workspace management
+        run: npm run smoke:workspaces
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-folder-roles/management-dev
+          WORKSPACE_SMOKE_MODE: dev
+      - name: Retained project settings and Back
+        run: node scripts/smoke-retained-recovery.mjs
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-folder-roles/recovery-dev
+          WORKSPACE_SMOKE_MODE: dev
+      - name: Package candidate
+        run: npx electron-builder --dir
+      - run: npm run check:artifact -- release
+      - name: Packaged folder configuration
+        run: npm run smoke:folder-roles
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-folder-roles/release
+          WORKSPACE_SMOKE_MODE: release
+      - name: Packaged retained setup
+        run: npm run smoke:workspaces
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-folder-roles/management-release
+          WORKSPACE_SMOKE_MODE: release
+      - name: Packaged retained project settings and Back
+        run: node scripts/smoke-retained-recovery.mjs
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-folder-roles/recovery-release
+          WORKSPACE_SMOKE_MODE: release
+      - name: Preserve exact-candidate evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: folder-roles-${{ matrix.os }}-${{ github.sha }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
+          path: work/ci-folder-roles/
+          if-no-files-found: error
+          retention-days: 14

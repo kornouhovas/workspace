@@ -1,3 +1,4 @@
+import { scanConfiguredSource, planRoleDiscovery, rolePlacement, savedFolderRoles } from "./folder-roles.js";
 import {isDeepStrictEqual} from 'node:util';
 import {parseArchiveAuthorizationV1,parseArchiveParents,archiveParentPathsMatch} from './archive-proof.js';
 import {parseArchivedFolderAssociation,archivedAssociationMatchesRecord} from './archive-association.js';
@@ -89,6 +90,42 @@ export function createProjectRevealService(db: BetterSQLite3Database<typeof sche
     const target:TrustedProjectRevealTarget={canonicalRoot:source.canonicalRoot,relativePath:archive.relativePath,parentRelativePath:parts.slice(0,-1).join('/'),rootIdentity:JSON.stringify(frame.root.mount),parentIdentity:JSON.stringify(folders.at(-2)!.mount),nativeIdentity:JSON.stringify(projectProof.mount),ancestors,authorization:{version:1,generation:source.evidenceGeneration,folders}};
     verifyTrustedProjectRevealTarget(target,filesystem);return target;
   }
+  function roleTarget(source: typeof schema.sources.$inferSelect, project: typeof schema.projects.$inferSelect): TrustedProjectRevealTarget {
+    if(project.modeInactive || project.associationState!=="active")throw new RevealFailure("mode_retained");
+    const roles=savedFolderRoles(source)!;
+    const placement=rolePlacement(project.relativePath,roles,source.discoveryMode === "grouped" ? "grouped":"direct");
+    if(!placement.recognized)throw new RevealFailure("mode_retained");
+    const projects=db.select().from(schema.projects).where(eq(schema.projects.sourceId,source.id)).all();
+    const categories=db.select().from(schema.categories).where(eq(schema.categories.sourceId,source.id)).all();
+    const category=categories.find(row=>row.id===project.categoryId);
+    if(placement.categoryPath===null ? project.categoryId!==null : !category || category.modeInactive || category.associationState!=="active" || category.relativePath!==placement.categoryPath)throw new RevealFailure("category_unavailable");
+    const reservations=readProjectReservations(db,source.id);
+    const authorizer=createFilesystemAuthorization(policy!.scope,policy!.read,db),frame=authorizer.capture(source,"",source.durableEvidence);
+    const scan=scanConfiguredSource(source,JSON.parse(source.excludedRelativePaths));
+    if(!scan.snapshot || !sameIdentity(scan.snapshot.root.identity,frame.root.mount))throw new RevealFailure("unavailable");
+    const planned=planRoleDiscovery(scan,continuityRecords(source,scan,categories,policy!.scope,policy!.read),continuityRecords(source,scan,projects,policy!.scope,policy!.read),reservations);
+    if(planned.projects.retained.find(row=>row.id===project.id)?.associationState!=="active")throw new RevealFailure("unresolved");
+    if(category && planned.categories.retained.find(row=>row.id===category.id)?.associationState!=="active")throw new RevealFailure("category_unavailable");
+    const folders=[{relativePath:"",evidence:frame.root.evidence,mount:frame.root.mount}];
+    const parts=project.relativePath.split("/");
+    for(let index=0;index<parts.length;index++) {
+      const relativePath=parts.slice(0,index+1).join("/"),child=scan.snapshot.children.find(row=>row.relativePath===relativePath);
+      if(child?.kind!=="directory")throw new RevealFailure("unresolved");
+      const expected=index===parts.length-1 ? storedEvidence(project.durableEvidence) : categories.find(row=>!row.modeInactive&&row.associationState==="active"&&row.relativePath===relativePath)?.durableEvidence;
+      const saved=typeof expected==="string" ? storedEvidence(expected) : expected;
+      if(index===parts.length-1&&!saved)throw new RevealFailure("unresolved");
+      const proof=authorizer.observe(join(source.canonicalRoot,relativePath),frame.root,child.identity,saved??undefined);
+      verifyPeerProject(source.id,join(source.canonicalRoot,relativePath),proof);
+      if(reservations.some(row=>row.projectId===project.id || row.relativePath===relativePath || reservationOwnsFolder(row,proof)))throw new RevealFailure("unresolved");
+      if(folders.some(folder=>durableOwnershipKey(folder.evidence)===durableOwnershipKey(proof.evidence)))throw new RevealFailure("unresolved");
+      if(index===parts.length-1 && [...projects,...categories].some(row=>row.id!==project.id && (()=>{const other=storedEvidence(row.durableEvidence),native=JSON.parse(row.nativeIdentity);return other ? durableOwnershipKey(other)===durableOwnershipKey(proof.evidence) : native.ino===proof.mount.ino&&native.birthtimeNs===proof.mount.birthtimeNs;})()))throw new RevealFailure("unresolved");
+      folders.push({relativePath,evidence:proof.evidence,mount:proof.mount});
+    }
+    const ancestors=folders.slice(1,-1).map(folder=>({relativePath:folder.relativePath,identity:JSON.stringify(folder.mount)}));
+    const target:TrustedProjectRevealTarget={canonicalRoot:source.canonicalRoot,relativePath:project.relativePath,parentRelativePath:parts.slice(0,-1).join("/"),rootIdentity:JSON.stringify(frame.root.mount),parentIdentity:JSON.stringify(folders.at(-2)!.mount),nativeIdentity:JSON.stringify(folders.at(-1)!.mount),...(ancestors.length?{ancestors}:{}),authorization:{version:1,generation:source.evidenceGeneration,folders}};
+    verifyTrustedProjectRevealTarget(target,filesystem);
+    return target;
+  }
   function durableTargetFor(workspaceId:string,projectId:string,includeArchived:boolean):{target:TrustedProjectRevealTarget;authorization:string} {
     const authorization=authorizationFor(workspaceId,projectId);
     const source=db.select().from(schema.workspaces).innerJoin(schema.sources,eq(schema.workspaces.sourceId,schema.sources.id)).where(eq(schema.workspaces.id,workspaceId)).get()?.sources;
@@ -97,6 +134,7 @@ export function createProjectRevealService(db: BetterSQLite3Database<typeof sche
     if(source.discoveryMode!=="direct"&&source.discoveryMode!=="grouped")throw new RevealFailure("unconfigured");
     const archive=includeArchived?db.select().from(schema.projectArchives).where(eq(schema.projectArchives.projectId,projectId)).get():undefined;
     if(archive){const target=durableArchivedTarget(source,project,archive);if(authorizationFor(workspaceId,projectId)!==authorization)throw new RevealFailure("unresolved");return {target,authorization};}
+    if(source.folderRoles){const target=roleTarget(source,project);if(authorizationFor(workspaceId,projectId)!==authorization)throw new RevealFailure("unresolved");return {target,authorization};}
     if(project.modeInactive)throw new RevealFailure("mode_retained");
     if(project.associationState!=="active")throw new RevealFailure(project.associationState);
     const parts=project.relativePath.split('/');
@@ -123,7 +161,7 @@ export function createProjectRevealService(db: BetterSQLite3Database<typeof sche
     const reservations=readProjectReservations(db,source.id);
     if(reservations.some(row=>row.projectId===projectId || row.relativePath===project.relativePath || reservationOwnsFolder(row,proof)))throw new RevealFailure("unresolved");
     const exclusions:unknown=JSON.parse(source.excludedRelativePaths);
-    if(!validExclusions(exclusions,"grouped")||!validArchive(source.archiveRelativePath))throw new RevealFailure("unresolved");
+    if(!validExclusions(exclusions,"grouped",!!source.folderRoles)||!validArchive(source.archiveRelativePath))throw new RevealFailure("unresolved");
     const scan=(source.discoveryMode==="grouped"?scanGroupedSource:scanDirectSource)(source.canonicalRoot,source.archiveRelativePath,projectExclusions(exclusions,source.discoveryMode).effective);
     if(!scan.snapshot){if(scan.state==="changed")throw new UnstableRevealScan();throw new RevealFailure("unavailable");}
     if(!sameIdentity(scan.snapshot.root.identity,frame.root.mount))throw new RevealFailure("root_replaced");
@@ -183,7 +221,7 @@ export function createProjectRevealService(db: BetterSQLite3Database<typeof sche
       rootIdentity: source.appliedRootIdentity, parentIdentity, nativeIdentity: project.nativeIdentity };
     verifyTrustedProjectRevealTarget(target, filesystem);
     const exclusions: unknown = JSON.parse(source.excludedRelativePaths);
-    if (!validExclusions(exclusions, "grouped") || !validArchive(source.archiveRelativePath)) throw new Error("Invalid source policy");
+    if (!validExclusions(exclusions, "grouped", !!source.folderRoles) || !validArchive(source.archiveRelativePath)) throw new Error("Invalid source policy");
     const scan = (source.discoveryMode === "grouped" ? scanGroupedSource : scanDirectSource)(source.canonicalRoot,
       source.archiveRelativePath, projectExclusions(exclusions, source.discoveryMode).effective);
     if (!scan.snapshot) {

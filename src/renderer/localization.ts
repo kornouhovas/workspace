@@ -107,6 +107,7 @@ const english = {
   groupOrder_manual: "Manual",
   groupHideEmpty: "Hide empty groups",
   groupNoValue: "No value",
+  groupNoStatus: "No status",
   groupHide: "Hide group",
   groupShow: "Show group",
   groupCollapse: "Collapse group",
@@ -559,7 +560,7 @@ const english = {
   projectReplaced: "Folder evidence differs from this retained record. Project metadata is preserved.",
   projectName: "Project name",
 
-  projectModeRetained: "Retained after a mode change. Text remains editable; locate a folder to reassociate explicitly.",
+  projectModeRetained: "Retained after a folder configuration change. Text remains editable; locate a folder to reassociate explicitly.",
   discoverySharedScope: "Apply changes the source for every workspace using this folder.",
   discoveryCurrentMode: "Current interpretation",
   discoveryCategoryAvailable: "The folder-backed category property will be available in grouped mode.",
@@ -823,6 +824,7 @@ const russian: Record<keyof typeof english, string> = {
   groupOrder_manual: "Вручную",
   groupHideEmpty: "Скрывать пустые группы",
   groupNoValue: "Без значения",
+  groupNoStatus: "Без статуса",
   groupHide: "Скрыть группу",
   groupShow: "Показать группу",
   groupCollapse: "Свернуть группу",
@@ -1273,7 +1275,7 @@ const russian: Record<keyof typeof english, string> = {
   projectReplaced: "Данные о папке отличаются от сохранённой записи. Метаданные проекта сохранены.",
   projectName: "Название проекта",
 
-  projectModeRetained: "Сохранён после смены режима. Текст можно редактировать; выберите папку для явной привязки.",
+  projectModeRetained: "Сохранён после изменения настройки папок. Текст можно редактировать; выберите папку для явной привязки.",
   discoverySharedScope: "Применение изменит источник во всех рабочих пространствах с этой папкой.",
   discoveryCurrentMode: "Текущая интерпретация",
   discoveryCategoryAvailable: "В сгруппированном режиме свойство категории по папкам будет доступно.",

@@ -1,3 +1,4 @@
+import { scanConfiguredSource } from "./folder-roles.js";
 import { storedEvidence } from "./source-identity.js";
 import { observeFolder, sameDurableFolder } from "./folder-evidence.js";
 import { reserveDurablePlacements, continuityRecords, discoveryEvidence, sameVolumeEvidence, discoveryIdentityState, sourceIdentity, type EvidenceReader } from "./source-identity.js";
@@ -5,7 +6,7 @@ import { hasUnfinishedProjectRelocation, readProjectReservations } from "./proje
 import { randomUUID } from "node:crypto";
 import { asc, eq } from "drizzle-orm";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
-import { isChildName, reserveProjectPlacements, projectExclusions, reliableIdentity, sameIdentity, scanDirectSource, scanGroupedSource, validArchive, validExclusions,
+import { isChildName, reserveProjectPlacements, projectExclusions, reliableIdentity, sameIdentity, validArchive, validExclusions,
   type DirectoryObservation, type DiscoveryScan, type NativeIdentity } from "./discovery.js";
 import * as schema from "./db/schema.js";
 
@@ -197,12 +198,11 @@ export function reconcileSource(db: Database, source: Source, observedScan?: Dis
   if (source.discoveryMode !== "direct" && source.discoveryMode !== "grouped") return { changed: false, scan: null };
   const grouped = source.discoveryMode === "grouped";
   const exclusions: unknown = JSON.parse(source.excludedRelativePaths);
-  if (!validExclusions(exclusions, "grouped") || !validArchive(source.archiveRelativePath) || !Number.isSafeInteger(source.discoveryRevision) ||
+  if (!validExclusions(exclusions, "grouped", !!source.folderRoles) || !validArchive(source.archiveRelativePath) || !Number.isSafeInteger(source.discoveryRevision) ||
     source.discoveryRevision < 0 || source.appliedRootIdentity === null) throw new Error("Invalid configured source");
   const readReservations = () => readProjectReservations(db, source.id);
   const reservations = readReservations();
-  const scanSource = () => reserveDurablePlacements(source,reserveProjectPlacements((grouped ? scanGroupedSource : scanDirectSource)(source.canonicalRoot,
-    source.archiveRelativePath, projectExclusions(exclusions, grouped ? "grouped" : "direct").effective), reservations),reservations,scope,reader);
+  const scanSource = () => reserveDurablePlacements(source,reserveProjectPlacements(scanConfiguredSource(source, projectExclusions(exclusions, grouped ? "grouped" : "direct").effective), reservations),reservations,scope,reader);
   let scan = observedScan ? reserveDurablePlacements(source,reserveProjectPlacements(observedScan, reservations),reservations,scope,reader) : scanSource();
   if (!scan.snapshot) return { changed: false, scan };
   const peers=()=>db.select().from(schema.sources).all().filter(peer=>peer.id!==source.id);
@@ -214,7 +214,7 @@ export function reconcileSource(db: Database, source: Source, observedScan?: Dis
     return {changed:false,scan:{state:"changed",entries:[],snapshot:null}};
   const eligible = (path:string) => {
     const child=evidence.get(path);
-    const parent=path.includes("/")?evidence.get(path.split("/")[0]):rootEvidence;
+    const parent=path.includes("/")?evidence.get(path.split("/").slice(0,-1).join("/")):rootEvidence;
     return !!child && !!parent && sameVolumeEvidence(rootEvidence,child) && sameVolumeEvidence(rootEvidence,parent);
   };
   scan={...scan,entries:scan.entries.map(entry=>entry.reason===null&&!eligible(entry.relativePath)?{...entry,reason:"unresolved"}:entry)};
@@ -224,6 +224,7 @@ export function reconcileSource(db: Database, source: Source, observedScan?: Dis
   const readProjects = () => db.select().from(schema.projects).where(eq(schema.projects.sourceId, source.id)).orderBy(asc(schema.projects.id)).all();
   const readCategories = () => db.select().from(schema.categories).where(eq(schema.categories.sourceId, source.id)).orderBy(asc(schema.categories.id)).all();
   const readProperty = () => db.select().from(schema.categoryProperties).where(eq(schema.categoryProperties.sourceId, source.id)).get();
+  if (source.folderRoles) return {changed:false,scan};
   const records = readProjects(), categories = readCategories(), property = readProperty();
   if (grouped && !property || categories.some((row) => !isChildName(row.relativePath)) || records.some((row) =>
     !row.relativePath.split("/").every(isChildName) || row.relativePath.split("/").length > 2 ||

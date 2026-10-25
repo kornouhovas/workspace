@@ -91,6 +91,39 @@ Discovery Apply reuses a continuous association only under a verified root with 
 
 Repeated observations and pre-commit checks detect observed changes without providing a filesystem lock or atomic filesystem/database coordination. Later changes and indistinguishable evidence reuse remain a boundary of this local identity strategy.
 
+## Role-configured discovery
+
+Issue #74 extends the legacy modes below with source-owned `folder_roles` in
+migration0033. Null preserves the prior direct/two-level interpretation. Explicit
+role configuration uses the grouped category-property identity with nullable
+nearest-status membership, arbitrary contained status paths and depth-bounded
+role overrides. Status display names are basenames; IDs and relative paths remain
+distinct when names coincide. Authored property labels remain unchanged.
+
+`workspace.getFolderChildren` explicitly reads the selected settings branch, even
+below a current project, without enrolling its contents. Ordinary foreground and
+worker scans traverse groups/statuses and stop at projects. Traversed groups have
+native/durable observation evidence and watcher targets. Links, hidden/service
+folders, manual exclusions and the designated archive remain suppressed. Role
+configuration has no filesystem effects.
+
+The existing discovery preview/Apply boundary binds roles, source/association state,
+all referencing workspace names/IDs, reservations and complete scan evidence.
+Apply repeats validation around the transaction, retains incompatible records and
+preserves same-folder project IDs while changing their nearest status. A replaced
+status ancestor cannot silently reattach a project. Legacy unverified operational
+records require their existing association review before reinterpretation; root
+consent alone does not enroll their evidence. Old immutable journal policies treat
+an absent role field as the additive null default, never as a nonempty role policy.
+
+Workspace details own the role tree, exclusions, availability and existing archive
+controls. Views and their presentation stay workspace-owned. Export/restore validates
+role placements and retains values and view/session references. File listing/Reveal
+for role projects verifies every ancestor through the existing trusted target format.
+Existing mutation journals keep their direct/two-level placement authorization and
+reject unsupported new placements; role configuration itself grants no file-mutation
+permit. Platform and final acceptance remain in the issue checkpoint.
+
 ## Implemented grouped discovery and categories
 
 An unconfigured source can review either direct (Root/Project) or grouped (Root/Category/Project) interpretation through workspace.previewDiscovery's optional mode. Omission uses the configured mode, or direct before configuration. A configured source can review a different explicit mode through the same command; omission preserves its current mode. DiscoveryPreview carries the exact reviewed mode, configuration status and discriminated category/project entries. Direct project entries have a null categoryPath; grouped project entries identify the source-relative enclosing category.

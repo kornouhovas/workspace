@@ -965,3 +965,15 @@ p { margin-block: .5rem; }
 .source-association { margin-block: 1rem; max-width: 52rem; }
 .source-association-mapping { display:flex; align-items: baseline; gap: .5rem; flex-wrap: wrap; margin-block: .75rem; overflow-wrap: anywhere; }
 .source-association fieldset { border: 1px solid var(--border); padding: .75rem; }
+
+.folder-role-settings { margin-block: 1.5rem; }
+.folder-role-list { list-style: none; padding-left: 1rem; margin: .35rem 0; }
+.folder-role-settings > .folder-role-list { padding-left: 0; }
+.folder-role-row { display: grid; grid-template-columns: 2rem minmax(5rem, 1fr) minmax(6rem, 8rem) auto; gap: .5rem; align-items: center; padding-block: .25rem; }
+.folder-role-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.folder-role-row .bb-input { width: 100%; min-width: 0; }
+.folder-role-exclusion { display: flex; align-items: center; gap: .3rem; }
+.folder-role-review { border: 1px solid var(--border); border-radius: .5rem; padding: 1rem; margin-top: 1rem; }
+.folder-role-review > label { display: block; margin-block: 1rem; }
+.folder-role-review dl { display: grid; grid-template-columns: 1fr auto; gap: .3rem 1rem; }
+.folder-role-review dd { margin: 0; }

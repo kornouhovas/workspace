@@ -56,7 +56,7 @@ export function createProjectCreationService(db: Database, integration: {
 
   function policy(source: Source, parentRelativePath: string, relativePath: string) {
     const exclusions: unknown = JSON.parse(source.excludedRelativePaths);
-    if (!validExclusions(exclusions, "grouped") || !validArchive(source.archiveRelativePath)) throw new Error("Invalid source configuration");
+    if (!validExclusions(exclusions, "grouped", !!source.folderRoles) || !validArchive(source.archiveRelativePath)) throw new Error("Invalid source configuration");
     const parts = relativePath.split("/");
     if (parts.some((name) => name.startsWith(".") || ["$RECYCLE.BIN", "SYSTEM VOLUME INFORMATION"].includes(filesystemAlias(name))) ||
       exclusions.some((path) => filesystemAlias(path) === filesystemAlias(relativePath) ||

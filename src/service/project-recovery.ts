@@ -1,3 +1,4 @@
+import {scanConfiguredSource,planRoleDiscovery} from "./folder-roles.js";
 import { hasUnfinishedProjectRelocation, readProjectReservations } from "./project-rename-reservations.js";
 import { join } from "node:path";
 import { createFilesystemAuthorization } from "./filesystem-authorization.js";
@@ -9,7 +10,7 @@ import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import type { ProjectRecoveryCandidate, ProjectRecoveryPreview } from "../contracts/project-recovery.js";
 import type { ServiceResult } from "../contracts/settings.js";
 import type { ProjectList } from "../contracts/workspaces.js";
-import { modeRetainedResolution, reserveProjectPlacements, planDiscovery, projectExclusions, isChildName, reliableIdentity, sameIdentity, scanDirectSource, scanGroupedSource, validArchive, validExclusions,
+import { modeRetainedResolution, reserveProjectPlacements, planDiscovery, projectExclusions, isChildName, reliableIdentity, sameIdentity, validArchive, validExclusions,
   type DiscoveryScan, type DiscoverySnapshot, type NativeIdentity } from "./discovery.js";
 import * as schema from "./db/schema.js";
 
@@ -48,9 +49,9 @@ export function createProjectRecoveryService(db: Database, integration: {
   const reservationsFor = (sourceId: string) => readProjectReservations(db, sourceId);
   function scanSource(source: Source) {
     const exclusions: unknown = JSON.parse(source.excludedRelativePaths);
-    if (!validExclusions(exclusions, "grouped") || !validArchive(source.archiveRelativePath) || !Number.isSafeInteger(source.discoveryRevision) ||
+    if (!validExclusions(exclusions, "grouped", !!source.folderRoles) || !validArchive(source.archiveRelativePath) || !Number.isSafeInteger(source.discoveryRevision) ||
       source.discoveryRevision < 0 || source.appliedRootIdentity === null) throw new Error("Invalid configured source");
-    const scan = (source.discoveryMode === "grouped" ? scanGroupedSource : scanDirectSource)(source.canonicalRoot, source.archiveRelativePath, projectExclusions(exclusions, source.discoveryMode === "grouped" ? "grouped" : "direct").effective);
+    const scan = scanConfiguredSource(source,projectExclusions(exclusions, source.discoveryMode === "grouped" ? "grouped" : "direct").effective);
     if(identity) {
       const peers=db.select().from(schema.sources).all().filter(row=>row.id!==source.id);
       const current=sourceIdentity(source,scan,identity.scope,identity.reader,peers);
@@ -114,7 +115,7 @@ export function createProjectRecoveryService(db: Database, integration: {
   }
   function eligible(project: Project, scan: DiscoveryScan, projects: Project[], categories: Category[], source: Source) {
     if (project.modeInactive) return modeRetainedResolution(scan, project, JSON.parse(source.excludedRelativePaths), source.archiveRelativePath) !== "excluded";
-    const resolution = scan.snapshot ? planDiscovery(scan, identity ? continuityRecords(source,scan,categories,identity.scope,identity.reader) : categories, identity ? continuityRecords(source,scan,projects,identity.scope,identity.reader) : projects).projects.retained.find((row) => row.id === project.id)?.associationState : null;
+    const resolution = scan.snapshot ? (source.folderRoles ? planRoleDiscovery : planDiscovery)(scan, identity ? continuityRecords(source,scan,categories,identity.scope,identity.reader) : categories, identity ? continuityRecords(source,scan,projects,identity.scope,identity.reader) : projects).projects.retained.find((row) => row.id === project.id)?.associationState : null;
     // Exclusion has its own explicit discovery controls. It is not recovery.
     return project.associationState !== "excluded" && resolution !== "excluded" &&
       (project.modeInactive || ["missing", "unresolved", "replaced"].includes(project.associationState) ||
@@ -218,7 +219,7 @@ export function createProjectRecoveryService(db: Database, integration: {
         const review = reviews.get(reviewKey);
         if (!review || review.preview.previewToken !== input.previewToken) return stale();
         const target = review.preview.entries.find((entry) => entry.relativePath === input.relativePath);
-        if (!target || target.status !== "selectable" || input.relativePath.split("/").length !== (review.preview.mode === "grouped" ? 2 : 1)) return invalid();
+        if (!target || target.status !== "selectable" || !source.folderRoles && input.relativePath.split("/").length !== (review.preview.mode === "grouped" ? 2 : 1)) return invalid();
         const verify = () => {
           if (hasUnfinishedProjectRelocation(db, source.id)) throw new StaleReview();
           const current = sourceFor(input.workspaceId);
@@ -282,8 +283,8 @@ export function createProjectRecoveryService(db: Database, integration: {
   };
 }
 function configuration(source: Source) {
-  const { id, canonicalRoot, discoveryMode, discoveryRevision, excludedRelativePaths, archiveRelativePath, appliedRootIdentity, durableEvidence, evidenceGeneration } = source;
-  return JSON.stringify({ id, canonicalRoot, discoveryMode, discoveryRevision, excludedRelativePaths, archiveRelativePath, appliedRootIdentity, durableEvidence, evidenceGeneration });
+  const { id, canonicalRoot, discoveryMode, folderRoles, discoveryRevision, excludedRelativePaths, archiveRelativePath, appliedRootIdentity, durableEvidence, evidenceGeneration } = source;
+  return JSON.stringify({ id, canonicalRoot, discoveryMode, folderRoles, discoveryRevision, excludedRelativePaths, archiveRelativePath, appliedRootIdentity, durableEvidence, evidenceGeneration });
 }
 function nativeAlias(a: NativeIdentity, b: NativeIdentity) { return a.dev === b.dev && a.ino === b.ino; }
 class StaleReview extends Error {}

@@ -1,3 +1,4 @@
+import {sourceFolderRolePolicy} from "./folder-roles.js";
 import {isDeepStrictEqual} from "node:util";
 import {parseFilesystemAuthorization,parseFolderObservation,type FilesystemAuthorization,type VerifiedFolder} from "./filesystem-authorization.js";
 import {sameVolumeEvidence} from "./source-identity.js";
@@ -103,7 +104,7 @@ export function archiveRenewalMatches(original:ArchiveBindingSnapshot,current:Ar
   if(!before || !after || before.version!==after.version || before.version===2&&(after.version!==2||before.associationId!==after.associationId||!isDeepStrictEqual(before.association,after.association)) || after.root.generation<before.root.generation || current.source.discoveryRevision<original.source.discoveryRevision ||
    !sameDurableFolder(before.root.root.evidence,after.root.root.evidence) || !sameDurableFolder(before.project.evidence,after.project.evidence) ||
    (before.originalParent===null?after.originalParent!==null:after.originalParent===null||!sameDurableFolder(before.originalParent.evidence,after.originalParent.evidence)))return false;
-  const policy=(source:ArchiveBindingSnapshot['source'])=>({...source,discoveryRevision:0,evidenceGeneration:0,propertyRevision:0,categoryPropertyRevision:0,appliedRootIdentity:null});
+  const policy=(source:ArchiveBindingSnapshot['source'])=>({...sourceFolderRolePolicy(source),discoveryRevision:0,evidenceGeneration:0,propertyRevision:0,categoryPropertyRevision:0,appliedRootIdentity:null});
   if(!isDeepStrictEqual(policy(original.source),policy(current.source)) ||
    ['project','archive','category','mode','createParent','categoryName'].some(field=>!isDeepStrictEqual(original[field as keyof ArchiveBindingSnapshot],current[field as keyof ArchiveBindingSnapshot])))return false;
   const sameRoles=(old:ArchiveParent[],fresh:ArchiveParent[])=>old.length===fresh.length && old.every((parent,index)=>{
@@ -141,7 +142,7 @@ export function legacyArchiveRenewalMatches(original:ArchiveBindingSnapshot,curr
   if(!auth || auth.version!==1 || original.source.evidenceGeneration!==undefined && (!Number.isSafeInteger(original.source.evidenceGeneration) || original.source.evidenceGeneration<0 || original.source.evidenceGeneration>auth.root.generation) || !sameIdentity(native(original.source.appliedRootIdentity!),auth.root.root.mount) || !sameIdentity(native(original.project.nativeIdentity),auth.project.mount))return false;
   const evidenceMatches=(saved:string|null|undefined,proof:VerifiedFolder)=>saved==null || sameDurableFolder(JSON.parse(saved),proof.evidence);
   if(!evidenceMatches(original.source.durableEvidence,auth.root.root) || !evidenceMatches(original.project.durableEvidence,auth.project))return false;
-  const policy=(source:ArchiveBindingSnapshot['source'])=>({...source,durableEvidence:null,evidenceGeneration:0,discoveryRevision:0,propertyRevision:0,categoryPropertyRevision:0});
+  const policy=(source:ArchiveBindingSnapshot['source'])=>({...sourceFolderRolePolicy(source),durableEvidence:null,evidenceGeneration:0,discoveryRevision:0,propertyRevision:0,categoryPropertyRevision:0});
   const record=(value:ArchiveBindingSnapshot['project']|ArchiveBindingSnapshot['category'])=>value?{...value,durableEvidence:null}:null;
   const archive=(value:ArchiveBindingSnapshot['archive'])=>value?{...value,authorization:value.authorization??null}:null;
   if(!isDeepStrictEqual(policy(original.source),policy(current.source)) || !isDeepStrictEqual(record(original.project),record(current.project)) ||

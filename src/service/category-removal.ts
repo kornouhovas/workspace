@@ -1,3 +1,4 @@
+import {sourceFolderRolePolicy} from "./folder-roles.js";
 import { randomUUID } from "node:crypto";
 import { isDeepStrictEqual } from "node:util";
 import { join, sep } from "node:path";
@@ -23,7 +24,7 @@ type Operation = typeof schema.categoryRemovalOperations.$inferSelect;
 type Binding = { legacyReview?:true; authorization?: RemovalAuthorization; source: Source; category: Category; destination: Category | null; members: Project[] };
 class RemovalFailure extends Error { constructor(readonly problem: string) { super(problem); } }
 const same = isDeepStrictEqual;
-const policy = (source: Source) => ({...source,propertyRevision:0,categoryPropertyRevision:0});
+const policy = (source: Source) => ({...sourceFolderRolePolicy(source),propertyRevision:0,categoryPropertyRevision:0});
 export function createCategoryRemovalService(db: Database, moves: ReturnType<typeof createProjectCategoryMoveService>,
   committed: (sourceId: string, revision: number, workspaceIds: string[]) => void,
   filesystem: ProjectFilesystem = nativeProjectFilesystem, authorizer?: FilesystemAuthorizer) {
@@ -179,7 +180,7 @@ export function createCategoryRemovalService(db: Database, moves: ReturnType<typ
       const source = sourceFor(input.workspaceId);
       if (!source || source.discoveryMode !== "grouped" || !source.appliedRootIdentity || readProjectReservations(db, source.id).length) return invalid();
       const exclusions: unknown = JSON.parse(source.excludedRelativePaths);
-      if (!validExclusions(exclusions, "grouped") || !validArchive(source.archiveRelativePath)) return invalid();
+      if (!validExclusions(exclusions, "grouped", !!source.folderRoles) || !validArchive(source.archiveRelativePath)) return invalid();
       if(authorizer)authorizer.capture(source,"",source.durableEvidence);
       else verifyCreationDirectory(filesystem, source.canonicalRoot, JSON.parse(source.appliedRootIdentity));
       const categories = db.select().from(schema.categories).where(eq(schema.categories.sourceId, source.id)).all();

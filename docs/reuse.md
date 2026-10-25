@@ -180,3 +180,12 @@ bb MIT, Drizzle Apache 2.0 and Inter OFL notices from their canonical build inpu
 No additional upstream module, asset or runtime dependency is copied. The
 packaged canonical notices and source provenance remain required independently
 of their in-app presentation.
+
+## Issue 74 folder roles
+
+Contextual workspace settings reuse the existing bb-inspired Inter/semantic token
+foundation, native labeled selects and checkboxes, source association and archive
+controls. Folder traversal, impact review and persistence remain behind typed service
+commands. No upstream code, asset or runtime dependency was copied. Existing notices
+remain applicable. Main's contextual workspace entry/Back composition is preserved;
+#74 explicitly replaces the Sources navigation and initial mode-oriented settings.

@@ -1,3 +1,4 @@
+import {sourceFolderRolePolicy} from "./folder-roles.js";
 import {isDeepStrictEqual} from "node:util";
 import {sameLegacyNativeIdentity,parseLegacyNativeIdentity,validLegacyGeneration,parseFilesystemAuthorization,parseFolderObservation,type FilesystemAuthorization,type VerifiedFolder} from "./filesystem-authorization.js";
 import {sameIdentity,isChildName} from "./discovery.js";
@@ -58,7 +59,7 @@ export function validLegacyRemovalHistory(binding:RemovalBinding,maximum:number)
     [binding.category,...(binding.destination?[binding.destination]:[]),...binding.members].every(row=>!!parseLegacyNativeIdentity(row.nativeIdentity));}catch{return false;}
 }
 
-const removalSourcePolicy=(source:RemovalBinding["source"])=>Object.fromEntries(Object.entries(source).filter(([key])=>!["propertyRevision","categoryPropertyRevision","appliedRootIdentity","durableEvidence","evidenceGeneration","discoveryRevision"].includes(key)));
+const removalSourcePolicy=(source:RemovalBinding["source"])=>Object.fromEntries(Object.entries(sourceFolderRolePolicy(source)).filter(([key])=>!["propertyRevision","categoryPropertyRevision","appliedRootIdentity","durableEvidence","evidenceGeneration","discoveryRevision"].includes(key)));
 
 export function removalAttestationMatchesBinding(reviewed:RemovalBinding & {authorization:RemovalAuthorization},original:RemovalBinding & {authorization?:RemovalAuthorization}):boolean {
   try {

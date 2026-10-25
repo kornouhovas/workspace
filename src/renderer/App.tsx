@@ -531,10 +531,10 @@ function WorkspaceApp() {
         </> : unavailableSettings,
         workspaces: settingsAvailable ? <>{activeWorkspace ? <>
           <h2>{activeWorkspace.name}</h2>
-          <p className="workspace-root">{activeWorkspace.canonicalRoot}</p>
+          <SourceSettings key={`${backendGeneration}:${activeWorkspace.workspaceId}`} client={client} language={language} activeSourceId={activeWorkspace.sourceId} workspaceId={activeWorkspace.workspaceId} disabled={dataLocked} onPendingChange={setSourceSettingsPending} />
           {workspaceData && <WorkspaceSwitcher data={workspaceData} label={t("workspaceSelectLabel")}
-            disabled={busy !== null || renameDraft !== null || removalTarget !== null} onActivate={id => void activateWorkspace(id)} />}
-          <button type="button" className="workspace-button workspace-button--secondary" disabled={busy !== null || renameDraft !== null || removalTarget !== null}
+            disabled={(busy !== null || sourceSettingsPending) || renameDraft !== null || removalTarget !== null} onActivate={id => void activateWorkspace(id)} />}
+          <button type="button" className="workspace-button workspace-button--secondary" disabled={(busy !== null || sourceSettingsPending) || renameDraft !== null || removalTarget !== null}
             onClick={() => { setFormMessage(null); setAddingWorkspace(true); back(); }}>{t("addWorkspaceAction")}</button>
               <section className="workspace-management" aria-labelledby="workspace-order-title" aria-busy={busy === "reorder"}>
                 <h3 id="workspace-order-title">{t("workspaceOrderTitle")}</h3>
@@ -551,7 +551,7 @@ function WorkspaceApp() {
                             data-workspace-id={workspace.workspaceId}
                             data-direction={direction}
                             aria-label={`${t(direction === "up" ? "moveWorkspaceUp" : "moveWorkspaceDown")}: ${workspace.name}`}
-                            disabled={busy !== null || renameDraft !== null || removalTarget !== null || (direction === "up" ? index === 0 : index === all.length - 1)}
+                            disabled={(busy !== null || sourceSettingsPending) || renameDraft !== null || removalTarget !== null || (direction === "up" ? index === 0 : index === all.length - 1)}
                             onClick={() => void moveWorkspace(workspace.workspaceId, direction)}
                           >
                             {t(direction === "up" ? "moveWorkspaceUp" : "moveWorkspaceDown")}
@@ -563,7 +563,7 @@ function WorkspaceApp() {
                           data-workspace-id={workspace.workspaceId}
                           data-action="remove"
                           aria-label={`${t("removeWorkspaceAction")}: ${workspace.name}`}
-                          disabled={busy !== null || renameDraft !== null || removalTarget !== null}
+                          disabled={(busy !== null || sourceSettingsPending) || renameDraft !== null || removalTarget !== null}
                           onClick={() => { setRemovalTarget(workspace); setRemovalError(null); }}
                         >
                           {t("removeWorkspaceAction")}
@@ -593,10 +593,10 @@ function WorkspaceApp() {
                   <h3 id="remove-title">{t("removeWorkspaceTitle")}: <span>{removalTarget.name}</span></h3>
                   <p id="remove-description">{t("removeWorkspaceDescription")}</p>
                   <div className="workspace-form-actions">
-                    <button type="button" autoFocus className="workspace-button workspace-button--secondary" disabled={busy !== null} onClick={cancelRemoval}>
+                    <button type="button" autoFocus className="workspace-button workspace-button--secondary" disabled={(busy !== null || sourceSettingsPending)} onClick={cancelRemoval}>
                       {t("cancelRemoveWorkspace")}
                     </button>
-                    <button type="submit" className="workspace-button" disabled={busy !== null}>
+                    <button type="submit" className="workspace-button" disabled={(busy !== null || sourceSettingsPending)}>
                       {busy === "remove" ? t("removingWorkspace") : t("confirmRemoveWorkspace")}
                     </button>
                   </div>
@@ -611,7 +611,7 @@ function WorkspaceApp() {
                 ref={renameButton}
                 type="button"
                 className="workspace-button workspace-button--secondary"
-                disabled={busy !== null || renameDraft !== null || removalTarget !== null}
+                disabled={(busy !== null || sourceSettingsPending) || renameDraft !== null || removalTarget !== null}
                 onClick={() => {
                   setRenameDraft({ workspaceId: activeWorkspace.workspaceId, name: activeWorkspace.name });
                   setRenameError(null);
@@ -637,17 +637,17 @@ function WorkspaceApp() {
                       autoFocus
                       autoComplete="off"
                       value={renameDraft.name}
-                      disabled={busy !== null}
+                      disabled={(busy !== null || sourceSettingsPending)}
                       aria-invalid={renameError === "blank"}
                       aria-describedby={renameError ? "rename-error" : undefined}
                       onChange={(event) => setRenameDraft({ ...renameDraft, name: event.currentTarget.value })}
                     />
                   </label>
                   <div className="workspace-form-actions">
-                    <button type="submit" className="workspace-button" disabled={busy !== null}>
+                    <button type="submit" className="workspace-button" disabled={(busy !== null || sourceSettingsPending)}>
                       {busy === "rename" ? t("savingWorkspaceName") : t("saveWorkspaceName")}
                     </button>
-                    <button type="button" className="workspace-button workspace-button--secondary" disabled={busy !== null} onClick={cancelRename}>
+                    <button type="button" className="workspace-button workspace-button--secondary" disabled={(busy !== null || sourceSettingsPending)} onClick={cancelRename}>
                       {t("cancelRenameWorkspace")}
                     </button>
                   </div>
@@ -660,7 +660,7 @@ function WorkspaceApp() {
                   )}
                 </form>
               )}
-</> : <><p>{t("createWorkspaceDescription")}</p><button type="button" className="workspace-button" disabled={busy !== null} onClick={() => { back(); void pickRoot(); }}>{t("addWorkspaceAction")}</button></>}</> : unavailableSettings,
+</> : <><p>{t("createWorkspaceDescription")}</p><button type="button" className="workspace-button" disabled={(busy !== null || sourceSettingsPending)} onClick={() => { back(); void pickRoot(); }}>{t("addWorkspaceAction")}</button></>}</> : unavailableSettings,
         sources: settingsAvailable ? <SourceSettings key={backendGeneration} client={client} language={language} activeSourceId={activeWorkspace?.sourceId} disabled={dataLocked} onPendingChange={setSourceSettingsPending} /> : unavailableSettings,
         backup: backend.state === "ready" ? <DataRecoveryPanel key={backendGeneration} client={client} language={language} onRestored={() => window.location.reload()} onLock={setDataLocked} /> : <StartupRecovery language={language} diagnostic={backend.diagnostic} />,
         about: <AboutPanel language={language} />,

@@ -37,9 +37,9 @@ export function isChildName(value: unknown): value is string {
   return typeof value === "string" && value.length > 0 && value !== "." && value !== ".." &&
     !value.includes("\0") && !isAbsolute(value) && basename(value) === value;
 }
-export function validExclusions(value: unknown, mode: DiscoveryMode = "direct"): value is string[] {
+export function validExclusions(value: unknown, mode: DiscoveryMode = "direct", folderRoles = false): value is string[] {
   return Array.isArray(value) && Array.from(value).every((path: unknown) => typeof path === "string" &&
-    path.split("/").length <= (mode === "grouped" ? 2 : 1) && path.split("/").every(isChildName)) &&
+    path.split("/").length <= (folderRoles ? 64 : mode === "grouped" ? 2 : 1) && path.split("/").every(isChildName)) &&
     new Set(value).size === value.length;
 }
 export function projectExclusions(paths: string[], mode: DiscoveryMode) {

@@ -56,7 +56,7 @@ export function createViewFilterService(db: Database, model: ReadModel) {
           // a filesystem command's authorization. All IDs must still be the
           // complete current non-archived membership of this source.
           if (input.projection && input.projection.revision !== source.discoveryRevision) return invalid();
-          if (!validExclusions(JSON.parse(source.excludedRelativePaths), "grouped") || !validArchive(source.archiveRelativePath) ||
+          if (!validExclusions(JSON.parse(source.excludedRelativePaths), "grouped", !!source.folderRoles) || !validArchive(source.archiveRelativePath) ||
             !Number.isSafeInteger(source.discoveryRevision) || source.discoveryRevision < 0 ||
             !Number.isSafeInteger(source.categoryPropertyRevision) || source.categoryPropertyRevision < 0 ||
             ![null, "direct", "grouped"].includes(source.discoveryMode) || source.discoveryMode === "grouped" && !category) return storage();
@@ -69,7 +69,7 @@ export function createViewFilterService(db: Database, model: ReadModel) {
           projects = ids.map(id => {
             const row = byId.get(id)!;
             const parent = categories.find(c => c.id === row.categoryId && !c.modeInactive && c.associationState === "active");
-            if (!row.modeInactive && row.associationState === "active" && (source.discoveryMode === "grouped"
+            if (!source.folderRoles && !row.modeInactive && row.associationState === "active" && (source.discoveryMode === "grouped"
               ? !parent || row.relativePath.split("/").length !== 2 || row.relativePath.split("/")[0] !== parent.relativePath : row.categoryId !== null)) throw new Error("Invalid required category");
             return { projectId: row.id, name: row.relativePath.split("/").at(-1)!, categoryId: row.categoryId };
           });

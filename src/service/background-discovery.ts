@@ -6,6 +6,7 @@ export const SCAN_CLOSED = 0;
 export const SCAN_BUSY = 1;
 
 export interface BackgroundScanRequest {
+  folderRoles?: string | null;
   mode: DiscoveryMode; canonicalRoot: string; archiveRelativePath: string | null; exclusions: string[];
 }
 

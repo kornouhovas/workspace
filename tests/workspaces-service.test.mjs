@@ -24,7 +24,7 @@ function withFixture(run) {
 
 const unconfiguredDiscovery = {
   category_property_revision: 0, property_revision: 0, discovery_mode: null, discovery_revision: 0, excluded_relative_paths: "[]",
-  archive_relative_path: null, applied_root_identity: null,durable_evidence:null,evidence_generation:0,
+  archive_relative_path: null, applied_root_identity: null,durable_evidence:null,evidence_generation:0,folder_roles:null,
 };
 
 function records(databasePath) {

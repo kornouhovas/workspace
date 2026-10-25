@@ -1,3 +1,4 @@
+import {validFolderRoles} from "./folder-roles.js";
 import { isWorkspaceSessionRequest } from "../contracts/workspace-sessions.js";
 import { isProjectFilesRequest } from "../contracts/project-files.js";
 import { isDataRecoveryRequest } from "../contracts/data-recovery.js";
@@ -153,7 +154,7 @@ export function startServiceProcess(
 }
 
 function isLoadQuery(input: unknown): boolean {
-  return isRecord(input) && ((typeof input.type === "string" && [...archiveQueries, ...categoryOptionsQueries, ...categoryRemovalQueries].includes(input.type)) || input.type === "workspace.listProjectCategoryMoves" || input.type === "workspace.getProjectCategoryMove" || input.type === "workspace.previewProjectCategoryMoveRecovery" || input.type === "workspace.listProjectRenames" || input.type === "workspace.getProjectRename" || input.type === "workspace.previewProjectRenameRecovery" || input.type === "workspace.getBoardLayout" || input.type === "workspace.getTableLayout" || input.type === "workspace.getViewGrouping" || input.type === "workspace.getViewFilter" || input.type === "workspace.queryView" || input.type === "workspace.getSession" || input.type === "workspace.listViews" || input.type === "workspace.previewMetadataRemoval" || input.type === "data.export" || input.type === "data.backups" || input.type === "data.backupExport" || input.type === "settings.load" || input.type === "workspace.listProjectFiles" || input.type === "workspace.listSources" || input.type === "workspace.load" || input.type === "workspace.previewSourceAssociation" || input.type === "workspace.previewDiscovery" || input.type === "workspace.getSourceObservation" || input.type === "workspace.listProjects" || input.type === "workspace.listTextProperties" || input.type === "workspace.previewProjectRecovery" || input.type === "workspace.listProjectCreations" || input.type === "workspace.getProjectCreation" || input.type === "workspace.previewProjectCreationRecovery");
+  return isRecord(input) && ((typeof input.type === "string" && [...archiveQueries, ...categoryOptionsQueries, ...categoryRemovalQueries].includes(input.type)) || input.type === "workspace.listProjectCategoryMoves" || input.type === "workspace.getProjectCategoryMove" || input.type === "workspace.previewProjectCategoryMoveRecovery" || input.type === "workspace.listProjectRenames" || input.type === "workspace.getProjectRename" || input.type === "workspace.previewProjectRenameRecovery" || input.type === "workspace.getBoardLayout" || input.type === "workspace.getTableLayout" || input.type === "workspace.getViewGrouping" || input.type === "workspace.getViewFilter" || input.type === "workspace.queryView" || input.type === "workspace.getSession" || input.type === "workspace.listViews" || input.type === "workspace.previewMetadataRemoval" || input.type === "data.export" || input.type === "data.backups" || input.type === "data.backupExport" || input.type === "settings.load" || input.type === "workspace.listProjectFiles" || input.type === "workspace.getFolderChildren" || input.type === "workspace.listSources" || input.type === "workspace.load" || input.type === "workspace.previewSourceAssociation" || input.type === "workspace.previewDiscovery" || input.type === "workspace.getSourceObservation" || input.type === "workspace.listProjects" || input.type === "workspace.listTextProperties" || input.type === "workspace.previewProjectRecovery" || input.type === "workspace.listProjectCreations" || input.type === "workspace.getProjectCreation" || input.type === "workspace.previewProjectCreationRecovery");
 }
 
 function isMalformedWorkspaceRequest(input: unknown): boolean {
@@ -200,11 +201,13 @@ function isMalformedWorkspaceRequest(input: unknown): boolean {
   if (input.type === "workspace.listTextProperties") return !hasExactKeys(input, ["type", "workspaceId"]) || typeof input.workspaceId !== "string";
   if (input.type === "workspace.previewSourceAssociation") return !hasExactKeys(input, ["type", "workspaceId", "mappings"]) || typeof input.workspaceId !== "string" || !Array.isArray(input.mappings);
   if (["workspace.applySourceAssociation", "workspace.cancelSourceAssociation"].includes(input.type)) return !hasExactKeys(input, ["type", "workspaceId", "previewToken"]) || typeof input.workspaceId !== "string" || typeof input.previewToken !== "string";
+  if (input.type === "workspace.getFolderChildren") return !hasExactKeys(input,["type","workspaceId","parentRelativePath"]) || typeof input.workspaceId !== "string" || typeof input.parentRelativePath !== "string";
   if (input.type === "workspace.previewDiscovery") {
     const keys = ["type", "workspaceId", ...(Object.hasOwn(input, "excludedRelativePaths") ? ["excludedRelativePaths"] : []),
-      ...(Object.hasOwn(input, "mode") ? ["mode"] : [])];
+      ...(Object.hasOwn(input, "mode") ? ["mode"] : []), ...(Object.hasOwn(input,"folderRoles") ? ["folderRoles"] : [])];
     return !hasExactKeys(input, keys) || typeof input.workspaceId !== "string" ||
       (Object.hasOwn(input, "mode") && input.mode !== "direct" && input.mode !== "grouped") ||
+      (Object.hasOwn(input,"folderRoles") && !validFolderRoles(input.folderRoles)) ||
       (Object.hasOwn(input, "excludedRelativePaths") &&
         (!Array.isArray(input.excludedRelativePaths) || !input.excludedRelativePaths.every((path) => typeof path === "string")));
   }

@@ -1,3 +1,4 @@
+import {savedFolderRoles,rolePlacement,folderRole,validRolePath} from "./folder-roles.js";
 import type Database from "better-sqlite3";
 
 /** Final-state counterparts of migration guards. Historical intent/stage/locator
@@ -21,17 +22,31 @@ export function validateSnapshotRelations(db: Database.Database): void {
     JOIN select_options o ON o.id=v.option_id WHERE w.source_id!=o.source_id`);
   rejectRows(`SELECT 1 FROM category_presentation v JOIN workspaces w ON w.id=v.workspace_id
     JOIN categories c ON c.id=v.category_id WHERE w.source_id!=c.source_id`);
+  const roleSchema=(db.prepare("PRAGMA table_info(sources)").all() as {name:string}[]).some(column=>column.name==="folder_roles");
+  const legacy=roleSchema ? "s.folder_roles IS NULL AND " : "";
   rejectRows(`SELECT 1 FROM categories c JOIN sources s ON s.id=c.source_id
-    WHERE instr(c.relative_path,'/')!=0 OR (c.mode_inactive=0 AND s.discovery_mode IS NOT 'grouped')`);
+    WHERE ${legacy}(instr(c.relative_path,'/')!=0 OR (c.mode_inactive=0 AND s.discovery_mode IS NOT 'grouped'))`);
   rejectRows(`SELECT 1 FROM projects p JOIN sources s ON s.id=p.source_id
     WHERE (p.category_id IS NOT NULL AND NOT EXISTS(SELECT 1 FROM categories c WHERE c.id=p.category_id AND c.source_id=p.source_id))
-    OR (p.mode_inactive=0 AND (
+    OR (${legacy}p.mode_inactive=0 AND (
       (s.discovery_mode IS NOT 'grouped' AND (p.category_id IS NOT NULL OR instr(p.relative_path,'/')!=0))
       OR (s.discovery_mode='grouped' AND NOT EXISTS(SELECT 1 FROM categories c WHERE c.id=p.category_id AND c.source_id=p.source_id
         AND (p.association_state!='active' OR (c.association_state='active' AND c.mode_inactive=0
           AND substr(p.relative_path,1,length(c.relative_path)+1)=c.relative_path||'/'
           AND length(p.relative_path)>length(c.relative_path)+1 AND instr(substr(p.relative_path,length(c.relative_path)+2),'/')=0))))
     ))`);
+  if (roleSchema) for (const source of db.prepare("SELECT id,folder_roles,discovery_mode FROM sources WHERE folder_roles IS NOT NULL").all() as {id:string;folder_roles:string;discovery_mode:"direct"|"grouped"}[]) {
+    const roles=savedFolderRoles({folderRoles:source.folder_roles})!;
+    const categories=db.prepare("SELECT id,relative_path,association_state,mode_inactive FROM categories WHERE source_id=?").all(source.id) as {id:string;relative_path:string;association_state:string;mode_inactive:number}[];
+    for (const category of categories) if (!validRolePath(category.relative_path) || !category.mode_inactive && category.association_state==="active" && folderRole(category.relative_path,roles,source.discovery_mode)!=="status") throw new Error("Invalid role status");
+    for (const project of db.prepare("SELECT relative_path,category_id,association_state,mode_inactive FROM projects WHERE source_id=?").all(source.id) as {relative_path:string;category_id:string|null;association_state:string;mode_inactive:number}[]) {
+      if (!validRolePath(project.relative_path)) throw new Error("Invalid role project path");
+      if (project.mode_inactive || project.association_state!=="active") continue;
+      const placement=rolePlacement(project.relative_path,roles,source.discovery_mode);
+      const category=categories.find(category=>category.id===project.category_id);
+      if (!placement.recognized || (placement.categoryPath===null ? project.category_id!==null : !category || category.mode_inactive || category.association_state!=="active" || category.relative_path!==placement.categoryPath)) throw new Error("Invalid role project status");
+    }
+  }
   rejectRows(`SELECT 1 FROM project_archives a WHERE NOT EXISTS(SELECT 1 FROM projects p
     WHERE p.id=a.project_id AND p.source_id=a.source_id AND p.mode_inactive=1 AND p.relative_path=a.original_relative_path)`);
 

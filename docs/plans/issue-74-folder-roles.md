@@ -53,9 +53,8 @@ must never transfer a former project's metadata to a newly discovered child.
 
 ## Test retention and verification
 
-Proposed TDD seams await the owner's response: typed public service commands with
-temporary real folders/SQLite, and settings UI/Electron flows. No new test has been
-written before that confirmation, as required by the TDD skill.
+The owner confirmed both TDD seams and authorized publication: typed public service
+commands with temporary real folders/SQLite, and settings UI/Electron flows.
 
 Retain source identity, data preservation, recovery, isolation and platform
 guarantees. Adapt superseded direct/grouped UI assumptions to the accepted #74
@@ -74,9 +73,43 @@ Record actual results and exact-SHA CI/integration progress in the issue checkpo
 
 - [x] Verify dependency completion, ownership and accepted baseline; create isolated branch.
 - [x] Inspect current discovery, storage, identity and settings boundaries.
-- [ ] Confirm TDD seams with the owner.
-- [ ] Implement reviewed, persisted role interpretation with retention and migration coverage.
-- [ ] Expose the shared tree inside workspace settings and reconcile navigation/consumers.
+- [x] Confirm TDD seams with the owner.
+- [x] Implement reviewed, persisted role interpretation with retention and migration coverage.
+- [x] Expose the shared tree inside workspace settings and reconcile navigation/consumers.
 - [ ] Complete appearance, affected behavior and retained-guarantee verification.
 - [ ] Complete independent Standards and Spec reviews; repair findings.
 - [ ] Commit the verified candidate and complete required CI/integration acceptance.
+
+
+## Local candidate evidence before independent review
+
+- Public service TDD reproduced rejected role configuration, deep exclusion rejection,
+  stored-projection rejection, legacy direct reinterpretation without status, parent
+  replacement, shared ownership changes, Refresh losing no-status membership and
+  invalid null configuration. Focused repairs pass. The real pre-role database test
+  verifies reviewed legacy enrollment, role reinterpretation, restart, values and views.
+- EN/RU UI tests verify explicit expansion, shared-impact confirmation, stale delayed
+  responses, Cancel focus and retained saved overrides while the source is unavailable.
+- `npm run test:migrations` renewed1027 cases:1026 passed, one platform skip, zero
+  failures/cancellations. The first run's13 failures remain recorded locally: additive
+  fixture inventories, an incomplete rewind fixture, old journal policy comparisons
+  and the legacy exclusion guard. Repairs preserve exact authored values, immutable
+  journal bytes and the old direct/grouped exclusion limit. No deadline was widened.
+- Typecheck, lint, documentation links and diff checks pass on the candidate worktree.
+- Real Electron role settings pass EN/RU, both themes,1024x720 and1440x960, shared
+  review, explicit project expansion, parent/child overrides, Escape, independent views,
+  shared archive location, restart IDs/values, file bytes, shutdown and owned cleanup.
+  Inspected actual settings/project captures; the implemented tree uses existing
+  Inter/semantic tokens and preserves pinned main080b416c's contextual entry/Back.
+  The earlier passive stale message and background ambiguity were reproduced and
+  repaired; failed receipts are not accepted as current runtime evidence.
+- The Sources native journey is replaced by the #74 contextual role journey while
+  retaining its shared ownership, review/cancellation, archive, localization/restart
+  and file-preservation assertions. Existing direct/grouped service coverage remains.
+- Mutation journals retain their existing placement authorization; unsupported novel
+  placements fail closed. This task adds no filesystem effect to configuration edits.
+  File listing/Reveal uses the existing full-ancestor trusted target for new roles.
+- Remaining: independent Standards/Spec review and repairs, complete final suite,
+  renewed exact-candidate native evidence, three-host DEV/package CI and integration.
+  Local complete inventory will use serial file scheduling as in the accepted #73
+  local run; CI retains its ordinary host scheduling and complete inventory.

@@ -95,15 +95,21 @@ export function associationReason(source: IdentitySource, scan: DiscoveryScan, r
   return identityState(row.durableEvidence,observed,scope);
 }
 
+/** Traversed groups need evidence even though they are neither projects nor statuses. */
+export function discoveryEvidencePaths(scan: DiscoveryScan): string[] {
+  const entryPaths=new Set(scan.entries.map(entry=>entry.relativePath));
+  return [...new Set([...scan.entries.filter(entry=>entry.reason===null).map(entry=>entry.relativePath),
+    ...(scan.snapshot?.children.filter(child=>child.kind==="directory"&&!entryPaths.has(child.relativePath)).map(child=>child.relativePath)??[])])];
+}
 /** Read-only evidence for a complete scan; never a filesystem execution permit. */
 export function discoveryEvidence(source: IdentitySource, scan: DiscoveryScan, scope: string, reader: EvidenceReader = observeFolder) {
   const observations = new Map<string, FolderObservation>();
   const root = reader(source.canonicalRoot,scope);
   observations.set("",root);
-  for(const entry of scan.entries.filter(entry=>entry.reason===null)) {
-    const child=scan.snapshot?.children.find(child=>child.relativePath===entry.relativePath);
-    const observed=reader(join(source.canonicalRoot,entry.relativePath),scope);
-    observations.set(entry.relativePath,observed.ok && (child?.kind!=="directory" || !sameIdentity(child.identity,observed.mount))
+  for(const path of discoveryEvidencePaths(scan)) {
+    const child=scan.snapshot?.children.find(child=>child.relativePath===path);
+    const observed=reader(join(source.canonicalRoot,path),scope);
+    observations.set(path,observed.ok && (child?.kind!=="directory" || !sameIdentity(child.identity,observed.mount))
       ? {ok:false,reason:"changed"} : observed);
   }
   // Duplicate durable IDs remain ambiguous even when native observations differ.

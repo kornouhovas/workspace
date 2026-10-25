@@ -585,12 +585,12 @@ for (const language of ["en", "ru"] as const) test(`${language}: source outage t
   assert.equal(client.saves, 0);
 });
 
-for (const language of ["en", "ru"] as const) test(`${language}: retained project reaches Sources and returns without losing its tab`, async () => {
+for (const language of ["en", "ru"] as const) test(`${language}: retained project reaches workspace settings and returns without losing its tab`, async () => {
   const { DesktopShell, shellLabels } = await import("../src/renderer/components/DesktopShell.js");
   const client = new RecoveryClient();
   const user = userEvent.setup({ document });
   const data = { workspaces: [{ workspaceId: "workspace", name: "One" }], activeWorkspace: { workspaceId: "workspace", sourceId: "source", viewId: "view", name: "One", canonicalRoot: "/fixture", sourceAvailable: false } };
-  render(<DesktopShell language={language} data={data} busy={false} locked={false} onActivate={() => {}} renderPanels={() => ({ general: null, appearance: null, workspaces: null, sources: <p>Current source settings</p>, backup: <p>Application data recovery</p>, about: null })}>
+  render(<DesktopShell language={language} data={data} busy={false} locked={false} onActivate={() => {}} renderPanels={() => ({ general: null, appearance: null, workspaces: <p>Current source settings</p>, sources: null, backup: <p>Application data recovery</p>, about: null })}>
     <DiscoveryWorkspace client={client} workspaceId="workspace" sourceId="source" language={language} disabled={false} />
   </DesktopShell>);
   await user.click(await screen.findByRole("button", { name: `${language === "en" ? "Preview project" : "Открыть предпросмотр проекта"}: ${retained.name}` }));
@@ -599,7 +599,7 @@ for (const language of ["en", "ru"] as const) test(`${language}: retained projec
   const settings = within(area).getByRole("button", { name: language === "en" ? "Source settings" : "Настройки источника" });
   await user.click(settings);
   assert.ok(await screen.findByText("Current source settings"));
-  assert.ok(screen.getByRole("tab", { name: shellLabels[language].sources, selected: true }));
+  assert.ok(screen.getByRole("tab", { name: shellLabels[language].workspaces, selected: true }));
   await user.click(screen.getByRole("button", { name: shellLabels[language].back }));
   await waitFor(() => assert.equal(document.activeElement === settings, true));
   assert.ok(screen.getByRole("tab", { name: retained.name, selected: true }));

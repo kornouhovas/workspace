@@ -3717,7 +3717,7 @@ test("EN/RU postponing an open pending setup returns focus and rejects the delay
   }
 });
 
-test("Sources settings displays shared ownership and current configuration without activating a workspace", async () => {
+test("Workspace settings displays shared ownership and current configuration without activating a workspace", async () => {
   for (const language of ["en", "ru"] as const) {
     const active = makeActive("one", "One");
     const requests: WorkspaceRequest[] = [];
@@ -3730,9 +3730,8 @@ test("Sources settings displays shared ownership and current configuration witho
       } });
     render(<App />);
     await openSettings();
-    await userEvent.click(screen.getByRole("tab", { name: language === "en" ? "Sources" : "Источники" }));
-    const source = await findAction("button",{ name: active.canonicalRoot });
-    source.focus(); await userEvent.keyboard("{Enter}");
+    await userEvent.click(screen.getByRole("tab", { name: language === "en" ? "Workspaces" : "Рабочие пространства" }));
+    assert.equal(screen.queryByRole("tab",{name:language === "en" ? "Sources" : "Источники"}),null);
     const detail = await screen.findByRole("region", { name: active.canonicalRoot });
     assert.ok(within(detail).getByText("One"));
     assert.ok(within(detail).getByText("Two"));

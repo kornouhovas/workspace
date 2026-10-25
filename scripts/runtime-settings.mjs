@@ -4,7 +4,7 @@ export async function openSettingsSection(page, section = "general") {
   await restoreRuntimeSidebar(page);
   const entry = page.getByRole("button", { name: /^(Settings|Настройки)$/ });
   if (await entry.isVisible()) await entry.click();
-  const labels = { general: /^(General|Основные)$/, workspaces: /^(Workspaces|Рабочие пространства)$/, appearance: /^(Appearance|Оформление)$/, sources: /^(Sources|Источники)$/, about: /^(About|О приложении)$/, backup: /^(Backup and recovery|Резервные копии и восстановление)$/ };
+  const labels = { general: /^(General|Основные)$/, workspaces: /^(Workspaces|Рабочие пространства)$/, appearance: /^(Appearance|Оформление)$/, sources: /^(Workspaces|Рабочие пространства)$/, about: /^(About|О приложении)$/, backup: /^(Backup and recovery|Резервные копии и восстановление)$/ };
   await page.getByRole("tab", { name: labels[section] }).click();
 }
 export async function returnToWorkspace(page) {

@@ -33,7 +33,7 @@ test("0012 upgrade preserves populated project identity, exact Text, source/work
       migrate(drizzle(old), { migrationsFolder: folder });
       const tables = old.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name!='__drizzle_migrations' ORDER BY name").all().map(r => r.name);
       snapshot = Object.fromEntries(tables.map(table => [table, current.prepare(`SELECT * FROM ${table} ORDER BY 1`).all()]));
-      for(const table of ['sources','projects','categories'])snapshot[table]=snapshot[table].map(row=>({...row,durable_evidence:null,...(table==='sources'?{evidence_generation:0}:{})}));
+      for(const table of ['sources','projects','categories'])snapshot[table]=snapshot[table].map(row=>({...row,durable_evidence:null,...(table==='sources'?{evidence_generation:0,folder_roles:null}:{})}));
       // This migration fixture copies only existing rows, retaining exact prior
       // schema and migration history instead of mutating the new schema backwards.
       old.pragma("foreign_keys=OFF");
@@ -56,7 +56,7 @@ test("0012 upgrade preserves populated project identity, exact Text, source/work
       const inspected = new Database(oldPath);
       try {
         for (const [table, rows] of Object.entries(snapshot)) assert.deepEqual(inspected.prepare(`SELECT * FROM ${table} ORDER BY 1`).all(), rows, table);
-        assert.equal(inspected.prepare("SELECT count(*) AS count FROM __drizzle_migrations").get().count, 33);
+        assert.equal(inspected.prepare("SELECT count(*) AS count FROM __drizzle_migrations").get().count, 34);
         assert.deepEqual(inspected.pragma("foreign_key_check"), []);
       } finally { inspected.close(); }
     }

@@ -1,3 +1,4 @@
+import {validFolderRoles} from "./folder-roles.js";
 import {archivedAssociationMatchesRecord,parseArchivedFolderAssociation} from "./archive-association.js";
 import {archiveBindingMatchesRow,parseArchiveAttestation,parseArchiveAuthorization,parseArchiveBindingAuthorization,parseArchiveParents,archiveParentPathsMatch,uniqueArchiveProofs,type ArchiveRowDescriptor} from "./archive-authorization.js";
 import {validLegacyRemovalHistory,parseRemovalAuthorization,removalBindingMatchesRow,removalAttestationMatchesBinding} from "./category-removal-authorization.js";
@@ -51,9 +52,9 @@ function validate(db: Database.Database) {
       !isTableLayoutConfig(JSON.parse(view.table_config)) || !isViewGroupingConfig(JSON.parse(view.grouping_config)) ||
       !isViewFilterConfig(JSON.parse(view.filter_config))) throw new Error("Invalid view");
   }
-  for (const source of db.prepare("SELECT discovery_mode, excluded_relative_paths, archive_relative_path FROM sources").all() as Record<string, unknown>[]) {
-    if (source.discovery_mode !== null && !["direct", "grouped"].includes(String(source.discovery_mode)) ||
-      !validExclusions(JSON.parse(String(source.excluded_relative_paths)), "grouped") || !validArchive(source.archive_relative_path)) throw new Error("Invalid source configuration");
+  for (const source of db.prepare("SELECT * FROM sources").all() as Record<string, unknown>[]) {
+    if (source.folder_roles !== undefined && source.folder_roles !== null && !validFolderRoles(JSON.parse(String(source.folder_roles))) || source.discovery_mode !== null && !["direct", "grouped"].includes(String(source.discovery_mode)) ||
+      !validExclusions(JSON.parse(String(source.excluded_relative_paths)), "grouped", !!source.folder_roles) || !validArchive(source.archive_relative_path)) throw new Error("Invalid source configuration");
   }
   for (const table of schema(db).filter(entry => entry.type === "table")) {
     const columns = db.prepare(`PRAGMA table_info(${quote(table.name)})`).all() as { name: string }[];

@@ -1,3 +1,4 @@
+import {sourceFolderRolePolicy} from "./folder-roles.js";
 import {archivedAssociationMatchesRecord,parseArchivedFolderAssociation} from "./archive-association.js";
 import {isDeepStrictEqual} from "node:util";
 import {legacyArchiveRenewalMatches,parseArchiveAttestation,parseArchiveAuthorization,parseArchiveParents,parseArchiveBindingAuthorization,type ArchiveAuthorization,type ArchiveParent} from "./archive-authorization.js";
@@ -52,7 +53,7 @@ export function createProjectArchiveMutations(db: Database, integration: {
   const projectFor = (id: string) => db.select().from(schema.projects).where(eq(schema.projects.id, id)).get();
   const archiveFor = (id: string) => db.select().from(schema.projectArchives).where(eq(schema.projectArchives.projectId, id)).get() ?? null;
   const eqJSON = isDeepStrictEqual;
-  const sourcePolicy=(source:Source)=>({...source,propertyRevision:0,categoryPropertyRevision:0});
+  const sourcePolicy=(source:Source)=>({...sourceFolderRolePolicy(source),propertyRevision:0,categoryPropertyRevision:0});
   function authority(binding:Binding):ArchiveAuthorization|undefined {
     if(!authorizer)return undefined;
     const value=parseArchiveBindingAuthorization(binding);
@@ -363,7 +364,7 @@ export function createProjectArchiveMutations(db: Database, integration: {
         originalRelativePath: "", requestedRelativePath: "", revision: source.discoveryRevision, missingParents: [], blockers: [problem(e)], previewToken: null } };
     }
   }
-  const comparableBinding=(binding:Binding)=>({...binding,source:{...binding.source,propertyRevision:0,categoryPropertyRevision:0}});
+  const comparableBinding=(binding:Binding)=>({...binding,source:{...sourceFolderRolePolicy(binding.source),propertyRevision:0,categoryPropertyRevision:0}});
   function sourceBinding(source: Source) {
     const { id, canonicalRoot, discoveryMode, discoveryRevision, excludedRelativePaths, archiveRelativePath, appliedRootIdentity } = source;
     return { id, canonicalRoot, discoveryMode, discoveryRevision, excludedRelativePaths, archiveRelativePath, appliedRootIdentity };
