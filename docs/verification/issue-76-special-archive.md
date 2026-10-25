@@ -73,8 +73,8 @@ quit deadlines and process/cleanup assertions remain.
 Required hosted evidence is `desktop-ci.yml`, `checks: special-archive`: complete
 suites and actual DEV/package first-use/settings/restart on macOS latest, Windows
 latest and Windows2022, plus retained contextual archive and original recovery/
-restart consumers. Hosted results and inspected artifacts remain acceptance gates;
-release/manual Windows11 and final #67/#42 acceptance are separate.
+restart consumers. The completed hosted rows below satisfy scoped issue acceptance;
+release/manual Windows11 and final #67/#42 acceptance remain separate.
 
 ## Driver and routing renewal
 
@@ -105,7 +105,9 @@ At application candidate `bb7701e6`, run
 - Windows latest: isolated batches pass 51/51 and 14/14; remaining batch has
   3984 tests, 3968 passed, 2 failed, 14 skipped. Only the two option-position
   guards fail. Downloaded full log/artifact inspected.
-- Windows2022 remains running at this checkpoint; it is not accepted by inference.
+- Windows2022: isolated batches pass 51/51 and 14/14; remaining batch has
+  3984 tests, 3968 passed, 2 failed, 14 skipped. Only the same two option-position
+  guards fail. Downloaded full log/artifact inspected.
 
 The notification failure asserts callback order: reconciliation committed before
 its `hints` counter advanced. An exact local 20-run loop does not reproduce the
@@ -124,3 +126,44 @@ The original retained `smoke:archive -- dev` also passes locally: all 12 direct/
 grouped EN/RU layout, archived Text, restart and restore checks, with five normal
 quits, backend exit and owned cleanup. This successful receipt stays separate
 from the failed new native driver's local quit receipt.
+
+## Accepted hosted renewal
+
+[40226779029/attempt 1](https://github.com/kornouhovas/workspace/actions/runs/40226779029)
+passes on macOS latest, Windows latest and Windows2022 at
+`5e78d4b6311fa698f8aadd2284de2cd5d6c28ab6`. All three complete job logs and
+artifact archives were downloaded and inspected.
+
+| Scenario on each host | Renewed result |
+| --- | --- |
+| Original routing failures and startup controls | 97/97 pass |
+| Original direct/grouped native notifications and real-callback ordering control | 3/3 pass, original shared 4s deadline |
+| New first-use/settings DEV | EN/RU journeys pass, 16 captures, three normal quits and backend exits |
+| New first-use/settings package | Same two journeys/16 captures/three normal quits pass in checked platform package |
+| Retained contextual DEV archive | Original selected journey passes |
+| Retained archive DEV and package | 12/12 checks per mode, five normal quits each; direct/grouped Text/restart/restore retained |
+| All consumers | Owned processes stopped and fixture cleanup passes |
+
+The six new host/mode rows retain 96 screenshots across EN/RU, light/dark and
+1024x720/1440x960; original archive consumers retain 48 additional captures.
+Twelve representative new captures were manually inspected across all three
+hosts and both runtime modes, covering both languages, themes, sizes and the two
+changed surfaces. The wider matrix has capture/overflow receipts; it is not a
+claim that every image received independent manual inspection. No clipping or
+control/return gap was found in the manual sample. Separate Standards and Spec
+evidence reviews report zero findings.
+
+Artifacts are named
+`special-archive-<host>-5e78d4b6311fa698f8aadd2284de2cd5d6c28ab6-run-40226779029-attempt-1`.
+DEV/package and retained DEV/package receipts have distinct directories.
+
+Acceptance combines the inspected successful complete-suite complement from
+`bb7701e6` with the renewed failed/changed tests and originally unexecuted native
+consumers at `5e78d4b6`, under the shared evidence-reuse policy. Their full diff
+contains only tests, smoke drivers, workflow selection and prose: application,
+migrations, resources, dependencies, runtime/compiler/build and packaging inputs
+are unchanged. The failed original overall run and the non-green local full run
+retain their original results; no blanket raw-full-green claim is made.
+
+Every issue-76 scenario has passing scoped acceptance evidence. GitHub records
+the delivered integration SHA; this completes neither final #67 nor a release.

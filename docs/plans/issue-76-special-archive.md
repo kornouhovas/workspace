@@ -31,3 +31,17 @@ migration is included. GitHub owns current acceptance and delivery status.
 
 Local checks, review findings and native evidence limits are recorded in the
 [verification report](../verification/issue-76-special-archive.md).
+
+## Accepted outcome
+
+- [x] Ordinary Archive status remains active; first use configures a separate location.
+- [x] Cancel/review has no mutation; configured reuse/settings and explicit empty-only changes remain.
+- [x] Live un-enrolled status veto, late-arrival rejection and durable archive/restore safety pass.
+- [x] Standards and Spec reviews have zero remaining findings.
+- [x] Full candidate complements and failed-case renewals are inspected on all three supported CI hosts.
+- [x] DEV/package first-use/settings, retained archive/restart and sampled appearance evidence pass.
+
+Application candidate: `bb7701e6`. Accepted native/test renewal: `5e78d4b6`,
+run40226779029/attempt1. The [verification report](../verification/issue-76-special-archive.md)
+records exact receipts, unchanged-input reuse, local failures and separate release
+limits. GitHub owns the integration/delivery checkpoint.
