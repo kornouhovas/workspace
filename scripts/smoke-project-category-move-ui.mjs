@@ -47,7 +47,15 @@ export function assertRuntimeCategoryUnavailableGuard({ stale, ids, editorDisabl
   // A command can beat observation: the active category row still exists,
   // while inspecting its removed parent maps ENOENT to source_unavailable.
   assert.ok(["category_unavailable", "source_unavailable", "stale_configuration", "filesystem_changed"].includes(receipt.problem));
-  if (stale) { assert.equal(editorDisabled, true); assert.equal(submitDisabled, true); }
+  if (stale) {
+    assert.equal(editorDisabled, submitDisabled, "Stale control state must agree");
+    if (!editorDisabled) {
+      // These exact refusals share the stale text but preserve a retryable draft.
+      // An observed invalidation is separately covered by disabled-control cases.
+      assert.ok(["stale_configuration", "filesystem_changed"].includes(receipt.problem));
+      return "rejected_with_stale_feedback";
+    }
+  }
   return stale ? "rejected_before_stale" : "destination_unavailable";
 }
 
@@ -681,10 +689,10 @@ export async function runProjectCategoryMoveUi(mode = "dev") {
           // End observation only after action/state/control inspection. Dispose
           // and snapshot atomically in main, retaining late duplicate counts.
           receipt = await withDeadline(startup.current.electron.evaluate(() => globalThis.categorySubmissionReceipt.dispose()), 5000, "Category receipt completion");
-          await saveOperationProof(language, "unavailable", { ...unavailableProof, binding, beforeSubmit, after, ids, receipt });
+          await saveOperationProof(language, "unavailable", { ...unavailableProof, binding, beforeSubmit, after, stale, editorDisabled, submitDisabled, ids, receipt });
           guard = assertRuntimeCategoryUnavailableGuard({ stale, ids, receipt, editorDisabled, submitDisabled });
           assertRuntimeCategoryUnavailablePreservation(unavailableProof.before, after, beforeSubmit, category.categoryId);
-          await saveOperationProof(language, "unavailable", { ...unavailableProof, binding, beforeSubmit, after, guard, ids, receipt });
+          await saveOperationProof(language, "unavailable", { ...unavailableProof, binding, beforeSubmit, after, guard, stale, editorDisabled, submitDisabled, ids, receipt });
         } catch (error) {
           primary = error;
           try {

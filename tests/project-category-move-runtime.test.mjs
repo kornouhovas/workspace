@@ -39,6 +39,20 @@ test("post-submission stale text accepts only the exact bound unavailable reject
   }
 });
 
+test("bound stale-code rejection retains an enabled draft without proving source invalidation", () => {
+  const id = "11111111-1111-4111-8111-111111111111";
+  const receipt = { requests: 1, requestBindingMatches: true, operationId: id, responses: 1,
+    serviceOk: true, responseShapeMatches: true, outcome: "rejected", problem: "filesystem_changed", operationAbsent: true,
+    observerFailed: false, expired: false };
+  const input = { stale: true, ids: [id], editorDisabled: false, submitDisabled: false, receipt };
+  for (const problem of ["filesystem_changed", "stale_configuration"])
+    assert.equal(assertRuntimeCategoryUnavailableGuard({...input, receipt: {...receipt, problem}}), "rejected_with_stale_feedback");
+  for (const change of [{editorDisabled:true}, {submitDisabled:true}, {ids:[]},
+    {receipt:{...receipt,problem:"category_unavailable"}}, {receipt:{...receipt,operationAbsent:false}},
+    {receipt:{...receipt,responses:0}}, {receipt:{...receipt,requestBindingMatches:false}}])
+    assert.throws(()=>assertRuntimeCategoryUnavailableGuard({...input,...change}));
+});
+
 test("unavailable-category proof rejects effects beyond the deliberate missing empty category", () => {
   const projection = { revision: 2, projects: [{ projectId: "project", relativePath: "Destination/project" }], categories: [{ categoryId: "current" }, { categoryId: "missing" }] };
   const before = { durable: { journal: [], metadata: { projects: ["unchanged"], settings: ["unchanged"] }, tree: "before", otherTree: "other" },

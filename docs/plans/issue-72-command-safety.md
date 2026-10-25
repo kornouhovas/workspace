@@ -840,3 +840,36 @@ policy, with these affected renewals:
 Both independent Standards and Spec follow-ups found no concrete defect in the
 CI/test-only repair boundary. No push, Actions run, package acceptance or Windows
 acceptance is claimed by these renewals.
+
+### Development consumer failures and bounded diagnosis
+
+On clean `ff7a8490`, the source-enrollment driver journey passed. Creation first
+failed its original normal-close bound after valid creation/recovery/Finder checks.
+A diagnostic-only close sampler then ran all eight checkpoints and 16 normal
+closes successfully; its one slow-process sample contained no thread call graph,
+so it did not establish a cause. Instrumentation was removed byte-for-byte.
+The unchanged creation consumer subsequently passed all eight checkpoints and
+normal closes in `work/issue-72-candidate-dev-renewal`. The original failed receipt
+remains in `work/issue-72-candidate-dev`. A separate unchanged minimal Electron
+fixture closed 60/60 times, with some slow exits below the same ten-second bound.
+No root cause or application shutdown fix is inferred.
+
+The renewal then reached rename, passed direct submission/Reveal and multiple
+interruption/recovery/preservation/restart cases, and failed normal close before
+completing its inventory. It remains failed, not accepted. A named tail ran the
+previously unreached category-move consumer and exposed a distinct test-consumer
+mismatch: a bound single rejected `filesystem_changed` reply with no operation
+shares the stale message but preserves an enabled draft. Existing EN/RU UI tests
+explicitly retain this retryable rejection behavior, separately from observed
+source invalidation, which disables controls. The smoke had inferred invalidation
+from message text alone.
+
+The guard now accepts both enabled controls only for the two exact stale-code
+refusals after all original request/reply/no-operation checks pass. Mixed control
+states, other enabled stale refusals, malformed/unbound replies, and zero-request
+stale cases without both disabled controls remain rejected. Runtime receipts now
+retain the observed message/control states. New focused regression went red on
+the original guard; the affected runtime, UI and CI controls pass 243/243. Existing
+preservation and observer-invalidation checks remain. This is a harness-only
+repair; application/build/migrations/dependencies remain unchanged. Actual renewed
+category move and remaining development/package/platform consumers are pending.
