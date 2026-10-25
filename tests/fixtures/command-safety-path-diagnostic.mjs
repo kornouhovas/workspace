@@ -40,5 +40,5 @@ try {
  service.close();sql.close();rmSync(directory,{recursive:true,force:true});
  mkdirSync('work/ci-command-safety-fixtures',{recursive:true});
  writeFileSync('work/ci-command-safety-fixtures/path-diagnostic.json',JSON.stringify(report,null,2)+'\n');
- console.log('[DEBUG-72-path] '+JSON.stringify(report));
+ console.info('Disposable command-safety path observations retained.');
 }

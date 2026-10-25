@@ -9,7 +9,7 @@ import {syncBuiltinESMExports} from 'node:module';
 import {randomUUID} from 'node:crypto';
 import {mkdtempSync,mkdirSync,realpathSync,rmSync,writeFileSync,readFileSync,existsSync,renameSync} from 'node:fs';
 import {tmpdir} from 'node:os';
-import {join,sep} from 'node:path';
+import {join,sep,basename} from 'node:path';
 import test from 'node:test';
 import Database from 'better-sqlite3';
 import {observeFolder} from '../src/service/folder-evidence.ts';
@@ -17,7 +17,7 @@ import {renameNoReplace} from '../dist/service/project-rename-filesystem.mjs';
 import {openSettingsService} from '../dist/service/settings.mjs';
 const observer={watch(){return {close(){}};},schedule(){return {cancel(){}};}};
 function fixture(run,options={}) {
- const directory=realpathSync(mkdtempSync(join(tmpdir(),'durable-category-removal-'))),root=join(directory,'root'),path=join(directory,'app.sqlite');
+ const directory=realpathSync.native(mkdtempSync(join(tmpdir(),'durable-category-removal-'))),root=join(directory,'root'),path=join(directory,'app.sqlite');
  mkdirSync(join(root,'From/Project'),{recursive:true});mkdirSync(join(root,'To'));writeFileSync(join(root,'From/Project/sentinel'),'exact contents');
  const open=()=>openSettingsService(path,undefined,undefined,observer,options.filesystem,options.native,options.reader);
  let service=open();const workspace=service.handleCommand({type:'workspace.create',name:'Workspace',rootPath:root}).value,workspaceId=workspace.workspaceId;
@@ -52,7 +52,7 @@ test('a source rooted in the removed category added after preview invalidates re
 
 test('removal refuses a project durable alias in an unowned branch',()=>{
  let rootPath,ambiguous=false;
- const reader=(path,scope)=>{const value=observeFolder(path,scope);if(!ambiguous||!value.ok||!path.endsWith('/Other'))return value;
+ const reader=(path,scope)=>{const value=observeFolder(path,scope);if(!ambiguous||!value.ok||basename(path)!=='Other')return value;
   return {...value,evidence:observeFolder(join(rootPath,'From/Project'),scope).evidence};};
  fixture(f=>{
   rootPath=f.root;mkdirSync(join(f.root,'Unowned/Other'),{recursive:true});ambiguous=true;

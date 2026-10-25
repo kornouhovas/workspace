@@ -945,3 +945,36 @@ acceptance. Original suite assertions, native policy and deadlines stay intact.
 Local diagnostic control refuses the altered proof when its hook fires; 103
 routing/inventory/isolation controls, lint and diff pass. Windows diagnostic and
 original focused red evidence remain to be collected before selecting a repair.
+
+### Proven Windows fixture causes and scoped repair
+
+Both Windows original full jobs finished with the same 66 failures and otherwise
+matching 3,855-test totals. Focused diagnostic run40163746918 at `3afa6036`
+reproduced exactly66 failures/229 checks on each Windows host, while macOS passed
+229/229. Its path reports establish the cause: fixture `realpathSync` retained
+`C:\Users\RUNNER~1\...`; actual source creation stored native-canonical
+`C:\Users\runneradmin\...`. Raw-root SQL found zero rows; canonical-root SQL found
+one. Slash-only and raw-path proof hooks matched zero observations and therefore
+did not inject the intended fault. The canonical-target hook matched once and
+the real service rejected the altered proof. Native collection dispatched the
+current verified canonical path, while the old raw-spelling callback assertion
+would fail. This is a fixture targeting/expectation defect, not evidence that an
+altered proof was granted by the authorizer.
+
+The repair changes only the eleven affected test files: native-canonical
+mkdtemp bases match actual current/historical source creation; basename predicates
+replace POSIX-only suffixes. All original positive/refusal/history/rollback,
+reservation, no-overwrite, data-preservation and native assertions remain.
+Diagnostic JSON remains in the clearly named fixture/route; its temporary DEBUG
+console dump is removed. No application, migration, native resource, dependency,
+lockfile or build input changes. Compare the complete delta, including the
+selector-only concurrency addition, before reusing evidence.
+
+Local original11-file renewal passes229/229. Standards and Spec reviews find no
+retained-requirement weakening or scope expansion. Windows repaired checks still
+need focused renewal on their actual hosts; no full-matrix replay is selected
+while that gate remains. The original macOS full and all DEV consumers passed;
+its package phase continues and must retain its original SHA/artifacts. Windows
+DEV/package/native consumers remain unreached and will be renewed only after the
+focused repair gate passes. Failed original/focused Windows conclusions remain
+failed; future receipts do not relabel those runs.

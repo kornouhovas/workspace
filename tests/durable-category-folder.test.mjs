@@ -13,7 +13,7 @@ import {renameNoReplace} from '../dist/service/project-rename-filesystem.mjs';
 import {openSettingsService} from '../dist/service/settings.mjs';
 const observer={watch(){return {close(){}};},schedule(){return {cancel(){}};}};
 function fixture(run,options={}) {
- const directory=realpathSync(mkdtempSync(join(tmpdir(),'durable-category-folder-'))),root=join(directory,'root'),path=join(directory,'app.sqlite');
+ const directory=realpathSync.native(mkdtempSync(join(tmpdir(),'durable-category-folder-'))),root=join(directory,'root'),path=join(directory,'app.sqlite');
  mkdirSync(join(root,'From/Project'),{recursive:true});mkdirSync(join(root,'To'));writeFileSync(join(root,'From/Project/sentinel'),'exact contents');
  const open=()=>openSettingsService(path,undefined,undefined,observer,options.filesystem,options.native,options.reader);
  let service=open();const workspace=service.handleCommand({type:'workspace.create',name:'Workspace',rootPath:root}).value,workspaceId=workspace.workspaceId;

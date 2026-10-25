@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import {randomUUID} from 'node:crypto';
 import {mkdtempSync,mkdirSync,realpathSync,rmSync,readdirSync,renameSync} from 'node:fs';
 import {tmpdir} from 'node:os';
-import {join} from 'node:path';
+import {join,basename} from 'node:path';
 import test from 'node:test';
 import Database from 'better-sqlite3';
 import {observeFolder} from '../src/service/folder-evidence.ts';
@@ -121,7 +121,7 @@ test('an unfinished legacy creation requires exact old triples and a separate ex
 
 test('unrecorded creation review pins the full durable destination until Apply',()=>{
  let substitute=false;
- const reader=(path,scope)=>{const value=observeFolder(path,scope);return substitute && path.endsWith('/Unrecorded') && value.ok ? {...value,evidence:{...value.evidence,fileId:value.evidence.provider==='apfs'?'999999999999':'f'.repeat(32)}} : value;};
+ const reader=(path,scope)=>{const value=observeFolder(path,scope);return substitute && basename(path)==='Unrecorded' && value.ok ? {...value,evidence:{...value.evidence,fileId:value.evidence.provider==='apfs'?'999999999999':'f'.repeat(32)}} : value;};
  const filesystem={...nativeProjectFilesystem,mkdir(path){nativeProjectFilesystem.mkdir(path);throw new Error('lost mkdir outcome');}};
  fixture(f=>{
   const request={type:'workspace.createProject',mode:'direct',name:'Unrecorded',operationId:randomUUID(),expectedRevision:f.query({type:'workspace.listProjects'}).value.revision};

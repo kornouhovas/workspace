@@ -9,7 +9,7 @@ import {observeFolder} from '../src/service/folder-evidence.ts';
 import {openSettingsService} from '../dist/service/settings.mjs';
 const observer={watch(){return {close(){}};},schedule(){return {cancel(){}};}};
 function fixture(run,reader) {
- const directory=realpathSync(mkdtempSync(join(tmpdir(),'durable-archive-location-'))),root=join(directory,'root'),path=join(directory,'app.sqlite');
+ const directory=realpathSync.native(mkdtempSync(join(tmpdir(),'durable-archive-location-'))),root=join(directory,'root'),path=join(directory,'app.sqlite');
  mkdirSync(join(root,'Project'),{recursive:true});writeFileSync(join(root,'Project/sentinel'),'exact contents');
  const open=()=>openSettingsService(path,undefined,undefined,observer,undefined,undefined,reader);
  let service=open();const workspace=service.handleCommand({type:'workspace.create',rootPath:root,name:'Workspace'}).value,workspaceId=workspace.workspaceId;

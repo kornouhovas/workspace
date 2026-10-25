@@ -7,7 +7,7 @@ import {alteredSnapshot} from "./support/mutate-application-snapshot.mjs";
 import assert from 'node:assert/strict';
 import {mkdtempSync,mkdirSync,realpathSync,rmSync,readFileSync,writeFileSync,copyFileSync,renameSync} from 'node:fs';
 import {tmpdir} from 'node:os';
-import {join} from 'node:path';
+import {join,basename} from 'node:path';
 import test from 'node:test';
 import Database from 'better-sqlite3';
 import {seedHistoricalFixture} from './support/identity-migration-fixtures.mjs';
@@ -15,7 +15,7 @@ import {nativeProjectFilesystem} from '../src/service/project-filesystem.ts';
 import {openSettingsService} from '../dist/service/settings.mjs';
 
 function fixture(run,reader,{mode="direct",missingParent=false,native}={}) {
- const directory=realpathSync(mkdtempSync(join(tmpdir(),'archived-association-'))),root=join(directory,'root'),path=join(directory,'app.sqlite'),migrations=join(directory,'migrations');
+ const directory=realpathSync.native(mkdtempSync(join(tmpdir(),'archived-association-'))),root=join(directory,'root'),path=join(directory,'app.sqlite'),migrations=join(directory,'migrations');
  mkdirSync(join(root,'Project'),{recursive:true});mkdirSync(join(root,'Cold/Archive'),{recursive:true});writeFileSync(join(root,'Project/sentinel'),'exact archived bytes');mkdirSync(join(migrations,'meta'),{recursive:true});
  const journal=JSON.parse(readFileSync('src/service/db/migrations/meta/_journal.json','utf8'));journal.entries=journal.entries.slice(0,24);
  for(const entry of journal.entries)copyFileSync(`src/service/db/migrations/${entry.tag}.sql`,join(migrations,`${entry.tag}.sql`));writeFileSync(join(migrations,'meta/_journal.json'),JSON.stringify(journal));
@@ -93,7 +93,7 @@ test('scope-unverified archive mapping preserves every old receipt and requires 
 
 test('designated archive binding refuses a full target alias in an unowned archived sibling',()=>{
  let projectPath;
- const reader=(path,scope)=>{const proof=observeFolder(path,scope);return proof.ok&&path.endsWith('/Other')?{...proof,evidence:observeFolder(projectPath,scope).evidence}:proof;};
+ const reader=(path,scope)=>{const proof=observeFolder(path,scope);return proof.ok&&basename(path)==='Other'?{...proof,evidence:observeFolder(projectPath,scope).evidence}:proof;};
  fixture(f=>{projectPath=join(f.root,'Cold/Archive/Project');mkdirSync(join(f.root,'Cold/Archive/Other'));
   const review=f.query({type:'workspace.previewSourceAssociation',mappings:[{kind:'project',id:f.projectId,relativePath:'Cold/Archive/Project'}]});assert.equal(review.value.previewToken,null,JSON.stringify(review));
   assert.equal(f.sql.prepare('SELECT durable_evidence FROM projects').get().durable_evidence,null);assert.equal(f.sql.prepare('SELECT count(*) n FROM archived_folder_associations').get().n,0);assert.equal(readFileSync(join(f.root,'Cold/Archive/Project/sentinel'),'utf8'),'exact archived bytes');
@@ -153,7 +153,7 @@ test('archive mapping and restore may observe an unchanged archive parent that i
 }));
 
 for(const mode of ['direct','grouped'])test(`known ${mode} archive history keeps its old scope while explicitly rebound current roles authorize restore`,()=>{
- const directory=realpathSync(mkdtempSync(join(tmpdir(),'scoped-archive-association-'))),root=join(directory,'root'),path=join(directory,'app.sqlite'),relativePath=mode==='grouped'?'Category/Project':'Project';
+ const directory=realpathSync.native(mkdtempSync(join(tmpdir(),'scoped-archive-association-'))),root=join(directory,'root'),path=join(directory,'app.sqlite'),relativePath=mode==='grouped'?'Category/Project':'Project';
  mkdirSync(join(root,relativePath),{recursive:true});writeFileSync(join(root,relativePath,'sentinel'),'known archive bytes');
  const observer={watch(){return{close(){}};},schedule(){return{cancel(){}};}};const open=()=>openSettingsService(path,undefined,undefined,observer);let service=open();const sql=new Database(path);
  try {
@@ -177,7 +177,7 @@ for(const mode of ['direct','grouped'])test(`known ${mode} archive history keeps
 });
 
 test('archive association rolls back all enrollment and its receipt if an ancestor changes after SQL insertion',()=>{
- let changed=false;const reader=(path,scope)=>{const proof=observeFolder(path,scope);return changed&&proof.ok&&path.endsWith('/Cold')?{...proof,evidence:{...proof.evidence,created:(BigInt(proof.evidence.created)+1n).toString()}}:proof;};
+ let changed=false;const reader=(path,scope)=>{const proof=observeFolder(path,scope);return changed&&proof.ok&&basename(path)==='Cold'?{...proof,evidence:{...proof.evidence,created:(BigInt(proof.evidence.created)+1n).toString()}}:proof;};
  fixture(f=>{
   const before=f.sql.prepare('SELECT * FROM sources').all(),project=f.sql.prepare('SELECT * FROM projects').get();
   const review=f.query({type:'workspace.previewSourceAssociation',mappings:[{kind:'project',id:f.projectId,relativePath:'Cold/Archive/Project'}]}).value;assert.ok(review.previewToken);
@@ -234,7 +234,7 @@ test('explicit v2 restore recovery completes a lost native response while preser
 });
 
 for(const conflictingRole of [false,'created','legacy','exactLegacy'])test(`archived grouped original parent ${conflictingRole==='exactLegacy'?'accepts exact current legacy role':conflictingRole?`rejects a contradictory ${conflictingRole} role`:'can be explicitly rebound after mode change and scope loss without activating dormant records'}`,()=>{
- const directory=realpathSync(mkdtempSync(join(tmpdir(),'archived-parent-role-'))),root=join(directory,'root'),path=join(directory,'app.sqlite');mkdirSync(join(root,'Category/Project'),{recursive:true});writeFileSync(join(root,'Category/Project/sentinel'),'retained');
+ const directory=realpathSync.native(mkdtempSync(join(tmpdir(),'archived-parent-role-'))),root=join(directory,'root'),path=join(directory,'app.sqlite');mkdirSync(join(root,'Category/Project'),{recursive:true});writeFileSync(join(root,'Category/Project/sentinel'),'retained');
  const observer={watch(){return{close(){}};},schedule(){return{cancel(){}};}};const open=()=>openSettingsService(path,undefined,undefined,observer);let service=open();const sql=new Database(path);
  try{
   const workspaceId=service.handleCommand({type:'workspace.create',name:'Roles',rootPath:root}).value.workspaceId,query=input=>service.handleQuery({workspaceId,...input}),command=input=>service.handleCommand({workspaceId,...input});

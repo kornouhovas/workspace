@@ -13,7 +13,7 @@ import {scanGroupedSource} from '../src/service/discovery.ts';
 import {openSettingsService} from '../dist/service/settings.mjs';
 const observer={watch(){return {close(){}};},schedule(){return {cancel(){}};}};
 for(const stale of [false,true,'generation_shape','generation_future','native_extra'])test(`real0023 category rename recovery ${typeof stale==='string'?stale:stale?'retains changed-dev uncertainty':'attests exact old root/category/member triples'}`,()=>{
- const directory=realpathSync(mkdtempSync(join(tmpdir(),'legacy-category-'))),root=join(directory,'root'),path=join(directory,'data','app.sqlite'),migrations=join(directory,'migrations');
+ const directory=realpathSync.native(mkdtempSync(join(tmpdir(),'legacy-category-'))),root=join(directory,'root'),path=join(directory,'data','app.sqlite'),migrations=join(directory,'migrations');
  mkdirSync(join(root,'Category/Project'),{recursive:true});mkdirSync(join(directory,'data'));mkdirSync(join(migrations,'meta'),{recursive:true});writeFileSync(join(root,'Category/Project/sentinel'),'legacy bytes');
  const journal=JSON.parse(readFileSync('src/service/db/migrations/meta/_journal.json','utf8'));journal.entries=journal.entries.slice(0,24);
  for(const entry of journal.entries)copyFileSync(`src/service/db/migrations/${entry.tag}.sql`,join(migrations,entry.tag+'.sql'));writeFileSync(join(migrations,'meta/_journal.json'),JSON.stringify(journal));

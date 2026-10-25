@@ -3,14 +3,14 @@ import test from 'node:test';
 import {randomUUID} from 'node:crypto';
 import {mkdtempSync,mkdirSync,writeFileSync,readFileSync,rmSync,realpathSync} from 'node:fs';
 import {tmpdir} from 'node:os';
-import {join} from 'node:path';
+import {join,basename} from 'node:path';
 import Database from 'better-sqlite3';
 import {openSettingsService} from '../dist/service/settings.mjs';
 import {observeFolder} from '../src/service/folder-evidence.ts';
 import {createNativeProjectReveal} from '../src/desktop/project-reveal.ts';
 const observer={watch(){return{close(){}};},schedule(){return{cancel(){}};}};
 async function fixture(mode,run,reader){
- const directory=realpathSync(mkdtempSync(join(tmpdir(),'durable-native-'))),root=join(directory,'root'),path=join(directory,'app.sqlite'),relativePath=mode==='grouped'?'Category/Project':'Project';mkdirSync(join(root,relativePath),{recursive:true});writeFileSync(join(root,relativePath,'sentinel'),'unchanged');
+ const directory=realpathSync.native(mkdtempSync(join(tmpdir(),'durable-native-'))),root=join(directory,'root'),path=join(directory,'app.sqlite'),relativePath=mode==='grouped'?'Category/Project':'Project';mkdirSync(join(root,relativePath),{recursive:true});writeFileSync(join(root,relativePath,'sentinel'),'unchanged');
  const open=()=>openSettingsService(path,undefined,undefined,observer,undefined,undefined,reader);let service=open();const sql=new Database(path);
  try{
   const workspaceId=service.handleCommand({type:'workspace.create',name:'Native',rootPath:root}).value.workspaceId;
@@ -81,7 +81,7 @@ for(const mode of ['direct','grouped'])for(const renewScope of [false,true])test
 }));
 
 test('archived native targets reject an unowned full identity alias outside the archive subtree',async()=>{
- let selected,alias=false;const reader=(path,scope)=>alias&&path.endsWith('/Other')?{...observeFolder(path,scope),evidence:observeFolder(selected,scope).evidence}:observeFolder(path,scope);
+ let selected,alias=false;const reader=(path,scope)=>alias&&basename(path)==='Other'?{...observeFolder(path,scope),evidence:observeFolder(selected,scope).evidence}:observeFolder(path,scope);
  await fixture('direct',async f=>{
   const q=input=>f.service.handleQuery({workspaceId:f.workspaceId,...input}),c=input=>f.service.handleCommand({workspaceId:f.workspaceId,...input});
   const location=q({type:'workspace.previewArchiveLocation',relativePath:'Archive'});c({type:'workspace.applyArchiveLocation',operationId:randomUUID(),previewToken:location.value.previewToken});
@@ -100,7 +100,7 @@ for(const staleLocator of [false,true])test(`native target rejects a peer source
 }));
 
 for(const role of ['root','parent'])test(`active native authorization rejects an unowned alias of protected ${role}`,async()=>{
- let protectedPath,ambiguous=false;const reader=(path,scope)=>ambiguous&&path.endsWith('/Other')?{...observeFolder(path,scope),evidence:observeFolder(protectedPath,scope).evidence}:observeFolder(path,scope);
+ let protectedPath,ambiguous=false;const reader=(path,scope)=>ambiguous&&basename(path)==='Other'?{...observeFolder(path,scope),evidence:observeFolder(protectedPath,scope).evidence}:observeFolder(path,scope);
  await fixture('grouped',async f=>{
   protectedPath=role==='root'?f.root:join(f.root,'Category');mkdirSync(join(f.root,'Other'));ambiguous=true;let calls=0;
   const result=await f.service.revealProject({type:'workspace.revealProject',workspaceId:f.workspaceId,projectId:f.projectId},async()=>{calls++;return{outcome:'dispatched'};});

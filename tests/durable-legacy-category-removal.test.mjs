@@ -13,7 +13,7 @@ import {openSettingsService} from '../dist/service/settings.mjs';
 const observer={watch(){return {close(){}};},schedule(){return {cancel(){}};}};
 for(const stale of [null,'root','category','destination','project','cleanup_missing','generation_shape','generation_future','native_extra'])test(`real0023 category removal recovery ${stale==='cleanup_missing'?'retains unprovable absent-category cleanup':stale?'retains changed-dev '+stale+' uncertainty':'attests exact old root/category/member triples'}`,()=>{
  const cleanupMissing=stale==='cleanup_missing';
- const directory=realpathSync(mkdtempSync(join(tmpdir(),'legacy-removal-'))),root=join(directory,'root'),path=join(directory,'data','app.sqlite'),migrations=join(directory,'migrations');
+ const directory=realpathSync.native(mkdtempSync(join(tmpdir(),'legacy-removal-'))),root=join(directory,'root'),path=join(directory,'data','app.sqlite'),migrations=join(directory,'migrations');
  mkdirSync(join(root,'Category/Project'),{recursive:true});mkdirSync(join(root,'Destination'));mkdirSync(join(root,'Unrelated/Other'),{recursive:true});mkdirSync(join(directory,'data'));mkdirSync(join(migrations,'meta'),{recursive:true});writeFileSync(join(root,'Category/Project/sentinel'),'legacy bytes');
  const journal=JSON.parse(readFileSync('src/service/db/migrations/meta/_journal.json','utf8'));journal.entries=journal.entries.slice(0,24);
  for(const entry of journal.entries)copyFileSync(`src/service/db/migrations/${entry.tag}.sql`,join(migrations,entry.tag+'.sql'));writeFileSync(join(migrations,'meta/_journal.json'),JSON.stringify(journal));

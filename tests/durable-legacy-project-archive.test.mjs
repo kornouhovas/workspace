@@ -16,7 +16,7 @@ import {nativeProjectFilesystem} from '../src/service/project-filesystem.ts';
 import {openSettingsService} from '../dist/service/settings.mjs';
 
 function fixture(run,{action='archive',stale=null,native,mode='direct',missingArchiveParents=false,extraNative=null}={}) {
- const directory=realpathSync(mkdtempSync(join(tmpdir(),'legacy-archive-'))),root=join(directory,'root'),path=join(directory,'app.sqlite'),migrations=join(directory,'migrations');
+ const directory=realpathSync.native(mkdtempSync(join(tmpdir(),'legacy-archive-'))),root=join(directory,'root'),path=join(directory,'app.sqlite'),migrations=join(directory,'migrations');
  mkdirSync(join(root,'Cold/Archive'),{recursive:true});mkdirSync(join(migrations,'meta'),{recursive:true});
  const original=mode==='grouped'?'Category/Project':'Project',archived=`Cold/Archive/${original}`,placement=action==='archive'?original:archived;
  if(mode==='grouped'){mkdirSync(join(root,'Category'),{recursive:true});mkdirSync(join(root,'Cold/Archive/Category'),{recursive:true});}mkdirSync(join(root,placement));writeFileSync(join(root,placement,'sentinel'),'exact legacy bytes');

@@ -11,13 +11,13 @@ import assert from 'node:assert/strict';
 import {randomUUID} from 'node:crypto';
 import {mkdtempSync,mkdirSync,realpathSync,rmSync,writeFileSync,readFileSync,existsSync} from 'node:fs';
 import {tmpdir} from 'node:os';
-import {join} from 'node:path';
+import {join,basename} from 'node:path';
 import test from 'node:test';
 import Database from 'better-sqlite3';
 import {openSettingsService} from '../dist/service/settings.mjs';
 const observer={watch(){return {close(){}};},schedule(){return {cancel(){}};}};
 function fixture(run,{mode='direct',...options}={}) {
- const directory=realpathSync(mkdtempSync(join(tmpdir(),'durable-project-archive-'))),root=join(directory,'root'),path=join(directory,'app.sqlite'),relativePath=mode==='grouped'?'Category/Project':'Project';
+ const directory=realpathSync.native(mkdtempSync(join(tmpdir(),'durable-project-archive-'))),root=join(directory,'root'),path=join(directory,'app.sqlite'),relativePath=mode==='grouped'?'Category/Project':'Project';
  mkdirSync(join(root,relativePath),{recursive:true});writeFileSync(join(root,relativePath,'sentinel'),'exact contents');
  const open=()=>openSettingsService(path,undefined,undefined,observer,options.filesystem,options.native,options.reader);
  let service=open();const workspace=service.handleCommand({type:'workspace.create',name:'Workspace',rootPath:root}).value,workspaceId=workspace.workspaceId;
@@ -50,7 +50,7 @@ test('a saved source appearing inside the project after archive Preview prevents
 
 test('archive refuses a project durable alias in an unowned eligible folder',()=>{
  let rootPath,ambiguous=false;
- const reader=(path,scope)=>{const value=observeFolder(path,scope);return ambiguous&&value.ok&&path.endsWith('/Other')?{...value,evidence:observeFolder(join(rootPath,'Project'),scope).evidence}:value;};
+ const reader=(path,scope)=>{const value=observeFolder(path,scope);return ambiguous&&value.ok&&basename(path)==='Other'?{...value,evidence:observeFolder(join(rootPath,'Project'),scope).evidence}:value;};
  fixture(f=>{rootPath=f.root;mkdirSync(join(f.root,'Other'));ambiguous=true;const preview=f.review('archive');assert.equal(preview.ok,true,JSON.stringify(preview));assert.equal(preview.value.previewToken,null,JSON.stringify(preview));assert.equal(existsSync(join(f.root,'Project/sentinel')),true);},{reader});
 });
 
@@ -78,14 +78,14 @@ test('late evidence-generation invalidation after terminal SQL rolls back archiv
 }));
 
 test('a changed full parent proof after Preview prevents archive intent and all effects',()=>{
- let changed=false;const reader=(path,scope)=>{const proof=observeFolder(path,scope);return changed&&proof.ok&&path.endsWith('/Archive')?{...proof,evidence:{...proof.evidence,created:(BigInt(proof.evidence.created)+1n).toString()}}:proof;};
+ let changed=false;const reader=(path,scope)=>{const proof=observeFolder(path,scope);return changed&&proof.ok&&basename(path)==='Archive'?{...proof,evidence:{...proof.evidence,created:(BigInt(proof.evidence.created)+1n).toString()}}:proof;};
  fixture(f=>{mkdirSync(join(f.root,'Cold/Archive'),{recursive:true});const preview=f.review('archive').value;assert.ok(preview.previewToken);changed=true;
   assert.equal(f.apply(preview).ok,false);assert.equal(f.sql.prepare('SELECT count(*) n FROM project_archive_operations').get().n,0);assert.equal(readFileSync(join(f.root,'Project/sentinel'),'utf8'),'exact contents');
  },{reader});
 });
 
 test('an unstable newly created archive parent retains intent before recording ownership or moving the project',()=>{
- let reads=0,calls=0;const reader=(path,scope)=>{const proof=observeFolder(path,scope);return proof.ok&&path.endsWith('/Cold')&&++reads>1?{...proof,evidence:{...proof.evidence,created:(BigInt(proof.evidence.created)+1n).toString()}}:proof;};
+ let reads=0,calls=0;const reader=(path,scope)=>{const proof=observeFolder(path,scope);return proof.ok&&basename(path)==='Cold'&&++reads>1?{...proof,evidence:{...proof.evidence,created:(BigInt(proof.evidence.created)+1n).toString()}}:proof;};
  fixture(f=>{const preview=f.review('archive').value;assert.ok(preview.previewToken);const result=f.apply(preview);assert.equal(result.value.operation.stage,'intent',JSON.stringify(result));assert.equal(calls,0);
   assert.equal(existsSync(join(f.root,'Cold')),true);assert.equal(existsSync(join(f.root,'Cold/Archive')),false);assert.equal(JSON.parse(f.sql.prepare('SELECT parents FROM project_archive_operations').get().parents)[0].identity,null);
   assert.equal(readFileSync(join(f.root,'Project/sentinel'),'utf8'),'exact contents');
@@ -159,7 +159,7 @@ test('a mount change after archive Preview consumes the review before intent or 
 
 for(const field of ['volume','created','scope'])test(`fresh archive refuses changed ${field} in the selected project's durable proof`,()=>{
  let changed=false;
- const reader=(path,scope)=>{const proof=observeFolder(path,scope);if(!changed || !proof.ok || !path.endsWith('/Project'))return proof;
+ const reader=(path,scope)=>{const proof=observeFolder(path,scope);if(!changed || !proof.ok || basename(path)!=='Project')return proof;
   return {...proof,evidence:{...proof.evidence,[field]:field==='volume'?(proof.evidence.provider==='apfs'?'a'.repeat(32):'\\\\?\\Volume{aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa}\\'):field==='scope'?'foreign-scope':(BigInt(proof.evidence.created)+1n).toString()}};
  };
  fixture(f=>{changed=true;const preview=f.review('archive');assert.equal(preview.value.previewToken,null,JSON.stringify(preview));

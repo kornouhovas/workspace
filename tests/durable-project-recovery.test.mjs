@@ -9,7 +9,7 @@ import {openSettingsService} from '../dist/service/settings.mjs';
 
 const observer={watch(){return {close(){}};},schedule(){return {cancel(){}};}};
 function fixture(run,mode='direct',reader) {
- const directory=realpathSync(mkdtempSync(join(tmpdir(),'durable-recovery-'))),root=join(directory,'source'),dbPath=join(directory,'settings.sqlite');
+ const directory=realpathSync.native(mkdtempSync(join(tmpdir(),'durable-recovery-'))),root=join(directory,'source'),dbPath=join(directory,'settings.sqlite');
  const oldPath=mode==='direct'?'Project':'Category/Project',target=mode==='direct'?'Target':'Category/Target';
  mkdirSync(join(root,oldPath),{recursive:true});writeFileSync(join(root,oldPath,'sentinel'),'exact contents');
  const open=()=>openSettingsService(dbPath,undefined,undefined,observer,undefined,undefined,reader);
