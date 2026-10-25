@@ -89,3 +89,14 @@ additionally proves post-assignment editor availability/Cancel focus and real UI
 readiness after restart, then verifies unchanged normal-exit deadlines. Successful
 current shutdown receipts do not relabel earlier failures. Final suite/CI and
 integration remain pending at this checkpoint.
+
+
+## Final-suite reconciliation
+
+Single local full run:3901pass/23fail/27skip (3951total), including21 inherited
+normal-close timeouts, Ladle's task-symlink403 and one omitted exact CI-selector
+fixture. Original Ladle passes after replacing the task-owned dependency link;
+73 focused inventory/routing checks pass after additive fixture reconciliation.
+The application graph remains unchanged. Preserve full successful complement and
+negative receipts; renew exact failures/missing platform/native tails through the
+focused routes under ci.md, and keep historical quit causation unestablished.

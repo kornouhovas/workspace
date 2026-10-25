@@ -12,6 +12,20 @@ SHA, run/attempt, host, mode, screenshots, normal shutdown and fixture cleanup.
 No installer, resource, dependency or schema input changes; final release/manual
 Windows11 acceptance remains separate. Original full/release routes are unchanged.
 
+For the additive selector inventory failure at8e0b258f, use
+`checks: status-moves-routing` first. It runs only the original
+`tests/test-suites.test.mjs` and route guards on all three hosts after npm ci/static
+checks, without builds, native consumers or a full-suite retry. The frozen expected
+selector list is updated to include the authorized route; the default/full and
+negative scheduling guarantees remain. After focused success and artifact
+inspection, `checks: status-moves-runtime` selects the previously unreached
+DEV/package consumers and prerequisites, preserving the successful unchanged full
+complement at its original source SHA. These phases use separate concurrency
+suffixes so the original broad run can finish recording evidence. Every original
+failure retains its result; these selectors never turn skipped or failed checks
+into passing evidence. Additional observed failures require their own diagnosis
+and focused selection before the missing tails.
+
 
 ## Folder-role settings acceptance
 

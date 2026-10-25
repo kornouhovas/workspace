@@ -2,6 +2,10 @@ name: Safe folder status assignment
 
 on:
   workflow_call:
+    inputs:
+      phase:
+        type: string
+        default: full
 
 permissions:
   contents: read
@@ -25,33 +29,49 @@ jobs:
       - run: npm run lint
       - run: npm run check:docs
       - run: npm run build
+        if: ${{ inputs.phase != 'routing-repair' }}
+      - name: Original failed workflow inventory and routing regressions
+        if: ${{ inputs.phase == 'routing-repair' }}
+        shell: bash
+        run: |
+          mkdir -p work/ci-status-moves
+          set -o pipefail
+          node --test tests/test-suites.test.mjs tests/status-moves-workflow.test.mjs 2>&1 | tee work/ci-status-moves/routing.log
       - name: Final complete suite
+        if: ${{ inputs.phase == 'full' }}
         shell: bash
         run: |
           mkdir -p work/ci-status-moves
           set -o pipefail
           npm run test:all 2>&1 | tee work/ci-status-moves/full.log
       - name: Development status editing and Board/Table assignment
+        if: ${{ inputs.phase != 'routing-repair' }}
         run: node scripts/smoke-status-assignment.mjs
         env:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-status-moves/dev
       - name: Retained explicit parent operations
+        if: ${{ inputs.phase != 'routing-repair' }}
         run: npm run smoke:folder-roles
         env:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-status-moves/roles-dev
       - name: Retained ordinary and filesystem assignment
+        if: ${{ inputs.phase != 'routing-repair' }}
         run: node scripts/smoke-group-assignment.mjs --filesystem
         env:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-status-moves/assignment-dev
       - name: Package reviewed candidate
+        if: ${{ inputs.phase != 'routing-repair' }}
         run: npx electron-builder --dir
       - run: npm run check:artifact -- release
+        if: ${{ inputs.phase != 'routing-repair' }}
       - name: Packaged status editing and Board/Table assignment
+        if: ${{ inputs.phase != 'routing-repair' }}
         run: node scripts/smoke-status-assignment.mjs
         env:
           WORKSPACE_SMOKE_MODE: release
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-status-moves/release
       - name: Packaged retained explicit parent operations
+        if: ${{ inputs.phase != 'routing-repair' }}
         run: npm run smoke:folder-roles
         env:
           WORKSPACE_SMOKE_MODE: release

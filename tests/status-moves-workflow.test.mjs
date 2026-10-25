@@ -12,3 +12,20 @@ test('status assignment acceptance selects three hosts, complete suite and actua
  assert.match(workflow,/WORKSPACE_SMOKE_MODE: release/);assert.match(workflow,/if: always\(\)/);assert.match(workflow,/set -o pipefail/);
  assert.ok(!workflow.includes('continue-on-error'));
 });
+
+test('routing repair renews only the original failed inventory and runtime tails preserve full defaults',async()=>{
+ const {load}=await import('js-yaml'),{runInNewContext}=await import('node:vm');
+ const dispatch=load(readFileSync('.github/workflows/desktop-ci.yml','utf8')),workflow=load(readFileSync('.github/workflows/status-moves.yml','utf8'));
+ assert.equal(workflow.on.workflow_call.inputs.phase.default,'full');
+ for(const [checks,phase] of [['status-moves','full'],['status-moves-routing','routing-repair'],['status-moves-runtime','runtime']]){
+  const context={github:{event_name:'workflow_dispatch'},inputs:{checks}};
+  assert.equal(runInNewContext(dispatch.jobs.common.if.slice(3,-2),context),false);
+  assert.equal(runInNewContext(dispatch.jobs['status-moves'].if.slice(3,-2),context),true);
+  assert.equal(runInNewContext(dispatch.jobs['status-moves'].with.phase.slice(3,-2),context),phase);
+  const runs=workflow.jobs['status-moves'].steps.filter(step=>step.run&&(!step.if||runInNewContext(step.if.slice(3,-2),{inputs:{phase}}))).map(step=>step.run);
+  assert.equal(runs.some(run=>run.includes('npm run test:all')),phase==='full');
+  assert.equal(runs.some(run=>run.includes('node --test tests/test-suites.test.mjs tests/status-moves-workflow.test.mjs')),phase==='routing-repair');
+  assert.equal(runs.includes('npm run build'),phase!=='routing-repair');
+  assert.equal(runs.includes('node scripts/smoke-status-assignment.mjs'),phase!=='routing-repair');
+ }
+});
