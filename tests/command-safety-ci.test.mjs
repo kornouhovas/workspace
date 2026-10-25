@@ -48,20 +48,25 @@ test('fixture diagnosis retains all failed files and separates only its concurre
  const desktop=load(readFileSync('.github/workflows/desktop-ci.yml','utf8')),workflow=load(readFileSync('.github/workflows/command-safety-fixtures.yml','utf8'));
  assert.ok(desktop.on.workflow_dispatch.inputs.checks.options.includes('command-safety-fixtures'));
  assert.equal(desktop.jobs['focused-command-safety-fixtures'].uses,'./.github/workflows/command-safety-fixtures.yml');
- for(const checks of ['command-safety-fixtures','command-safety','full']) {
+ for(const checks of ['command-safety-fixtures','command-safety-archive-alias','command-safety','full']) {
   const context={github:{event_name:'workflow_dispatch'},inputs:{checks}};
-  assert.equal(runInNewContext(desktop.jobs['focused-command-safety-fixtures'].if.slice(3,-2),context),checks==='command-safety-fixtures');
+  assert.equal(runInNewContext(desktop.jobs['focused-command-safety-fixtures'].if.slice(3,-2),context),['command-safety-fixtures','command-safety-archive-alias'].includes(checks));
+  if(['command-safety-fixtures','command-safety-archive-alias'].includes(checks)) assert.equal(runInNewContext(desktop.jobs['focused-command-safety-fixtures'].with.profile.slice(3,-2),context),checks==='command-safety-archive-alias'?'archive-alias':'all');
   assert.equal(runInNewContext(desktop.jobs.common.if.slice(3,-2),context),checks==='full');
  }
  const prefix='desktop-${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}';
  assert.ok(desktop.concurrency.group.startsWith(prefix));
- for(const checks of ['command-safety-fixtures','command-safety','full'])
-  assert.equal(runInNewContext(desktop.concurrency.group.slice(prefix.length+3,-2),{inputs:{checks}}),checks==='command-safety-fixtures'?'-command-safety-fixtures':'');
+ for(const checks of ['command-safety-fixtures','command-safety-archive-alias','command-safety','full'])
+  assert.equal(runInNewContext(desktop.concurrency.group.slice(prefix.length+3,-2),{inputs:{checks}}),['command-safety-fixtures','command-safety-archive-alias'].includes(checks)?'-command-safety-fixtures':'');
+ assert.equal(workflow.on.workflow_call.inputs.profile.default,'all');
  const job=workflow.jobs.fixtures;assert.deepEqual(job.strategy.matrix.os,['macos-latest','windows-latest','windows-2022']);
  const step=job.steps.find(step=>step.name==='Original failed command safety fixtures');
  for(const outcome of ['success','failure']) for(const cancelled of [false,true])
   assert.equal(runInNewContext(step.if.slice(3,-2),{steps:{build:{outcome}},cancelled:()=>cancelled}),outcome==='success'&&!cancelled);
  assert.equal(job.steps.find(step=>step.id==='build').run,'npm run build');
- assert.equal((step.run.match(/tests\/[\w-]+\.test\.mjs/g)??[]).length,11);
+ assert.equal(new Set(step.run.match(/tests\/[\w-]+\.test\.mjs/g)??[]).size,11);
+ assert.ok(step.run.includes('files=(tests/durable-archive-location.test.mjs)'));
+ assert.ok(step.run.includes('if [[ "$FIXTURE_PROFILE" == all ]]'));
+ assert.equal(job.steps.find(step=>step.name==='Record disposable path and injection observations').if,"${{ inputs.profile == 'all' }}");
  assert.ok(step.run.includes('set -o pipefail'));assert.equal(job.steps.at(-1).if,'always()');
 });

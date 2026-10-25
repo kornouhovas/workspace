@@ -1848,3 +1848,10 @@ retained. Only this selector gets its own concurrency suffix, so an ongoing
 full acceptance run on the same ref can finish providing missing evidence.
 Ordinary push/PR/full grouping and defaults remain unchanged. Follow the shared
 failed-Actions and evidence-reuse policies before renewing acceptance.
+
+After the same #72 repair narrows the remaining failure to the equal-root legacy
+alias case, `checks: command-safety-archive-alias` selects only
+`durable-archive-location.test.mjs` on those three hosts. The default fixture profile
+still selects all eleven files. Artifacts record the actual profile/file inventory;
+a narrow pass does not claim the eleven-file profile ran again. Build prerequisites,
+original failure propagation and separate diagnostic concurrency are retained.

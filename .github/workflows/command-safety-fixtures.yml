@@ -1,6 +1,10 @@
 name: Command safety fixture diagnosis
 on:
   workflow_call:
+    inputs:
+      profile:
+        type: string
+        default: all
 permissions:
   contents: read
 jobs:
@@ -11,16 +15,24 @@ jobs:
         os: [macos-latest, windows-latest, windows-2022]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30
+    env:
+      FIXTURE_PROFILE: ${{ inputs.profile }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22.21.1
           cache: npm
+      - name: Validate focused selection
+        shell: bash
+        run: |
+          mkdir -p work/ci-command-safety-fixtures
+          case "$FIXTURE_PROFILE" in all|archive-alias) ;; *) exit 2 ;; esac
       - run: npm ci
       - id: build
         run: npm run build
       - name: Record disposable path and injection observations
+        if: ${{ inputs.profile == 'all' }}
         shell: bash
         run: |
           mkdir -p work/ci-command-safety-fixtures
@@ -30,7 +42,12 @@ jobs:
         shell: bash
         run: |
           set -o pipefail
-          node --import tsx --test tests/archived-folder-association.test.mjs tests/durable-archive-location.test.mjs tests/durable-category-folder.test.mjs tests/durable-category-removal.test.mjs tests/durable-legacy-category-folder.test.mjs tests/durable-legacy-category-removal.test.mjs tests/durable-legacy-project-archive.test.mjs tests/durable-native-project.test.mjs tests/durable-project-archive.test.mjs tests/durable-project-creation.test.mjs tests/durable-project-recovery.test.mjs 2>&1 | tee work/ci-command-safety-fixtures/tests.log
+          files=(tests/durable-archive-location.test.mjs)
+          if [[ "$FIXTURE_PROFILE" == all ]]; then
+            files=(tests/archived-folder-association.test.mjs tests/durable-archive-location.test.mjs tests/durable-category-folder.test.mjs tests/durable-category-removal.test.mjs tests/durable-legacy-category-folder.test.mjs tests/durable-legacy-category-removal.test.mjs tests/durable-legacy-project-archive.test.mjs tests/durable-native-project.test.mjs tests/durable-project-archive.test.mjs tests/durable-project-creation.test.mjs tests/durable-project-recovery.test.mjs)
+          fi
+          node -e 'console.log(JSON.stringify({profile:process.env.FIXTURE_PROFILE,files:process.argv.slice(1)}))' "${files[@]}" > work/ci-command-safety-fixtures/selection.json
+          node --import tsx --test "${files[@]}" 2>&1 | tee work/ci-command-safety-fixtures/tests.log
       - name: Retain diagnostic and original results
         if: always()
         uses: actions/upload-artifact@v4

@@ -978,3 +978,46 @@ its package phase continues and must retain its original SHA/artifacts. Windows
 DEV/package/native consumers remain unreached and will be renewed only after the
 focused repair gate passes. Failed original/focused Windows conclusions remain
 failed; future receipts do not relabel those runs.
+
+### Remaining alias case: distinguish the two valid veto stages
+
+Focused run40164287527 at `ec5fa54c` passes228/229 on both Windows hosts and
+229/229 on macOS. The sole Windows failure is the uppercase legacy source alias
+equal to the selected root. On Windows its current full proof observes the same
+physical root, so the shared authorizer correctly refuses that competing root
+before archive-location lexical inspection. The old test expected the later
+Preview response. A macOS public-service reproduction mapping the peer observation
+to the actual root proof reproduces the identical early refusal with the old
+expectation (`/tmp/issue72-peer-alias-mode-red1.txt`); no production exception or
+permission change was invented.
+
+The retained case now explicitly covers missing current peer attributes and
+still requires a successful Preview with no token and `owned_location`. A second
+case requires early refusal for an actually observed physical peer owner. Both
+require the peer hook to execute, exact source-row preservation and no archive
+directory creation. The modeled failure uses the closed adapter reason
+`missing_attributes`. Existing production behavior remains unchanged. This is a
+requirement-based fixture distinction, not acceptance of an unsafe operation.
+The affected file passes16/16 locally; with CI/inventory/isolation controls the
+renewal passes119/119. Reviews found only the modeled-reason contract correction,
+which was applied; neither axis found coverage loss in the two-stage distinction.
+
+The registered `command-safety-archive-alias` profile renews only this file on
+three hosts. Original eleven-file defaults remain, and artifacts state the actual
+selection rather than accepting unexecuted files. Windows's other228 checks retain
+their inspected `ec5fa54c` receipts; failed run conclusions remain failed. The new
+narrow host renewal is pending before Windows runtime acceptance can proceed.
+
+Original macOS job121075976631 in run40162220624 has now completed successfully.
+Inspected artifact on `a5470a9e`: full3836/3809 passed/27 skipped/zero failed or
+cancelled; all eight DEV and all eight package journeys pass. Each mode has all
+eight creation checkpoints/16 normal closes and rename's46 normal closes. File
+native/external observations, byte preservation and owned cleanup pass; narrow RU
+and wide EN packaged file screens were inspected. Release manifest has unchanged
+package inventory, clean source diff and app.asar SHA256
+`68f6a8b2fd73ea6c6e7b5b06a674937458f23ca889cb3dc952c53c2535f684e5`.
+This is macOS arm64 CI evidence at its actual SHA, separate from retained local
+macOS27 intermittent failures. The whole delta since that receipt is tests,
+diagnostic workflow selection and documentation; application, migrations, native
+resources, dependencies/lockfile and build/package inputs are unchanged. Windows
+DEV/package/native remains unreached. No integration or issue completion yet.

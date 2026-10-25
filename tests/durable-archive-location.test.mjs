@@ -111,9 +111,27 @@ test('a nested selected source may designate its own archive beneath a separatel
  assert.equal(saved.value.relativePath,'Archive');assert.equal(existsSync(join(nested,'Archive')),false);
 }));
 
-test('a legacy saved source alias equal to the selected root is not a strict ancestor exception',()=>fixture(f=>{
- const alias=f.root.toUpperCase();assert.notEqual(alias,f.root);
- f.sql.prepare('INSERT INTO sources(id,canonical_root) VALUES(?,?)').run(randomUUID(),alias);
- const preview=f.review('Archive');assert.equal(preview.ok,true,JSON.stringify(preview));assert.equal(preview.value.previewToken,null);
- assert.equal(f.sql.prepare('SELECT archive_relative_path FROM sources WHERE canonical_root=?').get(f.root).archive_relative_path,null);
-}));
+for (const physical of [false,true]) test(physical
+ ? 'a physically observed legacy source alias equal to the root vetoes archive authorization'
+ : 'an unprovable legacy saved source alias equal to the root is not a strict ancestor exception',()=>{
+ let alias,root,peerReads=0;
+ const reader=(path,scope)=>{
+  if(path!==alias)return observeFolder(path,scope);
+  peerReads++;
+  return physical?observeFolder(root,scope):{ok:false,reason:'missing_attributes'};
+ };
+ fixture(f=>{
+  root=f.root;alias=f.root.toUpperCase();assert.notEqual(alias,f.root);
+  f.sql.prepare('INSERT INTO sources(id,canonical_root) VALUES(?,?)').run(randomUUID(),alias);
+  const before=f.sql.prepare('SELECT * FROM sources ORDER BY id').all();
+  const preview=f.review('Archive');
+  assert.ok(peerReads>0,'The intended peer observation must be exercised');
+  if(physical)assert.equal(preview.ok,false,JSON.stringify(preview));
+  else {
+   assert.equal(preview.ok,true,JSON.stringify(preview));assert.equal(preview.value.previewToken,null);
+   assert.ok(preview.value.blockers.includes('owned_location'));
+  }
+  assert.deepEqual(f.sql.prepare('SELECT * FROM sources ORDER BY id').all(),before);
+  assert.equal(existsSync(join(f.root,'Archive')),false);
+ },reader);
+});
