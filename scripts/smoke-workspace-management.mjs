@@ -9,7 +9,7 @@ import { mkdtemp, mkdir, realpath, writeFile, readFile } from "node:fs/promises"
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { _electron } from "playwright-core";
-import { closeElectron, cleanupOwnedFixture, ownedProcessesStopped } from "./runtime-lifecycle.mjs";
+import { closeElectron, cleanupOwnedFixture, ownedProcessesStopped, withDeadline } from "./runtime-lifecycle.mjs";
 import { renameActiveWorkspace } from "./runtime-settings.mjs";
 import {openRoleSettingsSection as openSettingsSection,returnRoleWorkspace as returnToWorkspace,setRoleLanguage as setInterfaceLanguage} from "./folder-role-driver.mjs";
 
@@ -21,6 +21,7 @@ const data = join(fixture, "data"), source = join(fixture, "source");
 await mkdir(source); await mkdir(join(source, "Project"));
 await writeFile(join(source, "Project", "keep.txt"), "User project bytes");
 const parents = new Set(), backends = new Set(), checks = [];
+const diagnostics={};
 let app, page, failed, launchUnverified = false;
 const unwrap = result => { assert.equal(result.ok, true, JSON.stringify(result)); return result.value; };
 const query = input => page.evaluate(input => window.workspace.workspace(input), input).then(unwrap);
@@ -38,6 +39,10 @@ async function close() { if (app) { const current = app; app = null; await close
 const sidebar = () => page.getByRole("navigation", { name: /^(Workspaces|Рабочие пространства)$/ });
 const add = () => sidebar().getByRole("button", { name: /^(Add workspace|Добавить рабочее пространство)$/ }).and(page.locator(":enabled"));
 const actions = () => sidebar().getByRole("button", { name: /^(Workspace actions|Действия с рабочим пространством):/ }).and(page.locator(":enabled"));
+async function recordDiagnostic(label){
+ if(!process.env.WORKSPACE_MANAGEMENT_DIAGNOSTIC||!page)return;
+ try{diagnostics[label]=await withDeadline(page.evaluate(()=>({rows:[...document.querySelectorAll('.sidebar-workspace-row')].map(row=>row.outerHTML),forms:[...document.querySelectorAll('.workspace-rename,.workspace-removal')].map(el=>({text:el.textContent,visible:el.checkVisibility()})),statuses:[...document.querySelectorAll('[role="status"],[role="alert"]')].map(el=>({text:el.textContent,visible:el.checkVisibility()}))})),1000,'Management DOM diagnostic');}catch{diagnostics[label]={unavailable:true};}
+}
 async function selectRoot() { await app.evaluate((_electron, path) => { process.env.WORKSPACE_TEST_ROOT_PICKER_PATH = path; }, source); }
 try {
   await launch();
@@ -133,6 +138,7 @@ try {
   assert.deepEqual((await query({ type: "workspace.load" })).workspaces.map(w => w.workspaceId), [second.workspaceId, first.workspaceId]);
   assert.equal((await query({ type: "workspace.load" })).activeWorkspace.name, "Renamed workspace");
   for (const name of ["Renamed workspace", "Workspace"]) {
+    await recordDiagnostic(name);
     const confirmation=await enterWorkspaceRemoval(page,name==='Renamed workspace'?second.workspaceId:first.workspaceId,name);
     await confirmation.press('Enter');
     await page.waitForFunction(async remaining => (await window.workspace.workspace({ type:"workspace.load" })).value?.workspaces.length === remaining, name === "Renamed workspace" ? 1 : 0);
@@ -149,14 +155,17 @@ try {
   assert.deepEqual((await query({ type: "workspace.listProjects", workspaceId: recovered.workspaceId })).projects, before.projects);
   checks.push({ postponementAndCancelRetainWorkspace:true, configuredReuse:true, duplicateNamesDistinctIds:true,
     renameReorderRestart:true, removalPreservesFilesAndOrphanSource:true });
-} catch (error) { failed = error; if (page) await page.screenshot({ path:join(evidence, "failure.png") }).catch(() => {}); }
+} catch (error) { failed = error;
+  await recordDiagnostic('failure');
+  if(process.env.WORKSPACE_MANAGEMENT_DIAGNOSTIC&&page)try{diagnostics.public=await withDeadline(query({type:'workspace.load'}),1000,'Management public diagnostic');if(diagnostics.public.activeWorkspace)diagnostics.session=await withDeadline(query({type:'workspace.getSession',workspaceId:diagnostics.public.activeWorkspace.workspaceId}),1000,'Management session diagnostic');}catch{diagnostics.public={unavailable:true};}
+  if (page) await page.screenshot({ path:join(evidence, "failure.png") }).catch(() => {}); }
 finally {
   try { await close(); } catch (error) { failed ??= error; }
   const stopped = ownedProcessesStopped(parents, backends, { launchUnverified });
   let cleanup;
   try { await cleanupOwnedFixture(fixture, { processesStopped:stopped, record:result => { cleanup = result; } }); } catch (error) { failed ??= error; }
   await writeFile(join(evidence, "result.json"), JSON.stringify({ issue:49, sha:process.env.GITHUB_SHA ?? null, platform:process.platform, checks,
-    stopped, cleanup, status:failed ? "failed" : "passed", error:failed?.message }, null, 2));
+    stopped, cleanup, ...(process.env.WORKSPACE_MANAGEMENT_DIAGNOSTIC?{diagnosticOnly:true,diagnostics}:{}), status:failed ? "failed" : "passed", error:failed?.message }, null, 2));
 }
 if (failed) throw failed;
 console.log("Workspace management native journey passed");

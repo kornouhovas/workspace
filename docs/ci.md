@@ -2105,3 +2105,16 @@ Local10 controls, original role/management journeys,70 routing checks and lint
 pass. Independent reviews cover the cumulative guards and the localization repair.
 The affected-consumer gate renews both drivers in DEV/package on all3hosts; the
 remaining runtime tail is still Windows retained recovery/outage only.
+
+
+Gate40203516042 at2d90918b passes macOS all affected consumers and role DEV
+on both Windows hosts. Both Windows management journeys then stop at the first
+stable-ID removal entry after restart, before confirmation; screenshots alone do
+not distinguish missing locator, pending form or session state. Do not infer a
+product cause or replay broad acceptance. `checks: folder-management-diagnostic`
+runs only original management DEV on Windows latest/2022 with passive opt-in
+DOM row/form/status snapshots and bounded post-failure public workspace/session
+reads. Each read has1s and records unavailable without replacing the original
+failure. Reports are diagnosticOnly and cannot establish acceptance. No observer
+or CPU change is installed in ordinary routes. A local6x CPU probe passed without
+reproducing the failure; it does not establish cause or ordinary acceptance.
