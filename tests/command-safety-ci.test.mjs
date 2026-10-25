@@ -42,3 +42,26 @@ test('diagnostic failure retains the original nonzero exit and never accepts or 
   assert.ok(report.journeys.slice(1).every(row=>row.status==='unreached'));assert.equal(report.journeys.some(row=>row.status==='passed'),false);
  }finally{rmSync(directory,{recursive:true,force:true});}
 });
+
+
+test('fixture diagnosis retains all failed files and separates only its concurrency from current acceptance',()=>{
+ const desktop=load(readFileSync('.github/workflows/desktop-ci.yml','utf8')),workflow=load(readFileSync('.github/workflows/command-safety-fixtures.yml','utf8'));
+ assert.ok(desktop.on.workflow_dispatch.inputs.checks.options.includes('command-safety-fixtures'));
+ assert.equal(desktop.jobs['focused-command-safety-fixtures'].uses,'./.github/workflows/command-safety-fixtures.yml');
+ for(const checks of ['command-safety-fixtures','command-safety','full']) {
+  const context={github:{event_name:'workflow_dispatch'},inputs:{checks}};
+  assert.equal(runInNewContext(desktop.jobs['focused-command-safety-fixtures'].if.slice(3,-2),context),checks==='command-safety-fixtures');
+  assert.equal(runInNewContext(desktop.jobs.common.if.slice(3,-2),context),checks==='full');
+ }
+ const prefix='desktop-${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}';
+ assert.ok(desktop.concurrency.group.startsWith(prefix));
+ for(const checks of ['command-safety-fixtures','command-safety','full'])
+  assert.equal(runInNewContext(desktop.concurrency.group.slice(prefix.length+3,-2),{inputs:{checks}}),checks==='command-safety-fixtures'?'-command-safety-fixtures':'');
+ const job=workflow.jobs.fixtures;assert.deepEqual(job.strategy.matrix.os,['macos-latest','windows-latest','windows-2022']);
+ const step=job.steps.find(step=>step.name==='Original failed command safety fixtures');
+ for(const outcome of ['success','failure']) for(const cancelled of [false,true])
+  assert.equal(runInNewContext(step.if.slice(3,-2),{steps:{build:{outcome}},cancelled:()=>cancelled}),outcome==='success'&&!cancelled);
+ assert.equal(job.steps.find(step=>step.id==='build').run,'npm run build');
+ assert.equal((step.run.match(/tests\/[\w-]+\.test\.mjs/g)??[]).length,11);
+ assert.ok(step.run.includes('set -o pipefail'));assert.equal(job.steps.at(-1).if,'always()');
+});

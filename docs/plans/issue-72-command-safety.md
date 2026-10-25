@@ -923,3 +923,25 @@ integration. Push/Actions authorization remains required by AGENTS.md; no push,
 Actions dispatch, integration, publication or release has occurred. The next
 external action is the reviewed task-branch push and three-host `command-safety`
 workflow, with unresolved failures preserved for the mandatory diagnosis loop.
+
+### First supported-host Actions failure and path diagnosis
+
+Owner authorization now covers the task-branch push and necessary Actions
+repair/renewal loop. Original full run40162220624 tests `a5470a9e`.
+Windows2022 completed 3,855 tests: 3,775 passed, 66 failed, 14 skipped,
+no cancellations. Failures span eleven new durable/legacy/archived/native fixture
+files. DEV/package steps are unreached on that host. The macOS full suite passed
+and its DEV consumer phase is active; Windows latest remains active. Do not
+cancel these runs while they provide missing evidence.
+
+The failure map suggests three falsifiable hypotheses: raw versus native
+canonical fixture roots prevent SQL/read-hook matches; native target assertions
+compare a different locator spelling; or a real platform authorizer defect remains
+if a correctly targeted altered proof still receives authority. No production
+repair is inferred yet. The new `command-safety-fixtures` route retains the exact
+eleven failing files/commands and adds controlled disposable path observations.
+Its separate selector-only concurrency group preserves ongoing original full
+acceptance. Original suite assertions, native policy and deadlines stay intact.
+Local diagnostic control refuses the altered proof when its hook fires; 103
+routing/inventory/isolation controls, lint and diff pass. Windows diagnostic and
+original focused red evidence remain to be collected before selecting a repair.

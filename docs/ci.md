@@ -1836,3 +1836,15 @@ package hash and source provenance. A failure stops later consumers and preserve
 its nonzero exit. `--failure-probe` is diagnostic-only: it runs no real journey and
 must produce a failed receipt. These routes do not waive any unresolved issue or
 supported-host requirement. Ordinary full dispatch behavior remains unchanged.
+
+For #72 run40162220624's Windows command-safety fixture failures, select
+`checks: command-safety-fixtures`. This runs the original eleven failed files
+with their unchanged assertions on macOS latest, Windows latest and Windows 2022,
+after the existing build. A separate disposable path diagnostic records raw and
+canonical source locators, SQL lookup counts, native operand comparisons and
+whether each modeled proof injection actually fired. Diagnostic output alone
+never accepts the original checks. Original nonzero exits and all reports are
+retained. Only this selector gets its own concurrency suffix, so an ongoing
+full acceptance run on the same ref can finish providing missing evidence.
+Ordinary push/PR/full grouping and defaults remain unchanged. Follow the shared
+failed-Actions and evidence-reuse policies before renewing acceptance.
