@@ -246,21 +246,23 @@ test("creates from keyboard folder selection with the standard name and preserve
   cleanup();
 });
 
-test("picker cancellation is actionable and never sends a create command", async () => {
-  let createCalls = 0;
-  mockApi({
-    picker: async () => ({ outcome: "cancelled" }),
-    onWorkspace: async (input) => {
-      if (input.type === "workspace.create") createCalls++;
-      return input.type === "workspace.load" ? ok(emptyLoad()) : fail("invalid_input");
-    },
-  });
-  render(<App />);
-  await findAction("button",{ name: "Choose project folder" });
-  await userEvent.click((await findAction("button",{ name: "Choose project folder" })));
-  assert.ok(await screen.findByRole("heading", { name: "Folder selection cancelled" }));
-  assert.equal(createCalls, 0);
-  cleanup();
+test("EN/RU picker cancellation is actionable and never sends a create command", async () => {
+  for (const language of ["en", "ru"] as const) {
+    let createCalls = 0;
+    mockApi({
+      language,
+      picker: async () => ({ outcome: "cancelled" }),
+      onWorkspace: async input => {
+        if (input.type === "workspace.create") createCalls++;
+        return input.type === "workspace.load" ? ok(emptyLoad()) : fail("invalid_input");
+      },
+    });
+    render(<App />);
+    await userEvent.click(await findAction("button", { name: translate(language, "pickRootAction") }));
+    assert.ok(await screen.findByRole("heading", { name: translate(language, "pickerCancelledTitle") }));
+    assert.equal(createCalls, 0);
+    cleanup();
+  }
 });
 
 test("pending folder selection cannot create or open a second picker", async () => {
@@ -459,7 +461,7 @@ test("typed client forwards settings, workspace, activation and picker requests"
     { type: "settings.load" },
     { type: "workspace.load" },
     { type: "workspace.activate", workspaceId: "id" },
-    { type: "workspace.create", name: "Name", rootPath: "/tmp/root" },
+    { type: "workspace.create", name: "Name", rootPath: "/tmp/root", initialize: "status" },
     { type: "workspace.rename", workspaceId: "id", name: "New name" },
     { type: "workspace.remove", workspaceId: "id" },
   ]);
@@ -3808,4 +3810,29 @@ test("startup failure reaches recovery settings and returns focus without a work
   assert.equal(screen.queryByRole("button", { name: translate("en", "dataExport") }), null);
   await userEvent.click(screen.getByRole("button", { name: "Back to workspace" }));
   await waitFor(() => assert.ok(document.activeElement === entry));
+});
+
+
+test("EN/RU choosing a fresh folder opens its status-grouped projects without setup", async () => {
+  for (const language of ["en", "ru"] as const) {
+    const directory = mkdtempSync(join(tmpdir(), "immediate-folder-ui-"));
+    const root = join(directory, "Root");
+    mkdirSync(join(root, "Archive", "cpp"), { recursive: true });
+    mkdirSync(join(root, "Projects", "draw"), { recursive: true });
+    const service = openSettingsService(join(directory, "data", "workspace.sqlite"));
+    try {
+      mockApi({ language, picker: async () => ({ outcome: "selected", path: root }) });
+      window.workspace.workspace = (async (input: WorkspaceRequest) => {
+        const queried = service.handleQuery(input);
+        return queried.ok || queried.error.code !== "invalid_input" ? queried : service.handleCommand(input);
+      }) as WorkspaceDesktopApi["workspace"];
+      render(<App />);
+      await userEvent.click(await findAction("button", { name: translate(language, "pickRootAction") }));
+      await screen.findByRole("cell", { name: "cpp" });
+      assert.ok(screen.getByRole("cell", { name: "draw" }));
+      assert.equal(document.querySelector("#workspace-title")?.textContent, "Workspace");
+      assert.equal(screen.queryByText(translate(language, "setupOffer")), null);
+      assert.equal(screen.queryByRole("button", { name: translate(language, "setupLater") }), null);
+    } finally { cleanup(); service.close(); rmSync(directory, { recursive: true, force: true }); }
+  }
 });

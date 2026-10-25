@@ -798,3 +798,23 @@ tree come from current services and filesystem authorization, never from session
 content. Existing backup/export includes the session table; restore validates
 its shape, completeness and ownership before replacing any live data. Historical
 pre-migration snapshots keep their exact schema and matching-version recovery.
+
+## Immediate folder-first initialization (issue 73)
+
+The desktop client submits `workspace.create` with `initialize: "status"`.
+For a genuinely new source, creation atomically enrolls the ordinary two-level
+grouped interpretation, a folder-backed Status property, projects/categories and
+a Table grouped by that property. The scanner stops at project folders and retains
+its hidden/service/link/containment and durable-evidence checks. Archive is an
+ordinary status name; initialization leaves archive designation null. Repeated
+filesystem/evidence checks roll back failed or changed initialization without
+publishing a committed workspace.
+
+Reusing a saved source never resets its mode, exclusions, archive, identity or
+metadata, including saved unconfigured/legacy sources requiring explicit review.
+A new workspace over an already grouped source starts its own category-grouped
+Table, without changing sibling views. The low-level creation command without
+`initialize` retains staged setup for explicit configuration callers and legacy
+fixtures. Folder-first desktop creation uses immediate initialization; it requires
+neither a name form nor initial preview/Apply. Later interpretation changes still
+use the existing reviewed source settings.

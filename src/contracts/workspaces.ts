@@ -17,6 +17,8 @@ export type WorkspaceCreateCommand = {
   type: "workspace.create";
   name: string;
   rootPath: string;
+  /** Folder-first desktop flow; omission retains staged setup for existing callers. */
+  initialize?: "status";
 };
 
 export type WorkspaceLoadQuery = { type: "workspace.load" };

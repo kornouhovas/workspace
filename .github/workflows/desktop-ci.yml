@@ -8,7 +8,7 @@ on:
       checks:
         description: Full acceptance or a selected focused failure route
         type: choice
-        options: [full, command-safety-creation, command-safety-windows-2022, command-safety-creation-diagnostic, command-safety-windows, command-safety-archive-alias, command-safety-fixtures, command-safety, command-safety-runtime, command-safety-packaged, source-access, source-access-repair, integrated-desktop, integrated-regressions, integrated-layout, integrated-category-layout, integrated-operation-layout, integrated-archive-profile, integrated-fixture-repairs, integrated-filesystem-repair, integrated-project-entry-repair, integrated-category-entry-profile, integrated-missing-tails, integrated-runtime, desktop-ux, layout-fixtures, source-inventory, observer-cancellation, observer-workflow, native-owner-controls, native-lifecycle, project-files-windows, project-files-windows-trace, failed, readiness, windows-release, issue22-failures, creation-shutdown, raw-rename, issue24-failures, category-fixture, issue24-startup, multiselect, etw-controls, app-fixture, property-fixture, runtime-observation, view-fixtures, number, windows-property-fixture, rename-authoring, rename-fixture, viewport-runtime, workspace-root-runtime, archive-contexts, creation-ownership, desktop-shell, shell-runtime, views-readiness, view-contexts, workspace-sidebar, workspace-setup, workspace-setup-readiness, select-readiness, source-fixture, source-runtime]
+        options: [full, immediate-folders, command-safety-creation, command-safety-windows-2022, command-safety-creation-diagnostic, command-safety-windows, command-safety-archive-alias, command-safety-fixtures, command-safety, command-safety-runtime, command-safety-packaged, source-access, source-access-repair, integrated-desktop, integrated-regressions, integrated-layout, integrated-category-layout, integrated-operation-layout, integrated-archive-profile, integrated-fixture-repairs, integrated-filesystem-repair, integrated-project-entry-repair, integrated-category-entry-profile, integrated-missing-tails, integrated-runtime, desktop-ux, layout-fixtures, source-inventory, observer-cancellation, observer-workflow, native-owner-controls, native-lifecycle, project-files-windows, project-files-windows-trace, failed, readiness, windows-release, issue22-failures, creation-shutdown, raw-rename, issue24-failures, category-fixture, issue24-startup, multiselect, etw-controls, app-fixture, property-fixture, runtime-observation, view-fixtures, number, windows-property-fixture, rename-authoring, rename-fixture, viewport-runtime, workspace-root-runtime, archive-contexts, creation-ownership, desktop-shell, shell-runtime, views-readiness, view-contexts, workspace-sidebar, workspace-setup, workspace-setup-readiness, select-readiness, source-fixture, source-runtime]
         default: full
       desktop_ux_profile:
         description: With desktop-ux, select foundation, grouped Board or project navigation acceptance
@@ -114,6 +114,10 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  immediate-folders:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.checks == 'immediate-folders' }}
+    uses: ./.github/workflows/immediate-folders.yml
+
   focused-command-safety-creation-diagnostic:
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.checks == 'command-safety-creation-diagnostic' }}
     uses: ./.github/workflows/command-safety-creation-entry.yml

@@ -216,8 +216,9 @@ function isMalformedWorkspaceRequest(input: unknown): boolean {
   if (input.type === "workspace.getSourceObservation") return !hasExactKeys(input, ["type", "workspaceId"]) || typeof input.workspaceId !== "string";
   if (input.type === "workspace.load" || input.type === "workspace.listSources") return !hasExactKeys(input, ["type"]);
   if (input.type === "workspace.create") {
-    return !hasExactKeys(input, ["type", "name", "rootPath"]) ||
-      typeof input.name !== "string" || typeof input.rootPath !== "string";
+    return !hasExactKeys(input, Object.hasOwn(input, "initialize") ? ["type", "name", "rootPath", "initialize"] : ["type", "name", "rootPath"]) ||
+      typeof input.name !== "string" || typeof input.rootPath !== "string" ||
+      Object.hasOwn(input, "initialize") && input.initialize !== "status";
   }
   if (input.type === "workspace.rename") {
     return !hasExactKeys(input, ["type", "workspaceId", "name"]) ||

@@ -617,7 +617,8 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
     },
     create(input) {
       if (!isRecord(input) || input.type !== "workspace.create" || typeof input.name !== "string" ||
-        typeof input.rootPath !== "string") {
+        typeof input.rootPath !== "string" ||
+        (Object.hasOwn(input, "initialize") && input.initialize !== "status")) {
         return invalid("Expected a workspace name and root path.");
       }
       const name = input.name;
@@ -647,16 +648,22 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
             }
           }
           let newRoot: import("./folder-evidence.js").FolderObservation | null = null;
+          const initialize = !source && input.initialize === "status";
           if (!source) {
             newRoot = readFolderEvidence(canonicalRoot,scope);
             if(rootOwnershipConflict(newRoot,tx.select().from(schema.sources).all(),scope,readFolderEvidence))throw new SourceOwnershipConflict();
             source = tx.insert(schema.sources).values({ id: randomUUID(), canonicalRoot,
               durableEvidence:newRoot.ok?JSON.stringify(newRoot.evidence):null }).returning().get();
           }
+          const categoryPropertyId = initialize ? initializeStatusSource(source)
+            : input.initialize === "status" && source.discoveryMode === "grouped"
+              ? tx.select().from(schema.categoryProperties).where(eq(schema.categoryProperties.sourceId, source.id)).get()?.id
+              : null;
           const lastPosition = tx.select({ value: max(schema.workspaces.position) }).from(schema.workspaces).get()?.value;
           tx.insert(schema.workspaces).values({ id: workspaceId, name, sourceId: source.id, position: (lastPosition ?? -1) + 1 }).run();
           tx.insert(schema.views).values({
             id: viewId, workspaceId, name: "Table", kind: "table",
+            ...(categoryPropertyId ? { groupingConfig: JSON.stringify({ propertyId: categoryPropertyId, settings: [] }) } : {}),
           }).run();
           tx.insert(schema.workspaceViewSelection).values({ workspaceId, viewId }).run();
           tx.insert(schema.activeWorkspace).values({ key: "active", workspaceId, viewId })
@@ -827,6 +834,38 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
   function canUpdateAssociation(row: {durableEvidence: string | null}) {
     return storedEvidence(row.durableEvidence)?.scope === scope;
   }
+  // Only used within creation's transaction for a newly inserted, empty source.
+  // Reuse the ordinary scanner/evidence policy; never infer archive semantics.
+  function initializeStatusSource(source: typeof schema.sources.$inferSelect): string {
+    const scan = () => reserveDurablePlacements(source,
+      scanGroupedSource(source.canonicalRoot, null, []), readReservations(source.id), scope, readFolderEvidence);
+    const initial = scan();
+    const evidence = scanEvidence(source, initial);
+    if (!initial.snapshot || !evidence) throw new StalePreview();
+    const planned = planDiscovery(initial, [], [], readReservations(source.id));
+    db.update(schema.sources).set({ discoveryMode: "grouped", discoveryRevision: 1,
+      appliedRootIdentity: JSON.stringify(initial.snapshot.root.identity) }).where(eq(schema.sources.id, source.id)).run();
+    const propertyId = randomUUID();
+    db.insert(schema.categoryProperties).values({ id: propertyId, sourceId: source.id, name: "Status" }).run();
+    const categories = new Map<string, string>();
+    for (const row of planned.categories.additions) {
+      const id = randomUUID();
+      db.insert(schema.categories).values({ id, sourceId: source.id, ...row,
+        durableEvidence: enrollEvidence(source, row.relativePath), associationState: "active" }).run();
+      categories.set(row.relativePath, id);
+    }
+    for (const row of planned.projects.additions) {
+      const categoryId = categories.get(row.relativePath.split("/")[0]);
+      if (!categoryId) throw new StalePreview();
+      db.insert(schema.projects).values({ id: randomUUID(), sourceId: source.id, ...row, categoryId,
+        durableEvidence: enrollEvidence(source, row.relativePath), associationState: "active" }).run();
+    }
+    const after = scan();
+    if (JSON.stringify(after.snapshot) !== JSON.stringify(initial.snapshot) ||
+      JSON.stringify(scanEvidence(source, after)) !== JSON.stringify(evidence)) throw new StalePreview();
+    return propertyId;
+  }
+
   function scanEvidence(source: typeof schema.sources.$inferSelect, scan: DiscoveryScan) {
     if (!scan.snapshot) return null;
     const identity = sourceIdentity(source, scan, scope, readFolderEvidence,peerSources(source.id));

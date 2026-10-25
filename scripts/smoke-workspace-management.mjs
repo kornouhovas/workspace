@@ -48,6 +48,10 @@ try {
   await page.getByRole("heading", { name: "Folder selection cancelled", exact: true }).waitFor();
   assert.equal((await query({ type: "workspace.load" })).workspaces.length, 0);
   await app.evaluate(({ dialog }) => { dialog.showOpenDialog = globalThis.originalWorkspaceDialog; });
+  // Retain the existing deferred-setup journey for a saved unconfigured source.
+  // Fresh folder-first initialization is covered by smoke-immediate-folders.
+  const staged = await query({ type: "workspace.create", name: "Retained setup", rootPath: source });
+  await query({ type: "workspace.remove", workspaceId: staged.workspaceId });
   await selectRoot(); await add().press("Enter");
   await page.getByRole("button",{name:"Workspace",exact:true}).and(page.locator('[aria-current="page"]')).waitFor();
   const first = (await query({ type: "workspace.load" })).activeWorkspace;

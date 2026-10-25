@@ -1919,3 +1919,14 @@ unknown/reversed ranges fail, and empty defaults preserve the full inventory.
 This narrow renewal resolves only creation-driver reuse; inherited successful
 receipts retain their actual tested SHA, and the unknown historical cause stays
 explicit.
+
+## Immediate folder opening (issue 73)
+
+Dispatch the registered `desktop-ci.yml` with `checks: immediate-folders`.
+The [scoped route](../.github/workflows/immediate-folders.yml) runs the full suite
+on macOS latest, Windows latest and Windows 2022, then immediate folder opening
+and retained unconfigured-source workspace management in development and packaged
+modes. Each host packages once. Receipts retain SHA/run/attempt, mode, screenshots,
+reopen, source reuse, file preservation and normal shutdown/cleanup. It changes
+no ordinary full defaults and publishes no release. Windows Server evidence does
+not substitute for Windows 11 desktop acceptance.

@@ -1,0 +1,64 @@
+name: Immediate folder opening
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  immediate-folders:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest, windows-2022]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.21.1
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm run check:docs
+      - run: npm run build
+      - name: Complete current suite
+        shell: bash
+        run: |
+          mkdir -p work/ci-immediate-folders
+          set -o pipefail
+          npm run test:all 2>&1 | tee work/ci-immediate-folders/full.log
+      - name: Development immediate opening
+        run: npm run smoke:immediate-folders
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-immediate-folders/dev
+          WORKSPACE_SMOKE_MODE: dev
+      - name: Retained unconfigured workspace management
+        run: npm run smoke:workspaces
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-immediate-folders/management-dev
+          WORKSPACE_SMOKE_MODE: dev
+      - name: Package candidate
+        run: npx electron-builder --dir
+      - run: npm run check:artifact -- release
+      - name: Packaged immediate opening
+        run: npm run smoke:immediate-folders
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-immediate-folders/release
+          WORKSPACE_SMOKE_MODE: release
+      - name: Packaged retained setup
+        run: npm run smoke:workspaces
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-immediate-folders/management-release
+          WORKSPACE_SMOKE_MODE: release
+      - name: Preserve exact-candidate evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: immediate-folders-${{ matrix.os }}-${{ github.sha }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
+          path: work/ci-immediate-folders/
+          if-no-files-found: error
+          retention-days: 14
