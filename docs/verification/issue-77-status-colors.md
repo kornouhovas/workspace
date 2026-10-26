@@ -20,7 +20,7 @@ The corrected fixture passes the same complete local Electron journey: eight
 language/theme/size combinations and 24 settings/Table/Board captures, immediate
 agreement, duplicate/sibling isolation, restart and normal shutdown/cleanup.
 Representative settings and group captures were visually inspected, including
-narrow RU dark and wide EN light. Supported-host CI receipts remain pending.
+narrow RU dark and wide EN light. Supported-host final receipts are recorded below.
 
 ## Affected behavior
 
@@ -41,8 +41,7 @@ by focusing Refresh on failure and the select after read-only recovery. EN/RU
 component checks and a real Electron production-component control cover rejection,
 transport failure, Escape/return and no mutation replay. Reinstating the original
 focus behavior makes the native control fail; the repair passes. No remaining
-material review findings. Final full suite and supported-host receipts remain
-pending until the GitHub ledger.
+material review findings. Final evidence is recorded below and in GitHub.
 The native journey records discovery revision before/after the complete session
 instead of requiring equality across background observation and restart; the
 public service test retains the strict color-command revision invariant.
@@ -61,3 +60,40 @@ consumers on macOS latest, Windows latest and Windows2022. Its reports retain
 SHA/run/attempt, platform, actual mode, screenshots, normal quit and cleanup.
 The final local full suite is separate from those affected-host receipts.
 Final desktop #67, release #42 and manual Windows11 acceptance remain separate.
+
+## Final acceptance ledger
+
+Application/test/CI candidate: `01720f66d87879e1805e635eb3ced1d90c75b804`.
+[CI run 40270039104, attempt 1](https://github.com/kornouhovas/workspace/actions/runs/40270039104)
+succeeds on macOS latest, Windows latest and Windows2022. Every host passes
+static/build/artifact checks and all 137 affected regressions, including the native
+error-focus control. All six DEV/package artifacts were downloaded and inspected:
+each has eight EN/RU/theme/size combinations, 24 captures, actual `app.isPackaged`
+matching mode, immediate settings/group agreement, duplicate/sibling isolation,
+restart, unchanged project identities/paths/bytes, two normal quits/backend exits
+and asserted fixture cleanup. Representative settings and group captures were
+visually inspected across hosts, including narrow RU dark and wide EN light.
+
+The final local `npm run build` and `npm run test:all` ran once on the same
+candidate: 3974 tests, 3923 pass, 24 fail, 27 platform skips, 0 cancellations in 377.7s.
+The raw run remains failed. One failure is the initial local dependency symlink:
+Vite rejects Ladle's resolved dependency path outside the checkout allowlist.
+Replacing it with local `npm ci` using the unchanged lockfile resolves that case.
+The other 23 failures report Electron shutdown timeout, including one failure in
+the new native focus control; their historical cause is not established.
+
+Renewal executes all nine original failing files serially with their existing
+assertions/deadlines: creation-context-observation, ladle-dev,
+project-context-driver, property-editor-driver, rename-editor-readiness,
+runtime-electron-quit, runtime-view-readiness, runtime-workspace-identity and
+status-color-focus-native. All 100 tests pass in 109.5s, with no skips/cancellations.
+The eight inherited files and runtime-lifecycle helper have no diff from baseline;
+no product/test change or relaxed deadline was used for renewal. Passing full-suite
+complement and fresh original-consumer evidence retain separate provenance under
+the impact/evidence-reuse policy. No failed result is relabeled as a passing full
+suite. Local typecheck, lint, documentation links and diff checks also pass.
+
+The final documentation-only delivery commit inherits this unchanged application,
+test, dependency, build and CI candidate. Its exact delivered SHA, clean integration
+and remote-ref verification belong to the GitHub completion checkpoint. No release,
+main merge, live-data repair or next issue is part of delivery.

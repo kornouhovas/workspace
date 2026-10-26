@@ -31,3 +31,14 @@ is retired. Run typecheck/focused tests during slices, review both axes against
 this baseline, then full suite once on the final candidate. Select supported-host
 CI/native consumers by docs/desktop-ux-verification.md; acceptance receipts belong
 in the GitHub checkpoint and verification report.
+
+## Completion
+
+All scoped criteria have passing inspected evidence in the
+[verification ledger](../verification/issue-77-status-colors.md).
+Standards/Spec reviews have no remaining findings after the error-focus repair.
+Candidate `01720f66` passes the supported-host 137-regression/DEV/package route.
+The local final full run remains failed; its successful complement and all 100
+original failed-file tests after environment/serial renewal retain separate
+provenance. No test requirement is retired. Final documentation-only commit and
+integration SHA are recorded in the GitHub completion checkpoint.
