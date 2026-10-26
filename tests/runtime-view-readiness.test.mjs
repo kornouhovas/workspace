@@ -131,7 +131,7 @@ test('role settings entry acknowledges keyboard navigation after a pointer inter
   await page.setContent('<button>Settings</button><div id="tabs"></div>');
   await page.evaluate(()=>{
    const button=document.querySelector('button');button.onpointerdown=()=>{button.disabled=true;setTimeout(()=>{button.disabled=false;},100);};
-   button.onclick=()=>{button.hidden=true;const tab=document.createElement('button');tab.setAttribute('role','tab');tab.textContent='Appearance';let firstTab=true;tab.onkeydown=event=>{if(firstTab&&event.key==='Enter'){firstTab=false;event.preventDefault();}};tab.onclick=()=>tab.setAttribute('aria-selected','true');document.querySelector('#tabs').append(tab);};
+   button.onclick=()=>{button.hidden=true;const tab=document.createElement('button');tab.setAttribute('role','tab');tab.textContent='General';let firstTab=true;tab.onkeydown=event=>{if(firstTab&&event.key==='Enter'){firstTab=false;event.preventDefault();}};tab.onclick=()=>tab.setAttribute('aria-selected','true');document.querySelector('#tabs').append(tab);};
   });
   page.setDefaultTimeout(300);
   await assert.rejects(openSettingsSection(page,'appearance'),/Timeout/);

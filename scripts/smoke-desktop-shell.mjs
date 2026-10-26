@@ -68,7 +68,7 @@ try {
   for (const language of ["en", "ru"]) {
     await setInterfaceLanguage(page, language);
     for (const theme of ["light", "dark"]) {
-      await openSettingsSection(page, "appearance");
+      await openSettingsSection(page, "general");
       await page.getByRole("radio", { name: theme === "light" ? /^(Light|Светлая)$/ : /^(Dark|Тёмная)$/ }).click();
       await page.waitForFunction(theme => document.documentElement.dataset.theme === theme, theme);
       await returnToWorkspace(page);
@@ -129,9 +129,13 @@ try {
         assert.equal(scrollHidden.height, scrollBefore.height, "Settings preserves workspace layout geometry");
         await page.getByRole("tab", { name: /^(General|Основные)$/ }).focus();
         await page.keyboard.press("Enter");
+        assert.equal(await page.getByRole("tab", { name: /^(Appearance|Оформление)$/ }).count(), 0);
+        await page.locator("#interface-language").waitFor();
+        // Manual keyboard activation still reaches every retained settings page.
         await page.keyboard.press("ArrowDown");
-        await page.waitForFunction(label => document.activeElement?.textContent === label, language === "en" ? "Appearance" : "Оформление");
+        await page.waitForFunction(label => document.activeElement?.textContent === label, language === "en" ? "Workspaces" : "Рабочие пространства");
         await page.keyboard.press("Enter");
+        for (const section of ["backup", "about", "general"]) await openSettingsSection(page, section);
         await page.getByRole("radiogroup", { name: /^(Color theme|Цветовая тема)$/ }).waitFor();
         await page.screenshot({ path: join(evidence, `${language}-${theme}-${size.width}-settings.png`) });
         const back = page.getByRole("button", { name: /^(Back to workspace|Вернуться к работе)$/ });
@@ -145,10 +149,22 @@ try {
     }
   }
   // OS changes affect System only, using real renderer media-query notifications.
-  await openSettingsSection(page, "appearance");
+  await openSettingsSection(page, "general");
   await page.getByRole("radio", { name: /^(System|Системная)$/ }).click();
-  await page.emulateMedia({ colorScheme: "dark" }); await page.waitForFunction(() => document.documentElement.dataset.theme === "dark");
-  await page.emulateMedia({ colorScheme: "light" }); await page.waitForFunction(() => document.documentElement.dataset.theme === "light");
+  await page.emulateMedia({ colorScheme: null }); // Clear Playwright's default light override.
+  // Electron nativeTheme dispatches real native media-query changes without
+  // changing the host user's persistent OS preference.
+  for (const theme of ["dark", "light"]) {
+    await app.evaluate(({nativeTheme}, theme) => { nativeTheme.themeSource = theme; }, theme);
+    await page.waitForFunction(theme => document.documentElement.dataset.theme === theme, theme);
+  }
+  await page.getByRole("radio", {name:/^(Dark|Тёмная)$/}).click();
+  await page.waitForFunction(() => document.documentElement.dataset.theme === "dark");
+  await app.evaluate(({nativeTheme}) => { nativeTheme.themeSource = "light"; });
+  assert.equal(await page.evaluate(() => document.documentElement.dataset.theme), "dark");
+  await page.getByRole("radio", {name:/^(System|Системная)$/}).click();
+  await page.waitForFunction(() => document.documentElement.dataset.theme === "light");
+  await app.evaluate(({nativeTheme}) => { nativeTheme.themeSource = "system"; });
   await returnToWorkspace(page);
   await openSettingsSection(page, "sources");
   await page.getByRole("button", { name: source, exact: true }).click();

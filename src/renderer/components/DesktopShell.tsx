@@ -13,7 +13,7 @@ import type { Appearance, Language } from "../../contracts/settings.js";
 import type { WorkspaceLoad } from "../../contracts/workspaces.js";
 
 
-const sections = ["general", "appearance", "workspaces", "backup", "about"] as const;
+const sections = ["general", "workspaces", "backup", "about"] as const;
 type Section = typeof sections[number] | "sources";
 export const shellLabels = {
   en: { actions: "Workspace actions", add: "Add workspace", rename: "Rename workspace", remove: "Remove workspace", up: "Move up", down: "Move down", settings: "Settings", back: "Back to workspace", general: "General", appearance: "Appearance", workspaces: "Workspaces", sources: "Sources", backup: "Backup and recovery", about: "About", theme: "Color theme", light: "Light", dark: "Dark", system: "System", retry: "Retry", workspace: "Workspace", unavailable: "Settings will be available when the backend reconnects.", aboutDescription: "Workspace organizes real project folders using properties and saved views." },

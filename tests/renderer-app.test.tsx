@@ -3565,13 +3565,14 @@ test("appearance keeps the accepted theme while saving, reports failure and perm
     return ok({ language: "en", appearance: "dark" });
   } });
   render(<App />); await openSettings();
-  await userEvent.click(screen.getByRole("tab", { name: "Appearance" }));
+  assert.ok(!screen.queryByRole("tab", { name: "Appearance" }));
+  assert.ok(screen.getByRole("combobox", { name: "Interface language" }));
   const dark = await screen.findByRole("radio", { name: "Dark" });
   await userEvent.click(dark);
   assert.equal(document.documentElement.dataset.theme, "light");
   assert.equal((dark as HTMLButtonElement).disabled, true);
   await act(async () => finish?.(fail("storage")));
-  await screen.findByRole("heading", { name: translate("en", "saveErrorTitle") });
+  await screen.findByRole("heading", { name: translate("en", "appearanceSaveErrorTitle") });
   assert.equal(dark.getAttribute("aria-checked"), "false");
   await userEvent.click(dark);
   await waitFor(() => assert.equal(document.documentElement.dataset.theme, "dark"));
@@ -3853,4 +3854,36 @@ test("EN/RU choosing a fresh folder opens its status-grouped projects without se
       await waitFor(() => assert.ok(screen.getAllByRole("columnheader", { name: "My Status" }).length > 0));
     } finally { cleanup(); service.close(); rmSync(directory, { recursive: true, force: true }); }
   }
+});
+
+for (const language of ["en", "ru"] as const) test(`${language}: General saves preferences independently with scoped pending and error feedback`, async () => {
+  let finishLanguage!: (value: ServiceResult<Settings>) => void;
+  let finishAppearance!: (value: ServiceResult<Settings>) => void;
+  mockApi({ language, onSettings: async input => {
+    if (input.type === "settings.load") return ok({language, appearance: "dark"});
+    return new Promise(resolve => {
+      if (input.type === "settings.setLanguage") finishLanguage = resolve;
+      else finishAppearance = resolve;
+    });
+  }});
+  render(<App/>); await openSettings();
+  assert.ok(!screen.queryByRole("tab", {name: /^(Appearance|Оформление)$/}));
+  const languageRegion = screen.getByRole("region", {name: translate(language, "languageLabel")});
+  const appearanceRegion = screen.getByRole("region", {name: language === "en" ? "Appearance" : "Оформление"});
+  const selector = within(languageRegion).getByRole("combobox") as HTMLSelectElement;
+  const light = within(appearanceRegion).getByRole("radio", {name: language === "en" ? "Light" : "Светлая"});
+  assert.equal(within(appearanceRegion).getByRole("radio", {name: language === "en" ? "Dark" : "Тёмная"}).getAttribute("aria-checked"), "true");
+  await userEvent.selectOptions(selector, language === "en" ? "ru" : "en");
+  assert.equal(within(languageRegion).getByRole("status").textContent, translate(language, "savingLanguage"));
+  assert.equal((light as HTMLButtonElement).disabled, false);
+  await userEvent.click(light);
+  assert.equal(within(appearanceRegion).getByRole("status").textContent, translate(language, "savingAppearance"));
+  await act(async () => finishAppearance(fail("storage")));
+  assert.ok(within(appearanceRegion).getByRole("heading", {name: translate(language,"appearanceSaveErrorTitle")}));
+  assert.equal(selector.disabled, true);
+  await act(async () => finishLanguage(fail("storage")));
+  assert.equal(selector.value, language);
+  assert.equal(selector.disabled, false);
+  assert.ok(within(languageRegion).getByRole("heading", {name: translate(language,"saveErrorTitle")}));
+  assert.equal(document.documentElement.dataset.theme, "dark");
 });

@@ -5,7 +5,7 @@ import {withDeadline} from './runtime-lifecycle.mjs';
 // A disabled transition may consume a key without activation. Only navigation
 // can be re-entered until acknowledged, within the original15s.
 export async function openRoleSettingsSection(page, section) {
- const labels={general:/^(General|Основные)$/,workspaces:/^(Workspaces|Рабочие пространства)$/,appearance:/^(Appearance|Оформление)$/,backup:/^(Backup and recovery|Резервные копии и восстановление)$/};
+ const labels={general:/^(General|Основные)$/,workspaces:/^(Workspaces|Рабочие пространства)$/,appearance:/^(General|Основные)$/,backup:/^(Backup and recovery|Резервные копии и восстановление)$/};
  const tab=page.getByRole('tab',{name:labels[section]});
  const selected=tab.and(page.locator('[aria-selected="true"]'));
  const deadline=Date.now()+15000;

@@ -1,5 +1,16 @@
 # CI checks and diagnostic routes
 
+## General preferences
+
+For #78 select `desktop-ci.yml` with `checks: general-settings`. This bounded
+renderer/navigation route runs static checks, App/preferences and retained session/
+recovery regressions, real Electron shell (EN/RU, both themes/sizes, native System
+notifications and restart), session/selection return and workspace contextual entry
+on macOS latest, Windows latest and Windows2022. It records candidate SHA and
+run/attempt in artifact names. No schema, native adapter, resource, dependency or
+installer input changes; packaging and release acceptance remain separate.
+
+
 ## Workspace-local status colors
 
 For #77 dispatch `desktop-ci.yml` with `checks: status-colors`. The bounded

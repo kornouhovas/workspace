@@ -509,8 +509,8 @@ function WorkspaceApp() {
       onEmptyWorkspaceShown={() => createPickerButton.current?.focus()}
       onActivate={(id) => { setAddingWorkspace(false); return activateWorkspace(id); }}
       renderPanels={(back) => ({
-        general: settingsAvailable ? <>          <section className="workspace-settings" aria-labelledby="settings-title">
-            <h2 id="settings-title">{t("settingsTitle")}</h2>
+        general: settingsAvailable ? <>
+          <section className="workspace-settings" aria-label={t("languageLabel")} aria-busy={savingLanguage}>
             <LanguageSelect
               id="interface-language"
               label={t("languageLabel")}
@@ -518,16 +518,15 @@ function WorkspaceApp() {
               onChange={(nextLanguage) => void changeLanguage(nextLanguage)}
               disabled={savingLanguage}
             />
-            {saveError && (
-              <StatusMessage kind="error" title={t("saveErrorTitle")}>
-                {t("saveErrorDescription")}
-              </StatusMessage>
-            )}
+            {savingLanguage && <p role="status">{t("savingLanguage")}</p>}
+            {saveError && <StatusMessage kind="error" title={t("saveErrorTitle")}>{t("saveErrorDescription")}</StatusMessage>}
           </section>
-</> : unavailableSettings,
-        appearance: settingsAvailable ? <>
-          <AppearanceControl language={language} value={appearance} disabled={savingAppearance} onChange={next => void changeAppearance(next)} />
-          {appearanceError && <StatusMessage kind="error" title={t("saveErrorTitle")}>{t("saveErrorDescription")}</StatusMessage>}
+          <section className="workspace-settings" aria-labelledby="appearance-setting-title" aria-busy={savingAppearance}>
+            <h3 id="appearance-setting-title">{shellLabels[language].appearance}</h3>
+            <AppearanceControl language={language} value={appearance} disabled={savingAppearance} onChange={next => void changeAppearance(next)} />
+            {savingAppearance && <p role="status">{t("savingAppearance")}</p>}
+            {appearanceError && <StatusMessage kind="error" title={t("appearanceSaveErrorTitle")}>{t("appearanceSaveErrorDescription")}</StatusMessage>}
+          </section>
         </> : unavailableSettings,
         workspaces: settingsAvailable ? <>{activeWorkspace ? <>
           <h2>{activeWorkspace.name}</h2>

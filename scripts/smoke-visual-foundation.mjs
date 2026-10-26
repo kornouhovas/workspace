@@ -137,7 +137,7 @@ try {
           await openSettingsSection(page,'general');
           await page.screenshot({path:join(evidence,`${content}-${language}-${theme}-${size.width}-settings.png`)});
           if(!before && content==='ordinary') {
-            for(const section of ['appearance','workspaces','sources','backup','about']) {
+            for(const section of ['workspaces','sources','backup','about']) {
               await openSettingsSection(page,section);
               await page.screenshot({path:join(evidence,`${content}-${language}-${theme}-${size.width}-settings-${section}.png`)});
             }

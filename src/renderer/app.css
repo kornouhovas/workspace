@@ -987,3 +987,7 @@ p { margin-block: .5rem; }
 .folder-role-row .folder-role-name { flex: 1; min-width: 5rem; }
 .folder-role-row .bb-input { width: 7rem; }
 .project-group-header > .category-chip { min-width: 0; overflow-wrap: anywhere; }
+
+/* General preferences retain independent save/status regions. */
+.settings-card > .workspace-settings + .workspace-settings { margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border); }
+.settings-card > .workspace-settings > h3 { margin: 0; font-size: 14px; font-weight: 500; }

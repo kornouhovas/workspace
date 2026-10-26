@@ -1,0 +1,52 @@
+name: General language and appearance
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  general-settings:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest, windows-2022]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.21.1
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm run check:docs
+      - run: npm run build
+      - name: Preferences and retained navigation regressions
+        shell: bash
+        run: |
+          mkdir -p work/ci-general-settings
+          set -o pipefail
+          node --import tsx --test tests/renderer-app.test.tsx tests/settings-service.test.mjs tests/runtime-view-readiness.test.mjs tests/project-recovery-ui.test.tsx tests/workspace-sessions-service.test.mjs tests/data-recovery-ui.test.tsx tests/test-suites.test.mjs 2>&1 | tee work/ci-general-settings/affected.log
+      - name: Native General and shell journey
+        run: npm run smoke:shell
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-general-settings/shell
+      - name: Retained session, selection and contextual settings return
+        run: node scripts/smoke-workspace-sessions.mjs dev
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-general-settings/sessions
+      - name: Retained workspace management and contextual entry
+        run: npm run smoke:workspaces
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-general-settings/workspaces
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: general-settings-${{ matrix.os }}-${{ github.sha }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
+          path: work/ci-general-settings/
+          if-no-files-found: error
+          retention-days: 14
