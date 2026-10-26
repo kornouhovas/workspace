@@ -32,13 +32,19 @@ after hiddenInset. Renderer screenshots are appearance supplements, not native
 window evidence. Existing CSS class locators identify controls; behavior, geometry
 and accessible activation provide acceptance.
 
+Adapt the inherited preload source guard to allow only the exact sandbox-provided
+`process.platform === "darwin"` presentation check. Keep its other process, Node,
+filesystem and database prohibitions and the actual Electron isolation assertions.
+No security requirement is retired. The native-Close driver retains the original
+child handle because Playwright disposes its application object on native exit.
+
 ## Execution
 
 - [x] Resolve references, blockers, ownership and scope.
 - [x] Reproduce the extra title row in actual Electron before implementation.
 - [x] Implement macOS native chrome and reserve native/navigation/tab space.
 - [x] Verify actual Electron geometry, EN/RU, themes/sizes and window lifecycle.
-- [ ] Complete independent standards/spec review and affected repairs.
+- [x] Complete independent standards/spec review and affected repairs.
 - [ ] Run final full local suite and affected platform DEV/package acceptance.
 - [ ] Commit, publish and integrate the accepted candidate; record delivered SHA.
 

@@ -6,7 +6,7 @@ import {join, resolve} from 'node:path';
 import {execFileSync} from 'node:child_process';
 import {_electron} from 'playwright-core';
 import {runtimeSmokeLaunch} from './runtime-executable.mjs';
-import {closeElectron, cleanupOwnedFixture, ownedProcessesStopped} from './runtime-lifecycle.mjs';
+import {closeElectron, cleanupOwnedFixture, ownedProcessesStopped, withDeadline} from './runtime-lifecycle.mjs';
 import {openSettingsSection, returnToWorkspace, setInterfaceLanguage} from './runtime-settings.mjs';
 
 const root=resolve(import.meta.dirname,'..');
@@ -17,14 +17,14 @@ const evidence=resolve(process.env.WORKSPACE_SMOKE_EVIDENCE_DIR??'work/issue-79-
 await mkdir(evidence,{recursive:true});
 const parents=new Set(),backends=new Set();
 const report={issue:79,sha:execFileSync('git',['rev-parse','HEAD'],{cwd:root,encoding:'utf8'}).trim(),platform:process.platform,mode:process.env.WORKSPACE_SMOKE_MODE??'dev',run:process.env.GITHUB_RUN_ID??null,checks:[],screens:[],status:'running'};
-let app,page,failure,launchUnverified=true;
+let app,page,child,failure,launchUnverified=true;
 async function geometry(){return app.evaluate(({BrowserWindow})=>{
   const w=BrowserWindow.getAllWindows()[0],p=w.webContents.getLastWebPreferences();
   return {outer:w.getBounds(),content:w.getContentBounds(),minimum:w.getMinimumSize(),buttons:process.platform==='darwin'?w.getWindowButtonPosition():null,isolation:[p.contextIsolation,p.nodeIntegration,p.sandbox]};
 });}
 try {
   app=await _electron.launch({...runtimeSmokeLaunch(root),cwd:root,env:{...process.env,WORKSPACE_USER_DATA_DIR:join(fixture,'data'),WORKSPACE_TEST_ROOT_PICKER_PATH:source}});
-  parents.add(app.process());page=await app.firstWindow();page.setDefaultTimeout(15000);
+  child=app.process();parents.add(child);page=await app.firstWindow();page.setDefaultTimeout(15000);
   await page.locator('.workspace-screen[data-ready="true"]').waitFor();
   for(const pid of await app.evaluate(({app})=>app.getAppMetrics().filter(m=>m.type==='Utility'&&m.serviceName?.includes('Node')).map(m=>m.pid)))backends.add(pid);
   assert.ok(backends.size);launchUnverified=false;
@@ -117,8 +117,13 @@ try {
   }
 }catch(error){failure=error;if(page)await page.screenshot({path:join(evidence,'failure.png')}).catch(()=>{});}
 finally{
-  try{if(app&&app.process().exitCode===null)await closeElectron(app);}catch(error){failure??=error;}
-  if(report.nativeCloseRequested)assert.equal(app.process().exitCode,0,'Native Close exits normally');
+  try{
+    if(report.nativeCloseRequested){
+      if(child.exitCode===null&&child.signalCode===null)await withDeadline(new Promise(resolve=>child.once('exit',resolve)),10000,'Native Close exit');
+      report.nativeExitCode=child.exitCode;
+      assert.equal(child.exitCode,0,'Native Close exits normally');
+    }else if(app&&child?.exitCode===null)await closeElectron(app);
+  }catch(error){failure??=error;}
   report.stopped=ownedProcessesStopped(parents,backends,{launchUnverified});
   try{report.cleanup=await cleanupOwnedFixture(fixture,{processesStopped:report.stopped,record:result=>{report.cleanup=result;}});}catch(error){failure??=error;}
   report.status=failure?'failed':'passed';report.error=failure?.stack;

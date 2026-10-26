@@ -312,7 +312,9 @@ test("renderer security settings are strict and service has no network server de
   assert.match(main, /nodeIntegration:\s*false/);
   assert.match(main, /sandbox:\s*true/);
   assert.match(preload, /exposeInMainWorld\("workspace", api\)/);
-  assert.doesNotMatch(preload, /require\(|process\.|node:fs|better-sqlite3/);
+  // Sandboxed Electron exposes process.platform as a read-only presentation hint.
+  // Retain the prohibition on other process/Node/database access.
+  assert.doesNotMatch(preload.replaceAll('process.platform === "darwin"', ''), /require\(|process\.|node:fs|better-sqlite3/);
   assert.match(preload, /WorkspaceDesktopApi/);
   assert.match(preload, /workspace:command/);
   assert.match(preload, /workspace:pick-root/);

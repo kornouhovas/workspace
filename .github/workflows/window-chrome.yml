@@ -26,7 +26,7 @@ jobs:
       - run: npm run check:docs
       - run: npm run build
       - name: Retained shell, session and isolation regressions
-        run: node --import tsx --test tests/renderer-app.test.tsx tests/runtime-view-readiness.test.mjs tests/workspace-sessions-service.test.mjs tests/build-smoke.test.mjs tests/test-suites.test.mjs
+        run: node --import tsx --test tests/renderer-app.test.tsx tests/runtime-view-readiness.test.mjs tests/workspace-sessions-service.test.mjs tests/backend-lifecycle.test.mjs tests/build-smoke.test.mjs tests/test-suites.test.mjs
       - name: Native development window
         run: npm run smoke:window-chrome
         env:
