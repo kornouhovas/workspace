@@ -36,6 +36,9 @@ try {
   }else if(process.platform==='win32'){
     assert.ok(report.geometry.content.y>report.geometry.outer.y,'Windows retains its native title bar');
   }
+  await page.getByRole('button',{name:'Collapse sidebar',exact:true}).click();
+  await page.screenshot({path:join(evidence,'empty-collapsed.png')});
+  await page.getByRole('button',{name:'Restore sidebar',exact:true}).press('Enter');
   await page.getByRole('button',{name:'Add workspace',exact:true}).click();
   await page.getByRole('cell',{name:'Atlas',exact:true}).waitFor();
   for(const language of ['en','ru']){

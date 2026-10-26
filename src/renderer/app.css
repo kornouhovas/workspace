@@ -853,7 +853,8 @@ p { margin-block: .5rem; }
   -webkit-app-region: no-drag;
 }
 :root[data-window-chrome="macos"] .collapsed-navigation {
-  left: 84px; top: 10px; -webkit-app-region: no-drag;
+  left: 84px; top: 10px; padding-right: 10px;
+  -webkit-app-region: drag; user-select: none;
 }
 :root[data-window-chrome="macos"] .desktop-shell--collapsed .workspace-screen { padding-top: 8px; }
 :root[data-window-chrome="macos"] .desktop-shell--collapsed .view-controls { padding-left: 180px; }
