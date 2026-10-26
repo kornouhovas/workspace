@@ -94,3 +94,13 @@ consumers: `smoke-project-navigation.mjs` on Windows latest/2022 and
 The existing navigation and full profiles retain their inventories. The route
 selection tests passed 35/35 (`/tmp/issue80-routing.log`); focused Actions
 receipts and artifact inspection remain open.
+
+Focused run [40403482210](https://github.com/kornouhovas/workspace/actions/runs/40403482210)
+at `d0392a3c` passed the original macOS views consumer; Windows 2022 again
+failed the nonzero grouped-scroll assertion despite the new projection/overflow
+readiness gate. Thus that gate alone does not explain the failure. The separate
+`navigation-probe` profile runs only Windows 2022 with bounded failure-only
+scroll observations and a `diagnosticOnly` report; it has its own concurrency
+group and cannot supply acceptance. Compare immediate versus post-paint scroll,
+direction and dimensions before choosing a repair. The unchanged original
+assertion and wait bounds remain in place.

@@ -100,10 +100,18 @@ test('issue 80 repair runs only the original failed consumer on each affected ho
  const {readFile}=await import('node:fs/promises');const {load}=await import('js-yaml');const {runInNewContext}=await import('node:vm');
  const workflow=load(await readFile('.github/workflows/desktop-ci.yml','utf8'));const job=workflow.jobs['desktop-ux'];
  assert.ok(workflow.on.workflow_dispatch.inputs.desktop_ux_profile.options.includes('navigation-repair'));
+ assert.ok(workflow.on.workflow_dispatch.inputs.desktop_ux_profile.options.includes('navigation-probe'));
  const expression=job.strategy.matrix.os.slice(3,-2);
  assert.deepEqual(Array.from(runInNewContext(expression,{fromJSON:JSON.parse,inputs:{desktop_ux_profile:'navigation-repair',desktop_ux_category_only:false}})),['macos-latest','windows-latest','windows-2022']);
+ assert.deepEqual(Array.from(runInNewContext(expression,{fromJSON:JSON.parse,inputs:{desktop_ux_profile:'navigation-probe',desktop_ux_category_only:false}})),['windows-2022']);
  const nav=job.steps.find(step=>step.name==='Issue 80 original Windows navigation'),views=job.steps.find(step=>step.name==='Issue 80 original macOS views');
  assert.equal(nav.run,'node scripts/smoke-project-navigation.mjs');assert.equal(views.run,'npm run smoke:views -- dev');
+ assert.match(workflow.concurrency.group,/navigation-probe/);assert.match(nav.env.WORKSPACE_NAVIGATION_DIAGNOSTIC,/navigation-probe/);
+ const probe={inputs:{desktop_ux_failure_probe:false,desktop_ux_profile:'navigation-probe',desktop_ux_packaged_only:false,desktop_ux_category_only:false},matrix:{os:'windows-2022'}};
+ assert.equal(runInNewContext(nav.if.slice(3,-2),probe),true);assert.equal(runInNewContext(views.if.slice(3,-2),probe),false);
+ for(const name of ['Affected UI, services and real Electron flows','Package shared font and notices','Inspect packaged artifact','Packaged saved-view consumers']) {
+  assert.equal(runInNewContext(job.steps.find(step=>step.name===name).if.slice(3,-2),probe),false,name);
+ }
  for(const os of ['macos-latest','windows-latest','windows-2022']){
   const context={inputs:{desktop_ux_failure_probe:false,desktop_ux_profile:'navigation-repair'},matrix:{os}};
   assert.equal(runInNewContext(nav.if.slice(3,-2),context),os!=='macos-latest');

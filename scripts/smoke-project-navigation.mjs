@@ -220,13 +220,14 @@ try{
  try {
   await page.waitForFunction(count=>{const board=document.querySelector('.grouped-board');return board && board.querySelectorAll(':scope > .project-group').length===count && board.scrollWidth>board.clientWidth && !document.querySelector('.saved-view-content [aria-busy=true]');},expectedGroups);
  } catch(error) {
-  console.error('Grouped Board readiness:',await page.locator('.grouped-board').evaluate((el,expectedGroups)=>({expectedGroups,actualGroups:el.querySelectorAll(':scope > .project-group').length,scrollWidth:el.scrollWidth,clientWidth:el.clientWidth}),expectedGroups).catch(()=>({expectedGroups,boardUnavailable:true})));
+  console.error('Grouped Board readiness:',await page.locator('.grouped-board').evaluate((el,expectedGroups)=>({expectedGroups,actualGroups:el.querySelectorAll(':scope > .project-group').length,scrollWidth:el.scrollWidth,clientWidth:el.clientWidth}),expectedGroups,{timeout:1000}).catch(()=>({expectedGroups,boardUnavailable:true})));
   throw error;
  }
  await page.locator('.grouped-board .project-board .project-preview-trigger').first().waitFor();
- await page.locator('.grouped-board').evaluate(el=>{el.scrollLeft=160;});
+ const immediateScroll=await page.locator('.grouped-board').evaluate(el=>{el.scrollLeft=160;return {scrollLeft:el.scrollLeft,scrollWidth:el.scrollWidth,clientWidth:el.clientWidth,direction:window.getComputedStyle(el).direction,restoring:el.closest('.saved-view-content')?.dataset.scrollRestoring ?? null};});
  await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
  const groupedBefore=await boardGeometry();
+ if(!(groupedBefore.scroll[1]>0)) console.error('Grouped Board scroll probe:',JSON.stringify({immediateScroll,after:groupedBefore.scroll[1]}));
  assert.ok(groupedBefore.scroll[1]>0,'the grouped Board has a nonzero horizontal scroll');
  const groupedTarget=await page.locator('.grouped-board .project-preview-trigger').evaluateAll(buttons=>{
   const view=document.querySelector('.grouped-board').getBoundingClientRect();
@@ -241,7 +242,7 @@ finally{
  let stopped=false,cleaned=false;
  try{if(app)await closeElectron(app);stopped=await ownedProcessesStopped(parents,backends,{launchUnverified});assert.equal(stopped,true);}catch(error){failure??=error;}
  try{cleaned=await cleanupOwnedFixture(fixture,{processesStopped:stopped,primaryFailure:failure,record:result=>{cleaned=result;}});}catch(error){failure??=error;}
- await writeFile(join(evidence,'report.json'),JSON.stringify({sha:process.env.GITHUB_SHA??null,platform:process.platform,screens,checks,launchUnverified,stopped,cleaned,failure:failure?.stack},null,2));
+ await writeFile(join(evidence,'report.json'),JSON.stringify({sha:process.env.GITHUB_SHA??null,platform:process.platform,diagnosticOnly:process.env.WORKSPACE_NAVIGATION_DIAGNOSTIC==='1',screens,checks,launchUnverified,stopped,cleaned,failure:failure?.stack},null,2));
 }
 if(failure)throw failure;
 console.log(`Project navigation: ${screens.length*4} ordinary/long preview/expanded variants; ${checks.join(', ')}`);
