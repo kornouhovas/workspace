@@ -33,10 +33,15 @@ The driver waits for an enabled button before one Enter and preserves the shared
 15s action/acknowledgment budget. Run40360849243 showed that this guard alone
 does not settle the original failure. A controlled native-frame callback now
 reproduces the same failure with Enter delivered to the project preview after
-close returns focus asynchronously. The native-repair DEV step temporarily adds
-a bounded128-event focus/key/sidebar-state trace and marks its receipt diagnostic;
-it is not acceptance. No authored labels, paths or property values are recorded.
-After diagnosis and cold focused success, renew all DEV/package
+close returns focus asynchronously. Diagnostic run40363947663 at149d43d2 passed but captured deferred preview focus
+between Restore keydown and keyup (24ms/31ms/32ms after Close). Its bounded128-event
+receipt is diagnostic, not acceptance, and contains no authored labels/paths/values.
+The controlled failing interval delivered Enter to Preview; waiting for the public
+preview-or-saved-tab focus return first delivers Enter to Restore. All focus,
+enabled-control and acknowledgment waits share the original15s budget. Temporary
+trace instrumentation is removed. Native-repair now runs the deferred-focus
+control, the disabled-control case and the original8variant DEV journey cold.
+After cold focused success, renew all DEV/package
 consumers of the changed smoke driver on the three hosts; do not reuse the older
 Windows driver receipts as execution of the repaired driver.
 

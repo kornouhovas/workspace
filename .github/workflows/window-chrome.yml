@@ -53,6 +53,12 @@ jobs:
           mkdir -p work/ci-window-chrome
           set -o pipefail
           node --import tsx --test --test-name-pattern="projection endpoint observation" tests/runtime-view-readiness.test.mjs 2>&1 | tee work/ci-window-chrome/endpoint.log
+      - name: Deferred native close focus control
+        if: ${{ inputs.native_repair }}
+        run: npm run smoke:window-chrome
+        env:
+          WORKSPACE_WINDOW_CHROME_FOCUS_CONTROL: '1'
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-window-chrome/focus-control
       - name: Delayed native sidebar restore control
         if: ${{ inputs.native_repair }}
         run: npm run smoke:window-chrome
@@ -63,7 +69,6 @@ jobs:
         if: ${{ !inputs.repair_only }}
         run: npm run smoke:window-chrome
         env:
-          WORKSPACE_WINDOW_CHROME_TRACE: ${{ inputs.native_repair && '1' || '0' }}
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-window-chrome/dev
       - name: Retained shell and settings journey
         if: ${{ !inputs.repair_only && !inputs.native_repair }}

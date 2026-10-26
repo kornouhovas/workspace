@@ -1,0 +1,46 @@
+{
+  "red": {
+    "baseShaAtRun": "46968a9b4f0ff5f70b8801b5cd3d5545ebe09c7d",
+    "harnessVariant": "Enabled-only Restore guard with real app frame callbacks held at the focus boundary",
+    "workingTreeControl": true,
+    "status": "failed",
+    "focusControl": {
+      "queued": 3,
+      "flushed": 3,
+      "keyTargets": [
+        "preview"
+      ]
+    },
+    "stopped": true,
+    "cleanup": {
+      "status": "passed",
+      "asserted": true,
+      "processesStopped": true,
+      "maxRetries": 5,
+      "retryDelay": 100
+    },
+    "errorFirstLine": "locator.waitFor: Timeout 14985ms exceeded."
+  },
+  "green": {
+    "baseShaAtRun": "149d43d27956725cf6b3fa708503aa550e4e9687",
+    "harnessVariant": "Working-tree repair waits for app-owned preview or saved-tab focus before Restore",
+    "workingTreeControl": true,
+    "status": "passed",
+    "focusControl": {
+      "queued": 3,
+      "flushed": 3,
+      "keyTargets": [
+        "restore"
+      ]
+    },
+    "stopped": true,
+    "cleanup": {
+      "status": "passed",
+      "asserted": true,
+      "processesStopped": true,
+      "maxRetries": 5,
+      "retryDelay": 100
+    },
+    "errorFirstLine": null
+  }
+}

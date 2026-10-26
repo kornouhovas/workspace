@@ -62,6 +62,19 @@ renewal of unreached macOS DEV/package consumers; Windows evidence remains at it
 actual tested SHA. The workflow now preserves regression logs even before native
 consumers create their artifacts.
 
-Platform CI receipts are pending; this local
+Run40357918701 passed the macOS regression step, then7/8 DEV variants before
+missing the Restore keyboard action. An enabled-only guard passed its300ms disabled
+control but did not settle the original failure in run40360849243. A second public
+frame-scheduling control reproduces Enter landing on Preview after the existing
+Close callback returns focus. The repaired driver waits for the public Preview or
+saved-tab focus acknowledgment before moving to Restore, using the same15s total
+budget and a single Enter. Both controls and the ordinary8variants pass locally.
+[Controlled results](issue-79-evidence/deferred-focus-controls.json) distinguish
+working-tree harness variants from exact-SHA CI acceptance. The
+[diagnostic sequence](issue-79-evidence/deferred-focus-diagnostic.json) at149d43d2
+passed but observed Preview taking focus between Restore keydown and keyup; it is
+not relabelled as a failing diagnostic or acceptance. Temporary tracing is removed.
+
+Final cold focused/shared-consumer CI receipts are pending; this local
 record does not claim Windows or final desktop/release acceptance. Exact-SHA CI
 and delivery checkpoints belong to [#79](https://github.com/kornouhovas/workspace/issues/79).

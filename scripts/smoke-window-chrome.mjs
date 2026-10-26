@@ -1,6 +1,7 @@
 /* global window, document */
 import assert from 'node:assert/strict';
-import {mkdtemp, mkdir, realpath, writeFile, access} from 'node:fs/promises';
+import {mkdtemp, mkdir, realpath, writeFile, access, readFile} from 'node:fs/promises';
+import {createHash} from 'node:crypto';
 import {tmpdir} from 'node:os';
 import {join, resolve} from 'node:path';
 import {execFileSync} from 'node:child_process';
@@ -17,15 +18,20 @@ const evidence=resolve(process.env.WORKSPACE_SMOKE_EVIDENCE_DIR??'work/issue-79-
 const restoreControl=process.env.WORKSPACE_WINDOW_CHROME_RESTORE_CONTROL==='1';
 const focusControl=process.env.WORKSPACE_WINDOW_CHROME_FOCUS_CONTROL==='1';
 const boundedControl=restoreControl||focusControl;
-const trace=process.env.WORKSPACE_WINDOW_CHROME_TRACE==='1';
 await mkdir(evidence,{recursive:true});
 const parents=new Set(),backends=new Set();
 const report={issue:79,sha:execFileSync('git',['rev-parse','HEAD'],{cwd:root,encoding:'utf8'}).trim(),platform:process.platform,mode:process.env.WORKSPACE_SMOKE_MODE??'dev',run:process.env.GITHUB_RUN_ID??null,checks:[],screens:[],status:'running'};
-report.diagnostic=trace;
+report.diagnostic=false;
+report.profile=focusControl?'focus-control':restoreControl?'disabled-control':'normal';
+report.harnessSha256=createHash('sha256').update(await readFile(import.meta.filename)).digest('hex');
+report.dirty=!!execFileSync('git',['status','--porcelain','--untracked-files=no'],{cwd:root,encoding:'utf8'}).trim();
 let app,page,child,failure,launchUnverified=true;
-async function restoreSidebar(){
+async function restoreSidebar(afterCloseFocus){
   const deadline=Date.now()+15000;
-  await page.getByRole('button',{name:/^(Restore sidebar|Восстановить боковую панель)$/}).and(page.locator(':enabled')).press('Enter',{timeout:15000});
+  const remaining=()=>Math.max(1,deadline-Date.now());
+  // Close owns its next-frame focus return; observe it before moving to Restore.
+  if(afterCloseFocus)await afterCloseFocus.and(page.locator(':focus')).waitFor({timeout:remaining()});
+  await page.getByRole('button',{name:/^(Restore sidebar|Восстановить боковую панель)$/}).and(page.locator(':enabled')).press('Enter',{timeout:remaining()});
   await page.getByRole('button',{name:/^(Collapse sidebar|Свернуть боковую панель)$/}).waitFor({timeout:Math.max(1,deadline-Date.now())});
 }
 async function geometry(){return app.evaluate(({BrowserWindow})=>{
@@ -38,22 +44,6 @@ try {
   await page.locator('.workspace-screen[data-ready="true"]').waitFor();
   for(const pid of await app.evaluate(({app})=>app.getAppMetrics().filter(m=>m.type==='Utility'&&m.serviceName?.includes('Node')).map(m=>m.pid)))backends.add(pid);
   assert.ok(backends.size);launchUnverified=false;
-  if(trace)await page.evaluate(()=>{
-    const events=[];globalThis.chromeRestoreEvents=events;
-    const category=element=>{
-      if(!(element instanceof globalThis.Element))return 'none';
-      if(element.closest('.project-preview-trigger'))return 'preview';
-      const button=element.closest('button'),label=button?.getAttribute('aria-label')??'';
-      if(/^(Restore sidebar|Восстановить боковую панель)$/.test(label))return 'restore';
-      if(/^(Collapse sidebar|Свернуть боковую панель)$/.test(label))return 'collapse';
-      if(button?.classList.contains('tab-close'))return 'close-tab';
-      if(button?.getAttribute('role')==='tab')return 'tab';
-      return 'other';
-    };
-    const record=(event,target,key)=>{events.push({event,target:category(target),key,time:performance.now(),active:category(document.activeElement),collapsed:!!document.querySelector('.desktop-shell--collapsed'),disabled:target?.disabled??null});if(events.length>128)events.shift();};
-    for(const type of ['focusin','click','keydown','keyup'])document.addEventListener(type,event=>{if(!type.startsWith('key')||event.key==='Enter')record(type,event.target,event.key??null);},true);
-    new globalThis.MutationObserver(records=>{for(const item of records)if(item.target.matches('.desktop-shell')||category(item.target)==='restore')record(`mutation:${item.attributeName}`,item.target,null);}).observe(document.querySelector('.desktop-shell'),{subtree:true,attributes:true,attributeFilter:['class','disabled']});
-  });
   report.geometry=await geometry();
   assert.deepEqual(report.geometry.isolation,[true,false,true]);
   if(process.platform==='darwin'){
@@ -91,7 +81,8 @@ try {
         assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>window.innerWidth),false);
         const screen=`${language}-${theme}-${size.width}.png`;
         await page.screenshot({path:join(evidence,screen)});report.screens.push(screen);
-        await page.getByRole('button',{name:`${language==='en'?'Preview project':'Открыть предпросмотр проекта'}: Atlas`,exact:true}).click();
+        const previewButton=page.getByRole('button',{name:`${language==='en'?'Preview project':'Открыть предпросмотр проекта'}: Atlas`,exact:true});
+        await previewButton.click();
         await page.getByRole('button',{name:language==='en'?'Expand project':'Развернуть проект',exact:true}).click();
         const projectTab=page.getByRole('tab',{name:'Atlas',exact:true});
         await projectTab.and(page.locator('[aria-selected="true"]')).waitFor();
@@ -102,6 +93,7 @@ try {
         await projectMenu.press('Enter');await page.getByRole('menu').waitFor();
         await page.keyboard.press('Escape');await projectMenu.and(page.locator(':focus')).waitFor();
         await page.screenshot({path:join(evidence,`${language}-${theme}-${size.width}-project-collapsed.png`)});
+        // Exercise real deferred app callbacks at the keyboard-focus boundary.
         if(focusControl)await page.evaluate(()=>{
           const frame=window.requestAnimationFrame.bind(window),held=[];
           const state={queued:0,flushed:0,keyTargets:[]};globalThis.chromeFocusControl=state;
@@ -118,7 +110,7 @@ try {
           await restore.evaluate(element=>{element.disabled=true;setTimeout(()=>{element.disabled=false;},300);});
           report.restoreReadinessControl=true;
         }
-        await restoreSidebar();
+        await restoreSidebar(previewButton.or(tab));
         await openSettingsSection(page);await page.getByRole('heading',{name:language==='en'?'General':'Основные',exact:true}).waitFor();
         await returnToWorkspace(page);
         report.checks.push({language,theme,size,navigationPointer:true,restoreKeyboard:true,tabsKeyboard:true,projectTabsAndMenu:true,collapsedProjectClose:true,settingsReturn:true});
@@ -160,7 +152,6 @@ try {
   }
 }catch(error){failure=error;if(page)await page.screenshot({path:join(evidence,'failure.png')}).catch(()=>{});}
 finally{
-  if(trace&&page&&!page.isClosed())report.restoreTrace=await page.evaluate(()=>globalThis.chromeRestoreEvents).catch(()=>null);
   if(focusControl&&page&&!page.isClosed())report.focusReadinessControl=await page.evaluate(()=>globalThis.chromeFocusControl).catch(()=>null);
   try{
     if(report.nativeCloseRequested){

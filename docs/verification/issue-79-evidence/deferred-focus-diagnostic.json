@@ -1,0 +1,101 @@
+{
+  "run": 40363947663,
+  "sha": "149d43d27956725cf6b3fa708503aa550e4e9687",
+  "diagnostic": true,
+  "status": "passed",
+  "variants": 8,
+  "retainedEventCount": 128,
+  "lateFocusSequence": [
+    {
+      "event": "click",
+      "target": "close-tab",
+      "key": null,
+      "time": 9263,
+      "active": "close-tab",
+      "collapsed": true,
+      "disabled": null,
+      "elapsedAfterCloseMs": 0
+    },
+    {
+      "event": "focusin",
+      "target": "restore",
+      "key": null,
+      "time": 9281.900000000023,
+      "active": "restore",
+      "collapsed": true,
+      "disabled": false,
+      "elapsedAfterCloseMs": 18.9
+    },
+    {
+      "event": "keydown",
+      "target": "restore",
+      "key": "Enter",
+      "time": 9287.300000000017,
+      "active": "restore",
+      "collapsed": true,
+      "disabled": false,
+      "elapsedAfterCloseMs": 24.3
+    },
+    {
+      "event": "click",
+      "target": "restore",
+      "key": null,
+      "time": 9287.400000000023,
+      "active": "restore",
+      "collapsed": true,
+      "disabled": false,
+      "elapsedAfterCloseMs": 24.4
+    },
+    {
+      "event": "focusin",
+      "target": "collapse",
+      "key": null,
+      "time": 9292.800000000017,
+      "active": "collapse",
+      "collapsed": false,
+      "disabled": false,
+      "elapsedAfterCloseMs": 29.8
+    },
+    {
+      "event": "mutation:class",
+      "target": "other",
+      "key": null,
+      "time": 9293.200000000012,
+      "active": "collapse",
+      "collapsed": false,
+      "disabled": null,
+      "elapsedAfterCloseMs": 30.2
+    },
+    {
+      "event": "focusin",
+      "target": "preview",
+      "key": null,
+      "time": 9294.200000000012,
+      "active": "preview",
+      "collapsed": false,
+      "disabled": false,
+      "elapsedAfterCloseMs": 31.2
+    },
+    {
+      "event": "keyup",
+      "target": "preview",
+      "key": "Enter",
+      "time": 9295.5,
+      "active": "preview",
+      "collapsed": false,
+      "disabled": false,
+      "elapsedAfterCloseMs": 32.5
+    },
+    {
+      "event": "focusin",
+      "target": "other",
+      "key": null,
+      "time": 9363.800000000017,
+      "active": "other",
+      "collapsed": false,
+      "disabled": false,
+      "elapsedAfterCloseMs": 100.8
+    }
+  ],
+  "limit": "The diagnostic run passed; this sequence demonstrates focus returning during keyboard dispatch, not a failed Enter in that run."
+}
