@@ -2,6 +2,13 @@ name: Integrated native window chrome
 
 on:
   workflow_call:
+    inputs:
+      repair_only:
+        type: boolean
+        default: false
+      macos_only:
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -11,7 +18,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-latest, windows-latest, windows-2022]
+        os: ${{ (inputs.repair_only || inputs.macos_only) && fromJSON('["macos-latest"]') || fromJSON('["macos-latest","windows-latest","windows-2022"]') }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30
     steps:
@@ -25,19 +32,37 @@ jobs:
       - run: npm run lint
       - run: npm run check:docs
       - run: npm run build
+        if: ${{ !inputs.repair_only }}
       - name: Retained shell, session and isolation regressions
-        run: node --import tsx --test tests/renderer-app.test.tsx tests/runtime-view-readiness.test.mjs tests/workspace-sessions-service.test.mjs tests/backend-lifecycle.test.mjs tests/build-smoke.test.mjs tests/test-suites.test.mjs
+        if: ${{ !inputs.repair_only }}
+        shell: bash
+        run: |
+          mkdir -p work/ci-window-chrome
+          set -o pipefail
+          node --import tsx --test tests/renderer-app.test.tsx tests/runtime-view-readiness.test.mjs tests/workspace-sessions-service.test.mjs tests/backend-lifecycle.test.mjs tests/build-smoke.test.mjs tests/test-suites.test.mjs 2>&1 | tee work/ci-window-chrome/regressions.log
+      - name: Original macOS endpoint observation regression
+        if: ${{ inputs.repair_only }}
+        shell: bash
+        run: |
+          mkdir -p work/ci-window-chrome
+          set -o pipefail
+          node --import tsx --test --test-name-pattern="projection endpoint observation" tests/runtime-view-readiness.test.mjs 2>&1 | tee work/ci-window-chrome/endpoint.log
       - name: Native development window
+        if: ${{ !inputs.repair_only }}
         run: npm run smoke:window-chrome
         env:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-window-chrome/dev
       - name: Retained shell and settings journey
+        if: ${{ !inputs.repair_only }}
         run: npm run smoke:shell
         env:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-window-chrome/shell
       - run: npm run package:built
+        if: ${{ !inputs.repair_only }}
       - run: npm run check:artifact -- release
+        if: ${{ !inputs.repair_only }}
       - name: Native packaged window
+        if: ${{ !inputs.repair_only }}
         run: npm run smoke:window-chrome
         env:
           WORKSPACE_SMOKE_MODE: release

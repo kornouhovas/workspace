@@ -11,6 +11,16 @@ shutdown and fixture cleanup have separate receipts. Local native input and full
 window captures supplement the automated lifecycle calls. No installer, schema,
 resource or dependency input changes; final #67/release gates remain separate.
 
+For the original macOS failure at `bbc09277` (run40354335288), select
+`checks: window-chrome-repair` first. It runs only the failing projection-endpoint
+control on macOS with static prerequisites and always-uploaded logs. A controlled
+125ms delay per native frame reproduces the original insufficient driver-delay
+assertion: the host pause began before renderer paint stabilization. Await the
+paint receipt before the300ms host-delivery pause; keep committed-result/membership
+and the200ms assertion unchanged. After focused success, renew the unreached
+macOS consumers with `checks: window-chrome-macos` and retain independently complete Windows receipts only with
+unchanged application/build inputs. Original failures remain failed.
+
 ## General preferences
 
 For #78 select `desktop-ci.yml` with `checks: general-settings`. This bounded

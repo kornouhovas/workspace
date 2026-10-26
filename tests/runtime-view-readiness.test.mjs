@@ -866,6 +866,10 @@ test('projection endpoint observation precedes slow locator delivery but require
   await withPage(async page=>{
     await page.setContent('<button id="save">Apply</button><section class="text-properties" aria-busy="false"><div data-project-id="one" data-fields-ready="true"><button>Edit value</button></div></section>');
     await page.evaluate(()=>{
+      // Native/background frame delivery can outlast a host-side pause.
+      // Keep that ordering deterministic instead of relying on runner speed.
+      const frame=globalThis.requestAnimationFrame.bind(globalThis);
+      globalThis.requestAnimationFrame=callback=>frame(()=>setTimeout(()=>callback(performance.now()),125));
       document.querySelector('#save').addEventListener('keydown',()=>{globalThis.__workspacePerformanceStarted=performance.now();},{once:true});
       document.querySelector('#save').addEventListener('click',()=>{
         setTimeout(()=>{
@@ -879,8 +883,9 @@ test('projection endpoint observation precedes slow locator delivery but require
     await page.locator('#save').press('Enter');
     const waiting=waitForRuntimeProjection(page,['one'],false,[{selector:'.text-properties .bb-status__title',text:'Saved'},{selector:'.project-group[aria-label="Destination"] [data-project-id="one"]'}]);
     await page.getByRole('heading',{name:'Saved',exact:true}).waitFor();
+    const timing=await waiting;
     await new Promise(done=>setTimeout(done,300)); // Controlled late driver delivery.
-    const timing=await waiting,committed=await page.evaluate(()=>globalThis.endpointCommittedAt);
+    const committed=await page.evaluate(()=>globalThis.endpointCommittedAt);
     assert.ok(timing.firstPaintedAt>=committed,'Actual committed result must precede the paint endpoint');
     const measured=await readRuntimeInteraction(page,timing);
     assert.ok(measured.driverObservationDelayMs>=200,'Late host polling cannot move an already captured endpoint');

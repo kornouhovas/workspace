@@ -1,0 +1,186 @@
+{
+  "issue": 79,
+  "sha": "f495c4def448ff22785f5600b439394a027c1615",
+  "platform": "darwin",
+  "mode": "dev",
+  "run": null,
+  "checks": [
+    {
+      "language": "en",
+      "theme": "light",
+      "size": {
+        "width": 1024,
+        "height": 720
+      },
+      "navigationPointer": true,
+      "restoreKeyboard": true,
+      "tabsKeyboard": true,
+      "projectTabsAndMenu": true,
+      "collapsedProjectClose": true,
+      "settingsReturn": true
+    },
+    {
+      "language": "en",
+      "theme": "light",
+      "size": {
+        "width": 1440,
+        "height": 960
+      },
+      "navigationPointer": true,
+      "restoreKeyboard": true,
+      "tabsKeyboard": true,
+      "projectTabsAndMenu": true,
+      "collapsedProjectClose": true,
+      "settingsReturn": true
+    },
+    {
+      "language": "en",
+      "theme": "dark",
+      "size": {
+        "width": 1024,
+        "height": 720
+      },
+      "navigationPointer": true,
+      "restoreKeyboard": true,
+      "tabsKeyboard": true,
+      "projectTabsAndMenu": true,
+      "collapsedProjectClose": true,
+      "settingsReturn": true
+    },
+    {
+      "language": "en",
+      "theme": "dark",
+      "size": {
+        "width": 1440,
+        "height": 960
+      },
+      "navigationPointer": true,
+      "restoreKeyboard": true,
+      "tabsKeyboard": true,
+      "projectTabsAndMenu": true,
+      "collapsedProjectClose": true,
+      "settingsReturn": true
+    },
+    {
+      "language": "ru",
+      "theme": "light",
+      "size": {
+        "width": 1024,
+        "height": 720
+      },
+      "navigationPointer": true,
+      "restoreKeyboard": true,
+      "tabsKeyboard": true,
+      "projectTabsAndMenu": true,
+      "collapsedProjectClose": true,
+      "settingsReturn": true
+    },
+    {
+      "language": "ru",
+      "theme": "light",
+      "size": {
+        "width": 1440,
+        "height": 960
+      },
+      "navigationPointer": true,
+      "restoreKeyboard": true,
+      "tabsKeyboard": true,
+      "projectTabsAndMenu": true,
+      "collapsedProjectClose": true,
+      "settingsReturn": true
+    },
+    {
+      "language": "ru",
+      "theme": "dark",
+      "size": {
+        "width": 1024,
+        "height": 720
+      },
+      "navigationPointer": true,
+      "restoreKeyboard": true,
+      "tabsKeyboard": true,
+      "projectTabsAndMenu": true,
+      "collapsedProjectClose": true,
+      "settingsReturn": true
+    },
+    {
+      "language": "ru",
+      "theme": "dark",
+      "size": {
+        "width": 1440,
+        "height": 960
+      },
+      "navigationPointer": true,
+      "restoreKeyboard": true,
+      "tabsKeyboard": true,
+      "projectTabsAndMenu": true,
+      "collapsedProjectClose": true,
+      "settingsReturn": true
+    }
+  ],
+  "screens": [
+    "en-light-1024.png",
+    "en-light-1440.png",
+    "en-dark-1024.png",
+    "en-dark-1440.png",
+    "ru-light-1024.png",
+    "ru-light-1440.png",
+    "ru-dark-1024.png",
+    "ru-dark-1440.png"
+  ],
+  "status": "passed",
+  "geometry": {
+    "outer": {
+      "x": 388,
+      "y": 161,
+      "width": 1024,
+      "height": 720
+    },
+    "content": {
+      "x": 388,
+      "y": 161,
+      "width": 1024,
+      "height": 720
+    },
+    "minimum": [
+      1024,
+      720
+    ],
+    "buttons": {
+      "x": 18,
+      "y": 18
+    },
+    "isolation": [
+      true,
+      false,
+      true
+    ]
+  },
+  "lifecycle": [
+    "minimize",
+    "restore",
+    "fullscreen",
+    "windowed"
+  ],
+  "native": {
+    "bounds": {
+      "x": 388,
+      "y": 123,
+      "width": 1024,
+      "height": 720
+    },
+    "minimized": false,
+    "fullscreen": false,
+    "events": []
+  },
+  "nativeCloseRequested": true,
+  "nativeExitCode": 0,
+  "stopped": true,
+  "cleanup": {
+    "status": "passed",
+    "asserted": true,
+    "processesStopped": true,
+    "maxRetries": 5,
+    "retryDelay": 100
+  }
+}
