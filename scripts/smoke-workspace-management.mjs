@@ -41,7 +41,7 @@ const add = () => sidebar().getByRole("button", { name: /^(Add workspace|Доб�
 const actions = () => sidebar().getByRole("button", { name: /^(Workspace actions|Действия с рабочим пространством):/ }).and(page.locator(":enabled"));
 async function recordDiagnostic(label,force=false){
  if((!process.env.WORKSPACE_MANAGEMENT_DIAGNOSTIC&&!force)||!page)return;
- try{diagnostics[label]=await withDeadline(page.evaluate(()=>({focus:document.activeElement?.outerHTML,settingsHidden:document.querySelector('.desktop-settings')?.hidden,selectedTab:document.querySelector('[role=tab][aria-selected=true]')?.textContent,rows:[...document.querySelectorAll('.sidebar-workspace-row')].map(row=>row.outerHTML),forms:[...document.querySelectorAll('.workspace-rename,.workspace-removal')].map(el=>({text:el.textContent,visible:el.checkVisibility()})),statuses:[...document.querySelectorAll('[role="status"],[role="alert"]')].map(el=>({text:el.textContent,visible:el.checkVisibility()}))})),1000,'Management DOM diagnostic');}catch{diagnostics[label]={unavailable:true};}
+ try{diagnostics[label]=await withDeadline(page.evaluate(()=>({focus:document.activeElement?.tagName,removalObservations:globalThis.managementRemovalObservations,settingsHidden:document.querySelector('.desktop-settings')?.hidden,selectedTab:document.querySelector('[role=tab][aria-selected=true]')?.textContent,rows:[...document.querySelectorAll('.sidebar-workspace-row')].map(row=>row.outerHTML),forms:[...document.querySelectorAll('.workspace-rename,.workspace-removal')].map(el=>({text:el.textContent,visible:el.checkVisibility()})),statuses:[...document.querySelectorAll('[role="status"],[role="alert"]')].map(el=>({text:el.textContent,visible:el.checkVisibility()}))})),1000,'Management DOM diagnostic');}catch{diagnostics[label]={unavailable:true};}
 }
 async function selectRoot() { await app.evaluate((_electron, path) => { process.env.WORKSPACE_TEST_ROOT_PICKER_PATH = path; }, source); }
 try {
@@ -145,7 +145,11 @@ try {
     diagnostics.removalPhase.stage='confirmation';
     await confirmation.press('Enter');
     diagnostics.removalPhase.stage='outcome';
-    await page.waitForFunction(async remaining => (await window.workspace.workspace({ type:"workspace.load" })).value?.workspaces.length === remaining, name === "Renamed workspace" ? 1 : 0);
+    await page.waitForFunction(async remaining => {
+      const response = await window.workspace.workspace({ type:"workspace.load" });
+      (globalThis.managementRemovalObservations ??= []).push({remaining,ok:response.ok,ids:response.value?.workspaces?.map(workspace=>workspace.workspaceId)});
+      return response.value?.workspaces.length === remaining;
+    }, name === "Renamed workspace" ? 1 : 0);
     diagnostics.removalPhase.stage='return';
     if (name === "Renamed workspace") await returnToWorkspace(page);
   }
