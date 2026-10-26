@@ -75,6 +75,21 @@ working-tree harness variants from exact-SHA CI acceptance. The
 passed but observed Preview taking focus between Restore keydown and keyup; it is
 not relabelled as a failing diagnostic or acceptance. Temporary tracing is removed.
 
-Final cold focused/shared-consumer CI receipts are pending; this local
+Run40366625375 at9d9e2244 is green and all three hosts pass293 regressions,
+retained shell and both native modes. Artifact inspection nevertheless rejects
+its macOS wide-size evidence: actual PNGs are1440x720 rather than1440x960. Native
+work-area clamping is reproduced locally (1440x875 on the current display).
+The repaired capture driver allocates actual requested native bounds using a
+temporary minimum, restores the product1024x720 minimum before input, and checks
+native/content/viewport/PNG dimensions per capture. The local eight-variant journey
+now has real1440x960 bounds and2880x1920 Retina PNGs. Host display settings and
+application constructor remain unchanged. Table, collapsed-project and General
+settings captures are included. The [size controls](issue-79-evidence/native-size-controls.json) preserve the
+rejected old image and actual repaired native/viewport/PNG dimensions. Large
+captures can extend beyond the hosted work area; they prove native-size layout,
+not ordinary manual enlargement on that smaller physical monitor. The old clamped
+size is not accepted as passing.
+
+Final cold geometry-focused/shared-consumer CI receipts are pending; this local
 record does not claim Windows or final desktop/release acceptance. Exact-SHA CI
 and delivery checkpoints belong to [#79](https://github.com/kornouhovas/workspace/issues/79).

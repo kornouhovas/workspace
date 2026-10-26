@@ -22,6 +22,7 @@ No backend, storage, folder operation, dependency, resource or installer changes
 | Remove the extra native title row | Actual Electron outer/content origins coincide on macOS; native buttons remain at 18/18 |
 | Navigation and tabs clear the native buttons | Pointer collapse, keyboard restore/tab activation, bounds in all eight EN/RU/theme/size combinations |
 | Native window operations and drag separation | Native input observations; automated minimize/restore/fullscreen return and normal shutdown |
+| Actual native sizes | Verify1024x720/1440x960 outer bounds, restored minimum, renderer/native content equality and PNG pixel size; record host work area and any offscreen extent |
 | Sidebar, settings and work area remain usable | Existing App regressions and shell/settings native journey; no document horizontal overflow |
 | Windows behavior | Actual Windows latest/2022 DEV/package geometry and interaction receipts, retaining the native title row |
 | Isolation/session guarantees | Retain App, session service, build isolation and readiness regressions without retiring requirements |

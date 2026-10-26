@@ -15,6 +15,9 @@ on:
       native_repair:
         type: boolean
         default: false
+      captures_only:
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -40,7 +43,7 @@ jobs:
       - run: npm run build
         if: ${{ !inputs.repair_only }}
       - name: Retained shell, session and isolation regressions
-        if: ${{ !inputs.repair_only && !inputs.native_repair }}
+        if: ${{ !inputs.repair_only && !inputs.native_repair && !inputs.captures_only }}
         shell: bash
         run: |
           mkdir -p work/ci-window-chrome
@@ -71,7 +74,7 @@ jobs:
         env:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-window-chrome/dev
       - name: Retained shell and settings journey
-        if: ${{ !inputs.repair_only && !inputs.native_repair }}
+        if: ${{ !inputs.repair_only && !inputs.native_repair && !inputs.captures_only }}
         run: npm run smoke:shell
         env:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-window-chrome/shell

@@ -34,10 +34,22 @@ async function restoreSidebar(afterCloseFocus){
   await page.getByRole('button',{name:/^(Restore sidebar|Восстановить боковую панель)$/}).and(page.locator(':enabled')).press('Enter',{timeout:remaining()});
   await page.getByRole('button',{name:/^(Collapse sidebar|Свернуть боковую панель)$/}).waitFor({timeout:Math.max(1,deadline-Date.now())});
 }
-async function geometry(){return app.evaluate(({BrowserWindow})=>{
+async function geometry(){return app.evaluate(({BrowserWindow,screen})=>{
   const w=BrowserWindow.getAllWindows()[0],p=w.webContents.getLastWebPreferences();
-  return {outer:w.getBounds(),content:w.getContentBounds(),minimum:w.getMinimumSize(),buttons:process.platform==='darwin'?w.getWindowButtonPosition():null,isolation:[p.contextIsolation,p.nodeIntegration,p.sandbox]};
+  const display=screen.getDisplayMatching(w.getBounds());
+  return {outer:w.getBounds(),content:w.getContentBounds(),minimum:w.getMinimumSize(),buttons:process.platform==='darwin'?w.getWindowButtonPosition():null,isolation:[p.contextIsolation,p.nodeIntegration,p.sandbox],display:{bounds:display.bounds,workArea:display.workArea,scaleFactor:display.scaleFactor}};
 });}
+async function capture(name,requested){
+  const actual=await geometry();
+  assert.deepEqual({width:actual.outer.width,height:actual.outer.height},requested,'Native window must reach the requested size');
+  assert.deepEqual(actual.minimum,[1024,720],'Temporary capture constraints must be restored');
+  const viewport=await page.evaluate(()=>({width:window.innerWidth,height:window.innerHeight,scale:window.devicePixelRatio}));
+  assert.deepEqual({width:viewport.width,height:viewport.height},{width:actual.content.width,height:actual.content.height},'Renderer viewport must match native content bounds');
+  const png=await page.screenshot({path:join(evidence,name)});
+  const pixels={width:png.readUInt32BE(16),height:png.readUInt32BE(20)};
+  assert.deepEqual(pixels,{width:Math.round(viewport.width*viewport.scale),height:Math.round(viewport.height*viewport.scale)},'PNG dimensions must match the actual native viewport');
+  (report.captures??=[]).push({file:name,requested,actual,viewport,pixels});
+}
 try {
   app=await _electron.launch({...runtimeSmokeLaunch(root),cwd:root,env:{...process.env,WORKSPACE_USER_DATA_DIR:join(fixture,'data'),WORKSPACE_TEST_ROOT_PICKER_PATH:source}});
   child=app.process();parents.add(child);page=await app.firstWindow();page.setDefaultTimeout(15000);
@@ -53,7 +65,7 @@ try {
     assert.ok(report.geometry.content.y>report.geometry.outer.y,'Windows retains its native title bar');
   }
   await page.getByRole('button',{name:'Collapse sidebar',exact:true}).click();
-  await page.screenshot({path:join(evidence,'empty-collapsed.png')});
+  await capture('empty-collapsed.png',{width:1024,height:720});
   await restoreSidebar();
   await page.getByRole('button',{name:'Add workspace',exact:true}).click();
   await page.getByRole('cell',{name:'Atlas',exact:true}).waitFor();
@@ -65,7 +77,17 @@ try {
       await page.waitForFunction(theme=>document.documentElement.dataset.theme===theme,theme);
       await returnToWorkspace(page);
       for(const size of boundedControl?[{width:1024,height:720}]:[{width:1024,height:720},{width:1440,height:960}]){
-        await app.evaluate(({BrowserWindow},size)=>BrowserWindow.getAllWindows()[0].setSize(size.width,size.height),size);
+        const resized=await app.evaluate(({BrowserWindow,screen},size)=>{
+          const w=BrowserWindow.getAllWindows()[0],area=screen.getDisplayMatching(w.getBounds()).workArea;
+          const minimum=w.getMinimumSize();
+          // Small hosted displays otherwise clamp the requested native height.
+          // Allocate the actual window, then restore its product minimum before use.
+          w.setMinimumSize(size.width,size.height);
+          try{w.setBounds({x:area.x,y:area.y,width:size.width,height:size.height});}
+          finally{w.setMinimumSize(...minimum);}
+          return w.getContentBounds();
+        },size);
+        await page.waitForFunction(size=>window.innerWidth===size.width&&window.innerHeight===size.height,resized);
         await page.getByRole('cell',{name:'Atlas',exact:true}).waitFor();
         const navigation=page.getByRole('button',{name:language==='en'?'Collapse sidebar':'Свернуть боковую панель',exact:true});
         const bounds=await navigation.boundingBox();
@@ -80,7 +102,7 @@ try {
         if(process.platform==='darwin')assert.ok(tabBounds.y<52,'Saved view tabs share the native strip');
         assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>window.innerWidth),false);
         const screen=`${language}-${theme}-${size.width}.png`;
-        await page.screenshot({path:join(evidence,screen)});report.screens.push(screen);
+        await capture(screen,size);report.screens.push(screen);
         const previewButton=page.getByRole('button',{name:`${language==='en'?'Preview project':'Открыть предпросмотр проекта'}: Atlas`,exact:true});
         await previewButton.click();
         await page.getByRole('button',{name:language==='en'?'Expand project':'Развернуть проект',exact:true}).click();
@@ -92,7 +114,7 @@ try {
         const projectMenu=page.getByRole('button',{name:`${language==='en'?'Project tab actions':'Действия с вкладкой проекта'}: Atlas`,exact:true});
         await projectMenu.press('Enter');await page.getByRole('menu').waitFor();
         await page.keyboard.press('Escape');await projectMenu.and(page.locator(':focus')).waitFor();
-        await page.screenshot({path:join(evidence,`${language}-${theme}-${size.width}-project-collapsed.png`)});
+        await capture(`${language}-${theme}-${size.width}-project-collapsed.png`,size);
         // Exercise real deferred app callbacks at the keyboard-focus boundary.
         if(focusControl)await page.evaluate(()=>{
           const frame=window.requestAnimationFrame.bind(window),held=[];
@@ -112,6 +134,7 @@ try {
         }
         await restoreSidebar(previewButton.or(tab));
         await openSettingsSection(page);await page.getByRole('heading',{name:language==='en'?'General':'Основные',exact:true}).waitFor();
+        await capture(`${language}-${theme}-${size.width}-settings.png`,size);
         await returnToWorkspace(page);
         report.checks.push({language,theme,size,navigationPointer:true,restoreKeyboard:true,tabsKeyboard:true,projectTabsAndMenu:true,collapsedProjectClose:true,settingsReturn:true});
       }

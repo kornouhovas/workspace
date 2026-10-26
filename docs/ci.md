@@ -45,6 +45,24 @@ After cold focused success, renew all DEV/package
 consumers of the changed smoke driver on the three hosts; do not reuse the older
 Windows driver receipts as execution of the repaired driver.
 
+Artifact inspection of run40366625375 found a real size gap despite successful
+logic: requested macOS1440x960 PNGs were1440x720 because the native window was
+clamped to the hosted work area. The capture driver now temporarily raises the
+window minimum while setting actual native bounds, then restores1024x720 before
+any UI action. It records native/display/content/viewport/PNG geometry for every
+Table, collapsed project and General-settings capture, asserting requested outer
+size, restored minimum and real pixel dimensions. No application option, host
+display setting or renderer viewport emulation changes. The old artifact check and
+ordinary native resize are red controls; the repaired local native journey reaches
+1440x960 with the original minimum restored.
+
+Run `window-chrome-native-repair` first for cold macOS sizing/focus/disabled
+controls and original DEV. After inspection, `checks: window-chrome-captures`
+renews only all three hosts' DEV/package consumers and package prerequisites.
+Reuse the293 regressions and retained shell from9d9e2244/run40366625375 only with
+unchanged application/build/dependency/native inputs; do not accept the old macOS
+wide captures. Ordinary `window-chrome` still runs the complete scoped matrix.
+
 ## General preferences
 
 For #78 select `desktop-ci.yml` with `checks: general-settings`. This bounded

@@ -1,0 +1,110 @@
+{
+  "rejectedCi": {
+    "run": 40366625375,
+    "sha": "9d9e22441df561d972848886675d528e4801ecde",
+    "requestedOuter": {
+      "width": 1440,
+      "height": 960
+    },
+    "actualPng": {
+      "width": 1440,
+      "height": 720
+    },
+    "acceptedForWideSize": false
+  },
+  "localOrdinaryResize": {
+    "baseSha": "9d9e22441df561d972848886675d528e4801ecde",
+    "status": "failed",
+    "display": {
+      "bounds": {
+        "x": 0,
+        "y": 0,
+        "width": 1512,
+        "height": 982
+      },
+      "workArea": {
+        "x": 0,
+        "y": 33,
+        "width": 1512,
+        "height": 875
+      },
+      "scaleFactor": 2
+    },
+    "errorFirstLine": "AssertionError [ERR_ASSERTION]: Native window must reach the requested size"
+  },
+  "localWorkingTreeRepair": {
+    "baseSha": "9d9e22441df561d972848886675d528e4801ecde",
+    "harnessSha256": "47c444d4edb0525e0ed01f0acfa03b8f774439b45ce54e8d1da19f5b89e92057",
+    "dirty": true,
+    "status": "passed",
+    "variants": 8,
+    "captures": 25,
+    "wideCapture": {
+      "file": "en-light-1440.png",
+      "requested": {
+        "width": 1440,
+        "height": 960
+      },
+      "actual": {
+        "outer": {
+          "x": 0,
+          "y": 33,
+          "width": 1440,
+          "height": 960
+        },
+        "content": {
+          "x": 0,
+          "y": 33,
+          "width": 1440,
+          "height": 960
+        },
+        "minimum": [
+          1024,
+          720
+        ],
+        "buttons": {
+          "x": 18,
+          "y": 18
+        },
+        "isolation": [
+          true,
+          false,
+          true
+        ],
+        "display": {
+          "bounds": {
+            "x": 0,
+            "y": 0,
+            "width": 1512,
+            "height": 982
+          },
+          "workArea": {
+            "x": 0,
+            "y": 33,
+            "width": 1512,
+            "height": 875
+          },
+          "scaleFactor": 2
+        }
+      },
+      "viewport": {
+        "width": 1440,
+        "height": 960,
+        "scale": 2
+      },
+      "pixels": {
+        "width": 2880,
+        "height": 1920
+      }
+    },
+    "stopped": true,
+    "cleanup": {
+      "status": "passed",
+      "asserted": true,
+      "processesStopped": true,
+      "maxRetries": 5,
+      "retryDelay": 100
+    }
+  },
+  "limit": "Large native captures may extend beyond the hosted work area. They establish actual native-size layout and pixel dimensions, not ordinary on-screen manual enlargement on a smaller monitor."
+}
