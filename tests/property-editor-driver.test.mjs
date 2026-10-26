@@ -124,6 +124,7 @@ test("creation input readiness observes delayed app-owned focus without taking i
     await page.locator("input").evaluate(node => node.blur());
     page.setDefaultTimeout(100);
     await assert.rejects(waitForFocusedInput(page, "#project-creation-name"), /Timeout/);
+    page.setDefaultTimeout(1000);
     assert.equal(await page.locator("input").evaluate(node => node === globalThis.document.activeElement), false);
   });
 });

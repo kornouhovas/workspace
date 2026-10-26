@@ -64,6 +64,25 @@ try{
  assert.deepEqual(await viewGeometry(),geometryBefore,'opening the preview must not resize or scroll the saved view');
  const overlap=await page.evaluate(()=>{const view=document.querySelector('.saved-view-content').getBoundingClientRect(),project=document.querySelector('.project-area').getBoundingClientRect();return project.left<view.right && project.right<=view.right+1;});
  assert.equal(overlap,true,'the project area overlaps the saved view');
+ assert.equal(await page.locator('.project-area').evaluate(el=>{const r=el.getBoundingClientRect();return el.contains(document.elementFromPoint(r.left+10,r.top+100));}),true,'the overlay owns pointer input over the covered view');
+ const overlayTools=page.locator('.project-area').getByRole('button',{name:'Project actions: Atlas',exact:true});
+ await overlayTools.click();
+ const overlayMenu=page.getByRole('dialog',{name:'Project actions: Atlas',exact:true});
+ await overlayMenu.waitFor();
+ assert.equal(await overlayMenu.evaluate(el=>{const r=el.getBoundingClientRect();return el.contains(document.elementFromPoint(r.left+r.width/2,r.top+r.height/2));}),true,'the project menu receives input above the overlay');
+ await page.keyboard.press('Escape');
+ assert.equal(await overlayTools.getAttribute('aria-expanded'),'false');
+ assert.equal(await page.locator('.project-area').count(),1);
+ const viewTools=page.getByRole('button',{name:'Column settings: Project name',exact:true});
+ await viewTools.click();
+ const viewMenu=page.getByRole('dialog',{name:'Column settings: Project name',exact:true});
+ await viewMenu.waitFor();
+ assert.equal(await viewMenu.evaluate(el=>{const a=el.getBoundingClientRect(),b=document.querySelector('.project-area').getBoundingClientRect();return a.left<b.right && a.right>b.left && a.top<b.bottom && a.bottom>b.top;}),true,'the view popover overlaps the project area');
+ assert.equal(await viewMenu.evaluate(el=>{const r=el.getBoundingClientRect();return el.contains(document.elementFromPoint(r.left+r.width/2,r.top+r.height/2));}),true,'the view popover receives input while the preview is open');
+ await page.keyboard.press('Escape');
+ assert.equal(await viewTools.getAttribute('aria-expanded'),'false');
+ assert.equal(await page.locator('.project-area').count(),1);
+ checks.push('overlay hit testing and project/view popover Escape ownership');
  await page.getByRole('button',{name:'Close preview',exact:true}).click();
  assert.deepEqual(await viewGeometry(),geometryBefore,'closing the preview must not resize or scroll the saved view');
  await page.getByRole('button',{name:'Preview project: Atlas',exact:true}).and(page.locator(':focus')).waitFor();
@@ -77,6 +96,16 @@ try{
  await page.locator('.project-detail-fields[aria-busy="false"]').waitFor();
  const setScroll=async(top,left)=>{await page.waitForFunction(()=>!document.querySelector(".saved-view-content").dataset.scrollRestoring);await page.locator('.saved-view-content').evaluate((el,{top,left})=>{el.scrollTop=top;el.querySelector('.project-table-scroll').scrollLeft=left;},{top,left});await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));};
  const assertScroll=async(top,left)=>{try{await page.waitForFunction(({top,left})=>{const el=document.querySelector('.saved-view-content');return !el.dataset.scrollRestoring && Math.abs(el.scrollTop-top)<2 && Math.abs(el.querySelector('.project-table-scroll').scrollLeft-left)<2;},{top,left});await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));const settled=await page.locator(".saved-view-content").evaluate(el=>[el.scrollTop,el.querySelector(".project-table-scroll").scrollLeft]);assert.deepEqual(settled,[top,left]);}catch(error){console.log(await page.locator('.saved-view-content').evaluate(el=>({actual:[el.scrollTop,el.scrollLeft],horizontal:[...el.querySelectorAll('.project-table-scroll')].map(e=>[e.scrollLeft,e.scrollWidth,e.clientWidth]),busy:[...el.querySelectorAll('[aria-busy=true]')].map(e=>e.className)})));throw error;}};
+ await setScroll(160,0);
+ const beforeReplacement=await viewGeometry();
+ const nextVisible=await page.locator('.saved-view-content .project-preview-trigger').evaluateAll(buttons=>{
+  const view=document.querySelector('.saved-view-content').getBoundingClientRect();
+  return buttons.find(button=>{const r=button.getBoundingClientRect();return r.top>=view.top && r.bottom<=view.bottom && r.left>=view.left && r.right<view.left+300 && button.textContent!=='Atlas';})?.getAttribute('aria-label');
+ });
+ assert.ok(nextVisible,'a second visible project can be selected without scrolling');
+ await page.getByRole('button',{name:nextVisible,exact:true}).click();
+ assert.equal(await page.locator('.project-area-header h2').textContent(),nextVisible.replace('Preview project: ',''));
+ assert.deepEqual(await viewGeometry(),beforeReplacement,'replacing the preview must preserve geometry and nonzero scroll');
  await setScroll(160,100);
  await page.getByRole('button',{name:'Expand project',exact:true}).click();
  await page.getByRole('button',{name:'Return project to the right',exact:true}).click();
@@ -92,6 +121,11 @@ try{
  await call('setViewFilter',{viewId,config:{search:'Atlas',rules:[]}});
  await page.waitForFunction(()=>!document.querySelector('.saved-view-content').dataset.scrollRestoring && document.querySelectorAll('.saved-view-content [data-project-id]').length===1);
  assert.equal(await page.locator('.saved-view-content').evaluate(el=>el.scrollTop),0);
+ await page.getByRole('button',{name:'Close preview',exact:true}).click();
+ await setScroll(0,0);
+ const filteredBefore=await viewGeometry();
+ await page.getByRole('button',{name:'Preview project: Atlas',exact:true}).click();
+ assert.deepEqual(await viewGeometry(),filteredBefore,'a filtered view retains geometry and scroll when preview opens');
  await call('setViewFilter',{viewId,config:{search:'',rules:[]}});
  await page.waitForFunction(()=>!document.querySelector('.saved-view-content').dataset.scrollRestoring && document.querySelectorAll('.saved-view-content [data-project-id]').length>1);
  checks.push('scroll clamps and releases after a shorter filtered projection');
@@ -169,14 +203,32 @@ try{
   const rect=node=>{const r=node.getBoundingClientRect();return [r.x,r.y,r.width,r.height];};
   const card=el.querySelector('[data-project-id]');
   const board=el.querySelector('.project-board');
-  return {view:rect(el),card:rect(card),boardWidth:board.getBoundingClientRect().width,scroll:[el.scrollTop,board.scrollLeft]};
+  return {view:rect(el),card:rect(card),boardWidth:board.getBoundingClientRect().width,scroll:[el.scrollTop,(el.querySelector('.grouped-board') ?? board).scrollLeft]};
  });
  const boardBefore=await boardGeometry();
  await page.getByRole('button',{name:'Открыть предпросмотр проекта: Cedar',exact:true}).click();assert.equal(await page.locator('.project-area-header h2').textContent(),'Cedar');
  assert.deepEqual(await boardGeometry(),boardBefore,'opening the preview must preserve Board geometry and scroll');
  await page.getByRole('button',{name:'Закрыть предпросмотр',exact:true}).click();
  assert.deepEqual(await boardGeometry(),boardBefore,'closing the preview must preserve Board geometry and scroll');
- checks.push('Board preview and unchanged geometry');
+ for (const [index,project] of projects.filter(p=>p.name.startsWith('Project ')).slice(0,5).entries()) {
+  await call('setNumberValue',{projectId:project.projectId,propertyId:number,expression:String(index+1)});
+ }
+ await page.setViewportSize({width:1024,height:720});
+ await call('setViewGrouping',{viewId,config:{propertyId:number,settings:[]}});
+ await page.locator('.grouped-board .project-board .project-preview-trigger').first().waitFor();
+ await page.waitForFunction(()=>!document.querySelector('.saved-view-content [aria-busy=true]'));
+ await page.locator('.grouped-board').evaluate(el=>{el.scrollLeft=160;});
+ await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+ const groupedBefore=await boardGeometry();
+ assert.ok(groupedBefore.scroll[1]>0,'the grouped Board has a nonzero horizontal scroll');
+ const groupedTarget=await page.locator('.grouped-board .project-preview-trigger').evaluateAll(buttons=>{
+  const view=document.querySelector('.grouped-board').getBoundingClientRect();
+  return buttons.find(button=>{const r=button.getBoundingClientRect();return r.left>=view.left && r.right<=view.right && r.top>=view.top && r.bottom<=view.bottom;})?.getAttribute('aria-label');
+ });
+ assert.ok(groupedTarget,'a grouped project is visible at the current scroll position');
+ await page.getByRole('button',{name:groupedTarget,exact:true}).click();
+ assert.deepEqual(await boardGeometry(),groupedBefore,'a grouped Board retains geometry and scroll when preview opens');
+ checks.push('Board preview and unchanged geometry, including grouping');
 }catch(error){failure=error;if(page)await page.screenshot({path:join(evidence,'failure.png')}).catch(()=>{});}
 finally{
  let stopped=false,cleaned=false;
