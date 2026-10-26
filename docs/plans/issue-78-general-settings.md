@@ -53,4 +53,12 @@ Runtime/CI acceptance and delivered SHA are recorded in the GitHub checkpoint.
   acknowledgment and requires unchanged public project state. Independent Spec
   review found no loss of guarantee.
 - Two independent code-review axes: zero Standards and zero Spec findings.
-  Final full-suite and supported-host CI receipts remain GitHub acceptance gates.
+  Final evidence is recorded in the verification report and GitHub checkpoint.
+
+## Completion
+
+Scoped acceptance passes on macOS latest, Windows latest and Windows 2022.
+The final test-driver repairs and full-suite limitation are documented in
+[verification](../verification/issue-78-general-settings.md). Runtime receipts
+retain their actual application and repair SHAs; the final documentation commit
+inherits that reviewed evidence. No release/main merge is included.

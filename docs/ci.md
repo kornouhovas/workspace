@@ -21,7 +21,10 @@ IDs, yet the old async `waitForFunction` completed. The pinned Playwright poller
 checks Promise truthiness without awaiting the predicate. A native red control
 reproduces the false acknowledgment. Explicit awaited public polling now requires
 the target ID absent and exact remaining count, then the form's hidden acknowledgment
-within the original15s total. Submit is never replayed. Original failed receipts
+within the original15s total. The confirmation also retains a live enabled guard before the single Enter;
+a disabled-control regression proves zero commands until readiness. Final ordinary
+run40277479712 atbc889bfd passes both Windows hosts and four controls. Submit is
+never replayed. Original failed receipts
 stay failed; unchanged app/shell/session/regression evidence retains3f429ec8 provenance.
 
 ## Workspace-local status colors
