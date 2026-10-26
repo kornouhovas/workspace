@@ -513,7 +513,7 @@ function DiscoveryWorkspaceContent({ memory, client, workspaceId, sourceId, refr
       observationVersion={observationVersion} sourceLifetime={sourceLifetime} invalidation={invalidation} onBlockedChange={setRenameBlocked}
       onRestoreFocus={() => tableHeading.current?.focus()}
       onClose={(focus = true) => { restoreRenameFocus.current = focus; setRenameProject(null); }} onCompleted={() => void load()} />
-    <div className="project-work-body" ref={workBody} style={{gridTemplateColumns:navigation.expanded || !selectedId ? "minmax(0, 1fr)" : `minmax(280px, 1fr) 5px ${effectiveProjectWidth}px`}}>
+    <div className="project-work-body" ref={workBody}>
     <div className="saved-view-content" ref={scroll.element} onScrollCapture={saveScroll} onWheelCapture={scroll.cancelRestore} onPointerDownCapture={scroll.cancelRestore} onKeyDownCapture={scroll.cancelRestore} hidden={!!navigation.expanded}>
     <ContextTools label={t("sourceTools")} icon="settings" compact daily open={sourceToolsOpen} onOpenChange={setSourceToolsOpen}>
     {sourcePath && <p className="workspace-root">{sourcePath}</p>}
@@ -612,7 +612,7 @@ function DiscoveryWorkspaceContent({ memory, client, workspaceId, sourceId, refr
         projects={projects?.projects ?? []} retainedProjects={projects?.retainedProjects ?? []} language={language} disabled={disabled} />}
     </section></ViewControlsScope>
     </div>
-    {selectedId && <>
+    {selectedId && <div className={navigation.expanded ? "project-host project-host--expanded" : "project-host project-host--overlay"} style={navigation.expanded ? undefined : {width: effectiveProjectWidth + 5}}>
       {!navigation.expanded && <AreaResize label={labels.projectWidth} value={effectiveProjectWidth} min={280} max={maximumProjectWidth} reverse onChange={setProjectWidth}/>}
       <section className="project-area" role="region" aria-label={`${labels.project}: ${projectName(selectedId)}`}>
         <header className="project-area-header"><h2 title={projectName(selectedId)}>{projectName(selectedId)}</h2>
@@ -652,7 +652,7 @@ function DiscoveryWorkspaceContent({ memory, client, workspaceId, sourceId, refr
               client={client} workspaceId={workspaceId} projectId={selectedId} language={language} disabled={disabled || loading || error || !sourceAvailable || "originalRelativePath" in selectedProject || "resolution" in selectedProject && (selectedProject.resolution !== "active" || selectedProject.retentionReason === "mode_change")}/></> : <StatusMessage kind="info" title={labels.unavailable}/>}
         </div>
       </section>
-    </>}
+    </div>}
     </div>
   </div></ManagementSurface></DailyControlsSurface>;
 }

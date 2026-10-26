@@ -53,8 +53,19 @@ try{
  await page.locator('.saved-view-content').evaluate(content=>{content.scrollTop=0;});
  await page.waitForFunction(usableRuntimeViewProjection,expectedIds);
  checks.push('rapid scroll preserves exact ordered identities and all clipped visible fields');
+ const viewGeometry=()=>page.locator('.saved-view-content').evaluate(el=>{
+  const rect=node=>{const r=node.getBoundingClientRect();return [r.x,r.y,r.width,r.height];};
+  const scroll=el.querySelector('.project-table-scroll');
+  const row=el.querySelector('[data-project-id]');
+  return {view:rect(el),row:rect(row),scroll:[el.scrollTop,scroll.scrollLeft],scrollWidth:scroll.scrollWidth};
+ });
+ const geometryBefore=await viewGeometry();
  await page.getByRole('cell',{name:'Atlas',exact:true}).click({position:{x:150,y:10}});
+ assert.deepEqual(await viewGeometry(),geometryBefore,'opening the preview must not resize or scroll the saved view');
+ const overlap=await page.evaluate(()=>{const view=document.querySelector('.saved-view-content').getBoundingClientRect(),project=document.querySelector('.project-area').getBoundingClientRect();return project.left<view.right && project.right<=view.right+1;});
+ assert.equal(overlap,true,'the project area overlaps the saved view');
  await page.getByRole('button',{name:'Close preview',exact:true}).click();
+ assert.deepEqual(await viewGeometry(),geometryBefore,'closing the preview must not resize or scroll the saved view');
  await page.getByRole('button',{name:'Preview project: Atlas',exact:true}).and(page.locator(':focus')).waitFor();
  await page.getByRole('button',{name:'Edit Text value: Atlas / Notes',exact:true}).click();
  await page.locator('.text-value-label').filter({hasText:'Edit Text value: Atlas / Notes'}).click();
@@ -153,8 +164,19 @@ try{
  await page.getByRole('button',{name:'Вперёд',exact:true}).press('Enter');await page.locator(`.sidebar-workspace-row > button[data-workspace-id="${workspaceId}"][aria-current="page"]`).waitFor();
  checks.push('actual workspace Back/Forward keyboard navigation, project tab pointer reorder and keyboard selection');
  await call('updateView',{viewId,name:'Board',kind:'board'});
+ await page.getByRole('button',{name:'Открыть предпросмотр проекта: Cedar',exact:true}).waitFor();
+ const boardGeometry=()=>page.locator('.saved-view-content').evaluate(el=>{
+  const rect=node=>{const r=node.getBoundingClientRect();return [r.x,r.y,r.width,r.height];};
+  const card=el.querySelector('[data-project-id]');
+  const board=el.querySelector('.project-board');
+  return {view:rect(el),card:rect(card),boardWidth:board.getBoundingClientRect().width,scroll:[el.scrollTop,board.scrollLeft]};
+ });
+ const boardBefore=await boardGeometry();
  await page.getByRole('button',{name:'Открыть предпросмотр проекта: Cedar',exact:true}).click();assert.equal(await page.locator('.project-area-header h2').textContent(),'Cedar');
- checks.push('Board preview');
+ assert.deepEqual(await boardGeometry(),boardBefore,'opening the preview must preserve Board geometry and scroll');
+ await page.getByRole('button',{name:'Закрыть предпросмотр',exact:true}).click();
+ assert.deepEqual(await boardGeometry(),boardBefore,'closing the preview must preserve Board geometry and scroll');
+ checks.push('Board preview and unchanged geometry');
 }catch(error){failure=error;if(page)await page.screenshot({path:join(evidence,'failure.png')}).catch(()=>{});}
 finally{
  let stopped=false,cleaned=false;
