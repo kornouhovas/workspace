@@ -18,14 +18,14 @@ function ColorEditor({client,workspaceId,category,language,disabled}:Parameters<
   const l=statusColorLabels[language];
   const [color,setColor]=useState<CategoryColor>(category.presentation?.color??"default"),[pending,setPending]=useState(false),[error,setError]=useState(false);
   const propRevision=useRef(0);
-  const generation=useRef(0),busy=useRef(false),select=useRef<HTMLSelectElement>(null),restoreFocus=useRef(false);
+  const generation=useRef(0),busy=useRef(false),select=useRef<HTMLSelectElement>(null),retry=useRef<HTMLButtonElement>(null),restoreFocus=useRef(false);
   useEffect(()=>{propRevision.current++;setColor(category.presentation?.color??"default");},[category.presentation?.color]);
   useEffect(()=>()=>{generation.current++;},[]);
-  useEffect(()=>{if(!pending&&restoreFocus.current){restoreFocus.current=false;if(document.activeElement===document.body)select.current?.focus({preventScroll:true});}},[pending]);
+  useEffect(()=>{if(!pending&&restoreFocus.current){restoreFocus.current=false;if(document.activeElement===document.body||document.activeElement===select.current||document.activeElement===retry.current)(error?retry.current:select.current)?.focus({preventScroll:true});}},[pending,error]);
   const update=async(next?:CategoryColor)=>{
     if(busy.current||disabled)return;
     busy.current=true;const request=++generation.current,observedRevision=propRevision.current;
-    restoreFocus.current=document.activeElement===select.current;setPending(true);setError(false);
+    restoreFocus.current=document.activeElement===select.current||document.activeElement===retry.current;setPending(true);setError(false);
     try{
       const result=next===undefined ? await client.listCategoryPresentation({workspaceId}) : await client.setCategoryColor({workspaceId,categoryId:category.categoryId,color:next});
       if(request!==generation.current)return;
@@ -39,6 +39,6 @@ function ColorEditor({client,workspaceId,category,language,disabled}:Parameters<
       {categoryColors.map(value=><option key={value} value={value}>{translate(language,colorLabels[value])}</option>)}
     </select></label>
     {pending&&<span role="status">{l.saving}</span>}
-    {error&&<><span role="alert">{l.error}</span><button type="button" className="workspace-button workspace-button--secondary" disabled={disabled||pending} onClick={()=>void update()}>{l.refresh}</button></>}
+    {error&&<><span role="alert">{l.error}</span><button ref={retry} type="button" className="workspace-button workspace-button--secondary" disabled={disabled||pending} onClick={()=>void update()}>{l.refresh}</button></>}
   </div>;
 }

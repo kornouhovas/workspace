@@ -22,6 +22,7 @@ async function launch(){
  await app.evaluate(({app})=>{for(const event of ['before-quit','will-quit','quit','window-all-closed'])app.on(event,()=>process.stdout.write(`[status-quit:${event}]\n`));process.on('exit',()=>process.stdout.write('[status-quit:node-exit]\n'));});
  page=await app.firstWindow();page.setDefaultTimeout(15000);await page.waitForFunction(async()=>(await window.workspace.getBackendStatus()).state==='ready');
  for(const pid of await app.evaluate(({app})=>app.getAppMetrics().filter(item=>item.type==='Utility'&&item.serviceName?.includes('Node')).map(item=>item.pid)))backends.add(pid);
+ report.packaged=await app.evaluate(({app})=>app.isPackaged);assert.equal(report.packaged,report.mode==='release');
  launchUnverified=false;
 }
 async function close(){if(app){const shutdown={normalQuit:false};report.shutdowns.push(shutdown);try{await closeElectron(app);app=null;shutdown.normalQuit=true;shutdown.backendsExited=ownedProcessesStopped(parents,backends);assert.equal(shutdown.backendsExited,true);}catch(error){shutdown.error=error.message;shutdown.forcedCleanup=error.forcedCleanup;app=null;throw error;}finally{shutdown.quitEvents=quitEvents;shutdown.debuggerWait=debuggerWait;}}}

@@ -23,11 +23,13 @@ for(const language of ["en","ru"] as const)test(`${language}: status editor save
  assert.equal((select as HTMLSelectElement).disabled,true);
  finish({ok:true,value:{workspaceId:"one",options:[{categoryId:"first",color:"blue"}]}});
  await waitFor(()=>assert.equal((select as HTMLSelectElement).value,"blue"));
- await waitFor(()=>assert.equal(document.activeElement,select));
+ await waitFor(()=>assert.equal(document.activeElement===select,true));
  await user.selectOptions(select,"red");finish({ok:false,error:{code:"storage"}});
  await screen.findByRole("alert");assert.equal((select as HTMLSelectElement).value,"blue");
+ await waitFor(()=>assert.equal(document.activeElement===screen.getByRole("button",{name:language==="en"?"Refresh":"Обновить"}),true));
  await user.click(screen.getByRole("button",{name:language==="en"?"Refresh":"Обновить"}));
  await waitFor(()=>assert.equal((select as HTMLSelectElement).value,"purple"));
+ await waitFor(()=>assert.equal(document.activeElement===select,true));
  assert.equal(calls.length,2);
 });
 test('folder settings show committed status colors, preserve role drafts on color events and distinguish nested names',async()=>{

@@ -36,7 +36,13 @@ settings path identity and role-draft preservation on presentation events.
 A separate red/green ordering test reproduces a delayed command response
 repainting a newer committed color and guards the corrected precedence.
 Typecheck, lint, documentation links and 136 focused regressions pass.
-Final full suite and review remain pending until the GitHub ledger.
+Independent Standards/Spec reviews found one shared error-focus concern, repaired
+by focusing Refresh on failure and the select after read-only recovery. EN/RU
+component checks and a real Electron production-component control cover rejection,
+transport failure, Escape/return and no mutation replay. Reinstating the original
+focus behavior makes the native control fail; the repair passes. No remaining
+material review findings. Final full suite and supported-host receipts remain
+pending until the GitHub ledger.
 The native journey records discovery revision before/after the complete session
 instead of requiring equality across background observation and restart; the
 public service test retains the strict color-command revision invariant.

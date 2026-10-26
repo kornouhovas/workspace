@@ -30,7 +30,7 @@ jobs:
         run: |
           mkdir -p work/ci-status-colors
           set -o pipefail
-          node --import tsx --test tests/status-colors-service.test.mjs tests/status-colors-ui.test.tsx tests/folder-roles-ui.test.tsx tests/category-options-service.test.mjs tests/single-select-service.test.mjs tests/multi-select-service.test.mjs tests/view-grouping-service.test.mjs tests/test-suites.test.mjs tests/status-colors-workflow.test.mjs 2>&1 | tee work/ci-status-colors/affected.log
+          node --import tsx --test tests/status-color-focus-native.test.mjs tests/status-colors-service.test.mjs tests/status-colors-ui.test.tsx tests/folder-roles-ui.test.tsx tests/category-options-service.test.mjs tests/single-select-service.test.mjs tests/multi-select-service.test.mjs tests/view-grouping-service.test.mjs tests/test-suites.test.mjs tests/status-colors-workflow.test.mjs 2>&1 | tee work/ci-status-colors/affected.log
       - name: Development settings and Board/Table colors
         run: npm run smoke:status-colors
         env:
