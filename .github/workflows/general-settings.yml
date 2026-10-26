@@ -2,6 +2,10 @@ name: General language and appearance
 
 on:
   workflow_call:
+    inputs:
+      management_only:
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -11,7 +15,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-latest, windows-latest, windows-2022]
+        os: ${{ inputs.management_only && fromJSON('["windows-latest","windows-2022"]') || fromJSON('["macos-latest","windows-latest","windows-2022"]') }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30
     steps:
@@ -26,16 +30,19 @@ jobs:
       - run: npm run check:docs
       - run: npm run build
       - name: Preferences and retained navigation regressions
+        if: ${{ !inputs.management_only }}
         shell: bash
         run: |
           mkdir -p work/ci-general-settings
           set -o pipefail
           node --import tsx --test tests/renderer-app.test.tsx tests/settings-service.test.mjs tests/runtime-view-readiness.test.mjs tests/project-recovery-ui.test.tsx tests/workspace-sessions-service.test.mjs tests/data-recovery-ui.test.tsx tests/test-suites.test.mjs 2>&1 | tee work/ci-general-settings/affected.log
       - name: Native General and shell journey
+        if: ${{ !inputs.management_only }}
         run: npm run smoke:shell
         env:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-general-settings/shell
       - name: Retained session, selection and contextual settings return
+        if: ${{ !inputs.management_only }}
         run: node scripts/smoke-workspace-sessions.mjs dev
         env:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-general-settings/sessions
