@@ -62,9 +62,23 @@ try {
         assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>window.innerWidth),false);
         const screen=`${language}-${theme}-${size.width}.png`;
         await page.screenshot({path:join(evidence,screen)});report.screens.push(screen);
+        await page.getByRole('button',{name:`${language==='en'?'Preview project':'Открыть предпросмотр проекта'}: Atlas`,exact:true}).click();
+        await page.getByRole('button',{name:language==='en'?'Expand project':'Развернуть проект',exact:true}).click();
+        const projectTab=page.getByRole('tab',{name:'Atlas',exact:true});
+        await projectTab.and(page.locator('[aria-selected="true"]')).waitFor();
+        if(process.platform==='darwin')assert.ok((await projectTab.boundingBox()).y<52,'Project tabs share the native strip');
+        await navigation.click();
+        await projectTab.focus();await projectTab.press('Enter');
+        const projectMenu=page.getByRole('button',{name:`${language==='en'?'Project tab actions':'Действия с вкладкой проекта'}: Atlas`,exact:true});
+        await projectMenu.press('Enter');await page.getByRole('menu').waitFor();
+        await page.keyboard.press('Escape');await projectMenu.and(page.locator(':focus')).waitFor();
+        await page.screenshot({path:join(evidence,`${language}-${theme}-${size.width}-project-collapsed.png`)});
+        await page.getByRole('button',{name:`${language==='en'?'Close project tab':'Закрыть вкладку проекта'}: Atlas`,exact:true}).click();
+        await projectTab.waitFor({state:'hidden'});
+        await restore.press('Enter');await navigation.waitFor();
         await openSettingsSection(page);await page.getByRole('heading',{name:language==='en'?'General':'Основные',exact:true}).waitFor();
         await returnToWorkspace(page);
-        report.checks.push({language,theme,size,navigationPointer:true,restoreKeyboard:true,tabsKeyboard:true,settingsReturn:true});
+        report.checks.push({language,theme,size,navigationPointer:true,restoreKeyboard:true,tabsKeyboard:true,projectTabsAndMenu:true,collapsedProjectClose:true,settingsReturn:true});
       }
     }
   }
@@ -87,11 +101,14 @@ try {
       for(const event of ['move','resize','minimize','restore','maximize','unmaximize','enter-full-screen','leave-full-screen','close'])w.on(event,()=>globalThis.chromeEvents.push({event,time:Date.now(),bounds:w.getBounds()}));
     });
     await writeFile(join(evidence,'manual-ready.json'),JSON.stringify({pid:app.process().pid,fixture}));
+    page.on('close',()=>{report.nativeCloseRequested=true;});
     const deadline=Date.now()+600000;
     while(Date.now()<deadline){
-      report.native=await app.evaluate(({BrowserWindow})=>{
-        const w=BrowserWindow.getAllWindows()[0];return {bounds:w?.getBounds(),minimized:w?.isMinimized(),fullscreen:w?.isFullScreen(),events:globalThis.chromeEvents};
-      });
+      try{
+        report.native=await app.evaluate(({BrowserWindow})=>{
+          const w=BrowserWindow.getAllWindows()[0];return {bounds:w?.getBounds(),minimized:w?.isMinimized(),fullscreen:w?.isFullScreen(),events:globalThis.chromeEvents};
+        });
+      }catch(error){if(report.nativeCloseRequested)break;throw error;}
       await writeFile(join(evidence,'native-observation.json'),JSON.stringify(report.native,null,2));
       if(await access(join(evidence,'manual-finished')).then(()=>true,()=>false))break;
       await new Promise(resolve=>setTimeout(resolve,1000));
@@ -100,7 +117,8 @@ try {
   }
 }catch(error){failure=error;if(page)await page.screenshot({path:join(evidence,'failure.png')}).catch(()=>{});}
 finally{
-  try{if(app)await closeElectron(app);}catch(error){failure??=error;}
+  try{if(app&&app.process().exitCode===null)await closeElectron(app);}catch(error){failure??=error;}
+  if(report.nativeCloseRequested)assert.equal(app.process().exitCode,0,'Native Close exits normally');
   report.stopped=ownedProcessesStopped(parents,backends,{launchUnverified});
   try{report.cleanup=await cleanupOwnedFixture(fixture,{processesStopped:report.stopped,record:result=>{report.cleanup=result;}});}catch(error){failure??=error;}
   report.status=failure?'failed':'passed';report.error=failure?.stack;

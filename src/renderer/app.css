@@ -849,8 +849,7 @@ p { margin-block: .5rem; }
 :root[data-window-chrome="macos"] .view-controls {
   min-height: 34px; -webkit-app-region: drag; user-select: none;
 }
-:root[data-window-chrome="macos"] .saved-view-tabs { width: fit-content; max-width: 100%; }
-:root[data-window-chrome="macos"] :is(button, input, select, textarea, [role="tablist"], [role="separator"], [draggable="true"]) {
+:root[data-window-chrome="macos"] :is(button, input, select, textarea, [role="separator"], [draggable="true"]) {
   -webkit-app-region: no-drag;
 }
 :root[data-window-chrome="macos"] .collapsed-navigation {
