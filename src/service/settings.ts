@@ -213,6 +213,7 @@ export function openSettingsService(
       if (isRecord(input) && input.type === "workspace.applyCategoryRemoval") return workspaces.applyCategoryRemoval(input);
       if (isRecord(input) && input.type === "workspace.applyCategoryFolder") return workspaces.applyCategoryFolder(input);
       if (isRecord(input) && input.type === "workspace.recoverCategoryFolder") return workspaces.recoverCategoryFolder(input);
+      if (isRecord(input) && input.type === "workspace.setCategoryColor") return workspaces.setCategoryColor(input);
       if (isRecord(input) && input.type === "workspace.setCategoryPresentation") return workspaces.setCategoryPresentation(input);
 
       if (isRecord(input) && input.type === "workspace.recoverProjectCategoryMove") return workspaces.recoverProjectCategoryMove(input);

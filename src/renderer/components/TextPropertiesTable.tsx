@@ -1,3 +1,4 @@
+import { StatusColorEditor,statusColorLabels } from "./StatusColorEditor.js";
 import { retainedProjectAvailability } from "./project-availability.js";
 import { useDraftGuard, useScalarDraftActive } from "./ScalarDrafts.js";
 import { navigationLabels } from "./ProjectNavigation.js";
@@ -503,7 +504,11 @@ function TextPropertiesContent({ sourceAvailable = true, detail, onPreview, view
           const command = readGroupDrop(raw, {workspaceId,viewId,propertyId:assignmentProperty.propertyId,archived:!!hideReveal}, group.key);
           if (command) void assign(command);
         }} style={layout === "board" ? {flexBasis:boardColumnWidth(boardState.config, grouped.propertyId, group.key)} : undefined} key={group.key} aria-label={group.value===null?t(grouped.propertyId===categoryProperty?.propertyId?"groupNoStatus":"groupNoValue"):(group.label ?? String(group.value))}>
-        <div className="project-group-header"><h3 className="property-authored">{group.value===null?t(grouped.propertyId===categoryProperty?.propertyId?"groupNoStatus":"groupNoValue"):(group.label ?? String(group.value))} ({group.projectIds.length})</h3>
+        <div className="project-group-header"><h3 className={grouped.propertyId===categoryProperty?.propertyId&&group.value!==null?"property-authored category-chip":"property-authored"} data-color={grouped.propertyId===categoryProperty?.propertyId ? categories.find(category=>category.categoryId===group.value)?.presentation?.color??"default" : undefined}>{group.value===null?t(grouped.propertyId===categoryProperty?.propertyId?"groupNoStatus":"groupNoValue"):(group.label ?? String(group.value))} ({group.projectIds.length})</h3>
+        {grouped.propertyId===categoryProperty?.propertyId&&categories.filter(category=>category.categoryId===group.value).map(category=><ContextTools key={category.categoryId} compact label={`${statusColorLabels[language].actions}: ${category.relativePath}`}>
+          <StatusColorEditor client={client} workspaceId={workspaceId} category={category} language={language} disabled={disabled||loadError||loading}/>
+          <p>{statusColorLabels[language].scope}</p>
+        </ContextTools>)}
         {layout === "board" && viewId && <BoardLayoutControls column={group} layoutTrigger={layoutTrigger} state={boardState} fields={fields} groups={null} groupPropertyId={grouped.propertyId} language={language} disabled={disabled || loadError || loading}/>}
         </div>
         {group.assignmentUnavailable && <p className="text-value-hint">{t(group.assignmentUnavailable === "no_status" ? "statusNoDestination" : group.assignmentUnavailable === "nested_status" ? "statusNestedDestination" : "statusUnavailableDestination")}</p>}

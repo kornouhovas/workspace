@@ -1,0 +1,52 @@
+name: Workspace-local status colors
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  status-colors:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest, windows-2022]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.21.1
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm run check:docs
+      - run: npm run build
+      - name: Affected ownership, settings, grouping and editor regressions
+        shell: bash
+        run: |
+          mkdir -p work/ci-status-colors
+          set -o pipefail
+          node --import tsx --test tests/status-colors-service.test.mjs tests/status-colors-ui.test.tsx tests/folder-roles-ui.test.tsx tests/category-options-service.test.mjs tests/single-select-service.test.mjs tests/multi-select-service.test.mjs tests/view-grouping-service.test.mjs tests/test-suites.test.mjs tests/status-colors-workflow.test.mjs 2>&1 | tee work/ci-status-colors/affected.log
+      - name: Development settings and Board/Table colors
+        run: npm run smoke:status-colors
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-status-colors/dev
+      - name: Package reviewed candidate
+        run: npx electron-builder --dir
+      - run: npm run check:artifact -- release
+      - name: Packaged settings and Board/Table colors
+        run: npm run smoke:status-colors
+        env:
+          WORKSPACE_SMOKE_MODE: release
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-status-colors/release
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: status-colors-${{ matrix.os }}-${{ github.sha }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
+          path: work/ci-status-colors/
+          if-no-files-found: error
+          retention-days: 14

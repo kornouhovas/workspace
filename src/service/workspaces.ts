@@ -113,6 +113,7 @@ export interface WorkspaceService {
   listCategoryFolderOperations(input: unknown): ServiceResult<CategoryFolderStatus>;
   previewCategoryFolderRecovery(input: unknown): ServiceResult<CategoryFolderRecoveryPreview>;
   recoverCategoryFolder(input: unknown): ServiceResult<CategoryFolderResult>;
+  setCategoryColor(input: unknown): ServiceResult<CategoryPresentationSnapshot>;
   listCategoryPresentation(input: unknown): ServiceResult<CategoryPresentationSnapshot>;
   setCategoryPresentation(input: unknown): ServiceResult<CategoryPresentationSnapshot>;
 
@@ -325,6 +326,7 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
     recoverCategoryFolder: categoryOptions.recoverCategoryFolder,
     listCategoryPresentation: categoryOptions.listCategoryPresentation,
     setCategoryPresentation: categoryOptions.setCategoryPresentation,
+    setCategoryColor: categoryOptions.setCategoryColor,
 
     moveProjectCategory: categoryMove.moveProjectCategory,
     listProjectCategoryMoves: categoryMove.listProjectCategoryMoves,

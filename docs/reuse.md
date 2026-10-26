@@ -189,3 +189,12 @@ controls. Folder traversal, impact review and persistence remain behind typed se
 commands. No upstream code, asset or runtime dependency was copied. Existing notices
 remain applicable. Main's contextual workspace entry/Back composition is preserved;
 #74 explicitly replaces the Sources navigation and initial mode-oriented settings.
+
+## Issue 77 status colors
+
+Folder settings and Board/Table group tools reuse the local bb-inspired labeled
+native select, existing category palette, semantic tokens and ContextTools focus/
+Escape foundation. One shared StatusColorEditor serves both entry points; no
+upstream code, asset, dependency or additional notice is introduced. Main's group
+headers and contextual settings composition remain; status colors add a compact
+workspace-owned action without changing folder names or ordinary option ownership.

@@ -57,7 +57,7 @@ export interface WorkspaceDesktopApi {
   workspace(input: Extract<CategoryOptionsQuery | CategoryOptionsCommand, { type: "workspace.previewCategoryFolderRecovery" }>): Promise<ServiceResult<CategoryFolderRecoveryPreview>>;
   workspace(input: Extract<CategoryOptionsQuery | CategoryOptionsCommand, { type: "workspace.recoverCategoryFolder" }>): Promise<ServiceResult<CategoryFolderResult>>;
   workspace(input: Extract<CategoryOptionsQuery | CategoryOptionsCommand, { type: "workspace.listCategoryPresentation" }>): Promise<ServiceResult<CategoryPresentationSnapshot>>;
-  workspace(input: Extract<CategoryOptionsQuery | CategoryOptionsCommand, { type: "workspace.setCategoryPresentation" }>): Promise<ServiceResult<CategoryPresentationSnapshot>>;
+  workspace(input: Extract<CategoryOptionsQuery | CategoryOptionsCommand, { type: "workspace.setCategoryPresentation" | "workspace.setCategoryColor" }>): Promise<ServiceResult<CategoryPresentationSnapshot>>;
 
   recovery(input: import("./data-recovery.js").DataRecoveryRequest): Promise<ServiceResult<import("./data-recovery.js").DataRecoveryPayload>>;
   getBackendStatus(): Promise<BackendStatus>;

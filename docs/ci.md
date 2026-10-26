@@ -1,5 +1,18 @@
 # CI checks and diagnostic routes
 
+## Workspace-local status colors
+
+For #77 dispatch `desktop-ci.yml` with `checks: status-colors`. The bounded
+route runs static checks, routing and affected public service/UI ownership
+regressions on macOS latest, Windows latest and Windows2022. The real Electron
+settings/Table/Board journey runs in DEV and checked packaged modes on each host,
+with EN/RU, themes/sizes, keyboard/focus, workspace/duplicate isolation, restart,
+folder/byte preservation and normal shutdown/cleanup receipts. This adds no
+migration, native resource, dependency or installer input. The implement workflow
+also runs the final complete local suite once; final #67/release requirements
+remain separate. Artifacts retain source SHA, run/attempt, host and mode.
+
+
 ## Separate special archive
 
 For #76, dispatch `desktop-ci.yml` with `checks: special-archive`. The reusable

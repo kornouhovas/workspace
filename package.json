@@ -67,6 +67,7 @@
     "smoke:visual-foundation": "node scripts/smoke-visual-foundation.mjs",
     "smoke:source-association": "node scripts/smoke-source-association.mjs",
     "build:unconverted-test-entry": "esbuild tests/fixtures/unconverted-engine-entry.mjs --bundle --platform=node --format=cjs --external:better-sqlite3 --define:process.parentPort=undefined --outfile=dist/service/unconverted-engine-test-entry.cjs",
+    "smoke:status-colors": "node scripts/smoke-status-colors.mjs",
     "smoke:folder-roles": "node scripts/smoke-folder-roles.mjs"
   },
   "dependencies": {

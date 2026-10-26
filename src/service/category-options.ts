@@ -489,7 +489,22 @@ export function createCategoryOptionsService(db: Database, committed: (sourceId:
       return { ok: true, value: presentation(input.workspaceId, source) };
     } catch { return { ok: false, error: { code: "storage", message: "Category presentation could not be saved." } }; }
   }
-  return { getCategoryFolderOperation, previewCategoryFolder, applyCategoryFolder, listCategoryFolderOperations, previewCategoryFolderRecovery, recoverCategoryFolder, listCategoryPresentation, setCategoryPresentation,
+  function setCategoryColor(input: unknown): ServiceResult<CategoryPresentationSnapshot> {
+    if (!isCategoryOptionsRequest(input) || input.type !== "workspace.setCategoryColor") return invalid();
+    try {
+      const source = sourceFor(input.workspaceId);
+      if (!source || source.discoveryMode !== "grouped") return invalid();
+      const current = presentation(input.workspaceId, source);
+      const option = current.options.find(option => option.categoryId === input.categoryId);
+      if (!option) return invalid();
+      if (option.color === input.color) return {ok: true, value: current};
+      db.insert(schema.categoryPresentation).values({workspaceId: input.workspaceId, ...option, color: input.color})
+        .onConflictDoUpdate({target: [schema.categoryPresentation.workspaceId, schema.categoryPresentation.categoryId], set: {color: input.color}}).run();
+      committed(source.id, source.discoveryRevision, [input.workspaceId], true);
+      return {ok: true, value: presentation(input.workspaceId, source)};
+    } catch { return {ok: false, error: {code: "storage", message: "Status color could not be saved."}}; }
+  }
+  return { setCategoryColor, getCategoryFolderOperation, previewCategoryFolder, applyCategoryFolder, listCategoryFolderOperations, previewCategoryFolderRecovery, recoverCategoryFolder, listCategoryPresentation, setCategoryPresentation,
     invalidateSource(sourceId: string) { for (const [key, r] of reviews) if (r.preview.sourceId === sourceId) reviews.delete(key);
       for (const [key, r] of recoveryReviews) if (r.row.sourceId === sourceId) recoveryReviews.delete(key); },
     close() { reviews.clear(); recoveryReviews.clear(); } };

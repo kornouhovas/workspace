@@ -109,6 +109,9 @@ export class WorkspaceServiceClient {
   listCategoryPresentation(input: Omit<Extract<CategoryOptionsQuery | CategoryOptionsCommand, { type: "workspace.listCategoryPresentation" }>, "type">) {
     return this.api.workspace({ ...input, type: "workspace.listCategoryPresentation" });
   }
+  setCategoryColor(input: Omit<Extract<CategoryOptionsCommand, { type: "workspace.setCategoryColor" }>, "type">) {
+    return this.api.workspace({ ...input, type: "workspace.setCategoryColor" });
+  }
   setCategoryPresentation(input: Omit<Extract<CategoryOptionsQuery | CategoryOptionsCommand, { type: "workspace.setCategoryPresentation" }>, "type">) {
     return this.api.workspace({ ...input, type: "workspace.setCategoryPresentation" });
   }

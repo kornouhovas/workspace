@@ -20,8 +20,10 @@ export interface CategoryFolderRecoveryPreview {
   originalState: "matching" | "missing" | "changed"; destinationState: "matching" | "missing" | "changed";
   actions: ("complete_destination" | "keep_original")[]; previewToken: string | null;
 }
+export const categoryColors = ["default", "gray", "red", "orange", "yellow", "green", "blue", "purple"] as const;
+export type CategoryColor = typeof categoryColors[number];
 export interface CategoryPresentation {
-  categoryId: string; color: "default" | "gray" | "red" | "orange" | "yellow" | "green" | "blue" | "purple";
+  categoryId: string; color: CategoryColor;
   hidden: boolean; position: number;
 }
 export interface CategoryPresentationSnapshot { workspaceId: string; sourceId: string; options: CategoryPresentation[] }
@@ -32,12 +34,13 @@ export type CategoryOptionsQuery =
   | { type: "workspace.previewCategoryFolderRecovery"; workspaceId: string; operationId: string }
   | { type: "workspace.listCategoryPresentation"; workspaceId: string };
 export type CategoryOptionsCommand =
+  | { type: "workspace.setCategoryColor"; workspaceId: string; categoryId: string; color: CategoryColor }
   | { type: "workspace.applyCategoryFolder"; workspaceId: string; operationId: string; previewToken: string }
   | { type: "workspace.recoverCategoryFolder"; workspaceId: string; operationId: string; previewToken: string; action: "complete_destination" | "keep_original" }
   | { type: "workspace.setCategoryPresentation"; workspaceId: string; options: CategoryPresentation[] };
 export type CategoryOptionsPayload = CategoryFolderPreview | CategoryFolderResult | CategoryFolderStatus | CategoryFolderRecoveryPreview | CategoryPresentationSnapshot;
 export const categoryOptionsQueries = ["workspace.previewCategoryFolder", "workspace.listCategoryFolderOperations", "workspace.previewCategoryFolderRecovery", "workspace.getCategoryFolderOperation", "workspace.listCategoryPresentation"];
-export const categoryOptionsCommands = ["workspace.applyCategoryFolder", "workspace.recoverCategoryFolder", "workspace.setCategoryPresentation"];
+export const categoryOptionsCommands = ["workspace.setCategoryColor", "workspace.applyCategoryFolder", "workspace.recoverCategoryFolder", "workspace.setCategoryPresentation"];
 export function isCategoryOptionsRequest(value: unknown): value is CategoryOptionsQuery | CategoryOptionsCommand {
   if (typeof value !== "object" || value === null || Array.isArray(value)) return false;
   const v = value as Record<string, unknown>;
@@ -51,6 +54,7 @@ export function isCategoryOptionsRequest(value: unknown): value is CategoryOptio
   if (v.type === "workspace.previewCategoryFolderRecovery" || v.type === "workspace.getCategoryFolderOperation") return exact(["type", "workspaceId", "operationId"]) && uuid(v.operationId);
   if (v.type === "workspace.applyCategoryFolder") return exact(["type", "workspaceId", "operationId", "previewToken"]) && uuid(v.operationId) && uuid(v.previewToken);
   if (v.type === "workspace.recoverCategoryFolder") return exact(["type", "workspaceId", "operationId", "previewToken", "action"]) && uuid(v.operationId) && uuid(v.previewToken) && ["complete_destination", "keep_original"].includes(typeof v.action === "string" ? v.action : "");
+  if (v.type === "workspace.setCategoryColor") return exact(["type", "workspaceId", "categoryId", "color"]) && uuid(v.categoryId) && categoryColors.some(color => color === v.color);
   return v.type === "workspace.setCategoryPresentation" && exact(["type", "workspaceId", "options"]) && Array.isArray(v.options) && v.options.every((o: unknown) => {
     if (typeof o !== "object" || o === null || Array.isArray(o)) return false;
     const p = o as Record<string, unknown>;

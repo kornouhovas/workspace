@@ -4,6 +4,8 @@ User-facing changes are maintained in English. The first target release is 0.1.0
 
 ## Unreleased
 
+- Edit workspace-local status colors from folder settings and Board/Table group tools; preserve independent same-name statuses and show updates across views.
+
 - Reduce repeated discovery work and large Table/Board rendering, preserving
   offscreen drafts and keyboard access while fields load near the viewport.
 

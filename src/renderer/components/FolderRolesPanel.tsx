@@ -1,3 +1,5 @@
+import {StatusColorEditor,statusColorLabels} from "./StatusColorEditor.js";
+import type {CategorySummary} from "../../contracts/workspaces.js";
 import {useEffect,useRef,useState} from "react";
 import type {Language} from "../../contracts/settings.js";
 import type {DiscoveryPreview,FolderChildren,FolderRole,FolderRoleOverride} from "../../contracts/workspaces.js";
@@ -11,6 +13,22 @@ export const folderLabels={
 
 export function FolderRolesPanel({client,workspaceId,language,disabled,invalidation,onCommitted,onPendingChange}:{client:WorkspaceServiceClient;workspaceId:string;language:Language;disabled:boolean;invalidation:number;onCommitted():void;onPendingChange(pending:boolean):void}) {
   const l=folderLabels[language];
+  const [categories,setCategories]=useState<CategorySummary[]>([]),[colorError,setColorError]=useState(false),[colorRefresh,setColorRefresh]=useState(0);
+  useEffect(()=>{
+    let active=true,request=0;
+    const loadColors=async()=>{
+      const current=++request;
+      try{const result=await client.listProjects(workspaceId);
+        if(!active||current!==request)return;
+        if(result.ok){setCategories(result.value.categories);setColorError(false);}else setColorError(true);
+      }catch{if(active&&current===request)setColorError(true);}
+    };
+    void loadColors();
+    const stop=client.onWorkspaceChange(event=>{
+      if((event.type==="workspace.categoryPresentationChanged"||event.type==="workspace.projectsChanged")&&event.workspaceIds.includes(workspaceId))void loadColors();
+    });
+    return()=>{active=false;request++;stop();};
+  },[client,workspaceId,invalidation,colorRefresh]);
   const [root,setRoot]=useState<FolderChildren|null>(null),[branches,setBranches]=useState<Record<string,FolderChildren["children"]>>({});
   const [expanded,setExpanded]=useState<string[]>([]),[roles,setRoles]=useState<FolderRoleOverride[]>([]),[exclusions,setExclusions]=useState<string[]>([]);
   const [dirty,setDirty]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState(false),[stale,setStale]=useState(false);
@@ -87,21 +105,24 @@ export function FolderRolesPanel({client,workspaceId,language,disabled,invalidat
   const cancel=()=>{returnFocus.current=true;if(stale)void load(true);setRoles(root?.folderRoles??[]);setExclusions(root?.excludedRelativePaths??[]);setDirty(false);setPreview(null);setConfirmed(false);setStale(false);setError(false);};
   const nodes=(parent:string)=> <ul className="folder-role-list">{(branches[parent]??[]).map(node=>{
     const role=roles.find(row=>row.relativePath===node.relativePath)?.role??node.role;
+    const category=categories.find(category=>category.relativePath===node.relativePath);
     const excluded=exclusions.includes(node.relativePath),blocked=!!node.reason&&node.reason!=="manual";
     return <li key={node.relativePath}>
       <div className="folder-role-row">
         <button type="button" className="workspace-button workspace-button--secondary icon-button" aria-label={`${expanded.includes(node.relativePath)?l.collapse:l.expand}: ${node.relativePath}`} aria-expanded={expanded.includes(node.relativePath)} disabled={busy||disabled||blocked||excluded} onClick={()=>void toggle(node.relativePath)}>{expanded.includes(node.relativePath)?"−":"+"}</button>
-        <span className="folder-role-name" title={node.relativePath}>{node.name}</span>
+        <span className="folder-role-name category-chip" data-color={role==="status" ? category?.presentation?.color??"default" : "default"} title={node.relativePath}>{node.name}</span>
         <select className="bb-input" aria-label={`${l.role}: ${node.relativePath}`} value={role} disabled={busy||disabled||blocked||excluded} onChange={event=>{const next=event.currentTarget.value as FolderRole;editingControl.current=event.currentTarget;edit();setRoles(current=>[...current.filter(row=>row.relativePath!==node.relativePath),{relativePath:node.relativePath,role:next}].sort((a,b)=>a.relativePath.localeCompare(b.relativePath)));}}>
           {(["group","status","project"] as const).map(value=><option key={value} value={value}>{l[value]}</option>)}
         </select>
+        {role==="status"&&category&&<StatusColorEditor client={client} workspaceId={workspaceId} category={category} language={language} disabled={disabled||busy||dirty||blocked||excluded}/>}
         <label className="folder-role-exclusion"><input type="checkbox" aria-label={`${l.exclude}: ${node.relativePath}`} checked={excluded} disabled={busy||disabled||blocked} onChange={event=>{const checked=event.currentTarget.checked;editingControl.current=event.currentTarget;edit();setExclusions(current=>checked?[...current,node.relativePath].sort():current.filter(path=>path!==node.relativePath));}}/>{l.exclude}</label>
       </div>
       {expanded.includes(node.relativePath)&&nodes(node.relativePath)}
     </li>;
   })}</ul>;
   return <section className="folder-role-settings" aria-label={l.title} aria-busy={busy} onKeyDown={event=>{if(event.key==="Escape"&&dirty&&!busy){event.preventDefault();event.stopPropagation();cancel();}}}>
-    <h3>{l.title}</h3><p>{l.description}</p>
+    <h3>{l.title}</h3><p>{l.description}</p><p>{statusColorLabels[language].scope}</p>
+    {colorError&&<StatusMessage kind="error" title={statusColorLabels[language].error}><button type="button" className="workspace-button workspace-button--secondary" disabled={disabled} onClick={()=>setColorRefresh(value=>value+1)}>{statusColorLabels[language].refresh}</button></StatusMessage>}
     {root&&!['ready','empty'].includes(root.state)&&<StatusMessage kind="info" title={l.unavailable}/>}
     {stale&&<p role="status">{l.stale}</p>}
     {error&&<StatusMessage kind="error" title={l.error}/>}
