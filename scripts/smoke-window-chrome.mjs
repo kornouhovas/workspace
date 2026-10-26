@@ -14,10 +14,16 @@ const fixture=await realpath(await mkdtemp(join(tmpdir(),'workspace-window-chrom
 const source=join(fixture,'Studio');
 await mkdir(join(source,'Active','Atlas'),{recursive:true});
 const evidence=resolve(process.env.WORKSPACE_SMOKE_EVIDENCE_DIR??'work/issue-79-window-chrome');
+const restoreControl=process.env.WORKSPACE_WINDOW_CHROME_RESTORE_CONTROL==='1';
 await mkdir(evidence,{recursive:true});
 const parents=new Set(),backends=new Set();
 const report={issue:79,sha:execFileSync('git',['rev-parse','HEAD'],{cwd:root,encoding:'utf8'}).trim(),platform:process.platform,mode:process.env.WORKSPACE_SMOKE_MODE??'dev',run:process.env.GITHUB_RUN_ID??null,checks:[],screens:[],status:'running'};
 let app,page,child,failure,launchUnverified=true;
+async function restoreSidebar(){
+  const deadline=Date.now()+15000;
+  await page.getByRole('button',{name:/^(Restore sidebar|Восстановить боковую панель)$/}).and(page.locator(':enabled')).press('Enter',{timeout:15000});
+  await page.getByRole('button',{name:/^(Collapse sidebar|Свернуть боковую панель)$/}).waitFor({timeout:Math.max(1,deadline-Date.now())});
+}
 async function geometry(){return app.evaluate(({BrowserWindow})=>{
   const w=BrowserWindow.getAllWindows()[0],p=w.webContents.getLastWebPreferences();
   return {outer:w.getBounds(),content:w.getContentBounds(),minimum:w.getMinimumSize(),buttons:process.platform==='darwin'?w.getWindowButtonPosition():null,isolation:[p.contextIsolation,p.nodeIntegration,p.sandbox]};
@@ -38,17 +44,17 @@ try {
   }
   await page.getByRole('button',{name:'Collapse sidebar',exact:true}).click();
   await page.screenshot({path:join(evidence,'empty-collapsed.png')});
-  await page.getByRole('button',{name:'Restore sidebar',exact:true}).press('Enter');
+  await restoreSidebar();
   await page.getByRole('button',{name:'Add workspace',exact:true}).click();
   await page.getByRole('cell',{name:'Atlas',exact:true}).waitFor();
-  for(const language of ['en','ru']){
+  for(const language of restoreControl?['en']:['en','ru']){
     await setInterfaceLanguage(page,language);
-    for(const theme of ['light','dark']){
+    for(const theme of restoreControl?['light']:['light','dark']){
       await openSettingsSection(page);
       await page.getByRole('radio',{name:theme==='light'?/^(Light|Светлая)$/:/^(Dark|Тёмная)$/}).click();
       await page.waitForFunction(theme=>document.documentElement.dataset.theme===theme,theme);
       await returnToWorkspace(page);
-      for(const size of [{width:1024,height:720},{width:1440,height:960}]){
+      for(const size of restoreControl?[{width:1024,height:720}]:[{width:1024,height:720},{width:1440,height:960}]){
         await app.evaluate(({BrowserWindow},size)=>BrowserWindow.getAllWindows()[0].setSize(size.width,size.height),size);
         await page.getByRole('cell',{name:'Atlas',exact:true}).waitFor();
         const navigation=page.getByRole('button',{name:language==='en'?'Collapse sidebar':'Свернуть боковую панель',exact:true});
@@ -57,7 +63,7 @@ try {
         await navigation.click();
         const restore=page.getByRole('button',{name:language==='en'?'Restore sidebar':'Восстановить боковую панель',exact:true});
         if(process.platform==='darwin')assert.ok((await restore.boundingBox()).x>=80,'Collapsed navigation clears native buttons');
-        await restore.focus();await restore.press('Enter');await navigation.waitFor();
+        await restoreSidebar();
         const tab=page.locator('.saved-view-tabs [role="tab"]').first();
         await tab.focus();await tab.press('Enter');
         const tabBounds=await tab.boundingBox();
@@ -78,7 +84,11 @@ try {
         await page.screenshot({path:join(evidence,`${language}-${theme}-${size.width}-project-collapsed.png`)});
         await page.getByRole('button',{name:`${language==='en'?'Close project tab':'Закрыть вкладку проекта'}: Atlas`,exact:true}).click();
         await projectTab.waitFor({state:'hidden'});
-        await restore.press('Enter');await navigation.waitFor();
+        if(restoreControl){
+          await restore.evaluate(element=>{element.disabled=true;setTimeout(()=>{element.disabled=false;},300);});
+          report.restoreReadinessControl=true;
+        }
+        await restoreSidebar();
         await openSettingsSection(page);await page.getByRole('heading',{name:language==='en'?'General':'Основные',exact:true}).waitFor();
         await returnToWorkspace(page);
         report.checks.push({language,theme,size,navigationPointer:true,restoreKeyboard:true,tabsKeyboard:true,projectTabsAndMenu:true,collapsedProjectClose:true,settingsReturn:true});

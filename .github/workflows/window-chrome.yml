@@ -12,6 +12,9 @@ on:
       windows_repair:
         type: boolean
         default: false
+      native_repair:
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -21,7 +24,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: ${{ (inputs.repair_only && inputs.windows_repair) && fromJSON('["windows-latest","windows-2022"]') || (inputs.repair_only || inputs.macos_only) && fromJSON('["macos-latest"]') || fromJSON('["macos-latest","windows-latest","windows-2022"]') }}
+        os: ${{ (inputs.repair_only && inputs.windows_repair) && fromJSON('["windows-latest","windows-2022"]') || (inputs.repair_only || inputs.macos_only || inputs.native_repair) && fromJSON('["macos-latest"]') || fromJSON('["macos-latest","windows-latest","windows-2022"]') }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30
     steps:
@@ -37,7 +40,7 @@ jobs:
       - run: npm run build
         if: ${{ !inputs.repair_only }}
       - name: Retained shell, session and isolation regressions
-        if: ${{ !inputs.repair_only }}
+        if: ${{ !inputs.repair_only && !inputs.native_repair }}
         shell: bash
         run: |
           mkdir -p work/ci-window-chrome
@@ -50,22 +53,28 @@ jobs:
           mkdir -p work/ci-window-chrome
           set -o pipefail
           node --import tsx --test --test-name-pattern="projection endpoint observation" tests/runtime-view-readiness.test.mjs 2>&1 | tee work/ci-window-chrome/endpoint.log
+      - name: Delayed native sidebar restore control
+        if: ${{ inputs.native_repair }}
+        run: npm run smoke:window-chrome
+        env:
+          WORKSPACE_WINDOW_CHROME_RESTORE_CONTROL: '1'
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-window-chrome/restore-control
       - name: Native development window
         if: ${{ !inputs.repair_only }}
         run: npm run smoke:window-chrome
         env:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-window-chrome/dev
       - name: Retained shell and settings journey
-        if: ${{ !inputs.repair_only }}
+        if: ${{ !inputs.repair_only && !inputs.native_repair }}
         run: npm run smoke:shell
         env:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-window-chrome/shell
       - run: npm run package:built
-        if: ${{ !inputs.repair_only }}
+        if: ${{ !inputs.repair_only && !inputs.native_repair }}
       - run: npm run check:artifact -- release
-        if: ${{ !inputs.repair_only }}
+        if: ${{ !inputs.repair_only && !inputs.native_repair }}
       - name: Native packaged window
-        if: ${{ !inputs.repair_only }}
+        if: ${{ !inputs.repair_only && !inputs.native_repair }}
         run: npm run smoke:window-chrome
         env:
           WORKSPACE_SMOKE_MODE: release

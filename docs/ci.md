@@ -24,6 +24,16 @@ concurrency suffixes so they do not cancel a receipt-producing platform run.
 After the macOS focused gate, `checks: window-chrome-repair-windows` renews only the changed shared endpoint control on Windows latest/2022;
 it does not repeat their unchanged DEV/package journeys.
 
+The macOS DEV failure in run40357918701 at05fc6479 completed7/8variants,
+then its keyboard restore sent Enter while the sidebar control was disabled by
+the preceding session save. A300ms disabled-control injection reproduces the same
+15s acknowledgment failure. `checks: window-chrome-native-repair` selects only
+macOS build prerequisites, that bounded control and the original full DEV journey.
+The driver waits for an enabled button before one Enter and preserves the shared
+15s action/acknowledgment budget. After focused success, renew all DEV/package
+consumers of the changed smoke driver on the three hosts; do not reuse the older
+Windows driver receipts as execution of the repaired driver.
+
 ## General preferences
 
 For #78 select `desktop-ci.yml` with `checks: general-settings`. This bounded
