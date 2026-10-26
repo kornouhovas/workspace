@@ -19,7 +19,8 @@ assertion: the host pause began before renderer paint stabilization. Await the
 paint receipt before the300ms host-delivery pause; keep committed-result/membership
 and the200ms assertion unchanged. After focused success, renew the unreached
 macOS consumers with `checks: window-chrome-macos` and retain independently complete Windows receipts only with
-unchanged application/build inputs. Original failures remain failed.
+unchanged application/build inputs. Original failures remain failed. The focused repair and macOS renewal use separate
+concurrency suffixes so they do not cancel a receipt-producing platform run.
 
 ## General preferences
 
