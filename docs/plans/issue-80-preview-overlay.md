@@ -116,3 +116,35 @@ finishes before its programmatic scroll; the required nonzero and geometry check
 remain. The focused control (`/tmp/issue80-scroll-control2.log`) and original
 local navigation (`/tmp/issue80-restoration-repair/report.json`) pass. Both
 Windows original consumers still need ordinary, non-diagnostic renewal.
+
+## Acceptance evidence and integration handoff
+
+- macOS navigation at `5a4621c0`: the original navigation step in failed
+  [40400890006](https://github.com/kornouhovas/workspace/actions/runs/40400890006)
+  passed and its `issue-54-navigation/report.json` records all 8 theme/language/
+  size combinations, navigation checks, normal shutdown and cleanup. Its later
+  views step failed and is not presented as a passing job.
+- macOS original views at `d0392a3c`: focused
+  [40403482210](https://github.com/kornouhovas/workspace/actions/runs/40403482210)
+  passed; the inspected `issue-27-views-runtime/evidence.json` records EN/RU
+  scenarios, status-group recovery, normal quit/backend exit and cleanup.
+- Windows latest and Windows 2022 navigation at `7ade1320`: ordinary
+  [40404533964](https://github.com/kornouhovas/workspace/actions/runs/40404533964)
+  passed on both hosts. Inspected reports record 8 theme/language/size
+  combinations, grouped and filtered geometry, layer and Escape checks,
+  `diagnosticOnly: false`, process exit and owned cleanup. The Windows latest
+  RU dark 1024 preview was visually inspected against the accepted composition.
+- The driver repair was separately renewed at `5a4621c0`: macOS
+  [40400102087](https://github.com/kornouhovas/workspace/actions/runs/40400102087)
+  and Windows latest [40400404344](https://github.com/kornouhovas/workspace/actions/runs/40400404344)
+  each passed 14/14, with inspected artifacts. The failed local full run and
+  its individually renewed failed case remain documented above.
+
+Reuse rationale: the entire subsequent diff from `5a4621c0` to `7ade1320`
+contains only test/smoke drivers, CI route selection, tests and this plan;
+renderer, services, persistence, native resources, dependencies, packaging and
+runtime configuration are unchanged. Changed consumers and route tests were
+renewed as recorded. Diagnostic run `40404087348` is evidence of a mechanism,
+not acceptance; cancelled and failed runs retain their original statuses.
+Broader #67 and release acceptance, including installer requirements, remain
+separate; issue 80 authorizes neither release nor merge to `main`.
