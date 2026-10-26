@@ -90,6 +90,31 @@ captures can extend beyond the hosted work area; they prove native-size layout,
 not ordinary manual enlargement on that smaller physical monitor. The old clamped
 size is not accepted as passing.
 
-Final cold geometry-focused/shared-consumer CI receipts are pending; this local
-record does not claim Windows or final desktop/release acceptance. Exact-SHA CI
-and delivery checkpoints belong to [#79](https://github.com/kornouhovas/workspace/issues/79).
+## Accepted candidate and integration
+
+Candidate `848f371e3ec914a246eb1e37a99aa2e37b633bb4` passes the
+[cold geometry and focus controls](https://github.com/kornouhovas/workspace/actions/runs/40374026951)
+and the [final DEV/package matrix](https://github.com/kornouhovas/workspace/actions/runs/40374882808).
+Downloaded artifact archives passed CRC checks. Strict inspection verifies three
+hosts (macOS, Windows latest and Windows 2022), six native modes, 48 variants and
+150 captures: exact 1024x720/1440x960 outer bounds, restored 1024x720 minimum,
+native-content/renderer equality and matching PNG pixels. Every final normal
+receipt is clean and nondiagnostic, with normal exit, stopped backend and cleanup.
+The host work-area limitation described above remains explicit.
+
+The [evidence ledger](issue-79-evidence/final-ci.json) separates renewed native
+receipts at `848f371e` from inherited 293/293 regression and 28-check shell receipts
+per host at `9d9e2244` in
+[run40366625375](https://github.com/kornouhovas/workspace/actions/runs/40366625375).
+Application, build/dependency, regression-scenario and retained-shell inputs did
+not change; the changed workflow-routing check was renewed locally (71/71).
+The old clamped macOS wide captures remain rejected. Historical failed, cancelled
+and diagnostic runs are not relabelled as final acceptance. The original complete
+local suite outcome and separately renewed scenarios above remain part of this record.
+
+The accepted candidate was fast-forwarded into the local `new-workspace` checkout:
+a fresh build and actual Electron DEV journey passed all eight variants and 25
+exact-size captures, with process shutdown and fixture cleanup. Subsequent delivery
+changes contain only this evidence/documentation. Tested and delivered SHA checkpoints
+belong to [#79](https://github.com/kornouhovas/workspace/issues/79). This accepts
+only #79; it does not claim release or the broader #67 desktop acceptance.

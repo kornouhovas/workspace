@@ -46,8 +46,8 @@ child handle because Playwright disposes its application object on native exit.
 - [x] Implement macOS native chrome and reserve native/navigation/tab space.
 - [x] Verify actual Electron geometry, EN/RU, themes/sizes and window lifecycle.
 - [x] Complete independent standards/spec review and affected repairs.
-- [ ] Run final full local suite and affected platform DEV/package acceptance.
-- [ ] Commit, publish and integrate the accepted candidate; record delivered SHA.
+- [x] Run the full local suite and platform DEV/package checks; retain its four original failures and separately renewed passing scenario evidence in verification.
+- [x] Commit, publish and locally verify the integrated candidate; the GitHub completion checkpoint records the delivered SHA.
 
 Follow [requirement retention](../development.md#inherited-test-coverage),
 [CI evidence reuse](../ci.md#evidence-reuse-after-test-only-repairs) and the

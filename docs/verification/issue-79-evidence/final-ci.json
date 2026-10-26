@@ -1,0 +1,649 @@
+{
+  "sha": "848f371e3ec914a246eb1e37a99aa2e37b633bb4",
+  "hosts": [
+    {
+      "host": "macos-latest",
+      "artifact": "window-chrome-macos-latest-848f371e3ec914a246eb1e37a99aa2e37b633bb4-run-40374882808-attempt-1",
+      "archiveSha256": "15446ad05b05a8f127d318e1bc88fdf8839a05d59cada4981d0536e5d232e91a",
+      "modes": {
+        "dev": {
+          "status": "passed",
+          "profile": "normal",
+          "variants": 8,
+          "captures": 25,
+          "actualOuterSizes": [
+            [
+              1024,
+              720
+            ],
+            [
+              1440,
+              960
+            ]
+          ],
+          "actualContentSizes": [
+            [
+              1024,
+              720
+            ],
+            [
+              1440,
+              960
+            ]
+          ],
+          "pixelSizes": [
+            [
+              1024,
+              720
+            ],
+            [
+              1440,
+              960
+            ]
+          ],
+          "minimum": [
+            1024,
+            720
+          ],
+          "nativeGeometry": {
+            "outer": {
+              "x": 0,
+              "y": 31,
+              "width": 1024,
+              "height": 720
+            },
+            "content": {
+              "x": 0,
+              "y": 31,
+              "width": 1024,
+              "height": 720
+            },
+            "minimum": [
+              1024,
+              720
+            ],
+            "buttons": {
+              "x": 18,
+              "y": 18
+            },
+            "isolation": [
+              true,
+              false,
+              true
+            ],
+            "display": {
+              "bounds": {
+                "x": 0,
+                "y": 0,
+                "width": 1024,
+                "height": 768
+              },
+              "workArea": {
+                "x": 0,
+                "y": 31,
+                "width": 1024,
+                "height": 677
+              },
+              "scaleFactor": 1
+            }
+          },
+          "harnessSha256": "47c444d4edb0525e0ed01f0acfa03b8f774439b45ce54e8d1da19f5b89e92057",
+          "dirty": false,
+          "diagnostic": false,
+          "lifecycle": [
+            "minimize",
+            "restore",
+            "fullscreen",
+            "windowed"
+          ],
+          "processesStopped": true,
+          "cleanup": "passed"
+        },
+        "release": {
+          "status": "passed",
+          "profile": "normal",
+          "variants": 8,
+          "captures": 25,
+          "actualOuterSizes": [
+            [
+              1024,
+              720
+            ],
+            [
+              1440,
+              960
+            ]
+          ],
+          "actualContentSizes": [
+            [
+              1024,
+              720
+            ],
+            [
+              1440,
+              960
+            ]
+          ],
+          "pixelSizes": [
+            [
+              1024,
+              720
+            ],
+            [
+              1440,
+              960
+            ]
+          ],
+          "minimum": [
+            1024,
+            720
+          ],
+          "nativeGeometry": {
+            "outer": {
+              "x": 0,
+              "y": 31,
+              "width": 1024,
+              "height": 720
+            },
+            "content": {
+              "x": 0,
+              "y": 31,
+              "width": 1024,
+              "height": 720
+            },
+            "minimum": [
+              1024,
+              720
+            ],
+            "buttons": {
+              "x": 18,
+              "y": 18
+            },
+            "isolation": [
+              true,
+              false,
+              true
+            ],
+            "display": {
+              "bounds": {
+                "x": 0,
+                "y": 0,
+                "width": 1024,
+                "height": 768
+              },
+              "workArea": {
+                "x": 0,
+                "y": 31,
+                "width": 1024,
+                "height": 677
+              },
+              "scaleFactor": 1
+            }
+          },
+          "harnessSha256": "47c444d4edb0525e0ed01f0acfa03b8f774439b45ce54e8d1da19f5b89e92057",
+          "dirty": false,
+          "diagnostic": false,
+          "lifecycle": [
+            "minimize",
+            "restore",
+            "fullscreen",
+            "windowed"
+          ],
+          "processesStopped": true,
+          "cleanup": "passed"
+        }
+      },
+      "inherited": {
+        "sha": "9d9e22441df561d972848886675d528e4801ecde",
+        "run": "https://github.com/kornouhovas/workspace/actions/runs/40366625375",
+        "regressions": {
+          "tests": 293,
+          "passed": 293,
+          "failed": 0,
+          "skipped": 0,
+          "logSha256": "d9e4b91a0d4043e1bc2fdf4664db164fdc23deea5a76b876661f16c6d69719bb"
+        },
+        "shell": {
+          "checks": 28,
+          "status": "passed",
+          "processesStopped": true,
+          "cleanup": "passed"
+        },
+        "reuse": "Application, build, dependency, regression scenario and shell inputs unchanged. Workflow-routing test changed and renewed locally (71/71). Old macOS wide screenshots rejected and replaced by the exact-size run."
+      }
+    },
+    {
+      "host": "windows-2022",
+      "artifact": "window-chrome-windows-2022-848f371e3ec914a246eb1e37a99aa2e37b633bb4-run-40374882808-attempt-1",
+      "archiveSha256": "034dac9196ecf43eec6f103caa22e830514dd92ec0ed2fe4157292253350e839",
+      "modes": {
+        "dev": {
+          "status": "passed",
+          "profile": "normal",
+          "variants": 8,
+          "captures": 25,
+          "actualOuterSizes": [
+            [
+              1024,
+              720
+            ],
+            [
+              1440,
+              960
+            ]
+          ],
+          "actualContentSizes": [
+            [
+              1008,
+              655
+            ],
+            [
+              1424,
+              895
+            ]
+          ],
+          "pixelSizes": [
+            [
+              1008,
+              655
+            ],
+            [
+              1424,
+              895
+            ]
+          ],
+          "minimum": [
+            1024,
+            720
+          ],
+          "nativeGeometry": {
+            "outer": {
+              "x": 0,
+              "y": 4,
+              "width": 1024,
+              "height": 720
+            },
+            "content": {
+              "x": 8,
+              "y": 61,
+              "width": 1008,
+              "height": 655
+            },
+            "minimum": [
+              1024,
+              720
+            ],
+            "buttons": null,
+            "isolation": [
+              true,
+              false,
+              true
+            ],
+            "display": {
+              "bounds": {
+                "x": 0,
+                "y": 0,
+                "width": 1024,
+                "height": 768
+              },
+              "workArea": {
+                "x": 0,
+                "y": 0,
+                "width": 1024,
+                "height": 728
+              },
+              "scaleFactor": 1
+            }
+          },
+          "harnessSha256": "1bbfd73b73582d20760cd717bca832ec5e6cc5e515c33bbb816e698b1c387cf0",
+          "dirty": false,
+          "diagnostic": false,
+          "lifecycle": [
+            "minimize",
+            "restore",
+            "fullscreen",
+            "windowed"
+          ],
+          "processesStopped": true,
+          "cleanup": "passed"
+        },
+        "release": {
+          "status": "passed",
+          "profile": "normal",
+          "variants": 8,
+          "captures": 25,
+          "actualOuterSizes": [
+            [
+              1024,
+              720
+            ],
+            [
+              1440,
+              960
+            ]
+          ],
+          "actualContentSizes": [
+            [
+              1008,
+              655
+            ],
+            [
+              1424,
+              895
+            ]
+          ],
+          "pixelSizes": [
+            [
+              1008,
+              655
+            ],
+            [
+              1424,
+              895
+            ]
+          ],
+          "minimum": [
+            1024,
+            720
+          ],
+          "nativeGeometry": {
+            "outer": {
+              "x": 0,
+              "y": 4,
+              "width": 1024,
+              "height": 720
+            },
+            "content": {
+              "x": 8,
+              "y": 61,
+              "width": 1008,
+              "height": 655
+            },
+            "minimum": [
+              1024,
+              720
+            ],
+            "buttons": null,
+            "isolation": [
+              true,
+              false,
+              true
+            ],
+            "display": {
+              "bounds": {
+                "x": 0,
+                "y": 0,
+                "width": 1024,
+                "height": 768
+              },
+              "workArea": {
+                "x": 0,
+                "y": 0,
+                "width": 1024,
+                "height": 728
+              },
+              "scaleFactor": 1
+            }
+          },
+          "harnessSha256": "1bbfd73b73582d20760cd717bca832ec5e6cc5e515c33bbb816e698b1c387cf0",
+          "dirty": false,
+          "diagnostic": false,
+          "lifecycle": [
+            "minimize",
+            "restore",
+            "fullscreen",
+            "windowed"
+          ],
+          "processesStopped": true,
+          "cleanup": "passed"
+        }
+      },
+      "inherited": {
+        "sha": "9d9e22441df561d972848886675d528e4801ecde",
+        "run": "https://github.com/kornouhovas/workspace/actions/runs/40366625375",
+        "regressions": {
+          "tests": 293,
+          "passed": 293,
+          "failed": 0,
+          "skipped": 0,
+          "logSha256": "d111b4a1abeb8bf581fc515647fa5a9199c5b332b1b72e34ed4c2056c777eaed"
+        },
+        "shell": {
+          "checks": 28,
+          "status": "passed",
+          "processesStopped": true,
+          "cleanup": "passed"
+        },
+        "reuse": "Application, build, dependency, regression scenario and shell inputs unchanged. Workflow-routing test changed and renewed locally (71/71). Old macOS wide screenshots rejected and replaced by the exact-size run."
+      }
+    },
+    {
+      "host": "windows-latest",
+      "artifact": "window-chrome-windows-latest-848f371e3ec914a246eb1e37a99aa2e37b633bb4-run-40374882808-attempt-1",
+      "archiveSha256": "d7b64322add85a262aede27d9d3465a30693eb1fe1c7b688512a5bcc1488fd04",
+      "modes": {
+        "dev": {
+          "status": "passed",
+          "profile": "normal",
+          "variants": 8,
+          "captures": 25,
+          "actualOuterSizes": [
+            [
+              1024,
+              720
+            ],
+            [
+              1440,
+              960
+            ]
+          ],
+          "actualContentSizes": [
+            [
+              1008,
+              655
+            ],
+            [
+              1424,
+              895
+            ]
+          ],
+          "pixelSizes": [
+            [
+              1008,
+              655
+            ],
+            [
+              1424,
+              895
+            ]
+          ],
+          "minimum": [
+            1024,
+            720
+          ],
+          "nativeGeometry": {
+            "outer": {
+              "x": 0,
+              "y": 0,
+              "width": 1024,
+              "height": 720
+            },
+            "content": {
+              "x": 8,
+              "y": 57,
+              "width": 1008,
+              "height": 655
+            },
+            "minimum": [
+              1024,
+              720
+            ],
+            "buttons": null,
+            "isolation": [
+              true,
+              false,
+              true
+            ],
+            "display": {
+              "bounds": {
+                "x": 0,
+                "y": 0,
+                "width": 1024,
+                "height": 768
+              },
+              "workArea": {
+                "x": 0,
+                "y": 0,
+                "width": 1024,
+                "height": 720
+              },
+              "scaleFactor": 1
+            }
+          },
+          "harnessSha256": "1bbfd73b73582d20760cd717bca832ec5e6cc5e515c33bbb816e698b1c387cf0",
+          "dirty": false,
+          "diagnostic": false,
+          "lifecycle": [
+            "minimize",
+            "restore",
+            "fullscreen",
+            "windowed"
+          ],
+          "processesStopped": true,
+          "cleanup": "passed"
+        },
+        "release": {
+          "status": "passed",
+          "profile": "normal",
+          "variants": 8,
+          "captures": 25,
+          "actualOuterSizes": [
+            [
+              1024,
+              720
+            ],
+            [
+              1440,
+              960
+            ]
+          ],
+          "actualContentSizes": [
+            [
+              1008,
+              655
+            ],
+            [
+              1424,
+              895
+            ]
+          ],
+          "pixelSizes": [
+            [
+              1008,
+              655
+            ],
+            [
+              1424,
+              895
+            ]
+          ],
+          "minimum": [
+            1024,
+            720
+          ],
+          "nativeGeometry": {
+            "outer": {
+              "x": 0,
+              "y": 0,
+              "width": 1024,
+              "height": 720
+            },
+            "content": {
+              "x": 8,
+              "y": 57,
+              "width": 1008,
+              "height": 655
+            },
+            "minimum": [
+              1024,
+              720
+            ],
+            "buttons": null,
+            "isolation": [
+              true,
+              false,
+              true
+            ],
+            "display": {
+              "bounds": {
+                "x": 0,
+                "y": 0,
+                "width": 1024,
+                "height": 768
+              },
+              "workArea": {
+                "x": 0,
+                "y": 0,
+                "width": 1024,
+                "height": 720
+              },
+              "scaleFactor": 1
+            }
+          },
+          "harnessSha256": "1bbfd73b73582d20760cd717bca832ec5e6cc5e515c33bbb816e698b1c387cf0",
+          "dirty": false,
+          "diagnostic": false,
+          "lifecycle": [
+            "minimize",
+            "restore",
+            "fullscreen",
+            "windowed"
+          ],
+          "processesStopped": true,
+          "cleanup": "passed"
+        }
+      },
+      "inherited": {
+        "sha": "9d9e22441df561d972848886675d528e4801ecde",
+        "run": "https://github.com/kornouhovas/workspace/actions/runs/40366625375",
+        "regressions": {
+          "tests": 293,
+          "passed": 293,
+          "failed": 0,
+          "skipped": 0,
+          "logSha256": "fe74aa823fafc1f1f69f3eb10e8c42a6ceda8e0ed5ddc57939933b46390e8dd5"
+        },
+        "shell": {
+          "checks": 28,
+          "status": "passed",
+          "processesStopped": true,
+          "cleanup": "passed"
+        },
+        "reuse": "Application, build, dependency, regression scenario and shell inputs unchanged. Workflow-routing test changed and renewed locally (71/71). Old macOS wide screenshots rejected and replaced by the exact-size run."
+      }
+    }
+  ],
+  "issue": 79,
+  "status": "passed",
+  "run": "https://github.com/kornouhovas/workspace/actions/runs/40374882808",
+  "focusedControlRun": "https://github.com/kornouhovas/workspace/actions/runs/40374026951",
+  "scope": "Issue 79 native window chrome; not release or issue 67 acceptance",
+  "captureTotals": {
+    "hosts": 3,
+    "modes": 6,
+    "variants": 48,
+    "captures": 150
+  },
+  "sizingLimit": "Actual native bounds may extend outside the hosted work area; this is native-size layout evidence, not ordinary manual enlargement on a smaller display.",
+  "localIntegrated": {
+    "sha": "848f371e3ec914a246eb1e37a99aa2e37b633bb4",
+    "build": "passed",
+    "mode": "dev",
+    "variants": 8,
+    "captures": 25,
+    "status": "passed",
+    "harnessSha256": "47c444d4edb0525e0ed01f0acfa03b8f774439b45ce54e8d1da19f5b89e92057",
+    "processesStopped": true,
+    "cleanup": "passed"
+  }
+}
