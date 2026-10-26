@@ -96,6 +96,26 @@ test('focused navigation failure renewal selects only the failed Windows hosts a
  assert.deepEqual(matrix(true),['windows-latest','windows-2022']);assert.deepEqual(matrix(false),['macos-latest','windows-latest','windows-2022']);
 });
 
+test('issue 80 repair runs only the original failed consumer on each affected host',async()=>{
+ const {readFile}=await import('node:fs/promises');const {load}=await import('js-yaml');const {runInNewContext}=await import('node:vm');
+ const workflow=load(await readFile('.github/workflows/desktop-ci.yml','utf8'));const job=workflow.jobs['desktop-ux'];
+ assert.ok(workflow.on.workflow_dispatch.inputs.desktop_ux_profile.options.includes('navigation-repair'));
+ const expression=job.strategy.matrix.os.slice(3,-2);
+ assert.deepEqual(Array.from(runInNewContext(expression,{fromJSON:JSON.parse,inputs:{desktop_ux_profile:'navigation-repair',desktop_ux_category_only:false}})),['macos-latest','windows-latest','windows-2022']);
+ const nav=job.steps.find(step=>step.name==='Issue 80 original Windows navigation'),views=job.steps.find(step=>step.name==='Issue 80 original macOS views');
+ assert.equal(nav.run,'node scripts/smoke-project-navigation.mjs');assert.equal(views.run,'npm run smoke:views -- dev');
+ for(const os of ['macos-latest','windows-latest','windows-2022']){
+  const context={inputs:{desktop_ux_failure_probe:false,desktop_ux_profile:'navigation-repair'},matrix:{os}};
+  assert.equal(runInNewContext(nav.if.slice(3,-2),context),os!=='macos-latest');
+  assert.equal(runInNewContext(views.if.slice(3,-2),context),os==='macos-latest');
+  for(const name of ['Affected UI, services and real Electron flows','Package shared font and notices','Inspect packaged artifact','Packaged saved-view consumers']) {
+   const step=job.steps.find(candidate=>candidate.name===name);
+   const flags={...context,inputs:{...context.inputs,desktop_ux_packaged_only:false,desktop_ux_category_only:false}};
+   assert.equal(runInNewContext(step.if.slice(3,-2),flags),false,name);
+  }
+ }
+});
+
 test('candidate provenance records focused navigation mode after shell quote processing',async()=>{
  const {readFile}=await import('node:fs/promises');const {load}=await import('js-yaml');const {runInNewContext}=await import('node:vm');
  const workflow=load(await readFile('.github/workflows/desktop-ci.yml','utf8'));const command=workflow.jobs['desktop-ux'].steps.find(step=>step.name==='Candidate provenance').run;

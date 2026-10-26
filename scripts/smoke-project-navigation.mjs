@@ -215,8 +215,15 @@ try{
  }
  await page.setViewportSize({width:1024,height:720});
  await call('setViewGrouping',{viewId,config:{propertyId:number,settings:[]}});
+ const expectedGroups=(await call('queryView',{viewId,archived:false})).groups.filter(group=>!group.hidden).length;
+ assert.ok(expectedGroups>=6,'the fixture has enough distinct groups to scroll');
+ try {
+  await page.waitForFunction(count=>{const board=document.querySelector('.grouped-board');return board && board.querySelectorAll(':scope > .project-group').length===count && board.scrollWidth>board.clientWidth && !document.querySelector('.saved-view-content [aria-busy=true]');},expectedGroups);
+ } catch(error) {
+  console.error('Grouped Board readiness:',await page.locator('.grouped-board').evaluate((el,expectedGroups)=>({expectedGroups,actualGroups:el.querySelectorAll(':scope > .project-group').length,scrollWidth:el.scrollWidth,clientWidth:el.clientWidth}),expectedGroups).catch(()=>({expectedGroups,boardUnavailable:true})));
+  throw error;
+ }
  await page.locator('.grouped-board .project-board .project-preview-trigger').first().waitFor();
- await page.waitForFunction(()=>!document.querySelector('.saved-view-content [aria-busy=true]'));
  await page.locator('.grouped-board').evaluate(el=>{el.scrollLeft=160;});
  await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
  const groupedBefore=await boardGeometry();

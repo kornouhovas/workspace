@@ -67,3 +67,30 @@ horizontal scroll, plus overlay hit testing, intersecting view popover, project
 menu and Escape. All 32 appearance variants and cleanup completed. Earlier
 native attempts failed a tab-drag assertion and a resize assertion respectively;
 their precise causes remain unproved and their reports remain failed.
+
+## Actions failure and focused repair
+
+Navigation run [40400890006](https://github.com/kornouhovas/workspace/actions/runs/40400890006)
+at `5a4621c0` failed: both Windows hosts stopped at the new grouped-Board
+nonzero-scroll assertion; macOS passed navigation and stopped in `smoke:views`
+expecting `No value (1)` for the retained category group. Its failure capture
+shows `No status (1)`. The original views command reproduced that same timeout
+locally (`/tmp/issue80-views-baseline.log`); the fixture now expects the current
+EN/RU status labels and retains identity, recovery and edit assertions. The
+complete local views command passed (`/tmp/issue80-views-repair.log`).
+
+The Windows screenshots show the first groups at the failed assertion, but do
+not establish why scrolling was unavailable. The navigation driver now waits
+for the rendered visible groups to match the service projection and for actual
+horizontal overflow before setting nonzero scroll; it records bounded group and
+width diagnostics on a readiness failure. The earlier failure's precise cause
+remains unproved. The updated original navigation command passed locally
+(`/tmp/issue80-wait-repair/report.json`). Both original CI failures remain failed;
+focused affected-host renewal and its artifacts are required before acceptance.
+
+The `desktop-ux` profile `navigation-repair` renews only the original failed
+consumers: `smoke-project-navigation.mjs` on Windows latest/2022 and
+`smoke:views -- dev` on macOS, after the same install/build prerequisites.
+The existing navigation and full profiles retain their inventories. The route
+selection tests passed 35/35 (`/tmp/issue80-routing.log`); focused Actions
+receipts and artifact inspection remain open.

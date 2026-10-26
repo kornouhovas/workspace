@@ -109,7 +109,7 @@ export async function exerciseCategoryGrouping({ page, query, rootPath, language
     await call("updateView", { viewId, name: "Categories", kind: layout });
     await page.getByRole("heading", { name: "Category (1)", exact: true }).waitFor();
     await page.getByRole("heading", { name: "Empty (0)", exact: true }).waitFor();
-    assert.equal(await page.getByRole("heading", { name: en ? "No value (0)" : "Без значения (0)", exact: true }).count(), 0);
+    assert.equal(await page.getByRole("heading", { name: en ? "No status (0)" : "Без статуса (0)", exact: true }).count(), 0);
     const groups = (await call("queryView", { viewId, archived: false })).groups;
     assert.deepEqual(groups.map(g => g.value), list.categories.map(c => c.categoryId));
     for (const width of [360, 1440]) {
@@ -139,8 +139,8 @@ export async function exerciseRetainedCategoryGrouping({ page, query, rootPath, 
   await closeGroupingControls(page, language);
   for (const layout of ["table", "board"]) {
     await call("updateView", { viewId, name: "Recovery", kind: layout });
-    const group = page.getByRole("region", { name: en ? "No value" : "Без значения", exact: true });
-    await group.getByRole("heading", { name: en ? "No value (1)" : "Без значения (1)", exact: true }).waitFor();
+    const group = page.getByRole("region", { name: en ? "No status" : "Без статуса", exact: true });
+    await group.getByRole("heading", { name: en ? "No status (1)" : "Без статуса (1)", exact: true }).waitFor();
     const locate = group.getByRole("button", { name: `${en ? "Locate folder" : "Найти папку"}: Retained`, exact: true });
     await locate.waitFor(); assert.equal(await locate.isEnabled(), true);
     const value = group.getByRole("button", { name: `${en ? "Edit Text value" : "Редактировать Text-значение"}: Retained / Notes`, exact: true });
