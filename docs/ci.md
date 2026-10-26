@@ -11,6 +11,19 @@ run/attempt in artifact names. No schema, native adapter, resource, dependency o
 installer input changes; packaging and release acceptance remain separate.
 
 
+For an affected Windows management-only renewal select
+`checks: general-settings-management`. It runs only Windows latest/2022 build/
+static prerequisites, native removal/entry/cancellation controls and the original
+workspace-management journey. The ordinary General route remains all three hosts.
+
+Run40276259568's Windows2022 diagnostic recorded expected count1 with two actual
+IDs, yet the old async `waitForFunction` completed. The pinned Playwright poller
+checks Promise truthiness without awaiting the predicate. A native red control
+reproduces the false acknowledgment. Explicit awaited public polling now requires
+the target ID absent and exact remaining count, then the form's hidden acknowledgment
+within the original15s total. Submit is never replayed. Original failed receipts
+stay failed; unchanged app/shell/session/regression evidence retains3f429ec8 provenance.
+
 ## Workspace-local status colors
 
 For #77 dispatch `desktop-ci.yml` with `checks: status-colors`. The bounded

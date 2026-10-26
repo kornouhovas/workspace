@@ -46,6 +46,9 @@ jobs:
         run: node scripts/smoke-workspace-sessions.mjs dev
         env:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-general-settings/sessions
+      - name: Removal acknowledgment regression
+        if: ${{ inputs.management_only }}
+        run: node --import tsx --test --test-name-pattern="workspace removal outcome|workspace removal entry|workspace rename cancellation" tests/runtime-view-readiness.test.mjs
       - name: Retained workspace management and contextual entry
         run: npm run smoke:workspaces
         env:

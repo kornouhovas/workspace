@@ -1,5 +1,5 @@
 import {translate} from '../src/renderer/localization.ts';
-import {enterWorkspaceRemoval,cancelWorkspaceRename} from '../scripts/workspace-removal-driver.mjs';
+import {enterWorkspaceRemoval,cancelWorkspaceRename,waitForWorkspaceRemoval} from '../scripts/workspace-removal-driver.mjs';
 /* global document, requestAnimationFrame */
 import assert from "node:assert/strict";
 import test from "node:test";
@@ -972,4 +972,30 @@ test('filter and editor preparation observes presented operands without submitti
       assert.equal(await page.evaluate(() => globalThis.preparation.saves), 1);
     });
   });
+});
+
+test('workspace removal outcome waits for actual identity removal and the form acknowledgment',async()=>{
+ await withPage(async page=>{
+  await page.setContent('<form class="workspace-removal">Pending removal</form><button>Complete removal</button><button>Acknowledge</button>');
+  await page.evaluate(()=>{
+   globalThis.removalReads=0;globalThis.removalConfirmedReads=0;
+   globalThis.removalRecords=[{workspaceId:'target'},{workspaceId:'other'}];
+   globalThis.workspace={workspace:async()=>{globalThis.removalReads++;if(globalThis.removalRecords.length===1)globalThis.removalConfirmedReads++;return {ok:true,value:{workspaces:globalThis.removalRecords}};}};
+   document.querySelector('button').onclick=()=>{globalThis.removalRecords=[{workspaceId:'other'}];};
+   document.querySelectorAll('button')[1].onclick=()=>document.querySelector('form').remove();
+  });
+  let complete=false;
+  const outcome=waitForWorkspaceRemoval(page,'target',1).then(()=>{complete=true;});
+  await page.waitForFunction(()=>globalThis.removalReads>0);
+  await page.evaluate(()=>Promise.resolve());
+  // Drain the driver's returned result, rather than relying on a timer race.
+  await page.getByRole('button',{name:'Complete removal',exact:true}).focus();
+  assert.equal(complete,false,'An async false result must not acknowledge removal');
+  await page.getByRole('button',{name:'Complete removal',exact:true}).click();
+  await page.waitForFunction(()=>globalThis.removalConfirmedReads>0);
+  await page.getByRole('button',{name:'Acknowledge',exact:true}).focus();
+  assert.equal(complete,false,'Backend completion must not bypass the pending form acknowledgment');
+  await page.getByRole('button',{name:'Acknowledge',exact:true}).click();await outcome;
+  assert.equal(complete,true);
+ });
 });
