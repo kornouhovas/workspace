@@ -57,6 +57,15 @@ test('native scroll restoration retains coordinates, cancels for user input and 
   assert.deepEqual(await coordinates(),[300,120]);
   await page.getByRole('button',{name:'Expand or return',exact:true}).click();assert.equal(await owner.isVisible(),false);
   await page.getByRole('button',{name:'Expand or return',exact:true}).click();await complete();assert.deepEqual(await coordinates(),[300,120]);
+  // Programmatic setup during restoration can be overwritten by later frames.
+  await page.getByRole('button',{name:'Restore saved position',exact:true}).click();
+  await page.waitForFunction(()=>document.querySelector('#view').dataset.scrollRestoring==='true');
+  await owner.locator('.project-table-scroll').evaluate(node=>{node.scrollLeft=160;node.firstElementChild.append(document.createElement('span'));});
+  await frames();assert.equal((await coordinates())[1],120);
+  await page.getByRole('button',{name:'Finish projection',exact:true}).click();await complete();
+  await owner.locator('.project-table-scroll').evaluate(node=>{node.scrollLeft=160;});await frames();
+  assert.equal((await coordinates())[1],160);
+  await owner.locator('.project-table-scroll').evaluate(node=>{node.scrollLeft=120;});await frames();
   // A pending projection keeps restoration active while real wheel input owns
   // the new position. Later geometry notifications must not snap it back.
   await page.getByRole('button',{name:'Restore saved position',exact:true}).click();

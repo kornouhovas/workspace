@@ -104,3 +104,15 @@ scroll observations and a `diagnosticOnly` report; it has its own concurrency
 group and cannot supply acceptance. Compare immediate versus post-paint scroll,
 direction and dimensions before choosing a repair. The unchanged original
 assertion and wait bounds remain in place.
+
+The failure-only [Windows diagnostic](https://github.com/kornouhovas/workspace/actions/runs/40404087348)
+at `827bb7e9` observed an immediate scrollLeft of 160, then 0 after two
+frames while `data-scroll-restoring` was true (scrollWidth 2784, clientWidth
+800, LTR). The local real-Electron hook control demonstrates the mechanism with
+an injected content mutation: pending restoration resets 160 to the saved 120;
+after restoration, 160 remains. This control does not prove the exact historical
+Windows event order. The original navigation driver now waits until restoration
+finishes before its programmatic scroll; the required nonzero and geometry checks
+remain. The focused control (`/tmp/issue80-scroll-control2.log`) and original
+local navigation (`/tmp/issue80-restoration-repair/report.json`) pass. Both
+Windows original consumers still need ordinary, non-diagnostic renewal.

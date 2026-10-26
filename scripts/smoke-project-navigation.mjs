@@ -218,7 +218,7 @@ try{
  const expectedGroups=(await call('queryView',{viewId,archived:false})).groups.filter(group=>!group.hidden).length;
  assert.ok(expectedGroups>=6,'the fixture has enough distinct groups to scroll');
  try {
-  await page.waitForFunction(count=>{const board=document.querySelector('.grouped-board');return board && board.querySelectorAll(':scope > .project-group').length===count && board.scrollWidth>board.clientWidth && !document.querySelector('.saved-view-content [aria-busy=true]');},expectedGroups);
+  await page.waitForFunction(count=>{const board=document.querySelector('.grouped-board');return board && board.querySelectorAll(':scope > .project-group').length===count && board.scrollWidth>board.clientWidth && !document.querySelector('.saved-view-content').dataset.scrollRestoring && !document.querySelector('.saved-view-content [aria-busy=true]');},expectedGroups);
  } catch(error) {
   console.error('Grouped Board readiness:',await page.locator('.grouped-board').evaluate((el,expectedGroups)=>({expectedGroups,actualGroups:el.querySelectorAll(':scope > .project-group').length,scrollWidth:el.scrollWidth,clientWidth:el.clientWidth}),expectedGroups,{timeout:1000}).catch(()=>({expectedGroups,boardUnavailable:true})));
   throw error;
