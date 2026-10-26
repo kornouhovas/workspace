@@ -999,3 +999,23 @@ test('workspace removal outcome waits for actual identity removal and the form a
   assert.equal(complete,true);
  });
 });
+
+test('workspace removal confirmation waits for enabled readiness before one Submit',async()=>{
+ await withPage(async page=>{
+  await page.setContent('<div class="sidebar-workspace-row"><button data-workspace-id="one">Workspace</button><button aria-label="Workspace actions: Workspace">Tools</button></div><button id="enable">Enable confirmation</button>');
+  await page.evaluate(()=>{
+   globalThis.removalCommands=0;
+   document.querySelector('[aria-label]').onclick=()=>{
+    const group=document.createElement('div');group.setAttribute('role','group');group.setAttribute('aria-label','Workspace actions: Workspace');group.innerHTML='<button>Remove workspace</button>';document.body.append(group);
+    group.querySelector('button').onclick=()=>{group.remove();const confirm=document.createElement('button');confirm.textContent='Remove configuration';confirm.disabled=true;confirm.onclick=()=>globalThis.removalCommands++;document.body.append(confirm);document.querySelector('#enable').onclick=()=>{confirm.disabled=false;};};
+   };
+  });
+  const confirm=await enterWorkspaceRemoval(page,'one','Workspace');
+  let submitted=false;const submit=confirm.press('Enter').then(()=>{submitted=true;});
+  await page.getByRole('button',{name:'Enable confirmation',exact:true}).focus();
+  assert.equal(submitted,false,'Disabled confirmation must not consume the single Submit');
+  assert.equal(await page.evaluate(()=>globalThis.removalCommands),0);
+  await page.getByRole('button',{name:'Enable confirmation',exact:true}).click();await submit;
+  assert.equal(await page.evaluate(()=>globalThis.removalCommands),1);
+ });
+});

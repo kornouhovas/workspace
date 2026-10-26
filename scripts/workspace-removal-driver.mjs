@@ -18,7 +18,8 @@ export async function enterWorkspaceRemoval(page,workspaceId,name) {
    await confirm.waitFor({timeout:left()});
   }catch(error){if(Date.now()>=deadline)throw error;}
  }
- return confirm;
+ // Preserve a live enabled guard through the caller's single Enter gesture.
+ return confirm.and(page.locator(':enabled'));
 }
 
 // A contextual activation can expose the rename form before its reply unlocks
