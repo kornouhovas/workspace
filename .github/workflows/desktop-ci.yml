@@ -10,6 +10,10 @@ on:
         type: choice
         options: [full, window-chrome, window-chrome-repair, window-chrome-macos, general-settings, general-settings-management, status-colors, special-archive, special-archive-native, status-moves, status-moves-routing, status-moves-runtime, status-moves-entry-repair, status-moves-native-renewal, folder-roles, folder-roles-repair, folder-roles-recovery-repair, folder-outage-repair, folder-roles-runtime, folder-role-entry-repair, folder-management-diagnostic, folder-management-package-diagnostic, folder-management-package, immediate-folders, command-safety-creation, command-safety-windows-2022, command-safety-creation-diagnostic, command-safety-windows, command-safety-archive-alias, command-safety-fixtures, command-safety, command-safety-runtime, command-safety-packaged, source-access, source-access-repair, integrated-desktop, integrated-regressions, integrated-layout, integrated-category-layout, integrated-operation-layout, integrated-archive-profile, integrated-fixture-repairs, integrated-filesystem-repair, integrated-project-entry-repair, integrated-category-entry-profile, integrated-missing-tails, integrated-runtime, desktop-ux, layout-fixtures, source-inventory, observer-cancellation, observer-workflow, native-owner-controls, native-lifecycle, project-files-windows, project-files-windows-trace, failed, readiness, windows-release, issue22-failures, creation-shutdown, raw-rename, issue24-failures, category-fixture, issue24-startup, multiselect, etw-controls, app-fixture, property-fixture, runtime-observation, view-fixtures, number, windows-property-fixture, rename-authoring, rename-fixture, viewport-runtime, workspace-root-runtime, archive-contexts, creation-ownership, desktop-shell, shell-runtime, views-readiness, view-contexts, workspace-sidebar, workspace-setup, workspace-setup-readiness, select-readiness, source-fixture, source-runtime]
         default: full
+      window_chrome_windows:
+        description: With window-chrome-repair, renew the changed endpoint control on both Windows hosts
+        type: boolean
+        default: false
       desktop_ux_profile:
         description: With desktop-ux, select foundation, grouped Board or project navigation acceptance
         type: choice
@@ -248,6 +252,7 @@ jobs:
     with:
       repair_only: ${{ inputs.checks == 'window-chrome-repair' }}
       macos_only: ${{ inputs.checks == 'window-chrome-macos' }}
+      windows_repair: ${{ inputs.checks == 'window-chrome-repair' && inputs.window_chrome_windows }}
 
   general-settings:
     if: ${{ github.event_name == 'workflow_dispatch' && (inputs.checks == 'general-settings' || inputs.checks == 'general-settings-management') }}

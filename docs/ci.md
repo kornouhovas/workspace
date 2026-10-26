@@ -21,6 +21,9 @@ and the200ms assertion unchanged. After focused success, renew the unreached
 macOS consumers with `checks: window-chrome-macos` and retain independently complete Windows receipts only with
 unchanged application/build inputs. Original failures remain failed. The focused repair and macOS renewal use separate
 concurrency suffixes so they do not cancel a receipt-producing platform run.
+After the macOS focused gate, `window_chrome_windows: true` with the repair
+selector renews only the changed shared endpoint control on Windows latest/2022;
+it does not repeat their unchanged DEV/package journeys.
 
 ## General preferences
 

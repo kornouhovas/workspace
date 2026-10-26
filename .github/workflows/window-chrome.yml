@@ -9,6 +9,9 @@ on:
       macos_only:
         type: boolean
         default: false
+      windows_repair:
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -18,7 +21,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: ${{ (inputs.repair_only || inputs.macos_only) && fromJSON('["macos-latest"]') || fromJSON('["macos-latest","windows-latest","windows-2022"]') }}
+        os: ${{ (inputs.repair_only && inputs.windows_repair) && fromJSON('["windows-latest","windows-2022"]') || (inputs.repair_only || inputs.macos_only) && fromJSON('["macos-latest"]') || fromJSON('["macos-latest","windows-latest","windows-2022"]') }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30
     steps:
@@ -40,7 +43,7 @@ jobs:
           mkdir -p work/ci-window-chrome
           set -o pipefail
           node --import tsx --test tests/renderer-app.test.tsx tests/runtime-view-readiness.test.mjs tests/workspace-sessions-service.test.mjs tests/backend-lifecycle.test.mjs tests/build-smoke.test.mjs tests/test-suites.test.mjs 2>&1 | tee work/ci-window-chrome/regressions.log
-      - name: Original macOS endpoint observation regression
+      - name: Endpoint observation regression
         if: ${{ inputs.repair_only }}
         shell: bash
         run: |
