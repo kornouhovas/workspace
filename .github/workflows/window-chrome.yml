@@ -63,6 +63,7 @@ jobs:
         if: ${{ !inputs.repair_only }}
         run: npm run smoke:window-chrome
         env:
+          WORKSPACE_WINDOW_CHROME_TRACE: ${{ inputs.native_repair && '1' || '0' }}
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-window-chrome/dev
       - name: Retained shell and settings journey
         if: ${{ !inputs.repair_only && !inputs.native_repair }}

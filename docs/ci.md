@@ -30,7 +30,13 @@ the preceding session save. A300ms disabled-control injection reproduces the sam
 15s acknowledgment failure. `checks: window-chrome-native-repair` selects only
 macOS build prerequisites, that bounded control and the original full DEV journey.
 The driver waits for an enabled button before one Enter and preserves the shared
-15s action/acknowledgment budget. After focused success, renew all DEV/package
+15s action/acknowledgment budget. Run40360849243 showed that this guard alone
+does not settle the original failure. A controlled native-frame callback now
+reproduces the same failure with Enter delivered to the project preview after
+close returns focus asynchronously. The native-repair DEV step temporarily adds
+a bounded128-event focus/key/sidebar-state trace and marks its receipt diagnostic;
+it is not acceptance. No authored labels, paths or property values are recorded.
+After diagnosis and cold focused success, renew all DEV/package
 consumers of the changed smoke driver on the three hosts; do not reuse the older
 Windows driver receipts as execution of the repaired driver.
 
