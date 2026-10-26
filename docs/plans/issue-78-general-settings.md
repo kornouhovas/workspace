@@ -30,3 +30,27 @@ inputs are unchanged; no installer or filesystem release matrix is selected.
 Reference: existing shell composition from main `080b416c`, bb component patterns
 at `f135a001` (docs/reuse.md). Deliberate change: language and theme share General.
 Runtime/CI acceptance and delivered SHA are recorded in the GitHub checkpoint.
+
+## Local implementation evidence
+
+- TDD red: the adapted App regression rejected the separate Appearance tab;
+  green after moving its controls into General. EN/RU independent pending/error
+  scenarios pass, along with preserved language/theme acceptance and retry.
+- Typecheck, lint, local documentation links and 71 CI routing checks pass.
+- Real Electron shell passes 28 recorded checks, EN/RU/light/dark at both desktop
+  sizes, retained scroll/focus, restart preferences, source review/Cancel and
+  last-workspace focus, normal shutdown and owned-fixture cleanup.
+- Inspected General captures: English dark 1024, Russian light 1024, English
+  light 1440 and Russian dark 1440; remaining matrix captures are retained.
+  Existing main/bb hierarchy/tokens remain; only the deliberate shared General
+  composition differs. All controls/labels fit without horizontal overflow.
+- Native theme probe established Playwright's default light media override:
+  native dark was true while matchMedia stayed false. Clearing that override
+  makes actual nativeTheme dark/light changes reach matchMedia and the app.
+  The original shell rerun now covers System and fixed explicit Dark.
+- The inherited source-list/direct preview was superseded by #74. Its current
+  replacement edits an exclusion draft, reviews shared impact, cancels without
+  acknowledgment and requires unchanged public project state. Independent Spec
+  review found no loss of guarantee.
+- Two independent code-review axes: zero Standards and zero Spec findings.
+  Final full-suite and supported-host CI receipts remain GitHub acceptance gates.

@@ -167,10 +167,16 @@ try {
   await app.evaluate(({nativeTheme}) => { nativeTheme.themeSource = "system"; });
   await returnToWorkspace(page);
   await openSettingsSection(page, "sources");
-  await page.getByRole("button", { name: source, exact: true }).click();
-  await page.getByRole("button", { name: /^(Preview project folders|Посмотреть папки проектов)$/ }).click();
-  await page.getByRole("button", { name: /^(Apply reviewed projects|Применить проверенные проекты)$/ }).waitFor();
-  await page.getByRole("button", { name: /^(Cancel|Отмена)$/ }).click();
+  // #74 replaced the legacy source-list/direct-discovery page with contextual
+  // role settings. Retain read-only preview/Cancel through that current boundary.
+  const beforeReview = await query({type:"workspace.listProjects",workspaceId:first.workspaceId});
+  const exclude = page.getByRole("checkbox", {name:/^(Exclude|Исключить): Project 00$/});
+  await exclude.check();
+  await page.getByRole("button", {name:/^(Review changes|Проверить изменения)$/}).click();
+  await page.locator(".folder-role-review").waitFor();
+  assert.equal(await page.locator(".folder-role-review").getByRole("checkbox").isChecked(), false);
+  await page.getByRole("button", {name:/^(Cancel|Отмена)$/}).click();
+  assert.deepEqual(await query({type:"workspace.listProjects",workspaceId:first.workspaceId}), beforeReview);
   await returnToWorkspace(page);
   const nav = page.getByRole("navigation", { name: /^(Workspaces|Рабочие пространства)$/ });
   await nav.getByRole("button", { name: "Second workspace", exact: true }).click();
