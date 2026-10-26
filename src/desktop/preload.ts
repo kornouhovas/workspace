@@ -3,6 +3,11 @@ import type { BackendStatus, WorkspaceDesktopApi } from "../contracts/desktop-ap
 
 import { isWorkspaceChangeEvent } from "../contracts/service-protocol.js";
 
+// The sandboxed preload owns this presentation hint; it grants no Node or IPC access.
+window.addEventListener("DOMContentLoaded", () => {
+  if (process.platform === "darwin") document.documentElement.dataset.windowChrome = "macos";
+}, { once: true });
+
 const api: WorkspaceDesktopApi = {
   getBackendStatus: () => ipcRenderer.invoke("workspace:backend-status"),
   recovery: (input) => ipcRenderer.invoke("workspace:command", input),

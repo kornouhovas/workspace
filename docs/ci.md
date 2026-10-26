@@ -1,5 +1,16 @@
 # CI checks and diagnostic routes
 
+## Native macOS top strip
+
+For #79 select `desktop-ci.yml` with `checks: window-chrome`. It runs static
+checks, retained App/session/isolation/routing regressions, the shell/settings
+journey and actual development plus checked packaged Electron window journeys
+on macOS latest, Windows latest and Windows2022. Native geometry, minimize/restore,
+fullscreen return, EN/RU, both themes/sizes, keyboard and pointer navigation, normal
+shutdown and fixture cleanup have separate receipts. Local native input and full
+window captures supplement the automated lifecycle calls. No installer, schema,
+resource or dependency input changes; final #67/release gates remain separate.
+
 ## General preferences
 
 For #78 select `desktop-ci.yml` with `checks: general-settings`. This bounded

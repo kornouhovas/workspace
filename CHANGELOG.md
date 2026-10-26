@@ -4,6 +4,8 @@ User-facing changes are maintained in English. The first target release is 0.1.0
 
 ## Unreleased
 
+- Integrate native macOS window buttons with navigation and tabs in one top strip.
+
 - Combine language and appearance in General settings with independent save feedback.
 
 - Edit workspace-local status colors from folder settings and Board/Table group tools; preserve independent same-name statuses and show updates across views.

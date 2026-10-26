@@ -49,6 +49,10 @@ async function createWindow(): Promise<void> {
     height: 720,
     minWidth: 1024,
     minHeight: 720,
+    ...(process.platform === "darwin" ? {
+      titleBarStyle: "hiddenInset" as const,
+      trafficLightPosition: { x: 18, y: 18 },
+    } : {}),
     webPreferences: {
       preload: join(__dirname, "preload.cjs"),
       contextIsolation: true,

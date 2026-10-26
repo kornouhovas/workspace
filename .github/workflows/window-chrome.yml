@@ -1,0 +1,51 @@
+name: Integrated native window chrome
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  window-chrome:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest, windows-2022]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.21.1
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm run check:docs
+      - run: npm run build
+      - name: Retained shell, session and isolation regressions
+        run: node --import tsx --test tests/renderer-app.test.tsx tests/runtime-view-readiness.test.mjs tests/workspace-sessions-service.test.mjs tests/build-smoke.test.mjs tests/test-suites.test.mjs
+      - name: Native development window
+        run: npm run smoke:window-chrome
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-window-chrome/dev
+      - name: Retained shell and settings journey
+        run: npm run smoke:shell
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-window-chrome/shell
+      - run: npm run package:built
+      - run: npm run check:artifact -- release
+      - name: Native packaged window
+        run: npm run smoke:window-chrome
+        env:
+          WORKSPACE_SMOKE_MODE: release
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-window-chrome/release
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: window-chrome-${{ matrix.os }}-${{ github.sha }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
+          path: work/ci-window-chrome/
+          if-no-files-found: error
+          retention-days: 14

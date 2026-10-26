@@ -838,6 +838,29 @@ p { margin-block: .5rem; }
 [hidden] { display: none !important; }
 .sidebar-navigation { flex-wrap: wrap; }
 .sidebar-navigation .desktop-brand { flex: 1 0 100%; }
+/* Native macOS controls, navigation and tabs share the same 50px strip.
+   Windows keeps its standard native frame and existing renderer composition. */
+:root[data-window-chrome="macos"] .desktop-sidebar { padding-top: 0; }
+:root[data-window-chrome="macos"] .sidebar-navigation {
+  height: 50px; margin-inline: -8px; padding-left: 84px; flex-wrap: nowrap;
+  -webkit-app-region: drag; user-select: none;
+}
+:root[data-window-chrome="macos"] .desktop-brand { display: none; }
+:root[data-window-chrome="macos"] .view-controls {
+  min-height: 34px; -webkit-app-region: drag; user-select: none;
+}
+:root[data-window-chrome="macos"] .saved-view-tabs { width: fit-content; max-width: 100%; }
+:root[data-window-chrome="macos"] :is(button, input, select, textarea, [role="tablist"], [role="separator"], [draggable="true"]) {
+  -webkit-app-region: no-drag;
+}
+:root[data-window-chrome="macos"] .collapsed-navigation {
+  left: 84px; top: 10px; -webkit-app-region: no-drag;
+}
+:root[data-window-chrome="macos"] .desktop-shell--collapsed .workspace-screen { padding-top: 8px; }
+:root[data-window-chrome="macos"] .desktop-shell--collapsed .view-controls { padding-left: 180px; }
+:root[data-window-chrome="macos"] .desktop-settings::before {
+  content: ""; display: block; height: 50px; -webkit-app-region: drag;
+}
 .project-detail-fields td { grid-template-columns: minmax(80px, 160px) minmax(0, 1fr); }
 .project-area-scroll { scrollbar-gutter: stable; }
 .collapsed-history-error { position: absolute; top: 36px; left: 8px; z-index: 6; background: var(--background); padding: 8px; border: 1px solid var(--border); }
