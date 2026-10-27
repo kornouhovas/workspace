@@ -1,6 +1,8 @@
 name: Combined desktop corrections
 
 on:
+  push:
+    branches: [codex/issue-82-combined-desktop]
   workflow_dispatch:
 
 permissions:
