@@ -1,3 +1,4 @@
+import { dismissCreationMenu } from "./runtime-menu-transition.mjs";
 import { enterContextFor } from "./runtime-context-tools.mjs";
 import { openGroupingControls, closeGroupingControls, waitForPresentationBounds } from "./runtime-presentation-controls.mjs";
 /* global window, document */
@@ -96,6 +97,16 @@ try {
         });
         assert.deepEqual(layout, { viewport:true, documentScroll:false, workScroll:true, sidebarScroll:true, noHorizontalOverflow:true });
         await page.screenshot({ path: join(evidence, `${language}-${theme}-${size.width}-table.png`) });
+        if (process.env.WORKSPACE_VIEW_MENU_TRACE === "1") await page.evaluate(() => {
+          if (window.viewMenuFocusListener) document.removeEventListener("focusin", window.viewMenuFocusListener, true);
+          window.viewMenuFocusTrace = [];
+          window.viewMenuFocusListener = event => {
+            const node = event.target, label = node instanceof window.Element ? node.getAttribute("aria-label") ?? "" : "";
+            const kind = /^(New view|Новое представление)$/.test(label) ? "create" : /^(View actions|Действия с представлением):/.test(label) ? "actions" : node instanceof window.Element && node.getAttribute("role") === "menuitem" ? "menuitem" : "other";
+            if (window.viewMenuFocusTrace.length < 128) window.viewMenuFocusTrace.push({ time: Math.round(window.performance.now()), kind });
+          };
+          document.addEventListener("focusin", window.viewMenuFocusListener, true);
+        });
         const viewTab = page.getByRole("tab", { name: view.name, exact: true });
         await viewTab.focus(); await page.keyboard.press("ArrowLeft");
         const focusStyle = await page.evaluate(() => { const node = document.activeElement, style = window.getComputedStyle(node); return { role: node?.getAttribute("role"), width: style.outlineWidth, color: style.outlineColor }; });
@@ -108,7 +119,7 @@ try {
         const createMenu = page.getByRole("menu"); await createMenu.waitFor();
         const menuBounds = await createMenu.boundingBox(); assert.ok(menuBounds && menuBounds.x >= 0 && menuBounds.y >= 0 && menuBounds.x + menuBounds.width <= viewport.width && menuBounds.y + menuBounds.height <= viewport.height);
         await page.screenshot({ path: join(evidence, `${language}-${theme}-${size.width}-view-create-menu.png`) });
-        await page.keyboard.press("Escape");
+        await dismissCreationMenu(page, create);
         const actions = page.getByRole("button", { name: /^(View actions|Действия с представлением):/ });
         await actions.focus(); await actions.press("Enter");
         await page.getByRole("menu").waitFor();
@@ -116,6 +127,7 @@ try {
         await page.keyboard.press("Escape");
         await actions.and(page.locator(":focus")).waitFor();
         assert.equal(await actions.evaluate(el => el === document.activeElement), true);
+        if (process.env.WORKSPACE_VIEW_MENU_TRACE === "1") checks.push({ menuFocusTrace: await page.evaluate(() => window.viewMenuFocusTrace), language, theme, size });
         const filters = await enterContextFor(page,page.getByRole("button", { name: /^(Search and filters|Поиск и фильтры)$/,includeHidden:true }));
         await filters.focus(); await filters.press("Enter");
         const popover = page.getByRole("dialog", { name: /^(Search and filters|Поиск и фильтры)$/ });
@@ -230,6 +242,7 @@ try {
   assert.equal(await createName.evaluate(el => el === document.activeElement), true);
   checks.push({ lastWorkspaceRemovalFocus:true });
 } catch (error) { failed = error;
+  if (page && process.env.WORKSPACE_VIEW_MENU_TRACE === "1") checks.push({ menuFocusFailureTrace: await page.evaluate(() => window.viewMenuFocusTrace ?? []).catch(() => []) });
   if (page) { await page.screenshot({ path: join(evidence, "failure.png") }).catch(() => {});
     console.log(await page.evaluate(() => ({ focus:document.activeElement?.textContent?.slice(0,80), selected:document.querySelector('[role="tab"][aria-selected="true"]')?.textContent })).catch(() => ({}))); }
 }

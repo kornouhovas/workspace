@@ -500,3 +500,19 @@ test('recovery driver renewal covers both modes on all hosts and only missing ma
  assert.ok(workflow.on.workflow_dispatch.inputs.desktop_ux_profile.options.includes('filesystem-assignment-recovery-renewal'));
  assert.ok(workflow.jobs['desktop-ux'].steps.some(step=>step.run==='node scripts/desktop-ux-checks.mjs filesystem-assignment-recovery-renewal'));
 });
+
+test('issue 81 repair routes original failures first and renews changed consumers on all hosts',async()=>{
+ const {readFile}=await import('node:fs/promises');const {load}=await import('js-yaml');const {runInNewContext}=await import('node:vm');
+ const workflow=load(await readFile('.github/workflows/desktop-ci.yml','utf8'));const job=workflow.jobs['view-menu-acceptance'];
+ const expression=job.strategy.matrix.os.slice(3,-2);
+ const matrix=checks=>Array.from(runInNewContext(expression,{fromJSON:JSON.parse,inputs:{checks}}));
+ assert.deepEqual(matrix('view-menu-focus'),['macos-latest','windows-2022']);
+ assert.deepEqual(matrix('view-menu-renewal'),['macos-latest','windows-latest','windows-2022']);
+ for(const checks of ['view-menu-focus','view-menu-renewal'])assert.ok(workflow.on.workflow_dispatch.inputs.checks.options.includes(checks));
+ for(const [name,command,focusedHost] of [['Deferred focus regression','node --import tsx --test tests/view-actions-native.test.mjs','macos-latest'],['Original macOS shell and changed consumer','npm run smoke:shell','macos-latest'],['Original Windows views and remaining consumer','npm run smoke:views','windows-2022']]){
+  const step=job.steps.find(step=>step.name===name);assert.equal(step.run,command);
+  for(const os of matrix('view-menu-renewal'))for(const checks of ['view-menu-focus','view-menu-renewal'])assert.equal(runInNewContext(step.if.slice(3,-2),{inputs:{checks},matrix:{os}}),checks==='view-menu-renewal'||os===focusedHost);
+ }
+ const artifact=job.steps.find(step=>step.name==='Preserve candidate evidence');assert.equal(artifact.if,'always()');assert.equal(artifact.with['if-no-files-found'],'error');
+ assert.match(workflow.concurrency.group,/view-menu-focus/);assert.match(workflow.concurrency.group,/view-menu-renewal/);
+});

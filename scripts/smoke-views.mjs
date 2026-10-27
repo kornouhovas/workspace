@@ -111,6 +111,7 @@ try {
     await tableTab.click({ button: "right" });
     await edit().waitFor();
     await page.keyboard.press("Escape");
+    await tableTab.and(page.locator(":focus")).waitFor();
     assert.equal(await tableTab.evaluate(node => node === document.activeElement), true);
     await reviewTab.dragTo(tableTab);
     await page.waitForFunction(() => [...document.querySelectorAll('[role="tab"]')].filter(node => ["Table", "Review"].includes(node.textContent)).map(node => node.textContent).join(",") === "Review,Table");

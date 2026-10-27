@@ -10,6 +10,7 @@ import {build} from 'esbuild';
 import {_electron} from 'playwright-core';
 import {closeElectron,cleanupOwnedFixture,withDeadline} from '../scripts/runtime-lifecycle.mjs';
 import {openRuntimeViewActions} from '../scripts/runtime-view-actions.mjs';
+import {dismissCreationMenu} from '../scripts/runtime-menu-transition.mjs';
 
 const renderer=language=>`
 import React,{useRef} from 'react';
@@ -64,6 +65,34 @@ test('view actions dismiss the actual owning tools before a delayed grouping foc
    assert.deepEqual(await page.evaluate(()=>globalThis.viewActionCommands),[],'Cancel cannot create or delete a view');
   }
  }catch(error){failure=error;}
+ try{if(app){await closeElectron(app);stopped=child.exitCode!==null||child.signalCode!==null;assert.equal(stopped,true);}}catch(error){failure??=error;}
+ try{await cleanupOwnedFixture(profile,{processesStopped:stopped,primaryFailure:failure,record:result=>{cleanup=result;}});}catch(error){failure??=error;}
+ if(failure)throw failure;
+ assert.equal(cleanup.status,'passed');
+});
+
+
+test('a deferred creation-menu focus return cannot steal focus from the next actions menu',async()=>{
+ const profile=await mkdtemp(join(tmpdir(),'workspace-view-menu-return-'));
+ let app,child,failure,stopped=false,cleanup;
+ try {
+  app=await _electron.launch({executablePath:createRequire(import.meta.url)('electron'),args:[fileURLToPath(new URL('./fixtures/rename-editor-readiness-electron.cjs',import.meta.url))],env:{...process.env,WORKSPACE_RENAME_EDITOR_PROFILE:profile},timeout:10000});
+  child=app.process();const page=await app.firstWindow();page.setDefaultTimeout(3000);
+  const url=await app.evaluate(()=>globalThis.renameEditorInitialLoad);await page.waitForURL(url,{waitUntil:'load'});
+  const bundle=await build({stdin:{contents:renderer('en'),loader:'tsx',resolveDir:process.cwd()},bundle:true,write:false,format:'iife',platform:'browser'});
+  await page.setContent('<div id="root"></div>');await page.addScriptTag({content:bundle.outputFiles[0].text});
+  const create=page.getByRole('button',{name:'New view',exact:true});
+  const actions=page.getByRole('button',{name:/^View actions: Review$/});
+  await create.focus();await create.press('Enter');await page.getByRole('menuitem',{name:'Board'}).waitFor();
+  await create.evaluate(node=>{const original=node.focus.bind(node);node.focus=(...args)=>{globalThis.deferredReturnScheduled=true;setTimeout(()=>{original(...args);globalThis.deferredReturnFinished=true;},600);};});
+  await dismissCreationMenu(page,create);
+  await page.waitForFunction(()=>globalThis.deferredReturnScheduled===true);
+  await openRuntimeViewActions(page,actions);await page.getByRole('menuitem',{name:'Duplicate view'}).waitFor();
+  await page.keyboard.press('Escape');
+  await page.waitForFunction(()=>globalThis.deferredReturnFinished===true);
+  await actions.and(page.locator(':focus')).waitFor();
+  assert.equal(await actions.evaluate(node=>node===document.activeElement),true,'The subsequent menu trigger owns final focus');
+ } catch(error){failure=error;}
  try{if(app){await closeElectron(app);stopped=child.exitCode!==null||child.signalCode!==null;assert.equal(stopped,true);}}catch(error){failure??=error;}
  try{await cleanupOwnedFixture(profile,{processesStopped:stopped,primaryFailure:failure,record:result=>{cleanup=result;}});}catch(error){failure??=error;}
  if(failure)throw failure;

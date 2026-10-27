@@ -2462,3 +2462,9 @@ It renews status DEV on Windows2022, status package/artifact prerequisites on al
 three hosts, and the missing retained/ordinary/role-package rows on Mac/Windows
 latest. Full/runtime defaults still run their original inventory. Evaluated routing
 checks assert per-host command counts;74/74 pass locally and independently.
+
+## Issue 81 focus-driver repair
+
+Navigation run [40477262633](https://github.com/kornouhovas/workspace/actions/runs/40477262633) at `0051a8302afaecdcfdaed3ac9a8fd673a3107cb3` failed the shell focus-return check on macOS and the views context-menu focus check on Windows 2022. Both failures and the limits of their original evidence are recorded in [issue 81 verification](verification/issue-81-view-tabs.md#ci-repair-in-progress). The repair changes only smoke drivers, regression tests and workflow/documentation; application and build inputs remain unchanged.
+
+Dispatch `checks=view-menu-focus` first to run each original failed consumer on its affected host; inspect its exact-SHA provenance and artifacts. Only after it passes, dispatch `checks=view-menu-renewal` to renew changed consumers and the previously unreached views tail on all three hosts. Each route has its own concurrency group, preserves native artifacts even on failure, and keeps the original assertions. The opt-in bounded shell focus trace is diagnostic evidence, not evidence of what happened in the original run. Existing default routes are unchanged.
