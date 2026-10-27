@@ -132,6 +132,11 @@ jobs:
           mkdir -p work/ci-view-menu-routing
           node -e 'require("fs").writeFileSync("work/ci-view-menu-routing/provenance.json", JSON.stringify({sha:process.env.GITHUB_SHA,run:process.env.GITHUB_RUN_ID,attempt:process.env.GITHUB_RUN_ATTEMPT,os:process.env.RUNNER_OS}))'
           node --test tests/test-suites.test.mjs 2>&1 | tee work/ci-view-menu-routing/tests.log
+      - name: Changed workflow routing controls
+        shell: bash
+        run: |
+          set -o pipefail
+          node --import tsx --test tests/desktop-ux-checks.test.mjs 2>&1 | tee work/ci-view-menu-routing/controls.log
       - name: Preserve workflow inventory evidence
         if: always()
         uses: actions/upload-artifact@v4
