@@ -384,6 +384,11 @@ function DiscoveryWorkspaceContent({ memory, client, workspaceId, sourceId, refr
           .find(button => button.dataset.statusProjectId === id && !button.disabled && !button.closest("[hidden], [inert]"));
       const target = current ?? tableHeading.current;
       target?.focus();
+      if (target instanceof HTMLButtonElement) target.addEventListener("focusout", () => {
+        // A later source refresh may temporarily disable the restored control.
+        // Keep its return intent only when that disable drops focus to the body.
+        if (target.disabled && document.activeElement === document.body) restoreCategoryMoveFocus.current = true;
+      }, { once: true });
       restoreCategoryMoveFocus.current = false;
     });
     return () => window.cancelAnimationFrame(frame);

@@ -58,6 +58,7 @@ Read development's scope, integration, tracker, executor-selection and verificat
 | Category move | Architecture's category-move/recovery sections, [move ticket](specs/workspace-0.1.0-tickets/12-move-projects-by-editing-folder-backed-select.md) and originating issue |
 | UI implementation/review | [Reuse adaptation policy](reuse.md#adaptation-policy), affected product/architecture interaction, accessibility, EN/RU and failure/recovery constraints, and the issue's acceptance criteria |
 | Native macOS top strip | [#79 scenarios](plans/issue-79-window-chrome.md), [verification](verification/issue-79-window-chrome.md) and exact native DEV/package evidence |
+| Combined desktop corrections | [#82 scenario ledger](plans/issue-82-combined-corrections.md), [verification](verification/issue-82-combined-corrections.md), and the [desktop UX matrix](desktop-ux-verification.md) |
 | Desktop UX correction and delivery | [Desktop spec](specs/workspace-desktop-ux.md), [reference authority](adr/0008-desktop-experience-reference-authority.md), [verification matrix](desktop-ux-verification.md), [post-#52 audit](research/desktop-experience-audit.md) and originating GitHub issue |
 | Design-to-development process | [Primary-source research](research/design-to-development-workflow.md), including concrete handoff, running design review and separate visual/behavior evidence |
 | Issue operations or dependency graph | [Tracker](issue-tracker.md), including native and textual fallback relationships |

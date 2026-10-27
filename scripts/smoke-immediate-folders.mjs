@@ -12,7 +12,7 @@ import {openSettingsSection, returnToWorkspace, setInterfaceLanguage} from './ru
 const root=resolve(import.meta.dirname,'..');
 const fixture=await realpath(await mkdtemp(join(tmpdir(),'immediate-folders-runtime-')));
 const source=join(fixture,'Root'),data=join(fixture,'data');
-for (const path of ['Archive/cpp/nested','Projects/draw','Empty']) await mkdir(join(source,path),{recursive:true});
+for (const path of ['Archive/cpp/nested','Archive/design_system','Projects/Anytype','Projects/draw','Empty']) await mkdir(join(source,path),{recursive:true});
 await writeFile(join(source,'Projects','draw','keep.txt'),'User project bytes');
 const evidence=resolve(process.env.WORKSPACE_SMOKE_EVIDENCE_DIR??'work/issue-73-immediate-folders');
 await mkdir(evidence,{recursive:true});
@@ -39,11 +39,13 @@ try {
   await app.evaluate(({dialog},source)=>{dialog.showOpenDialog=globalThis.savedPicker;process.env.WORKSPACE_TEST_ROOT_PICKER_PATH=source;},source);
   await add().press('Enter');
   await page.getByRole('cell',{name:'cpp',exact:true}).waitFor();
+  await page.getByRole('cell',{name:'design_system',exact:true}).waitFor();
+  await page.getByRole('cell',{name:'Anytype',exact:true}).waitFor();
   await page.getByRole('cell',{name:'draw',exact:true}).waitFor();
   const first=(await query({type:'workspace.load'})).activeWorkspace;
   const projects=await query({type:'workspace.listProjects',workspaceId:first.workspaceId});
   assert.equal(first.name,'Workspace');assert.equal(projects.mode,'grouped');
-  assert.deepEqual(projects.projects.map(p=>p.relativePath).sort(),['Archive/cpp','Projects/draw']);
+  assert.deepEqual(projects.projects.map(p=>p.relativePath).sort(),['Archive/cpp','Archive/design_system','Projects/Anytype','Projects/draw']);
   assert.equal((await query({type:'workspace.getViewGrouping',workspaceId:first.workspaceId,viewId:first.viewId})).config.propertyId,projects.categoryProperty.propertyId);
   assert.equal((await query({type:'workspace.listSources'})).sources[0].archiveRelativePath,null);
   assert.equal(await page.getByRole('button',{name:/^(Set up later|Настроить позже)$/}).count(),0);

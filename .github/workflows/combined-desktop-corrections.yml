@@ -1,0 +1,82 @@
+name: Combined desktop corrections
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  corrections:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest, windows-2022]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.21.1
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm run check:docs
+      - run: npm run build
+      - name: Corrected flows in development Electron
+        shell: bash
+        run: |
+          set -uo pipefail
+          for script in smoke-immediate-folders smoke-folder-roles smoke-status-assignment smoke-special-archive smoke-status-colors smoke-desktop-shell smoke-window-chrome smoke-project-navigation smoke-views smoke-source-association smoke-source-outage smoke-data-recovery; do
+            mkdir -p "work/ci-combined-corrections/dev/$script"
+            if [[ "$script" == smoke-views || "$script" == smoke-source-outage ]]; then
+              WORKSPACE_SMOKE_EVIDENCE_DIR="work/ci-combined-corrections/dev/$script" node "scripts/$script.mjs" dev > "work/ci-combined-corrections/dev/$script/runtime.log" 2>&1
+            else
+              WORKSPACE_SMOKE_EVIDENCE_DIR="work/ci-combined-corrections/dev/$script" node "scripts/$script.mjs" > "work/ci-combined-corrections/dev/$script/runtime.log" 2>&1
+            fi
+            result=$?
+            echo "$script $result" | tee -a work/ci-combined-corrections/dev-results.txt
+          done
+      - name: Package candidate
+        run: npx electron-builder --dir
+      - run: npm run check:artifact -- release
+      - name: Corrected flows in packaged Electron
+        shell: bash
+        run: |
+          set -uo pipefail
+          for script in smoke-immediate-folders smoke-folder-roles smoke-status-assignment smoke-special-archive smoke-status-colors smoke-desktop-shell smoke-window-chrome smoke-project-navigation smoke-views smoke-source-association smoke-source-outage smoke-data-recovery; do
+            mkdir -p "work/ci-combined-corrections/release/$script"
+            if [[ "$script" == smoke-views || "$script" == smoke-source-outage ]]; then
+              WORKSPACE_SMOKE_MODE=release WORKSPACE_SMOKE_EVIDENCE_DIR="work/ci-combined-corrections/release/$script" node "scripts/$script.mjs" release > "work/ci-combined-corrections/release/$script/runtime.log" 2>&1
+            else
+              WORKSPACE_SMOKE_MODE=release WORKSPACE_SMOKE_EVIDENCE_DIR="work/ci-combined-corrections/release/$script" node "scripts/$script.mjs" > "work/ci-combined-corrections/release/$script/runtime.log" 2>&1
+            fi
+            result=$?
+            echo "$script $result" | tee -a work/ci-combined-corrections/release-results.txt
+          done
+      - name: Strict representative scale
+        shell: bash
+        run: |
+          mkdir -p work/ci-combined-corrections/performance
+          WORKSPACE_SMOKE_EVIDENCE_DIR=work/ci-combined-corrections/performance WORKSPACE_PERFORMANCE_ROOT="$PWD" node scripts/smoke-performance.mjs --enforce --project-flows > work/ci-combined-corrections/performance/runtime.log 2>&1
+      - name: Actual macOS System appearance switching
+        if: matrix.os == 'macos-latest'
+        shell: bash
+        run: |
+          mkdir -p work/ci-combined-corrections/system-theme
+          WORKSPACE_SMOKE_MODE=release WORKSPACE_SMOKE_EVIDENCE_DIR=work/ci-combined-corrections/system-theme node scripts/smoke-system-theme.mjs > work/ci-combined-corrections/system-theme/runtime.log 2>&1
+      - name: Require every corrected journey
+        if: always()
+        shell: bash
+        run: |
+          if [[ ! -f work/ci-combined-corrections/dev-results.txt || ! -f work/ci-combined-corrections/release-results.txt ]]; then exit 1; fi
+          if grep -v ' 0$' work/ci-combined-corrections/dev-results.txt work/ci-combined-corrections/release-results.txt; then exit 1; fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: combined-corrections-${{ matrix.os }}-${{ github.sha }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
+          path: work/ci-combined-corrections/
+          if-no-files-found: error
+          retention-days: 14
