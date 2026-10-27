@@ -66,7 +66,8 @@ try {
   }
   await page.getByRole('button',{name:'Collapse sidebar',exact:true}).click();
   await capture('empty-collapsed.png',{width:1024,height:720});
-  await restoreSidebar();
+  await page.getByRole('button',{name:'Restore sidebar',exact:true}).click({timeout:3000});
+  await page.getByRole('button',{name:'Collapse sidebar',exact:true}).waitFor();
   await page.getByRole('button',{name:'Add workspace',exact:true}).click();
   await page.getByRole('cell',{name:'Atlas',exact:true}).waitFor();
   for(const language of boundedControl?['en']:['en','ru']){
@@ -95,7 +96,12 @@ try {
         await navigation.click();
         const restore=page.getByRole('button',{name:language==='en'?'Restore sidebar':'Восстановить боковую панель',exact:true});
         if(process.platform==='darwin')assert.ok((await restore.boundingBox()).x>=80,'Collapsed navigation clears native buttons');
-        await restoreSidebar();
+        if(process.platform==='darwin') {
+          const hitRegion=await restore.evaluate(button=>{const control=button.getBoundingClientRect(),drag=document.querySelector('.view-controls').getBoundingClientRect();return {control:{left:control.left,right:control.right,top:control.top,bottom:control.bottom},drag:{left:drag.left,right:drag.right,top:drag.top,bottom:drag.bottom}};});
+          assert.ok(hitRegion.control.right<=hitRegion.drag.left || hitRegion.control.left>=hitRegion.drag.right || hitRegion.control.bottom<=hitRegion.drag.top || hitRegion.control.top>=hitRegion.drag.bottom, `Restore control overlaps native drag region: ${JSON.stringify(hitRegion)}`);
+        }
+        await restore.click({timeout:3000});
+        await navigation.waitFor();
         const tab=page.locator('.saved-view-tabs [role="tab"]').first();
         await tab.focus();await tab.press('Enter');
         const tabBounds=await tab.boundingBox();
@@ -135,6 +141,12 @@ try {
         await restoreSidebar(previewButton.or(tab));
         await openSettingsSection(page);await page.getByRole('heading',{name:language==='en'?'General':'Основные',exact:true}).waitFor();
         await capture(`${language}-${theme}-${size.width}-settings.png`,size);
+        await navigation.click();
+        if(process.platform==='darwin') {
+          const settingsInset=await page.locator('.desktop-settings').evaluate(el=>parseFloat(window.getComputedStyle(el,'::before').marginLeft));
+          assert.ok(settingsInset>=180, `Settings drag region overlaps collapsed navigation: ${settingsInset}`);
+        }
+        await restore.click({timeout:3000}); await navigation.waitFor();
         await returnToWorkspace(page);
         report.checks.push({language,theme,size,navigationPointer:true,restoreKeyboard:true,tabsKeyboard:true,projectTabsAndMenu:true,collapsedProjectClose:true,settingsReturn:true});
       }

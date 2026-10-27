@@ -864,10 +864,11 @@ p { margin-block: .5rem; }
   -webkit-app-region: drag; user-select: none;
 }
 :root[data-window-chrome="macos"] .desktop-shell--collapsed .workspace-screen { padding-top: 8px; }
-:root[data-window-chrome="macos"] .desktop-shell--collapsed .view-controls { padding-left: 180px; }
+:root[data-window-chrome="macos"] .desktop-shell--collapsed .view-controls { margin-left: 180px; }
 :root[data-window-chrome="macos"] .desktop-settings::before {
   content: ""; display: block; height: 50px; -webkit-app-region: drag;
 }
+:root[data-window-chrome="macos"] .desktop-shell--collapsed .desktop-settings::before { margin-left: 180px; }
 .project-detail-fields td { grid-template-columns: minmax(80px, 160px) minmax(0, 1fr); }
 .project-area-scroll { scrollbar-gutter: stable; }
 .collapsed-history-error { position: absolute; top: 36px; left: 8px; z-index: 6; background: var(--background); padding: 8px; border: 1px solid var(--border); }
