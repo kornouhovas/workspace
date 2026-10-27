@@ -14,13 +14,68 @@ import { translate } from "../src/renderer/localization.js";
 const browser = new Window();
 Object.assign(globalThis, { window: browser, document: browser.document, HTMLElement: browser.HTMLElement, Element: browser.Element, Node: browser.Node, MutationObserver: browser.MutationObserver, CustomEvent: browser.CustomEvent, getComputedStyle: browser.getComputedStyle.bind(browser), NodeFilter: browser.NodeFilter, HTMLInputElement: browser.HTMLInputElement, ResizeObserver: browser.ResizeObserver });
 Object.defineProperty(globalThis, "navigator", { configurable: true, value: browser.navigator });
-const { cleanup, render, screen, waitFor, within } = await import("@testing-library/react");
+const { cleanup, fireEvent, render, screen, waitFor, within } = await import("@testing-library/react");
 const { default: userEvent } = await import("@testing-library/user-event");
 const { DiscoveryWorkspace } = await import("../src/renderer/components/DiscoveryPanel.js");
 const { ViewsPanel } = await import("../src/renderer/components/ViewsPanel.js");
 const { TextPropertiesTable } = await import("../src/renderer/components/TextPropertiesTable.js");
 // @ts-expect-error Built service module intentionally has no declarations.
 const { openSettingsService } = await import("../dist/service/settings.mjs");
+test("switching views does not insert a loading message above existing tabs", async () => {
+  const directory = mkdtempSync(join(tmpdir(), "view-switch-")), root = join(directory, "root"); mkdirSync(root);
+  const service = openSettingsService(join(directory, "workspace.sqlite"));
+  const workspaceId = service.handleCommand({ type: "workspace.create", rootPath: root, name: "One" }).value.workspaceId;
+  service.handleCommand({ type: "workspace.createView", workspaceId, name: "Board", kind: "board" });
+  let delayed = false;
+  const api = { workspace: async (input: {type:string}) => {
+    if (input.type === "workspace.listViews" && delayed) await new Promise<void>(resolve => setTimeout(resolve, 500));
+    return /workspace\.(list|get|query)/.test(input.type) ? service.handleQuery(input) : service.handleCommand(input);
+  }, onWorkspaceChange: () => () => {} } as unknown as WorkspaceDesktopApi;
+  const client = new WorkspaceServiceClient(api), user = userEvent.setup({ document });
+  try {
+    render(<ViewsPanel client={client} workspaceId={workspaceId} language="en" disabled={false} onChange={() => {}} />);
+    await screen.findByRole("tab", { name: "Board", selected: true }); delayed = true;
+    await user.click(screen.getByRole("tab", { name: "Table" }));
+    await waitFor(() => assert.equal(screen.getByRole("region", { name: "Views" }).getAttribute("aria-busy"), "true"));
+    assert.equal(screen.queryByText(translate("en", "viewsLoading")), null);
+    await screen.findByRole("tab", { name: "Table", selected: true });
+  } finally { cleanup(); service.close(); rmSync(directory, { recursive: true, force: true }); }
+});
+
+test("new view menu immediately creates a Board", async () => {
+  const directory = mkdtempSync(join(tmpdir(), "view-menu-")), root = join(directory, "root"); mkdirSync(root);
+  const service = openSettingsService(join(directory, "workspace.sqlite"));
+  const workspaceId = service.handleCommand({ type: "workspace.create", rootPath: root, name: "One" }).value.workspaceId;
+  const api = { workspace: async (input: {type:string}) => /workspace\.(list|get|query)/.test(input.type) ? service.handleQuery(input) : service.handleCommand(input), onWorkspaceChange: service.workspaces.subscribe } as unknown as WorkspaceDesktopApi;
+  const user = userEvent.setup({ document });
+  try {
+    render(<ViewsPanel client={new WorkspaceServiceClient(api)} workspaceId={workspaceId} language="en" disabled={false} onChange={() => {}} />);
+    await screen.findByRole("tab", { name: "Table" });
+    await user.click(screen.getByRole("button", { name: "New view" }));
+    await user.click(screen.getByRole("menuitem", { name: "Board" }));
+    await screen.findByRole("tab", { name: "Board", selected: true });
+    assert.equal(screen.queryByLabelText("View name"), null);
+    await user.pointer({ keys: "[MouseRight]", target: screen.getByRole("tab", { name: "Table" }) });
+    await user.click(screen.getByRole("menuitem", { name: "Edit view" }));
+    assert.equal((screen.getByLabelText("View name") as HTMLInputElement).value, "Table");
+    await user.keyboard("{Escape}");
+    const board = screen.getByRole("tab", { name: "Board" }), table = screen.getByRole("tab", { name: "Table" });
+    table.getBoundingClientRect = () => ({ left: 0, width: 100 } as DOMRect);
+    board.getBoundingClientRect = () => ({ left: 102, width: 100 } as DOMRect);
+    fireEvent.pointerDown(board, { button: 0, clientX: 150, pointerId: 1 });
+    fireEvent.pointerMove(board, { clientX: 25, clientY: 500, pointerId: 1 });
+    fireEvent.keyDown(window, { key: "Escape" });
+    fireEvent.pointerUp(board, { clientX: 25, clientY: 500, pointerId: 1 });
+    assert.deepEqual(service.handleQuery({ type: "workspace.listViews", workspaceId }).value.views.map((view: { name: string }) => view.name), ["Table", "Board"]);
+    fireEvent.pointerDown(board, { button: 0, clientX: 150, pointerId: 1 });
+    fireEvent.pointerMove(board, { clientX: 25, clientY: 500, pointerId: 1 });
+    assert.equal(board.style.transform, "translateX(-125px)");
+    assert.equal(table.style.transform, "translateX(102px)");
+    fireEvent.pointerUp(board, { clientX: 25, clientY: 500, pointerId: 1 });
+    await waitFor(() => assert.deepEqual(service.handleQuery({ type: "workspace.listViews", workspaceId }).value.views.map((view: { name: string }) => view.name), ["Board", "Table"]));
+  } finally { cleanup(); service.close(); rmSync(directory, { recursive: true, force: true }); }
+});
+
 for (const language of ["en", "ru"] as const) {
   test(`${language} keyboard creates and duplicates Board views and edits independent layout settings`, async () => {
     const directory = mkdtempSync(join(tmpdir(), "views-ui-")), root = join(directory, "root"); mkdirSync(root); mkdirSync(join(root, "Project"));
@@ -38,8 +93,10 @@ for (const language of ["en", "ru"] as const) {
       assert.equal((screen.getByRole("menuitem", { name: t("viewDelete") }) as HTMLElement).getAttribute("aria-disabled"), "true");
       await user.keyboard("{Escape}"); assert.equal(document.activeElement === actions, true);
       screen.getByRole("button", { name: t("viewCreate") }).focus(); await user.keyboard("{Enter}");
-      await user.type(screen.getByLabelText(t("viewName")), "Review");
-      await user.selectOptions(screen.getByLabelText(t("viewLayout")), "board"); await user.keyboard("{Tab}{Enter}");
+      await user.click(screen.getByRole("menuitem", { name: t("boardViewTitle") }));
+      await screen.findByRole("tab", { name: "Board", selected: true });
+      await user.click(actions); await user.click(screen.getByRole("menuitem", { name: t("viewEdit") }));
+      await user.clear(screen.getByLabelText(t("viewName"))); await user.type(screen.getByLabelText(t("viewName")), "Review{Enter}");
       await waitFor(() => assert.equal(screen.getByRole("tab", { selected: true }).textContent, "Review"));
       // Creation restores New view; reorder must restore its own menu trigger.
       await user.click(actions); await user.click(screen.getByRole("menuitem", { name: t("viewEarlier") }));

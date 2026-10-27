@@ -650,6 +650,8 @@ p { margin-block: .5rem; }
 .saved-view-tabs { gap: 2px; padding: 0; }
 .saved-view-tab { display: inline-flex; align-items: center; gap: 7px; height: 34px; padding: 6px 10px !important; font-size: 12px; border-radius: 5px 5px 0 0; }
 .saved-view-tab[data-state="active"] { background: transparent; box-shadow: inset 0 -2px var(--foreground); }
+.saved-view-tab:focus-visible { outline: 1px solid var(--muted-foreground); outline-offset: -3px; }
+.views-panel[aria-busy="true"] .saved-view-tab:disabled { opacity: 1; }
 .view-controls { gap: 4px; }
 .table-view { padding: 0; margin: 0; border: 0; }
 .table-view__heading { min-height: 0; gap: 6px; margin: 0; }
