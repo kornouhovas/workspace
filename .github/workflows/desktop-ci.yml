@@ -116,7 +116,11 @@ concurrency:
 jobs:
   view-menu-routing:
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.checks == 'view-menu-routing' }}
-    runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest, windows-2022]
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
@@ -141,7 +145,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: view-menu-routing-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          name: view-menu-routing-${{ matrix.os }}-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
           path: work/ci-view-menu-routing
           if-no-files-found: error
 
