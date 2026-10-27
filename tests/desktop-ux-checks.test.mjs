@@ -513,9 +513,10 @@ test('issue 81 repair routes original failures first and renews changed consumer
   const step=job.steps.find(step=>step.name===name);assert.equal(step.run,command);
   for(const os of matrix('view-menu-renewal'))for(const checks of ['view-menu-focus','view-menu-renewal'])assert.equal(runInNewContext(step.if.slice(3,-2),{inputs:{checks},matrix:{os}}),checks==='view-menu-renewal'||os===focusedHost);
  }
+ const routing=workflow.jobs['view-menu-routing'];assert.equal(routing['runs-on'],'macos-latest');assert.match(routing.steps.find(step=>step.name==='Original failed workflow inventory').run,/node --test tests\/test-suites.test.mjs/);
  const artifact=job.steps.find(step=>step.name==='Preserve candidate evidence');assert.equal(artifact.if,'always()');assert.equal(artifact.with['if-no-files-found'],'error');
  assert.match(workflow.concurrency.group,/view-menu-focus/);assert.match(workflow.concurrency.group,/view-menu-renewal/);
  const common=workflow.jobs.common.if.slice(3,-2);
- for(const checks of ['view-menu-focus','view-menu-renewal'])assert.equal(runInNewContext(common,{github:{event_name:'workflow_dispatch'},inputs:{checks}}),false);
+ for(const checks of ['view-menu-routing','view-menu-focus','view-menu-renewal'])assert.equal(runInNewContext(common,{github:{event_name:'workflow_dispatch'},inputs:{checks}}),false);
  assert.equal(runInNewContext(common,{github:{event_name:'workflow_dispatch'},inputs:{checks:'full'}}),true);
 });
