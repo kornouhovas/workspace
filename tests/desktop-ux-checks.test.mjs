@@ -515,4 +515,7 @@ test('issue 81 repair routes original failures first and renews changed consumer
  }
  const artifact=job.steps.find(step=>step.name==='Preserve candidate evidence');assert.equal(artifact.if,'always()');assert.equal(artifact.with['if-no-files-found'],'error');
  assert.match(workflow.concurrency.group,/view-menu-focus/);assert.match(workflow.concurrency.group,/view-menu-renewal/);
+ const common=workflow.jobs.common.if.slice(3,-2);
+ for(const checks of ['view-menu-focus','view-menu-renewal'])assert.equal(runInNewContext(common,{github:{event_name:'workflow_dispatch'},inputs:{checks}}),false);
+ assert.equal(runInNewContext(common,{github:{event_name:'workflow_dispatch'},inputs:{checks:'full'}}),true);
 });
