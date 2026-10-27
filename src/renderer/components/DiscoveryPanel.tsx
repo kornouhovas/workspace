@@ -1,3 +1,4 @@
+import type { PreparedView } from "./prepared-view.js";
 import { retainedProjectAvailability } from "./project-availability.js";
 import { useSettingsNavigation } from "./SettingsNavigation.js";
 import { ScalarDrafts } from "./ScalarDrafts.js";
@@ -270,6 +271,21 @@ function DiscoveryWorkspaceContent({ memory, client, workspaceId, sourceId, refr
 }) {
   const settingsNavigation = useSettingsNavigation();
   const [view, setView] = useState<WorkspaceView | null>(null);
+  const [preparedView, setPreparedView] = useState<PreparedView | undefined>();
+  const preparedStop = useRef<(() => void) | null>(null);
+  const preparingStops = useRef(new Set<() => void>());
+  const preparationGeneration = useRef(0);
+  useEffect(() => {
+    preparationGeneration.current++;
+    return () => {
+      preparationGeneration.current++;
+      preparedStop.current?.(); preparedStop.current = null;
+      for (const stop of preparingStops.current) stop();
+      preparingStops.current.clear();
+    };
+  }, [client, workspaceId]);
+  const [viewTransitioning, setViewTransitioning] = useState(false);
+  const displayedPrepared = useRef<PreparedView | undefined>(undefined);
   const navigation = useProjectNavigation(view?.viewId,memory);
   const labels = navigationLabels[language];
   const session = useWorkspaceSession();
@@ -291,6 +307,9 @@ function DiscoveryWorkspaceContent({ memory, client, workspaceId, sourceId, refr
   const [showArchived, setShowArchived] = useState(false);
   const [archiveSnapshot,setArchiveSnapshot]=useState<ArchiveSnapshot|null>(null);
   const [archiveHasProjects,setArchiveHasProjects]=useState(false);
+  if (preparedView?.valid && preparedView.viewId === view?.viewId && preparedView.archived === showArchived) displayedPrepared.current = preparedView;
+  const visiblePrepared = preparedView?.valid && preparedView.viewId === view?.viewId && preparedView.archived === showArchived ? preparedView :
+    viewTransitioning && displayedPrepared.current?.viewId === view?.viewId && displayedPrepared.current?.archived === showArchived ? displayedPrepared.current : undefined;
   const [setupDeferred, setSetupDeferred] = useState(false);
   const [sourceToolsOpen, setSourceToolsOpen] = useState(false);
   const [assignmentHistory, setAssignmentHistory] = useState<"name" | "category" | null>(null);
@@ -504,9 +523,40 @@ function DiscoveryWorkspaceContent({ memory, client, workspaceId, sourceId, refr
 
     {sourceStatus}
     {recoveryUncertain && <StatusMessage kind="error" title={t("recoveryUncertain")} />}
-    <ViewsPanel onWillLoad={scroll.suspend} projectActive={!!navigation.expanded} onSelectView={()=>{saveScroll();navigation.selectView();}}
-      projectTabs={<ProjectTabs session={navigation} language={language} name={projectName} disabled={disabled}/>}
-      tools={<><DailyControlsTarget hidden={!!navigation.expanded}/>{projects?.configured && <ViewToolsTarget label={t("viewSettings")} hidden={showArchived && !archiveHasProjects} />}</>} panelId={`${showArchived ? "archived" : "active"}-view-panel-${workspaceId}`} client={client} workspaceId={workspaceId} language={language} onChange={next=>{setView(next);scroll.resume();}}
+    <ViewsPanel onWillLoad={scroll.suspend} onTransitionChange={setViewTransitioning} onPrepareView={async target => {
+      const source = committedProjects.current;
+      if (!source?.configured || (showArchived && !archiveSnapshot?.projects.length)) { preparedStop.current?.(); preparedStop.current = null; setPreparedView(undefined); return true; }
+      const generation = preparationGeneration.current;
+      let invalidated = false, accepted = false, stopped = false;
+      let data: PreparedView | undefined;
+      const unsubscribe = client.onWorkspaceChange(event => {
+        if (event.type === "workspace.sourceObserved" && ["ready", "empty"].includes(event.state)) return;
+        if (event.type === "workspace.sourceChanged" && event.source.sourceId !== sourceId) return;
+        if (event.type !== "workspace.listChanged" && event.type !== "workspace.sourceChanged" && event.sourceId !== sourceId) return;
+        invalidated = true;
+        if (data) { data.valid = false; setPreparedView(current => current === data ? undefined : current); }
+      });
+      const stop = () => { if (!stopped) { stopped = true; unsubscribe(); } };
+      preparingStops.current.add(stop);
+      const archived = showArchived;
+      const projection = !archived && source.revision > 0 ? { revision: source.revision, projectIds: [...new Set([...source.projects, ...source.retainedProjects].map(project => project.projectId))] } : undefined;
+      try {
+        const [filter, result, layout] = await Promise.all([
+          client.getViewFilter(workspaceId, target.viewId), client.queryView(workspaceId, target.viewId, archived, projection),
+          target.kind === "board" ? client.getBoardLayout(workspaceId, target.viewId) : client.getTableLayout(workspaceId, target.viewId),
+        ]);
+        if (generation !== preparationGeneration.current || invalidated || committedProjects.current !== source || !filter.ok || !result.ok || !layout.ok ||
+            filter.value.workspaceId !== workspaceId || filter.value.viewId !== target.viewId ||
+            result.value.workspaceId !== workspaceId || result.value.viewId !== target.viewId || result.value.archived !== archived ||
+            layout.value.workspaceId !== workspaceId || layout.value.viewId !== target.viewId) return false;
+        data = { valid: true, workspaceId, viewId: target.viewId, archived, filter: filter.value.config, result: result.value,
+          layout: target.kind === "board" ? { kind: "board", config: layout.value.config as import("../../contracts/board-layout.js").BoardLayoutConfig } : { kind: "table", config: layout.value.config as import("../../contracts/table-layout.js").TableLayoutConfig } };
+        preparedStop.current?.(); preparedStop.current = stop; accepted = true;
+        setPreparedView(data); return true;
+      } catch { return false; } finally { preparingStops.current.delete(stop); if (!accepted) stop(); }
+    }} projectActive={!!navigation.expanded} onSelectView={()=>{saveScroll();navigation.selectView();}}
+      projectTabs={<ProjectTabs session={navigation} language={language} name={projectName} disabled={disabled || viewTransitioning}/>}
+      tools={<><DailyControlsTarget hidden={!!navigation.expanded} inert={viewTransitioning}/>{projects?.configured && <ViewToolsTarget label={t("viewSettings")} hidden={showArchived && !archiveHasProjects} />}</>} panelId={`${showArchived ? "archived" : "active"}-view-panel-${workspaceId}`} client={client} workspaceId={workspaceId} language={language} onChange={next=>{setView(next);scroll.resume();}}
       disabled={disabled || categoryOptionsBlocked || creationBlocked || discoveryPending || recoveryProject !== null || renameProject !== null || renameBlocked || categoryMoveProject !== null || categoryMoveBlocked || archiveBlocked} />
     <ProjectRenamePanel onReviewProject={setRenameProject} client={client} workspaceId={workspaceId} sourceId={sourceId} language={language} project={renameProject}
       projects={projects} disabled={disabled || archiveBlocked || categoryOptionsBlocked || creationBlocked || discoveryPending || loading || error || recoveryProject !== null || categoryMoveProject !== null || categoryMoveBlocked} minimumRevision={minimumRevision}
@@ -568,13 +618,13 @@ function DiscoveryWorkspaceContent({ memory, client, workspaceId, sourceId, refr
         if (updated.categoryPropertyRevision < minimumCategoryPropertyRevision.current) void load();
       }} /></ProjectOperationDialog>}
     {recoverySaved && <StatusMessage kind="info" title={t("recoverySaved")} />}
-    <ProjectArchivePanel request={archiveRequest} onRequestClosed={() => setArchiveRequest(null)}
+    <ProjectArchivePanel transitionPending={viewTransitioning} request={archiveRequest} onRequestClosed={() => setArchiveRequest(null)}
       onRestoreFocus={() => workBody.current?.querySelector<HTMLElement>(".project-area-header button:not(:disabled)")?.focus()}
-      onPreview={(id,trigger)=>navigation.show(id,trigger)} onSnapshot={setArchiveSnapshot} categoryProperty={projects?.categoryProperty} categories={projects?.categories} viewId={view?.viewId} layout={view?.kind} client={client} workspaceId={workspaceId} sourceId={sourceId} projects={projects?.projects ?? []}
+      onPreview={(id,trigger)=>navigation.show(id,trigger)} onSnapshot={setArchiveSnapshot} categoryProperty={projects?.categoryProperty} categories={projects?.categories} prepared={visiblePrepared} viewId={view?.viewId} layout={view?.kind} client={client} workspaceId={workspaceId} sourceId={sourceId} projects={projects?.projects ?? []}
       language={language} revision={projects?.revision ?? 0} invalidation={invalidation} onViewChange={setShowArchived} onProjectAvailability={setArchiveHasProjects}
       onBlockedChange={setArchiveBlocked} onCommitted={() => void load()}
-      disabled={disabled || categoryOptionsBlocked || creationBlocked || discoveryPending || recoveryProject !== null || renameProject !== null || renameBlocked || categoryMoveProject !== null || categoryMoveBlocked} />
-    <ViewControlsScope visible={!showArchived}><section id={`active-view-panel-${workspaceId}`} role="tabpanel" hidden={showArchived} className="table-view" aria-labelledby={view ? `saved-view-${view.viewId}` : "table-title"} aria-busy={loading}>
+      disabled={disabled || viewTransitioning || categoryOptionsBlocked || creationBlocked || discoveryPending || recoveryProject !== null || renameProject !== null || renameBlocked || categoryMoveProject !== null || categoryMoveBlocked} />
+    <ViewControlsScope visible={!showArchived}><section id={`active-view-panel-${workspaceId}`} role="tabpanel" hidden={showArchived} className="table-view" aria-labelledby={view ? `saved-view-${view.viewId}` : "table-title"} aria-busy={loading || viewTransitioning}>
       <div className="table-view__heading sr-only"><div>
         <h3 id="table-title" ref={tableHeading} tabIndex={-1}>{view?.name ?? t("tableViewTitle")}</h3>
         <p>{t(projects?.configured ? "projectsApplied" : "emptyTableDescription")}</p>
@@ -596,7 +646,7 @@ function DiscoveryWorkspaceContent({ memory, client, workspaceId, sourceId, refr
         {projects.categories.length > 0 ? <ul>{projects.categories.filter(c => showHiddenCategories || !c.presentation?.hidden).map((category) => <li key={category.categoryId}><span className="category-chip" data-color={category.presentation?.color ?? "default"}>{category.name}</span></li>)}</ul>
           : <p>{t("savedCategoriesEmpty")}</p>}
       </details>}
-      {view && projects?.configured && <TextPropertiesTable sourceAvailable={sourceAvailable} key={view.viewId} onPreview={(id,trigger)=>navigation.show(id,trigger)} viewId={view.viewId} layout={view.kind} sourceLifetime={sourceLifetime} discoveryRevision={projects?.revision ?? 0} minimumDiscoveryRevision={minimumRevision} categoryPropertyRevision={projects?.categoryPropertyRevision ?? 0} minimumCategoryPropertyRevision={minimumCategoryPropertyRevision}
+      {view && projects?.configured && <TextPropertiesTable prepared={visiblePrepared} transitionPending={viewTransitioning} sourceAvailable={sourceAvailable} onPreview={(id,trigger)=>navigation.show(id,trigger)} viewId={view.viewId} layout={view.kind} sourceLifetime={sourceLifetime} discoveryRevision={projects?.revision ?? 0} minimumDiscoveryRevision={minimumRevision} categoryPropertyRevision={projects?.categoryPropertyRevision ?? 0} minimumCategoryPropertyRevision={minimumCategoryPropertyRevision}
         onFilesystemAssignmentDetails={kind => { setAssignmentHistory(kind); setSourceToolsOpen(true); }}
         onFilesystemAssignmentObserved={() => { setInvalidation(value => value + 1); void load(); }}
         onCategoryPropertyCommitted={commitLabel} categoryProperty={projects?.categoryProperty ?? null} categories={projects?.categories ?? []} client={client} workspaceId={workspaceId} sourceId={sourceId}
@@ -609,10 +659,10 @@ function DiscoveryWorkspaceContent({ memory, client, workspaceId, sourceId, refr
         onRename={(project, trigger) => { renameTrigger.current = trigger; setRenameProject(project); }}
         locateDisabled={archiveBlocked || categoryOptionsBlocked || creationBlocked || discoveryPending || recoveryProject !== null || renameBlocked || renameProject !== null || categoryMoveProject !== null || categoryMoveBlocked}
         onLocate={projects?.configured ? locate : undefined}
-        projects={projects?.projects ?? []} retainedProjects={projects?.retainedProjects ?? []} language={language} disabled={disabled} />}
+        projects={projects?.projects ?? []} retainedProjects={projects?.retainedProjects ?? []} language={language} disabled={disabled || viewTransitioning} />}
     </section></ViewControlsScope>
     </div>
-    {selectedId && <div className={navigation.expanded ? "project-host project-host--expanded" : "project-host project-host--overlay"} style={navigation.expanded ? undefined : {width: effectiveProjectWidth + 5}}>
+    {selectedId && <div className={navigation.expanded ? "project-host project-host--expanded" : "project-host project-host--overlay"} inert={viewTransitioning} style={navigation.expanded ? undefined : {width: effectiveProjectWidth + 5}}>
       {!navigation.expanded && <AreaResize label={labels.projectWidth} value={effectiveProjectWidth} min={280} max={maximumProjectWidth} reverse onChange={setProjectWidth}/>}
       <section className="project-area" role="region" aria-label={`${labels.project}: ${projectName(selectedId)}`}>
         <header className="project-area-header"><h2 title={projectName(selectedId)}>{projectName(selectedId)}</h2>

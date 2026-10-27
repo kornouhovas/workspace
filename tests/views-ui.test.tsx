@@ -42,6 +42,322 @@ test("switching views does not insert a loading message above existing tabs", as
   } finally { cleanup(); service.close(); rmSync(directory, { recursive: true, force: true }); }
 });
 
+test("view switch must not expose a hidden column before its layout loads", async () => {
+  const directory = mkdtempSync(join(tmpdir(), "view-hidden-")), root = join(directory, "root"); mkdirSync(root); mkdirSync(join(root, "Project"));
+  const service = openSettingsService(join(directory, "workspace.sqlite"));
+  const workspace = service.handleCommand({ type: "workspace.create", rootPath: root, name: "One" }).value, workspaceId = workspace.workspaceId;
+  const preview = service.handleQuery({ type: "workspace.previewDiscovery", workspaceId }).value;
+  service.handleCommand({ type: "workspace.applyDiscovery", workspaceId, previewToken: preview.previewToken });
+  const propertyId = service.handleCommand({ type: "workspace.createProperty", workspaceId, name: "Secret", propertyType: "text" }).value.propertyId;
+  assert.equal(service.handleCommand({ type: "workspace.setTableLayout", workspaceId, viewId: workspace.viewId, config: { columns: [{ propertyId, hidden: true, width: 224, wrap: true }], rowOrder: [] } }).ok, true);
+  service.handleCommand({ type: "workspace.createView", workspaceId, name: "Board", kind: "board" });
+  let delayed = false, delayedRequests = 0;
+  const api = { getBackendStatus: async () => ({ state: "ready" }), onBackendStatus: () => () => {}, workspace: async (input: {type:string}) => {
+    if (input.type === "workspace.getTableLayout" && delayed) { delayedRequests++; await new Promise<void>(resolve => setTimeout(resolve, 700)); }
+    return /workspace\.(list|get|preview|query)/.test(input.type) ? service.handleQuery(input) : service.handleCommand(input);
+  }, onWorkspaceChange: service.workspaces.subscribe } as unknown as WorkspaceDesktopApi;
+  const client = new WorkspaceServiceClient(api), user = userEvent.setup({ document });
+  try {
+    render(<DiscoveryWorkspace client={client} workspaceId={workspaceId} sourceId={workspace.sourceId} language="en" disabled={false} />);
+    await within(await screen.findByRole("list", { name: "Project cards" })).findByText("Project");
+    const notices: string[] = [];
+    const observer = new MutationObserver(() => { const table = screen.queryByRole("table"); if (table && within(table).queryByRole("columnheader", { name: /Secret/ })) notices.push("hidden-column-visible"); });
+    observer.observe(document.body, { childList: true, subtree: true });
+    delayed = true; await user.click(screen.getByRole("tab", { name: "Table" }));
+    await within(await screen.findByRole("table", {}, { timeout: 4000 })).findByText("Project");
+    observer.disconnect();
+    assert.deepEqual(notices, []); assert.ok(delayedRequests > 0);
+  } finally { cleanup(); service.close(); rmSync(directory, { recursive: true, force: true }); }
+});
+
+test("slow view selection keeps the previous view until the new filtered presentation is ready", async () => {
+  const directory = mkdtempSync(join(tmpdir(), "view-surface-")), root = join(directory, "root"); mkdirSync(root); mkdirSync(join(root, "Project"));
+  const service = openSettingsService(join(directory, "workspace.sqlite"));
+  const workspace = service.handleCommand({ type: "workspace.create", rootPath: root, name: "One" }).value, workspaceId = workspace.workspaceId;
+  const preview = service.handleQuery({ type: "workspace.previewDiscovery", workspaceId }).value;
+  service.handleCommand({ type: "workspace.applyDiscovery", workspaceId, previewToken: preview.previewToken });
+  service.handleCommand({ type: "workspace.setViewFilter", workspaceId, viewId: workspace.viewId, config: { search: "missing", rules: [] } });
+  service.handleCommand({ type: "workspace.createView", workspaceId, name: "Board", kind: "board" });
+  let delay = false, requests = 0;
+  const api = { getBackendStatus: async () => ({ state: "ready" }), onBackendStatus: () => () => {}, workspace: async (input: {type:string;viewId?:string}) => {
+    if (input.type === "workspace.queryView" && input.viewId === workspace.viewId && delay) { requests++; await new Promise<void>(resolve => setTimeout(resolve, 700)); }
+    return /workspace\.(list|get|preview|query)/.test(input.type) ? service.handleQuery(input) : service.handleCommand(input);
+  }, onWorkspaceChange: service.workspaces.subscribe } as unknown as WorkspaceDesktopApi;
+  const client = new WorkspaceServiceClient(api), user = userEvent.setup({ document });
+  try {
+    render(<DiscoveryWorkspace client={client} workspaceId={workspaceId} sourceId={workspace.sourceId} language="en" disabled={false} />);
+    await within(await screen.findByRole("list", { name: "Project cards" })).findByText("Project");
+    delay = true; await user.click(screen.getByRole("tab", { name: "Table" }));
+    await waitFor(() => assert.ok(requests > 0));
+    assert.equal(screen.getByRole("tab", { name: "Board" }).getAttribute("aria-selected"), "true");
+    assert.equal((screen.getByRole("button", { name: "Archived" }) as HTMLButtonElement).disabled, true);
+    assert.ok(within(screen.getByRole("list", { name: "Project cards" })).getByText("Project"));
+    await screen.findByRole("tab", { name: "Table", selected: true }, { timeout: 4000 });
+    await screen.findByText(translate("en", "filterEmpty"));
+    assert.equal(within(screen.getByRole("table")).queryByText("Project") === null, true);
+  } finally { cleanup(); service.close(); rmSync(directory, { recursive: true, force: true }); }
+});
+
+test("a second slow switch retains the current rows until the target is ready", async () => {
+  const directory = mkdtempSync(join(tmpdir(), "view-second-")), root = join(directory, "root"); mkdirSync(root); mkdirSync(join(root, "Project"));
+  const service = openSettingsService(join(directory, "workspace.sqlite"));
+  const workspace = service.handleCommand({ type: "workspace.create", rootPath: root, name: "One" }).value, workspaceId = workspace.workspaceId;
+  const preview = service.handleQuery({ type: "workspace.previewDiscovery", workspaceId }).value;
+  service.handleCommand({ type: "workspace.applyDiscovery", workspaceId, previewToken: preview.previewToken });
+  const boardId = service.handleCommand({ type: "workspace.createView", workspaceId, name: "Board", kind: "board" }).value.activeViewId;
+  let delay = false;
+  const api = { getBackendStatus: async () => ({ state: "ready" }), onBackendStatus: () => () => {}, workspace: async (input: {type:string;viewId?:string}) => {
+    if ((input.type === "workspace.queryView" && (input.viewId === boardId || input.viewId === workspace.viewId) || input.type === "workspace.getTableLayout" && input.viewId === workspace.viewId) && delay) await new Promise<void>(resolve => setTimeout(resolve, 500));
+    return /workspace\.(list|get|preview|query)/.test(input.type) ? service.handleQuery(input) : service.handleCommand(input);
+  }, onWorkspaceChange: service.workspaces.subscribe } as unknown as WorkspaceDesktopApi;
+  const user = userEvent.setup({ document });
+  try {
+    render(<DiscoveryWorkspace client={new WorkspaceServiceClient(api)} workspaceId={workspaceId} sourceId={workspace.sourceId} language="en" disabled={false} />);
+    await within(await screen.findByRole("list", { name: "Project cards" })).findByText("Project");
+    await user.click(screen.getByRole("tab", { name: "Table" }));
+    await within(await screen.findByRole("table")).findByText("Project");
+    const gaps: string[] = [];
+    const observer = new MutationObserver(() => {
+      const tableTab = screen.queryByRole("tab", { name: "Table", selected: true });
+      if (tableTab && !screen.queryByRole("button", { name: "Preview project: Project" })) gaps.push("missing row");
+      if (tableTab && screen.queryByText(translate("en", "filterLoading"))) gaps.push("filter loading");
+      if (tableTab && screen.queryByText(translate("en", "tableLoading"))) gaps.push("layout loading");
+    });
+    observer.observe(document.body, { childList: true, subtree: true, attributes: true });
+    delay = true; await user.click(screen.getByRole("tab", { name: "Board" }));
+    await screen.findByRole("tab", { name: "Board", selected: true }, { timeout: 4000 });
+    observer.disconnect(); assert.deepEqual(gaps, []);
+  } finally { cleanup(); service.close(); rmSync(directory, { recursive: true, force: true }); }
+});
+
+test("view changes received during a final list read are reloaded", async () => {
+  const directory = mkdtempSync(join(tmpdir(), "view-list-race-")), root = join(directory, "root"); mkdirSync(root);
+  const service = openSettingsService(join(directory, "workspace.sqlite"));
+  const workspace = service.handleCommand({ type: "workspace.create", rootPath: root, name: "One" }).value, workspaceId = workspace.workspaceId;
+  service.handleCommand({ type: "workspace.createView", workspaceId, name: "Board", kind: "board" });
+  let activated = false, inject = true;
+  const api = { workspace: async (input: {type:string}) => {
+    if (input.type === "workspace.activateView") activated = true;
+    if (input.type === "workspace.listViews" && activated && inject) {
+      inject = false; const stale = service.handleQuery(input);
+      service.handleCommand({ type: "workspace.renameView", workspaceId, viewId: workspace.viewId, name: "Renamed" });
+      return stale;
+    }
+    return /workspace\.(list|get|query)/.test(input.type) ? service.handleQuery(input) : service.handleCommand(input);
+  }, onWorkspaceChange: service.workspaces.subscribe } as unknown as WorkspaceDesktopApi;
+  const user = userEvent.setup({ document });
+  try {
+    render(<ViewsPanel client={new WorkspaceServiceClient(api)} workspaceId={workspaceId} language="en" disabled={false} onChange={() => {}} />);
+    await screen.findByRole("tab", { name: "Board", selected: true });
+    await user.click(screen.getByRole("tab", { name: "Table" }));
+    await screen.findByRole("tab", { name: "Renamed", selected: true });
+  } finally { cleanup(); service.close(); rmSync(directory, { recursive: true, force: true }); }
+});
+
+test("a filter changed during activation is not lost after view preparation", async () => {
+  const directory = mkdtempSync(join(tmpdir(), "view-race-")), root = join(directory, "root"); mkdirSync(root); mkdirSync(join(root, "Project"));
+  const service = openSettingsService(join(directory, "workspace.sqlite"));
+  const workspace = service.handleCommand({ type: "workspace.create", rootPath: root, name: "One" }).value, workspaceId = workspace.workspaceId;
+  const preview = service.handleQuery({ type: "workspace.previewDiscovery", workspaceId }).value;
+  service.handleCommand({ type: "workspace.applyDiscovery", workspaceId, previewToken: preview.previewToken });
+  service.handleCommand({ type: "workspace.createView", workspaceId, name: "Board", kind: "board" });
+  let inject = true;
+  const api = { getBackendStatus: async () => ({ state: "ready" }), onBackendStatus: () => () => {}, workspace: async (input: {type:string}) => {
+    if (input.type === "workspace.activateView" && inject) { inject = false; service.handleCommand({ type: "workspace.setViewFilter", workspaceId, viewId: workspace.viewId, config: { search: "missing", rules: [] } }); }
+    return /workspace\.(list|get|preview|query)/.test(input.type) ? service.handleQuery(input) : service.handleCommand(input);
+  }, onWorkspaceChange: service.workspaces.subscribe } as unknown as WorkspaceDesktopApi;
+  const user = userEvent.setup({ document });
+  try {
+    render(<DiscoveryWorkspace client={new WorkspaceServiceClient(api)} workspaceId={workspaceId} sourceId={workspace.sourceId} language="en" disabled={false} />);
+    await within(await screen.findByRole("list", { name: "Project cards" })).findByText("Project");
+    await user.click(screen.getByRole("tab", { name: "Table" }));
+    await screen.findByRole("tab", { name: "Table", selected: true });
+    await screen.findByText(translate("en", "filterEmpty"));
+    assert.equal(within(screen.getByRole("table")).queryByText("Project") === null, true);
+  } finally { cleanup(); service.close(); rmSync(directory, { recursive: true, force: true }); }
+});
+
+test("a filter changed during the final view reload is not lost", async () => {
+  const directory = mkdtempSync(join(tmpdir(), "view-race-")), root = join(directory, "root"); mkdirSync(root); mkdirSync(join(root, "Project"));
+  const service = openSettingsService(join(directory, "workspace.sqlite"));
+  const workspace = service.handleCommand({ type: "workspace.create", rootPath: root, name: "One" }).value, workspaceId = workspace.workspaceId;
+  const preview = service.handleQuery({ type: "workspace.previewDiscovery", workspaceId }).value;
+  service.handleCommand({ type: "workspace.applyDiscovery", workspaceId, previewToken: preview.previewToken });
+  service.handleCommand({ type: "workspace.createView", workspaceId, name: "Board", kind: "board" });
+  let inject = true, activated = false;
+  const api = { getBackendStatus: async () => ({ state: "ready" }), onBackendStatus: () => () => {}, workspace: async (input: {type:string}) => {
+    if (input.type === "workspace.activateView") activated = true;
+    if (input.type === "workspace.listViews" && activated && inject) { inject = false; service.handleCommand({ type: "workspace.setViewFilter", workspaceId, viewId: workspace.viewId, config: { search: "missing", rules: [] } }); }
+    return /workspace\.(list|get|preview|query)/.test(input.type) ? service.handleQuery(input) : service.handleCommand(input);
+  }, onWorkspaceChange: service.workspaces.subscribe } as unknown as WorkspaceDesktopApi;
+  const user = userEvent.setup({ document });
+  try {
+    render(<DiscoveryWorkspace client={new WorkspaceServiceClient(api)} workspaceId={workspaceId} sourceId={workspace.sourceId} language="en" disabled={false} />);
+    await within(await screen.findByRole("list", { name: "Project cards" })).findByText("Project");
+    await user.click(screen.getByRole("tab", { name: "Table" }));
+    await screen.findByRole("tab", { name: "Table", selected: true });
+    await screen.findByText(translate("en", "filterEmpty"));
+    assert.equal(within(screen.getByRole("table")).queryByText("Project") === null, true);
+  } finally { cleanup(); service.close(); rmSync(directory, { recursive: true, force: true }); }
+});
+
+test("archived view preparation freezes archive mode and retains its current rows", async () => {
+  const directory = mkdtempSync(join(tmpdir(), "view-archived-wait-")), root = join(directory, "root"); mkdirSync(root); mkdirSync(join(root, "Project"));
+  const service = openSettingsService(join(directory, "workspace.sqlite"));
+  const workspace = service.handleCommand({ type: "workspace.create", rootPath: root, name: "One" }).value, workspaceId = workspace.workspaceId;
+  const preview = service.handleQuery({ type: "workspace.previewDiscovery", workspaceId }).value;
+  const projectId = service.handleCommand({ type: "workspace.applyDiscovery", workspaceId, previewToken: preview.previewToken }).value.projects[0].projectId;
+  archiveProjectFixture(join(directory, "workspace.sqlite"), workspaceId, projectId);
+  service.handleCommand({ type: "workspace.createView", workspaceId, name: "Board", kind: "board" });
+  let delay = false, requested = false;
+  const api = { getBackendStatus: async () => ({ state: "ready" }), onBackendStatus: () => () => {}, workspace: async (input: {type:string;viewId?:string;archived?:boolean}) => {
+    if (input.type === "workspace.queryView" && input.viewId === workspace.viewId && input.archived && delay) { requested = true; await new Promise<void>(resolve => setTimeout(resolve, 500)); }
+    return /workspace\.(list|get|preview|query)/.test(input.type) ? service.handleQuery(input) : service.handleCommand(input);
+  }, onWorkspaceChange: service.workspaces.subscribe } as unknown as WorkspaceDesktopApi;
+  const user = userEvent.setup({ document });
+  try {
+    render(<DiscoveryWorkspace client={new WorkspaceServiceClient(api)} workspaceId={workspaceId} sourceId={workspace.sourceId} language="en" disabled={false} />);
+    await screen.findByRole("tab", { name: "Board", selected: true }); await user.click(screen.getByRole("button", { name: "Archived" }));
+    await within(await screen.findByRole("list", { name: "Project cards" })).findByText("Project");
+    delay = true; await user.click(screen.getByRole("tab", { name: "Table" })); await waitFor(() => assert.equal(requested, true));
+    assert.equal((screen.getByRole("button", { name: "Active" }) as HTMLButtonElement).disabled, true);
+    assert.equal(screen.getByRole("tab", { name: "Board" }).getAttribute("aria-selected"), "true");
+    assert.ok(within(screen.getByRole("list", { name: "Project cards" })).getByText("Project"));
+    await screen.findByRole("tab", { name: "Table", selected: true }, { timeout: 4000 });
+    await within(await screen.findByRole("table")).findByText("Project");
+  } finally { cleanup(); service.close(); rmSync(directory, { recursive: true, force: true }); }
+});
+
+test("preparing a view makes the expanded project area inert until the transition completes", async () => {
+  const directory = mkdtempSync(join(tmpdir(), "view-project-wait-")), root = join(directory, "root"); mkdirSync(root); mkdirSync(join(root, "Project"));
+  const service = openSettingsService(join(directory, "workspace.sqlite"));
+  const workspace = service.handleCommand({ type: "workspace.create", rootPath: root, name: "One" }).value, workspaceId = workspace.workspaceId;
+  const preview = service.handleQuery({ type: "workspace.previewDiscovery", workspaceId }).value;
+  service.handleCommand({ type: "workspace.applyDiscovery", workspaceId, previewToken: preview.previewToken });
+  service.handleCommand({ type: "workspace.createView", workspaceId, name: "Board", kind: "board" });
+  let delay = false, release: (() => void) | undefined;
+  const api = { getBackendStatus: async () => ({ state: "ready" }), onBackendStatus: () => () => {}, workspace: async (input: {type:string;viewId?:string}) => {
+    if (input.type === "workspace.queryView" && input.viewId === workspace.viewId && delay) await new Promise<void>(resolve => { release = resolve; });
+    return /workspace\.(list|get|preview|query)/.test(input.type) ? service.handleQuery(input) : service.handleCommand(input);
+  }, onWorkspaceChange: service.workspaces.subscribe } as unknown as WorkspaceDesktopApi;
+  const user = userEvent.setup({ document });
+  try {
+    render(<DiscoveryWorkspace client={new WorkspaceServiceClient(api)} workspaceId={workspaceId} sourceId={workspace.sourceId} language="en" disabled={false} />);
+    await user.click(await screen.findByRole("button", { name: "Preview project: Project" }));
+    await user.click(await screen.findByRole("button", { name: "Expand project" }));
+    delay = true; await user.click(screen.getByRole("tab", { name: "Table" }));
+    await waitFor(() => assert.ok(release));
+    assert.equal(screen.getByRole("region", { name: "Project: Project" }).closest(".project-host")?.hasAttribute("inert"), true);
+    delay = false; release?.(); await screen.findByRole("tab", { name: "Table", selected: true }, { timeout: 4000 });
+  } finally { release?.(); cleanup(); service.close(); rmSync(directory, { recursive: true, force: true }); }
+});
+
+test("unmount during preparation releases subscriptions and ignores the late response", async () => {
+  const directory = mkdtempSync(join(tmpdir(), "view-unmount-")), root = join(directory, "root"); mkdirSync(root); mkdirSync(join(root, "Project"));
+  const service = openSettingsService(join(directory, "workspace.sqlite"));
+  const workspace = service.handleCommand({ type: "workspace.create", rootPath: root, name: "One" }).value, workspaceId = workspace.workspaceId;
+  const preview = service.handleQuery({ type: "workspace.previewDiscovery", workspaceId }).value;
+  service.handleCommand({ type: "workspace.applyDiscovery", workspaceId, previewToken: preview.previewToken });
+  service.handleCommand({ type: "workspace.createView", workspaceId, name: "Board", kind: "board" });
+  let delay = false, release: (() => void) | undefined;
+  const subscriptions = new Set<() => void>();
+  const api = { getBackendStatus: async () => ({ state: "ready" }), onBackendStatus: () => () => {}, workspace: async (input: {type:string;viewId?:string}) => {
+    if (input.type === "workspace.queryView" && input.viewId === workspace.viewId && delay) await new Promise<void>(resolve => { release = resolve; });
+    return /workspace\.(list|get|preview|query)/.test(input.type) ? service.handleQuery(input) : service.handleCommand(input);
+  }, onWorkspaceChange: (listener: (...args: never[]) => void) => { const unsubscribe = service.workspaces.subscribe(listener); const stop = () => { subscriptions.delete(stop); unsubscribe(); }; subscriptions.add(stop); return stop; } } as unknown as WorkspaceDesktopApi;
+  const user = userEvent.setup({ document });
+  try {
+    const rendered = render(<DiscoveryWorkspace client={new WorkspaceServiceClient(api)} workspaceId={workspaceId} sourceId={workspace.sourceId} language="en" disabled={false} />);
+    await within(await screen.findByRole("list", { name: "Project cards" })).findByText("Project");
+    delay = true; await user.click(screen.getByRole("tab", { name: "Table" })); await waitFor(() => assert.ok(release));
+    rendered.unmount(); assert.equal(subscriptions.size, 0); release?.();
+    await new Promise(resolve => setTimeout(resolve, 30)); assert.equal(subscriptions.size, 0);
+    assert.equal(service.handleQuery({ type: "workspace.listViews", workspaceId }).value.activeViewId, service.handleQuery({ type: "workspace.listViews", workspaceId }).value.views.find((view: {name:string}) => view.name === "Board").viewId);
+  } finally { release?.(); cleanup(); service.close(); rmSync(directory, { recursive: true, force: true }); }
+});
+
+test("a failed reload after preparation retains the view load error", async () => {
+  const directory = mkdtempSync(join(tmpdir(), "view-reload-")), root = join(directory, "root"); mkdirSync(root);
+  const service = openSettingsService(join(directory, "workspace.sqlite"));
+  const workspaceId = service.handleCommand({ type: "workspace.create", rootPath: root, name: "One" }).value.workspaceId;
+  let ready = false, failLoad = false;
+  const api = { workspace: async (input: {type:string}) => {
+    if (input.type === "workspace.listViews" && failLoad) return { ok: false, error: { code: "storage", message: "Unavailable" } };
+    return /workspace\.(list|get|query)/.test(input.type) ? service.handleQuery(input) : service.handleCommand(input);
+  }, onWorkspaceChange: service.workspaces.subscribe } as unknown as WorkspaceDesktopApi;
+  const user = userEvent.setup({ document });
+  try {
+    render(<ViewsPanel client={new WorkspaceServiceClient(api)} workspaceId={workspaceId} language="en" disabled={false} onPrepareView={async () => ready} onChange={() => {}} />);
+    await screen.findByRole("tab", { name: "Table" });
+    await user.click(screen.getByRole("button", { name: /^View actions/ })); await user.click(screen.getByRole("menuitem", { name: "Duplicate view" }));
+    await user.type(screen.getByLabelText("View name"), " copy{Enter}");
+    await screen.findByText(translate("en", "viewPrepareError"));
+    ready = true; failLoad = true; await user.click(screen.getByRole("button", { name: "Reload views" }));
+    await screen.findByText(translate("en", "viewsError"));
+    assert.equal((screen.getByRole("button", { name: "New view" }) as HTMLButtonElement).disabled, true);
+  } finally { cleanup(); service.close(); rmSync(directory, { recursive: true, force: true }); }
+});
+
+test("failed preparation after duplication cannot repeat a committed copy", async () => {
+  const directory = mkdtempSync(join(tmpdir(), "view-copy-")), root = join(directory, "root"); mkdirSync(root);
+  const service = openSettingsService(join(directory, "workspace.sqlite"));
+  const workspaceId = service.handleCommand({ type: "workspace.create", rootPath: root, name: "One" }).value.workspaceId;
+  const api = { workspace: async (input: {type:string}) => /workspace\.(list|get|query)/.test(input.type) ? service.handleQuery(input) : service.handleCommand(input), onWorkspaceChange: service.workspaces.subscribe } as unknown as WorkspaceDesktopApi;
+  let ready = false;
+  const user = userEvent.setup({ document });
+  try {
+    render(<ViewsPanel client={new WorkspaceServiceClient(api)} workspaceId={workspaceId} language="en" disabled={false} onPrepareView={async () => ready} onChange={() => {}} />);
+    await screen.findByRole("tab", { name: "Table" });
+    await user.click(screen.getByRole("button", { name: /^View actions/ })); await user.click(screen.getByRole("menuitem", { name: "Duplicate view" }));
+    const name = screen.getByLabelText("View name"); await user.clear(name); await user.type(name, "Copy{Enter}");
+    await screen.findByText(translate("en", "viewPrepareError"));
+    assert.equal(screen.queryByLabelText("View name") === null, true);
+    assert.deepEqual(service.handleQuery({ type: "workspace.listViews", workspaceId }).value.views.map((view: {name:string}) => view.name), ["Table", "Copy"]);
+    ready = true; await user.click(screen.getByRole("button", { name: "Reload views" }));
+    await waitFor(() => assert.equal(screen.queryByText(translate("en", "viewPrepareError")) === null, true));
+    assert.deepEqual(service.handleQuery({ type: "workspace.listViews", workspaceId }).value.views.map((view: {name:string}) => view.name), ["Table", "Copy"]);
+  } finally { cleanup(); service.close(); rmSync(directory, { recursive: true, force: true }); }
+});
+
+test("creating a view returns from an expanded project to the new view", async () => {
+  const directory = mkdtempSync(join(tmpdir(), "view-project-")), root = join(directory, "root"); mkdirSync(root);
+  const service = openSettingsService(join(directory, "workspace.sqlite"));
+  const workspaceId = service.handleCommand({ type: "workspace.create", rootPath: root, name: "One" }).value.workspaceId;
+  const api = { workspace: async (input: {type:string}) => /workspace\.(list|get|query)/.test(input.type) ? service.handleQuery(input) : service.handleCommand(input), onWorkspaceChange: service.workspaces.subscribe } as unknown as WorkspaceDesktopApi;
+  let selected = 0;
+  const user = userEvent.setup({ document });
+  try {
+    render(<ViewsPanel client={new WorkspaceServiceClient(api)} workspaceId={workspaceId} language="en" disabled={false} projectActive onSelectView={() => { selected++; }} onChange={() => {}} />);
+    await screen.findByRole("tab", { name: "Table" });
+    await user.click(screen.getByRole("button", { name: "New view" }));
+    await user.click(screen.getByRole("menuitem", { name: "Board" }));
+    await screen.findByRole("tab", { name: "Board" });
+    assert.equal(selected, 1);
+  } finally { cleanup(); service.close(); rmSync(directory, { recursive: true, force: true }); }
+});
+
+test("dragging across an overflowing tab strip scrolls towards off-screen views", async () => {
+  const directory = mkdtempSync(join(tmpdir(), "view-overflow-")), root = join(directory, "root"); mkdirSync(root);
+  const service = openSettingsService(join(directory, "workspace.sqlite"));
+  const workspaceId = service.handleCommand({ type: "workspace.create", rootPath: root, name: "One" }).value.workspaceId;
+  for (const name of ["One", "Two", "Three"]) service.handleCommand({ type: "workspace.createView", workspaceId, name, kind: "board" });
+  const api = { workspace: async (input: {type:string}) => /workspace\.(list|get|query)/.test(input.type) ? service.handleQuery(input) : service.handleCommand(input), onWorkspaceChange: service.workspaces.subscribe } as unknown as WorkspaceDesktopApi;
+  try {
+    render(<ViewsPanel client={new WorkspaceServiceClient(api)} workspaceId={workspaceId} language="en" disabled={false} onChange={() => {}} />);
+    await screen.findByRole("tab", { name: "Three" });
+    const tabs = screen.getAllByRole("tab"), list = screen.getByRole("tablist");
+    list.getBoundingClientRect = () => ({ left: 0, right: 200, width: 200 } as DOMRect);
+    Object.defineProperty(list, "clientWidth", { configurable: true, value: 200 });
+    Object.defineProperty(list, "scrollWidth", { configurable: true, value: 400 });
+    tabs.forEach((tab, index) => { tab.getBoundingClientRect = () => ({ left: index * 100 - list.scrollLeft, width: 100 } as DOMRect); });
+    fireEvent.pointerDown(tabs[0], { button: 0, clientX: 50, pointerId: 1 });
+    fireEvent.pointerMove(tabs[0], { clientX: 195, pointerId: 1 });
+    await waitFor(() => assert.ok(list.scrollLeft > 0));
+    fireEvent.pointerUp(tabs[0], { clientX: 195, pointerId: 1 });
+    await waitFor(() => assert.notEqual(service.handleQuery({ type: "workspace.listViews", workspaceId }).value.views[0].name, "Table"));
+  } finally { cleanup(); service.close(); rmSync(directory, { recursive: true, force: true }); }
+});
+
 test("new view menu immediately creates a Board", async () => {
   const directory = mkdtempSync(join(tmpdir(), "view-menu-")), root = join(directory, "root"); mkdirSync(root);
   const service = openSettingsService(join(directory, "workspace.sqlite"));
@@ -55,11 +371,16 @@ test("new view menu immediately creates a Board", async () => {
     await user.click(screen.getByRole("menuitem", { name: "Board" }));
     await screen.findByRole("tab", { name: "Board", selected: true });
     assert.equal(screen.queryByLabelText("View name"), null);
-    await user.pointer({ keys: "[MouseRight]", target: screen.getByRole("tab", { name: "Table" }) });
+    const contextTab = screen.getByRole("tab", { name: "Table" });
+    await user.pointer({ keys: "[MouseRight]", target: contextTab });
+    await user.keyboard("{Escape}");
+    assert.equal(document.activeElement === contextTab, true);
+    await user.pointer({ keys: "[MouseRight]", target: contextTab });
     await user.click(screen.getByRole("menuitem", { name: "Edit view" }));
     assert.equal((screen.getByLabelText("View name") as HTMLInputElement).value, "Table");
     await user.keyboard("{Escape}");
     const board = screen.getByRole("tab", { name: "Board" }), table = screen.getByRole("tab", { name: "Table" });
+    (table.parentElement as HTMLElement).style.columnGap = "2px";
     table.getBoundingClientRect = () => ({ left: 0, width: 100 } as DOMRect);
     board.getBoundingClientRect = () => ({ left: 102, width: 100 } as DOMRect);
     fireEvent.pointerDown(board, { button: 0, clientX: 150, pointerId: 1 });
@@ -73,6 +394,11 @@ test("new view menu immediately creates a Board", async () => {
     assert.equal(table.style.transform, "translateX(102px)");
     fireEvent.pointerUp(board, { clientX: 25, clientY: 500, pointerId: 1 });
     await waitFor(() => assert.deepEqual(service.handleQuery({ type: "workspace.listViews", workspaceId }).value.views.map((view: { name: string }) => view.name), ["Board", "Table"]));
+    await user.click(screen.getByRole("button", { name: "New view" }));
+    await user.click(screen.getByRole("menuitem", { name: "Board" }));
+    await waitFor(() => assert.equal(screen.getAllByRole("tab", { name: "Board" }).length, 2));
+    assert.equal(screen.getAllByRole("tab", { name: "Board", selected: true }).length, 1);
+    assert.equal(screen.queryByLabelText("View name") === null, true);
   } finally { cleanup(); service.close(); rmSync(directory, { recursive: true, force: true }); }
 });
 

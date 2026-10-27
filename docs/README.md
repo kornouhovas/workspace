@@ -49,6 +49,7 @@ Read development's scope, integration, tracker, executor-selection and verificat
 | Exact scalar grouping | [Grouping contract/scenarios](plans/issue-29-scalar-grouping.md), typed grouping commands and [verification](verification/issue-29-scalar-grouping.md) |
 | Search and typed filters | [Filter contract/scenarios](plans/issue-28-view-filters.md), typed query/filter commands and [verification](verification/issue-28-view-filters.md) |
 | Table/Board views | [Lifecycle/scenarios](plans/issue-27-views.md), typed view commands and [verification](verification/issue-27-views.md) |
+| Saved-view tabs and transitions | [#81 scenarios](plans/issue-81-view-tabs.md), [verification](verification/issue-81-view-tabs.md), view-local filter/layout and session contracts |
 | MultiSelect | [Set contract/scenarios](plans/issue-26-multiselect.md), typed property commands and [verification](verification/issue-26-multiselect.md) |
 | Ordinary Single Select | [Contract/scenarios](plans/issue-25-single-select.md), typed property commands and [verification](verification/issue-25-single-select.md) |
 | Date properties | [Date contract/scenarios](plans/issue-24-date-properties.md), typed property commands and [verification](verification/issue-24-date-properties.md) |

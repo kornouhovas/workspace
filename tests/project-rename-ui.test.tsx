@@ -21,6 +21,8 @@ test.afterEach(cleanup);
 function deferred<T>() { let resolve!: (value: T) => void; const promise = new Promise<T>((done) => { resolve = done; }); return { promise, resolve }; }
 const initial: ProjectList = { workspaceId: "workspace", sourceId: "source", revision: 1, configured: true, mode: "direct", state: "ready", projects: [{ projectId: "project", name: "Original", relativePath: "Original", categoryId: null, associationState: "active", resolution: "active", categoryName: null }], retainedProjects: [], retainedCount: 0, categories: [], categoryProperty: null, categoryPropertyRevision: 0 };
 class Client extends WorkspaceServiceClient {
+  override async getTableLayout(workspaceId: string, viewId: string) { return { ok: true as const, value: { workspaceId, viewId, config: { columns: [], rowOrder: [] } } }; }
+  override async getBoardLayout(workspaceId: string, viewId: string) { return { ok: true as const, value: { workspaceId, viewId, config: { widths: [], properties: [], wrap: true } } }; }
   // Non-filter workflow fixtures expose the new empty-filter projection without
   // calling listProjects again (some tests intentionally control that read).
   override async getViewFilter(workspaceId: string, viewId: string) { return { ok: true as const, value: { workspaceId, viewId, config: { search: "", rules: [] } } }; }

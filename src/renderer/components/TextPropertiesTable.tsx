@@ -1,3 +1,4 @@
+import type { PreparedView } from "./prepared-view.js";
 import { StatusColorEditor,statusColorLabels } from "./StatusColorEditor.js";
 import { retainedProjectAvailability } from "./project-availability.js";
 import { useDraftGuard, useScalarDraftActive } from "./ScalarDrafts.js";
@@ -32,6 +33,8 @@ import { TextPropertyCell } from "./TextPropertyCell.js";
 import { StatusMessage } from "./bb-foundation.js";
 
 interface Props {
+  prepared?: PreparedView;
+  transitionPending?: boolean;
   detail?: boolean;
   sourceAvailable?: boolean;
   onPreview?(projectId: string, trigger: HTMLElement): void;
@@ -67,7 +70,7 @@ interface Props {
 export function TextPropertiesTable(props: Props) {
   return <TextPropertiesContent key={`${props.workspaceId}:${props.sourceId}`} {...props} />;
 }
-function TextPropertiesContent({ sourceAvailable = true, detail, onPreview, viewId, layout = "table", hideReveal, client, workspaceId, sourceId, projects, retainedProjects = [], onLocate, locateDisabled, onRename, renameDisabled, onArchive, archiveDisabled, onMoveCategory, onFilesystemAssignmentObserved, onFilesystemAssignmentDetails, categoryMoveDisabled, categoryProperty, categories = [], categoryPropertyRevision = 0, discoveryRevision = 0, minimumDiscoveryRevision, sourceLifetime, minimumCategoryPropertyRevision, onCategoryPropertyCommitted, language, disabled }: Props) {
+function TextPropertiesContent({ prepared, transitionPending = false, sourceAvailable = true, detail, onPreview, viewId, layout = "table", hideReveal, client, workspaceId, sourceId, projects, retainedProjects = [], onLocate, locateDisabled, onRename, renameDisabled, onArchive, archiveDisabled, onMoveCategory, onFilesystemAssignmentObserved, onFilesystemAssignmentDetails, categoryMoveDisabled, categoryProperty, categories = [], categoryPropertyRevision = 0, discoveryRevision = 0, minimumDiscoveryRevision, sourceLifetime, minimumCategoryPropertyRevision, onCategoryPropertyCommitted, language, disabled }: Props) {
   const [observedGroups, setGrouped] = useState<{viewId:string; groups:ViewGroup[]|null;propertyId:string|null;refreshToken:number}|null>(null);
   const [observedFilter, setFilteredIds] = useState<{ viewId: string; ids: string[] | null } | null>(null);
   const editingScalar = useScalarDraftActive();
@@ -99,7 +102,9 @@ function TextPropertiesContent({ sourceAvailable = true, detail, onPreview, view
       }
     }
   }
-  const { grouped, filteredIds } = projection.current;
+  const seed = prepared?.workspaceId === workspaceId && prepared.viewId === viewId && prepared.archived === !!hideReveal ? prepared : undefined;
+  const grouped = projection.current.grouped?.viewId === viewId ? projection.current.grouped : seed ? { viewId: seed.viewId, groups: seed.result.groups ?? null, propertyId: seed.result.groupPropertyId ?? null, refreshToken: 0 } : projection.current.grouped;
+  const filteredIds = projection.current.filteredIds?.viewId === viewId ? projection.current.filteredIds : seed ? { viewId: seed.viewId, ids: seed.result.projectIds } : projection.current.filteredIds;
   const activeDrag = useRef<{command: AssignProjectGroupCommand; trigger: HTMLButtonElement} | null>(null);
   const [draggingAssignment, setDraggingAssignment] = useState(false);
   const [dropTarget, setDropTarget] = useState<string | null>(null);
@@ -194,9 +199,9 @@ function TextPropertiesContent({ sourceAvailable = true, detail, onPreview, view
     void load();
     return () => { listVersion.current++; lifetime.current++; unsubscribe(); };
   }, [client, workspaceId, sourceId]);
-  const boardState = useBoardLayout(client, workspaceId, layout === "board" ? viewId : undefined);
+  const boardState = useBoardLayout(client, workspaceId, layout === "board" ? viewId : undefined, seed?.layout.kind === "board" ? { viewId: seed.viewId, config: seed.layout.config } : undefined, transitionPending);
   const layoutTrigger = useRef<HTMLButtonElement>(null);
-  const tableState = useTableLayout(client, workspaceId, layout === "table" ? viewId : undefined);
+  const tableState = useTableLayout(client, workspaceId, layout === "table" ? viewId : undefined, seed?.layout.kind === "table" ? { viewId: seed.viewId, config: seed.layout.config } : undefined, transitionPending);
   const fields = [{propertyId: "name", name: t("projectName"), text: false}, ...(categoryProperty ? [{propertyId:categoryProperty.propertyId, name:categoryPropertyName(categoryProperty, language), text:false}] : []), ...(snapshot?.definitions.map(p => ({propertyId:p.propertyId, name:p.name, text:p.propertyType === "text"})) ?? [])];
   const columns = tableColumns(tableState.config, fields);
   const projectById = new Map([...projects, ...retainedProjects].map(p => [p.projectId,p]));
@@ -456,7 +461,7 @@ function TextPropertiesContent({ sourceAvailable = true, detail, onPreview, view
   return <div className="text-properties" aria-busy={loading} onKeyDownCapture={event => { if (event.key === "Tab") backwards.current = event.shiftKey; }}>
     {viewId && <ViewFilters client={client} workspaceId={workspaceId} viewId={viewId} archived={!!hideReveal} language={language}
       showEmpty={projects.length + retainedProjects.length > 0} snapshot={snapshot} categoryProperty={categoryProperty} categories={categories} disabled={disabled || loadError}
-      projection={discoveryRevision > 0 && !hideReveal ? {revision:discoveryRevision,projectIds:[...projectById.keys()]} : undefined}
+      prepared={seed} transitionPending={transitionPending} projection={discoveryRevision > 0 && !hideReveal ? {revision:discoveryRevision,projectIds:[...projectById.keys()]} : undefined}
       refreshToken={assignmentRefresh} refreshKey={JSON.stringify([assignmentRefresh, snapshot?.revision, discoveryRevision, projects.map(p => [p.projectId, p.name, p.categoryId]), retainedProjects.map(p => [p.projectId, p.name, p.categoryId])])}
       onResults={ids => setFilteredIds({ viewId, ids })} onGroups={(groups,propertyId,refreshToken) => setGrouped({viewId,groups,propertyId,refreshToken})} />
     }
@@ -486,7 +491,7 @@ function TextPropertiesContent({ sourceAvailable = true, detail, onPreview, view
       <button type="button" className="workspace-button workspace-button--secondary" onClick={() => onFilesystemAssignmentDetails(assignmentFolderKind)}>{t("groupAssignmentDetails")}</button>}
     </div>
 
-    {grouped?.viewId===viewId && grouped?.groups ? <>
+    {(!viewId || (layout === "board" ? boardState.config : tableState.config)) && (grouped?.viewId===viewId && grouped?.groups ? <>
       {grouped.groups.length>0 && grouped.groups.every(group=>group.hidden) && <p role="status">{t("groupAllHidden")}</p>}
       {grouped.groups.length===0 && <p role="status">{t("groupEmpty")}</p>}
       <div className={layout === "board" ? "grouped-board" : "grouped-table"}>
@@ -522,6 +527,6 @@ function TextPropertiesContent({ sourceAvailable = true, detail, onPreview, view
       <table className="project-table" style={tableStyle}>
         <thead><tr>{headers}</tr></thead><tbody>{rows()}</tbody>
       </table>
-    </div>}
+    </div>)}
   </div>;
 }

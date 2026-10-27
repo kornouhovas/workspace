@@ -13,9 +13,9 @@ export function DailyControlsSurface({ children }: { children: ReactNode }) {
   return <DailyControlsContext.Provider value={{ target, setTarget }}>{children}</DailyControlsContext.Provider>;
 }
 
-export function DailyControlsTarget({ hidden }: { hidden: boolean }) {
+export function DailyControlsTarget({ hidden, inert = false }: { hidden: boolean; inert?: boolean }) {
   const context = useContext(DailyControlsContext);
-  return <div className="daily-controls" hidden={hidden} ref={context?.setTarget} />;
+  return <div className="daily-controls" hidden={hidden} inert={inert} ref={context?.setTarget} />;
 }
 
 export function DailyControl({ children }: { children: ReactNode }) {

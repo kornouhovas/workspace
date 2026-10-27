@@ -1,3 +1,4 @@
+import type { PreparedView } from "./prepared-view.js";
 import { ViewControls, useViewControlsVisible } from "./ManagementSurface.js";
 import { contextOwner } from "./ContextTools.js";
 import { Hint } from "./Hint.js";
@@ -15,22 +16,29 @@ import { StatusMessage } from "./bb-foundation.js";
 interface Props {
   showEmpty?: boolean; client: WorkspaceServiceClient; workspaceId: string; viewId: string; archived: boolean; language: Language;
   snapshot: PropertySnapshot | null; categoryProperty?: CategoryProperty | null; categories: CategorySummary[];
-  projection?: import("../../contracts/view-filters.js").ViewProjectProjection;
+  projection?: import("../../contracts/view-filters.js").ViewProjectProjection; prepared?: PreparedView; transitionPending?: boolean;
   refreshKey: string; refreshToken?: number; disabled: boolean; onResults(ids: string[] | null): void; onGroups?(groups: import("../../contracts/view-grouping.js").ViewGroup[] | null, propertyId: string | null, refreshToken: number): void;
 }
 const clearConfig = (): ViewFilterConfig => ({ search: "", rules: [] });
 export function ViewFilters(props: Props) { return <FilterContent key={`${props.workspaceId}:${props.viewId}:${props.archived}`} {...props} />; }
-function FilterContent({ showEmpty = true, client, workspaceId, viewId, archived, language, snapshot, categoryProperty, categories, projection, refreshKey, refreshToken = 0, disabled, onResults, onGroups }: Props) {
+function FilterContent({ showEmpty = true, client, workspaceId, viewId, archived, language, snapshot, categoryProperty, categories, projection, prepared, transitionPending = false, refreshKey, refreshToken = 0, disabled, onResults, onGroups }: Props) {
   const t = (key: TranslationKey) => translate(language, key);
   const [open, setOpen] = useState(false);
   const [owner,setOwner]=useState<string | undefined>(undefined);
   const visible=useViewControlsVisible();
   useEffect(()=>{if(!visible)setOpen(false);},[visible]);
   const toggle = useRef<HTMLButtonElement>(null);
-  const [draft, setDraft] = useState<ViewFilterConfig>(clearConfig);
-  const [loading, setLoading] = useState(true), [saving, setSaving] = useState(false);
+  const initial = prepared?.workspaceId === workspaceId && prepared.viewId === viewId && prepared.archived === archived ? prepared : undefined;
+  const [draft, setDraft] = useState<ViewFilterConfig>(() => initial?.filter ?? clearConfig());
+  const [loading, setLoading] = useState(!initial), [saving, setSaving] = useState(false);
   const [error, setError] = useState<"filterLoadError" | "filterSaveError" | "filterQueryError" | null>(null);
-  const [empty, setEmpty] = useState(false);
+  const [empty, setEmpty] = useState(!!initial && initial.result.projectIds.length === 0);
+  const skipInitialRefresh = useRef(!!initial);
+  const usedPrepared = useRef(!!initial);
+  const reloadAfterSave = useRef(false);
+  const transitionRef = useRef(transitionPending); transitionRef.current = transitionPending;
+  const refreshAfterTransition = useRef(false);
+  const appliedPrepared = useRef(initial);
   const configRequestVersion = useRef(0), projectionReady = useRef(false);
   const queryRequestVersion = useRef(0), mountGeneration = useRef(0), saveInFlight = useRef(false), hasDraft = useRef(false);
   const results = useRef(onResults); results.current = onResults;
@@ -57,10 +65,10 @@ function FilterContent({ showEmpty = true, client, workspaceId, viewId, archived
     } catch { if (request === queryRequestVersion.current) { groupResults.current?.(null, null, projectionToken); results.current(null); setError("filterQueryError"); } }
     finally { if (request === queryRequestVersion.current) setLoading(false); }
   };
-  const load = async () => {
+  const load = async (preserveError = false) => {
     const started = mountGeneration.current, request = ++configRequestVersion.current;
     queryRequestVersion.current++;
-    setLoading(true); setError(null);
+    setLoading(true); if (!preserveError) setError(null);
     try {
       const result = await client.getViewFilter(workspaceId, viewId);
       if (started !== mountGeneration.current || request !== configRequestVersion.current) return;
@@ -71,17 +79,45 @@ function FilterContent({ showEmpty = true, client, workspaceId, viewId, archived
     } catch { if (started === mountGeneration.current && request === configRequestVersion.current) { groupResults.current?.(null, null, refreshToken); results.current(null); setError("filterLoadError"); setLoading(false); } }
   };
   useEffect(() => {
-    void load();
+    if (initial) { projectionReady.current = true; groupResults.current?.(initial.result.groups ?? null, initial.result.groupPropertyId ?? null, refreshToken); results.current(initial.result.projectIds); }
+    else void load();
     const stop = client.onWorkspaceChange(event => {
       // Source property events are owned by TextPropertiesContent. Its accepted
       // snapshot revision arrives through refreshKey; a second subscription here
       // was issuing duplicate full-source queries for the same committed edit.
       if (event.type !== "workspace.listChanged") return;
-      if (!saveInFlight.current) void load();
+      if (transitionRef.current) { refreshAfterTransition.current = true; return; }
+      if (!saveInFlight.current) void load(true);
     });
     return () => { mountGeneration.current++; queryRequestVersion.current++; configRequestVersion.current++; stop(); };
   }, [client, workspaceId, viewId, archived]);
   useEffect(() => {
+    if (transitionPending || !refreshAfterTransition.current) return;
+    refreshAfterTransition.current = false;
+    if (saveInFlight.current) reloadAfterSave.current = true;
+    else void load(true);
+  }, [transitionPending]);
+  useEffect(() => {
+    if (prepared && prepared.workspaceId === workspaceId && prepared.viewId === viewId && prepared.archived === archived) {
+      if (appliedPrepared.current !== prepared) {
+        configRequestVersion.current++; queryRequestVersion.current++;
+        appliedPrepared.current = prepared; usedPrepared.current = true; projectionReady.current = true;
+        if (!hasDraft.current) setDraft(prepared.filter);
+        setLoading(false); setError(null); setEmpty(prepared.result.projectIds.length === 0);
+        groupResults.current?.(prepared.result.groups ?? null, prepared.result.groupPropertyId ?? null, latestRefreshToken.current);
+        results.current(prepared.result.projectIds);
+      }
+      return;
+    }
+    if (!usedPrepared.current) return;
+    usedPrepared.current = false; appliedPrepared.current = undefined;
+    if (saveInFlight.current) { reloadAfterSave.current = true; return; }
+    projectionReady.current = false;
+    groupResults.current?.(null, null, latestRefreshToken.current); results.current(null);
+    void load(true);
+  }, [prepared]);
+  useEffect(() => {
+    if (skipInitialRefresh.current) { skipInitialRefresh.current = false; return; }
     const previous = previousSnapshot.current;
     if (snapshot) previousSnapshot.current = snapshot;
     // Metadata removal rewrites saved filters in the service. Reload that
@@ -102,14 +138,15 @@ function FilterContent({ showEmpty = true, client, workspaceId, viewId, archived
     saveInFlight.current = true; configRequestVersion.current++; queryRequestVersion.current++;
     setLoading(false); setSaving(true); setError(null);
     const started = mountGeneration.current;
+    let saved = false;
     try {
       const result = await client.setViewFilter(workspaceId, viewId, config);
       if (started !== mountGeneration.current) return;
       if (result.ok && result.value.workspaceId === workspaceId && result.value.viewId === viewId) {
-        projectionReady.current = true; hasDraft.current = false; setDraft(result.value.config); await query();
+        saved = true; projectionReady.current = true; hasDraft.current = false; setDraft(result.value.config); await query();
       } else setError("filterSaveError");
     } catch { if (started === mountGeneration.current) setError("filterSaveError"); }
-    finally { if (started === mountGeneration.current) { saveInFlight.current = false; setSaving(false);  } }
+    finally { if (started === mountGeneration.current) { saveInFlight.current = false; setSaving(false); if (reloadAfterSave.current) { reloadAfterSave.current = false; if (saved) void load(true); else void query(); } } }
   };
   const ruleChange = (index: number, rule: FilterRule) => change({ ...draft, rules: draft.rules.map((current, i) => i === index ? rule : current) });
   return <section className="view-filters" aria-label={t("filtersTitle")} aria-busy={loading || saving}>

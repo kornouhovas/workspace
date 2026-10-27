@@ -29,6 +29,8 @@ const initial: ProjectList = { workspaceId: "workspace", sourceId: "source", rev
 const committed: ProjectList = { ...initial, revision: 2, projects: [{ ...retained, relativePath: preview.entries[0].relativePath, name: preview.entries[0].name, associationState: "active", resolution: "active" }],
   retainedProjects: [initial.retainedProjects[1]], retainedCount: 1 };
 class RecoveryClient extends WorkspaceServiceClient {
+  override async getTableLayout(workspaceId: string, viewId: string) { return { ok: true as const, value: { workspaceId, viewId, config: { columns: [], rowOrder: [] } } }; }
+  override async getBoardLayout(workspaceId: string, viewId: string) { return { ok: true as const, value: { workspaceId, viewId, config: { widths: [], properties: [], wrap: true } } }; }
   // Non-filter workflow fixtures expose the new empty-filter projection without
   // calling listProjects again (some tests intentionally control that read).
   override async getViewFilter(workspaceId: string, viewId: string) { return { ok: true as const, value: { workspaceId, viewId, config: { search: "", rules: [] } } }; }

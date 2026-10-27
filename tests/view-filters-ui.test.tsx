@@ -16,6 +16,30 @@ const { default: userEvent } = await import("@testing-library/user-event");
 const { TextPropertiesTable } = await import("../src/renderer/components/TextPropertiesTable.js");
 // @ts-expect-error Built service module intentionally has no declarations.
 const { openSettingsService } = await import("../dist/service/settings.mjs");
+test("invalidating prepared filter data waits for the in-flight save before reloading", async () => {
+  const { ViewFilters } = await import("../src/renderer/components/ViewFilters.js");
+  const workspaceId = "11111111-1111-4111-8111-111111111111", viewId = "22222222-2222-4222-8222-222222222222";
+  const filter = { search: "", rules: [] }, result = { workspaceId, viewId, archived: false, projectIds: [] };
+  const prepared = { valid: true, workspaceId, viewId, archived: false, filter, result, layout: {kind: "table" as const, config: {columns: [], rowOrder: []}} };
+  let finish: ((value: unknown) => void) | undefined, reads = 0;
+  const client = new WorkspaceServiceClient({onWorkspaceChange: () => () => {}, workspace: async (input: {type:string}) => {
+    if (input.type === "workspace.getViewFilter") { reads++; return {ok:true,value:{workspaceId,viewId,config:filter}}; }
+    if (input.type === "workspace.queryView") return {ok:true,value:result};
+    return new Promise(resolve => { finish = resolve; });
+  }} as unknown as WorkspaceDesktopApi);
+  const props = {client,workspaceId,viewId,archived:false,language:"en" as const,snapshot:{definitions:[],selectOptions:[]} as never,categories:[],refreshKey:"initial",disabled:false,onResults:()=>{}};
+  const user = userEvent.setup({document});
+  try {
+    const rendered = render(<ViewFilters {...props} prepared={prepared}/>);
+    await user.type(screen.getByRole("searchbox"), "hello{Enter}");
+    await waitFor(() => assert.ok(finish));
+    rendered.rerender(<ViewFilters {...props}/>);
+    assert.equal(reads, 0);
+    finish!({ok:true,value:{workspaceId,viewId,config:{search:"hello",rules:[]}}});
+    await waitFor(() => assert.ok(reads > 0));
+  } finally { cleanup(); }
+});
+
 for (const language of ["en", "ru"] as const) for (const layout of ["table", "board"] as const) {
   test(`${language} ${layout} keyboard search, typed filter, empty guidance, value edits and query errors`, async () => {
     const directory = mkdtempSync(join(tmpdir(), "filters-ui-")), root = join(directory, "root"); mkdirSync(root);

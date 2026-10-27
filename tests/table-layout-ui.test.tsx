@@ -145,6 +145,97 @@ test('a source metadata change arriving during a pending layout reply refreshes 
   } finally { cleanup(); }
 });
 
+test('a prepared view clears loading and error state owned by the previous view', async () => {
+  const { TableLayoutControls, useTableLayout } = await import('../src/renderer/components/TableLayout.js');
+  const workspaceId = '11111111-1111-4111-8111-111111111111', oldView = '22222222-2222-4222-8222-222222222222', newView = '33333333-3333-4333-8333-333333333333';
+  const config = { columns: [], rowOrder: [] }; let finish: ((value: unknown) => void) | undefined, fail = false;
+  const client = new WorkspaceServiceClient({ onWorkspaceChange: () => () => {}, workspace: async () => fail ? {ok:false,error:{code:'storage',message:'Unavailable'}} : new Promise(resolve => { finish = resolve; }) } as unknown as WorkspaceDesktopApi);
+  function Harness({id,seed}: {id:string;seed?:{viewId:string;config:typeof config}}) { const state = useTableLayout(client, workspaceId, id, seed); return <TableLayoutControls state={state} fields={[{propertyId:'name',name:'Name',text:false}]} language="en" disabled={false}/>; }
+  try {
+    const rendered = render(<Harness id={oldView}/>); await screen.findByText('Loading Table layout...');
+    rendered.rerender(<Harness id={newView} seed={{viewId:newView,config}}/>);
+    await waitFor(() => assert.equal(screen.queryByText('Loading Table layout...') === null, true));
+    finish!({ok:true,value:{workspaceId,viewId:oldView,config}});
+    assert.equal((screen.getByRole('button',{name:'Table layout'}) as HTMLButtonElement).disabled, false);
+    fail = true; rendered.rerender(<Harness id={oldView}/>); await screen.findByRole('alert');
+    rendered.rerender(<Harness id={newView} seed={{viewId:newView,config}}/>);
+    await waitFor(() => assert.equal(screen.queryByRole('alert') === null, true));
+    assert.equal((screen.getByRole('button',{name:'Table layout'}) as HTMLButtonElement).disabled, false);
+  } finally { cleanup(); }
+});
+
+test('a failed layout save remains visible after a deferred transition refresh', async () => {
+  const { TableLayoutControls, useTableLayout } = await import('../src/renderer/components/TableLayout.js');
+  const workspaceId = '11111111-1111-4111-8111-111111111111', viewId = '22222222-2222-4222-8222-222222222222';
+  const config = { columns: [{ propertyId: 'name', hidden: false, width: 224, wrap: false }], rowOrder: [] };
+  let finish: ((value: unknown) => void) | undefined, reads = 0;
+  let listener: ((event: import('../src/contracts/workspaces.js').WorkspaceChangeEvent) => void) | undefined;
+  const client = new WorkspaceServiceClient({ onWorkspaceChange: (callback: typeof listener) => { listener = callback; return () => {}; }, workspace: async (input: {type:string}) => {
+    if (input.type === 'workspace.getTableLayout') { reads++; return {ok:true,value:{workspaceId,viewId,config}}; }
+    return new Promise(resolve => { finish = resolve; });
+  }} as unknown as WorkspaceDesktopApi);
+  function Harness({transition}: {transition:boolean}) { const state = useTableLayout(client,workspaceId,viewId,undefined,transition); return <TableLayoutControls state={state} fields={[{propertyId:'name',name:'Name',text:false}]} language="en" disabled={false}/>; }
+  const user = userEvent.setup({document});
+  try {
+    const rendered = render(<Harness transition={false}/>); await waitFor(() => assert.ok(reads));
+    await user.click(screen.getByRole('button',{name:'Table layout'}));
+    const width = screen.getByRole('slider') as HTMLInputElement; fireEvent.change(width,{target:{value:'350'}}); fireEvent.keyUp(width,{key:'ArrowRight'});
+    await waitFor(() => assert.ok(finish)); rendered.rerender(<Harness transition/>);
+    listener!({type:'workspace.propertiesChanged',sourceId:'44444444-4444-4444-8444-444444444444',workspaceIds:[workspaceId],revision:5});
+    finish!({ok:false,error:{code:'storage',message:'Rejected'}}); await screen.findByRole('alert');
+    rendered.rerender(<Harness transition={false}/>); await waitFor(() => assert.ok(reads > 1));
+    assert.ok(screen.getByRole('alert'));
+  } finally { cleanup(); }
+});
+
+test('a rejected layout save remains visible after deferred prepared-data reload', async () => {
+  const { TableLayoutControls, useTableLayout } = await import('../src/renderer/components/TableLayout.js');
+  const workspaceId = '11111111-1111-4111-8111-111111111111', viewId = '22222222-2222-4222-8222-222222222222';
+  const config = { columns: [{ propertyId: 'name', hidden: false, width: 224, wrap: false }], rowOrder: [] };
+  let finish: ((value: unknown) => void) | undefined, reads = 0;
+  const client = new WorkspaceServiceClient({ onWorkspaceChange: () => () => {}, workspace: async (input: {type:string}) => {
+    if (input.type === 'workspace.getTableLayout') { reads++; return {ok:true,value:{workspaceId,viewId,config}}; }
+    return new Promise(resolve => { finish = resolve; });
+  }} as unknown as WorkspaceDesktopApi);
+  const prepared = {viewId,config};
+  function Harness({seed}: {seed?: typeof prepared}) { const state = useTableLayout(client,workspaceId,viewId,seed); return <TableLayoutControls state={state} fields={[{propertyId:'name',name:'Name',text:false}]} language="en" disabled={false}/>; }
+  const user = userEvent.setup({document});
+  try {
+    const rendered = render(<Harness seed={prepared}/>); await user.click(screen.getByRole('button',{name:'Table layout'}));
+    const width = screen.getByRole('slider') as HTMLInputElement; fireEvent.change(width,{target:{value:'350'}}); fireEvent.keyUp(width,{key:'ArrowRight'});
+    await waitFor(() => assert.ok(finish)); rendered.rerender(<Harness/>);
+    finish!({ok:false,error:{code:'storage',message:'Rejected'}});
+    await waitFor(() => assert.ok(reads > 0)); await screen.findByRole('alert');
+  } finally { cleanup(); }
+});
+
+test('invalidating a prepared layout during save preserves the save and allows a later edit', async () => {
+  const { TableLayoutControls, useTableLayout } = await import('../src/renderer/components/TableLayout.js');
+  const workspaceId = '11111111-1111-4111-8111-111111111111', viewId = '22222222-2222-4222-8222-222222222222';
+  const config = { columns: [{ propertyId: 'name', hidden: false, width: 224, wrap: false }], rowOrder: [] };
+  let finish: ((value: unknown) => void) | undefined, saves = 0;
+  const client = new WorkspaceServiceClient({ onWorkspaceChange: () => () => {}, workspace: async (input: {type:string}) => {
+    if (input.type === 'workspace.getTableLayout') return {ok:true,value:{workspaceId,viewId,config}};
+    saves++; return new Promise(resolve => { finish = resolve; });
+  } } as unknown as WorkspaceDesktopApi);
+  const prepared = {viewId,config};
+  function Harness({seed}: {seed?: typeof prepared}) { const state = useTableLayout(client, workspaceId, viewId, seed); return <TableLayoutControls state={state} fields={[{propertyId:'name',name:'Name',text:false}]} language="en" disabled={false}/>; }
+  const user = userEvent.setup({document});
+  try {
+    const rendered = render(<Harness seed={prepared}/>);
+    await user.click(screen.getByRole('button',{name:'Table layout'}));
+    const width = screen.getByRole('slider') as HTMLInputElement;
+    fireEvent.change(width,{target:{value:'350'}}); fireEvent.keyUp(width,{key:'ArrowRight'});
+    await screen.findByText('Saving Table layout...');
+    rendered.rerender(<Harness/>);
+    finish!({ok:true,value:{workspaceId,viewId,config}});
+    await waitFor(() => assert.equal(screen.queryByText('Saving Table layout...') === null, true));
+    fireEvent.change(width,{target:{value:'360'}}); fireEvent.keyUp(width,{key:'ArrowRight'});
+    await waitFor(() => assert.equal(saves, 2));
+    finish!({ok:true,value:{workspaceId,viewId,config}});
+  } finally { cleanup(); }
+});
+
 test('a rejected header width save stays visible in the column popup and preserves committed width', async () => {
   const {TableLayoutControls,useTableLayout}=await import('../src/renderer/components/TableLayout.js');
   const workspaceId='11111111-1111-4111-8111-111111111111',viewId='22222222-2222-4222-8222-222222222222';

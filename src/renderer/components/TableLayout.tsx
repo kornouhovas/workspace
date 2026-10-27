@@ -12,8 +12,8 @@ const tableAdapter = {
   load: (client: WorkspaceServiceClient, workspaceId: string, viewId: string) => client.getTableLayout(workspaceId, viewId),
   save: (client: WorkspaceServiceClient, workspaceId: string, viewId: string, config: TableLayoutConfig) => client.setTableLayout(workspaceId, viewId, config),
 };
-export function useTableLayout(client: WorkspaceServiceClient, workspaceId: string, viewId: string | undefined) {
-  return useViewPresentation(client, workspaceId, viewId, tableAdapter);
+export function useTableLayout(client: WorkspaceServiceClient, workspaceId: string, viewId: string | undefined, prepared?: {viewId: string; config: TableLayoutConfig}, transitionPending = false) {
+  return useViewPresentation(client, workspaceId, viewId, tableAdapter, prepared, transitionPending);
 }
 export function tableColumns(config: TableLayoutConfig | null, fields: TableField[]): TableColumn[] {
   const available = new Set(fields.map(f => f.propertyId));

@@ -103,6 +103,7 @@ try {
     await pressEnabled(page, page.getByRole("menuitem", { name: en ? "Board" : "Доска", exact: true }));
     await page.getByRole("tab", { name: "Board", exact: true }).and(page.locator('[aria-selected="true"]')).waitFor();
     await openRuntimeViewActions(page, actions()); await pressEnabled(page, edit());
+    await name().fill(""); await name().press("Enter"); await page.getByRole("alert").waitFor();
     await name().fill("Review"); await name().press("Enter");
     const tableTab = page.getByRole("tab", { name: "Table", exact: true });
     const reviewTab = page.getByRole("tab", { name: "Review", exact: true });
@@ -110,6 +111,7 @@ try {
     await tableTab.click({ button: "right" });
     await edit().waitFor();
     await page.keyboard.press("Escape");
+    assert.equal(await tableTab.evaluate(node => node === document.activeElement), true);
     await reviewTab.dragTo(tableTab);
     await page.waitForFunction(() => [...document.querySelectorAll('[role="tab"]')].filter(node => ["Table", "Review"].includes(node.textContent)).map(node => node.textContent).join(",") === "Review,Table");
     await tableTab.and(page.locator(":enabled")).waitFor();
@@ -205,6 +207,31 @@ try {
     evidence.checks.push({language,folderAssignment});
     const metadataRemoval = await exerciseMetadataRemoval({page,query,rootPath:join(fixture,`${language}-metadata-removal`),language,evidenceDirectory});
     evidence.checks.push({language,metadataRemoval});
+    const overflowRoot = join(fixture, `view-overflow-${language}`); await mkdir(overflowRoot);
+    const overflowWorkspace = await query(page, { type: "workspace.create", rootPath: overflowRoot, name: `Overflow ${language}` });
+    const overflowId = overflowWorkspace.workspaceId;
+    for (let index = 0; index < 10; index++) await query(page, { type: "workspace.createView", workspaceId: overflowId, name: `Long view ${index}`, kind: "board" });
+    await query(page, { type: "workspace.activate", workspaceId: overflowId }); await page.reload();
+    const strip = page.getByRole("tablist", { name: en ? "Current view" : "Текущее представление", exact: true });
+    const firstTab = strip.getByRole("tab", { name: "Table", exact: true });
+    await firstTab.waitFor();
+    await strip.evaluate(node => { node.scrollLeft = 0; });
+    const stripBox = await strip.boundingBox(), firstBox = await firstTab.boundingBox();
+    assert.ok(stripBox && firstBox);
+    const originalOrder = await query(page, { type: "workspace.listViews", workspaceId: overflowId });
+    const maxScroll = await strip.evaluate(node => node.scrollWidth - node.clientWidth);
+    assert.ok(maxScroll > 0);
+    await page.mouse.move(firstBox.x + firstBox.width / 2, firstBox.y + firstBox.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(stripBox.x + stripBox.width - 3, firstBox.y + firstBox.height / 2 + 50, { steps: 12 });
+    await page.waitForFunction(max => { const node = document.querySelector(".saved-view-tabs"); return node && node.scrollLeft >= max - 1; }, maxScroll);
+    await page.mouse.up();
+    await page.waitForFunction(() => !document.querySelector(".views-panel")?.getAttribute("aria-busy")?.includes("true"));
+    const movedOrder = await query(page, { type: "workspace.listViews", workspaceId: overflowId });
+    assert.equal(movedOrder.views.at(-1).viewId, originalOrder.views[0].viewId);
+    await close(); ({ page } = await launch());
+    assert.deepEqual(await query(page, { type: "workspace.listViews", workspaceId: overflowId }), movedOrder);
+    evidence.checks.push({ language, overflowDrag: true, overflowRestart: true });
     evidence.checks.push({ language, groupAssignment, boardLayout, tableLayout, filters, grouping, categoryGrouping, retainedGrouping, keyboard: true, table: true, board: true, lifecycle: true, independentCopy: true, sourceSibling: true, activeArchived: true, restart: true, filesUnchanged: true, widths: [360, 1024, 1440] });
   }
   await close(); evidence.status = "passed";

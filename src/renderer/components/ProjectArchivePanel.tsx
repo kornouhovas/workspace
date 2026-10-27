@@ -1,3 +1,4 @@
+import type { PreparedView } from "./prepared-view.js";
 import { ContextTools } from "./ContextTools.js";
 import { DailyControl } from "./DailyControls.js";
 import { useEffect, useId, useRef, useState } from "react";
@@ -18,6 +19,8 @@ interface Props {
   onPreview?(projectId:string,trigger:HTMLElement):void;
   onSnapshot?(snapshot:ArchiveSnapshot|null):void;
   locationOnly?: boolean;
+  prepared?: PreparedView;
+  transitionPending?: boolean;
   viewId?: string;
   categoryProperty?: CategoryProperty | null; categories?: CategorySummary[];
   layout?: "table" | "board";
@@ -31,7 +34,7 @@ const problemKeys: Record<string, TranslationKey> = {
   busy: "archiveProblemBusy", owned_location: "archiveProblemOwned",
 };
 export function ProjectArchivePanel(props: Props) { return <ArchiveContent key={`${props.workspaceId}:${props.sourceId}`} {...props} />; }
-function ArchiveContent({ request, onRequestClosed, onRestoreFocus, onPreview, onSnapshot, locationOnly = false, viewId, categoryProperty, categories, layout = "table", client, workspaceId, sourceId, projects, language, disabled, revision, invalidation, onCommitted, onViewChange, onBlockedChange, onProjectAvailability }: Props) {
+function ArchiveContent({ request, onRequestClosed, onRestoreFocus, onPreview, onSnapshot, locationOnly = false, prepared, transitionPending = false, viewId, categoryProperty, categories, layout = "table", client, workspaceId, sourceId, projects, language, disabled, revision, invalidation, onCommitted, onViewChange, onBlockedChange, onProjectAvailability }: Props) {
   const projectSelectId = useId();
   const draftGuard = useDraftGuard();
   const dialogRoot = useRef<HTMLDivElement>(null);
@@ -201,7 +204,7 @@ function ArchiveContent({ request, onRequestClosed, onRestoreFocus, onPreview, o
     onKeyDown={event => { if (!contextual && !event.defaultPrevented && event.key === "Escape" && (review || locationReview || recovery)) { event.preventDefault(); cancel(); } }}>
     {locationOnly && <h3>{t("archiveLocation")}</h3>}
     {!locationOnly && <DailyControl><div className="workspace-form-actions">{[false, true].map(value => <button type="button" key={String(value)} className="workspace-button workspace-button--secondary" aria-pressed={archived === value}
-      disabled={blocked || contextual !== null} onClick={() => { const run = () => changeDraft(() => { setArchived(value); setProjectId(""); setName(""); setCreateParent(false); onViewChange(value); }); if (draftGuard) draftGuard.run(run); else run(); }}>{t(value ? "archiveArchived" : "archiveActive")}</button>)}</div></DailyControl>}
+      disabled={blocked || contextual !== null || transitionPending} onClick={() => { const run = () => changeDraft(() => { setArchived(value); setProjectId(""); setName(""); setCreateParent(false); onViewChange(value); }); if (draftGuard) draftGuard.run(run); else run(); }}>{t(value ? "archiveArchived" : "archiveActive")}</button>)}</div></DailyControl>}
     {loading && <StatusMessage kind="info" title={t("archiveLoading")} />}
     {error && <><StatusMessage kind="error" title={t("archiveError")} /><button type="button" disabled={pending} className="workspace-button workspace-button--secondary" onClick={() => void load()}>{t("propertiesRetry")}</button></>}
     <ContextTools label={t("archiveTitle")} compact={!locationOnly} inline={locationOnly} daily={!locationOnly} onEscape={event=>{if(review || locationReview || recovery){event.preventDefault();cancel();}}}>
@@ -237,7 +240,7 @@ function ArchiveContent({ request, onRequestClosed, onRestoreFocus, onPreview, o
     </ProjectOperationDialog>
     </ContextTools>
     {!locationOnly && archived && <div id={`archived-view-panel-${workspaceId}`} role="tabpanel" aria-labelledby={viewId ? `saved-view-${viewId}` : undefined}>{snapshot?.projects.length ? <>
-      {viewId && <TextPropertiesTable key={viewId} onArchive={(project, action, trigger) => { if (blocked || disabled) return; epoch.current++; setContextual({project, action, trigger}); setProjectId(project.projectId); setName(""); setCreateParent(false); setReview(null); setRecovery(null); setMessage(null); returnFocus.current = trigger; }} archiveDisabled={blocked || loading || error || !snapshot?.relativePath} onPreview={onPreview} categoryProperty={categoryProperty} categories={categories} viewId={viewId} layout={layout} client={client} workspaceId={workspaceId} sourceId={sourceId} language={language} disabled={disabled} projects={snapshot.projects} hideReveal />}
+      {viewId && <TextPropertiesTable prepared={prepared} transitionPending={transitionPending} onArchive={(project, action, trigger) => { if (blocked || disabled) return; epoch.current++; setContextual({project, action, trigger}); setProjectId(project.projectId); setName(""); setCreateParent(false); setReview(null); setRecovery(null); setMessage(null); returnFocus.current = trigger; }} archiveDisabled={blocked || loading || error || !snapshot?.relativePath} onPreview={onPreview} categoryProperty={categoryProperty} categories={categories} viewId={viewId} layout={layout} client={client} workspaceId={workspaceId} sourceId={sourceId} language={language} disabled={disabled} projects={snapshot.projects} hideReveal />}
     </> : <p>{t("archiveEmpty")}</p>}</div>}
   </section>;
 }

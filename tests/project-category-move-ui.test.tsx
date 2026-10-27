@@ -29,6 +29,8 @@ const initial: ProjectList = {
   categoryProperty: { propertyId: "category-label", sourceId: "source", name: "Client" }, categoryPropertyRevision: 0,
 };
 class Client extends WorkspaceServiceClient {
+  override async getTableLayout(workspaceId: string, viewId: string) { return { ok: true as const, value: { workspaceId, viewId, config: { columns: [], rowOrder: [] } } }; }
+  override async getBoardLayout(workspaceId: string, viewId: string) { return { ok: true as const, value: { workspaceId, viewId, config: { widths: [], properties: [], wrap: true } } }; }
   // Non-filter workflow fixtures expose the new empty-filter projection without
   // calling listProjects again (some tests intentionally control that read).
   override async getViewFilter(workspaceId: string, viewId: string) { return { ok: true as const, value: { workspaceId, viewId, config: { search: "", rules: [] } } }; }

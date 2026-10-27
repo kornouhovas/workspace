@@ -73,7 +73,18 @@ try {
       await page.waitForFunction(theme => document.documentElement.dataset.theme === theme, theme);
       await returnToWorkspace(page);
       for (const size of [{width:1024,height:720},{width:1440,height:960}]) {
-        await page.setViewportSize(size);
+        const geometry = await app.evaluate(({BrowserWindow, screen}, requested) => {
+          const win = BrowserWindow.getAllWindows()[0], area = screen.getDisplayMatching(win.getBounds()).workArea;
+          const minimum = win.getMinimumSize();
+          win.setMinimumSize(requested.width, requested.height);
+          try { win.setBounds({ x: area.x, y: area.y, width: requested.width, height: requested.height }); }
+          finally { win.setMinimumSize(...minimum); }
+          return { outer: win.getBounds(), content: win.getContentBounds(), minimum: win.getMinimumSize() };
+        }, size);
+        assert.deepEqual({ width: geometry.outer.width, height: geometry.outer.height }, size);
+        assert.deepEqual(geometry.minimum, [1024, 720]);
+        await page.waitForFunction(content => window.innerWidth === content.width && window.innerHeight === content.height, geometry.content);
+        const viewport = await page.evaluate(() => ({ width: window.innerWidth, height: window.innerHeight, scale: window.devicePixelRatio }));
         await page.getByRole("cell", { name: "Project 00", exact: true }).scrollIntoViewIfNeeded();
         assert.equal(await page.getByRole("tab", { name: view.name, exact: true }).getAttribute("aria-selected"), "true");
         const layout = await page.evaluate(() => {
@@ -85,6 +96,19 @@ try {
         });
         assert.deepEqual(layout, { viewport:true, documentScroll:false, workScroll:true, sidebarScroll:true, noHorizontalOverflow:true });
         await page.screenshot({ path: join(evidence, `${language}-${theme}-${size.width}-table.png`) });
+        const viewTab = page.getByRole("tab", { name: view.name, exact: true });
+        await viewTab.focus(); await page.keyboard.press("ArrowLeft");
+        const focusStyle = await page.evaluate(() => { const node = document.activeElement, style = window.getComputedStyle(node); return { role: node?.getAttribute("role"), width: style.outlineWidth, color: style.outlineColor }; });
+        assert.equal(focusStyle.role, "tab"); assert.notEqual(focusStyle.width, "0px");
+        const focusPng = await page.screenshot({ path: join(evidence, `${language}-${theme}-${size.width}-view-keyboard-focus.png`) });
+        assert.deepEqual({ width: focusPng.readUInt32BE(16), height: focusPng.readUInt32BE(20) }, { width: Math.round(viewport.width * viewport.scale), height: Math.round(viewport.height * viewport.scale) });
+        checks.push({ language, theme, requested: size, geometry, viewport, focusCapture: true });
+        const create = page.getByRole("button", { name: language === "en" ? "New view" : "Новое представление", exact: true });
+        await create.focus(); await create.press("Enter");
+        const createMenu = page.getByRole("menu"); await createMenu.waitFor();
+        const menuBounds = await createMenu.boundingBox(); assert.ok(menuBounds && menuBounds.x >= 0 && menuBounds.y >= 0 && menuBounds.x + menuBounds.width <= viewport.width && menuBounds.y + menuBounds.height <= viewport.height);
+        await page.screenshot({ path: join(evidence, `${language}-${theme}-${size.width}-view-create-menu.png`) });
+        await page.keyboard.press("Escape");
         const actions = page.getByRole("button", { name: /^(View actions|Действия с представлением):/ });
         await actions.focus(); await actions.press("Enter");
         await page.getByRole("menu").waitFor();

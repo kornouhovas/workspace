@@ -12,8 +12,8 @@ const adapter = {
   load: (client: WorkspaceServiceClient, workspaceId: string, viewId: string) => client.getBoardLayout(workspaceId, viewId),
   save: (client: WorkspaceServiceClient, workspaceId: string, viewId: string, config: BoardLayoutConfig) => client.setBoardLayout(workspaceId, viewId, config),
 };
-export function useBoardLayout(client: WorkspaceServiceClient, workspaceId: string, viewId: string | undefined) {
-  return useViewPresentation(client, workspaceId, viewId, adapter);
+export function useBoardLayout(client: WorkspaceServiceClient, workspaceId: string, viewId: string | undefined, prepared?: {viewId: string; config: BoardLayoutConfig}, transitionPending = false) {
+  return useViewPresentation(client, workspaceId, viewId, adapter, prepared, transitionPending);
 }
 export function boardColumnWidth(config: BoardLayoutConfig | null, propertyId: string | null | undefined, key: string) {
   return config?.widths.find(c => c.propertyId === propertyId && c.key === key)?.width ?? defaultBoardColumnWidth;
