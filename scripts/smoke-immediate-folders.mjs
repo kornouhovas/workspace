@@ -42,6 +42,11 @@ try {
   await page.getByRole('cell',{name:'design_system',exact:true}).waitFor();
   await page.getByRole('cell',{name:'Anytype',exact:true}).waitFor();
   await page.getByRole('cell',{name:'draw',exact:true}).waitFor();
+  const archive=page.getByRole('region',{name:'Archive',exact:true});
+  const ordinaryProjects=page.getByRole('region',{name:'Projects',exact:true});
+  for (const name of ['cpp','design_system']) assert.equal(await archive.getByRole('cell',{name,exact:true}).count(),1);
+  for (const name of ['Anytype','draw']) assert.equal(await ordinaryProjects.getByRole('cell',{name,exact:true}).count(),1);
+  for (const name of ['Archive','Projects']) assert.equal(await page.getByRole('cell',{name,exact:true}).count(),0);
   const first=(await query({type:'workspace.load'})).activeWorkspace;
   const projects=await query({type:'workspace.listProjects',workspaceId:first.workspaceId});
   assert.equal(first.name,'Workspace');assert.equal(projects.mode,'grouped');
@@ -49,7 +54,7 @@ try {
   assert.equal((await query({type:'workspace.getViewGrouping',workspaceId:first.workspaceId,viewId:first.viewId})).config.propertyId,projects.categoryProperty.propertyId);
   assert.equal((await query({type:'workspace.listSources'})).sources[0].archiveRelativePath,null);
   assert.equal(await page.getByRole('button',{name:/^(Set up later|Настроить позже)$/}).count(),0);
-  checks.push({cancellationCreatesNothing:true,immediateProjects:true,ordinaryArchive:true,defaultGrouping:true});
+  checks.push({cancellationCreatesNothing:true,immediateProjects:true,archiveAndProjectsSections:true,ordinaryArchive:true,defaultGrouping:true});
   for (const language of ['en','ru']) {
     await setInterfaceLanguage(page,language);
     await page.getByRole('columnheader',{name:language==='ru'?'Статус':'Status',exact:true}).first().waitFor();

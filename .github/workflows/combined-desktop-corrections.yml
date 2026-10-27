@@ -25,6 +25,8 @@ jobs:
       - run: npm run lint
       - run: npm run check:docs
       - run: npm run build
+      - name: Migration and storage regressions
+        run: npm run test:migrations
       - name: Corrected flows in development Electron
         shell: bash
         run: |
@@ -56,17 +58,17 @@ jobs:
             result=$?
             echo "$script $result" | tee -a work/ci-combined-corrections/release-results.txt
           done
-      - name: Strict representative scale
-        shell: bash
-        run: |
-          mkdir -p work/ci-combined-corrections/performance
-          WORKSPACE_SMOKE_EVIDENCE_DIR=work/ci-combined-corrections/performance WORKSPACE_PERFORMANCE_ROOT="$PWD" node scripts/smoke-performance.mjs --enforce --project-flows > work/ci-combined-corrections/performance/runtime.log 2>&1
       - name: Actual macOS System appearance switching
         if: matrix.os == 'macos-latest'
         shell: bash
         run: |
           mkdir -p work/ci-combined-corrections/system-theme
           WORKSPACE_SMOKE_MODE=release WORKSPACE_SMOKE_EVIDENCE_DIR=work/ci-combined-corrections/system-theme node scripts/smoke-system-theme.mjs > work/ci-combined-corrections/system-theme/runtime.log 2>&1
+      - name: Strict representative scale
+        shell: bash
+        run: |
+          mkdir -p work/ci-combined-corrections/performance
+          WORKSPACE_SMOKE_EVIDENCE_DIR=work/ci-combined-corrections/performance WORKSPACE_PERFORMANCE_ROOT="$PWD" node scripts/smoke-performance.mjs --enforce --project-flows > work/ci-combined-corrections/performance/runtime.log 2>&1
       - name: Require every corrected journey
         if: always()
         shell: bash
